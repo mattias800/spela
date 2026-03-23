@@ -30,8 +30,10 @@ import com.spela.player.domain.model.AchievementPlayerRanking
 import com.spela.player.domain.model.AchievementProgress
 import com.spela.player.domain.model.AchievementTimelineEntry
 import com.spela.player.domain.model.GameAchievement
+import com.spela.player.presentation.ui.components.SpAchievementBadge
 import com.spela.player.presentation.ui.components.SpAvatar
 import com.spela.player.presentation.ui.components.SpInnerCard
+import com.spela.player.presentation.ui.components.SpRarityChip
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.ui.theme.SpTypography
@@ -56,23 +58,12 @@ internal fun AchievementCard(
                 .padding(SpSpacing.Default),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            // Badge placeholder (colored circle)
-            Box(
-                modifier = Modifier
-                    .size(40.dp)
-                    .clip(RoundedCornerShape(SpSpacing.RadiusDefault))
-                    .background(
-                        if (isUnlocked) SpColor.Gold.copy(alpha = 0.2f)
-                        else SpColor.SurfaceBright,
-                    ),
-                contentAlignment = Alignment.Center,
-            ) {
-                Text(
-                    text = "${achievement.points}",
-                    style = SpTypography.LabelMedium,
-                    color = if (isUnlocked) SpColor.Gold else SpColor.OnBackgroundTertiary,
-                )
-            }
+            SpAchievementBadge(
+                badgeUrl = achievement.badgeUrl,
+                rarityPercent = achievement.rarityPercent,
+                size = 40.dp,
+                isUnlocked = isUnlocked,
+            )
 
             Spacer(Modifier.width(SpSpacing.Medium))
 
@@ -91,6 +82,10 @@ internal fun AchievementCard(
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
                 )
+                if (isUnlocked && achievement.rarityPercent > 0.0) {
+                    Spacer(Modifier.height(SpSpacing.XSmall))
+                    SpRarityChip(rarityPercent = achievement.rarityPercent)
+                }
             }
         }
     }
