@@ -153,6 +153,17 @@ compose.desktop {
             linux {
                 packageName = "spela-player"
             }
+
+            // Include required Java modules for the bundled JRE.
+            // java.sql is needed by SQLDelight's JDBC SQLite driver.
+            modules(
+                "java.base",
+                "java.desktop",
+                "java.logging",
+                "java.prefs",
+                "java.sql",           // Required for SQLDelight JDBC driver
+                "jdk.unsupported"     // Required for some Compose/Skia internals
+            )
         }
     }
 }
