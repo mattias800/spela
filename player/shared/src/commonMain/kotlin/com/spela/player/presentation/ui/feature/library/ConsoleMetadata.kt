@@ -388,16 +388,16 @@ fun getConsoleGradient(abbreviation: String, colorTheme: String?): Pair<Color, C
         "neocd" -> Color(0xFFeab308) to Color(0xFFb91c1c)       // yellow-500 → red-700
         "pce" -> Color(0xFFf97316) to Color(0xFF991b1b)         // orange-500 → red-800
         "pcecd" -> Color(0xFFf97316) to Color(0xFF991b1b)       // orange-500 → red-800
-        "a26" -> Color(0xFFd97706) to Color(0xFF78350f)         // amber-600 → amber-900
+        "a26" -> Color(0xFF1e293b) to Color(0xFF0f172a)         // slate-800 → slate-900 (complements red Atari logo)
         "gg" -> Color(0xFF2563eb) to Color(0xFF1e3a8a)          // blue-600 → blue-900
         "scd" -> Color(0xFF374151) to Color(0xFF1e3a8a)         // gray-700 → blue-900
         "32x" -> Color(0xFF1f2937) to Color(0xFF000000)         // gray-800 → black
         "dc" -> Color(0xFFf97316) to Color(0xFF1d4ed8)          // orange-500 → blue-700
         "vb" -> Color(0xFF991b1b) to Color(0xFF450a0a)          // red-800 → red-950
-        "3ds" -> Color(0xFFef4444) to Color(0xFF991b1b)         // red-500 → red-800
+        "3ds" -> Color(0xFF1e3a5f) to Color(0xFF0c1a2e)         // dark teal-blue (complements red 3DS logo)
         "gc" -> Color(0xFF6366f1) to Color(0xFF6b21a8)           // indigo-500 → purple-800
         "a52" -> Color(0xFFb45309) to Color(0xFF451a03)         // amber-700 → amber-950
-        "a78" -> Color(0xFFd97706) to Color(0xFF78350f)         // amber-600 → amber-900
+        "a78" -> Color(0xFF1e293b) to Color(0xFF0f172a)         // slate-800 → slate-900 (complements red logo)
         "lynx" -> Color(0xFFca8a04) to Color(0xFF713f12)        // yellow-600 → yellow-900
         "jag" -> Color(0xFFb91c1c) to Color(0xFF111827)         // red-700 → gray-900
         "ngp" -> Color(0xFF6b7280) to Color(0xFF1f2937)         // gray-500 → gray-800

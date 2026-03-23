@@ -33,11 +33,12 @@ import com.spela.player.domain.model.PublicProfileGame
 import com.spela.player.presentation.intent.SocialIntent
 import com.spela.player.presentation.ui.components.SpAvatar
 import com.spela.player.presentation.ui.components.SpCard
-import com.spela.player.presentation.ui.components.SpCoverArt
+
 import com.spela.player.presentation.ui.components.SpLoadingIndicator
 import com.spela.player.presentation.ui.components.SpPlayHeatmap
 import com.spela.player.presentation.ui.components.SpSectionList
 import com.spela.player.presentation.ui.components.SpTitledSection
+import com.spela.player.presentation.ui.components.SpWideGameCard
 import com.spela.player.presentation.ui.components.SpTopBar
 import com.spela.player.presentation.ui.components.PlatformBackHandler
 import com.spela.player.presentation.ui.theme.SpColor
@@ -343,45 +344,20 @@ private fun ProfileGameItem(
     showPlayTime: Boolean,
     onClick: () -> Unit,
 ) {
-    SpCard(
-        onGradient = true,
-        modifier = Modifier.fillMaxWidth(),
+    SpWideGameCard(
+        title = game.title,
+        subtitle = game.consoleName,
+        coverUrl = game.coverUrl,
         onClick = onClick,
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(SpSpacing.Small),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            SpCoverArt(
-                imageUrl = game.coverUrl,
-                contentDescription = "${game.title} cover",
-                modifier = Modifier.size(width = 40.dp, height = 56.dp),
-                cornerRadius = SpSpacing.RadiusDefault,
-            )
-            Spacer(Modifier.width(SpSpacing.Medium))
-            Column(modifier = Modifier.weight(1f)) {
+        fillWidth = true,
+        extraContent = if (showPlayTime && game.playTime > 0) {
+            {
                 Text(
-                    text = game.title,
-                    style = SpTypography.TitleSmall,
-                    color = SpColor.OnCard,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-                Text(
-                    text = game.consoleName,
+                    text = formatPlayTime(game.playTime),
                     style = SpTypography.LabelSmall,
-                    color = SpColor.OnBackgroundTertiary,
+                    color = SpColor.OnBackgroundSecondary,
                 )
-                if (showPlayTime && game.playTime > 0) {
-                    Text(
-                        text = formatPlayTime(game.playTime),
-                        style = SpTypography.LabelSmall,
-                        color = SpColor.OnBackgroundSecondary,
-                    )
-                }
             }
-        }
-    }
+        } else null,
+    )
 }
