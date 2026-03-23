@@ -39,6 +39,7 @@ modules:
         cat > /app/bin/spela << 'EOF'
         #!/bin/sh
         export PATH="/app/jre/bin:$PATH"
+        export LD_LIBRARY_PATH="/app/lib/runtime/lib:/app/lib/app:$LD_LIBRARY_PATH"
         exec /app/bin/Spela "$@"
         EOF
       - chmod +x /app/bin/spela
