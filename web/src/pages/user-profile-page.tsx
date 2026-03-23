@@ -4,6 +4,7 @@ import { usePublicProfile } from "@/hooks/use-public-profile";
 import { useUserPlayHeatmap } from "@/hooks/use-play-heatmap";
 import { PlayerAvatar } from "@/components/player-avatar";
 import { PlayHeatmap } from "@/components/play-heatmap";
+import { AchievementShowcase } from "@/features/user-profile/components/achievement-showcase";
 import { Badge, Skeleton, EmptyState } from "@/components/ui";
 import type { PublicProfileGame } from "@/types/api";
 
@@ -187,6 +188,9 @@ export function UserProfilePage() {
           )}
         </section>
       )}
+
+      {/* Achievement Showcase */}
+      {id && <AchievementShowcase userId={id} />}
 
       {/* Game sections */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

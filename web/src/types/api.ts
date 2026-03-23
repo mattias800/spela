@@ -297,6 +297,34 @@ export interface GameAchievementProgressResponse {
   progress: GameAchievementProgress[];
 }
 
+export interface ShowcaseAchievement {
+  achievementRaId: number;
+  raGameId: number;
+  showcaseOrder: number;
+  title?: string;
+  description?: string;
+  points?: number;
+  badgeUrl?: string;
+  rarityPercent?: number;
+  gameTitle?: string;
+}
+
+export interface UnlockedAchievement {
+  achievementRaId: number;
+  raGameId: number;
+  title: string;
+  description: string;
+  points: number;
+  badgeUrl: string;
+  rarityPercent: number;
+  gameTitle: string;
+  consoleName: string;
+}
+
+export interface UnlockedAchievementsResponse {
+  achievements: UnlockedAchievement[];
+}
+
 export interface GameStats {
   totalPlayers: number;
   totalPlayTime: number;

@@ -149,6 +149,9 @@ export type ApiGetPath = WithQuery<
   | "/user/ra/token"
   | "/user/taste-profile"
   | "/user/achievements/recent"
+  | "/user/achievements/showcase"
+  | "/user/achievements/unlocked"
+  | `/users/${string}/achievements/showcase`
   | "/user/saved-searches"
   | "/user/explorer-badges"
   | "/user/completionist-map"
@@ -334,6 +337,9 @@ export type ApiPutPath = WithQuery<
 
   // Netplay
   | `/netplay/sessions/${string}/settings`
+
+  // Achievement Showcase
+  | "/user/achievements/showcase"
 
   // Challenges
   | `/challenges/${string}`
