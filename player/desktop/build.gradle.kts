@@ -202,6 +202,25 @@ tasks.matching { it.name == "createDistributable" || it.name == "createReleaseDi
                     logger.lifecycle("Patched native library path in ${cfg.name}")
                 }
             }
+
+        // Copy native library to the app's lib directory so it can be found at runtime.
+        // $APPDIR resolves to lib/app/ (Linux/Windows) or Contents/app/ (macOS).
+        val nativeDir = nativeBuildDir.get().asFile
+        val possibleLibDirs = listOf(
+            appImageDir.resolve("Spela/lib/app"),           // Linux
+            appImageDir.resolve("Spela/app"),               // Windows
+            appImageDir.resolve("Spela.app/Contents/app"),  // macOS
+        )
+        val appLibDir = possibleLibDirs.firstOrNull { it.exists() }
+        if (appLibDir != null) {
+            nativeDir.listFiles()?.filter { it.extension in listOf("so", "dylib", "dll") }?.forEach { lib ->
+                val dest = appLibDir.resolve(lib.name)
+                lib.copyTo(dest, overwrite = true)
+                logger.lifecycle("Copied native library ${lib.name} to ${dest.relativeTo(appImageDir)}")
+            }
+        } else {
+            logger.warn("Could not find app lib directory to copy native libraries")
+        }
     }
 }
 
