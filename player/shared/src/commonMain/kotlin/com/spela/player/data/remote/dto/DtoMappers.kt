@@ -436,6 +436,18 @@ fun RecentAchievementDto.toDomain(): RecentAchievement = RecentAchievement(
     coverUrl = coverUrl,
 )
 
+fun ShowcaseAchievementDto.toDomain(): ShowcaseAchievement = ShowcaseAchievement(
+    achievementRaId = achievementRaId,
+    raGameId = raGameId,
+    showcaseOrder = showcaseOrder,
+    title = title ?: "",
+    description = description ?: "",
+    points = points ?: 0,
+    badgeUrl = badgeUrl,
+    rarityPercent = rarityPercent ?: 0.0,
+    gameTitle = gameTitle ?: "",
+)
+
 // Stats mappers
 
 fun MostPlayedGameDto.toDomain(): MostPlayedGame = MostPlayedGame(

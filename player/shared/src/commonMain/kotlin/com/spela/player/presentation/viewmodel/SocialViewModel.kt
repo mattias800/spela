@@ -4,6 +4,7 @@ import com.spela.player.domain.usecase.GetActivityFeedUseCase
 import com.spela.player.domain.usecase.GetOnlineUsersUseCase
 import com.spela.player.domain.usecase.GetPlayHeatmapUseCase
 import com.spela.player.domain.usecase.GetPublicProfileUseCase
+import com.spela.player.domain.usecase.GetPublicShowcaseUseCase
 import com.spela.player.presentation.intent.SocialIntent
 import com.spela.player.presentation.state.SocialState
 import com.spela.player.util.DispatcherProvider
@@ -19,6 +20,7 @@ class SocialViewModel(
     private val getActivityFeedUseCase: GetActivityFeedUseCase,
     private val getPublicProfileUseCase: GetPublicProfileUseCase,
     private val getPlayHeatmapUseCase: GetPlayHeatmapUseCase,
+    private val getPublicShowcaseUseCase: GetPublicShowcaseUseCase,
     private val dispatchers: DispatcherProvider,
     private val scope: CoroutineScope,
 ) {
@@ -127,7 +129,7 @@ class SocialViewModel(
     }
 
     private fun loadPublicProfile(userId: String) {
-        _state.update { it.copy(isLoadingProfile = true, publicProfile = null, heatmapData = emptyList()) }
+        _state.update { it.copy(isLoadingProfile = true, publicProfile = null, heatmapData = emptyList(), showcaseAchievements = emptyList()) }
         scope.launch(dispatchers.io) {
             getPublicProfileUseCase(userId).fold(
                 onSuccess = { profile ->
@@ -145,6 +147,15 @@ class SocialViewModel(
                 _state.update { it.copy(heatmapData = entries) }
             } catch (_: Exception) {
                 // Best effort — heatmap is non-critical
+            }
+        }
+        // Load achievement showcase in parallel — best effort, non-critical
+        scope.launch(dispatchers.io) {
+            try {
+                val entries = getPublicShowcaseUseCase(userId).getOrDefault(emptyList())
+                _state.update { it.copy(showcaseAchievements = entries) }
+            } catch (_: Exception) {
+                // Best effort — showcase is non-critical
             }
         }
     }

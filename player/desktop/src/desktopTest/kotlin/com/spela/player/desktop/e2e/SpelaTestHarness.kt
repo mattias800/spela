@@ -258,6 +258,7 @@ class SpelaTestHarness(
         getActivityFeedUseCase = GetActivityFeedUseCase(socialRepo),
         getPublicProfileUseCase = GetPublicProfileUseCase(socialRepo),
         getPlayHeatmapUseCase = GetPlayHeatmapUseCase(socialRepo),
+        getPublicShowcaseUseCase = GetPublicShowcaseUseCase(socialRepo),
         dispatchers = dispatchers,
         scope = scope,
     )

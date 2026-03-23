@@ -641,6 +641,14 @@ class SpelaApiClient(
         return client.get("$baseUrl/api/user/achievements/recent").body()
     }
 
+    suspend fun getShowcase(): List<ShowcaseAchievementDto> {
+        return client.get("$baseUrl/api/user/achievements/showcase").body()
+    }
+
+    suspend fun getPublicShowcase(userId: String): List<ShowcaseAchievementDto> {
+        return client.get("$baseUrl/api/users/$userId/achievements/showcase").body()
+    }
+
     // Devices
 
     suspend fun deleteDevice(deviceId: Long) {

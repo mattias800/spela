@@ -955,6 +955,21 @@ data class RecentAchievementsResponse(
     val achievements: List<RecentAchievementDto> = emptyList(),
 )
 
+// Achievement Showcase
+
+@Serializable
+data class ShowcaseAchievementDto(
+    val achievementRaId: Long,
+    val raGameId: Long,
+    val showcaseOrder: Int = 0,
+    val title: String? = null,
+    val description: String? = null,
+    val points: Int? = null,
+    val badgeUrl: String? = null,
+    val rarityPercent: Double? = null,
+    val gameTitle: String? = null,
+)
+
 // Top Rated
 
 @Serializable

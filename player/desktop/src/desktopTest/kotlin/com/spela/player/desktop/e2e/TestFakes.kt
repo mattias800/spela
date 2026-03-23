@@ -815,6 +815,8 @@ class FakeSocialRepository : SocialRepository {
         Result.failure(Exception("Not implemented in fake"))
     override suspend fun getPlayHeatmap(userId: String): Result<List<com.spela.player.domain.model.HeatmapEntry>> =
         Result.success(emptyList())
+    override suspend fun getPublicShowcase(userId: String): Result<List<com.spela.player.domain.model.ShowcaseAchievement>> =
+        Result.success(emptyList())
 }
 
 class FakeKeyMappingRepository : KeyMappingRepository {
