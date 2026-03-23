@@ -35,6 +35,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.semantics.contentDescription
@@ -46,24 +47,79 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.spela.player.domain.model.AchievementEvent
 import com.spela.player.domain.model.AchievementEventType
+import com.spela.player.presentation.ui.components.SpConfetti
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.ui.theme.SpTypography
 import kotlinx.coroutines.delay
 
-private const val CELEBRATION_DISPLAY_DURATION_MS = 6_000L
 private const val ENTRANCE_ANIMATION_MS = 400
 private const val EXIT_ANIMATION_MS = 300
-private const val GLOW_PULSE_DURATION_MS = 1_500
 private val BANNER_CORNER_RADIUS = SpSpacing.RadiusLarge
 private val BANNER_MAX_WIDTH = 340.dp
-private val GLOW_STROKE_WIDTH = SpSpacing.XXSmall
+
+// Rarity tier thresholds (matching server-side definition)
+private enum class RarityTier(val label: String) {
+    COMMON("Common"),
+    UNCOMMON("Uncommon"),
+    RARE("Rare"),
+    ULTRA_RARE("Ultra Rare"),
+    LEGENDARY("Legendary"),
+}
+
+private fun rarityTier(percent: Double): RarityTier = when {
+    percent < 1.0 -> RarityTier.LEGENDARY
+    percent < 5.0 -> RarityTier.ULTRA_RARE
+    percent < 20.0 -> RarityTier.RARE
+    percent < 50.0 -> RarityTier.UNCOMMON
+    else -> RarityTier.COMMON
+}
+
+private val SILVER = Color(0xFFC0C0C0)
+private val GOLD = Color(0xFFFFD700)
+
+private fun tierAccentColor(tier: RarityTier): Color = when (tier) {
+    RarityTier.COMMON -> SpColor.Warning
+    RarityTier.UNCOMMON -> SILVER
+    RarityTier.RARE -> GOLD
+    RarityTier.ULTRA_RARE -> SpColor.Primary
+    RarityTier.LEGENDARY -> SpColor.Primary
+}
+
+private fun tierDisplayDuration(tier: RarityTier, isGameCompleted: Boolean): Long = when {
+    isGameCompleted -> 8_000L
+    tier == RarityTier.LEGENDARY -> 7_000L
+    tier == RarityTier.ULTRA_RARE -> 6_500L
+    tier == RarityTier.RARE -> 6_000L
+    else -> 5_000L
+}
+
+private fun tierGlowPulseDuration(tier: RarityTier): Int = when (tier) {
+    RarityTier.LEGENDARY -> 800
+    RarityTier.ULTRA_RARE -> 1_000
+    RarityTier.RARE -> 1_200
+    else -> 1_500
+}
+
+private fun tierStrokeWidth(tier: RarityTier): Float = when (tier) {
+    RarityTier.LEGENDARY -> 4f
+    RarityTier.ULTRA_RARE -> 3f
+    RarityTier.RARE -> 2.5f
+    else -> 2f
+}
+
+private fun tierShowConfetti(tier: RarityTier, isGameCompleted: Boolean): Boolean =
+    isGameCompleted || tier == RarityTier.LEGENDARY
+
+private fun tierConfettiCount(isGameCompleted: Boolean): Int =
+    if (isGameCompleted) 80 else 50
 
 /**
  * Achievement celebration overlay for the secondary screen.
  *
  * Displays a visually rich banner when achievements are unlocked or the game is completed.
  * Events are queued so rapid unlocks show one at a time, each for its full duration.
+ * Celebration intensity scales with the achievement's rarity tier.
  *
  * This composable does NOT consume pointer events, so the user can still interact
  * with the underlying pager/controls while the celebration is visible.
@@ -77,16 +133,9 @@ fun SecondaryAchievementCelebration(
     achievementEvent: AchievementEvent?,
     onCelebrationStarted: () -> Unit = {},
 ) {
-    // Queue of pending celebrations. We collect events into this list and display
-    // them one at a time. Each event is shown for CELEBRATION_DISPLAY_DURATION_MS
-    // before being removed, which triggers the next one in the queue.
     val celebrationQueue = remember { mutableStateListOf<AchievementEvent>() }
     var currentCelebration by remember { mutableStateOf<AchievementEvent?>(null) }
 
-    // Enqueue new achievement events when the parameter changes.
-    // We key on the event identity so each new event fires exactly once.
-    // The event may be cleared from EmulationState by the primary screen's
-    // AchievementPopup, but we've already captured our own copy in the queue.
     LaunchedEffect(achievementEvent) {
         val event = achievementEvent ?: return@LaunchedEffect
         if (event.type == AchievementEventType.ACHIEVEMENT_TRIGGERED ||
@@ -96,21 +145,19 @@ fun SecondaryAchievementCelebration(
         }
     }
 
-    // Promote the next queued item to current when there is no active celebration.
     LaunchedEffect(celebrationQueue.size, currentCelebration) {
         if (currentCelebration == null && celebrationQueue.isNotEmpty()) {
             currentCelebration = celebrationQueue.removeFirst()
         }
     }
 
-    // Auto-dismiss the current celebration after the display duration.
     LaunchedEffect(currentCelebration) {
         val celebration = currentCelebration ?: return@LaunchedEffect
         onCelebrationStarted()
-        // Keep the celebration visible for its full duration, then clear it
-        // so the next queued item can be promoted.
-        delay(CELEBRATION_DISPLAY_DURATION_MS)
-        // Only clear if it's still the same celebration (defensive check)
+        val isGameCompleted = celebration.type == AchievementEventType.GAME_COMPLETED
+        val tier = rarityTier(celebration.rarityPercent)
+        val duration = tierDisplayDuration(tier, isGameCompleted)
+        delay(duration)
         if (currentCelebration == celebration) {
             currentCelebration = null
         }
@@ -118,19 +165,28 @@ fun SecondaryAchievementCelebration(
 
     val isVisible = currentCelebration != null
 
-    // Cache the last non-null celebration so the banner content persists during the
-    // exit fade-out animation (when currentCelebration has already been set to null).
     var lastCelebration by remember { mutableStateOf<AchievementEvent?>(null) }
     LaunchedEffect(currentCelebration) {
         if (currentCelebration != null) lastCelebration = currentCelebration
     }
 
-    // The overlay does NOT fill the entire screen and does NOT consume pointer events.
-    // It sits in a Box that fills the parent but uses contentAlignment to center the banner.
     Box(
         modifier = Modifier.fillMaxSize(),
         contentAlignment = Alignment.Center,
     ) {
+        // Confetti layer (behind the banner)
+        val celebration = lastCelebration
+        if (isVisible && celebration != null) {
+            val isGameCompleted = celebration.type == AchievementEventType.GAME_COMPLETED
+            val tier = rarityTier(celebration.rarityPercent)
+            if (tierShowConfetti(tier, isGameCompleted)) {
+                SpConfetti(
+                    particleCount = tierConfettiCount(isGameCompleted),
+                    durationMs = if (isGameCompleted) 4000 else 3000,
+                )
+            }
+        }
+
         AnimatedVisibility(
             visible = isVisible,
             enter = fadeIn(tween(ENTRANCE_ANIMATION_MS)) +
@@ -140,35 +196,56 @@ fun SecondaryAchievementCelebration(
                 ),
             exit = fadeOut(tween(EXIT_ANIMATION_MS)),
         ) {
-            val celebration = lastCelebration ?: return@AnimatedVisibility
-            CelebrationBanner(event = celebration)
+            val event = lastCelebration ?: return@AnimatedVisibility
+            CelebrationBanner(event = event)
         }
     }
 }
 
 /**
  * The visual banner card displayed for a single achievement celebration.
+ * Visual intensity scales with rarity tier.
  */
 @Composable
 private fun CelebrationBanner(event: AchievementEvent) {
     val isGameCompleted = event.type == AchievementEventType.GAME_COMPLETED
-    val accentColor = if (isGameCompleted) SpColor.Success else SpColor.Warning
-    val headerText = if (isGameCompleted) "GAME COMPLETED" else "ACHIEVEMENT UNLOCKED"
+    val tier = rarityTier(event.rarityPercent)
+    val accentColor = if (isGameCompleted) SpColor.Success else tierAccentColor(tier)
+    val headerText = if (isGameCompleted) {
+        "100% COMPLETE"
+    } else when (tier) {
+        RarityTier.LEGENDARY -> "LEGENDARY ACHIEVEMENT"
+        RarityTier.ULTRA_RARE -> "ULTRA RARE ACHIEVEMENT"
+        RarityTier.RARE -> "RARE ACHIEVEMENT"
+        else -> "ACHIEVEMENT UNLOCKED"
+    }
 
-    // Subtle pulsing glow animation
+    val glowPulseDuration = tierGlowPulseDuration(tier)
+    val strokeWidth = tierStrokeWidth(tier)
+
     val infiniteTransition = rememberInfiniteTransition(label = "celebrationGlow")
     val glowAlpha by infiniteTransition.animateFloat(
         initialValue = 0.4f,
-        targetValue = 0.9f,
+        targetValue = 0.95f,
         animationSpec = infiniteRepeatable(
-            animation = tween(GLOW_PULSE_DURATION_MS, easing = FastOutSlowInEasing),
+            animation = tween(glowPulseDuration, easing = FastOutSlowInEasing),
             repeatMode = RepeatMode.Reverse,
         ),
         label = "glowAlpha",
     )
 
+    // Animated gradient rotation for legendary tier
+    val gradientAngle by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(2000, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse,
+        ),
+        label = "gradientAngle",
+    )
+
     val cornerRadiusPx = BANNER_CORNER_RADIUS
-    val strokeWidthPx = GLOW_STROKE_WIDTH
 
     Column(
         modifier = Modifier
@@ -176,12 +253,38 @@ private fun CelebrationBanner(event: AchievementEvent) {
             .clip(RoundedCornerShape(cornerRadiusPx))
             .background(SpColor.Surface.copy(alpha = 0.95f))
             .drawBehind {
-                // Pulsing glow border
-                drawRoundRect(
-                    color = accentColor.copy(alpha = glowAlpha),
-                    cornerRadius = CornerRadius(cornerRadiusPx.toPx()),
-                    style = Stroke(width = strokeWidthPx.toPx()),
-                )
+                val cr = CornerRadius(cornerRadiusPx.toPx())
+                val sw = strokeWidth.dp.toPx()
+                if (tier == RarityTier.LEGENDARY && !isGameCompleted) {
+                    // Animated gradient border for legendary
+                    val colors = listOf(
+                        SpColor.Primary.copy(alpha = glowAlpha),
+                        GOLD.copy(alpha = glowAlpha),
+                        SpColor.Primary.copy(alpha = glowAlpha),
+                    )
+                    val brush = Brush.linearGradient(
+                        colors = colors,
+                        start = androidx.compose.ui.geometry.Offset(
+                            size.width * gradientAngle,
+                            0f,
+                        ),
+                        end = androidx.compose.ui.geometry.Offset(
+                            size.width * (1f - gradientAngle),
+                            size.height,
+                        ),
+                    )
+                    drawRoundRect(
+                        brush = brush,
+                        cornerRadius = cr,
+                        style = Stroke(width = sw),
+                    )
+                } else {
+                    drawRoundRect(
+                        color = accentColor.copy(alpha = glowAlpha),
+                        cornerRadius = cr,
+                        style = Stroke(width = sw),
+                    )
+                }
             }
             .padding(SpSpacing.Default)
             .semantics {
@@ -235,18 +338,26 @@ private fun CelebrationBanner(event: AchievementEvent) {
             Spacer(Modifier.height(SpSpacing.Medium))
         }
 
-        // Points badge or completion indicator
+        // Points badge / rarity chip / completion indicator
         if (isGameCompleted) {
             CompletionIndicator()
-        } else if (event.points > 0) {
-            PointsBadge(points = event.points, accentColor = accentColor)
+        } else {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(SpSpacing.Small, Alignment.CenterHorizontally),
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                if (event.points > 0) {
+                    PointsBadge(points = event.points, accentColor = accentColor)
+                }
+                if (event.rarityPercent > 0 && tier != RarityTier.COMMON) {
+                    RarityBadge(tier = tier, percent = event.rarityPercent, accentColor = accentColor)
+                }
+            }
         }
     }
 }
 
-/**
- * Points display for achievement unlocks, shown as "25 pts" with the accent color.
- */
 @Composable
 private fun PointsBadge(points: Int, accentColor: Color) {
     Row(
@@ -271,9 +382,25 @@ private fun PointsBadge(points: Int, accentColor: Color) {
     }
 }
 
-/**
- * Special "100%" indicator shown for game completion events.
- */
+@Composable
+private fun RarityBadge(tier: RarityTier, percent: Double, accentColor: Color) {
+    val formattedPercent = if (percent < 0.1) "<0.1%" else "${String.format("%.1f", percent)}%"
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.Center,
+        modifier = Modifier
+            .clip(RoundedCornerShape(SpSpacing.RadiusPill))
+            .background(accentColor.copy(alpha = 0.15f))
+            .padding(horizontal = SpSpacing.Medium, vertical = SpSpacing.Small),
+    ) {
+        Text(
+            text = "${tier.label} \u00B7 $formattedPercent",
+            style = SpTypography.LabelMedium.copy(fontWeight = FontWeight.SemiBold),
+            color = accentColor,
+        )
+    }
+}
+
 @Composable
 private fun CompletionIndicator() {
     Box(

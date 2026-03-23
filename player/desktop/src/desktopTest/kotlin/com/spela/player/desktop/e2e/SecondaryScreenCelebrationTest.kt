@@ -10,55 +10,121 @@ import kotlin.test.Test
  * E2E tests for the SecondaryAchievementCelebration overlay.
  *
  * Tests cover:
- * - Achievement unlock celebration (ACHIEVEMENT_TRIGGERED event)
- * - Game completion celebration (GAME_COMPLETED event) with distinct visuals
- *
- * The SecondaryAchievementCelebration is a stateless composable rendered
- * directly with explicit parameters. No ViewModel is needed.
+ * - Common achievement unlock (default styling)
+ * - Rare achievement unlock (tier-specific header and rarity badge)
+ * - Game completion celebration (confetti + 100% indicator)
  */
 @OptIn(ExperimentalTestApi::class)
 class SecondaryScreenCelebrationTest {
 
     @Test
-    fun achievementCelebrationShowsOnEvent() = runComposeUiTest {
+    fun commonAchievementShowsDefaultHeader() = runComposeUiTest {
         val event = AchievementEvent(
             type = AchievementEventType.ACHIEVEMENT_TRIGGERED,
             title = "First Blood",
             description = "Defeat the first enemy",
             points = 10,
+            rarityPercent = 75.0,
         )
 
         mainClock.autoAdvance = false
 
         setContent {
-            SecondaryAchievementCelebration(
-                achievementEvent = event,
-            )
+            SecondaryAchievementCelebration(achievementEvent = event)
         }
 
-        // Advance clock to let the LaunchedEffect enqueue and promote the event.
-        // Keep autoAdvance disabled because the celebration has an infinite glow
-        // animation that would cause waitForIdle() to hang.
         mainClock.advanceTimeBy(1_000)
         waitForIdle()
 
-        // The celebration overlay should show with correct content description
         onNodeWithContentDescription("Achievement unlocked: First Blood, 10 points")
             .assertExists()
             .assertIsDisplayed()
 
-        // "ACHIEVEMENT UNLOCKED" header text should be visible
         onNodeWithText("ACHIEVEMENT UNLOCKED")
             .assertExists()
             .assertIsDisplayed()
 
-        // Achievement title should be visible
         onNodeWithText("First Blood")
             .assertExists()
             .assertIsDisplayed()
 
-        // Achievement description should be visible
         onNodeWithText("Defeat the first enemy")
+            .assertExists()
+            .assertIsDisplayed()
+    }
+
+    @Test
+    fun rareAchievementShowsRareHeader() = runComposeUiTest {
+        val event = AchievementEvent(
+            type = AchievementEventType.ACHIEVEMENT_TRIGGERED,
+            title = "Speed Demon",
+            description = "Complete the game in under 2 hours",
+            points = 50,
+            rarityPercent = 8.2,
+        )
+
+        mainClock.autoAdvance = false
+
+        setContent {
+            SecondaryAchievementCelebration(achievementEvent = event)
+        }
+
+        mainClock.advanceTimeBy(1_000)
+        waitForIdle()
+
+        onNodeWithText("RARE ACHIEVEMENT")
+            .assertExists()
+            .assertIsDisplayed()
+
+        onNodeWithText("Speed Demon")
+            .assertExists()
+            .assertIsDisplayed()
+    }
+
+    @Test
+    fun ultraRareAchievementShowsUltraRareHeader() = runComposeUiTest {
+        val event = AchievementEvent(
+            type = AchievementEventType.ACHIEVEMENT_TRIGGERED,
+            title = "Perfectionist",
+            description = "Complete without taking any damage",
+            points = 100,
+            rarityPercent = 2.5,
+        )
+
+        mainClock.autoAdvance = false
+
+        setContent {
+            SecondaryAchievementCelebration(achievementEvent = event)
+        }
+
+        mainClock.advanceTimeBy(1_000)
+        waitForIdle()
+
+        onNodeWithText("ULTRA RARE ACHIEVEMENT")
+            .assertExists()
+            .assertIsDisplayed()
+    }
+
+    @Test
+    fun legendaryAchievementShowsLegendaryHeader() = runComposeUiTest {
+        val event = AchievementEvent(
+            type = AchievementEventType.ACHIEVEMENT_TRIGGERED,
+            title = "The Impossible",
+            description = "Achieve the truly impossible",
+            points = 200,
+            rarityPercent = 0.3,
+        )
+
+        mainClock.autoAdvance = false
+
+        setContent {
+            SecondaryAchievementCelebration(achievementEvent = event)
+        }
+
+        mainClock.advanceTimeBy(1_000)
+        waitForIdle()
+
+        onNodeWithText("LEGENDARY ACHIEVEMENT")
             .assertExists()
             .assertIsDisplayed()
     }
@@ -75,33 +141,24 @@ class SecondaryScreenCelebrationTest {
         mainClock.autoAdvance = false
 
         setContent {
-            SecondaryAchievementCelebration(
-                achievementEvent = event,
-            )
+            SecondaryAchievementCelebration(achievementEvent = event)
         }
 
-        // Advance clock to let the LaunchedEffect enqueue and promote the event.
-        // Keep autoAdvance disabled because the celebration has an infinite glow
-        // animation that would cause waitForIdle() to hang.
         mainClock.advanceTimeBy(1_000)
         waitForIdle()
 
-        // The celebration overlay should show with game completed content description
         onNodeWithContentDescription("Game completed celebration: Castlevania")
             .assertExists()
             .assertIsDisplayed()
 
-        // "GAME COMPLETED" header text should be visible (distinct from "ACHIEVEMENT UNLOCKED")
-        onNodeWithText("GAME COMPLETED")
+        onNodeWithText("100% COMPLETE")
             .assertExists()
             .assertIsDisplayed()
 
-        // "100%" completion indicator should be visible
         onNodeWithText("100%")
             .assertExists()
             .assertIsDisplayed()
 
-        // "ACHIEVEMENT UNLOCKED" should NOT be present
         onAllNodesWithText("ACHIEVEMENT UNLOCKED")
             .assertCountEquals(0)
     }

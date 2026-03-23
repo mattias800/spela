@@ -29,12 +29,13 @@ class DesktopAchievementsController(
     override val isHardcore: Boolean get() = _isHardcore
 
     override fun init() {
-        jni.achievementEventListener = { eventType, title, description, points ->
+        jni.achievementEventListener = { eventType, achievementId, title, description, points ->
             val type = AchievementEventType.fromNativeValue(eventType)
             if (type != null) {
                 _events.tryEmit(
                     AchievementEvent(
                         type = type,
+                        achievementId = achievementId,
                         title = title ?: "",
                         description = description ?: "",
                         points = points,

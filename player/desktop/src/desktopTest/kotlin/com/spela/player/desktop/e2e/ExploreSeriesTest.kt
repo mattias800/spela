@@ -103,6 +103,7 @@ class ExploreSeriesTest {
         id = "s1",
         name = "Super Mario",
         heroUrl = null,
+        logoUrl = null,
         consoles = sampleSeriesConsoles,
         libraryGames = 2,
         totalGames = 3,

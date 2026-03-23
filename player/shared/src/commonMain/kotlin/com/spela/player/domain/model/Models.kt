@@ -324,9 +324,11 @@ enum class AchievementEventType(val nativeValue: Int) {
 
 data class AchievementEvent(
     val type: AchievementEventType,
+    val achievementId: Long = 0L,
     val title: String = "",
     val description: String = "",
     val points: Int = 0,
+    val rarityPercent: Double = 0.0,
 )
 
 // Shared Session
