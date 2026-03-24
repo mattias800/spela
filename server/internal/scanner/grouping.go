@@ -21,6 +21,7 @@ func GroupAndElectPrimaries(database *gorm.DB) error {
 
 // groupAndElectWithComparator is the shared implementation for primary election.
 // It processes games one console at a time and uses the given comparator for sorting.
+// Uses batched transactions (50 groups per tx) to avoid huge transactions with SQLite.
 func groupAndElectWithComparator(database *gorm.DB, less func(a, b db.Game) bool) error {
 	// Get distinct console IDs that have grouped games
 	var consoleIDs []uint
@@ -32,6 +33,7 @@ func groupAndElectWithComparator(database *gorm.DB, less func(a, b db.Game) bool
 	}
 
 	totalGroups := 0
+	const batchSize = 50 // groups per transaction
 
 	// Process one console at a time to bound memory
 	for _, cid := range consoleIDs {
@@ -46,40 +48,65 @@ func groupAndElectWithComparator(database *gorm.DB, less func(a, b db.Game) bool
 			groups[g.GroupKey] = append(groups[g.GroupKey], g)
 		}
 
-		err := database.Transaction(func(tx *gorm.DB) error {
-			for gk, gGames := range groups {
-				sort.SliceStable(gGames, func(i, j int) bool {
-					return less(gGames[i], gGames[j])
-				})
+		// Collect group keys for deterministic ordering
+		groupKeys := make([]string, 0, len(groups))
+		for gk := range groups {
+			groupKeys = append(groupKeys, gk)
+		}
+		sort.Strings(groupKeys)
 
-				primary := gGames[0]
+		// Elect primaries: collect all primary IDs first, then batch update
+		primaryIDs := make([]uint, 0, len(groups))
+		groupPrimaryMap := make(map[string]uint, len(groups)) // groupKey -> primaryID
 
-				if err := tx.Model(&db.Game{}).
-					Where("console_id = ? AND group_key = ?", cid, gk).
-					Updates(map[string]interface{}{
-						"is_primary":      false,
-						"primary_game_id": primary.ID,
-					}).Error; err != nil {
-					slog.Warn("failed to clear primary flags",
-						"consoleId", cid, "groupKey", gk, "error", err)
-					continue
-				}
+		for _, gk := range groupKeys {
+			gGames := groups[gk]
+			sort.SliceStable(gGames, func(i, j int) bool {
+				return less(gGames[i], gGames[j])
+			})
+			primaryIDs = append(primaryIDs, gGames[0].ID)
+			groupPrimaryMap[gk] = gGames[0].ID
+		}
 
-				if err := tx.Model(&db.Game{}).
-					Where("id = ?", primary.ID).
-					Updates(map[string]interface{}{
-						"is_primary":      true,
-						"primary_game_id": nil,
-					}).Error; err != nil {
-					slog.Warn("failed to set primary",
-						"consoleId", cid, "groupKey", gk, "error", err)
-					continue
-				}
+		// Process in batches of batchSize groups per transaction
+		for batchStart := 0; batchStart < len(groupKeys); batchStart += batchSize {
+			batchEnd := batchStart + batchSize
+			if batchEnd > len(groupKeys) {
+				batchEnd = len(groupKeys)
 			}
-			return nil
-		})
-		if err != nil {
-			return fmt.Errorf("primary election for console %d: %w", cid, err)
+			batchKeys := groupKeys[batchStart:batchEnd]
+
+			err := database.Transaction(func(tx *gorm.DB) error {
+				for _, gk := range batchKeys {
+					pid := groupPrimaryMap[gk]
+
+					if err := tx.Model(&db.Game{}).
+						Where("console_id = ? AND group_key = ?", cid, gk).
+						Updates(map[string]interface{}{
+							"is_primary":      false,
+							"primary_game_id": pid,
+						}).Error; err != nil {
+						slog.Warn("failed to clear primary flags",
+							"consoleId", cid, "groupKey", gk, "error", err)
+						continue
+					}
+
+					if err := tx.Model(&db.Game{}).
+						Where("id = ?", pid).
+						Updates(map[string]interface{}{
+							"is_primary":      true,
+							"primary_game_id": nil,
+						}).Error; err != nil {
+						slog.Warn("failed to set primary",
+							"consoleId", cid, "groupKey", gk, "error", err)
+						continue
+					}
+				}
+				return nil
+			})
+			if err != nil {
+				return fmt.Errorf("primary election for console %d batch %d: %w", cid, batchStart, err)
+			}
 		}
 
 		totalGroups += len(groups)
