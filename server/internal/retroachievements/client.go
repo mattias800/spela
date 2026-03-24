@@ -1,11 +1,14 @@
 package retroachievements
 
 import (
+	"crypto/md5"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
 	"net/url"
+	"os"
 	"time"
 )
 
@@ -50,6 +53,114 @@ type UserProgress struct {
 	AchievementID uint   `json:"achievementId"`
 	UnlockedAt    string `json:"unlockedAt"`
 	IsHardcore    bool   `json:"isHardcore"`
+}
+
+// ComputeMD5 computes the MD5 hash of a file and returns it as a hex string.
+// This is a shared utility used by both the API handler and the scraper.
+func ComputeMD5(path string) (string, error) {
+	f, err := os.Open(path)
+	if err != nil {
+		return "", fmt.Errorf("opening file for hash: %w", err)
+	}
+	defer f.Close()
+
+	h := md5.New()
+	if _, err := io.Copy(h, f); err != nil {
+		return "", fmt.Errorf("computing file hash: %w", err)
+	}
+
+	return hex.EncodeToString(h.Sum(nil)), nil
+}
+
+// GetGameExtended fetches game achievements using the public Web API.
+// Requires a server-level API key (not a user token).
+func (c *RAClient) GetGameExtended(apiKey string, raGameID uint) (*GameInfo, error) {
+	u := fmt.Sprintf("%s/API/API_GetGameExtended.php?y=%s&i=%d",
+		c.BaseURL, url.QueryEscape(apiKey), raGameID)
+
+	resp, err := c.HTTPClient.Get(u)
+	if err != nil {
+		return nil, fmt.Errorf("calling RA game extended API: %w", err)
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("reading RA game extended response: %w", err)
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("RA game extended returned status %d: %s", resp.StatusCode, string(body))
+	}
+
+	// The RA API returns a flat object with an Achievements map (same structure as GetGameInfoAndUserProgress)
+	var raw struct {
+		ID                         uint   `json:"ID"`
+		Title                      string `json:"Title"`
+		NumDistinctPlayersCasual   int    `json:"NumDistinctPlayersCasual"`
+		NumDistinctPlayersHardcore int    `json:"NumDistinctPlayersHardcore"`
+		Achievements               map[string]struct {
+			ID                 uint   `json:"ID"`
+			Title              string `json:"Title"`
+			Description        string `json:"Description"`
+			Points             int    `json:"Points"`
+			BadgeName          string `json:"BadgeName"`
+			Type               int    `json:"type"`
+			NumAwarded         int    `json:"NumAwarded"`
+			NumAwardedHardcore int    `json:"NumAwardedHardcore"`
+		} `json:"Achievements"`
+	}
+	if err := json.Unmarshal(body, &raw); err != nil {
+		return nil, fmt.Errorf("parsing RA game extended response: %w", err)
+	}
+
+	gameInfo := &GameInfo{
+		ID:    raw.ID,
+		Title: raw.Title,
+	}
+
+	totalPoints := 0
+
+	numDistinctPlayers := raw.NumDistinctPlayersCasual
+	if raw.NumDistinctPlayersHardcore > numDistinctPlayers {
+		numDistinctPlayers = raw.NumDistinctPlayersHardcore
+	}
+
+	for _, a := range raw.Achievements {
+		achType := "core"
+		if a.Type == 5 {
+			achType = "unofficial"
+		}
+
+		badgeURL := ""
+		if a.BadgeName != "" {
+			badgeURL = fmt.Sprintf("https://media.retroachievements.org/Badge/%s.png", a.BadgeName)
+		}
+
+		rarityPercent := 0.0
+		if numDistinctPlayers > 0 {
+			rarityPercent = float64(a.NumAwarded) / float64(numDistinctPlayers) * 100.0
+		}
+
+		gameInfo.Achievements = append(gameInfo.Achievements, Achievement{
+			ID:            a.ID,
+			Title:         a.Title,
+			Description:   a.Description,
+			Points:        a.Points,
+			BadgeURL:      badgeURL,
+			Type:          achType,
+			RarityPercent: rarityPercent,
+		})
+
+		if achType == "core" {
+			totalPoints += a.Points
+		}
+	}
+
+	gameInfo.TotalCount = len(gameInfo.Achievements)
+	gameInfo.TotalPoints = totalPoints
+
+	return gameInfo, nil
 }
 
 // LoginWithPassword calls the RA API to exchange username+password for a token.

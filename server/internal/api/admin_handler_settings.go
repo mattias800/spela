@@ -12,6 +12,7 @@ import (
 var secretSettingKeys = map[string]bool{
 	"igdb_client_secret":   true,
 	"steamgriddb_api_key":  true,
+	"ra_api_key":           true,
 }
 
 // GetSettings returns server settings (admin only).
@@ -47,6 +48,7 @@ var allowedSettingKeys = map[string]bool{
 	"steamgriddb_api_key":     true,
 	"default_region":          true,
 	"hide_pre_release_default": true,
+	"ra_api_key":              true,
 }
 
 // UpdateSettings updates server settings (admin only).

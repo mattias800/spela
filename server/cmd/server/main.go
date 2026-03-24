@@ -17,6 +17,7 @@ import (
 	"github.com/spela/server/internal/cheats"
 	"github.com/spela/server/internal/db"
 	"github.com/spela/server/internal/igdb"
+	"github.com/spela/server/internal/retroachievements"
 	"github.com/spela/server/internal/scanner"
 	"github.com/spela/server/internal/scraper"
 	"github.com/spela/server/internal/storage"
@@ -256,6 +257,19 @@ func main() {
 				metaScraper.IGDBClient = igdb.NewClient(clientID, clientSecret)
 			}
 		}
+		// Configure RA API key for achievement scraping
+		raAPIKey := os.Getenv("SPELA_RA_API_KEY")
+		if raAPIKey == "" {
+			var setting db.ServerSetting
+			database.Where("key = ?", "ra_api_key").First(&setting)
+			raAPIKey = setting.Value
+		}
+		if raAPIKey != "" {
+			metaScraper.RAClient = retroachievements.NewRAClient()
+			metaScraper.RAAPIKey = raAPIKey
+			slog.Info("RA API key configured for achievement scraping")
+		}
+
 		if result.NewGames > 0 && metaScraper.IsIGDBConfigured() {
 			// Configure SteamGridDB for hero art (env var or DB setting)
 			if sgdbKey := os.Getenv("SPELA_STEAMGRIDDB_API_KEY"); sgdbKey != "" {
@@ -280,6 +294,18 @@ func main() {
 				}
 				slog.Info("startup auto-scrape complete", "scraped", count, "total", total)
 				hub.Broadcast(websocket.Event{Type: "scrape_complete", Payload: map[string]interface{}{"scraped": count, "total": total}})
+			}
+		}
+
+		// Standalone RA achievement scraping for games that weren't covered by ScrapeAll
+		// (e.g., when IGDB is not configured but RA is, or for existing games)
+		if metaScraper.IsRAConfigured() {
+			slog.Info("scraping RetroAchievements data...")
+			raSuccesses, raTotal, raErr := metaScraper.ScrapeRAAchievements(context.Background(), nil)
+			if raErr != nil {
+				slog.Error("RA achievement scraping failed", "error", raErr)
+			} else if raSuccesses > 0 {
+				slog.Info("RA achievement scraping complete", "successes", raSuccesses, "total", raTotal)
 			}
 		}
 	}()
