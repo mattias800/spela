@@ -75,8 +75,9 @@ var registry = []Entry{
 	{ConsoleID: "arcade", FileName: "neogeo.zip", Description: "Neo Geo BIOS (for Neo Geo arcade games)", MD5: "", Required: false, OverrideURL: "https://archive.org/download/real-bout-fatal-fury-world-cdz-patched/neogeo.zip"},
 
 	// Neo Geo CD (NEOCD) — neocd_libretro.info
-	{ConsoleID: "neocd", FileName: "neocdz.zip", Description: "Neo Geo CDZ BIOS", MD5: "", Required: true, OverrideURL: "https://archive.org/download/real-bout-fatal-fury-world-cdz-patched/neocdz.zip"},
-	{ConsoleID: "neocd", FileName: "neocd.zip", Description: "Neo Geo CD Front Loader BIOS", MD5: "", Required: false, OverrideURL: "https://archive.org/download/real-bout-fatal-fury-world-cdz-patched/neocd.zip"},
+	// NeoCD core looks for BIOS in a "neocd" subdirectory under system_dir
+	{ConsoleID: "neocd", FileName: "neocdz.zip", Description: "Neo Geo CDZ BIOS", MD5: "", Required: true, OverrideURL: "https://archive.org/download/real-bout-fatal-fury-world-cdz-patched/neocdz.zip", SubDir: "neocd"},
+	{ConsoleID: "neocd", FileName: "neocd.zip", Description: "Neo Geo CD Front Loader BIOS", MD5: "", Required: false, OverrideURL: "https://archive.org/download/real-bout-fatal-fury-world-cdz-patched/neocd.zip", SubDir: "neocd"},
 
 	// Atari Lynx (LYNX) — handy_libretro.info
 	{ConsoleID: "lynx", FileName: "lynxboot.img", Description: "Atari Lynx Boot ROM", MD5: "fcd403db69f54290b51035d82f835e7b", Required: false},
