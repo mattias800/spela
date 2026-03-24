@@ -921,6 +921,8 @@ func SeedCores(db *gorm.DB) error {
 		{Name: "mgba", DisplayName: "mGBA", Description: "Game Boy Advance emulator", Platforms: "windows,linux,macos,android"},
 		{Name: "mupen64plus_next", DisplayName: "Mupen64Plus-Next", Description: "Nintendo 64 emulator", Platforms: "windows,linux,macos,android"},
 		{Name: "genesis_plus_gx", DisplayName: "Genesis Plus GX", Description: "Sega 8/16-bit emulator", Platforms: "windows,linux,macos,android"},
+		{Name: "genesis_plus_gx_wide", DisplayName: "Genesis Plus GX Wide", Description: "Sega 8/16-bit emulator (widescreen)", Platforms: "windows,linux,macos,android"},
+		{Name: "picodrive", DisplayName: "PicoDrive", Description: "Sega 8/16-bit + Sega CD/32X emulator", Platforms: "windows,linux,macos,android"},
 		{Name: "beetle_psx_hw", DisplayName: "Beetle PSX HW", Description: "PlayStation emulator with hardware rendering", Platforms: "windows,linux,macos"},
 		{Name: "desmume", DisplayName: "DeSmuME", Description: "Nintendo DS emulator", Platforms: "windows,linux,macos"},
 		{Name: "dolphin", DisplayName: "Dolphin", Description: "GameCube and Wii emulator", Platforms: "windows,linux,macos,android"},
