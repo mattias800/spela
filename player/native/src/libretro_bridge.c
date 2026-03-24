@@ -489,6 +489,11 @@ static bool environment_callback(unsigned cmd, void *data) {
                 cb->get_current_framebuffer = hw_get_current_framebuffer;
                 cb->get_proc_address = hw_get_proc_address;
                 g_core.hw_render_enabled = true;
+                /* Tell GPU renderer about Y-axis convention for GL readback flip */
+                if (g_gpu_renderer) {
+                    gpu_renderer_set_hw_bottom_left_origin(g_gpu_renderer,
+                        cb->bottom_left_origin);
+                }
                 LOGI("Accepted OpenGL HW render (type=%u, bottom_left_origin=%d, depth=%d, stencil=%d)",
                      cb->context_type, cb->bottom_left_origin, cb->depth, cb->stencil);
                 return true;

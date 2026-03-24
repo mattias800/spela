@@ -245,6 +245,8 @@ class DesktopLibretroController(
         val h = jni.nativeGetVideoHeight()
         if (w <= 0 || h <= 0) return
 
+        // Allocate for the larger of core output size or current buffer
+        // The GPU renderer may resize the offscreen target to match frame dims
         val needed = w * h * 4
         val bufIdx = renderBufferIndex
         if (renderBuffers[bufIdx].size < needed) {
@@ -253,9 +255,24 @@ class DesktopLibretroController(
 
         val written = jni.nativeGpuRenderToBgra(renderBuffers[bufIdx])
         if (written > 0) {
+            // Compute actual dimensions from bytes written (always BGRA = 4 bpp)
+            // The GPU renderer may output at different dimensions than the core reports
+            val actualPixels = written / 4
+            val actualW: Int
+            val actualH: Int
+            if (actualPixels == w * h) {
+                actualW = w
+                actualH = h
+            } else {
+                // Readback dimensions differ from core dimensions — estimate from aspect
+                // The offscreen target should be the same as frame dims after our fix,
+                // but as a safety fallback, try common dimensions
+                actualW = w
+                actualH = if (w > 0) actualPixels / w else h
+            }
             val ar = jni.nativeGetAspectRatio()
-            latestRenderedFrame = RenderedFrame(renderBuffers[bufIdx], w, h, ar)
-            renderBufferIndex = 1 - bufIdx // Swap for next frame
+            latestRenderedFrame = RenderedFrame(renderBuffers[bufIdx], actualW, actualH, ar)
+            renderBufferIndex = 1 - bufIdx
         }
     }
 
