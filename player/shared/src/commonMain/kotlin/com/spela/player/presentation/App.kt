@@ -17,6 +17,7 @@ import com.spela.player.presentation.viewmodel.SharedSessionsViewModel
 import com.spela.player.presentation.viewmodel.SettingsViewModel
 import com.spela.player.data.remote.ConnectivityMonitor
 import com.spela.player.data.remote.PresenceService
+import com.spela.player.data.remote.ScrapeService
 import com.spela.player.presentation.navigation.NavigationEventBus
 import com.spela.player.presentation.viewmodel.NetplayLobbyViewModel
 import com.spela.player.presentation.viewmodel.SessionDetailViewModel
@@ -68,6 +69,7 @@ fun App() {
     val exploreViewModel: ExploreViewModel = koinInject()
     val topListsViewModel: TopListsViewModel = koinInject()
     val gamepadConfigViewModel: GamepadConfigViewModel = koinInject()
+    val scrapeService: ScrapeService = koinInject()
 
     SpelaApp(
         navigationViewModel = navigationViewModel,
@@ -99,5 +101,6 @@ fun App() {
         exploreViewModel = exploreViewModel,
         topListsViewModel = topListsViewModel,
         gamepadConfigViewModel = gamepadConfigViewModel,
+        scrapeService = scrapeService,
     )
 }

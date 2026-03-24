@@ -148,7 +148,10 @@ class PresenceService(
             when (type) {
                 "game_scraped" -> {
                     val gameDto = json.decodeFromJsonElement<GameDto>(payload)
-                    scrapeService?.onGameScraped(gameDto.toDomain())
+                    val game = gameDto.toDomain().copy(
+                        coverUrl = apiClient.resolveUrl(gameDto.coverUrl),
+                    )
+                    scrapeService?.onGameScraped(game)
                 }
             }
         } catch (_: Exception) {

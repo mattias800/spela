@@ -121,7 +121,11 @@ import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.ui.theme.SpTypography
 import com.spela.player.presentation.ui.gamepad.GamepadHandler
 import com.spela.player.presentation.ui.gamepad.InputMode
+import com.spela.player.presentation.ui.components.LocalScrapeService
+import com.spela.player.presentation.ui.components.ScrapeUpdates
 import com.spela.player.presentation.ui.theme.SpelaTheme
+import com.spela.player.data.remote.ScrapeService
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.input.pointer.PointerEventPass
 import com.spela.player.presentation.viewmodel.DownloadsViewModel
 import com.spela.player.presentation.viewmodel.EmulationViewModel
@@ -181,10 +185,19 @@ fun SpelaApp(
     navigationEventBus: NavigationEventBus? = null,
     gamepadPortManager: GamepadPortManager? = null,
     globalSearchViewModel: GlobalSearchViewModel? = null,
+    scrapeService: ScrapeService? = null,
 ) {
     val currentTheme by settingsViewModel.selectedTheme.collectAsState()
 
     SpelaTheme(theme = currentTheme) {
+    CompositionLocalProvider(LocalScrapeService provides scrapeService) {
+        // Observe scrape completions and update cover art reactively
+        LaunchedEffect(scrapeService) {
+            scrapeService?.scrapedGames?.collect { game ->
+                ScrapeUpdates.onGameScraped(game)
+            }
+        }
+
         val navState by navigationViewModel.state.collectAsState()
 
         // Input mode detection: TOUCH shows tab bar, GAMEPAD shows section indicator
@@ -216,7 +229,7 @@ fun SpelaApp(
                     CircularProgressIndicator(color = SpColor.Primary)
                 }
             }
-            return@SpelaTheme
+            return@CompositionLocalProvider
         }
 
         // Connect/disconnect WebSocket presence based on authentication state
@@ -1581,6 +1594,7 @@ fun SpelaApp(
             }
         }
         }
+    } // CompositionLocalProvider
     }
 }
 
