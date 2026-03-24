@@ -550,28 +550,7 @@ private fun GameInfoContent(
     onNavigateToPublisher: ((name: String) -> Unit)? = null,
     onNavigateToAchievements: (() -> Unit)? = null,
 ) {
-    // Title, badges, and action buttons are in the hero banner (GameHeroContent)
-
-    // Sync status row (shown while pre-launch or post-exit sync is in progress)
-    syncState?.takeIf { !it.isTimedOut }?.let { sync ->
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(SpSpacing.Small),
-        ) {
-            if (LocalAnimationsEnabled.current) {
-                CircularProgressIndicator(
-                    modifier = Modifier.size(16.dp),
-                    strokeWidth = 2.dp,
-                    color = Color.White.copy(alpha = 0.75f),
-                )
-            }
-            Text(
-                text = sync.message,
-                style = SpTypography.BodySmall,
-                color = SpColor.OnBackgroundTertiary,
-            )
-        }
-    }
+    // Title, badges, action buttons, and loading indicators are in the hero banner (GameHeroContent)
 
     // BIOS warning chip
     if (missingBiosFiles.isNotEmpty()) {
@@ -608,33 +587,6 @@ private fun GameInfoContent(
             }
         }
     }
-
-    // Download progress
-    AnimatedVisibility(
-        visible = state.downloadProgress?.state == DownloadState.DOWNLOADING,
-        enter = fadeIn(),
-        exit = fadeOut(),
-    ) {
-        state.downloadProgress?.let { progress ->
-            Column(modifier = Modifier.padding(top = SpSpacing.Medium)) {
-                if (progress.totalDiscs > 1) {
-                    Text(
-                        text = "Downloading Disc ${progress.currentDisc} of ${progress.totalDiscs}",
-                        style = SpTypography.LabelMedium,
-                        color = SpColor.OnBackgroundSecondary,
-                        modifier = Modifier.padding(bottom = SpSpacing.XSmall),
-                    )
-                }
-                SpProgressBar(
-                    progress = if (progress.isIndeterminate) 0f else progress.progress,
-                    showPercentage = !progress.isIndeterminate,
-                    label = "Downloading...",
-                    onGradient = true,
-                )
-            }
-        }
-    }
-
 
     // Description (plain text, matching web UI)
     game.description?.let { description ->
@@ -1080,8 +1032,18 @@ private fun GameHeroContent(
                 onGradient = true,
             )
 
-            // Scraping indicator
-            if (state.isScraping) {
+            // Status indicators (scraping, syncing, downloading)
+            val statusText = when {
+                state.isScraping -> "Scraping\u2026"
+                syncState?.isTimedOut == false && syncState != null -> syncState.message
+                state.downloadProgress?.state == DownloadState.DOWNLOADING -> {
+                    val p = state.downloadProgress!!
+                    if (p.totalDiscs > 1) "Downloading disc ${p.currentDisc}/${p.totalDiscs}\u2026"
+                    else "Downloading\u2026"
+                }
+                else -> null
+            }
+            if (statusText != null) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(SpSpacing.XSmall),
@@ -1092,7 +1054,7 @@ private fun GameHeroContent(
                         color = Color.White.copy(alpha = 0.65f),
                     )
                     Text(
-                        text = "Scraping\u2026",
+                        text = statusText,
                         style = SpTypography.LabelSmall,
                         color = Color.White.copy(alpha = 0.65f),
                     )
