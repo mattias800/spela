@@ -119,9 +119,22 @@ fun HomeScreen(
     val socialState by socialViewModel.state.collectAsState()
 
     LaunchedEffect(Unit) {
+        println("[HomeScreen] LaunchedEffect(Unit) fired — loading dashboard")
         viewModel.onIntent(GameListIntent.LoadDashboard)
         socialViewModel.onIntent(SocialIntent.RefreshAll)
         settingsViewModel?.onIntent(SettingsIntent.LoadSettings)
+    }
+
+    // Retry if dashboard loaded empty (server may still be scanning on startup)
+    val isEmpty = state.consoles.isEmpty() && state.recentGames.isEmpty() && !state.isLoading
+    LaunchedEffect(isEmpty) {
+        if (isEmpty) {
+            println("[HomeScreen] Dashboard empty, retrying in 3s (consoles=${state.consoles.size}, recent=${state.recentGames.size}, loading=${state.isLoading})")
+            kotlinx.coroutines.delay(3000)
+            println("[HomeScreen] Retrying dashboard load")
+            viewModel.onIntent(GameListIntent.LoadDashboard)
+            socialViewModel.onIntent(SocialIntent.RefreshAll)
+        }
     }
 
     val gradientColors = listOf(
@@ -163,7 +176,8 @@ fun HomeScreen(
                     },
                     modifier = Modifier.fillMaxSize(),
                 ) {
-                    val isEmpty = state.recentGames.isEmpty() &&
+                    val isEmpty = state.consoles.isEmpty() &&
+                            state.recentGames.isEmpty() &&
                             state.favoriteGames.isEmpty() &&
                             state.playLaterGames.isEmpty() &&
                             state.recentAchievements.isEmpty() &&

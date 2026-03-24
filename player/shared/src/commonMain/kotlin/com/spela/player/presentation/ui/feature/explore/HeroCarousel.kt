@@ -11,9 +11,11 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.material3.ripple
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -50,6 +52,7 @@ import coil3.compose.SubcomposeAsyncImage
 import com.spela.player.domain.model.FeaturedGame
 import com.spela.player.presentation.ui.components.LocalAnimationsEnabled
 import com.spela.player.presentation.ui.components.SpButton
+import com.spela.player.presentation.ui.components.SpAreaSizedImage
 import com.spela.player.presentation.ui.components.SpChip
 import com.spela.player.presentation.ui.components.SpConsoleChip
 import com.spela.player.presentation.ui.components.SpShimmer
@@ -232,104 +235,154 @@ private fun HeroSlide(
                 ),
         )
 
-        // Content overlay (centered)
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .padding(SpSpacing.XLarge)
-                .padding(bottom = SpSpacing.XLarge)
-                .fillMaxWidth(),
-        ) {
-            // Logo or title text fallback
-            if (game.logoUrl != null) {
-                SubcomposeAsyncImage(
-                    model = game.logoUrl,
-                    contentDescription = "${game.title} logo",
+        // Content overlay — responsive: Row on wide screens, Column on narrow
+        BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+            val isWide = maxWidth > 700.dp
+
+            if (isWide) {
+                // Desktop: left info + right logo
+                Row(
                     modifier = Modifier
-                        .height(80.dp)
-                        .fillMaxWidth(0.7f),
-                    contentScale = ContentScale.Fit,
-                    loading = {
-                        Text(
-                            text = game.title,
-                            style = SpTypography.DisplaySmall,
-                            color = SpColor.OnBackground,
-                        )
-                    },
-                    error = {
-                        Text(
-                            text = game.title,
-                            style = SpTypography.DisplaySmall,
-                            color = SpColor.OnBackground,
-                        )
-                    },
-                )
-            } else {
-                Text(
-                    text = game.title,
-                    style = SpTypography.DisplaySmall,
-                    color = SpColor.OnBackground,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
-                )
-            }
-
-            Spacer(Modifier.height(SpSpacing.Small))
-
-            // Metadata row: console badge, rating, genre
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(SpSpacing.Small),
-            ) {
-                // Console badge — full name since the hero has plenty of space
-                val consoleColor = parseHexColor(game.consoleColor, SpColor.Primary)
-                SpConsoleChip(
-                    consoleName = game.consoleName.ifEmpty { game.consoleAbbreviation.uppercase() },
-                    consoleColor = consoleColor,
-                    onGradient = true,
-                )
-
-                // Rating
-                if (game.rating > 0) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(SpSpacing.XXSmall),
+                        .fillMaxSize()
+                        .padding(start = SpSpacing.XLarge, bottom = SpSpacing.XLarge, top = SpSpacing.XLarge)
+                        .padding(end = SpSpacing.XXXLarge),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Column(
+                        horizontalAlignment = Alignment.Start,
+                        verticalArrangement = Arrangement.Bottom,
+                        modifier = Modifier.weight(1f).fillMaxHeight(),
                     ) {
-                        Icon(
-                            imageVector = Icons.Filled.Star,
-                            contentDescription = null,
-                            tint = SpColor.Rating,
-                            modifier = Modifier.size(SpSpacing.IconSmall),
-                        )
-                        Text(
-                            text = formatRating(game.rating),
-                            style = SpTypography.LabelMedium,
-                            color = SpColor.OnBackground,
+                        HeroInfoContent(game, onGameSelected)
+                    }
+
+                    if (game.logoUrl != null) {
+                        SpAreaSizedImage(
+                            imageUrl = game.logoUrl!!,
+                            contentDescription = "${game.title} logo",
+                            targetArea = 28000f,
+                            maxHeight = 200.dp,
+                            maxWidth = 300.dp,
+                            minHeight = 90.dp,
+                            error = {
+                                Text(
+                                    text = game.title,
+                                    style = SpTypography.HeadlineMedium,
+                                    color = SpColor.OnBackground,
+                                    maxLines = 2,
+                                    overflow = TextOverflow.Ellipsis,
+                                )
+                            },
                         )
                     }
                 }
+            } else {
+                // Mobile: logo centered above, info below
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Bottom,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(SpSpacing.XLarge)
+                        .padding(bottom = SpSpacing.XLarge),
+                ) {
+                    if (game.logoUrl != null) {
+                        Spacer(Modifier.weight(1f))
+                        SpAreaSizedImage(
+                            imageUrl = game.logoUrl!!,
+                            contentDescription = "${game.title} logo",
+                            targetArea = 28000f,
+                            maxHeight = 200.dp,
+                            maxWidth = 300.dp,
+                            minHeight = 90.dp,
+                            error = {
+                                Text(
+                                    text = game.title,
+                                    style = SpTypography.HeadlineSmall,
+                                    color = SpColor.OnBackground,
+                                    maxLines = 2,
+                                    overflow = TextOverflow.Ellipsis,
+                                )
+                            },
+                        )
+                        Spacer(Modifier.weight(1f))
+                    }
 
-                // Genre
-                if (game.genre.isNotEmpty()) {
-                    SpChip(text = game.genre, onGradient = true)
+                    HeroInfoContent(game, onGameSelected, centerAligned = true)
                 }
             }
+        }
+    }
+}
 
-            Spacer(Modifier.height(SpSpacing.Medium))
+@Composable
+private fun HeroInfoContent(
+    game: FeaturedGame,
+    onGameSelected: () -> Unit,
+    centerAligned: Boolean = false,
+) {
+    val alignment = if (centerAligned) Alignment.CenterHorizontally else Alignment.Start
 
-            // Action button
-            SpButton(
-                text = "View Game",
-                onClick = onGameSelected,
-                leadingIcon = {
-                    Icon(
-                        imageVector = Icons.Filled.PlayArrow,
-                        contentDescription = null,
-                        modifier = Modifier.size(SpSpacing.IconDefault),
-                    )
-                },
+    // Title (only when no logo)
+    if (game.logoUrl == null) {
+        Text(
+            text = game.title,
+            style = if (centerAligned) SpTypography.HeadlineSmall else SpTypography.DisplaySmall,
+            color = SpColor.OnBackground,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis,
+        )
+        Spacer(Modifier.height(SpSpacing.Small))
+    }
+
+    // Action button
+    SpButton(
+        text = "View Game",
+        onClick = onGameSelected,
+        leadingIcon = {
+            Icon(
+                imageVector = Icons.Filled.PlayArrow,
+                contentDescription = null,
+                modifier = Modifier.size(SpSpacing.IconDefault),
             )
+        },
+    )
+
+    Spacer(Modifier.height(SpSpacing.Medium))
+
+    // Badges
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(SpSpacing.Small),
+    ) {
+        val consoleColor = parseHexColor(game.consoleColor, SpColor.Primary)
+        SpConsoleChip(
+            consoleName = game.consoleName.ifEmpty { game.consoleAbbreviation.uppercase() },
+            consoleColor = consoleColor,
+            onGradient = true,
+        )
+
+        if (game.rating > 0) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(SpSpacing.XXSmall),
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.Star,
+                    contentDescription = null,
+                    tint = SpColor.Rating,
+                    modifier = Modifier.size(SpSpacing.IconSmall),
+                )
+                Text(
+                    text = formatRating(game.rating),
+                    style = SpTypography.LabelMedium,
+                    color = SpColor.OnBackground,
+                )
+            }
+        }
+
+        if (game.genre.isNotEmpty()) {
+            SpChip(text = game.genre, onGradient = true)
         }
     }
 }

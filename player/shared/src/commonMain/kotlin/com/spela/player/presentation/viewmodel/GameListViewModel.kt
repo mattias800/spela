@@ -109,12 +109,14 @@ class GameListViewModel(
     }
 
     private fun loadDashboard() {
+        println("[GameListVM] loadDashboard() called")
         _state.update { it.copy(isLoading = true) }
         scope.launch(dispatchers.io) {
             val consoles = getConsolesUseCase().getOrDefault(emptyList())
             val recent = getRecentGamesUseCase().getOrDefault(emptyList())
             val favorites = getFavoriteGamesUseCase().getOrDefault(emptyList())
             val playLater = getPlayLaterGamesUseCase().getOrDefault(emptyList())
+            println("[GameListVM] loadDashboard() result: consoles=${consoles.size}, recent=${recent.size}, favorites=${favorites.size}, playLater=${playLater.size}")
             _state.update {
                 it.copy(
                     consoles = consoles,

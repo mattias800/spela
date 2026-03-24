@@ -28,7 +28,7 @@ fun SpGridGameCard(
         subtitle = subtitle,
         coverUrl = coverUrl,
         onClick = onClick,
-        coverAspectRatio = null,
+        coverAspectRatio = if (coverUrl == null) 0.75f else null,
         rating = rating,
         isFavorite = isFavorite,
         isInPlayLater = isInPlayLater,
