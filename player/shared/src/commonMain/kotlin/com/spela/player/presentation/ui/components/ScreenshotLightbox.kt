@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -31,6 +32,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
@@ -49,6 +52,7 @@ import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.ui.theme.SpTypography
 import kotlinx.coroutines.launch
 import kotlin.math.abs
+import kotlin.math.roundToInt
 
 private val NavButtonColor = Color.White.copy(alpha = 0.12f)
 private val NavButtonContentColor = Color.White.copy(alpha = 0.9f)
@@ -93,6 +97,8 @@ fun ScreenshotLightbox(
             )
             val coroutineScope = rememberCoroutineScope()
             var scale by remember { mutableFloatStateOf(1f) }
+            var verticalDragOffset by remember { mutableFloatStateOf(0f) }
+            val dismissProgress = (abs(verticalDragOffset) / 150f).coerceIn(0f, 1f)
 
             LaunchedEffect(visible, initialIndex) {
                 if (visible) pagerState.scrollToPage(initialIndex)
@@ -106,7 +112,7 @@ fun ScreenshotLightbox(
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(Color.Black.copy(alpha = 0.92f)),
+                    .background(Color.Black.copy(alpha = 0.92f * (1f - dismissProgress * 0.4f))),
             ) {
                 // Pager with mouse-drag support
                 HorizontalPager(
@@ -114,7 +120,15 @@ fun ScreenshotLightbox(
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(vertical = SpSpacing.XXXLarge)
-                        .mouseDragPager(pagerState, coroutineScope, onDismiss),
+                        .offset { IntOffset(0, verticalDragOffset.roundToInt()) }
+                        .alpha(1f - dismissProgress * 0.3f)
+                        .mouseDragPager(
+                            pagerState = pagerState,
+                            coroutineScope = coroutineScope,
+                            onDismiss = onDismiss,
+                            onVerticalDrag = { verticalDragOffset = it },
+                            onDragEnd = { verticalDragOffset = 0f },
+                        ),
                 ) { page ->
                     Box(
                         modifier = Modifier.fillMaxSize(),
@@ -227,25 +241,32 @@ private fun Modifier.mouseDragPager(
     pagerState: PagerState,
     coroutineScope: kotlinx.coroutines.CoroutineScope,
     onDismiss: () -> Unit,
+    onVerticalDrag: (Float) -> Unit,
+    onDragEnd: () -> Unit,
 ): Modifier = this.pointerInput(Unit) {
     awaitPointerEventScope {
         while (true) {
             val down = awaitFirstDown(requireUnconsumed = false)
             var totalDragX = 0f
             var totalDragY = 0f
+            var wasDragged = false
 
             drag(down.id) { change ->
                 val delta = change.positionChange()
                 totalDragX += delta.x
                 totalDragY += delta.y
+                wasDragged = true
                 change.consume()
                 coroutineScope.launch {
                     pagerState.scrollBy(-delta.x)
                 }
+                onVerticalDrag(totalDragY)
             }
 
-            // On drag end: snap to page or dismiss
-            if (abs(totalDragY) > 150f && abs(totalDragY) > abs(totalDragX)) {
+            if (!wasDragged) {
+                // Was a click, not a drag — dismiss
+                onDismiss()
+            } else if (abs(totalDragY) > 150f && abs(totalDragY) > abs(totalDragX)) {
                 // Vertical swipe — dismiss
                 onDismiss()
             } else {
@@ -259,6 +280,7 @@ private fun Modifier.mouseDragPager(
                     }
                 }
             }
+            onDragEnd()
         }
     }
 }
