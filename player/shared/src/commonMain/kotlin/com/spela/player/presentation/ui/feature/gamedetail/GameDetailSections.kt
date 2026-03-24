@@ -66,14 +66,14 @@ fun ScreenshotsSection(screenshots: List<String>) {
     ) {
         items(screenshots.size, key = { "${it}_${screenshots[it]}" }) { index ->
             SpInnerCard(
-                modifier = Modifier.width(280.dp),
+                modifier = Modifier.height(180.dp),
                 onClick = { lightboxIndex = index },
             ) {
                 AsyncImage(
                     model = screenshots[index],
-                    contentDescription = "Game screenshot",
-                    modifier = Modifier.fillMaxWidth(),
-                    contentScale = ContentScale.FillWidth,
+                    contentDescription = "Screenshot ${index + 1}",
+                    modifier = Modifier.height(180.dp),
+                    contentScale = ContentScale.FillHeight,
                 )
             }
         }
