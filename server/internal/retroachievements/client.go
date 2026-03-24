@@ -93,21 +93,24 @@ func (c *RAClient) GetGameExtended(apiKey string, raGameID uint) (*GameInfo, err
 		return nil, fmt.Errorf("RA game extended returned status %d: %s", resp.StatusCode, string(body))
 	}
 
-	// The RA API returns a flat object with an Achievements map (same structure as GetGameInfoAndUserProgress)
+	// The RA API returns a flat object with an Achievements map.
+	// Note: GetGameExtended returns type as a string ("progression", "win_condition", "missable", null)
+	// while GetGameInfoAndUserProgress returns type as an int (3=core, 5=unofficial).
+	// We use json.RawMessage to handle both formats.
 	var raw struct {
 		ID                         uint   `json:"ID"`
 		Title                      string `json:"Title"`
 		NumDistinctPlayersCasual   int    `json:"NumDistinctPlayersCasual"`
 		NumDistinctPlayersHardcore int    `json:"NumDistinctPlayersHardcore"`
 		Achievements               map[string]struct {
-			ID                 uint   `json:"ID"`
-			Title              string `json:"Title"`
-			Description        string `json:"Description"`
-			Points             int    `json:"Points"`
-			BadgeName          string `json:"BadgeName"`
-			Type               int    `json:"type"`
-			NumAwarded         int    `json:"NumAwarded"`
-			NumAwardedHardcore int    `json:"NumAwardedHardcore"`
+			ID                 uint             `json:"ID"`
+			Title              string           `json:"Title"`
+			Description        string           `json:"Description"`
+			Points             int              `json:"Points"`
+			BadgeName          string           `json:"BadgeName"`
+			Type               json.RawMessage  `json:"type"`
+			NumAwarded         int              `json:"NumAwarded"`
+			NumAwardedHardcore int              `json:"NumAwardedHardcore"`
 		} `json:"Achievements"`
 	}
 	if err := json.Unmarshal(body, &raw); err != nil {
@@ -127,9 +130,14 @@ func (c *RAClient) GetGameExtended(apiKey string, raGameID uint) (*GameInfo, err
 	}
 
 	for _, a := range raw.Achievements {
+		// Parse type: string ("progression", "win_condition", "missable", null) from GetGameExtended
 		achType := "core"
-		if a.Type == 5 {
-			achType = "unofficial"
+		if len(a.Type) > 0 {
+			var typeInt int
+			if json.Unmarshal(a.Type, &typeInt) == nil && typeInt == 5 {
+				achType = "unofficial"
+			}
+			// String types are all "core" variants (progression, win_condition, etc.)
 		}
 
 		badgeURL := ""
