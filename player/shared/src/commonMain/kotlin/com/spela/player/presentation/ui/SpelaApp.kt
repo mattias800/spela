@@ -122,6 +122,7 @@ import com.spela.player.presentation.ui.theme.SpTypography
 import com.spela.player.presentation.ui.gamepad.GamepadHandler
 import com.spela.player.presentation.ui.gamepad.InputMode
 import com.spela.player.presentation.ui.components.LocalScrapeService
+import com.spela.player.presentation.ui.components.ScrapeUpdates
 import com.spela.player.presentation.ui.theme.SpelaTheme
 import com.spela.player.data.remote.ScrapeService
 import androidx.compose.runtime.CompositionLocalProvider
@@ -190,6 +191,13 @@ fun SpelaApp(
 
     SpelaTheme(theme = currentTheme) {
     CompositionLocalProvider(LocalScrapeService provides scrapeService) {
+        // Observe scrape completions and update cover art reactively
+        LaunchedEffect(scrapeService) {
+            scrapeService?.scrapedGames?.collect { game ->
+                ScrapeUpdates.onGameScraped(game)
+            }
+        }
+
         val navState by navigationViewModel.state.collectAsState()
 
         // Input mode detection: TOUCH shows tab bar, GAMEPAD shows section indicator
