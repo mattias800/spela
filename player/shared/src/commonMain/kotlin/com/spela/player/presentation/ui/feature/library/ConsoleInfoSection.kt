@@ -10,6 +10,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Business
 import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material.icons.filled.Group
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.Layers
 import androidx.compose.material.icons.filled.SdCard
 import androidx.compose.material3.Icon
@@ -42,6 +44,7 @@ private data class Stat(val icon: ImageVector, val value: String, val label: Str
 internal fun ConsoleInfoSection(
     console: Console,
     modifier: Modifier = Modifier,
+    showFeatureBadges: Boolean = false,
 ) {
     val info = getConsoleInfo(console.abbreviation) ?: return
 
@@ -54,6 +57,14 @@ internal fun ConsoleInfoSection(
         add(Stat(Icons.Filled.SdCard, info.mediaType, "Media"))
         if (info.unitsSold.isNotEmpty()) {
             add(Stat(Icons.Filled.Group, info.unitsSold, "Units sold"))
+        }
+        if (showFeatureBadges) {
+            if (console.saveStateSupport) {
+                add(Stat(Icons.Filled.Check, "Yes", "Save states"))
+            }
+            if (console.browserPlayable) {
+                add(Stat(Icons.Filled.Language, "Yes", "Browser play"))
+            }
         }
     }
 

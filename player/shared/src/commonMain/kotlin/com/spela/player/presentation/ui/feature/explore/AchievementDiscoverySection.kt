@@ -170,7 +170,6 @@ internal fun FreshChallengesSection(
         items(games, key = { it.game.id }) { item ->
             Column(
                 modifier = Modifier
-                    .width(CardWidth)
                     .semantics {
                         contentDescription = "${item.game.title}, ${item.totalAchievements} achievements, ${item.totalPoints} pts"
                     },
