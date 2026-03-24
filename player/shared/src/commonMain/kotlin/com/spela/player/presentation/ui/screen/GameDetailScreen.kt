@@ -675,11 +675,13 @@ private fun GameInfoContent(
         )
     }
 
-    // Metadata grid (Developer, Publisher, Released, Genre, Players, Size, Discs)
+    // Metadata grid (Developer, Publisher, Released, Genre, Players, Achievements, Size, Discs)
     MetadataGrid(
         game = game,
         onGradient = true,
         isDemoConsole = isDemoConsole,
+        achievementTotal = state.achievements.size,
+        achievementUnlocked = state.achievementProgress.size,
         onDeveloperClick = onNavigateToDeveloper,
         onPublisherClick = onNavigateToPublisher,
     )

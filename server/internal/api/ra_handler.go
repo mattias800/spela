@@ -1,14 +1,9 @@
 package api
 
 import (
-	"crypto/md5"
-	"encoding/hex"
 	"encoding/json"
-	"fmt"
-	"io"
 	"log/slog"
 	"net/http"
-	"os"
 	"path/filepath"
 	"sort"
 	"strconv"
@@ -188,9 +183,16 @@ func (h *RAHandler) GetToken(c *gin.Context) {
 }
 
 // GetGameAchievements returns achievements for a game, using cache when available.
+// If the game has a cached RAGameID (from batch scraping), the hash computation is skipped.
+// Cached achievement data is served to ALL authenticated users, even those without RA credentials.
+// Only falls back to user-credential-based fetch if cache is stale AND user has RA credentials.
 func (h *RAHandler) GetGameAchievements(c *gin.Context) {
 	uid := getUserID(c)
 	gameID := c.Param("id")
+
+	emptyResponse := gin.H{
+		"raGameId": 0, "totalCount": 0, "totalPoints": 0, "achievements": []any{},
+	}
 
 	// Look up the game
 	var game db.Game
@@ -204,44 +206,36 @@ func (h *RAHandler) GetGameAchievements(c *gin.Context) {
 		return
 	}
 
-	// Get user's RA credentials — return empty achievements if not linked
-	var cred db.RetroAchievementCredential
-	if err := h.DB.Where("user_id = ?", uid).First(&cred).Error; err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"raGameId": 0, "totalCount": 0, "totalPoints": 0, "achievements": []any{},
-		})
-		return
+	// Determine RA game ID: use cached value if available, otherwise compute hash and look up
+	raGameID := game.RAGameID
+	if raGameID == 0 {
+		// No cached RA game ID — compute hash and look up
+		romPath := filepath.Join(h.GameDir, game.FilePath)
+		if !storage.ValidateROMPath(romPath, []string{h.GameDir}) {
+			slog.Warn("RA: ROM path failed validation", "path", romPath, "gameId", gameID)
+			c.JSON(http.StatusOK, emptyResponse)
+			return
+		}
+		hash, err := computeMD5(romPath)
+		if err != nil {
+			slog.Error("failed to compute ROM hash", "path", romPath, "error", err)
+			c.JSON(http.StatusOK, emptyResponse)
+			return
+		}
+
+		var lookupErr error
+		raGameID, lookupErr = h.RAClient.GetGameIDFromHash(hash)
+		if lookupErr != nil {
+			slog.Warn("RA game ID lookup failed", "hash", hash, "error", lookupErr)
+			c.JSON(http.StatusOK, emptyResponse)
+			return
+		}
+
+		// Cache the RA game ID on the game record for future requests
+		h.DB.Model(&db.Game{}).Where("id = ?", game.ID).Update("ra_game_id", raGameID)
 	}
 
-	// Compute MD5 hash of the ROM file
-	romPath := filepath.Join(h.GameDir, game.FilePath)
-	if !storage.ValidateROMPath(romPath, []string{h.GameDir}) {
-		slog.Warn("RA: ROM path failed validation", "path", romPath, "gameId", gameID)
-		c.JSON(http.StatusOK, gin.H{
-			"raGameId": 0, "totalCount": 0, "totalPoints": 0, "achievements": []any{},
-		})
-		return
-	}
-	hash, err := computeMD5(romPath)
-	if err != nil {
-		slog.Error("failed to compute ROM hash", "path", romPath, "error", err)
-		c.JSON(http.StatusOK, gin.H{
-			"raGameId": 0, "totalCount": 0, "totalPoints": 0, "achievements": []any{},
-		})
-		return
-	}
-
-	// Look up RA game ID from hash
-	raGameID, err := h.RAClient.GetGameIDFromHash(hash)
-	if err != nil {
-		slog.Warn("RA game ID lookup failed", "hash", hash, "error", err)
-		c.JSON(http.StatusOK, gin.H{
-			"raGameId": 0, "totalCount": 0, "totalPoints": 0, "achievements": []any{},
-		})
-		return
-	}
-
-	// Check cache (valid for 24 hours)
+	// Check cache (valid for 24 hours) — this is available to ALL authenticated users
 	var cache db.GameAchievementCache
 	cacheHit := h.DB.Where("ra_game_id = ?", raGameID).First(&cache).Error == nil
 	if cacheHit && time.Since(cache.CachedAt) < 24*time.Hour {
@@ -258,6 +252,27 @@ func (h *RAHandler) GetGameAchievements(c *gin.Context) {
 			})
 			return
 		}
+	}
+
+	// Cache is stale or missing — try to refresh using user's RA credentials
+	var cred db.RetroAchievementCredential
+	if err := h.DB.Where("user_id = ?", uid).First(&cred).Error; err != nil {
+		// User has no RA credentials. If we have a stale cache, return it anyway.
+		if cacheHit {
+			var achievements []retroachievements.Achievement
+			if err := json.Unmarshal([]byte(cache.AchievementJSON), &achievements); err == nil {
+				c.JSON(http.StatusOK, gin.H{
+					"raGameId":     raGameID,
+					"title":        cache.Title,
+					"achievements": achievements,
+					"totalCount":   cache.TotalCount,
+					"totalPoints":  cache.TotalPoints,
+				})
+				return
+			}
+		}
+		c.JSON(http.StatusOK, emptyResponse)
+		return
 	}
 
 	// Decrypt RA token for API call
@@ -334,25 +349,27 @@ func (h *RAHandler) GetAchievementProgress(c *gin.Context) {
 		return
 	}
 
-	// Compute MD5 hash of the ROM file
-	romPath := filepath.Join(h.GameDir, game.FilePath)
-	if !storage.ValidateROMPath(romPath, []string{h.GameDir}) {
-		slog.Warn("RA: ROM path failed validation", "path", romPath, "gameId", gameID)
-		c.JSON(http.StatusOK, []any{})
-		return
-	}
-	hash, err := computeMD5(romPath)
-	if err != nil {
-		slog.Error("failed to compute ROM hash", "path", romPath, "error", err)
-		c.JSON(http.StatusOK, []any{})
-		return
-	}
-
-	// Look up RA game ID from hash
-	raGameID, err := h.RAClient.GetGameIDFromHash(hash)
-	if err != nil {
-		c.JSON(http.StatusOK, []any{})
-		return
+	// Use cached RA game ID if available, otherwise compute hash and look up
+	raGameID := game.RAGameID
+	if raGameID == 0 {
+		romPath := filepath.Join(h.GameDir, game.FilePath)
+		if !storage.ValidateROMPath(romPath, []string{h.GameDir}) {
+			c.JSON(http.StatusOK, []any{})
+			return
+		}
+		hash, err := computeMD5(romPath)
+		if err != nil {
+			c.JSON(http.StatusOK, []any{})
+			return
+		}
+		var lookupErr error
+		raGameID, lookupErr = h.RAClient.GetGameIDFromHash(hash)
+		if lookupErr != nil {
+			c.JSON(http.StatusOK, []any{})
+			return
+		}
+		// Cache for next time
+		h.DB.Model(&db.Game{}).Where("id = ?", game.ID).Update("ra_game_id", raGameID)
 	}
 
 	// Decrypt RA token for API call
@@ -895,17 +912,7 @@ func (h *RAHandler) GetAchievementLeaderboard(c *gin.Context) {
 }
 
 // computeMD5 calculates the MD5 hash of a file.
+// computeMD5 delegates to the shared implementation in the retroachievements package.
 func computeMD5(path string) (string, error) {
-	f, err := os.Open(path)
-	if err != nil {
-		return "", fmt.Errorf("opening file for hash: %w", err)
-	}
-	defer f.Close()
-
-	h := md5.New()
-	if _, err := io.Copy(h, f); err != nil {
-		return "", fmt.Errorf("computing file hash: %w", err)
-	}
-
-	return hex.EncodeToString(h.Sum(nil)), nil
+	return retroachievements.ComputeMD5(path)
 }

@@ -46,6 +46,8 @@ internal fun MetadataGrid(
     modifier: Modifier = Modifier,
     onGradient: Boolean = false,
     isDemoConsole: Boolean = false,
+    achievementTotal: Int = 0,
+    achievementUnlocked: Int = 0,
     onDeveloperClick: ((name: String) -> Unit)? = null,
     onPublisherClick: ((name: String) -> Unit)? = null,
 ) {
@@ -69,6 +71,14 @@ internal fun MetadataGrid(
         }
         if (!isDemoConsole && game.players > 0) {
             add(MetaItem(Icons.Filled.Group, "Players", "${game.players}"))
+        }
+        if (achievementTotal > 0) {
+            val value = if (achievementUnlocked > 0) {
+                "$achievementUnlocked / $achievementTotal"
+            } else {
+                "$achievementTotal"
+            }
+            add(MetaItem(Icons.Filled.EmojiEvents, "Achievements", value))
         }
         if (game.fileSize > 0) {
             add(MetaItem(Icons.Filled.SdStorage, "Size", formatBytes(game.fileSize)))

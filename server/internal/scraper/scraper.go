@@ -8,6 +8,7 @@ import (
 
 	"github.com/spela/server/internal/igdb"
 	"github.com/spela/server/internal/pouet"
+	"github.com/spela/server/internal/retroachievements"
 	"github.com/spela/server/internal/storage"
 	"gorm.io/gorm"
 )
@@ -20,6 +21,8 @@ type Scraper struct {
 	IGDBClient       *igdb.Client
 	SteamGridDBClient *SteamGridDBClient
 	PouetClient       *pouet.Client
+	RAClient          *retroachievements.RAClient
+	RAAPIKey          string
 	DATCache         *DATCache
 	GameDirs         []string
 	cache            *nameCache
@@ -55,6 +58,11 @@ func NewScraper(database *gorm.DB, store *storage.Storage, datDir string, gameDi
 // IsIGDBConfigured returns whether the scraper has a configured IGDB client.
 func (s *Scraper) IsIGDBConfigured() bool {
 	return s.IGDBClient != nil && s.IGDBClient.IsConfigured()
+}
+
+// IsRAConfigured returns whether the scraper has a configured RA client and API key.
+func (s *Scraper) IsRAConfigured() bool {
+	return s.RAClient != nil && s.RAAPIKey != ""
 }
 
 // TryStartScrape attempts to acquire the scrape lock.
