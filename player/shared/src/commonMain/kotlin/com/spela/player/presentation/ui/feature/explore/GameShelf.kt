@@ -1,5 +1,6 @@
 package com.spela.player.presentation.ui.feature.explore
 
+import com.spela.player.presentation.ui.components.AutoScrapeIfNeeded
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -51,6 +52,7 @@ internal fun ExploreGameCard(
     game: Game,
     onClick: () -> Unit,
 ) {
+    AutoScrapeIfNeeded(gameId = game.id, coverUrl = game.coverUrl, scrapeAttempts = game.scrapeAttempts)
     SpCarouselGameCard(
         title = game.title,
         subtitle = game.consoleName,
