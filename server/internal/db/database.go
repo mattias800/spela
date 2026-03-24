@@ -788,7 +788,7 @@ func SeedConsoles(db *gorm.DB) error {
 		// 5th Generation
 		{Name: "PlayStation", Abbreviation: "PSX", Extensions: ".bin,.cue,.iso,.pbp,.m3u", DefaultCore: "beetle_psx_hw", EmulatorJSCore: "mednafen_psx_hw", FolderName: "psx", ColorTheme: "#003087", CoverAspect: "1:1", Generation: 5, SaveStateSupport: true, Playable: true},
 		{Name: "Nintendo 64", Abbreviation: "N64", Extensions: ".n64,.z64,.v64", DefaultCore: "mupen64plus_next", EmulatorJSCore: "mupen64plus_next", FolderName: "n64", ColorTheme: "#009e60", CoverAspect: "10:7", Generation: 5, SaveStateSupport: true, Playable: true},
-		{Name: "Sega Saturn", Abbreviation: "SAT", Extensions: ".iso,.bin,.cue,.chd,.m3u", DefaultCore: "beetle_saturn", EmulatorJSCore: "yabause", FolderName: "saturn", ColorTheme: "#0a4da2", Generation: 5, SaveStateSupport: true, Playable: true},
+		{Name: "Sega Saturn", Abbreviation: "SAT", Extensions: ".iso,.bin,.cue,.chd,.m3u", DefaultCore: "mednafen_saturn", EmulatorJSCore: "yabause", FolderName: "saturn", ColorTheme: "#0a4da2", Generation: 5, SaveStateSupport: true, Playable: true},
 		{Name: "Game Boy Color", Abbreviation: "GBC", Extensions: ".gbc", DefaultCore: "gambatte", EmulatorJSCore: "gambatte", FolderName: "gbc", ColorTheme: "#6638a8", CoverAspect: "7:8", Generation: 5, SaveStateSupport: true, Playable: true},
 		{Name: "Atari Jaguar", Abbreviation: "JAG", Extensions: ".j64,.jag", DefaultCore: "virtualjaguar", EmulatorJSCore: "virtualjaguar", FolderName: "atarijaguar", ColorTheme: "#8b4513", Generation: 5, SaveStateSupport: false, Playable: true},
 		{Name: "Virtual Boy", Abbreviation: "VB", Extensions: ".vb,.vboy", DefaultCore: "beetle_vb", EmulatorJSCore: "beetle_vb", FolderName: "virtualboy", ColorTheme: "#ff0000", Generation: 5, SaveStateSupport: true, Playable: true},
@@ -924,6 +924,8 @@ func SeedCores(db *gorm.DB) error {
 		{Name: "genesis_plus_gx_wide", DisplayName: "Genesis Plus GX Wide", Description: "Sega 8/16-bit emulator (widescreen)", Platforms: "windows,linux,macos,android"},
 		{Name: "picodrive", DisplayName: "PicoDrive", Description: "Sega 8/16-bit + Sega CD/32X emulator", Platforms: "windows,linux,macos,android"},
 		{Name: "clownmdemu", DisplayName: "ClownMDEmu", Description: "Sega Mega Drive/CD emulator (pure C, no JIT)", Platforms: "windows,linux,macos,android"},
+		{Name: "mednafen_saturn", DisplayName: "Mednafen Saturn", Description: "Sega Saturn emulator (Beetle Saturn, requires BIOS)", Platforms: "windows,linux,macos"},
+		{Name: "yabasanshiro", DisplayName: "YabaSanshiro", Description: "Sega Saturn emulator (HLE BIOS, no external files needed)", Platforms: "windows,linux,macos,android"},
 		{Name: "beetle_psx_hw", DisplayName: "Beetle PSX HW", Description: "PlayStation emulator with hardware rendering", Platforms: "windows,linux,macos"},
 		{Name: "desmume", DisplayName: "DeSmuME", Description: "Nintendo DS emulator", Platforms: "windows,linux,macos"},
 		{Name: "dolphin", DisplayName: "Dolphin", Description: "GameCube and Wii emulator", Platforms: "windows,linux,macos,android"},
