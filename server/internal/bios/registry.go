@@ -105,7 +105,9 @@ var registry = []Entry{
 	{ConsoleID: "cv", FileName: "colecovision.rom", Description: "ColecoVision BIOS", MD5: "2c66f5911e5b42b8ebe113403548eee7", Required: true, OverrideURL: "https://raw.githubusercontent.com/Abdess/retrobios/main/bios/Coleco/ColecoVision/BIOS.col"},
 
 	// Philips CD-i (CDI) — same_cdi_libretro.info (MAME-based, needs subdirectory)
-	{ConsoleID: "cdi", FileName: "cdimono1.zip", Description: "CD-i Mono-I BIOS", MD5: "", Required: true, OverrideURL: "https://archive.org/download/MAME208RomsOnlyMerged/cdimono1.zip", SubDir: "same_cdi/bios"},
+	// cdimono1 requires 5 files including servo/slave MCU ROMs (added in MAME 0.222).
+	// The MAME 0.208 archive only has 3 files — use retrobios which has the complete set.
+	{ConsoleID: "cdi", FileName: "cdimono1.zip", Description: "CD-i Mono-I BIOS", MD5: "", Required: true, OverrideURL: "https://github.com/Abdess/retrobios/raw/main/bios/Philips/CD-i/cdimono1.zip", SubDir: "same_cdi/bios"},
 	{ConsoleID: "cdi", FileName: "cdimono2.zip", Description: "CD-i Mono-II BIOS", MD5: "", Required: false, OverrideURL: "https://archive.org/download/MAME208RomsOnlyMerged/cdimono2.zip", SubDir: "same_cdi/bios"},
 	{ConsoleID: "cdi", FileName: "cdibios.zip", Description: "CD-i BIOS (generic)", MD5: "", Required: false, OverrideURL: "https://archive.org/download/MAME208RomsOnlyMerged/cdibios.zip", SubDir: "same_cdi/bios"},
 }

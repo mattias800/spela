@@ -146,9 +146,22 @@ class PreferencesRepositoryImpl(
         runCatching {
             val prefs = apiClient.getPreferences()
 
-            // Only populate local DB if it's empty (first-device experience)
+            // Only populate local DB if it's empty (first-device experience).
+            // Key mappings are platform-specific (Android uses KEYCODE_*, desktop
+            // uses AWT VK_* codes), so we validate that the server's key codes
+            // match this platform's default codes before importing. If they don't
+            // match (e.g. Android codes on desktop), skip the import and let
+            // ensureDefaultsApplied() seed the correct platform codes.
             val localMappings = database.spelaDatabaseQueries.getAllKeyMappings().executeAsList()
             if (localMappings.isNotEmpty()) return
+
+            val platformDefaults = keyMappingRepository.getDefaultMapping()
+            val serverCodes = prefs.customKeyMapping.values.mapNotNull { it.toIntOrNull() }.toSet()
+            val platformCodes = platformDefaults.values.toSet()
+            if (serverCodes.isNotEmpty() && serverCodes.intersect(platformCodes).isEmpty()) {
+                // Server codes don't match this platform — skip import
+                return
+            }
 
             // Import global default mapping from server
             for ((retroButtonStr, keyCodeStr) in prefs.customKeyMapping) {
