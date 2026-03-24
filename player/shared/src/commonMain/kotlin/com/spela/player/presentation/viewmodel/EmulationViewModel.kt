@@ -653,7 +653,16 @@ class EmulationViewModel(
 
             // Save SRAM before stopping (best effort) — this is the upload the sync
             // status refers to. Clear sync state once it completes.
-            saveManager.saveSramOnStop(currentState.gameId)
+            // Timeout after 15 seconds to prevent stuck "Uploading save…" indicator.
+            try {
+                kotlinx.coroutines.withTimeout(15_000L) {
+                    saveManager.saveSramOnStop(currentState.gameId)
+                }
+            } catch (_: kotlinx.coroutines.TimeoutCancellationException) {
+                println("[Emulation] SRAM upload timed out after 15s for game ${currentState.gameId}")
+            } catch (_: Exception) {
+                println("[Emulation] SRAM upload failed for game ${currentState.gameId}")
+            }
             _syncState.update { current ->
                 if (current?.gameId == stoppingGameId) null else current
             }
