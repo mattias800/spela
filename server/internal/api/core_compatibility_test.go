@@ -112,9 +112,9 @@ func TestGetCoreCompatibility_MatchedField(t *testing.T) {
 	assert.True(t, psx.Matched, "PSX cores should match via beetle/mednafen equivalence")
 
 	require.NotNil(t, sat, "SAT should be present")
-	assert.Equal(t, "beetle_saturn", sat.NativeCore)
+	assert.Equal(t, "yabause", sat.NativeCore)
 	assert.Equal(t, "yabause", sat.WebCore)
-	assert.False(t, sat.Matched, "Saturn cores should not match (different engines)")
+	assert.True(t, sat.Matched, "Saturn cores should match (same core)")
 }
 
 func TestGetCoreCompatibility_NonPlayableConsolesIncluded(t *testing.T) {
