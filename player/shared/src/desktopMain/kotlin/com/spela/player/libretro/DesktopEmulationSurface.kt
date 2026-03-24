@@ -83,7 +83,9 @@ fun DesktopEmulationSurface(
     val frameBuffers = remember { FrameBuffers() }
 
     // Frame polling loop -- runs each Compose frame
+    // Clear stale frame from previous game before starting
     LaunchedEffect(controller) {
+        currentBitmap = null
         while (true) {
             withFrameNanos { }
             val frameData = controller.getVideoFrame() ?: continue

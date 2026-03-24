@@ -117,6 +117,12 @@ fun HomeScreen(
 ) {
     val state by viewModel.state.collectAsState()
     val socialState by socialViewModel.state.collectAsState()
+    // Track whether the first load has completed to avoid flashing "empty" state.
+    // Starts false, becomes true after isLoading has been true at least once then gone false.
+    var sawLoading by remember { mutableStateOf(false) }
+    var hasInitiallyLoaded by remember { mutableStateOf(false) }
+    if (state.isLoading) sawLoading = true
+    if (sawLoading && !state.isLoading) hasInitiallyLoaded = true
 
     LaunchedEffect(Unit) {
         println("[HomeScreen] LaunchedEffect(Unit) fired — loading dashboard")
@@ -160,7 +166,7 @@ fun HomeScreen(
                     )
                 },
         ) {
-            if (state.isLoading && state.recentGames.isEmpty() && state.favoriteGames.isEmpty()) {
+            if (!hasInitiallyLoaded) {
                 Box(
                     modifier = Modifier.fillMaxSize(),
                     contentAlignment = Alignment.Center,

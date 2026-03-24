@@ -1036,9 +1036,9 @@ private fun GameHeroContent(
             val statusText = when {
                 state.isScraping -> "Scraping\u2026"
                 syncState?.isTimedOut == false && syncState != null -> syncState.message
-                state.downloadProgress?.state == DownloadState.DOWNLOADING -> {
-                    val p = state.downloadProgress!!
-                    if (p.totalDiscs > 1) "Downloading disc ${p.currentDisc}/${p.totalDiscs}\u2026"
+                state.isDownloading -> {
+                    val p = state.downloadProgress
+                    if (p != null && p.totalDiscs > 1) "Downloading disc ${p.currentDisc}/${p.totalDiscs}\u2026"
                     else "Downloading\u2026"
                 }
                 else -> null

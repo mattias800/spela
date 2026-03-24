@@ -25,6 +25,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.material3.Icon
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -37,6 +40,7 @@ import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.spela.player.presentation.ui.components.SpEmptyState
+import com.spela.player.presentation.ui.components.SpLoadingIndicator
 import com.spela.player.presentation.ui.gamepad.spFocusRing
 import com.spela.player.presentation.ui.components.SpSnackbar
 import com.spela.player.presentation.ui.components.SpSnackbarData
@@ -109,6 +113,12 @@ fun ExploreScreen(
         viewModel.load()
     }
 
+    // Track initial load to avoid flashing empty state
+    var sawLoading by remember { mutableStateOf(false) }
+    var hasInitiallyLoaded by remember { mutableStateOf(false) }
+    if (state.isLoading) sawLoading = true
+    if (sawLoading && !state.isLoading) hasInitiallyLoaded = true
+
     val titleBarInset = LocalTitleBarInset.current
 
     Box(
@@ -118,6 +128,15 @@ fun ExploreScreen(
             .testTag("explore_screen"),
     ) {
         when {
+            // Show loading until first fetch completes
+            !hasInitiallyLoaded -> {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    SpLoadingIndicator(message = "Loading...")
+                }
+            }
             // Empty library: no data at all and not loading
             state.isEmpty && !state.isLoading -> {
                 Box(
