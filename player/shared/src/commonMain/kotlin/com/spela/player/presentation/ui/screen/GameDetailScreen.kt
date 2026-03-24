@@ -550,28 +550,7 @@ private fun GameInfoContent(
     onNavigateToPublisher: ((name: String) -> Unit)? = null,
     onNavigateToAchievements: (() -> Unit)? = null,
 ) {
-    // Game info content — title, badges, and action buttons are in the hero banner
-
-    if (state.isScraping) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(SpSpacing.Small),
-        ) {
-            CircularProgressIndicator(
-                modifier = Modifier.size(16.dp),
-                strokeWidth = 2.dp,
-                color = Color.White.copy(alpha = 0.75f),
-            )
-            Text(
-                text = "Scraping metadata\u2026",
-                style = SpTypography.BodySmall,
-                color = SpColor.OnBackgroundTertiary,
-            )
-        }
-    }
-
-
-    // Title, badges, and action buttons are now in the hero banner (GameHeroContent)
+    // Title, badges, and action buttons are in the hero banner (GameHeroContent)
 
     // Sync status row (shown while pre-launch or post-exit sync is in progress)
     syncState?.takeIf { !it.isTimedOut }?.let { sync ->
@@ -1100,6 +1079,25 @@ private fun GameHeroContent(
                 onAddToCollection = onAddToCollection,
                 onGradient = true,
             )
+
+            // Scraping indicator
+            if (state.isScraping) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(SpSpacing.XSmall),
+                ) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(14.dp),
+                        strokeWidth = 2.dp,
+                        color = Color.White.copy(alpha = 0.65f),
+                    )
+                    Text(
+                        text = "Scraping\u2026",
+                        style = SpTypography.LabelSmall,
+                        color = Color.White.copy(alpha = 0.65f),
+                    )
+                }
+            }
 
             // Playtime + last played grouped so they wrap together
             if (game.totalPlayTime > 0 || game.lastPlayedAt != null) {

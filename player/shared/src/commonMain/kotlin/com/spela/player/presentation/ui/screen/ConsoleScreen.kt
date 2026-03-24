@@ -44,6 +44,8 @@ import com.spela.player.presentation.ui.components.SpSnackbar
 import com.spela.player.presentation.ui.components.SpSnackbarData
 import com.spela.player.presentation.ui.components.SpSnackbarType
 import com.spela.player.presentation.ui.components.SpTopBar
+import com.spela.player.presentation.ui.components.SpGameGrid
+import com.spela.player.presentation.ui.components.SpGridGameCard
 import com.spela.player.presentation.ui.components.SpTitledSection
 import com.spela.player.presentation.ui.feature.explore.ConsoleEssentials
 import com.spela.player.presentation.ui.feature.explore.ConsoleHiddenGems
@@ -151,17 +153,6 @@ fun ConsoleScreen(
                         }
                     }
 
-                    // Browse All Games (quick access)
-                    if (state.games.isNotEmpty()) {
-                        item {
-                            SpButton(
-                                text = "Browse All ${state.games.size} Games",
-                                onClick = onBrowseAllGames,
-                                modifier = Modifier.fillMaxWidth(),
-                            )
-                        }
-                    }
-
                     // BIOS warning
                     if (consoleId in state.consolesWithMissingBios) {
                         item {
@@ -197,6 +188,39 @@ fun ConsoleScreen(
                     // Top Developers
                     if (exploreViewModel != null) {
                         item { ConsoleTopDevelopers(exploreViewModel, onDeveloperSelected) }
+                    }
+
+                    // Browse All Games — at the bottom: inline grid for small libraries, button for large
+                    if (state.games.isNotEmpty()) {
+                        if (state.games.size <= 15) {
+                            item {
+                                SpTitledSection(title = "All Games") {
+                                    SpGameGrid(
+                                        items = state.games.map { game ->
+                                            {
+                                                SpGridGameCard(
+                                                    title = game.title,
+                                                    subtitle = game.consoleName,
+                                                    coverUrl = game.coverUrl,
+                                                    onClick = { onGameSelected(game.id) },
+                                                    rating = game.rating,
+                                                    isFavorite = game.isFavorite,
+                                                    isInPlayLater = game.isInPlayLater,
+                                                )
+                                            }
+                                        },
+                                    )
+                                }
+                            }
+                        } else {
+                            item {
+                                SpButton(
+                                    text = "Browse All ${state.games.size} Games",
+                                    onClick = onBrowseAllGames,
+                                    modifier = Modifier.fillMaxWidth(),
+                                )
+                            }
+                        }
                     }
 
                     // Loading / Empty
