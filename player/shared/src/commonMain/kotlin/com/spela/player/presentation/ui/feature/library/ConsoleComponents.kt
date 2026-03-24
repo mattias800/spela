@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -14,6 +15,7 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.animation.core.animateFloatAsState
@@ -60,6 +62,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import com.spela.player.domain.model.Console
+import com.spela.player.presentation.ui.components.SpAreaSizedImage
 import com.spela.player.presentation.ui.components.SpButton
 import com.spela.player.presentation.ui.components.SpButtonStyle
 import com.spela.player.presentation.ui.components.SpShimmer
@@ -349,6 +352,7 @@ internal fun ConsolesSkeletonGrid(
 internal fun ConsoleHeroBanner(
     console: Console,
     modifier: Modifier = Modifier,
+    onBrowseGames: (() -> Unit)? = null,
 ) {
     val shape = RoundedCornerShape(SpSpacing.CardCornerRadius)
 
@@ -421,54 +425,49 @@ internal fun ConsoleHeroBanner(
                 .background(overlayBrush),
         )
 
-        // Content: stats on left, logo + badges truly centered in full width.
-        Box(
+        // Content: responsive layout
+        BoxWithConstraints(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(horizontal = SpSpacing.XLarge),
+                .padding(horizontal = SpSpacing.XLarge, vertical = SpSpacing.Medium),
         ) {
-            // Compact platform details on the left
-            Box(
-                modifier = Modifier
-                    .align(Alignment.CenterStart)
-                    .widthIn(max = 96.dp),
-            ) {
-                ConsoleInfoSection(console = console)
-            }
+            val isWide = maxWidth > 500.dp
 
-            // Logo + metadata badges centered in full banner width
-            Column(
-                modifier = Modifier.fillMaxSize(),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center,
-            ) {
-                // Logo or text fallback
-                var logoFailed by remember { mutableStateOf(false) }
-
+            // Logo or text fallback (shared)
+            var logoFailed by remember { mutableStateOf(false) }
+            val logoContent: @Composable () -> Unit = {
                 if (console.logoUrl.isNotEmpty() && !logoFailed) {
-                    AsyncImage(
-                        model = console.logoUrl,
+                    SpAreaSizedImage(
+                        imageUrl = console.logoUrl,
                         contentDescription = console.name,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .heightIn(max = 80.dp),
-                        contentScale = ContentScale.Fit,
-                        onError = { logoFailed = true },
+                        targetArea = if (isWide) 8000f else 6000f,
+                        maxHeight = if (isWide) 80.dp else 60.dp,
+                        maxWidth = if (isWide) 200.dp else 160.dp,
+                        minHeight = 32.dp,
+                        error = {
+                            logoFailed = true
+                            Text(
+                                text = console.name,
+                                style = if (isWide) SpTypography.HeadlineLarge else SpTypography.HeadlineMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = Color.White,
+                            )
+                        },
                     )
                 }
-
                 if (console.logoUrl.isEmpty() || logoFailed) {
                     Text(
                         text = console.name,
-                        style = SpTypography.HeadlineLarge,
+                        style = if (isWide) SpTypography.HeadlineLarge else SpTypography.HeadlineMedium,
                         fontWeight = FontWeight.Bold,
                         color = Color.White,
                     )
                 }
+            }
 
-                // Metadata row: game count + badges
+            // Metadata badges (shared)
+            val badgesContent: @Composable () -> Unit = {
                 Row(
-                    modifier = Modifier.padding(top = SpSpacing.Default),
                     horizontalArrangement = Arrangement.spacedBy(SpSpacing.Medium),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
@@ -492,7 +491,94 @@ internal fun ConsoleHeroBanner(
                     }
                 }
             }
+
+            // Data table left, logo centered, feature info right, browse button bottom-right
+            Box(modifier = Modifier.fillMaxSize()) {
+                // Left: console stats
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.TopStart)
+                        .widthIn(max = 96.dp),
+                ) {
+                    ConsoleInfoSection(console = console)
+                }
+
+                // Center: logo + badges
+                // Center: logo
+                Column(
+                    modifier = Modifier.fillMaxSize(),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center,
+                ) {
+                    logoContent()
+                }
+
+                // Top-right: game count + feature badges
+                Column(
+                    modifier = Modifier.align(Alignment.TopEnd),
+                    horizontalAlignment = Alignment.End,
+                    verticalArrangement = Arrangement.spacedBy(SpSpacing.Small),
+                ) {
+                    MetadataBadge(
+                        icon = { Icon(Icons.Filled.SportsEsports, null, Modifier.size(12.dp), tint = HeroTextPrimary) },
+                        label = "${console.gameCount} ${if (console.gameCount == 1) "game" else "games"}",
+                    )
+                    if (console.saveStateSupport) {
+                        MetadataBadge(
+                            icon = { Icon(Icons.Filled.Check, null, Modifier.size(12.dp), tint = HeroTextPrimary) },
+                            label = "Save states",
+                        )
+                    }
+                    if (console.browserPlayable) {
+                        MetadataBadge(
+                            icon = { Icon(Icons.Filled.Language, null, Modifier.size(12.dp), tint = HeroTextPrimary) },
+                            label = "Browser play",
+                        )
+                    }
+                }
+
+                // Bottom-right: browse button
+                if (onBrowseGames != null) {
+                    Box(modifier = Modifier.align(Alignment.BottomEnd)) {
+                        SpButton(
+                            text = "Browse games",
+                            onClick = onBrowseGames,
+                            style = SpButtonStyle.Secondary,
+                            onGradient = true,
+                        )
+                    }
+                }
+            }
         }
+    }
+}
+
+@Composable
+private fun FeatureInfoRow(label: String) {
+    Row(verticalAlignment = Alignment.Top) {
+        Column(
+            verticalArrangement = Arrangement.spacedBy(1.dp),
+            horizontalAlignment = Alignment.End,
+        ) {
+            Text(
+                text = "Yes",
+                style = SpTypography.BodySmall,
+                fontWeight = FontWeight.SemiBold,
+                color = Color.White.copy(alpha = 0.90f),
+            )
+            Text(
+                text = label,
+                style = SpTypography.LabelSmall,
+                color = Color.White.copy(alpha = 0.40f),
+            )
+        }
+        Spacer(Modifier.width(SpSpacing.XSmall))
+        Icon(
+            imageVector = Icons.Filled.Check,
+            contentDescription = null,
+            tint = Color.White.copy(alpha = 0.45f),
+            modifier = Modifier.size(SpSpacing.IconSmall),
+        )
     }
 }
 

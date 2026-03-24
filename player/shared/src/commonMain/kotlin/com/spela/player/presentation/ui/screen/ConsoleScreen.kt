@@ -133,7 +133,10 @@ fun ConsoleScreen(
                     // Console hero banner
                     if (console != null) {
                         item {
-                            ConsoleHeroBanner(console = console)
+                            ConsoleHeroBanner(
+                                console = console,
+                                onBrowseGames = if (state.games.size > 15) onBrowseAllGames else null,
+                            )
                         }
                     }
 
@@ -190,34 +193,25 @@ fun ConsoleScreen(
                         item { ConsoleTopDevelopers(exploreViewModel, onDeveloperSelected) }
                     }
 
-                    // Browse All Games — at the bottom: inline grid for small libraries, button for large
-                    if (state.games.isNotEmpty()) {
-                        if (state.games.size <= 15) {
-                            item {
-                                SpTitledSection(title = "All Games") {
-                                    SpGameGrid(
-                                        items = state.games.map { game ->
-                                            {
-                                                SpGridGameCard(
-                                                    title = game.title,
-                                                    subtitle = game.consoleName,
-                                                    coverUrl = game.coverUrl,
-                                                    onClick = { onGameSelected(game.id) },
-                                                    rating = game.rating,
-                                                    isFavorite = game.isFavorite,
-                                                    isInPlayLater = game.isInPlayLater,
-                                                )
-                                            }
-                                        },
-                                    )
-                                }
-                            }
-                        } else {
-                            item {
-                                SpButton(
-                                    text = "Browse All ${state.games.size} Games",
-                                    onClick = onBrowseAllGames,
-                                    modifier = Modifier.fillMaxWidth(),
+                    // All Games — inline grid at bottom for small libraries (≤15 games)
+                    // For larger libraries, the "Browse games" button is in the hero banner
+                    if (state.games.isNotEmpty() && state.games.size <= 15) {
+                        item {
+                            SpTitledSection(title = "All Games") {
+                                SpGameGrid(
+                                    items = state.games.map { game ->
+                                        {
+                                            SpGridGameCard(
+                                                title = game.title,
+                                                subtitle = game.consoleName,
+                                                coverUrl = game.coverUrl,
+                                                onClick = { onGameSelected(game.id) },
+                                                rating = game.rating,
+                                                isFavorite = game.isFavorite,
+                                                isInPlayLater = game.isInPlayLater,
+                                            )
+                                        }
+                                    },
                                 )
                             }
                         }
