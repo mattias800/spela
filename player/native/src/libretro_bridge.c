@@ -1576,7 +1576,7 @@ JNI_FUNC(jboolean, nativeGpuInitOffscreen)(JNIEnv *env, jobject thiz, jint width
     return JNI_TRUE;
 }
 
-JNI_FUNC(jint, nativeGpuRenderToBgra)(JNIEnv *env, jobject thiz, jbyteArray outData) {
+JNI_FUNC(jlong, nativeGpuRenderToBgra)(JNIEnv *env, jobject thiz, jbyteArray outData) {
     if (!g_gpu_renderer || !outData) return 0;
 
     jsize capacity = (*env)->GetArrayLength(env, outData);
@@ -1587,7 +1587,9 @@ JNI_FUNC(jint, nativeGpuRenderToBgra)(JNIEnv *env, jobject thiz, jbyteArray outD
     size_t written = gpu_renderer_render_to_bgra(g_gpu_renderer, data, (size_t)capacity, &w, &h);
 
     (*env)->ReleasePrimitiveArrayCritical(env, outData, data, 0);
-    return (jint)written;
+    if (written == 0) return 0;
+    /* Pack width (high 32 bits) and height (low 32 bits) into a jlong */
+    return ((jlong)w << 32) | (jlong)h;
 }
 
 JNI_FUNC(jboolean, nativeGpuIsActive)(JNIEnv *env, jobject thiz) {

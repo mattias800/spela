@@ -2,6 +2,8 @@
 layout(push_constant) uniform PushConstants {
     vec2 texture_size;
     float flip_y;
+    float _pad;
+    vec2 output_size;
 } pc;
 layout(location = 0) out vec2 uv;
 void main() {
