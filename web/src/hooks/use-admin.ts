@@ -320,6 +320,17 @@ export function useSteamGridDBStatus() {
   });
 }
 
+export function useRAStatus() {
+  return useQuery({
+    queryKey: ["admin", "ra-status"],
+    queryFn: () =>
+      api.get<{
+        configured: boolean;
+        source: "env" | "database" | "none";
+      }>("/admin/ra/status"),
+  });
+}
+
 export function useUpdateGameMetadata() {
   const queryClient = useQueryClient();
 

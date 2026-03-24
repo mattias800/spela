@@ -12,17 +12,20 @@ import {
   useUpdateSettings,
   useIgdbStatus,
   useSteamGridDBStatus,
+  useRAStatus,
 } from "@/hooks/use-admin";
 import { useToast } from "@/components/ui";
 import { Skeleton } from "@/components/ui";
 import { IgdbConfigCard } from "@/features/admin/components/igdb-config-card";
 import { IgdbWarningBanner } from "@/features/admin/components/igdb-warning-banner";
 import { SteamGridDBConfigCard } from "@/features/admin/components/steamgriddb-config-card";
+import { RAConfigCard } from "@/features/admin/components/ra-config-card";
 
 export function AdminSettingsPage() {
   const { data: settings, isLoading } = useServerSettings();
   const { data: igdbStatus } = useIgdbStatus();
   const { data: steamgriddbStatus } = useSteamGridDBStatus();
+  const { data: raStatus } = useRAStatus();
   const updateSettings = useUpdateSettings();
   const { toast } = useToast();
 
@@ -34,6 +37,7 @@ export function AdminSettingsPage() {
   const [igdbClientId, setIgdbClientId] = useState("");
   const [igdbClientSecret, setIgdbClientSecret] = useState("");
   const [steamgriddbApiKey, setSteamgriddbApiKey] = useState("");
+  const [raApiKey, setRaApiKey] = useState("");
 
   useEffect(() => {
     if (settings) {
@@ -45,6 +49,7 @@ export function AdminSettingsPage() {
       setIgdbClientId(settings["igdb_client_id"] ?? "");
       setIgdbClientSecret(settings["igdb_client_secret"] ?? "");
       setSteamgriddbApiKey(settings["steamgriddb_api_key"] ?? "");
+      setRaApiKey(settings["ra_api_key"] ?? "");
     }
   }, [settings]);
 
@@ -63,6 +68,9 @@ export function AdminSettingsPage() {
     }
     if (!steamgriddbEnvConfigured) {
       payload.steamgriddb_api_key = steamgriddbApiKey;
+    }
+    if (!raEnvConfigured) {
+      payload.ra_api_key = raApiKey;
     }
     updateSettings.mutate(payload, {
       onSuccess: () => toast("success", "Settings saved"),
@@ -83,6 +91,7 @@ export function AdminSettingsPage() {
   const igdbNotConfigured = igdbStatus && !igdbStatus.configured;
   const igdbEnvConfigured = igdbStatus?.source === "env";
   const steamgriddbEnvConfigured = steamgriddbStatus?.source === "env";
+  const raEnvConfigured = raStatus?.source === "env";
 
   return (
     <div className="space-y-6 max-w-3xl">
@@ -194,6 +203,12 @@ export function AdminSettingsPage() {
         apiKey={steamgriddbApiKey}
         onApiKeyChange={setSteamgriddbApiKey}
         envConfigured={steamgriddbEnvConfigured}
+      />
+
+      <RAConfigCard
+        apiKey={raApiKey}
+        onApiKeyChange={setRaApiKey}
+        envConfigured={raEnvConfigured}
       />
 
       <div className="flex justify-end">
