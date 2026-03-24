@@ -209,13 +209,18 @@ func main() {
 			slog.Warn("skipping startup scan: scan already in progress")
 			return
 		}
-		defer gameScanner.FinishScan()
 
 		hub.Broadcast(websocket.Event{Type: "scan_started", Payload: nil})
 		result, scanErr := gameScanner.Scan(func(p scanner.ScanProgress) {
 			gameScanner.SetScanProgress(&p)
 			hub.Broadcast(websocket.Event{Type: "scan_progress", Payload: p})
 		})
+
+		// Finish the scan BEFORE starting scraping, so the scan status API
+		// reports active=false immediately. Otherwise the web UI shows the
+		// stale "Grouping variants..." message during the entire IGDB scrape.
+		gameScanner.FinishScan()
+
 		if scanErr != nil {
 			slog.Error("startup library scan failed", "error", scanErr)
 			hub.Broadcast(websocket.Event{Type: "scan_error", Payload: map[string]string{"error": "startup scan failed"}})
