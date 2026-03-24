@@ -541,6 +541,7 @@ func NewRouter(cfg Config) (*gin.Engine, func()) {
 			admin.POST("/igdb/test", igdbHandler.TestIGDB)
 			admin.GET("/igdb/status", igdbHandler.GetIGDBStatus)
 			admin.GET("/steamgriddb/status", adminHandler.GetSteamGridDBStatus)
+			admin.GET("/ra/status", adminHandler.GetRAStatus)
 			admin.GET("/stats", adminHandler.GetStats)
 			admin.GET("/users/:id/rate-limit", adminHandler.GetUserRateLimit)
 			admin.DELETE("/users/:id/rate-limit", adminHandler.ResetUserRateLimit)

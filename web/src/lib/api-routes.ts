@@ -216,6 +216,7 @@ export type ApiGetPath = WithQuery<
   | "/admin/metadata-matches"
   | "/admin/igdb/status"
   | "/admin/steamgriddb/status"
+  | "/admin/ra/status"
   | "/admin/cheats/stats"
   | "/admin/uploads"
   | "/admin/uploads/writable"

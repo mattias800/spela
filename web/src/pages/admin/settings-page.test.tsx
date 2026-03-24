@@ -28,6 +28,7 @@ vi.mock("@/hooks/use-admin", () => ({
   useTestIgdbCredentials: vi.fn(),
   useIgdbStatus: vi.fn(),
   useSteamGridDBStatus: vi.fn(),
+  useRAStatus: vi.fn(),
 }));
 
 vi.mock("@/components/ui", async () => {
@@ -45,6 +46,7 @@ import {
   useTestIgdbCredentials,
   useIgdbStatus,
   useSteamGridDBStatus,
+  useRAStatus,
 } from "@/hooks/use-admin";
 
 const mockUseServerSettings = useServerSettings as ReturnType<typeof vi.fn>;
@@ -56,6 +58,7 @@ const mockUseIgdbStatus = useIgdbStatus as ReturnType<typeof vi.fn>;
 const mockUseSteamGridDBStatus = useSteamGridDBStatus as ReturnType<
   typeof vi.fn
 >;
+const mockUseRAStatus = useRAStatus as ReturnType<typeof vi.fn>;
 
 function renderPage() {
   const queryClient = new QueryClient({
@@ -88,6 +91,9 @@ beforeEach(() => {
     data: { configured: true, status: "connected" },
   });
   mockUseSteamGridDBStatus.mockReturnValue({
+    data: { configured: false, source: "none" },
+  });
+  mockUseRAStatus.mockReturnValue({
     data: { configured: false, source: "none" },
   });
 });

@@ -251,6 +251,31 @@ func (h *AdminHandler) GetSteamGridDBStatus(c *gin.Context) {
 	})
 }
 
+// RASource returns "env" if RA API key is set via environment variables,
+// "database" if set via admin settings, or "none" if not configured.
+func RASource(database *gorm.DB) string {
+	if os.Getenv("SPELA_RA_API_KEY") != "" {
+		return "env"
+	}
+	var count int64
+	database.Model(&db.ServerSetting{}).
+		Where("key = ? AND value != ''", "ra_api_key").
+		Count(&count)
+	if count == 1 {
+		return "database"
+	}
+	return "none"
+}
+
+// GetRAStatus returns the current RetroAchievements API configuration status.
+func (h *AdminHandler) GetRAStatus(c *gin.Context) {
+	source := RASource(h.DB)
+	c.JSON(http.StatusOK, gin.H{
+		"configured": source != "none",
+		"source":     source,
+	})
+}
+
 // IGDBSource returns "env" if IGDB credentials are set via environment variables,
 // "database" if set via admin settings, or "none" if not configured.
 func IGDBSource(database *gorm.DB) string {
