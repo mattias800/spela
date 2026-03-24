@@ -100,10 +100,14 @@
  * in HW render callbacks instead of the handle parameter. */
 static struct gpu_renderer *g_hw_renderer = NULL;
 
-/* Push constant data passed to vertex + fragment shaders */
+/* Push constant data passed to vertex + fragment shaders.
+ * Layout must match GLSL push_constant block exactly (std430 alignment).
+ * vec2 requires 8-byte alignment, so pad after flip_y. */
 typedef struct {
-    float texture_size[2];
-    float flip_y; /* 1.0 = flip Y (default for software), 0.0 = no flip (HW render) */
+    float texture_size[2]; /* offset 0 */
+    float flip_y;          /* offset 8 */
+    float _pad;            /* offset 12 — alignment padding for output_size */
+    float output_size[2];  /* offset 16 */
 } push_constants_t;
 
 struct gpu_renderer {
@@ -190,6 +194,12 @@ struct gpu_renderer {
     VkCommandBuffer offscreen_cmd;
     int offscreen_width;
     int offscreen_height;
+
+    /* Desired output size set by the host (Kotlin/Compose canvas dimensions).
+     * When non-zero and a shader is active, render_to_bgra uses these instead
+     * of computing a static scale factor from the frame dimensions. */
+    int desired_output_width;
+    int desired_output_height;
 
     /* Source rect for DS dual-screen */
     int source_x, source_y, source_w, source_h;
@@ -360,7 +370,20 @@ bool gpu_renderer_init_surface(gpu_renderer_t *r, void *native_surface) {
 }
 
 void gpu_renderer_resize(gpu_renderer_t *r, int width, int height) {
-    if (!r || !r->surface_initialized) return;
+    if (!r) return;
+
+    /* Offscreen mode: store desired output dimensions for render_to_bgra.
+     * The actual offscreen target is resized lazily in render_to_bgra. */
+    if (r->offscreen_mode) {
+        if (width > 0 && height > 0) {
+            r->desired_output_width = width;
+            r->desired_output_height = height;
+            VK_LOGI("Desired output size: %dx%d", width, height);
+        }
+        return;
+    }
+
+    if (!r->surface_initialized) return;
     r->surface_width = (uint32_t)width;
     r->surface_height = (uint32_t)height;
     VK_LOGI("Surface resize: %dx%d", width, height);
@@ -637,7 +660,12 @@ void gpu_renderer_upload_frame(gpu_renderer_t *r, const void *data,
 void gpu_renderer_set_shader(gpu_renderer_t *r, int shader_id) {
     if (!r) return;
     if (shader_id >= 0 && shader_id < NUM_SHADERS) {
+        int old_shader = r->current_shader;
         r->current_shader = shader_id;
+        /* Update sampler (nearest vs linear) when shader changes */
+        if (old_shader != shader_id && r->game_texture_view) {
+            update_descriptor_set(r);
+        }
     }
 }
 
@@ -703,6 +731,7 @@ void gpu_renderer_render(gpu_renderer_t *r) {
     push_constants_t pc = {
         .texture_size = { (float)r->frame_width, (float)r->frame_height },
         .flip_y = 1.0f,
+        .output_size = { (float)r->swapchain_extent.width, (float)r->swapchain_extent.height },
     };
     vkCmdPushConstants(cmd, r->pipeline_layout,
                        VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
@@ -1011,10 +1040,33 @@ static void gpu_renderer_hw_render_frame_offscreen(gpu_renderer_t *r, unsigned w
         return;
     }
 
-    /* Resize offscreen target if core output dimensions changed */
-    if ((int)width != r->offscreen_width || (int)height != r->offscreen_height) {
-        VK_LOGI("hw_render_frame_offscreen: resizing offscreen target %dx%d -> %ux%u",
-                r->offscreen_width, r->offscreen_height, width, height);
+    /* Compute desired offscreen target size for HW render.
+     * Same logic as software path: use desired output size when shader active. */
+    int target_w = (int)width;
+    int target_h = (int)height;
+    if (r->current_shader != GPU_SHADER_NONE && width > 0 && height > 0) {
+        if (r->desired_output_width > 0 && r->desired_output_height > 0) {
+            float game_ar = (float)width / (float)height;
+            float out_ar = (float)r->desired_output_width / (float)r->desired_output_height;
+            if (game_ar > out_ar) {
+                target_w = r->desired_output_width;
+                target_h = (int)(r->desired_output_width / game_ar);
+            } else {
+                target_h = r->desired_output_height;
+                target_w = (int)(r->desired_output_height * game_ar);
+            }
+            if (target_w < 1) target_w = 1;
+            if (target_h < 1) target_h = 1;
+        } else {
+            target_w = (int)width * 2;
+            target_h = (int)height * 2;
+        }
+    }
+
+    /* Resize offscreen target if dimensions changed */
+    if (target_w != r->offscreen_width || target_h != r->offscreen_height) {
+        VK_LOGI("hw_render_frame_offscreen: resizing offscreen target %dx%d -> %dx%d",
+                r->offscreen_width, r->offscreen_height, target_w, target_h);
         vkDeviceWaitIdle(r->device);
         /* Destroy old offscreen resources */
         if (r->offscreen_framebuffer) {
@@ -1033,12 +1085,10 @@ static void gpu_renderer_hw_render_frame_offscreen(gpu_renderer_t *r, unsigned w
             vkFreeMemory(r->device, r->offscreen_image_memory, NULL);
             r->offscreen_image_memory = VK_NULL_HANDLE;
         }
-        if (!create_offscreen_target(r, (int)width, (int)height)) {
+        if (!create_offscreen_target(r, target_w, target_h)) {
             VK_LOGE("hw_render_frame_offscreen: failed to resize offscreen target");
             return;
         }
-        r->offscreen_width = (int)width;
-        r->offscreen_height = (int)height;
     }
 
     unsigned w = (unsigned)r->offscreen_width;
@@ -1127,6 +1177,7 @@ static void gpu_renderer_hw_render_frame_offscreen(gpu_renderer_t *r, unsigned w
     push_constants_t pc = {
         .texture_size = { (float)width, (float)height },
         .flip_y = 0.0f, /* HW render: core's VkImage is already correct orientation */
+        .output_size = { (float)w, (float)h },
     };
     vkCmdPushConstants(cmd, r->pipeline_layout,
                        VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
@@ -1369,6 +1420,7 @@ void gpu_renderer_hw_render_frame(gpu_renderer_t *r, unsigned width, unsigned he
     push_constants_t pc = {
         .texture_size = { (float)width, (float)height },
         .flip_y = 0.0f, /* HW render: core's VkImage is already correct orientation */
+        .output_size = { (float)r->swapchain_extent.width, (float)r->swapchain_extent.height },
     };
     vkCmdPushConstants(cmd, r->pipeline_layout,
                        VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
@@ -1683,24 +1735,51 @@ size_t gpu_renderer_render_to_bgra(gpu_renderer_t *r, void *out_data, size_t out
     /* Software render path */
     if (!r->frame_uploaded) return 0;
 
-    /* Resize offscreen target to match frame dimensions for correct readback.
-     * Without this, the offscreen target stays at the initial 256x224 while the
-     * core may output 640x480, causing garbled video due to dimension mismatch. */
-    if ((int)r->frame_width != r->offscreen_width || (int)r->frame_height != r->offscreen_height) {
-        if (r->frame_width > 0 && r->frame_height > 0) {
-            VK_LOGI("render_to_bgra: resizing offscreen %dx%d -> %ux%u",
-                    r->offscreen_width, r->offscreen_height, r->frame_width, r->frame_height);
+    /* Compute desired offscreen dimensions.
+     * - No shader (passthrough): match frame for clean 1:1 pixels
+     * - With shader: use the host-provided output size (window/canvas)
+     *   so shader effects render at display resolution. Fall back to 2x
+     *   if the host hasn't called gpu_renderer_resize yet. */
+    int target_w = (int)r->frame_width;
+    int target_h = (int)r->frame_height;
+    if (r->current_shader != GPU_SHADER_NONE && r->frame_width > 0 && r->frame_height > 0) {
+        if (r->desired_output_width > 0 && r->desired_output_height > 0) {
+            /* Use the actual window/canvas size from the host.
+             * Maintain game aspect ratio within the output dimensions. */
+            float game_ar = (float)r->frame_width / (float)r->frame_height;
+            float out_ar = (float)r->desired_output_width / (float)r->desired_output_height;
+            if (game_ar > out_ar) {
+                target_w = r->desired_output_width;
+                target_h = (int)(r->desired_output_width / game_ar);
+            } else {
+                target_h = r->desired_output_height;
+                target_w = (int)(r->desired_output_height * game_ar);
+            }
+            /* Ensure at least 1 pixel */
+            if (target_w < 1) target_w = 1;
+            if (target_h < 1) target_h = 1;
+        } else {
+            /* Fallback: 2x native resolution */
+            target_w = (int)r->frame_width * 2;
+            target_h = (int)r->frame_height * 2;
+        }
+    }
+
+    /* Resize offscreen target if needed */
+    if (target_w != r->offscreen_width || target_h != r->offscreen_height) {
+        if (target_w > 0 && target_h > 0) {
+            VK_LOGI("render_to_bgra: resizing offscreen %dx%d -> %dx%d (shader=%d, frame=%ux%u)",
+                    r->offscreen_width, r->offscreen_height, target_w, target_h,
+                    r->current_shader, r->frame_width, r->frame_height);
             vkDeviceWaitIdle(r->device);
 
-            /* Destroy old offscreen resources (image, view, framebuffer, render pass, readback, fence) */
             cleanup_offscreen(r);
 
-            /* Recreate: render pass → target → fence */
             if (!create_offscreen_render_pass(r)) {
                 VK_LOGE("Failed to recreate offscreen render pass");
                 return 0;
             }
-            if (!create_offscreen_target(r, (int)r->frame_width, (int)r->frame_height)) {
+            if (!create_offscreen_target(r, target_w, target_h)) {
                 VK_LOGE("Failed to resize offscreen target");
                 return 0;
             }
@@ -1782,6 +1861,7 @@ size_t gpu_renderer_render_to_bgra(gpu_renderer_t *r, void *out_data, size_t out
         .texture_size = { (float)r->frame_width, (float)r->frame_height },
         /* Flip Y when frame data came from an OpenGL readback (bottom-left origin) */
         .flip_y = r->hw_bottom_left_origin ? 1.0f : 0.0f,
+        .output_size = { (float)w, (float)h },
     };
     vkCmdPushConstants(cmd, r->pipeline_layout,
                        VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,

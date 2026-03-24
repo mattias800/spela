@@ -3,6 +3,8 @@ layout(set = 0, binding = 0) uniform sampler2D tex;
 layout(push_constant) uniform PushConstants {
     vec2 texture_size;
     float flip_y;
+    float _pad;
+    vec2 output_size;
 } pc;
 layout(location = 0) in vec2 uv;
 layout(location = 0) out vec4 fragColor;
@@ -10,16 +12,15 @@ layout(location = 0) out vec4 fragColor;
 void main() {
     vec4 color = texture(tex, uv);
 
-    // LCD grid: darken pixel edges to simulate LCD subpixel structure
-    vec2 grid_pos = fract(uv * pc.texture_size);
+    // LCD dot matrix grid — darken edges of each game pixel
+    vec2 pixelPos = fract(uv * pc.texture_size);
 
-    // Horizontal grid lines
-    float h_line = smoothstep(0.0, 0.05, grid_pos.y) * smoothstep(1.0, 0.95, grid_pos.y);
-    // Vertical grid lines
-    float v_line = smoothstep(0.0, 0.05, grid_pos.x) * smoothstep(1.0, 0.95, grid_pos.x);
-
-    float grid_mask = mix(0.75, 1.0, h_line * v_line);
-    color.rgb *= grid_mask;
+    float edgeX = 0.1;
+    float edgeY = 0.15;
+    float px = smoothstep(0.0, edgeX, pixelPos.x) * smoothstep(1.0, 1.0 - edgeX, pixelPos.x);
+    float py = smoothstep(0.0, edgeY, pixelPos.y) * smoothstep(1.0, 1.0 - edgeY, pixelPos.y);
+    float grid = mix(0.5, 1.0, px * py);
+    color.rgb *= grid;
 
     fragColor = color;
 }

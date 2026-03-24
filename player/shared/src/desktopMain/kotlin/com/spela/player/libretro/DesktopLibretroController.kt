@@ -204,9 +204,8 @@ class DesktopLibretroController(
     fun gpuInit(surface: Any): Boolean = jni.nativeGpuInit(surface)
     fun gpuInitOffscreen(width: Int, height: Int): Boolean = jni.nativeGpuInitOffscreen(width, height)
     fun gpuRender() = jni.nativeGpuRender()
-    fun gpuRenderToBgra(outData: ByteArray): Int = jni.nativeGpuRenderToBgra(outData)
+    fun gpuRenderToBgra(outData: ByteArray): Long = jni.nativeGpuRenderToBgra(outData)
     fun gpuSetShader(shaderId: Int) = jni.nativeGpuSetShader(shaderId)
-    fun gpuResize(width: Int, height: Int) = jni.nativeGpuResize(width, height)
     fun gpuDeinit() = jni.nativeGpuDeinit()
     fun gpuIsActive(): Boolean = jni.nativeGpuIsActive()
     fun gpuSetSourceRect(x: Int, y: Int, w: Int, h: Int) = jni.nativeGpuSetSourceRect(x, y, w, h)
@@ -235,6 +234,19 @@ class DesktopLibretroController(
     /** Whether the GPU renderer is active (checked each frame). */
     fun isGpuActive(): Boolean = jni.nativeGpuIsActive()
 
+    /** Last canvas size reported via gpuResize, used for buffer allocation. */
+    @Volatile
+    private var lastCanvasWidth = 1920
+
+    @Volatile
+    private var lastCanvasHeight = 1080
+
+    fun gpuResize(width: Int, height: Int) {
+        lastCanvasWidth = width
+        lastCanvasHeight = height
+        jni.nativeGpuResize(width, height)
+    }
+
     /**
      * Render the current GPU frame through shaders and store the BGRA result.
      * Called on the emulation thread. Uses double buffering: writes to one buffer
@@ -245,31 +257,20 @@ class DesktopLibretroController(
         val h = jni.nativeGetVideoHeight()
         if (w <= 0 || h <= 0) return
 
-        // Allocate for the larger of core output size or current buffer
-        // The GPU renderer may resize the offscreen target to match frame dims
-        val needed = w * h * 4
+        // Allocate enough for the shader-upscaled output (up to canvas size).
+        // The GPU renderer outputs at the offscreen target resolution which
+        // matches the canvas/window dimensions when a shader is active.
+        val maxNeeded = lastCanvasWidth * lastCanvasHeight * 4
         val bufIdx = renderBufferIndex
-        if (renderBuffers[bufIdx].size < needed) {
-            renderBuffers[bufIdx] = ByteArray(needed)
+        if (renderBuffers[bufIdx].size < maxNeeded) {
+            renderBuffers[bufIdx] = ByteArray(maxNeeded)
         }
 
-        val written = jni.nativeGpuRenderToBgra(renderBuffers[bufIdx])
-        if (written > 0) {
-            // Compute actual dimensions from bytes written (always BGRA = 4 bpp)
-            // The GPU renderer may output at different dimensions than the core reports
-            val actualPixels = written / 4
-            val actualW: Int
-            val actualH: Int
-            if (actualPixels == w * h) {
-                actualW = w
-                actualH = h
-            } else {
-                // Readback dimensions differ from core dimensions — estimate from aspect
-                // The offscreen target should be the same as frame dims after our fix,
-                // but as a safety fallback, try common dimensions
-                actualW = w
-                actualH = if (w > 0) actualPixels / w else h
-            }
+        val result = jni.nativeGpuRenderToBgra(renderBuffers[bufIdx])
+        if (result != 0L) {
+            // Unpack width (high 32 bits) and height (low 32 bits) from the packed long
+            val actualW = (result shr 32).toInt()
+            val actualH = (result and 0xFFFFFFFFL).toInt()
             val ar = jni.nativeGetAspectRatio()
             latestRenderedFrame = RenderedFrame(renderBuffers[bufIdx], actualW, actualH, ar)
             renderBufferIndex = 1 - bufIdx

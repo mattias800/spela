@@ -66,7 +66,7 @@ class LibretroJni {
     external fun nativeGpuInit(surface: Any): Boolean
     external fun nativeGpuInitOffscreen(width: Int, height: Int): Boolean
     external fun nativeGpuRender()
-    external fun nativeGpuRenderToBgra(outData: ByteArray): Int
+    external fun nativeGpuRenderToBgra(outData: ByteArray): Long
     external fun nativeGpuSetShader(shaderId: Int)
     external fun nativeGpuResize(width: Int, height: Int)
     external fun nativeGpuDeinit()

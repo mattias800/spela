@@ -30,6 +30,7 @@ import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
@@ -103,6 +104,11 @@ fun MetalOffscreenSurface(
             modifier = Modifier
                 .fillMaxSize()
                 .background(Color.Black)
+                .onSizeChanged { size ->
+                    // Report canvas size to GPU renderer so shaders render
+                    // at display resolution instead of a static multiplier
+                    controller.gpuResize(size.width, size.height)
+                }
                 .focusRequester(focusRequester)
                 .focusable()
                 .onPreviewKeyEvent { event ->

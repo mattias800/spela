@@ -310,8 +310,8 @@ private class NetplayTestRunnerImpl(private val config: Config) {
         if (jni.nativeGpuIsActive()) {
             // GPU renderer is active — read back from GPU as BGRA
             val buf = ByteArray(width * height * 4)
-            val written = jni.nativeGpuRenderToBgra(buf)
-            if (written <= 0) error("GPU readback failed")
+            val result = jni.nativeGpuRenderToBgra(buf)
+            if (result == 0L) error("GPU readback failed")
             frame = buf
             isBgra = true
         } else {
