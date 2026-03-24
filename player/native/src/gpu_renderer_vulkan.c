@@ -1683,6 +1683,38 @@ size_t gpu_renderer_render_to_bgra(gpu_renderer_t *r, void *out_data, size_t out
     /* Software render path */
     if (!r->frame_uploaded) return 0;
 
+    /* Resize offscreen target to match frame dimensions for correct readback.
+     * Without this, the offscreen target stays at the initial 256x224 while the
+     * core may output 640x480, causing garbled video due to dimension mismatch. */
+    if ((int)r->frame_width != r->offscreen_width || (int)r->frame_height != r->offscreen_height) {
+        if (r->frame_width > 0 && r->frame_height > 0) {
+            VK_LOGI("render_to_bgra: resizing offscreen %dx%d -> %ux%u",
+                    r->offscreen_width, r->offscreen_height, r->frame_width, r->frame_height);
+            vkDeviceWaitIdle(r->device);
+
+            /* Destroy old offscreen resources (image, view, framebuffer, render pass, readback, fence) */
+            cleanup_offscreen(r);
+
+            /* Recreate: render pass → target → fence */
+            if (!create_offscreen_render_pass(r)) {
+                VK_LOGE("Failed to recreate offscreen render pass");
+                return 0;
+            }
+            if (!create_offscreen_target(r, (int)r->frame_width, (int)r->frame_height)) {
+                VK_LOGE("Failed to resize offscreen target");
+                return 0;
+            }
+            VkFenceCreateInfo fence_info = {
+                .sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,
+                .flags = VK_FENCE_CREATE_SIGNALED_BIT,
+            };
+            if (vkCreateFence(r->device, &fence_info, NULL, &r->offscreen_fence) != VK_SUCCESS) {
+                VK_LOGE("Failed to recreate offscreen fence");
+                return 0;
+            }
+        }
+    }
+
     unsigned w = (unsigned)r->offscreen_width;
     unsigned h = (unsigned)r->offscreen_height;
     size_t needed = (size_t)w * h * 4;
@@ -1748,7 +1780,8 @@ size_t gpu_renderer_render_to_bgra(gpu_renderer_t *r, void *out_data, size_t out
 
     push_constants_t pc = {
         .texture_size = { (float)r->frame_width, (float)r->frame_height },
-        .flip_y = 0.0f,  /* Offscreen/desktop: Vulkan uses top-left origin, no flip needed */
+        /* Flip Y when frame data came from an OpenGL readback (bottom-left origin) */
+        .flip_y = r->hw_bottom_left_origin ? 1.0f : 0.0f,
     };
     vkCmdPushConstants(cmd, r->pipeline_layout,
                        VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
@@ -3489,6 +3522,9 @@ static bool create_offscreen_target(gpu_renderer_t *r, int width, int height) {
     };
     VK_CHECK(vkCreateFramebuffer(r->device, &fb_info, NULL, &r->offscreen_framebuffer));
 
+    r->offscreen_width = width;
+    r->offscreen_height = height;
+
     VK_LOGI("Offscreen target created: %dx%d", width, height);
     return true;
 }
@@ -3554,6 +3590,7 @@ static void cleanup_offscreen(gpu_renderer_t *r) {
         r->readback_memory = VK_NULL_HANDLE;
         r->readback_mapped = NULL;
     }
+    r->readback_size = 0;
     if (r->offscreen_fence) {
         vkDestroyFence(r->device, r->offscreen_fence, NULL);
         r->offscreen_fence = VK_NULL_HANDLE;

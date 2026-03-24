@@ -24,13 +24,14 @@ type SteamGridDBClient struct {
 
 // SteamGridDBImage represents an image returned by SteamGridDB.
 type SteamGridDBImage struct {
-	ID     int    `json:"id"`
-	URL    string `json:"url"`
-	Thumb  string `json:"thumb"`
-	Width  int    `json:"width"`
-	Height int    `json:"height"`
-	Style  string `json:"style"`
-	Score  int    `json:"score"`
+	ID       int    `json:"id"`
+	URL      string `json:"url"`
+	Thumb    string `json:"thumb"`
+	Width    int    `json:"width"`
+	Height   int    `json:"height"`
+	Style    string `json:"style"`
+	Score    int    `json:"score"`
+	Language string `json:"language"`
 }
 
 // steamGridDBSearchResult represents a game result from the search endpoint.
@@ -151,9 +152,14 @@ func (c *SteamGridDBClient) getImages(path string) ([]SteamGridDBImage, error) {
 		return nil, fmt.Errorf("SteamGridDB returned unsuccessful response")
 	}
 
-	// Sort by score descending
+	// Sort: English first, then by score descending
 	images := resp.Data
 	sort.Slice(images, func(i, j int) bool {
+		iEn := images[i].Language == "en"
+		jEn := images[j].Language == "en"
+		if iEn != jEn {
+			return iEn
+		}
 		return images[i].Score > images[j].Score
 	})
 

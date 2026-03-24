@@ -168,14 +168,16 @@ fun MetalOffscreenSurface(
             val offsetX = ((canvasWidth - dstWidth) / 2).toInt()
             val offsetY = ((canvasHeight - dstHeight) / 2).toInt()
 
-            // Shader effects already applied by Metal -- use bilinear upscale
+            // Nearest-neighbor when no shader (pixel-perfect), bilinear otherwise
+            // (shader already applied filtering in the GPU pass)
+            val quality = if (selectedShader == ShaderPreset.NONE) FilterQuality.None else FilterQuality.Medium
             drawImage(
                 image = bitmap,
                 srcOffset = IntOffset.Zero,
                 srcSize = IntSize(bitmap.width, bitmap.height),
                 dstOffset = IntOffset(offsetX, offsetY),
                 dstSize = IntSize(dstWidth, dstHeight),
-                filterQuality = FilterQuality.Medium,
+                filterQuality = quality,
             )
         }
 
