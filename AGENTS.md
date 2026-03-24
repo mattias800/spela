@@ -118,3 +118,10 @@ one-of-a-kind and must NOT be reused (e.g., a platform-specific emulation
 surface). If there is any chance the pattern could appear elsewhere, it
 must be a shared component. The reviewer must verify: "Is this custom
 element intentionally non-reusable, or should it be an Sp* component?"
+
+## Key Documentation
+
+- **`CLAUDE.md`** — Project conventions, code style, testing strategy
+- **`ARCHITECTURE.md`** — Full technical architecture
+- **`AGENT_TEAM.md`** — Team roles and review checklist
+- **`player/RENDERING.md`** — Emulation rendering pipeline: how libretro cores render video across platforms (software vs OpenGL HW vs Vulkan HW), the GPU renderer, common video issues (garbled, flipped, black screen), and key native files
