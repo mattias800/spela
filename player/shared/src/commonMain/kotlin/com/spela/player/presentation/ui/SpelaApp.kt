@@ -99,6 +99,7 @@ import com.spela.player.presentation.ui.screen.ServerConnectionScreen
 import com.spela.player.presentation.ui.screen.SettingsScreen
 import com.spela.player.presentation.ui.screen.ActivityScreen
 import com.spela.player.presentation.ui.screen.ChallengeDetailScreen
+import com.spela.player.presentation.ui.screen.GameAchievementsScreen
 import com.spela.player.presentation.ui.screen.ChallengeListScreen
 import com.spela.player.presentation.ui.screen.GlobalChallengesScreen
 import com.spela.player.presentation.ui.screen.StatsScreen
@@ -1003,6 +1004,11 @@ fun SpelaApp(
                                             NavigationIntent.NavigateTo(SpScreen.ExplorePublisher(name))
                                         )
                                     },
+                                    onNavigateToAchievements = { gameId ->
+                                        navigationViewModel.onIntent(
+                                            NavigationIntent.NavigateTo(SpScreen.GameAchievements(gameId))
+                                        )
+                                    },
                                 )
                             }
 
@@ -1305,6 +1311,16 @@ fun SpelaApp(
                                             NavigationIntent.NavigateTo(SpScreen.GameDetail(gameId))
                                         )
                                     },
+                                    onBack = {
+                                        navigationViewModel.onIntent(NavigationIntent.GoBack)
+                                    },
+                                )
+                            }
+
+                            is SpScreen.GameAchievements -> {
+                                GameAchievementsScreen(
+                                    gameId = screen.gameId,
+                                    viewModel = gameDetailViewModel,
                                     onBack = {
                                         navigationViewModel.onIntent(NavigationIntent.GoBack)
                                     },

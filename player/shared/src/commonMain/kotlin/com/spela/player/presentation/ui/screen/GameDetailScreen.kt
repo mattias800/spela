@@ -66,7 +66,6 @@ import com.spela.player.presentation.ui.feature.gamedetail.VerificationChip
 import com.spela.player.presentation.ui.feature.gamedetail.ChallengesSection
 import com.spela.player.presentation.ui.feature.gamedetail.CreateChallengeDialog
 import com.spela.player.presentation.ui.feature.gamedetail.CommunitySharesSection
-import com.spela.player.presentation.ui.feature.gamedetail.GameAchievementsSection
 import com.spela.player.presentation.ui.feature.gamedetail.GameControlsSection
 import com.spela.player.presentation.ui.feature.gamedetail.GameCommunityStatsSection
 import com.spela.player.presentation.ui.feature.gamedetail.DeveloperGamesSection
@@ -125,6 +124,7 @@ fun GameDetailScreen(
     onNavigateToFranchise: ((franchiseId: String, franchiseName: String) -> Unit)? = null,
     onNavigateToDeveloper: ((name: String) -> Unit)? = null,
     onNavigateToPublisher: ((name: String) -> Unit)? = null,
+    onNavigateToAchievements: ((gameId: String) -> Unit)? = null,
     syncState: GameSyncState? = null,
     onPlayWithLocalSave: () -> Unit = {},
     onCancelLaunch: () -> Unit = {},
@@ -190,6 +190,7 @@ fun GameDetailScreen(
                     onCreateNetplay = onCreateNetplay,
                     onDeleteLocalGame = { viewModel.onIntent(GameDetailIntent.ShowDeleteDownloadDialog) },
                     syncState = syncState,
+                    onNavigateToAchievements = { onNavigateToAchievements?.invoke(gameId) },
                 )
             },
             coverArt = { modifier, isPortrait ->
@@ -247,6 +248,9 @@ fun GameDetailScreen(
                     onNavigateToGame = onNavigateToGame,
                     onNavigateToDeveloper = onNavigateToDeveloper,
                     onNavigateToPublisher = onNavigateToPublisher,
+                    onNavigateToAchievements = if (state.achievements.isNotEmpty()) {
+                        { onNavigateToAchievements?.invoke(gameId) }
+                    } else null,
                 )
 
                 // Series & Franchise links
@@ -358,21 +362,7 @@ fun GameDetailScreen(
                 // screenshots, and similar games — but not saves, controls,
                 // challenges, shared sessions, or achievements.
                 if (game.playable) {
-                    // 4. Achievements (hidden for demo consoles)
-                    if (!isDemoConsole) {
-                        GameAchievementsSection(
-                            achievements = state.achievements,
-                            progress = state.achievementProgress,
-                            timeline = state.achievementTimeline,
-                            leaderboard = state.achievementLeaderboard,
-                            viewMode = state.achievementsView,
-                            isLoading = state.isLoadingAchievements,
-                            onToggleView = { mode ->
-                                viewModel.onIntent(GameDetailIntent.ToggleAchievementsView(mode))
-                            },
-                            achievementsWarning = game.achievementsWarning,
-                        )
-                    }
+                    // 4. Achievements — now shown on a dedicated sub-screen
 
                     // 5. Community Shares (hidden for demo consoles — save-based)
                     if (!isDemoConsole) {
@@ -558,6 +548,7 @@ private fun GameInfoContent(
     onNavigateToGame: ((String) -> Unit)? = null,
     onNavigateToDeveloper: ((name: String) -> Unit)? = null,
     onNavigateToPublisher: ((name: String) -> Unit)? = null,
+    onNavigateToAchievements: (() -> Unit)? = null,
 ) {
     // Game info content — title, badges, and action buttons are in the hero banner
 
@@ -684,6 +675,7 @@ private fun GameInfoContent(
         achievementUnlocked = state.achievementProgress.size,
         onDeveloperClick = onNavigateToDeveloper,
         onPublisherClick = onNavigateToPublisher,
+        onAchievementsClick = onNavigateToAchievements,
     )
 
     // Variants section -- split into Versions (non-hack) and ROM Hacks (hack-tagged)
@@ -986,6 +978,7 @@ private fun GameHeroContent(
     onCreateNetplay: ((String) -> Unit)?,
     onDeleteLocalGame: () -> Unit,
     syncState: GameSyncState?,
+    onNavigateToAchievements: () -> Unit = {},
 ) {
     val supportsNetplay = game.playable && game.consoleId.lowercase() in NETPLAY_SUPPORTED_CONSOLES
 
@@ -1027,6 +1020,21 @@ private fun GameHeroContent(
                 CommunityRatingBadge(
                     averageRating = game.averageRating,
                     ratingCount = game.ratingCount,
+                )
+            }
+            if (state.achievements.isNotEmpty()) {
+                SpChip(
+                    text = "${state.achievementProgress.size} / ${state.achievements.size}",
+                    leadingIcon = {
+                        Icon(
+                            imageVector = Icons.Filled.EmojiEvents,
+                            contentDescription = null,
+                            tint = Color.White.copy(alpha = 0.65f),
+                            modifier = Modifier.size(14.dp),
+                        )
+                    },
+                    onGradient = true,
+                    onClick = onNavigateToAchievements,
                 )
             }
         }
