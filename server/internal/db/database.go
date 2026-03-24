@@ -914,7 +914,6 @@ func SeedConsoles(db *gorm.DB) error {
 // SeedCores inserts the default libretro core definitions if they don't exist,
 // and backfills DownloadURL for existing rows when the seed has a value set.
 func SeedCores(db *gorm.DB) error {
-	const azaharTag = "2125.0-alpha4"
 	cores := []Core{
 		{Name: "nestopia", DisplayName: "Nestopia UE", Description: "Accurate NES/Famicom emulator", Platforms: "windows,linux,macos,android"},
 		{Name: "snes9x", DisplayName: "Snes9x", Description: "Portable SNES emulator", Platforms: "windows,linux,macos,android"},
@@ -940,8 +939,8 @@ func SeedCores(db *gorm.DB) error {
 			DisplayName: "Azahar",
 			Description: "Nintendo 3DS emulator (Citra successor)",
 			Platforms:   "windows,linux,macos,android",
-			Version:     azaharTag,
-			DownloadURL: "https://github.com/azahar-emu/azahar/releases/download/" + azaharTag + "/azahar-libretro-" + azaharTag + "-{platform}.zip",
+			Version:     "2125.0-rc5",
+			DownloadURL: "https://github.com/azahar-emu/azahar/releases/download/2125.0-rc5/azahar-libretro-2125.0-rc5-{platform}.zip",
 		},
 	}
 
