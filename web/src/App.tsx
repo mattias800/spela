@@ -12,6 +12,7 @@ import { ConsoleDetailPage } from "@/pages/console-detail-page";
 import { ConsoleGamesPage } from "@/pages/console-games-page";
 import { GamesPage } from "@/pages/games-page";
 import { GameDetailPage } from "@/pages/game-detail-page";
+import { GameAchievementsPage } from "@/pages/game-achievements-page";
 import { FavoritesPage } from "@/pages/favorites-page";
 import { PlayLaterPage } from "@/pages/play-later-page";
 import { AdminUsersPage } from "@/pages/admin/users-page";
@@ -152,6 +153,10 @@ export function App() {
                       element={<ConsoleGamesPage />}
                     />
                     <Route path="games/:id" element={<GameDetailPage />} />
+                    <Route
+                      path="games/:id/achievements"
+                      element={<GameAchievementsPage />}
+                    />
                     <Route
                       path="sessions/:sessionId"
                       element={<SessionDetailPage />}

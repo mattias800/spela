@@ -43,6 +43,7 @@ sealed class SpScreen(val route: String) {
     data object ExploreSearch : SpScreen("explore_search")
     data object ExploreWizard : SpScreen("explore_wizard")
     data object GlobalSearch : SpScreen("global_search")
+    data class GameAchievements(val gameId: String) : SpScreen("game_achievements/$gameId")
 }
 
 data class NavigationState(

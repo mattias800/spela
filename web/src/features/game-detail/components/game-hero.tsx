@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import {
   Heart,
   Calendar,
@@ -42,6 +43,8 @@ interface GameHeroProps {
   isPlayLaterPending?: boolean;
   isScraping: boolean;
   hasAchievements?: boolean;
+  achievementCount?: number;
+  achievementUnlocked?: number;
   biosMissing?: boolean;
   isDemo?: boolean;
   onPlay: () => void;
@@ -64,6 +67,8 @@ export function GameHero({
   isPlayLaterPending,
   isScraping,
   hasAchievements,
+  achievementCount,
+  achievementUnlocked,
   biosMissing,
   isDemo,
   onPlay,
@@ -189,14 +194,8 @@ export function GameHero({
       <div className="w-full min-w-0 flex-1 space-y-5 pt-2">
         <div className="space-y-4">
           <div>
-            <h1 className="text-2xl font-bold text-surface-100 flex items-center gap-2 md:text-3xl">
+            <h1 className="text-2xl font-bold text-surface-100 md:text-3xl">
               {game.title}
-              {hasAchievements && (
-                <Trophy
-                  className="h-6 w-6 text-amber-400"
-                  data-testid="achievements-trophy"
-                />
-              )}
             </h1>
             <div className="flex flex-wrap items-center gap-3 mt-2">
               {consoleName && <Badge variant="brand">{consoleName}</Badge>}
@@ -208,6 +207,19 @@ export function GameHero({
               )}
               <VerificationBadge game={game} isAdmin={isAdmin} />
               {game.region && <RegionBadge region={game.region} />}
+              {hasAchievements && achievementCount != null && achievementCount > 0 && (
+                <Link
+                  to={`/games/${game.id}/achievements`}
+                  data-testid="achievements-badge"
+                >
+                  <Badge variant="warning">
+                    <Trophy className="h-3 w-3 mr-1" />
+                    {achievementUnlocked != null
+                      ? `${achievementUnlocked} / ${achievementCount}`
+                      : `${achievementCount}`}
+                  </Badge>
+                </Link>
+              )}
               {(game.rating ?? 0) > 0 ? (
                 <IgdbRatingStars rating={game.rating!} />
               ) : (game.igdbUserRating ?? 0) > 0 ? (
@@ -326,6 +338,18 @@ export function GameHero({
               icon={Disc}
               label="Discs"
               value={`${game.discCount}`}
+            />
+          )}
+          {achievementCount != null && achievementCount > 0 && (
+            <MetaItem
+              icon={Trophy}
+              label="Achievements"
+              value={
+                achievementUnlocked != null
+                  ? `${achievementUnlocked} / ${achievementCount}`
+                  : `${achievementCount}`
+              }
+              href={`/games/${game.id}/achievements`}
             />
           )}
         </div>

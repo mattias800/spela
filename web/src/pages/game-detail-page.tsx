@@ -25,7 +25,6 @@ import {
 import { GameHero } from "@/features/game-detail/components/game-hero";
 import { GameScreenshots } from "@/features/game-detail/components/game-screenshots";
 import { GameCommunityStats } from "@/features/game-detail/components/game-community-stats";
-import { GameAchievements } from "@/features/game-detail/components/game-achievements";
 import { GameAchievementLeaderboard } from "@/features/game-detail/components/game-achievement-leaderboard";
 import { RatingSummaryCard } from "@/features/game-detail/components/rating-summary";
 import { GameReviews } from "@/features/game-detail/components/game-reviews";
@@ -34,7 +33,10 @@ import { GameActiveSharedSessions } from "@/features/shared-sessions/components/
 import { GameSessions } from "@/features/sessions/components/game-sessions";
 import { useGameSessions } from "@/hooks/use-sessions";
 import { GameChallenges } from "@/features/challenges/components/game-challenges";
-import { useGameAchievements } from "@/hooks/use-retroachievements";
+import {
+  useGameAchievements,
+  useGameAchievementProgress,
+} from "@/hooks/use-retroachievements";
 import { useGameSeries, useGameFranchises } from "@/hooks/use-explore";
 import { useBiosStatus } from "@/hooks/use-bios";
 import { BiosWarningBanner } from "@/features/bios/components/bios-warning-banner";
@@ -121,11 +123,16 @@ export function GameDetailPage() {
   const { data: biosData } = useBiosStatus();
   const { data: sessions } = useGameSessions(id ?? "");
   const { data: gameAchievements } = useGameAchievements(id);
+  const { data: achievementProgress } = useGameAchievementProgress(id);
   const { data: gameSeries } = useGameSeries(id);
   const { data: gameFranchises } = useGameFranchises(id);
   const consoleInfo = consoles?.find((c) => c.id === game?.consoleId);
   const canPlayInBrowser = !!consoleInfo?.emulatorJsCore;
   const hasAchievements = (gameAchievements?.achievements?.length ?? 0) > 0;
+  const achievementCount = gameAchievements?.totalCount ?? 0;
+  const achievementUnlocked = achievementProgress
+    ? achievementProgress.length
+    : undefined;
   const isDemo = consoleInfo?.abbreviation === "ADEMO" || consoleInfo?.abbreviation === "DDEMO";
   const [showCollectionPicker, setShowCollectionPicker] = useState(false);
   const [showScrapeMatch, setShowScrapeMatch] = useState(false);
@@ -203,6 +210,8 @@ export function GameDetailPage() {
         isPlayLaterPending={togglePlayLater.isPending}
         isScraping={scrapeGame.isPending}
         hasAchievements={hasAchievements}
+        achievementCount={achievementCount}
+        achievementUnlocked={achievementUnlocked}
         biosMissing={showBiosWarning}
         isDemo={isDemo}
         onPlay={() => navigate(`/games/${game.id}/play/${sessions && sessions.length > 0 ? sessions[0].id : "new"}`)}
@@ -318,10 +327,6 @@ export function GameDetailPage() {
         screenshotUrls={game.screenshotUrls}
         gameTitle={game.title}
       />
-
-      {isPlayable && !isDemo && (
-        <GameAchievements gameId={game.id} achievementsWarning={game.achievementsWarning} />
-      )}
 
       {isPlayable && !isDemo && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
