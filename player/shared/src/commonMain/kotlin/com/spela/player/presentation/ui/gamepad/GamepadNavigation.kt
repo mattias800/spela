@@ -115,16 +115,20 @@ fun GamepadHandler(
                         onPreviousSection != null
                     }
                     Key.Tab -> {
-                        if (event.isShiftPressed) {
+                        // Only consume Tab for section navigation when sections exist.
+                        // Otherwise let it do default focus movement (e.g., login form).
+                        if (event.isShiftPressed && onPreviousSection != null) {
                             focusManager.clearFocus(force = true)
-                            onPreviousSection?.invoke()
+                            onPreviousSection.invoke()
                             onGamepadInput?.invoke()
-                            onPreviousSection != null
+                            true
+                        } else if (!event.isShiftPressed && onNextSection != null) {
+                            focusManager.clearFocus(force = true)
+                            onNextSection.invoke()
+                            onGamepadInput?.invoke()
+                            true
                         } else {
-                            focusManager.clearFocus(force = true)
-                            onNextSection?.invoke()
-                            onGamepadInput?.invoke()
-                            onNextSection != null
+                            false // Let default Tab focus navigation work
                         }
                     }
                     else -> false
