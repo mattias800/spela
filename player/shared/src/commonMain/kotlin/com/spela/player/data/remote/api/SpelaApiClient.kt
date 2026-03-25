@@ -36,6 +36,9 @@ class SpelaApiClient(
     }
 
     private val client = HttpClient(engineFactory) {
+        // Throw on non-2xx responses so HTTP errors are never silently swallowed.
+        expectSuccess = true
+
         install(ContentNegotiation) {
             json(this@SpelaApiClient.json)
         }
@@ -118,8 +121,12 @@ class SpelaApiClient(
     // Health
 
     suspend fun healthCheck(): Boolean {
-        val response = client.get("$baseUrl/api/health")
-        return response.status.isSuccess()
+        return try {
+            client.get("$baseUrl/api/health")
+            true
+        } catch (_: Exception) {
+            false
+        }
     }
 
     // Auth
