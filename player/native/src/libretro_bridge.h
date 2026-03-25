@@ -105,6 +105,7 @@ typedef struct {
 
     /* OpenGL HW render context (NULL when not using GL HW render) */
     hw_gl_context_t                *hw_gl_ctx;
+    bool                            hw_gl_was_used; /* sticky: true once GL HW was activated */
 } libretro_core_t;
 
 /* Global core instance */
