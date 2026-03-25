@@ -434,16 +434,22 @@ internal fun ConsoleHeroBanner(
             val isWide = maxWidth > 500.dp
 
             // Logo or text fallback (shared)
+            // Scale logo dynamically with banner width — wider banners get bigger logos
+            val widthDp = maxWidth
+            val logoArea = (widthDp.value * 22f).coerceIn(8000f, 30000f)
+            val logoMaxH = (widthDp.value * 0.14f).coerceIn(60f, 140f).dp
+            val logoMaxW = (widthDp.value * 0.4f).coerceIn(160f, 400f).dp
+
             var logoFailed by remember { mutableStateOf(false) }
             val logoContent: @Composable () -> Unit = {
                 if (console.logoUrl.isNotEmpty() && !logoFailed) {
                     SpAreaSizedImage(
                         imageUrl = console.logoUrl,
                         contentDescription = console.name,
-                        targetArea = if (isWide) 8000f else 6000f,
-                        maxHeight = if (isWide) 80.dp else 60.dp,
-                        maxWidth = if (isWide) 200.dp else 160.dp,
-                        minHeight = 32.dp,
+                        targetArea = logoArea,
+                        maxHeight = logoMaxH,
+                        maxWidth = logoMaxW,
+                        minHeight = 40.dp,
                         error = {
                             logoFailed = true
                             Text(

@@ -6,14 +6,16 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Icon
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Star
@@ -36,6 +38,7 @@ import coil3.compose.AsyncImage
 import com.spela.player.presentation.intent.GameListIntent
 import com.spela.player.presentation.ui.components.PlatformBackHandler
 import com.spela.player.presentation.ui.components.SpButton
+import com.spela.player.presentation.ui.components.SpShimmer
 import com.spela.player.presentation.ui.components.SpEmptyStates
 import com.spela.player.presentation.ui.components.SpSectionList
 import com.spela.player.presentation.ui.components.SpIconButton
@@ -138,6 +141,11 @@ fun ConsoleScreen(
                                 onBrowseGames = if (state.games.size > 15) onBrowseAllGames else null,
                             )
                         }
+                    }
+
+                    // Shimmer loading skeleton when switching consoles
+                    if (state.isLoading && state.games.isEmpty()) {
+                        item { ConsoleScreenSkeleton() }
                     }
 
                     // Continue Playing (most relevant — always first)
@@ -280,4 +288,36 @@ fun ConsoleScreen(
             modifier = Modifier.align(Alignment.BottomCenter),
         )
     } // outer Box
+}
+
+@Composable
+private fun ConsoleScreenSkeleton() {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = SpSpacing.ScreenHorizontal),
+        verticalArrangement = Arrangement.spacedBy(SpSpacing.XLarge),
+    ) {
+        // Section title shimmer
+        SpShimmer(width = 140.dp, height = 20.dp)
+        // Game row shimmer (cards)
+        Row(horizontalArrangement = Arrangement.spacedBy(SpSpacing.Medium)) {
+            repeat(3) {
+                Column(verticalArrangement = Arrangement.spacedBy(SpSpacing.Small)) {
+                    SpShimmer(width = 140.dp, height = 190.dp)
+                    SpShimmer(width = 100.dp, height = 14.dp)
+                }
+            }
+        }
+        // Second section
+        SpShimmer(width = 120.dp, height = 20.dp)
+        Row(horizontalArrangement = Arrangement.spacedBy(SpSpacing.Medium)) {
+            repeat(3) {
+                Column(verticalArrangement = Arrangement.spacedBy(SpSpacing.Small)) {
+                    SpShimmer(width = 140.dp, height = 190.dp)
+                    SpShimmer(width = 80.dp, height = 14.dp)
+                }
+            }
+        }
+    }
 }

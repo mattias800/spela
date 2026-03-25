@@ -231,7 +231,16 @@ class GameListViewModel(
     }
 
     private fun loadGamesForConsole(consoleId: String) {
-        _state.update { it.copy(isLoading = true, selectedConsoleId = consoleId) }
+        _state.update {
+            it.copy(
+                isLoading = true,
+                selectedConsoleId = consoleId,
+                // Clear stale data from previous console so the UI shows
+                // a loading state instead of the old console's games.
+                games = emptyList(),
+                topRatedGames = emptyList(),
+            )
+        }
         scope.launch(dispatchers.io) {
             getGamesForConsoleUseCase(consoleId).fold(
                 onSuccess = { games ->
