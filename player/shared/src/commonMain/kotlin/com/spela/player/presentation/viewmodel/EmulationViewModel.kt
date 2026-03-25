@@ -123,6 +123,11 @@ class EmulationViewModel(
                 if (wasShowing) resumeGame() else pauseGame()
             }
             EmulationIntent.ToggleFastForward -> toggleFastForward()
+            is EmulationIntent.SetVolume -> {
+                val vol = intent.volume.coerceIn(0f, 1f)
+                libretroController.setVolume(vol)
+                _state.update { it.copy(volume = vol) }
+            }
             EmulationIntent.TakeScreenshot -> { /* Platform-specific capture */ }
 
             EmulationIntent.ShowExitConfirm -> {
@@ -1078,6 +1083,9 @@ interface LibretroController {
 
     /** Set pointer/touch state for the given port (used for DS touch screen). */
     fun setPointer(port: Int, x: Int, y: Int, pressed: Boolean) {}
+
+    /** Set audio volume (0.0 = mute, 1.0 = full). */
+    fun setVolume(volume: Float) {}
 
     /** Set a core option variable (e.g. DeSmuME screen layout). */
     fun setCoreVariable(key: String, value: String) {}

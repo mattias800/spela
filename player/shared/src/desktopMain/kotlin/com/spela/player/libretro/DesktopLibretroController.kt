@@ -168,6 +168,10 @@ class DesktopLibretroController(
         fastForward = enabled
     }
 
+    override fun setVolume(volume: Float) {
+        audioPlayer?.volume = volume.coerceIn(0f, 1f)
+    }
+
     override fun performanceStats(): Flow<Pair<Float, Float>> = flow {
         while (running) {
             emit(currentFps to currentFrameTime)

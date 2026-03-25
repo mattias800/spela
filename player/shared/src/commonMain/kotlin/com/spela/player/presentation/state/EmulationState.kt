@@ -72,6 +72,7 @@ data class EmulationState(
     val fps: Float = 0f,
     val frameTime: Float = 0f,
     val isFastForward: Boolean = false,
+    val volume: Float = 1f,
     val showKeyMapping: Boolean = false,
     val showGamepadConfig: Boolean = false,
     val error: String? = null,
