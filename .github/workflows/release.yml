@@ -228,27 +228,32 @@ jobs:
         if: runner.os == 'macOS'
         shell: bash
         run: |
-          DMG_PATH=$(ls player/desktop/build/compose/binaries/main/dmg/*.dmg)
-          echo "Signing $DMG_PATH"
-          # Mount the DMG
-          MOUNT_DIR=$(hdiutil attach "$DMG_PATH" -nobrowse -readonly | tail -1 | awk '{print $3}')
-          APP_NAME=$(ls "$MOUNT_DIR" | grep '\.app$' | head -1)
-          # Copy app out of read-only DMG
-          cp -R "$MOUNT_DIR/$APP_NAME" /tmp/"$APP_NAME"
-          hdiutil detach "$MOUNT_DIR"
+          # Sign the app bundle INSIDE the build output (before DMG was created).
+          # JPackage builds the .app first, then wraps it in a DMG. We sign the
+          # .app in-place and rebuild the DMG to preserve all contents (runtime, etc).
+          APP_DIR=$(ls -d player/desktop/build/compose/binaries/main/app/*.app 2>/dev/null | head -1)
+          if [ -z "$APP_DIR" ]; then
+            echo "No .app found in build output, skipping codesign"
+            exit 0
+          fi
+          echo "Signing $APP_DIR"
           # Ad-hoc sign all Mach-O binaries (JRE libs, native libs, launcher)
-          find /tmp/"$APP_NAME" -type f \( -name '*.dylib' -o -name '*.jnilib' -o -perm +111 \) | while read f; do
+          find "$APP_DIR" -type f \( -name '*.dylib' -o -name '*.jnilib' \) -print0 | while IFS= read -r -d '' f; do
+            codesign --force --sign - "$f" 2>/dev/null || true
+          done
+          find "$APP_DIR" -type f -perm +111 -print0 | while IFS= read -r -d '' f; do
             if file "$f" | grep -q 'Mach-O'; then
               codesign --force --sign - "$f" 2>/dev/null || true
             fi
           done
           # Sign the app bundle itself
-          codesign --force --deep --sign - /tmp/"$APP_NAME"
-          # Repackage as DMG
+          codesign --force --deep --sign - "$APP_DIR"
+          echo "Signed $APP_DIR"
+          # Rebuild DMG with the signed app
+          DMG_PATH=$(ls player/desktop/build/compose/binaries/main/dmg/*.dmg)
           rm "$DMG_PATH"
-          hdiutil create -volname "Spela" -srcfolder /tmp/"$APP_NAME" -ov -format UDZO "$DMG_PATH"
-          rm -rf /tmp/"$APP_NAME"
-          echo "Signed and repackaged $DMG_PATH"
+          hdiutil create -volname "Spela" -srcfolder "$APP_DIR" -ov -format UDZO "$DMG_PATH"
+          echo "Repackaged $DMG_PATH"
       - name: Upload artifact
         uses: actions/upload-artifact@v5
         with:
