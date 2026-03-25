@@ -51,7 +51,7 @@ internal fun ContinuePlayingRow(
         contentPadding = contentPadding,
         horizontalArrangement = Arrangement.spacedBy(SpSpacing.Medium),
     ) {
-        items(games, key = { it.id }) { game ->
+        items(games, key = { "continue_${it.id}" }) { game ->
             ContinuePlayingCard(
                 game = game,
                 onClick = { onGameSelected(game.id) },
@@ -89,12 +89,13 @@ internal fun ContinuePlayingCard(
 internal fun GameCarouselRow(
     games: List<Game>,
     onGameSelected: (String) -> Unit,
+    keyPrefix: String = "carousel",
 ) {
     LazyRow(
         contentPadding = PaddingValues(horizontal = SpSpacing.ScreenHorizontal),
         horizontalArrangement = Arrangement.spacedBy(SpSpacing.Medium),
     ) {
-        items(games, key = { it.id }) { game ->
+        items(games, key = { "${keyPrefix}_${it.id}" }) { game ->
             GameCoverCard(
                 game = game,
                 onClick = { onGameSelected(game.id) },

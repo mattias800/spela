@@ -324,6 +324,7 @@ fun HomeScreen(
                                         GameCarouselRow(
                                             games = state.playLaterGames.take(6),
                                             onGameSelected = onGameSelected,
+                                            keyPrefix = "playLater",
                                         )
                                     }
                                 }
@@ -347,6 +348,7 @@ fun HomeScreen(
                                         GameCarouselRow(
                                             games = state.favoriteGames.take(6),
                                             onGameSelected = onGameSelected,
+                                            keyPrefix = "favorites",
                                         )
                                     }
                                 }
@@ -364,6 +366,7 @@ fun HomeScreen(
                                         GameCarouselRow(
                                             games = state.recentlyAddedGames.take(6),
                                             onGameSelected = onGameSelected,
+                                            keyPrefix = "recentlyAdded",
                                         )
                                     }
                                 }
