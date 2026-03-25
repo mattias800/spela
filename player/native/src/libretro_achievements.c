@@ -239,12 +239,23 @@ void achievements_deinit(void) {
         rc_client_destroy(ach_state.client);
     }
 
-    if (ach_state.jni_env) {
+    /* Get a valid JNIEnv for the CURRENT thread. The cached jni_env was
+     * captured on the init thread, but deinit may run on a different
+     * coroutine dispatcher thread. Using a stale JNIEnv causes SIGSEGV. */
+    JNIEnv *env = NULL;
+    extern JavaVM *g_jvm;
+    if (g_jvm) {
+        int status = (*g_jvm)->GetEnv(g_jvm, (void **)&env, JNI_VERSION_1_6);
+        if (status == JNI_EDETACHED) {
+            (*g_jvm)->AttachCurrentThread(g_jvm, (void **)&env, NULL);
+        }
+    }
+    if (env) {
         if (ach_state.jni_thiz) {
-            (*ach_state.jni_env)->DeleteGlobalRef(ach_state.jni_env, ach_state.jni_thiz);
+            (*env)->DeleteGlobalRef(env, ach_state.jni_thiz);
         }
         if (ach_state.jni_class) {
-            (*ach_state.jni_env)->DeleteGlobalRef(ach_state.jni_env, ach_state.jni_class);
+            (*env)->DeleteGlobalRef(env, ach_state.jni_class);
         }
     }
 

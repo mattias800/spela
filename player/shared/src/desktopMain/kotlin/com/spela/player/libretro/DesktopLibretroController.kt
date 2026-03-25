@@ -133,21 +133,25 @@ class DesktopLibretroController(
         paused = false
     }
 
+    /** Set by emulation thread; signals that unload+deinit should happen on the emu thread. */
+    @Volatile
+    private var deinitOnEmuThread = false
+
     override fun stop() {
+        // Signal the emulation thread to run nativeUnloadGame + nativeDeinit
+        // before exiting. This ensures cores with thread-affine resources
+        // (e.g. Play! PS2's OpenGL context) are cleaned up on the correct thread.
+        deinitOnEmuThread = true
         running = false
         netplayTransport?.disconnect()
-        // No timeout: we MUST wait for retro_run() to return before calling
-        // nativeUnloadGame(). Calling unload while retro_run() is active causes
-        // a crash in the core.
         emulationThread?.join()
         emulationThread = null
+        deinitOnEmuThread = false
         // Don't deinit GPU here — it persists across game sessions on desktop.
         // The composable's onDispose handles GPU cleanup when the user leaves
         // the emulation screen. This prevents stop() (called as precautionary
         // cleanup in startGame) from destroying the renderer mid-lifecycle.
         clearNetplayMode()
-        jni.nativeUnloadGame()
-        jni.nativeDeinit()
     }
 
     override fun supportsSaveStates(): Boolean = jni.nativeSerializeSize() > 0
@@ -327,6 +331,13 @@ class DesktopLibretroController(
             val frameEnd = System.nanoTime()
             currentFrameTime = (frameEnd - frameStart) / 1_000_000f
         }
+
+        // Deinit on the emulation thread so cores with thread-affine resources
+        // (e.g. OpenGL contexts) are cleaned up on the correct thread.
+        if (deinitOnEmuThread) {
+            jni.nativeUnloadGame()
+            jni.nativeDeinit()
+        }
     }
 
     /**
@@ -434,6 +445,11 @@ class DesktopLibretroController(
 
             // Frame pacing (no fast forward in netplay)
             precisionSleep(frameStart + frameTimeNs)
+        }
+
+        if (deinitOnEmuThread) {
+            jni.nativeUnloadGame()
+            jni.nativeDeinit()
         }
     }
 

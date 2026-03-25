@@ -58,11 +58,10 @@ static FILE *bridge_log_get(void) {
 /* Global core instance */
 libretro_core_t g_core = {0};
 
-#ifdef __ANDROID__
-/* Global JavaVM pointer - needed to pass to cores that require JNI thread
- * attachment (e.g. Play! PS2). Captured from JNIEnv in nativeLoadCore(). */
-static JavaVM *g_jvm = NULL;
-#endif
+/* Global JavaVM pointer - needed for JNI thread attachment (e.g. Play! PS2)
+ * and for getting a valid JNIEnv on arbitrary threads (achievements deinit).
+ * Captured from JNIEnv in nativeLoadCore(). */
+JavaVM *g_jvm = NULL;
 
 /* GPU renderer instance - used by both env callbacks and JNI methods */
 static gpu_renderer_t *g_gpu_renderer = NULL;
@@ -654,11 +653,16 @@ static int core_load(const char *path) {
             g_core.retro_unload_game();
             g_core.game_loaded = false;
         }
-        if (g_core.initialized) {
+        if (g_core.initialized && !g_core.hw_gl_was_used) {
             g_core.retro_deinit();
             g_core.initialized = false;
+        } else if (g_core.hw_gl_was_used) {
+            LOGI("Skipping retro_deinit in core_load for GL HW core");
+            g_core.initialized = false;
         }
-        sp_dlclose(g_core.handle);
+        if (!g_core.hw_gl_was_used) {
+            sp_dlclose(g_core.handle);
+        }
         g_core.handle = NULL;
     }
 
@@ -743,13 +747,12 @@ static int core_load(const char *path) {
 #define JNI_FUNC(ret, name) JNIEXPORT ret JNICALL Java_com_spela_player_libretro_LibretroJni_##name
 
 JNI_FUNC(jboolean, nativeLoadCore)(JNIEnv *env, jobject thiz, jstring corePath) {
-#ifdef __ANDROID__
     /* Capture JavaVM pointer from JNIEnv - needed for cores like Play! PS2
-     * that spawn worker threads requiring JNI attachment. */
+     * that spawn worker threads, and for achievements deinit on coroutine
+     * dispatcher threads that need a valid JNIEnv. */
     if (!g_jvm) {
         (*env)->GetJavaVM(env, &g_jvm);
     }
-#endif
 
     const char *path = (*env)->GetStringUTFChars(env, corePath, NULL);
     int result = core_load(path);
@@ -876,6 +879,7 @@ JNI_FUNC(jboolean, nativeLoadGame)(JNIEnv *env, jobject thiz, jstring gamePath) 
         if (g_core.hw_render_enabled &&
             g_core.hw_render_callback.context_type != RETRO_HW_CONTEXT_VULKAN) {
             g_core.hw_gl_ctx = hw_gl_create();
+            g_core.hw_gl_was_used = (g_core.hw_gl_ctx != NULL);
             if (g_core.hw_gl_ctx) {
                 unsigned vmaj = g_core.hw_render_callback.version_major;
                 unsigned vmin = g_core.hw_render_callback.version_minor;
@@ -1021,6 +1025,34 @@ JNI_FUNC(void, nativeUnloadGame)(JNIEnv *env, jobject thiz) {
 
 JNI_FUNC(void, nativeDeinit)(JNIEnv *env, jobject thiz) {
     if (!g_core.initialized) return;
+
+    /* GL HW render cores (e.g. Play! PS2) crash in retro_deinit because
+     * their internal GL state is corrupted during cleanup. Skip the entire
+     * normal deinit path — just unload the game and mark as deinitialized.
+     * The library stays loaded (dlclose is also skipped). */
+    if (g_core.hw_gl_was_used) {
+        LOGI("GL HW core: skipping retro_deinit, unloading game only");
+        if (g_core.game_loaded) {
+            g_core.retro_unload_game();
+            g_core.game_loaded = false;
+        }
+        g_core.initialized = false;
+        video_deinit();
+        input_deinit();
+        audio_deinit();
+        g_core.hw_vk_negotiation = NULL;
+        g_core.hw_render_enabled = false;
+        memset(&g_core.hw_render_callback, 0, sizeof(g_core.hw_render_callback));
+        if (g_core.hw_gl_ctx) {
+            hw_gl_destroy(g_core.hw_gl_ctx);
+            g_core.hw_gl_ctx = NULL;
+        }
+        /* Skip dlclose — keep library loaded */
+        g_core.handle = NULL;
+        LOGI("GL HW core deinitialized (retro_deinit skipped)");
+        return;
+    }
+
     if (g_core.game_loaded) {
         /* Clean up Vulkan HW render if still active */
         if (g_core.hw_render_enabled && g_gpu_renderer &&
@@ -1034,20 +1066,51 @@ JNI_FUNC(void, nativeDeinit)(JNIEnv *env, jobject thiz) {
             gpu_renderer_hw_vulkan_deinit(g_gpu_renderer);
             g_core.hw_render_enabled = false;
         }
-        /* Clean up GL/GLES HW render if still active */
-        if (g_core.hw_render_enabled && g_core.hw_gl_ctx) {
-            if (g_core.hw_render_callback.context_destroy) {
+        /* Clean up GL/GLES HW render core.
+         * Skip retro_deinit for GL HW render cores — cores like Play! PS2
+         * crash in retro_deinit → Release() because their internal GL state
+         * is already corrupted by the time cleanup runs. The library stays
+         * loaded (dlclose is skipped for HW cores), so OS cleanup handles
+         * resource deallocation. retro_unload_game is safe to call.
+         * Use the sticky hw_gl_was_used flag — both hw_render_enabled and
+         * hw_gl_ctx may already be cleared by context_destroy during emulation. */
+        LOGI("nativeDeinit: hw_gl_was_used=%d hw_gl_ctx=%p hw_render_enabled=%d initialized=%d game_loaded=%d",
+             g_core.hw_gl_was_used, (void*)g_core.hw_gl_ctx, g_core.hw_render_enabled,
+             g_core.initialized, g_core.game_loaded);
+        if (g_core.hw_gl_was_used) {
+            if (g_core.hw_gl_ctx) {
                 hw_gl_make_current(g_core.hw_gl_ctx);
-                g_core.hw_render_callback.context_destroy();
+                if (g_core.hw_render_callback.context_destroy) {
+                    g_core.hw_render_callback.context_destroy();
+                }
             }
-            hw_gl_destroy(g_core.hw_gl_ctx);
-            g_core.hw_gl_ctx = NULL;
+            if (g_core.game_loaded) {
+                g_core.retro_unload_game();
+                g_core.game_loaded = false;
+            }
+            /* Skip retro_deinit — crashes in Play! PS2 GL cleanup */
+            LOGI("Skipping retro_deinit for GL HW render core (known crash in GL cleanup)");
+            g_core.initialized = false;
+            if (g_core.hw_gl_ctx) {
+                hw_gl_destroy(g_core.hw_gl_ctx);
+                g_core.hw_gl_ctx = NULL;
+            }
             g_core.hw_render_enabled = false;
+            /* Keep hw_gl_was_used = true — the core library is still loaded
+             * (dlclose is skipped), so subsequent runs need the same treatment. */
         }
-        g_core.retro_unload_game();
-        g_core.game_loaded = false;
+        if (g_core.game_loaded) {
+            g_core.retro_unload_game();
+            g_core.game_loaded = false;
+        }
     }
-    g_core.retro_deinit();
+    if (g_core.initialized) {
+        if (g_core.hw_gl_was_used) {
+            LOGI("Skipping retro_deinit (GL HW core, final path)");
+        } else {
+            g_core.retro_deinit();
+        }
+    }
     g_core.initialized = false;
     video_deinit();
     input_deinit();
@@ -1073,7 +1136,11 @@ JNI_FUNC(void, nativeDeinit)(JNIEnv *env, jobject thiz) {
             sp_dlclose(g_core.handle);
         }
 #else
-        sp_dlclose(g_core.handle);
+        if (g_core.hw_gl_was_used) {
+            LOGI("Skipping dlclose for GL HW render core");
+        } else {
+            sp_dlclose(g_core.handle);
+        }
 #endif
         g_core.handle = NULL;
     }
