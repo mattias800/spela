@@ -64,14 +64,19 @@ func TestDownloadMissing_SuccessfulDownload(t *testing.T) {
 func TestDownloadMissing_SkipsExistingFiles(t *testing.T) {
 	biosDir := t.TempDir()
 
-	// Pre-create the file
-	err := os.WriteFile(filepath.Join(biosDir, "existing.bin"), []byte("already here"), 0644)
+	// Pre-create the file with enough data to pass the minimum size check (>= 1KB)
+	bigContent := make([]byte, 2048)
+	for i := range bigContent {
+		bigContent[i] = byte(i % 256)
+	}
+	err := os.WriteFile(filepath.Join(biosDir, "existing.bin"), bigContent, 0644)
 	require.NoError(t, err)
 
 	origRegistry := make([]Entry, len(registry))
 	copy(origRegistry, registry)
 	registry = []Entry{
-		{ConsoleID: "psx", FileName: "existing.bin", Description: "Existing BIOS", MD5: "abc", Required: true},
+		// No MD5 set — skips checksum validation for existing files
+		{ConsoleID: "psx", FileName: "existing.bin", Description: "Existing BIOS", Required: true},
 	}
 	defer func() { registry = origRegistry }()
 
@@ -206,8 +211,9 @@ func TestDownloadMissing_NilProgressCallback(t *testing.T) {
 	}
 	defer func() { registry = origRegistry }()
 
-	// Pre-create so it gets skipped
-	os.WriteFile(filepath.Join(biosDir, "skip_me.bin"), []byte("x"), 0644)
+	// Pre-create with enough data to pass minimum size check
+	skipContent := make([]byte, 2048)
+	os.WriteFile(filepath.Join(biosDir, "skip_me.bin"), skipContent, 0644)
 
 	// Should not panic with nil callback
 	result := DownloadMissing(biosDir, "http://unused", nil)

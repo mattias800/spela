@@ -57,15 +57,40 @@ func DownloadMissing(biosDir, baseURL string, onProgress func(DownloadProgress))
 			Total:     total,
 		}
 
-		// Skip if already present
+		// Skip if already present and valid.
+		// Re-download if the file is suspiciously small (< 1KB, likely a
+		// placeholder from a failed earlier download) or if it fails MD5
+		// validation when a checksum is available.
 		destPath := entry.FilePath(biosDir)
-		if _, err := os.Stat(destPath); err == nil {
-			progress.Status = "skipped"
-			result.Skipped++
-			if onProgress != nil {
-				onProgress(progress)
+		if info, err := os.Stat(destPath); err == nil {
+			needsRedownload := false
+			if info.Size() < 1024 {
+				slog.Warn("BIOS file too small, re-downloading",
+					"file", entry.FileName, "size", info.Size())
+				needsRedownload = true
+			} else if entry.MD5 != "" {
+				if f, err := os.Open(destPath); err == nil {
+					h := md5.New()
+					io.Copy(h, f)
+					f.Close()
+					actual := hex.EncodeToString(h.Sum(nil))
+					if actual != entry.MD5 {
+						slog.Warn("BIOS file MD5 mismatch, re-downloading",
+							"file", entry.FileName, "expected", entry.MD5, "actual", actual)
+						needsRedownload = true
+					}
+				}
 			}
-			continue
+			if needsRedownload {
+				os.Remove(destPath)
+			} else {
+				progress.Status = "skipped"
+				result.Skipped++
+				if onProgress != nil {
+					onProgress(progress)
+				}
+				continue
+			}
 		}
 
 		// Use OverrideURL if set, otherwise build from repo base URL
