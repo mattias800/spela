@@ -39,7 +39,12 @@ private const val REWIND_BUFFER_SIZE = 300 // ~60 seconds at 5fps capture rate
 private const val REWIND_CAPTURE_INTERVAL_MS = 200L // Capture every 200ms (~5 per second)
 
 /** Stores parameters for a pending game launch while pre-launch sync is in progress. */
-data class PendingLaunch(val gameId: String, val skipAutoLoad: Boolean, val sessionId: String? = null)
+data class PendingLaunch(
+    val gameId: String,
+    val skipAutoLoad: Boolean,
+    val forceNewSession: Boolean = false,
+    val sessionId: String? = null,
+)
 
 /**
  * Bridges between Compose UI and the platform-specific libretro core.
@@ -110,7 +115,7 @@ class EmulationViewModel(
                 intent.gameId, intent.sharedSessionId, intent.turnToken,
                 intent.netplaySessionId, intent.netplayLocalPort, intent.netplayInputDelay, intent.netplayIsHost,
                 intent.challengeId, intent.challengeSaveData, intent.skipAutoLoad,
-                intent.sessionId,
+                intent.forceNewSession, intent.sessionId,
             )
             EmulationIntent.PauseGame -> pauseGame()
             EmulationIntent.ResumeGame -> resumeGame()
@@ -209,7 +214,7 @@ class EmulationViewModel(
             EmulationIntent.ToggleRewind -> toggleRewindEnabled()
 
             // Pre-launch sync
-            is EmulationIntent.PrepareLaunch -> prepareLaunch(intent.gameId, intent.skipAutoLoad, intent.sessionId)
+            is EmulationIntent.PrepareLaunch -> prepareLaunch(intent.gameId, intent.skipAutoLoad, intent.forceNewSession, intent.sessionId)
             EmulationIntent.PlayWithLocalSave -> playWithLocalSave()
             EmulationIntent.CancelLaunch -> cancelLaunch()
 
@@ -242,6 +247,7 @@ class EmulationViewModel(
         challengeId: String? = null,
         challengeSaveDataArg: ByteArray? = null,
         skipAutoLoad: Boolean = false,
+        forceNewSession: Boolean = false,
         sessionId: String? = null,
     ) {
         saveManager.currentSessionId = sessionId
@@ -320,10 +326,10 @@ class EmulationViewModel(
             }
 
             // Auto-create or reuse session for normal play (not shared/netplay/challenge).
-            // When skipAutoLoad is true ("New Game"), force a fresh session to avoid
-            // overwriting auto-saves from a previous playthrough.
+            // forceNewSession creates a brand new session (e.g. "New Game"), while
+            // skipAutoLoad alone reuses the existing session but skips save state restore.
             if (sharedSessionId == null && netplaySessionId == null && challengeId == null) {
-                val resolvedSessionId = saveManager.ensureSession(gameId, sessionId, forceNew = skipAutoLoad)
+                val resolvedSessionId = saveManager.ensureSession(gameId, sessionId, forceNew = forceNewSession)
                 saveManager.currentSessionId = resolvedSessionId
                 if (resolvedSessionId != null && resolvedSessionId != sessionId) {
                     withContext(dispatchers.main) {
@@ -548,8 +554,8 @@ class EmulationViewModel(
         }
     }
 
-    private fun prepareLaunch(gameId: String, skipAutoLoad: Boolean, sessionId: String? = null) {
-        pendingLaunch = PendingLaunch(gameId, skipAutoLoad, sessionId)
+    private fun prepareLaunch(gameId: String, skipAutoLoad: Boolean, forceNewSession: Boolean = false, sessionId: String? = null) {
+        pendingLaunch = PendingLaunch(gameId, skipAutoLoad, forceNewSession, sessionId)
         scope.launch(dispatchers.io) {
             _syncState.update { null }
             val pending = pendingLaunch ?: return@launch

@@ -2,6 +2,7 @@ package com.spela.player.presentation.ui.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -32,6 +33,7 @@ import com.spela.player.presentation.ui.theme.SpTypography
 
 data class SpSplitButtonMenuItem(
     val label: String,
+    val description: String? = null,
     val onClick: () -> Unit,
 )
 
@@ -128,10 +130,19 @@ fun SpSplitButton(
                 menuItems.forEach { item ->
                     DropdownMenuItem(
                         text = {
-                            Text(
-                                text = item.label,
-                                style = SpTypography.BodyMedium,
-                            )
+                            Column {
+                                Text(
+                                    text = item.label,
+                                    style = SpTypography.BodyMedium,
+                                )
+                                if (item.description != null) {
+                                    Text(
+                                        text = item.description,
+                                        style = SpTypography.BodySmall,
+                                        color = SpColor.OnSurfaceVariant,
+                                    )
+                                }
+                            }
                         },
                         onClick = {
                             expanded = false
