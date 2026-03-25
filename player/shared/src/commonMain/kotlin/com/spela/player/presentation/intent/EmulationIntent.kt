@@ -21,6 +21,7 @@ sealed interface EmulationIntent {
     data object LoadState : EmulationIntent
     data object ToggleOverlay : EmulationIntent
     data object ToggleFastForward : EmulationIntent
+    data class SetVolume(val volume: Float) : EmulationIntent
     data object TakeScreenshot : EmulationIntent
 
     data object ShowExitConfirm : EmulationIntent

@@ -28,7 +28,11 @@ import androidx.compose.material.icons.filled.Save
 import androidx.compose.material.icons.filled.Code
 import androidx.compose.material.icons.filled.SportsEsports
 import androidx.compose.material.icons.filled.Stop
+import androidx.compose.material.icons.filled.VolumeUp
+import androidx.compose.material.icons.filled.VolumeOff
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
+import com.spela.player.presentation.ui.components.SpSlider
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -282,7 +286,32 @@ internal fun InGameOverlayPanel(
                         )
                     }
 
-                    Spacer(Modifier.height(if (isLandscape) SpSpacing.Medium else SpSpacing.XLarge))
+                    Spacer(Modifier.height(if (isLandscape) SpSpacing.Medium else SpSpacing.Large))
+
+                    // Volume slider
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(SpSpacing.Small),
+                    ) {
+                        Icon(
+                            imageVector = if (state.volume < 0.01f) Icons.Filled.VolumeOff else Icons.Filled.VolumeUp,
+                            contentDescription = "Volume",
+                            tint = SpColor.OnBackgroundSecondary,
+                        )
+                        SpSlider(
+                            value = state.volume,
+                            onValueChange = { viewModel.onIntent(EmulationIntent.SetVolume(it)) },
+                            modifier = Modifier.weight(1f),
+                        )
+                        Text(
+                            text = "${(state.volume * 100).toInt()}%",
+                            style = SpTypography.LabelSmall,
+                            color = SpColor.OnBackgroundSecondary,
+                        )
+                    }
+
+                    Spacer(Modifier.height(if (isLandscape) SpSpacing.Medium else SpSpacing.Large))
 
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -381,3 +410,4 @@ internal fun OverlayAction(
         isActive = isActive,
     )
 }
+

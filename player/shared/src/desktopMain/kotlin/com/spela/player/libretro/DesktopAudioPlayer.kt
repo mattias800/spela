@@ -26,6 +26,10 @@ class DesktopAudioPlayer(private val controller: DesktopLibretroController) {
     private var sourceDataLine: SourceDataLine? = null
     private var initAttempted = false
 
+    /** Volume level 0.0 (mute) to 1.0 (full). Applied to samples in writeSync. */
+    @Volatile
+    var volume: Float = 1.0f
+
     // Pre-allocated conversion buffer (resized if needed)
     private var conversionBuffer = ByteBuffer.allocate(0).order(ByteOrder.LITTLE_ENDIAN)
 
@@ -99,7 +103,19 @@ class DesktopAudioPlayer(private val controller: DesktopLibretroController) {
             conversionBuffer = ByteBuffer.allocate(needed).order(ByteOrder.LITTLE_ENDIAN)
         }
         conversionBuffer.clear()
-        conversionBuffer.asShortBuffer().put(samples)
+        // Apply logarithmic volume curve: human hearing is logarithmic, so
+        // a linear slider position needs exponential scaling to feel natural.
+        // vol^3 gives a good perceptual curve (50% slider ≈ 12.5% amplitude).
+        val linear = volume
+        val vol = linear * linear * linear
+        val shortBuf = conversionBuffer.asShortBuffer()
+        if (vol >= 0.999f) {
+            shortBuf.put(samples)
+        } else {
+            for (s in samples) {
+                shortBuf.put((s * vol).toInt().coerceIn(Short.MIN_VALUE.toInt(), Short.MAX_VALUE.toInt()).toShort())
+            }
+        }
         line.write(conversionBuffer.array(), 0, needed)
         return true
     }
