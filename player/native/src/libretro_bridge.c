@@ -58,11 +58,10 @@ static FILE *bridge_log_get(void) {
 /* Global core instance */
 libretro_core_t g_core = {0};
 
-#ifdef __ANDROID__
-/* Global JavaVM pointer - needed to pass to cores that require JNI thread
- * attachment (e.g. Play! PS2). Captured from JNIEnv in nativeLoadCore(). */
-static JavaVM *g_jvm = NULL;
-#endif
+/* Global JavaVM pointer - needed for JNI thread attachment (e.g. Play! PS2)
+ * and for getting a valid JNIEnv on arbitrary threads (achievements deinit).
+ * Captured from JNIEnv in nativeLoadCore(). */
+JavaVM *g_jvm = NULL;
 
 /* GPU renderer instance - used by both env callbacks and JNI methods */
 static gpu_renderer_t *g_gpu_renderer = NULL;
@@ -743,13 +742,12 @@ static int core_load(const char *path) {
 #define JNI_FUNC(ret, name) JNIEXPORT ret JNICALL Java_com_spela_player_libretro_LibretroJni_##name
 
 JNI_FUNC(jboolean, nativeLoadCore)(JNIEnv *env, jobject thiz, jstring corePath) {
-#ifdef __ANDROID__
     /* Capture JavaVM pointer from JNIEnv - needed for cores like Play! PS2
-     * that spawn worker threads requiring JNI attachment. */
+     * that spawn worker threads, and for achievements deinit on coroutine
+     * dispatcher threads that need a valid JNIEnv. */
     if (!g_jvm) {
         (*env)->GetJavaVM(env, &g_jvm);
     }
-#endif
 
     const char *path = (*env)->GetStringUTFChars(env, corePath, NULL);
     int result = core_load(path);
