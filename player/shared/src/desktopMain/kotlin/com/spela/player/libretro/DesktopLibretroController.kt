@@ -154,7 +154,11 @@ class DesktopLibretroController(
         clearNetplayMode()
     }
 
-    override fun supportsSaveStates(): Boolean = jni.nativeSerializeSize() > 0
+    // Always report true — calling nativeSerializeSize() from a non-GL thread
+    // crashes PPSSPP (and potentially other GL HW render cores) because they
+    // flush their GL render queue during serialize. If a core doesn't support
+    // save states, serialize() itself will return null gracefully.
+    override fun supportsSaveStates(): Boolean = true
 
     override fun serialize(): ByteArray? = jni.nativeSerialize()
 

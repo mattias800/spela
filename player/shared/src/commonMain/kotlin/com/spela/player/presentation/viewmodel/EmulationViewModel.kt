@@ -475,11 +475,14 @@ class EmulationViewModel(
                         // Populate save slot thumbnails for the secondary screen
                         saveManager.refreshSaveSlots()
 
-                        // Re-check save state support after core has run a few frames
+                        // Re-check save state support after core has run a few frames.
+                        // Skip for GL HW render cores (e.g. PPSSPP) — calling
+                        // nativeSerializeSize triggers GL calls that crash on the
+                        // IO dispatcher thread. Default of true (set above) is fine.
                         println("[Emulation] Starting 3-second delay for HW render init")
                         kotlinx.coroutines.delay(3000)
                         println("[Emulation] 3-second delay completed, checking save state support")
-                        val saveStatesSupported = libretroController.supportsSaveStates()
+                        val saveStatesSupported = if (hwRender) true else libretroController.supportsSaveStates()
                         println("[Emulation] saveStatesSupported=$saveStatesSupported")
                         withContext(dispatchers.main) {
                             _state.update { it.copy(supportsSaveStates = saveStatesSupported) }
