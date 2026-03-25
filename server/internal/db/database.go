@@ -823,7 +823,7 @@ func SeedConsoles(db *gorm.DB) error {
 		{Name: "Atari 5200", Abbreviation: "A52", Extensions: ".a52,.bin", DefaultCore: "atari800", EmulatorJSCore: "atari800", FolderName: "atari5200", ColorTheme: "#8b4513", Generation: 2, SaveStateSupport: true, Playable: true},
 		{Name: "ColecoVision", Abbreviation: "CV", Extensions: ".col,.rom", DefaultCore: "gearcoleco", EmulatorJSCore: "gearcoleco", FolderName: "colecovision", ColorTheme: "#000000", Generation: 2, SaveStateSupport: true, Playable: true},
 		// Home Computers (generation = 100)
-		{Name: "Commodore 64", Abbreviation: "C64", Extensions: ".d64,.t64,.prg,.crt", DefaultCore: "vice_x64", EmulatorJSCore: "vice_x64", FolderName: "c64", ColorTheme: "#6c5eb5", Generation: 100, SaveStateSupport: true, Playable: true},
+		{Name: "Commodore 64", Abbreviation: "C64", Extensions: ".d64,.t64,.prg,.crt,.tap", DefaultCore: "vice_x64sc", EmulatorJSCore: "vice_x64sc", FolderName: "c64", ColorTheme: "#6c5eb5", Generation: 100, SaveStateSupport: true, Playable: true},
 		{Name: "Commodore 128", Abbreviation: "C128", Extensions: ".d64,.d71,.d81,.t64,.prg,.crt", DefaultCore: "vice_x128", EmulatorJSCore: "vice_x128", FolderName: "c128", ColorTheme: "#6c5eb5", Generation: 100, SaveStateSupport: true, Playable: true},
 		{Name: "Commodore PET", Abbreviation: "PET", Extensions: ".prg,.d64,.t64", DefaultCore: "vice_xpet", EmulatorJSCore: "vice_xpet", FolderName: "pet", ColorTheme: "#6c5eb5", Generation: 100, SaveStateSupport: true, Playable: true},
 		{Name: "Commodore Plus/4", Abbreviation: "PLUS4", Extensions: ".prg,.d64,.t64", DefaultCore: "vice_xplus4", EmulatorJSCore: "vice_xplus4", FolderName: "plus4", ColorTheme: "#6c5eb5", Generation: 100, SaveStateSupport: true, Playable: true},
