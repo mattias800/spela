@@ -224,6 +224,31 @@ jobs:
         working-directory: player
         shell: bash
         run: ./gradlew ${{ matrix.format }} -PappVersion=${RELEASE_TAG#v}
+      - name: Ad-hoc codesign macOS app
+        if: runner.os == 'macOS'
+        shell: bash
+        run: |
+          DMG_PATH=$(ls player/desktop/build/compose/binaries/main/dmg/*.dmg)
+          echo "Signing $DMG_PATH"
+          # Mount the DMG
+          MOUNT_DIR=$(hdiutil attach "$DMG_PATH" -nobrowse -readonly | tail -1 | awk '{print $3}')
+          APP_NAME=$(ls "$MOUNT_DIR" | grep '\.app$' | head -1)
+          # Copy app out of read-only DMG
+          cp -R "$MOUNT_DIR/$APP_NAME" /tmp/"$APP_NAME"
+          hdiutil detach "$MOUNT_DIR"
+          # Ad-hoc sign all Mach-O binaries (JRE libs, native libs, launcher)
+          find /tmp/"$APP_NAME" -type f \( -name '*.dylib' -o -name '*.jnilib' -o -perm +111 \) | while read f; do
+            if file "$f" | grep -q 'Mach-O'; then
+              codesign --force --sign - "$f" 2>/dev/null || true
+            fi
+          done
+          # Sign the app bundle itself
+          codesign --force --deep --sign - /tmp/"$APP_NAME"
+          # Repackage as DMG
+          rm "$DMG_PATH"
+          hdiutil create -volname "Spela" -srcfolder /tmp/"$APP_NAME" -ov -format UDZO "$DMG_PATH"
+          rm -rf /tmp/"$APP_NAME"
+          echo "Signed and repackaged $DMG_PATH"
       - name: Upload artifact
         uses: actions/upload-artifact@v5
         with:
