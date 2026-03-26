@@ -52,6 +52,7 @@ import { CoverGalleryPage } from "@/pages/cover-gallery-page";
 import { ChallengeDetailPage } from "@/pages/challenge-detail-page";
 import { SessionDetailPage } from "@/pages/session-detail-page";
 import { SetupWizardPage } from "@/pages/setup-wizard-page";
+import { StoragePage } from "@/pages/storage-page";
 import { LibraryLayout } from "@/components/library-layout";
 import { ErrorBoundary } from "@/components/error-boundary";
 import { useTheme } from "@/hooks/use-theme";
@@ -179,6 +180,7 @@ export function App() {
                     <Route path="netplay/:id" element={<NetplaySessionPage />} />
                     <Route path="users/:id" element={<UserProfilePage />} />
                     <Route path="preferences" element={<PreferencesPage />} />
+                    <Route path="storage" element={<StoragePage />} />
                     <Route path="licenses" element={<LicensesPage />} />
 
                     {/* Admin routes */}

@@ -10,6 +10,7 @@ import {
   Repeat,
   Wifi,
   SlidersHorizontal,
+  HardDrive,
   Settings,
   Users,
   ScanSearch,
@@ -101,6 +102,7 @@ export function AppLayout() {
           badge: netplayBadge,
         },
         { to: "/preferences", icon: SlidersHorizontal, label: "Preferences" },
+        { to: "/storage", icon: HardDrive, label: "Storage" },
       ],
     },
     ...(isAdmin

@@ -1548,3 +1548,21 @@ export interface CompletionistMapResponse {
   totalPlayed: number;
   overallPct: number;
 }
+
+export interface StorageConsoleBreakdown {
+  consoleId: string;
+  consoleName: string;
+  bytes: number;
+  saveCount: number;
+}
+
+export interface StorageInfo {
+  usedBytes: number;
+  quotaBytes: number;
+  byConsole: StorageConsoleBreakdown[];
+}
+
+export interface CompactSavesResult {
+  deletedCount: number;
+  freedBytes: number;
+}

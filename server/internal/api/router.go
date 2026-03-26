@@ -338,6 +338,7 @@ func NewRouter(cfg Config) (*gin.Engine, func()) {
 		api.GET("/sessions/:id/cheats", sessionHandler.GetSessionCheats)
 		api.PUT("/sessions/:id/cheats", sessionHandler.UpdateSessionCheats)
 		api.POST("/sessions/:id/duplicate", sessionHandler.DuplicateSession)
+		api.DELETE("/sessions/:id/saves", sessionHandler.BulkDeleteSessionSaves)
 
 		// Ratings
 		api.POST("/games/:id/ratings", ratingHandler.CreateOrUpdateRating)
@@ -381,6 +382,10 @@ func NewRouter(cfg Config) (*gin.Engine, func()) {
 		api.GET("/user/favorites", userHandler.GetFavorites)
 		api.POST("/user/favorites/:gameId", userHandler.AddFavorite)
 		api.DELETE("/user/favorites/:gameId", userHandler.RemoveFavorite)
+
+		// Storage management
+		api.GET("/user/storage", sessionHandler.GetStorageUsage)
+		api.POST("/user/saves/compact", sessionHandler.CompactSaves)
 
 		// Per-game key mappings
 		api.GET("/user/games/:gameId/keymapping", gameKeyMappingHandler.GetGameKeyMapping)
