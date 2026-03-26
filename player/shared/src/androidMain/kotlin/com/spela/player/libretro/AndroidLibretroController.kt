@@ -265,6 +265,18 @@ class AndroidLibretroController(
         jni.nativeSetInputPointer(port, x, y, pressed)
     }
 
+    override fun setMouse(port: Int, dx: Short, dy: Short, left: Boolean, right: Boolean) {
+        jni.nativeSetInputMouse(port, dx, dy, left, right)
+    }
+
+    override fun setKeyboardKey(key: Int, pressed: Boolean) {
+        jni.nativeSetInputKeyboard(key, pressed)
+    }
+
+    override fun setControllerPortDevice(port: Int, device: Int) {
+        jni.nativeSetControllerPortDevice(port, device)
+    }
+
     override fun setCoreVariable(key: String, value: String) {
         jni.nativeSetCoreVariable(key, value)
     }

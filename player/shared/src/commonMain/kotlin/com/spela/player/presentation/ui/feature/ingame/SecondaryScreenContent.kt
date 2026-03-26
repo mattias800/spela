@@ -208,8 +208,25 @@ fun SecondaryScreenContent(
                             SecondaryControlsPage(
                                 controller = controller,
                                 touchControlPort = state.touchControlPort,
+                                selectedTab = state.selectedControlTab,
+                                consoleId = state.consoleId,
                                 onSelectPort = { port ->
                                     viewModel.onIntent(EmulationIntent.SelectTouchControlPort(port))
+                                },
+                                onSelectTab = { tab ->
+                                    viewModel.onIntent(EmulationIntent.SelectControlTab(tab))
+                                },
+                                onKeyDown = { key ->
+                                    controller.setKeyboardKey(key, true)
+                                },
+                                onKeyUp = { key ->
+                                    controller.setKeyboardKey(key, false)
+                                },
+                                onMouseMove = { dx, dy ->
+                                    controller.setMouse(0, dx.toInt().toShort(), dy.toInt().toShort(), false, false)
+                                },
+                                onMouseButton = { left, right ->
+                                    controller.setMouse(0, 0, 0, left, right)
                                 },
                             )
                         }

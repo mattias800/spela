@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -20,6 +21,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
+import com.spela.player.presentation.state.ControlTab
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.ui.theme.SpTypography
@@ -28,27 +30,75 @@ import com.spela.player.presentation.viewmodel.LibretroController
 /**
  * Controls page for the secondary screen companion.
  *
- * Shows a P1/P2 port selector toggle above the platform touch controls,
- * allowing the user to choose which player port the on-screen buttons target.
+ * Shows a segmented control (Gamepad | Keyboard | Trackpad) above the
+ * active input mode content. The Gamepad tab includes the P1/P2 port
+ * selector and platform touch controls.
  */
 @Composable
 fun SecondaryControlsPage(
     controller: LibretroController,
     touchControlPort: Int,
+    selectedTab: ControlTab,
+    consoleId: String,
     onSelectPort: (Int) -> Unit,
+    onSelectTab: (ControlTab) -> Unit,
+    onKeyDown: (Int) -> Unit,
+    onKeyUp: (Int) -> Unit,
+    onMouseMove: (dx: Float, dy: Float) -> Unit,
+    onMouseButton: (left: Boolean, right: Boolean) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Column(
         modifier = modifier.fillMaxSize(),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        // Port selector toggle row
+        // Segmented control tab selector
+        ControlTabSelector(
+            selectedTab = selectedTab,
+            onSelectTab = onSelectTab,
+        )
+
+        // Tab content filling remaining space
+        when (selectedTab) {
+            ControlTab.GAMEPAD -> GamepadTabContent(
+                controller = controller,
+                touchControlPort = touchControlPort,
+                onSelectPort = onSelectPort,
+                modifier = Modifier.weight(1f),
+            )
+            ControlTab.KEYBOARD -> SecondaryKeyboardTab(
+                consoleId = consoleId,
+                onKeyDown = onKeyDown,
+                onKeyUp = onKeyUp,
+                modifier = Modifier.weight(1f),
+            )
+            ControlTab.TRACKPAD -> SecondaryTrackpadTab(
+                onMouseMove = onMouseMove,
+                onMouseButton = onMouseButton,
+                modifier = Modifier.weight(1f),
+            )
+        }
+    }
+}
+
+/**
+ * Gamepad tab content: P1/P2 port selector + platform touch controls.
+ */
+@Composable
+private fun GamepadTabContent(
+    controller: LibretroController,
+    touchControlPort: Int,
+    onSelectPort: (Int) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Column(
+        modifier = modifier,
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
         PortSelectorRow(
             selectedPort = touchControlPort,
             onSelectPort = onSelectPort,
         )
-
-        // Touch controls filling remaining space
         PlatformTouchControls(
             controller = controller,
             modifier = Modifier.weight(1f),
@@ -58,8 +108,65 @@ fun SecondaryControlsPage(
 }
 
 /**
- * Segmented button row for selecting the touch control port (P1 / P2).
+ * Pill-style segmented control for switching between input tabs.
  */
+@Composable
+private fun ControlTabSelector(
+    selectedTab: ControlTab,
+    onSelectTab: (ControlTab) -> Unit,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = SpSpacing.Medium, vertical = SpSpacing.Small)
+            .semantics {
+                contentDescription = "Input mode: ${selectedTab.id}"
+            },
+        horizontalArrangement = Arrangement.Center,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        ControlTab.entries.forEachIndexed { index, tab ->
+            if (index > 0) Spacer(Modifier.width(4.dp))
+            TabPill(
+                label = tab.id.replaceFirstChar { it.uppercase() },
+                isSelected = tab == selectedTab,
+                onClick = { onSelectTab(tab) },
+                contentDesc = "${tab.id.replaceFirstChar { it.uppercase() }} input mode",
+            )
+        }
+    }
+}
+
+@Composable
+private fun TabPill(
+    label: String,
+    isSelected: Boolean,
+    onClick: () -> Unit,
+    contentDesc: String,
+) {
+    val backgroundColor = if (isSelected) SpColor.Primary else SpColor.SurfaceVariant
+    val textColor = if (isSelected) SpColor.OnBackground else SpColor.OnBackgroundSecondary
+
+    Box(
+        modifier = Modifier
+            .defaultMinSize(minHeight = 36.dp)
+            .clip(RoundedCornerShape(SpSpacing.Small))
+            .background(backgroundColor)
+            .clickable(onClick = onClick)
+            .padding(horizontal = SpSpacing.Medium, vertical = SpSpacing.XSmall)
+            .semantics { contentDescription = contentDesc },
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(
+            text = label,
+            style = SpTypography.LabelMedium,
+            color = textColor,
+        )
+    }
+}
+
+// --- Port selector ---
+
 @Composable
 private fun PortSelectorRow(
     selectedPort: Int,
@@ -74,27 +181,12 @@ private fun PortSelectorRow(
         horizontalArrangement = Arrangement.Center,
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        PortPillButton(
-            label = "P1",
-            port = 0,
-            isSelected = selectedPort == 0,
-            onSelect = onSelectPort,
-        )
-
+        PortPillButton(label = "P1", port = 0, isSelected = selectedPort == 0, onSelect = onSelectPort)
         Spacer(Modifier.width(SpSpacing.Small))
-
-        PortPillButton(
-            label = "P2",
-            port = 1,
-            isSelected = selectedPort == 1,
-            onSelect = onSelectPort,
-        )
+        PortPillButton(label = "P2", port = 1, isSelected = selectedPort == 1, onSelect = onSelectPort)
     }
 }
 
-/**
- * A small pill-shaped button for port selection.
- */
 @Composable
 private fun PortPillButton(
     label: String,
@@ -104,7 +196,6 @@ private fun PortPillButton(
 ) {
     val backgroundColor = if (isSelected) SpColor.Primary else SpColor.SurfaceVariant
     val textColor = if (isSelected) SpColor.OnBackground else SpColor.OnBackgroundSecondary
-    val playerNumber = port + 1
 
     Box(
         modifier = Modifier
@@ -113,15 +204,9 @@ private fun PortPillButton(
             .background(backgroundColor)
             .clickable { onSelect(port) }
             .padding(horizontal = SpSpacing.Medium, vertical = SpSpacing.Small)
-            .semantics {
-                contentDescription = "Player $playerNumber controls"
-            },
+            .semantics { contentDescription = "Player ${port + 1} controls" },
         contentAlignment = Alignment.Center,
     ) {
-        Text(
-            text = label,
-            style = SpTypography.LabelMedium,
-            color = textColor,
-        )
+        Text(text = label, style = SpTypography.LabelMedium, color = textColor)
     }
 }
