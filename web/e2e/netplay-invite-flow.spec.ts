@@ -20,15 +20,6 @@ async function apiLogin(
   return data.accessToken;
 }
 
-/** Trigger a library scan (admin-only, synchronous). */
-async function triggerScan(token: string): Promise<void> {
-  const res = await fetch(`${API}/admin/games/scan`, {
-    method: "POST",
-    headers: { Authorization: `Bearer ${token}` },
-  });
-  if (!res.ok) throw new Error(`Scan failed: ${res.status}`);
-}
-
 /** Get the first game from a netplay-supported console. */
 async function getNetplayGame(
   token: string,
@@ -97,10 +88,7 @@ test.describe("Netplay invite flow (two browsers)", () => {
     // Get tokens
     adminToken = await apiLogin("admin", "admin123");
 
-    // Ensure games exist by triggering a scan
-    await triggerScan(adminToken);
-
-    // Find a netplay-supported game
+    // Games are already scanned by the E2E startup script — just find one
     const game = await getNetplayGame(adminToken);
     gameId = game.id;
   });
@@ -134,28 +122,25 @@ test.describe("Netplay invite flow (two browsers)", () => {
       // Click "Invite Player" button
       await adminPage.getByRole("button", { name: /invite player/i }).click();
 
-      // Type "player" in the search input (label is "Username")
-      const searchInput = adminPage.getByLabel(/username/i);
+      // Type "player" in the search input (aria-label is "Search users")
+      const searchInput = adminPage.getByLabel(/search users/i);
       await searchInput.fill("player");
 
-      // Wait for the debounced search dropdown and select "player"
-      // The dropdown items are plain <button> elements containing a <span> with username
-      const dropdown = adminPage.locator(".absolute.z-50");
-      await dropdown.waitFor({ timeout: 5_000 });
-      await dropdown.locator("button", { hasText: "player" }).first().click();
+      // Wait for search results to appear (debounced 300ms + API call)
+      // Then click the "Invite" button next to the "player" user row.
+      // Use the dialog scope to avoid matching the "Invite Player" button behind the modal.
+      const modal = adminPage.getByRole("dialog");
+      const inviteButton = modal.getByRole("button", { name: "Invite", exact: true });
+      await expect(inviteButton).toBeVisible({ timeout: 5_000 });
+      await inviteButton.click();
 
-      // Click "Send Invite"
-      await adminPage
-        .getByRole("button", { name: /send invite/i })
-        .click();
-
-      // Wait for success feedback — the modal shows invited user chip
+      // Wait for success feedback — the modal shows "Invited this session" chip
       await expect(
-        adminPage.getByText(/invited this session/i),
+        modal.getByText(/invited this session/i),
       ).toBeVisible({ timeout: 5_000 });
 
-      // Close the modal (use exact match to avoid matching "Close dialog" X button)
-      await adminPage
+      // Close the modal
+      await modal
         .getByRole("button", { name: "Close", exact: true })
         .click();
 

@@ -492,11 +492,12 @@ test.describe("RetroAchievements - Game Detail", () => {
     // Mock social/ratings/shared-saves endpoints for the game detail page
     await setupGameDetailSocialRoutes(page, "1");
 
-    await page.goto("/games/1");
+    await page.goto("/games/1/achievements");
 
-    // Achievements section should be visible
+    // Achievements section should be visible (use exact match to avoid
+    // ambiguity with the page-level h1 "Super Mario Bros. — Achievements")
     await expect(
-      page.getByRole("heading", { name: "Achievements" }),
+      page.getByRole("heading", { name: "Achievements", exact: true }),
     ).toBeVisible({ timeout: 10_000 });
 
     // Browser warning banner
@@ -610,7 +611,7 @@ test.describe("RetroAchievements - Game Detail", () => {
     // Mock social/ratings/shared-saves endpoints for the game detail page
     await setupGameDetailSocialRoutes(page, "1");
 
-    await page.goto("/games/1");
+    await page.goto("/games/1/achievements");
 
     await expect(page.getByTestId("achievement-101")).toBeVisible({
       timeout: 10_000,
