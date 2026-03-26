@@ -933,6 +933,7 @@ fun SpelaApp(
                                             NavigationIntent.ShowOverlay(
                                                 gameId = pending.gameId,
                                                 skipAutoLoad = pending.skipAutoLoad,
+                                                forceNewSession = pending.forceNewSession,
                                                 sessionId = pending.sessionId,
                                             )
                                         )
@@ -952,7 +953,12 @@ fun SpelaApp(
                                     },
                                     onPlayFresh = { gameId ->
                                         emulationViewModel.onIntent(
-                                            EmulationIntent.PrepareLaunch(gameId, skipAutoLoad = true)
+                                            EmulationIntent.PrepareLaunch(gameId, skipAutoLoad = true, forceNewSession = true)
+                                        )
+                                    },
+                                    onPlayFromTitleScreen = { gameId ->
+                                        emulationViewModel.onIntent(
+                                            EmulationIntent.PrepareLaunch(gameId, skipAutoLoad = true, forceNewSession = false)
                                         )
                                     },
                                     syncState = syncState.takeIf { it?.gameId == screen.gameId },
@@ -1407,7 +1413,7 @@ fun SpelaApp(
                                 },
                         )
 
-                        LaunchedEffect(navState.overlayGameId, navState.overlaySharedSessionId, navState.overlayNetplaySessionId, navState.overlayChallengeId, navState.overlaySessionId) {
+                        LaunchedEffect(navState.overlayGameId, navState.overlaySharedSessionId, navState.overlayNetplaySessionId, navState.overlayChallengeId, navState.overlaySessionId, navState.overlaySkipAutoLoad, navState.overlayForceNewSession) {
                             navState.overlayGameId?.let { gameId ->
                                 emulationViewModel.onIntent(
                                     EmulationIntent.StartGame(
@@ -1420,6 +1426,7 @@ fun SpelaApp(
                                         netplayIsHost = navState.overlayNetplayIsHost,
                                         challengeId = navState.overlayChallengeId,
                                         skipAutoLoad = navState.overlaySkipAutoLoad,
+                                        forceNewSession = navState.overlayForceNewSession,
                                         sessionId = navState.overlaySessionId,
                                     )
                                 )

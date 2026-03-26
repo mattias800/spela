@@ -115,6 +115,7 @@ fun GameDetailScreen(
     onBack: () -> Unit,
     onPlay: (String) -> Unit,
     onPlayFresh: ((String) -> Unit)? = null,
+    onPlayFromTitleScreen: ((String) -> Unit)? = null,
     onCreateNetplay: ((String) -> Unit)? = null,
     onNavigateToChallenges: ((gameId: String, gameTitle: String) -> Unit)? = null,
     onNavigateToSharedSession: ((sharedSessionId: String) -> Unit)? = null,
@@ -183,6 +184,7 @@ fun GameDetailScreen(
                     missingBiosFiles = state.missingBiosFiles,
                     onPlay = onPlay,
                     onPlayFresh = onPlayFresh,
+                    onPlayFromTitleScreen = onPlayFromTitleScreen,
                     onDownloadGame = { viewModel.onIntent(GameDetailIntent.DownloadGame) },
                     onToggleFavorite = { viewModel.onIntent(GameDetailIntent.ToggleFavorite) },
                     onTogglePlayLater = { viewModel.onIntent(GameDetailIntent.TogglePlayLater) },
@@ -233,6 +235,7 @@ fun GameDetailScreen(
                     isDemoConsole = isDemoConsole,
                     onPlay = onPlay,
                     onPlayFresh = onPlayFresh,
+                    onPlayFromTitleScreen = onPlayFromTitleScreen,
                     onDownloadGame = { viewModel.onIntent(GameDetailIntent.DownloadGame) },
                     onToggleFavorite = { viewModel.onIntent(GameDetailIntent.ToggleFavorite) },
                     onTogglePlayLater = { viewModel.onIntent(GameDetailIntent.TogglePlayLater) },
@@ -535,6 +538,7 @@ private fun GameInfoContent(
     isDemoConsole: Boolean = false,
     onPlay: (String) -> Unit,
     onPlayFresh: ((String) -> Unit)? = null,
+    onPlayFromTitleScreen: ((String) -> Unit)? = null,
     onDownloadGame: () -> Unit,
     onToggleFavorite: () -> Unit,
     onTogglePlayLater: () -> Unit,
@@ -902,6 +906,7 @@ private fun GameHeroContent(
     missingBiosFiles: List<BiosMissingFile>,
     onPlay: (String) -> Unit,
     onPlayFresh: ((String) -> Unit)?,
+    onPlayFromTitleScreen: ((String) -> Unit)? = null,
     onDownloadGame: () -> Unit,
     onToggleFavorite: () -> Unit,
     onTogglePlayLater: () -> Unit,
@@ -979,8 +984,18 @@ private fun GameHeroContent(
             if (state.isGameCached) {
                 if (game.playable) {
                     val menuItems = buildList {
+                        if (hasSaves && onPlayFromTitleScreen != null) {
+                            add(SpSplitButtonMenuItem(
+                                label = "Continue from Title Screen",
+                                description = "Keep your in-game save, start from the beginning",
+                            ) { onPlayFromTitleScreen(gameId) })
+
+                        }
                         if (hasSaves && onPlayFresh != null) {
-                            add(SpSplitButtonMenuItem("New Game") { onPlayFresh(gameId) })
+                            add(SpSplitButtonMenuItem(
+                                label = "New Game",
+                                description = "Start a separate playthrough from scratch",
+                            ) { onPlayFresh(gameId) })
                         }
                         if (onCreateNetplay != null && supportsNetplay) {
                             add(SpSplitButtonMenuItem("Netplay") { onCreateNetplay(gameId) })

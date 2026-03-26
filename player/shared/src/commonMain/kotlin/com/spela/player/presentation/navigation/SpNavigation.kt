@@ -61,6 +61,7 @@ data class NavigationState(
     val overlayNetplayIsHost: Boolean = false,
     val overlayChallengeId: String? = null,
     val overlaySkipAutoLoad: Boolean = false,
+    val overlayForceNewSession: Boolean = false,
     val overlaySessionId: String? = null,
     val screenBehindOverlay: SpScreen? = null,
     val backStackBehindOverlay: List<SpScreen> = emptyList(),
@@ -86,6 +87,7 @@ sealed interface NavigationIntent {
         val netplayIsHost: Boolean = false,
         val challengeId: String? = null,
         val skipAutoLoad: Boolean = false,
+        val forceNewSession: Boolean = false,
         val sessionId: String? = null,
     ) : NavigationIntent
     data object HideOverlay : NavigationIntent

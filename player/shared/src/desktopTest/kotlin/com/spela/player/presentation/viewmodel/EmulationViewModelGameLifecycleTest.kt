@@ -264,8 +264,8 @@ class EmulationViewModelGameLifecycleTest {
         )
         val vm = builder.build()
 
-        // Start game with skipAutoLoad=true ("New Game")
-        vm.onIntent(EmulationIntent.StartGame("game1", skipAutoLoad = true))
+        // Start game with skipAutoLoad=true + forceNewSession=true ("New Game")
+        vm.onIntent(EmulationIntent.StartGame("game1", skipAutoLoad = true, forceNewSession = true))
         builder.advanceTimeBy(100)
 
         // Should create a NEW session, not reuse the existing one
