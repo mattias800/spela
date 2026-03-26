@@ -110,4 +110,7 @@ sealed interface EmulationIntent {
 
     // Secondary screen touch control port
     data class SelectTouchControlPort(val port: Int) : EmulationIntent
+
+    // Secondary screen control tab
+    data class SelectControlTab(val tab: com.spela.player.presentation.state.ControlTab) : EmulationIntent
 }

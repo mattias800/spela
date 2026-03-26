@@ -595,6 +595,23 @@ class FakeLibretroController : LibretroController {
     override fun supportsSaveStates(): Boolean = supportsSaveStatesResult
 
     override fun performanceStats(): Flow<Pair<Float, Float>> = MutableStateFlow(59.9f to 16.5f)
+
+    var lastMouseDx: Short = 0
+    var lastMouseDy: Short = 0
+    var lastMouseLeft: Boolean = false
+    var lastMouseRight: Boolean = false
+    val keyboardState = mutableMapOf<Int, Boolean>()
+    var lastPortDevice: Pair<Int, Int>? = null
+
+    override fun setMouse(port: Int, dx: Short, dy: Short, left: Boolean, right: Boolean) {
+        lastMouseDx = dx; lastMouseDy = dy; lastMouseLeft = left; lastMouseRight = right
+    }
+    override fun setKeyboardKey(key: Int, pressed: Boolean) {
+        keyboardState[key] = pressed
+    }
+    override fun setControllerPortDevice(port: Int, device: Int) {
+        lastPortDevice = port to device
+    }
 }
 
 class FakeFileStorage : FileStorage {

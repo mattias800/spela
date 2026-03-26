@@ -44,6 +44,9 @@ class LibretroJni {
     external fun nativeSetInputAnalog(port: Int, index: Int, id: Int, value: Short)
     external fun nativeGetInputAnalog(port: Int, index: Int, id: Int): Short
     external fun nativeSetInputPointer(port: Int, x: Int, y: Int, pressed: Boolean)
+    external fun nativeSetInputMouse(port: Int, dx: Short, dy: Short, left: Boolean, right: Boolean)
+    external fun nativeSetInputKeyboard(key: Int, pressed: Boolean)
+    external fun nativeSetControllerPortDevice(port: Int, device: Int)
 
     /* Core variables */
     external fun nativeSetCoreVariable(key: String, value: String)

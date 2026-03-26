@@ -6,6 +6,17 @@ import com.spela.player.domain.model.BiosMissingFile
 import com.spela.player.domain.model.GameAchievement
 import com.spela.player.domain.model.ShaderPreset
 
+/** Input mode tabs available on the secondary screen controls page. */
+enum class ControlTab(val id: String) {
+    GAMEPAD("gamepad"),
+    KEYBOARD("keyboard"),
+    TRACKPAD("trackpad");
+
+    companion object {
+        fun fromId(id: String): ControlTab = entries.find { it.id == id } ?: GAMEPAD
+    }
+}
+
 /**
  * Type of secondary screen toast notification.
  */
@@ -170,6 +181,9 @@ data class EmulationState(
 
     /** Which port the touch controls target (0 = Player 1, 1 = Player 2). */
     val touchControlPort: Int = 0,
+
+    /** Which input tab is active on the secondary screen controls page. */
+    val selectedControlTab: ControlTab = ControlTab.GAMEPAD,
 ) {
     val isNetplayMode: Boolean get() = netplaySessionId != null
     val isChallengeMode: Boolean get() = challengeId != null
