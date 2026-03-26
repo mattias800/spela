@@ -735,10 +735,11 @@ func (h *SessionHandler) UploadAutoSave(c *gin.Context) {
 		return
 	}
 
-	// Prune old auto-saves (keep latest 5)
+	// Prune old auto-saves — retention count depends on save size
+	maxAutoSaves := autoSaveRetentionLimit(size)
 	var oldSaves []db.SessionSaveState
 	h.DB.Where("session_id = ? AND is_auto = ? AND id != ?", session.ID, true, save.ID).
-		Order("created_at DESC").Offset(4).Find(&oldSaves)
+		Order("created_at DESC").Offset(maxAutoSaves - 1).Find(&oldSaves)
 	for _, old := range oldSaves {
 		h.Storage.DeleteSave(old.FilePath)
 		if old.ScreenshotURL != "" {
@@ -1118,6 +1119,170 @@ func (h *SessionHandler) UpdateSessionCheats(c *gin.Context) {
 		"cheatsEnabled":  req.CheatsEnabled,
 		"enabledIndices": req.EnabledIndices,
 	})
+}
+
+// GetStorageUsage returns storage usage statistics for the authenticated user.
+// GET /api/user/storage
+func (h *SessionHandler) GetStorageUsage(c *gin.Context) {
+	uid := getUserID(c)
+
+	// Total used bytes
+	var usedBytes int64
+	if err := h.DB.Model(&db.SessionSaveState{}).Where("user_id = ?", uid).
+		Select("COALESCE(SUM(file_size), 0)").Scan(&usedBytes).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to query storage usage"})
+		return
+	}
+
+	// Per-console breakdown via JOINs:
+	// session_save_states → game_sessions → games → consoles
+	type consoleRow struct {
+		ConsoleID   string `json:"consoleId"`
+		ConsoleName string `json:"consoleName"`
+		Bytes       int64  `json:"bytes"`
+		SaveCount   int64  `json:"saveCount"`
+	}
+	var rows []consoleRow
+	h.DB.Model(&db.SessionSaveState{}).
+		Joins("JOIN game_sessions ON game_sessions.id = session_save_states.session_id AND game_sessions.deleted_at IS NULL").
+		Joins("JOIN games ON games.id = game_sessions.game_id AND games.deleted_at IS NULL").
+		Joins("JOIN consoles ON consoles.id = games.console_id AND consoles.deleted_at IS NULL").
+		Where("session_save_states.user_id = ? AND session_save_states.deleted_at IS NULL", uid).
+		Select("consoles.abbreviation AS console_id, consoles.name AS console_name, COALESCE(SUM(session_save_states.file_size), 0) AS bytes, COUNT(*) AS save_count").
+		Group("consoles.id").
+		Order("bytes DESC").
+		Scan(&rows)
+
+	if rows == nil {
+		rows = []consoleRow{}
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"usedBytes":  usedBytes,
+		"quotaBytes": maxSaveStorageBytes(),
+		"byConsole":  rows,
+	})
+}
+
+// BulkDeleteSessionSaves deletes all save states for a session (both auto and manual),
+// removing files from disk but keeping the session itself.
+// DELETE /api/sessions/:id/saves
+func (h *SessionHandler) BulkDeleteSessionSaves(c *gin.Context) {
+	uid := getUserID(c)
+	session, ok := h.loadSessionWithOwnerCheck(c, uid)
+	if !ok {
+		return
+	}
+
+	var saves []db.SessionSaveState
+	if err := h.DB.Where("session_id = ?", session.ID).Find(&saves).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch saves"})
+		return
+	}
+
+	var freedBytes int64
+	for _, save := range saves {
+		freedBytes += save.FileSize
+		h.Storage.DeleteSave(save.FilePath)
+		if save.ScreenshotURL != "" {
+			h.Storage.DeleteSave(h.Storage.ImagePath(save.ScreenshotURL))
+		}
+	}
+
+	h.DB.Where("session_id = ?", session.ID).Delete(&db.SessionSaveState{})
+
+	c.JSON(http.StatusOK, gin.H{
+		"deletedCount": len(saves),
+		"freedBytes":   freedBytes,
+	})
+}
+
+// CompactSaves keeps only the most recent auto-save and most recent manual save
+// per session for the authenticated user. Everything else is deleted from disk and DB,
+// including slot saves. This is an aggressive cleanup — use when quota is tight.
+// POST /api/user/saves/compact
+func (h *SessionHandler) CompactSaves(c *gin.Context) {
+	uid := getUserID(c)
+
+	// Find all sessions owned by this user
+	var sessions []db.GameSession
+	if err := h.DB.Where("owner_id = ?", uid).Find(&sessions).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch sessions"})
+		return
+	}
+
+	var totalDeleted int
+	var totalFreed int64
+
+	for _, session := range sessions {
+		// Find the most recent auto-save
+		var keepIDs []uint
+
+		var latestAuto db.SessionSaveState
+		if err := h.DB.Where("session_id = ? AND is_auto = ?", session.ID, true).
+			Order("created_at DESC").First(&latestAuto).Error; err == nil {
+			keepIDs = append(keepIDs, latestAuto.ID)
+		}
+
+		// Find the most recent manual save (non-auto, non-slot)
+		var latestManual db.SessionSaveState
+		if err := h.DB.Where("session_id = ? AND is_auto = ? AND slot IS NULL", session.ID, false).
+			Order("created_at DESC").First(&latestManual).Error; err == nil {
+			keepIDs = append(keepIDs, latestManual.ID)
+		}
+
+		// Find all saves to delete (everything except the kept ones)
+		query := h.DB.Where("session_id = ?", session.ID)
+		if len(keepIDs) > 0 {
+			query = query.Where("id NOT IN ?", keepIDs)
+		}
+
+		var toDelete []db.SessionSaveState
+		if err := query.Find(&toDelete).Error; err != nil {
+			continue
+		}
+
+		for _, save := range toDelete {
+			totalFreed += save.FileSize
+			h.Storage.DeleteSave(save.FilePath)
+			if save.ScreenshotURL != "" {
+				h.Storage.DeleteSave(h.Storage.ImagePath(save.ScreenshotURL))
+			}
+		}
+
+		if len(toDelete) > 0 {
+			deleteQuery := h.DB.Where("session_id = ?", session.ID)
+			if len(keepIDs) > 0 {
+				deleteQuery = deleteQuery.Where("id NOT IN ?", keepIDs)
+			}
+			deleteQuery.Delete(&db.SessionSaveState{})
+		}
+
+		totalDeleted += len(toDelete)
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"deletedCount": totalDeleted,
+		"freedBytes":   totalFreed,
+	})
+}
+
+// autoSaveRetentionLimit returns the maximum number of auto-saves to keep
+// based on the size of the save being uploaded.
+//
+//	< 1 MB  → 5
+//	1-10 MB → 3
+//	> 10 MB → 1
+func autoSaveRetentionLimit(sizeBytes int64) int {
+	const mb = 1 << 20
+	switch {
+	case sizeBytes > 10*mb:
+		return 1
+	case sizeBytes >= 1*mb:
+		return 3
+	default:
+		return 5
+	}
 }
 
 // --- Helper methods ---

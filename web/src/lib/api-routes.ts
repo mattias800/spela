@@ -155,6 +155,7 @@ export type ApiGetPath = WithQuery<
   | "/user/saved-searches"
   | "/user/explorer-badges"
   | "/user/completionist-map"
+  | "/user/storage"
 
   // Shared Sessions
   | "/shared-sessions"
@@ -259,6 +260,7 @@ export type ApiPostPath = WithQuery<
   | `/user/shared-session-invites/${string}/accept`
   | `/user/shared-session-invites/${string}/decline`
   | "/user/saved-searches"
+  | "/user/saves/compact"
 
   // Collections
   | "/collections"
@@ -363,6 +365,7 @@ export type ApiDeletePath = WithQuery<
 
   // Sessions
   | `/sessions/${string}`
+  | `/sessions/${string}/saves`
   | `/sessions/${string}/saves/${string}`
   | `/sessions/${string}/play-time`
 
