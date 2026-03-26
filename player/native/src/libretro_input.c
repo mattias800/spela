@@ -11,6 +11,7 @@
 
 #define MAX_PORTS 8
 #define MAX_BUTTONS 16
+#define MAX_KEYBOARD_KEYS 322  /* RETROK_LAST + 1 */
 
 static struct {
     /* Digital button state per port */
@@ -25,6 +26,17 @@ static struct {
         int16_t y;       /* -0x7FFF to 0x7FFF */
         bool pressed;
     } pointer[MAX_PORTS];
+
+    /* Mouse state per port (relative deltas, consumed each frame) */
+    struct {
+        int16_t dx;       /* Accumulated X delta since last poll */
+        int16_t dy;       /* Accumulated Y delta since last poll */
+        bool left;
+        bool right;
+    } mouse[MAX_PORTS];
+
+    /* Keyboard state (global, not per-port) */
+    bool keyboard[MAX_KEYBOARD_KEYS];
 
     bool initialized;
 } input_state = {0};
@@ -66,17 +78,22 @@ int16_t input_state_callback(unsigned port, unsigned device, unsigned index, uns
             break;
 
         case RETRO_DEVICE_MOUSE: {
-            /* Map pointer/touch state to mouse device.
-             * Some cores query RETRO_DEVICE_MOUSE for input. */
+            /* Mouse input: relative deltas consumed each read, plus button state. */
             switch (id) {
-                case RETRO_DEVICE_ID_MOUSE_X:
-                    return input_state.pointer[port].x;
-                case RETRO_DEVICE_ID_MOUSE_Y:
-                    return input_state.pointer[port].y;
+                case RETRO_DEVICE_ID_MOUSE_X: {
+                    int16_t dx = input_state.mouse[port].dx;
+                    input_state.mouse[port].dx = 0;  /* Consumed */
+                    return dx;
+                }
+                case RETRO_DEVICE_ID_MOUSE_Y: {
+                    int16_t dy = input_state.mouse[port].dy;
+                    input_state.mouse[port].dy = 0;  /* Consumed */
+                    return dy;
+                }
                 case RETRO_DEVICE_ID_MOUSE_LEFT:
-                    return input_state.pointer[port].pressed ? 1 : 0;
+                    return input_state.mouse[port].left ? 1 : 0;
                 case RETRO_DEVICE_ID_MOUSE_RIGHT:
-                    return 0;
+                    return input_state.mouse[port].right ? 1 : 0;
             }
             break;
         }
@@ -89,6 +106,12 @@ int16_t input_state_callback(unsigned port, unsigned device, unsigned index, uns
                     return input_state.pointer[port].y;
                 case RETRO_DEVICE_ID_POINTER_PRESSED:
                     return input_state.pointer[port].pressed ? 1 : 0;
+            }
+            break;
+
+        case RETRO_DEVICE_KEYBOARD:
+            if (id < MAX_KEYBOARD_KEYS) {
+                return input_state.keyboard[id] ? 1 : 0;
             }
             break;
 
@@ -135,5 +158,22 @@ void input_set_pointer(unsigned port, int16_t x, int16_t y, bool pressed) {
         input_state.pointer[port].x = x;
         input_state.pointer[port].y = y;
         input_state.pointer[port].pressed = pressed;
+    }
+}
+
+/* Called from Kotlin/JNI to set mouse relative movement and button state */
+void input_set_mouse(unsigned port, int16_t dx, int16_t dy, bool left, bool right) {
+    if (port < MAX_PORTS) {
+        input_state.mouse[port].dx += dx;   /* Accumulate deltas */
+        input_state.mouse[port].dy += dy;
+        input_state.mouse[port].left = left;
+        input_state.mouse[port].right = right;
+    }
+}
+
+/* Called from Kotlin/JNI to set keyboard key state */
+void input_set_keyboard(unsigned key, bool pressed) {
+    if (key < MAX_KEYBOARD_KEYS) {
+        input_state.keyboard[key] = pressed;
     }
 }

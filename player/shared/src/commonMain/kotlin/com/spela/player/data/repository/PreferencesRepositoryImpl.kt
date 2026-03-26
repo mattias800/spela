@@ -202,6 +202,15 @@ class PreferencesRepositoryImpl(
         database.spelaDatabaseQueries.insertDeviceSetting("orientation_lock", mode)
     }
 
+    override fun getControlTab(consoleId: String): String {
+        return database.spelaDatabaseQueries.getDeviceSetting("control_tab:$consoleId")
+            .executeAsOneOrNull() ?: "gamepad"
+    }
+
+    override fun setControlTab(consoleId: String, tab: String) {
+        database.spelaDatabaseQueries.insertDeviceSetting("control_tab:$consoleId", tab)
+    }
+
     override suspend fun pushKeyMappingsToServer() {
         runCatching {
             val allMappings = database.spelaDatabaseQueries.getAllKeyMappings().executeAsList()

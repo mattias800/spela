@@ -233,6 +233,15 @@ class EmulationViewModel(
 
             // Secondary screen touch control port
             is EmulationIntent.SelectTouchControlPort -> _state.update { it.copy(touchControlPort = intent.port.coerceIn(0, 1)) }
+
+            // Secondary screen control tab
+            is EmulationIntent.SelectControlTab -> {
+                _state.update { it.copy(selectedControlTab = intent.tab) }
+                val consoleId = _state.value.consoleId
+                if (consoleId.isNotEmpty()) {
+                    preferencesRepository.setControlTab(consoleId, intent.tab.id)
+                }
+            }
         }
     }
 
@@ -384,6 +393,14 @@ class EmulationViewModel(
                         dualScreenBottomOffsetX = bottomOffsetX,
                     )
                 }
+            }
+
+            // Restore persisted control tab for this console
+            val savedControlTab = com.spela.player.presentation.state.ControlTab.fromId(
+                preferencesRepository.getControlTab(consoleId)
+            )
+            withContext(dispatchers.main) {
+                _state.update { it.copy(selectedControlTab = savedControlTab) }
             }
 
             // Resolve shader using two-layer system
@@ -1093,6 +1110,15 @@ interface LibretroController {
 
     /** Set pointer/touch state for the given port (used for DS touch screen). */
     fun setPointer(port: Int, x: Int, y: Int, pressed: Boolean) {}
+
+    /** Set mouse relative movement and button state. */
+    fun setMouse(port: Int, dx: Short, dy: Short, left: Boolean, right: Boolean) {}
+
+    /** Set keyboard key state (RETROK_* constants). */
+    fun setKeyboardKey(key: Int, pressed: Boolean) {}
+
+    /** Set the input device type for a controller port. */
+    fun setControllerPortDevice(port: Int, device: Int) {}
 
     /** Set audio volume (0.0 = mute, 1.0 = full). */
     fun setVolume(volume: Float) {}

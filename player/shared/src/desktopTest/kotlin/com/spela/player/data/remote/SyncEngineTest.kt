@@ -178,6 +178,8 @@ class SyncEngineTest {
         override suspend fun pushKeyMappingsToServer() {}
         override fun getOrientationLock(): String = "auto"
         override fun setOrientationLock(mode: String) {}
+        override fun getControlTab(consoleId: String): String = "gamepad"
+        override fun setControlTab(consoleId: String, tab: String) {}
     }
 
     private class NoOpGameRepository : GameRepository {
@@ -218,6 +220,8 @@ class SyncEngineTest {
         override suspend fun pushKeyMappingsToServer() {}
         override fun getOrientationLock(): String = "auto"
         override fun setOrientationLock(mode: String) {}
+        override fun getControlTab(consoleId: String): String = "gamepad"
+        override fun setControlTab(consoleId: String, tab: String) {}
     }
 
     private class FailingGameRepository : GameRepository {
@@ -262,6 +266,8 @@ class SyncEngineTest {
         override suspend fun pushKeyMappingsToServer() {}
         override fun getOrientationLock(): String = "auto"
         override fun setOrientationLock(mode: String) {}
+        override fun getControlTab(consoleId: String): String = "gamepad"
+        override fun setControlTab(consoleId: String, tab: String) {}
     }
 
     private class TrackingGameRepository : GameRepository {
