@@ -46,6 +46,9 @@ player/local.properties
 # Test ROMs (not for distribution)
 testdata/
 
+# E2E test cache
+.e2e-cache/
+
 # OS
 .DS_Store
 Thumbs.db

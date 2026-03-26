@@ -125,3 +125,4 @@ element intentionally non-reusable, or should it be an Sp* component?"
 - **`ARCHITECTURE.md`** — Full technical architecture
 - **`AGENT_TEAM.md`** — Team roles and review checklist
 - **`player/RENDERING.md`** — Emulation rendering pipeline: how libretro cores render video across platforms (software vs OpenGL HW vs Vulkan HW), the GPU renderer, common video issues (garbled, flipped, black screen), and key native files
+- **`docs/e2e-testing.md`** — How to run web E2E tests reliably: quick start, architecture, troubleshooting, and test patterns
