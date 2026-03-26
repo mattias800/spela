@@ -34,6 +34,9 @@ class PresenceService(
     private var heartbeatJob: Job? = null
     private var currentGameId: String? = null
 
+    @Volatile
+    var paused: Boolean = false
+
     private val json = Json {
         ignoreUnknownKeys = true
         isLenient = true
@@ -92,6 +95,7 @@ class PresenceService(
      */
     fun startHeartbeat(gameId: String) {
         stopHeartbeat()
+        paused = false
         currentGameId = gameId
 
         // Send initial heartbeat immediately
@@ -106,6 +110,7 @@ class PresenceService(
         heartbeatJob = scope.launch(dispatchers.io) {
             while (isActive) {
                 delay(HEARTBEAT_INTERVAL_MS)
+                if (paused) continue // Don't report play time while paused/backgrounded
                 val gid = currentGameId ?: break
                 try {
                     val seconds = HEARTBEAT_INTERVAL_MS / 1000
