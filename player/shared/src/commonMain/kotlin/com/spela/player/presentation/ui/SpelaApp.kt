@@ -12,8 +12,11 @@ import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -56,7 +59,9 @@ import com.spela.player.presentation.navigation.NavigationViewModel
 import com.spela.player.presentation.navigation.SpScreen
 import com.spela.player.presentation.ui.components.BottomNavTab
 import com.spela.player.presentation.ui.components.PlatformBackHandler
+import com.spela.player.presentation.ui.components.NavigationLayoutMode
 import com.spela.player.presentation.ui.components.SpBottomNavBar
+import com.spela.player.presentation.ui.components.SpNavigationRail
 import com.spela.player.presentation.ui.components.SpAuthExpiredDialog
 import com.spela.player.presentation.ui.components.SpButton
 import com.spela.player.presentation.ui.components.SpDatabaseErrorScreen
@@ -312,7 +317,38 @@ fun SpelaApp(
                     }
                 },
         ) {
-            Column(modifier = Modifier.fillMaxSize()) {
+            BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+            val navLayoutMode = when {
+                maxWidth > 840.dp -> NavigationLayoutMode.LABELED_RAIL
+                maxWidth > 600.dp -> NavigationLayoutMode.ICON_RAIL
+                else -> NavigationLayoutMode.BOTTOM_BAR
+            }
+            val showNavArea = !navState.showInGameOverlay && shouldShowBottomNav(navState.currentScreen)
+            val showSideRail = navLayoutMode != NavigationLayoutMode.BOTTOM_BAR && showNavArea && !isGamepadMode
+
+            Row(modifier = Modifier.fillMaxSize()) {
+            // Side navigation rail (larger screens, touch mode only)
+            if (showSideRail) {
+                SpNavigationRail(
+                    activeTab = activeTabForScreen(navState.currentScreen),
+                    onTabSelected = { tab ->
+                        val targetScreen = when (tab) {
+                            BottomNavTab.HOME -> SpScreen.Home
+                            BottomNavTab.EXPLORE -> SpScreen.Explore
+                            BottomNavTab.CONSOLES -> SpScreen.Consoles
+                            BottomNavTab.COLLECTIONS -> SpScreen.Collections
+                            BottomNavTab.ACTIVITY -> SpScreen.Activity
+                            BottomNavTab.SETTINGS -> SpScreen.Settings
+                        }
+                        navigationViewModel.onIntent(
+                            NavigationIntent.SwitchTab(targetScreen)
+                        )
+                    },
+                    showLabels = navLayoutMode == NavigationLayoutMode.LABELED_RAIL,
+                )
+            }
+
+            Column(modifier = Modifier.weight(1f).fillMaxHeight()) {
                 // Connection state
                 val currentConnectionState by connectivityMonitor.connectionState.collectAsState()
                 var serverWarningDismissed by remember { mutableStateOf(false) }
@@ -1567,9 +1603,8 @@ fun SpelaApp(
                     )
                 }
 
-                // Bottom navigation bar (hidden when in gamepad mode)
-                val showNavArea = !navState.showInGameOverlay && shouldShowBottomNav(navState.currentScreen)
-                if (showNavArea && !isGamepadMode) {
+                // Bottom navigation bar (phones only, hidden when in gamepad mode or side rail is showing)
+                if (navLayoutMode == NavigationLayoutMode.BOTTOM_BAR && showNavArea && !isGamepadMode) {
                     SpBottomNavBar(
                         activeTab = activeTabForScreen(navState.currentScreen),
                         onTabSelected = { tab ->
@@ -1588,10 +1623,10 @@ fun SpelaApp(
                     )
                 }
                 } // else (not DatabaseError)
-            }
+            } // Column (content + bottom bar)
+            } // Row (side rail + content column)
 
             // Section indicator overlay (shown when in gamepad mode)
-            val showNavArea = !navState.showInGameOverlay && shouldShowBottomNav(navState.currentScreen)
             if (showNavArea && isGamepadMode) {
                 Box(
                     modifier = Modifier.fillMaxSize(),
@@ -1604,11 +1639,12 @@ fun SpelaApp(
                     )
                 }
             }
-        }
-        }
+            } // BoxWithConstraints
+        } // Box
+        } // GamepadNavigation
     } // CompositionLocalProvider
-    }
-}
+    } // SpelaTheme
+} // SpelaApp
 
 private fun shouldShowBottomNav(screen: SpScreen): Boolean = when (screen) {
     is SpScreen.ServerConnection, is SpScreen.Login -> false
