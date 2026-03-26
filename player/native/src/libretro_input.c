@@ -78,22 +78,44 @@ int16_t input_state_callback(unsigned port, unsigned device, unsigned index, uns
             break;
 
         case RETRO_DEVICE_MOUSE: {
-            /* Mouse input: relative deltas consumed each read, plus button state. */
-            switch (id) {
-                case RETRO_DEVICE_ID_MOUSE_X: {
-                    int16_t dx = input_state.mouse[port].dx;
-                    input_state.mouse[port].dx = 0;  /* Consumed */
-                    return dx;
+            /* Mouse input with fallback to pointer state.
+             * Some cores (e.g. DeSmuME with pointer_mouse=enabled) query
+             * RETRO_DEVICE_MOUSE for touch input. When no real mouse input
+             * has been provided (mouse_active is false), fall back to the
+             * pointer/touch state for backward compatibility. */
+            bool mouse_active = input_state.mouse[port].left ||
+                                input_state.mouse[port].right ||
+                                input_state.mouse[port].dx != 0 ||
+                                input_state.mouse[port].dy != 0;
+            if (mouse_active) {
+                switch (id) {
+                    case RETRO_DEVICE_ID_MOUSE_X: {
+                        int16_t dx = input_state.mouse[port].dx;
+                        input_state.mouse[port].dx = 0;
+                        return dx;
+                    }
+                    case RETRO_DEVICE_ID_MOUSE_Y: {
+                        int16_t dy = input_state.mouse[port].dy;
+                        input_state.mouse[port].dy = 0;
+                        return dy;
+                    }
+                    case RETRO_DEVICE_ID_MOUSE_LEFT:
+                        return input_state.mouse[port].left ? 1 : 0;
+                    case RETRO_DEVICE_ID_MOUSE_RIGHT:
+                        return input_state.mouse[port].right ? 1 : 0;
                 }
-                case RETRO_DEVICE_ID_MOUSE_Y: {
-                    int16_t dy = input_state.mouse[port].dy;
-                    input_state.mouse[port].dy = 0;  /* Consumed */
-                    return dy;
+            } else {
+                /* Fallback: map pointer/touch state to mouse queries */
+                switch (id) {
+                    case RETRO_DEVICE_ID_MOUSE_X:
+                        return input_state.pointer[port].x;
+                    case RETRO_DEVICE_ID_MOUSE_Y:
+                        return input_state.pointer[port].y;
+                    case RETRO_DEVICE_ID_MOUSE_LEFT:
+                        return input_state.pointer[port].pressed ? 1 : 0;
+                    case RETRO_DEVICE_ID_MOUSE_RIGHT:
+                        return 0;
                 }
-                case RETRO_DEVICE_ID_MOUSE_LEFT:
-                    return input_state.mouse[port].left ? 1 : 0;
-                case RETRO_DEVICE_ID_MOUSE_RIGHT:
-                    return input_state.mouse[port].right ? 1 : 0;
             }
             break;
         }
