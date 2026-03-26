@@ -239,9 +239,7 @@ class EmulationViewModel(
                 _state.update { it.copy(selectedControlTab = intent.tab) }
                 val consoleId = _state.value.consoleId
                 if (consoleId.isNotEmpty()) {
-                    database.spelaDatabaseQueries.insertDeviceSetting(
-                        "control_tab:$consoleId", intent.tab.id
-                    )
+                    preferencesRepository.setControlTab(consoleId, intent.tab.id)
                 }
             }
         }
@@ -398,11 +396,9 @@ class EmulationViewModel(
             }
 
             // Restore persisted control tab for this console
-            val savedControlTab = database.spelaDatabaseQueries
-                .getDeviceSetting("control_tab:$consoleId")
-                .executeAsOneOrNull()
-                ?.let { com.spela.player.presentation.state.ControlTab.fromId(it) }
-                ?: com.spela.player.presentation.state.ControlTab.GAMEPAD
+            val savedControlTab = com.spela.player.presentation.state.ControlTab.fromId(
+                preferencesRepository.getControlTab(consoleId)
+            )
             withContext(dispatchers.main) {
                 _state.update { it.copy(selectedControlTab = savedControlTab) }
             }

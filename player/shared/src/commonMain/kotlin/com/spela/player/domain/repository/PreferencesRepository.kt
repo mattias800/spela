@@ -24,4 +24,6 @@ interface PreferencesRepository {
     suspend fun pushKeyMappingsToServer()
     fun getOrientationLock(): String
     fun setOrientationLock(mode: String)
+    fun getControlTab(consoleId: String): String
+    fun setControlTab(consoleId: String, tab: String)
 }
