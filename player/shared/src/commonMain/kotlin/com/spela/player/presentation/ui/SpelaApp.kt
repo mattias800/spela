@@ -973,6 +973,11 @@ fun SpelaApp(
                                             EmulationIntent.PrepareLaunch(gameId, sessionId = sessionId)
                                         )
                                     },
+                                    onPlaySessionFromTitleScreen = { gameId, sessionId ->
+                                        emulationViewModel.onIntent(
+                                            EmulationIntent.PrepareLaunch(gameId, skipAutoLoad = true, sessionId = sessionId)
+                                        )
+                                    },
                                     onCreateNetplay = { gameId ->
                                         netplayViewModel.onIntent(
                                             NetplayIntent.CreateSession(gameId)

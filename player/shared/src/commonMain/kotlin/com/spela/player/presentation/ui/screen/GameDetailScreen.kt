@@ -130,6 +130,7 @@ fun GameDetailScreen(
     onPlayWithLocalSave: () -> Unit = {},
     onCancelLaunch: () -> Unit = {},
     onPlaySession: ((gameId: String, sessionId: String) -> Unit)? = null,
+    onPlaySessionFromTitleScreen: ((gameId: String, sessionId: String) -> Unit)? = null,
     onNavigateToSession: ((sessionId: String) -> Unit)? = null,
 ) {
     PlatformBackHandler { onBack() }
@@ -277,6 +278,9 @@ fun GameDetailScreen(
                         isLoading = state.isLoadingSessions,
                         onContinueSession = { session ->
                             onPlaySession?.invoke(game.id, session.id)
+                        },
+                        onContinueSessionFromTitleScreen = { session ->
+                            onPlaySessionFromTitleScreen?.invoke(game.id, session.id)
                         },
                         onCreateSession = { name ->
                             viewModel.onIntent(GameDetailIntent.CreateSession(game.id, name))

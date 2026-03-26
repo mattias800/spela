@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
@@ -20,6 +21,8 @@ import androidx.compose.material.icons.filled.People
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.outlined.Gamepad
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
@@ -55,6 +58,7 @@ internal fun SessionsSection(
     sessions: List<GameSession>,
     isLoading: Boolean,
     onContinueSession: (GameSession) -> Unit,
+    onContinueSessionFromTitleScreen: ((GameSession) -> Unit)? = null,
     onCreateSession: (String) -> Unit,
     onRenameSession: (String, String) -> Unit,
     onDeleteSession: (String) -> Unit,
@@ -98,6 +102,7 @@ internal fun SessionsSection(
                     }
                 },
                 onContinue = { onContinueSession(session) },
+                onContinueFromTitleScreen = onContinueSessionFromTitleScreen?.let { callback -> { callback(session) } },
                 onRename = { showRenameDialog = session },
                 onDelete = { showDeleteDialog = session },
                 onDuplicate = { onDuplicateSession(session.id) },
@@ -209,6 +214,7 @@ private fun SessionItem(
     isCurrent: Boolean,
     onClick: () -> Unit,
     onContinue: () -> Unit,
+    onContinueFromTitleScreen: (() -> Unit)?,
     onRename: () -> Unit,
     onDelete: () -> Unit,
     onDuplicate: () -> Unit,
@@ -314,12 +320,51 @@ private fun SessionItem(
                         tint = SpColor.OnBackgroundSecondary,
                     )
                 }
-                IconButton(onClick = onContinue) {
-                    Icon(
-                        Icons.Filled.PlayArrow,
-                        contentDescription = "Continue session",
-                        tint = SpColor.Accent,
-                    )
+                // Play button with optional dropdown for "Continue from Title Screen"
+                val showChevron = session.lastPlayedAt != null && onContinueFromTitleScreen != null
+                Box {
+                    var showPlayMenu by remember { mutableStateOf(false) }
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        IconButton(onClick = onContinue) {
+                            Icon(
+                                Icons.Filled.PlayArrow,
+                                contentDescription = "Continue session",
+                                tint = SpColor.Accent,
+                            )
+                        }
+                        if (showChevron) {
+                            IconButton(
+                                onClick = { showPlayMenu = true },
+                                modifier = Modifier.size(SpSpacing.IconLarge),
+                            ) {
+                                Icon(
+                                    Icons.Filled.ArrowDropDown,
+                                    contentDescription = "More play options",
+                                    tint = SpColor.Accent,
+                                    modifier = Modifier.size(SpSpacing.IconDefault),
+                                )
+                            }
+                        }
+                    }
+                    if (showChevron) {
+                        DropdownMenu(
+                            expanded = showPlayMenu,
+                            onDismissRequest = { showPlayMenu = false },
+                        ) {
+                            DropdownMenuItem(
+                                text = {
+                                    Text(
+                                        text = "Continue from Title Screen",
+                                        style = SpTypography.BodyMedium,
+                                    )
+                                },
+                                onClick = {
+                                    showPlayMenu = false
+                                    onContinueFromTitleScreen?.invoke()
+                                },
+                            )
+                        }
+                    }
                 }
             }
         }
