@@ -350,10 +350,11 @@ static bool environment_callback(unsigned cmd, void *data) {
             return false;
 
         case RETRO_ENVIRONMENT_GET_INPUT_DEVICE_CAPABILITIES: {
-            /* Return bitmask of supported input device types.
-             * We support joypad, analog, and pointer (touch). */
+            /* Return bitmask of supported input device types. */
             *(uint64_t *)data = (1 << RETRO_DEVICE_JOYPAD) |
                                 (1 << RETRO_DEVICE_ANALOG) |
+                                (1 << RETRO_DEVICE_MOUSE) |
+                                (1 << RETRO_DEVICE_KEYBOARD) |
                                 (1 << RETRO_DEVICE_POINTER);
             return true;
         }
@@ -1385,6 +1386,26 @@ JNI_FUNC(void, nativeSetCoreVariable)(JNIEnv *env, jobject thiz, jstring key, js
 JNI_FUNC(void, nativeSetInputPointer)(JNIEnv *env, jobject thiz,
                                        jint port, jint x, jint y, jboolean pressed) {
     input_set_pointer((unsigned)port, (int16_t)x, (int16_t)y, pressed == JNI_TRUE);
+}
+
+JNI_FUNC(void, nativeSetInputMouse)(JNIEnv *env, jobject thiz,
+                                     jint port, jshort dx, jshort dy,
+                                     jboolean left, jboolean right) {
+    input_set_mouse((unsigned)port, (int16_t)dx, (int16_t)dy,
+                    left == JNI_TRUE, right == JNI_TRUE);
+}
+
+JNI_FUNC(void, nativeSetInputKeyboard)(JNIEnv *env, jobject thiz,
+                                        jint key, jboolean pressed) {
+    input_set_keyboard((unsigned)key, pressed == JNI_TRUE);
+}
+
+JNI_FUNC(void, nativeSetControllerPortDevice)(JNIEnv *env, jobject thiz,
+                                               jint port, jint device) {
+    if (g_core.retro_set_controller_port_device) {
+        g_core.retro_set_controller_port_device((unsigned)port, (unsigned)device);
+        LOGI("Set controller port %d device to %d", port, device);
+    }
 }
 
 /* === GPU Renderer JNI Methods === */

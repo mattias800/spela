@@ -52,6 +52,8 @@ int16_t input_get_analog(unsigned port, unsigned index, unsigned id);
 void input_set_button(unsigned port, unsigned id, bool pressed);
 void input_set_analog(unsigned port, unsigned index, unsigned id, int16_t value);
 void input_set_pointer(unsigned port, int16_t x, int16_t y, bool pressed);
+void input_set_mouse(unsigned port, int16_t dx, int16_t dy, bool left, bool right);
+void input_set_keyboard(unsigned key, bool pressed);
 
 /* Core variable subsystem (libretro_bridge.c) */
 void core_variables_set(const char *key, const char *value);
