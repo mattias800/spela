@@ -294,6 +294,13 @@ if (org.gradle.internal.os.OperatingSystem.current().isMacOsX) {
     }
 }
 
+// Forward JVM stdout/stderr so emulation logs, native printf, and debug output
+// are visible in the terminal. Without this, Gradle's forked JVM process swallows all output.
+tasks.withType<JavaExec>().configureEach {
+    standardOutput = System.out
+    errorOutput = System.err
+}
+
 // Pass native library path to Compose Hot Reload tasks.
 tasks.withType<JavaExec>().matching { it.name.startsWith("hotRun") || it.name.startsWith("hotDev") }.configureEach {
     jvmArgs("-Djava.library.path=${nativeBuildDir.get().asFile.absolutePath}")

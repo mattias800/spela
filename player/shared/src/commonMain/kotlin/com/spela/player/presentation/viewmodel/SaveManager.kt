@@ -206,15 +206,24 @@ class SaveManager(
      */
     suspend fun autoSaveOnStop(gameId: String) {
         try {
-            println("[SaveManager] autoSaveOnStop: serializing game $gameId")
             val saveData = libretroController.serialize()
-            println("[SaveManager] autoSaveOnStop: serialize returned ${saveData?.size ?: "null"} bytes")
             if (saveData != null) {
                 val sessionId = currentSessionId
                 if (sessionId != null) {
                     val screenshot = screenshotCapture?.captureScreenshot()
                     val result = sessionRepository.uploadSessionAutoSave(sessionId, saveData, screenshot, currentCoreName)
-                    println("[SaveManager] autoSaveOnStop: session upload result=${result.isSuccess}")
+                    if (result.isFailure) {
+                        val msg = result.exceptionOrNull()?.message ?: "Unknown error"
+                        println("[SaveManager] autoSaveOnStop: upload failed: $msg")
+                        val userMsg = if (msg.contains("413") || msg.contains("quota", ignoreCase = true)) {
+                            "Auto-save failed: storage quota exceeded. Delete old saves to free space."
+                        } else {
+                            "Auto-save upload failed: $msg"
+                        }
+                        withContext(dispatchers.main) {
+                            _state.update { it.copy(error = userMsg) }
+                        }
+                    }
                 }
             }
         } catch (e: Exception) {

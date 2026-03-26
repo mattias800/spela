@@ -147,6 +147,7 @@ class DesktopLibretroController(
         emulationThread?.join()
         emulationThread = null
         deinitOnEmuThread = false
+        latestRenderedFrame = null // Clear frame so next game doesn't flash the old one
         // Don't deinit GPU here — it persists across game sessions on desktop.
         // The composable's onDispose handles GPU cleanup when the user leaves
         // the emulation screen. This prevents stop() (called as precautionary
