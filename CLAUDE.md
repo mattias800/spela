@@ -18,7 +18,7 @@ Spela is a self-hosted game emulation service with three components:
 4. **libretro only** - No custom emulation code. All emulation via libretro cores.
 5. **A feature is not done until all tests pass** - Every change must have appropriate test coverage (E2E and/or unit tests), and the ENTIRE test suite must pass before a task is considered complete. No regressions allowed.
    - **Player app**: See "Player App Testing Strategy" below for the desktop-primary / Android-smoke approach.
-   - **Web frontend**: Playwright E2E tests + Vitest unit tests.
+   - **Web frontend**: Playwright E2E tests + Vitest unit tests. See [`docs/e2e-testing.md`](docs/e2e-testing.md) for how to run E2E tests reliably.
    - **Backend**: Go unit tests (`go test ./...`).
    - Run the full suite, not just the new tests. Catching regressions early is critical.
 

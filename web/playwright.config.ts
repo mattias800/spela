@@ -1,5 +1,9 @@
 import { defineConfig } from "@playwright/test";
 
+// When E2E_SERVERS_RUNNING is set (by run-e2e.sh), the server and Vite are
+// already running — skip Playwright's webServer startup entirely.
+const serversAlreadyRunning = !!process.env.E2E_SERVERS_RUNNING;
+
 export default defineConfig({
   testDir: "./e2e",
   timeout: 60_000,
@@ -10,12 +14,14 @@ export default defineConfig({
     baseURL: "http://localhost:5173",
     trace: "on-first-retry",
   },
-  webServer: {
-    command: "bash e2e/start-e2e.sh",
-    url: "http://localhost:5173",
-    reuseExistingServer: !process.env.CI,
-    timeout: 120_000,
-  },
+  ...(!serversAlreadyRunning && {
+    webServer: {
+      command: "bash e2e/start-e2e.sh",
+      url: "http://localhost:5173",
+      reuseExistingServer: !process.env.CI,
+      timeout: 120_000,
+    },
+  }),
   projects: [
     {
       name: "setup",
