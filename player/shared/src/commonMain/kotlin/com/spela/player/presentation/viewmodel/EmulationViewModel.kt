@@ -580,11 +580,13 @@ class EmulationViewModel(
 
     private fun pauseGame() {
         libretroController.pause()
+        presenceService.paused = true
         _state.update { it.copy(isPaused = true) }
     }
 
     private fun resumeGame() {
         libretroController.resume()
+        presenceService.paused = false
         _state.update { it.copy(isPaused = false) }
     }
 
@@ -592,6 +594,7 @@ class EmulationViewModel(
         val current = _state.value
         if (current.isRunning && !current.isPaused) {
             libretroController.pause()
+            presenceService.paused = true
             _state.update { it.copy(isLifecyclePaused = true, isPaused = true) }
         }
     }
@@ -602,6 +605,7 @@ class EmulationViewModel(
             _state.update { it.copy(isLifecyclePaused = false) }
             // Only resume emulation if it wasn't user-paused before lifecycle pause
             libretroController.resume()
+            presenceService.paused = false
             _state.update { it.copy(isPaused = false) }
         }
     }
