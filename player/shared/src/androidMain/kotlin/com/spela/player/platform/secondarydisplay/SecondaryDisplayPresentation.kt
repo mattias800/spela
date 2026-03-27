@@ -47,15 +47,16 @@ class SecondaryDisplayPresentation(
         window?.apply {
             // Keep secondary screen on while presentation is visible
             addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
-            // Ensure window is focusable so it receives touch input on secondary displays
-            clearFlags(WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE)
+            // Keep window non-focusable so gamepad/key events always route to the
+            // Activity (and thus to the emulation thread). Touch events still work
+            // with FLAG_NOT_FOCUSABLE — only key event focus is affected.
+            addFlags(WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE)
             clearFlags(WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE)
         }
 
         val composeView = ComposeView(context).apply {
             setViewTreeLifecycleOwner(this@SecondaryDisplayPresentation)
             setViewTreeSavedStateRegistryOwner(this@SecondaryDisplayPresentation)
-            isFocusableInTouchMode = true
             setContent {
                 SpelaTheme {
                     content()
