@@ -83,6 +83,7 @@ import com.spela.player.presentation.ui.components.GameDetailLayout
 import com.spela.player.presentation.ui.components.GameDetailSkeleton
 import com.spela.player.presentation.ui.components.SpButton
 import com.spela.player.presentation.ui.components.SpButtonStyle
+import com.spela.player.presentation.ui.components.SpSecondaryButton
 import com.spela.player.presentation.ui.components.SpCard
 import com.spela.player.presentation.ui.components.SpChip
 import com.spela.player.presentation.ui.components.SpRegionChip
@@ -194,6 +195,8 @@ fun GameDetailScreen(
                     onDeleteLocalGame = { viewModel.onIntent(GameDetailIntent.ShowDeleteDownloadDialog) },
                     syncState = syncState,
                     onNavigateToAchievements = { onNavigateToAchievements?.invoke(gameId) },
+                    onAdminScrape = if (state.isAdmin) {{ viewModel.onIntent(GameDetailIntent.AdminScrapeGame) }} else null,
+                    onAdminRefreshAchievements = if (state.isAdmin) {{ viewModel.onIntent(GameDetailIntent.AdminRefreshAchievements) }} else null,
                 )
             },
             coverArt = { modifier, isPortrait ->
@@ -919,6 +922,8 @@ private fun GameHeroContent(
     onDeleteLocalGame: () -> Unit,
     syncState: GameSyncState?,
     onNavigateToAchievements: () -> Unit = {},
+    onAdminScrape: (() -> Unit)? = null,
+    onAdminRefreshAchievements: (() -> Unit)? = null,
 ) {
     val supportsNetplay = game.playable && game.consoleId.lowercase() in NETPLAY_SUPPORTED_CONSOLES
 
@@ -1081,6 +1086,30 @@ private fun GameHeroContent(
                         style = SpTypography.LabelSmall,
                         color = Color.White.copy(alpha = 0.65f),
                     )
+                }
+            }
+
+            // Admin actions (scrape + refresh achievements)
+            if (onAdminScrape != null || onAdminRefreshAchievements != null) {
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(SpSpacing.Small),
+                ) {
+                    if (onAdminScrape != null) {
+                        SpSecondaryButton(
+                            text = "Scrape Metadata",
+                            onClick = onAdminScrape,
+                            isLoading = state.isAdminActionLoading,
+                            onGradient = true,
+                        )
+                    }
+                    if (onAdminRefreshAchievements != null) {
+                        SpSecondaryButton(
+                            text = "Update Achievements",
+                            onClick = onAdminRefreshAchievements,
+                            isLoading = state.isAdminActionLoading,
+                            onGradient = true,
+                        )
+                    }
                 }
             }
 

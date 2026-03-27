@@ -236,6 +236,16 @@ class SpelaApiClient(
         client.post("$baseUrl/api/games/$gameId/scrape-if-needed")
     }
 
+    /** Admin: scrape metadata for a single game. */
+    suspend fun adminScrapeGame(gameId: String) {
+        client.post("$baseUrl/api/admin/games/$gameId/scrape")
+    }
+
+    /** Admin: refresh achievement cache for a single game. */
+    suspend fun adminRefreshAchievements(gameId: String) {
+        client.post("$baseUrl/api/admin/games/$gameId/achievements/refresh")
+    }
+
     suspend fun getRecentlyAddedGames(pageSize: Int = 12): GameListResponse {
         return client.get("$baseUrl/api/games") {
             parameter("sortBy", "created_at")
