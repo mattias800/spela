@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/spela/server/internal/db"
 	"github.com/spela/server/internal/scanner"
@@ -278,7 +279,10 @@ func (s *Scraper) ScrapeAll(ctx context.Context, mode string, consoleID uint, on
 		// Smart scraping: if this game belongs to a variant group, try to
 		// propagate metadata from an already-scraped sibling instead of
 		// hitting external APIs again.
-		if game.GroupKey != "" && mode != "all" {
+		// Skip propagation in "all" mode (re-scrape everything) and "fallback"
+		// mode (retry IGDB for games that only had LibRetro matches — propagating
+		// from other LibRetro siblings would defeat the purpose).
+		if game.GroupKey != "" && mode == "new" {
 			groupID := fmt.Sprintf("%d:%s", game.ConsoleID, game.GroupKey)
 
 			// Check if we've already scraped a game in this group during this run
@@ -413,16 +417,24 @@ func (s *Scraper) propagateGroupMetadata(game *db.Game) bool {
 }
 
 // propagateToGroup copies metadata from a freshly scraped game to all unscraped
-// siblings in the same variant group.
+// siblings in the same variant group. Also upgrades LibRetro-only siblings when
+// the source has IGDB metadata (so fallback re-scrapes benefit the whole group).
 func (s *Scraper) propagateToGroup(source *db.Game) {
 	if source.GroupKey == "" {
 		return
 	}
 
 	var siblings []db.Game
-	s.DB.Where("console_id = ? AND group_key = ? AND id != ? AND (scraper_id = '' OR scraper_id IS NULL)",
-		source.ConsoleID, source.GroupKey, source.ID).
-		Find(&siblings)
+	q := s.DB.Where("console_id = ? AND group_key = ? AND id != ?",
+		source.ConsoleID, source.GroupKey, source.ID)
+
+	// If the source has IGDB metadata, also upgrade LibRetro-only siblings
+	if strings.HasPrefix(source.ScraperID, "igdb:") {
+		q = q.Where("scraper_id = '' OR scraper_id IS NULL OR scraper_id = 'libretro'")
+	} else {
+		q = q.Where("scraper_id = '' OR scraper_id IS NULL")
+	}
+	q.Find(&siblings)
 
 	for i := range siblings {
 		s.propagateGroupMetadata(&siblings[i])

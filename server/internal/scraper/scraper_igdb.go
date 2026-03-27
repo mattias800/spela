@@ -172,6 +172,10 @@ func (s *Scraper) ScrapeGame(game *db.Game) error {
 		return fmt.Errorf("saving scraped metadata: %w", err)
 	}
 
+	// Clean up orphaned image files from previous scrapes.
+	// Only runs after a successful save, so cancelled scrapes keep old files.
+	s.cleanGameImages(game, console.Abbreviation, gameIDStr)
+
 	slog.Info("scraped metadata", "game", game.Title, "scraperId", game.ScraperID, "rating", game.Rating)
 	return nil
 }
@@ -608,8 +612,48 @@ func (s *Scraper) ScrapeGameWithIGDBMatch(game *db.Game, igdbID int) error {
 	// Enrichment: fetch themes, keywords, perspectives, franchises, artworks
 	s.enrichGameMetadata(game, igdbID)
 
+	// Clean up orphaned image files from previous scrapes
+	s.cleanGameImages(game, console.Abbreviation, gameIDStr)
+
 	slog.Info("re-scraped with manual IGDB match", "game", game.Title, "igdbId", igdbID, "scraperId", game.ScraperID)
 	return nil
+}
+
+// cleanGameImages removes orphaned image files from a game's image directory.
+// It collects all currently-referenced image paths from the game's DB fields
+// and screenshots/artwork, then deletes any other files in the directory.
+func (s *Scraper) cleanGameImages(game *db.Game, consoleAbbr, gameIDStr string) {
+	var keep []string
+	for _, path := range []string{
+		game.CoverURL, game.IGDBCoverURL, game.LibRetroCoverURL, game.ScreenshotURL,
+	} {
+		if path != "" {
+			keep = append(keep, path)
+		}
+	}
+
+	// Collect screenshot paths from DB
+	var screenshots []db.GameScreenshot
+	s.DB.Where("game_id = ?", game.ID).Find(&screenshots)
+	for _, ss := range screenshots {
+		if ss.URL != "" {
+			keep = append(keep, ss.URL)
+		}
+	}
+
+	// Collect artwork paths from DB
+	var artwork db.GameArtwork
+	if err := s.DB.Where("game_id = ?", game.ID).First(&artwork).Error; err == nil {
+		for _, path := range []string{artwork.HeroURL, artwork.GridURL, artwork.LogoURL, artwork.IconURL} {
+			if path != "" {
+				keep = append(keep, path)
+			}
+		}
+	}
+
+	if err := s.Storage.CleanGameImageDir(consoleAbbr, gameIDStr, keep); err != nil {
+		slog.Warn("failed to clean game image dir", "game", game.Title, "error", err)
+	}
 }
 
 // earliestPlatformReleaseDate returns the earliest release date (unix timestamp)
