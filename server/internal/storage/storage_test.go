@@ -154,3 +154,55 @@ func TestValidateROMPath(t *testing.T) {
 		})
 	}
 }
+
+func TestCleanGameImageDir(t *testing.T) {
+	dir := t.TempDir()
+	store, err := NewStorage(filepath.Join(dir, "saves"), filepath.Join(dir, "cores"), filepath.Join(dir, "images"), filepath.Join(dir, "bios"))
+	require.NoError(t, err)
+
+	// Create a game image directory with several files
+	gameDir := filepath.Join(store.ImageDir, "NES", "42")
+	require.NoError(t, os.MkdirAll(gameDir, 0755))
+
+	kept := filepath.Join(gameDir, "boxart-libretro.png")
+	orphaned1 := filepath.Join(gameDir, "screenshot_3.jpg")
+	orphaned2 := filepath.Join(gameDir, "boxart-igdb.jpg")
+
+	for _, f := range []string{kept, orphaned1, orphaned2} {
+		require.NoError(t, os.WriteFile(f, []byte("img"), 0644))
+	}
+
+	// Clean, keeping only the libretro cover
+	err = store.CleanGameImageDir("NES", "42", []string{"NES/42/boxart-libretro.png"})
+	require.NoError(t, err)
+
+	assert.FileExists(t, kept)
+	assert.NoFileExists(t, orphaned1)
+	assert.NoFileExists(t, orphaned2)
+}
+
+func TestCleanGameImageDir_NonExistentDir(t *testing.T) {
+	dir := t.TempDir()
+	store := &Storage{ImageDir: filepath.Join(dir, "images")}
+	require.NoError(t, os.MkdirAll(store.ImageDir, 0755))
+
+	// Should not error when the game directory doesn't exist
+	err := store.CleanGameImageDir("NES", "999", nil)
+	assert.NoError(t, err)
+}
+
+func TestCleanGameImageDir_EmptyKeepDeletesAll(t *testing.T) {
+	dir := t.TempDir()
+	store, err := NewStorage(filepath.Join(dir, "saves"), filepath.Join(dir, "cores"), filepath.Join(dir, "images"), filepath.Join(dir, "bios"))
+	require.NoError(t, err)
+
+	gameDir := filepath.Join(store.ImageDir, "SNES", "7")
+	require.NoError(t, os.MkdirAll(gameDir, 0755))
+	require.NoError(t, os.WriteFile(filepath.Join(gameDir, "old.jpg"), []byte("x"), 0644))
+
+	err = store.CleanGameImageDir("SNES", "7", nil)
+	require.NoError(t, err)
+
+	entries, _ := os.ReadDir(gameDir)
+	assert.Empty(t, entries)
+}

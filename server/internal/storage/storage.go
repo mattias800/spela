@@ -3,6 +3,7 @@ package storage
 import (
 	"fmt"
 	"io"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"strings"
@@ -77,6 +78,58 @@ func (s *Storage) WriteImage(subpath string, data io.Reader) (string, error) {
 // ImagePath returns the full filesystem path for a stored image subpath.
 func (s *Storage) ImagePath(subpath string) string {
 	return filepath.Join(s.ImageDir, subpath)
+}
+
+// CleanGameImageDir removes image files in {ImageDir}/{consoleAbbr}/{gameID}/
+// that are NOT in the keepPaths set. keepPaths should contain relative subpaths
+// (e.g. "NES/42/boxart-libretro.png"). Files matching a keep path are preserved;
+// everything else in the directory is deleted. This is safe to call after a
+// successful scrape to remove orphaned images from a previous scrape.
+func (s *Storage) CleanGameImageDir(consoleAbbr, gameIDStr string, keepPaths []string) error {
+	dir := filepath.Join(s.ImageDir, consoleAbbr, gameIDStr)
+
+	// Verify the directory is inside the image directory (defense-in-depth)
+	absDir, err := filepath.Abs(dir)
+	if err != nil {
+		return fmt.Errorf("resolving game image dir: %w", err)
+	}
+	absImageDir, err := filepath.Abs(s.ImageDir)
+	if err != nil {
+		return fmt.Errorf("resolving image dir: %w", err)
+	}
+	if !strings.HasPrefix(absDir, absImageDir+string(filepath.Separator)) {
+		return fmt.Errorf("game image dir outside image directory")
+	}
+
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return nil // nothing to clean
+		}
+		return fmt.Errorf("reading game image dir: %w", err)
+	}
+
+	// Build a set of filenames to keep
+	keep := make(map[string]bool, len(keepPaths))
+	for _, p := range keepPaths {
+		keep[filepath.Base(p)] = true
+	}
+
+	for _, entry := range entries {
+		if entry.IsDir() {
+			continue
+		}
+		if !keep[entry.Name()] {
+			path := filepath.Join(dir, entry.Name())
+			if err := os.Remove(path); err != nil && !os.IsNotExist(err) {
+				slog.Warn("failed to remove orphaned image", "path", path, "error", err)
+			} else {
+				slog.Debug("removed orphaned image", "path", path)
+			}
+		}
+	}
+
+	return nil
 }
 
 // BiosFilePath returns the filesystem path for a BIOS file, using sanitizeFilename
