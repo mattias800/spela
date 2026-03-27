@@ -222,6 +222,8 @@ class EmulationViewModel(
             EmulationIntent.CoreMismatchTryAnyway -> handleCoreMismatchTryAnyway()
             EmulationIntent.CoreMismatchGameSaveOnly -> handleCoreMismatchGameSaveOnly()
             EmulationIntent.CoreMismatchStartFresh -> handleCoreMismatchStartFresh()
+            EmulationIntent.ConfirmCoreMismatchSave -> Unit // TODO: implement in Tasks 3-4
+            EmulationIntent.SkipCoreMismatchSave -> Unit // TODO: implement in Tasks 3-4
 
             // Cheats
             EmulationIntent.ShowCheatBrowser -> _state.update { it.copy(showCheatBrowser = true) }

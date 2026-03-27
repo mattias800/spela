@@ -100,6 +100,12 @@ sealed interface EmulationIntent {
     /** User chose "Start Fresh" — skip all saves. */
     data object CoreMismatchStartFresh : EmulationIntent
 
+    // Core mismatch save warning
+    /** User confirmed saving the save state despite core mismatch. */
+    data object ConfirmCoreMismatchSave : EmulationIntent
+    /** User chose to skip saving the save state (SRAM already saved). */
+    data object SkipCoreMismatchSave : EmulationIntent
+
     // Cheats
     data object ShowCheatBrowser : EmulationIntent
     data object HideCheatBrowser : EmulationIntent
