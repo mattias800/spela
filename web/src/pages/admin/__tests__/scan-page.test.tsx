@@ -14,6 +14,8 @@ vi.mock("@/hooks/use-admin", () => ({
   useScanLibrary: vi.fn(),
   useScrapeMetadata: vi.fn(),
   useCancelScrape: vi.fn(),
+  useScrapeStatusCounts: vi.fn(() => ({ data: null, isLoading: false })),
+  useScrapeStatus: vi.fn(() => ({ data: null, isLoading: false })),
 }));
 
 vi.mock("@/hooks/use-scrape-progress", () => ({
