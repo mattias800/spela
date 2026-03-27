@@ -100,6 +100,12 @@ func (h *AdminHandler) CancelScrape(c *gin.Context) {
 		return
 	}
 
+	// Broadcast immediately so the frontend stops spinning.
+	// The goroutine will also broadcast when it detects the cancel, but that
+	// can be delayed by seconds while the current game finishes scraping.
+	// Receiving the event twice is harmless (frontend just sets phase="complete").
+	h.Hub.Broadcast(ws.Event{Type: "scrape_cancelled", Payload: gin.H{}})
+
 	adminID, _ := c.Get("userId")
 	slog.Info("audit: admin cancelled scrape", "admin_id", adminID)
 	c.JSON(http.StatusOK, gin.H{"message": "scrape cancellation requested"})
