@@ -537,6 +537,7 @@ func NewRouter(cfg Config) (*gin.Engine, func()) {
 			admin.POST("/scrape", adminHandler.TriggerScrape)
 			admin.DELETE("/scrape", adminHandler.CancelScrape)
 			admin.GET("/scrape/status", adminHandler.ScrapeStatus)
+			admin.GET("/scrape/counts", adminHandler.ScrapeStatusCounts)
 			admin.POST("/games/:id/scrape", adminHandler.ScrapeGame)
 			admin.POST("/games/:id/achievements/refresh", adminHandler.RefreshAchievements)
 			admin.GET("/games/:id/covers", adminHandler.GetGameCovers)

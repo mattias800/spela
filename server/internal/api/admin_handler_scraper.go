@@ -4,6 +4,7 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/spela/server/internal/db"
@@ -52,13 +53,35 @@ func (h *AdminHandler) TriggerScrape(c *gin.Context) {
 	if consoleID > 0 {
 		q = q.Where("console_id = ?", consoleID)
 	}
-	switch mode {
-	case "all":
+
+	source := c.Query("source")
+	status := c.Query("status")
+	if source != "" && status != "" {
+		// Filter by games with matching scrape result
+		cooldownCutoff := time.Now().AddDate(0, 0, -7)
+		if status == "not_attempted" {
+			// Games that DON'T have a result row for this source
+			q = q.Where("id NOT IN (SELECT game_id FROM game_scrape_results WHERE source = ?)", source)
+		} else {
+			subQ := "id IN (SELECT game_id FROM game_scrape_results WHERE source = ? AND status = ?"
+			args := []interface{}{source, status}
+			if status == "not_found" || status == "error" {
+				subQ += " AND (last_attempt_at IS NULL OR last_attempt_at < ?)"
+				args = append(args, cooldownCutoff)
+			}
+			subQ += ")"
+			q = q.Where(subQ, args...)
+		}
 		q.Count(&total)
-	case "fallback":
-		q.Where("scraper_id = 'libretro'").Count(&total)
-	default:
-		q.Where("scraper_id = '' OR scraper_id IS NULL").Count(&total)
+	} else {
+		switch mode {
+		case "all":
+			q.Count(&total)
+		case "fallback":
+			q.Where("scraper_id = 'libretro'").Count(&total)
+		default:
+			q.Where("scraper_id = '' OR scraper_id IS NULL").Count(&total)
+		}
 	}
 
 	h.Hub.Broadcast(ws.Event{Type: "scrape_started", Payload: nil})
@@ -132,6 +155,104 @@ func (h *AdminHandler) ScrapeStatus(c *gin.Context) {
 		"failures":    progress.Failures,
 		"verified":    progress.Verified,
 	})
+}
+
+// ScrapeStatusCounts returns aggregate scrape result counts per source.
+// For each source (igdb, libretro, steamgriddb) it reports:
+//   - matched: games successfully scraped
+//   - notFound: games where the source returned no result
+//   - notFoundEligible: notFound games eligible for retry (last attempt > 7 days ago or never)
+//   - error: games where the scrape errored
+//   - errorEligible: error games eligible for retry
+//   - notAttempted: games with no result row for this source at all
+func (h *AdminHandler) ScrapeStatusCounts(c *gin.Context) {
+	type sourceRow struct {
+		Source string
+		Status string
+		Count  int64
+	}
+
+	var rows []sourceRow
+	if err := h.DB.Model(&db.GameScrapeResult{}).
+		Select("source, status, COUNT(*) as count").
+		Group("source, status").
+		Scan(&rows).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to query scrape results"})
+		return
+	}
+
+	var totalGames int64
+	if err := h.DB.Model(&db.Game{}).Count(&totalGames).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to count games"})
+		return
+	}
+
+	cooldownCutoff := time.Now().AddDate(0, 0, -7)
+
+	type eligibleRow struct {
+		Source string
+		Status string
+		Count  int64
+	}
+	var eligibleRows []eligibleRow
+	if err := h.DB.Model(&db.GameScrapeResult{}).
+		Select("source, status, COUNT(*) as count").
+		Where("status IN ? AND (last_attempt_at IS NULL OR last_attempt_at < ?)", []string{"not_found", "error"}, cooldownCutoff).
+		Group("source, status").
+		Scan(&eligibleRows).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to query eligible counts"})
+		return
+	}
+
+	// Build lookup maps
+	counts := make(map[string]map[string]int64)
+	for _, r := range rows {
+		if counts[r.Source] == nil {
+			counts[r.Source] = make(map[string]int64)
+		}
+		counts[r.Source][r.Status] = r.Count
+	}
+
+	eligible := make(map[string]map[string]int64)
+	for _, r := range eligibleRows {
+		if eligible[r.Source] == nil {
+			eligible[r.Source] = make(map[string]int64)
+		}
+		eligible[r.Source][r.Status] = r.Count
+	}
+
+	type sourceResult struct {
+		Source           string `json:"source"`
+		Matched          int64  `json:"matched"`
+		NotFound         int64  `json:"notFound"`
+		NotFoundEligible int64  `json:"notFoundEligible"`
+		Error            int64  `json:"error"`
+		ErrorEligible    int64  `json:"errorEligible"`
+		NotAttempted     int64  `json:"notAttempted"`
+	}
+
+	sources := []string{"igdb", "libretro", "steamgriddb"}
+	results := make([]sourceResult, 0, len(sources))
+
+	for _, src := range sources {
+		sc := counts[src]
+		el := eligible[src]
+
+		var attempted int64
+		h.DB.Raw("SELECT COUNT(DISTINCT game_id) FROM game_scrape_results WHERE source = ?", src).Scan(&attempted)
+
+		results = append(results, sourceResult{
+			Source:           src,
+			Matched:          sc["matched"],
+			NotFound:         sc["not_found"],
+			NotFoundEligible: el["not_found"],
+			Error:            sc["error"],
+			ErrorEligible:    el["error"],
+			NotAttempted:     totalGames - attempted,
+		})
+	}
+
+	c.JSON(http.StatusOK, gin.H{"sources": results})
 }
 
 // ScrapeGame scrapes metadata for a single game (admin only).

@@ -9,6 +9,7 @@ import (
 
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 	"gorm.io/gorm/logger"
 )
 
@@ -176,6 +177,8 @@ func Initialize(dbPath string) (*gorm.DB, error) {
 		&SavedSearch{},
 		// Achievement Showcase
 		&UserAchievementShowcase{},
+		// Scrape results per source
+		&GameScrapeResult{},
 	)
 	if err != nil {
 		return nil, fmt.Errorf("running migrations: %w", err)
@@ -972,5 +975,118 @@ func SeedCores(db *gorm.DB) error {
 		}
 	}
 
+	return nil
+}
+
+// MigrateScrapeResults backfills GameScrapeResult rows from the legacy
+// ScraperID / ScrapeAttempts fields already present on each Game row.
+// It is idempotent: if any rows already exist the function returns immediately.
+func MigrateScrapeResults(database *gorm.DB) error {
+	var count int64
+	if err := database.Model(&GameScrapeResult{}).Count(&count).Error; err != nil {
+		return fmt.Errorf("counting existing scrape results: %w", err)
+	}
+	if count > 0 {
+		slog.Info("skipping scrape-result migration: rows already present", "count", count)
+		return nil
+	}
+
+	var games []Game
+	if err := database.Find(&games).Error; err != nil {
+		return fmt.Errorf("loading games for scrape-result migration: %w", err)
+	}
+
+	// Build a set of game IDs that have SteamGridDB artwork (hero URL present).
+	var artworks []GameArtwork
+	if err := database.Where("hero_url != ''").Find(&artworks).Error; err != nil {
+		return fmt.Errorf("loading game artworks for scrape-result migration: %w", err)
+	}
+	hasHero := make(map[uint]bool, len(artworks))
+	for _, a := range artworks {
+		hasHero[a.GameID] = true
+	}
+
+	var rows []GameScrapeResult
+	for _, g := range games {
+		t := g.UpdatedAt
+
+		if strings.HasPrefix(g.ScraperID, "igdb:") {
+			// IGDB matched
+			rows = append(rows, GameScrapeResult{
+				GameID:        g.ID,
+				Source:        "igdb",
+				Status:        "matched",
+				SourceID:      strings.TrimPrefix(g.ScraperID, "igdb:"),
+				LastAttemptAt: &t,
+			})
+			// LibRetro matched
+			rows = append(rows, GameScrapeResult{
+				GameID:        g.ID,
+				Source:        "libretro",
+				Status:        "matched",
+				LastAttemptAt: &t,
+			})
+			// SteamGridDB matched only if a hero exists
+			if hasHero[g.ID] {
+				rows = append(rows, GameScrapeResult{
+					GameID:        g.ID,
+					Source:        "steamgriddb",
+					Status:        "matched",
+					LastAttemptAt: &t,
+				})
+			}
+		} else if g.ScraperID == "libretro" {
+			// IGDB not found
+			rows = append(rows, GameScrapeResult{
+				GameID:        g.ID,
+				Source:        "igdb",
+				Status:        "not_found",
+				LastAttemptAt: &t,
+			})
+			// LibRetro matched
+			rows = append(rows, GameScrapeResult{
+				GameID:        g.ID,
+				Source:        "libretro",
+				Status:        "matched",
+				LastAttemptAt: &t,
+			})
+			// SteamGridDB matched only if a hero exists
+			if hasHero[g.ID] {
+				rows = append(rows, GameScrapeResult{
+					GameID:        g.ID,
+					Source:        "steamgriddb",
+					Status:        "matched",
+					LastAttemptAt: &t,
+				})
+			}
+		} else if g.ScraperID == "" && g.ScrapeAttempts > 0 {
+			// Attempted but nothing found
+			rows = append(rows, GameScrapeResult{
+				GameID:        g.ID,
+				Source:        "igdb",
+				Status:        "not_found",
+				LastAttemptAt: &t,
+			})
+			rows = append(rows, GameScrapeResult{
+				GameID:        g.ID,
+				Source:        "libretro",
+				Status:        "not_found",
+				LastAttemptAt: &t,
+			})
+		}
+	}
+
+	if len(rows) == 0 {
+		slog.Info("no games to backfill for scrape-result migration")
+		return nil
+	}
+
+	// Insert in batches; skip rows that already exist (idempotent).
+	if err := database.Clauses(clause.OnConflict{DoNothing: true}).
+		CreateInBatches(rows, 200).Error; err != nil {
+		return fmt.Errorf("inserting scrape result rows: %w", err)
+	}
+
+	slog.Info("scrape-result migration completed", "rows_inserted", len(rows))
 	return nil
 }

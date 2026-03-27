@@ -112,12 +112,21 @@ export function useScrapeMetadata() {
     mutationFn: ({
       mode = "new",
       console,
+      source,
+      status,
     }: {
       mode?: ScrapeMode;
       console?: string;
+      source?: string;
+      status?: string;
     }) => {
       const params = new URLSearchParams();
-      if (mode !== "new") params.set("mode", mode);
+      if (source && status) {
+        params.set("source", source);
+        params.set("status", status);
+      } else if (mode !== "new") {
+        params.set("mode", mode);
+      }
       if (console) params.set("console", console);
       const qs = params.toString();
       return api.post<ScrapeStartResponse>(
@@ -127,7 +136,30 @@ export function useScrapeMetadata() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["games"] });
       queryClient.invalidateQueries({ queryKey: ["game"] });
+      queryClient.invalidateQueries({ queryKey: ["admin", "scrape-counts"] });
     },
+  });
+}
+
+export interface ScrapeSourceCounts {
+  source: string;
+  matched: number;
+  notFound: number;
+  notFoundEligible: number;
+  error: number;
+  errorEligible: number;
+  notAttempted: number;
+}
+
+export interface ScrapeStatusCountsResponse {
+  sources: ScrapeSourceCounts[];
+}
+
+export function useScrapeStatusCounts() {
+  return useQuery({
+    queryKey: ["admin", "scrape-counts"],
+    queryFn: () =>
+      api.get<ScrapeStatusCountsResponse>("/admin/scrape/counts"),
   });
 }
 

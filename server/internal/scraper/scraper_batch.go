@@ -165,6 +165,16 @@ func (s *Scraper) scrapeSteamGridDBArtwork(game *db.Game, console db.Console) {
 	artwork, err := s.SteamGridDBClient.GetBestArtwork(game.Title, console.Abbreviation)
 	if err != nil {
 		slog.Debug("SteamGridDB artwork fetch failed", "game", game.Title, "error", err)
+		errStr := err.Error()
+		if strings.Contains(errStr, "no results found") {
+			RecordScrapeResult(s.DB, game.ID, "steamgriddb", "not_found", "", "")
+		} else {
+			RecordScrapeResult(s.DB, game.ID, "steamgriddb", "error", "", errStr)
+		}
+		return
+	}
+	if artwork == nil {
+		RecordScrapeResult(s.DB, game.ID, "steamgriddb", "not_found", "", "")
 		return
 	}
 
@@ -195,9 +205,11 @@ func (s *Scraper) scrapeSteamGridDBArtwork(game *db.Game, console db.Console) {
 
 	if err := s.DB.Create(artwork).Error; err != nil {
 		slog.Warn("failed to save SteamGridDB artwork", "game", game.Title, "error", err)
+		RecordScrapeResult(s.DB, game.ID, "steamgriddb", "error", "", err.Error())
 		return
 	}
 
+	RecordScrapeResult(s.DB, game.ID, "steamgriddb", "matched", "", "")
 	slog.Info("saved SteamGridDB artwork", "game", game.Title, "steamGridDbId", artwork.SteamGridDBID)
 }
 

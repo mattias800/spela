@@ -16,6 +16,7 @@ import { useToast } from "@/components/ui";
 import { useScrapeProgress } from "@/hooks/use-scrape-progress";
 import { useScanProgress } from "@/hooks/use-scan-progress";
 import { useConsoles } from "@/hooks/use-consoles";
+import { ScrapeStatusCard } from "@/features/admin/components/scrape-status-card";
 
 function ProgressBar({ value, max }: { value: number; max: number }) {
   const pct = max > 0 ? Math.round((value / max) * 100) : 0;
@@ -458,6 +459,8 @@ export function AdminScanPage() {
           Scan game directories and update metadata.
         </p>
       </div>
+
+      <ScrapeStatusCard />
 
       <div className="grid gap-5 md:grid-cols-2">
         <ScanCard />

@@ -87,6 +87,7 @@ func (s *Scraper) ScrapeGame(game *db.Game) error {
 		igdbAttempted = true
 		if err := s.scrapeIGDB(game, console, gameIDStr); err != nil {
 			slog.Warn("IGDB scrape failed, falling back to LibRetro", "game", game.Title, "error", err)
+			RecordScrapeResult(s.DB, game.ID, "igdb", "error", "", err.Error())
 		}
 	}
 	if !igdbAttempted {
@@ -124,6 +125,9 @@ func (s *Scraper) ScrapeGame(game *db.Game) error {
 		libRetroWg.Wait()
 		if libRetroCoverPath != "" {
 			game.LibRetroCoverURL = libRetroCoverPath
+			RecordScrapeResult(s.DB, game.ID, "libretro", "matched", "", "")
+		} else {
+			RecordScrapeResult(s.DB, game.ID, "libretro", "not_found", "", "")
 		}
 	}
 
@@ -282,6 +286,7 @@ func (s *Scraper) scrapeIGDB(game *db.Game, console db.Console, gameIDStr string
 
 	if len(games) == 0 {
 		slog.Debug("no IGDB results", "game", searchName, "platform", console.Abbreviation)
+		RecordScrapeResult(s.DB, game.ID, "igdb", "not_found", "", "")
 		return nil
 	}
 
@@ -293,6 +298,8 @@ func (s *Scraper) scrapeIGDB(game *db.Game, console db.Console, gameIDStr string
 	forceTitle := !crcVerified || normalizeName(match.Name) == normalizeName(searchName)
 
 	s.applyIGDBMatch(game, console, match, gameIDStr, forceTitle)
+
+	RecordScrapeResult(s.DB, game.ID, "igdb", "matched", fmt.Sprintf("%d", match.ID), "")
 
 	slog.Info("IGDB match found", "game", searchName, "matched", match.Name, "igdbId", match.ID)
 

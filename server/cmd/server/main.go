@@ -119,6 +119,11 @@ func main() {
 		os.Exit(1)
 	}
 
+	// Backfill per-source scrape results from legacy ScraperID field (one-time on upgrade)
+	if err := db.MigrateScrapeResults(database); err != nil {
+		slog.Warn("failed to migrate scrape results", "error", err)
+	}
+
 	// Migrate absolute file paths to relative (one-time on upgrade)
 	if err := db.MigrateToRelativePaths(database, gameDirs); err != nil {
 		slog.Warn("failed to migrate game paths", "error", err)
