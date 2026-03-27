@@ -66,8 +66,7 @@ fun SpSplitButton(
 
     Row(
         modifier = modifier
-            .heightIn(min = 48.dp)
-            .height(IntrinsicSize.Min),
+            .heightIn(min = 48.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         SpButton(
