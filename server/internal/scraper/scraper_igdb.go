@@ -81,48 +81,83 @@ func (s *Scraper) ScrapeGame(game *db.Game) error {
 		return nil
 	}
 
-	// --- IGDB (primary metadata + images, when configured) ---
-	igdbAttempted := false
+	// --- Scrape all sources in parallel ---
+	// IGDB, LibRetro, and SteamGridDB are independent external services.
+	// Run them concurrently, collect outcomes, then write results to DB.
+	var wg sync.WaitGroup
+
+	// Outcome variables — written by goroutines, read after wg.Wait()
+	var igdbErr error
+	var igdbAttempted bool
+	var libRetroCoverPath string
+	var sgdbResult struct {
+		status   string
+		errorMsg string
+	}
+
+	// IGDB (primary metadata + images)
 	if s.IGDBClient != nil && s.IGDBClient.IsConfigured() {
 		igdbAttempted = true
-		if err := s.scrapeIGDB(game, console, gameIDStr); err != nil {
-			slog.Warn("IGDB scrape failed, falling back to LibRetro", "game", game.Title, "error", err)
-			RecordScrapeResult(s.DB, game.ID, "igdb", "error", "", err.Error())
-		}
-	}
-	if !igdbAttempted {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			igdbErr = s.scrapeIGDB(game, console, gameIDStr)
+			if igdbErr != nil {
+				slog.Warn("IGDB scrape failed", "game", game.Title, "error", igdbErr)
+			}
+		}()
+	} else {
 		slog.Warn("IGDB not configured, scraping with LibRetro only", "game", game.Title)
 	}
 
-	// --- LibRetro Thumbnails (preferred for box art, fallback for screenshots) ---
+	// LibRetro Thumbnails (box art — preferred source)
 	libRetroSystem, hasLibRetro := AbbreviationToLibRetro[console.Abbreviation]
 	if hasLibRetro {
-		var libRetroWg sync.WaitGroup
-		var libRetroCoverPath string
-
-		// Box art: always try LibRetro (preferred source for box art)
-		libRetroWg.Add(1)
+		wg.Add(1)
 		go func() {
-			defer libRetroWg.Done()
+			defer wg.Done()
 			boxartSubpath := fmt.Sprintf("%s/%s/boxart-libretro.png", console.Abbreviation, gameIDStr)
 			libRetroCoverPath = s.downloadLibRetroImage(libRetroSystem, gameName, "Named_Boxarts", boxartSubpath)
 		}()
+	}
 
-		// Screenshot fallback: only if no IGDB screenshots were saved
+	// SteamGridDB artwork (best-effort, fully independent)
+	// Note: scrapeSteamGridDBArtwork writes its own DB records (GameArtwork)
+	// but we capture the outcome to record the scrape result after.
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		sgdbResult.status, sgdbResult.errorMsg = s.scrapeSteamGridDBArtworkResult(game, console)
+	}()
+
+	// Wait for all sources to complete
+	wg.Wait()
+
+	// --- Record all scrape results after parallel completion ---
+
+	// IGDB result
+	if igdbAttempted {
+		if igdbErr != nil {
+			RecordScrapeResult(s.DB, game.ID, "igdb", "error", "", igdbErr.Error())
+		}
+		// Note: scrapeIGDB already calls RecordScrapeResult for "matched" and "not_found"
+		// internally, because it has the IGDB game ID. We only record "error" here.
+	}
+
+	// SteamGridDB result
+	RecordScrapeResult(s.DB, game.ID, "steamgriddb", sgdbResult.status, "", sgdbResult.errorMsg)
+
+	// LibRetro screenshot fallback (must happen after IGDB to check for existing screenshots)
+	if hasLibRetro {
 		var screenshotCount int64
 		s.DB.Model(&db.GameScreenshot{}).Where("game_id = ?", game.ID).Count(&screenshotCount)
 		if screenshotCount == 0 {
-			libRetroWg.Add(1)
-			go func() {
-				defer libRetroWg.Done()
-				snapSubpath := fmt.Sprintf("%s/%s/screenshot.png", console.Abbreviation, gameIDStr)
-				if path := s.downloadLibRetroImage(libRetroSystem, gameName, "Named_Snaps", snapSubpath); path != "" {
-					s.DB.Create(&db.GameScreenshot{GameID: game.ID, URL: path, Position: 0})
-				}
-			}()
+			snapSubpath := fmt.Sprintf("%s/%s/screenshot.png", console.Abbreviation, gameIDStr)
+			if path := s.downloadLibRetroImage(libRetroSystem, gameName, "Named_Snaps", snapSubpath); path != "" {
+				s.DB.Create(&db.GameScreenshot{GameID: game.ID, URL: path, Position: 0})
+			}
 		}
 
-		libRetroWg.Wait()
 		if libRetroCoverPath != "" {
 			game.LibRetroCoverURL = libRetroCoverPath
 			RecordScrapeResult(s.DB, game.ID, "libretro", "matched", "", "")
@@ -131,8 +166,7 @@ func (s *Scraper) ScrapeGame(game *db.Game) error {
 		}
 	}
 
-	// Set active cover: restore admin's manual choice if still available,
-	// otherwise prefer LibRetro box art, fall back to IGDB.
+	// --- Resolve cover URL ---
 	if manualOverride {
 		switch prevCoverSource {
 		case "libretro":
@@ -151,7 +185,6 @@ func (s *Scraper) ScrapeGame(game *db.Game) error {
 		} else if game.IGDBCoverURL != "" {
 			game.CoverURL = game.IGDBCoverURL
 		}
-		// Admin's chosen source is no longer available; clear the flag
 		if manualOverride {
 			game.CoverManuallySet = false
 		}
@@ -162,13 +195,10 @@ func (s *Scraper) ScrapeGame(game *db.Game) error {
 		game.ScraperID = "libretro"
 	}
 
-	// Extract region from filename (works for both verified and unverified ROMs)
+	// Extract region from filename
 	if game.Region == "" {
 		game.Region = ExtractRegion(game.FileName)
 	}
-
-	// --- SteamGridDB artwork (best-effort) ---
-	s.scrapeSteamGridDBArtwork(game, console)
 
 	game.ScrapeAttempts++
 
