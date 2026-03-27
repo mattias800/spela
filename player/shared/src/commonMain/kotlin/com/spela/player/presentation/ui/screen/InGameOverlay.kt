@@ -17,6 +17,7 @@ import com.spela.player.presentation.intent.EmulationIntent
 import com.spela.player.presentation.ui.feature.ingame.ChallengeCompletedDialog
 import com.spela.player.presentation.ui.feature.ingame.CheatsDialog
 import com.spela.player.presentation.ui.feature.ingame.CoreMismatchDialog
+import com.spela.player.presentation.ui.feature.ingame.CoreMismatchSaveDialog
 import com.spela.player.presentation.ui.feature.ingame.ChallengeTimerHud
 import com.spela.player.presentation.ui.feature.ingame.FpsHud
 import com.spela.player.presentation.ui.feature.ingame.InGameOverlayPanel
@@ -220,6 +221,16 @@ fun InGameOverlay(
             onTryAnyway = { viewModel.onIntent(EmulationIntent.CoreMismatchTryAnyway) },
             onGameSaveOnly = { viewModel.onIntent(EmulationIntent.CoreMismatchGameSaveOnly) },
             onStartFresh = { viewModel.onIntent(EmulationIntent.CoreMismatchStartFresh) },
+        )
+    }
+
+    // Core mismatch save warning dialog
+    if (state.showCoreMismatchSaveDialog) {
+        CoreMismatchSaveDialog(
+            originalCoreName = state.mismatchedOriginalCore,
+            currentCoreName = state.coreMismatchCurrentCoreName.ifEmpty { "current core" },
+            onSaveAnyway = { viewModel.onIntent(EmulationIntent.ConfirmCoreMismatchSave) },
+            onSkipSaveState = { viewModel.onIntent(EmulationIntent.SkipCoreMismatchSave) },
         )
     }
 

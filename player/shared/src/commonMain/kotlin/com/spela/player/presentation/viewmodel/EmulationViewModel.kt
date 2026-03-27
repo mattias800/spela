@@ -120,7 +120,11 @@ class EmulationViewModel(
             EmulationIntent.PauseGame -> pauseGame()
             EmulationIntent.ResumeGame -> resumeGame()
             EmulationIntent.StopGame -> stopGame()
-            EmulationIntent.SaveState -> saveManager.saveState()
+            EmulationIntent.SaveState -> {
+                if (checkCoreMismatchBeforeSave("manual")) {
+                    saveManager.saveState()
+                }
+            }
             EmulationIntent.LoadState -> saveManager.loadState()
             EmulationIntent.ToggleOverlay -> {
                 val wasShowing = _state.value.showOverlay
@@ -197,12 +201,18 @@ class EmulationViewModel(
             }
 
             // Quick-save slots
-            EmulationIntent.QuickSave -> quickSaveToSlot()
+            EmulationIntent.QuickSave -> {
+                if (checkCoreMismatchBeforeSave("quick")) {
+                    quickSaveToSlot()
+                }
+            }
             EmulationIntent.QuickLoad -> quickLoadFromSlot()
             is EmulationIntent.SelectSlot -> _state.update { it.copy(activeSlot = intent.slot) }
             is EmulationIntent.SaveToSlot -> {
                 _state.update { it.copy(activeSlot = intent.slot) }
-                saveManager.saveToSlot(intent.slot)
+                if (checkCoreMismatchBeforeSave("slot", intent.slot)) {
+                    saveManager.saveToSlot(intent.slot)
+                }
             }
             is EmulationIntent.LoadFromSlot -> {
                 _state.update { it.copy(activeSlot = intent.slot) }
@@ -222,6 +232,27 @@ class EmulationViewModel(
             EmulationIntent.CoreMismatchTryAnyway -> handleCoreMismatchTryAnyway()
             EmulationIntent.CoreMismatchGameSaveOnly -> handleCoreMismatchGameSaveOnly()
             EmulationIntent.CoreMismatchStartFresh -> handleCoreMismatchStartFresh()
+            EmulationIntent.ConfirmCoreMismatchSave -> {
+                val pendingType = _state.value.pendingSaveType
+                val pendingSlot = _state.value.pendingSaveSlot
+                _state.update { it.copy(showCoreMismatchSaveDialog = false) }
+                when (pendingType) {
+                    "auto" -> scope.launch(dispatchers.io) {
+                        saveManager.autoSaveOnStop(_state.value.gameId)
+                        finishStopGame()
+                    }
+                    "manual" -> saveManager.saveState()
+                    "slot" -> saveManager.saveToSlot(pendingSlot)
+                    "quick" -> quickSaveToSlot()
+                }
+            }
+            EmulationIntent.SkipCoreMismatchSave -> {
+                val pendingType = _state.value.pendingSaveType
+                _state.update { it.copy(showCoreMismatchSaveDialog = false) }
+                if (pendingType == "auto") {
+                    scope.launch(dispatchers.io) { finishStopGame() }
+                }
+            }
 
             // Cheats
             EmulationIntent.ShowCheatBrowser -> _state.update { it.copy(showCheatBrowser = true) }
@@ -688,96 +719,137 @@ class EmulationViewModel(
             if (sharedSessionId != null && turnToken != null) {
                 netplayManager.saveSharedSessionOnStop(sharedSessionId, turnToken)
             } else if (currentPreferences.autoSaveEnabled && !currentState.isChallengeMode) {
-                saveManager.autoSaveOnStop(currentState.gameId)
-            }
-
-            // Save SRAM before stopping (best effort) — this is the upload the sync
-            // status refers to. Clear sync state once it completes.
-            // Timeout after 15 seconds to prevent stuck "Uploading save…" indicator.
-            try {
-                kotlinx.coroutines.withTimeout(15_000L) {
-                    saveManager.saveSramOnStop(currentState.gameId)
+                if (currentState.isCoreMismatched) {
+                    // SRAM is saved below in finishStopGame().
+                    // Show dialog and pause the stop flow — the dialog handlers will complete it.
+                    withContext(dispatchers.main) {
+                        _state.update {
+                            it.copy(
+                                showCoreMismatchSaveDialog = true,
+                                pendingSaveType = "auto",
+                            )
+                        }
+                    }
+                    return@launch // Stop flow pauses here; dialog handlers complete it
+                } else {
+                    saveManager.autoSaveOnStop(currentState.gameId)
                 }
-            } catch (_: kotlinx.coroutines.TimeoutCancellationException) {
-                println("[Emulation] SRAM upload timed out after 15s for game ${currentState.gameId}")
-            } catch (_: Exception) {
-                println("[Emulation] SRAM upload failed for game ${currentState.gameId}")
-            }
-            _syncState.update { current ->
-                if (current?.gameId == stoppingGameId) null else current
             }
 
-            try {
-                achievementsController.deinit()
-            } catch (_: Exception) {
-                // Best effort
-            }
-
-            libretroController.stop()
-            withContext(dispatchers.main) {
-                _state.update {
-                    it.copy(
-                        isRunning = false,
-                        isPaused = false,
-                        isLifecyclePaused = false,
-                        fps = 0f,
-                        frameTime = 0f,
-                        isHardcoreMode = false,
-                        showExitConfirm = false,
-                        showOverlay = false,
-                        secondaryDisplayActive = false,
-                        isDualScreenConsole = false,
-                        dualScreenSplitY = 0,
-                        dualScreenBottomWidth = 0,
-                        dualScreenBottomOffsetX = 0,
-                        sharedSessionId = null,
-                        turnToken = null,
-                        netplaySessionId = null,
-                        netplayPeerUsername = null,
-                        netplayPeerLatencyMs = 0,
-                        netplayPeerDisconnected = false,
-                        netplayPausedByUsername = null,
-                        netplayShowLeaveConfirm = false,
-                        netplayPauseElapsedSeconds = 0,
-                        netplaySessionExpired = false,
-                        challengeId = null,
-                        challengeAttemptId = null,
-                        challengeElapsedMs = 0,
-                        showChallengeCreation = false,
-                        isCreatingChallenge = false,
-                        challengeCreationSuccess = false,
-                        showGiveUpConfirm = false,
-                        challengeCompletedAttempt = null,
-                        sessionId = null,
-                        consoleColorTheme = null,
-                        heroUrl = null,
-                        gameDescription = null,
-                        gameDeveloper = null,
-                        gamePublisher = null,
-                        gameReleaseDate = null,
-                        gameGenre = null,
-                        gameRating = 0.0,
-                        gamePlayers = 0,
-                        showCoreMismatchDialog = false,
-                        coreMismatchSaveCoreName = "",
-                        coreMismatchCurrentCoreName = "",
-                        hasCheats = false,
-                        enabledCheatCount = 0,
-                        showCheatBrowser = false,
-                        cheats = emptyList(),
-                        achievements = emptyList(),
-                        achievementProgress = emptyList(),
-                        achievementTotalPoints = 0,
-                        achievementsLoading = false,
-                        sessionAchievementUnlocks = emptyList(),
-                        achievementEvent = null,
-                        secondaryToast = null,
-                        touchControlPort = 0,
-                    )
-                }
-                saveManager.currentSessionId = null
-            }
+            finishStopGame()
         }
+    }
+
+    /**
+     * Completes the stop-game flow after auto-save decision has been made.
+     * Saves SRAM, deinitializes achievements, stops the core, and resets state.
+     * Called from both the normal stopGame path and the core-mismatch dialog handlers.
+     */
+    private suspend fun finishStopGame() {
+        val currentState = _state.value
+        val stoppingGameId = currentState.gameId
+
+        // Save SRAM before stopping (best effort) — this is the upload the sync
+        // status refers to. Clear sync state once it completes.
+        // Timeout after 15 seconds to prevent stuck "Uploading save…" indicator.
+        try {
+            kotlinx.coroutines.withTimeout(15_000L) {
+                saveManager.saveSramOnStop(currentState.gameId)
+            }
+        } catch (_: kotlinx.coroutines.TimeoutCancellationException) {
+            println("[Emulation] SRAM upload timed out after 15s for game ${currentState.gameId}")
+        } catch (_: Exception) {
+            println("[Emulation] SRAM upload failed for game ${currentState.gameId}")
+        }
+        _syncState.update { current ->
+            if (current?.gameId == stoppingGameId) null else current
+        }
+
+        try {
+            achievementsController.deinit()
+        } catch (_: Exception) {
+            // Best effort
+        }
+
+        libretroController.stop()
+        withContext(dispatchers.main) {
+            _state.update {
+                it.copy(
+                    isRunning = false,
+                    isPaused = false,
+                    isLifecyclePaused = false,
+                    fps = 0f,
+                    frameTime = 0f,
+                    isHardcoreMode = false,
+                    showExitConfirm = false,
+                    showOverlay = false,
+                    secondaryDisplayActive = false,
+                    isDualScreenConsole = false,
+                    dualScreenSplitY = 0,
+                    dualScreenBottomWidth = 0,
+                    dualScreenBottomOffsetX = 0,
+                    sharedSessionId = null,
+                    turnToken = null,
+                    netplaySessionId = null,
+                    netplayPeerUsername = null,
+                    netplayPeerLatencyMs = 0,
+                    netplayPeerDisconnected = false,
+                    netplayPausedByUsername = null,
+                    netplayShowLeaveConfirm = false,
+                    netplayPauseElapsedSeconds = 0,
+                    netplaySessionExpired = false,
+                    challengeId = null,
+                    challengeAttemptId = null,
+                    challengeElapsedMs = 0,
+                    showChallengeCreation = false,
+                    isCreatingChallenge = false,
+                    challengeCreationSuccess = false,
+                    showGiveUpConfirm = false,
+                    challengeCompletedAttempt = null,
+                    sessionId = null,
+                    consoleColorTheme = null,
+                    heroUrl = null,
+                    gameDescription = null,
+                    gameDeveloper = null,
+                    gamePublisher = null,
+                    gameReleaseDate = null,
+                    gameGenre = null,
+                    gameRating = 0.0,
+                    gamePlayers = 0,
+                    showCoreMismatchDialog = false,
+                    coreMismatchSaveCoreName = "",
+                    coreMismatchCurrentCoreName = "",
+                    hasCheats = false,
+                    enabledCheatCount = 0,
+                    showCheatBrowser = false,
+                    cheats = emptyList(),
+                    achievements = emptyList(),
+                    achievementProgress = emptyList(),
+                    achievementTotalPoints = 0,
+                    achievementsLoading = false,
+                    sessionAchievementUnlocks = emptyList(),
+                    achievementEvent = null,
+                    secondaryToast = null,
+                    touchControlPort = 0,
+                )
+            }
+            saveManager.currentSessionId = null
+        }
+    }
+
+    /** Returns true if save should proceed, false if warning dialog was shown. */
+    private fun checkCoreMismatchBeforeSave(saveType: String, slot: Int = 0): Boolean {
+        if (_state.value.isCoreMismatched) {
+            _state.update {
+                it.copy(
+                    showCoreMismatchSaveDialog = true,
+                    pendingSaveType = saveType,
+                    pendingSaveSlot = slot,
+                )
+            }
+            return false
+        }
+        return true
     }
 
     /**
@@ -797,6 +869,8 @@ class EmulationViewModel(
                             showCoreMismatchDialog = true,
                             coreMismatchSaveCoreName = result.saveCoreName,
                             coreMismatchCurrentCoreName = result.currentCoreName,
+                            isCoreMismatched = true,
+                            mismatchedOriginalCore = result.saveCoreName,
                         )
                     }
                 }

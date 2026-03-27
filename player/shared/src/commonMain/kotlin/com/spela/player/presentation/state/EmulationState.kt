@@ -160,6 +160,17 @@ data class EmulationState(
     val coreMismatchSaveCoreName: String = "",
     val coreMismatchCurrentCoreName: String = "",
 
+    /** Persistent core mismatch flag: true for the entire session if cores differ. */
+    val isCoreMismatched: Boolean = false,
+    /** The original core name from the session (for save warning dialog). */
+    val mismatchedOriginalCore: String = "",
+    /** Show the save warning dialog when attempting to save with mismatched core. */
+    val showCoreMismatchSaveDialog: Boolean = false,
+    /** The type of save that triggered the warning ("auto", "manual", "slot", "quick"). */
+    val pendingSaveType: String = "",
+    /** The slot number for pending slot saves. */
+    val pendingSaveSlot: Int = 0,
+
     /** Default second screen page from user preferences. */
     val defaultSecondScreenPage: String = "art",
 
