@@ -58,43 +58,62 @@ fun GamepadHandler(
     content: @Composable () -> Unit,
 ) {
     val focusManager = LocalFocusManager.current
+    // Track whether any element currently has focus. When nothing is focused,
+    // D-pad presses should acquire focus on the first element (recovery).
+    // When something IS focused, failed directional moves should NOT wrap.
+    var hasFocus by remember { mutableStateOf(false) }
 
     // When focusResetKey changes (e.g. section switch in gamepad mode),
     // clear focus and move to the first focusable element on the new page.
+    // Retries focus acquisition because screens with async data loading may
+    // not have focusable elements in the compose tree on the first attempt.
     if (focusResetKey != null) {
         LaunchedEffect(focusResetKey) {
-            // Wait for new content to compose
             delay(100)
             focusManager.clearFocus(force = true)
-            focusManager.moveFocus(FocusDirection.Next)
+            // Retry up to 5 times (100ms apart) to find a focusable element.
+            // moveFocus returns true if focus was successfully moved.
+            repeat(5) {
+                if (focusManager.moveFocus(FocusDirection.Next)) return@LaunchedEffect
+                delay(100)
+            }
         }
     }
 
     Box(
         modifier = Modifier
             .fillMaxSize()
+            .onFocusChanged { state -> hasFocus = state.hasFocus }
             .onPreviewKeyEvent { event ->
                 if (!enabled) return@onPreviewKeyEvent false
                 if (event.type != KeyEventType.KeyDown) return@onPreviewKeyEvent false
 
                 when (event.key) {
                     Key.DirectionUp -> {
-                        focusManager.moveFocus(FocusDirection.Up)
+                        if (!focusManager.moveFocus(FocusDirection.Up) && !hasFocus) {
+                            focusManager.moveFocus(FocusDirection.Next)
+                        }
                         onGamepadInput?.invoke()
                         true
                     }
                     Key.DirectionDown -> {
-                        focusManager.moveFocus(FocusDirection.Down)
+                        if (!focusManager.moveFocus(FocusDirection.Down) && !hasFocus) {
+                            focusManager.moveFocus(FocusDirection.Next)
+                        }
                         onGamepadInput?.invoke()
                         true
                     }
                     Key.DirectionLeft -> {
-                        focusManager.moveFocus(FocusDirection.Left)
+                        if (!focusManager.moveFocus(FocusDirection.Left) && !hasFocus) {
+                            focusManager.moveFocus(FocusDirection.Next)
+                        }
                         onGamepadInput?.invoke()
                         true
                     }
                     Key.DirectionRight -> {
-                        focusManager.moveFocus(FocusDirection.Right)
+                        if (!focusManager.moveFocus(FocusDirection.Right) && !hasFocus) {
+                            focusManager.moveFocus(FocusDirection.Next)
+                        }
                         onGamepadInput?.invoke()
                         true
                     }
@@ -104,12 +123,14 @@ fun GamepadHandler(
                     }
                     Key.RightBracket -> {
                         focusManager.clearFocus(force = true)
+                        hasFocus = false
                         onNextSection?.invoke()
                         onGamepadInput?.invoke()
                         onNextSection != null
                     }
                     Key.LeftBracket -> {
                         focusManager.clearFocus(force = true)
+                        hasFocus = false
                         onPreviousSection?.invoke()
                         onGamepadInput?.invoke()
                         onPreviousSection != null
@@ -119,11 +140,13 @@ fun GamepadHandler(
                         // Otherwise let it do default focus movement (e.g., login form).
                         if (event.isShiftPressed && onPreviousSection != null) {
                             focusManager.clearFocus(force = true)
+                            hasFocus = false
                             onPreviousSection.invoke()
                             onGamepadInput?.invoke()
                             true
                         } else if (!event.isShiftPressed && onNextSection != null) {
                             focusManager.clearFocus(force = true)
+                            hasFocus = false
                             onNextSection.invoke()
                             onGamepadInput?.invoke()
                             true
