@@ -270,7 +270,8 @@ class StubPreferencesRepository : PreferencesRepository {
     override suspend fun pushKeyMappingsToServer() {}
     override fun getOrientationLock(): String = "auto"
     override fun setOrientationLock(mode: String) {}
-    override fun getControlTab(consoleId: String): String = "gamepad"
+    override fun getControlTab(consoleId: String): String =
+        if (consoleId.lowercase() == "scummvm") "trackpad" else "gamepad"
     override fun setControlTab(consoleId: String, tab: String) {}
 }
 

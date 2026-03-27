@@ -665,7 +665,8 @@ class FakePreferencesRepository : PreferencesRepository {
     override fun getOrientationLock(): String = orientationLock
     override fun setOrientationLock(mode: String) { orientationLock = mode }
     private val controlTabs = mutableMapOf<String, String>()
-    override fun getControlTab(consoleId: String): String = controlTabs[consoleId] ?: "gamepad"
+    override fun getControlTab(consoleId: String): String =
+        controlTabs[consoleId] ?: if (consoleId.lowercase() == "scummvm") "trackpad" else "gamepad"
     override fun setControlTab(consoleId: String, tab: String) { controlTabs[consoleId] = tab }
 }
 

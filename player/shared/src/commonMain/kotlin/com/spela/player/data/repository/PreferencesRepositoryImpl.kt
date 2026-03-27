@@ -204,7 +204,8 @@ class PreferencesRepositoryImpl(
 
     override fun getControlTab(consoleId: String): String {
         return database.spelaDatabaseQueries.getDeviceSetting("control_tab:$consoleId")
-            .executeAsOneOrNull() ?: "gamepad"
+            .executeAsOneOrNull()
+            ?: if (consoleId.lowercase() == "scummvm") "trackpad" else "gamepad"
     }
 
     override fun setControlTab(consoleId: String, tab: String) {
