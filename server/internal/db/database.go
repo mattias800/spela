@@ -836,6 +836,8 @@ func SeedConsoles(db *gorm.DB) error {
 		{Name: "MSX2", Abbreviation: "MSX2", Extensions: ".rom,.mx2,.dsk,.cas", DefaultCore: "bluemsx", EmulatorJSCore: "", FolderName: "msx2", ColorTheme: "#4a86c8", Generation: 100, SaveStateSupport: true, Playable: true},
 		// Arcade (generation = 101)
 		{Name: "Arcade", Abbreviation: "ARCADE", Extensions: ".zip", DefaultCore: "mame2003_plus", EmulatorJSCore: "fbneo", FolderName: "arcade", ColorTheme: "#ff4444", Generation: 101, SaveStateSupport: true, Playable: true},
+		// ScummVM (generation = 100, alongside home computers)
+		{Name: "ScummVM", Abbreviation: "SCUMMVM", Extensions: ".scummvm", DefaultCore: "scummvm", EmulatorJSCore: "", FolderName: "scummvm", ColorTheme: "#6b8e23", CoverAspect: "5:7", Generation: 100, SaveStateSupport: false, Playable: true},
 	}
 
 	for _, c := range consoles {
@@ -948,6 +950,7 @@ func SeedCores(db *gorm.DB) error {
 			Version:     "2125.0-rc5",
 			DownloadURL: "https://github.com/azahar-emu/azahar/releases/download/2125.0-rc5/azahar-libretro-2125.0-rc5-{platform}.zip",
 		},
+		{Name: "scummvm", DisplayName: "ScummVM", Description: "Point-and-click adventure game engine", Platforms: "windows,linux,macos,android"},
 	}
 
 	for _, c := range cores {

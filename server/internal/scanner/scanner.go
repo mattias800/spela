@@ -135,8 +135,9 @@ var ConsoleExtMap = map[string]string{
 	".j64":  "JAG",
 	".jag":  "JAG",
 	".32x":  "32X",
-	".a52":  "A52",
-	".a78":  "A78",
+	".a52":     "A52",
+	".a78":     "A78",
+	".scummvm": "SCUMMVM",
 }
 
 // RomExtensions is the set of file extensions recognized as ROM/disc files.
@@ -175,6 +176,7 @@ var RomExtensions = map[string]bool{
 	".min": true,
 	".j64": true, ".jag": true,
 	".32x": true,
+	".scummvm": true,
 }
 
 // directoryConsoleMap maps directory names to console abbreviations.
@@ -264,6 +266,7 @@ var directoryConsoleMap = map[string]string{
 	"pcecd":        "PCECD",
 	"neogeocd":     "NEOCD",
 	"neocd":        "NEOCD",
+	"scummvm":      "SCUMMVM",
 }
 
 // discPattern matches disc/disk/cd markers in filenames, e.g. "(Disc 1)", "[Disk 2]", "(CD 3)".
