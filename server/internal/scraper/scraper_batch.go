@@ -10,6 +10,7 @@ import (
 
 	"github.com/spela/server/internal/db"
 	"github.com/spela/server/internal/scanner"
+	"gorm.io/gorm"
 )
 
 // EnrichProgress holds progress information for a metadata enrichment operation.
@@ -25,84 +26,95 @@ type EnrichProgress struct {
 // Mode "missing" (default) only enriches games without themes; "all" re-enriches everything.
 // If onProgress is non-nil, it is called after each game.
 func (s *Scraper) EnrichAll(mode string, onProgress func(EnrichProgress)) (int, int, error) {
-	var games []db.Game
-	switch mode {
-	case "all":
-		if err := s.DB.Where("scraper_id LIKE 'igdb:%'").Find(&games).Error; err != nil {
-			return 0, 0, fmt.Errorf("loading IGDB-matched games: %w", err)
+	// Build base query for counting and pagination
+	baseQ := func() *gorm.DB {
+		q := s.DB.Model(&db.Game{}).Where("scraper_id LIKE 'igdb:%'")
+		if mode != "all" {
+			q = q.Where("id NOT IN (SELECT DISTINCT game_id FROM game_themes)")
 		}
-	default: // "missing"
-		// Games with IGDB match but no themes (never enriched)
-		if err := s.DB.Where("scraper_id LIKE 'igdb:%'").
-			Where("id NOT IN (SELECT DISTINCT game_id FROM game_themes)").
-			Find(&games).Error; err != nil {
-			return 0, 0, fmt.Errorf("loading unenriched games: %w", err)
-		}
+		return q
 	}
 
-	total := len(games)
+	var total64 int64
+	if err := baseQ().Count(&total64).Error; err != nil {
+		return 0, 0, fmt.Errorf("counting games for enrichment: %w", err)
+	}
+	total := int(total64)
+
 	successes := 0
 	failures := 0
+	processed := 0
 
 	// Track series/franchises we've populated to avoid redundant API calls
 	populatedSeries := make(map[uint]bool)
 	populatedFranchises := make(map[uint]bool)
 
-	for i := range games {
-		if err := s.EnrichGameOnly(&games[i]); err != nil {
-			slog.Warn("enrichment failed for game", "game", games[i].Title, "error", err)
-			failures++
-		} else {
-			successes++
-
-			// Check if this game's series needs full population
-			var entries []db.GameSeriesEntry
-			s.DB.Where("game_id = ?", games[i].ID).Find(&entries)
-			for _, entry := range entries {
-				if !populatedSeries[entry.SeriesID] {
-					var series db.GameSeries
-					if err := s.DB.First(&series, entry.SeriesID).Error; err == nil {
-						// Only populate if series has few entries (likely not yet populated)
-						var entryCount int64
-						s.DB.Model(&db.GameSeriesEntry{}).Where("series_id = ?", series.ID).Count(&entryCount)
-						if entryCount <= 1 {
-							if popErr := s.PopulateSeriesEntries(&series); popErr != nil {
-								slog.Warn("failed to populate series entries", "series", series.Name, "error", popErr)
-							}
-						}
-						populatedSeries[entry.SeriesID] = true
-					}
-				}
-			}
-
-			// Check if this game's franchises need full population
-			var gameFranchises []db.GameFranchise
-			s.DB.Where("game_id = ?", games[i].ID).Find(&gameFranchises)
-			for _, gf := range gameFranchises {
-				var group db.GameFranchiseGroup
-				if err := s.DB.Where("igdb_franchise_id = ?", gf.IGDBFranchiseID).First(&group).Error; err == nil {
-					if !populatedFranchises[group.ID] {
-						var entryCount int64
-						s.DB.Model(&db.GameFranchiseEntry{}).Where("franchise_group_id = ?", group.ID).Count(&entryCount)
-						if entryCount <= 1 {
-							if popErr := s.PopulateFranchiseEntries(&group); popErr != nil {
-								slog.Warn("failed to populate franchise entries", "franchise", group.Name, "error", popErr)
-							}
-						}
-						populatedFranchises[group.ID] = true
-					}
-				}
-			}
+	const batchSize = 100
+	for offset := 0; offset < total; offset += batchSize {
+		var batch []db.Game
+		if err := baseQ().Limit(batchSize).Offset(offset).Find(&batch).Error; err != nil {
+			return successes, total, fmt.Errorf("loading enrichment batch at offset %d: %w", offset, err)
 		}
 
-		if onProgress != nil {
-			onProgress(EnrichProgress{
-				Current:   i + 1,
-				Total:     total,
-				GameName:  games[i].Title,
-				Successes: successes,
-				Failures:  failures,
-			})
+		for i := range batch {
+			game := &batch[i]
+			processed++
+
+			if err := s.EnrichGameOnly(game); err != nil {
+				slog.Warn("enrichment failed for game", "game", game.Title, "error", err)
+				failures++
+			} else {
+				successes++
+
+				// Check if this game's series needs full population
+				var entries []db.GameSeriesEntry
+				s.DB.Where("game_id = ?", game.ID).Find(&entries)
+				for _, entry := range entries {
+					if !populatedSeries[entry.SeriesID] {
+						var series db.GameSeries
+						if err := s.DB.First(&series, entry.SeriesID).Error; err == nil {
+							// Only populate if series has few entries (likely not yet populated)
+							var entryCount int64
+							s.DB.Model(&db.GameSeriesEntry{}).Where("series_id = ?", series.ID).Count(&entryCount)
+							if entryCount <= 1 {
+								if popErr := s.PopulateSeriesEntries(&series); popErr != nil {
+									slog.Warn("failed to populate series entries", "series", series.Name, "error", popErr)
+								}
+							}
+							populatedSeries[entry.SeriesID] = true
+						}
+					}
+				}
+
+				// Check if this game's franchises need full population
+				var gameFranchises []db.GameFranchise
+				s.DB.Where("game_id = ?", game.ID).Find(&gameFranchises)
+				for _, gf := range gameFranchises {
+					var group db.GameFranchiseGroup
+					if err := s.DB.Where("igdb_franchise_id = ?", gf.IGDBFranchiseID).First(&group).Error; err == nil {
+						if !populatedFranchises[group.ID] {
+							var entryCount int64
+							s.DB.Model(&db.GameFranchiseEntry{}).Where("franchise_group_id = ?", group.ID).Count(&entryCount)
+							if entryCount <= 1 {
+								if popErr := s.PopulateFranchiseEntries(&group); popErr != nil {
+									slog.Warn("failed to populate franchise entries", "franchise", group.Name, "error", popErr)
+								}
+							}
+							populatedFranchises[group.ID] = true
+						}
+					}
+				}
+			}
+
+			if onProgress != nil {
+				onProgress(EnrichProgress{
+					Current:   processed,
+					Total:     total,
+					GameName:  game.Title,
+					Successes: successes,
+					Failures:  failures,
+				})
+			}
 		}
 	}
 
@@ -225,39 +237,56 @@ type ScrapeProgress struct {
 // If onProgress is non-nil, it is called after each game attempt with the current progress.
 // Returns the number of successes, the total number of games attempted, and any error.
 func (s *Scraper) ScrapeAll(ctx context.Context, mode string, consoleID uint, onProgress func(ScrapeProgress)) (int, int, error) {
-	var games []db.Game
-	q := s.DB.Preload("Console")
-	if consoleID > 0 {
-		q = q.Where("console_id = ?", consoleID)
-	}
-	switch mode {
-	case "all":
-		if err := q.Find(&games).Error; err != nil {
-			return 0, 0, fmt.Errorf("loading all games: %w", err)
+	// Build base query for counting and pagination
+	baseQ := func() *gorm.DB {
+		q := s.DB.Model(&db.Game{})
+		if consoleID > 0 {
+			q = q.Where("console_id = ?", consoleID)
 		}
-	case "fallback":
-		if err := q.Where("scraper_id = 'libretro'").Find(&games).Error; err != nil {
-			return 0, 0, fmt.Errorf("loading fallback-scraped games: %w", err)
+		switch mode {
+		case "all":
+			// no additional filter
+		case "fallback":
+			q = q.Where("scraper_id = 'libretro'")
+		default:
+			q = q.Where("scraper_id = '' OR scraper_id IS NULL")
 		}
-	default:
-		if err := q.Where("scraper_id = '' OR scraper_id IS NULL").Find(&games).Error; err != nil {
-			return 0, 0, fmt.Errorf("loading unscraped games: %w", err)
-		}
+		return q
 	}
 
-	total := len(games)
+	var total64 int64
+	if err := baseQ().Count(&total64).Error; err != nil {
+		return 0, 0, fmt.Errorf("counting games: %w", err)
+	}
+	total := int(total64)
+
+	// Load consoles into a map to avoid Preload on every batch
+	var consoles []db.Console
+	s.DB.Find(&consoles)
+	consoleMap := make(map[uint]db.Console, len(consoles))
+	for _, c := range consoles {
+		consoleMap[c.ID] = c
+	}
+
 	successes := 0
 	failures := 0
 	verified := 0
+	processed := 0
 
-	progress := func(i int, game *db.Game) ScrapeProgress {
+	progress := func(game *db.Game) ScrapeProgress {
+		consoleName := ""
+		consoleAbbr := ""
+		if c, ok := consoleMap[game.ConsoleID]; ok {
+			consoleName = c.Name
+			consoleAbbr = c.Abbreviation
+		}
 		return ScrapeProgress{
-			Current:     i + 1,
+			Current:     processed,
 			Total:       total,
 			GameID:      game.ID,
 			GameName:    game.Title,
-			ConsoleName: game.Console.Name,
-			ConsoleAbbr: game.Console.Abbreviation,
+			ConsoleName: consoleName,
+			ConsoleAbbr: consoleAbbr,
 			Successes:   successes,
 			Failures:    failures,
 			Verified:    verified,
@@ -267,64 +296,79 @@ func (s *Scraper) ScrapeAll(ctx context.Context, mode string, consoleID uint, on
 	// Track groups we've already scraped a primary for, so we can propagate
 	// metadata to other variants in the same group instead of re-scraping.
 	scrapedGroups := make(map[string]uint) // "consoleID:groupKey" -> scraped game ID
-	for i := range games {
-		// Check for cancellation before each game
-		if ctx.Err() != nil {
-			slog.Info("scrape cancelled", "completed", i, "total", total)
-			return successes, total, ctx.Err()
+
+	const batchSize = 100
+	for offset := 0; offset < total; offset += batchSize {
+		var batch []db.Game
+		if err := baseQ().Limit(batchSize).Offset(offset).Find(&batch).Error; err != nil {
+			return successes, total, fmt.Errorf("loading game batch at offset %d: %w", offset, err)
 		}
 
-		game := &games[i]
+		for i := range batch {
+			// Check for cancellation before each game
+			if ctx.Err() != nil {
+				slog.Info("scrape cancelled", "completed", processed, "total", total)
+				return successes, total, ctx.Err()
+			}
 
-		// Smart scraping: if this game belongs to a variant group, try to
-		// propagate metadata from an already-scraped sibling instead of
-		// hitting external APIs again.
-		// Skip propagation in "all" mode (re-scrape everything) and "fallback"
-		// mode (retry IGDB for games that only had LibRetro matches — propagating
-		// from other LibRetro siblings would defeat the purpose).
-		if game.GroupKey != "" && mode == "new" {
-			groupID := fmt.Sprintf("%d:%s", game.ConsoleID, game.GroupKey)
+			game := &batch[i]
+			// Attach console from map instead of Preload
+			if c, ok := consoleMap[game.ConsoleID]; ok {
+				game.Console = c
+			}
 
-			// Check if we've already scraped a game in this group during this run
-			if _, done := scrapedGroups[groupID]; done {
+			processed++
+
+			// Smart scraping: if this game belongs to a variant group, try to
+			// propagate metadata from an already-scraped sibling instead of
+			// hitting external APIs again.
+			// Skip propagation in "all" mode (re-scrape everything) and "fallback"
+			// mode (retry IGDB for games that only had LibRetro matches — propagating
+			// from other LibRetro siblings would defeat the purpose).
+			if game.GroupKey != "" && mode == "new" {
+				groupID := fmt.Sprintf("%d:%s", game.ConsoleID, game.GroupKey)
+
+				// Check if we've already scraped a game in this group during this run
+				if _, done := scrapedGroups[groupID]; done {
+					if s.propagateGroupMetadata(game) {
+						successes++
+						if onProgress != nil {
+							onProgress(progress(game))
+						}
+						continue
+					}
+				}
+
+				// Check if any sibling in the DB already has metadata
 				if s.propagateGroupMetadata(game) {
+					scrapedGroups[groupID] = game.ID
 					successes++
 					if onProgress != nil {
-						onProgress(progress(i, game))
+						onProgress(progress(game))
 					}
 					continue
 				}
 			}
 
-			// Check if any sibling in the DB already has metadata
-			if s.propagateGroupMetadata(game) {
-				scrapedGroups[groupID] = game.ID
+			if err := s.ScrapeGame(game); err != nil {
+				slog.Warn("failed to scrape game", "game", game.Title, "error", err)
+				failures++
+			} else {
 				successes++
-				if onProgress != nil {
-					onProgress(progress(i, game))
+				if game.VerificationStatus == "verified" {
+					verified++
 				}
-				continue
+				// After scraping, propagate to other unscraped variants in the group
+				if game.GroupKey != "" {
+					groupID := fmt.Sprintf("%d:%s", game.ConsoleID, game.GroupKey)
+					scrapedGroups[groupID] = game.ID
+					s.propagateToGroup(game)
+				}
 			}
-		}
 
-		if err := s.ScrapeGame(game); err != nil {
-			slog.Warn("failed to scrape game", "game", game.Title, "error", err)
-			failures++
-		} else {
-			successes++
-			if game.VerificationStatus == "verified" {
-				verified++
+			if onProgress != nil {
+				onProgress(progress(game))
 			}
-			// After scraping, propagate to other unscraped variants in the group
-			if game.GroupKey != "" {
-				groupID := fmt.Sprintf("%d:%s", game.ConsoleID, game.GroupKey)
-				scrapedGroups[groupID] = game.ID
-				s.propagateToGroup(game)
-			}
-		}
-
-		if onProgress != nil {
-			onProgress(progress(i, game))
 		}
 	}
 
