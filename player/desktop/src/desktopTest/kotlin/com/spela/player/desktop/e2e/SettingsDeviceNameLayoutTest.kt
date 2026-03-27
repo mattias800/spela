@@ -9,8 +9,7 @@ import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlin.test.Test
 
 /**
- * E2E tests verifying that Device Name and Sign Out appear after the About section
- * in the Settings screen layout.
+ * E2E tests verifying that Device Name and Sign Out appear in the About category.
  */
 @OptIn(ExperimentalCoroutinesApi::class, ExperimentalTestApi::class)
 class SettingsDeviceNameLayoutTest {
@@ -31,76 +30,61 @@ class SettingsDeviceNameLayoutTest {
     }
 
     @Test
-    fun accountSectionDoesNotContainDeviceNameOrSignOut() = runComposeUiTest {
+    fun categoryListShowsAllCategories() = runComposeUiTest {
         val harness = createLoggedInHarness()
 
         setContent { harness.App() }
         navigateToSettings(harness)
 
-        // The Account section should exist at the top
-        onNodeWithText("Account").assertIsDisplayed()
-
-        // Device Name TextField and Sign Out button should NOT be in the Account section
-        // (they should be at the bottom now). Verify Account section doesn't show them by
-        // checking that scrolling to Account does not bring "Device Name" into view.
-        // The "Device Name" label exists in the "Device & Account" section at the bottom instead.
+        // All categories should be visible in the left panel
+        onNodeWithContentDescription("General").assertExists()
+        onNodeWithContentDescription("Emulation").assertExists()
+        onNodeWithContentDescription("Controls").assertExists()
+        onNodeWithContentDescription("Achievements").assertExists()
+        onNodeWithContentDescription("Storage & Sync").assertExists()
+        onNodeWithContentDescription("About").assertExists()
     }
 
     @Test
-    fun deviceNameAppearsAfterAboutSection() = runComposeUiTest {
+    fun deviceNameAppearsInAboutCategory() = runComposeUiTest {
         val harness = createLoggedInHarness()
 
         setContent { harness.App() }
         navigateToSettings(harness)
 
-        // Scroll past About to "Device & Account" section
-        onNodeWithTag("settings_list")
-            .performScrollToNode(hasText("Device & Account"))
-        onNodeWithText("Device & Account").assertIsDisplayed()
+        // Click About category
+        onNodeWithContentDescription("About").performClick()
+        advanceQuick(harness)
 
-        // Device Name text field should be visible
-        onNodeWithTag("settings_list")
-            .performScrollToNode(hasText("Device Name"))
+        onNodeWithText("Device & Account").assertIsDisplayed()
         onNodeWithText("Device Name").assertIsDisplayed()
     }
 
     @Test
-    fun signOutAppearsAfterAboutSection() = runComposeUiTest {
+    fun signOutAppearsInAboutCategory() = runComposeUiTest {
         val harness = createLoggedInHarness()
 
         setContent { harness.App() }
         navigateToSettings(harness)
 
-        // Scroll to the bottom "Device & Account" section
-        onNodeWithTag("settings_list")
-            .performScrollToNode(hasText("Device & Account"))
+        // Click About category
+        onNodeWithContentDescription("About").performClick()
+        advanceQuick(harness)
 
-        // Sign Out button should be in the same section
-        onNodeWithTag("settings_list")
-            .performScrollToNode(hasText("Sign Out"))
         onNodeWithText("Sign Out").assertIsDisplayed()
     }
 
     @Test
-    fun aboutSectionAppearsBeforeDeviceAndAccountSection() = runComposeUiTest {
+    fun aboutCategoryShowsCreditsAndLicenses() = runComposeUiTest {
         val harness = createLoggedInHarness()
 
         setContent { harness.App() }
         navigateToSettings(harness)
 
-        // Scroll to About section - it should be visible
-        onNodeWithTag("settings_list")
-            .performScrollToNode(hasText("About"))
-        onNodeWithText("About").assertIsDisplayed()
+        // Click About category
+        onNodeWithContentDescription("About").performClick()
+        advanceQuick(harness)
 
-        // The Credits & Licenses card should also be present (part of About)
-        onNodeWithTag("settings_list")
-            .performScrollToNode(hasText("Credits & Licenses"))
         onNodeWithText("Credits & Licenses").assertIsDisplayed()
-
-        // Then "Device & Account" comes after
-        onNodeWithTag("settings_list")
-            .performScrollToNode(hasText("Device & Account"))
-        onNodeWithText("Device & Account").assertIsDisplayed()
     }
 }

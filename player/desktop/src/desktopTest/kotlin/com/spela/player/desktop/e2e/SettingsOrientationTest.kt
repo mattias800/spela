@@ -10,12 +10,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 
 /**
- * E2E tests for the orientation lock setting in the Display section.
- *
- * Verifies:
- * - Display section renders with three radio options (Auto, Landscape, Portrait)
- * - "Auto" is selected by default
- * - Clicking an option updates the ViewModel state
+ * E2E tests for the orientation lock setting in the General > Display section.
  */
 @OptIn(ExperimentalCoroutinesApi::class, ExperimentalTestApi::class)
 class SettingsOrientationTest {
@@ -42,22 +37,10 @@ class SettingsOrientationTest {
         setContent { harness.App() }
         navigateToSettings(harness)
 
-        // Scroll to Display section header
-        onNodeWithTag("settings_list")
-            .performScrollToNode(hasText("Display"))
+        // General is selected by default, Display section should be visible
         onNodeWithText("Display").assertIsDisplayed()
-
-        // Scroll to each orientation option
-        onNodeWithTag("settings_list")
-            .performScrollToNode(hasText("Follow system orientation"))
         onNodeWithText("Auto").assertExists()
-
-        onNodeWithTag("settings_list")
-            .performScrollToNode(hasText("Lock to landscape orientation"))
         onNodeWithText("Landscape").assertExists()
-
-        onNodeWithTag("settings_list")
-            .performScrollToNode(hasText("Lock to portrait orientation"))
         onNodeWithText("Portrait").assertExists()
     }
 
@@ -78,9 +61,6 @@ class SettingsOrientationTest {
         setContent { harness.App() }
         navigateToSettings(harness)
 
-        onNodeWithTag("settings_list")
-            .performScrollToNode(hasText("Lock to landscape orientation"))
-
         onNodeWithText("Landscape").performClick()
         advance(harness)
 
@@ -94,9 +74,6 @@ class SettingsOrientationTest {
 
         setContent { harness.App() }
         navigateToSettings(harness)
-
-        onNodeWithTag("settings_list")
-            .performScrollToNode(hasText("Lock to portrait orientation"))
 
         onNodeWithText("Portrait").performClick()
         advance(harness)
@@ -112,17 +89,10 @@ class SettingsOrientationTest {
         setContent { harness.App() }
         navigateToSettings(harness)
 
-        onNodeWithTag("settings_list")
-            .performScrollToNode(hasText("Lock to landscape orientation"))
-
-        // First select Landscape
         onNodeWithText("Landscape").performClick()
         advance(harness)
         assertEquals("landscape", harness.settingsViewModel.state.value.orientationLock)
 
-        // Then switch back to Auto
-        onNodeWithTag("settings_list")
-            .performScrollToNode(hasText("Follow system orientation"))
         onNodeWithText("Auto").performClick()
         advance(harness)
         assertEquals("auto", harness.settingsViewModel.state.value.orientationLock)
