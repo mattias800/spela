@@ -15,7 +15,7 @@ import {
 } from "@/hooks/use-games";
 import { useTogglePlayLater } from "@/hooks/use-play-later";
 import { useAuth } from "@/hooks/use-auth";
-import { useScrapeGame } from "@/hooks/use-admin";
+import { useScrapeGame, useRefreshAchievements } from "@/hooks/use-admin";
 import { useConsoles } from "@/hooks/use-consoles";
 import { useEffect } from "react";
 import {
@@ -115,6 +115,7 @@ export function GameDetailPage() {
   const togglePlayLater = useTogglePlayLater();
   const { user: currentUser } = useAuth();
   const scrapeGame = useScrapeGame();
+  const refreshAchievements = useRefreshAchievements();
   const scrapeIfNeeded = useScrapeIfNeeded();
   const { data: consoles } = useConsoles();
   const isAdmin =
@@ -216,6 +217,8 @@ export function GameDetailPage() {
         isDemo={isDemo}
         onPlay={() => navigate(`/games/${game.id}/play/${sessions && sessions.length > 0 ? sessions[0].id : "new"}`)}
         onScrape={() => scrapeGame.mutate(game.id)}
+        onRefreshAchievements={() => refreshAchievements.mutate(game.id)}
+        isRefreshingAchievements={refreshAchievements.isPending}
         onToggleFavorite={() =>
           toggleFavorite.mutate({ gameId: game.id, isFavorite })
         }

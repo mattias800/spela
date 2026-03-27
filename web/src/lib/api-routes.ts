@@ -293,6 +293,7 @@ export type ApiPostPath = WithQuery<
   // Admin
   | "/admin/users"
   | `/admin/games/${string}/scrape`
+  | `/admin/games/${string}/achievements/refresh`
   | `/admin/games/${string}/metadata`
   | `/admin/games/${string}/igdb-match`
   | "/admin/games/scan"

@@ -159,6 +159,30 @@ func (h *AdminHandler) ScrapeGame(c *gin.Context) {
 	c.JSON(http.StatusOK, ToGameResponse(game, h.DB, uid))
 }
 
+// RefreshAchievements invalidates the achievement cache for a single game,
+// forcing the next request to re-fetch from RetroAchievements.
+func (h *AdminHandler) RefreshAchievements(c *gin.Context) {
+	id := c.Param("id")
+	var game db.Game
+	if err := h.DB.First(&game, id).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "game not found"})
+		return
+	}
+
+	// Delete achievement cache entries for this game (by game_id or ra_game_id)
+	deleted := int64(0)
+	if game.RAGameID > 0 {
+		result := h.DB.Where("ra_game_id = ?", game.RAGameID).Delete(&db.GameAchievementCache{})
+		deleted = result.RowsAffected
+	}
+	// Also try by game_id in case ra_game_id wasn't set
+	result := h.DB.Where("game_id = ?", game.ID).Delete(&db.GameAchievementCache{})
+	deleted += result.RowsAffected
+
+	slog.Info("refreshed achievement cache", "game", game.Title, "deleted", deleted)
+	c.JSON(http.StatusOK, gin.H{"message": "Achievement cache cleared", "game": game.Title})
+}
+
 // tryConfigureIGDB loads IGDB credentials and configures the scraper's IGDB client.
 // Environment variables take precedence over database settings.
 func (h *AdminHandler) tryConfigureIGDB() {

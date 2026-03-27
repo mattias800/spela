@@ -112,6 +112,42 @@ class GameDetailViewModel(
             is GameDetailIntent.RenameSession -> renameSession(intent.sessionId, intent.name)
             is GameDetailIntent.DeleteSession -> deleteSession(intent.sessionId)
             is GameDetailIntent.DuplicateSession -> duplicateSession(intent.sessionId)
+
+            // Admin actions
+            GameDetailIntent.AdminScrapeGame -> adminScrapeGame()
+            GameDetailIntent.AdminRefreshAchievements -> adminRefreshAchievements()
+        }
+    }
+
+    private fun adminScrapeGame() {
+        val gameId = currentGameId ?: return
+        _state.update { it.copy(isAdminActionLoading = true) }
+        scope.launch(dispatchers.io) {
+            runCatching { apiClient.adminScrapeGame(gameId) }
+                .onSuccess {
+                    // Reload game detail to show updated metadata
+                    loadGame(gameId)
+                    _state.update { it.copy(isAdminActionLoading = false, successMessage = "Metadata scraped") }
+                }
+                .onFailure { error ->
+                    _state.update { it.copy(isAdminActionLoading = false, error = error.message) }
+                }
+        }
+    }
+
+    private fun adminRefreshAchievements() {
+        val gameId = currentGameId ?: return
+        _state.update { it.copy(isAdminActionLoading = true) }
+        scope.launch(dispatchers.io) {
+            runCatching { apiClient.adminRefreshAchievements(gameId) }
+                .onSuccess {
+                    // Reload achievements
+                    loadAchievements(gameId)
+                    _state.update { it.copy(isAdminActionLoading = false, successMessage = "Achievements refreshed") }
+                }
+                .onFailure { error ->
+                    _state.update { it.copy(isAdminActionLoading = false, error = error.message) }
+                }
         }
     }
 
@@ -141,6 +177,13 @@ class GameDetailViewModel(
                             ratingSummary = summary,
                             isLoading = false,
                         )
+                    }
+                    // Check admin status asynchronously (non-blocking)
+                    scope.launch(dispatchers.io) {
+                        val isAdmin = runCatching { apiClient.getCurrentUser() }
+                            .map { it.role == "admin" || it.role == "owner" }
+                            .getOrDefault(false)
+                        _state.update { it.copy(isAdmin = isAdmin) }
                     }
                     if (detail.game.scrapeAttempts == 0) {
                         scrapeAndRefresh(gameId)

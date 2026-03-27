@@ -192,6 +192,20 @@ export function useScrapeGame() {
   });
 }
 
+export function useRefreshAchievements() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (gameId: string) => {
+      await api.post(`/admin/games/${gameId}/achievements/refresh`);
+    },
+    onSuccess: (_data, gameId) => {
+      queryClient.invalidateQueries({ queryKey: ["game", gameId] });
+      queryClient.invalidateQueries({ queryKey: ["achievements", gameId] });
+    },
+  });
+}
+
 export function useAdminStats() {
   return useQuery({
     queryKey: ["admin", "stats"],

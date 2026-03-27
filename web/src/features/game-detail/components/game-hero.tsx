@@ -42,6 +42,7 @@ interface GameHeroProps {
   isInPlayLater: boolean;
   isPlayLaterPending?: boolean;
   isScraping: boolean;
+  isRefreshingAchievements?: boolean;
   hasAchievements?: boolean;
   achievementCount?: number;
   achievementUnlocked?: number;
@@ -49,6 +50,7 @@ interface GameHeroProps {
   isDemo?: boolean;
   onPlay: () => void;
   onScrape: () => void;
+  onRefreshAchievements?: () => void;
   onToggleFavorite: () => void;
   onTogglePlayLater: () => void;
   onAddToCollection?: () => void;
@@ -66,6 +68,7 @@ export function GameHero({
   isInPlayLater,
   isPlayLaterPending,
   isScraping,
+  isRefreshingAchievements,
   hasAchievements,
   achievementCount,
   achievementUnlocked,
@@ -73,6 +76,7 @@ export function GameHero({
   isDemo,
   onPlay,
   onScrape,
+  onRefreshAchievements,
   onToggleFavorite,
   onTogglePlayLater,
   onAddToCollection,
@@ -92,6 +96,16 @@ export function GameHero({
             onClick: onScrape,
             loading: isScraping,
           },
+          ...(onRefreshAchievements
+            ? [
+                {
+                  label: "Update Achievements",
+                  icon: <Trophy className="h-4 w-4" />,
+                  onClick: onRefreshAchievements,
+                  loading: isRefreshingAchievements,
+                },
+              ]
+            : []),
         ]
       : []),
     {

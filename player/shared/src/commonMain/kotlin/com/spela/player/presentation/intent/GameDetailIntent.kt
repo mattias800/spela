@@ -48,6 +48,10 @@ sealed interface GameDetailIntent {
     data object DismissError : GameDetailIntent
     data object DismissSuccess : GameDetailIntent
 
+    // Admin actions
+    data object AdminScrapeGame : GameDetailIntent
+    data object AdminRefreshAchievements : GameDetailIntent
+
     // Sessions
     data class LoadSessions(val gameId: String) : GameDetailIntent
     data class CreateSession(val gameId: String, val name: String) : GameDetailIntent

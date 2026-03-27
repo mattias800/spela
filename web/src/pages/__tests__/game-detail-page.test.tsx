@@ -27,6 +27,7 @@ vi.mock("@/hooks/use-auth", () => ({
 
 vi.mock("@/hooks/use-admin", () => ({
   useScrapeGame: vi.fn(() => ({ mutate: vi.fn(), isPending: false })),
+  useRefreshAchievements: vi.fn(() => ({ mutate: vi.fn(), isPending: false })),
 }));
 
 vi.mock("@/hooks/use-consoles", () => ({

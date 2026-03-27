@@ -66,6 +66,8 @@ data class GameDetailState(
     val isCreatingChallenge: Boolean = false,
     val successMessage: String? = null,
     val error: String? = null,
+    val isAdminActionLoading: Boolean = false,
+    val isAdmin: Boolean = false,
     // Similar Games & Developer Games
     val similarGames: List<SimilarGame> = emptyList(),
     val developerGames: List<DeveloperGame> = emptyList(),
