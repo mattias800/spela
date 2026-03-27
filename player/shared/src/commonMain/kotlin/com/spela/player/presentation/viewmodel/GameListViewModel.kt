@@ -40,6 +40,9 @@ class GameListViewModel(
     private val _state = MutableStateFlow(GameListState())
     val state: StateFlow<GameListState> = _state.asStateFlow()
     private var searchJob: Job? = null
+    private var dashboardJob: Job? = null
+    private var consolesJob: Job? = null
+    private var consoleGamesJob: Job? = null
 
     init {
         // Observe scrape completions and update games in state
@@ -110,8 +113,12 @@ class GameListViewModel(
 
     private fun loadDashboard() {
         println("[GameListVM] loadDashboard() called")
-        _state.update { it.copy(isLoading = true) }
-        scope.launch(dispatchers.io) {
+        // Skip if a dashboard load is already in-flight
+        if (dashboardJob?.isActive == true) return
+        // Only show loading spinner if we have no cached data.
+        // If we already have data, refresh silently in the background.
+        _state.update { it.copy(isLoading = it.consoles.isEmpty() && it.recentGames.isEmpty()) }
+        dashboardJob = scope.launch(dispatchers.io) {
             val consoles = getConsolesUseCase().getOrDefault(emptyList())
             val recent = getRecentGamesUseCase().getOrDefault(emptyList())
             val favorites = getFavoriteGamesUseCase().getOrDefault(emptyList())
@@ -206,8 +213,9 @@ class GameListViewModel(
     }
 
     private fun loadConsoles() {
-        _state.update { it.copy(isLoading = true) }
-        scope.launch(dispatchers.io) {
+        if (consolesJob?.isActive == true) return
+        _state.update { it.copy(isLoading = it.consoles.isEmpty()) }
+        consolesJob = scope.launch(dispatchers.io) {
             getConsolesUseCase().fold(
                 onSuccess = { consoles ->
                     _state.update { it.copy(consoles = consoles, isLoading = false) }
@@ -231,17 +239,22 @@ class GameListViewModel(
     }
 
     private fun loadGamesForConsole(consoleId: String) {
+        // Skip if already loading games for this console
+        if (consoleGamesJob?.isActive == true && _state.value.selectedConsoleId == consoleId) return
+        consoleGamesJob?.cancel()
+
+        val isSameConsole = _state.value.selectedConsoleId == consoleId
         _state.update {
             it.copy(
-                isLoading = true,
                 selectedConsoleId = consoleId,
-                // Clear stale data from previous console so the UI shows
-                // a loading state instead of the old console's games.
-                games = emptyList(),
-                topRatedGames = emptyList(),
+                // Only clear data and show loading when switching to a different console.
+                // When revisiting the same console, keep showing cached data.
+                isLoading = if (isSameConsole) it.games.isEmpty() else true,
+                games = if (isSameConsole) it.games else emptyList(),
+                topRatedGames = if (isSameConsole) it.topRatedGames else emptyList(),
             )
         }
-        scope.launch(dispatchers.io) {
+        consoleGamesJob = scope.launch(dispatchers.io) {
             getGamesForConsoleUseCase(consoleId).fold(
                 onSuccess = { games ->
                     _state.update { it.copy(games = games, isLoading = false) }
