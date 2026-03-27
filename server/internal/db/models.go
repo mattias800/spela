@@ -831,6 +831,20 @@ type UserAchievementShowcase struct {
 	CreatedAt       time.Time `json:"createdAt"`
 }
 
+// GameScrapeResult tracks the outcome of a scrape attempt for a specific source.
+// One row per game per source (igdb, libretro, steamgriddb).
+type GameScrapeResult struct {
+	ID            uint       `gorm:"primarykey" json:"id"`
+	CreatedAt     time.Time  `json:"createdAt"`
+	UpdatedAt     time.Time  `json:"updatedAt"`
+	GameID        uint       `gorm:"uniqueIndex:idx_scrape_result_game_source;not null" json:"gameId"`
+	Source        string     `gorm:"uniqueIndex:idx_scrape_result_game_source;size:32;not null" json:"source"`
+	Status        string     `gorm:"size:32;not null" json:"status"`
+	SourceID      string     `gorm:"size:128" json:"sourceId,omitempty"`
+	LastAttemptAt *time.Time `json:"lastAttemptAt,omitempty"`
+	ErrorMessage  string     `gorm:"size:512" json:"errorMessage,omitempty"`
+}
+
 // StagedUpload represents a ROM file uploaded to the staging area pending admin review.
 type StagedUpload struct {
 	ID               uint           `gorm:"primarykey" json:"id"`
