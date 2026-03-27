@@ -1067,11 +1067,15 @@ private fun GameHeroContent(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(SpSpacing.XSmall),
                 ) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(14.dp),
-                        strokeWidth = 2.dp,
-                        color = Color.White.copy(alpha = 0.65f),
-                    )
+                    // Show spinner for non-download statuses (scraping, sync).
+                    // Downloads already have a spinner in the button.
+                    if (!state.isDownloading) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(14.dp),
+                            strokeWidth = 2.dp,
+                            color = Color.White.copy(alpha = 0.65f),
+                        )
+                    }
                     Text(
                         text = statusText,
                         style = SpTypography.LabelSmall,
