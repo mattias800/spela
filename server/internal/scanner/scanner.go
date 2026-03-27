@@ -294,6 +294,46 @@ var consoleNotes = map[string]string{
 	"MSX2":   "This is for MSX2 (and MSX2+) ROMs.\nOriginal MSX ROMs go in the 'msx1' folder.\nUse .mx2 for MSX2-specific ROMs, or .rom/.dsk for generic MSX media.",
 	"GB":     "This is for original Game Boy ROMs only (.gb).\nGame Boy Color ROMs go in the 'gbc' folder.",
 	"GBC":    "This is for Game Boy Color ROMs (.gbc).\nOriginal Game Boy ROMs go in the 'gb' folder.",
+	"SCUMMVM": "ScummVM games are NOT single ROM files. Each game is a directory\n" +
+		"containing data files, plus a small .scummvm marker file that tells\n" +
+		"the engine which game it is.\n" +
+		"\n" +
+		"Setup:\n" +
+		"  1. Create a subfolder for each game (e.g., monkey1/, tentacle/, sky/)\n" +
+		"  2. Put the game's data files inside that subfolder\n" +
+		"  3. Create a .scummvm text file in the same subfolder\n" +
+		"  4. The .scummvm file should contain a single line: the ScummVM game ID\n" +
+		"\n" +
+		"Example layout:\n" +
+		"  scummvm/\n" +
+		"    monkey1/\n" +
+		"      MONKEY.000\n" +
+		"      MONKEY.001\n" +
+		"      monkey1.scummvm     <- contains the text: monkey\n" +
+		"    tentacle/\n" +
+		"      TENTACLE.000\n" +
+		"      TENTACLE.001\n" +
+		"      tentacle.scummvm    <- contains the text: tentacle\n" +
+		"    sky/\n" +
+		"      SKY.DNR\n" +
+		"      SKY.DSK\n" +
+		"      sky.scummvm         <- contains the text: sky\n" +
+		"\n" +
+		"The .scummvm file is a plain text file with one line: the game ID.\n" +
+		"You can find game IDs at: https://www.scummvm.org/compatibility/\n" +
+		"\n" +
+		"Nested folders are also supported. For example, if your library has\n" +
+		"extra files (manuals, cover art) alongside the game folder:\n" +
+		"  scummvm/\n" +
+		"    Beneath a Steel Sky/\n" +
+		"      manual.pdf\n" +
+		"      cover.png\n" +
+		"      sky/\n" +
+		"        SKY.DNR\n" +
+		"        sky.scummvm       <- the scanner finds this recursively\n" +
+		"\n" +
+		"The scanner will recursively search this folder for .scummvm files.\n" +
+		"The directory containing the .scummvm file is treated as the game.",
 }
 
 // ConsoleReadmeContent generates the content for a README.txt file
