@@ -39,31 +39,43 @@ func (s *Scraper) storeEnrichmentData(game *db.Game, enrichment *igdb.GameEnrich
 	s.DB.Where("game_id = ?", game.ID).Delete(&db.GameLanguageSupport{})
 	s.DB.Where("game_id = ?", game.ID).Delete(&db.GameAgeRating{})
 
-	// Store themes
-	for _, t := range enrichment.Themes {
-		s.DB.Create(&db.GameTheme{
-			GameID:      game.ID,
-			IGDBThemeID: t.ID,
-			Name:        t.Name,
-		})
+	// Batch insert themes
+	if len(enrichment.Themes) > 0 {
+		themes := make([]db.GameTheme, 0, len(enrichment.Themes))
+		for _, t := range enrichment.Themes {
+			themes = append(themes, db.GameTheme{
+				GameID:      game.ID,
+				IGDBThemeID: t.ID,
+				Name:        t.Name,
+			})
+		}
+		s.DB.CreateInBatches(&themes, 100)
 	}
 
-	// Store keywords
-	for _, k := range enrichment.Keywords {
-		s.DB.Create(&db.GameKeyword{
-			GameID:        game.ID,
-			IGDBKeywordID: k.ID,
-			Name:          k.Name,
-		})
+	// Batch insert keywords
+	if len(enrichment.Keywords) > 0 {
+		keywords := make([]db.GameKeyword, 0, len(enrichment.Keywords))
+		for _, k := range enrichment.Keywords {
+			keywords = append(keywords, db.GameKeyword{
+				GameID:        game.ID,
+				IGDBKeywordID: k.ID,
+				Name:          k.Name,
+			})
+		}
+		s.DB.CreateInBatches(&keywords, 100)
 	}
 
-	// Store player perspectives
-	for _, p := range enrichment.PlayerPerspectives {
-		s.DB.Create(&db.GamePlayerPerspective{
-			GameID:            game.ID,
-			IGDBPerspectiveID: p.ID,
-			Name:              p.Name,
-		})
+	// Batch insert player perspectives
+	if len(enrichment.PlayerPerspectives) > 0 {
+		perspectives := make([]db.GamePlayerPerspective, 0, len(enrichment.PlayerPerspectives))
+		for _, p := range enrichment.PlayerPerspectives {
+			perspectives = append(perspectives, db.GamePlayerPerspective{
+				GameID:            game.ID,
+				IGDBPerspectiveID: p.ID,
+				Name:              p.Name,
+			})
+		}
+		s.DB.CreateInBatches(&perspectives, 100)
 	}
 
 	// Store franchises (reuse name from existing DB entries when possible)
@@ -124,42 +136,60 @@ func (s *Scraper) storeEnrichmentData(game *db.Game, enrichment *igdb.GameEnrich
 		})
 	}
 
-	// Store videos
-	for _, v := range enrichment.Videos {
-		if v.VideoID == "" {
-			continue
+	// Batch insert videos
+	if len(enrichment.Videos) > 0 {
+		videos := make([]db.GameVideo, 0, len(enrichment.Videos))
+		for _, v := range enrichment.Videos {
+			if v.VideoID == "" {
+				continue
+			}
+			videos = append(videos, db.GameVideo{
+				GameID:  game.ID,
+				VideoID: v.VideoID,
+				Name:    v.Name,
+			})
 		}
-		s.DB.Create(&db.GameVideo{
-			GameID:  game.ID,
-			VideoID: v.VideoID,
-			Name:    v.Name,
-		})
+		if len(videos) > 0 {
+			s.DB.CreateInBatches(&videos, 100)
+		}
 	}
 
-	// Store language supports
-	for _, ls := range enrichment.LanguageSupports {
-		if ls.Language.Name == "" || ls.LanguageSupportType.Name == "" {
-			continue
+	// Batch insert language supports
+	if len(enrichment.LanguageSupports) > 0 {
+		langSupports := make([]db.GameLanguageSupport, 0, len(enrichment.LanguageSupports))
+		for _, ls := range enrichment.LanguageSupports {
+			if ls.Language.Name == "" || ls.LanguageSupportType.Name == "" {
+				continue
+			}
+			langSupports = append(langSupports, db.GameLanguageSupport{
+				GameID:      game.ID,
+				Language:    ls.Language.Name,
+				SupportType: ls.LanguageSupportType.Name,
+			})
 		}
-		s.DB.Create(&db.GameLanguageSupport{
-			GameID:      game.ID,
-			Language:    ls.Language.Name,
-			SupportType: ls.LanguageSupportType.Name,
-		})
+		if len(langSupports) > 0 {
+			s.DB.CreateInBatches(&langSupports, 100)
+		}
 	}
 
-	// Store age ratings
-	for _, ar := range enrichment.AgeRatings {
-		categoryName := igdb.AgeRatingCategoryName(ar.Category)
-		label := igdb.AgeRatingLabel(ar.Category, ar.Rating)
-		if categoryName == "" || label == "" {
-			continue
+	// Batch insert age ratings
+	if len(enrichment.AgeRatings) > 0 {
+		ageRatings := make([]db.GameAgeRating, 0, len(enrichment.AgeRatings))
+		for _, ar := range enrichment.AgeRatings {
+			categoryName := igdb.AgeRatingCategoryName(ar.Category)
+			label := igdb.AgeRatingLabel(ar.Category, ar.Rating)
+			if categoryName == "" || label == "" {
+				continue
+			}
+			ageRatings = append(ageRatings, db.GameAgeRating{
+				GameID:   game.ID,
+				Category: categoryName,
+				Rating:   label,
+			})
 		}
-		s.DB.Create(&db.GameAgeRating{
-			GameID:   game.ID,
-			Category: categoryName,
-			Rating:   label,
-		})
+		if len(ageRatings) > 0 {
+			s.DB.CreateInBatches(&ageRatings, 100)
+		}
 	}
 
 	// Handle series (IGDB collection)

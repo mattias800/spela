@@ -102,3 +102,10 @@ func (c *nameCache) getOrLoad(system string, httpClient *http.Client) ([]nameEnt
 	c.entries[system] = entries
 	return entries, nil
 }
+
+// clear removes cached entries for the given system to free memory.
+func (c *nameCache) clear(system string) {
+	c.mu.Lock()
+	delete(c.entries, system)
+	c.mu.Unlock()
+}

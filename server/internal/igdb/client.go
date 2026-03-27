@@ -154,12 +154,8 @@ func (c *Client) fetchToken() error {
 	}
 	defer resp.Body.Close()
 
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return fmt.Errorf("reading Twitch OAuth response: %w", err)
-	}
-
 	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(resp.Body)
 		return fmt.Errorf("Twitch OAuth returned %d: %s", resp.StatusCode, string(body))
 	}
 
@@ -168,7 +164,7 @@ func (c *Client) fetchToken() error {
 		ExpiresIn   int    `json:"expires_in"`
 		TokenType   string `json:"token_type"`
 	}
-	if err := json.Unmarshal(body, &tokenResp); err != nil {
+	if err := json.NewDecoder(resp.Body).Decode(&tokenResp); err != nil {
 		return fmt.Errorf("decoding Twitch OAuth response: %w", err)
 	}
 
@@ -346,17 +342,13 @@ func (c *Client) SearchGame(name string, platformID int) ([]Game, error) {
 	}
 	defer resp.Body.Close()
 
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("reading IGDB response: %w", err)
-	}
-
 	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(resp.Body)
 		return nil, fmt.Errorf("IGDB API returned %d: %s", resp.StatusCode, string(body))
 	}
 
 	var games []Game
-	if err := json.Unmarshal(body, &games); err != nil {
+	if err := json.NewDecoder(resp.Body).Decode(&games); err != nil {
 		return nil, fmt.Errorf("decoding IGDB response: %w", err)
 	}
 
@@ -406,17 +398,13 @@ func (c *Client) SearchGameExact(name string, platformID int) ([]Game, error) {
 	}
 	defer resp.Body.Close()
 
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("reading IGDB response: %w", err)
-	}
-
 	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(resp.Body)
 		return nil, fmt.Errorf("IGDB API returned %d: %s", resp.StatusCode, string(body))
 	}
 
 	var games []Game
-	if err := json.Unmarshal(body, &games); err != nil {
+	if err := json.NewDecoder(resp.Body).Decode(&games); err != nil {
 		return nil, fmt.Errorf("decoding IGDB response: %w", err)
 	}
 
@@ -464,17 +452,13 @@ func (c *Client) GetGameByID(igdbID int) (*Game, error) {
 	}
 	defer resp.Body.Close()
 
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("reading IGDB response: %w", err)
-	}
-
 	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(resp.Body)
 		return nil, fmt.Errorf("IGDB API returned %d: %s", resp.StatusCode, string(body))
 	}
 
 	var games []Game
-	if err := json.Unmarshal(body, &games); err != nil {
+	if err := json.NewDecoder(resp.Body).Decode(&games); err != nil {
 		return nil, fmt.Errorf("decoding IGDB response: %w", err)
 	}
 
@@ -520,17 +504,13 @@ func (c *Client) GetTimeToBeat(igdbGameID int) (*TimeToBeat, error) {
 	}
 	defer resp.Body.Close()
 
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("reading IGDB time to beat response: %w", err)
-	}
-
 	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(resp.Body)
 		return nil, fmt.Errorf("IGDB API returned %d: %s", resp.StatusCode, string(body))
 	}
 
 	var results []TimeToBeat
-	if err := json.Unmarshal(body, &results); err != nil {
+	if err := json.NewDecoder(resp.Body).Decode(&results); err != nil {
 		return nil, fmt.Errorf("decoding IGDB time to beat response: %w", err)
 	}
 
@@ -594,17 +574,13 @@ func (c *Client) GetTopGames(platformID int, limit int) ([]TopGame, error) {
 	}
 	defer resp.Body.Close()
 
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("reading IGDB response: %w", err)
-	}
-
 	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(resp.Body)
 		return nil, fmt.Errorf("IGDB API returned %d: %s", resp.StatusCode, string(body))
 	}
 
 	var games []TopGame
-	if err := json.Unmarshal(body, &games); err != nil {
+	if err := json.NewDecoder(resp.Body).Decode(&games); err != nil {
 		return nil, fmt.Errorf("decoding IGDB response: %w", err)
 	}
 
@@ -655,19 +631,15 @@ func (c *Client) GetSimilarGames(igdbGameID int) ([]SimilarGame, error) {
 	}
 	defer resp.Body.Close()
 
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("reading IGDB response: %w", err)
-	}
-
 	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(resp.Body)
 		return nil, fmt.Errorf("IGDB API returned %d: %s", resp.StatusCode, string(body))
 	}
 
 	var parentGames []struct {
 		SimilarGames []int `json:"similar_games"`
 	}
-	if err := json.Unmarshal(body, &parentGames); err != nil {
+	if err := json.NewDecoder(resp.Body).Decode(&parentGames); err != nil {
 		return nil, fmt.Errorf("decoding IGDB similar_games response: %w", err)
 	}
 
@@ -710,17 +682,13 @@ func (c *Client) GetSimilarGames(igdbGameID int) ([]SimilarGame, error) {
 	}
 	defer resp2.Body.Close()
 
-	body2, err := io.ReadAll(resp2.Body)
-	if err != nil {
-		return nil, fmt.Errorf("reading IGDB detail response: %w", err)
-	}
-
 	if resp2.StatusCode != http.StatusOK {
+		body2, _ := io.ReadAll(resp2.Body)
 		return nil, fmt.Errorf("IGDB API returned %d: %s", resp2.StatusCode, string(body2))
 	}
 
 	var games []SimilarGame
-	if err := json.Unmarshal(body2, &games); err != nil {
+	if err := json.NewDecoder(resp2.Body).Decode(&games); err != nil {
 		return nil, fmt.Errorf("decoding IGDB similar games detail: %w", err)
 	}
 
@@ -783,12 +751,8 @@ func (c *Client) GetCompanyByID(igdbID int) (*CompanyDetail, error) {
 	}
 	defer resp.Body.Close()
 
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("reading IGDB company response: %w", err)
-	}
-
 	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(resp.Body)
 		return nil, fmt.Errorf("IGDB API returned %d: %s", resp.StatusCode, string(body))
 	}
 
@@ -806,7 +770,7 @@ func (c *Client) GetCompanyByID(igdbID int) (*CompanyDetail, error) {
 			Category int    `json:"category"`
 		} `json:"websites"`
 	}
-	if err := json.Unmarshal(body, &results); err != nil {
+	if err := json.NewDecoder(resp.Body).Decode(&results); err != nil {
 		return nil, fmt.Errorf("decoding IGDB company response: %w", err)
 	}
 
@@ -879,12 +843,8 @@ func (c *Client) SearchCompanyByName(name string) (*CompanyDetail, error) {
 	}
 	defer resp.Body.Close()
 
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("reading IGDB company search response: %w", err)
-	}
-
 	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(resp.Body)
 		return nil, fmt.Errorf("IGDB API returned %d: %s", resp.StatusCode, string(body))
 	}
 
@@ -902,7 +862,7 @@ func (c *Client) SearchCompanyByName(name string) (*CompanyDetail, error) {
 			Category int    `json:"category"`
 		} `json:"websites"`
 	}
-	if err := json.Unmarshal(body, &results); err != nil {
+	if err := json.NewDecoder(resp.Body).Decode(&results); err != nil {
 		return nil, fmt.Errorf("decoding IGDB company search response: %w", err)
 	}
 
@@ -1106,12 +1066,8 @@ func (c *Client) GetGameEnrichment(igdbID int) (*GameEnrichment, error) {
 	}
 	defer resp.Body.Close()
 
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("reading IGDB enrichment response: %w", err)
-	}
-
 	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(resp.Body)
 		return nil, fmt.Errorf("IGDB API returned %d: %s", resp.StatusCode, string(body))
 	}
 
@@ -1139,7 +1095,7 @@ func (c *Client) GetGameEnrichment(igdbID int) (*GameEnrichment, error) {
 			Rating   int `json:"rating"`
 		} `json:"age_ratings"`
 	}
-	if err := json.Unmarshal(body, &results); err != nil {
+	if err := json.NewDecoder(resp.Body).Decode(&results); err != nil {
 		return nil, fmt.Errorf("decoding IGDB enrichment response: %w", err)
 	}
 
@@ -1229,17 +1185,13 @@ func (c *Client) GetCollection(collectionID int) (*CollectionData, error) {
 	}
 	defer resp.Body.Close()
 
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("reading IGDB collection response: %w", err)
-	}
-
 	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(resp.Body)
 		return nil, fmt.Errorf("IGDB API returned %d: %s", resp.StatusCode, string(body))
 	}
 
 	var results []CollectionData
-	if err := json.Unmarshal(body, &results); err != nil {
+	if err := json.NewDecoder(resp.Body).Decode(&results); err != nil {
 		return nil, fmt.Errorf("decoding IGDB collection response: %w", err)
 	}
 
@@ -1288,17 +1240,13 @@ func (c *Client) GetFranchise(franchiseID int) (*FranchiseData, error) {
 	}
 	defer resp.Body.Close()
 
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("reading IGDB franchise response: %w", err)
-	}
-
 	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(resp.Body)
 		return nil, fmt.Errorf("IGDB API returned %d: %s", resp.StatusCode, string(body))
 	}
 
 	var results []FranchiseData
-	if err := json.Unmarshal(body, &results); err != nil {
+	if err := json.NewDecoder(resp.Body).Decode(&results); err != nil {
 		return nil, fmt.Errorf("decoding IGDB franchise response: %w", err)
 	}
 
@@ -1361,13 +1309,9 @@ func (c *Client) GetCollectionGames(gameIDs []int) ([]CollectionGameInfo, error)
 			return nil, fmt.Errorf("calling IGDB API for collection games: %w", err)
 		}
 
-		body, err := io.ReadAll(resp.Body)
-		resp.Body.Close()
-		if err != nil {
-			return nil, fmt.Errorf("reading IGDB collection games response: %w", err)
-		}
-
 		if resp.StatusCode != http.StatusOK {
+			body, _ := io.ReadAll(resp.Body)
+			resp.Body.Close()
 			return nil, fmt.Errorf("IGDB API returned %d: %s", resp.StatusCode, string(body))
 		}
 
@@ -1376,7 +1320,9 @@ func (c *Client) GetCollectionGames(gameIDs []int) ([]CollectionGameInfo, error)
 			Name  string `json:"name"`
 			Cover *Image `json:"cover"`
 		}
-		if err := json.Unmarshal(body, &games); err != nil {
+		err = json.NewDecoder(resp.Body).Decode(&games)
+		resp.Body.Close()
+		if err != nil {
 			return nil, fmt.Errorf("decoding IGDB collection games response: %w", err)
 		}
 
