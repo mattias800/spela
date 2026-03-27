@@ -169,24 +169,26 @@ beforeEach(() => {
 });
 
 describe("PreferencesPage", () => {
-  it("renders page heading", () => {
+  it("renders page heading and tabs", () => {
     renderPage();
     expect(screen.getByText("Preferences")).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: "General" })).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: "Emulation" })).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: "Video Filters" })).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: "Controls" })).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: "Achievements" })).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: "Devices" })).toBeInTheDocument();
   });
 
-  it("renders loading state for preferences", () => {
-    mockUseUserPreferences.mockReturnValue({
-      data: undefined,
-      isLoading: true,
-    });
+  it("renders emulation settings when Emulation tab is clicked", async () => {
     renderPage();
+    await userEvent.click(screen.getByRole("tab", { name: "Emulation" }));
     expect(screen.getByText("Emulation Settings")).toBeInTheDocument();
-    // Skeleton elements should be present (no toggle switches)
-    expect(screen.queryByRole("switch")).not.toBeInTheDocument();
   });
 
-  it("displays current toggle preferences", () => {
+  it("displays current toggle preferences", async () => {
     renderPage();
+    await userEvent.click(screen.getByRole("tab", { name: "Emulation" }));
     const switches = screen.getAllByRole("switch");
     // Performance Overlay is true
     expect(switches[0]).toHaveAttribute("aria-checked", "true");
@@ -198,6 +200,7 @@ describe("PreferencesPage", () => {
 
   it("toggles a preference switch", async () => {
     renderPage();
+    await userEvent.click(screen.getByRole("tab", { name: "Emulation" }));
     const switches = screen.getAllByRole("switch");
     await userEvent.click(switches[1]); // Auto Save (currently false)
     expect(mockMutate).toHaveBeenCalledWith(
@@ -206,28 +209,32 @@ describe("PreferencesPage", () => {
     );
   });
 
-  it("displays global shader selection", () => {
+  it("displays global shader selection on Video Filters tab", async () => {
     renderPage();
+    await userEvent.click(screen.getByRole("tab", { name: "Video Filters" }));
     expect(screen.getByText("Global Default Shader")).toBeInTheDocument();
   });
 
-  it("shows per-console shader table", () => {
+  it("shows per-console shader table on Video Filters tab", async () => {
     renderPage();
+    await userEvent.click(screen.getByRole("tab", { name: "Video Filters" }));
     const overrideLabels = screen.getAllByText("Per-Console Overrides");
     expect(overrideLabels.length).toBeGreaterThanOrEqual(1);
     expect(screen.getAllByText("NES").length).toBeGreaterThanOrEqual(1);
     expect(screen.getAllByText("SNES").length).toBeGreaterThanOrEqual(1);
   });
 
-  it("shows devices list", () => {
+  it("shows devices list on Devices tab", async () => {
     renderPage();
+    await userEvent.click(screen.getByRole("tab", { name: "Devices" }));
     expect(screen.getByText("My Phone")).toBeInTheDocument();
     expect(screen.getByText("Desktop")).toBeInTheDocument();
   });
 
-  it("shows empty state when no devices", () => {
+  it("shows empty state when no devices", async () => {
     mockUseDevices.mockReturnValue({ data: [], isLoading: false });
     renderPage();
+    await userEvent.click(screen.getByRole("tab", { name: "Devices" }));
     expect(screen.getByText("No devices registered")).toBeInTheDocument();
     expect(
       screen.getByText(
@@ -236,25 +243,23 @@ describe("PreferencesPage", () => {
     ).toBeInTheDocument();
   });
 
-  it("renders loading state for devices", () => {
+  it("renders loading state for devices", async () => {
     mockUseDevices.mockReturnValue({ data: undefined, isLoading: true });
     renderPage();
-    expect(screen.getByText("Devices")).toBeInTheDocument();
-    // Should not show any device names while loading
+    await userEvent.click(screen.getByRole("tab", { name: "Devices" }));
+    // Tab is visible, but no device names should show while loading
     expect(screen.queryByText("My Phone")).not.toBeInTheDocument();
   });
 
   it("allows inline device rename", async () => {
     renderPage();
-    // Click the rename (pencil) button on the first device
+    await userEvent.click(screen.getByRole("tab", { name: "Devices" }));
     const renameButtons = screen.getAllByTitle("Rename device");
     await userEvent.click(renameButtons[0]);
 
-    // Should show an input with the current name
     const input = screen.getByDisplayValue("My Phone");
     expect(input).toBeInTheDocument();
 
-    // Change the name and press Enter
     await userEvent.clear(input);
     await userEvent.type(input, "New Name{Enter}");
 
@@ -269,31 +274,32 @@ describe("PreferencesPage", () => {
 
   it("cancels device rename on Escape", async () => {
     renderPage();
+    await userEvent.click(screen.getByRole("tab", { name: "Devices" }));
     const renameButtons = screen.getAllByTitle("Rename device");
     await userEvent.click(renameButtons[0]);
 
     screen.getByDisplayValue("My Phone");
     await userEvent.keyboard("{Escape}");
 
-    // Input should be gone, original name shown
     expect(screen.queryByDisplayValue("My Phone")).not.toBeInTheDocument();
     expect(screen.getByText("My Phone")).toBeInTheDocument();
   });
 
   it("opens delete confirmation modal", async () => {
     renderPage();
+    await userEvent.click(screen.getByRole("tab", { name: "Devices" }));
     const deleteButtons = screen.getAllByTitle("Delete device");
     await userEvent.click(deleteButtons[0]);
 
     expect(
       screen.getByRole("heading", { name: "Delete Device" }),
     ).toBeInTheDocument();
-    // The modal contains a confirmation message with the device name
     expect(screen.getByText(/This will remove/)).toBeInTheDocument();
   });
 
   it("confirms device deletion", async () => {
     renderPage();
+    await userEvent.click(screen.getByRole("tab", { name: "Devices" }));
     const deleteButtons = screen.getAllByTitle("Delete device");
     await userEvent.click(deleteButtons[0]);
 
@@ -311,18 +317,19 @@ describe("PreferencesPage", () => {
 
   it("cancels device deletion", async () => {
     renderPage();
+    await userEvent.click(screen.getByRole("tab", { name: "Devices" }));
     const deleteButtons = screen.getAllByTitle("Delete device");
     await userEvent.click(deleteButtons[0]);
 
     const cancelBtn = screen.getByRole("button", { name: "Cancel" });
     await userEvent.click(cancelBtn);
 
-    // Modal should be gone
     expect(screen.queryByText("Delete Device")).not.toBeInTheDocument();
   });
 
   it("expands device to show shader overrides", async () => {
     renderPage();
+    await userEvent.click(screen.getByRole("tab", { name: "Devices" }));
     const expandButtons = screen.getAllByTitle("Shader overrides");
     await userEvent.click(expandButtons[0]);
 
