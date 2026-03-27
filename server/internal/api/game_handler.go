@@ -5,6 +5,7 @@ import (
 	"archive/zip"
 	"fmt"
 	"io"
+	"io/fs"
 	"log/slog"
 	"net/http"
 	"os"
@@ -418,6 +419,31 @@ func (h *GameHandler) DownloadGame(c *gin.Context) {
 	// This handles both new games (with disc records) and old DB entries
 	// (without disc records) that were created before the scanner change.
 	lower := strings.ToLower(game.FileName)
+
+	// For .scummvm files, serve the entire game directory as a tar archive.
+	// The .scummvm file lives inside a directory of game data files.
+	// absPath resolves to the game directory (FilePath stores the directory, not the .scummvm file).
+	if strings.HasSuffix(lower, ".scummvm") {
+		var files []string
+		filepath.WalkDir(absPath, func(p string, d fs.DirEntry, err error) error {
+			if err != nil || d.IsDir() {
+				return nil
+			}
+			files = append(files, p)
+			return nil
+		})
+
+		if len(files) > 0 {
+			c.Header("Content-Type", "application/x-tar")
+			c.Header("Content-Disposition", fmt.Sprintf("attachment; filename=%q", game.FileName+".tar"))
+			c.Status(http.StatusOK)
+			if err := serveTar(c.Writer, files); err != nil {
+				slog.Warn("error streaming tar for ScummVM game", "game", game.Title, "error", err)
+			}
+			return
+		}
+	}
+
 	if strings.HasSuffix(lower, ".cue") || strings.HasSuffix(lower, ".gdi") {
 		companions, _, err := scanner.DiscCompanionFiles(absPath)
 		if err != nil {
