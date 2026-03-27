@@ -415,10 +415,11 @@ fun SpelaApp(
                     val animationsEnabled = com.spela.player.presentation.ui.components.LocalAnimationsEnabled.current
                     val saveableStateHolder = rememberSaveableStateHolder()
 
-                    // When navigating forward, clear saved state for the new screen
-                    // so it starts fresh (e.g., scroll position at top).
-                    // When going back, the saved state is preserved by SaveableStateProvider.
-                    if (!navState.isGoingBack) {
+                    // When navigating forward to a NEW screen, clear saved state so
+                    // it starts fresh (e.g., scroll position at top).
+                    // Preserve state when going back OR switching tabs — tab screens
+                    // should show cached data immediately instead of a loading spinner.
+                    if (!navState.isGoingBack && !navState.isTabSwitch) {
                         saveableStateHolder.removeState(navState.currentScreen.route)
                     }
 
