@@ -16,10 +16,13 @@ import {
 } from "@/hooks/use-admin";
 import { useToast } from "@/components/ui";
 import { Skeleton } from "@/components/ui";
+import { StateTabNav, StateTabItem } from "@/components/ui/tab-nav";
 import { IgdbConfigCard } from "@/features/admin/components/igdb-config-card";
 import { IgdbWarningBanner } from "@/features/admin/components/igdb-warning-banner";
 import { SteamGridDBConfigCard } from "@/features/admin/components/steamgriddb-config-card";
 import { RAConfigCard } from "@/features/admin/components/ra-config-card";
+
+type SettingsTab = "general" | "library" | "igdb" | "steamgriddb" | "retroachievements";
 
 export function AdminSettingsPage() {
   const { data: settings, isLoading } = useServerSettings();
@@ -29,6 +32,7 @@ export function AdminSettingsPage() {
   const updateSettings = useUpdateSettings();
   const { toast } = useToast();
 
+  const [activeTab, setActiveTab] = useState<SettingsTab>("general");
   const [allowRegistration, setAllowRegistration] = useState(true);
   const [scrapeOnScan, setScrapeOnScan] = useState(true);
   const [biosAutoDownload, setBiosAutoDownload] = useState(true);
@@ -61,7 +65,6 @@ export function AdminSettingsPage() {
       default_region: defaultRegion,
       hide_pre_release_default: String(hidePreReleaseDefault),
     };
-    // Only send IGDB credentials when they're managed via the UI, not env vars
     if (!igdbEnvConfigured) {
       payload.igdb_client_id = igdbClientId;
       payload.igdb_client_secret = igdbClientSecret;
@@ -104,112 +107,140 @@ export function AdminSettingsPage() {
 
       {igdbNotConfigured && <IgdbWarningBanner variant="settings" />}
 
-      <Card>
-        <CardHeader>
-          <h2 className="text-lg font-semibold text-surface-100">General</h2>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-surface-200">
-                Allow Registration
-              </p>
-              <p className="text-xs text-surface-500">
-                Allow new users to create accounts
-              </p>
+      <StateTabNav>
+        <StateTabItem active={activeTab === "general"} onClick={() => setActiveTab("general")}>
+          General
+        </StateTabItem>
+        <StateTabItem active={activeTab === "library"} onClick={() => setActiveTab("library")}>
+          Library
+        </StateTabItem>
+        <StateTabItem active={activeTab === "igdb"} onClick={() => setActiveTab("igdb")}>
+          IGDB
+        </StateTabItem>
+        <StateTabItem active={activeTab === "steamgriddb"} onClick={() => setActiveTab("steamgriddb")}>
+          SteamGridDB
+        </StateTabItem>
+        <StateTabItem active={activeTab === "retroachievements"} onClick={() => setActiveTab("retroachievements")}>
+          RetroAchievements
+        </StateTabItem>
+      </StateTabNav>
+
+      {activeTab === "general" && (
+        <Card>
+          <CardHeader>
+            <h2 className="text-lg font-semibold text-surface-100">General</h2>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-surface-200">
+                  Allow Registration
+                </p>
+                <p className="text-xs text-surface-500">
+                  Allow new users to create accounts
+                </p>
+              </div>
+              <Switch
+                checked={allowRegistration}
+                onChange={setAllowRegistration}
+              />
             </div>
-            <Switch
-              checked={allowRegistration}
-              onChange={setAllowRegistration}
+
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-surface-200">
+                  Auto-scrape on Scan
+                </p>
+                <p className="text-xs text-surface-500">
+                  Automatically fetch metadata when scanning
+                </p>
+              </div>
+              <Switch checked={scrapeOnScan} onChange={setScrapeOnScan} />
+            </div>
+
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-surface-200">
+                  Auto-download BIOS on startup
+                </p>
+                <p className="text-xs text-surface-500">
+                  Automatically download missing BIOS files when the server starts
+                </p>
+              </div>
+              <Switch
+                checked={biosAutoDownload}
+                onChange={setBiosAutoDownload}
+              />
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {activeTab === "library" && (
+        <Card>
+          <CardHeader>
+            <h2 className="text-lg font-semibold text-surface-100">Library Defaults</h2>
+            <p className="text-xs text-surface-500 mt-1">
+              Server-wide defaults for game library display and scraping.
+            </p>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <Select
+              id="default-region"
+              label="Default Region"
+              value={defaultRegion}
+              onChange={(e) => setDefaultRegion(e.target.value)}
+              options={[
+                { value: "USA", label: "USA" },
+                { value: "Europe", label: "Europe" },
+                { value: "World", label: "World" },
+                { value: "Japan", label: "Japan" },
+              ]}
             />
-          </div>
 
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-surface-200">
-                Auto-scrape on Scan
-              </p>
-              <p className="text-xs text-surface-500">
-                Automatically fetch metadata when scanning
-              </p>
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-surface-200">
+                  Hide Pre-release by Default
+                </p>
+                <p className="text-xs text-surface-500">
+                  Hide betas, prototypes, and samples in game listings by default
+                </p>
+              </div>
+              <Switch
+                checked={hidePreReleaseDefault}
+                onChange={setHidePreReleaseDefault}
+              />
             </div>
-            <Switch checked={scrapeOnScan} onChange={setScrapeOnScan} />
-          </div>
+          </CardContent>
+        </Card>
+      )}
 
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-surface-200">
-                Auto-download BIOS on startup
-              </p>
-              <p className="text-xs text-surface-500">
-                Automatically download missing BIOS files when the server starts
-              </p>
-            </div>
-            <Switch
-              checked={biosAutoDownload}
-              onChange={setBiosAutoDownload}
-            />
-          </div>
-        </CardContent>
-      </Card>
+      {activeTab === "igdb" && (
+        <IgdbConfigCard
+          clientId={igdbClientId}
+          onClientIdChange={setIgdbClientId}
+          clientSecret={igdbClientSecret}
+          onClientSecretChange={setIgdbClientSecret}
+          envConfigured={igdbEnvConfigured}
+        />
+      )}
 
-      <Card>
-        <CardHeader>
-          <h2 className="text-lg font-semibold text-surface-100">Library Defaults</h2>
-          <p className="text-xs text-surface-500 mt-1">
-            Server-wide defaults for game library display and scraping.
-          </p>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <Select
-            id="default-region"
-            label="Default Region"
-            value={defaultRegion}
-            onChange={(e) => setDefaultRegion(e.target.value)}
-            options={[
-              { value: "USA", label: "USA" },
-              { value: "Europe", label: "Europe" },
-              { value: "World", label: "World" },
-              { value: "Japan", label: "Japan" },
-            ]}
-          />
+      {activeTab === "steamgriddb" && (
+        <SteamGridDBConfigCard
+          apiKey={steamgriddbApiKey}
+          onApiKeyChange={setSteamgriddbApiKey}
+          envConfigured={steamgriddbEnvConfigured}
+        />
+      )}
 
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-surface-200">
-                Hide Pre-release by Default
-              </p>
-              <p className="text-xs text-surface-500">
-                Hide betas, prototypes, and samples in game listings by default
-              </p>
-            </div>
-            <Switch
-              checked={hidePreReleaseDefault}
-              onChange={setHidePreReleaseDefault}
-            />
-          </div>
-        </CardContent>
-      </Card>
-
-      <IgdbConfigCard
-        clientId={igdbClientId}
-        onClientIdChange={setIgdbClientId}
-        clientSecret={igdbClientSecret}
-        onClientSecretChange={setIgdbClientSecret}
-        envConfigured={igdbEnvConfigured}
-      />
-
-      <SteamGridDBConfigCard
-        apiKey={steamgriddbApiKey}
-        onApiKeyChange={setSteamgriddbApiKey}
-        envConfigured={steamgriddbEnvConfigured}
-      />
-
-      <RAConfigCard
-        apiKey={raApiKey}
-        onApiKeyChange={setRaApiKey}
-        envConfigured={raEnvConfigured}
-      />
+      {activeTab === "retroachievements" && (
+        <RAConfigCard
+          apiKey={raApiKey}
+          onApiKeyChange={setRaApiKey}
+          envConfigured={raEnvConfigured}
+        />
+      )}
 
       <div className="flex justify-end">
         <Button
