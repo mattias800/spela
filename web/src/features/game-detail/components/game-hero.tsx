@@ -87,6 +87,9 @@ export function GameHero({
   const [showCoverModal, setShowCoverModal] = useState(false);
   const consoleName = game.consoleName ?? "";
 
+  // Use first screenshot as hero background, or null for gradient-only fallback
+  const heroImage = game.screenshotUrls?.[0] || null;
+
   const actionsMenuItems = [
     ...(isAdmin
       ? [
@@ -163,153 +166,179 @@ export function GameHero({
   ];
 
   return (
-    <div className="flex flex-col items-center gap-6 md:flex-row md:items-start md:gap-8">
-      {/* Cover art */}
-      <div className="w-48 flex-shrink-0 md:w-64 flex flex-col items-center">
-        <div
-          className="w-full rounded-2xl overflow-hidden bg-surface-900 border border-surface-800 shadow-2xl"
-        >
-          {game.coverUrl ? (
-            <img
-              src={game.coverUrl}
-              alt={game.title}
-              className="w-full"
-            />
-          ) : (
-            <div className="flex items-center justify-center bg-gradient-to-br from-surface-800 to-surface-900" style={{ aspectRatio: aspectRatio ?? 3 / 4 }}>
-              <span className="text-5xl font-bold text-surface-700">
-                {game.title.charAt(0)}
-              </span>
-            </div>
-          )}
-        </div>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => setShowCoverModal(true)}
-          className="mt-3"
-          data-testid="change-cover-btn"
-        >
-          <ImageIcon className="h-4 w-4" />
-          Change cover
-        </Button>
-        <CoverArtSelector
-          open={showCoverModal}
-          onClose={() => setShowCoverModal(false)}
-          gameId={game.id}
-          aspectRatio={aspectRatio}
-        />
-        <div className="mt-4">
-          <UserRating gameId={game.id} />
-        </div>
-      </div>
+    <div className="relative -mx-6 -mt-6 overflow-hidden rounded-b-2xl">
+      {/* Hero banner background */}
+      <div className="relative min-h-[280px] md:min-h-[340px]">
+        {heroImage ? (
+          <img
+            src={heroImage}
+            alt=""
+            className="absolute inset-0 w-full h-full object-cover"
+          />
+        ) : (
+          <div className="absolute inset-0 bg-gradient-to-br from-surface-800 via-surface-900 to-surface-950" />
+        )}
 
-      {/* Info */}
-      <div className="w-full min-w-0 flex-1 space-y-5 pt-2">
-        <div className="space-y-4">
-          <div>
-            <h1 className="text-2xl font-bold text-surface-100 md:text-3xl">
-              {game.title}
-            </h1>
-            <div className="flex flex-wrap items-center gap-3 mt-2">
-              {consoleName && <Badge variant="brand">{consoleName}</Badge>}
-              {!game.playable && (
-                <Badge variant="warning" data-testid="external-emulator-badge">
-                  <Monitor className="h-3 w-3 mr-1" />
-                  External Emulator
-                </Badge>
-              )}
-              <VerificationBadge game={game} isAdmin={isAdmin} />
-              {game.region && <RegionBadge region={game.region} />}
-              {hasAchievements && achievementCount != null && achievementCount > 0 && (
-                <Link
-                  to={`/games/${game.id}/achievements`}
-                  data-testid="achievements-badge"
+        {/* Gradient overlays for text readability */}
+        <div className="absolute inset-0 bg-gradient-to-t from-surface-950 via-surface-950/70 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-r from-surface-950/80 to-transparent" />
+
+        {/* Content overlay */}
+        <div className="relative z-10 flex items-end min-h-[280px] md:min-h-[340px] p-6 md:p-8 gap-6 md:gap-8">
+          {/* Cover art */}
+          <div className="flex-shrink-0 w-36 md:w-48 self-end">
+            <div className="rounded-xl overflow-hidden bg-surface-900/80 border border-white/10 shadow-2xl backdrop-blur-sm">
+              {game.coverUrl ? (
+                <img
+                  src={game.coverUrl}
+                  alt={game.title}
+                  className="w-full"
+                />
+              ) : (
+                <div
+                  className="flex items-center justify-center bg-gradient-to-br from-surface-800 to-surface-900"
+                  style={{ aspectRatio: aspectRatio ?? 3 / 4 }}
                 >
-                  <Badge variant="warning">
-                    <Trophy className="h-3 w-3 mr-1" />
-                    {achievementUnlocked != null
-                      ? `${achievementUnlocked} / ${achievementCount}`
-                      : `${achievementCount}`}
-                  </Badge>
-                </Link>
+                  <span className="text-4xl font-bold text-surface-700">
+                    {game.title.charAt(0)}
+                  </span>
+                </div>
               )}
-              {(game.rating ?? 0) > 0 ? (
-                <IgdbRatingStars rating={game.rating!} />
-              ) : (game.igdbUserRating ?? 0) > 0 ? (
-                <IgdbRatingStars rating={game.igdbUserRating!} />
-              ) : null}
-              {game.averageRating > 0 && (
-                <span className="flex items-center gap-1 text-sm text-surface-400">
-                  <Star className="h-4 w-4 text-amber-400 fill-amber-400" />
-                  {game.averageRating.toFixed(1)}
-                  <span className="text-surface-500">({game.ratingCount})</span>
+            </div>
+            <div className="flex justify-center mt-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowCoverModal(true)}
+                className="text-white/60 hover:text-white/90 text-xs"
+                data-testid="change-cover-btn"
+              >
+                <ImageIcon className="h-3 w-3" />
+                Change cover
+              </Button>
+            </div>
+            <CoverArtSelector
+              open={showCoverModal}
+              onClose={() => setShowCoverModal(false)}
+              gameId={game.id}
+              aspectRatio={aspectRatio}
+            />
+          </div>
+
+          {/* Title, badges, buttons */}
+          <div className="flex-1 min-w-0 space-y-3 pb-1">
+            <div>
+              <h1 className="text-2xl font-bold text-white md:text-3xl drop-shadow-lg">
+                {game.title}
+              </h1>
+              <div className="flex flex-wrap items-center gap-2 mt-2">
+                {consoleName && <Badge variant="brand">{consoleName}</Badge>}
+                {!game.playable && (
+                  <Badge variant="warning" data-testid="external-emulator-badge">
+                    <Monitor className="h-3 w-3 mr-1" />
+                    External Emulator
+                  </Badge>
+                )}
+                <VerificationBadge game={game} isAdmin={isAdmin} />
+                {game.region && <RegionBadge region={game.region} />}
+                {hasAchievements && achievementCount != null && achievementCount > 0 && (
+                  <Link
+                    to={`/games/${game.id}/achievements`}
+                    data-testid="achievements-badge"
+                  >
+                    <Badge variant="warning">
+                      <Trophy className="h-3 w-3 mr-1" />
+                      {achievementUnlocked != null
+                        ? `${achievementUnlocked} / ${achievementCount}`
+                        : `${achievementCount}`}
+                    </Badge>
+                  </Link>
+                )}
+                {(game.rating ?? 0) > 0 ? (
+                  <IgdbRatingStars rating={game.rating!} />
+                ) : (game.igdbUserRating ?? 0) > 0 ? (
+                  <IgdbRatingStars rating={game.igdbUserRating!} />
+                ) : null}
+                {game.averageRating > 0 && (
+                  <span className="flex items-center gap-1 text-sm text-white/70">
+                    <Star className="h-4 w-4 text-amber-400 fill-amber-400" />
+                    {game.averageRating.toFixed(1)}
+                    <span className="text-white/50">({game.ratingCount})</span>
+                  </span>
+                )}
+              </div>
+            </div>
+
+            {/* Action buttons */}
+            <div className="flex flex-wrap items-center gap-2">
+              {game.playable ? (
+                <Button
+                  variant="primary"
+                  size="sm"
+                  onClick={onPlay}
+                  disabled={!canPlayInBrowser || biosMissing}
+                  title={
+                    biosMissing
+                      ? "Missing required BIOS files"
+                      : canPlayInBrowser
+                        ? "Play in Browser"
+                        : `${game.consoleName} is not supported for browser play`
+                  }
+                  data-testid="play-in-browser-btn"
+                >
+                  <Play className="h-5 w-5" />
+                  Play in Browser
+                </Button>
+              ) : (
+                <Button
+                  variant="primary"
+                  size="sm"
+                  onClick={onDownloadRom}
+                  title="Download ROM for use with an external emulator"
+                  data-testid="download-rom-btn"
+                >
+                  <Download className="h-5 w-5" />
+                  Download ROM
+                </Button>
+              )}
+              <ActionsMenu items={actionsMenuItems} />
+              {isScraping && (
+                <span className="flex items-center gap-1.5 text-sm text-brand-400 ml-1">
+                  <RefreshCw className="h-4 w-4 animate-spin" />
+                  Scraping…
                 </span>
               )}
             </div>
-          </div>
-          <div className="flex flex-wrap items-center gap-2">
-            {game.playable ? (
-              <Button
-                variant="primary"
-                size="sm"
-                onClick={onPlay}
-                disabled={!canPlayInBrowser || biosMissing}
-                title={
-                  biosMissing
-                    ? "Missing required BIOS files"
-                    : canPlayInBrowser
-                      ? "Play in Browser"
-                      : `${game.consoleName} is not supported for browser play`
-                }
-                data-testid="play-in-browser-btn"
-              >
-                <Play className="h-5 w-5" />
-                Play in Browser
-              </Button>
-            ) : (
-              <Button
-                variant="primary"
-                size="sm"
-                onClick={onDownloadRom}
-                title="Download ROM for use with an external emulator"
-                data-testid="download-rom-btn"
-              >
-                <Download className="h-5 w-5" />
-                Download ROM
-              </Button>
-            )}
-            <ActionsMenu items={actionsMenuItems} />
-            {isScraping && (
-              <span className="flex items-center gap-1.5 text-sm text-brand-400 ml-1">
-                <RefreshCw className="h-4 w-4 animate-spin" />
-                Scraping metadata…
+
+            {/* Play time + rating */}
+            <div className="flex flex-wrap items-center gap-4 text-sm text-white/60">
+              <span className="flex items-center gap-1">
+                <Clock className="h-4 w-4" />
+                {game.totalPlayTime > 0
+                  ? formatPlayTime(game.totalPlayTime)
+                  : "Not played yet"}
               </span>
-            )}
-            <span className="flex items-center gap-1 text-sm text-surface-400 ml-2">
-              <Clock className="h-4 w-4 text-surface-500" />
-              {game.totalPlayTime > 0
-                ? formatPlayTime(game.totalPlayTime)
-                : "Not played yet"}
-            </span>
-            {game.lastPlayedAt && (
-              <span className="flex items-center gap-1 text-sm text-surface-400">
-                <Calendar className="h-4 w-4 text-surface-500" />
-                {formatRelativeTime(game.lastPlayedAt)}
-              </span>
-            )}
+              {game.lastPlayedAt && (
+                <span className="flex items-center gap-1">
+                  <Calendar className="h-4 w-4" />
+                  {formatRelativeTime(game.lastPlayedAt)}
+                </span>
+              )}
+              <UserRating gameId={game.id} />
+            </div>
           </div>
         </div>
+      </div>
 
-        {/* Description */}
+      {/* Description + metadata below the banner */}
+      <div className="px-6 md:px-8 py-5 bg-surface-950 space-y-4">
         {game.description && (
           <p className="text-sm text-surface-300 leading-relaxed">
             {game.description}
           </p>
         )}
 
-        {/* Metadata grid */}
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
           {game.developer && (
             <MetaItem
               icon={Building2}
@@ -404,7 +433,7 @@ function getRegionFlag(region: string): string | null {
 function RegionBadge({ region }: { region: string }) {
   const flag = getRegionFlag(region);
   return (
-    <span className="inline-flex items-center gap-1 rounded-md bg-surface-800 px-2 py-0.5 text-xs font-medium text-surface-300">
+    <span className="inline-flex items-center gap-1 rounded-md bg-black/30 backdrop-blur-sm px-2 py-0.5 text-xs font-medium text-white/80">
       {flag && <span>{flag}</span>}
       {region}
     </span>
@@ -435,12 +464,12 @@ function IgdbRatingStars({ rating }: { rating: number }) {
           </div>
         )}
         {Array.from({ length: emptyStars }, (_, i) => (
-          <Star key={`empty-${i}`} className="h-4 w-4 text-surface-600" />
+          <Star key={`empty-${i}`} className="h-4 w-4 text-white/30" />
         ))}
       </div>
-      <span className="text-sm font-medium text-surface-300">
+      <span className="text-sm font-medium text-white/80">
         {normalized.toFixed(1)}
-        <span className="text-surface-500">/10</span>
+        <span className="text-white/50">/10</span>
       </span>
     </div>
   );
