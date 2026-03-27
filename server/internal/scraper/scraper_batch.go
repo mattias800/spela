@@ -213,6 +213,65 @@ func (s *Scraper) scrapeSteamGridDBArtwork(game *db.Game, console db.Console) {
 	slog.Info("saved SteamGridDB artwork", "game", game.Title, "steamGridDbId", artwork.SteamGridDBID)
 }
 
+// scrapeSteamGridDBArtworkResult is like scrapeSteamGridDBArtwork but returns
+// the outcome (status, errorMsg) instead of recording it to the DB directly.
+// This allows the caller to batch all RecordScrapeResult calls after parallel completion.
+func (s *Scraper) scrapeSteamGridDBArtworkResult(game *db.Game, console db.Console) (status string, errorMsg string) {
+	if s.SteamGridDBClient == nil {
+		return "not_found", ""
+	}
+
+	var existing db.GameArtwork
+	if err := s.DB.Where("game_id = ?", game.ID).First(&existing).Error; err == nil {
+		return "matched", "" // already exists
+	}
+
+	artwork, err := s.SteamGridDBClient.GetBestArtwork(game.Title, console.Abbreviation)
+	if err != nil {
+		slog.Debug("SteamGridDB artwork fetch failed", "game", game.Title, "error", err)
+		errStr := err.Error()
+		if strings.Contains(errStr, "no results found") {
+			return "not_found", ""
+		}
+		return "error", errStr
+	}
+	if artwork == nil {
+		return "not_found", ""
+	}
+
+	artwork.GameID = game.ID
+	gameIDStr := strconv.FormatUint(uint64(game.ID), 10)
+
+	if artwork.HeroURL != "" {
+		if path := s.DownloadExternalImage(artwork.HeroURL, fmt.Sprintf("%s/%s/artwork-hero.jpg", console.Abbreviation, gameIDStr)); path != "" {
+			artwork.HeroURL = path
+		}
+	}
+	if artwork.GridURL != "" {
+		if path := s.DownloadExternalImage(artwork.GridURL, fmt.Sprintf("%s/%s/artwork-grid.jpg", console.Abbreviation, gameIDStr)); path != "" {
+			artwork.GridURL = path
+		}
+	}
+	if artwork.LogoURL != "" {
+		if path := s.DownloadExternalImage(artwork.LogoURL, fmt.Sprintf("%s/%s/artwork-logo.png", console.Abbreviation, gameIDStr)); path != "" {
+			artwork.LogoURL = path
+		}
+	}
+	if artwork.IconURL != "" {
+		if path := s.DownloadExternalImage(artwork.IconURL, fmt.Sprintf("%s/%s/artwork-icon.png", console.Abbreviation, gameIDStr)); path != "" {
+			artwork.IconURL = path
+		}
+	}
+
+	if err := s.DB.Create(artwork).Error; err != nil {
+		slog.Warn("failed to save SteamGridDB artwork", "game", game.Title, "error", err)
+		return "error", err.Error()
+	}
+
+	slog.Info("saved SteamGridDB artwork", "game", game.Title, "steamGridDbId", artwork.SteamGridDBID)
+	return "matched", ""
+}
+
 // ConfigureSteamGridDB sets up the SteamGridDB client from the given API key.
 // If apiKey is empty, the client is set to nil (disabled).
 func (s *Scraper) ConfigureSteamGridDB(apiKey string) {
