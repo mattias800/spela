@@ -3,6 +3,7 @@ package scanner
 import (
 	"bufio"
 	"fmt"
+	"io/fs"
 	"log/slog"
 	"os"
 	"path/filepath"
@@ -367,6 +368,14 @@ func CreateConsoleFolders(database *gorm.DB, gameDirs []string) error {
 	return nil
 }
 
+// humanizeTitle converts a raw directory or filename into a human-readable title
+// by replacing underscores and hyphens with spaces.
+func humanizeTitle(name string) string {
+	name = strings.ReplaceAll(name, "_", " ")
+	name = strings.ReplaceAll(name, "-", " ")
+	return strings.TrimSpace(name)
+}
+
 // ScanResult holds the results of a scan operation.
 type ScanResult struct {
 	NewGames     int    `json:"newGames"`
@@ -587,6 +596,12 @@ func (s *Scanner) Scan(onProgress ProgressFunc, consoleFilter ...string) (*ScanR
 		}
 	}
 
+	// ScummVM directory scan — runs between multi-disc and single-file passes
+	report(ScanProgress{Phase: "discovering", Message: "Scanning ScummVM game directories..."})
+	if err := s.scanScummVMGames(result, foundPaths, onProgress); err != nil {
+		slog.Warn("ScummVM scan error", "error", err)
+	}
+
 	report(ScanProgress{
 		Phase:   "discovering",
 		Current: result.NewGames,
@@ -703,6 +718,91 @@ func (s *Scanner) Scan(onProgress ProgressFunc, consoleFilter ...string) (*ScanR
 	return result, nil
 }
 
+// scanScummVMGames walks each gameDir/scummvm/ subtree looking for .scummvm marker files.
+// Each directory that contains a .scummvm file is treated as one ScummVM game.
+// The game's FilePath is the relative path to that directory (not the .scummvm file),
+// so that the download handler can serve the whole directory as a tar archive.
+func (s *Scanner) scanScummVMGames(result *ScanResult, foundPaths map[string]bool, onProgress ProgressFunc) error {
+	var scummConsole db.Console
+	if err := s.DB.Where("abbreviation = ?", "SCUMMVM").First(&scummConsole).Error; err != nil {
+		return nil // ScummVM console not seeded — skip silently
+	}
+
+	for _, gameDir := range s.GameDirs {
+		scummRoot := filepath.Join(gameDir, "scummvm")
+		if _, err := os.Stat(scummRoot); os.IsNotExist(err) {
+			continue
+		}
+
+		filepath.WalkDir(scummRoot, func(path string, d fs.DirEntry, err error) error {
+			if err != nil || d.IsDir() {
+				return nil
+			}
+			if strings.ToLower(filepath.Ext(path)) != ".scummvm" {
+				return nil
+			}
+
+			gameDataDir := filepath.Dir(path)
+			relPath := storage.RelativeGamePath(gameDataDir, s.GameDirs)
+			fileName := filepath.Base(path)
+
+			// Mark the directory path as found so the removal pass keeps the game.
+			foundPaths[relPath] = true
+
+			// Check if game already exists
+			var existing db.Game
+			if err := s.DB.Unscoped().Where("file_path = ?", relPath).First(&existing).Error; err == nil {
+				// Restore if soft-deleted
+				if existing.DeletedAt.Valid {
+					slog.Info("restoring previously removed ScummVM game",
+						"title", existing.Title, "path", relPath)
+					s.DB.Unscoped().Model(&existing).Update("deleted_at", nil)
+				}
+				return nil
+			}
+
+			title := humanizeTitle(filepath.Base(gameDataDir))
+
+			// Calculate total directory size
+			var totalSize int64
+			filepath.WalkDir(gameDataDir, func(p string, d fs.DirEntry, err error) error {
+				if err != nil || d.IsDir() {
+					return nil
+				}
+				if info, err := d.Info(); err == nil {
+					totalSize += info.Size()
+				}
+				return nil
+			})
+
+			game := db.Game{
+				ConsoleID: scummConsole.ID,
+				Title:     title,
+				FileName:  fileName,
+				FilePath:  relPath,
+				FileSize:  totalSize,
+			}
+
+			if err := s.DB.Create(&game).Error; err != nil {
+				slog.Warn("failed to create ScummVM game", "path", relPath, "error", err)
+				return nil
+			}
+
+			result.NewGames++
+			result.NewGameIDs = append(result.NewGameIDs, game.ID)
+			if onProgress != nil {
+				onProgress(ScanProgress{
+					Phase:   "discovering",
+					Message: fmt.Sprintf("Found ScummVM game: %s", title),
+				})
+			}
+			slog.Info("found ScummVM game", "title", title, "path", relPath)
+			return nil
+		})
+	}
+	return nil
+}
+
 // scanMultiDisc performs pass 1: discovers multi-disc games via .m3u files, disc patterns,
 // and standalone .cue files (which need companion .bin files bundled).
 // The optional onFile callback is called for each file visited during the directory walk.
@@ -718,6 +818,10 @@ func (s *Scanner) scanMultiDisc(dir string, consoleMap map[string]*db.Console, f
 		}
 		if info.IsDir() {
 			if strings.EqualFold(info.Name(), "bios") {
+				return filepath.SkipDir
+			}
+			// Skip the scummvm root — handled by scanScummVMGames
+			if strings.EqualFold(info.Name(), "scummvm") && filepath.Dir(path) == dir {
 				return filepath.SkipDir
 			}
 			return nil
@@ -1169,6 +1273,10 @@ func (s *Scanner) scanDirectory(dir string, consoleMap map[string]*db.Console, f
 		}
 		if info.IsDir() {
 			if strings.EqualFold(info.Name(), "bios") {
+				return filepath.SkipDir
+			}
+			// Skip the scummvm root — handled by scanScummVMGames
+			if strings.EqualFold(info.Name(), "scummvm") && filepath.Dir(path) == dir {
 				return filepath.SkipDir
 			}
 			return nil

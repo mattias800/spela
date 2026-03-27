@@ -1663,3 +1663,66 @@ func TestTrackPattern(t *testing.T) {
 		})
 	}
 }
+
+func TestScan_DetectsScummVMGames(t *testing.T) {
+	database := setupTestDB(t)
+	dir := t.TempDir()
+
+	scummDir := filepath.Join(dir, "scummvm", "monkey1")
+	require.NoError(t, os.MkdirAll(scummDir, 0755))
+	require.NoError(t, os.WriteFile(filepath.Join(scummDir, "monkey1.scummvm"), []byte("monkey\n"), 0644))
+	require.NoError(t, os.WriteFile(filepath.Join(scummDir, "MONKEY.000"), []byte("data"), 0644))
+	require.NoError(t, os.WriteFile(filepath.Join(scummDir, "MONKEY.001"), []byte("data"), 0644))
+
+	s := NewScanner(database, []string{dir})
+	result, err := s.Scan(nil)
+	require.NoError(t, err)
+	assert.Equal(t, 1, result.NewGames)
+
+	var game db.Game
+	err = database.Preload("Console").First(&game).Error
+	require.NoError(t, err)
+	assert.Equal(t, "SCUMMVM", game.Console.Abbreviation)
+	assert.Equal(t, "monkey1.scummvm", game.FileName)
+	assert.Contains(t, game.FilePath, "scummvm")
+	assert.Contains(t, game.FilePath, "monkey1")
+}
+
+func TestScan_DetectsNestedScummVMGames(t *testing.T) {
+	database := setupTestDB(t)
+	dir := t.TempDir()
+
+	scummDir := filepath.Join(dir, "scummvm", "Beneath a Steel Sky", "sky")
+	require.NoError(t, os.MkdirAll(scummDir, 0755))
+	require.NoError(t, os.WriteFile(filepath.Join(scummDir, "sky.scummvm"), []byte("sky\n"), 0644))
+	require.NoError(t, os.WriteFile(filepath.Join(scummDir, "SKY.DNR"), []byte("data"), 0644))
+
+	s := NewScanner(database, []string{dir})
+	result, err := s.Scan(nil)
+	require.NoError(t, err)
+	assert.Equal(t, 1, result.NewGames)
+
+	var game db.Game
+	err = database.Preload("Console").First(&game).Error
+	require.NoError(t, err)
+	assert.Equal(t, "SCUMMVM", game.Console.Abbreviation)
+	assert.Equal(t, "sky.scummvm", game.FileName)
+}
+
+func TestScan_MultipleScummVMGames(t *testing.T) {
+	database := setupTestDB(t)
+	dir := t.TempDir()
+
+	game1Dir := filepath.Join(dir, "scummvm", "monkey1")
+	require.NoError(t, os.MkdirAll(game1Dir, 0755))
+	require.NoError(t, os.WriteFile(filepath.Join(game1Dir, "monkey1.scummvm"), []byte("monkey\n"), 0644))
+
+	game2Dir := filepath.Join(dir, "scummvm", "tentacle")
+	require.NoError(t, os.MkdirAll(game2Dir, 0755))
+	require.NoError(t, os.WriteFile(filepath.Join(game2Dir, "tentacle.scummvm"), []byte("tentacle\n"), 0644))
+
+	s := NewScanner(database, []string{dir})
+	result, err := s.Scan(nil)
+	require.NoError(t, err)
+	assert.Equal(t, 2, result.NewGames)
+}
