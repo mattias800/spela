@@ -18,7 +18,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
@@ -40,6 +39,7 @@ import androidx.compose.ui.unit.dp
 import com.spela.player.domain.model.GameCollection
 import com.spela.player.presentation.ui.components.SpCard
 import com.spela.player.presentation.ui.components.SpCoverArt
+import com.spela.player.presentation.ui.components.SpFab
 import com.spela.player.presentation.ui.components.SpEmptyStates
 import com.spela.player.presentation.ui.components.SpLoadingIndicator
 import com.spela.player.presentation.ui.components.SpSnackbar
@@ -184,21 +184,14 @@ fun CollectionsScreen(
         }
 
         // FAB
-        FloatingActionButton(
+        SpFab(
+            icon = Icons.Filled.Add,
             onClick = { viewModel.onIntent(CollectionsIntent.ShowCreateDialog) },
-            containerColor = SpColor.Primary,
-            contentColor = SpColor.OnPrimary,
-            shape = RoundedCornerShape(SpSpacing.RadiusXLarge),
+            description = "Create collection",
             modifier = Modifier
                 .align(Alignment.BottomEnd)
-                .padding(SpSpacing.Default)
-                .semantics { contentDescription = "Create collection" },
-        ) {
-            Icon(
-                imageVector = Icons.Filled.Add,
-                contentDescription = null,
-            )
-        }
+                .padding(SpSpacing.Default),
+        )
 
         // Success snackbar
         SpSnackbar(
