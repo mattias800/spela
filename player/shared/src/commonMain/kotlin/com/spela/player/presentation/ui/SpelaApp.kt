@@ -334,7 +334,7 @@ fun SpelaApp(
             // Side navigation rail (larger screens, touch mode only)
             if (showSideRail) {
                 SpNavigationRail(
-                    activeTab = activeTabForScreen(navState.currentScreen),
+                    activeTab = navState.activeTab,
                     onTabSelected = { tab ->
                         val targetScreen = when (tab) {
                             BottomNavTab.HOME -> SpScreen.Home
@@ -1611,7 +1611,7 @@ fun SpelaApp(
                 // Bottom navigation bar (phones only, hidden when in gamepad mode or side rail is showing)
                 if (navLayoutMode == NavigationLayoutMode.BOTTOM_BAR && showNavArea && !isGamepadMode) {
                     SpBottomNavBar(
-                        activeTab = activeTabForScreen(navState.currentScreen),
+                        activeTab = navState.activeTab,
                         onTabSelected = { tab ->
                             val targetScreen = when (tab) {
                                 BottomNavTab.HOME -> SpScreen.Home
@@ -1638,7 +1638,7 @@ fun SpelaApp(
                     contentAlignment = Alignment.TopCenter,
                 ) {
                     SpSectionIndicator(
-                        activeTab = activeTabForScreen(navState.currentScreen),
+                        activeTab = navState.activeTab,
                         visible = sectionIndicatorVisible,
                         modifier = Modifier.padding(top = SpSpacing.Default),
                     )
@@ -1655,9 +1655,6 @@ private fun shouldShowBottomNav(screen: SpScreen): Boolean = when (screen) {
     is SpScreen.ServerConnection, is SpScreen.Login -> false
     else -> true
 }
-
-private fun activeTabForScreen(screen: SpScreen): BottomNavTab =
-    NavigationViewModel.activeTabForScreen(screen)
 
 @Composable
 private fun PlaceholderScreen(title: String) {
