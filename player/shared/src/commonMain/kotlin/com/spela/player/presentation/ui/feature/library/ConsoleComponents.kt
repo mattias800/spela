@@ -166,8 +166,8 @@ internal fun ConsoleCard(
     Box(
         modifier = modifier
             .height(180.dp)
-            .graphicsLayer { scaleX = scale; scaleY = scale }
             .spFocusRing(shape = shape, scaleOnFocus = true)
+            .graphicsLayer { scaleX = scale; scaleY = scale }
             .shadow(8.dp, shape)
             .clip(shape)
             .drawBehind {
