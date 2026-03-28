@@ -113,8 +113,8 @@ class GameListViewModel(
 
     private fun loadDashboard() {
         println("[GameListVM] loadDashboard() called")
-        // Skip if a dashboard load is already in-flight
-        if (dashboardJob?.isActive == true) return
+        // Cancel any in-flight dashboard load (prevents stale data from overwriting fresh request)
+        dashboardJob?.cancel()
         // Only show loading spinner if we have no cached data.
         // If we already have data, refresh silently in the background.
         _state.update { it.copy(isLoading = it.consoles.isEmpty() && it.recentGames.isEmpty()) }
@@ -213,7 +213,7 @@ class GameListViewModel(
     }
 
     private fun loadConsoles() {
-        if (consolesJob?.isActive == true) return
+        consolesJob?.cancel()
         _state.update { it.copy(isLoading = it.consoles.isEmpty()) }
         consolesJob = scope.launch(dispatchers.io) {
             getConsolesUseCase().fold(

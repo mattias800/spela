@@ -427,7 +427,7 @@ class ExploreViewModel(
 
     private fun loadFeatured() {
         if (featuredJob?.isActive == true) return
-        _state.update { it.copy(isLoadingFeatured = true) }
+        _state.update { it.copy(isLoadingFeatured = it.featuredGames.isEmpty()) }
         featuredJob = scope.launch(dispatchers.io) {
             exploreRepository.getFeaturedGames().fold(
                 onSuccess = { featured ->
@@ -442,7 +442,7 @@ class ExploreViewModel(
 
     private fun loadRows() {
         if (rowsJob?.isActive == true) return
-        _state.update { it.copy(isLoadingRows = true) }
+        _state.update { it.copy(isLoadingRows = it.rows.isEmpty()) }
         rowsJob = scope.launch(dispatchers.io) {
             exploreRepository.getExploreRows().fold(
                 onSuccess = { rows ->
@@ -457,7 +457,7 @@ class ExploreViewModel(
 
     private fun loadThemes() {
         if (themesJob?.isActive == true) return
-        _state.update { it.copy(isLoadingThemes = true) }
+        _state.update { it.copy(isLoadingThemes = it.themes.isEmpty()) }
         themesJob = scope.launch(dispatchers.io) {
             exploreRepository.getThemes().fold(
                 onSuccess = { themes ->
@@ -472,7 +472,7 @@ class ExploreViewModel(
 
     private fun loadKeywords() {
         if (keywordsJob?.isActive == true) return
-        _state.update { it.copy(isLoadingKeywords = true) }
+        _state.update { it.copy(isLoadingKeywords = it.keywords.isEmpty()) }
         keywordsJob = scope.launch(dispatchers.io) {
             exploreRepository.getKeywords().fold(
                 onSuccess = { keywords ->
@@ -487,7 +487,7 @@ class ExploreViewModel(
 
     private fun loadFeaturedSeries() {
         if (featuredSeriesJob?.isActive == true) return
-        _state.update { it.copy(isLoadingFeaturedSeries = true) }
+        _state.update { it.copy(isLoadingFeaturedSeries = it.featuredSeries.isEmpty()) }
         featuredSeriesJob = scope.launch(dispatchers.io) {
             exploreRepository.getFeaturedSeries().fold(
                 onSuccess = { series ->
@@ -503,7 +503,7 @@ class ExploreViewModel(
 
     private fun loadMoods() {
         if (moodsJob?.isActive == true) return
-        _state.update { it.copy(isLoadingMoods = true) }
+        _state.update { it.copy(isLoadingMoods = it.moods.isEmpty()) }
         moodsJob = scope.launch(dispatchers.io) {
             exploreRepository.getMoods().fold(
                 onSuccess = { moods ->
@@ -518,7 +518,7 @@ class ExploreViewModel(
 
     private fun loadForYou() {
         if (forYouJob?.isActive == true) return
-        _state.update { it.copy(isLoadingForYou = true) }
+        _state.update { it.copy(isLoadingForYou = it.forYouRows.isEmpty()) }
         forYouJob = scope.launch(dispatchers.io) {
             exploreRepository.getForYou().fold(
                 onSuccess = { rows ->
@@ -570,7 +570,7 @@ class ExploreViewModel(
 
     private fun loadDeveloperSpotlight() {
         if (developerSpotlightJob?.isActive == true) return
-        _state.update { it.copy(isLoadingDeveloperSpotlight = true) }
+        _state.update { it.copy(isLoadingDeveloperSpotlight = it.developerSpotlight == null) }
         developerSpotlightJob = scope.launch(dispatchers.io) {
             exploreRepository.getDeveloperSpotlight().fold(
                 onSuccess = { spotlight ->
@@ -639,7 +639,7 @@ class ExploreViewModel(
 
     private fun loadConsoleHighlights() {
         if (consoleHighlightsJob?.isActive == true) return
-        _state.update { it.copy(isLoadingConsoleHighlights = true) }
+        _state.update { it.copy(isLoadingConsoleHighlights = it.consoleHighlights.isEmpty()) }
         consoleHighlightsJob = scope.launch(dispatchers.io) {
             exploreRepository.getConsoleHighlights().fold(
                 onSuccess = { highlights ->
@@ -675,7 +675,7 @@ class ExploreViewModel(
 
     private fun loadArtworkShowcase() {
         if (artworkShowcaseJob?.isActive == true) return
-        _state.update { it.copy(isLoadingArtwork = true) }
+        _state.update { it.copy(isLoadingArtwork = it.artworkShowcase.isEmpty()) }
         artworkShowcaseJob = scope.launch(dispatchers.io) {
             exploreRepository.getArtworkGallery(page = 1).fold(
                 onSuccess = { artworks ->
@@ -690,7 +690,7 @@ class ExploreViewModel(
 
     private fun loadSocialData() {
         if (socialJob?.isActive == true) return
-        _state.update { it.copy(isLoadingSocial = true) }
+        _state.update { it.copy(isLoadingSocial = it.trendingGames.isEmpty() && it.communityTopGames.isEmpty()) }
         socialJob = scope.launch(dispatchers.io) {
             // Load all social endpoints concurrently
             val trendingDeferred = async { exploreRepository.getTrending() }
@@ -716,7 +716,7 @@ class ExploreViewModel(
 
     private fun loadTemporalData() {
         if (temporalJob?.isActive == true) return
-        _state.update { it.copy(isLoadingTemporal = true) }
+        _state.update { it.copy(isLoadingTemporal = it.onThisDayGames.isEmpty() && it.anniversaries.isEmpty()) }
         temporalJob = scope.launch(dispatchers.io) {
             val onThisDayDeferred = async { exploreRepository.getOnThisDay() }
             val anniversariesDeferred = async { exploreRepository.getYourAnniversaries() }
@@ -737,7 +737,7 @@ class ExploreViewModel(
 
     private fun loadAchievementData() {
         if (achievementJob?.isActive == true) return
-        _state.update { it.copy(isLoadingAchievement = true) }
+        _state.update { it.copy(isLoadingAchievement = it.easyToCompleteGames.isEmpty() && it.hardestGames.isEmpty()) }
         achievementJob = scope.launch(dispatchers.io) {
             val easyDeferred = async { exploreRepository.getEasyToComplete() }
             val hardestDeferred = async { exploreRepository.getHardestGames() }
