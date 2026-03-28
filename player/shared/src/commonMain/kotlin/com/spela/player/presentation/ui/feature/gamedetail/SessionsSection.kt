@@ -223,8 +223,8 @@ private fun SessionItem(
     val isMultiplayer = session.memberCount > 1
 
     SpInnerCard(
+        onClick = onClick,
         modifier = modifier
-            .clickable(onClick = onClick)
             .testTag("session_item_${session.id}"),
     ) {
         Row(
