@@ -44,18 +44,20 @@ export function useScanProgress(): ScanProgressState {
   const [total, setTotal] = useState(0);
   const [result, setResult] = useState<ScanCompletePayload | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [initialized, setInitialized] = useState(false);
-
+  // Sync from polled status — this runs on every status refetch (3s interval).
+  // Allows the UI to pick up status after page refresh or WebSocket disconnect.
   useEffect(() => {
-    if (!initialStatus || initialized) return;
-    setInitialized(true);
+    if (!initialStatus) return;
     if (initialStatus.active) {
       setPhase("active");
       setMessage(initialStatus.message ?? "Scanning...");
       setCurrent(initialStatus.current ?? 0);
       setTotal(initialStatus.total ?? 0);
+    } else if (phase === "active") {
+      // Status went from active to inactive — scan finished while we were polling
+      setPhase("idle");
     }
-  }, [initialStatus, initialized]);
+  }, [initialStatus]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useWebSocketEvent(
     "scan_started",

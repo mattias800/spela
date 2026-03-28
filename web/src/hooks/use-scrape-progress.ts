@@ -54,11 +54,10 @@ export function useScrapeProgress(): ScrapeProgressState {
   const [failures, setFailures] = useState(0);
   const [verified, setVerified] = useState(0);
   const [error, setError] = useState<string | null>(null);
-  const [initialized, setInitialized] = useState(false);
-
+  // Sync from polled status — this runs on every status refetch (3s interval).
+  // Allows the UI to pick up status after page refresh or WebSocket disconnect.
   useEffect(() => {
-    if (!initialStatus || initialized) return;
-    setInitialized(true);
+    if (!initialStatus) return;
     if (initialStatus.active) {
       setPhase("active");
       setCurrent(initialStatus.current ?? 0);
@@ -70,8 +69,11 @@ export function useScrapeProgress(): ScrapeProgressState {
       setSuccesses(initialStatus.successes ?? 0);
       setFailures(initialStatus.failures ?? 0);
       setVerified(initialStatus.verified ?? 0);
+    } else if (phase === "active") {
+      // Status went from active to inactive — scrape finished while we were polling
+      setPhase("idle");
     }
-  }, [initialStatus, initialized]);
+  }, [initialStatus]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useWebSocketEvent(
     "scrape_started",
