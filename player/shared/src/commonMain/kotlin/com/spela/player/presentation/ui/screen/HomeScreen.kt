@@ -118,9 +118,10 @@ fun HomeScreen(
     val state by viewModel.state.collectAsState()
     val socialState by socialViewModel.state.collectAsState()
     // Track whether the first load has completed to avoid flashing "empty" state.
-    // Starts false, becomes true after isLoading has been true at least once then gone false.
+    // If the ViewModel already has data (revisit), start as loaded immediately.
+    val hasDataOnMount = state.consoles.isNotEmpty() || state.recentGames.isNotEmpty()
     var sawLoading by remember { mutableStateOf(false) }
-    var hasInitiallyLoaded by remember { mutableStateOf(false) }
+    var hasInitiallyLoaded by remember { mutableStateOf(hasDataOnMount) }
     if (state.isLoading) sawLoading = true
     if (sawLoading && !state.isLoading) hasInitiallyLoaded = true
 

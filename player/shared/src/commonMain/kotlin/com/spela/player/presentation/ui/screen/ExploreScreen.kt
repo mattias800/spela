@@ -113,9 +113,11 @@ fun ExploreScreen(
         viewModel.load()
     }
 
-    // Track initial load to avoid flashing empty state
+    // Track initial load to avoid flashing empty state.
+    // If the ViewModel already has data (revisit), start as loaded immediately.
+    val hasDataOnMount = !state.isEmpty || state.isLoading
     var sawLoading by remember { mutableStateOf(false) }
-    var hasInitiallyLoaded by remember { mutableStateOf(false) }
+    var hasInitiallyLoaded by remember { mutableStateOf(hasDataOnMount) }
     if (state.isLoading) sawLoading = true
     if (sawLoading && !state.isLoading) hasInitiallyLoaded = true
 

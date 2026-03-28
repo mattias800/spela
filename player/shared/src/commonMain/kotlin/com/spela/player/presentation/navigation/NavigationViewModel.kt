@@ -117,7 +117,7 @@ class NavigationViewModel(
                     current.copy(
                         activeTab = BottomNavTab.entries[nextIndex],
                         isGoingBack = false,
-                        isTabSwitch = false,
+                        isTabSwitch = true,
                     )
                 }
             }
@@ -129,7 +129,7 @@ class NavigationViewModel(
                     current.copy(
                         activeTab = BottomNavTab.entries[prevIndex],
                         isGoingBack = true,
-                        isTabSwitch = false,
+                        isTabSwitch = true,
                     )
                 }
             }
