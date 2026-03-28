@@ -4,6 +4,7 @@ import (
 	"context"
 	"log/slog"
 	"net/http"
+	_ "net/http/pprof" // profiling endpoint at /debug/pprof/
 	"os"
 	"os/signal"
 	"strconv"
@@ -28,6 +29,14 @@ import (
 var version = "dev"
 
 func main() {
+	// Start pprof profiling server on :6060
+	go func() {
+		slog.Info("pprof profiling server started on :6060")
+		if err := http.ListenAndServe(":6060", nil); err != nil {
+			slog.Warn("pprof server failed", "error", err)
+		}
+	}()
+
 	slog.Info("Spela", "version", version)
 	// Configuration from environment variables with sensible defaults
 	port := getEnv("SPELA_PORT", "8080")

@@ -991,102 +991,77 @@ func MigrateScrapeResults(database *gorm.DB) error {
 		return nil
 	}
 
-	var games []Game
-	if err := database.Find(&games).Error; err != nil {
-		return fmt.Errorf("loading games for scrape-result migration: %w", err)
-	}
-
 	// Build a set of game IDs that have SteamGridDB artwork (hero URL present).
-	var artworks []GameArtwork
-	if err := database.Where("hero_url != ''").Find(&artworks).Error; err != nil {
-		return fmt.Errorf("loading game artworks for scrape-result migration: %w", err)
-	}
-	hasHero := make(map[uint]bool, len(artworks))
-	for _, a := range artworks {
-		hasHero[a.GameID] = true
+	// Only load the IDs, not full artwork structs.
+	var artworkGameIDs []uint
+	database.Model(&GameArtwork{}).Where("hero_url != ''").Pluck("game_id", &artworkGameIDs)
+	hasHero := make(map[uint]bool, len(artworkGameIDs))
+	for _, id := range artworkGameIDs {
+		hasHero[id] = true
 	}
 
-	var rows []GameScrapeResult
-	for _, g := range games {
-		t := g.UpdatedAt
+	// Process games in batches to avoid loading all 40k+ games into memory
+	const batchSize = 500
+	var totalGames int64
+	database.Model(&Game{}).Where("scrape_attempts > 0").Count(&totalGames)
 
-		if strings.HasPrefix(g.ScraperID, "igdb:") {
-			// IGDB matched
-			rows = append(rows, GameScrapeResult{
-				GameID:        g.ID,
-				Source:        "igdb",
-				Status:        "matched",
-				SourceID:      strings.TrimPrefix(g.ScraperID, "igdb:"),
-				LastAttemptAt: &t,
-			})
-			// LibRetro matched
-			rows = append(rows, GameScrapeResult{
-				GameID:        g.ID,
-				Source:        "libretro",
-				Status:        "matched",
-				LastAttemptAt: &t,
-			})
-			// SteamGridDB matched only if a hero exists
-			if hasHero[g.ID] {
+	totalInserted := 0
+	for offset := 0; offset < int(totalGames); offset += batchSize {
+		var batch []Game
+		if err := database.Where("scrape_attempts > 0").
+			Select("id, scraper_id, scrape_attempts, updated_at").
+			Limit(batchSize).Offset(offset).Find(&batch).Error; err != nil {
+			return fmt.Errorf("loading game batch at offset %d: %w", offset, err)
+		}
+
+		var rows []GameScrapeResult
+		for _, g := range batch {
+			t := g.UpdatedAt
+
+			if strings.HasPrefix(g.ScraperID, "igdb:") {
 				rows = append(rows, GameScrapeResult{
-					GameID:        g.ID,
-					Source:        "steamgriddb",
-					Status:        "matched",
-					LastAttemptAt: &t,
+					GameID: g.ID, Source: "igdb", Status: "matched",
+					SourceID: strings.TrimPrefix(g.ScraperID, "igdb:"), LastAttemptAt: &t,
+				})
+				rows = append(rows, GameScrapeResult{
+					GameID: g.ID, Source: "libretro", Status: "matched", LastAttemptAt: &t,
+				})
+				if hasHero[g.ID] {
+					rows = append(rows, GameScrapeResult{
+						GameID: g.ID, Source: "steamgriddb", Status: "matched", LastAttemptAt: &t,
+					})
+				}
+			} else if g.ScraperID == "libretro" {
+				rows = append(rows, GameScrapeResult{
+					GameID: g.ID, Source: "igdb", Status: "not_found", LastAttemptAt: &t,
+				})
+				rows = append(rows, GameScrapeResult{
+					GameID: g.ID, Source: "libretro", Status: "matched", LastAttemptAt: &t,
+				})
+				if hasHero[g.ID] {
+					rows = append(rows, GameScrapeResult{
+						GameID: g.ID, Source: "steamgriddb", Status: "matched", LastAttemptAt: &t,
+					})
+				}
+			} else if g.ScraperID == "" {
+				rows = append(rows, GameScrapeResult{
+					GameID: g.ID, Source: "igdb", Status: "not_found", LastAttemptAt: &t,
+				})
+				rows = append(rows, GameScrapeResult{
+					GameID: g.ID, Source: "libretro", Status: "not_found", LastAttemptAt: &t,
 				})
 			}
-		} else if g.ScraperID == "libretro" {
-			// IGDB not found
-			rows = append(rows, GameScrapeResult{
-				GameID:        g.ID,
-				Source:        "igdb",
-				Status:        "not_found",
-				LastAttemptAt: &t,
-			})
-			// LibRetro matched
-			rows = append(rows, GameScrapeResult{
-				GameID:        g.ID,
-				Source:        "libretro",
-				Status:        "matched",
-				LastAttemptAt: &t,
-			})
-			// SteamGridDB matched only if a hero exists
-			if hasHero[g.ID] {
-				rows = append(rows, GameScrapeResult{
-					GameID:        g.ID,
-					Source:        "steamgriddb",
-					Status:        "matched",
-					LastAttemptAt: &t,
-				})
+		}
+
+		if len(rows) > 0 {
+			if err := database.Clauses(clause.OnConflict{DoNothing: true}).
+				CreateInBatches(rows, 200).Error; err != nil {
+				return fmt.Errorf("inserting scrape result batch at offset %d: %w", offset, err)
 			}
-		} else if g.ScraperID == "" && g.ScrapeAttempts > 0 {
-			// Attempted but nothing found
-			rows = append(rows, GameScrapeResult{
-				GameID:        g.ID,
-				Source:        "igdb",
-				Status:        "not_found",
-				LastAttemptAt: &t,
-			})
-			rows = append(rows, GameScrapeResult{
-				GameID:        g.ID,
-				Source:        "libretro",
-				Status:        "not_found",
-				LastAttemptAt: &t,
-			})
+			totalInserted += len(rows)
 		}
 	}
 
-	if len(rows) == 0 {
-		slog.Info("no games to backfill for scrape-result migration")
-		return nil
-	}
-
-	// Insert in batches; skip rows that already exist (idempotent).
-	if err := database.Clauses(clause.OnConflict{DoNothing: true}).
-		CreateInBatches(rows, 200).Error; err != nil {
-		return fmt.Errorf("inserting scrape result rows: %w", err)
-	}
-
-	slog.Info("scrape-result migration completed", "rows_inserted", len(rows))
+	slog.Info("scrape-result migration completed", "rows_inserted", totalInserted)
 	return nil
 }
