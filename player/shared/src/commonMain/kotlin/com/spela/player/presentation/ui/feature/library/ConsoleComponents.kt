@@ -515,26 +515,26 @@ internal fun ConsoleHeroBanner(
                     ConsoleInfoSection(console = console)
                 }
 
-                // Center: logo + badges
-                // Center: logo
+                // Center: logo + game count badge
                 Column(
                     modifier = Modifier.fillMaxSize(),
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.Center,
                 ) {
                     logoContent()
+                    Spacer(modifier = Modifier.height(SpSpacing.Small))
+                    MetadataBadge(
+                        icon = { Icon(Icons.Filled.SportsEsports, null, Modifier.size(12.dp), tint = HeroTextPrimary) },
+                        label = "${console.gameCount} ${if (console.gameCount == 1) "game" else "games"}",
+                    )
                 }
 
-                // Top-right: game count + feature badges
+                // Top-right: feature badges
                 Column(
                     modifier = Modifier.align(Alignment.TopEnd),
                     horizontalAlignment = Alignment.End,
                     verticalArrangement = Arrangement.spacedBy(SpSpacing.Small),
                 ) {
-                    MetadataBadge(
-                        icon = { Icon(Icons.Filled.SportsEsports, null, Modifier.size(12.dp), tint = HeroTextPrimary) },
-                        label = "${console.gameCount} ${if (console.gameCount == 1) "game" else "games"}",
-                    )
                     if (console.saveStateSupport) {
                         MetadataBadge(
                             icon = { Icon(Icons.Filled.Check, null, Modifier.size(12.dp), tint = HeroTextPrimary) },

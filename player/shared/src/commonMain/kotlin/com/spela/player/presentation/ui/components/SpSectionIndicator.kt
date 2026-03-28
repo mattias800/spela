@@ -43,7 +43,7 @@ fun SpSectionIndicator(
         Row(
             modifier = Modifier
                 .background(
-                    color = SpColor.SurfaceElevated.copy(alpha = 0.9f),
+                    color = Color.Black.copy(alpha = 0.6f),
                     shape = RoundedCornerShape(24.dp),
                 )
                 .padding(horizontal = SpSpacing.Default, vertical = SpSpacing.Small),
