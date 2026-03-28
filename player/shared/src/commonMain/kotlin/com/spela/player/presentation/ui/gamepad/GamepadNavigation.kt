@@ -69,7 +69,9 @@ fun GamepadHandler(
     // not have focusable elements in the compose tree on the first attempt.
     if (focusResetKey != null) {
         LaunchedEffect(focusResetKey) {
-            delay(150)
+            // Wait for AnimatedContent transition to complete before trying to acquire focus.
+            // The new screen's composables aren't in the focus tree during the transition.
+            delay(350)
             focusManager.clearFocus(force = true)
             // Retry up to 15 times (200ms apart, ~3s total) to find a focusable element.
             // Screens with async data may need time before focusable items are composed.
