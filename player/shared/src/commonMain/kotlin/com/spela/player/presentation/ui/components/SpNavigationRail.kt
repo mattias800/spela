@@ -106,8 +106,8 @@ private fun RailItem(
     val interactionSource = remember { MutableInteractionSource() }
     val isFocused by interactionSource.collectIsFocusedAsState()
     val color = when {
-        isSelected -> SpColor.PrimaryLight
-        isFocused -> SpColor.PrimaryLight.copy(alpha = 0.7f)
+        isSelected -> Color.White
+        isFocused -> Color.White.copy(alpha = 0.7f)
         else -> SpColor.OnBackgroundSecondary
     }
 
@@ -122,7 +122,7 @@ private fun RailItem(
             )
             .clip(RoundedCornerShape(8.dp))
             .background(
-                if (isFocused) SpColor.Primary.copy(alpha = 0.1f) else Color.Transparent,
+                if (isFocused) Color.Black.copy(alpha = 0.3f) else Color.Transparent,
             )
             .clickable(
                 interactionSource = interactionSource,

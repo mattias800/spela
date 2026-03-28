@@ -387,6 +387,10 @@ class MainActivity : ComponentActivity() {
         analogDpadDown = nowDown
 
         if (Math.abs(rY) > 0.15f) {
+            // Clear Compose focus so the next d-pad press focuses the first
+            // visible element instead of jumping back to the off-screen element.
+            currentFocus?.clearFocus()
+
             val props = MotionEvent.PointerProperties().apply {
                 id = 0
                 toolType = MotionEvent.TOOL_TYPE_MOUSE

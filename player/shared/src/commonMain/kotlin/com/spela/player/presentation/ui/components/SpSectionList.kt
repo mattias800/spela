@@ -1,5 +1,6 @@
 package com.spela.player.presentation.ui.components
 
+import androidx.compose.foundation.focusGroup
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.lazy.LazyColumn
@@ -8,6 +9,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.spela.player.presentation.ui.gamepad.InputMode
+import com.spela.player.presentation.ui.gamepad.LocalInputMode
 import com.spela.player.presentation.ui.theme.SpSpacing
 
 /**
@@ -31,12 +34,20 @@ fun SpSectionList(
     topPadding: Dp = 0.dp,
     content: LazyListScope.() -> Unit,
 ) {
+    // In gamepad mode the SpTopBar is hidden, so reduce the top padding
+    // that was reserving space for it.
+    val effectiveTopPadding = if (LocalInputMode.current == InputMode.GAMEPAD) {
+        SpSpacing.Large
+    } else {
+        topPadding
+    }
+
     LazyColumn(
-        modifier = modifier,
+        modifier = modifier.focusGroup(),
         contentPadding = PaddingValues(
             start = SpSpacing.ScreenHorizontal,
             end = SpSpacing.ScreenHorizontal,
-            top = topPadding,
+            top = effectiveTopPadding,
             bottom = SpSpacing.XLarge,
         ),
         verticalArrangement = Arrangement.spacedBy(SpSpacing.Large),

@@ -53,7 +53,7 @@ fun SpChip(
         else -> Color.Transparent
     }
     val borderColor = when {
-        isFocused -> SpColor.PrimaryLight.copy(alpha = 0.85f)
+        isFocused -> Color.White.copy(alpha = 0.85f)
         onGradient -> Color.White.copy(alpha = 0.25f)
         isSelected -> color.copy(alpha = 0.4f)
         else -> SpColor.Divider

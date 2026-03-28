@@ -13,8 +13,8 @@ object SpColor {
     val PrimaryDark = Color(0xFF4834D4)
     val PrimaryContainer = Color(0xFF1E1640)
 
-    // Link color — brighter than Primary for readable text on dark backgrounds
-    val Link = Color(0xFF9B8FEF)
+    // Link color — bright white for readable text on dark/gradient backgrounds
+    val Link = Color(0xFFDDDDDD)
 
     // Secondary palette - vivid coral/rose
     val Secondary = Color(0xFFFF6B81)
@@ -27,26 +27,26 @@ object SpColor {
     val AccentLight = Color(0xFF69E4FF)
     val AccentDark = Color(0xFF009FCC)
 
-    // Background surfaces - true dark with subtle blue tint
-    val Background = Color(0xFF0A0A10)
-    val Surface = Color(0xFF12121C)
-    val SurfaceVariant = Color(0xFF1A1A28)
-    val SurfaceElevated = Color(0xFF222236)
-    val SurfaceBright = Color(0xFF2A2A42)
+    // Background surfaces - true dark, neutral (no blue tint)
+    val Background = Color(0xFF0A0A0C)
+    val Surface = Color(0xFF121214)
+    val SurfaceVariant = Color(0xFF1A1A1E)
+    val SurfaceElevated = Color(0xFF222226)
+    val SurfaceBright = Color(0xFF2A2A30)
 
     // Card surfaces
-    val Card = Color(0xFF16162A)
-    val CardHovered = Color(0xFF1E1E38)
+    val Card = Color(0xFF161618)
+    val CardHovered = Color(0xFF1E1E22)
 
-    // Text
-    val OnBackground = Color(0xFFF0F0F8)
-    val OnBackgroundSecondary = Color(0xFFB0B0C8)
-    val OnBackgroundTertiary = Color(0xFF707090)
+    // Text - greyscale only, no color tint
+    val OnBackground = Color(0xFFF0F0F0)
+    val OnBackgroundSecondary = Color(0xFFCCCCCC)
+    val OnBackgroundTertiary = Color(0xFF888888)
     val OnPrimary = Color(0xFFFFFFFF)
     val OnSecondary = Color(0xFFFFFFFF)
-    val OnSurface = Color(0xFFE8E8F0)
-    val OnSurfaceVariant = Color(0xFFA0A0B8)
-    val OnCard = Color(0xFFE0E0F0)
+    val OnSurface = Color(0xFFE8E8E8)
+    val OnSurfaceVariant = Color(0xFFA0A0A0)
+    val OnCard = Color(0xFFE0E0E0)
 
     // Semantic interaction colors
     val Favorite = Color(0xFFFF4757)  // heart / like
@@ -89,12 +89,12 @@ object SpColor {
     val ScrimLight = Color(0x80000000)
 
     // Divider
-    val Divider = Color(0xFF2A2A3A)
-    val DividerLight = Color(0xFF3A3A4A)
+    val Divider = Color(0xFF2A2A2E)
+    val DividerLight = Color(0xFF3A3A3E)
 
-    // Default screen background gradient (dark, non-black)
-    val ScreenGradientStart = Color(0xFF1E1E3A)
-    val ScreenGradientEnd = Color(0xFF162030)
+    // Default screen background gradient (dark, neutral)
+    val ScreenGradientStart = Color(0xFF1A1A20)
+    val ScreenGradientEnd = Color(0xFF141418)
 }
 
 /**

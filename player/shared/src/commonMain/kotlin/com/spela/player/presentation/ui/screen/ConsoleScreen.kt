@@ -1,6 +1,7 @@
 package com.spela.player.presentation.ui.screen
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.focusGroup
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
@@ -111,6 +112,7 @@ fun ConsoleScreen(
         Box(
             modifier = Modifier
                 .fillMaxSize()
+                .focusGroup()
                 .drawBehind {
                     val cx = size.width / 2f
                     val cy = size.height / 2f
@@ -139,6 +141,7 @@ fun ConsoleScreen(
                             ConsoleHeroBanner(
                                 console = console,
                                 onBrowseGames = if (state.games.size > 15) onBrowseAllGames else null,
+                                onConsoleSettings = onNavigateToConsoleSettings,
                             )
                         }
                     }
@@ -249,6 +252,7 @@ fun ConsoleScreen(
             }
 
             // Fixed top bar overlaid on top of scrollable content
+            // (auto-hidden in gamepad mode by SpTopBar)
             SpTopBar(
                 title = consoleName,
                 showBack = true,

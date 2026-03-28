@@ -1,6 +1,7 @@
 package com.spela.player.presentation.ui.components
 
 import androidx.compose.foundation.background
+import androidx.compose.ui.graphics.Color
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -56,13 +57,13 @@ fun SpEmptyState(
             modifier = Modifier
                 .size(80.dp)
                 .clip(RoundedCornerShape(SpSpacing.RadiusXLarge))
-                .background(SpColor.SurfaceVariant),
+                .background(Color.Black.copy(alpha = 0.25f)),
             contentAlignment = Alignment.Center,
         ) {
             Icon(
                 imageVector = icon,
                 contentDescription = null,
-                tint = SpColor.OnBackgroundTertiary,
+                tint = Color.White.copy(alpha = 0.5f),
                 modifier = Modifier.size(40.dp),
             )
         }

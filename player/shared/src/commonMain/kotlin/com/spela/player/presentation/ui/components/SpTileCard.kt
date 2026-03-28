@@ -68,7 +68,7 @@ fun SpTileCard(
         label = "tileScale",
     )
 
-    val borderColor = if (isFocused) SpColor.PrimaryLight.copy(alpha = 0.85f)
+    val borderColor = if (isFocused) Color.White.copy(alpha = 0.85f)
                       else Color.White.copy(alpha = 0.08f)
 
     Box(

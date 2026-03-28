@@ -22,6 +22,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.graphics.Color
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
 
@@ -42,7 +43,7 @@ fun SpSectionIndicator(
         Row(
             modifier = Modifier
                 .background(
-                    color = SpColor.SurfaceElevated.copy(alpha = 0.9f),
+                    color = Color.Black.copy(alpha = 0.6f),
                     shape = RoundedCornerShape(24.dp),
                 )
                 .padding(horizontal = SpSpacing.Default, vertical = SpSpacing.Small),
@@ -63,7 +64,7 @@ fun SpSectionIndicator(
                     Icon(
                         imageVector = tab.icon,
                         contentDescription = if (isActive) "Section: ${tab.label}, active" else "Section: ${tab.label}",
-                        tint = if (isActive) SpColor.Primary else SpColor.OnBackgroundTertiary,
+                        tint = if (isActive) Color.White else SpColor.OnBackgroundTertiary,
                         modifier = Modifier.size(24.dp),
                     )
                 }

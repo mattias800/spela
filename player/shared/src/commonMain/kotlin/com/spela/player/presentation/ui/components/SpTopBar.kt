@@ -33,6 +33,8 @@ import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
+import com.spela.player.presentation.ui.gamepad.InputMode
+import com.spela.player.presentation.ui.gamepad.LocalInputMode
 import com.spela.player.presentation.ui.theme.LocalTitleBarInset
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
@@ -48,6 +50,10 @@ fun SpTopBar(
     onGradient: Boolean = false,
     actions: @Composable () -> Unit = {},
 ) {
+    // Hide in gamepad mode — user navigates with B button for back,
+    // and action buttons should be placed in the screen content instead.
+    if (LocalInputMode.current == InputMode.GAMEPAD) return
+
     Column(
         modifier = modifier
             .fillMaxWidth()

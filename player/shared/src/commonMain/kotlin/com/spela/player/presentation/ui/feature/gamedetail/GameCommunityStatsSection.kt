@@ -28,6 +28,7 @@ import com.spela.player.presentation.ui.components.SpInnerCard
 import com.spela.player.presentation.ui.components.SpTitledSection
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.TrendingUp
+import androidx.compose.ui.graphics.Color
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.ui.theme.SpTypography
@@ -108,7 +109,7 @@ private fun StatMiniCard(
             Text(
                 text = value,
                 style = SpTypography.TitleLarge,
-                color = SpColor.Accent,
+                color = SpColor.OnBackground,
             )
             Text(
                 text = label,
@@ -174,14 +175,14 @@ private fun TopPlayerRow(
                     .weight(1f)
                     .height(8.dp)
                     .clip(RoundedCornerShape(4.dp))
-                    .background(SpColor.Accent.copy(alpha = 0.15f)),
+                    .background(Color.White.copy(alpha = 0.10f)),
             ) {
                 Box(
                     modifier = Modifier
                         .fillMaxWidth(barFraction)
                         .height(8.dp)
                         .clip(RoundedCornerShape(4.dp))
-                        .background(SpColor.Accent),
+                        .background(Color.White.copy(alpha = 0.60f)),
                 )
             }
 

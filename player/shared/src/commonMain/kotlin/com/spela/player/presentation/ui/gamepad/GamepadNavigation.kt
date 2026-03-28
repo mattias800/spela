@@ -69,13 +69,13 @@ fun GamepadHandler(
     // not have focusable elements in the compose tree on the first attempt.
     if (focusResetKey != null) {
         LaunchedEffect(focusResetKey) {
-            delay(100)
+            delay(150)
             focusManager.clearFocus(force = true)
-            // Retry up to 5 times (100ms apart) to find a focusable element.
-            // moveFocus returns true if focus was successfully moved.
-            repeat(5) {
+            // Retry up to 15 times (200ms apart, ~3s total) to find a focusable element.
+            // Screens with async data may need time before focusable items are composed.
+            repeat(15) {
                 if (focusManager.moveFocus(FocusDirection.Next)) return@LaunchedEffect
-                delay(100)
+                delay(200)
             }
         }
     }
@@ -90,29 +90,43 @@ fun GamepadHandler(
 
                 when (event.key) {
                     Key.DirectionUp -> {
-                        if (!focusManager.moveFocus(FocusDirection.Up) && !hasFocus) {
-                            focusManager.moveFocus(FocusDirection.Next)
+                        val hadFocus = hasFocus
+                        if (!focusManager.moveFocus(FocusDirection.Up)) {
+                            // Recovery: re-acquire focus when nothing is focused,
+                            // or when focus escaped the visible area at a boundary.
+                            if (!hadFocus || !hasFocus) {
+                                focusManager.moveFocus(FocusDirection.Next)
+                            }
                         }
                         onGamepadInput?.invoke()
                         true
                     }
                     Key.DirectionDown -> {
-                        if (!focusManager.moveFocus(FocusDirection.Down) && !hasFocus) {
-                            focusManager.moveFocus(FocusDirection.Next)
+                        val hadFocus = hasFocus
+                        if (!focusManager.moveFocus(FocusDirection.Down)) {
+                            if (!hadFocus || !hasFocus) {
+                                focusManager.moveFocus(FocusDirection.Next)
+                            }
                         }
                         onGamepadInput?.invoke()
                         true
                     }
                     Key.DirectionLeft -> {
-                        if (!focusManager.moveFocus(FocusDirection.Left) && !hasFocus) {
-                            focusManager.moveFocus(FocusDirection.Next)
+                        val hadFocus = hasFocus
+                        if (!focusManager.moveFocus(FocusDirection.Left)) {
+                            if (!hadFocus || !hasFocus) {
+                                focusManager.moveFocus(FocusDirection.Next)
+                            }
                         }
                         onGamepadInput?.invoke()
                         true
                     }
                     Key.DirectionRight -> {
-                        if (!focusManager.moveFocus(FocusDirection.Right) && !hasFocus) {
-                            focusManager.moveFocus(FocusDirection.Next)
+                        val hadFocus = hasFocus
+                        if (!focusManager.moveFocus(FocusDirection.Right)) {
+                            if (!hadFocus || !hasFocus) {
+                                focusManager.moveFocus(FocusDirection.Next)
+                            }
                         }
                         onGamepadInput?.invoke()
                         true
@@ -174,7 +188,7 @@ fun Modifier.spFocusRing(
     var isFocused by remember { mutableStateOf(false) }
 
     val borderColor by animateColorAsState(
-        targetValue = if (isFocused) SpColor.Primary.copy(alpha = 0.85f) else Color.Transparent,
+        targetValue = if (isFocused) Color.White.copy(alpha = 0.85f) else Color.Transparent,
         animationSpec = tween(150),
     )
 

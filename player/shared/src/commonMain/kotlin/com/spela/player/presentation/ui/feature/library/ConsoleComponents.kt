@@ -21,13 +21,16 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.focusGroup
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.hoverable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsHoveredAsState
 import androidx.compose.foundation.interaction.collectIsPressedAsState
+import com.spela.player.presentation.ui.gamepad.spFocusRing
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.Language
@@ -165,6 +168,7 @@ internal fun ConsoleCard(
     Box(
         modifier = modifier
             .height(180.dp)
+            .spFocusRing(shape = shape, scaleOnFocus = true)
             .graphicsLayer { scaleX = scale; scaleY = scale }
             .shadow(8.dp, shape)
             .clip(shape)
@@ -353,6 +357,7 @@ internal fun ConsoleHeroBanner(
     console: Console,
     modifier: Modifier = Modifier,
     onBrowseGames: (() -> Unit)? = null,
+    onConsoleSettings: (() -> Unit)? = null,
 ) {
     val shape = RoundedCornerShape(SpSpacing.CardCornerRadius)
 
@@ -374,6 +379,7 @@ internal fun ConsoleHeroBanner(
         modifier = modifier
             .fillMaxWidth()
             .height(200.dp)
+            .focusGroup()
             .clip(shape)
             // CSS 135deg-equivalent gradient: fixed 45° diagonal (top-left → bottom-right)
             // regardless of aspect ratio, matching the visual appearance on the web.
@@ -509,26 +515,26 @@ internal fun ConsoleHeroBanner(
                     ConsoleInfoSection(console = console)
                 }
 
-                // Center: logo + badges
-                // Center: logo
+                // Center: logo + game count badge
                 Column(
                     modifier = Modifier.fillMaxSize(),
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.Center,
                 ) {
                     logoContent()
+                    Spacer(modifier = Modifier.height(SpSpacing.Small))
+                    MetadataBadge(
+                        icon = { Icon(Icons.Filled.SportsEsports, null, Modifier.size(12.dp), tint = HeroTextPrimary) },
+                        label = "${console.gameCount} ${if (console.gameCount == 1) "game" else "games"}",
+                    )
                 }
 
-                // Top-right: game count + feature badges
+                // Top-right: feature badges
                 Column(
                     modifier = Modifier.align(Alignment.TopEnd),
                     horizontalAlignment = Alignment.End,
                     verticalArrangement = Arrangement.spacedBy(SpSpacing.Small),
                 ) {
-                    MetadataBadge(
-                        icon = { Icon(Icons.Filled.SportsEsports, null, Modifier.size(12.dp), tint = HeroTextPrimary) },
-                        label = "${console.gameCount} ${if (console.gameCount == 1) "game" else "games"}",
-                    )
                     if (console.saveStateSupport) {
                         MetadataBadge(
                             icon = { Icon(Icons.Filled.Check, null, Modifier.size(12.dp), tint = HeroTextPrimary) },
@@ -543,15 +549,36 @@ internal fun ConsoleHeroBanner(
                     }
                 }
 
-                // Bottom-right: browse button
-                if (onBrowseGames != null) {
-                    Box(modifier = Modifier.align(Alignment.BottomEnd)) {
-                        SpButton(
-                            text = "Browse games",
-                            onClick = onBrowseGames,
-                            style = SpButtonStyle.Secondary,
-                            onGradient = true,
-                        )
+                // Bottom-right: action buttons (stacked vertically for narrow screens)
+                if (onBrowseGames != null || onConsoleSettings != null) {
+                    Column(
+                        modifier = Modifier.align(Alignment.BottomEnd),
+                        verticalArrangement = Arrangement.spacedBy(SpSpacing.Small),
+                        horizontalAlignment = Alignment.End,
+                    ) {
+                        if (onConsoleSettings != null) {
+                            SpButton(
+                                text = "Console settings",
+                                onClick = onConsoleSettings,
+                                style = SpButtonStyle.Outlined,
+                                onGradient = true,
+                                leadingIcon = {
+                                    Icon(
+                                        Icons.Filled.Settings,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(16.dp),
+                                    )
+                                },
+                            )
+                        }
+                        if (onBrowseGames != null) {
+                            SpButton(
+                                text = "Browse games",
+                                onClick = onBrowseGames,
+                                style = SpButtonStyle.Secondary,
+                                onGradient = true,
+                            )
+                        }
                     }
                 }
             }

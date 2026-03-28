@@ -76,7 +76,7 @@ fun SpTitledSection(
                     Icon(
                         imageVector = icon,
                         contentDescription = null,
-                        tint = SpColor.Accent,
+                        tint = Color.White.copy(alpha = 0.55f),
                         modifier = Modifier.size(SpSpacing.IconDefault),
                     )
                 }
