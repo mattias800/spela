@@ -6,6 +6,7 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -13,6 +14,7 @@ import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -35,16 +37,19 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.spela.player.presentation.ui.components.SpButton
-import com.spela.player.presentation.ui.components.SpSecondaryButton
 import com.spela.player.presentation.ui.components.SpButtonStyle
 import com.spela.player.presentation.ui.components.SpCard
 import com.spela.player.presentation.ui.components.SpLoadingIndicator
+import com.spela.player.presentation.ui.components.SpSecondaryButton
 import com.spela.player.presentation.ui.components.SpSnackbar
 import com.spela.player.presentation.ui.components.SpSnackbarData
 import com.spela.player.presentation.ui.components.SpSnackbarType
@@ -54,6 +59,12 @@ import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.ui.theme.SpTypography
 import com.spela.player.presentation.viewmodel.ServerConnectionIntent
 import com.spela.player.presentation.viewmodel.ServerConnectionViewModel
+
+// SNES button colors used for ambient glow and decorative dots
+private val SnesRed = Color(0xFFCC2232)
+private val SnesYellow = Color(0xFFC4B208)
+private val SnesBlue = Color(0xFF2C2CAA)
+private val SnesGreen = Color(0xFF00843D)
 
 @Composable
 fun ServerConnectionScreen(
@@ -73,203 +84,26 @@ fun ServerConnectionScreen(
         }
     }
 
-    BoxWithConstraints(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(SpColor.Background),
-    ) {
-        val isLandscape = maxWidth > maxHeight
-
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(horizontal = SpSpacing.ScreenHorizontal),
-            horizontalAlignment = Alignment.CenterHorizontally,
-        ) {
-            Spacer(Modifier.height(if (isLandscape) SpSpacing.XLarge else 80.dp))
-
-            // App branding
-            Box(
-                modifier = Modifier
-                    .size(if (isLandscape) 56.dp else 80.dp)
-                    .clip(RoundedCornerShape(if (isLandscape) 14.dp else 20.dp))
-                    .background(SpColor.PrimaryContainer),
-                contentAlignment = Alignment.Center,
-            ) {
-                Text(
-                    text = "S",
-                    style = if (isLandscape) SpTypography.TitleLarge else SpTypography.DisplayMedium,
-                    color = SpColor.Primary,
-                )
-            }
-
-            Spacer(Modifier.height(SpSpacing.Default))
-
-            Text(
-                text = "Spela",
-                style = SpTypography.DisplaySmall,
-                color = SpColor.OnBackground,
-            )
-
-            Text(
-                text = "Connect to your game server",
-                style = SpTypography.BodyMedium,
-                color = SpColor.OnBackgroundSecondary,
-            )
-
-            Spacer(Modifier.height(if (isLandscape) SpSpacing.XLarge else SpSpacing.XXXLarge))
-
-            if (state.isLoading) {
-                SpLoadingIndicator(message = "Loading servers...")
-            } else {
-                LazyColumn(
-                    modifier = Modifier
-                        .then(if (isLandscape) Modifier.widthIn(max = 550.dp) else Modifier.fillMaxWidth()),
-                    verticalArrangement = Arrangement.spacedBy(SpSpacing.Medium),
-                ) {
-                    items(state.servers) { server ->
-                        SpCard(
-                            onClick = {
-                                viewModel.onIntent(ServerConnectionIntent.SelectServer(server.id))
-                                onServerSelected()
-                            },
-                            onGradient = true,
-                        ) {
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .semantics { contentDescription = server.name }
-                                    .padding(SpSpacing.Default),
-                                verticalAlignment = Alignment.CenterVertically,
-                            ) {
-                                Box(
-                                    modifier = Modifier
-                                        .size(44.dp)
-                                        .clip(CircleShape)
-                                        .background(SpColor.PrimaryContainer),
-                                    contentAlignment = Alignment.Center,
-                                ) {
-                                    Text(
-                                        text = server.name.take(1).uppercase(),
-                                        style = SpTypography.TitleLarge,
-                                        color = SpColor.Primary,
-                                    )
-                                }
-                                Spacer(Modifier.width(SpSpacing.Medium))
-                                Column(modifier = Modifier.weight(1f)) {
-                                    Text(
-                                        text = server.name,
-                                        style = SpTypography.TitleLarge,
-                                        color = SpColor.OnCard,
-                                    )
-                                    Text(
-                                        text = server.url,
-                                        style = SpTypography.BodySmall,
-                                        color = SpColor.OnBackgroundTertiary,
-                                    )
-                                }
-                                if (server.isActive) {
-                                    Box(
-                                        modifier = Modifier
-                                            .size(12.dp)
-                                            .clip(CircleShape)
-                                            .background(SpColor.Success),
-                                    )
-                                    Spacer(Modifier.width(SpSpacing.Medium))
-                                }
-                                // Delete button
-                                Icon(
-                                    imageVector = Icons.Filled.Delete,
-                                    contentDescription = "Remove server",
-                                    tint = SpColor.OnBackgroundTertiary,
-                                    modifier = Modifier
-                                        .size(36.dp)
-                                        .clip(CircleShape)
-                                        .clickable(onClick = {
-                                            viewModel.onIntent(ServerConnectionIntent.RemoveServer(server.id))
-                                        })
-                                        .padding(6.dp),
-                                )
-                            }
-                        }
-                    }
-
-                    item {
-                        // Add Server section
-                        AnimatedVisibility(
-                            visible = state.isAddingServer,
-                            enter = expandVertically() + fadeIn(),
-                            exit = shrinkVertically() + fadeOut(),
-                        ) {
-                            SpCard {
-                                Column(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(SpSpacing.Default),
-                                ) {
-                                    Text(
-                                        text = "Add Server",
-                                        style = SpTypography.TitleLarge,
-                                        color = SpColor.OnCard,
-                                    )
-                                    Spacer(Modifier.height(SpSpacing.Medium))
-                                    SpTextField(
-                                        value = state.newServerName,
-                                        onValueChange = {
-                                            viewModel.onIntent(ServerConnectionIntent.SetNewServerName(it))
-                                        },
-                                        label = "Server Name",
-                                        placeholder = "My Home Server",
-                                    )
-                                    Spacer(Modifier.height(SpSpacing.Small))
-                                    SpTextField(
-                                        value = state.newServerUrl,
-                                        onValueChange = {
-                                            viewModel.onIntent(ServerConnectionIntent.SetNewServerUrl(it))
-                                        },
-                                        label = "Server URL",
-                                        placeholder = "https://spela.example.com",
-                                        imeAction = ImeAction.Done,
-                                        onImeAction = { viewModel.onIntent(ServerConnectionIntent.AddServer) },
-                                    )
-                                    Spacer(Modifier.height(SpSpacing.Default))
-                                    Row(
-                                        modifier = Modifier.fillMaxWidth(),
-                                        horizontalArrangement = Arrangement.End,
-                                    ) {
-                                        SpButton(
-                                            text = "Cancel",
-                                            onClick = { viewModel.onIntent(ServerConnectionIntent.ToggleAddServer) },
-                                            style = SpButtonStyle.Ghost,
-                                            enabled = !state.isValidating,
-                                        )
-                                        Spacer(Modifier.width(SpSpacing.Small))
-                                        SpButton(
-                                            text = "Add",
-                                            onClick = { viewModel.onIntent(ServerConnectionIntent.AddServer) },
-                                            enabled = !state.isValidating,
-                                            isLoading = state.isValidating,
-                                        )
-                                    }
-                                }
-                            }
-                        }
-
-                        if (!state.isAddingServer) {
-                            Spacer(Modifier.height(SpSpacing.Default))
-                            SpSecondaryButton(
-                                text = "Add Server",
-                                onClick = { viewModel.onIntent(ServerConnectionIntent.ToggleAddServer) },
-                                modifier = Modifier.fillMaxWidth(),
-                            )
-                        }
-                    }
-                }
-            }
-
+    BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+        val layoutMode = when {
+            maxWidth > 840.dp -> "desktop"
+            maxWidth > 600.dp -> "handheld"
+            else -> "mobile"
         }
 
-        // Error snackbar with auto-dismiss
+        when (layoutMode) {
+            "mobile" -> MobileLayout(viewModel = viewModel, onServerSelected = onServerSelected)
+            else -> {
+                val leftFraction = if (layoutMode == "desktop") 0.40f else 0.35f
+                SplitLayout(
+                    viewModel = viewModel,
+                    onServerSelected = onServerSelected,
+                    leftFraction = leftFraction,
+                )
+            }
+        }
+
+        // Error snackbar at bottom — always on top of content
         SpSnackbar(
             data = state.error?.let {
                 SpSnackbarData(
@@ -284,4 +118,400 @@ fun ServerConnectionScreen(
             modifier = Modifier.align(Alignment.BottomCenter),
         )
     }
+}
+
+// ────────────────────────────────────────────────────────
+// Mobile layout: full-screen glow background + centered card
+// ────────────────────────────────────────────────────────
+
+@Composable
+private fun MobileLayout(
+    viewModel: ServerConnectionViewModel,
+    onServerSelected: () -> Unit,
+) {
+    val state by viewModel.state.collectAsState()
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color(0xFF0F0F1A)),
+        contentAlignment = Alignment.Center,
+    ) {
+        // Ambient glow blobs
+        AmbientGlowBlobs()
+
+        // Glass card
+        Column(
+            modifier = Modifier
+                .widthIn(max = 400.dp)
+                .fillMaxWidth()
+                .padding(horizontal = SpSpacing.Default)
+                .clip(RoundedCornerShape(24.dp))
+                .background(Color.White.copy(alpha = 0.04f))
+                .border(1.dp, Color.White.copy(alpha = 0.08f), RoundedCornerShape(24.dp))
+                .padding(SpSpacing.XLarge),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            AppIcon(size = 64.dp, radius = 16.dp)
+            Spacer(Modifier.height(SpSpacing.Default))
+            Text(
+                text = "Welcome to Spela",
+                style = SpTypography.DisplaySmall,
+                color = SpColor.OnBackground,
+                textAlign = TextAlign.Center,
+            )
+            Text(
+                text = "Connect to your game server",
+                style = SpTypography.BodyMedium,
+                color = SpColor.OnBackgroundSecondary,
+                textAlign = TextAlign.Center,
+            )
+            Spacer(Modifier.height(SpSpacing.XLarge))
+
+            if (state.isLoading) {
+                SpLoadingIndicator(message = "Loading servers...")
+            } else {
+                ServerListOrForm(
+                    viewModel = viewModel,
+                    onServerSelected = onServerSelected,
+                    fullWidth = true,
+                )
+            }
+        }
+    }
+}
+
+// ────────────────────────────────────────────────────────
+// Split layout: hero panel + form panel side by side
+// ────────────────────────────────────────────────────────
+
+@Composable
+private fun SplitLayout(
+    viewModel: ServerConnectionViewModel,
+    onServerSelected: () -> Unit,
+    leftFraction: Float,
+) {
+    val state by viewModel.state.collectAsState()
+
+    Row(modifier = Modifier.fillMaxSize()) {
+        // Left hero panel
+        Box(
+            modifier = Modifier
+                .fillMaxHeight()
+                .fillMaxWidth(leftFraction)
+                .background(Color(0xFF0F0F1A)),
+            contentAlignment = Alignment.Center,
+        ) {
+            AmbientGlowBlobs()
+
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center,
+            ) {
+                AppIcon(size = 80.dp, radius = 20.dp)
+                Spacer(Modifier.height(SpSpacing.Default))
+                Text(
+                    text = "Spela",
+                    style = SpTypography.DisplayMedium,
+                    color = SpColor.OnBackground,
+                    fontWeight = FontWeight.Bold,
+                )
+                Spacer(Modifier.height(SpSpacing.Small))
+                Text(
+                    text = "Your self-hosted\ngame library",
+                    style = SpTypography.BodyMedium,
+                    color = SpColor.OnBackgroundSecondary,
+                    textAlign = TextAlign.Center,
+                )
+                Spacer(Modifier.height(SpSpacing.XLarge))
+                SnesButtonDots()
+            }
+        }
+
+        // Right form panel
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(SpColor.Background),
+            contentAlignment = Alignment.Center,
+        ) {
+            Column(
+                modifier = Modifier
+                    .widthIn(max = 380.dp)
+                    .fillMaxWidth()
+                    .padding(horizontal = SpSpacing.XLarge),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                if (state.isLoading) {
+                    SpLoadingIndicator(message = "Loading servers...")
+                } else {
+                    ServerListOrForm(
+                        viewModel = viewModel,
+                        onServerSelected = onServerSelected,
+                        fullWidth = true,
+                    )
+                }
+            }
+        }
+    }
+}
+
+// ────────────────────────────────────────────────────────
+// Shared server list / add-server form
+// ────────────────────────────────────────────────────────
+
+@Composable
+private fun ServerListOrForm(
+    viewModel: ServerConnectionViewModel,
+    onServerSelected: () -> Unit,
+    fullWidth: Boolean,
+) {
+    val state by viewModel.state.collectAsState()
+
+    LazyColumn(
+        modifier = if (fullWidth) Modifier.fillMaxWidth() else Modifier,
+        verticalArrangement = Arrangement.spacedBy(SpSpacing.Medium),
+    ) {
+        items(state.servers) { server ->
+            SpCard(
+                onClick = {
+                    viewModel.onIntent(ServerConnectionIntent.SelectServer(server.id))
+                    onServerSelected()
+                },
+                onGradient = true,
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .semantics { contentDescription = server.name }
+                        .padding(SpSpacing.Default),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(44.dp)
+                            .clip(CircleShape)
+                            .background(SpColor.PrimaryContainer),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Text(
+                            text = server.name.take(1).uppercase(),
+                            style = SpTypography.TitleLarge,
+                            color = SpColor.Primary,
+                        )
+                    }
+                    Spacer(Modifier.width(SpSpacing.Medium))
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = server.name,
+                            style = SpTypography.TitleLarge,
+                            color = SpColor.OnCard,
+                        )
+                        Text(
+                            text = server.url,
+                            style = SpTypography.BodySmall,
+                            color = SpColor.OnBackgroundTertiary,
+                        )
+                    }
+                    if (server.isActive) {
+                        Box(
+                            modifier = Modifier
+                                .size(12.dp)
+                                .clip(CircleShape)
+                                .background(SpColor.Success),
+                        )
+                        Spacer(Modifier.width(SpSpacing.Medium))
+                    }
+                    Icon(
+                        imageVector = Icons.Filled.Delete,
+                        contentDescription = "Remove server",
+                        tint = SpColor.OnBackgroundTertiary,
+                        modifier = Modifier
+                            .size(36.dp)
+                            .clip(CircleShape)
+                            .clickable(onClick = {
+                                viewModel.onIntent(ServerConnectionIntent.RemoveServer(server.id))
+                            })
+                            .padding(6.dp),
+                    )
+                }
+            }
+        }
+
+        item {
+            AnimatedVisibility(
+                visible = state.isAddingServer,
+                enter = expandVertically() + fadeIn(),
+                exit = shrinkVertically() + fadeOut(),
+            ) {
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    if (state.servers.isEmpty()) {
+                        // No servers yet — show welcoming header inside form area
+                        Text(
+                            text = "Add Server",
+                            style = SpTypography.TitleLarge,
+                            color = SpColor.OnBackground,
+                        )
+                        Spacer(Modifier.height(SpSpacing.XSmall))
+                        Text(
+                            text = "Enter your server details to connect",
+                            style = SpTypography.BodyMedium,
+                            color = SpColor.OnBackgroundSecondary,
+                        )
+                        Spacer(Modifier.height(SpSpacing.Default))
+                    }
+                    SpTextField(
+                        value = state.newServerName,
+                        onValueChange = {
+                            viewModel.onIntent(ServerConnectionIntent.SetNewServerName(it))
+                        },
+                        label = "Server Name",
+                        placeholder = "My Home Server",
+                    )
+                    Spacer(Modifier.height(SpSpacing.Small))
+                    SpTextField(
+                        value = state.newServerUrl,
+                        onValueChange = {
+                            viewModel.onIntent(ServerConnectionIntent.SetNewServerUrl(it))
+                        },
+                        label = "Server URL",
+                        placeholder = "https://spela.example.com",
+                        imeAction = ImeAction.Done,
+                        onImeAction = { viewModel.onIntent(ServerConnectionIntent.AddServer) },
+                    )
+                    Spacer(Modifier.height(SpSpacing.Default))
+                    if (state.servers.isEmpty()) {
+                        // First server — single prominent "Connect" button
+                        SpButton(
+                            text = "Connect",
+                            onClick = { viewModel.onIntent(ServerConnectionIntent.AddServer) },
+                            modifier = Modifier.fillMaxWidth(),
+                            enabled = !state.isValidating,
+                            isLoading = state.isValidating,
+                        )
+                    } else {
+                        // Adding an additional server — Cancel + Add
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.End,
+                        ) {
+                            SpButton(
+                                text = "Cancel",
+                                onClick = { viewModel.onIntent(ServerConnectionIntent.ToggleAddServer) },
+                                style = SpButtonStyle.Ghost,
+                                enabled = !state.isValidating,
+                            )
+                            Spacer(Modifier.width(SpSpacing.Small))
+                            SpButton(
+                                text = "Add",
+                                onClick = { viewModel.onIntent(ServerConnectionIntent.AddServer) },
+                                enabled = !state.isValidating,
+                                isLoading = state.isValidating,
+                            )
+                        }
+                    }
+                }
+            }
+
+            if (!state.isAddingServer) {
+                Spacer(Modifier.height(SpSpacing.Default))
+                SpSecondaryButton(
+                    text = "Add Server",
+                    onClick = { viewModel.onIntent(ServerConnectionIntent.ToggleAddServer) },
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
+        }
+    }
+}
+
+// ────────────────────────────────────────────────────────
+// Reusable visual sub-components
+// ────────────────────────────────────────────────────────
+
+@Composable
+private fun AppIcon(size: androidx.compose.ui.unit.Dp, radius: androidx.compose.ui.unit.Dp) {
+    Box(
+        modifier = Modifier
+            .size(size)
+            .clip(RoundedCornerShape(radius))
+            .background(Color.White.copy(alpha = 0.08f))
+            .border(1.dp, Color.White.copy(alpha = 0.1f), RoundedCornerShape(radius)),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(
+            text = "S",
+            style = SpTypography.DisplayMedium,
+            color = Color.White,
+            fontWeight = FontWeight.ExtraBold,
+        )
+    }
+}
+
+@Composable
+private fun SnesButtonDots() {
+    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        listOf(SnesRed, SnesYellow, SnesBlue, SnesGreen).forEach { color ->
+            Box(
+                modifier = Modifier
+                    .size(12.dp)
+                    .clip(CircleShape)
+                    .background(color.copy(alpha = 0.6f)),
+            )
+        }
+    }
+}
+
+@Composable
+private fun androidx.compose.foundation.layout.BoxScope.AmbientGlowBlobs() {
+    // Red — top-left
+    Box(
+        modifier = Modifier
+            .matchParentSize()
+            .background(
+                Brush.radialGradient(
+                    colors = listOf(SnesRed.copy(alpha = 0.25f), Color.Transparent),
+                    center = androidx.compose.ui.geometry.Offset(0f, 0f),
+                    radius = 600f,
+                ),
+            ),
+    )
+    // Blue — bottom-right
+    Box(
+        modifier = Modifier
+            .matchParentSize()
+            .background(
+                Brush.radialGradient(
+                    colors = listOf(SnesBlue.copy(alpha = 0.25f), Color.Transparent),
+                    center = androidx.compose.ui.geometry.Offset(Float.MAX_VALUE, Float.MAX_VALUE),
+                    radius = 600f,
+                ),
+            ),
+    )
+    // Green — bottom-center
+    Box(
+        modifier = Modifier
+            .matchParentSize()
+            .background(
+                Brush.radialGradient(
+                    colors = listOf(SnesGreen.copy(alpha = 0.20f), Color.Transparent),
+                    center = androidx.compose.ui.geometry.Offset(Float.MAX_VALUE / 2f, Float.MAX_VALUE),
+                    radius = 500f,
+                ),
+            ),
+    )
+    // Yellow — top-right
+    Box(
+        modifier = Modifier
+            .matchParentSize()
+            .background(
+                Brush.radialGradient(
+                    colors = listOf(SnesYellow.copy(alpha = 0.15f), Color.Transparent),
+                    center = androidx.compose.ui.geometry.Offset(Float.MAX_VALUE, 0f),
+                    radius = 500f,
+                ),
+            ),
+    )
 }

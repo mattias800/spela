@@ -4,8 +4,10 @@ import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.border
+import androidx.compose.foundation.focusable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsFocusedAsState
+import com.spela.player.presentation.ui.gamepad.spFocusRing
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.heightIn
@@ -45,11 +47,9 @@ fun SpButton(
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     val isFocused by interactionSource.collectIsFocusedAsState()
-    val focusBorder = Modifier.border(
-        width = if (isFocused) 2.dp else 0.dp,
-        color = if (isFocused) Color.White.copy(alpha = 0.85f) else Color.Transparent,
-        shape = shape,
-    )
+    val focusMods = Modifier
+        .spFocusRing(shape = shape)
+        .focusable(interactionSource = interactionSource)
     val isIconOnly = text.isEmpty() && leadingIcon != null
     val defaultPadding = PaddingValues(horizontal = SpSpacing.XLarge, vertical = SpSpacing.Medium)
     val iconOnlyPadding = PaddingValues(SpSpacing.Medium)
@@ -68,7 +68,7 @@ fun SpButton(
             val contentColor = if (onGradient && enabled) Color.White else SpColor.OnPrimary
             Button(
                 onClick = { if (!isLoading) onClick() },
-                modifier = modifier.heightIn(min = 48.dp).then(focusBorder),
+                modifier = modifier.heightIn(min = 48.dp).then(focusMods),
                 enabled = enabled,
                 shape = shape,
                 interactionSource = interactionSource,
@@ -87,7 +87,7 @@ fun SpButton(
         SpButtonStyle.Secondary -> {
             Button(
                 onClick = { if (!isLoading) onClick() },
-                modifier = modifier.heightIn(min = 48.dp).then(focusBorder),
+                modifier = modifier.heightIn(min = 48.dp).then(focusMods),
                 enabled = enabled,
                 shape = shape,
                 interactionSource = interactionSource,
@@ -106,7 +106,7 @@ fun SpButton(
         SpButtonStyle.Outlined -> {
             OutlinedButton(
                 onClick = { if (!isLoading) onClick() },
-                modifier = modifier.heightIn(min = 48.dp).then(focusBorder),
+                modifier = modifier.heightIn(min = 48.dp).then(focusMods),
                 enabled = enabled,
                 shape = shape,
                 interactionSource = interactionSource,
@@ -131,7 +131,7 @@ fun SpButton(
         SpButtonStyle.Ghost -> {
             TextButton(
                 onClick = { if (!isLoading) onClick() },
-                modifier = modifier.heightIn(min = 48.dp).then(focusBorder),
+                modifier = modifier.heightIn(min = 48.dp).then(focusMods),
                 enabled = enabled,
                 shape = shape,
                 interactionSource = interactionSource,
