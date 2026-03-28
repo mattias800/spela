@@ -75,7 +75,7 @@ fun SpTextField(
                 focusedTextColor = SpColor.OnBackground,
                 unfocusedTextColor = SpColor.OnBackground,
                 focusedBorderColor = SpColor.Primary,
-                unfocusedBorderColor = SpColor.Divider,
+                unfocusedBorderColor = SpColor.OnBackgroundTertiary.copy(alpha = 0.3f),
                 errorBorderColor = SpColor.Error,
                 focusedLabelColor = SpColor.Primary,
                 unfocusedLabelColor = SpColor.OnBackgroundSecondary,
