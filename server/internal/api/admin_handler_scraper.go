@@ -87,13 +87,12 @@ func (h *AdminHandler) TriggerScrape(c *gin.Context) {
 	h.Hub.Broadcast(ws.Event{Type: "scrape_started", Payload: nil})
 
 	go func() {
-		defer h.Scraper.FinishScrape()
-
 		count, total, err := h.Scraper.ScrapeAll(ctx, mode, consoleID, func(p scraper.ScrapeProgress) {
 			h.Scraper.SetScrapeProgress(&p)
 			h.Hub.Broadcast(ws.Event{Type: "scrape_progress", Payload: p})
 		})
 		if err != nil {
+			h.Scraper.FinishScrape()
 			if ctx.Err() != nil {
 				slog.Info("metadata scrape cancelled", "scraped", count, "total", total)
 				h.Hub.Broadcast(ws.Event{Type: "scrape_cancelled", Payload: gin.H{"scraped": count, "total": total}})
@@ -105,7 +104,12 @@ func (h *AdminHandler) TriggerScrape(c *gin.Context) {
 		}
 		h.Hub.Broadcast(ws.Event{Type: "scrape_complete", Payload: gin.H{"scraped": count, "total": total}})
 
+		// Release the scrape lock BEFORE refreshing top-rated cache.
+		// This allows new scrapes to start while top-rated refresh runs.
+		h.Scraper.FinishScrape()
+
 		// Refresh top-rated cache for all consoles with IGDB platform mappings.
+		// Runs after scrape lock is released so the UI doesn't show "stuck".
 		if h.Scraper.IGDBClient != nil && h.Scraper.IGDBClient.IsConfigured() {
 			h.refreshTopRatedForAllConsoles()
 		}
