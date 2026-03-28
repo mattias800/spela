@@ -70,7 +70,7 @@ internal fun TimeToBeatSection(
                     label = "Main Story",
                     seconds = hastily,
                     maxSeconds = maxSeconds,
-                    color = SpColor.Accent,
+                    color = Color.White.copy(alpha = 0.85f),
                     animationStarted = animationStarted,
                 )
             }
@@ -80,7 +80,7 @@ internal fun TimeToBeatSection(
                     label = "Main + Extras",
                     seconds = normally,
                     maxSeconds = maxSeconds,
-                    color = SpColor.Warning,
+                    color = Color.White.copy(alpha = 0.65f),
                     animationStarted = animationStarted,
                 )
             }
@@ -90,7 +90,7 @@ internal fun TimeToBeatSection(
                     label = "Completionist",
                     seconds = completely,
                     maxSeconds = maxSeconds,
-                    color = SpColor.Primary,
+                    color = Color.White.copy(alpha = 0.50f),
                     animationStarted = animationStarted,
                 )
             }
