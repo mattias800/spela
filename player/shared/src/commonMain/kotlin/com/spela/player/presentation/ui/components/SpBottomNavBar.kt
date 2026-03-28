@@ -89,7 +89,7 @@ fun SpBottomNavBar(
                         .height(64.dp)
                         .clip(RoundedCornerShape(8.dp))
                         .background(
-                            if (isFocused) Color.White.copy(alpha = 0.1f) else Color.Transparent,
+                            if (isFocused) Color.Black.copy(alpha = 0.3f) else Color.Transparent,
                         )
                         .clickable(
                             interactionSource = interactionSource,

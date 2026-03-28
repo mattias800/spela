@@ -1,5 +1,6 @@
 package com.spela.player.presentation.ui.components
 
+import androidx.compose.foundation.focusGroup
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.lazy.LazyColumn
@@ -32,7 +33,7 @@ fun SpSectionList(
     content: LazyListScope.() -> Unit,
 ) {
     LazyColumn(
-        modifier = modifier,
+        modifier = modifier.focusGroup(),
         contentPadding = PaddingValues(
             start = SpSpacing.ScreenHorizontal,
             end = SpSpacing.ScreenHorizontal,
