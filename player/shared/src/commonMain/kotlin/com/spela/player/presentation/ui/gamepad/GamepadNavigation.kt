@@ -199,7 +199,7 @@ fun Modifier.spFocusRing(
 
     this
         .scale(focusScale)
-        .onFocusChanged { state -> isFocused = state.isFocused }
+        .onFocusChanged { state -> isFocused = state.isFocused || state.hasFocus }
         .border(
             width = 2.dp,
             color = borderColor,
