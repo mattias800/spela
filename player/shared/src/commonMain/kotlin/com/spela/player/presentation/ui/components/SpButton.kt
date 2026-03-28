@@ -47,7 +47,7 @@ fun SpButton(
     val isFocused by interactionSource.collectIsFocusedAsState()
     val focusBorder = Modifier.border(
         width = if (isFocused) 2.dp else 0.dp,
-        color = if (isFocused) SpColor.PrimaryLight else Color.Transparent,
+        color = if (isFocused) Color.White.copy(alpha = 0.85f) else Color.Transparent,
         shape = shape,
     )
     val isIconOnly = text.isEmpty() && leadingIcon != null

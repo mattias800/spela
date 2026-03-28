@@ -81,7 +81,7 @@ fun SpCard(
     }
 
     val borderColor = if (isFocused) {
-        SpColor.Primary.copy(alpha = 0.85f)
+        Color.White.copy(alpha = 0.85f)
     } else if (onGradient) {
         Color.White.copy(alpha = 0.08f)
     } else {
@@ -191,7 +191,7 @@ fun SpGradientCard(
             .shadow(8.dp, shape)
             .border(
                 width = if (isFocused) 2.dp else 0.dp,
-                color = if (isFocused) SpColor.Primary.copy(alpha = 0.85f) else Color.Transparent,
+                color = if (isFocused) Color.White.copy(alpha = 0.85f) else Color.Transparent,
                 shape = shape,
             )
             .clip(shape)

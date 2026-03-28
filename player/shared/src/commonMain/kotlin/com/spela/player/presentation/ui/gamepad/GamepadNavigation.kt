@@ -188,7 +188,7 @@ fun Modifier.spFocusRing(
     var isFocused by remember { mutableStateOf(false) }
 
     val borderColor by animateColorAsState(
-        targetValue = if (isFocused) SpColor.Primary.copy(alpha = 0.85f) else Color.Transparent,
+        targetValue = if (isFocused) Color.White.copy(alpha = 0.85f) else Color.Transparent,
         animationSpec = tween(150),
     )
 
