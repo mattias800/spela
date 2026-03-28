@@ -48,6 +48,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Popup
 import androidx.compose.ui.window.PopupProperties
 import coil3.compose.AsyncImage
+import com.spela.player.presentation.ui.gamepad.spFocusRing
+import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.ui.theme.SpTypography
 import kotlinx.coroutines.launch
@@ -114,12 +116,11 @@ fun ScreenshotLightbox(
                     .fillMaxSize()
                     .background(Color.Black.copy(alpha = 0.92f * (1f - dismissProgress * 0.4f))),
             ) {
-                // Pager with mouse-drag support
+                // Pager with mouse-drag support (fullscreen)
                 HorizontalPager(
                     state = pagerState,
                     modifier = Modifier
                         .fillMaxSize()
-                        .padding(vertical = SpSpacing.XXXLarge)
                         .offset { IntOffset(0, verticalDragOffset.roundToInt()) }
                         .alpha(1f - dismissProgress * 0.3f)
                         .mouseDragPager(
@@ -169,7 +170,7 @@ fun ScreenshotLightbox(
                 Text(
                     text = "${pagerState.currentPage + 1} / ${screenshotUrls.size}",
                     style = SpTypography.BodySmall,
-                    color = Color.White.copy(alpha = 0.5f),
+                    color = SpColor.OnBackground,
                     modifier = Modifier
                         .align(Alignment.TopCenter)
                         .padding(top = SpSpacing.XLarge),
@@ -184,7 +185,8 @@ fun ScreenshotLightbox(
                     ),
                     modifier = Modifier
                         .align(Alignment.TopEnd)
-                        .padding(SpSpacing.Medium),
+                        .padding(SpSpacing.Medium)
+                        .spFocusRing(shape = androidx.compose.foundation.shape.CircleShape),
                 ) {
                     Icon(Icons.Filled.Close, "Close", Modifier.size(24.dp))
                 }
@@ -205,6 +207,7 @@ fun ScreenshotLightbox(
                             containerColor = NavButtonColor, contentColor = NavButtonContentColor,
                             disabledContainerColor = NavButtonDisabledColor, disabledContentColor = NavButtonDisabledContentColor,
                         ),
+                        modifier = Modifier.spFocusRing(shape = androidx.compose.foundation.shape.CircleShape),
                     ) { Icon(Icons.AutoMirrored.Filled.KeyboardArrowLeft, "Previous", Modifier.size(36.dp)) }
 
                     val hasNext = pagerState.currentPage < screenshotUrls.size - 1
@@ -215,6 +218,7 @@ fun ScreenshotLightbox(
                             containerColor = NavButtonColor, contentColor = NavButtonContentColor,
                             disabledContainerColor = NavButtonDisabledColor, disabledContentColor = NavButtonDisabledContentColor,
                         ),
+                        modifier = Modifier.spFocusRing(shape = androidx.compose.foundation.shape.CircleShape),
                     ) { Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, "Next", Modifier.size(36.dp)) }
                 }
 
@@ -222,7 +226,7 @@ fun ScreenshotLightbox(
                 Text(
                     text = "Drag to navigate \u00b7 Scroll to zoom \u00b7 Swipe up/down to close",
                     style = SpTypography.BodySmall,
-                    color = Color.White.copy(alpha = 0.35f),
+                    color = SpColor.OnBackgroundSecondary,
                     modifier = Modifier
                         .align(Alignment.BottomCenter)
                         .padding(bottom = SpSpacing.XLarge),

@@ -157,7 +157,7 @@ fun SpInnerCard(
         modifier = modifier
             .border(
                 width = if (isFocused) 2.dp else 1.dp,
-                color = if (isFocused) SpColor.Primary.copy(alpha = 0.85f)
+                color = if (isFocused) Color.White.copy(alpha = 0.85f)
                         else Color.White.copy(alpha = 0.08f),
                 shape = shape,
             )
