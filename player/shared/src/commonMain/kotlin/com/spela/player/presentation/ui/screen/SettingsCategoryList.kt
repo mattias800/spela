@@ -2,6 +2,9 @@ package com.spela.player.presentation.ui.screen
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.focusGroup
+import androidx.compose.foundation.focusable
+import com.spela.player.presentation.ui.gamepad.spFocusRing
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -46,7 +49,7 @@ fun SettingsCategoryList(
     topPadding: androidx.compose.ui.unit.Dp = 0.dp,
 ) {
     LazyColumn(
-        modifier = modifier.fillMaxSize(),
+        modifier = modifier.fillMaxSize().focusGroup(),
         contentPadding = PaddingValues(
             start = SpSpacing.Medium,
             end = SpSpacing.Medium,
@@ -89,9 +92,11 @@ fun SettingsCategoryList(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
+                    .spFocusRing(shape = RoundedCornerShape(8.dp))
                     .clip(RoundedCornerShape(8.dp))
                     .background(bgColor)
                     .clickable { onSelectCategory(category) }
+                    .focusable()
                     .padding(horizontal = SpSpacing.Medium, vertical = SpSpacing.Medium)
                     .semantics { contentDescription = category.label },
                 verticalAlignment = Alignment.CenterVertically,
