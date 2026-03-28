@@ -58,6 +58,7 @@ fun GamepadHandler(
     onPreviousSection: (() -> Unit)? = null,
     onGamepadInput: (() -> Unit)? = null,
     focusResetKey: Any? = null,
+    isGoingBack: Boolean = false,
     content: @Composable () -> Unit,
 ) {
     val focusManager = LocalFocusManager.current
@@ -68,14 +69,24 @@ fun GamepadHandler(
     var isSelfFocused by remember { mutableStateOf(false) }
 
     // When focusResetKey changes (e.g. tab switch or screen navigation),
-    // request focus on the wrapper Box. The first d-pad press then uses
-    // moveFocus(Next) to enter the content (see isSelfFocused check below).
+    // auto-focus the first visible focusable element.
+    //
+    // Forward navigation: focus the first element on the new screen.
+    // Back navigation: focus the first VISIBLE element — scroll position is
+    // restored by saveableStateHolder, so this lands near where the user was.
     if (focusResetKey != null) {
         LaunchedEffect(focusResetKey) {
             delay(350)
             focusManager.clearFocus(force = true)
             try {
                 focusRequester.requestFocus()
+                // Auto-enter content: find the first visible focusable child.
+                // On back navigation, scroll position is already restored so
+                // the first visible element is near where the user left off.
+                repeat(10) {
+                    if (focusManager.moveFocus(FocusDirection.Next)) return@LaunchedEffect
+                    delay(200)
+                }
             } catch (_: Exception) {
                 // FocusRequester may not be attached yet during transitions
             }
@@ -113,22 +124,36 @@ fun GamepadHandler(
 
                 when (event.key) {
                     Key.DirectionUp -> {
-                        focusManager.moveFocus(FocusDirection.Up)
+                        if (!focusManager.moveFocus(FocusDirection.Up)) {
+                            // Directional move failed — focused element may be offscreen
+                            // after joystick scroll. Clear and re-enter content.
+                            focusManager.clearFocus(force = true)
+                            focusManager.moveFocus(FocusDirection.Next)
+                        }
                         onGamepadInput?.invoke()
                         true
                     }
                     Key.DirectionDown -> {
-                        focusManager.moveFocus(FocusDirection.Down)
+                        if (!focusManager.moveFocus(FocusDirection.Down)) {
+                            focusManager.clearFocus(force = true)
+                            focusManager.moveFocus(FocusDirection.Next)
+                        }
                         onGamepadInput?.invoke()
                         true
                     }
                     Key.DirectionLeft -> {
-                        focusManager.moveFocus(FocusDirection.Left)
+                        if (!focusManager.moveFocus(FocusDirection.Left)) {
+                            focusManager.clearFocus(force = true)
+                            focusManager.moveFocus(FocusDirection.Next)
+                        }
                         onGamepadInput?.invoke()
                         true
                     }
                     Key.DirectionRight -> {
-                        focusManager.moveFocus(FocusDirection.Right)
+                        if (!focusManager.moveFocus(FocusDirection.Right)) {
+                            focusManager.clearFocus(force = true)
+                            focusManager.moveFocus(FocusDirection.Next)
+                        }
                         onGamepadInput?.invoke()
                         true
                     }
