@@ -4,6 +4,7 @@ import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.border
+import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -17,6 +18,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.focus.FocusDirection
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
@@ -58,26 +61,23 @@ fun GamepadHandler(
     content: @Composable () -> Unit,
 ) {
     val focusManager = LocalFocusManager.current
-    // Track whether any element currently has focus. When nothing is focused,
-    // D-pad presses should acquire focus on the first element (recovery).
-    // When something IS focused, failed directional moves should NOT wrap.
+    val focusRequester = remember { FocusRequester() }
+    // Track focus state. isSelfFocused = the wrapper Box has direct focus
+    // (not a child). hasFocus = anything in the tree has focus.
     var hasFocus by remember { mutableStateOf(false) }
+    var isSelfFocused by remember { mutableStateOf(false) }
 
-    // When focusResetKey changes (e.g. section switch in gamepad mode),
-    // clear focus and move to the first focusable element on the new page.
-    // Retries focus acquisition because screens with async data loading may
-    // not have focusable elements in the compose tree on the first attempt.
+    // When focusResetKey changes (e.g. tab switch or screen navigation),
+    // request focus on the wrapper Box. The first d-pad press then uses
+    // moveFocus(Next) to enter the content (see isSelfFocused check below).
     if (focusResetKey != null) {
         LaunchedEffect(focusResetKey) {
-            // Wait for AnimatedContent transition to complete before trying to acquire focus.
-            // The new screen's composables aren't in the focus tree during the transition.
             delay(350)
             focusManager.clearFocus(force = true)
-            // Retry up to 15 times (200ms apart, ~3s total) to find a focusable element.
-            // Screens with async data may need time before focusable items are composed.
-            repeat(15) {
-                if (focusManager.moveFocus(FocusDirection.Next)) return@LaunchedEffect
-                delay(200)
+            try {
+                focusRequester.requestFocus()
+            } catch (_: Exception) {
+                // FocusRequester may not be attached yet during transitions
             }
         }
     }
@@ -85,51 +85,50 @@ fun GamepadHandler(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .onFocusChanged { state -> hasFocus = state.hasFocus }
+            .focusRequester(focusRequester)
+            .focusable()
+            .onFocusChanged { state ->
+                hasFocus = state.hasFocus
+                isSelfFocused = state.isFocused
+            }
             .onPreviewKeyEvent { event ->
                 if (!enabled) return@onPreviewKeyEvent false
                 if (event.type != KeyEventType.KeyDown) return@onPreviewKeyEvent false
 
+                // When the wrapper Box itself has focus (no child focused yet),
+                // any d-pad press should enter the content via moveFocus(Next).
+                // Directional moves don't work from a full-screen Box (nothing
+                // is spatially above/below/left/right of it).
+                if (isSelfFocused || !hasFocus) {
+                    when (event.key) {
+                        Key.DirectionUp, Key.DirectionDown,
+                        Key.DirectionLeft, Key.DirectionRight -> {
+                            focusManager.moveFocus(FocusDirection.Next)
+                            onGamepadInput?.invoke()
+                            return@onPreviewKeyEvent true
+                        }
+                        else -> {}
+                    }
+                }
+
                 when (event.key) {
                     Key.DirectionUp -> {
-                        val hadFocus = hasFocus
-                        if (!focusManager.moveFocus(FocusDirection.Up)) {
-                            // Recovery: re-acquire focus when nothing is focused,
-                            // or when focus escaped the visible area at a boundary.
-                            if (!hadFocus || !hasFocus) {
-                                focusManager.moveFocus(FocusDirection.Next)
-                            }
-                        }
+                        focusManager.moveFocus(FocusDirection.Up)
                         onGamepadInput?.invoke()
                         true
                     }
                     Key.DirectionDown -> {
-                        val hadFocus = hasFocus
-                        if (!focusManager.moveFocus(FocusDirection.Down)) {
-                            if (!hadFocus || !hasFocus) {
-                                focusManager.moveFocus(FocusDirection.Next)
-                            }
-                        }
+                        focusManager.moveFocus(FocusDirection.Down)
                         onGamepadInput?.invoke()
                         true
                     }
                     Key.DirectionLeft -> {
-                        val hadFocus = hasFocus
-                        if (!focusManager.moveFocus(FocusDirection.Left)) {
-                            if (!hadFocus || !hasFocus) {
-                                focusManager.moveFocus(FocusDirection.Next)
-                            }
-                        }
+                        focusManager.moveFocus(FocusDirection.Left)
                         onGamepadInput?.invoke()
                         true
                     }
                     Key.DirectionRight -> {
-                        val hadFocus = hasFocus
-                        if (!focusManager.moveFocus(FocusDirection.Right)) {
-                            if (!hadFocus || !hasFocus) {
-                                focusManager.moveFocus(FocusDirection.Next)
-                            }
-                        }
+                        focusManager.moveFocus(FocusDirection.Right)
                         onGamepadInput?.invoke()
                         true
                     }

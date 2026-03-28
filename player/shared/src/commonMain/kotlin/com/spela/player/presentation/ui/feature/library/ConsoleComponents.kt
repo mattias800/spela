@@ -549,7 +549,7 @@ internal fun ConsoleHeroBanner(
                     }
                 }
 
-                // Bottom-right: action buttons (stacked vertically for narrow screens)
+                // Bottom-right: action buttons
                 if (onBrowseGames != null || onConsoleSettings != null) {
                     Column(
                         modifier = Modifier.align(Alignment.BottomEnd),
