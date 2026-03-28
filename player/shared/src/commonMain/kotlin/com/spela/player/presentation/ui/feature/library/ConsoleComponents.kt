@@ -21,6 +21,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.focusGroup
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.hoverable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -378,6 +379,7 @@ internal fun ConsoleHeroBanner(
         modifier = modifier
             .fillMaxWidth()
             .height(200.dp)
+            .focusGroup()
             .clip(shape)
             // CSS 135deg-equivalent gradient: fixed 45° diagonal (top-left → bottom-right)
             // regardless of aspect ratio, matching the visual appearance on the web.
@@ -547,11 +549,12 @@ internal fun ConsoleHeroBanner(
                     }
                 }
 
-                // Bottom-right: action buttons
+                // Bottom-right: action buttons (stacked vertically for narrow screens)
                 if (onBrowseGames != null || onConsoleSettings != null) {
-                    Row(
+                    Column(
                         modifier = Modifier.align(Alignment.BottomEnd),
-                        horizontalArrangement = Arrangement.spacedBy(SpSpacing.Small),
+                        verticalArrangement = Arrangement.spacedBy(SpSpacing.Small),
+                        horizontalAlignment = Alignment.End,
                     ) {
                         if (onConsoleSettings != null) {
                             SpButton(

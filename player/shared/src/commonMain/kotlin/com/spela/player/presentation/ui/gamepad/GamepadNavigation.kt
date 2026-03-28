@@ -69,13 +69,13 @@ fun GamepadHandler(
     // not have focusable elements in the compose tree on the first attempt.
     if (focusResetKey != null) {
         LaunchedEffect(focusResetKey) {
-            delay(100)
+            delay(150)
             focusManager.clearFocus(force = true)
-            // Retry up to 5 times (100ms apart) to find a focusable element.
-            // moveFocus returns true if focus was successfully moved.
-            repeat(5) {
+            // Retry up to 15 times (200ms apart, ~3s total) to find a focusable element.
+            // Screens with async data may need time before focusable items are composed.
+            repeat(15) {
                 if (focusManager.moveFocus(FocusDirection.Next)) return@LaunchedEffect
-                delay(100)
+                delay(200)
             }
         }
     }
