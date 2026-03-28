@@ -26,6 +26,7 @@ import androidx.compose.foundation.hoverable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsHoveredAsState
 import androidx.compose.foundation.interaction.collectIsPressedAsState
+import com.spela.player.presentation.ui.gamepad.spFocusRing
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.ExpandLess
@@ -166,6 +167,7 @@ internal fun ConsoleCard(
         modifier = modifier
             .height(180.dp)
             .graphicsLayer { scaleX = scale; scaleY = scale }
+            .spFocusRing(shape = shape, scaleOnFocus = true)
             .shadow(8.dp, shape)
             .clip(shape)
             .drawBehind {

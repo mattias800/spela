@@ -90,29 +90,43 @@ fun GamepadHandler(
 
                 when (event.key) {
                     Key.DirectionUp -> {
-                        if (!focusManager.moveFocus(FocusDirection.Up) && !hasFocus) {
-                            focusManager.moveFocus(FocusDirection.Next)
+                        val hadFocus = hasFocus
+                        if (!focusManager.moveFocus(FocusDirection.Up)) {
+                            // Recovery: re-acquire focus when nothing is focused,
+                            // or when focus escaped the visible area at a boundary.
+                            if (!hadFocus || !hasFocus) {
+                                focusManager.moveFocus(FocusDirection.Next)
+                            }
                         }
                         onGamepadInput?.invoke()
                         true
                     }
                     Key.DirectionDown -> {
-                        if (!focusManager.moveFocus(FocusDirection.Down) && !hasFocus) {
-                            focusManager.moveFocus(FocusDirection.Next)
+                        val hadFocus = hasFocus
+                        if (!focusManager.moveFocus(FocusDirection.Down)) {
+                            if (!hadFocus || !hasFocus) {
+                                focusManager.moveFocus(FocusDirection.Next)
+                            }
                         }
                         onGamepadInput?.invoke()
                         true
                     }
                     Key.DirectionLeft -> {
-                        if (!focusManager.moveFocus(FocusDirection.Left) && !hasFocus) {
-                            focusManager.moveFocus(FocusDirection.Next)
+                        val hadFocus = hasFocus
+                        if (!focusManager.moveFocus(FocusDirection.Left)) {
+                            if (!hadFocus || !hasFocus) {
+                                focusManager.moveFocus(FocusDirection.Next)
+                            }
                         }
                         onGamepadInput?.invoke()
                         true
                     }
                     Key.DirectionRight -> {
-                        if (!focusManager.moveFocus(FocusDirection.Right) && !hasFocus) {
-                            focusManager.moveFocus(FocusDirection.Next)
+                        val hadFocus = hasFocus
+                        if (!focusManager.moveFocus(FocusDirection.Right)) {
+                            if (!hadFocus || !hasFocus) {
+                                focusManager.moveFocus(FocusDirection.Next)
+                            }
                         }
                         onGamepadInput?.invoke()
                         true
