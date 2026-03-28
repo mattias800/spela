@@ -279,6 +279,7 @@ export function useScrapeStatus() {
   return useQuery({
     queryKey: ["admin", "scrape-status"],
     queryFn: () => api.get<ScrapeStatus>("/admin/scrape/status"),
+    refetchInterval: 3000, // Poll every 3s to catch status changes
   });
 }
 
@@ -294,6 +295,7 @@ export function useScanStatus() {
   return useQuery({
     queryKey: ["admin", "scan-status"],
     queryFn: () => api.get<ScanStatus>("/admin/games/scan/status"),
+    refetchInterval: 3000, // Poll every 3s to catch status changes
   });
 }
 
