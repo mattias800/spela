@@ -7,6 +7,7 @@ import com.spela.player.data.remote.interceptor.TokenManager
 import com.spela.player.domain.model.*
 import com.spela.player.domain.repository.*
 import com.spela.player.domain.usecase.RestoreSessionUseCase
+import com.spela.player.presentation.ui.components.BottomNavTab
 import com.spela.player.test.NoOpMockEngineFactory
 import com.spela.player.util.DispatcherProvider
 import kotlinx.coroutines.CoroutineDispatcher
@@ -67,18 +68,42 @@ class NavigationViewModelTest {
         )
     }
 
+    /** Helper: the active tab's stack. */
+    private fun NavigationState.activeStack(): List<SpScreen> =
+        tabStacks[activeTab] ?: emptyList()
+
+    /** Simulates a logged-in state by navigating to Home from ServerConnection.
+     *  This mimics what happens after successful login: NavigateTo(Home). */
+    private fun simulateLoggedIn(vm: NavigationViewModel) {
+        vm.onIntent(NavigationIntent.NavigateTo(SpScreen.Home))
+        // Now the Home tab has [ServerConnection, Home]. GoBack would go to ServerConnection.
+        // In the real app, login replaces the screen, but for tests we just need Home as current.
+    }
+
     @Test
-    fun goBackPopsFromBackStack() = runTest(testDispatcher) {
+    fun navigateToPushesOntoActiveTabStack() = runTest(testDispatcher) {
         val vm = createViewModel()
         advanceUntilIdle()
+        simulateLoggedIn(vm)
 
-        vm.onIntent(NavigationIntent.NavigateTo(SpScreen.Home))
+        val stackSizeBefore = vm.state.value.activeStack().size
+        vm.onIntent(NavigationIntent.NavigateTo(SpScreen.GameDetail("1")))
+
+        assertEquals(SpScreen.GameDetail("1"), vm.state.value.currentScreen)
+        assertEquals(BottomNavTab.HOME, vm.state.value.activeTab)
+        assertEquals(stackSizeBefore + 1, vm.state.value.activeStack().size)
+    }
+
+    @Test
+    fun goBackPopsFromActiveTabStack() = runTest(testDispatcher) {
+        val vm = createViewModel()
+        advanceUntilIdle()
+        simulateLoggedIn(vm)
+
         vm.onIntent(NavigationIntent.NavigateTo(SpScreen.Console("nes")))
-
         assertEquals(SpScreen.Console("nes"), vm.state.value.currentScreen)
 
         vm.onIntent(NavigationIntent.GoBack)
-
         assertEquals(SpScreen.Home, vm.state.value.currentScreen)
     }
 
@@ -86,9 +111,6 @@ class NavigationViewModelTest {
     fun navigateToSetsIsGoingBackFalse() = runTest(testDispatcher) {
         val vm = createViewModel()
         advanceUntilIdle()
-
-        vm.onIntent(NavigationIntent.NavigateTo(SpScreen.Home))
-        assertFalse(vm.state.value.isGoingBack)
 
         vm.onIntent(NavigationIntent.NavigateTo(SpScreen.Console("nes")))
         assertFalse(vm.state.value.isGoingBack)
@@ -99,43 +121,77 @@ class NavigationViewModelTest {
         val vm = createViewModel()
         advanceUntilIdle()
 
-        vm.onIntent(NavigationIntent.NavigateTo(SpScreen.Home))
         vm.onIntent(NavigationIntent.NavigateTo(SpScreen.Console("nes")))
-
         vm.onIntent(NavigationIntent.GoBack)
         assertTrue(vm.state.value.isGoingBack)
     }
 
     @Test
-    fun showOverlayPreservesNavigationState() = runTest(testDispatcher) {
+    fun switchTabPreservesStacks() = runTest(testDispatcher) {
         val vm = createViewModel()
         advanceUntilIdle()
 
-        vm.onIntent(NavigationIntent.NavigateTo(SpScreen.Home))
+        // Navigate deep on Home tab
+        vm.onIntent(NavigationIntent.NavigateTo(SpScreen.GameDetail("1")))
+        assertEquals(SpScreen.GameDetail("1"), vm.state.value.currentScreen)
+
+        // Switch to Consoles tab
+        vm.onIntent(NavigationIntent.SwitchTab(SpScreen.Consoles))
+        assertEquals(BottomNavTab.CONSOLES, vm.state.value.activeTab)
+        assertEquals(SpScreen.Consoles, vm.state.value.currentScreen)
+
+        // Switch back to Home — stack is preserved
+        vm.onIntent(NavigationIntent.SwitchTab(SpScreen.Home))
+        assertEquals(BottomNavTab.HOME, vm.state.value.activeTab)
+        assertEquals(SpScreen.GameDetail("1"), vm.state.value.currentScreen)
+    }
+
+    @Test
+    fun activeTabStaysCorrectThroughDeepNavigation() = runTest(testDispatcher) {
+        val vm = createViewModel()
+        advanceUntilIdle()
+
+        // Switch to Consoles, navigate deep
+        vm.onIntent(NavigationIntent.SwitchTab(SpScreen.Consoles))
+        vm.onIntent(NavigationIntent.NavigateTo(SpScreen.Console("nes")))
+        vm.onIntent(NavigationIntent.NavigateTo(SpScreen.GameDetail("42")))
+
+        // Active tab should still be CONSOLES, not HOME
+        assertEquals(BottomNavTab.CONSOLES, vm.state.value.activeTab)
+        assertEquals(SpScreen.GameDetail("42"), vm.state.value.currentScreen)
+    }
+
+    @Test
+    fun showOverlayPreservesAllTabStacks() = runTest(testDispatcher) {
+        val vm = createViewModel()
+        advanceUntilIdle()
+
+        vm.onIntent(NavigationIntent.SwitchTab(SpScreen.Consoles))
         vm.onIntent(NavigationIntent.NavigateTo(SpScreen.Console("nes")))
         vm.onIntent(NavigationIntent.NavigateTo(SpScreen.GameDetail("game1")))
 
-        val screenBefore = vm.state.value.currentScreen
-        val backStackBefore = vm.state.value.backStack
+        val tabBefore = vm.state.value.activeTab
+        val stacksBefore = vm.state.value.tabStacks
 
         vm.onIntent(NavigationIntent.ShowOverlay("game1"))
 
         assertTrue(vm.state.value.showInGameOverlay)
-        assertEquals(screenBefore, vm.state.value.screenBehindOverlay)
-        assertEquals(backStackBefore, vm.state.value.backStackBehindOverlay)
+        assertEquals(tabBefore, vm.state.value.activeTabBehindOverlay)
+        assertEquals(stacksBefore, vm.state.value.tabStacksBehindOverlay)
     }
 
     @Test
-    fun hideOverlayRestoresNavigationState() = runTest(testDispatcher) {
+    fun hideOverlayRestoresAllTabStacks() = runTest(testDispatcher) {
         val vm = createViewModel()
         advanceUntilIdle()
 
-        vm.onIntent(NavigationIntent.NavigateTo(SpScreen.Home))
+        vm.onIntent(NavigationIntent.SwitchTab(SpScreen.Consoles))
         vm.onIntent(NavigationIntent.NavigateTo(SpScreen.Console("nes")))
         vm.onIntent(NavigationIntent.NavigateTo(SpScreen.GameDetail("game1")))
 
         val screenBefore = vm.state.value.currentScreen
-        val backStackBefore = vm.state.value.backStack
+        val tabBefore = vm.state.value.activeTab
+        val stacksBefore = vm.state.value.tabStacks
 
         vm.onIntent(NavigationIntent.ShowOverlay("game1"))
         vm.onIntent(NavigationIntent.HideOverlay)
@@ -143,61 +199,56 @@ class NavigationViewModelTest {
         assertFalse(vm.state.value.showInGameOverlay)
         assertNull(vm.state.value.overlayGameId)
         assertEquals(screenBefore, vm.state.value.currentScreen)
-        assertEquals(backStackBefore, vm.state.value.backStack)
-        assertNull(vm.state.value.screenBehindOverlay)
-        assertTrue(vm.state.value.backStackBehindOverlay.isEmpty())
+        assertEquals(tabBefore, vm.state.value.activeTab)
+        assertEquals(stacksBefore, vm.state.value.tabStacks)
     }
 
     @Test
-    fun hideOverlayRestoresEvenIfBackStackModifiedDuringGameplay() = runTest(testDispatcher) {
+    fun hideOverlayRestoresEvenIfStackModifiedDuringGameplay() = runTest(testDispatcher) {
         val vm = createViewModel()
         advanceUntilIdle()
 
-        vm.onIntent(NavigationIntent.NavigateTo(SpScreen.Home))
-        vm.onIntent(NavigationIntent.NavigateTo(SpScreen.Console("nes")))
         vm.onIntent(NavigationIntent.NavigateTo(SpScreen.GameDetail("game1")))
 
         val screenBefore = vm.state.value.currentScreen
-        val backStackBefore = vm.state.value.backStack
+        val stacksBefore = vm.state.value.tabStacks
 
         vm.onIntent(NavigationIntent.ShowOverlay("game1"))
 
-        // Simulate back stack corruption during gameplay
-        vm.onIntent(NavigationIntent.GoBack)
+        // Simulate modification during gameplay
         vm.onIntent(NavigationIntent.GoBack)
 
         // HideOverlay should restore the original state
         vm.onIntent(NavigationIntent.HideOverlay)
 
         assertEquals(screenBefore, vm.state.value.currentScreen)
-        assertEquals(backStackBefore, vm.state.value.backStack)
+        assertEquals(stacksBefore, vm.state.value.tabStacks)
     }
 
     @Test
-    fun nextSectionCyclesThroughAllSections() = runTest(testDispatcher) {
+    fun nextSectionCyclesThroughAllTabs() = runTest(testDispatcher) {
         val vm = createViewModel()
         advanceUntilIdle()
 
-        vm.onIntent(NavigationIntent.NavigateTo(SpScreen.Home))
-        assertEquals(SpScreen.Home, vm.state.value.currentScreen)
+        assertEquals(BottomNavTab.HOME, vm.state.value.activeTab)
 
         vm.onIntent(NavigationIntent.NextSection)
-        assertEquals(SpScreen.Explore, vm.state.value.currentScreen)
+        assertEquals(BottomNavTab.EXPLORE, vm.state.value.activeTab)
 
         vm.onIntent(NavigationIntent.NextSection)
-        assertEquals(SpScreen.Consoles, vm.state.value.currentScreen)
+        assertEquals(BottomNavTab.CONSOLES, vm.state.value.activeTab)
 
         vm.onIntent(NavigationIntent.NextSection)
-        assertEquals(SpScreen.Collections, vm.state.value.currentScreen)
+        assertEquals(BottomNavTab.COLLECTIONS, vm.state.value.activeTab)
 
         vm.onIntent(NavigationIntent.NextSection)
-        assertEquals(SpScreen.Activity, vm.state.value.currentScreen)
+        assertEquals(BottomNavTab.ACTIVITY, vm.state.value.activeTab)
 
         vm.onIntent(NavigationIntent.NextSection)
-        assertEquals(SpScreen.Settings, vm.state.value.currentScreen)
+        assertEquals(BottomNavTab.SETTINGS, vm.state.value.activeTab)
 
         vm.onIntent(NavigationIntent.NextSection)
-        assertEquals(SpScreen.Home, vm.state.value.currentScreen)
+        assertEquals(BottomNavTab.HOME, vm.state.value.activeTab)
     }
 
     @Test
@@ -205,62 +256,59 @@ class NavigationViewModelTest {
         val vm = createViewModel()
         advanceUntilIdle()
 
-        vm.onIntent(NavigationIntent.NavigateTo(SpScreen.Home))
-        assertEquals(SpScreen.Home, vm.state.value.currentScreen)
+        assertEquals(BottomNavTab.HOME, vm.state.value.activeTab)
 
         vm.onIntent(NavigationIntent.PreviousSection)
-        assertEquals(SpScreen.Settings, vm.state.value.currentScreen)
+        assertEquals(BottomNavTab.SETTINGS, vm.state.value.activeTab)
 
         vm.onIntent(NavigationIntent.PreviousSection)
-        assertEquals(SpScreen.Activity, vm.state.value.currentScreen)
+        assertEquals(BottomNavTab.ACTIVITY, vm.state.value.activeTab)
     }
 
     @Test
-    fun sectionCyclingClearsBackStack() = runTest(testDispatcher) {
+    fun sectionCyclingPreservesTabStacks() = runTest(testDispatcher) {
         val vm = createViewModel()
         advanceUntilIdle()
 
-        vm.onIntent(NavigationIntent.NavigateTo(SpScreen.Home))
+        // Navigate deep on Home tab
         vm.onIntent(NavigationIntent.NavigateTo(SpScreen.GameDetail("1")))
-        vm.onIntent(NavigationIntent.NavigateTo(SpScreen.Console("nes")))
-        assertTrue(vm.state.value.backStack.isNotEmpty())
+        val homeStack = vm.state.value.tabStacks[BottomNavTab.HOME]
 
+        // Cycle to next section
         vm.onIntent(NavigationIntent.NextSection)
-        assertTrue(vm.state.value.backStack.isEmpty())
+        assertEquals(BottomNavTab.EXPLORE, vm.state.value.activeTab)
+
+        // Home stack should be preserved
+        assertEquals(homeStack, vm.state.value.tabStacks[BottomNavTab.HOME])
     }
 
     @Test
-    fun goBackFromConsolesReturnsToHome() = runTest(testDispatcher) {
+    fun goBackFromConsolesTabReturnsToHome() = runTest(testDispatcher) {
         val vm = createViewModel()
         advanceUntilIdle()
+        simulateLoggedIn(vm)
 
-        vm.onIntent(NavigationIntent.NavigateTo(SpScreen.Consoles))
+        // Switch to Consoles tab (empty stack, just root)
+        vm.onIntent(NavigationIntent.SwitchTab(SpScreen.Consoles))
+        assertEquals(BottomNavTab.CONSOLES, vm.state.value.activeTab)
         assertEquals(SpScreen.Consoles, vm.state.value.currentScreen)
-        // Manually clear backstack to simulate section cycling
-        vm.onIntent(NavigationIntent.NextSection) // goes to Collections
-        vm.onIntent(NavigationIntent.PreviousSection) // goes back to Consoles with empty backstack
-        assertEquals(SpScreen.Consoles, vm.state.value.currentScreen)
-        assertTrue(vm.state.value.backStack.isEmpty())
 
+        // GoBack from tab root → Home
         vm.onIntent(NavigationIntent.GoBack)
+        assertEquals(BottomNavTab.HOME, vm.state.value.activeTab)
         assertEquals(SpScreen.Home, vm.state.value.currentScreen)
     }
 
     @Test
-    fun goBackFromCollectionsReturnsToHome() = runTest(testDispatcher) {
+    fun goBackFromCollectionsTabReturnsToHome() = runTest(testDispatcher) {
         val vm = createViewModel()
         advanceUntilIdle()
 
-        // Navigate to Collections via section cycling (empty backstack)
-        vm.onIntent(NavigationIntent.NavigateTo(SpScreen.Home))
-        vm.onIntent(NavigationIntent.NextSection) // Explore
-        vm.onIntent(NavigationIntent.NextSection) // Consoles
-        vm.onIntent(NavigationIntent.NextSection) // Collections
-        assertEquals(SpScreen.Collections, vm.state.value.currentScreen)
-        assertTrue(vm.state.value.backStack.isEmpty())
+        vm.onIntent(NavigationIntent.SwitchTab(SpScreen.Collections))
+        assertEquals(BottomNavTab.COLLECTIONS, vm.state.value.activeTab)
 
         vm.onIntent(NavigationIntent.GoBack)
-        assertEquals(SpScreen.Home, vm.state.value.currentScreen)
+        assertEquals(BottomNavTab.HOME, vm.state.value.activeTab)
     }
 
     @Test
@@ -268,7 +316,6 @@ class NavigationViewModelTest {
         val vm = createViewModel()
         advanceUntilIdle()
 
-        vm.onIntent(NavigationIntent.NavigateTo(SpScreen.Home))
         vm.onIntent(NavigationIntent.NextSection)
         assertFalse(vm.state.value.isGoingBack)
     }
@@ -278,25 +325,29 @@ class NavigationViewModelTest {
         val vm = createViewModel()
         advanceUntilIdle()
 
-        vm.onIntent(NavigationIntent.NavigateTo(SpScreen.Home))
         vm.onIntent(NavigationIntent.PreviousSection)
         assertTrue(vm.state.value.isGoingBack)
     }
 
     @Test
-    fun nextSectionFromSubScreenMapsToCorrectTab() = runTest(testDispatcher) {
+    fun nextSectionFromDeepScreenPreservesStack() = runTest(testDispatcher) {
         val vm = createViewModel()
         advanceUntilIdle()
 
-        // Navigate deep into a console screen (belongs to CONSOLES tab)
-        vm.onIntent(NavigationIntent.NavigateTo(SpScreen.Home))
-        vm.onIntent(NavigationIntent.NavigateTo(SpScreen.Consoles))
+        // Navigate deep on Home tab
         vm.onIntent(NavigationIntent.NavigateTo(SpScreen.Console("nes")))
+        vm.onIntent(NavigationIntent.NavigateTo(SpScreen.GameDetail("1")))
+        assertEquals(BottomNavTab.HOME, vm.state.value.activeTab)
 
-        // NextSection from Console (CONSOLES tab) should go to Collections
+        // NextSection switches to Explore tab
         vm.onIntent(NavigationIntent.NextSection)
-        assertEquals(SpScreen.Collections, vm.state.value.currentScreen)
-        assertTrue(vm.state.value.backStack.isEmpty())
+        assertEquals(BottomNavTab.EXPLORE, vm.state.value.activeTab)
+        assertEquals(SpScreen.Explore, vm.state.value.currentScreen)
+
+        // Home stack is preserved with the deep navigation
+        val homeStack = vm.state.value.tabStacks[BottomNavTab.HOME]!!
+        assertEquals(3, homeStack.size)
+        assertEquals(SpScreen.GameDetail("1"), homeStack.last())
     }
 
     // Minimal fakes that cause RestoreSessionUseCase to return NoSession

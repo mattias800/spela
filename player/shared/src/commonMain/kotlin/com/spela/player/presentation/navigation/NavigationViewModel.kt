@@ -44,8 +44,8 @@ class NavigationViewModel(
                     is ConnectionState.AuthFailed -> {
                         _state.update {
                             it.copy(
-                                currentScreen = SpScreen.Login,
-                                backStack = emptyList(),
+                                activeTab = BottomNavTab.HOME,
+                                tabStacks = defaultTabStacks(),
                                 showInGameOverlay = false,
                             )
                         }
@@ -56,24 +56,48 @@ class NavigationViewModel(
         }
     }
 
+    /** Push onto the active tab's stack. */
+    private fun pushScreen(state: NavigationState, screen: SpScreen): NavigationState {
+        val currentStack = state.tabStacks[state.activeTab] ?: listOf()
+        return state.copy(
+            tabStacks = state.tabStacks + (state.activeTab to currentStack + screen),
+            isGoingBack = false,
+            isTabSwitch = false,
+        )
+    }
+
+    /** Pop from the active tab's stack. Returns null if nothing to pop. */
+    private fun popScreen(state: NavigationState): NavigationState? {
+        val currentStack = state.tabStacks[state.activeTab] ?: return null
+        if (currentStack.size > 1) {
+            return state.copy(
+                tabStacks = state.tabStacks + (state.activeTab to currentStack.dropLast(1)),
+                isGoingBack = true,
+                isTabSwitch = false,
+            )
+        }
+        // Stack has only the root — go to Home tab if not already there
+        if (state.activeTab != BottomNavTab.HOME) {
+            return state.copy(
+                activeTab = BottomNavTab.HOME,
+                isGoingBack = true,
+                isTabSwitch = false,
+            )
+        }
+        return null // Home root — nothing to do (platform handles app exit)
+    }
+
     fun onIntent(intent: NavigationIntent) {
         when (intent) {
             is NavigationIntent.NavigateTo -> {
-                _state.update { current ->
-                    current.copy(
-                        currentScreen = intent.screen,
-                        backStack = current.backStack + current.currentScreen,
-                        isGoingBack = false,
-                        isTabSwitch = false,
-                    )
-                }
+                _state.update { pushScreen(it, intent.screen) }
             }
 
             is NavigationIntent.SwitchTab -> {
+                val targetTab = tabForRootScreen(intent.screen) ?: BottomNavTab.HOME
                 _state.update { current ->
                     current.copy(
-                        currentScreen = intent.screen,
-                        backStack = emptyList(),
+                        activeTab = targetTab,
                         isGoingBack = false,
                         isTabSwitch = true,
                     )
@@ -82,40 +106,16 @@ class NavigationViewModel(
 
             NavigationIntent.GoBack -> {
                 _state.update { current ->
-                    if (current.backStack.isNotEmpty()) {
-                        current.copy(
-                            currentScreen = current.backStack.last(),
-                            backStack = current.backStack.dropLast(1),
-                            isGoingBack = true,
-                            isTabSwitch = false,
-                        )
-                    } else if (current.currentScreen is SpScreen.Settings ||
-                        current.currentScreen is SpScreen.Downloads ||
-                        current.currentScreen is SpScreen.Explore ||
-                        current.currentScreen is SpScreen.Consoles ||
-                        current.currentScreen is SpScreen.Collections ||
-                        current.currentScreen is SpScreen.Activity
-                    ) {
-                        // When on a non-Home tab with empty back stack, return to Home
-                        current.copy(
-                            currentScreen = SpScreen.Home,
-                            isGoingBack = true,
-                            isTabSwitch = false,
-                        )
-                    } else {
-                        current
-                    }
+                    popScreen(current) ?: current
                 }
             }
 
             NavigationIntent.NextSection -> {
                 _state.update { current ->
-                    val currentTab = activeTabForScreen(current.currentScreen)
-                    val currentIndex = BottomNavTab.entries.indexOf(currentTab)
+                    val currentIndex = BottomNavTab.entries.indexOf(current.activeTab)
                     val nextIndex = (currentIndex + 1) % sections.size
                     current.copy(
-                        currentScreen = sections[nextIndex],
-                        backStack = emptyList(),
+                        activeTab = BottomNavTab.entries[nextIndex],
                         isGoingBack = false,
                         isTabSwitch = false,
                     )
@@ -124,12 +124,10 @@ class NavigationViewModel(
 
             NavigationIntent.PreviousSection -> {
                 _state.update { current ->
-                    val currentTab = activeTabForScreen(current.currentScreen)
-                    val currentIndex = BottomNavTab.entries.indexOf(currentTab)
+                    val currentIndex = BottomNavTab.entries.indexOf(current.activeTab)
                     val prevIndex = (currentIndex - 1 + sections.size) % sections.size
                     current.copy(
-                        currentScreen = sections[prevIndex],
-                        backStack = emptyList(),
+                        activeTab = BottomNavTab.entries[prevIndex],
                         isGoingBack = true,
                         isTabSwitch = false,
                     )
@@ -151,76 +149,39 @@ class NavigationViewModel(
                         overlaySkipAutoLoad = intent.skipAutoLoad,
                         overlayForceNewSession = intent.forceNewSession,
                         overlaySessionId = intent.sessionId,
-                        screenBehindOverlay = it.currentScreen,
-                        backStackBehindOverlay = it.backStack,
+                        activeTabBehindOverlay = it.activeTab,
+                        tabStacksBehindOverlay = it.tabStacks,
                     )
                 }
             }
 
             NavigationIntent.HideOverlay -> {
                 _state.update {
-                    if (it.screenBehindOverlay != null) {
-                        it.copy(
-                            showInGameOverlay = false,
-                            overlayGameId = null,
-                            overlaySharedSessionId = null,
-                            overlayTurnToken = null,
-                            overlayNetplaySessionId = null,
-                            overlayNetplayLocalPort = 0,
-                            overlayNetplayInputDelay = 3,
-                            overlayNetplayIsHost = false,
-                            overlayChallengeId = null,
-                            overlaySkipAutoLoad = false,
-                            overlayForceNewSession = false,
-                            overlaySessionId = null,
-                            currentScreen = it.screenBehindOverlay,
-                            backStack = it.backStackBehindOverlay,
-                            screenBehindOverlay = null,
-                            backStackBehindOverlay = emptyList(),
-                        )
-                    } else {
-                        it.copy(
-                            showInGameOverlay = false,
-                            overlayGameId = null,
-                            overlaySharedSessionId = null,
-                            overlayTurnToken = null,
-                            overlayNetplaySessionId = null,
-                            overlayNetplayLocalPort = 0,
-                            overlayNetplayInputDelay = 3,
-                            overlayNetplayIsHost = false,
-                            overlayChallengeId = null,
-                            overlaySkipAutoLoad = false,
-                            overlayForceNewSession = false,
-                            overlaySessionId = null,
-                        )
-                    }
+                    val restoredTab = it.activeTabBehindOverlay ?: it.activeTab
+                    val restoredStacks = it.tabStacksBehindOverlay.ifEmpty { it.tabStacks }
+                    it.copy(
+                        showInGameOverlay = false,
+                        overlayGameId = null,
+                        overlaySharedSessionId = null,
+                        overlayTurnToken = null,
+                        overlayNetplaySessionId = null,
+                        overlayNetplayLocalPort = 0,
+                        overlayNetplayInputDelay = 3,
+                        overlayNetplayIsHost = false,
+                        overlayChallengeId = null,
+                        overlaySkipAutoLoad = false,
+                        overlayForceNewSession = false,
+                        overlaySessionId = null,
+                        activeTab = restoredTab,
+                        tabStacks = restoredStacks,
+                        activeTabBehindOverlay = null,
+                        tabStacksBehindOverlay = emptyMap(),
+                    )
                 }
                 // Sync pending save states to the server after leaving a game.
-                // Auto-save writes to local storage only (fast), so the upload
-                // happens here in the background.
                 scope.launch(dispatchers.io) { syncEngine.syncAll() }
             }
 
-        }
-    }
-
-    companion object {
-        fun activeTabForScreen(screen: SpScreen): BottomNavTab = when (screen) {
-            is SpScreen.Explore,
-            is SpScreen.ExploreTheme,
-            is SpScreen.ExploreKeyword,
-            is SpScreen.ExploreSeries,
-            is SpScreen.ExploreFranchise,
-            is SpScreen.ExploreMood,
-            is SpScreen.ExploreDeveloper,
-            is SpScreen.ExplorePublisher,
-            is SpScreen.DeveloperGames,
-            -> BottomNavTab.EXPLORE
-            is SpScreen.Consoles, is SpScreen.Console -> BottomNavTab.CONSOLES
-            is SpScreen.Collections, is SpScreen.CollectionDetail -> BottomNavTab.COLLECTIONS
-            is SpScreen.Activity, is SpScreen.Stats -> BottomNavTab.ACTIVITY
-            is SpScreen.Settings, is SpScreen.ConsoleSettings, is SpScreen.Licenses -> BottomNavTab.SETTINGS
-            else -> BottomNavTab.HOME
         }
     }
 
@@ -228,8 +189,8 @@ class NavigationViewModel(
         DatabaseResetHelper.resetDatabase()
         _state.update {
             it.copy(
-                currentScreen = SpScreen.ServerConnection,
-                backStack = emptyList(),
+                activeTab = BottomNavTab.HOME,
+                tabStacks = defaultTabStacks(),
                 showInGameOverlay = false,
             )
         }
@@ -254,13 +215,27 @@ class NavigationViewModel(
                 is RestoreSessionResult.NeedsLogin -> result.serverUrl
                 else -> null
             }
+
             _state.update {
-                it.copy(
-                    currentScreen = screen,
-                    isRestoringSession = false,
-                    restoredServerUrl = serverUrl,
-                    isOffline = result is RestoreSessionResult.OfflineSuccess,
-                )
+                when (screen) {
+                    // Auth screens bypass the tab system
+                    SpScreen.Login, SpScreen.ServerConnection -> it.copy(
+                        activeTab = BottomNavTab.HOME,
+                        tabStacks = defaultTabStacks().toMutableMap().apply {
+                            put(BottomNavTab.HOME, listOf(screen))
+                        },
+                        isRestoringSession = false,
+                        restoredServerUrl = serverUrl,
+                        isOffline = result is RestoreSessionResult.OfflineSuccess,
+                    )
+                    else -> it.copy(
+                        activeTab = BottomNavTab.HOME,
+                        tabStacks = defaultTabStacks(),
+                        isRestoringSession = false,
+                        restoredServerUrl = serverUrl,
+                        isOffline = result is RestoreSessionResult.OfflineSuccess,
+                    )
+                }
             }
 
             // Start connectivity monitoring and sync engine after successful session restore
@@ -280,6 +255,19 @@ class NavigationViewModel(
                     }
                 }
             }
+        }
+    }
+
+    companion object {
+        /** Maps a tab root screen to its BottomNavTab. */
+        private fun tabForRootScreen(screen: SpScreen): BottomNavTab? = when (screen) {
+            SpScreen.Home -> BottomNavTab.HOME
+            SpScreen.Explore -> BottomNavTab.EXPLORE
+            SpScreen.Consoles -> BottomNavTab.CONSOLES
+            SpScreen.Collections -> BottomNavTab.COLLECTIONS
+            SpScreen.Activity -> BottomNavTab.ACTIVITY
+            SpScreen.Settings -> BottomNavTab.SETTINGS
+            else -> null
         }
     }
 }

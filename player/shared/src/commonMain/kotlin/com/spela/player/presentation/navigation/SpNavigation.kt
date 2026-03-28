@@ -1,5 +1,7 @@
 package com.spela.player.presentation.navigation
 
+import com.spela.player.presentation.ui.components.BottomNavTab
+
 sealed class SpScreen(val route: String) {
     data object ServerConnection : SpScreen("server_connection")
     data object Login : SpScreen("login")
@@ -46,9 +48,19 @@ sealed class SpScreen(val route: String) {
     data class GameAchievements(val gameId: String) : SpScreen("game_achievements/$gameId")
 }
 
+/** Creates the default per-tab stacks with each tab at its root screen. */
+fun defaultTabStacks(): Map<BottomNavTab, List<SpScreen>> = mapOf(
+    BottomNavTab.HOME to listOf(SpScreen.Home),
+    BottomNavTab.EXPLORE to listOf(SpScreen.Explore),
+    BottomNavTab.CONSOLES to listOf(SpScreen.Consoles),
+    BottomNavTab.COLLECTIONS to listOf(SpScreen.Collections),
+    BottomNavTab.ACTIVITY to listOf(SpScreen.Activity),
+    BottomNavTab.SETTINGS to listOf(SpScreen.Settings),
+)
+
 data class NavigationState(
-    val currentScreen: SpScreen = SpScreen.ServerConnection,
-    val backStack: List<SpScreen> = emptyList(),
+    val activeTab: BottomNavTab = BottomNavTab.HOME,
+    val tabStacks: Map<BottomNavTab, List<SpScreen>> = defaultTabStacks(),
     val isGoingBack: Boolean = false,
     val isTabSwitch: Boolean = false,
     val showInGameOverlay: Boolean = false,
@@ -63,12 +75,17 @@ data class NavigationState(
     val overlaySkipAutoLoad: Boolean = false,
     val overlayForceNewSession: Boolean = false,
     val overlaySessionId: String? = null,
-    val screenBehindOverlay: SpScreen? = null,
-    val backStackBehindOverlay: List<SpScreen> = emptyList(),
+    val activeTabBehindOverlay: BottomNavTab? = null,
+    val tabStacksBehindOverlay: Map<BottomNavTab, List<SpScreen>> = emptyMap(),
     val isRestoringSession: Boolean = true,
     val restoredServerUrl: String? = null,
     val isOffline: Boolean = false,
-)
+) {
+    /** The currently visible screen — last entry on the active tab's stack. */
+    val currentScreen: SpScreen
+        get() = tabStacks[activeTab]?.lastOrNull()
+            ?: SpScreen.ServerConnection
+}
 
 sealed interface NavigationIntent {
     data class NavigateTo(val screen: SpScreen) : NavigationIntent
