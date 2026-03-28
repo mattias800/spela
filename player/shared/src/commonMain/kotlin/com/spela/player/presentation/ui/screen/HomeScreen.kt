@@ -252,16 +252,19 @@ fun HomeScreen(
                                 }
                             }
 
-                            // Device name banner
+                            // Device name banner (only after settings loaded)
                             if (settingsViewModel != null) {
                                 item {
                                     val settingsState by settingsViewModel.state.collectAsState()
-                                    DeviceNameBanner(
-                                        deviceName = settingsState.deviceName,
-                                        onSave = { name ->
-                                            settingsViewModel.onIntent(SettingsIntent.UpdateDeviceName(name))
-                                        },
-                                    )
+                                    // Only show when settings are loaded (userId non-empty means LoadSettings completed)
+                                    if (settingsState.userId.isNotEmpty()) {
+                                        DeviceNameBanner(
+                                            deviceName = settingsState.deviceName,
+                                            onSave = { name ->
+                                                settingsViewModel.onIntent(SettingsIntent.UpdateDeviceName(name))
+                                            },
+                                        )
+                                    }
                                 }
                             }
 
