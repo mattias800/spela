@@ -29,6 +29,7 @@ import androidx.compose.foundation.interaction.collectIsPressedAsState
 import com.spela.player.presentation.ui.gamepad.spFocusRing
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.Language
@@ -355,6 +356,7 @@ internal fun ConsoleHeroBanner(
     console: Console,
     modifier: Modifier = Modifier,
     onBrowseGames: (() -> Unit)? = null,
+    onConsoleSettings: (() -> Unit)? = null,
 ) {
     val shape = RoundedCornerShape(SpSpacing.CardCornerRadius)
 
@@ -545,15 +547,35 @@ internal fun ConsoleHeroBanner(
                     }
                 }
 
-                // Bottom-right: browse button
-                if (onBrowseGames != null) {
-                    Box(modifier = Modifier.align(Alignment.BottomEnd)) {
-                        SpButton(
-                            text = "Browse games",
-                            onClick = onBrowseGames,
-                            style = SpButtonStyle.Secondary,
-                            onGradient = true,
-                        )
+                // Bottom-right: action buttons
+                if (onBrowseGames != null || onConsoleSettings != null) {
+                    Row(
+                        modifier = Modifier.align(Alignment.BottomEnd),
+                        horizontalArrangement = Arrangement.spacedBy(SpSpacing.Small),
+                    ) {
+                        if (onConsoleSettings != null) {
+                            SpButton(
+                                text = "Console settings",
+                                onClick = onConsoleSettings,
+                                style = SpButtonStyle.Outlined,
+                                onGradient = true,
+                                leadingIcon = {
+                                    Icon(
+                                        Icons.Filled.Settings,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(16.dp),
+                                    )
+                                },
+                            )
+                        }
+                        if (onBrowseGames != null) {
+                            SpButton(
+                                text = "Browse games",
+                                onClick = onBrowseGames,
+                                style = SpButtonStyle.Secondary,
+                                onGradient = true,
+                            )
+                        }
                     }
                 }
             }

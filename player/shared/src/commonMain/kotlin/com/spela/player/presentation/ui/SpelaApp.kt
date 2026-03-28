@@ -126,6 +126,7 @@ import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.ui.theme.SpTypography
 import com.spela.player.presentation.ui.gamepad.GamepadHandler
 import com.spela.player.presentation.ui.gamepad.InputMode
+import com.spela.player.presentation.ui.gamepad.LocalInputMode
 import com.spela.player.presentation.ui.components.LocalScrapeService
 import com.spela.player.presentation.ui.components.ScrapeUpdates
 import com.spela.player.presentation.ui.theme.SpelaTheme
@@ -195,7 +196,10 @@ fun SpelaApp(
     val currentTheme by settingsViewModel.selectedTheme.collectAsState()
 
     SpelaTheme(theme = currentTheme) {
-    CompositionLocalProvider(LocalScrapeService provides scrapeService) {
+    CompositionLocalProvider(
+        LocalScrapeService provides scrapeService,
+        LocalInputMode provides (gamepadPortManager?.inputMode?.collectAsState()?.value ?: InputMode.TOUCH),
+    ) {
         // Observe scrape completions and update cover art reactively
         LaunchedEffect(scrapeService) {
             scrapeService?.scrapedGames?.collect { game ->
