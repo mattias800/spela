@@ -6,10 +6,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.focus.focusRestorer
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.spela.player.presentation.ui.gamepad.InputMode
@@ -45,12 +42,8 @@ fun SpSectionList(
         topPadding
     }
 
-    val focusFallback = remember { FocusRequester() }
-
     LazyColumn(
-        modifier = modifier
-            .focusRestorer(focusFallback)
-            .focusGroup(),
+        modifier = modifier.focusGroup(),
         contentPadding = PaddingValues(
             start = SpSpacing.ScreenHorizontal,
             end = SpSpacing.ScreenHorizontal,
