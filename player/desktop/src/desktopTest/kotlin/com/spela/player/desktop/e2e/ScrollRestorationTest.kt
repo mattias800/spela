@@ -1,6 +1,7 @@
 package com.spela.player.desktop.e2e
 
 import androidx.compose.ui.test.*
+import com.spela.player.domain.model.Console
 import com.spela.player.presentation.navigation.NavigationIntent
 import com.spela.player.presentation.navigation.SpScreen
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -15,15 +16,28 @@ import kotlin.test.Test
 @OptIn(ExperimentalCoroutinesApi::class, ExperimentalTestApi::class)
 class ScrollRestorationTest {
 
-    private fun createLoggedInHarness(): SpelaTestHarness {
+    private fun createHarnessWithManyConsoles(): SpelaTestHarness {
         val harness = SpelaTestHarness(StandardTestDispatcher())
+        // Override with 10 consoles to force scrolling
+        harness.gameRepo.consoles = listOf(
+            Console("nes", "Nintendo Entertainment System", "NES", 3, "#e53e3e"),
+            Console("snes", "Super Nintendo", "SNES", 2, "#3182ce"),
+            Console("gba", "Game Boy Advance", "GBA", 1, "#5a1f9e"),
+            Console("gen", "Sega Genesis", "GEN", 1, "#0060a8"),
+            Console("n64", "Nintendo 64", "N64", 1, "#009e42"),
+            Console("psx", "PlayStation", "PSX", 1, "#003087"),
+            Console("gb", "Game Boy", "GB", 1, "#9bbc0f"),
+            Console("gbc", "Game Boy Color", "GBC", 1, "#6b4fa0"),
+            Console("dc", "Dreamcast", "DC", 1, "#ff6600"),
+            Console("sat", "Sega Saturn", "SAT", 1, "#333333"),
+        )
         harness.navigationViewModel.onIntent(NavigationIntent.NavigateTo(SpScreen.Home))
         return harness
     }
 
     @Test
     fun consoleListScrollPositionRestoredOnBack() = runComposeUiTest {
-        val harness = createLoggedInHarness()
+        val harness = createHarnessWithManyConsoles()
         setContent { harness.App() }
         advance(harness)
 
