@@ -2,8 +2,6 @@ package com.spela.player.presentation.ui.screen
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.focusGroup
-import com.spela.player.presentation.ui.gamepad.InputMode
-import com.spela.player.presentation.ui.gamepad.LocalInputMode
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
@@ -128,17 +126,14 @@ fun ConsoleScreen(
                     )
                 },
         ) {
-            val isGamepadMode = LocalInputMode.current == InputMode.GAMEPAD
-
             PullToRefreshBox(
                 isRefreshing = state.isLoading,
                 onRefresh = { viewModel.onIntent(GameListIntent.SelectConsole(consoleId)) },
                 modifier = Modifier.fillMaxSize(),
             ) {
-
                 SpSectionList(
                     modifier = Modifier.fillMaxSize(),
-                    topPadding = if (isGamepadMode) SpSpacing.Large else SpSpacing.TopBarHeight + LocalTitleBarInset.current,
+                    topPadding = SpSpacing.TopBarHeight + LocalTitleBarInset.current,
                 ) {
                     // Console hero banner
                     if (console != null) {
@@ -146,7 +141,7 @@ fun ConsoleScreen(
                             ConsoleHeroBanner(
                                 console = console,
                                 onBrowseGames = if (state.games.size > 15) onBrowseAllGames else null,
-                                onConsoleSettings = if (isGamepadMode) onNavigateToConsoleSettings else null,
+                                onConsoleSettings = onNavigateToConsoleSettings,
                             )
                         }
                     }
@@ -256,33 +251,31 @@ fun ConsoleScreen(
                 }
             }
 
-            // Fixed top bar overlaid on top of scrollable content (hidden in gamepad mode —
-            // user navigates with B for back, settings button is in the hero banner)
-            if (!isGamepadMode) {
-                SpTopBar(
-                    title = consoleName,
-                    showBack = true,
-                    onGradient = true,
-                    onBack = onBack,
-                    titleLeadingContent = if (console?.iconUrl?.isNotEmpty() == true) {
-                        {
-                            AsyncImage(
-                                model = console.iconUrl,
-                                contentDescription = null,
-                                modifier = Modifier.size(28.dp),
-                            )
-                        }
-                    } else null,
-                    actions = {
-                        SpIconButton(
-                            icon = Icons.Filled.Settings,
-                            contentDescription = "Console settings",
-                            onGradient = true,
-                            onClick = onNavigateToConsoleSettings,
+            // Fixed top bar overlaid on top of scrollable content
+            // (auto-hidden in gamepad mode by SpTopBar)
+            SpTopBar(
+                title = consoleName,
+                showBack = true,
+                onGradient = true,
+                onBack = onBack,
+                titleLeadingContent = if (console?.iconUrl?.isNotEmpty() == true) {
+                    {
+                        AsyncImage(
+                            model = console.iconUrl,
+                            contentDescription = null,
+                            modifier = Modifier.size(28.dp),
                         )
-                    },
-                )
-            }
+                    }
+                } else null,
+                actions = {
+                    SpIconButton(
+                        icon = Icons.Filled.Settings,
+                        contentDescription = "Console settings",
+                        onGradient = true,
+                        onClick = onNavigateToConsoleSettings,
+                    )
+                },
+            )
         }
 
         // Error snackbar
