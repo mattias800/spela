@@ -17,7 +17,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
-import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -56,6 +55,7 @@ import com.spela.player.domain.model.DeveloperDetail
 import com.spela.player.domain.model.DeveloperDetailUserStats
 import com.spela.player.domain.model.Game
 import com.spela.player.presentation.ui.components.SpCard
+import com.spela.player.presentation.ui.components.SpCarousel
 import com.spela.player.presentation.ui.components.SpCoverArt
 import com.spela.player.presentation.ui.components.SpLinkText
 import com.spela.player.presentation.ui.components.SpCarouselGameCard
@@ -317,10 +317,8 @@ internal fun DeveloperTopRatedRow(
     onGameSelected: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    LazyRow(
+    SpCarousel(
         modifier = modifier,
-        contentPadding = PaddingValues(horizontal = SpSpacing.ScreenHorizontal),
-        horizontalArrangement = Arrangement.spacedBy(SpSpacing.Medium),
     ) {
         items(
             items = topGames,

@@ -92,10 +92,10 @@ fun SettingsCategoryList(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .spFocusRing(shape = RoundedCornerShape(8.dp))
                     .clip(RoundedCornerShape(8.dp))
                     .background(bgColor)
                     .clickable { onSelectCategory(category) }
+                    .spFocusRing(shape = RoundedCornerShape(8.dp))
                     .focusable()
                     .padding(horizontal = SpSpacing.Medium, vertical = SpSpacing.Medium)
                     .semantics { contentDescription = category.label },

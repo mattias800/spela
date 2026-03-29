@@ -28,6 +28,7 @@ import com.spela.player.domain.model.AchievementGameItem
 import com.spela.player.domain.model.AlmostDoneGame
 import com.spela.player.domain.model.ExploreChallenge
 import com.spela.player.domain.model.FreshChallengeGame
+import com.spela.player.presentation.ui.components.SpCarousel
 import com.spela.player.presentation.ui.components.SpShimmer
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
@@ -41,10 +42,8 @@ internal fun EasyToCompleteSection(
     onGameClick: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    LazyRow(
+    SpCarousel(
         modifier = modifier.testTag("easy_to_complete_row"),
-        contentPadding = PaddingValues(horizontal = SpSpacing.ScreenHorizontal),
-        horizontalArrangement = Arrangement.spacedBy(SpSpacing.Medium),
     ) {
         items(games, key = { it.game.id }) { item ->
             Column(
@@ -78,10 +77,8 @@ internal fun HardestGamesSection(
     onGameClick: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    LazyRow(
+    SpCarousel(
         modifier = modifier.testTag("hardest_games_row"),
-        contentPadding = PaddingValues(horizontal = SpSpacing.ScreenHorizontal),
-        horizontalArrangement = Arrangement.spacedBy(SpSpacing.Medium),
     ) {
         items(games, key = { it.game.id }) { item ->
             Column(
@@ -115,10 +112,8 @@ internal fun AlmostDoneSection(
     onGameClick: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    LazyRow(
+    SpCarousel(
         modifier = modifier.testTag("almost_done_row"),
-        contentPadding = PaddingValues(horizontal = SpSpacing.ScreenHorizontal),
-        horizontalArrangement = Arrangement.spacedBy(SpSpacing.Medium),
     ) {
         items(games, key = { it.game.id }) { item ->
             Column(
@@ -162,10 +157,8 @@ internal fun FreshChallengesSection(
     onGameClick: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    LazyRow(
+    SpCarousel(
         modifier = modifier.testTag("fresh_challenges_row"),
-        contentPadding = PaddingValues(horizontal = SpSpacing.ScreenHorizontal),
-        horizontalArrangement = Arrangement.spacedBy(SpSpacing.Medium),
     ) {
         items(games, key = { it.game.id }) { item ->
             Column(
@@ -198,10 +191,8 @@ internal fun ActiveChallengesSection(
     onChallengeClick: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    LazyRow(
+    SpCarousel(
         modifier = modifier.testTag("active_challenges_row"),
-        contentPadding = PaddingValues(horizontal = SpSpacing.ScreenHorizontal),
-        horizontalArrangement = Arrangement.spacedBy(SpSpacing.Medium),
     ) {
         items(challenges, key = { it.id }) { ch ->
             Column(

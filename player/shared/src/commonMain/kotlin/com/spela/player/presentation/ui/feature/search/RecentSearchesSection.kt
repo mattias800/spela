@@ -67,9 +67,9 @@ fun RecentSearchesSection(
                 style = SpTypography.LabelSmall,
                 color = SpColor.Primary,
                 modifier = Modifier
-                    .spFocusRing(shape = RoundedCornerShape(SpSpacing.RadiusSmall))
                     .clip(RoundedCornerShape(SpSpacing.RadiusSmall))
                     .clickable(onClick = onClearAll)
+                    .spFocusRing(shape = RoundedCornerShape(SpSpacing.RadiusSmall))
                     .focusable()
                     .padding(
                         horizontal = SpSpacing.Small,
@@ -102,9 +102,9 @@ private fun RecentSearchItem(
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .spFocusRing(shape = RoundedCornerShape(SpSpacing.RadiusDefault))
             .clip(RoundedCornerShape(SpSpacing.RadiusDefault))
             .clickable(onClick = onClick)
+            .spFocusRing(shape = RoundedCornerShape(SpSpacing.RadiusDefault))
             .focusable()
             .padding(
                 horizontal = SpSpacing.ScreenHorizontal,

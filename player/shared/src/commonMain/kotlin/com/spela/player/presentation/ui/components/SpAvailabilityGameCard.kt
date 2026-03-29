@@ -1,9 +1,6 @@
 package com.spela.player.presentation.ui.components
 
-import androidx.compose.foundation.layout.Box
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.unit.Dp
 import com.spela.player.presentation.ui.theme.SpSpacing
 
@@ -12,7 +9,7 @@ import com.spela.player.presentation.ui.theme.SpSpacing
  *
  * Layer 2 in the component hierarchy (Design → Content → Role).
  * Wraps [SpGameCard] and adds:
- * - Dimmed appearance (50% opacity) when the game is not available locally
+ * - "Not in library" badge over cover art when not available locally
  * - Disabled click when the game is not available
  *
  * Use this instead of [SpGameCard] when showing games that may or may
@@ -36,19 +33,20 @@ fun SpAvailabilityGameCard(
     width: Dp = SpSpacing.CoverMediumWidth,
     testTag: String? = null,
 ) {
-    Box(modifier = if (!available) Modifier.alpha(0.5f) else Modifier) {
-        SpGameCard(
-            title = title,
-            subtitle = subtitle,
-            coverUrl = coverUrl,
-            onClick = if (available) onClick else ({}),
-            coverAspectRatio = if (coverHeight != null) null else 0.75f,
-            coverHeight = coverHeight,
-            rating = rating,
-            isFavorite = isFavorite,
-            isInPlayLater = isInPlayLater,
-            width = width,
-            testTag = testTag,
-        )
-    }
+    SpGameCard(
+        title = title,
+        subtitle = subtitle,
+        coverUrl = coverUrl,
+        onClick = if (available) onClick else ({}),
+        coverAspectRatio = if (coverHeight != null) null else 0.75f,
+        coverHeight = coverHeight,
+        rating = rating,
+        isFavorite = isFavorite,
+        isInPlayLater = isInPlayLater,
+        width = width,
+        testTag = testTag,
+        coverBadge = if (!available) {
+            { SpCoverBadge(text = "Not in library") }
+        } else null,
+    )
 }

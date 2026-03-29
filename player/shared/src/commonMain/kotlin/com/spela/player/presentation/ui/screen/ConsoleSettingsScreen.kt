@@ -167,7 +167,6 @@ fun ConsoleSettingsScreen(
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .spFocusRing(shape = RoundedCornerShape(SpSpacing.RadiusLarge))
                                 .clickable {
                                     if (hasDeviceOverride) {
                                         settingsViewModel.onIntent(
@@ -179,6 +178,7 @@ fun ConsoleSettingsScreen(
                                         )
                                     }
                                 }
+                                .spFocusRing(shape = RoundedCornerShape(SpSpacing.RadiusLarge))
                                 .focusable()
                                 .semantics { contentDescription = "Override on this device only" }
                                 .padding(horizontal = SpSpacing.Default, vertical = SpSpacing.Medium),

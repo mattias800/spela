@@ -26,6 +26,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.spela.player.presentation.ui.gamepad.spFocusRing
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
 
@@ -80,9 +81,7 @@ fun SpCard(
         if (isHovered || isFocused) SpColor.CardHovered else backgroundColor
     }
 
-    val borderColor = if (isFocused) {
-        Color.White.copy(alpha = 0.85f)
-    } else if (onGradient) {
+    val borderColor = if (onGradient) {
         Color.White.copy(alpha = 0.08f)
     } else {
         SpColor.Divider.copy(alpha = 0.5f)
@@ -97,11 +96,7 @@ fun SpCard(
                 ambientColor = SpColor.Primary.copy(alpha = 0.15f),
                 spotColor = SpColor.Primary.copy(alpha = 0.1f),
             )
-            .border(
-                width = if (isFocused) 2.dp else 1.dp,
-                color = borderColor,
-                shape = shape,
-            )
+            .border(1.dp, borderColor, shape)
             .clip(shape)
             .background(resolvedBg)
             .then(
@@ -110,7 +105,7 @@ fun SpCard(
                         interactionSource = interactionSource,
                         indication = null,
                         onClick = onClick,
-                    ).focusable(interactionSource = interactionSource)
+                    ).spFocusRing(shape = shape).focusable(interactionSource = interactionSource)
                 } else Modifier
             )
     ) {
@@ -155,12 +150,7 @@ fun SpInnerCard(
 
     Box(
         modifier = modifier
-            .border(
-                width = if (isFocused) 2.dp else 1.dp,
-                color = if (isFocused) Color.White.copy(alpha = 0.85f)
-                        else Color.White.copy(alpha = 0.08f),
-                shape = shape,
-            )
+            .border(1.dp, Color.White.copy(alpha = 0.08f), shape)
             .clip(shape)
             .background(Color.White.copy(alpha = bgAlpha))
             .then(
@@ -168,7 +158,7 @@ fun SpInnerCard(
                     interactionSource = interactionSource,
                     indication = null,
                     onClick = onClick,
-                ).focusable(interactionSource = interactionSource) else Modifier
+                ).spFocusRing(shape = shape).focusable(interactionSource = interactionSource) else Modifier
             )
     ) {
         content()
@@ -189,11 +179,6 @@ fun SpGradientCard(
     Box(
         modifier = modifier
             .shadow(8.dp, shape)
-            .border(
-                width = if (isFocused) 2.dp else 0.dp,
-                color = if (isFocused) Color.White.copy(alpha = 0.85f) else Color.Transparent,
-                shape = shape,
-            )
             .clip(shape)
             .background(Brush.linearGradient(gradientColors))
             .then(
@@ -201,7 +186,7 @@ fun SpGradientCard(
                     interactionSource = interactionSource,
                     indication = null,
                     onClick = onClick,
-                ).focusable(interactionSource = interactionSource) else Modifier
+                ).spFocusRing(shape = shape).focusable(interactionSource = interactionSource) else Modifier
             )
     ) {
         content()

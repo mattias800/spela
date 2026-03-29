@@ -44,10 +44,10 @@ fun SpIconButton(
         Box(
             modifier = Modifier
                 .size(40.dp)
-                .spFocusRing(shape = CircleShape)
                 .clip(CircleShape)
                 .background(if (onGradient) Color.Black.copy(alpha = 0.30f) else SpColor.SurfaceVariant)
                 .clickable(onClick = onClick)
+                .spFocusRing(shape = CircleShape)
                 .focusable()
                 .semantics {
                     this.contentDescription = contentDescription

@@ -138,8 +138,8 @@ private fun MetadataItem(
             .padding(vertical = SpSpacing.XSmall)
             .then(
                 if (isClickable) Modifier
-                    .spFocusRing(shape = RoundedCornerShape(SpSpacing.Small))
                     .clickable(onClick = onClick!!)
+                    .spFocusRing(shape = RoundedCornerShape(SpSpacing.Small))
                     .focusable()
                 else Modifier
             ),

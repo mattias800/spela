@@ -5,12 +5,10 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Text
@@ -27,6 +25,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.spela.player.domain.model.OnlineUser
 import com.spela.player.presentation.ui.components.SpAvatar
+import com.spela.player.presentation.ui.components.SpCarousel
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.ui.theme.SpTypography
@@ -37,9 +36,8 @@ fun OnlineUsersRow(
     modifier: Modifier = Modifier,
     onUserSelected: (String) -> Unit = {},
 ) {
-    LazyRow(
+    SpCarousel(
         modifier = modifier,
-        contentPadding = PaddingValues(horizontal = SpSpacing.ScreenHorizontal),
         horizontalArrangement = Arrangement.spacedBy(SpSpacing.Default),
     ) {
         items(users, key = { it.id }) { user ->

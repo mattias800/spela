@@ -31,6 +31,7 @@ import androidx.compose.ui.unit.dp
 import com.spela.player.domain.model.ForYouRow
 import com.spela.player.domain.model.Game
 import com.spela.player.presentation.ui.components.SpCard
+import com.spela.player.presentation.ui.components.SpCarousel
 import com.spela.player.presentation.ui.components.SpCarouselGameCard
 import com.spela.player.presentation.ui.components.SpCoverArt
 import com.spela.player.presentation.ui.components.SpGameCardSkeleton
@@ -102,10 +103,7 @@ private fun ForYouRowSection(
         Spacer(Modifier.height(SpSpacing.Medium))
 
         // Horizontal game shelf
-        LazyRow(
-            contentPadding = PaddingValues(horizontal = SpSpacing.ScreenHorizontal),
-            horizontalArrangement = Arrangement.spacedBy(SpSpacing.Medium),
-        ) {
+        SpCarousel {
             items(row.games, key = { it.id }) { game ->
                 ForYouGameCard(
                     game = game,

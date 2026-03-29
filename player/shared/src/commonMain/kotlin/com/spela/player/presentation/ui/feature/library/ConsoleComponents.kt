@@ -25,6 +25,7 @@ import androidx.compose.foundation.focusGroup
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.hoverable
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.foundation.interaction.collectIsHoveredAsState
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import com.spela.player.presentation.ui.gamepad.spFocusRing
@@ -155,9 +156,11 @@ internal fun ConsoleCard(
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
     val isHovered by interactionSource.collectIsHoveredAsState()
+    val isFocused by interactionSource.collectIsFocusedAsState()
     val scale by animateFloatAsState(
         targetValue = when {
             isPressed -> 0.97f
+            isFocused -> 1.03f
             isHovered -> 1.02f
             else -> 1f
         },
@@ -168,9 +171,7 @@ internal fun ConsoleCard(
     Box(
         modifier = modifier
             .height(180.dp)
-            .spFocusRing(shape = shape, scaleOnFocus = true)
             .graphicsLayer { scaleX = scale; scaleY = scale }
-            .shadow(8.dp, shape)
             .clip(shape)
             .drawBehind {
                 val cx = size.width / 2f
@@ -191,6 +192,7 @@ internal fun ConsoleCard(
                 indication = null,
                 onClick = onClick,
             )
+            .spFocusRing(shape = shape)
             .focusable(interactionSource = interactionSource)
             .semantics {
                 contentDescription = "${console.name}, ${console.gameCount} games$biosDesc"

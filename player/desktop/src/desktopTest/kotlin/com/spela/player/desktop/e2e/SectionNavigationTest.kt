@@ -146,16 +146,18 @@ class SectionNavigationTest {
         setContent { harness.App() }
         advance(harness)
 
-        // Push some screens onto backstack
+        // Push some screens onto the active tab's stack
         harness.navigationViewModel.onIntent(NavigationIntent.NavigateTo(SpScreen.GameDetail("1")))
         harness.navigationViewModel.onIntent(NavigationIntent.NavigateTo(SpScreen.Console("nes")))
-        assertTrue(harness.navigationViewModel.state.value.backStack.isNotEmpty())
+        val homeStack = harness.navigationViewModel.state.value.tabStacks[com.spela.player.presentation.ui.components.BottomNavTab.HOME]!!
+        assertTrue(homeStack.size > 1)
 
-        // Section cycle should clear backstack
-        // Current screen Console("nes") maps to CONSOLES tab, so NextSection → Collections
+        // Section cycle switches tab but preserves stacks
         harness.navigationViewModel.onIntent(NavigationIntent.NextSection)
-        assertTrue(harness.navigationViewModel.state.value.backStack.isEmpty())
-        assertEquals(SpScreen.Collections, harness.navigationViewModel.state.value.currentScreen)
+        assertEquals(com.spela.player.presentation.ui.components.BottomNavTab.EXPLORE, harness.navigationViewModel.state.value.activeTab)
+        assertEquals(SpScreen.Explore, harness.navigationViewModel.state.value.currentScreen)
+        // Home stack is preserved
+        assertEquals(homeStack, harness.navigationViewModel.state.value.tabStacks[com.spela.player.presentation.ui.components.BottomNavTab.HOME])
     }
 
     @Test

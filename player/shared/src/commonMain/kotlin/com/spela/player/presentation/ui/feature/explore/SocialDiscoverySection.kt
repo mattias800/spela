@@ -27,6 +27,7 @@ import com.spela.player.domain.model.CommunityTopGame
 import com.spela.player.domain.model.CultClassicGame
 import com.spela.player.domain.model.RecentReviewItem
 import com.spela.player.domain.model.TrendingGame
+import com.spela.player.presentation.ui.components.SpCarousel
 import com.spela.player.presentation.ui.components.SpShimmer
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
@@ -40,10 +41,8 @@ fun TrendingSection(
     onGameSelected: (gameId: String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    LazyRow(
+    SpCarousel(
         modifier = modifier.testTag("trending_row"),
-        contentPadding = PaddingValues(horizontal = SpSpacing.ScreenHorizontal),
-        horizontalArrangement = Arrangement.spacedBy(SpSpacing.Medium),
     ) {
         items(games, key = { it.game.id }) { item ->
             Column(
@@ -74,10 +73,8 @@ fun CommunityTopSection(
     onGameSelected: (gameId: String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    LazyRow(
+    SpCarousel(
         modifier = modifier.testTag("community_top_row"),
-        contentPadding = PaddingValues(horizontal = SpSpacing.ScreenHorizontal),
-        horizontalArrangement = Arrangement.spacedBy(SpSpacing.Medium),
     ) {
         items(games, key = { it.game.id }) { item ->
             Column(
@@ -113,10 +110,8 @@ fun CultClassicsSection(
     onGameSelected: (gameId: String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    LazyRow(
+    SpCarousel(
         modifier = modifier.testTag("cult_classics_row"),
-        contentPadding = PaddingValues(horizontal = SpSpacing.ScreenHorizontal),
-        horizontalArrangement = Arrangement.spacedBy(SpSpacing.Medium),
     ) {
         items(games, key = { it.game.id }) { item ->
             Column(
@@ -149,10 +144,8 @@ fun RecentlyReviewedSection(
     onGameSelected: (gameId: String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    LazyRow(
+    SpCarousel(
         modifier = modifier.testTag("recently_reviewed_row"),
-        contentPadding = PaddingValues(horizontal = SpSpacing.ScreenHorizontal),
-        horizontalArrangement = Arrangement.spacedBy(SpSpacing.Medium),
     ) {
         items(reviews, key = { "${it.game.id}_${it.reviewerName}" }) { item ->
             Column(
@@ -207,10 +200,8 @@ fun ActiveNowSection(
     onGameSelected: (gameId: String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    LazyRow(
+    SpCarousel(
         modifier = modifier.testTag("active_now_row"),
-        contentPadding = PaddingValues(horizontal = SpSpacing.ScreenHorizontal),
-        horizontalArrangement = Arrangement.spacedBy(SpSpacing.Medium),
     ) {
         items(games, key = { it.game.id }) { item ->
             Column(

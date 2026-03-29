@@ -1,6 +1,5 @@
 package com.spela.player.presentation.ui.feature.home
 
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -10,7 +9,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Star
@@ -28,6 +26,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.spela.player.domain.model.TopRatedGame
 import com.spela.player.presentation.ui.components.SpAvailabilityGameCard
+import com.spela.player.presentation.ui.components.SpCarousel
 import com.spela.player.presentation.ui.components.SpCard
 import com.spela.player.presentation.ui.components.SpCoverArt
 import com.spela.player.presentation.ui.theme.SpColor
@@ -40,9 +39,8 @@ internal fun TopRatedRow(
     onGameSelected: (String) -> Unit,
     contentPadding: PaddingValues = PaddingValues(horizontal = SpSpacing.ScreenHorizontal),
 ) {
-    LazyRow(
+    SpCarousel(
         contentPadding = contentPadding,
-        horizontalArrangement = Arrangement.spacedBy(SpSpacing.Medium),
     ) {
         items(games, key = { it.rank }) { game ->
             TopRatedCard(
