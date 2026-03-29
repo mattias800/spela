@@ -14,7 +14,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
@@ -37,6 +36,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import com.spela.player.domain.model.SharedSaveState
+import com.spela.player.presentation.ui.components.SpCarousel
 import com.spela.player.presentation.ui.components.ScreenshotLightbox
 import com.spela.player.presentation.ui.components.social.formatRelativeTime
 import com.spela.player.presentation.ui.components.SpButton
@@ -60,9 +60,8 @@ fun ScreenshotsSection(screenshots: List<String>) {
         icon = Icons.Filled.CameraAlt,
         edgeToEdgeContent = true,
     ) {
-    LazyRow(
+    SpCarousel(
         contentPadding = PaddingValues(horizontal = SpSpacing.Default),
-        horizontalArrangement = Arrangement.spacedBy(SpSpacing.Medium),
     ) {
         items(screenshots.size, key = { "${it}_${screenshots[it]}" }) { index ->
             SpInnerCard(

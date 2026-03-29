@@ -16,7 +16,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
@@ -39,6 +38,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import coil3.compose.SubcomposeAsyncImage
 import com.spela.player.presentation.state.SaveSlotInfo
+import com.spela.player.presentation.ui.components.SpCarousel
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.ui.theme.SpTypography
@@ -92,7 +92,7 @@ fun SecondarySaveSlotsPage(
         )
 
         // Horizontal scrollable row of slot cards
-        LazyRow(
+        SpCarousel(
             contentPadding = PaddingValues(horizontal = SpSpacing.Medium),
             horizontalArrangement = Arrangement.spacedBy(SpSpacing.Small),
         ) {

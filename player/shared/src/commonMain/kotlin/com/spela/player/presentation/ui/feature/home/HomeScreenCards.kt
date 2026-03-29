@@ -1,7 +1,6 @@
 package com.spela.player.presentation.ui.feature.home
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -11,7 +10,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -30,6 +28,7 @@ import androidx.compose.ui.unit.dp
 import com.spela.player.domain.model.Game
 import com.spela.player.domain.model.NetplaySession
 import com.spela.player.domain.model.NetplaySessionStatus
+import com.spela.player.presentation.ui.components.SpCarousel
 import com.spela.player.presentation.ui.components.SpCard
 import com.spela.player.presentation.ui.components.SpCoverArt
 import com.spela.player.presentation.ui.feature.library.MetadataBadge
@@ -47,9 +46,8 @@ internal fun ContinuePlayingRow(
     onGameSelected: (String) -> Unit,
     contentPadding: PaddingValues = PaddingValues(horizontal = SpSpacing.ScreenHorizontal),
 ) {
-    LazyRow(
+    SpCarousel(
         contentPadding = contentPadding,
-        horizontalArrangement = Arrangement.spacedBy(SpSpacing.Medium),
     ) {
         items(games, key = { "continue_${it.id}" }) { game ->
             ContinuePlayingCard(
@@ -91,10 +89,7 @@ internal fun GameCarouselRow(
     onGameSelected: (String) -> Unit,
     keyPrefix: String = "carousel",
 ) {
-    LazyRow(
-        contentPadding = PaddingValues(horizontal = SpSpacing.ScreenHorizontal),
-        horizontalArrangement = Arrangement.spacedBy(SpSpacing.Medium),
-    ) {
+    SpCarousel {
         items(games, key = { "${keyPrefix}_${it.id}" }) { game ->
             GameCoverCard(
                 game = game,

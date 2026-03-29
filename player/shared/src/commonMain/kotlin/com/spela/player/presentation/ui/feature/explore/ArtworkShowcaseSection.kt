@@ -31,6 +31,7 @@ import androidx.compose.ui.unit.dp
 import coil3.compose.SubcomposeAsyncImage
 import com.spela.player.domain.model.ArtworkItem
 import com.spela.player.presentation.ui.components.SpCard
+import com.spela.player.presentation.ui.components.SpCarousel
 import com.spela.player.presentation.ui.components.SpShimmer
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
@@ -49,10 +50,8 @@ fun ArtworkShowcaseSection(
     Column(
         modifier = modifier.testTag("artwork_showcase"),
     ) {
-        LazyRow(
+        SpCarousel(
             modifier = Modifier.testTag("artwork_showcase_row"),
-            contentPadding = PaddingValues(horizontal = SpSpacing.ScreenHorizontal),
-            horizontalArrangement = Arrangement.spacedBy(SpSpacing.Medium),
         ) {
             items(artworks, key = { "${it.gameId}_${it.url}" }) { artwork ->
                 ArtworkCard(

@@ -9,6 +9,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import com.spela.player.domain.model.Keyword
+import com.spela.player.presentation.ui.components.SpCarousel
 import com.spela.player.presentation.ui.components.SpChip
 import com.spela.player.presentation.ui.components.SpShimmer
 import com.spela.player.presentation.ui.theme.SpSpacing
@@ -19,9 +20,8 @@ fun KeywordChips(
     onKeywordSelected: (keywordId: String, keywordName: String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    LazyRow(
+    SpCarousel(
         modifier = modifier.testTag("keyword_chips"),
-        contentPadding = PaddingValues(horizontal = SpSpacing.ScreenHorizontal),
         horizontalArrangement = Arrangement.spacedBy(SpSpacing.Small),
     ) {
         items(keywords, key = { it.id }) { keyword ->

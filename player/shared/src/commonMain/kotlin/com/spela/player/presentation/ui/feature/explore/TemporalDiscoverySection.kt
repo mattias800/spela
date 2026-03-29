@@ -21,6 +21,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.spela.player.domain.model.AnniversaryItem
 import com.spela.player.domain.model.Game
+import com.spela.player.presentation.ui.components.SpCarousel
 import com.spela.player.presentation.ui.components.SpShimmer
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
@@ -34,10 +35,8 @@ fun OnThisDaySection(
     onGameSelected: (gameId: String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    LazyRow(
+    SpCarousel(
         modifier = modifier.testTag("on_this_day_row"),
-        contentPadding = PaddingValues(horizontal = SpSpacing.ScreenHorizontal),
-        horizontalArrangement = Arrangement.spacedBy(SpSpacing.Medium),
     ) {
         items(games, key = { it.id }) { game ->
             Column(
@@ -75,10 +74,8 @@ fun AnniversariesSection(
     onGameSelected: (gameId: String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    LazyRow(
+    SpCarousel(
         modifier = modifier.testTag("anniversaries_row"),
-        contentPadding = PaddingValues(horizontal = SpSpacing.ScreenHorizontal),
-        horizontalArrangement = Arrangement.spacedBy(SpSpacing.Medium),
     ) {
         items(anniversaries, key = { "${it.game.id}_${it.yearsAgo}" }) { item ->
             Column(

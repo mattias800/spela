@@ -28,6 +28,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.spela.player.domain.model.MoodDefinition
+import com.spela.player.presentation.ui.components.SpCarousel
 import com.spela.player.presentation.ui.components.SpMoodTile
 import com.spela.player.presentation.ui.components.SpShimmer
 import com.spela.player.presentation.ui.theme.SpSpacing
@@ -40,10 +41,8 @@ fun MoodPicker(
     onMoodSelected: (moodId: String, moodName: String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    LazyRow(
+    SpCarousel(
         modifier = modifier.testTag("mood_picker"),
-        contentPadding = PaddingValues(horizontal = SpSpacing.ScreenHorizontal),
-        horizontalArrangement = Arrangement.spacedBy(SpSpacing.Medium),
     ) {
         itemsIndexed(moods, key = { _, item -> item.id }) { _, item ->
             MoodCard(

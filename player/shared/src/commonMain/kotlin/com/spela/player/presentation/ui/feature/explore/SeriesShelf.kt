@@ -29,6 +29,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.spela.player.domain.model.FeaturedSeries
 import com.spela.player.presentation.ui.components.SpCard
+import com.spela.player.presentation.ui.components.SpCarousel
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.ui.theme.SpTypography
@@ -53,10 +54,8 @@ fun SeriesShelf(
     onSeriesSelected: (seriesId: String, seriesName: String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    LazyRow(
+    SpCarousel(
         modifier = modifier.testTag("series_shelf"),
-        contentPadding = PaddingValues(horizontal = SpSpacing.ScreenHorizontal),
-        horizontalArrangement = Arrangement.spacedBy(SpSpacing.Medium),
     ) {
         itemsIndexed(series, key = { _, item -> item.id }) { index, item ->
             val gradientIndex = index % seriesGradients.size

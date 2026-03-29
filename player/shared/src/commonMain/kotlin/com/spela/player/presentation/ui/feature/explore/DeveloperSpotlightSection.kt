@@ -36,6 +36,7 @@ import androidx.compose.ui.unit.dp
 import com.spela.player.domain.model.DeveloperSpotlight
 import com.spela.player.domain.model.Game
 import com.spela.player.presentation.ui.components.SpCard
+import com.spela.player.presentation.ui.components.SpCarousel
 import com.spela.player.presentation.ui.components.SpCarouselGameCard
 import com.spela.player.presentation.ui.components.SpCoverArt
 import com.spela.player.presentation.ui.components.SpGameCardSkeleton
@@ -151,10 +152,8 @@ fun DeveloperSpotlightSection(
 
         // Top games row
         if (spotlight.topGames.isNotEmpty()) {
-            LazyRow(
+            SpCarousel(
                 modifier = Modifier.testTag("developer_spotlight_games"),
-                contentPadding = PaddingValues(horizontal = SpSpacing.ScreenHorizontal),
-                horizontalArrangement = Arrangement.spacedBy(SpSpacing.Medium),
             ) {
                 items(spotlight.topGames, key = { it.id }) { game ->
                     SpotlightGameCard(
