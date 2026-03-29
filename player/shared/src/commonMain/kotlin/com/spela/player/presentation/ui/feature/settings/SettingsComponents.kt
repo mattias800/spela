@@ -68,8 +68,8 @@ internal fun SettingsToggle(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .spFocusRing(shape = RoundedCornerShape(SpSpacing.RadiusLarge))
             .clickable(onClick = onToggle)
+            .spFocusRing(shape = RoundedCornerShape(SpSpacing.RadiusLarge))
             .focusable()
             .semantics {
                 contentDescription = title

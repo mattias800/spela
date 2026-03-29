@@ -1,9 +1,7 @@
 package com.spela.player.presentation.ui.gamepad
 
-import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
-import androidx.compose.foundation.border
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -16,6 +14,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
+import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.focus.FocusRequester
@@ -23,15 +22,20 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.drawOutline
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.isShiftPressed
 import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.dp
-import com.spela.player.presentation.ui.theme.SpColor
 import kotlinx.coroutines.delay
 
 /**
@@ -76,13 +80,13 @@ fun GamepadHandler(
     // restored by saveableStateHolder, so this lands near where the user was.
     if (focusResetKey != null) {
         LaunchedEffect(focusResetKey) {
-            delay(350)
-            focusManager.clearFocus(force = true)
+            // Wait for new content to compose
+            delay(100)
+            // Try to focus the first element. Retry up to 10 times for
+            // screens with async data loading (API calls may take 1-2s).
+            // Total window: 100ms initial + 10 × 200ms = 2.1 seconds.
             try {
                 focusRequester.requestFocus()
-                // Auto-enter content: find the first visible focusable child.
-                // On back navigation, scroll position is already restored so
-                // the first visible element is near where the user left off.
                 repeat(10) {
                     if (focusManager.moveFocus(FocusDirection.Next)) return@LaunchedEffect
                     delay(200)
@@ -204,8 +208,13 @@ fun GamepadHandler(
 
 /**
  * Adds a visible focus ring to any focusable element.
- * The element must already be focusable (via focusable() or clickable()).
- * Place this modifier BEFORE focusable()/clickable() in the chain.
+ *
+ * Uses [drawWithContent] to render the ring on top of the composable's content,
+ * so it works even after `.clip()`.
+ *
+ * **Placement:** Must be right before `.focusable()` in the modifier chain.
+ * Do NOT place it before `.clickable()` — the clickable modifier intercepts
+ * focus events and prevents [onFocusChanged] from firing.
  */
 fun Modifier.spFocusRing(
     shape: Shape = RoundedCornerShape(12.dp),
@@ -213,22 +222,31 @@ fun Modifier.spFocusRing(
 ): Modifier = composed {
     var isFocused by remember { mutableStateOf(false) }
 
-    val borderColor by animateColorAsState(
-        targetValue = if (isFocused) Color.White.copy(alpha = 0.85f) else Color.Transparent,
-        animationSpec = tween(150),
-    )
-
     val focusScale by animateFloatAsState(
         targetValue = if (isFocused && scaleOnFocus) 1.04f else 1f,
         animationSpec = tween(150),
     )
 
+    val density = LocalDensity.current
+    val layoutDirection = LocalLayoutDirection.current
+
     this
         .scale(focusScale)
-        .onFocusChanged { state -> isFocused = state.isFocused || state.hasFocus }
-        .border(
-            width = 2.dp,
-            color = borderColor,
-            shape = shape,
-        )
+        .onFocusChanged { isFocused = it.isFocused }
+        .drawWithContent {
+            drawContent()
+            if (isFocused) {
+                val strokeWidth = 3.dp.toPx()
+                val halfStroke = strokeWidth / 2f
+                val insetSize = Size(size.width - strokeWidth, size.height - strokeWidth)
+                val outline = shape.createOutline(insetSize, layoutDirection, density)
+                translate(left = halfStroke, top = halfStroke) {
+                    drawOutline(
+                        outline = outline,
+                        color = Color.White.copy(alpha = 0.85f),
+                        style = Stroke(width = strokeWidth),
+                    )
+                }
+            }
+        }
 }

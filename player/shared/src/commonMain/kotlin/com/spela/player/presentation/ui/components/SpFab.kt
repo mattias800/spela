@@ -39,11 +39,11 @@ fun SpFab(
     Box(
         modifier = modifier
             .size(size)
-            .spFocusRing(shape = CircleShape, scaleOnFocus = true)
             .shadow(8.dp, CircleShape)
             .clip(CircleShape)
             .background(Color.White.copy(alpha = 0.15f))
             .clickable(onClick = onClick)
+            .spFocusRing(shape = CircleShape, scaleOnFocus = true)
             .focusable()
             .semantics {
                 contentDescription = description

@@ -36,8 +36,8 @@ fun SpRadioOption(
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .spFocusRing(shape = RoundedCornerShape(SpSpacing.RadiusLarge))
             .clickable(onClick = onClick)
+            .spFocusRing(shape = RoundedCornerShape(SpSpacing.RadiusLarge))
             .focusable()
             .semantics {
                 contentDescription = title

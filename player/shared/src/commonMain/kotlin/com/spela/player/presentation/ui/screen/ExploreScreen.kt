@@ -809,11 +809,11 @@ private fun SearchBarEntryPoint(
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .spFocusRing(shape = shape)
             .clip(shape)
             .background(SpColor.SurfaceVariant)
             .border(1.dp, SpColor.Divider, shape)
             .clickable(onClick = onClick)
+            .spFocusRing(shape = shape)
             .focusable()
             .padding(horizontal = SpSpacing.Default, vertical = 14.dp)
             .semantics {

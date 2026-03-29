@@ -72,10 +72,10 @@ fun SpTopBar(
                 Box(
                     modifier = Modifier
                         .size(48.dp)
-                        .spFocusRing(shape = CircleShape)
                         .clip(CircleShape)
                         .background(if (onGradient) Color.Black.copy(alpha = 0.30f) else SpColor.SurfaceVariant)
                         .clickable(onClick = onBack)
+                        .spFocusRing(shape = CircleShape)
                         .focusable()
                         .semantics {
                             contentDescription = "Go back"

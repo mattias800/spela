@@ -194,9 +194,9 @@ private fun ControllerButton(
                 )
             }
             .size(width = buttonWidth, height = buttonHeight)
-            .spFocusRing(shape = shape)
             .clip(shape)
             .clickable(onClick = onClick)
+            .spFocusRing(shape = shape)
             .focusable()
             .semantics {
                 contentDescription = if (mappedKeyLabel != null) {

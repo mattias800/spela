@@ -80,13 +80,12 @@ fun EmulationActionButton(
         modifier = Modifier
             .sizeIn(minWidth = 48.dp, minHeight = 48.dp)
             .graphicsLayer { this.alpha = alpha }
-            .then(if (useFocusRing) Modifier.spFocusRing(shape = RoundedCornerShape(16.dp)) else Modifier)
             .clickable(
                 interactionSource = interactionSource,
                 indication = null,
                 onClick = onClick,
             )
-            .then(if (useFocusRing) Modifier.focusable() else Modifier)
+            .then(if (useFocusRing) Modifier.spFocusRing(shape = RoundedCornerShape(16.dp)).focusable() else Modifier)
             .semantics {
                 contentDescription = label
                 role = Role.Button
