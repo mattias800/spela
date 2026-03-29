@@ -1,6 +1,7 @@
 package com.spela.player.presentation.ui.components
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -69,6 +70,7 @@ fun SpGameCard(
     coverHeight: Dp? = null,
     variantCount: Int = 0,
     testTag: String? = null,
+    coverBadge: (@Composable () -> Unit)? = null,
 ) {
     // In carousel mode, compute width from the cover height and actual image ratio.
     // Start with a default ratio (0.75) and update when the image loads.
@@ -94,15 +96,22 @@ fun SpGameCard(
         onGradient = true,
     ) {
         Column {
-            SpCoverArt(
-                imageUrl = coverUrl,
-                contentDescription = "$title cover art",
-                modifier = if (coverHeight != null) Modifier.height(coverHeight) else Modifier.fillMaxWidth(),
-                aspectRatio = if (coverHeight != null) null else coverAspectRatio,
-                onAspectRatioResolved = if (coverHeight != null) { ratio ->
-                    resolvedAspectRatio = ratio
-                } else null,
-            )
+            Box {
+                SpCoverArt(
+                    imageUrl = coverUrl,
+                    contentDescription = "$title cover art",
+                    modifier = if (coverHeight != null) Modifier.height(coverHeight) else Modifier.fillMaxWidth(),
+                    aspectRatio = if (coverHeight != null) null else coverAspectRatio,
+                    onAspectRatioResolved = if (coverHeight != null) { ratio ->
+                        resolvedAspectRatio = ratio
+                    } else null,
+                )
+                if (coverBadge != null) {
+                    Box(modifier = Modifier.align(Alignment.BottomStart).padding(SpSpacing.XSmall)) {
+                        coverBadge()
+                    }
+                }
+            }
             Column(
                 modifier = Modifier.padding(SpSpacing.Small),
             ) {

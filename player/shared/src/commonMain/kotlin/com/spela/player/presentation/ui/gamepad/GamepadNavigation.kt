@@ -128,36 +128,22 @@ fun GamepadHandler(
 
                 when (event.key) {
                     Key.DirectionUp -> {
-                        if (!focusManager.moveFocus(FocusDirection.Up)) {
-                            // Directional move failed — focused element may be offscreen
-                            // after joystick scroll. Clear and re-enter content.
-                            focusManager.clearFocus(force = true)
-                            focusManager.moveFocus(FocusDirection.Next)
-                        }
+                        focusManager.moveFocus(FocusDirection.Up)
                         onGamepadInput?.invoke()
                         true
                     }
                     Key.DirectionDown -> {
-                        if (!focusManager.moveFocus(FocusDirection.Down)) {
-                            focusManager.clearFocus(force = true)
-                            focusManager.moveFocus(FocusDirection.Next)
-                        }
+                        focusManager.moveFocus(FocusDirection.Down)
                         onGamepadInput?.invoke()
                         true
                     }
                     Key.DirectionLeft -> {
-                        if (!focusManager.moveFocus(FocusDirection.Left)) {
-                            focusManager.clearFocus(force = true)
-                            focusManager.moveFocus(FocusDirection.Next)
-                        }
+                        focusManager.moveFocus(FocusDirection.Left)
                         onGamepadInput?.invoke()
                         true
                     }
                     Key.DirectionRight -> {
-                        if (!focusManager.moveFocus(FocusDirection.Right)) {
-                            focusManager.clearFocus(force = true)
-                            focusManager.moveFocus(FocusDirection.Next)
-                        }
+                        focusManager.moveFocus(FocusDirection.Right)
                         onGamepadInput?.invoke()
                         true
                     }
