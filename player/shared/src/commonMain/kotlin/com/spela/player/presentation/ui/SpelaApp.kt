@@ -422,10 +422,18 @@ fun SpelaApp(
 
                     // When navigating forward to a NEW screen, clear saved state so
                     // it starts fresh (e.g., scroll position at top).
-                    // Preserve state when going back OR switching tabs — tab screens
-                    // should show cached data immediately instead of a loading spinner.
-                    if (!navState.isGoingBack && !navState.isTabSwitch) {
-                        saveableStateHolder.removeState(navState.currentScreen.route)
+                    // Preserve state when going back OR switching tabs.
+                    //
+                    // IMPORTANT: Only remove state ONCE per screen change. Running
+                    // removeState on every recomposition continuously clears scroll
+                    // state while the user is on the screen.
+                    var lastClearedRoute by remember { mutableStateOf<String?>(null) }
+                    val currentRoute = navState.currentScreen.route
+                    if (currentRoute != lastClearedRoute) {
+                        if (!navState.isGoingBack && !navState.isTabSwitch) {
+                            saveableStateHolder.removeState(currentRoute)
+                        }
+                        lastClearedRoute = currentRoute
                     }
 
                     AnimatedContent(
