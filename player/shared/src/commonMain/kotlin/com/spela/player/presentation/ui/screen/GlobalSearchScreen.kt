@@ -30,8 +30,10 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import com.spela.player.presentation.ui.components.PlatformBackHandler
 import com.spela.player.presentation.ui.components.SpButton
-import com.spela.player.presentation.ui.components.SpScreen
+import com.spela.player.presentation.ui.components.SpButtonStyle
 import com.spela.player.presentation.ui.components.SpMainContentPadding
+import com.spela.player.presentation.ui.components.SpScreen
+import com.spela.player.presentation.ui.components.SpScreenTopSpacer
 import com.spela.player.presentation.ui.components.SpEmptyState
 import com.spela.player.presentation.ui.components.SpSnackbar
 import com.spela.player.presentation.ui.components.SpSnackbarData
@@ -77,7 +79,9 @@ fun GlobalSearchScreen(
 
     SpScreen(modifier = Modifier.testTag("global_search_screen")) {
         Column(modifier = Modifier.fillMaxSize()) {
-            if (!isGamepad) {
+            if (isGamepad) {
+                SpScreenTopSpacer()
+            } else {
                 SpTopBar(
                     title = "Search",
                     showBack = true,
@@ -114,18 +118,15 @@ fun GlobalSearchScreen(
                 } else null,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = SpSpacing.ScreenHorizontal)
                     .focusRequester(focusRequester)
                     .testTag("global_search_input"),
             )
-
-            Spacer(Modifier.height(SpSpacing.Small))
 
             // Advanced Filters button
             SpButton(
                 text = "Advanced Filters",
                 onClick = onAdvancedFiltersSelected,
-                style = com.spela.player.presentation.ui.components.SpButtonStyle.Ghost,
+                style = SpButtonStyle.Ghost,
                 leadingIcon = {
                     Icon(
                         imageVector = Icons.Filled.Tune,
@@ -135,12 +136,9 @@ fun GlobalSearchScreen(
                 },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = SpSpacing.ScreenHorizontal)
                     .heightIn(min = 48.dp)
                     .testTag("global_search_advanced_filters"),
             )
-
-            Spacer(Modifier.height(SpSpacing.Small))
 
             // Content area
             when {
