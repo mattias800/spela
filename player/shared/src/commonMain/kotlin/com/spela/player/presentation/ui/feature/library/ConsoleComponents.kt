@@ -276,24 +276,24 @@ internal fun ConsoleCard(
             )
         }
 
-        // Bottom-left: game count + manufacturer · year
-        Column(
+        // Bottom-left: game count · manufacturer · year
+        Row(
             modifier = Modifier
                 .align(Alignment.BottomStart)
-                .padding(SpSpacing.Default),
+                .padding(SpSpacing.Small),
         ) {
-            Text(
-                text = "${console.gameCount} ${if (console.gameCount == 1) "game" else "games"}",
-                style = SpTypography.BodySmall,
-                color = HeroTextSecondary,
-            )
-            if (consoleInfo != null) {
-                Text(
-                    text = "${consoleInfo.manufacturer} · ${consoleInfo.releaseYear}",
-                    style = SpTypography.LabelSmall,
-                    color = Color.White.copy(alpha = 0.50f),
-                )
+            val info = buildString {
+                append("${console.gameCount} ${if (console.gameCount == 1) "game" else "games"}")
+                if (consoleInfo != null) {
+                    append(" · ${consoleInfo.manufacturer} · ${consoleInfo.releaseYear}")
+                }
             }
+            Text(
+                text = info,
+                style = SpTypography.LabelSmall,
+                color = HeroTextSecondary,
+                maxLines = 1,
+            )
         }
     }
 }

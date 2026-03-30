@@ -111,8 +111,8 @@ internal fun LibraryConsolesTab(
                         item {
                             BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
                                 val columnsPerRow = when {
-                                    maxWidth >= 840.dp -> 3
-                                    maxWidth >= 480.dp -> 2
+                                    maxWidth >= 700.dp -> 3
+                                    maxWidth >= 400.dp -> 2
                                     else -> 1
                                 }
                                 ConsolesGrid(
