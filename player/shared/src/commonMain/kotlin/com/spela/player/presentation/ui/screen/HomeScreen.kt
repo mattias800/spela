@@ -63,6 +63,9 @@ import com.spela.player.presentation.ui.components.SpButton
 import com.spela.player.presentation.ui.components.SpButtonStyle
 import com.spela.player.presentation.ui.components.SpCard
 import com.spela.player.presentation.ui.components.SpEmptyStates
+import com.spela.player.presentation.ui.components.SpMainContentPadding
+import com.spela.player.presentation.ui.components.SpScreen
+import com.spela.player.presentation.ui.components.SpScrollableContent
 import com.spela.player.presentation.ui.components.SpSectionList
 import com.spela.player.presentation.ui.components.SpIconButton
 import com.spela.player.presentation.ui.components.SpLoadingIndicator
@@ -145,23 +148,7 @@ fun HomeScreen(
         SpColor.Primary.darken(0.70f),
         SpColor.Accent.darken(0.75f),
     )
-    Box(modifier = Modifier.fillMaxSize()) {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .drawBehind {
-                    val cx = size.width / 2f
-                    val cy = size.height / 2f
-                    val d = (size.width + size.height) * 0.25f
-                    drawRect(
-                        brush = Brush.linearGradient(
-                            colors = gradientColors,
-                            start = Offset(cx - d, cy - d),
-                            end = Offset(cx + d, cy + d),
-                        ),
-                    )
-                },
-        ) {
+    SpScreen(gradientColors = gradientColors) {
             if (!hasInitiallyLoaded) {
                 Box(
                     modifier = Modifier.fillMaxSize(),
@@ -195,6 +182,8 @@ fun HomeScreen(
                             SpEmptyStates.EmptyLibrary()
                         }
                     } else {
+                        SpScrollableContent {
+                        SpMainContentPadding {
                         SpSectionList(
                             modifier = Modifier.fillMaxSize(),
                         ) {
@@ -202,10 +191,7 @@ fun HomeScreen(
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .padding(
-                                        horizontal = SpSpacing.ScreenHorizontal,
-                                        vertical = SpSpacing.Default,
-                                    ),
+                                    .padding(vertical = SpSpacing.Default),
                                 verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.spacedBy(SpSpacing.Small),
                             ) {
@@ -471,11 +457,12 @@ fun HomeScreen(
 
                             // Bottom spacer
                             Spacer(Modifier.height(SpSpacing.XLarge))
-                        }
+                        } // SpSectionList
+                        } // SpMainContentPadding
+                        } // SpScrollableContent
                     }
                 }
             }
-        }
 
         // Error snackbar
         SpSnackbar(

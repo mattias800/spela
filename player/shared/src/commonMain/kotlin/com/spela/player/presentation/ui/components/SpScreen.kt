@@ -10,6 +10,10 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.ui.theme.spScreenBackground
 
@@ -26,12 +30,30 @@ import com.spela.player.presentation.ui.theme.spScreenBackground
 @Composable
 fun SpScreen(
     modifier: Modifier = Modifier,
+    gradientColors: List<Color>? = null,
     content: @Composable BoxScope.() -> Unit,
 ) {
+    val backgroundModifier = if (gradientColors != null) {
+        Modifier.drawBehind {
+            val cx = size.width / 2f
+            val cy = size.height / 2f
+            val d = (size.width + size.height) * 0.25f
+            drawRect(
+                brush = Brush.linearGradient(
+                    colors = gradientColors,
+                    start = Offset(cx - d, cy - d),
+                    end = Offset(cx + d, cy + d),
+                ),
+            )
+        }
+    } else {
+        Modifier.spScreenBackground()
+    }
+
     Box(
         modifier = modifier
             .fillMaxSize()
-            .spScreenBackground(),
+            .then(backgroundModifier),
         content = content,
     )
 }
