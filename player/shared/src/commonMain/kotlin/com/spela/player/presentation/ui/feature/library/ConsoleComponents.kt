@@ -70,6 +70,7 @@ import com.spela.player.presentation.ui.components.SpAreaSizedImage
 import com.spela.player.presentation.ui.components.SpButton
 import com.spela.player.presentation.ui.components.SpButtonStyle
 import com.spela.player.presentation.ui.components.SpShimmer
+import com.spela.player.presentation.ui.gamepad.autoFocus
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.ui.theme.SpTypography
@@ -105,6 +106,8 @@ internal fun ConsolesGrid(
 ) {
     val grouped = consoles.groupBy { it.generation }.toSortedMap()
 
+    var isFirstCard = true
+
     Column(
         modifier = Modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(SpSpacing.Medium),
@@ -125,11 +128,17 @@ internal fun ConsolesGrid(
                     horizontalArrangement = Arrangement.spacedBy(SpSpacing.Medium),
                 ) {
                     rowConsoles.forEach { console ->
+                        val cardModifier = if (isFirstCard) {
+                            isFirstCard = false
+                            Modifier.weight(1f).autoFocus()
+                        } else {
+                            Modifier.weight(1f)
+                        }
                         ConsoleCard(
                             console = console,
                             onClick = { onConsoleSelected(console.id) },
                             hasMissingBios = console.id in consolesWithMissingBios,
-                            modifier = Modifier.weight(1f),
+                            modifier = cardModifier,
                         )
                     }
                     repeat(columnsPerRow - rowConsoles.size) {
@@ -564,6 +573,7 @@ internal fun ConsoleHeroBanner(
                                 onClick = onConsoleSettings,
                                 style = SpButtonStyle.Outlined,
                                 onGradient = true,
+                                modifier = Modifier.autoFocus(),
                                 leadingIcon = {
                                     Icon(
                                         Icons.Filled.Settings,

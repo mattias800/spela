@@ -44,6 +44,7 @@ import com.spela.player.presentation.ui.components.SpChip
 import com.spela.player.presentation.ui.components.SpCoverArt
 import com.spela.player.presentation.ui.components.SpTextField
 import com.spela.player.presentation.ui.components.social.formatRelativeTime
+import com.spela.player.presentation.ui.gamepad.autoFocus
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.ui.theme.SpTypography
@@ -163,6 +164,7 @@ internal fun SharedSessionHeader(
                 onClick = onTakeTurn,
                 isLoading = isTakingTurn,
                 enabled = !isTakingTurn,
+                modifier = Modifier.autoFocus(),
                 leadingIcon = {
                     Icon(
                         imageVector = Icons.Filled.PlayArrow,

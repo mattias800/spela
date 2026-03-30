@@ -54,6 +54,7 @@ import com.spela.player.presentation.ui.components.SpTopBar
 import com.spela.player.presentation.ui.components.PlatformBackHandler
 import com.spela.player.presentation.ui.gamepad.InputMode
 import com.spela.player.presentation.ui.gamepad.LocalInputMode
+import com.spela.player.presentation.ui.gamepad.autoFocus
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.ui.theme.SpTypography
@@ -128,6 +129,7 @@ fun NetplayListScreen(
                                 SpSecondaryButton(
                                     text = "Join by Code",
                                     onClick = { showJoinDialog = true },
+                                    modifier = Modifier.autoFocus(),
                                 )
                             }
                             Spacer(Modifier.height(SpSpacing.Default))

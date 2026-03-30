@@ -57,6 +57,7 @@ import com.spela.player.presentation.ui.components.SpTopBar
 import com.spela.player.presentation.ui.components.PlatformBackHandler
 import com.spela.player.presentation.ui.gamepad.InputMode
 import com.spela.player.presentation.ui.gamepad.LocalInputMode
+import com.spela.player.presentation.ui.gamepad.autoFocus
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.ui.theme.SpTypography
@@ -143,6 +144,7 @@ fun SharedSessionsScreen(
                                         invitation = invitation,
                                         onAccept = { viewModel.onIntent(SharedSessionIntent.AcceptInvitation(invitation.id)) },
                                         onReject = { viewModel.onIntent(SharedSessionIntent.RejectInvitation(invitation.id)) },
+                                        modifier = if (invitation == state.invitations.firstOrNull()) Modifier.autoFocus() else Modifier,
                                     )
                                 }
                                 item {
@@ -166,6 +168,7 @@ fun SharedSessionsScreen(
                                     SharedSessionItem(
                                         sharedSession = sharedSession,
                                         onClick = { onSharedSessionSelected(sharedSession.id) },
+                                        modifier = if (state.invitations.isEmpty() && sharedSession == state.sharedSessions.firstOrNull()) Modifier.autoFocus() else Modifier,
                                     )
                                 }
                             }
@@ -206,10 +209,11 @@ fun SharedSessionsScreen(
 private fun SharedSessionItem(
     sharedSession: SharedSession,
     onClick: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     SpCard(
         onGradient = true,
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .padding(horizontal = SpSpacing.ScreenHorizontal, vertical = SpSpacing.XSmall)
             .semantics {
@@ -267,10 +271,11 @@ private fun InvitationItem(
     invitation: SharedSessionInvitation,
     onAccept: () -> Unit,
     onReject: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     SpCard(
         onGradient = true,
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .padding(horizontal = SpSpacing.ScreenHorizontal, vertical = SpSpacing.XSmall)
             .semantics {

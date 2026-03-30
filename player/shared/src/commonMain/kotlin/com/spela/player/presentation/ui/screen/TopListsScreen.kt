@@ -60,6 +60,7 @@ import com.spela.player.presentation.ui.feature.stats.RankBadge
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.gamepad.InputMode
 import com.spela.player.presentation.ui.gamepad.LocalInputMode
+import com.spela.player.presentation.ui.gamepad.autoFocus
 import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.ui.theme.SpTypography
 import com.spela.player.presentation.viewmodel.TopListsViewModel
@@ -116,7 +117,7 @@ fun TopListsScreen(
                             modifier = Modifier.size(14.dp),
                         )
                     },
-                    modifier = Modifier.testTag("tab_top_rated"),
+                    modifier = Modifier.autoFocus().testTag("tab_top_rated"),
                 )
                 SpChip(
                     text = "Longest",

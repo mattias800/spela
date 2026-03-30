@@ -47,6 +47,7 @@ import com.spela.player.presentation.ui.components.SpScreenTopSpacer
 import com.spela.player.presentation.ui.components.SpTopBar
 import com.spela.player.presentation.ui.gamepad.InputMode
 import com.spela.player.presentation.ui.gamepad.LocalInputMode
+import com.spela.player.presentation.ui.gamepad.autoFocus
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.ui.theme.SpTypography
@@ -120,6 +121,7 @@ fun DownloadsScreen(
                             onClick = { viewModel.onIntent(DownloadsIntent.ClearCache) },
                             isLoading = state.isClearingCache,
                             enabled = !state.isClearingCache && state.cacheSize > 0,
+                            modifier = Modifier.autoFocus(),
                         )
                     }
                 }

@@ -41,6 +41,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.spela.player.presentation.ui.components.SpEmptyState
 import com.spela.player.presentation.ui.components.SpLoadingIndicator
+import com.spela.player.presentation.ui.gamepad.autoFocus
 import com.spela.player.presentation.ui.gamepad.spFocusRing
 import com.spela.player.presentation.ui.components.SpSnackbar
 import com.spela.player.presentation.ui.components.SpSnackbarData
@@ -168,6 +169,7 @@ fun ExploreScreen(
                     SearchBarEntryPoint(
                         onClick = { onGlobalSearchSelected?.invoke() },
                         modifier = Modifier
+                            .autoFocus()
                             .testTag("explore_search_bar"),
                     )
 

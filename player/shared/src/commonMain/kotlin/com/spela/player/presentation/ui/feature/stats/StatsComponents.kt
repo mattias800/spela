@@ -66,10 +66,11 @@ internal fun MostPlayedGameItem(
     rank: Int,
     item: MostPlayedGame,
     onClick: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     SpCard(
         onGradient = true,
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .padding(horizontal = SpSpacing.ScreenHorizontal, vertical = SpSpacing.XSmall)
             .semantics {

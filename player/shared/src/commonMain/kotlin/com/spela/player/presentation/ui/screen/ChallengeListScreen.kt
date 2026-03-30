@@ -27,6 +27,7 @@ import com.spela.player.presentation.ui.components.challenge.SpChallengeCard
 import com.spela.player.presentation.ui.components.challenge.SpChallengeCardSkeleton
 import com.spela.player.presentation.ui.gamepad.InputMode
 import com.spela.player.presentation.ui.gamepad.LocalInputMode
+import com.spela.player.presentation.ui.gamepad.autoFocus
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.viewmodel.ChallengeListViewModel
@@ -104,6 +105,7 @@ fun ChallengeListScreen(
                             SpChallengeCard(
                                 challenge = challenge,
                                 onClick = { onChallengeSelected(challenge.id) },
+                                modifier = if (challenge == state.gameChallenges.firstOrNull()) Modifier.autoFocus() else Modifier,
                             )
                         }
                     }

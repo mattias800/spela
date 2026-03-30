@@ -55,6 +55,7 @@ import com.spela.player.presentation.ui.components.SpScreenTopSpacer
 import com.spela.player.presentation.ui.components.SpTopBar
 import com.spela.player.presentation.ui.gamepad.InputMode
 import com.spela.player.presentation.ui.gamepad.LocalInputMode
+import com.spela.player.presentation.ui.gamepad.autoFocus
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.ui.theme.SpTypography
@@ -286,7 +287,7 @@ fun NetplayLobbyScreen(
                                 SpButton(
                                     text = "Invite Player",
                                     onClick = { viewModel.onIntent(NetplayLobbyIntent.ShowInviteSheet) },
-                                    modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
+                                    modifier = Modifier.autoFocus().padding(horizontal = SpSpacing.ScreenHorizontal),
                                 )
                             }
                         }

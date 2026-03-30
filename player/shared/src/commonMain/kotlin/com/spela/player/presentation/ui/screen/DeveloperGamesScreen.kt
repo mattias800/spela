@@ -47,6 +47,7 @@ import com.spela.player.presentation.ui.components.SpTopBar
 import com.spela.player.presentation.ui.feature.library.GameGridItem
 import com.spela.player.presentation.ui.gamepad.InputMode
 import com.spela.player.presentation.ui.gamepad.LocalInputMode
+import com.spela.player.presentation.ui.gamepad.autoFocus
 import com.spela.player.presentation.ui.theme.LocalTitleBarInset
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
@@ -165,6 +166,7 @@ fun DeveloperGamesScreen(
                             icon = Icons.Filled.SwapVert,
                             contentDescription = "Sort games",
                             onClick = { showSortMenu = true },
+                            modifier = Modifier.autoFocus(),
                         )
                         DropdownMenu(
                             expanded = showSortMenu,

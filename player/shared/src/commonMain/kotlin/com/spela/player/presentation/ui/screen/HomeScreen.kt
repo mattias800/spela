@@ -66,6 +66,7 @@ import com.spela.player.presentation.ui.components.SpEmptyStates
 import com.spela.player.presentation.ui.components.SpMainContentPadding
 import com.spela.player.presentation.ui.components.SpScreen
 import com.spela.player.presentation.ui.components.SpScrollableContent
+import com.spela.player.presentation.ui.gamepad.autoFocus
 import com.spela.player.presentation.ui.components.SpSectionList
 import com.spela.player.presentation.ui.components.SpIconButton
 import com.spela.player.presentation.ui.components.SpLoadingIndicator
@@ -212,6 +213,7 @@ fun HomeScreen(
                                     icon = Icons.Filled.Search,
                                     contentDescription = "Search",
                                     onClick = onSearchSelected,
+                                    modifier = Modifier.autoFocus(),
                                 )
                                 if (hasActiveDownloads) {
                                     SpIconButton(

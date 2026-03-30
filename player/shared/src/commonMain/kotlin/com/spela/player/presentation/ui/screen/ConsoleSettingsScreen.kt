@@ -53,6 +53,7 @@ import com.spela.player.presentation.viewmodel.GamepadConfigIntent
 import com.spela.player.presentation.viewmodel.GamepadConfigViewModel
 import com.spela.player.presentation.ui.gamepad.InputMode
 import com.spela.player.presentation.ui.gamepad.LocalInputMode
+import com.spela.player.presentation.ui.gamepad.autoFocus
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.ui.theme.SpTypography
@@ -143,6 +144,7 @@ fun ConsoleSettingsScreen(
                                         SettingsIntent.SelectConsoleShader(consoleId, shader)
                                     )
                                 },
+                                modifier = if (index == 0) Modifier.autoFocus() else Modifier,
                             )
                             if (index < ShaderPreset.entries.size - 1) {
                                 SettingsDivider()

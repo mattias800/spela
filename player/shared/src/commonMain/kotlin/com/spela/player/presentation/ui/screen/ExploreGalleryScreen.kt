@@ -49,6 +49,7 @@ import com.spela.player.presentation.ui.components.SpScreenTopSpacer
 import com.spela.player.presentation.ui.components.SpTopBar
 import com.spela.player.presentation.ui.gamepad.InputMode
 import com.spela.player.presentation.ui.gamepad.LocalInputMode
+import com.spela.player.presentation.ui.gamepad.autoFocus
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.ui.theme.SpTypography
@@ -143,6 +144,7 @@ fun ExploreGalleryScreen(
                             ScreenshotGridCard(
                                 screenshot = screenshot,
                                 onClick = { onGameSelected(screenshot.gameId) },
+                                modifier = if (screenshot == state.screenshots.firstOrNull()) Modifier.autoFocus() else Modifier,
                             )
                         }
                     }
@@ -183,11 +185,12 @@ fun ExploreGalleryScreen(
 private fun ScreenshotGridCard(
     screenshot: ScreenshotItem,
     onClick: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     val shape = RoundedCornerShape(SpSpacing.CardCornerRadius)
 
     SpCard(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .testTag("gallery_screenshot_${screenshot.gameId}")
             .semantics {

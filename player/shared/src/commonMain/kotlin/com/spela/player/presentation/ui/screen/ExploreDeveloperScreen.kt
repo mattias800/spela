@@ -45,6 +45,7 @@ import com.spela.player.presentation.ui.feature.explore.DeveloperTopRatedRow
 import com.spela.player.presentation.ui.feature.explore.DeveloperUserStatsCard
 import com.spela.player.presentation.ui.gamepad.InputMode
 import com.spela.player.presentation.ui.gamepad.LocalInputMode
+import com.spela.player.presentation.ui.gamepad.autoFocus
 import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.viewmodel.ExploreViewModel
 
@@ -105,6 +106,7 @@ fun ExploreDeveloperScreen(
                         DeveloperHeroBanner(
                             detail = detail,
                             modifier = Modifier
+                                .autoFocus()
                                 .layout { measurable, constraints ->
                                     val extraWidth = (horizontalPadding * 2).roundToPx()
                                     val newConstraints = constraints.copy(
