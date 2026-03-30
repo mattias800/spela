@@ -47,12 +47,15 @@ import com.spela.player.presentation.ui.components.SpPlayHeatmap
 import com.spela.player.presentation.ui.components.SpSectionList
 import com.spela.player.presentation.ui.components.SpTitledSection
 import com.spela.player.presentation.ui.components.SpWideGameCard
+import com.spela.player.presentation.ui.components.SpScreen
+import com.spela.player.presentation.ui.components.SpScreenTopSpacer
 import com.spela.player.presentation.ui.components.SpTopBar
 import com.spela.player.presentation.ui.components.PlatformBackHandler
+import com.spela.player.presentation.ui.gamepad.InputMode
+import com.spela.player.presentation.ui.gamepad.LocalInputMode
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.ui.theme.SpTypography
-import com.spela.player.presentation.ui.theme.spScreenBackground
 import com.spela.player.presentation.viewmodel.SocialViewModel
 import com.spela.player.util.formatPlayTime
 
@@ -116,17 +119,22 @@ fun UserProfileScreen(
         )
     }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .spScreenBackground()
-            .testTag("user_profile_screen"),
-    ) {
-        SpTopBar(
-            title = state.publicProfile?.username ?: "Profile",
-            showBack = true,
-            onBack = onBack,
-        )
+    val isGamepad = LocalInputMode.current == InputMode.GAMEPAD
+
+    SpScreen(modifier = Modifier.testTag("user_profile_screen")) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize(),
+        ) {
+            if (isGamepad) {
+                SpScreenTopSpacer()
+            } else {
+                SpTopBar(
+                    title = state.publicProfile?.username ?: "Profile",
+                    showBack = true,
+                    onBack = onBack,
+                )
+            }
 
         when {
             state.isLoadingProfile -> {
@@ -138,7 +146,7 @@ fun UserProfileScreen(
                 }
             }
             state.publicProfile != null -> {
-                val profile = state.publicProfile ?: return
+                val profile = state.publicProfile!!
                 ProfileContent(
                     profile = profile,
                     heatmapData = state.heatmapData,
@@ -160,6 +168,7 @@ fun UserProfileScreen(
                     )
                 }
             }
+        }
         }
     }
 }

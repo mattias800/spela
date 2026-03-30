@@ -42,11 +42,14 @@ import com.spela.player.presentation.ui.components.SpCoverArt
 import com.spela.player.presentation.ui.components.SpDownloadProgressBar
 import com.spela.player.presentation.ui.components.SpEmptyStates
 import com.spela.player.presentation.ui.components.SpProgressBar
+import com.spela.player.presentation.ui.components.SpScreen
+import com.spela.player.presentation.ui.components.SpScreenTopSpacer
 import com.spela.player.presentation.ui.components.SpTopBar
+import com.spela.player.presentation.ui.gamepad.InputMode
+import com.spela.player.presentation.ui.gamepad.LocalInputMode
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.ui.theme.SpTypography
-import com.spela.player.presentation.ui.theme.spScreenBackground
 import com.spela.player.util.formatBytes
 import com.spela.player.presentation.ui.components.PlatformBackHandler
 import com.spela.player.presentation.viewmodel.DownloadsIntent
@@ -66,14 +69,20 @@ fun DownloadsScreen(
         viewModel.onIntent(DownloadsIntent.LoadDownloads)
     }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .spScreenBackground(),
-    ) {
-        SpTopBar(title = "Downloads", showBack = true, onBack = onBack)
+    val isGamepad = LocalInputMode.current == InputMode.GAMEPAD
 
-        LazyColumn(
+    SpScreen {
+        Column(
+            modifier = Modifier
+                .fillMaxSize(),
+        ) {
+            if (isGamepad) {
+                SpScreenTopSpacer()
+            } else {
+                SpTopBar(title = "Downloads", showBack = true, onBack = onBack)
+            }
+
+            LazyColumn(
             modifier = Modifier.fillMaxSize(),
             contentPadding = PaddingValues(
                 horizontal = SpSpacing.ScreenHorizontal,
@@ -162,6 +171,7 @@ fun DownloadsScreen(
                     SpEmptyStates.NoActiveDownloads(modifier = Modifier.fillMaxWidth())
                 }
             }
+        }
         }
     }
 }

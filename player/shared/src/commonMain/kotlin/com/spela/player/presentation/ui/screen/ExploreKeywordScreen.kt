@@ -1,6 +1,5 @@
 package com.spela.player.presentation.ui.screen
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -42,11 +41,14 @@ import com.spela.player.presentation.ui.components.SpGameCardSkeleton
 import com.spela.player.presentation.ui.components.SpSnackbar
 import com.spela.player.presentation.ui.components.SpSnackbarData
 import com.spela.player.presentation.ui.components.SpSnackbarType
+import com.spela.player.presentation.ui.components.SpScreen
+import com.spela.player.presentation.ui.components.SpScreenTopSpacer
 import com.spela.player.presentation.ui.components.SpTopBar
+import com.spela.player.presentation.ui.gamepad.InputMode
+import com.spela.player.presentation.ui.gamepad.LocalInputMode
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.ui.theme.SpTypography
-import com.spela.player.presentation.ui.theme.spScreenBackground
 import com.spela.player.presentation.viewmodel.ExploreViewModel
 import com.spela.player.util.formatRating
 
@@ -66,16 +68,22 @@ fun ExploreKeywordScreen(
         viewModel.loadKeywordGames(keywordId, keywordName)
     }
 
-    Box(modifier = Modifier.fillMaxSize().spScreenBackground().testTag("explore_keyword_screen")) {
+    val isGamepad = LocalInputMode.current == InputMode.GAMEPAD
+
+    SpScreen(modifier = Modifier.testTag("explore_keyword_screen")) {
         Column(
             modifier = Modifier
                 .fillMaxSize(),
         ) {
-            SpTopBar(
-                title = keywordName,
-                showBack = true,
-                onBack = onBack,
-            )
+            if (isGamepad) {
+                SpScreenTopSpacer()
+            } else {
+                SpTopBar(
+                    title = keywordName,
+                    showBack = true,
+                    onBack = onBack,
+                )
+            }
 
             when {
                 state.isLoading && state.games.isEmpty() -> {

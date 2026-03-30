@@ -35,14 +35,17 @@ import com.spela.player.presentation.ui.components.SpSnackbar
 import com.spela.player.presentation.ui.components.SpSnackbarData
 import com.spela.player.presentation.ui.components.SpSnackbarType
 import com.spela.player.presentation.ui.components.SpTitledSection
+import com.spela.player.presentation.ui.components.SpScreen
+import com.spela.player.presentation.ui.components.SpScreenTopSpacer
 import com.spela.player.presentation.ui.components.SpTopBar
 import com.spela.player.presentation.ui.feature.explore.DeveloperCompanyDescription
 import com.spela.player.presentation.ui.feature.explore.DeveloperDetailSkeleton
 import com.spela.player.presentation.ui.feature.explore.DeveloperHeroBanner
 import com.spela.player.presentation.ui.feature.explore.DeveloperTopRatedRow
 import com.spela.player.presentation.ui.feature.explore.DeveloperUserStatsCard
+import com.spela.player.presentation.ui.gamepad.InputMode
+import com.spela.player.presentation.ui.gamepad.LocalInputMode
 import com.spela.player.presentation.ui.theme.SpSpacing
-import com.spela.player.presentation.ui.theme.spScreenBackground
 import com.spela.player.presentation.viewmodel.ExploreViewModel
 
 @OptIn(ExperimentalLayoutApi::class)
@@ -69,18 +72,24 @@ fun ExploreDeveloperScreen(
         }
     }
 
-    Box(modifier = Modifier.fillMaxSize().spScreenBackground().testTag("developer_detail_screen")) {
+    val isGamepad = LocalInputMode.current == InputMode.GAMEPAD
+
+    SpScreen(modifier = Modifier.testTag("developer_detail_screen")) {
         Column(
             modifier = Modifier
                 .fillMaxSize(),
         ) {
             when {
                 state.isLoading && state.detail == null -> {
-                    SpTopBar(
-                        title = name,
-                        showBack = true,
-                        onBack = onBack,
-                    )
+                    if (isGamepad) {
+                        SpScreenTopSpacer()
+                    } else {
+                        SpTopBar(
+                            title = name,
+                            showBack = true,
+                            onBack = onBack,
+                        )
+                    }
                     DeveloperDetailSkeleton()
                 }
 
@@ -229,21 +238,29 @@ fun ExploreDeveloperScreen(
                         }
                     }
                     // Top bar overlaid on everything — floats over the banner
-                    SpTopBar(
-                        title = "",
-                        showBack = true,
-                        onBack = onBack,
-                        onGradient = true,
-                    )
+                    if (isGamepad) {
+                        SpScreenTopSpacer()
+                    } else {
+                        SpTopBar(
+                            title = "",
+                            showBack = true,
+                            onBack = onBack,
+                            onGradient = true,
+                        )
+                    }
                     } // Box
                 }
 
                 else -> {
-                    SpTopBar(
-                        title = name,
-                        showBack = true,
-                        onBack = onBack,
-                    )
+                    if (isGamepad) {
+                        SpScreenTopSpacer()
+                    } else {
+                        SpTopBar(
+                            title = name,
+                            showBack = true,
+                            onBack = onBack,
+                        )
+                    }
                     Box(
                         modifier = Modifier.fillMaxSize(),
                         contentAlignment = Alignment.Center,

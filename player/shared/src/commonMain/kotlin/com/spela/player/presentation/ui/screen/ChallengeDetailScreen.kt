@@ -48,15 +48,18 @@ import com.spela.player.presentation.ui.components.SpSecondaryButton
 import com.spela.player.presentation.ui.components.SpButtonStyle
 import com.spela.player.presentation.ui.components.SpEmptyStates
 import com.spela.player.presentation.ui.components.SpShimmer
+import com.spela.player.presentation.ui.components.SpScreen
+import com.spela.player.presentation.ui.components.SpScreenTopSpacer
 import com.spela.player.presentation.ui.components.SpTopBar
 import com.spela.player.presentation.ui.components.challenge.ChallengeLeaderboard
 import com.spela.player.presentation.ui.components.challenge.SpChallengeTypeChip
 import com.spela.player.presentation.ui.components.challenge.SpDifficultyChip
 import com.spela.player.presentation.ui.components.challenge.formatDuration
 import com.spela.player.presentation.ui.theme.SpColor
+import com.spela.player.presentation.ui.gamepad.InputMode
+import com.spela.player.presentation.ui.gamepad.LocalInputMode
 import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.ui.theme.SpTypography
-import com.spela.player.presentation.ui.theme.spScreenBackground
 import com.spela.player.presentation.viewmodel.ChallengeDetailViewModel
 
 @Composable
@@ -82,21 +85,27 @@ fun ChallengeDetailScreen(
 
     PlatformBackHandler(onBack = onBack)
 
-    Box(modifier = Modifier.fillMaxSize().spScreenBackground()) {
+    val isGamepad = LocalInputMode.current == InputMode.GAMEPAD
+
+    SpScreen {
         Column(
             modifier = Modifier
                 .fillMaxSize(),
         ) {
-            SpTopBar(
-                title = state.challenge?.name ?: "Challenge",
-                showBack = true,
-                onBack = onBack,
-            )
+            if (isGamepad) {
+                SpScreenTopSpacer()
+            } else {
+                SpTopBar(
+                    title = state.challenge?.name ?: "Challenge",
+                    showBack = true,
+                    onBack = onBack,
+                )
+            }
 
             if (state.isLoading && state.challenge == null) {
                 ChallengeDetailSkeleton()
             } else if (state.challenge != null) {
-                val challenge = state.challenge ?: return
+                val challenge = state.challenge!!
 
                 Column(
                     modifier = Modifier

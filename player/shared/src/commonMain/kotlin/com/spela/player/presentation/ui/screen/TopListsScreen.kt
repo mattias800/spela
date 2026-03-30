@@ -1,6 +1,5 @@
 package com.spela.player.presentation.ui.screen
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -53,13 +52,16 @@ import com.spela.player.presentation.ui.components.SpLoadingIndicator
 import com.spela.player.presentation.ui.components.SpSnackbar
 import com.spela.player.presentation.ui.components.SpSnackbarData
 import com.spela.player.presentation.ui.components.SpSnackbarType
+import com.spela.player.presentation.ui.components.SpScreen
+import com.spela.player.presentation.ui.components.SpScreenTopSpacer
 import com.spela.player.presentation.ui.components.SpTopBar
 import com.spela.player.presentation.ui.feature.gamedetail.formatTimeToBeat
 import com.spela.player.presentation.ui.feature.stats.RankBadge
 import com.spela.player.presentation.ui.theme.SpColor
+import com.spela.player.presentation.ui.gamepad.InputMode
+import com.spela.player.presentation.ui.gamepad.LocalInputMode
 import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.ui.theme.SpTypography
-import com.spela.player.presentation.ui.theme.spScreenBackground
 import com.spela.player.presentation.viewmodel.TopListsViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -77,16 +79,22 @@ fun TopListsScreen(
         viewModel.onIntent(TopListsIntent.LoadTopLists)
     }
 
-    Box(modifier = Modifier.fillMaxSize().spScreenBackground().testTag("top_lists_screen")) {
+    val isGamepad = LocalInputMode.current == InputMode.GAMEPAD
+
+    SpScreen(modifier = Modifier.testTag("top_lists_screen")) {
         Column(
             modifier = Modifier
                 .fillMaxSize(),
         ) {
-            SpTopBar(
-                title = "Top Lists",
-                showBack = true,
-                onBack = onBack,
-            )
+            if (isGamepad) {
+                SpScreenTopSpacer()
+            } else {
+                SpTopBar(
+                    title = "Top Lists",
+                    showBack = true,
+                    onBack = onBack,
+                )
+            }
 
             // Tab bar
             Row(

@@ -43,17 +43,20 @@ import com.spela.player.presentation.ui.components.PlatformBackHandler
 import com.spela.player.presentation.ui.components.SpEmptyStates
 import com.spela.player.presentation.ui.components.SpIconButton
 import com.spela.player.presentation.ui.components.SpLoadingIndicator
+import com.spela.player.presentation.ui.components.SpScreen
 import com.spela.player.presentation.ui.components.SpSearchField
 import com.spela.player.presentation.ui.components.SpSnackbar
 import com.spela.player.presentation.ui.components.SpSnackbarData
 import com.spela.player.presentation.ui.components.SpSnackbarType
+import com.spela.player.presentation.ui.components.SpScreenTopSpacer
 import com.spela.player.presentation.ui.components.SpTopBar
 import com.spela.player.presentation.ui.feature.library.GameGridItem
+import com.spela.player.presentation.ui.gamepad.InputMode
+import com.spela.player.presentation.ui.gamepad.LocalInputMode
 import com.spela.player.presentation.ui.theme.LocalTitleBarInset
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.ui.theme.SpTypography
-import com.spela.player.presentation.ui.theme.spScreenBackground
 import com.spela.player.presentation.viewmodel.GameListViewModel
 
 private data class SortOption(val key: String, val label: String)
@@ -121,12 +124,9 @@ fun ConsoleGamesScreen(
         }
     }
 
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .spScreenBackground()
-            .testTag("console_games_screen"),
-    ) {
+    val isGamepad = LocalInputMode.current == InputMode.GAMEPAD
+
+    SpScreen(modifier = Modifier.testTag("console_games_screen")) {
         PullToRefreshBox(
             isRefreshing = state.isLoading,
             onRefresh = { viewModel.onIntent(GameListIntent.SelectConsole(consoleId)) },
@@ -247,25 +247,29 @@ fun ConsoleGamesScreen(
         }
 
         // Top bar
-        SpTopBar(
-            title = "$consoleName Games",
-            showBack = true,
-            onBack = {
-                if (isSearchVisible) {
-                    viewModel.onIntent(GameListIntent.Search(""))
-                    isSearchVisible = false
-                } else {
-                    onBack()
-                }
-            },
-            actions = {
-                SpIconButton(
-                    icon = Icons.Filled.Search,
-                    contentDescription = "Search games",
-                    onClick = { isSearchVisible = !isSearchVisible },
-                )
-            },
-        )
+        if (isGamepad) {
+            SpScreenTopSpacer()
+        } else {
+            SpTopBar(
+                title = "$consoleName Games",
+                showBack = true,
+                onBack = {
+                    if (isSearchVisible) {
+                        viewModel.onIntent(GameListIntent.Search(""))
+                        isSearchVisible = false
+                    } else {
+                        onBack()
+                    }
+                },
+                actions = {
+                    SpIconButton(
+                        icon = Icons.Filled.Search,
+                        contentDescription = "Search games",
+                        onClick = { isSearchVisible = !isSearchVisible },
+                    )
+                },
+            )
+        }
 
         // Error snackbar
         SpSnackbar(

@@ -1,6 +1,5 @@
 package com.spela.player.presentation.ui.screen
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -32,11 +31,14 @@ import com.spela.player.presentation.ui.components.SpSectionHeader
 import com.spela.player.presentation.ui.components.SpSnackbar
 import com.spela.player.presentation.ui.components.SpSnackbarData
 import com.spela.player.presentation.ui.components.SpSnackbarType
+import com.spela.player.presentation.ui.components.SpScreen
+import com.spela.player.presentation.ui.components.SpScreenTopSpacer
 import com.spela.player.presentation.ui.components.SpTopBar
 import com.spela.player.presentation.ui.components.PlatformBackHandler
+import com.spela.player.presentation.ui.gamepad.InputMode
+import com.spela.player.presentation.ui.gamepad.LocalInputMode
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
-import com.spela.player.presentation.ui.theme.spScreenBackground
 import com.spela.player.presentation.viewmodel.SharedSessionDetailViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -56,16 +58,22 @@ fun SharedSessionDetailScreen(
         viewModel.onIntent(SharedSessionDetailIntent.LoadSaves(sharedSessionId))
     }
 
-    Box(modifier = Modifier.fillMaxSize().spScreenBackground()) {
+    val isGamepad = LocalInputMode.current == InputMode.GAMEPAD
+
+    SpScreen {
         Column(
             modifier = Modifier
                 .fillMaxSize(),
         ) {
-            SpTopBar(
-                title = state.sharedSession?.name ?: "Shared Session",
-                showBack = true,
-                onBack = onBack,
-            )
+            if (isGamepad) {
+                SpScreenTopSpacer()
+            } else {
+                SpTopBar(
+                    title = state.sharedSession?.name ?: "Shared Session",
+                    showBack = true,
+                    onBack = onBack,
+                )
+            }
 
             if (state.isLoadingSharedSession && state.sharedSession == null) {
                 Box(
@@ -75,7 +83,7 @@ fun SharedSessionDetailScreen(
                     SpLoadingIndicator(message = "Loading shared session...")
                 }
             } else if (state.sharedSession != null) {
-                val sharedSession = state.sharedSession ?: return
+                val sharedSession = state.sharedSession!!
                 val isRefreshing = state.isLoadingSharedSession || state.isLoadingSaves
 
                 PullToRefreshBox(

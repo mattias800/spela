@@ -42,6 +42,8 @@ import com.spela.player.presentation.ui.components.SpButton
 import com.spela.player.presentation.ui.components.SpButtonStyle
 import com.spela.player.presentation.ui.components.SpCard
 import com.spela.player.presentation.ui.components.SpRadioOption
+import com.spela.player.presentation.ui.components.SpScreen
+import com.spela.player.presentation.ui.components.SpScreenTopSpacer
 import com.spela.player.presentation.ui.components.SpTopBar
 import com.spela.player.presentation.ui.components.gamepad.GamepadConfigScreen
 import com.spela.player.presentation.ui.components.keymapping.KeyMappingScreen
@@ -49,6 +51,8 @@ import com.spela.player.presentation.ui.components.keymapping.platformKeyName
 import com.spela.player.presentation.ui.gamepad.spFocusRing
 import com.spela.player.presentation.viewmodel.GamepadConfigIntent
 import com.spela.player.presentation.viewmodel.GamepadConfigViewModel
+import com.spela.player.presentation.ui.gamepad.InputMode
+import com.spela.player.presentation.ui.gamepad.LocalInputMode
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.ui.theme.SpTypography
@@ -91,18 +95,24 @@ fun ConsoleSettingsScreen(
     val deviceOverrideShader = settingsState.deviceShaderOverrides[consoleId]
     val effectiveShader = deviceOverrideShader ?: currentShader
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(SpColor.Background),
-    ) {
-        SpTopBar(
-            title = "$consoleName Settings",
-            showBack = true,
-            onBack = onBack,
-        )
+    val isGamepad = LocalInputMode.current == InputMode.GAMEPAD
 
-        LazyColumn(
+    SpScreen {
+        Column(
+            modifier = Modifier
+                .fillMaxSize(),
+        ) {
+            if (isGamepad) {
+                SpScreenTopSpacer()
+            } else {
+                SpTopBar(
+                    title = "$consoleName Settings",
+                    showBack = true,
+                    onBack = onBack,
+                )
+            }
+
+            LazyColumn(
             modifier = Modifier.fillMaxSize().testTag("console-settings-list"),
             contentPadding = PaddingValues(
                 horizontal = SpSpacing.ScreenHorizontal,
@@ -358,6 +368,7 @@ fun ConsoleSettingsScreen(
             item {
                 Spacer(Modifier.height(SpSpacing.XXXLarge))
             }
+        }
         }
     }
 
