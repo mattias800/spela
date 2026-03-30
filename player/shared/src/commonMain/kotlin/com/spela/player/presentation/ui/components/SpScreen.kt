@@ -1,5 +1,6 @@
 package com.spela.player.presentation.ui.components
 
+import androidx.compose.foundation.focusGroup
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
@@ -74,6 +75,7 @@ fun SpScrollableContent(
     Column(
         modifier = modifier
             .fillMaxSize()
+            .focusGroup()
             .verticalScroll(rememberScrollState()),
         content = content,
     )
@@ -83,8 +85,7 @@ fun SpScrollableContent(
  * Adds consistent screen-level padding.
  *
  * - Horizontal: [SpSpacing.ScreenHorizontal] on both sides.
- * - Top: [SpSpacing.SectionIndicatorClearance] in gamepad mode
- *   (clears the pill), or 0 in touch mode (SpTopBar handles its own height).
+ * - Top gap: [SpSpacing.Large] (same as section spacing).
  *
  * Place inside [SpScrollableContent], after any edge-to-edge content.
  */

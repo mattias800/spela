@@ -124,4 +124,34 @@ class BackNavigationFocusTest {
         println("After d-pad on back: $count focused nodes")
         assert(count > 0) { "Expected focus after d-pad press on back-navigated screen, found $count" }
     }
+
+    @Test
+    fun homeScreen_navigateToGameDetail_focusAcquired() = runComposeUiTest {
+        val harness = createHarness()
+        setContent { harness.App() }
+        advance(harness)
+
+        // Enter gamepad mode
+        harness.gamepadPortManager.setInputMode(InputMode.GAMEPAD)
+        advance(harness)
+
+        // Navigate to game detail
+        harness.navigationViewModel.onIntent(NavigationIntent.NavigateTo(SpScreen.GameDetail("1")))
+        advance(harness)
+
+        // Check that SOMETHING has focus
+        val focusedNodes = onAllNodes(isFocused())
+        val count = focusedNodes.fetchSemanticsNodes().size
+        println("Game detail forward: $count focused nodes")
+
+        // If no focus, try d-pad
+        if (count == 0) {
+            println("No focus after navigation, trying d-pad...")
+            onRoot().performKeyInput { pressKey(androidx.compose.ui.input.key.Key.DirectionDown) }
+            advanceQuick(harness)
+            val afterDpad = onAllNodes(isFocused()).fetchSemanticsNodes().size
+            println("Game detail after d-pad: $afterDpad focused nodes")
+            assert(afterDpad > 0) { "Expected focus after d-pad on game detail, found $afterDpad" }
+        }
+    }
 }

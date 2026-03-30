@@ -79,19 +79,14 @@ fun GamepadHandler(
     //   content near the restored scroll position.
     if (focusResetKey != null) {
         LaunchedEffect(focusResetKey) {
-            delay(100)
-            // If a child already claimed focus (e.g. a text field via its own
-            // LaunchedEffect), don't steal it.
-            if (hasFocus && !isSelfFocused) return@LaunchedEffect
+            // Wait for AnimatedContent exit transition to complete (~300ms)
+            // so moveFocus(Next) doesn't land on the outgoing screen.
+            delay(500)
             try {
                 focusRequester.requestFocus()
-                if (!isGoingBack) {
-                    repeat(10) {
-                        // Stop if a child already claimed focus (e.g. text field)
-                        if (hasFocus && !isSelfFocused) return@LaunchedEffect
-                        if (focusManager.moveFocus(FocusDirection.Next)) return@LaunchedEffect
-                        delay(200)
-                    }
+                repeat(10) {
+                    if (focusManager.moveFocus(FocusDirection.Next)) return@LaunchedEffect
+                    delay(200)
                 }
             } catch (_: Exception) {}
         }
