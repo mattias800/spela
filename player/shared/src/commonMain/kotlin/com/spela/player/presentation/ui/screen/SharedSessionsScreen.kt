@@ -58,6 +58,10 @@ import com.spela.player.presentation.ui.components.PlatformBackHandler
 import com.spela.player.presentation.ui.gamepad.InputMode
 import com.spela.player.presentation.ui.gamepad.LocalInputMode
 import com.spela.player.presentation.ui.gamepad.autoFocus
+import com.spela.player.presentation.ui.gamepad.LocalFocusMemory
+import com.spela.player.presentation.ui.gamepad.rememberFocus
+import com.spela.player.presentation.ui.gamepad.rememberFocusMemoryState
+import androidx.compose.runtime.CompositionLocalProvider
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.ui.theme.SpTypography
@@ -123,6 +127,8 @@ fun SharedSessionsScreen(
                             )
                         }
                     } else {
+                        val focusMemory = rememberFocusMemoryState()
+                        CompositionLocalProvider(LocalFocusMemory provides focusMemory) {
                         LazyColumn(
                             modifier = Modifier.fillMaxSize(),
                             contentPadding = PaddingValues(vertical = SpSpacing.Default),
@@ -144,7 +150,8 @@ fun SharedSessionsScreen(
                                         invitation = invitation,
                                         onAccept = { viewModel.onIntent(SharedSessionIntent.AcceptInvitation(invitation.id)) },
                                         onReject = { viewModel.onIntent(SharedSessionIntent.RejectInvitation(invitation.id)) },
-                                        modifier = if (invitation == state.invitations.firstOrNull()) Modifier.autoFocus() else Modifier,
+                                        modifier = (if (invitation == state.invitations.firstOrNull()) Modifier.autoFocus() else Modifier)
+                                            .rememberFocus("invite_${invitation.id}"),
                                     )
                                 }
                                 item {
@@ -168,11 +175,13 @@ fun SharedSessionsScreen(
                                     SharedSessionItem(
                                         sharedSession = sharedSession,
                                         onClick = { onSharedSessionSelected(sharedSession.id) },
-                                        modifier = if (state.invitations.isEmpty() && sharedSession == state.sharedSessions.firstOrNull()) Modifier.autoFocus() else Modifier,
+                                        modifier = (if (state.invitations.isEmpty() && sharedSession == state.sharedSessions.firstOrNull()) Modifier.autoFocus() else Modifier)
+                                            .rememberFocus("shared_${sharedSession.id}"),
                                     )
                                 }
                             }
                         }
+                        } // CompositionLocalProvider
                     }
                 }
             }

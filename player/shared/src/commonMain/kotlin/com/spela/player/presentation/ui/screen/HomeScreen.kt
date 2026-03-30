@@ -67,6 +67,10 @@ import com.spela.player.presentation.ui.components.SpMainContentPadding
 import com.spela.player.presentation.ui.components.SpScreen
 import com.spela.player.presentation.ui.components.SpScrollableContent
 import com.spela.player.presentation.ui.gamepad.autoFocus
+import com.spela.player.presentation.ui.gamepad.LocalFocusMemory
+import com.spela.player.presentation.ui.gamepad.rememberFocus
+import com.spela.player.presentation.ui.gamepad.rememberFocusMemoryState
+import androidx.compose.runtime.CompositionLocalProvider
 import com.spela.player.presentation.ui.components.SpSectionList
 import com.spela.player.presentation.ui.components.SpIconButton
 import com.spela.player.presentation.ui.components.SpLoadingIndicator
@@ -183,8 +187,10 @@ fun HomeScreen(
                             SpEmptyStates.EmptyLibrary()
                         }
                     } else {
+                        val focusMemory = rememberFocusMemoryState()
                         SpScrollableContent {
                         SpMainContentPadding {
+                        CompositionLocalProvider(LocalFocusMemory provides focusMemory) {
                         SpSectionList(
                             modifier = Modifier.fillMaxSize(),
                         ) {
@@ -254,7 +260,7 @@ fun HomeScreen(
                                 SpTitledSection(
                                     title = "Netplay",
                                     icon = Icons.Filled.WifiTethering,
-
+                                    modifier = Modifier.rememberFocus("section_netplay"),
                                 ) {
                                     Column(
                                         verticalArrangement = Arrangement.spacedBy(SpSpacing.Small),
@@ -275,7 +281,7 @@ fun HomeScreen(
                                     title = "Continue Playing",
                                     icon = Icons.Filled.PlayArrow,
                                     edgeToEdgeContent = true,
-
+                                    modifier = Modifier.rememberFocus("section_continue_playing"),
                                 ) {
                                     ContinuePlayingRow(
                                         games = state.recentGames.take(6),
@@ -290,13 +296,13 @@ fun HomeScreen(
                                     title = "Play Later",
                                     icon = Icons.Filled.WatchLater,
                                     edgeToEdgeContent = true,
+                                    modifier = Modifier.rememberFocus("section_play_later"),
                                     titleTrailing = {
                                         SeeAllLink(
                                             label = "Play Later",
                                             onClick = onNavigateToPlayLater,
                                         )
                                     },
-
                                 ) {
                                     GameCarouselRow(
                                         games = state.playLaterGames.take(6),
@@ -312,13 +318,13 @@ fun HomeScreen(
                                     title = "Favorites",
                                     icon = Icons.Filled.Favorite,
                                     edgeToEdgeContent = true,
+                                    modifier = Modifier.rememberFocus("section_favorites"),
                                     titleTrailing = {
                                         SeeAllLink(
                                             label = "Favorites",
                                             onClick = onNavigateToFavorites,
                                         )
                                     },
-
                                 ) {
                                     GameCarouselRow(
                                         games = state.favoriteGames.take(6),
@@ -334,7 +340,7 @@ fun HomeScreen(
                                     title = "Recently Added",
                                     icon = Icons.Filled.NewReleases,
                                     edgeToEdgeContent = true,
-
+                                    modifier = Modifier.rememberFocus("section_recently_added"),
                                 ) {
                                     GameCarouselRow(
                                         games = state.recentlyAddedGames.take(6),
@@ -352,13 +358,13 @@ fun HomeScreen(
                                     title = "Recent Achievements",
                                     icon = Icons.Filled.EmojiEvents,
                                     edgeToEdgeContent = true,
+                                    modifier = Modifier.rememberFocus("section_recent_achievements"),
                                     titleTrailing = {
                                         SeeAllLink(
                                             label = "Recent Achievements",
                                             onClick = onNavigateToStats,
                                         )
                                     },
-
                                 ) {
                                     RecentAchievementsRow(achievements = state.recentAchievements)
                                 }
@@ -370,13 +376,13 @@ fun HomeScreen(
                                     title = "Trending Challenges",
                                     icon = Icons.Filled.Whatshot,
                                     edgeToEdgeContent = true,
+                                    modifier = Modifier.rememberFocus("section_trending_challenges"),
                                     titleTrailing = {
                                         SeeAllLink(
                                             label = "Trending Challenges",
                                             onClick = onNavigateToChallenges,
                                         )
                                     },
-
                                 ) {
                                     TrendingChallengesRow(
                                         challenges = state.trendingChallenges,
@@ -391,7 +397,7 @@ fun HomeScreen(
                                     title = "Top Rated",
                                     icon = Icons.Filled.Star,
                                     edgeToEdgeContent = true,
-
+                                    modifier = Modifier.rememberFocus("section_top_rated"),
                                 ) {
                                     TopRatedRow(
                                         games = state.topRatedGames,
@@ -408,7 +414,7 @@ fun HomeScreen(
                                     title = "Online Now",
                                     icon = Icons.Filled.People,
                                     edgeToEdgeContent = true,
-
+                                    modifier = Modifier.rememberFocus("section_online_now"),
                                 ) {
                                     OnlineUsersRow(
                                         users = socialState.onlineUsers,
@@ -422,13 +428,13 @@ fun HomeScreen(
                                 SpTitledSection(
                                     title = "Recent Activity",
                                     icon = Icons.Filled.History,
+                                    modifier = Modifier.rememberFocus("section_recent_activity"),
                                     titleTrailing = {
                                         SeeAllLink(
                                             label = "Recent Activity",
                                             onClick = onNavigateToActivity,
                                         )
                                     },
-
                                 ) {
                                     Column(
                                         verticalArrangement = Arrangement.spacedBy(SpSpacing.Small),
@@ -445,13 +451,13 @@ fun HomeScreen(
                                 SpTitledSection(
                                     title = "Your Stats",
                                     icon = Icons.Filled.BarChart,
+                                    modifier = Modifier.rememberFocus("section_your_stats"),
                                     titleTrailing = {
                                         SeeAllLink(
                                             label = "Your Stats",
                                             onClick = onNavigateToStats,
                                         )
                                     },
-
                                 ) {
                                     PersonalStatsCard(stats = state.personalStats!!)
                                 }
@@ -460,6 +466,7 @@ fun HomeScreen(
                             // Bottom spacer
                             Spacer(Modifier.height(SpSpacing.XLarge))
                         } // SpSectionList
+                        } // CompositionLocalProvider
                         } // SpMainContentPadding
                         } // SpScrollableContent
                     }

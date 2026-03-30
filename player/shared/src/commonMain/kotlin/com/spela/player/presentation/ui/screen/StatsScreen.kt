@@ -36,6 +36,10 @@ import com.spela.player.presentation.ui.components.PlatformBackHandler
 import com.spela.player.presentation.ui.gamepad.InputMode
 import com.spela.player.presentation.ui.gamepad.LocalInputMode
 import com.spela.player.presentation.ui.gamepad.autoFocus
+import com.spela.player.presentation.ui.gamepad.LocalFocusMemory
+import com.spela.player.presentation.ui.gamepad.rememberFocus
+import com.spela.player.presentation.ui.gamepad.rememberFocusMemoryState
+import androidx.compose.runtime.CompositionLocalProvider
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.viewmodel.StatsViewModel
@@ -100,6 +104,8 @@ fun StatsScreen(
                             )
                         }
                     } else {
+                        val focusMemory = rememberFocusMemoryState()
+                        CompositionLocalProvider(LocalFocusMemory provides focusMemory) {
                         LazyColumn(
                             modifier = Modifier.fillMaxSize(),
                             contentPadding = PaddingValues(vertical = SpSpacing.Default),
@@ -130,7 +136,8 @@ fun StatsScreen(
                                         rank = index + 1,
                                         item = item,
                                         onClick = { onGameSelected(item.game.id) },
-                                        modifier = if (index == 0) Modifier.autoFocus() else Modifier,
+                                        modifier = (if (index == 0) Modifier.autoFocus() else Modifier)
+                                            .rememberFocus("game_${item.game.id}"),
                                     )
                                 }
 
@@ -157,10 +164,12 @@ fun StatsScreen(
                                         rank = index + 1,
                                         item = item,
                                         onClick = { onUserSelected(item.userId) },
+                                        modifier = Modifier.rememberFocus("player_${item.userId}"),
                                     )
                                 }
                             }
                         }
+                        } // CompositionLocalProvider
                     }
                 }
             }

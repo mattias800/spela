@@ -28,6 +28,10 @@ import com.spela.player.presentation.ui.components.challenge.SpChallengeCardSkel
 import com.spela.player.presentation.ui.gamepad.InputMode
 import com.spela.player.presentation.ui.gamepad.LocalInputMode
 import com.spela.player.presentation.ui.gamepad.autoFocus
+import com.spela.player.presentation.ui.gamepad.LocalFocusMemory
+import com.spela.player.presentation.ui.gamepad.rememberFocus
+import com.spela.player.presentation.ui.gamepad.rememberFocusMemoryState
+import androidx.compose.runtime.CompositionLocalProvider
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.viewmodel.ChallengeListViewModel
@@ -66,6 +70,8 @@ fun ChallengeListScreen(
                 )
             }
 
+        val focusMemory = rememberFocusMemoryState()
+        CompositionLocalProvider(LocalFocusMemory provides focusMemory) {
         if (state.isLoadingGameChallenges && state.gameChallenges.isEmpty()) {
             // Skeleton grid while loading
             LazyVerticalGrid(
@@ -105,13 +111,15 @@ fun ChallengeListScreen(
                             SpChallengeCard(
                                 challenge = challenge,
                                 onClick = { onChallengeSelected(challenge.id) },
-                                modifier = if (challenge == state.gameChallenges.firstOrNull()) Modifier.autoFocus() else Modifier,
+                                modifier = (if (challenge == state.gameChallenges.firstOrNull()) Modifier.autoFocus() else Modifier)
+                                    .rememberFocus(challenge.id),
                             )
                         }
                     }
                 }
             }
         }
+        } // CompositionLocalProvider
         }
     }
 }

@@ -6,7 +6,11 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.border
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.interaction.collectIsFocusedAsState
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.onPreviewKeyEvent
+import androidx.compose.ui.input.key.type
 import com.spela.player.presentation.ui.gamepad.spFocusRing
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
@@ -46,8 +50,18 @@ fun SpButton(
     onGradient: Boolean = false,
 ) {
     val interactionSource = remember { MutableInteractionSource() }
-    val isFocused by interactionSource.collectIsFocusedAsState()
     val focusMods = Modifier
+        .onPreviewKeyEvent { event ->
+            if (event.type == KeyEventType.KeyDown && !isLoading && enabled) {
+                when (event.key) {
+                    Key.Enter, Key.Spacebar, Key.DirectionCenter -> {
+                        onClick()
+                        true
+                    }
+                    else -> false
+                }
+            } else false
+        }
         .spFocusRing(shape = shape)
         .focusable(interactionSource = interactionSource)
     val isIconOnly = text.isEmpty() && leadingIcon != null

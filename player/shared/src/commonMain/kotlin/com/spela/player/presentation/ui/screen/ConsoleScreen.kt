@@ -61,6 +61,10 @@ import com.spela.player.presentation.ui.feature.library.BiosWarningBanner
 import com.spela.player.presentation.ui.feature.library.ConsoleHeroBanner
 import com.spela.player.presentation.ui.feature.library.darken
 import com.spela.player.presentation.ui.feature.library.getConsoleGradient
+import androidx.compose.runtime.CompositionLocalProvider
+import com.spela.player.presentation.ui.gamepad.LocalFocusMemory
+import com.spela.player.presentation.ui.gamepad.rememberFocus
+import com.spela.player.presentation.ui.gamepad.rememberFocusMemoryState
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.viewmodel.ExploreViewModel
@@ -126,6 +130,8 @@ fun ConsoleScreen(
                         )
                     }
 
+                    val focusMemory = rememberFocusMemoryState()
+                    CompositionLocalProvider(LocalFocusMemory provides focusMemory) {
                     SpSectionList {
                     // Shimmer loading skeleton when switching consoles
                     if (state.isLoading && state.games.isEmpty()) {
@@ -138,6 +144,7 @@ fun ConsoleScreen(
                             title = "Continue Playing",
                             icon = Icons.Filled.PlayArrow,
                             edgeToEdgeContent = true,
+                            modifier = Modifier.rememberFocus("section_continue_playing"),
                         ) {
                             ContinuePlayingRow(
                                 games = continuePlayingGames,
@@ -166,6 +173,7 @@ fun ConsoleScreen(
                             title = "Top Rated",
                             icon = Icons.Filled.Star,
                             edgeToEdgeContent = true,
+                            modifier = Modifier.rememberFocus("section_top_rated"),
                         ) {
                             TopRatedRow(
                                 games = state.topRatedGames,
@@ -182,7 +190,10 @@ fun ConsoleScreen(
                     // All Games — inline grid at bottom for small libraries (≤15 games)
                     // For larger libraries, the "Browse games" button is in the hero banner
                     if (state.games.isNotEmpty() && state.games.size <= 15) {
-                        SpTitledSection(title = "All Games") {
+                        SpTitledSection(
+                            title = "All Games",
+                            modifier = Modifier.rememberFocus("section_all_games"),
+                        ) {
                             SpGameGrid(
                                 items = state.games.map { game ->
                                     {
@@ -218,6 +229,7 @@ fun ConsoleScreen(
                         }
                     }
                 } // SpSectionList
+                } // CompositionLocalProvider
                 } // SpMainContentPadding
                 } // SpScrollableContent
             }
