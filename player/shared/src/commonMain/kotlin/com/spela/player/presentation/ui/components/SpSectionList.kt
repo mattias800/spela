@@ -11,6 +11,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.spela.player.presentation.ui.gamepad.InputMode
 import com.spela.player.presentation.ui.gamepad.LocalInputMode
+import com.spela.player.presentation.ui.gamepad.autoFocus
 import com.spela.player.presentation.ui.theme.SpSpacing
 
 /**
@@ -43,7 +44,7 @@ fun SpSectionList(
     }
 
     LazyColumn(
-        modifier = modifier.focusGroup(),
+        modifier = modifier.autoFocus().focusGroup(),
         contentPadding = PaddingValues(
             start = SpSpacing.ScreenHorizontal,
             end = SpSpacing.ScreenHorizontal,

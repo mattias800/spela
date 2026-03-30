@@ -72,28 +72,23 @@ fun GamepadHandler(
     var hasFocus by remember { mutableStateOf(false) }
     var isSelfFocused by remember { mutableStateOf(false) }
 
-    // When focusResetKey changes (e.g. tab switch or screen navigation),
-    // auto-focus the first visible focusable element.
-    //
-    // Forward navigation: focus the first element on the new screen.
-    // Back navigation: focus the first VISIBLE element — scroll position is
-    // restored by saveableStateHolder, so this lands near where the user was.
+    // When focusResetKey changes, ensure the GamepadHandler Box has focus
+    // so d-pad key events are received.
+    // - Forward nav / tab switch: also enter the first focusable child.
+    // - Back nav: only focus the Box — the first d-pad press enters
+    //   content near the restored scroll position.
     if (focusResetKey != null) {
         LaunchedEffect(focusResetKey) {
-            // Wait for new content to compose
             delay(100)
-            // Try to focus the first element. Retry up to 10 times for
-            // screens with async data loading (API calls may take 1-2s).
-            // Total window: 100ms initial + 10 × 200ms = 2.1 seconds.
             try {
                 focusRequester.requestFocus()
-                repeat(10) {
-                    if (focusManager.moveFocus(FocusDirection.Next)) return@LaunchedEffect
-                    delay(200)
+                if (!isGoingBack) {
+                    repeat(10) {
+                        if (focusManager.moveFocus(FocusDirection.Next)) return@LaunchedEffect
+                        delay(200)
+                    }
                 }
-            } catch (_: Exception) {
-                // FocusRequester may not be attached yet during transitions
-            }
+            } catch (_: Exception) {}
         }
     }
 
