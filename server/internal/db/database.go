@@ -806,6 +806,7 @@ func SeedConsoles(db *gorm.DB) error {
 		{Name: "Nintendo GameCube", Abbreviation: "GC", Extensions: ".iso,.gcm,.gcz,.ciso,.rvz", DefaultCore: "dolphin", EmulatorJSCore: "", FolderName: "gc", ColorTheme: "#6f5fa6", CoverAspect: "1:1", Generation: 6, SaveStateSupport: true, Playable: true},
 		{Name: "Game Boy Advance", Abbreviation: "GBA", Extensions: ".gba", DefaultCore: "mgba", EmulatorJSCore: "mgba", FolderName: "gba", ColorTheme: "#2e17a3", CoverAspect: "1:1", Generation: 6, SaveStateSupport: true, Playable: true},
 		{Name: "Pokemon Mini", Abbreviation: "PKMN", Extensions: ".min", DefaultCore: "pokemini", EmulatorJSCore: "", FolderName: "pokemonmini", ColorTheme: "#ffcc00", CoverAspect: "1:1", Generation: 6, SaveStateSupport: true, Playable: true},
+		{Name: "Xbox", Abbreviation: "XBOX", Extensions: ".iso,.xbe", DefaultCore: "", EmulatorJSCore: "", FolderName: "xbox", ColorTheme: "#107c10", CoverAspect: "8:11", Generation: 6, SaveStateSupport: false, Playable: false},
 		// 7th Generation
 		{Name: "Nintendo Wii", Abbreviation: "WII", Extensions: ".iso,.wbfs,.gcz,.rvz,.ciso", DefaultCore: "", EmulatorJSCore: "", FolderName: "wii", ColorTheme: "#c0c0c0", CoverAspect: "8:11", Generation: 7, SaveStateSupport: false, Playable: false},
 		{Name: "PlayStation 3", Abbreviation: "PS3", Extensions: ".iso,.bin,.pkg", DefaultCore: "", EmulatorJSCore: "", FolderName: "ps3", ColorTheme: "#003087", CoverAspect: "8:11", Generation: 7, SaveStateSupport: false, Playable: false},

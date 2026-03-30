@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#2db52d"/>
+      <stop offset="100%" stop-color="#107c10"/>
+    </linearGradient>
+  </defs>
+  <circle cx="256" cy="256" r="256" fill="url(#bg)"/>
+  <!-- Top flare -->
+  <path d="M190 72c20-12 42-20 66-24 24 4 46 12 66 24-8 2-28 12-66 40C218 84 198 74 190 72z" fill="#fff"/>
+  <!-- Left leaf -->
+  <path d="M152 102c-40 40-64 96-64 152 0 56 16 108 48 150 0 0 4-8 12-22C172 340 220 264 256 212 208 156 168 118 152 102z" fill="#fff"/>
+  <!-- Right leaf -->
+  <path d="M360 102c-16 16-56 54-104 110 36 52 84 128 108 170 8 14 12 22 12 22 32-42 48-94 48-150 0-56-24-112-64-152z" fill="#fff"/>
+  <!-- Bottom -->
+  <path d="M148 404c28 32 62 56 100 68 4 0 5 0 8 0 3 0 4 0 8 0 38-12 72-36 100-68-4-4-8-12-16-24C312 324 272 256 256 228 240 256 200 324 164 380 156 392 152 400 148 404z" fill="#fff"/>
+</svg>

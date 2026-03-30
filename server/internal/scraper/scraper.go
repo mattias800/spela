@@ -210,5 +210,6 @@ var AbbreviationToLibRetro = map[string]string{
 	"MSX1":  "Microsoft - MSX",
 	"MSX2":  "Microsoft - MSX2",
 	"PS3":   "Sony - PlayStation 3",
+	"XBOX":  "Microsoft - Xbox",
 	"WII":   "Nintendo - Wii",
 }

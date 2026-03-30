@@ -67,6 +67,7 @@ var AbbreviationToIGDBPlatform = map[string]int{
 	"PS3":    9,
 	"PS4":    48,
 	"PS5":    167,
+	"XBOX":   11,
 	"X360":   12,
 	"XONE":   49,
 	"XSX":    169,
