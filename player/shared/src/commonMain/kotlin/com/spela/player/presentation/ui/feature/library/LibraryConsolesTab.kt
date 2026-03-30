@@ -23,6 +23,8 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.unit.dp
 import com.spela.player.presentation.intent.GameListIntent
 import com.spela.player.presentation.ui.components.SpEmptyStates
+import com.spela.player.presentation.ui.gamepad.InputMode
+import com.spela.player.presentation.ui.gamepad.LocalInputMode
 import com.spela.player.presentation.ui.theme.LocalTitleBarInset
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
@@ -100,12 +102,16 @@ internal fun LibraryConsolesTab(
                     LazyColumn(
                         state = listState,
                         modifier = Modifier.fillMaxSize().testTag("consoles-list"),
-                        contentPadding = PaddingValues(
-                            start = SpSpacing.ScreenHorizontal,
-                            end = SpSpacing.ScreenHorizontal,
-                            top = titleBarInset + SpSpacing.Default,
-                            bottom = SpSpacing.Default,
-                        ),
+                        contentPadding = run {
+                            val isGamepad = LocalInputMode.current == InputMode.GAMEPAD
+                            val topPad = if (isGamepad) SpSpacing.SectionIndicatorClearance else titleBarInset + SpSpacing.Default
+                            PaddingValues(
+                                start = SpSpacing.ScreenHorizontal,
+                                end = SpSpacing.ScreenHorizontal,
+                                top = topPad,
+                                bottom = SpSpacing.Default,
+                            )
+                        },
                         verticalArrangement = Arrangement.spacedBy(SpSpacing.Medium),
                     ) {
                         item {

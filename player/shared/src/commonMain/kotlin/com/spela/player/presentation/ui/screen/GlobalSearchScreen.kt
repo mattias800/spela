@@ -30,6 +30,8 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import com.spela.player.presentation.ui.components.PlatformBackHandler
 import com.spela.player.presentation.ui.components.SpButton
+import com.spela.player.presentation.ui.components.SpScreen
+import com.spela.player.presentation.ui.components.SpMainContentPadding
 import com.spela.player.presentation.ui.components.SpEmptyState
 import com.spela.player.presentation.ui.components.SpSnackbar
 import com.spela.player.presentation.ui.components.SpSnackbarData
@@ -43,7 +45,6 @@ import com.spela.player.presentation.ui.gamepad.InputMode
 import com.spela.player.presentation.ui.gamepad.LocalInputMode
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
-import com.spela.player.presentation.ui.theme.spScreenBackground
 import com.spela.player.presentation.viewmodel.GlobalSearchViewModel
 
 @Composable
@@ -74,26 +75,16 @@ fun GlobalSearchScreen(
         try { focusRequester.requestFocus() } catch (_: Exception) {}
     }
 
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .spScreenBackground()
-            .testTag("global_search_screen"),
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize(),
-        ) {
-            if (isGamepad) {
-                // Space for: pill top padding (16) + pill height (~40) + pill bottom padding (16)
-                Spacer(Modifier.height(72.dp))
-            } else {
+    SpScreen(modifier = Modifier.testTag("global_search_screen")) {
+        Column(modifier = Modifier.fillMaxSize()) {
+            if (!isGamepad) {
                 SpTopBar(
                     title = "Search",
                     showBack = true,
                     onBack = onBack,
                 )
             }
+            SpMainContentPadding {
 
             // Search input
             SpTextField(
@@ -232,7 +223,8 @@ fun GlobalSearchScreen(
                     )
                 }
             }
-        }
+        } // SpMainContentPadding
+        } // Column
 
         // Error snackbar
         SpSnackbar(

@@ -18,8 +18,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -83,7 +81,6 @@ import com.spela.player.presentation.ui.feature.home.RecentAchievementsRow
 import com.spela.player.presentation.ui.feature.home.TopRatedRow
 import com.spela.player.presentation.ui.feature.home.TrendingChallengesRow
 import com.spela.player.presentation.ui.feature.library.darken
-import com.spela.player.presentation.ui.theme.LocalTitleBarInset
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.ui.theme.SpTypography
@@ -148,8 +145,6 @@ fun HomeScreen(
         SpColor.Primary.darken(0.70f),
         SpColor.Accent.darken(0.75f),
     )
-    val titleBarInset = LocalTitleBarInset.current
-
     Box(modifier = Modifier.fillMaxSize()) {
         Box(
             modifier = Modifier
@@ -202,70 +197,65 @@ fun HomeScreen(
                     } else {
                         SpSectionList(
                             modifier = Modifier.fillMaxSize(),
-                            topPadding = titleBarInset,
                         ) {
                             // Scrollable heading with app icon
-                            item {
-                                Row(
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(
+                                        horizontal = SpSpacing.ScreenHorizontal,
+                                        vertical = SpSpacing.Default,
+                                    ),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(SpSpacing.Small),
+                            ) {
+                                Image(
+                                    painter = painterResource(Res.drawable.spela_icon),
+                                    contentDescription = null,
                                     modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(
-                                            horizontal = SpSpacing.ScreenHorizontal,
-                                            vertical = SpSpacing.Default,
-                                        ),
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(SpSpacing.Small),
-                                ) {
-                                    Image(
-                                        painter = painterResource(Res.drawable.spela_icon),
-                                        contentDescription = null,
-                                        modifier = Modifier
-                                            .size(36.dp)
-                                            .clip(CircleShape),
-                                    )
-                                    Text(
-                                        text = "Spela",
-                                        style = SpTypography.HeadlineMedium,
-                                        color = SpColor.OnBackground,
-                                        modifier = Modifier.weight(1f),
-                                    )
+                                        .size(36.dp)
+                                        .clip(CircleShape),
+                                )
+                                Text(
+                                    text = "Spela",
+                                    style = SpTypography.HeadlineMedium,
+                                    color = SpColor.OnBackground,
+                                    modifier = Modifier.weight(1f),
+                                )
+                                SpIconButton(
+                                    icon = Icons.Filled.Search,
+                                    contentDescription = "Search",
+                                    onClick = onSearchSelected,
+                                )
+                                if (hasActiveDownloads) {
                                     SpIconButton(
-                                        icon = Icons.Filled.Search,
-                                        contentDescription = "Search",
-                                        onClick = onSearchSelected,
+                                        icon = Icons.Filled.Download,
+                                        contentDescription = "Downloads",
+                                        onClick = onNavigateToDownloads,
+                                        badge = {
+                                            Box(
+                                                modifier = Modifier
+                                                    .size(SpSpacing.Small)
+                                                    .align(Alignment.TopEnd)
+                                                    .clip(CircleShape)
+                                                    .background(SpColor.Primary),
+                                            )
+                                        },
                                     )
-                                    if (hasActiveDownloads) {
-                                        SpIconButton(
-                                            icon = Icons.Filled.Download,
-                                            contentDescription = "Downloads",
-                                            onClick = onNavigateToDownloads,
-                                            badge = {
-                                                Box(
-                                                    modifier = Modifier
-                                                        .size(SpSpacing.Small)
-                                                        .align(Alignment.TopEnd)
-                                                        .clip(CircleShape)
-                                                        .background(SpColor.Primary),
-                                                )
-                                            },
-                                        )
-                                    }
                                 }
                             }
 
                             // Device name banner (only after settings loaded)
                             if (settingsViewModel != null) {
-                                item {
-                                    val settingsState by settingsViewModel.state.collectAsState()
-                                    // Only show when settings are loaded (userId non-empty means LoadSettings completed)
-                                    if (settingsState.userId.isNotEmpty()) {
-                                        DeviceNameBanner(
-                                            deviceName = settingsState.deviceName,
-                                            onSave = { name ->
-                                                settingsViewModel.onIntent(SettingsIntent.UpdateDeviceName(name))
-                                            },
-                                        )
-                                    }
+                                val settingsState by settingsViewModel.state.collectAsState()
+                                // Only show when settings are loaded (userId non-empty means LoadSettings completed)
+                                if (settingsState.userId.isNotEmpty()) {
+                                    DeviceNameBanner(
+                                        deviceName = settingsState.deviceName,
+                                        onSave = { name ->
+                                            settingsViewModel.onIntent(SettingsIntent.UpdateDeviceName(name))
+                                        },
+                                    )
                                 }
                             }
 
@@ -273,21 +263,19 @@ fun HomeScreen(
 
                             // Netplay section (time-sensitive, shown first when active)
                             if (activeNetplaySessions.isNotEmpty()) {
-                                item {
-                                    SpTitledSection(
-                                        title = "Netplay",
-                                        icon = Icons.Filled.WifiTethering,
-                                        
+                                SpTitledSection(
+                                    title = "Netplay",
+                                    icon = Icons.Filled.WifiTethering,
+
+                                ) {
+                                    Column(
+                                        verticalArrangement = Arrangement.spacedBy(SpSpacing.Small),
                                     ) {
-                                        Column(
-                                            verticalArrangement = Arrangement.spacedBy(SpSpacing.Small),
-                                        ) {
-                                            activeNetplaySessions.forEach { session ->
-                                                NetplaySessionCard(
-                                                    session = session,
-                                                    onClick = { onNetplaySessionSelected(session.id) },
-                                                )
-                                            }
+                                        activeNetplaySessions.forEach { session ->
+                                            NetplaySessionCard(
+                                                session = session,
+                                                onClick = { onNetplaySessionSelected(session.id) },
+                                            )
                                         }
                                     }
                                 }
@@ -295,84 +283,76 @@ fun HomeScreen(
 
                             // Continue Playing section
                             if (state.recentGames.isNotEmpty()) {
-                                item {
-                                    SpTitledSection(
-                                        title = "Continue Playing",
-                                        icon = Icons.Filled.PlayArrow,
-                                        edgeToEdgeContent = true,
-                                        
-                                    ) {
-                                        ContinuePlayingRow(
-                                            games = state.recentGames.take(6),
-                                            onGameSelected = onGameSelected,
-                                        )
-                                    }
+                                SpTitledSection(
+                                    title = "Continue Playing",
+                                    icon = Icons.Filled.PlayArrow,
+                                    edgeToEdgeContent = true,
+
+                                ) {
+                                    ContinuePlayingRow(
+                                        games = state.recentGames.take(6),
+                                        onGameSelected = onGameSelected,
+                                    )
                                 }
                             }
 
                             // Play Later section
                             if (state.playLaterGames.isNotEmpty()) {
-                                item {
-                                    SpTitledSection(
-                                        title = "Play Later",
-                                        icon = Icons.Filled.WatchLater,
-                                        edgeToEdgeContent = true,
-                                        titleTrailing = {
-                                            SeeAllLink(
-                                                label = "Play Later",
-                                                onClick = onNavigateToPlayLater,
-                                            )
-                                        },
-                                        
-                                    ) {
-                                        GameCarouselRow(
-                                            games = state.playLaterGames.take(6),
-                                            onGameSelected = onGameSelected,
-                                            keyPrefix = "playLater",
+                                SpTitledSection(
+                                    title = "Play Later",
+                                    icon = Icons.Filled.WatchLater,
+                                    edgeToEdgeContent = true,
+                                    titleTrailing = {
+                                        SeeAllLink(
+                                            label = "Play Later",
+                                            onClick = onNavigateToPlayLater,
                                         )
-                                    }
+                                    },
+
+                                ) {
+                                    GameCarouselRow(
+                                        games = state.playLaterGames.take(6),
+                                        onGameSelected = onGameSelected,
+                                        keyPrefix = "playLater",
+                                    )
                                 }
                             }
 
                             // Favorites section
                             if (state.favoriteGames.isNotEmpty()) {
-                                item {
-                                    SpTitledSection(
-                                        title = "Favorites",
-                                        icon = Icons.Filled.Favorite,
-                                        edgeToEdgeContent = true,
-                                        titleTrailing = {
-                                            SeeAllLink(
-                                                label = "Favorites",
-                                                onClick = onNavigateToFavorites,
-                                            )
-                                        },
-                                        
-                                    ) {
-                                        GameCarouselRow(
-                                            games = state.favoriteGames.take(6),
-                                            onGameSelected = onGameSelected,
-                                            keyPrefix = "favorites",
+                                SpTitledSection(
+                                    title = "Favorites",
+                                    icon = Icons.Filled.Favorite,
+                                    edgeToEdgeContent = true,
+                                    titleTrailing = {
+                                        SeeAllLink(
+                                            label = "Favorites",
+                                            onClick = onNavigateToFavorites,
                                         )
-                                    }
+                                    },
+
+                                ) {
+                                    GameCarouselRow(
+                                        games = state.favoriteGames.take(6),
+                                        onGameSelected = onGameSelected,
+                                        keyPrefix = "favorites",
+                                    )
                                 }
                             }
 
                             // Recently Added section
                             if (state.recentlyAddedGames.isNotEmpty()) {
-                                item {
-                                    SpTitledSection(
-                                        title = "Recently Added",
-                                        icon = Icons.Filled.NewReleases,
-                                        edgeToEdgeContent = true,
-                                        
-                                    ) {
-                                        GameCarouselRow(
-                                            games = state.recentlyAddedGames.take(6),
-                                            onGameSelected = onGameSelected,
-                                            keyPrefix = "recentlyAdded",
-                                        )
-                                    }
+                                SpTitledSection(
+                                    title = "Recently Added",
+                                    icon = Icons.Filled.NewReleases,
+                                    edgeToEdgeContent = true,
+
+                                ) {
+                                    GameCarouselRow(
+                                        games = state.recentlyAddedGames.take(6),
+                                        onGameSelected = onGameSelected,
+                                        keyPrefix = "recentlyAdded",
+                                    )
                                 }
                             }
 
@@ -380,61 +360,55 @@ fun HomeScreen(
 
                             // Recent Achievements section
                             if (state.recentAchievements.isNotEmpty()) {
-                                item {
-                                    SpTitledSection(
-                                        title = "Recent Achievements",
-                                        icon = Icons.Filled.EmojiEvents,
-                                        edgeToEdgeContent = true,
-                                        titleTrailing = {
-                                            SeeAllLink(
-                                                label = "Recent Achievements",
-                                                onClick = onNavigateToStats,
-                                            )
-                                        },
-                                        
-                                    ) {
-                                        RecentAchievementsRow(achievements = state.recentAchievements)
-                                    }
+                                SpTitledSection(
+                                    title = "Recent Achievements",
+                                    icon = Icons.Filled.EmojiEvents,
+                                    edgeToEdgeContent = true,
+                                    titleTrailing = {
+                                        SeeAllLink(
+                                            label = "Recent Achievements",
+                                            onClick = onNavigateToStats,
+                                        )
+                                    },
+
+                                ) {
+                                    RecentAchievementsRow(achievements = state.recentAchievements)
                                 }
                             }
 
                             // Trending Challenges section
                             if (state.trendingChallenges.isNotEmpty()) {
-                                item {
-                                    SpTitledSection(
-                                        title = "Trending Challenges",
-                                        icon = Icons.Filled.Whatshot,
-                                        edgeToEdgeContent = true,
-                                        titleTrailing = {
-                                            SeeAllLink(
-                                                label = "Trending Challenges",
-                                                onClick = onNavigateToChallenges,
-                                            )
-                                        },
-                                        
-                                    ) {
-                                        TrendingChallengesRow(
-                                            challenges = state.trendingChallenges,
-                                            onChallengeSelected = onChallengeSelected,
+                                SpTitledSection(
+                                    title = "Trending Challenges",
+                                    icon = Icons.Filled.Whatshot,
+                                    edgeToEdgeContent = true,
+                                    titleTrailing = {
+                                        SeeAllLink(
+                                            label = "Trending Challenges",
+                                            onClick = onNavigateToChallenges,
                                         )
-                                    }
+                                    },
+
+                                ) {
+                                    TrendingChallengesRow(
+                                        challenges = state.trendingChallenges,
+                                        onChallengeSelected = onChallengeSelected,
+                                    )
                                 }
                             }
 
                             // Top Rated section
                             if (state.topRatedGames.isNotEmpty()) {
-                                item {
-                                    SpTitledSection(
-                                        title = "Top Rated",
-                                        icon = Icons.Filled.Star,
-                                        edgeToEdgeContent = true,
-                                        
-                                    ) {
-                                        TopRatedRow(
-                                            games = state.topRatedGames,
-                                            onGameSelected = onGameSelected,
-                                        )
-                                    }
+                                SpTitledSection(
+                                    title = "Top Rated",
+                                    icon = Icons.Filled.Star,
+                                    edgeToEdgeContent = true,
+
+                                ) {
+                                    TopRatedRow(
+                                        games = state.topRatedGames,
+                                        onGameSelected = onGameSelected,
+                                    )
                                 }
                             }
 
@@ -442,41 +416,37 @@ fun HomeScreen(
 
                             // Online Now section
                             if (socialState.onlineUsers.isNotEmpty()) {
-                                item {
-                                    SpTitledSection(
-                                        title = "Online Now",
-                                        icon = Icons.Filled.People,
-                                        edgeToEdgeContent = true,
-                                        
-                                    ) {
-                                        OnlineUsersRow(
-                                            users = socialState.onlineUsers,
-                                            onUserSelected = onUserSelected,
-                                        )
-                                    }
+                                SpTitledSection(
+                                    title = "Online Now",
+                                    icon = Icons.Filled.People,
+                                    edgeToEdgeContent = true,
+
+                                ) {
+                                    OnlineUsersRow(
+                                        users = socialState.onlineUsers,
+                                        onUserSelected = onUserSelected,
+                                    )
                                 }
                             }
 
                             // Recent Activity section
                             if (socialState.activityEvents.isNotEmpty()) {
-                                item {
-                                    SpTitledSection(
-                                        title = "Recent Activity",
-                                        icon = Icons.Filled.History,
-                                        titleTrailing = {
-                                            SeeAllLink(
-                                                label = "Recent Activity",
-                                                onClick = onNavigateToActivity,
-                                            )
-                                        },
-                                        
+                                SpTitledSection(
+                                    title = "Recent Activity",
+                                    icon = Icons.Filled.History,
+                                    titleTrailing = {
+                                        SeeAllLink(
+                                            label = "Recent Activity",
+                                            onClick = onNavigateToActivity,
+                                        )
+                                    },
+
+                                ) {
+                                    Column(
+                                        verticalArrangement = Arrangement.spacedBy(SpSpacing.Small),
                                     ) {
-                                        Column(
-                                            verticalArrangement = Arrangement.spacedBy(SpSpacing.Small),
-                                        ) {
-                                            socialState.activityEvents.take(2).forEach { event ->
-                                                ActivityEventItem(event = event)
-                                            }
+                                        socialState.activityEvents.take(2).forEach { event ->
+                                            ActivityEventItem(event = event)
                                         }
                                     }
                                 }
@@ -484,25 +454,23 @@ fun HomeScreen(
 
                             // Personal Stats section
                             if (state.personalStats != null) {
-                                item {
-                                    SpTitledSection(
-                                        title = "Your Stats",
-                                        icon = Icons.Filled.BarChart,
-                                        titleTrailing = {
-                                            SeeAllLink(
-                                                label = "Your Stats",
-                                                onClick = onNavigateToStats,
-                                            )
-                                        },
-                                        
-                                    ) {
-                                        PersonalStatsCard(stats = state.personalStats!!)
-                                    }
+                                SpTitledSection(
+                                    title = "Your Stats",
+                                    icon = Icons.Filled.BarChart,
+                                    titleTrailing = {
+                                        SeeAllLink(
+                                            label = "Your Stats",
+                                            onClick = onNavigateToStats,
+                                        )
+                                    },
+
+                                ) {
+                                    PersonalStatsCard(stats = state.personalStats!!)
                                 }
                             }
 
                             // Bottom spacer
-                            item { Spacer(Modifier.height(SpSpacing.XLarge)) }
+                            Spacer(Modifier.height(SpSpacing.XLarge))
                         }
                     }
                 }
