@@ -1,10 +1,6 @@
 package com.spela.player.presentation.ui.screen
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.focusGroup
-import androidx.compose.ui.draw.drawBehind
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -42,6 +38,10 @@ import com.spela.player.presentation.ui.components.SpButton
 import com.spela.player.presentation.ui.components.SpButtonStyle
 import com.spela.player.presentation.ui.components.SpShimmer
 import com.spela.player.presentation.ui.components.SpEmptyStates
+import com.spela.player.presentation.ui.components.SpMainContentPadding
+import com.spela.player.presentation.ui.components.SpScreen
+import com.spela.player.presentation.ui.components.SpScreenTopSpacer
+import com.spela.player.presentation.ui.components.SpScrollableContent
 import com.spela.player.presentation.ui.components.SpSectionList
 import com.spela.player.presentation.ui.components.SpIconButton
 import com.spela.player.presentation.ui.components.SpLoadingIndicator
@@ -108,33 +108,16 @@ fun ConsoleScreen(
         listOf(SpColor.Background, SpColor.Background)
     }
 
-    Box(modifier = Modifier.fillMaxSize()) {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .focusGroup()
-                .drawBehind {
-                    val cx = size.width / 2f
-                    val cy = size.height / 2f
-                    val d = (size.width + size.height) * 0.25f
-                    drawRect(
-                        brush = Brush.linearGradient(
-                            colors = screenGradientColors,
-                            start = Offset(cx - d, cy - d),
-                            end = Offset(cx + d, cy + d),
-                        ),
-                    )
-                },
-        ) {
+    SpScreen(gradientColors = screenGradientColors) {
             PullToRefreshBox(
                 isRefreshing = state.isLoading,
                 onRefresh = { viewModel.onIntent(GameListIntent.SelectConsole(consoleId)) },
                 modifier = Modifier.fillMaxSize(),
             ) {
-                SpSectionList(
-                    modifier = Modifier.fillMaxSize(),
-                ) {
-                    // Console hero banner
+                SpScrollableContent {
+                    SpScreenTopSpacer()
+                    SpMainContentPadding {
+                    // Console hero banner — inside padding
                     if (console != null) {
                         ConsoleHeroBanner(
                             console = console,
@@ -143,6 +126,7 @@ fun ConsoleScreen(
                         )
                     }
 
+                    SpSectionList {
                     // Shimmer loading skeleton when switching consoles
                     if (state.isLoading && state.games.isEmpty()) {
                         ConsoleScreenSkeleton()
@@ -233,7 +217,9 @@ fun ConsoleScreen(
                             SpEmptyStates.NoGamesInConsole(consoleName = consoleName)
                         }
                     }
-                }
+                } // SpSectionList
+                } // SpMainContentPadding
+                } // SpScrollableContent
             }
 
             // Fixed top bar overlaid on top of scrollable content
@@ -261,7 +247,6 @@ fun ConsoleScreen(
                     )
                 },
             )
-        }
 
         // Error snackbar
         SpSnackbar(
@@ -276,15 +261,13 @@ fun ConsoleScreen(
             onDismiss = { viewModel.onIntent(GameListIntent.DismissError) },
             modifier = Modifier.align(Alignment.BottomCenter),
         )
-    } // outer Box
+    } // SpScreen
 }
 
 @Composable
 private fun ConsoleScreenSkeleton() {
     Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = SpSpacing.ScreenHorizontal),
+        modifier = Modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(SpSpacing.XLarge),
     ) {
         // Section title shimmer

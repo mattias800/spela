@@ -1,5 +1,6 @@
 package com.spela.player.presentation.ui.components
 
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
@@ -100,6 +101,7 @@ fun SpMainContentPadding(
                 end = SpSpacing.ScreenHorizontal,
                 top = SpSpacing.Large,
             ),
+        verticalArrangement = Arrangement.spacedBy(SpSpacing.Large),
         content = content,
     )
 }
