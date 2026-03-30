@@ -35,19 +35,16 @@ fun SpSectionList(
     topPadding: Dp = 0.dp,
     content: LazyListScope.() -> Unit,
 ) {
-    // In gamepad mode the SpTopBar is hidden, so reduce the top padding
-    // that was reserving space for it.
-    val effectiveTopPadding = if (LocalInputMode.current == InputMode.GAMEPAD) {
-        SpSpacing.Large
-    } else {
-        topPadding
-    }
+    val isGamepad = LocalInputMode.current == InputMode.GAMEPAD
+    // In gamepad mode: no top bar, no nav rail — go edge-to-edge.
+    val effectiveTopPadding = if (isGamepad) 0.dp else topPadding
+    val horizontalPadding = if (isGamepad) 0.dp else SpSpacing.ScreenHorizontal
 
     LazyColumn(
         modifier = modifier.autoFocus().focusGroup(),
         contentPadding = PaddingValues(
-            start = SpSpacing.ScreenHorizontal,
-            end = SpSpacing.ScreenHorizontal,
+            start = horizontalPadding,
+            end = horizontalPadding,
             top = effectiveTopPadding,
             bottom = SpSpacing.XLarge,
         ),

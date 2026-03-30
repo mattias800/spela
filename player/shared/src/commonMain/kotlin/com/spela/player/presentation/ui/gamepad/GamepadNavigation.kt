@@ -80,10 +80,15 @@ fun GamepadHandler(
     if (focusResetKey != null) {
         LaunchedEffect(focusResetKey) {
             delay(100)
+            // If a child already claimed focus (e.g. a text field via its own
+            // LaunchedEffect), don't steal it.
+            if (hasFocus && !isSelfFocused) return@LaunchedEffect
             try {
                 focusRequester.requestFocus()
                 if (!isGoingBack) {
                     repeat(10) {
+                        // Stop if a child already claimed focus (e.g. text field)
+                        if (hasFocus && !isSelfFocused) return@LaunchedEffect
                         if (focusManager.moveFocus(FocusDirection.Next)) return@LaunchedEffect
                         delay(200)
                     }

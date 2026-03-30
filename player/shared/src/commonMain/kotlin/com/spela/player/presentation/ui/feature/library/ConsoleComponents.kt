@@ -170,7 +170,7 @@ internal fun ConsoleCard(
 
     Box(
         modifier = modifier
-            .height(180.dp)
+            .height(120.dp)
             .graphicsLayer { scaleX = scale; scaleY = scale }
             .clip(shape)
             .drawBehind {
@@ -305,7 +305,7 @@ internal fun ConsoleCardSkeleton(
     val shape = RoundedCornerShape(SpSpacing.CardCornerRadius)
     Box(
         modifier = modifier
-            .height(180.dp)
+            .height(120.dp)
             .clip(shape)
             .background(SpColor.SurfaceVariant),
     ) {

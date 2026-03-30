@@ -163,18 +163,11 @@ fun ExploreScreen(
                     if (state.isLoadingFeatured || state.featuredGames.isNotEmpty()) {
                     item {
                         if (state.isLoadingFeatured && state.featuredGames.isEmpty()) {
-                            HeroCarouselSkeleton(
-                                modifier = Modifier.padding(
-                                    horizontal = SpSpacing.ScreenHorizontal,
-                                ),
-                            )
+                            HeroCarouselSkeleton()
                         } else if (state.featuredGames.isNotEmpty()) {
                             HeroCarousel(
                                 featuredGames = state.featuredGames,
                                 onGameSelected = onGameSelected,
-                                modifier = Modifier.padding(
-                                    horizontal = SpSpacing.ScreenHorizontal,
-                                ),
                             )
                         }
                     }
