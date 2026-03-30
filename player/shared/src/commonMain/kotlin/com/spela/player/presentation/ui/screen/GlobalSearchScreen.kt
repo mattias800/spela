@@ -143,6 +143,7 @@ fun GlobalSearchScreen(
                     )
                 },
                 modifier = Modifier
+                    .fillMaxWidth()
                     .padding(horizontal = SpSpacing.ScreenHorizontal)
                     .heightIn(min = 48.dp)
                     .testTag("global_search_advanced_filters"),

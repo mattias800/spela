@@ -28,6 +28,8 @@ import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.spela.player.presentation.ui.components.SpButton
+import com.spela.player.presentation.ui.components.SpButtonStyle
 import com.spela.player.presentation.ui.gamepad.spFocusRing
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
@@ -62,20 +64,11 @@ fun RecentSearchesSection(
                 color = SpColor.OnBackground,
                 modifier = Modifier.weight(1f),
             )
-            Text(
+            SpButton(
                 text = "Clear all",
-                style = SpTypography.LabelSmall,
-                color = SpColor.Primary,
-                modifier = Modifier
-                    .clip(RoundedCornerShape(SpSpacing.RadiusSmall))
-                    .clickable(onClick = onClearAll)
-                    .spFocusRing(shape = RoundedCornerShape(SpSpacing.RadiusSmall))
-                    .focusable()
-                    .padding(
-                        horizontal = SpSpacing.Small,
-                        vertical = SpSpacing.XSmall,
-                    )
-                    .testTag("recent_searches_clear_all"),
+                onClick = onClearAll,
+                style = SpButtonStyle.Ghost,
+                modifier = Modifier.testTag("recent_searches_clear_all"),
             )
         }
 
