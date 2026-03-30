@@ -28,6 +28,10 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.foundation.interaction.collectIsHoveredAsState
 import androidx.compose.foundation.interaction.collectIsPressedAsState
+import androidx.compose.runtime.CompositionLocalProvider
+import com.spela.player.presentation.ui.gamepad.LocalFocusMemory
+import com.spela.player.presentation.ui.gamepad.rememberFocus
+import com.spela.player.presentation.ui.gamepad.rememberFocusMemoryState
 import com.spela.player.presentation.ui.gamepad.spFocusRing
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
@@ -105,9 +109,11 @@ internal fun ConsolesGrid(
     columnsPerRow: Int = 2,
 ) {
     val grouped = consoles.groupBy { it.generation }.toSortedMap()
+    val focusMemory = rememberFocusMemoryState()
 
     var isFirstCard = true
 
+    CompositionLocalProvider(LocalFocusMemory provides focusMemory) {
     Column(
         modifier = Modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(SpSpacing.Medium),
@@ -130,9 +136,9 @@ internal fun ConsolesGrid(
                     rowConsoles.forEach { console ->
                         val cardModifier = if (isFirstCard) {
                             isFirstCard = false
-                            Modifier.weight(1f).autoFocus()
+                            Modifier.weight(1f).autoFocus().rememberFocus(console.id)
                         } else {
-                            Modifier.weight(1f)
+                            Modifier.weight(1f).rememberFocus(console.id)
                         }
                         ConsoleCard(
                             console = console,
@@ -148,6 +154,7 @@ internal fun ConsolesGrid(
             }
         }
     }
+    } // CompositionLocalProvider
 }
 
 @Composable

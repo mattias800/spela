@@ -2,6 +2,7 @@ package com.spela.player.presentation.ui.gamepad
 
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.compositionLocalOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
 import androidx.compose.ui.focus.FocusRequester
@@ -35,7 +36,7 @@ fun Modifier.autoFocus(): Modifier = composed {
     val isGamepad = LocalInputMode.current == InputMode.GAMEPAD
 
     if (isForward && isGamepad) {
-        val focusRequester = FocusRequester()
+        val focusRequester = remember { FocusRequester() }
         LaunchedEffect(Unit) {
             // Wait for AnimatedContent exit transition to complete
             delay(500)

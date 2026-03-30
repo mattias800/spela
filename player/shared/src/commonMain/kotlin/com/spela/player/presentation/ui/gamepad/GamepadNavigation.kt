@@ -80,8 +80,6 @@ fun GamepadHandler(
         LaunchedEffect(focusResetKey) {
             delay(500)
             try {
-                // Only focus the Box if nothing else claimed focus
-                // (e.g. a screen's autoFocus already fired)
                 if (!hasFocus) {
                     focusRequester.requestFocus()
                 }
