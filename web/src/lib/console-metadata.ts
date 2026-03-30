@@ -213,6 +213,11 @@ const consoleStyles: Record<string, ConsoleStyle> = {
     gradient: "from-white to-blue-900",
     color: "#003087",
   },
+  xbox: {
+    icon: Gamepad2,
+    gradient: "from-green-600 to-green-900",
+    color: "#107c10",
+  },
   x360: {
     icon: Gamepad2,
     gradient: "from-green-600 to-green-900",

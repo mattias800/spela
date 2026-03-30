@@ -1,6 +1,5 @@
 package com.spela.player.presentation.ui.screen
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -18,8 +17,12 @@ import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.spela.player.presentation.ui.components.SpCard
+import com.spela.player.presentation.ui.components.SpScreen
+import com.spela.player.presentation.ui.components.SpScreenTopSpacer
 import com.spela.player.presentation.ui.components.SpTopBar
 import com.spela.player.presentation.ui.components.PlatformBackHandler
+import com.spela.player.presentation.ui.gamepad.InputMode
+import com.spela.player.presentation.ui.gamepad.LocalInputMode
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.ui.theme.SpTypography
@@ -94,14 +97,20 @@ fun LicensesScreen(
 ) {
     PlatformBackHandler { onBack() }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(SpColor.Background),
-    ) {
-        SpTopBar(title = "Credits & Licenses", showBack = true, onBack = onBack)
+    val isGamepad = LocalInputMode.current == InputMode.GAMEPAD
 
-        LazyColumn(
+    SpScreen {
+        Column(
+            modifier = Modifier
+                .fillMaxSize(),
+        ) {
+            if (isGamepad) {
+                SpScreenTopSpacer()
+            } else {
+                SpTopBar(title = "Credits & Licenses", showBack = true, onBack = onBack)
+            }
+
+            LazyColumn(
             modifier = Modifier.fillMaxSize(),
             contentPadding = PaddingValues(
                 horizontal = SpSpacing.ScreenHorizontal,
@@ -155,6 +164,7 @@ fun LicensesScreen(
             item {
                 Spacer(Modifier.height(SpSpacing.XXXLarge))
             }
+        }
         }
     }
 }

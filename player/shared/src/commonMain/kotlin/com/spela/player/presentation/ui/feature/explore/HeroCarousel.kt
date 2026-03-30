@@ -53,7 +53,6 @@ import com.spela.player.domain.model.FeaturedGame
 import com.spela.player.presentation.ui.components.LocalAnimationsEnabled
 import com.spela.player.presentation.ui.components.SpButton
 import com.spela.player.presentation.ui.components.SpAreaSizedImage
-import com.spela.player.presentation.ui.components.SpChip
 import com.spela.player.presentation.ui.components.SpConsoleChip
 import com.spela.player.presentation.ui.components.SpShimmer
 import com.spela.player.presentation.ui.theme.SpColor
@@ -63,7 +62,8 @@ import com.spela.player.util.formatRating
 import com.spela.player.util.parseHexColor
 import kotlinx.coroutines.delay
 
-private val HERO_HEIGHT = 320.dp
+private val HERO_HEIGHT_PORTRAIT = 240.dp
+private val HERO_HEIGHT_LANDSCAPE = 150.dp
 private const val AUTO_ADVANCE_DELAY_MS = 8_000L
 
 @Composable
@@ -95,11 +95,13 @@ fun HeroCarousel(
         }
     }
 
+    BoxWithConstraints(modifier = modifier.fillMaxWidth()) {
+    val isLandscape = maxWidth > maxHeight
+    val heroHeight = if (isLandscape) HERO_HEIGHT_LANDSCAPE else HERO_HEIGHT_PORTRAIT
     Box(
-        modifier = modifier
+        modifier = Modifier
             .fillMaxWidth()
-            .height(HERO_HEIGHT)
-            .clip(RoundedCornerShape(SpSpacing.CardCornerRadius))
+            .height(heroHeight)
             .testTag("hero_carousel")
             .pointerInput(featuredGames.size) {
                 var dragConsumed = false
@@ -174,6 +176,7 @@ fun HeroCarousel(
             }
         }
     }
+    } // BoxWithConstraints
 }
 
 @Composable
@@ -381,9 +384,6 @@ private fun HeroInfoContent(
             }
         }
 
-        if (game.genre.isNotEmpty()) {
-            SpChip(text = game.genre, onGradient = true)
-        }
     }
 }
 
@@ -391,18 +391,21 @@ private fun HeroInfoContent(
 fun HeroCarouselSkeleton(
     modifier: Modifier = Modifier,
 ) {
+    BoxWithConstraints(modifier = modifier.fillMaxWidth()) {
+    val isLandscape = maxWidth > maxHeight
+    val heroHeight = if (isLandscape) HERO_HEIGHT_LANDSCAPE else HERO_HEIGHT_PORTRAIT
     Box(
-        modifier = modifier
+        modifier = Modifier
             .fillMaxWidth()
-            .height(HERO_HEIGHT)
-            .clip(RoundedCornerShape(SpSpacing.CardCornerRadius))
+            .height(heroHeight)
             .testTag("hero_carousel_skeleton"),
     ) {
         SpShimmer(
             modifier = Modifier.fillMaxSize(),
             width = 400.dp,
-            height = HERO_HEIGHT,
+            height = heroHeight,
         )
     }
+    } // BoxWithConstraints
 }
 

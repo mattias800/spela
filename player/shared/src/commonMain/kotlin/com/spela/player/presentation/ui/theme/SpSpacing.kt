@@ -59,4 +59,8 @@ object SpSpacing {
 
     // Top bar
     val TopBarHeight = 64.dp
+
+    // Section indicator pill (gamepad mode).
+    // Accounts for: top padding (16) + pill height (~40).
+    val SectionIndicatorClearance = 56.dp
 }

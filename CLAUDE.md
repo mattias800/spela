@@ -152,6 +152,7 @@ Do not guess at the problem — instrument the code, read the logs, and let the 
 
 ## Architecture Decisions
 - See ARCHITECTURE.md for full technical architecture
+- See `player/LAYOUT.md` for the player app's shared layout composable system (SpScreen, SpMainContentPadding, SpSectionList, etc.). All screens must use these — no custom padding or scroll code.
 - SQLite as default database (self-hosted friendly)
 - JWT authentication with refresh token rotation
 - REST API + WebSocket for real-time events

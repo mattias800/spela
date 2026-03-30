@@ -47,12 +47,15 @@ import com.spela.player.presentation.ui.components.SpPlayHeatmap
 import com.spela.player.presentation.ui.components.SpSectionList
 import com.spela.player.presentation.ui.components.SpTitledSection
 import com.spela.player.presentation.ui.components.SpWideGameCard
+import com.spela.player.presentation.ui.components.SpScreen
+import com.spela.player.presentation.ui.components.SpScreenTopSpacer
 import com.spela.player.presentation.ui.components.SpTopBar
 import com.spela.player.presentation.ui.components.PlatformBackHandler
+import com.spela.player.presentation.ui.gamepad.InputMode
+import com.spela.player.presentation.ui.gamepad.LocalInputMode
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.ui.theme.SpTypography
-import com.spela.player.presentation.ui.theme.spScreenBackground
 import com.spela.player.presentation.viewmodel.SocialViewModel
 import com.spela.player.util.formatPlayTime
 
@@ -116,17 +119,22 @@ fun UserProfileScreen(
         )
     }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .spScreenBackground()
-            .testTag("user_profile_screen"),
-    ) {
-        SpTopBar(
-            title = state.publicProfile?.username ?: "Profile",
-            showBack = true,
-            onBack = onBack,
-        )
+    val isGamepad = LocalInputMode.current == InputMode.GAMEPAD
+
+    SpScreen(modifier = Modifier.testTag("user_profile_screen")) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize(),
+        ) {
+            if (isGamepad) {
+                SpScreenTopSpacer()
+            } else {
+                SpTopBar(
+                    title = state.publicProfile?.username ?: "Profile",
+                    showBack = true,
+                    onBack = onBack,
+                )
+            }
 
         when {
             state.isLoadingProfile -> {
@@ -138,7 +146,7 @@ fun UserProfileScreen(
                 }
             }
             state.publicProfile != null -> {
-                val profile = state.publicProfile ?: return
+                val profile = state.publicProfile!!
                 ProfileContent(
                     profile = profile,
                     heatmapData = state.heatmapData,
@@ -161,6 +169,7 @@ fun UserProfileScreen(
                 }
             }
         }
+        }
     }
 }
 
@@ -181,150 +190,140 @@ private fun ProfileContent(
         modifier = Modifier.fillMaxSize(),
     ) {
         // Avatar + name + online status
-        item {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Box(modifier = Modifier.size(64.dp)) {
-                    SpAvatar(
-                        username = profile.username,
-                        avatarUrl = profile.avatarUrl,
-                        size = 64.dp,
-                        placeholderTextStyle = SpTypography.HeadlineLarge,
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Box(modifier = Modifier.size(64.dp)) {
+                SpAvatar(
+                    username = profile.username,
+                    avatarUrl = profile.avatarUrl,
+                    size = 64.dp,
+                    placeholderTextStyle = SpTypography.HeadlineLarge,
+                )
+                if (profile.isOnline) {
+                    Box(
+                        modifier = Modifier
+                            .size(SpSpacing.Default)
+                            .align(Alignment.BottomEnd)
+                            .clip(CircleShape)
+                            .background(SpColor.Background)
+                            .padding(SpSpacing.XXSmall)
+                            .clip(CircleShape)
+                            .background(SpColor.Success)
+                            .semantics { contentDescription = "Online" },
                     )
-                    if (profile.isOnline) {
-                        Box(
-                            modifier = Modifier
-                                .size(SpSpacing.Default)
-                                .align(Alignment.BottomEnd)
-                                .clip(CircleShape)
-                                .background(SpColor.Background)
-                                .padding(SpSpacing.XXSmall)
-                                .clip(CircleShape)
-                                .background(SpColor.Success)
-                                .semantics { contentDescription = "Online" },
-                        )
-                    }
                 }
-                Spacer(Modifier.width(SpSpacing.Default))
-                Column {
+            }
+            Spacer(Modifier.width(SpSpacing.Default))
+            Column {
+                Text(
+                    text = profile.username,
+                    style = SpTypography.HeadlineLarge,
+                    color = SpColor.OnBackground,
+                )
+                if (profile.isOnline && profile.currentGame != null) {
                     Text(
-                        text = profile.username,
-                        style = SpTypography.HeadlineLarge,
-                        color = SpColor.OnBackground,
+                        text = "Playing ${profile.currentGame.title}",
+                        style = SpTypography.BodySmall,
+                        color = SpColor.Primary,
                     )
-                    if (profile.isOnline && profile.currentGame != null) {
-                        Text(
-                            text = "Playing ${profile.currentGame.title}",
-                            style = SpTypography.BodySmall,
-                            color = SpColor.Primary,
-                        )
-                    } else if (profile.isOnline) {
-                        Text(
-                            text = "Online",
-                            style = SpTypography.BodySmall,
-                            color = SpColor.Success,
-                        )
-                    }
-                    if (profile.memberSince.isNotBlank()) {
-                        Text(
-                            text = "Member since $formattedMemberSince",
-                            style = SpTypography.LabelSmall,
-                            color = SpColor.OnBackgroundTertiary,
-                        )
-                    }
+                } else if (profile.isOnline) {
+                    Text(
+                        text = "Online",
+                        style = SpTypography.BodySmall,
+                        color = SpColor.Success,
+                    )
+                }
+                if (profile.memberSince.isNotBlank()) {
+                    Text(
+                        text = "Member since $formattedMemberSince",
+                        style = SpTypography.LabelSmall,
+                        color = SpColor.OnBackgroundTertiary,
+                    )
                 }
             }
         }
 
         // Stats row
-        item {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .testTag("user_profile_stats"),
-                horizontalArrangement = Arrangement.spacedBy(SpSpacing.Medium),
-            ) {
-                StatCard(
-                    label = "Play Time",
-                    value = formatPlayTime(profile.totalPlayTime),
-                    modifier = Modifier.weight(1f),
-                )
-                StatCard(
-                    label = "Games Played",
-                    value = profile.gamesPlayed.toString(),
-                    modifier = Modifier.weight(1f),
-                )
-            }
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .testTag("user_profile_stats"),
+            horizontalArrangement = Arrangement.spacedBy(SpSpacing.Medium),
+        ) {
+            StatCard(
+                label = "Play Time",
+                value = formatPlayTime(profile.totalPlayTime),
+                modifier = Modifier.weight(1f),
+            )
+            StatCard(
+                label = "Games Played",
+                value = profile.gamesPlayed.toString(),
+                modifier = Modifier.weight(1f),
+            )
         }
 
         // Activity Heatmap
         if (heatmapData.isNotEmpty()) {
-            item {
-                SpTitledSection(title = "Activity") {
-                    SpPlayHeatmap(
-                        entries = heatmapData,
-                        modifier = Modifier.fillMaxWidth(),
-                    )
-                }
+            SpTitledSection(title = "Activity") {
+                SpPlayHeatmap(
+                    entries = heatmapData,
+                    modifier = Modifier.fillMaxWidth(),
+                )
             }
         }
 
         // Featured Achievements (Showcase)
         if (showcaseAchievements.isNotEmpty() || isOwnProfile) {
-            item {
-                SpTitledSection(
-                    title = "Featured Achievements",
-                    edgeToEdgeContent = true,
-                    titleTrailing = if (isOwnProfile) {
-                        {
-                            SpButton(
-                                text = "Edit",
-                                onClick = onEditShowcase,
-                                style = SpButtonStyle.Outlined,
-                            )
-                        }
-                    } else null,
-                ) {
-                    if (showcaseAchievements.isNotEmpty()) {
-                        LazyRow(
-                            contentPadding = PaddingValues(horizontal = SpSpacing.ScreenHorizontal),
-                            horizontalArrangement = Arrangement.spacedBy(SpSpacing.Medium),
-                        ) {
-                            items(showcaseAchievements, key = { it.achievementRaId }) { achievement ->
-                                SpAchievementShowcaseCard(achievement = achievement)
-                            }
-                        }
-                    } else {
-                        Text(
-                            "Pin your proudest achievements here",
-                            style = SpTypography.BodyMedium,
-                            color = SpColor.OnBackgroundSecondary,
-                            modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
+            SpTitledSection(
+                title = "Featured Achievements",
+                edgeToEdgeContent = true,
+                titleTrailing = if (isOwnProfile) {
+                    {
+                        SpButton(
+                            text = "Edit",
+                            onClick = onEditShowcase,
+                            style = SpButtonStyle.Outlined,
                         )
                     }
+                } else null,
+            ) {
+                if (showcaseAchievements.isNotEmpty()) {
+                    LazyRow(
+                        contentPadding = PaddingValues(horizontal = SpSpacing.ScreenHorizontal),
+                        horizontalArrangement = Arrangement.spacedBy(SpSpacing.Medium),
+                    ) {
+                        items(showcaseAchievements, key = { it.achievementRaId }) { achievement ->
+                            SpAchievementShowcaseCard(achievement = achievement)
+                        }
+                    }
+                } else {
+                    Text(
+                        "Pin your proudest achievements here",
+                        style = SpTypography.BodyMedium,
+                        color = SpColor.OnBackgroundSecondary,
+                        modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
+                    )
                 }
             }
         }
 
         // Most Played
         if (profile.topGames.isNotEmpty()) {
-            item {
-                SpTitledSection(
-                    title = "Most Played",
-                    modifier = Modifier.testTag("user_profile_most_played"),
+            SpTitledSection(
+                title = "Most Played",
+                modifier = Modifier.testTag("user_profile_most_played"),
+            ) {
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(SpSpacing.XSmall),
                 ) {
-                    Column(
-                        verticalArrangement = Arrangement.spacedBy(SpSpacing.XSmall),
-                    ) {
-                        profile.topGames.forEach { game ->
-                            ProfileGameItem(
-                                game = game,
-                                showPlayTime = true,
-                                onClick = { onGameSelected(game.id) },
-                            )
-                        }
+                    profile.topGames.forEach { game ->
+                        ProfileGameItem(
+                            game = game,
+                            showPlayTime = true,
+                            onClick = { onGameSelected(game.id) },
+                        )
                     }
                 }
             }
@@ -332,21 +331,19 @@ private fun ProfileContent(
 
         // Favorites
         if (profile.favoriteGames.isNotEmpty()) {
-            item {
-                SpTitledSection(
-                    title = "Favorites",
-                    modifier = Modifier.testTag("user_profile_favorites"),
+            SpTitledSection(
+                title = "Favorites",
+                modifier = Modifier.testTag("user_profile_favorites"),
+            ) {
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(SpSpacing.XSmall),
                 ) {
-                    Column(
-                        verticalArrangement = Arrangement.spacedBy(SpSpacing.XSmall),
-                    ) {
-                        profile.favoriteGames.forEach { game ->
-                            ProfileGameItem(
-                                game = game,
-                                showPlayTime = false,
-                                onClick = { onGameSelected(game.id) },
-                            )
-                        }
+                    profile.favoriteGames.forEach { game ->
+                        ProfileGameItem(
+                            game = game,
+                            showPlayTime = false,
+                            onClick = { onGameSelected(game.id) },
+                        )
                     }
                 }
             }
@@ -354,21 +351,19 @@ private fun ProfileContent(
 
         // Recently Played
         if (profile.recentGames.isNotEmpty()) {
-            item {
-                SpTitledSection(
-                    title = "Recently Played",
-                    modifier = Modifier.testTag("user_profile_recently_played"),
+            SpTitledSection(
+                title = "Recently Played",
+                modifier = Modifier.testTag("user_profile_recently_played"),
+            ) {
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(SpSpacing.XSmall),
                 ) {
-                    Column(
-                        verticalArrangement = Arrangement.spacedBy(SpSpacing.XSmall),
-                    ) {
-                        profile.recentGames.forEach { game ->
-                            ProfileGameItem(
-                                game = game,
-                                showPlayTime = true,
-                                onClick = { onGameSelected(game.id) },
-                            )
-                        }
+                    profile.recentGames.forEach { game ->
+                        ProfileGameItem(
+                            game = game,
+                            showPlayTime = true,
+                            onClick = { onGameSelected(game.id) },
+                        )
                     }
                 }
             }

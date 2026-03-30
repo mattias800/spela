@@ -129,6 +129,7 @@ fun SpButton(
         }
 
         SpButtonStyle.Ghost -> {
+            val ghostColor = if (onGradient) Color.White else SpColor.OnBackground
             TextButton(
                 onClick = { if (!isLoading) onClick() },
                 modifier = modifier.heightIn(min = 48.dp).then(focusMods),
@@ -136,12 +137,12 @@ fun SpButton(
                 shape = shape,
                 interactionSource = interactionSource,
                 colors = ButtonDefaults.textButtonColors(
-                    contentColor = if (onGradient) Color.White else SpColor.Primary,
+                    contentColor = ghostColor,
                     disabledContentColor = SpColor.OnBackgroundTertiary,
                 ),
                 contentPadding = if (isIconOnly) iconOnlyPadding else PaddingValues(horizontal = SpSpacing.Default, vertical = SpSpacing.Medium),
             ) {
-                ButtonContent(text, isLoading, leadingIcon, if (onGradient) Color.White else SpColor.Primary)
+                ButtonContent(text, isLoading, leadingIcon, ghostColor)
             }
         }
     }

@@ -126,6 +126,7 @@ import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.ui.theme.SpTypography
 import com.spela.player.presentation.ui.gamepad.GamepadHandler
 import com.spela.player.presentation.ui.gamepad.InputMode
+import com.spela.player.presentation.ui.gamepad.LocalIsForwardNavigation
 import com.spela.player.presentation.ui.gamepad.LocalInputMode
 import com.spela.player.presentation.ui.components.LocalScrapeService
 import com.spela.player.presentation.ui.components.ScrapeUpdates
@@ -450,7 +451,9 @@ fun SpelaApp(
                             }
                         },
                     ) { screen ->
+                        val isForward = !navState.isGoingBack && !navState.isTabSwitch
                         saveableStateHolder.SaveableStateProvider(screen.route) {
+                        CompositionLocalProvider(LocalIsForwardNavigation provides isForward) {
                         when (screen) {
                             is SpScreen.ServerConnection -> {
                                 ServerConnectionScreen(
@@ -1448,6 +1451,7 @@ fun SpelaApp(
                                 }
                             }
                         } // when (screen)
+                        } // CompositionLocalProvider (LocalIsForwardNavigation)
                         } // SaveableStateProvider
                     } // AnimatedContent
 

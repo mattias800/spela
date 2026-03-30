@@ -40,14 +40,17 @@ import com.spela.player.presentation.ui.components.PlatformBackHandler
 import com.spela.player.presentation.ui.components.SpEmptyStates
 import com.spela.player.presentation.ui.components.SpIconButton
 import com.spela.player.presentation.ui.components.SpLoadingIndicator
+import com.spela.player.presentation.ui.components.SpScreen
 import com.spela.player.presentation.ui.components.SpSearchField
+import com.spela.player.presentation.ui.components.SpScreenTopSpacer
 import com.spela.player.presentation.ui.components.SpTopBar
 import com.spela.player.presentation.ui.feature.library.GameGridItem
+import com.spela.player.presentation.ui.gamepad.InputMode
+import com.spela.player.presentation.ui.gamepad.LocalInputMode
 import com.spela.player.presentation.ui.theme.LocalTitleBarInset
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.ui.theme.SpTypography
-import com.spela.player.presentation.ui.theme.spScreenBackground
 import com.spela.player.presentation.viewmodel.ExploreViewModel
 
 private data class DeveloperGamesSortOption(val key: String, val label: String)
@@ -101,12 +104,9 @@ fun DeveloperGamesScreen(
         if (isSearchVisible) focusRequester.requestFocus()
     }
 
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .spScreenBackground()
-            .testTag("developer_games_screen"),
-    ) {
+    val isGamepad = LocalInputMode.current == InputMode.GAMEPAD
+
+    SpScreen(modifier = Modifier.testTag("developer_games_screen")) {
         LazyVerticalGrid(
             columns = GridCells.Adaptive(SpSpacing.GridCellMinWidth),
             modifier = Modifier.fillMaxSize().testTag("developer_games_grid"),
@@ -221,24 +221,28 @@ fun DeveloperGamesScreen(
         }
 
         // Top bar
-        SpTopBar(
-            title = name,
-            showBack = true,
-            onBack = {
-                if (isSearchVisible) {
-                    viewModel.setDeveloperGamesSearch("")
-                    isSearchVisible = false
-                } else {
-                    onBack()
-                }
-            },
-            actions = {
-                SpIconButton(
-                    icon = Icons.Filled.Search,
-                    contentDescription = "Search games",
-                    onClick = { isSearchVisible = !isSearchVisible },
-                )
-            },
-        )
+        if (isGamepad) {
+            SpScreenTopSpacer()
+        } else {
+            SpTopBar(
+                title = name,
+                showBack = true,
+                onBack = {
+                    if (isSearchVisible) {
+                        viewModel.setDeveloperGamesSearch("")
+                        isSearchVisible = false
+                    } else {
+                        onBack()
+                    }
+                },
+                actions = {
+                    SpIconButton(
+                        icon = Icons.Filled.Search,
+                        contentDescription = "Search games",
+                        onClick = { isSearchVisible = !isSearchVisible },
+                    )
+                },
+            )
+        }
     }
 }

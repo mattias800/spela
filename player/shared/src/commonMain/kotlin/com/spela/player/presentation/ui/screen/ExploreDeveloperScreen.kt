@@ -35,14 +35,17 @@ import com.spela.player.presentation.ui.components.SpSnackbar
 import com.spela.player.presentation.ui.components.SpSnackbarData
 import com.spela.player.presentation.ui.components.SpSnackbarType
 import com.spela.player.presentation.ui.components.SpTitledSection
+import com.spela.player.presentation.ui.components.SpScreen
+import com.spela.player.presentation.ui.components.SpScreenTopSpacer
 import com.spela.player.presentation.ui.components.SpTopBar
 import com.spela.player.presentation.ui.feature.explore.DeveloperCompanyDescription
 import com.spela.player.presentation.ui.feature.explore.DeveloperDetailSkeleton
 import com.spela.player.presentation.ui.feature.explore.DeveloperHeroBanner
 import com.spela.player.presentation.ui.feature.explore.DeveloperTopRatedRow
 import com.spela.player.presentation.ui.feature.explore.DeveloperUserStatsCard
+import com.spela.player.presentation.ui.gamepad.InputMode
+import com.spela.player.presentation.ui.gamepad.LocalInputMode
 import com.spela.player.presentation.ui.theme.SpSpacing
-import com.spela.player.presentation.ui.theme.spScreenBackground
 import com.spela.player.presentation.viewmodel.ExploreViewModel
 
 @OptIn(ExperimentalLayoutApi::class)
@@ -69,18 +72,24 @@ fun ExploreDeveloperScreen(
         }
     }
 
-    Box(modifier = Modifier.fillMaxSize().spScreenBackground().testTag("developer_detail_screen")) {
+    val isGamepad = LocalInputMode.current == InputMode.GAMEPAD
+
+    SpScreen(modifier = Modifier.testTag("developer_detail_screen")) {
         Column(
             modifier = Modifier
                 .fillMaxSize(),
         ) {
             when {
                 state.isLoading && state.detail == null -> {
-                    SpTopBar(
-                        title = name,
-                        showBack = true,
-                        onBack = onBack,
-                    )
+                    if (isGamepad) {
+                        SpScreenTopSpacer()
+                    } else {
+                        SpTopBar(
+                            title = name,
+                            showBack = true,
+                            onBack = onBack,
+                        )
+                    }
                     DeveloperDetailSkeleton()
                 }
 
@@ -93,34 +102,30 @@ fun ExploreDeveloperScreen(
                         modifier = Modifier.fillMaxSize().testTag("developer_detail_content"),
                     ) {
                         // 0. Hero Banner — full-width edge-to-edge
-                        item {
-                            DeveloperHeroBanner(
-                                detail = detail,
-                                modifier = Modifier
-                                    .layout { measurable, constraints ->
-                                        val extraWidth = (horizontalPadding * 2).roundToPx()
-                                        val newConstraints = constraints.copy(
-                                            maxWidth = constraints.maxWidth + extraWidth,
-                                            minWidth = if (constraints.minWidth > 0) constraints.minWidth + extraWidth else 0,
-                                        )
-                                        val placeable = measurable.measure(newConstraints)
-                                        layout(placeable.width, placeable.height) {
-                                            placeable.place(-horizontalPadding.roundToPx(), 0)
-                                        }
+                        DeveloperHeroBanner(
+                            detail = detail,
+                            modifier = Modifier
+                                .layout { measurable, constraints ->
+                                    val extraWidth = (horizontalPadding * 2).roundToPx()
+                                    val newConstraints = constraints.copy(
+                                        maxWidth = constraints.maxWidth + extraWidth,
+                                        minWidth = if (constraints.minWidth > 0) constraints.minWidth + extraWidth else 0,
+                                    )
+                                    val placeable = measurable.measure(newConstraints)
+                                    layout(placeable.width, placeable.height) {
+                                        placeable.place(-horizontalPadding.roundToPx(), 0)
                                     }
-                                    .testTag("developer_hero_banner"),
-                            )
-                        }
+                                }
+                                .testTag("developer_hero_banner"),
+                        )
                         // 1. About (company description)
                         val companyInfo = detail.companyInfo
                         if (companyInfo?.description != null) {
-                            item {
-                                SpTitledSection(title = "About") {
-                                    DeveloperCompanyDescription(
-                                        companyInfo = companyInfo,
-                                        modifier = Modifier.testTag("developer_company_description_section"),
-                                    )
-                                }
+                            SpTitledSection(title = "About") {
+                                DeveloperCompanyDescription(
+                                    companyInfo = companyInfo,
+                                    modifier = Modifier.testTag("developer_company_description_section"),
+                                )
                             }
                         }
 
@@ -128,134 +133,134 @@ fun ExploreDeveloperScreen(
                         val hasPublishers = detail.publishers.isNotEmpty()
                         val hasRelated = detail.relatedDevelopers.isNotEmpty()
                         if (hasPublishers || hasRelated) {
-                            item {
-                                FlowRow(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .testTag("developer_related_chips"),
-                                    horizontalArrangement = Arrangement.spacedBy(SpSpacing.Small),
-                                    verticalArrangement = Arrangement.spacedBy(SpSpacing.Small),
-                                ) {
-                                    detail.publishers.forEach { publisher ->
-                                        SpChip(
-                                            text = "${publisher.name} (${publisher.count})",
-                                            onClick = { onPublisherSelected(publisher.name) },
-                                            modifier = Modifier
-                                                .testTag("developer_publisher_chip_${publisher.name}")
-                                                .semantics {
-                                                    contentDescription = "${publisher.name}, ${publisher.count} games"
-                                                    role = Role.Button
-                                                },
-                                        )
-                                    }
-                                    detail.relatedDevelopers.forEach { related ->
-                                        SpChip(
-                                            text = related.name,
-                                            onClick = { onDeveloperSelected(related.name) },
-                                            modifier = Modifier
-                                                .testTag("developer_related_chip_${related.name}")
-                                                .semantics {
-                                                    contentDescription = "${related.name}, ${related.gameCount} games"
-                                                    role = Role.Button
-                                                },
-                                        )
-                                    }
+                            FlowRow(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .testTag("developer_related_chips"),
+                                horizontalArrangement = Arrangement.spacedBy(SpSpacing.Small),
+                                verticalArrangement = Arrangement.spacedBy(SpSpacing.Small),
+                            ) {
+                                detail.publishers.forEach { publisher ->
+                                    SpChip(
+                                        text = "${publisher.name} (${publisher.count})",
+                                        onClick = { onPublisherSelected(publisher.name) },
+                                        modifier = Modifier
+                                            .testTag("developer_publisher_chip_${publisher.name}")
+                                            .semantics {
+                                                contentDescription = "${publisher.name}, ${publisher.count} games"
+                                                role = Role.Button
+                                            },
+                                    )
+                                }
+                                detail.relatedDevelopers.forEach { related ->
+                                    SpChip(
+                                        text = related.name,
+                                        onClick = { onDeveloperSelected(related.name) },
+                                        modifier = Modifier
+                                            .testTag("developer_related_chip_${related.name}")
+                                            .semantics {
+                                                contentDescription = "${related.name}, ${related.gameCount} games"
+                                                role = Role.Button
+                                            },
+                                    )
                                 }
                             }
                         }
 
                         // 3. Top Rated
                         if (detail.topGames.size >= 3) {
-                            item {
-                                SpTitledSection(
-                                    title = "Top Rated",
-                                    edgeToEdgeContent = true,
-                                    titleTrailing = if (detail.games.isNotEmpty() && onNavigateToGames != null) {
-                                        {
-                                            SpButton(
-                                                text = "See all games",
-                                                style = SpButtonStyle.Ghost,
-                                                onClick = { onNavigateToGames(name, isDeveloper) },
-                                                modifier = Modifier.testTag("developer_see_all_games"),
-                                            )
-                                        }
-                                    } else {
-                                        null
-                                    },
-                                ) {
-                                    DeveloperTopRatedRow(
-                                        topGames = detail.topGames,
-                                        onGameSelected = onGameSelected,
-                                        modifier = Modifier.testTag("developer_top_rated_section"),
-                                    )
-                                }
+                            SpTitledSection(
+                                title = "Top Rated",
+                                edgeToEdgeContent = true,
+                                titleTrailing = if (detail.games.isNotEmpty() && onNavigateToGames != null) {
+                                    {
+                                        SpButton(
+                                            text = "See all games",
+                                            style = SpButtonStyle.Ghost,
+                                            onClick = { onNavigateToGames(name, isDeveloper) },
+                                            modifier = Modifier.testTag("developer_see_all_games"),
+                                        )
+                                    }
+                                } else {
+                                    null
+                                },
+                            ) {
+                                DeveloperTopRatedRow(
+                                    topGames = detail.topGames,
+                                    onGameSelected = onGameSelected,
+                                    modifier = Modifier.testTag("developer_top_rated_section"),
+                                )
                             }
                         }
 
                         // 4. Games grid
                         if (detail.games.isNotEmpty()) {
-                            item {
-                                SpTitledSection(
-                                    title = "Games",
-                                    titleTrailing = if (detail.games.size > 12 && onNavigateToGames != null) {
-                                        {
-                                            SpButton(
-                                                text = "See all",
-                                                style = SpButtonStyle.Ghost,
-                                                onClick = { onNavigateToGames(name, isDeveloper) },
+                            SpTitledSection(
+                                title = "Games",
+                                titleTrailing = if (detail.games.size > 12 && onNavigateToGames != null) {
+                                    {
+                                        SpButton(
+                                            text = "See all",
+                                            style = SpButtonStyle.Ghost,
+                                            onClick = { onNavigateToGames(name, isDeveloper) },
+                                        )
+                                    }
+                                } else null,
+                            ) {
+                                SpGameGrid(
+                                    items = detail.games.take(12).map { game ->
+                                        @Composable {
+                                            SpGridGameCard(
+                                                title = game.title,
+                                                subtitle = game.consoleName,
+                                                coverUrl = game.coverUrl,
+                                                onClick = { onGameSelected(game.id) },
+                                                rating = game.averageRating,
+                                                isFavorite = game.isFavorite,
+                                                isInPlayLater = game.isInPlayLater,
                                             )
                                         }
-                                    } else null,
-                                ) {
-                                    SpGameGrid(
-                                        items = detail.games.take(12).map { game ->
-                                            @Composable {
-                                                SpGridGameCard(
-                                                    title = game.title,
-                                                    subtitle = game.consoleName,
-                                                    coverUrl = game.coverUrl,
-                                                    onClick = { onGameSelected(game.id) },
-                                                    rating = game.averageRating,
-                                                    isFavorite = game.isFavorite,
-                                                    isInPlayLater = game.isInPlayLater,
-                                                )
-                                            }
-                                        },
-                                    )
-                                }
+                                    },
+                                )
                             }
                         }
 
                         // 5. Your Stats
                         if (detail.userStats != null) {
-                            item {
-                                SpTitledSection(title = "Your Stats") {
-                                    DeveloperUserStatsCard(
-                                        userStats = detail.userStats,
-                                        totalGames = detail.gameCount,
-                                        onGameSelected = onGameSelected,
-                                        modifier = Modifier.testTag("developer_user_stats"),
-                                    )
-                                }
+                            SpTitledSection(title = "Your Stats") {
+                                DeveloperUserStatsCard(
+                                    userStats = detail.userStats,
+                                    totalGames = detail.gameCount,
+                                    onGameSelected = onGameSelected,
+                                    modifier = Modifier.testTag("developer_user_stats"),
+                                )
                             }
                         }
                     }
                     // Top bar overlaid on everything — floats over the banner
-                    SpTopBar(
-                        title = "",
-                        showBack = true,
-                        onBack = onBack,
-                        onGradient = true,
-                    )
+                    if (isGamepad) {
+                        SpScreenTopSpacer()
+                    } else {
+                        SpTopBar(
+                            title = "",
+                            showBack = true,
+                            onBack = onBack,
+                            onGradient = true,
+                        )
+                    }
                     } // Box
                 }
 
                 else -> {
-                    SpTopBar(
-                        title = name,
-                        showBack = true,
-                        onBack = onBack,
-                    )
+                    if (isGamepad) {
+                        SpScreenTopSpacer()
+                    } else {
+                        SpTopBar(
+                            title = name,
+                            showBack = true,
+                            onBack = onBack,
+                        )
+                    }
                     Box(
                         modifier = Modifier.fillMaxSize(),
                         contentAlignment = Alignment.Center,

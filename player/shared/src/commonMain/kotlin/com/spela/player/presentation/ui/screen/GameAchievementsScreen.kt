@@ -12,10 +12,13 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import com.spela.player.presentation.intent.GameDetailIntent
 import com.spela.player.presentation.ui.components.PlatformBackHandler
+import com.spela.player.presentation.ui.components.SpScreen
+import com.spela.player.presentation.ui.components.SpScreenTopSpacer
 import com.spela.player.presentation.ui.components.SpTopBar
 import com.spela.player.presentation.ui.feature.gamedetail.GameAchievementsSection
+import com.spela.player.presentation.ui.gamepad.InputMode
+import com.spela.player.presentation.ui.gamepad.LocalInputMode
 import com.spela.player.presentation.ui.theme.SpSpacing
-import com.spela.player.presentation.ui.theme.spScreenBackground
 import com.spela.player.presentation.viewmodel.GameDetailViewModel
 
 @Composable
@@ -32,18 +35,24 @@ fun GameAchievementsScreen(
         viewModel.onIntent(GameDetailIntent.LoadGame(gameId))
     }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .spScreenBackground(),
-    ) {
-        SpTopBar(
-            title = "Achievements",
-            showBack = true,
-            onBack = onBack,
-        )
+    val isGamepad = LocalInputMode.current == InputMode.GAMEPAD
 
+    SpScreen {
         Column(
+            modifier = Modifier
+                .fillMaxSize(),
+        ) {
+            if (isGamepad) {
+                SpScreenTopSpacer()
+            } else {
+                SpTopBar(
+                    title = "Achievements",
+                    showBack = true,
+                    onBack = onBack,
+                )
+            }
+
+            Column(
             modifier = Modifier
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
@@ -61,6 +70,7 @@ fun GameAchievementsScreen(
                 },
                 achievementsWarning = state.gameDetail?.game?.achievementsWarning,
             )
+        }
         }
     }
 }

@@ -1,10 +1,6 @@
 package com.spela.player.presentation.ui.screen
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.focusGroup
-import androidx.compose.ui.draw.drawBehind
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -42,6 +38,10 @@ import com.spela.player.presentation.ui.components.SpButton
 import com.spela.player.presentation.ui.components.SpButtonStyle
 import com.spela.player.presentation.ui.components.SpShimmer
 import com.spela.player.presentation.ui.components.SpEmptyStates
+import com.spela.player.presentation.ui.components.SpMainContentPadding
+import com.spela.player.presentation.ui.components.SpScreen
+import com.spela.player.presentation.ui.components.SpScreenTopSpacer
+import com.spela.player.presentation.ui.components.SpScrollableContent
 import com.spela.player.presentation.ui.components.SpSectionList
 import com.spela.player.presentation.ui.components.SpIconButton
 import com.spela.player.presentation.ui.components.SpLoadingIndicator
@@ -61,7 +61,6 @@ import com.spela.player.presentation.ui.feature.library.BiosWarningBanner
 import com.spela.player.presentation.ui.feature.library.ConsoleHeroBanner
 import com.spela.player.presentation.ui.feature.library.darken
 import com.spela.player.presentation.ui.feature.library.getConsoleGradient
-import com.spela.player.presentation.ui.theme.LocalTitleBarInset
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.viewmodel.ExploreViewModel
@@ -109,147 +108,118 @@ fun ConsoleScreen(
         listOf(SpColor.Background, SpColor.Background)
     }
 
-    Box(modifier = Modifier.fillMaxSize()) {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .focusGroup()
-                .drawBehind {
-                    val cx = size.width / 2f
-                    val cy = size.height / 2f
-                    val d = (size.width + size.height) * 0.25f
-                    drawRect(
-                        brush = Brush.linearGradient(
-                            colors = screenGradientColors,
-                            start = Offset(cx - d, cy - d),
-                            end = Offset(cx + d, cy + d),
-                        ),
-                    )
-                },
-        ) {
+    SpScreen(gradientColors = screenGradientColors) {
             PullToRefreshBox(
                 isRefreshing = state.isLoading,
                 onRefresh = { viewModel.onIntent(GameListIntent.SelectConsole(consoleId)) },
                 modifier = Modifier.fillMaxSize(),
             ) {
-                SpSectionList(
-                    modifier = Modifier.fillMaxSize(),
-                    topPadding = SpSpacing.TopBarHeight + LocalTitleBarInset.current,
-                ) {
-                    // Console hero banner
+                SpScrollableContent {
+                    SpScreenTopSpacer()
+                    SpMainContentPadding {
+                    // Console hero banner — inside padding
                     if (console != null) {
-                        item {
-                            ConsoleHeroBanner(
-                                console = console,
-                                onBrowseGames = if (state.games.size > 15) onBrowseAllGames else null,
-                                onConsoleSettings = onNavigateToConsoleSettings,
-                            )
-                        }
+                        ConsoleHeroBanner(
+                            console = console,
+                            onBrowseGames = if (state.games.size > 15) onBrowseAllGames else null,
+                            onConsoleSettings = onNavigateToConsoleSettings,
+                        )
                     }
 
+                    SpSectionList {
                     // Shimmer loading skeleton when switching consoles
                     if (state.isLoading && state.games.isEmpty()) {
-                        item { ConsoleScreenSkeleton() }
+                        ConsoleScreenSkeleton()
                     }
 
                     // Continue Playing (most relevant — always first)
                     if (continuePlayingGames.isNotEmpty()) {
-                        item {
-                            SpTitledSection(
-                                title = "Continue Playing",
-                                icon = Icons.Filled.PlayArrow,
-                                edgeToEdgeContent = true,
-                            ) {
-                                ContinuePlayingRow(
-                                    games = continuePlayingGames,
-                                    onGameSelected = onGameSelected,
-                                )
-                            }
+                        SpTitledSection(
+                            title = "Continue Playing",
+                            icon = Icons.Filled.PlayArrow,
+                            edgeToEdgeContent = true,
+                        ) {
+                            ContinuePlayingRow(
+                                games = continuePlayingGames,
+                                onGameSelected = onGameSelected,
+                            )
                         }
                     }
 
                     // BIOS warning
                     if (consoleId in state.consolesWithMissingBios) {
-                        item {
-                            BiosWarningBanner(
-                                consoleName = consoleName,
-                                modifier = Modifier.fillMaxWidth(),
-                            )
-                        }
+                        BiosWarningBanner(
+                            consoleName = consoleName,
+                            modifier = Modifier.fillMaxWidth(),
+                        )
                     }
 
                     // Curated content
                     if (exploreViewModel != null) {
-                        item { ConsoleEssentials(exploreViewModel, onGameSelected) }
-                        item { ConsoleHiddenGems(exploreViewModel, onGameSelected) }
+                        ConsoleEssentials(exploreViewModel, onGameSelected)
+                        ConsoleHiddenGems(exploreViewModel, onGameSelected)
                     }
 
                     // Top Rated
                     if (state.topRatedGames.isNotEmpty()) {
-                        item {
-                            SpTitledSection(
-                                title = "Top Rated",
-                                icon = Icons.Filled.Star,
-                                edgeToEdgeContent = true,
-                            ) {
-                                TopRatedRow(
-                                    games = state.topRatedGames,
-                                    onGameSelected = onGameSelected,
-                                )
-                            }
+                        SpTitledSection(
+                            title = "Top Rated",
+                            icon = Icons.Filled.Star,
+                            edgeToEdgeContent = true,
+                        ) {
+                            TopRatedRow(
+                                games = state.topRatedGames,
+                                onGameSelected = onGameSelected,
+                            )
                         }
                     }
 
                     // Top Developers
                     if (exploreViewModel != null) {
-                        item { ConsoleTopDevelopers(exploreViewModel, onDeveloperSelected) }
+                        ConsoleTopDevelopers(exploreViewModel, onDeveloperSelected)
                     }
 
                     // All Games — inline grid at bottom for small libraries (≤15 games)
                     // For larger libraries, the "Browse games" button is in the hero banner
                     if (state.games.isNotEmpty() && state.games.size <= 15) {
-                        item {
-                            SpTitledSection(title = "All Games") {
-                                SpGameGrid(
-                                    items = state.games.map { game ->
-                                        {
-                                            SpGridGameCard(
-                                                title = game.title,
-                                                subtitle = game.consoleName,
-                                                coverUrl = game.coverUrl,
-                                                onClick = { onGameSelected(game.id) },
-                                                rating = game.rating,
-                                                isFavorite = game.isFavorite,
-                                                isInPlayLater = game.isInPlayLater,
-                                            )
-                                        }
-                                    },
-                                )
-                            }
+                        SpTitledSection(title = "All Games") {
+                            SpGameGrid(
+                                items = state.games.map { game ->
+                                    {
+                                        SpGridGameCard(
+                                            title = game.title,
+                                            subtitle = game.consoleName,
+                                            coverUrl = game.coverUrl,
+                                            onClick = { onGameSelected(game.id) },
+                                            rating = game.rating,
+                                            isFavorite = game.isFavorite,
+                                            isInPlayLater = game.isInPlayLater,
+                                        )
+                                    }
+                                },
+                            )
                         }
                     }
 
                     // Loading / Empty
                     if (state.games.isEmpty() && state.isLoading) {
-                        item {
-                            Box(
-                                modifier = Modifier.fillMaxWidth().height(200.dp),
-                                contentAlignment = Alignment.Center,
-                            ) {
-                                SpLoadingIndicator(message = "Loading games...")
-                            }
+                        Box(
+                            modifier = Modifier.fillMaxWidth().height(200.dp),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            SpLoadingIndicator(message = "Loading games...")
                         }
                     } else if (state.games.isEmpty() && !state.isLoading) {
-                        item {
-                            Box(
-                                modifier = Modifier.fillMaxWidth().height(200.dp),
-                                contentAlignment = Alignment.Center,
-                            ) {
-                                SpEmptyStates.NoGamesInConsole(consoleName = consoleName)
-                            }
+                        Box(
+                            modifier = Modifier.fillMaxWidth().height(200.dp),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            SpEmptyStates.NoGamesInConsole(consoleName = consoleName)
                         }
                     }
-                }
+                } // SpSectionList
+                } // SpMainContentPadding
+                } // SpScrollableContent
             }
 
             // Fixed top bar overlaid on top of scrollable content
@@ -277,7 +247,6 @@ fun ConsoleScreen(
                     )
                 },
             )
-        }
 
         // Error snackbar
         SpSnackbar(
@@ -292,15 +261,13 @@ fun ConsoleScreen(
             onDismiss = { viewModel.onIntent(GameListIntent.DismissError) },
             modifier = Modifier.align(Alignment.BottomCenter),
         )
-    } // outer Box
+    } // SpScreen
 }
 
 @Composable
 private fun ConsoleScreenSkeleton() {
     Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = SpSpacing.ScreenHorizontal),
+        modifier = Modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(SpSpacing.XLarge),
     ) {
         // Section title shimmer

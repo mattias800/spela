@@ -20,12 +20,15 @@ import androidx.compose.ui.Modifier
 import com.spela.player.presentation.intent.ChallengeIntent
 import com.spela.player.presentation.ui.components.PlatformBackHandler
 import com.spela.player.presentation.ui.components.SpEmptyStates
+import com.spela.player.presentation.ui.components.SpScreen
+import com.spela.player.presentation.ui.components.SpScreenTopSpacer
 import com.spela.player.presentation.ui.components.SpTopBar
 import com.spela.player.presentation.ui.components.challenge.SpChallengeCard
 import com.spela.player.presentation.ui.components.challenge.SpChallengeCardSkeleton
+import com.spela.player.presentation.ui.gamepad.InputMode
+import com.spela.player.presentation.ui.gamepad.LocalInputMode
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
-import com.spela.player.presentation.ui.theme.spScreenBackground
 import com.spela.player.presentation.viewmodel.ChallengeListViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -45,16 +48,22 @@ fun ChallengeListScreen(
 
     PlatformBackHandler(onBack = onBack)
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .spScreenBackground(),
-    ) {
-        SpTopBar(
-            title = gameTitle,
-            showBack = true,
-            onBack = onBack,
-        )
+    val isGamepad = LocalInputMode.current == InputMode.GAMEPAD
+
+    SpScreen {
+        Column(
+            modifier = Modifier
+                .fillMaxSize(),
+        ) {
+            if (isGamepad) {
+                SpScreenTopSpacer()
+            } else {
+                SpTopBar(
+                    title = gameTitle,
+                    showBack = true,
+                    onBack = onBack,
+                )
+            }
 
         if (state.isLoadingGameChallenges && state.gameChallenges.isEmpty()) {
             // Skeleton grid while loading
@@ -100,6 +109,7 @@ fun ChallengeListScreen(
                     }
                 }
             }
+        }
         }
     }
 }

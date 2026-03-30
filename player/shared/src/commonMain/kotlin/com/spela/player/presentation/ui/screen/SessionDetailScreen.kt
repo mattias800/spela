@@ -36,9 +36,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.drawBehind
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -60,10 +57,14 @@ import com.spela.player.presentation.ui.components.SpSectionHeader
 import com.spela.player.presentation.ui.components.SpSnackbar
 import com.spela.player.presentation.ui.components.SpSnackbarData
 import com.spela.player.presentation.ui.components.SpSnackbarType
+import com.spela.player.presentation.ui.components.SpScreen
+import com.spela.player.presentation.ui.components.SpScreenTopSpacer
 import com.spela.player.presentation.ui.components.SpTopBar
 import com.spela.player.presentation.ui.components.PlatformBackHandler
 import com.spela.player.presentation.ui.feature.library.darken
 import com.spela.player.presentation.ui.feature.library.getConsoleGradient
+import com.spela.player.presentation.ui.gamepad.InputMode
+import com.spela.player.presentation.ui.gamepad.LocalInputMode
 import com.spela.player.presentation.ui.feature.sessiondetail.SessionCheatsSection
 import com.spela.player.presentation.ui.components.SpPlayInfo
 import com.spela.player.presentation.ui.components.social.formatRelativeTime
@@ -109,29 +110,23 @@ fun SessionDetailScreen(
         }
     }
 
-    Box(modifier = Modifier.fillMaxSize()) {
+    val isGamepad = LocalInputMode.current == InputMode.GAMEPAD
+
+    SpScreen(gradientColors = backgroundColors) {
         Column(
             modifier = Modifier
-                .fillMaxSize()
-                .drawBehind {
-                    val cx = size.width / 2f
-                    val cy = size.height / 2f
-                    val d = (size.width + size.height) * 0.25f
-                    drawRect(
-                        brush = Brush.linearGradient(
-                            colors = backgroundColors,
-                            start = Offset(cx - d, cy - d),
-                            end = Offset(cx + d, cy + d),
-                        ),
-                    )
-                },
+                .fillMaxSize(),
         ) {
-            SpTopBar(
-                title = state.session?.name ?: "Session",
-                showBack = true,
-                onBack = onBack,
-                onGradient = true,
-            )
+            if (isGamepad) {
+                SpScreenTopSpacer()
+            } else {
+                SpTopBar(
+                    title = state.session?.name ?: "Session",
+                    showBack = true,
+                    onBack = onBack,
+                    onGradient = true,
+                )
+            }
 
             if (state.isLoading && state.session == null) {
                 Box(
@@ -141,7 +136,7 @@ fun SessionDetailScreen(
                     SpLoadingIndicator(message = "Loading session...")
                 }
             } else if (state.session != null) {
-                val session = state.session ?: return
+                val session = state.session!!
                 val isRefreshing = state.isLoading || state.isLoadingSaves
 
                 PullToRefreshBox(

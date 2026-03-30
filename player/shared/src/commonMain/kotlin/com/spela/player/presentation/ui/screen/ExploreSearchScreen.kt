@@ -1,6 +1,5 @@
 package com.spela.player.presentation.ui.screen
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -44,12 +43,15 @@ import com.spela.player.presentation.ui.components.SpGameCardSkeleton
 import com.spela.player.presentation.ui.components.SpSnackbar
 import com.spela.player.presentation.ui.components.SpSnackbarData
 import com.spela.player.presentation.ui.components.SpSnackbarType
+import com.spela.player.presentation.ui.components.SpScreen
+import com.spela.player.presentation.ui.components.SpScreenTopSpacer
 import com.spela.player.presentation.ui.components.SpTopBar
 import com.spela.player.presentation.ui.feature.explore.GameFilterPanel
+import com.spela.player.presentation.ui.gamepad.InputMode
+import com.spela.player.presentation.ui.gamepad.LocalInputMode
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.ui.theme.SpTypography
-import com.spela.player.presentation.ui.theme.spScreenBackground
 import com.spela.player.presentation.viewmodel.ExploreViewModel
 import com.spela.player.util.formatRating
 
@@ -67,33 +69,34 @@ fun ExploreSearchScreen(
         viewModel.loadSavedSearches()
     }
 
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .spScreenBackground()
-            .testTag("explore_search_screen"),
-    ) {
+    val isGamepad = LocalInputMode.current == InputMode.GAMEPAD
+
+    SpScreen(modifier = Modifier.testTag("explore_search_screen")) {
         Column(
             modifier = Modifier
                 .fillMaxSize(),
         ) {
-            SpTopBar(
-                title = "Advanced Search",
-                showBack = true,
-                onBack = onBack,
-                actions = {
-                    IconButton(
-                        onClick = { viewModel.toggleFilterPanel() },
-                        modifier = Modifier.testTag("toggle_filter_panel_button"),
-                    ) {
-                        Icon(
-                            imageVector = Icons.Filled.FilterList,
-                            contentDescription = "Toggle filters",
-                            tint = if (searchState.showFilterPanel) SpColor.Primary else SpColor.OnBackgroundSecondary,
-                        )
-                    }
-                },
-            )
+            if (isGamepad) {
+                SpScreenTopSpacer()
+            } else {
+                SpTopBar(
+                    title = "Advanced Search",
+                    showBack = true,
+                    onBack = onBack,
+                    actions = {
+                        IconButton(
+                            onClick = { viewModel.toggleFilterPanel() },
+                            modifier = Modifier.testTag("toggle_filter_panel_button"),
+                        ) {
+                            Icon(
+                                imageVector = Icons.Filled.FilterList,
+                                contentDescription = "Toggle filters",
+                                tint = if (searchState.showFilterPanel) SpColor.Primary else SpColor.OnBackgroundSecondary,
+                            )
+                        }
+                    },
+                )
+            }
 
             if (searchState.showFilterPanel) {
                 GameFilterPanel(

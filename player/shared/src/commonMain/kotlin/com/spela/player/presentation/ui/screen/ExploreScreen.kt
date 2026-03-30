@@ -14,8 +14,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Explore
@@ -32,7 +30,9 @@ import androidx.compose.material3.Icon
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import com.spela.player.presentation.ui.theme.spScreenBackground
+import com.spela.player.presentation.ui.components.SpScreen
+import com.spela.player.presentation.ui.components.SpMainContentPadding
+import com.spela.player.presentation.ui.components.SpScrollableContent
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
@@ -83,7 +83,6 @@ import com.spela.player.presentation.ui.feature.explore.OnThisDaySection
 import com.spela.player.presentation.ui.feature.explore.TemporalSectionSkeleton
 import com.spela.player.presentation.ui.feature.explore.TrendingSection
 import com.spela.player.presentation.ui.feature.explore.WildFeaturesSection
-import com.spela.player.presentation.ui.theme.LocalTitleBarInset
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.ui.theme.SpTypography
@@ -121,14 +120,7 @@ fun ExploreScreen(
     if (state.isLoading) sawLoading = true
     if (sawLoading && !state.isLoading) hasInitiallyLoaded = true
 
-    val titleBarInset = LocalTitleBarInset.current
-
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .spScreenBackground()
-            .testTag("explore_screen"),
-    ) {
+    SpScreen(modifier = Modifier.testTag("explore_screen")) {
         when {
             // Show loading until first fetch completes
             !hasInitiallyLoaded -> {
@@ -155,46 +147,32 @@ fun ExploreScreen(
             }
 
             else -> {
-                SpSectionList(
-                    modifier = Modifier.fillMaxSize(),
-                    topPadding = titleBarInset,
-                ) {
-                    // Hero carousel
+                SpScrollableContent {
+                    // Hero carousel — edge-to-edge, outside SpMainContentPadding
                     if (state.isLoadingFeatured || state.featuredGames.isNotEmpty()) {
-                    item {
                         if (state.isLoadingFeatured && state.featuredGames.isEmpty()) {
-                            HeroCarouselSkeleton(
-                                modifier = Modifier.padding(
-                                    horizontal = SpSpacing.ScreenHorizontal,
-                                ),
-                            )
+                            HeroCarouselSkeleton()
                         } else if (state.featuredGames.isNotEmpty()) {
                             HeroCarousel(
                                 featuredGames = state.featuredGames,
                                 onGameSelected = onGameSelected,
-                                modifier = Modifier.padding(
-                                    horizontal = SpSpacing.ScreenHorizontal,
-                                ),
                             )
                         }
                     }
-                    }
 
+                SpMainContentPadding {
+                SpSectionList(
+                    modifier = Modifier.fillMaxSize(),
+                ) {
                     // Global search entry point — tappable search bar
-                    item {
-                        SearchBarEntryPoint(
-                            onClick = { onGlobalSearchSelected?.invoke() },
-                            modifier = Modifier
-                                .padding(
-                                    horizontal = SpSpacing.ScreenHorizontal,
-                                )
-                                .testTag("explore_search_bar"),
-                        )
-                    }
+                    SearchBarEntryPoint(
+                        onClick = { onGlobalSearchSelected?.invoke() },
+                        modifier = Modifier
+                            .testTag("explore_search_bar"),
+                    )
 
                     // Console quick-jump section
                     if (state.isLoadingConsoleHighlights || state.consoleHighlights.isNotEmpty()) {
-                    item {
                         if (state.isLoadingConsoleHighlights && state.consoleHighlights.isEmpty()) {
                             SpTitledSection(
                                 title = "Browse by Console",
@@ -218,11 +196,9 @@ fun ExploreScreen(
                             }
                         }
                     }
-                    }
 
                     // Mood picker section
                     if (state.isLoadingMoods || state.moods.isNotEmpty()) {
-                    item {
                         if (state.isLoadingMoods && state.moods.isEmpty()) {
                             SpTitledSection(
                                 title = "What are you in the mood for?",
@@ -246,21 +222,17 @@ fun ExploreScreen(
                             }
                         }
                     }
-                    }
 
                     // Wild Features — Lucky & Wizard
-                    item {
-                        WildFeaturesSection(
-                            onSurpriseMe = { onSurpriseMe?.invoke() },
-                            onWizardSelected = { onWizardSelected?.invoke() },
-                            modifier = Modifier
-                                .testTag("explore_wild_features"),
-                        )
-                    }
+                    WildFeaturesSection(
+                        onSurpriseMe = { onSurpriseMe?.invoke() },
+                        onWizardSelected = { onWizardSelected?.invoke() },
+                        modifier = Modifier
+                            .testTag("explore_wild_features"),
+                    )
 
                     // For You section (personalized recommendations)
                     if (state.isLoadingForYou || state.forYouRows.isNotEmpty()) {
-                    item {
                         if (state.isLoadingForYou && state.forYouRows.isEmpty()) {
                             SpTitledSection(
                                 title = "For You",
@@ -282,11 +254,9 @@ fun ExploreScreen(
                             }
                         }
                     }
-                    }
 
                     // Theme grid section
                     if (state.isLoadingThemes || state.themes.isNotEmpty()) {
-                    item {
                         if (state.isLoadingThemes && state.themes.isEmpty()) {
                             SpTitledSection(
                                 title = "Browse by Theme",
@@ -310,11 +280,9 @@ fun ExploreScreen(
                             }
                         }
                     }
-                    }
 
                     // Keyword chips section
                     if (state.isLoadingKeywords || state.keywords.isNotEmpty()) {
-                    item {
                         if (state.isLoadingKeywords && state.keywords.isEmpty()) {
                             SpTitledSection(
                                 title = "Popular Keywords",
@@ -338,11 +306,9 @@ fun ExploreScreen(
                             }
                         }
                     }
-                    }
 
                     // Series shelf section
                     if (state.isLoadingFeaturedSeries || state.featuredSeries.isNotEmpty()) {
-                    item {
                         if (state.isLoadingFeaturedSeries && state.featuredSeries.isEmpty()) {
                             SpTitledSection(
                                 title = "Browse by Series",
@@ -366,29 +332,25 @@ fun ExploreScreen(
                             }
                         }
                     }
-                    }
 
 
                     // Developer spotlight section
-                    item {
-                        if (state.isLoadingDeveloperSpotlight && state.developerSpotlight == null) {
-                            DeveloperSpotlightSkeleton(
-                            )
-                        } else if (state.developerSpotlight != null) {
-                            DeveloperSpotlightSection(
-                                spotlight = state.developerSpotlight!!,
-                                onDeveloperSelected = { name ->
-                                    onDeveloperSelected?.invoke(name)
-                                },
-                                onGameSelected = onGameSelected,
-                                modifier = Modifier.testTag("explore_developer_spotlight_section"),
-                            )
-                        }
+                    if (state.isLoadingDeveloperSpotlight && state.developerSpotlight == null) {
+                        DeveloperSpotlightSkeleton(
+                        )
+                    } else if (state.developerSpotlight != null) {
+                        DeveloperSpotlightSection(
+                            spotlight = state.developerSpotlight!!,
+                            onDeveloperSelected = { name ->
+                                onDeveloperSelected?.invoke(name)
+                            },
+                            onGameSelected = onGameSelected,
+                            modifier = Modifier.testTag("explore_developer_spotlight_section"),
+                        )
                     }
 
                     // Artwork showcase section
                     if (state.isLoadingArtwork || state.artworkShowcase.isNotEmpty()) {
-                    item {
                         if (state.isLoadingArtwork && state.artworkShowcase.isEmpty()) {
                             SpTitledSection(
                                 title = "Visual Discovery",
@@ -424,12 +386,10 @@ fun ExploreScreen(
                             }
                         }
                     }
-                    }
 
                     // Social & Community Discovery sections
                     // Trending
                     if (state.isLoadingSocial || state.trendingGames.isNotEmpty()) {
-                    item {
                         if (state.isLoadingSocial && state.trendingGames.isEmpty()) {
                             SpTitledSection(
                                 title = "Trending on Your Server",
@@ -451,11 +411,9 @@ fun ExploreScreen(
                             }
                         }
                     }
-                    }
 
                     // Community Favorites
                     if (state.isLoadingSocial || state.communityTopGames.isNotEmpty()) {
-                    item {
                         if (state.isLoadingSocial && state.communityTopGames.isEmpty()) {
                             SpTitledSection(
                                 title = "Community Favorites",
@@ -477,11 +435,9 @@ fun ExploreScreen(
                             }
                         }
                     }
-                    }
 
                     // Cult Classics
                     if (state.isLoadingSocial || state.cultClassics.isNotEmpty()) {
-                    item {
                         if (state.isLoadingSocial && state.cultClassics.isEmpty()) {
                             SpTitledSection(
                                 title = "Cult Classics",
@@ -503,11 +459,9 @@ fun ExploreScreen(
                             }
                         }
                     }
-                    }
 
                     // Active Right Now
                     if (state.isLoadingSocial || state.activeNowGames.isNotEmpty()) {
-                    item {
                         if (state.isLoadingSocial && state.activeNowGames.isEmpty()) {
                             SpTitledSection(
                                 title = "Active Right Now",
@@ -529,11 +483,9 @@ fun ExploreScreen(
                             }
                         }
                     }
-                    }
 
                     // Recently Reviewed
                     if (state.isLoadingSocial || state.recentReviews.isNotEmpty()) {
-                    item {
                         if (state.isLoadingSocial && state.recentReviews.isEmpty()) {
                             SpTitledSection(
                                 title = "Recently Reviewed",
@@ -555,11 +507,9 @@ fun ExploreScreen(
                             }
                         }
                     }
-                    }
 
                     // Temporal Discovery: On This Day
                     if (state.isLoadingTemporal || state.onThisDayGames.isNotEmpty()) {
-                    item {
                         if (state.isLoadingTemporal && state.onThisDayGames.isEmpty()) {
                             SpTitledSection(
                                 title = "On This Day",
@@ -586,11 +536,9 @@ fun ExploreScreen(
                             }
                         }
                     }
-                    }
 
                     // Temporal Discovery: Your Anniversaries
                     if (state.isLoadingTemporal || state.anniversaries.isNotEmpty()) {
-                    item {
                         if (state.isLoadingTemporal && state.anniversaries.isEmpty()) {
                             SpTitledSection(
                                 title = "Your Anniversaries",
@@ -612,11 +560,9 @@ fun ExploreScreen(
                             }
                         }
                     }
-                    }
 
                     // Achievement Discovery: Easy to 100%
                     if (state.isLoadingAchievement || state.easyToCompleteGames.isNotEmpty()) {
-                    item {
                         if (state.isLoadingAchievement && state.easyToCompleteGames.isEmpty()) {
                             SpTitledSection(
                                 title = "Easy to 100%",
@@ -638,11 +584,9 @@ fun ExploreScreen(
                             }
                         }
                     }
-                    }
 
                     // Achievement Discovery: Mount Everest (Hardest)
                     if (state.isLoadingAchievement || state.hardestGames.isNotEmpty()) {
-                    item {
                         if (state.isLoadingAchievement && state.hardestGames.isEmpty()) {
                             SpTitledSection(
                                 title = "Mount Everest",
@@ -664,11 +608,9 @@ fun ExploreScreen(
                             }
                         }
                     }
-                    }
 
                     // Achievement Discovery: Almost Done
                     if (state.isLoadingAchievement || state.almostDoneGames.isNotEmpty()) {
-                    item {
                         if (state.isLoadingAchievement && state.almostDoneGames.isEmpty()) {
                             SpTitledSection(
                                 title = "Almost Done",
@@ -690,11 +632,9 @@ fun ExploreScreen(
                             }
                         }
                     }
-                    }
 
                     // Achievement Discovery: Fresh Challenges
                     if (state.isLoadingAchievement || state.freshChallengeGames.isNotEmpty()) {
-                    item {
                         if (state.isLoadingAchievement && state.freshChallengeGames.isEmpty()) {
                             SpTitledSection(
                                 title = "Fresh Challenges",
@@ -716,11 +656,9 @@ fun ExploreScreen(
                             }
                         }
                     }
-                    }
 
                     // Achievement Discovery: Active Challenges
                     if (state.isLoadingAchievement || state.activeChallenges.isNotEmpty()) {
-                    item {
                         if (state.isLoadingAchievement && state.activeChallenges.isEmpty()) {
                             SpTitledSection(
                                 title = "Active Challenges",
@@ -744,24 +682,20 @@ fun ExploreScreen(
                             }
                         }
                     }
-                    }
                     // Shelf rows
                     if (state.isLoadingRows && state.rows.isEmpty()) {
                         // Loading skeletons for rows
                         val skeletonTitles = listOf("Top Rated", "Recently Added", "Hidden Gems")
-                        items(skeletonTitles.size) { index ->
+                        skeletonTitles.forEach { title ->
                             SpTitledSection(
-                                title = skeletonTitles[index],
+                                title = title,
                                 edgeToEdgeContent = true,
                             ) {
                                 GameShelfSkeleton()
                             }
                         }
                     } else {
-                        items(
-                            items = state.rows,
-                            key = { it.id },
-                        ) { row ->
+                        state.rows.forEach { row ->
                             if (row.games.isNotEmpty()) {
                                 SpTitledSection(
                                 title = row.title,
@@ -779,8 +713,10 @@ fun ExploreScreen(
                     }
 
                     // Bottom spacer
-                    item { Spacer(Modifier.height(SpSpacing.XLarge)) }
-                }
+                    Spacer(Modifier.height(SpSpacing.XLarge))
+                } // SpSectionList
+                } // SpMainContentPadding
+                } // SpScrollableContent
             }
         }
 

@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
@@ -28,7 +29,11 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import com.spela.player.presentation.ui.components.PlatformBackHandler
-import com.spela.player.presentation.ui.components.SpChip
+import com.spela.player.presentation.ui.components.SpButton
+import com.spela.player.presentation.ui.components.SpButtonStyle
+import com.spela.player.presentation.ui.components.SpMainContentPadding
+import com.spela.player.presentation.ui.components.SpScreen
+import com.spela.player.presentation.ui.components.SpScreenTopSpacer
 import com.spela.player.presentation.ui.components.SpEmptyState
 import com.spela.player.presentation.ui.components.SpSnackbar
 import com.spela.player.presentation.ui.components.SpSnackbarData
@@ -38,9 +43,10 @@ import com.spela.player.presentation.ui.components.SpTopBar
 import com.spela.player.presentation.ui.feature.search.RecentSearchesSection
 import com.spela.player.presentation.ui.feature.search.SearchResultSkeleton
 import com.spela.player.presentation.ui.feature.search.SearchResultsList
+import com.spela.player.presentation.ui.gamepad.InputMode
+import com.spela.player.presentation.ui.gamepad.LocalInputMode
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
-import com.spela.player.presentation.ui.theme.spScreenBackground
 import com.spela.player.presentation.viewmodel.GlobalSearchViewModel
 
 @Composable
@@ -60,26 +66,29 @@ fun GlobalSearchScreen(
 
     val state by viewModel.state.collectAsState()
     val focusRequester = remember { FocusRequester() }
+    val isGamepad = LocalInputMode.current == InputMode.GAMEPAD
 
+    // Focus the text field on mount. Use a delay longer than the
+    // GamepadHandler retry loop's initial check (100ms) so it fires
+    // after GamepadHandler has already focused something, then we
+    // override it with the text field.
     LaunchedEffect(Unit) {
-        focusRequester.requestFocus()
+        kotlinx.coroutines.delay(300)
+        try { focusRequester.requestFocus() } catch (_: Exception) {}
     }
 
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .spScreenBackground()
-            .testTag("global_search_screen"),
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize(),
-        ) {
-            SpTopBar(
-                title = "Search",
-                showBack = true,
-                onBack = onBack,
-            )
+    SpScreen(modifier = Modifier.testTag("global_search_screen")) {
+        Column(modifier = Modifier.fillMaxSize()) {
+            if (isGamepad) {
+                SpScreenTopSpacer()
+            } else {
+                SpTopBar(
+                    title = "Search",
+                    showBack = true,
+                    onBack = onBack,
+                )
+            }
+            SpMainContentPadding {
 
             // Search input
             SpTextField(
@@ -109,31 +118,27 @@ fun GlobalSearchScreen(
                 } else null,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = SpSpacing.ScreenHorizontal)
                     .focusRequester(focusRequester)
                     .testTag("global_search_input"),
             )
 
-            Spacer(Modifier.height(SpSpacing.Small))
-
-            // Advanced Filters chip (Story 5)
-            SpChip(
+            // Advanced Filters button
+            SpButton(
                 text = "Advanced Filters",
                 onClick = onAdvancedFiltersSelected,
+                style = SpButtonStyle.Ghost,
                 leadingIcon = {
                     Icon(
                         imageVector = Icons.Filled.Tune,
                         contentDescription = null,
-                        tint = SpColor.OnBackgroundSecondary,
-                        modifier = Modifier.size(16.dp),
+                        modifier = Modifier.size(SpSpacing.IconDefault),
                     )
                 },
                 modifier = Modifier
-                    .padding(horizontal = SpSpacing.ScreenHorizontal)
+                    .fillMaxWidth()
+                    .heightIn(min = 48.dp)
                     .testTag("global_search_advanced_filters"),
             )
-
-            Spacer(Modifier.height(SpSpacing.Small))
 
             // Content area
             when {
@@ -216,7 +221,8 @@ fun GlobalSearchScreen(
                     )
                 }
             }
-        }
+        } // SpMainContentPadding
+        } // Column
 
         // Error snackbar
         SpSnackbar(
