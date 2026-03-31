@@ -87,8 +87,8 @@ export function GameHero({
   const [showCoverModal, setShowCoverModal] = useState(false);
   const consoleName = game.consoleName ?? "";
 
-  // Use first screenshot as hero background, or null for gradient-only fallback
-  const heroImage = game.screenshotUrls?.[0] || null;
+  // Prefer hero art (from SteamGridDB), fall back to first screenshot
+  const heroImage = game.heroUrl || game.screenshotUrls?.[0] || null;
 
   const actionsMenuItems = [
     ...(isAdmin

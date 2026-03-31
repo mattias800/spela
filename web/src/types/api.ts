@@ -106,6 +106,7 @@ export interface Game {
   discs?: GameDisc[];
   coverUrl?: string;
   screenshotUrls: string[];
+  heroUrl?: string;
   description?: string;
   developer?: string;
   publisher?: string;
