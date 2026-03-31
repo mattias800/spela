@@ -36,6 +36,11 @@ import com.spela.player.presentation.ui.components.challenge.SpChallengeCardSkel
 import com.spela.player.presentation.ui.feature.challenges.ChallengeFilterBar
 import com.spela.player.presentation.ui.gamepad.InputMode
 import com.spela.player.presentation.ui.gamepad.LocalInputMode
+import com.spela.player.presentation.ui.gamepad.autoFocus
+import com.spela.player.presentation.ui.gamepad.LocalFocusMemory
+import com.spela.player.presentation.ui.gamepad.rememberFocus
+import com.spela.player.presentation.ui.gamepad.rememberFocusMemoryState
+import androidx.compose.runtime.CompositionLocalProvider
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.ui.theme.SpTypography
@@ -134,6 +139,8 @@ fun GlobalChallengesScreen(
             else -> state.isLoading
         }
 
+        val focusMemory = rememberFocusMemoryState()
+        CompositionLocalProvider(LocalFocusMemory provides focusMemory) {
         if (isLoading && challenges.isEmpty()) {
             LazyVerticalGrid(
                 columns = GridCells.Adaptive(minSize = SpSpacing.ChallengeCellMinWidth),
@@ -176,12 +183,15 @@ fun GlobalChallengesScreen(
                             SpChallengeCard(
                                 challenge = challenge,
                                 onClick = { onChallengeSelected(challenge.id) },
+                                modifier = (if (challenge == challenges.firstOrNull()) Modifier.autoFocus() else Modifier)
+                                    .rememberFocus(challenge.id),
                             )
                         }
                     }
                 }
             }
         }
+        } // CompositionLocalProvider
         }
     }
 }

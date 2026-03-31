@@ -48,6 +48,7 @@ import com.spela.player.presentation.ui.components.SpScreenTopSpacer
 import com.spela.player.presentation.ui.components.SpTopBar
 import com.spela.player.presentation.ui.gamepad.InputMode
 import com.spela.player.presentation.ui.gamepad.LocalInputMode
+import com.spela.player.presentation.ui.gamepad.autoFocus
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.ui.theme.SpTypography
@@ -165,6 +166,7 @@ fun ExploreMoodScreen(
                             MoodGameItem(
                                 game = game,
                                 onClick = { onGameSelected(game.id) },
+                                modifier = if (game == state.games.firstOrNull()) Modifier.autoFocus() else Modifier,
                             )
                         }
                     }
@@ -205,9 +207,10 @@ fun ExploreMoodScreen(
 private fun MoodGameItem(
     game: Game,
     onClick: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     SpCard(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .padding(
                 horizontal = SpSpacing.ScreenHorizontal,

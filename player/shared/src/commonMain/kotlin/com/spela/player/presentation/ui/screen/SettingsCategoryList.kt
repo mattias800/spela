@@ -32,6 +32,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
+import androidx.compose.runtime.CompositionLocalProvider
+import com.spela.player.presentation.ui.gamepad.LocalFocusMemory
+import com.spela.player.presentation.ui.gamepad.rememberFocus
+import com.spela.player.presentation.ui.gamepad.rememberFocusMemoryState
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.ui.theme.SpTypography
@@ -48,6 +52,8 @@ fun SettingsCategoryList(
     modifier: Modifier = Modifier,
     topPadding: androidx.compose.ui.unit.Dp = 0.dp,
 ) {
+    val focusMemory = rememberFocusMemoryState()
+    CompositionLocalProvider(LocalFocusMemory provides focusMemory) {
     LazyColumn(
         modifier = modifier.fillMaxSize().focusGroup(),
         contentPadding = PaddingValues(
@@ -91,6 +97,7 @@ fun SettingsCategoryList(
 
             Row(
                 modifier = Modifier
+                    .rememberFocus(category.name)
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(8.dp))
                     .background(bgColor)
@@ -123,4 +130,5 @@ fun SettingsCategoryList(
             }
         }
     }
+    } // CompositionLocalProvider
 }

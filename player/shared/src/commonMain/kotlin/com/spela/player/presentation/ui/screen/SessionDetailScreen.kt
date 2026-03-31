@@ -65,6 +65,7 @@ import com.spela.player.presentation.ui.feature.library.darken
 import com.spela.player.presentation.ui.feature.library.getConsoleGradient
 import com.spela.player.presentation.ui.gamepad.InputMode
 import com.spela.player.presentation.ui.gamepad.LocalInputMode
+import com.spela.player.presentation.ui.gamepad.autoFocus
 import com.spela.player.presentation.ui.feature.sessiondetail.SessionCheatsSection
 import com.spela.player.presentation.ui.components.SpPlayInfo
 import com.spela.player.presentation.ui.components.social.formatRelativeTime
@@ -468,7 +469,7 @@ private fun SessionDetailHeader(
             SpButton(
                 text = "Play",
                 onClick = onPlay,
-                modifier = Modifier.testTag("session_detail_play_button"),
+                modifier = Modifier.autoFocus().testTag("session_detail_play_button"),
                 leadingIcon = {
                     Icon(
                         imageVector = Icons.Filled.PlayArrow,

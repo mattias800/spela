@@ -2,6 +2,7 @@ package com.spela.player.presentation.ui.feature.library
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.Modifier
 import com.spela.player.domain.model.Game
 import com.spela.player.presentation.ui.components.SpGridGameCard
 
@@ -17,6 +18,7 @@ internal fun GameGridItem(
     game: Game,
     onClick: () -> Unit,
     onRequestScrape: ((Game) -> Unit)? = null,
+    modifier: Modifier = Modifier,
 ) {
     // Trigger scrape for games with no cover art that haven't been scraped yet
     if (onRequestScrape != null && game.coverUrl == null && game.scrapeAttempts == 0) {
@@ -35,5 +37,6 @@ internal fun GameGridItem(
         isInPlayLater = game.isInPlayLater,
         variantCount = game.variantCount,
         testTag = "game_grid_item_${game.id}",
+        modifier = modifier,
     )
 }

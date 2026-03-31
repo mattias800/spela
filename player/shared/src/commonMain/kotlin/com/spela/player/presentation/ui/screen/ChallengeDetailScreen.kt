@@ -58,6 +58,7 @@ import com.spela.player.presentation.ui.components.challenge.formatDuration
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.gamepad.InputMode
 import com.spela.player.presentation.ui.gamepad.LocalInputMode
+import com.spela.player.presentation.ui.gamepad.autoFocus
 import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.ui.theme.SpTypography
 import com.spela.player.presentation.viewmodel.ChallengeDetailViewModel
@@ -229,7 +230,7 @@ fun ChallengeDetailScreen(
                     SpButton(
                         text = "Attempt Challenge",
                         onClick = { onAttempt(challenge.id, challenge.gameId) },
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier.autoFocus().fillMaxWidth(),
                     )
 
                     // Delete button (visible for challenge creator)

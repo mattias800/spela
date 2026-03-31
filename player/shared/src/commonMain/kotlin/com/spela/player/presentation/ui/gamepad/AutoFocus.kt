@@ -2,12 +2,11 @@ package com.spela.player.presentation.ui.gamepad
 
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.compositionLocalOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
-import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.platform.LocalFocusManager
 import kotlinx.coroutines.delay
 
 /**
@@ -17,31 +16,32 @@ import kotlinx.coroutines.delay
 val LocalIsForwardNavigation = compositionLocalOf { false }
 
 /**
- * Requests focus on this element when it first mounts during forward navigation.
+ * Requests focus on this element when it mounts during forward navigation
+ * in gamepad mode.
  *
- * Apply to exactly one element per screen — the element that should receive
- * initial focus when navigating to the screen with a gamepad. On back
- * navigation, this modifier does nothing (scroll position and spatial focus
- * handle restoration).
+ * Apply to the first meaningful focusable element on each screen — the
+ * element that should receive initial gamepad focus. Each screen is
+ * responsible for placing this modifier; this is the primary mechanism
+ * for focus acquisition on navigation.
  *
- * If the target is a focus group (e.g. a list), focus is moved into the
- * first focusable child automatically.
+ * On back navigation, this modifier does nothing — the GamepadHandler
+ * Box retains focus and the first d-pad press enters content near the
+ * restored scroll position.
  *
- * Only activates in gamepad mode.
+ * The 500ms delay ensures the AnimatedContent exit transition has
+ * completed so focus doesn't land on the outgoing screen.
  */
 fun Modifier.autoFocus(): Modifier = composed {
     val isForward = LocalIsForwardNavigation.current
     val isGamepad = LocalInputMode.current == InputMode.GAMEPAD
-    val focusManager = LocalFocusManager.current
 
     if (isForward && isGamepad) {
-        val focusRequester = FocusRequester()
+        val focusRequester = remember { FocusRequester() }
         LaunchedEffect(Unit) {
-            delay(200)
+            // Wait for AnimatedContent exit transition to complete
+            delay(500)
             try {
                 focusRequester.requestFocus()
-                // If this is a focus group, enter the first child
-                focusManager.moveFocus(FocusDirection.Enter)
             } catch (_: Exception) {}
         }
         this.focusRequester(focusRequester)

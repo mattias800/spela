@@ -1,6 +1,7 @@
 package com.spela.player.presentation.ui.components
 
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
 
 /**
  * ROLE component — a game card for grid layouts.
@@ -22,8 +23,10 @@ fun SpGridGameCard(
     isInPlayLater: Boolean = false,
     variantCount: Int = 0,
     testTag: String? = null,
+    modifier: Modifier = Modifier,
 ) {
     SpGameCard(
+        modifier = modifier,
         title = title,
         subtitle = subtitle,
         coverUrl = coverUrl,

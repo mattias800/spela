@@ -47,6 +47,11 @@ import com.spela.player.presentation.ui.components.SpScreenTopSpacer
 import com.spela.player.presentation.ui.components.SpTopBar
 import com.spela.player.presentation.ui.gamepad.InputMode
 import com.spela.player.presentation.ui.gamepad.LocalInputMode
+import com.spela.player.presentation.ui.gamepad.autoFocus
+import com.spela.player.presentation.ui.gamepad.LocalFocusMemory
+import com.spela.player.presentation.ui.gamepad.rememberFocus
+import com.spela.player.presentation.ui.gamepad.rememberFocusMemoryState
+import androidx.compose.runtime.CompositionLocalProvider
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.ui.theme.SpTypography
@@ -71,6 +76,8 @@ fun DownloadsScreen(
 
     val isGamepad = LocalInputMode.current == InputMode.GAMEPAD
 
+    val focusMemory = rememberFocusMemoryState()
+
     SpScreen {
         Column(
             modifier = Modifier
@@ -82,6 +89,7 @@ fun DownloadsScreen(
                 SpTopBar(title = "Downloads", showBack = true, onBack = onBack)
             }
 
+            CompositionLocalProvider(LocalFocusMemory provides focusMemory) {
             LazyColumn(
             modifier = Modifier.fillMaxSize(),
             contentPadding = PaddingValues(
@@ -120,6 +128,7 @@ fun DownloadsScreen(
                             onClick = { viewModel.onIntent(DownloadsIntent.ClearCache) },
                             isLoading = state.isClearingCache,
                             enabled = !state.isClearingCache && state.cacheSize > 0,
+                            modifier = Modifier.autoFocus(),
                         )
                     }
                 }
@@ -141,6 +150,7 @@ fun DownloadsScreen(
                         download = download,
                         isCancelling = download.gameId in state.cancellingGameIds,
                         onCancel = { viewModel.onIntent(DownloadsIntent.CancelDownload(download.gameId)) },
+                        modifier = Modifier.rememberFocus("download_${download.gameId}"),
                     )
                 }
             }
@@ -161,6 +171,7 @@ fun DownloadsScreen(
                         game = game,
                         onClick = { onGameClick(game.gameId) },
                         onDelete = { viewModel.onIntent(DownloadsIntent.DeleteLocalGame(game.gameId)) },
+                        modifier = Modifier.rememberFocus("downloaded_${game.gameId}"),
                     )
                 }
             }
@@ -172,6 +183,7 @@ fun DownloadsScreen(
                 }
             }
         }
+        } // CompositionLocalProvider
         }
     }
 }
@@ -181,11 +193,12 @@ private fun DownloadItem(
     download: DownloadProgress,
     isCancelling: Boolean = false,
     onCancel: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     val statusText = download.state.name.lowercase().replaceFirstChar { it.uppercase() }
     val displayTitle = download.gameTitle.ifEmpty { "Game ${download.gameId}" }
 
-    SpCard {
+    SpCard(modifier = modifier) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
@@ -261,9 +274,10 @@ private fun DownloadedGameItem(
     game: DownloadedGame,
     onClick: () -> Unit,
     onDelete: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     SpCard(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .clickable(onClick = onClick)
             .semantics {

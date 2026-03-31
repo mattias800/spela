@@ -23,6 +23,11 @@ import com.spela.player.presentation.ui.components.SpTopBar
 import com.spela.player.presentation.ui.components.PlatformBackHandler
 import com.spela.player.presentation.ui.gamepad.InputMode
 import com.spela.player.presentation.ui.gamepad.LocalInputMode
+import com.spela.player.presentation.ui.gamepad.autoFocus
+import com.spela.player.presentation.ui.gamepad.LocalFocusMemory
+import com.spela.player.presentation.ui.gamepad.rememberFocus
+import com.spela.player.presentation.ui.gamepad.rememberFocusMemoryState
+import androidx.compose.runtime.CompositionLocalProvider
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.ui.theme.SpTypography
@@ -110,6 +115,8 @@ fun LicensesScreen(
                 SpTopBar(title = "Credits & Licenses", showBack = true, onBack = onBack)
             }
 
+            val focusMemory = rememberFocusMemoryState()
+            CompositionLocalProvider(LocalFocusMemory provides focusMemory) {
             LazyColumn(
             modifier = Modifier.fillMaxSize(),
             contentPadding = PaddingValues(
@@ -127,7 +134,10 @@ fun LicensesScreen(
             }
 
             items(credits) { entry ->
-                SpCard {
+                SpCard(
+                    modifier = (if (entry == credits.firstOrNull()) Modifier.autoFocus() else Modifier)
+                        .rememberFocus(entry.name),
+                ) {
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -165,6 +175,7 @@ fun LicensesScreen(
                 Spacer(Modifier.height(SpSpacing.XXXLarge))
             }
         }
+        } // CompositionLocalProvider
         }
     }
 }

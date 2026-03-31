@@ -60,6 +60,11 @@ import com.spela.player.presentation.ui.feature.stats.RankBadge
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.gamepad.InputMode
 import com.spela.player.presentation.ui.gamepad.LocalInputMode
+import com.spela.player.presentation.ui.gamepad.autoFocus
+import com.spela.player.presentation.ui.gamepad.LocalFocusMemory
+import com.spela.player.presentation.ui.gamepad.rememberFocus
+import com.spela.player.presentation.ui.gamepad.rememberFocusMemoryState
+import androidx.compose.runtime.CompositionLocalProvider
 import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.ui.theme.SpTypography
 import com.spela.player.presentation.viewmodel.TopListsViewModel
@@ -116,7 +121,7 @@ fun TopListsScreen(
                             modifier = Modifier.size(14.dp),
                         )
                     },
-                    modifier = Modifier.testTag("tab_top_rated"),
+                    modifier = Modifier.autoFocus().testTag("tab_top_rated"),
                 )
                 SpChip(
                     text = "Longest",
@@ -177,6 +182,8 @@ fun TopListsScreen(
                             )
                         }
                     } else {
+                        val focusMemory = rememberFocusMemoryState()
+                        CompositionLocalProvider(LocalFocusMemory provides focusMemory) {
                         when (state.selectedTab) {
                             TopListTab.TOP_RATED -> {
                                 LazyColumn(
@@ -190,6 +197,7 @@ fun TopListsScreen(
                                         TopListGameItem(
                                             game = item,
                                             onClick = { onGameSelected(item.gameId) },
+                                            modifier = Modifier.rememberFocus("toplist_${item.gameId}"),
                                         )
                                     }
                                 }
@@ -206,11 +214,13 @@ fun TopListsScreen(
                                         LongestGameItem(
                                             game = item,
                                             onClick = { onGameSelected(item.gameId) },
+                                            modifier = Modifier.rememberFocus("longest_${item.gameId}"),
                                         )
                                     }
                                 }
                             }
                         }
+                        } // CompositionLocalProvider
                     }
                 }
             }
@@ -236,10 +246,11 @@ fun TopListsScreen(
 private fun TopListGameItem(
     game: TopListGame,
     onClick: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     SpCard(
         onGradient = true,
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .padding(horizontal = SpSpacing.ScreenHorizontal, vertical = SpSpacing.XSmall)
             .testTag("top_list_item_${game.gameId}")
@@ -308,6 +319,7 @@ private fun TopListGameItem(
 private fun LongestGameItem(
     game: LongestGame,
     onClick: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     val primaryTime = when {
         game.timeToBeatNormally > 0 -> game.timeToBeatNormally
@@ -317,7 +329,7 @@ private fun LongestGameItem(
 
     SpCard(
         onGradient = true,
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .padding(horizontal = SpSpacing.ScreenHorizontal, vertical = SpSpacing.XSmall)
             .testTag("longest_game_item_${game.gameId}")

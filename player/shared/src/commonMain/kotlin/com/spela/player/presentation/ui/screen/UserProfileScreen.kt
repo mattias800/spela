@@ -53,6 +53,11 @@ import com.spela.player.presentation.ui.components.SpTopBar
 import com.spela.player.presentation.ui.components.PlatformBackHandler
 import com.spela.player.presentation.ui.gamepad.InputMode
 import com.spela.player.presentation.ui.gamepad.LocalInputMode
+import com.spela.player.presentation.ui.gamepad.autoFocus
+import com.spela.player.presentation.ui.gamepad.LocalFocusMemory
+import com.spela.player.presentation.ui.gamepad.rememberFocus
+import com.spela.player.presentation.ui.gamepad.rememberFocusMemoryState
+import androidx.compose.runtime.CompositionLocalProvider
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.ui.theme.SpTypography
@@ -186,6 +191,8 @@ private fun ProfileContent(
         formatMemberSince(profile.memberSince)
     }
 
+    val focusMemory = rememberFocusMemoryState()
+    CompositionLocalProvider(LocalFocusMemory provides focusMemory) {
     SpSectionList(
         modifier = Modifier.fillMaxSize(),
     ) {
@@ -255,7 +262,7 @@ private fun ProfileContent(
             StatCard(
                 label = "Play Time",
                 value = formatPlayTime(profile.totalPlayTime),
-                modifier = Modifier.weight(1f),
+                modifier = Modifier.weight(1f).autoFocus(),
             )
             StatCard(
                 label = "Games Played",
@@ -266,7 +273,10 @@ private fun ProfileContent(
 
         // Activity Heatmap
         if (heatmapData.isNotEmpty()) {
-            SpTitledSection(title = "Activity") {
+            SpTitledSection(
+                title = "Activity",
+                modifier = Modifier.rememberFocus("section_activity"),
+            ) {
                 SpPlayHeatmap(
                     entries = heatmapData,
                     modifier = Modifier.fillMaxWidth(),
@@ -279,6 +289,7 @@ private fun ProfileContent(
             SpTitledSection(
                 title = "Featured Achievements",
                 edgeToEdgeContent = true,
+                modifier = Modifier.rememberFocus("section_featured_achievements"),
                 titleTrailing = if (isOwnProfile) {
                     {
                         SpButton(
@@ -313,7 +324,8 @@ private fun ProfileContent(
         if (profile.topGames.isNotEmpty()) {
             SpTitledSection(
                 title = "Most Played",
-                modifier = Modifier.testTag("user_profile_most_played"),
+                modifier = Modifier.testTag("user_profile_most_played")
+                    .rememberFocus("section_most_played"),
             ) {
                 Column(
                     verticalArrangement = Arrangement.spacedBy(SpSpacing.XSmall),
@@ -333,7 +345,8 @@ private fun ProfileContent(
         if (profile.favoriteGames.isNotEmpty()) {
             SpTitledSection(
                 title = "Favorites",
-                modifier = Modifier.testTag("user_profile_favorites"),
+                modifier = Modifier.testTag("user_profile_favorites")
+                    .rememberFocus("section_favorites"),
             ) {
                 Column(
                     verticalArrangement = Arrangement.spacedBy(SpSpacing.XSmall),
@@ -353,7 +366,8 @@ private fun ProfileContent(
         if (profile.recentGames.isNotEmpty()) {
             SpTitledSection(
                 title = "Recently Played",
-                modifier = Modifier.testTag("user_profile_recently_played"),
+                modifier = Modifier.testTag("user_profile_recently_played")
+                    .rememberFocus("section_recently_played"),
             ) {
                 Column(
                     verticalArrangement = Arrangement.spacedBy(SpSpacing.XSmall),
@@ -369,6 +383,7 @@ private fun ProfileContent(
             }
         }
     }
+    } // CompositionLocalProvider
 }
 
 @Composable

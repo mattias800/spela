@@ -18,6 +18,7 @@ import com.spela.player.presentation.ui.components.SpTopBar
 import com.spela.player.presentation.ui.feature.gamedetail.GameAchievementsSection
 import com.spela.player.presentation.ui.gamepad.InputMode
 import com.spela.player.presentation.ui.gamepad.LocalInputMode
+import com.spela.player.presentation.ui.gamepad.autoFocus
 import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.viewmodel.GameDetailViewModel
 
@@ -59,6 +60,7 @@ fun GameAchievementsScreen(
                 .padding(SpSpacing.Default),
         ) {
             GameAchievementsSection(
+                modifier = Modifier.autoFocus(),
                 achievements = state.achievements,
                 progress = state.achievementProgress,
                 timeline = state.achievementTimeline,

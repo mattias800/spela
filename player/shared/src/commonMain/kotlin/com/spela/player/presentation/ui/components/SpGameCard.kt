@@ -71,6 +71,7 @@ fun SpGameCard(
     variantCount: Int = 0,
     testTag: String? = null,
     coverBadge: (@Composable () -> Unit)? = null,
+    modifier: Modifier = Modifier,
 ) {
     // In carousel mode, compute width from the cover height and actual image ratio.
     // Start with a default ratio (0.75) and update when the image loads.
@@ -80,7 +81,7 @@ fun SpGameCard(
         coverHeight != null -> coverHeight * resolvedAspectRatio
         else -> width
     }
-    val sizeModifier = if (cardWidth != null) Modifier.width(cardWidth) else Modifier.fillMaxWidth()
+    val sizeModifier = if (cardWidth != null) modifier.width(cardWidth) else modifier.fillMaxWidth()
     SpCard(
         modifier = sizeModifier
             .let { if (testTag != null) it.testTag(testTag) else it }

@@ -41,6 +41,11 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.spela.player.presentation.ui.components.SpEmptyState
 import com.spela.player.presentation.ui.components.SpLoadingIndicator
+import com.spela.player.presentation.ui.gamepad.autoFocus
+import com.spela.player.presentation.ui.gamepad.LocalFocusMemory
+import com.spela.player.presentation.ui.gamepad.rememberFocus
+import com.spela.player.presentation.ui.gamepad.rememberFocusMemoryState
+import androidx.compose.runtime.CompositionLocalProvider
 import com.spela.player.presentation.ui.gamepad.spFocusRing
 import com.spela.player.presentation.ui.components.SpSnackbar
 import com.spela.player.presentation.ui.components.SpSnackbarData
@@ -161,6 +166,8 @@ fun ExploreScreen(
                     }
 
                 SpMainContentPadding {
+                val focusMemory = rememberFocusMemoryState()
+                CompositionLocalProvider(LocalFocusMemory provides focusMemory) {
                 SpSectionList(
                     modifier = Modifier.fillMaxSize(),
                 ) {
@@ -168,6 +175,7 @@ fun ExploreScreen(
                     SearchBarEntryPoint(
                         onClick = { onGlobalSearchSelected?.invoke() },
                         modifier = Modifier
+                            .autoFocus()
                             .testTag("explore_search_bar"),
                     )
 
@@ -185,7 +193,8 @@ fun ExploreScreen(
                                 title = "Browse by Console",
                                 edgeToEdgeContent = true,
                                 modifier = Modifier
-                                    .testTag("explore_consoles_section"),
+                                    .testTag("explore_consoles_section")
+                                    .rememberFocus("section_browse_by_console"),
                             ) {
                                 ConsoleQuickJumpSection(
                                     consoles = state.consoleHighlights,
@@ -211,7 +220,8 @@ fun ExploreScreen(
                                 title = "What are you in the mood for?",
                                 edgeToEdgeContent = true,
                                 modifier = Modifier
-                                    .testTag("explore_moods_section"),
+                                    .testTag("explore_moods_section")
+                                    .rememberFocus("section_moods"),
                             ) {
                                 MoodPicker(
                                     moods = state.moods,
@@ -228,7 +238,8 @@ fun ExploreScreen(
                         onSurpriseMe = { onSurpriseMe?.invoke() },
                         onWizardSelected = { onWizardSelected?.invoke() },
                         modifier = Modifier
-                            .testTag("explore_wild_features"),
+                            .testTag("explore_wild_features")
+                            .rememberFocus("section_wild_features"),
                     )
 
                     // For You section (personalized recommendations)
@@ -245,7 +256,8 @@ fun ExploreScreen(
                                 title = "For You",
                                 edgeToEdgeContent = true,
                                 modifier = Modifier
-                                    .testTag("explore_for_you_section"),
+                                    .testTag("explore_for_you_section")
+                                    .rememberFocus("section_for_you"),
                             ) {
                                 ForYouSection(
                                     rows = state.forYouRows,
@@ -269,7 +281,8 @@ fun ExploreScreen(
                                 title = "Browse by Theme",
                                 edgeToEdgeContent = true,
                                 modifier = Modifier
-                                    .testTag("explore_themes_section"),
+                                    .testTag("explore_themes_section")
+                                    .rememberFocus("section_themes"),
                             ) {
                                 ThemeGrid(
                                     themes = state.themes,
@@ -295,7 +308,8 @@ fun ExploreScreen(
                                 title = "Popular Keywords",
                                 edgeToEdgeContent = true,
                                 modifier = Modifier
-                                    .testTag("explore_keywords_section"),
+                                    .testTag("explore_keywords_section")
+                                    .rememberFocus("section_keywords"),
                             ) {
                                 KeywordChips(
                                     keywords = state.keywords,
@@ -321,7 +335,8 @@ fun ExploreScreen(
                                 title = "Browse by Series",
                                 edgeToEdgeContent = true,
                                 modifier = Modifier
-                                    .testTag("explore_series_section"),
+                                    .testTag("explore_series_section")
+                                    .rememberFocus("section_series"),
                             ) {
                                 SeriesShelf(
                                     series = state.featuredSeries,
@@ -345,7 +360,8 @@ fun ExploreScreen(
                                 onDeveloperSelected?.invoke(name)
                             },
                             onGameSelected = onGameSelected,
-                            modifier = Modifier.testTag("explore_developer_spotlight_section"),
+                            modifier = Modifier.testTag("explore_developer_spotlight_section")
+                                .rememberFocus("section_developer_spotlight"),
                         )
                     }
 
@@ -363,7 +379,8 @@ fun ExploreScreen(
                                 title = "Visual Discovery",
                                 edgeToEdgeContent = true,
                                 modifier = Modifier
-                                    .testTag("explore_artwork_section"),
+                                    .testTag("explore_artwork_section")
+                                    .rememberFocus("section_artwork"),
                                 titleTrailing = if (onGallerySelected != null) {
                                     {
                                         Text(
@@ -402,7 +419,8 @@ fun ExploreScreen(
                                 title = "Trending on Your Server",
                                 edgeToEdgeContent = true,
                                 modifier = Modifier
-                                    .testTag("explore_trending_section"),
+                                    .testTag("explore_trending_section")
+                                    .rememberFocus("section_trending"),
                             ) {
                                 TrendingSection(
                                     games = state.trendingGames,
@@ -426,7 +444,8 @@ fun ExploreScreen(
                                 title = "Community Favorites",
                                 edgeToEdgeContent = true,
                                 modifier = Modifier
-                                    .testTag("explore_community_top_section"),
+                                    .testTag("explore_community_top_section")
+                                    .rememberFocus("section_community_favorites"),
                             ) {
                                 CommunityTopSection(
                                     games = state.communityTopGames,
@@ -450,7 +469,8 @@ fun ExploreScreen(
                                 title = "Cult Classics",
                                 edgeToEdgeContent = true,
                                 modifier = Modifier
-                                    .testTag("explore_cult_classics_section"),
+                                    .testTag("explore_cult_classics_section")
+                                    .rememberFocus("section_cult_classics"),
                             ) {
                                 CultClassicsSection(
                                     games = state.cultClassics,
@@ -474,7 +494,8 @@ fun ExploreScreen(
                                 title = "Active Right Now",
                                 edgeToEdgeContent = true,
                                 modifier = Modifier
-                                    .testTag("explore_active_now_section"),
+                                    .testTag("explore_active_now_section")
+                                    .rememberFocus("section_active_now"),
                             ) {
                                 ActiveNowSection(
                                     games = state.activeNowGames,
@@ -498,7 +519,8 @@ fun ExploreScreen(
                                 title = "Recently Reviewed",
                                 edgeToEdgeContent = true,
                                 modifier = Modifier
-                                    .testTag("explore_recently_reviewed_section"),
+                                    .testTag("explore_recently_reviewed_section")
+                                    .rememberFocus("section_recently_reviewed"),
                             ) {
                                 RecentlyReviewedSection(
                                     reviews = state.recentReviews,
@@ -527,7 +549,8 @@ fun ExploreScreen(
                                 title = title,
                                 edgeToEdgeContent = true,
                                 modifier = Modifier
-                                    .testTag("explore_on_this_day_section"),
+                                    .testTag("explore_on_this_day_section")
+                                    .rememberFocus("section_on_this_day"),
                             ) {
                                 OnThisDaySection(
                                     games = state.onThisDayGames,
@@ -551,7 +574,8 @@ fun ExploreScreen(
                                 title = "Your Anniversaries",
                                 edgeToEdgeContent = true,
                                 modifier = Modifier
-                                    .testTag("explore_anniversaries_section"),
+                                    .testTag("explore_anniversaries_section")
+                                    .rememberFocus("section_anniversaries"),
                             ) {
                                 AnniversariesSection(
                                     anniversaries = state.anniversaries,
@@ -575,7 +599,8 @@ fun ExploreScreen(
                                 title = "Easy to 100%",
                                 edgeToEdgeContent = true,
                                 modifier = Modifier
-                                    .testTag("explore_easy_to_complete_section"),
+                                    .testTag("explore_easy_to_complete_section")
+                                    .rememberFocus("section_easy_to_complete"),
                             ) {
                                 EasyToCompleteSection(
                                     games = state.easyToCompleteGames,
@@ -599,7 +624,8 @@ fun ExploreScreen(
                                 title = "Mount Everest",
                                 edgeToEdgeContent = true,
                                 modifier = Modifier
-                                    .testTag("explore_hardest_games_section"),
+                                    .testTag("explore_hardest_games_section")
+                                    .rememberFocus("section_hardest_games"),
                             ) {
                                 HardestGamesSection(
                                     games = state.hardestGames,
@@ -623,7 +649,8 @@ fun ExploreScreen(
                                 title = "Almost Done",
                                 edgeToEdgeContent = true,
                                 modifier = Modifier
-                                    .testTag("explore_almost_done_section"),
+                                    .testTag("explore_almost_done_section")
+                                    .rememberFocus("section_almost_done"),
                             ) {
                                 AlmostDoneSection(
                                     games = state.almostDoneGames,
@@ -647,7 +674,8 @@ fun ExploreScreen(
                                 title = "Fresh Challenges",
                                 edgeToEdgeContent = true,
                                 modifier = Modifier
-                                    .testTag("explore_fresh_challenges_section"),
+                                    .testTag("explore_fresh_challenges_section")
+                                    .rememberFocus("section_fresh_challenges"),
                             ) {
                                 FreshChallengesSection(
                                     games = state.freshChallengeGames,
@@ -671,7 +699,8 @@ fun ExploreScreen(
                                 title = "Active Challenges",
                                 edgeToEdgeContent = true,
                                 modifier = Modifier
-                                    .testTag("explore_active_challenges_section"),
+                                    .testTag("explore_active_challenges_section")
+                                    .rememberFocus("section_active_challenges"),
                             ) {
                                 ActiveChallengesSection(
                                     challenges = state.activeChallenges,
@@ -701,7 +730,8 @@ fun ExploreScreen(
                                 title = row.title,
                                     edgeToEdgeContent = true,
                                     modifier = Modifier
-                                        .testTag("explore_row_${row.id}"),
+                                        .testTag("explore_row_${row.id}")
+                                        .rememberFocus("section_row_${row.id}"),
                                 ) {
                                     GameShelf(
                                         games = row.games,
@@ -715,6 +745,7 @@ fun ExploreScreen(
                     // Bottom spacer
                     Spacer(Modifier.height(SpSpacing.XLarge))
                 } // SpSectionList
+                } // CompositionLocalProvider
                 } // SpMainContentPadding
                 } // SpScrollableContent
             }

@@ -28,6 +28,10 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.foundation.interaction.collectIsHoveredAsState
 import androidx.compose.foundation.interaction.collectIsPressedAsState
+import androidx.compose.runtime.CompositionLocalProvider
+import com.spela.player.presentation.ui.gamepad.LocalFocusMemory
+import com.spela.player.presentation.ui.gamepad.rememberFocus
+import com.spela.player.presentation.ui.gamepad.rememberFocusMemoryState
 import com.spela.player.presentation.ui.gamepad.spFocusRing
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
@@ -70,6 +74,7 @@ import com.spela.player.presentation.ui.components.SpAreaSizedImage
 import com.spela.player.presentation.ui.components.SpButton
 import com.spela.player.presentation.ui.components.SpButtonStyle
 import com.spela.player.presentation.ui.components.SpShimmer
+import com.spela.player.presentation.ui.gamepad.autoFocus
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.ui.theme.SpTypography
@@ -104,7 +109,11 @@ internal fun ConsolesGrid(
     columnsPerRow: Int = 2,
 ) {
     val grouped = consoles.groupBy { it.generation }.toSortedMap()
+    val focusMemory = rememberFocusMemoryState()
 
+    var isFirstCard = true
+
+    CompositionLocalProvider(LocalFocusMemory provides focusMemory) {
     Column(
         modifier = Modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(SpSpacing.Medium),
@@ -125,11 +134,17 @@ internal fun ConsolesGrid(
                     horizontalArrangement = Arrangement.spacedBy(SpSpacing.Medium),
                 ) {
                     rowConsoles.forEach { console ->
+                        val cardModifier = if (isFirstCard) {
+                            isFirstCard = false
+                            Modifier.weight(1f).autoFocus().rememberFocus(console.id)
+                        } else {
+                            Modifier.weight(1f).rememberFocus(console.id)
+                        }
                         ConsoleCard(
                             console = console,
                             onClick = { onConsoleSelected(console.id) },
                             hasMissingBios = console.id in consolesWithMissingBios,
-                            modifier = Modifier.weight(1f),
+                            modifier = cardModifier,
                         )
                     }
                     repeat(columnsPerRow - rowConsoles.size) {
@@ -139,6 +154,7 @@ internal fun ConsolesGrid(
             }
         }
     }
+    } // CompositionLocalProvider
 }
 
 @Composable
@@ -564,6 +580,7 @@ internal fun ConsoleHeroBanner(
                                 onClick = onConsoleSettings,
                                 style = SpButtonStyle.Outlined,
                                 onGradient = true,
+                                modifier = Modifier.autoFocus(),
                                 leadingIcon = {
                                     Icon(
                                         Icons.Filled.Settings,

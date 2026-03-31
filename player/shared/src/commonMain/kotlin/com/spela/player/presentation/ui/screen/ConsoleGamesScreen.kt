@@ -53,6 +53,11 @@ import com.spela.player.presentation.ui.components.SpTopBar
 import com.spela.player.presentation.ui.feature.library.GameGridItem
 import com.spela.player.presentation.ui.gamepad.InputMode
 import com.spela.player.presentation.ui.gamepad.LocalInputMode
+import com.spela.player.presentation.ui.gamepad.autoFocus
+import com.spela.player.presentation.ui.gamepad.LocalFocusMemory
+import com.spela.player.presentation.ui.gamepad.rememberFocus
+import com.spela.player.presentation.ui.gamepad.rememberFocusMemoryState
+import androidx.compose.runtime.CompositionLocalProvider
 import com.spela.player.presentation.ui.theme.LocalTitleBarInset
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
@@ -126,12 +131,15 @@ fun ConsoleGamesScreen(
 
     val isGamepad = LocalInputMode.current == InputMode.GAMEPAD
 
+    val focusMemory = rememberFocusMemoryState()
+
     SpScreen(modifier = Modifier.testTag("console_games_screen")) {
         PullToRefreshBox(
             isRefreshing = state.isLoading,
             onRefresh = { viewModel.onIntent(GameListIntent.SelectConsole(consoleId)) },
             modifier = Modifier.fillMaxSize(),
         ) {
+            CompositionLocalProvider(LocalFocusMemory provides focusMemory) {
             LazyVerticalGrid(
                 columns = GridCells.Adaptive(SpSpacing.GridCellMinWidth),
                 modifier = Modifier.fillMaxSize(),
@@ -189,6 +197,7 @@ fun ConsoleGamesScreen(
                                 icon = Icons.Filled.SwapVert,
                                 contentDescription = "Sort games",
                                 onClick = { showSortMenu = true },
+                                modifier = Modifier.autoFocus(),
                             )
                             DropdownMenu(
                                 expanded = showSortMenu,
@@ -240,10 +249,12 @@ fun ConsoleGamesScreen(
                             game = game,
                             onClick = { onGameSelected(game.id) },
                             onRequestScrape = { viewModel.requestScrapeIfNeeded(it) },
+                            modifier = Modifier.rememberFocus(game.id),
                         )
                     }
                 }
             }
+            } // CompositionLocalProvider
         }
 
         // Top bar

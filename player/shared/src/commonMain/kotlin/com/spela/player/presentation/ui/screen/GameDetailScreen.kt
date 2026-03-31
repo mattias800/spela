@@ -98,6 +98,7 @@ import com.spela.player.presentation.ui.components.SpSplitButton
 import com.spela.player.presentation.ui.components.SpSplitButtonMenuItem
 import com.spela.player.presentation.ui.components.SpTitledSection
 import com.spela.player.presentation.ui.components.SpTopBar
+import com.spela.player.presentation.ui.gamepad.autoFocus
 import com.spela.player.presentation.ui.components.PlatformBackHandler
 import com.spela.player.presentation.ui.components.social.StarRatingRow
 import com.spela.player.presentation.ui.components.social.formatRelativeTime
@@ -1016,6 +1017,7 @@ private fun GameHeroContent(
                     SpSplitButton(
                         text = if (hasSaves) "Resume" else "Play",
                         onClick = { onPlay(gameId) },
+                        modifier = Modifier.autoFocus(),
                         enabled = !hasRequiredBiosMissing && !isSyncing,
                         isLoading = false,
                         menuItems = menuItems,

@@ -31,6 +31,7 @@ import com.spela.player.presentation.ui.components.SpCard
 import com.spela.player.presentation.ui.components.SpDeveloperCard
 import com.spela.player.presentation.ui.components.SpChip
 import com.spela.player.presentation.ui.components.SpTitledSection
+import com.spela.player.presentation.ui.gamepad.rememberFocus
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.ui.theme.SpTypography
@@ -51,6 +52,7 @@ fun ConsoleEssentials(
         title = "Essentials",
         edgeToEdgeContent = true,
         modifier = Modifier
+            .rememberFocus("section_essentials")
             .testTag("console_essentials_section"),
     ) {
         GameShelf(
@@ -73,6 +75,7 @@ fun ConsoleHiddenGems(
         title = "Hidden Gems",
         edgeToEdgeContent = true,
         modifier = Modifier
+            .rememberFocus("section_hidden_gems")
             .testTag("console_hidden_gems_section"),
     ) {
         GameShelf(
@@ -96,6 +99,7 @@ fun ConsoleGenreBreakdown(
         title = "Genre Breakdown",
         edgeToEdgeContent = true,
         modifier = Modifier
+            .rememberFocus("section_genre_breakdown")
             .testTag("console_genre_breakdown_section"),
     ) {
         GenreBreakdownChips(
@@ -117,6 +121,7 @@ fun ConsoleTopDevelopers(
     SpTitledSection(
         title = "Top Developers",
         modifier = Modifier
+            .rememberFocus("section_top_developers")
             .testTag("console_top_developers_section"),
     ) {
         TopDevelopersList(
@@ -139,6 +144,7 @@ fun ConsoleRecentlyPlayed(
         title = "Recently Played",
         edgeToEdgeContent = true,
         modifier = Modifier
+            .rememberFocus("section_recently_played")
             .testTag("console_recently_played_section"),
     ) {
         GameShelf(
