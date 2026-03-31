@@ -3,9 +3,6 @@ package com.spela.player.presentation.ui.screen
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -14,10 +11,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -26,7 +21,6 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -37,8 +31,9 @@ import com.spela.player.presentation.ui.components.SpTextField
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.ui.theme.SpTypography
-import com.spela.player.presentation.ui.components.SpBrandedBackgroundColor
+import com.spela.player.presentation.ui.components.SpGradientBackground
 import com.spela.player.presentation.ui.components.SpLogo
+import com.spela.player.presentation.ui.components.SpServerPill
 import com.spela.player.presentation.viewmodel.LoginViewModel
 
 @Composable
@@ -60,21 +55,18 @@ fun LoginScreen(
         }
     }
 
-    BoxWithConstraints(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(SpBrandedBackgroundColor),
-    ) {
+    BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
         val isLandscape = maxWidth > maxHeight
 
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .verticalScroll(rememberScrollState())
-                .imePadding()
-                .padding(horizontal = SpSpacing.ScreenHorizontal),
-            horizontalAlignment = Alignment.CenterHorizontally,
-        ) {
+        SpGradientBackground {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .verticalScroll(rememberScrollState())
+                    .imePadding()
+                    .padding(horizontal = SpSpacing.ScreenHorizontal),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
             Spacer(Modifier.height(if (isLandscape) SpSpacing.XLarge else 100.dp))
 
             // Branding
@@ -105,33 +97,10 @@ fun LoginScreen(
                     .then(if (isLandscape) Modifier.widthIn(max = 450.dp) else Modifier.fillMaxWidth()),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
-                // Server URL indicator (tappable to change server)
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(SpSpacing.RadiusMedium))
-                        .background(SpColor.SurfaceVariant)
-                        .clickable { onChangeServer() }
-                        .padding(SpSpacing.Medium),
-                ) {
-                    Column(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                    ) {
-                        Text(
-                            text = serverUrl.ifEmpty { "No server configured" },
-                            style = SpTypography.BodySmall,
-                            color = SpColor.OnBackgroundTertiary,
-                            textAlign = TextAlign.Center,
-                        )
-                        Text(
-                            text = "Tap to change server",
-                            style = SpTypography.LabelSmall,
-                            color = SpColor.Primary,
-                            textAlign = TextAlign.Center,
-                        )
-                    }
-                }
+                SpServerPill(
+                    serverUrl = serverUrl,
+                    onClick = onChangeServer,
+                )
 
                 Spacer(Modifier.height(SpSpacing.XLarge))
 
@@ -197,6 +166,7 @@ fun LoginScreen(
 
                 Spacer(Modifier.height(SpSpacing.XLarge))
             }
+        }
         }
     }
 }
