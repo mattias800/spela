@@ -95,7 +95,7 @@ type Console struct {
 	Generation       int            `gorm:"default:0" json:"generation"`
 	SaveStateSupport bool           `gorm:"default:true" json:"saveStateSupport"`
 	Playable         bool           `gorm:"default:true" json:"playable"`
-	Code             string         `gorm:"uniqueIndex;size:32" json:"code"`
+	Code             *string        `gorm:"uniqueIndex;size:32" json:"code"`
 	HardwareMakerID  *uint          `json:"hardwareMakerId"`
 	HardwareMaker    *HardwareMaker `gorm:"foreignKey:HardwareMakerID" json:"hardwareMaker,omitempty"`
 	MediaTypeID      *uint          `json:"mediaTypeId"`

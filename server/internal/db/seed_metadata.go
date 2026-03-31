@@ -263,7 +263,7 @@ func SeedConsoleMetadata(db *gorm.DB) error {
 		// Build update map with only non-nil fields.
 		updates := map[string]interface{}{}
 
-		if m.Code != "" && console.Code != m.Code {
+		if m.Code != "" && (console.Code == nil || *console.Code != m.Code) {
 			updates["code"] = m.Code
 		}
 

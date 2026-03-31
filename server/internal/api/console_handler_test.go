@@ -32,7 +32,7 @@ func setupConsoleTestEnv(t *testing.T) (*gorm.DB, *storage.Storage, *gin.Engine)
 	})
 	require.NoError(t, err)
 
-	err = database.AutoMigrate(&db.Console{}, &db.Game{}, &db.TopRatedGame{}, &db.GameReleaseDate{}, &db.GameVideo{}, &db.GameLanguageSupport{}, &db.GameAgeRating{})
+	err = database.AutoMigrate(&db.MediaTypeCategory{}, &db.MediaType{}, &db.HardwareMaker{}, &db.Console{}, &db.Game{}, &db.TopRatedGame{}, &db.GameReleaseDate{}, &db.GameVideo{}, &db.GameLanguageSupport{}, &db.GameAgeRating{})
 	require.NoError(t, err)
 
 	err = db.SeedConsoles(database)
@@ -246,7 +246,7 @@ func setupTopListTestEnv(t *testing.T) (*gorm.DB, *gin.Engine) {
 	})
 	require.NoError(t, err)
 
-	err = database.AutoMigrate(&db.Console{}, &db.Game{}, &db.TopRatedGame{}, &db.GameReleaseDate{}, &db.GameVideo{}, &db.GameLanguageSupport{}, &db.GameAgeRating{})
+	err = database.AutoMigrate(&db.MediaTypeCategory{}, &db.MediaType{}, &db.HardwareMaker{}, &db.Console{}, &db.Game{}, &db.TopRatedGame{}, &db.GameReleaseDate{}, &db.GameVideo{}, &db.GameLanguageSupport{}, &db.GameAgeRating{})
 	require.NoError(t, err)
 
 	err = db.SeedConsoles(database)
@@ -486,7 +486,7 @@ func setupLongestListTestEnv(t *testing.T) (*gorm.DB, *gin.Engine) {
 	})
 	require.NoError(t, err)
 
-	err = database.AutoMigrate(&db.Console{}, &db.Game{}, &db.TopRatedGame{}, &db.GameReleaseDate{}, &db.GameVideo{}, &db.GameLanguageSupport{}, &db.GameAgeRating{})
+	err = database.AutoMigrate(&db.MediaTypeCategory{}, &db.MediaType{}, &db.HardwareMaker{}, &db.Console{}, &db.Game{}, &db.TopRatedGame{}, &db.GameReleaseDate{}, &db.GameVideo{}, &db.GameLanguageSupport{}, &db.GameAgeRating{})
 	require.NoError(t, err)
 
 	err = db.SeedConsoles(database)
