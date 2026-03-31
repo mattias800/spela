@@ -669,10 +669,6 @@ private fun GameInfoContent(
 @Composable
 private fun IgdbRatingStars(rating: Double) {
     val normalized = rating / 10.0
-    val starValue = normalized / 2.0
-    val fullStars = starValue.toInt()
-    val hasHalf = starValue - fullStars >= 0.5
-    val emptyStars = 5 - fullStars - if (hasHalf) 1 else 0
 
     Row(
         verticalAlignment = Alignment.CenterVertically,
@@ -681,45 +677,14 @@ private fun IgdbRatingStars(rating: Double) {
             contentDescription = "IGDB rating: ${"%.1f".format(normalized)} out of 10"
         },
     ) {
-        repeat(fullStars) {
-            Icon(
-                imageVector = Icons.Filled.Star,
-                contentDescription = null,
-                tint = SpColor.Warning,
-                modifier = Modifier.size(20.dp),
-            )
-        }
-        if (hasHalf) {
-            Box(modifier = Modifier.size(20.dp)) {
-                Icon(
-                    imageVector = Icons.Outlined.StarOutline,
-                    contentDescription = null,
-                    tint = SpColor.Warning,
-                    modifier = Modifier.size(20.dp),
-                )
-                Box(modifier = Modifier.size(width = 10.dp, height = 20.dp).clipToBounds()) {
-                    Icon(
-                        imageVector = Icons.Filled.Star,
-                        contentDescription = null,
-                        tint = SpColor.Warning,
-                        modifier = Modifier.size(20.dp),
-                    )
-                }
-            }
-        }
-        repeat(emptyStars) {
-            Icon(
-                imageVector = Icons.Outlined.StarOutline,
-                contentDescription = null,
-                tint = SpColor.OnBackgroundTertiary,
-                modifier = Modifier.size(20.dp),
-            )
-        }
-
-        Spacer(Modifier.size(SpSpacing.XXSmall))
-
+        Icon(
+            imageVector = Icons.Filled.Star,
+            contentDescription = null,
+            tint = SpColor.Warning,
+            modifier = Modifier.size(16.dp),
+        )
         Text(
-            text = "${"%.1f".format(normalized)}/10",
+            text = "%.1f".format(normalized),
             style = SpTypography.LabelMedium,
             color = SpColor.OnBackgroundSecondary,
         )
@@ -1115,7 +1080,7 @@ private fun GameHeroContent(
                         val relative = formatRelativeTime(timestamp)
                         if (relative.isNotEmpty()) {
                             SpChip(
-                                text = "Last played $relative",
+                                text = relative,
                                 onGradient = true,
                                 leadingIcon = {
                                     Icon(
