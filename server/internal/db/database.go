@@ -112,6 +112,9 @@ func Initialize(dbPath string) (*gorm.DB, error) {
 	slog.Info("running database migrations")
 	err = db.AutoMigrate(
 		&User{},
+		&MediaTypeCategory{},
+		&MediaType{},
+		&HardwareMaker{},
 		&Console{},
 		&Game{},
 		&GameDisc{},
