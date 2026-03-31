@@ -1,5 +1,4 @@
 import { type ReactNode } from "react";
-import { Gamepad2 } from "lucide-react";
 
 interface AuthFormLayoutProps {
   title: string;
@@ -24,9 +23,11 @@ export function AuthFormLayout({
       <div className="relative w-full max-w-md space-y-8">
         {/* Logo */}
         <div className="flex flex-col items-center gap-4">
-          <div className="h-16 w-16 rounded-2xl bg-gradient-to-br from-brand-500 to-brand-700 flex items-center justify-center shadow-xl shadow-brand-600/30">
-            <Gamepad2 className="h-8 w-8 text-white" />
-          </div>
+          <img
+            src="/api/branding/logo"
+            alt="Spela"
+            className="h-28 w-auto"
+          />
           <div className="text-center">
             <h1 className="text-3xl font-bold tracking-tight text-surface-100">
               {title}

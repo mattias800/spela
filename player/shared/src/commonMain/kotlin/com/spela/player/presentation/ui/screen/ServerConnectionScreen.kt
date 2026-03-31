@@ -59,6 +59,9 @@ import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.ui.theme.SpTypography
 import com.spela.player.presentation.viewmodel.ServerConnectionIntent
 import com.spela.player.presentation.viewmodel.ServerConnectionViewModel
+import org.jetbrains.compose.resources.painterResource
+import spela_player.shared.generated.resources.Res
+import spela_player.shared.generated.resources.spela_logo
 
 // SNES button colors used for ambient glow and decorative dots
 private val SnesRed = Color(0xFFCC2232)
@@ -433,21 +436,11 @@ private fun ServerListOrForm(
 
 @Composable
 private fun AppIcon(size: androidx.compose.ui.unit.Dp, radius: androidx.compose.ui.unit.Dp) {
-    Box(
-        modifier = Modifier
-            .size(size)
-            .clip(RoundedCornerShape(radius))
-            .background(Color.White.copy(alpha = 0.08f))
-            .border(1.dp, Color.White.copy(alpha = 0.1f), RoundedCornerShape(radius)),
-        contentAlignment = Alignment.Center,
-    ) {
-        Text(
-            text = "S",
-            style = SpTypography.DisplayMedium,
-            color = Color.White,
-            fontWeight = FontWeight.ExtraBold,
-        )
-    }
+    androidx.compose.foundation.Image(
+        painter = painterResource(Res.drawable.spela_logo),
+        contentDescription = "Spela",
+        modifier = Modifier.height(size),
+    )
 }
 
 @Composable
