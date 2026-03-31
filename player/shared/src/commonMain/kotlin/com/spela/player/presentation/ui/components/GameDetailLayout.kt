@@ -149,58 +149,65 @@ private fun LandscapeLayout(
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(bannerHeight),
+                        .heightIn(min = bannerHeight),
                 ) {
-                    // Background: hero image or gradient fallback
-                    if (heroUrl != null) {
-                        SubcomposeAsyncImage(
-                            model = heroUrl,
-                            contentDescription = null,
-                            modifier = Modifier.fillMaxSize(),
-                            contentScale = ContentScale.Crop,
-                            loading = {
-                                Box(modifier = Modifier.fillMaxSize().drawBehind {
-                                    val cx = size.width / 2f
-                                    val cy = size.height / 2f
-                                    val d = (size.width + size.height) * 0.25f
-                                    drawRect(brush = Brush.linearGradient(backgroundColors, Offset(cx - d, cy - d), Offset(cx + d, cy + d)))
-                                })
-                            },
-                            error = {
-                                Box(modifier = Modifier.fillMaxSize().drawBehind {
-                                    val cx = size.width / 2f
-                                    val cy = size.height / 2f
-                                    val d = (size.width + size.height) * 0.25f
-                                    drawRect(brush = Brush.linearGradient(backgroundColors, Offset(cx - d, cy - d), Offset(cx + d, cy + d)))
-                                })
-                            },
-                        )
-                    } else {
-                        Box(modifier = Modifier.fillMaxSize().drawBehind {
-                            val cx = size.width / 2f
-                            val cy = size.height / 2f
-                            val d = (size.width + size.height) * 0.25f
-                            drawRect(brush = Brush.linearGradient(backgroundColors, Offset(cx - d, cy - d), Offset(cx + d, cy + d)))
-                        })
-                    }
-
-                    // Gradient overlay
+                    // Background: hero image pinned to banner height (doesn't grow with content)
                     Box(
-                        modifier = Modifier.fillMaxSize().background(
-                            Brush.verticalGradient(
-                                colorStops = arrayOf(
-                                    0.0f to Color.Transparent,
-                                    0.4f to SpColor.Background.copy(alpha = 0.3f),
-                                    1.0f to SpColor.Background,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(bannerHeight)
+                            .align(Alignment.TopStart),
+                    ) {
+                        if (heroUrl != null) {
+                            SubcomposeAsyncImage(
+                                model = heroUrl,
+                                contentDescription = null,
+                                modifier = Modifier.fillMaxSize(),
+                                contentScale = ContentScale.Crop,
+                                loading = {
+                                    Box(modifier = Modifier.fillMaxSize().drawBehind {
+                                        val cx = size.width / 2f
+                                        val cy = size.height / 2f
+                                        val d = (size.width + size.height) * 0.25f
+                                        drawRect(brush = Brush.linearGradient(backgroundColors, Offset(cx - d, cy - d), Offset(cx + d, cy + d)))
+                                    })
+                                },
+                                error = {
+                                    Box(modifier = Modifier.fillMaxSize().drawBehind {
+                                        val cx = size.width / 2f
+                                        val cy = size.height / 2f
+                                        val d = (size.width + size.height) * 0.25f
+                                        drawRect(brush = Brush.linearGradient(backgroundColors, Offset(cx - d, cy - d), Offset(cx + d, cy + d)))
+                                    })
+                                },
+                            )
+                        } else {
+                            Box(modifier = Modifier.fillMaxSize().drawBehind {
+                                val cx = size.width / 2f
+                                val cy = size.height / 2f
+                                val d = (size.width + size.height) * 0.25f
+                                drawRect(brush = Brush.linearGradient(backgroundColors, Offset(cx - d, cy - d), Offset(cx + d, cy + d)))
+                            })
+                        }
+
+                        // Gradient overlay
+                        Box(
+                            modifier = Modifier.fillMaxSize().background(
+                                Brush.verticalGradient(
+                                    colorStops = arrayOf(
+                                        0.0f to Color.Transparent,
+                                        0.4f to SpColor.Background.copy(alpha = 0.3f),
+                                        1.0f to SpColor.Background,
+                                    ),
                                 ),
                             ),
-                        ),
-                    )
+                        )
+                    }
 
                     // Content: cover art (left) + title/badges (right) in contrast backdrop
                     Row(
                         modifier = Modifier
-                            .fillMaxSize()
+                            .fillMaxWidth()
                             .padding(
                                 top = SpSpacing.TopBarHeight + SpSpacing.Large,
                                 start = SpSpacing.XLarge,
