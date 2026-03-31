@@ -378,6 +378,57 @@ internal fun ConsoleHeroBanner(
     onBrowseGames: (() -> Unit)? = null,
     onConsoleSettings: (() -> Unit)? = null,
 ) {
+    BoxWithConstraints(modifier = modifier) {
+        val showButtonsBelow = maxWidth < 400.dp
+        Column {
+            ConsoleHeroBannerContent(
+                console = console,
+                onBrowseGames = onBrowseGames,
+                onConsoleSettings = onConsoleSettings,
+                showButtons = !showButtonsBelow,
+            )
+            if (showButtonsBelow && (onBrowseGames != null || onConsoleSettings != null)) {
+                Spacer(Modifier.height(SpSpacing.Medium))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(SpSpacing.Small),
+                ) {
+                    if (onConsoleSettings != null) {
+                        SpButton(
+                            text = "Settings",
+                            onClick = onConsoleSettings,
+                            style = SpButtonStyle.Outlined,
+                            modifier = Modifier.weight(1f).autoFocus(),
+                            leadingIcon = {
+                                Icon(
+                                    Icons.Filled.Settings,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(16.dp),
+                                )
+                            },
+                        )
+                    }
+                    if (onBrowseGames != null) {
+                        SpButton(
+                            text = "Browse",
+                            onClick = onBrowseGames,
+                            style = SpButtonStyle.Secondary,
+                            modifier = Modifier.weight(1f),
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ConsoleHeroBannerContent(
+    console: Console,
+    onBrowseGames: (() -> Unit)? = null,
+    onConsoleSettings: (() -> Unit)? = null,
+    showButtons: Boolean = true,
+) {
     val shape = RoundedCornerShape(SpSpacing.CardCornerRadius)
 
     // Per-console gradient matching web UI's console-metadata.ts exactly
@@ -395,7 +446,7 @@ internal fun ConsoleHeroBanner(
     )
 
     Box(
-        modifier = modifier
+        modifier = Modifier
             .fillMaxWidth()
             .height(200.dp)
             .focusGroup()
@@ -568,8 +619,8 @@ internal fun ConsoleHeroBanner(
                     }
                 }
 
-                // Bottom-right: action buttons
-                if (onBrowseGames != null || onConsoleSettings != null) {
+                // Bottom-right: action buttons (only when parent says so)
+                if (showButtons && (onBrowseGames != null || onConsoleSettings != null)) {
                     Column(
                         modifier = Modifier.align(Alignment.BottomEnd),
                         verticalArrangement = Arrangement.spacedBy(SpSpacing.Small),
