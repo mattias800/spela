@@ -156,16 +156,12 @@ describe("ConsoleDetailPage", () => {
       expect(screen.getByText("100 games")).toBeInTheDocument();
     });
 
-    it("renders browse all games link at top and bottom", () => {
+    it("renders browse games link in the banner", () => {
       renderPage();
-      const topLink = screen.getByTestId("browse-all-games-link");
-      expect(topLink).toBeInTheDocument();
-      expect(topLink).toHaveTextContent("Browse all 100 games");
-      expect(topLink).toHaveAttribute("href", "/consoles/snes/games");
-
-      const bottomLink = screen.getByTestId("browse-all-games-link-bottom");
-      expect(bottomLink).toBeInTheDocument();
-      expect(bottomLink).toHaveAttribute("href", "/consoles/snes/games");
+      const bannerLink = screen.getByTestId("banner-browse-games");
+      expect(bannerLink).toBeInTheDocument();
+      expect(bannerLink).toHaveTextContent("Browse 100 games");
+      expect(bannerLink).toHaveAttribute("href", "/consoles/snes/games");
     });
 
     it("does not render inline search input", () => {
@@ -247,7 +243,7 @@ describe("ConsoleDetailPage", () => {
 
     it("does not render browse all games link", () => {
       renderPage();
-      expect(screen.queryByTestId("browse-all-games-link")).not.toBeInTheDocument();
+      expect(screen.queryByTestId("banner-browse-games")).not.toBeInTheDocument();
     });
 
     it("shows loading skeletons while data is loading", () => {
@@ -278,7 +274,7 @@ describe("ConsoleDetailPage", () => {
 
     it("does not render browse all games link", () => {
       renderPage();
-      expect(screen.queryByTestId("browse-all-games-link")).not.toBeInTheDocument();
+      expect(screen.queryByTestId("banner-browse-games")).not.toBeInTheDocument();
     });
   });
 });
