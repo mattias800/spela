@@ -98,6 +98,7 @@ fun SpButton(
                     disabledContainerColor = Color.Transparent,
                     disabledContentColor = SpColor.OnBackgroundTertiary,
                 ),
+                elevation = ButtonDefaults.buttonElevation(0.dp, 0.dp, 0.dp, 0.dp, 0.dp),
                 contentPadding = if (isIconOnly) iconOnlyPadding else defaultPadding,
             ) {
                 ButtonContent(text, isLoading, leadingIcon, Color.White)
@@ -122,6 +123,7 @@ fun SpButton(
                     disabledContainerColor = Color.Transparent,
                     disabledContentColor = SpColor.OnBackgroundTertiary,
                 ),
+                elevation = ButtonDefaults.buttonElevation(0.dp, 0.dp, 0.dp, 0.dp, 0.dp),
                 contentPadding = if (isIconOnly) iconOnlyPadding else defaultPadding,
             ) {
                 ButtonContent(text, isLoading, leadingIcon, Color.White)

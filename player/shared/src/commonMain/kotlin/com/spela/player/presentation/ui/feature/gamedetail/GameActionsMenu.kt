@@ -7,8 +7,10 @@ import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.WatchLater
 import androidx.compose.material.icons.outlined.FavoriteBorder
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.outlined.LibraryAdd
 import androidx.compose.material.icons.outlined.WatchLater
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
@@ -37,6 +39,9 @@ internal fun GameActionsMenu(
     onTogglePlayLater: () -> Unit,
     onAddToCollection: () -> Unit,
     onGradient: Boolean = false,
+    onAdminScrape: (() -> Unit)? = null,
+    onAdminRefreshAchievements: (() -> Unit)? = null,
+    isAdminActionLoading: Boolean = false,
 ) {
     var expanded by remember { mutableStateOf(false) }
 
@@ -119,6 +124,55 @@ internal fun GameActionsMenu(
                     )
                 },
             )
+
+            // Admin actions
+            if (onAdminScrape != null || onAdminRefreshAchievements != null) {
+                HorizontalDivider()
+                if (onAdminScrape != null) {
+                    DropdownMenuItem(
+                        text = {
+                            Text(
+                                text = "Scrape Metadata",
+                                style = SpTypography.BodyMedium,
+                            )
+                        },
+                        onClick = {
+                            expanded = false
+                            onAdminScrape()
+                        },
+                        enabled = !isAdminActionLoading,
+                        leadingIcon = {
+                            Icon(
+                                imageVector = Icons.Filled.Refresh,
+                                contentDescription = null,
+                                modifier = Modifier.size(20.dp),
+                            )
+                        },
+                    )
+                }
+                if (onAdminRefreshAchievements != null) {
+                    DropdownMenuItem(
+                        text = {
+                            Text(
+                                text = "Update Achievements",
+                                style = SpTypography.BodyMedium,
+                            )
+                        },
+                        onClick = {
+                            expanded = false
+                            onAdminRefreshAchievements()
+                        },
+                        enabled = !isAdminActionLoading,
+                        leadingIcon = {
+                            Icon(
+                                imageVector = Icons.Filled.Refresh,
+                                contentDescription = null,
+                                modifier = Modifier.size(20.dp),
+                            )
+                        },
+                    )
+                }
+            }
         }
     }
 }

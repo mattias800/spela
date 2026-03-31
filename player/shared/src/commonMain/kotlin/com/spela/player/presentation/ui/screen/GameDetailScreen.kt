@@ -1056,6 +1056,9 @@ private fun GameHeroContent(
                 onTogglePlayLater = onTogglePlayLater,
                 onAddToCollection = onAddToCollection,
                 onGradient = true,
+                onAdminScrape = onAdminScrape,
+                onAdminRefreshAchievements = onAdminRefreshAchievements,
+                isAdminActionLoading = state.isAdminActionLoading,
             )
 
             // Status indicators (scraping, syncing, downloading)
@@ -1088,30 +1091,6 @@ private fun GameHeroContent(
                         style = SpTypography.LabelSmall,
                         color = Color.White.copy(alpha = 0.65f),
                     )
-                }
-            }
-
-            // Admin actions (scrape + refresh achievements)
-            if (onAdminScrape != null || onAdminRefreshAchievements != null) {
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(SpSpacing.Small),
-                ) {
-                    if (onAdminScrape != null) {
-                        SpSecondaryButton(
-                            text = "Scrape Metadata",
-                            onClick = onAdminScrape,
-                            isLoading = state.isAdminActionLoading,
-                            onGradient = true,
-                        )
-                    }
-                    if (onAdminRefreshAchievements != null) {
-                        SpSecondaryButton(
-                            text = "Update Achievements",
-                            onClick = onAdminRefreshAchievements,
-                            isLoading = state.isAdminActionLoading,
-                            onGradient = true,
-                        )
-                    }
                 }
             }
 

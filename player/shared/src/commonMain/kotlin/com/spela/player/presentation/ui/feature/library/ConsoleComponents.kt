@@ -378,8 +378,8 @@ internal fun ConsoleHeroBanner(
     onBrowseGames: (() -> Unit)? = null,
     onConsoleSettings: (() -> Unit)? = null,
 ) {
-    BoxWithConstraints(modifier = modifier) {
-        val showButtonsBelow = maxWidth < 400.dp
+    BoxWithConstraints(modifier = modifier.fillMaxWidth()) {
+        val showButtonsBelow = maxWidth < 700.dp
         Column {
             ConsoleHeroBannerContent(
                 console = console,
