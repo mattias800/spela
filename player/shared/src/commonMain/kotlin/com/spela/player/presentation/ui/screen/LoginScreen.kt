@@ -3,9 +3,13 @@ package com.spela.player.presentation.ui.screen
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -21,19 +25,21 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.spela.player.presentation.intent.LoginIntent
 import com.spela.player.presentation.ui.components.SpButton
 import com.spela.player.presentation.ui.components.SpButtonStyle
+import com.spela.player.presentation.ui.components.SpGradientBackground
+import com.spela.player.presentation.ui.components.SpLogo
+import com.spela.player.presentation.ui.components.SpServerPill
 import com.spela.player.presentation.ui.components.SpTextField
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.ui.theme.SpTypography
-import com.spela.player.presentation.ui.components.SpGradientBackground
-import com.spela.player.presentation.ui.components.SpLogo
-import com.spela.player.presentation.ui.components.SpServerPill
+import com.spela.player.presentation.state.LoginState
 import com.spela.player.presentation.viewmodel.LoginViewModel
 
 @Composable
@@ -58,115 +64,204 @@ fun LoginScreen(
     BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
         val isLandscape = maxWidth > maxHeight
 
-        SpGradientBackground {
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .verticalScroll(rememberScrollState())
-                    .imePadding()
-                    .padding(horizontal = SpSpacing.ScreenHorizontal),
-                horizontalAlignment = Alignment.CenterHorizontally,
-            ) {
-            Spacer(Modifier.height(if (isLandscape) SpSpacing.XLarge else 100.dp))
-
-            // Branding
-            SpLogo(size = if (isLandscape) 240.dp else 384.dp)
-
-            Spacer(Modifier.height(SpSpacing.Small))
-
-            Text(
-                text = if (state.isRegisterMode) "Create Account" else "Welcome Back",
-                style = SpTypography.DisplaySmall,
-                color = SpColor.OnBackground,
-                textAlign = TextAlign.Center,
+        if (isLandscape) {
+            SplitLoginLayout(
+                viewModel = viewModel,
+                state = state,
+                serverUrl = serverUrl,
+                onChangeServer = onChangeServer,
             )
-
-            Text(
-                text = if (state.isRegisterMode) "Set up your player account"
-                else "Sign in to start playing",
-                style = SpTypography.BodyMedium,
-                color = SpColor.OnBackgroundSecondary,
-                textAlign = TextAlign.Center,
+        } else {
+            MobileLoginLayout(
+                viewModel = viewModel,
+                state = state,
+                serverUrl = serverUrl,
+                onChangeServer = onChangeServer,
             )
-
-            Spacer(Modifier.height(if (isLandscape) SpSpacing.XLarge else SpSpacing.XXXLarge))
-
-            // Constrain form width in landscape
-            Column(
-                modifier = Modifier
-                    .then(if (isLandscape) Modifier.widthIn(max = 450.dp) else Modifier.fillMaxWidth()),
-                horizontalAlignment = Alignment.CenterHorizontally,
-            ) {
-                SpServerPill(
-                    serverUrl = serverUrl,
-                    onClick = onChangeServer,
-                )
-
-                Spacer(Modifier.height(SpSpacing.XLarge))
-
-                SpTextField(
-                    value = state.username,
-                    onValueChange = { viewModel.onIntent(LoginIntent.SetUsername(it)) },
-                    label = "Username",
-                    placeholder = "Enter your username",
-                    enabled = !state.isLoading,
-                )
-
-                Spacer(Modifier.height(SpSpacing.Default))
-
-                SpTextField(
-                    value = state.password,
-                    onValueChange = { viewModel.onIntent(LoginIntent.SetPassword(it)) },
-                    label = "Password",
-                    placeholder = "Enter your password",
-                    isPassword = true,
-                    enabled = !state.isLoading,
-                    imeAction = ImeAction.Done,
-                    onImeAction = { viewModel.onIntent(LoginIntent.Submit) },
-                )
-
-                // Error display
-                AnimatedVisibility(
-                    visible = state.error != null,
-                    enter = fadeIn(),
-                    exit = fadeOut(),
-                ) {
-                    state.error?.let { error ->
-                        Text(
-                            text = error,
-                            style = SpTypography.BodySmall,
-                            color = SpColor.Error,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(top = SpSpacing.Small),
-                            textAlign = TextAlign.Center,
-                        )
-                    }
-                }
-
-                Spacer(Modifier.height(SpSpacing.XLarge))
-
-                SpButton(
-                    text = if (state.isRegisterMode) "Create Account" else "Sign In",
-                    onClick = { viewModel.onIntent(LoginIntent.Submit) },
-                    modifier = Modifier.fillMaxWidth(),
-                    isLoading = state.isLoading,
-                    enabled = !state.isLoading,
-                )
-
-                Spacer(Modifier.height(SpSpacing.Medium))
-
-                SpButton(
-                    text = if (state.isRegisterMode) "Already have an account? Sign In"
-                    else "Don't have an account? Register",
-                    onClick = { viewModel.onIntent(LoginIntent.ToggleRegisterMode) },
-                    style = SpButtonStyle.Ghost,
-                    enabled = !state.isLoading,
-                )
-
-                Spacer(Modifier.height(SpSpacing.XLarge))
-            }
-        }
         }
     }
+}
+
+// ────────────────────────────────────────────────────────
+// Mobile layout: single column, logo on top
+// ────────────────────────────────────────────────────────
+
+@Composable
+private fun MobileLoginLayout(
+    viewModel: LoginViewModel,
+    state: com.spela.player.presentation.state.LoginState,
+    serverUrl: String,
+    onChangeServer: () -> Unit,
+) {
+    SpGradientBackground {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .imePadding()
+                .padding(horizontal = SpSpacing.ScreenHorizontal),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Spacer(Modifier.height(100.dp))
+
+            SpLogo(size = 384.dp)
+
+            Spacer(Modifier.height(SpSpacing.XLarge))
+
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                LoginForm(
+                    viewModel = viewModel,
+                    state = state,
+                    serverUrl = serverUrl,
+                    onChangeServer = onChangeServer,
+                )
+            }
+        }
+    }
+}
+
+// ────────────────────────────────────────────────────────
+// Split layout: hero panel + form panel side by side
+// ────────────────────────────────────────────────────────
+
+@Composable
+private fun SplitLoginLayout(
+    viewModel: LoginViewModel,
+    state: com.spela.player.presentation.state.LoginState,
+    serverUrl: String,
+    onChangeServer: () -> Unit,
+) {
+    SpGradientBackground {
+        Row(modifier = Modifier.fillMaxSize()) {
+            // Left hero panel
+            Box(
+                modifier = Modifier
+                    .fillMaxHeight()
+                    .fillMaxWidth(0.40f),
+                contentAlignment = Alignment.Center,
+            ) {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center,
+                ) {
+                    SpLogo(size = 240.dp)
+                    Spacer(Modifier.height(SpSpacing.Small))
+                    Text(
+                        text = "\"Nu spelar vi!\"",
+                        style = SpTypography.BodyMedium,
+                        color = SpColor.OnBackgroundSecondary,
+                        fontStyle = FontStyle.Italic,
+                        textAlign = TextAlign.Center,
+                    )
+                }
+            }
+
+            // Right form panel
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center,
+            ) {
+                Column(
+                    modifier = Modifier
+                        .widthIn(max = 400.dp)
+                        .fillMaxWidth()
+                        .verticalScroll(rememberScrollState())
+                        .imePadding()
+                        .padding(horizontal = SpSpacing.XLarge),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                ) {
+                    LoginForm(
+                        viewModel = viewModel,
+                        state = state,
+                        serverUrl = serverUrl,
+                        onChangeServer = onChangeServer,
+                    )
+                }
+            }
+        }
+    }
+}
+
+// ────────────────────────────────────────────────────────
+// Shared form content
+// ────────────────────────────────────────────────────────
+
+@Composable
+private fun LoginForm(
+    viewModel: LoginViewModel,
+    state: com.spela.player.presentation.state.LoginState,
+    serverUrl: String,
+    onChangeServer: () -> Unit,
+) {
+    SpServerPill(
+        serverUrl = serverUrl,
+        onClick = onChangeServer,
+    )
+
+    Spacer(Modifier.height(SpSpacing.XLarge))
+
+    SpTextField(
+        value = state.username,
+        onValueChange = { viewModel.onIntent(LoginIntent.SetUsername(it)) },
+        label = "Username",
+        placeholder = "Enter your username",
+        enabled = !state.isLoading,
+    )
+
+    Spacer(Modifier.height(SpSpacing.Default))
+
+    SpTextField(
+        value = state.password,
+        onValueChange = { viewModel.onIntent(LoginIntent.SetPassword(it)) },
+        label = "Password",
+        placeholder = "Enter your password",
+        isPassword = true,
+        enabled = !state.isLoading,
+        imeAction = ImeAction.Done,
+        onImeAction = { viewModel.onIntent(LoginIntent.Submit) },
+    )
+
+    // Error display
+    AnimatedVisibility(
+        visible = state.error != null,
+        enter = fadeIn(),
+        exit = fadeOut(),
+    ) {
+        state.error?.let { error ->
+            Text(
+                text = error,
+                style = SpTypography.BodySmall,
+                color = SpColor.Error,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = SpSpacing.Small),
+                textAlign = TextAlign.Center,
+            )
+        }
+    }
+
+    Spacer(Modifier.height(SpSpacing.XLarge))
+
+    SpButton(
+        text = if (state.isRegisterMode) "Create Account" else "Sign In",
+        onClick = { viewModel.onIntent(LoginIntent.Submit) },
+        modifier = Modifier.fillMaxWidth(),
+        isLoading = state.isLoading,
+        enabled = !state.isLoading,
+    )
+
+    Spacer(Modifier.height(SpSpacing.Medium))
+
+    SpButton(
+        text = if (state.isRegisterMode) "Already have an account? Sign In"
+        else "Don't have an account? Register",
+        onClick = { viewModel.onIntent(LoginIntent.ToggleRegisterMode) },
+        style = SpButtonStyle.Ghost,
+        enabled = !state.isLoading,
+    )
+
+    Spacer(Modifier.height(SpSpacing.XLarge))
 }

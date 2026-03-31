@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -56,7 +57,10 @@ import com.spela.player.presentation.ui.components.SpTextField
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.ui.theme.SpTypography
+import androidx.compose.ui.graphics.Brush
+import com.spela.player.presentation.ui.components.SpActionCard
 import com.spela.player.presentation.ui.components.SpAmbientGlowBlobs
+import com.spela.player.presentation.ui.theme.spelaBrandGradient
 import com.spela.player.presentation.ui.components.SpBrandedBackgroundColor
 import com.spela.player.presentation.ui.components.SpGradientBackground
 import com.spela.player.presentation.ui.components.SpLogo
@@ -249,66 +253,60 @@ private fun ServerListOrForm(
         verticalArrangement = Arrangement.spacedBy(SpSpacing.Medium),
     ) {
         items(state.servers) { server ->
-            SpCard(
+            val gradientBrush = spelaBrandGradient()
+            SpActionCard(
                 onClick = {
                     viewModel.onIntent(ServerConnectionIntent.SelectServer(server.id))
                     onServerSelected()
                 },
-                onGradient = true,
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .semantics { contentDescription = server.name }
-                        .padding(SpSpacing.Default),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .size(44.dp)
-                            .clip(CircleShape)
-                            .background(SpColor.PrimaryContainer),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Text(
-                            text = server.name.take(1).uppercase(),
-                            style = SpTypography.TitleLarge,
-                            color = SpColor.Primary,
-                        )
-                    }
-                    Spacer(Modifier.width(SpSpacing.Medium))
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = server.name,
-                            style = SpTypography.TitleLarge,
-                            color = SpColor.OnCard,
-                        )
-                        Text(
-                            text = server.url,
-                            style = SpTypography.BodySmall,
-                            color = SpColor.OnBackgroundTertiary,
-                        )
-                    }
-                    if (server.isActive) {
-                        Box(
-                            modifier = Modifier
-                                .size(12.dp)
-                                .clip(CircleShape)
-                                .background(SpColor.Success),
-                        )
-                        Spacer(Modifier.width(SpSpacing.Medium))
-                    }
+                onAction = {
+                    viewModel.onIntent(ServerConnectionIntent.RemoveServer(server.id))
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .semantics { contentDescription = server.name },
+                action = {
                     Icon(
                         imageVector = Icons.Filled.Delete,
                         contentDescription = "Remove server",
-                        tint = SpColor.OnBackgroundTertiary,
+                        tint = SpColor.AccentPurple,
+                        modifier = Modifier.size(24.dp),
+                    )
+                },
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(44.dp)
+                        .clip(CircleShape)
+                        .background(gradientBrush),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(
+                        text = server.name.take(1).uppercase(),
+                        style = SpTypography.TitleLarge,
+                        color = Color.White,
+                        fontWeight = FontWeight.Bold,
+                    )
+                }
+                Spacer(Modifier.width(SpSpacing.Medium))
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = server.name,
+                        style = SpTypography.TitleLarge,
+                        color = SpColor.OnBackground,
+                    )
+                    Text(
+                        text = server.url,
+                        style = SpTypography.BodySmall,
+                        color = SpColor.AccentPurpleLight,
+                    )
+                }
+                if (server.isActive) {
+                    Box(
                         modifier = Modifier
-                            .size(36.dp)
+                            .size(12.dp)
                             .clip(CircleShape)
-                            .clickable(onClick = {
-                                viewModel.onIntent(ServerConnectionIntent.RemoveServer(server.id))
-                            })
-                            .padding(6.dp),
+                            .background(SpColor.Success),
                     )
                 }
             }
