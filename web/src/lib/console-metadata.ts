@@ -198,6 +198,11 @@ const consoleStyles: Record<string, ConsoleStyle> = {
     gradient: "from-red-600 to-blue-800",
     color: "#dc2626",
   },
+  acd32: {
+    icon: Gamepad2,
+    gradient: "from-purple-600 to-indigo-900",
+    color: "#6c5eb5",
+  },
   ps3: {
     icon: Gamepad2,
     gradient: "from-gray-700 to-blue-950",

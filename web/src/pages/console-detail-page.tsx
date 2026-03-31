@@ -10,7 +10,6 @@ import { GameGrid } from "@/components/game-grid";
 import { ConsoleHeroBanner } from "@/components/console-hero-banner";
 import {
   BackButton,
-  Button,
   EmptyState,
   GameCardSkeleton,
   SearchInput,
@@ -87,7 +86,31 @@ export function ConsoleDetailPage() {
       </BackButton>
 
       {/* Console hero banner */}
-      <ConsoleHeroBanner console={console} />
+      <ConsoleHeroBanner
+        console={console}
+        actions={
+          <>
+            {gameCount > SMALL_LIBRARY_THRESHOLD && (
+              <Link
+                to={`/consoles/${id}/games`}
+                className="inline-flex items-center gap-2 rounded-lg bg-white/10 backdrop-blur-sm px-4 py-2 text-sm font-medium text-white hover:bg-white/20 transition-colors"
+                data-testid="banner-browse-games"
+              >
+                Browse {gameCount} games
+                <ArrowRight className="h-4 w-4" />
+              </Link>
+            )}
+            {isAdmin && (
+              <ScanButton
+                consoleAbbr={consoleAbbr}
+                consoleName={consoleName}
+                scanLibrary={scanLibrary}
+                toast={toast}
+              />
+            )}
+          </>
+        }
+      />
 
       {/* BIOS warning */}
       {showBiosWarning && (
@@ -100,27 +123,21 @@ export function ConsoleDetailPage() {
 
       {/* Content varies by library size */}
       {gameCount === 0 ? (
-        <>
-          <EmptyState
-            icon={Library}
-            title="No games found"
-            description="No games have been detected for this console yet."
-          />
-          {isAdmin && <ScanButton consoleAbbr={consoleAbbr} consoleName={consoleName} scanLibrary={scanLibrary} toast={toast} />}
-        </>
+        <EmptyState
+          icon={Library}
+          title="No games found"
+          description="No games have been detected for this console yet."
+        />
       ) : isSmallLibrary ? (
         /* Small library: inline game grid */
         <>
-          <div className="flex items-center gap-3">
-            <SearchInput
-              placeholder={`Search ${consoleName} games...`}
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="max-w-sm"
-              data-testid="small-library-search"
-            />
-            {isAdmin && <ScanButton consoleAbbr={consoleAbbr} consoleName={consoleName} scanLibrary={scanLibrary} toast={toast} />}
-          </div>
+          <SearchInput
+            placeholder={`Search ${consoleName} games...`}
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="max-w-sm"
+            data-testid="small-library-search"
+          />
           {smallLibraryData && smallLibraryData.data.length > 0 ? (
             <GameGrid>
               {smallLibraryData.data.map((game) => (
@@ -152,35 +169,14 @@ export function ConsoleDetailPage() {
           )}
         </>
       ) : (
-        /* Large library: showcase sections + browse link */
+        /* Large library: showcase sections */
         <>
-          <div className="flex items-center gap-3">
-            <Link
-              to={`/consoles/${id}/games`}
-              className="inline-flex items-center gap-2 rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white shadow-lg shadow-brand-600/20 hover:bg-brand-500 active:bg-brand-700 transition-all duration-200"
-              data-testid="browse-all-games-link"
-            >
-              Browse all {gameCount} games
-              <ArrowRight className="h-4 w-4" />
-            </Link>
-            {isAdmin && <ScanButton consoleAbbr={consoleAbbr} consoleName={consoleName} scanLibrary={scanLibrary} toast={toast} />}
-          </div>
-
           <ConsoleRecentlyPlayed consoleId={id!} />
           <ConsoleEssentials consoleId={id!} />
           <ConsoleHiddenGems consoleId={id!} />
           <ConsoleGenreBreakdown consoleId={id!} />
           <ConsoleTopDevelopers consoleId={id!} />
           <ConsoleRecentlyAdded consoleId={id!} />
-
-          <Link
-            to={`/consoles/${id}/games`}
-            className="inline-flex items-center gap-2 rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white shadow-lg shadow-brand-600/20 hover:bg-brand-500 active:bg-brand-700 transition-all duration-200"
-            data-testid="browse-all-games-link-bottom"
-          >
-            Browse all {gameCount} games
-            <ArrowRight className="h-4 w-4" />
-          </Link>
         </>
       )}
     </div>
@@ -199,11 +195,9 @@ function ScanButton({
   toast: ReturnType<typeof useToast>["toast"];
 }) {
   return (
-    <Button
-      variant="ghost"
-      size="sm"
-      loading={scanLibrary.isPending}
-      icon={<FolderSearch className="h-4 w-4" />}
+    <button
+      className="inline-flex items-center gap-2 rounded-lg bg-white/10 backdrop-blur-sm px-4 py-2 text-sm font-medium text-white hover:bg-white/20 transition-colors disabled:opacity-50"
+      disabled={scanLibrary.isPending}
       data-testid="scan-button"
       onClick={() =>
         scanLibrary.mutate(
@@ -220,7 +214,8 @@ function ScanButton({
         )
       }
     >
+      <FolderSearch className="h-4 w-4" />
       Scan for new games
-    </Button>
+    </button>
   );
 }

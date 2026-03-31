@@ -800,6 +800,7 @@ func SeedConsoles(db *gorm.DB) error {
 		{Name: "WonderSwan", Abbreviation: "WS", Extensions: ".ws,.wsc", DefaultCore: "beetle_wswan", EmulatorJSCore: "mednafen_wswan", FolderName: "wonderswan", ColorTheme: "#4b0082", CoverAspect: "1:1", Generation: 5, SaveStateSupport: true, Playable: true},
 		{Name: "Sega 32X", Abbreviation: "32X", Extensions: ".32x", DefaultCore: "picodrive", EmulatorJSCore: "picodrive", FolderName: "sega32x", ColorTheme: "#1a1a1a", Generation: 5, SaveStateSupport: true, Playable: true},
 		{Name: "PC-FX", Abbreviation: "PCFX", Extensions: ".iso,.cue,.m3u", DefaultCore: "beetle_pcfx", EmulatorJSCore: "mednafen_pcfx", FolderName: "pcfx", ColorTheme: "#ff6600", Generation: 5, SaveStateSupport: true, Playable: true},
+		{Name: "Amiga CD32", Abbreviation: "ACD32", Extensions: ".iso,.cue,.bin,.chd", DefaultCore: "", EmulatorJSCore: "", FolderName: "acd32", ColorTheme: "#6c5eb5", CoverAspect: "8:11", Generation: 5, SaveStateSupport: false, Playable: false},
 		// 6th Generation
 		{Name: "PlayStation 2", Abbreviation: "PS2", Extensions: ".iso,.bin,.cue,.chd,.m3u", DefaultCore: "play", EmulatorJSCore: "", FolderName: "ps2", ColorTheme: "#003087", Generation: 6, SaveStateSupport: true, Playable: true},
 		{Name: "Dreamcast", Abbreviation: "DC", Extensions: ".gdi,.cdi,.chd,.cue,.bin,.m3u", DefaultCore: "flycast", EmulatorJSCore: "", FolderName: "dreamcast", ColorTheme: "#c0c0c0", Generation: 6, SaveStateSupport: true, Playable: true},

@@ -206,6 +206,7 @@ var AbbreviationToLibRetro = map[string]string{
 	"DOS":   "DOS",
 	"DDEMO": "DOS",
 	"AMIGA": "Commodore - Amiga",
+	"ACD32": "Commodore - Amiga CD32",
 	"ADEMO": "Commodore - Amiga",
 	"MSX1":  "Microsoft - MSX",
 	"MSX2":  "Microsoft - MSX2",

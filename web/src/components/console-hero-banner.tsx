@@ -2,15 +2,18 @@ import { Check, Globe } from "lucide-react";
 import { getConsoleStyle } from "@/lib/console-metadata";
 import { cn } from "@/lib/cn";
 import type { Console } from "@/types/api";
+import type { ReactNode } from "react";
 
 interface ConsoleHeroBannerProps {
   console: Console | undefined;
   gameCount?: number;
+  actions?: ReactNode;
 }
 
 export function ConsoleHeroBanner({
   console: consoleData,
   gameCount,
+  actions,
 }: ConsoleHeroBannerProps) {
   const consoleName = consoleData?.name ?? "Console";
   const consoleAbbr = consoleData?.abbreviation ?? "";
@@ -46,7 +49,8 @@ export function ConsoleHeroBanner({
       <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-white/[0.04] pointer-events-none" />
 
       {/* Content */}
-      <div className="relative flex flex-col items-center px-6 py-10 md:py-12">
+      <div className="relative px-6 py-10 md:py-12">
+        <div className="flex flex-col items-center">
         {/* Logo / Title */}
         {consoleData?.logoUrl ? (
           <img
@@ -88,6 +92,14 @@ export function ConsoleHeroBanner({
             </span>
           )}
         </div>
+        </div>
+
+        {/* Action buttons — bottom right */}
+        {actions && (
+          <div className="absolute bottom-4 right-4 flex flex-col gap-2 items-end">
+            {actions}
+          </div>
+        )}
       </div>
     </div>
   );
