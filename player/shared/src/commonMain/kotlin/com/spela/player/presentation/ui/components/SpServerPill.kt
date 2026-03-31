@@ -47,7 +47,7 @@ fun SpServerPill(
             .clip(pillShape)
             .border(1.dp, gradientBrush, pillShape)
             .clickable(onClick = onClick)
-            .padding(horizontal = 16.dp, vertical = 8.dp),
+            .padding(horizontal = 20.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.Center,
     ) {
@@ -62,24 +62,24 @@ fun SpServerPill(
         // Server URL
         Text(
             text = serverUrl.ifEmpty { "No server" },
-            style = SpTypography.BodySmall,
+            style = SpTypography.BodyMedium,
             color = SpColor.AccentPurpleLight,
-            modifier = Modifier.padding(start = 8.dp),
+            modifier = Modifier.padding(start = 10.dp),
         )
 
         // Vertical divider
         Box(
             modifier = Modifier
-                .padding(horizontal = 8.dp)
+                .padding(horizontal = 10.dp)
                 .width(1.dp)
-                .height(16.dp)
+                .height(18.dp)
                 .background(Color.White.copy(alpha = 0.12f)),
         )
 
         // Switch label
         Text(
             text = "Switch",
-            style = SpTypography.LabelSmall,
+            style = SpTypography.LabelMedium,
             color = SpColor.AccentPurple,
         )
     }

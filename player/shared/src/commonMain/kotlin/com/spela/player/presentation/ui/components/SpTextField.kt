@@ -19,6 +19,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.input.ImeAction
@@ -63,17 +64,18 @@ fun SpTextField(
                 .onFocusChanged { isFocused = it.isFocused }
                 .then(if (showGlow) Modifier.drawBehind {
                     val cr = CornerRadius(SpSpacing.RadiusLarge.toPx())
-                    drawRoundRect(
-                        color = Color(0xFF8B5CF6).copy(alpha = 0.15f),
-                        cornerRadius = cr,
-                        size = size,
-                        style = Stroke(width = 20.dp.toPx()),
+                    val glowBrush = Brush.linearGradient(
+                        colors = listOf(
+                            Color(0xFF6B8DD6).copy(alpha = 0.25f),
+                            Color(0xFFa855f7).copy(alpha = 0.20f),
+                            Color(0xFFE056A0).copy(alpha = 0.15f),
+                        ),
                     )
                     drawRoundRect(
-                        color = Color(0xFFE056A0).copy(alpha = 0.08f),
+                        brush = glowBrush,
                         cornerRadius = cr,
                         size = size,
-                        style = Stroke(width = 40.dp.toPx()),
+                        style = Stroke(width = 6.dp.toPx()),
                     )
                 } else Modifier)
                 .then(if (showGlow) Modifier.border(

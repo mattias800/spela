@@ -247,44 +247,19 @@ private fun Modifier.neonGlow(
     shape: Shape = RoundedCornerShape(SpSpacing.RadiusLarge),
     intense: Boolean = true,
 ): Modifier = this.drawBehind {
-    val cornerRadius = when (shape) {
-        is RoundedCornerShape -> CornerRadius(SpSpacing.RadiusLarge.toPx())
-        else -> CornerRadius(SpSpacing.RadiusLarge.toPx())
-    }
-
-    if (intense) {
-        // Outer purple glow
-        drawRoundRect(
-            color = Color(0xFF7C3AED).copy(alpha = 0.35f),
-            topLeft = androidx.compose.ui.geometry.Offset(-8f, -8f),
-            size = androidx.compose.ui.geometry.Size(size.width + 16f, size.height + 16f),
-            cornerRadius = cornerRadius,
-            style = Stroke(width = 8f),
-        )
-        // Inner pink glow
-        drawRoundRect(
-            color = Color(0xFFEC4899).copy(alpha = 0.25f),
-            topLeft = androidx.compose.ui.geometry.Offset(-4f, -4f),
-            size = androidx.compose.ui.geometry.Size(size.width + 8f, size.height + 8f),
-            cornerRadius = cornerRadius,
-            style = Stroke(width = 6f),
-        )
-    } else {
-        // Softer outer purple glow
-        drawRoundRect(
-            color = Color(0xFF7C3AED).copy(alpha = 0.20f),
-            topLeft = androidx.compose.ui.geometry.Offset(-6f, -6f),
-            size = androidx.compose.ui.geometry.Size(size.width + 12f, size.height + 12f),
-            cornerRadius = cornerRadius,
-            style = Stroke(width = 6f),
-        )
-        // Softer inner pink glow
-        drawRoundRect(
-            color = Color(0xFFEC4899).copy(alpha = 0.15f),
-            topLeft = androidx.compose.ui.geometry.Offset(-3f, -3f),
-            size = androidx.compose.ui.geometry.Size(size.width + 6f, size.height + 6f),
-            cornerRadius = cornerRadius,
-            style = Stroke(width = 4f),
-        )
-    }
+    val cr = CornerRadius(SpSpacing.RadiusLarge.toPx())
+    val alpha = if (intense) 0.25f else 0.15f
+    val glowBrush = Brush.linearGradient(
+        colors = listOf(
+            Color(0xFF6B8DD6).copy(alpha = alpha),
+            Color(0xFFa855f7).copy(alpha = alpha),
+            Color(0xFFE056A0).copy(alpha = alpha * 0.7f),
+        ),
+    )
+    drawRoundRect(
+        brush = glowBrush,
+        cornerRadius = cr,
+        size = size,
+        style = Stroke(width = if (intense) 8.dp.toPx() else 6.dp.toPx()),
+    )
 }
