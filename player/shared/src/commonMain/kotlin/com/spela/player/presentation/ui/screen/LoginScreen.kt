@@ -37,6 +37,8 @@ import com.spela.player.presentation.ui.components.SpTextField
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.ui.theme.SpTypography
+import com.spela.player.presentation.ui.components.SpBrandedBackgroundColor
+import com.spela.player.presentation.ui.components.SpLogo
 import com.spela.player.presentation.viewmodel.LoginViewModel
 
 @Composable
@@ -61,7 +63,7 @@ fun LoginScreen(
     BoxWithConstraints(
         modifier = Modifier
             .fillMaxSize()
-            .background(SpColor.Background),
+            .background(SpBrandedBackgroundColor),
     ) {
         val isLandscape = maxWidth > maxHeight
 
@@ -76,26 +78,15 @@ fun LoginScreen(
             Spacer(Modifier.height(if (isLandscape) SpSpacing.XLarge else 100.dp))
 
             // Branding
-            Box(
-                modifier = Modifier
-                    .size(72.dp)
-                    .clip(RoundedCornerShape(18.dp))
-                    .background(SpColor.PrimaryContainer),
-                contentAlignment = Alignment.Center,
-            ) {
-                Text(
-                    text = "S",
-                    style = SpTypography.DisplaySmall,
-                    color = SpColor.Primary,
-                )
-            }
+            SpLogo(size = if (isLandscape) 240.dp else 384.dp)
 
-            Spacer(Modifier.height(SpSpacing.Default))
+            Spacer(Modifier.height(SpSpacing.Small))
 
             Text(
                 text = if (state.isRegisterMode) "Create Account" else "Welcome Back",
                 style = SpTypography.DisplaySmall,
                 color = SpColor.OnBackground,
+                textAlign = TextAlign.Center,
             )
 
             Text(
@@ -103,6 +94,7 @@ fun LoginScreen(
                 else "Sign in to start playing",
                 style = SpTypography.BodyMedium,
                 color = SpColor.OnBackgroundSecondary,
+                textAlign = TextAlign.Center,
             )
 
             Spacer(Modifier.height(if (isLandscape) SpSpacing.XLarge else SpSpacing.XXXLarge))
