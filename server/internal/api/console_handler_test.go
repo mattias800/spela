@@ -38,6 +38,12 @@ func setupConsoleTestEnv(t *testing.T) (*gorm.DB, *storage.Storage, *gin.Engine)
 	err = db.SeedConsoles(database)
 	require.NoError(t, err)
 
+	// Seed reference tables and console metadata so tests can verify metadata fields.
+	require.NoError(t, db.SeedMediaTypeCategories(database))
+	require.NoError(t, db.SeedMediaTypes(database))
+	require.NoError(t, db.SeedHardwareMakers(database))
+	require.NoError(t, db.SeedConsoleMetadata(database))
+
 	tmpDir := t.TempDir()
 	store, err := storage.NewStorage(
 		filepath.Join(tmpDir, "saves"),
@@ -109,6 +115,64 @@ func TestListConsoles_ReturnsConsolesWithGames(t *testing.T) {
 	assert.Len(t, consoles, 1, "should return only the console with games")
 	assert.Equal(t, "NES", consoles[0].Abbreviation)
 	assert.Equal(t, 1, consoles[0].GameCount)
+}
+
+func TestListConsoles_IncludesMetadata(t *testing.T) {
+	database, store, router := setupConsoleTestEnv(t)
+
+	handler := &ConsoleHandler{DB: database, Storage: store}
+	router.GET("/api/consoles", handler.ListConsoles)
+
+	// Add a game to NES so it appears in the list
+	var nesConsole db.Console
+	err := database.Where("abbreviation = ?", "NES").First(&nesConsole).Error
+	require.NoError(t, err)
+
+	game := db.Game{
+		ConsoleID: nesConsole.ID,
+		Title:     "Test Game",
+		FileName:  "test.nes",
+		FilePath:  "/tmp/test.nes",
+		FileSize:  1024,
+		IsPrimary: true,
+	}
+	err = database.Create(&game).Error
+	require.NoError(t, err)
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/consoles", nil)
+	router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var consoles []ConsoleResponse
+	err = json.Unmarshal(w.Body.Bytes(), &consoles)
+	require.NoError(t, err)
+	require.Len(t, consoles, 1)
+
+	nes := consoles[0]
+	assert.Equal(t, "nes", nes.Code, "code should come from seeded metadata")
+	assert.Equal(t, "NES", nes.Abbreviation)
+
+	// Maker
+	require.NotNil(t, nes.Maker, "maker should be populated from seeded metadata")
+	assert.Equal(t, "nintendo", nes.Maker.Code)
+	assert.Equal(t, "Nintendo", nes.Maker.Name)
+
+	// Media type
+	require.NotNil(t, nes.MediaType, "mediaType should be populated from seeded metadata")
+	assert.Equal(t, "cartridge", nes.MediaType.Code)
+	assert.Equal(t, "cartridge", nes.MediaType.Category.Code)
+
+	// Numeric metadata
+	require.NotNil(t, nes.ReleaseYear, "releaseYear should be set")
+	assert.Equal(t, 1983, *nes.ReleaseYear)
+
+	require.NotNil(t, nes.UnitsSold, "unitsSold should be set")
+	assert.True(t, *nes.UnitsSold > 0, "unitsSold should be positive")
+
+	require.NotNil(t, nes.Summary, "summary should be set")
+	assert.NotEmpty(t, *nes.Summary, "summary should not be empty")
 }
 
 func TestGetPreviewScreenshot_ConsoleNotFound(t *testing.T) {
@@ -251,6 +315,11 @@ func setupTopListTestEnv(t *testing.T) (*gorm.DB, *gin.Engine) {
 
 	err = db.SeedConsoles(database)
 	require.NoError(t, err)
+
+	require.NoError(t, db.SeedMediaTypeCategories(database))
+	require.NoError(t, db.SeedMediaTypes(database))
+	require.NoError(t, db.SeedHardwareMakers(database))
+	require.NoError(t, db.SeedConsoleMetadata(database))
 
 	gin.SetMode(gin.TestMode)
 	router := gin.New()
@@ -491,6 +560,11 @@ func setupLongestListTestEnv(t *testing.T) (*gorm.DB, *gin.Engine) {
 
 	err = db.SeedConsoles(database)
 	require.NoError(t, err)
+
+	require.NoError(t, db.SeedMediaTypeCategories(database))
+	require.NoError(t, db.SeedMediaTypes(database))
+	require.NoError(t, db.SeedHardwareMakers(database))
+	require.NoError(t, db.SeedConsoleMetadata(database))
 
 	gin.SetMode(gin.TestMode)
 	router := gin.New()
