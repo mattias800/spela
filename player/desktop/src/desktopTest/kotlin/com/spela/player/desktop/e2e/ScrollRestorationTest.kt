@@ -23,16 +23,16 @@ class ScrollRestorationTest {
     private fun createHarnessWithManyConsoles(): SpelaTestHarness {
         val harness = SpelaTestHarness(StandardTestDispatcher())
         harness.gameRepo.consoles = listOf(
-            Console("nes", "Nintendo Entertainment System", "NES", 3, "#e53e3e"),
-            Console("snes", "Super Nintendo", "SNES", 2, "#3182ce"),
-            Console("gba", "Game Boy Advance", "GBA", 1, "#5a1f9e"),
-            Console("gen", "Sega Genesis", "GEN", 1, "#0060a8"),
-            Console("n64", "Nintendo 64", "N64", 1, "#009e42"),
-            Console("psx", "PlayStation", "PSX", 1, "#003087"),
-            Console("gb", "Game Boy", "GB", 1, "#9bbc0f"),
-            Console("gbc", "Game Boy Color", "GBC", 1, "#6b4fa0"),
-            Console("dc", "Dreamcast", "DC", 1, "#ff6600"),
-            Console("sat", "Sega Saturn", "SAT", 1, "#333333"),
+            Console(id = "nes", name = "Nintendo Entertainment System", abbreviation = "NES", gameCount = 3, colorTheme = "#e53e3e"),
+            Console(id = "snes", name = "Super Nintendo", abbreviation = "SNES", gameCount = 2, colorTheme = "#3182ce"),
+            Console(id = "gba", name = "Game Boy Advance", abbreviation = "GBA", gameCount = 1, colorTheme = "#5a1f9e"),
+            Console(id = "gen", name = "Sega Genesis", abbreviation = "GEN", gameCount = 1, colorTheme = "#0060a8"),
+            Console(id = "n64", name = "Nintendo 64", abbreviation = "N64", gameCount = 1, colorTheme = "#009e42"),
+            Console(id = "psx", name = "PlayStation", abbreviation = "PSX", gameCount = 1, colorTheme = "#003087"),
+            Console(id = "gb", name = "Game Boy", abbreviation = "GB", gameCount = 1, colorTheme = "#9bbc0f"),
+            Console(id = "gbc", name = "Game Boy Color", abbreviation = "GBC", gameCount = 1, colorTheme = "#6b4fa0"),
+            Console(id = "dc", name = "Dreamcast", abbreviation = "DC", gameCount = 1, colorTheme = "#ff6600"),
+            Console(id = "sat", name = "Sega Saturn", abbreviation = "SAT", gameCount = 1, colorTheme = "#333333"),
         )
         harness.navigationViewModel.onIntent(NavigationIntent.NavigateTo(SpScreen.Home))
         return harness

@@ -22,6 +22,12 @@ const makeConsole = (abbr: string, name: string): Console => ({
   saveStateSupport: true,
   browserPlayable: false,
   playable: true,
+  code: abbr,
+  maker: null,
+  mediaType: null,
+  releaseYear: null,
+  unitsSold: null,
+  summary: null,
   createdAt: "",
   updatedAt: "",
 });

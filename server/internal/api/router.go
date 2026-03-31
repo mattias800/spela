@@ -151,6 +151,7 @@ func NewRouter(cfg Config) (*gin.Engine, func()) {
 		Scraper:  cfg.Scraper,
 	}
 	consoleHandler := &ConsoleHandler{DB: cfg.DB, Storage: cfg.Storage, Scraper: cfg.Scraper}
+	makerHandler := &MakerHandler{DB: cfg.DB}
 	userHandler := &UserHandler{DB: cfg.DB, Hub: cfg.Hub, JWTSecret: cfg.JWTSecret}
 	deviceHandler := &DeviceHandler{DB: cfg.DB}
 	statsHandler := &StatsHandler{DB: cfg.DB}
@@ -230,6 +231,16 @@ func NewRouter(cfg Config) (*gin.Engine, func()) {
 	// Console preview screenshots (public — cached libretro thumbnails, loaded by <img> tags)
 	r.GET("/api/consoles/:id/preview-screenshot", consoleHandler.GetPreviewScreenshot)
 
+	// Branding assets (public — embedded PNGs)
+	r.GET("/api/branding/logo", func(c *gin.Context) {
+		data, err := brandingAssets.ReadFile("static/branding/spela-logo.png")
+		if err != nil {
+			c.JSON(404, gin.H{"error": "logo not found"})
+			return
+		}
+		c.Data(200, "image/png", data)
+	})
+
 	// Console icons (public — embedded PNGs, loaded by <img> tags)
 	r.GET("/api/consoles/:id/icon", consoleHandler.GetConsoleIcon)
 
@@ -244,6 +255,10 @@ func NewRouter(cfg Config) (*gin.Engine, func()) {
 	{
 		// Search
 		api.GET("/search", searchHandler.Search)
+
+		// Makers
+		api.GET("/makers", makerHandler.ListMakers)
+		api.GET("/makers/:code", makerHandler.GetMaker)
 
 		// Consoles
 		api.GET("/consoles", consoleHandler.ListConsoles)

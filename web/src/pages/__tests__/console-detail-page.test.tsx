@@ -84,6 +84,7 @@ function makeGame(overrides: Partial<Game> = {}): Game {
 function makeConsole(overrides: Partial<Console> = {}): Console {
   return {
     id: "snes",
+    code: "snes",
     name: "Super Nintendo",
     abbreviation: "snes",
     extensions: [".sfc"],
@@ -97,6 +98,11 @@ function makeConsole(overrides: Partial<Console> = {}): Console {
     saveStateSupport: true,
     browserPlayable: false,
     playable: true,
+    maker: null,
+    mediaType: null,
+    releaseYear: null,
+    unitsSold: null,
+    summary: null,
     createdAt: "",
     updatedAt: "",
     ...overrides,

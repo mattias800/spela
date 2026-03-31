@@ -1,7 +1,7 @@
 <p align="center">
-  <h1 align="center">Spela</h1>
-  <p align="center"><em>Nu spelar vi!</em> — Your retro game library, self-hosted. Play anywhere.</p>
+  <img src="docs/spela-logo.png" alt="Spela" width="300" />
 </p>
+<p align="center"><em>Nu spelar vi!</em> — Your retro game library, self-hosted. Play anywhere.</p>
 
 <p align="center">
   <a href="#supported-consoles">36 Consoles</a> &bull;

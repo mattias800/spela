@@ -167,8 +167,6 @@ internal fun ConsoleCard(
     val (gradientFrom, gradientTo) = getConsoleGradient(console.abbreviation, console.colorTheme)
     val shape = RoundedCornerShape(SpSpacing.CardCornerRadius)
     val biosDesc = if (hasMissingBios) ", BIOS missing" else ""
-    val consoleInfo = getConsoleInfo(console.abbreviation)
-
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
     val isHovered by interactionSource.collectIsHoveredAsState()
@@ -300,8 +298,11 @@ internal fun ConsoleCard(
         ) {
             val info = buildString {
                 append("${console.gameCount} ${if (console.gameCount == 1) "game" else "games"}")
-                if (consoleInfo != null) {
-                    append(" · ${consoleInfo.manufacturer} · ${consoleInfo.releaseYear}")
+                if (console.makerName != null) {
+                    append(" · ${console.makerName}")
+                }
+                if (console.releaseYear != null) {
+                    append(" · ${console.releaseYear}")
                 }
             }
             Text(
@@ -662,7 +663,7 @@ internal fun MetadataBadge(
 }
 
 /**
- * An expandable "About" card shown below the hero banner when [ConsoleInfo.summary]
+ * An expandable "About" card shown below the hero banner when [Console.summary]
  * is available. Collapsed by default to keep the screen tidy.
  */
 @Composable
@@ -670,8 +671,8 @@ internal fun ConsoleAboutSection(
     console: Console,
     modifier: Modifier = Modifier,
 ) {
-    val info = getConsoleInfo(console.abbreviation) ?: return
-    if (info.summary.isBlank()) return
+    val summary = console.summary
+    if (summary.isNullOrBlank()) return
 
     var expanded by rememberSaveable { mutableStateOf(false) }
 
@@ -679,7 +680,7 @@ internal fun ConsoleAboutSection(
         modifier = modifier.fillMaxWidth(),
     ) {
         Text(
-            text = info.summary,
+            text = summary,
             style = SpTypography.BodySmall,
             color = SpColor.OnBackgroundSecondary,
             maxLines = if (expanded) Int.MAX_VALUE else 2,

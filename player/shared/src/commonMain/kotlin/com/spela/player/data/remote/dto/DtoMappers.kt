@@ -23,6 +23,7 @@ fun ConsoleDto.toDomain(): Console = Console(
     name = name,
     abbreviation = abbreviation,
     gameCount = gameCount,
+    code = code,
     colorTheme = colorTheme,
     coverAspectRatio = coverAspectRatio,
     defaultCore = defaultCore,
@@ -32,6 +33,12 @@ fun ConsoleDto.toDomain(): Console = Console(
     browserPlayable = browserPlayable,
     playable = playable,
     generation = generation,
+    makerName = maker?.name,
+    makerCode = maker?.code,
+    mediaTypeName = mediaType?.name,
+    releaseYear = releaseYear,
+    unitsSold = unitsSold,
+    summary = summary,
 )
 
 fun GameDiscDto.toDomain(): GameDisc = GameDisc(

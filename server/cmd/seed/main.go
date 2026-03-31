@@ -28,6 +28,22 @@ func main() {
 		slog.Error("failed to seed consoles", "error", err)
 		os.Exit(1)
 	}
+	if err := db.SeedMediaTypeCategories(database); err != nil {
+		slog.Error("failed to seed media type categories", "error", err)
+		os.Exit(1)
+	}
+	if err := db.SeedMediaTypes(database); err != nil {
+		slog.Error("failed to seed media types", "error", err)
+		os.Exit(1)
+	}
+	if err := db.SeedHardwareMakers(database); err != nil {
+		slog.Error("failed to seed hardware makers", "error", err)
+		os.Exit(1)
+	}
+	if err := db.SeedConsoleMetadata(database); err != nil {
+		slog.Error("failed to seed console metadata", "error", err)
+		os.Exit(1)
+	}
 
 	// Create demo admin user
 	adminHash, err := auth.HashPassword("admin123")

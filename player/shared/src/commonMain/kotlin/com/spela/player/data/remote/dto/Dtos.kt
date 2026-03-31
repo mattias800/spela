@@ -39,12 +39,32 @@ data class UserDto(
     val updatedAt: String? = null,
 )
 
+@Serializable
+data class HardwareMakerDto(
+    val code: String,
+    val name: String,
+)
+
+@Serializable
+data class MediaTypeCategoryDto(
+    val code: String,
+    val name: String,
+)
+
+@Serializable
+data class MediaTypeDto(
+    val code: String,
+    val name: String,
+    val category: MediaTypeCategoryDto,
+)
+
 /** Matches ConsoleResponse in responses.go */
 @Serializable
 data class ConsoleDto(
     val id: String,
     val name: String,
     val abbreviation: String,
+    val code: String = "",
     val extensions: List<String> = emptyList(),
     val defaultCore: String = "",
     val coverAspectRatio: Double = 0.75,
@@ -57,6 +77,11 @@ data class ConsoleDto(
     val browserPlayable: Boolean = false,
     val playable: Boolean = true,
     val generation: Int = 0,
+    val maker: HardwareMakerDto? = null,
+    val mediaType: MediaTypeDto? = null,
+    val releaseYear: Int? = null,
+    val unitsSold: Long? = null,
+    val summary: String? = null,
     val createdAt: String? = null,
     val updatedAt: String? = null,
 )

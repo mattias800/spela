@@ -10,27 +10,60 @@ import (
 	"gorm.io/gorm"
 )
 
+// MediaTypeCategoryResponse is the API response for a media type category.
+type MediaTypeCategoryResponse struct {
+	Code string `json:"code"`
+	Name string `json:"name"`
+}
+
+// MediaTypeResponse is the API response for a media type.
+type MediaTypeResponse struct {
+	Code     string                    `json:"code"`
+	Name     string                    `json:"name"`
+	Category MediaTypeCategoryResponse `json:"category"`
+}
+
+// HardwareMakerResponse is the API response for a hardware maker.
+type HardwareMakerResponse struct {
+	Code string `json:"code"`
+	Name string `json:"name"`
+}
+
+// MakerDetailResponse is the API response for a hardware maker with its consoles.
+type MakerDetailResponse struct {
+	Code         string            `json:"code"`
+	Name         string            `json:"name"`
+	ConsoleCount int               `json:"consoleCount"`
+	Consoles     []ConsoleResponse `json:"consoles,omitempty"`
+}
+
 // ConsoleResponse is the API response for a console, with extensions as an array
 // and coverAspectRatio as a number.
 type ConsoleResponse struct {
-	ID               string    `json:"id"`
-	CreatedAt        time.Time `json:"createdAt"`
-	UpdatedAt        time.Time `json:"updatedAt"`
-	Name             string    `json:"name"`
-	Abbreviation     string    `json:"abbreviation"`
-	Extensions       []string  `json:"extensions"`
-	DefaultCore      string    `json:"defaultCore"`
-	EmulatorJSCore   string    `json:"emulatorJsCore"`
-	CoverAspectRatio float64   `json:"coverAspectRatio"`
-	ColorTheme       string    `json:"colorTheme"`
-	Generation       int       `json:"generation"`
-	IconURL          string    `json:"iconUrl"`
-	LogoURL          string    `json:"logoUrl"`
-	LogoPngURL       string    `json:"logoPngUrl"`
-	GameCount        int       `json:"gameCount"`
-	SaveStateSupport bool      `json:"saveStateSupport"`
-	BrowserPlayable  bool      `json:"browserPlayable"`
-	Playable         bool      `json:"playable"`
+	ID               string                 `json:"id"`
+	Code             string                 `json:"code"`
+	CreatedAt        time.Time              `json:"createdAt"`
+	UpdatedAt        time.Time              `json:"updatedAt"`
+	Name             string                 `json:"name"`
+	Abbreviation     string                 `json:"abbreviation"`
+	Maker            *HardwareMakerResponse `json:"maker"`
+	MediaType        *MediaTypeResponse     `json:"mediaType"`
+	ReleaseYear      *int                   `json:"releaseYear"`
+	UnitsSold        *int64                 `json:"unitsSold"`
+	Summary          *string                `json:"summary"`
+	Extensions       []string               `json:"extensions"`
+	DefaultCore      string                 `json:"defaultCore"`
+	EmulatorJSCore   string                 `json:"emulatorJsCore"`
+	CoverAspectRatio float64                `json:"coverAspectRatio"`
+	ColorTheme       string                 `json:"colorTheme"`
+	Generation       int                    `json:"generation"`
+	IconURL          string                 `json:"iconUrl"`
+	LogoURL          string                 `json:"logoUrl"`
+	LogoPngURL       string                 `json:"logoPngUrl"`
+	GameCount        int                    `json:"gameCount"`
+	SaveStateSupport bool                   `json:"saveStateSupport"`
+	BrowserPlayable  bool                   `json:"browserPlayable"`
+	Playable         bool                   `json:"playable"`
 }
 
 // DiscResponse is the API response for a single disc in a multi-disc game.
@@ -174,12 +207,44 @@ func ToConsoleResponse(c db.Console) ConsoleResponse {
 	ratio := parseAspectRatio(c.CoverAspect)
 
 	abbr := strings.ToLower(c.Abbreviation)
+
+	code := abbr
+	if c.Code != nil && *c.Code != "" {
+		code = *c.Code
+	}
+
+	var maker *HardwareMakerResponse
+	if c.HardwareMaker != nil {
+		maker = &HardwareMakerResponse{
+			Code: c.HardwareMaker.Code,
+			Name: c.HardwareMaker.Name,
+		}
+	}
+
+	var mediaType *MediaTypeResponse
+	if c.MediaType != nil {
+		mediaType = &MediaTypeResponse{
+			Code: c.MediaType.Code,
+			Name: c.MediaType.Name,
+			Category: MediaTypeCategoryResponse{
+				Code: c.MediaType.Category.Code,
+				Name: c.MediaType.Category.Name,
+			},
+		}
+	}
+
 	return ConsoleResponse{
 		ID:               abbr,
+		Code:             code,
 		CreatedAt:        c.CreatedAt,
 		UpdatedAt:        c.UpdatedAt,
 		Name:             c.Name,
 		Abbreviation:     c.Abbreviation,
+		Maker:            maker,
+		MediaType:        mediaType,
+		ReleaseYear:      c.ReleaseYear,
+		UnitsSold:        c.UnitsSold,
+		Summary:          c.Summary,
 		Extensions:       exts,
 		DefaultCore:      c.DefaultCore,
 		EmulatorJSCore:   c.EmulatorJSCore,

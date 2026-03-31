@@ -52,6 +52,32 @@ type LoginAttempt struct {
 	UpdatedAt   time.Time
 }
 
+// MediaTypeCategory represents a broad category of game media (e.g. cartridge, optical disc).
+type MediaTypeCategory struct {
+	ID   uint   `gorm:"primarykey" json:"id"`
+	Code string `gorm:"uniqueIndex;size:32;not null" json:"code"`
+	Name string `gorm:"size:64;not null" json:"name"`
+}
+
+// MediaType represents a specific game media format (e.g. ROM cartridge, CD-ROM).
+type MediaType struct {
+	ID         uint              `gorm:"primarykey" json:"id"`
+	Code       string            `gorm:"uniqueIndex;size:32;not null" json:"code"`
+	Name       string            `gorm:"size:64;not null" json:"name"`
+	CategoryID uint              `gorm:"not null" json:"categoryId"`
+	Category   MediaTypeCategory `gorm:"foreignKey:CategoryID" json:"category"`
+}
+
+// HardwareMaker represents a console/hardware manufacturer.
+type HardwareMaker struct {
+	ID        uint      `gorm:"primarykey" json:"id"`
+	CreatedAt time.Time `json:"createdAt"`
+	UpdatedAt time.Time `json:"updatedAt"`
+	Code      string    `gorm:"uniqueIndex;size:32;not null" json:"code"`
+	Name      string    `gorm:"size:128;not null" json:"name"`
+	Consoles  []Console `gorm:"foreignKey:HardwareMakerID" json:"consoles,omitempty"`
+}
+
 // Console represents a detected game console/platform.
 type Console struct {
 	ID             uint           `gorm:"primarykey" json:"id"`
@@ -69,6 +95,14 @@ type Console struct {
 	Generation       int            `gorm:"default:0" json:"generation"`
 	SaveStateSupport bool           `gorm:"default:true" json:"saveStateSupport"`
 	Playable         bool           `gorm:"default:true" json:"playable"`
+	Code             *string        `gorm:"uniqueIndex;size:32" json:"code"`
+	HardwareMakerID  *uint          `json:"hardwareMakerId"`
+	HardwareMaker    *HardwareMaker `gorm:"foreignKey:HardwareMakerID" json:"hardwareMaker,omitempty"`
+	MediaTypeID      *uint          `json:"mediaTypeId"`
+	MediaType        *MediaType     `gorm:"foreignKey:MediaTypeID" json:"mediaType,omitempty"`
+	ReleaseYear      *int           `json:"releaseYear"`
+	UnitsSold        *int64         `json:"unitsSold"`
+	Summary          *string        `gorm:"type:text" json:"summary"`
 	Games            []Game         `gorm:"foreignKey:ConsoleID" json:"games,omitempty"`
 	GameCount      int            `gorm:"-" json:"gameCount,omitempty"`
 }

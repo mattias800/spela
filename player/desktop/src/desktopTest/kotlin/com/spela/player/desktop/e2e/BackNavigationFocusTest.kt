@@ -22,9 +22,9 @@ class BackNavigationFocusTest {
     private fun createHarness(): SpelaTestHarness {
         val harness = SpelaTestHarness(StandardTestDispatcher())
         harness.gameRepo.consoles = listOf(
-            Console("nes", "Nintendo Entertainment System", "NES", 3, "#e53e3e"),
-            Console("snes", "Super Nintendo", "SNES", 2, "#3182ce"),
-            Console("gba", "Game Boy Advance", "GBA", 1, "#5a1f9e"),
+            Console(id = "nes", name = "Nintendo Entertainment System", abbreviation = "NES", gameCount = 3, colorTheme = "#e53e3e"),
+            Console(id = "snes", name = "Super Nintendo", abbreviation = "SNES", gameCount = 2, colorTheme = "#3182ce"),
+            Console(id = "gba", name = "Game Boy Advance", abbreviation = "GBA", gameCount = 1, colorTheme = "#5a1f9e"),
         )
         harness.navigationViewModel.onIntent(NavigationIntent.NavigateTo(SpScreen.Home))
         return harness
