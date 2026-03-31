@@ -32,6 +32,22 @@ export interface AuthTokens {
   user: User;
 }
 
+export interface HardwareMaker {
+  code: string;
+  name: string;
+}
+
+export interface MediaTypeCategory {
+  code: string;
+  name: string;
+}
+
+export interface MediaType {
+  code: string;
+  name: string;
+  category: MediaTypeCategory;
+}
+
 // ConsoleResponse from backend responses.go DTO layer
 export interface Console {
   id: string;
@@ -49,6 +65,12 @@ export interface Console {
   saveStateSupport: boolean;
   browserPlayable: boolean;
   playable: boolean;
+  code: string;
+  maker: HardwareMaker | null;
+  mediaType: MediaType | null;
+  releaseYear: number | null;
+  unitsSold: number | null;
+  summary: string | null;
   createdAt: string;
   updatedAt: string;
 }

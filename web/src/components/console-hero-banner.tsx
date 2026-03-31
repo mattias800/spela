@@ -79,6 +79,21 @@ export function ConsoleHeroBanner({
           <span className="text-sm font-medium text-white/70">
             {count} {count === 1 ? "game" : "games"}
           </span>
+          {consoleData?.maker && (
+            <span className="text-sm font-medium text-white/70">
+              {consoleData.maker.name}
+            </span>
+          )}
+          {consoleData?.releaseYear && (
+            <span className="text-sm font-medium text-white/70">
+              {consoleData.releaseYear}
+            </span>
+          )}
+          {consoleData?.mediaType && (
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-white/10 backdrop-blur-sm px-3 py-1 text-xs font-medium text-white/90">
+              {consoleData.mediaType.name}
+            </span>
+          )}
           {consoleData?.saveStateSupport && (
             <span className="inline-flex items-center gap-1.5 rounded-full bg-white/10 backdrop-blur-sm px-3 py-1 text-xs font-medium text-white/90">
               <Check className="h-3 w-3" />
