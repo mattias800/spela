@@ -33,7 +33,7 @@ func TestSteamGridDBClient_SearchGame(t *testing.T) {
 		HTTPClient: server.Client(),
 	}
 
-	gameID, err := client.SearchGame("Super Mario World", "")
+	gameID, err := client.SearchGame("Super Mario World", "", 0)
 	require.NoError(t, err)
 	assert.Equal(t, 5432, gameID)
 }
@@ -55,9 +55,49 @@ func TestSteamGridDBClient_SearchGame_NoResults(t *testing.T) {
 		HTTPClient: server.Client(),
 	}
 
-	_, err := client.SearchGame("NonexistentGame12345", "")
+	_, err := client.SearchGame("NonexistentGame12345", "", 0)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "no results found")
+}
+
+func TestSteamGridDBClient_SearchGame_ReleaseYearDisambiguation(t *testing.T) {
+	// Simulates "The Witness" scenario: modern PC game (2016) vs retro Amiga game (1983)
+	releaseDate1983 := int64(410227200) // 1983-01-01
+	releaseDate2016 := int64(1453795200) // 2016-01-26
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		resp := steamGridDBResponse[[]steamGridDBSearchResult]{
+			Success: true,
+			Data: []steamGridDBSearchResult{
+				{ID: 2014, Name: "The Witness", ReleaseDate: &releaseDate2016},
+				{ID: 5335694, Name: "The Witness", ReleaseDate: &releaseDate1983},
+			},
+		}
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(resp)
+	}))
+	defer server.Close()
+
+	client := &SteamGridDBClient{
+		APIKey:     "test-api-key",
+		BaseURL:    server.URL + "/api/v2",
+		HTTPClient: server.Client(),
+	}
+
+	// Without release year, should return first result (modern game)
+	gameID, err := client.SearchGame("The Witness", "AMIGA", 0)
+	require.NoError(t, err)
+	assert.Equal(t, 2014, gameID)
+
+	// With release year 1983, should pick the retro game
+	gameID, err = client.SearchGame("The Witness", "AMIGA", 1983)
+	require.NoError(t, err)
+	assert.Equal(t, 5335694, gameID)
+
+	// With release year 2016, should pick the modern game
+	gameID, err = client.SearchGame("The Witness", "", 2016)
+	require.NoError(t, err)
+	assert.Equal(t, 2014, gameID)
 }
 
 func TestSteamGridDBClient_SearchGame_Unauthorized(t *testing.T) {
@@ -73,7 +113,7 @@ func TestSteamGridDBClient_SearchGame_Unauthorized(t *testing.T) {
 		HTTPClient: server.Client(),
 	}
 
-	_, err := client.SearchGame("Test", "")
+	_, err := client.SearchGame("Test", "", 0)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "unauthorized")
 }
@@ -247,7 +287,7 @@ func TestSteamGridDBClient_GetBestArtwork(t *testing.T) {
 		HTTPClient: server.Client(),
 	}
 
-	artwork, err := client.GetBestArtwork("Zelda", "")
+	artwork, err := client.GetBestArtwork("Zelda", "", 0)
 	require.NoError(t, err)
 	require.NotNil(t, artwork)
 
@@ -309,7 +349,7 @@ func TestSteamGridDBClient_GetBestArtwork_PartialFailure(t *testing.T) {
 		HTTPClient: server.Client(),
 	}
 
-	artwork, err := client.GetBestArtwork("Tetris", "")
+	artwork, err := client.GetBestArtwork("Tetris", "", 0)
 	require.NoError(t, err)
 	require.NotNil(t, artwork)
 
@@ -332,7 +372,7 @@ func TestSteamGridDBClient_RateLimited(t *testing.T) {
 		HTTPClient: server.Client(),
 	}
 
-	_, err := client.SearchGame("Test", "")
+	_, err := client.SearchGame("Test", "", 0)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "rate limited")
 }

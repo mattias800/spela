@@ -13,6 +13,19 @@ import (
 	"gorm.io/gorm"
 )
 
+// parseReleaseYear extracts the year from a release date string like "1983-01-15".
+// Returns 0 if the string is empty or unparseable.
+func parseReleaseYear(releaseDate string) int {
+	if len(releaseDate) < 4 {
+		return 0
+	}
+	year, err := strconv.Atoi(releaseDate[:4])
+	if err != nil {
+		return 0
+	}
+	return year
+}
+
 // EnrichProgress holds progress information for a metadata enrichment operation.
 type EnrichProgress struct {
 	Current   int    `json:"current"`
@@ -162,7 +175,7 @@ func (s *Scraper) scrapeSteamGridDBArtwork(game *db.Game, console db.Console) {
 		return
 	}
 
-	artwork, err := s.SteamGridDBClient.GetBestArtwork(game.Title, console.Abbreviation)
+	artwork, err := s.SteamGridDBClient.GetBestArtwork(game.Title, console.Abbreviation, parseReleaseYear(game.ReleaseDate))
 	if err != nil {
 		slog.Debug("SteamGridDB artwork fetch failed", "game", game.Title, "error", err)
 		errStr := err.Error()
@@ -226,7 +239,7 @@ func (s *Scraper) scrapeSteamGridDBArtworkResult(game *db.Game, console db.Conso
 		return "matched", "" // already exists
 	}
 
-	artwork, err := s.SteamGridDBClient.GetBestArtwork(game.Title, console.Abbreviation)
+	artwork, err := s.SteamGridDBClient.GetBestArtwork(game.Title, console.Abbreviation, parseReleaseYear(game.ReleaseDate))
 	if err != nil {
 		slog.Debug("SteamGridDB artwork fetch failed", "game", game.Title, "error", err)
 		errStr := err.Error()

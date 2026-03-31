@@ -36,8 +36,9 @@ type SteamGridDBImage struct {
 
 // steamGridDBSearchResult represents a game result from the search endpoint.
 type steamGridDBSearchResult struct {
-	ID   int    `json:"id"`
-	Name string `json:"name"`
+	ID          int    `json:"id"`
+	Name        string `json:"name"`
+	ReleaseDate *int64 `json:"release_date"`
 }
 
 // steamGridDBResponse wraps the common API response structure.
@@ -95,8 +96,10 @@ func (c *SteamGridDBClient) doRequest(path string) ([]byte, error) {
 }
 
 // SearchGame searches SteamGridDB for a game by name and returns the best match game ID.
-// The platform parameter is currently unused (search is name-based) but reserved for future filtering.
-func (c *SteamGridDBClient) SearchGame(name string, platform string) (int, error) {
+// When releaseYear is provided (> 0), results are filtered to prefer entries whose
+// release date is closest to that year. This prevents a modern game (e.g. "The Witness" 2016)
+// from being matched when searching for a retro game with the same name.
+func (c *SteamGridDBClient) SearchGame(name string, platform string, releaseYear int) (int, error) {
 	encodedName := url.PathEscape(name)
 	body, err := c.doRequest("/search/autocomplete/" + encodedName)
 	if err != nil {
@@ -112,7 +115,34 @@ func (c *SteamGridDBClient) SearchGame(name string, platform string) (int, error
 		return 0, fmt.Errorf("no results found for %q", name)
 	}
 
-	// Return the first (best) match
+	// When we have a release year, pick the result with the closest release date.
+	if releaseYear > 0 {
+		bestIdx := 0
+		bestDist := -1
+		for i, r := range resp.Data {
+			if r.ReleaseDate == nil {
+				continue
+			}
+			year := time.Unix(*r.ReleaseDate, 0).UTC().Year()
+			dist := year - releaseYear
+			if dist < 0 {
+				dist = -dist
+			}
+			if bestDist < 0 || dist < bestDist {
+				bestDist = dist
+				bestIdx = i
+			}
+		}
+		if bestDist >= 0 {
+			chosen := resp.Data[bestIdx]
+			chosenYear := time.Unix(*chosen.ReleaseDate, 0).UTC().Year()
+			slog.Debug("SteamGridDB: picked result by release year",
+				"query", name, "chosen", chosen.Name,
+				"chosenYear", chosenYear, "targetYear", releaseYear)
+			return chosen.ID, nil
+		}
+	}
+
 	return resp.Data[0].ID, nil
 }
 
@@ -177,8 +207,9 @@ func bestImageURL(images []SteamGridDBImage) string {
 // GetBestArtwork searches SteamGridDB for a game and fetches the highest-scored artwork
 // of each type (hero, grid, logo, icon). Returns a GameArtwork with URLs populated.
 // Returns nil if the game is not found on SteamGridDB.
-func (c *SteamGridDBClient) GetBestArtwork(name string, platform string) (*db.GameArtwork, error) {
-	gameID, err := c.SearchGame(name, platform)
+// releaseYear helps disambiguate games with identical names across eras.
+func (c *SteamGridDBClient) GetBestArtwork(name string, platform string, releaseYear int) (*db.GameArtwork, error) {
+	gameID, err := c.SearchGame(name, platform, releaseYear)
 	if err != nil {
 		return nil, fmt.Errorf("searching game: %w", err)
 	}
