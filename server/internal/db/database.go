@@ -955,8 +955,8 @@ func SeedCores(db *gorm.DB) error {
 			DisplayName: "Azahar",
 			Description: "Nintendo 3DS emulator (Citra successor)",
 			Platforms:   "windows,linux,macos,android",
-			Version:     "2125.0-rc5",
-			DownloadURL: "https://github.com/azahar-emu/azahar/releases/download/2125.0-rc5/azahar-libretro-2125.0-rc5-{platform}.zip",
+			Version:     "2125.0.1",
+			DownloadURL: "https://github.com/azahar-emu/azahar/releases/download/2125.0.1/azahar-libretro-{platform}-2125.0.1.zip",
 		},
 		{Name: "scummvm", DisplayName: "ScummVM", Description: "Point-and-click adventure game engine", Platforms: "windows,linux,macos,android"},
 	}
