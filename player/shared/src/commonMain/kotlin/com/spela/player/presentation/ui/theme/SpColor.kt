@@ -92,10 +92,30 @@ object SpColor {
     val Divider = Color(0xFF2A2A2E)
     val DividerLight = Color(0xFF3A3A3E)
 
+    // Spela brand gradient — used for focused input borders, primary buttons, secondary button borders
+    val GradientStart = Color(0xFF6B8DD6)   // blue
+    val GradientMid = Color(0xFFa855f7)     // purple
+    val GradientEnd = Color(0xFFE056A0)     // pink
+    val AccentPurple = Color(0xFFA78BFA)    // label accent
+    val AccentPurpleLight = Color(0xFFC4B5FD) // lighter accent for text
+
     // Default screen background gradient (dark, neutral)
     val ScreenGradientStart = Color(0xFF1A1A20)
     val ScreenGradientEnd = Color(0xFF141418)
 }
+
+/**
+ * Returns the Spela brand gradient brush (blue → purple → pink at 135°).
+ * Used for focused input borders, primary button fills, and secondary button borders.
+ */
+fun spelaBrandGradient(
+    startOffset: Offset = Offset.Zero,
+    endOffset: Offset = Offset(Float.POSITIVE_INFINITY, Float.POSITIVE_INFINITY),
+): Brush = Brush.linearGradient(
+    colors = listOf(SpColor.GradientStart, SpColor.GradientMid, SpColor.GradientEnd),
+    start = startOffset,
+    end = endOffset,
+)
 
 /**
  * Applies the standard dark gradient background used on content screens.
