@@ -208,7 +208,7 @@ fun Modifier.spFocusRing(
 
     this
         .scale(focusScale)
-        .onFocusChanged { isFocused = it.isFocused }
+        .onFocusChanged { isFocused = it.isFocused || it.hasFocus }
         .drawWithContent {
             drawContent()
             if (isFocused) {
