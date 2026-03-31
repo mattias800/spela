@@ -232,8 +232,30 @@ class FakeGameRepository : GameRepository {
     var screenshotUrls: List<String> = emptyList()
 
     var consoles: List<Console> = listOf(
-        Console("nes", "Nintendo Entertainment System", "NES", 3, "#e53e3e"),
-        Console("snes", "Super Nintendo", "SNES", 2, "#3182ce"),
+        Console(
+            id = "nes",
+            name = "Nintendo Entertainment System",
+            abbreviation = "NES",
+            gameCount = 3,
+            colorTheme = "#e53e3e",
+            makerName = "Nintendo",
+            releaseYear = 1983,
+            mediaTypeName = "Cartridge",
+            unitsSold = 61_900_000,
+            summary = "Nintendo's landmark 8-bit console that revived the video game industry.",
+        ),
+        Console(
+            id = "snes",
+            name = "Super Nintendo",
+            abbreviation = "SNES",
+            gameCount = 2,
+            colorTheme = "#3182ce",
+            makerName = "Nintendo",
+            releaseYear = 1990,
+            mediaTypeName = "Cartridge",
+            unitsSold = 49_100_000,
+            summary = "Nintendo's 16-bit powerhouse defined the golden age of gaming.",
+        ),
     )
 
     var games: List<Game> = listOf(

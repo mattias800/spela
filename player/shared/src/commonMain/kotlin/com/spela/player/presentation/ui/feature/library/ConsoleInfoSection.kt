@@ -12,7 +12,6 @@ import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material.icons.filled.Group
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Language
-import androidx.compose.material.icons.filled.Layers
 import androidx.compose.material.icons.filled.SdCard
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
@@ -34,11 +33,36 @@ private val HeroLabelText = Color.White.copy(alpha = 0.40f)
 
 private data class Stat(val icon: ImageVector, val value: String, val label: String)
 
+/** Formats a units-sold count (stored in thousands) into a human-readable string like "61.9M units". */
+private fun formatUnitsSold(units: Long): String {
+    return when {
+        units >= 1_000_000 -> {
+            val millions = units / 1_000_000.0
+            val formatted = if (millions == millions.toLong().toDouble()) {
+                "${millions.toLong()}M"
+            } else {
+                "${"%.1f".format(millions).trimEnd('0').trimEnd('.')}M"
+            }
+            "$formatted units"
+        }
+        units >= 1_000 -> {
+            val thousands = units / 1_000.0
+            val formatted = if (thousands == thousands.toLong().toDouble()) {
+                "${thousands.toLong()}K"
+            } else {
+                "${"%.1f".format(thousands).trimEnd('0').trimEnd('.')}K"
+            }
+            "$formatted units"
+        }
+        else -> "$units units"
+    }
+}
+
 /**
  * A compact vertical list of console stats shown in the [ConsoleHeroBanner].
  * Each row shows an icon, a bold value, and a small contextual label below it.
  *
- * Data is sourced from [getConsoleInfo] in ConsoleMetadata.kt.
+ * Data is sourced from the Console domain model (populated from the API).
  */
 @Composable
 internal fun ConsoleInfoSection(
@@ -46,17 +70,22 @@ internal fun ConsoleInfoSection(
     modifier: Modifier = Modifier,
     showFeatureBadges: Boolean = false,
 ) {
-    val info = getConsoleInfo(console.abbreviation) ?: return
+    // If no metadata fields are available, don't render anything
+    if (console.releaseYear == null && console.makerName == null && console.mediaTypeName == null) return
 
     val stats = buildList {
-        add(Stat(Icons.Filled.CalendarToday, info.releaseYear.toString(), "Released"))
-        add(Stat(Icons.Filled.Business,      info.manufacturer,           "Maker"))
-        if (info.generation.isNotEmpty()) {
-            add(Stat(Icons.Filled.Layers, info.generation, "Generation"))
+        if (console.releaseYear != null) {
+            add(Stat(Icons.Filled.CalendarToday, console.releaseYear.toString(), "Released"))
         }
-        add(Stat(Icons.Filled.SdCard, info.mediaType, "Media"))
-        if (info.unitsSold.isNotEmpty()) {
-            add(Stat(Icons.Filled.Group, info.unitsSold, "Units sold"))
+        if (console.makerName != null) {
+            add(Stat(Icons.Filled.Business, console.makerName, "Maker"))
+        }
+        if (console.mediaTypeName != null) {
+            add(Stat(Icons.Filled.SdCard, console.mediaTypeName, "Media"))
+        }
+        if (console.unitsSold != null && console.unitsSold > 0) {
+            val formatted = formatUnitsSold(console.unitsSold)
+            add(Stat(Icons.Filled.Group, formatted, "Units sold"))
         }
         if (showFeatureBadges) {
             if (console.saveStateSupport) {

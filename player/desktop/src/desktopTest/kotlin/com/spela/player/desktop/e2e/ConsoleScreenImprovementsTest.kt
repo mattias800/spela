@@ -78,12 +78,11 @@ class ConsoleScreenImprovementsTest {
     }
 
     @Test
-    fun consoleInfoSectionShowsGenerationAndUnitsSold() = runComposeUiTest {
+    fun consoleInfoSectionShowsUnitsSold() = runComposeUiTest {
         val harness = createLoggedInHarness()
         setContent { harness.App() }
         navigateToConsole(harness, "nes")
 
-        onNodeWithText("3rd gen").assertExists()
         onNodeWithText("61.9M units").assertExists()
     }
 

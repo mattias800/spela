@@ -39,6 +39,7 @@ data class Console(
     val name: String,
     val abbreviation: String,
     val gameCount: Int,
+    val code: String = "",
     val colorTheme: String = "#6366f1",
     val coverAspectRatio: Double = 0.75,
     val defaultCore: String = "",
@@ -48,6 +49,12 @@ data class Console(
     val browserPlayable: Boolean = false,
     val playable: Boolean = true,
     val generation: Int = 0,
+    val makerName: String? = null,
+    val makerCode: String? = null,
+    val mediaTypeName: String? = null,
+    val releaseYear: Int? = null,
+    val unitsSold: Long? = null,
+    val summary: String? = null,
 )
 
 @Serializable
