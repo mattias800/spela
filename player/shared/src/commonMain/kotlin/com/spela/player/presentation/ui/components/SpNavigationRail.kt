@@ -24,6 +24,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
@@ -65,33 +66,51 @@ fun SpNavigationRail(
 ) {
     val railWidth = if (showLabels) 200.dp else 72.dp
 
-    Column(
-        modifier = modifier
-            .width(railWidth)
-            .fillMaxHeight()
-            .background(SpColor.SurfaceVariant)
-            .padding(vertical = SpSpacing.Medium),
-        horizontalAlignment = if (showLabels) Alignment.Start else Alignment.CenterHorizontally,
-    ) {
-        // Main tabs (everything except Settings)
-        BottomNavTab.entries.filter { it != BottomNavTab.SETTINGS }.forEach { tab ->
+    Row(modifier = modifier.fillMaxHeight()) {
+        Column(
+            modifier = Modifier
+                .width(railWidth)
+                .fillMaxHeight()
+                .background(SpColor.Surface)
+                .padding(vertical = SpSpacing.Medium),
+            horizontalAlignment = if (showLabels) Alignment.Start else Alignment.CenterHorizontally,
+        ) {
+            // Main tabs (everything except Settings)
+            BottomNavTab.entries.filter { it != BottomNavTab.SETTINGS }.forEach { tab ->
+                RailItem(
+                    tab = tab,
+                    isSelected = tab == activeTab,
+                    showLabel = showLabels,
+                    onClick = { onTabSelected(tab) },
+                )
+            }
+
+            // Push Settings to the bottom
+            Spacer(Modifier.weight(1f))
+
+            // Settings tab
             RailItem(
-                tab = tab,
-                isSelected = tab == activeTab,
+                tab = BottomNavTab.SETTINGS,
+                isSelected = BottomNavTab.SETTINGS == activeTab,
                 showLabel = showLabels,
-                onClick = { onTabSelected(tab) },
+                onClick = { onTabSelected(BottomNavTab.SETTINGS) },
             )
         }
 
-        // Push Settings to the bottom
-        Spacer(Modifier.weight(1f))
-
-        // Settings tab
-        RailItem(
-            tab = BottomNavTab.SETTINGS,
-            isSelected = BottomNavTab.SETTINGS == activeTab,
-            showLabel = showLabels,
-            onClick = { onTabSelected(BottomNavTab.SETTINGS) },
+        // Right edge highlight
+        Box(
+            modifier = Modifier
+                .fillMaxHeight()
+                .width(1.dp)
+                .background(
+                    Brush.linearGradient(
+                        colors = listOf(
+                            SpColor.GradientStart.copy(alpha = 0.3f),
+                            SpColor.GradientMid.copy(alpha = 0.3f),
+                            SpColor.GradientEnd.copy(alpha = 0.3f),
+                        ),
+                    ),
+                ),
         )
     }
 }
@@ -107,8 +126,8 @@ private fun RailItem(
     val isFocused by interactionSource.collectIsFocusedAsState()
     val color = when {
         isSelected -> Color.White
-        isFocused -> Color.White.copy(alpha = 0.7f)
-        else -> SpColor.OnBackgroundSecondary
+        isFocused -> SpColor.AccentPurple
+        else -> SpColor.OnBackgroundTertiary
     }
 
     Box(
@@ -122,7 +141,7 @@ private fun RailItem(
             )
             .clip(RoundedCornerShape(8.dp))
             .background(
-                if (isFocused) Color.Black.copy(alpha = 0.3f) else Color.Transparent,
+                if (isFocused) Color.White.copy(alpha = 0.05f) else Color.Transparent,
             )
             .clickable(
                 interactionSource = interactionSource,
@@ -140,6 +159,25 @@ private fun RailItem(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier.padding(horizontal = SpSpacing.Medium),
             ) {
+                // Active indicator — gradient bar on the left
+                if (isSelected) {
+                    Box(
+                        modifier = Modifier
+                            .width(3.dp)
+                            .height(24.dp)
+                            .clip(RoundedCornerShape(50))
+                            .background(
+                                Brush.linearGradient(
+                                    colors = listOf(
+                                        SpColor.GradientStart,
+                                        SpColor.GradientMid,
+                                        SpColor.GradientEnd,
+                                    ),
+                                ),
+                            ),
+                    )
+                    Spacer(Modifier.width(SpSpacing.Medium))
+                }
                 Icon(
                     imageVector = tab.icon,
                     contentDescription = null,
@@ -154,12 +192,36 @@ private fun RailItem(
                 )
             }
         } else {
-            Icon(
-                imageVector = tab.icon,
-                contentDescription = null,
-                tint = color,
-                modifier = Modifier.size(24.dp),
-            )
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center,
+            ) {
+                Icon(
+                    imageVector = tab.icon,
+                    contentDescription = null,
+                    tint = color,
+                    modifier = Modifier.size(24.dp),
+                )
+                // Active indicator — gradient dot below icon
+                if (isSelected) {
+                    Spacer(Modifier.height(4.dp))
+                    Box(
+                        modifier = Modifier
+                            .width(20.dp)
+                            .height(3.dp)
+                            .clip(RoundedCornerShape(50))
+                            .background(
+                                Brush.linearGradient(
+                                    colors = listOf(
+                                        SpColor.GradientStart,
+                                        SpColor.GradientMid,
+                                        SpColor.GradientEnd,
+                                    ),
+                                ),
+                            ),
+                    )
+                }
+            }
         }
     }
 }

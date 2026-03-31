@@ -53,6 +53,7 @@ fun SpButton(
     leadingIcon: (@Composable () -> Unit)? = null,
     shape: Shape = RoundedCornerShape(SpSpacing.RadiusLarge),
     onGradient: Boolean = false,
+    skipBackground: Boolean = false,
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     val focusMods = Modifier
@@ -80,13 +81,13 @@ fun SpButton(
                 onClick = { if (!isLoading) onClick() },
                 modifier = modifier
                     .heightIn(min = 48.dp)
-                    .neonGlow(shape = shape, intense = true)
-                    .background(
+                    .then(if (!skipBackground) Modifier.neonGlow(shape = shape, intense = true) else Modifier)
+                    .then(if (!skipBackground) Modifier.background(
                         brush = if (enabled) brush else Brush.linearGradient(
                             listOf(SpColor.SurfaceBright, SpColor.SurfaceBright)
                         ),
                         shape = shape,
-                    )
+                    ) else Modifier)
                     .then(focusMods),
                 enabled = enabled,
                 shape = shape,
