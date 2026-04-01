@@ -691,6 +691,7 @@ export interface NetplaySession {
   gameTitle: string;
   gameCoverUrl: string | null;
   consoleName: string;
+  consoleId: string;
   coverAspectRatio: number;
   status: "waiting" | "in_progress" | "ended";
   endReason: "host_left" | "client_left" | "timeout" | "completed" | "admin_deleted" | null;

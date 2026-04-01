@@ -9,7 +9,7 @@ import {
   Play,
 } from "lucide-react";
 import { GameShelf } from "@/features/explore/components/game-shelf";
-import { SectionHeader } from "@/components/section-header";
+import { TitledSection } from "@/components/ui";
 import { useConsoleShowcase } from "@/hooks/use-explore";
 import { useToggleFavorite } from "@/hooks/use-games";
 import { useTogglePlayLater } from "@/hooks/use-play-later";
@@ -93,31 +93,33 @@ export function ConsoleGenreBreakdown({
   const colorTheme = showcase.console.colorTheme || "#6366f1";
 
   return (
-    <section
-      data-testid="genre-breakdown"
-      aria-labelledby="genre-breakdown-heading"
-    >
-      <SectionHeader title="Genre Breakdown" icon={LayoutGrid} id="genre-breakdown-heading" />
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-        {showcase.genreBreakdown.map((genre: GenreCount) => (
-          <div
-            key={genre.name}
-            className="rounded-xl border border-white/[0.06] p-4"
-            style={{
-              background: `linear-gradient(135deg, ${colorTheme}15, transparent)`,
-            }}
-            data-testid={`genre-card-${genre.name}`}
-          >
-            <p className="text-sm font-semibold text-surface-100">
-              {genre.name}
-            </p>
-            <p className="text-xs text-surface-400 mt-1">
-              {genre.gameCount} {genre.gameCount === 1 ? "game" : "games"}
-            </p>
-          </div>
-        ))}
-      </div>
-    </section>
+    <div data-testid="genre-breakdown" aria-labelledby="genre-breakdown-heading">
+      <TitledSection
+        title="Genre Breakdown"
+        icon={LayoutGrid}
+        id="genre-breakdown-heading"
+      >
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+          {showcase.genreBreakdown.map((genre: GenreCount) => (
+            <div
+              key={genre.name}
+              className="rounded-xl border border-white/[0.06] p-4"
+              style={{
+                background: `linear-gradient(135deg, ${colorTheme}15, transparent)`,
+              }}
+              data-testid={`genre-card-${genre.name}`}
+            >
+              <p className="text-sm font-semibold text-surface-100">
+                {genre.name}
+              </p>
+              <p className="text-xs text-surface-400 mt-1">
+                {genre.gameCount} {genre.gameCount === 1 ? "game" : "games"}
+              </p>
+            </div>
+          ))}
+        </div>
+      </TitledSection>
+    </div>
   );
 }
 
@@ -131,38 +133,40 @@ export function ConsoleTopDevelopers({
   const colorTheme = showcase.console.colorTheme || "#6366f1";
 
   return (
-    <section
-      data-testid="top-developers"
-      aria-labelledby="top-developers-heading"
-    >
-      <SectionHeader title="Studios That Defined This Console" icon={Building2} id="top-developers-heading" />
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-        {showcase.topDevelopers.map((dev: DeveloperSummary) => (
-          <Link
-            key={dev.name}
-            to={`/explore/developers/${encodeURIComponent(dev.name)}`}
-            className="group/dev rounded-xl border border-white/[0.06] p-4 transition-colors hover:border-white/[0.12]"
-            style={{
-              background: `linear-gradient(135deg, ${colorTheme}10, transparent)`,
-            }}
-            data-testid={`developer-card-${dev.name}`}
-          >
-            <p className="text-sm font-semibold text-surface-100 group-hover/dev:text-brand-400 transition-colors">
-              {dev.name}
-            </p>
-            <p className="text-xs text-surface-400 mt-1">
-              {dev.gameCount} {dev.gameCount === 1 ? "game" : "games"}
-            </p>
-            {dev.avgRating > 0 && (
-              <span className="inline-flex items-center gap-1 text-xs text-surface-400 mt-1">
-                <Star className="h-3 w-3 text-amber-400 fill-amber-400" />
-                {dev.avgRating.toFixed(1)}
-              </span>
-            )}
-          </Link>
-        ))}
-      </div>
-    </section>
+    <div data-testid="top-developers" aria-labelledby="top-developers-heading">
+      <TitledSection
+        title="Studios That Defined This Console"
+        icon={Building2}
+        id="top-developers-heading"
+      >
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+          {showcase.topDevelopers.map((dev: DeveloperSummary) => (
+            <Link
+              key={dev.name}
+              to={`/explore/developers/${encodeURIComponent(dev.name)}`}
+              className="group/dev rounded-xl border border-white/[0.06] p-4 transition-colors hover:border-white/[0.12]"
+              style={{
+                background: `linear-gradient(135deg, ${colorTheme}10, transparent)`,
+              }}
+              data-testid={`developer-card-${dev.name}`}
+            >
+              <p className="text-sm font-semibold text-surface-100 group-hover/dev:text-brand-400 transition-colors">
+                {dev.name}
+              </p>
+              <p className="text-xs text-surface-400 mt-1">
+                {dev.gameCount} {dev.gameCount === 1 ? "game" : "games"}
+              </p>
+              {dev.avgRating > 0 && (
+                <span className="inline-flex items-center gap-1 text-xs text-surface-400 mt-1">
+                  <Star className="h-3 w-3 text-amber-400 fill-amber-400" />
+                  {dev.avgRating.toFixed(1)}
+                </span>
+              )}
+            </Link>
+          ))}
+        </div>
+      </TitledSection>
+    </div>
   );
 }
 

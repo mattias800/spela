@@ -1,8 +1,6 @@
 import { Archive, HardDrive, Sparkles } from "lucide-react";
 import {
-  Card,
-  CardHeader,
-  CardContent,
+  Section,
   Button,
   Skeleton,
   EmptyState,
@@ -16,29 +14,29 @@ import { ConsoleBreakdownTable } from "@/features/storage/components/console-bre
 function StorageSkeleton() {
   return (
     <div className="space-y-6">
-      <Card>
-        <CardHeader>
+      <Section>
+        <div className="px-5 pt-5 pb-2">
           <Skeleton className="h-6 w-40" />
-        </CardHeader>
-        <CardContent>
+        </div>
+        <div className="px-5 pb-5">
           <div className="space-y-3">
             <Skeleton className="h-4 w-64" />
             <Skeleton className="h-3 w-full rounded-full" />
           </div>
-        </CardContent>
-      </Card>
-      <Card>
-        <CardHeader>
+        </div>
+      </Section>
+      <Section>
+        <div className="px-5 pt-5 pb-2">
           <Skeleton className="h-6 w-48" />
-        </CardHeader>
-        <CardContent>
+        </div>
+        <div className="px-5 pb-5">
           <div className="space-y-3">
             {Array.from({ length: 4 }, (_, i) => (
               <Skeleton key={i} className="h-10 w-full" />
             ))}
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </Section>
     </div>
   );
 }
@@ -114,26 +112,26 @@ export function StoragePage() {
       </div>
 
       {/* Storage usage card */}
-      <Card>
-        <CardHeader>
+      <Section>
+        <div className="px-5 pt-5 pb-2">
           <div className="flex items-center gap-2.5">
             <HardDrive className="h-5 w-5 text-brand-400" />
             <h2 className="text-lg font-semibold text-surface-100">
               Storage Usage
             </h2>
           </div>
-        </CardHeader>
-        <CardContent>
+        </div>
+        <div className="px-5 pb-5">
           <StorageBar
             usedBytes={storage.usedBytes}
             quotaBytes={storage.quotaBytes}
           />
-        </CardContent>
-      </Card>
+        </div>
+      </Section>
 
       {/* Console breakdown card */}
-      <Card>
-        <CardHeader>
+      <Section>
+        <div className="px-5 pt-5 pb-2">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2.5">
               <Archive className="h-5 w-5 text-brand-400" />
@@ -153,8 +151,8 @@ export function StoragePage() {
               </Button>
             )}
           </div>
-        </CardHeader>
-        <CardContent>
+        </div>
+        <div className="px-5 pb-5">
           {hasSaves ? (
             <ConsoleBreakdownTable consoles={storage.byConsole} />
           ) : (
@@ -165,8 +163,8 @@ export function StoragePage() {
               className="py-10"
             />
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </Section>
     </div>
   );
 }

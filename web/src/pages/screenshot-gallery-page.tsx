@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { ImageIcon } from "lucide-react";
-import { BackButton, Badge, Button, Skeleton, EmptyState } from "@/components/ui";
+import { BackButton, Button, Skeleton, EmptyState } from "@/components/ui";
+import { ConsoleBadge } from "@/components/console-badge";
 import { useScreenshotGallery } from "@/hooks/use-explore";
 import { useConsoles } from "@/hooks/use-consoles";
 import type { ScreenshotItem } from "@/types/api";
@@ -44,21 +45,7 @@ function ScreenshotCard({ screenshot }: { screenshot: ScreenshotItem }) {
           <p className="text-sm font-semibold text-white truncate">
             {screenshot.gameTitle}
           </p>
-          <Badge
-            variant="default"
-            className="mt-1 w-fit"
-            style={
-              screenshot.consoleColor
-                ? {
-                    backgroundColor: `${screenshot.consoleColor}20`,
-                    color: screenshot.consoleColor,
-                    borderColor: `${screenshot.consoleColor}40`,
-                  }
-                : undefined
-            }
-          >
-            {screenshot.consoleAbbreviation.toUpperCase()}
-          </Badge>
+          <ConsoleBadge code={screenshot.consoleAbbreviation} />
         </div>
       </Link>
     </div>

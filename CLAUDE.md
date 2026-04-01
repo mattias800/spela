@@ -4,6 +4,10 @@
 > design system enforcement) and `AGENT_TEAM.md` (team roles, design system
 > principles, review checklist). These contain mandatory rules for UI work,
 > component discipline, and the review process.
+>
+> For all UI work (web and player app), also read `DESIGN_IMPLEMENTATION.md`
+> — the component hierarchy (Design → Content → Role), domain ownership rules,
+> and the ongoing design system refactoring process.
 
 ## Overview
 Spela is a self-hosted game emulation service with three components:

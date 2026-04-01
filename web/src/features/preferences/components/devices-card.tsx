@@ -9,9 +9,7 @@ import {
   ChevronRight,
 } from "lucide-react";
 import {
-  Card,
-  CardHeader,
-  CardContent,
+  Section,
   Badge,
   EmptyState,
   Select,
@@ -59,11 +57,11 @@ export function DevicesCard({
   }
 
   return (
-    <Card>
-      <CardHeader>
+    <Section>
+      <div className="px-5 pt-5 pb-2">
         <h2 className="text-lg font-semibold text-surface-100">Devices</h2>
-      </CardHeader>
-      <CardContent>
+      </div>
+      <div className="px-5 pb-5">
         {isLoading ? (
           <div className="space-y-3">
             {Array.from({ length: 2 }, (_, i) => (
@@ -210,7 +208,7 @@ export function DevicesCard({
             })}
           </div>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </Section>
   );
 }

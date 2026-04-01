@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { Repeat, Layers } from "lucide-react";
-import { Button, BackButton, Modal, Skeleton, EmptyState, Card } from "@/components/ui";
+import { Button, BackButton, Modal, Skeleton, EmptyState, Section } from "@/components/ui";
 import { useToast } from "@/components/ui";
 import {
   useSharedSession,
@@ -142,7 +142,7 @@ export function SharedSessionDetailPage() {
 
       {/* Linked session */}
       {sharedSession.sessionId && (
-        <Card className="p-6" data-testid="shared-session-session-link">
+        <Section className="p-6" data-testid="shared-session-session-link">
           <div className="flex items-center gap-2.5 mb-3">
             <Layers className="h-5 w-5 text-brand-400" />
             <h2 className="text-lg font-semibold text-surface-100">
@@ -159,7 +159,7 @@ export function SharedSessionDetailPage() {
           >
             View Session Details
           </Link>
-        </Card>
+        </Section>
       )}
 
       {/* Delete confirm modal */}

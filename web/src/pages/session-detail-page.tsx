@@ -14,7 +14,7 @@ import {
 import {
   Button,
   BackButton,
-  Card,
+  Section,
   Badge,
   Skeleton,
   Switch,
@@ -227,7 +227,7 @@ export function SessionDetailPage() {
       </div>
 
       {/* Save States */}
-      <Card className="p-6">
+      <Section className="p-6">
         <div className="flex items-center gap-2.5 mb-4">
           <Save className="h-5 w-5 text-brand-400" />
           <h2 className="text-lg font-semibold text-surface-100">
@@ -343,10 +343,10 @@ export function SessionDetailPage() {
             ))}
           </div>
         )}
-      </Card>
+      </Section>
 
       {/* Cheats */}
-      <Card className="p-6">
+      <Section className="p-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2.5">
             <Zap className="h-5 w-5 text-amber-400" />
@@ -385,7 +385,7 @@ export function SessionDetailPage() {
             onDeselectAll={handleDeselectAllCheats}
           />
         )}
-      </Card>
+      </Section>
 
       {/* Delete session modal */}
       <ConfirmDeleteModal

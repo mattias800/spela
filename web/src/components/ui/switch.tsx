@@ -10,6 +10,7 @@ interface SwitchProps extends Omit<
 export function Switch({ checked, onChange, disabled, ...rest }: SwitchProps) {
   return (
     <button
+      data-comp="Switch"
       role="switch"
       aria-checked={checked}
       disabled={disabled}

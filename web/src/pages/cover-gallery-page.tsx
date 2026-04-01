@@ -1,7 +1,9 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Grid2x2, Grid3x3, LayoutGrid, ImageIcon } from "lucide-react";
-import { BackButton, Badge, Button, Skeleton, EmptyState } from "@/components/ui";
+import { BackButton, Button, Skeleton, EmptyState } from "@/components/ui";
+import { ConsoleBadge } from "@/components/console-badge";
+import { CoverImage } from "@/components/cover-image";
 import { cn } from "@/lib/cn";
 import { useCoverGallery } from "@/hooks/use-explore";
 import { useConsoles } from "@/hooks/use-consoles";
@@ -40,21 +42,10 @@ function CoverCard({ cover }: { cover: CoverItem }) {
       data-testid="cover-card"
     >
       <div
-        className="w-full bg-surface-800"
+        className="w-full"
         style={{ aspectRatio: `${cover.coverAspectRatio || 0.75}` }}
       >
-        {cover.coverUrl ? (
-          <img
-            src={cover.coverUrl}
-            alt={cover.gameTitle}
-            className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-            loading="lazy"
-          />
-        ) : (
-          <div className="w-full h-full flex items-center justify-center text-surface-600 text-lg font-bold">
-            {cover.gameTitle.charAt(0)}
-          </div>
-        )}
+        <CoverImage src={cover.coverUrl} alt={cover.gameTitle} className="w-full h-full" />
       </div>
       {/* Hover overlay */}
       <div
@@ -64,21 +55,7 @@ function CoverCard({ cover }: { cover: CoverItem }) {
         <p className="text-xs font-semibold text-white truncate">
           {cover.gameTitle}
         </p>
-        <Badge
-          variant="default"
-          className="mt-0.5 w-fit text-[10px] px-1.5 py-0"
-          style={
-            cover.consoleColor
-              ? {
-                  backgroundColor: `${cover.consoleColor}20`,
-                  color: cover.consoleColor,
-                  borderColor: `${cover.consoleColor}40`,
-                }
-              : undefined
-          }
-        >
-          {cover.consoleAbbreviation.toUpperCase()}
-        </Badge>
+        <ConsoleBadge code={cover.consoleAbbreviation} />
       </div>
     </Link>
   );

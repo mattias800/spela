@@ -1,8 +1,9 @@
 import { Link } from "react-router-dom";
-import { Badge } from "@/components/ui";
 import { cn } from "@/lib/cn";
-import { ensureContrast } from "@/lib/color-utils";
+import { RatingDisplay } from "@/components/rating-display";
+import { ConsoleBadge } from "@/components/console-badge";
 import { getReleaseYear } from "@/lib/date-utils";
+import { CoverImage } from "@/components/cover-image";
 import type { SeriesGame } from "@/types/api";
 
 interface GameTimelineCardProps {
@@ -24,20 +25,7 @@ export function GameTimelineCard({ game, testIdPrefix }: GameTimelineCardProps) 
       data-testid={`${testIdPrefix}-game-${game.igdbGameId}`}
     >
       {/* Cover art */}
-      <div className="w-12 h-16 rounded-lg overflow-hidden bg-surface-800 flex-shrink-0">
-        {game.coverUrl ? (
-          <img
-            src={game.coverUrl}
-            alt={game.name}
-            className="w-full h-full object-cover"
-            loading="lazy"
-          />
-        ) : (
-          <div className="w-full h-full flex items-center justify-center text-surface-600 text-lg font-bold">
-            {game.name.charAt(0)}
-          </div>
-        )}
-      </div>
+      <CoverImage src={game.coverUrl} alt={game.name} className="w-12 h-16 rounded-lg" />
 
       {/* Info */}
       <div className="flex-1 min-w-0">
@@ -51,28 +39,13 @@ export function GameTimelineCard({ game, testIdPrefix }: GameTimelineCardProps) 
         </h3>
         <div className="flex items-center gap-2 mt-1">
           {game.consoleName && (
-            <Badge
-              variant="default"
-              style={
-                game.consoleColor
-                  ? {
-                      backgroundColor: `${game.consoleColor}20`,
-                      color: ensureContrast(game.consoleColor),
-                      borderColor: `${game.consoleColor}40`,
-                    }
-                  : undefined
-              }
-            >
-              {game.consoleName}
-            </Badge>
+            <ConsoleBadge code={game.consoleAbbreviation} label={game.consoleName} />
           )}
           {year && (
             <span className="text-xs text-surface-500">{year}</span>
           )}
           {game.rating > 0 && (
-            <span className="text-xs text-surface-400">
-              {game.rating.toFixed(0)}%
-            </span>
+            <RatingDisplay value={game.rating / 10} />
           )}
         </div>
       </div>

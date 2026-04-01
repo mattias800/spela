@@ -1,7 +1,8 @@
 import { Link } from "react-router-dom";
-import { Heart, Star, Clock, Loader2 } from "lucide-react";
+import { Heart, Clock, Loader2 } from "lucide-react";
+import { RatingDisplay } from "@/components/rating-display";
 import { cn } from "@/lib/cn";
-import { Badge } from "@/components/ui";
+import { ConsoleBadge } from "@/components/console-badge";
 import { useAutoScrape } from "@/hooks/use-auto-scrape";
 import { getReleaseYear } from "@/lib/date-utils";
 import type { Game } from "@/types/api";
@@ -28,7 +29,7 @@ export function GameCard({
   const { ref, isScraping } = useAutoScrape(game);
 
   return (
-    <Link ref={ref} to={`/games/${game.id}`} className="group block space-y-3">
+    <Link ref={ref} to={`/games/${game.id}`} data-comp="GameCard" className="group block space-y-3">
       <div
         className="relative rounded-2xl overflow-hidden bg-surface-900 border border-surface-800/50 transition-all duration-300 group-hover:border-surface-700/50 group-hover:shadow-xl group-hover:shadow-black/30 group-hover:-translate-y-1"
       >
@@ -108,7 +109,7 @@ export function GameCard({
             "absolute bottom-2.5 left-2.5 transition-opacity duration-300",
             showConsoleBadge ? "opacity-100" : "opacity-0 group-hover:opacity-100",
           )}>
-            <Badge variant="brand">{game.consoleName}</Badge>
+            <ConsoleBadge code={game.consoleId} label={game.consoleName} />
           </div>
         )}
 
@@ -145,10 +146,7 @@ export function GameCard({
             )
           )}
           {game.averageRating > 0 && (
-            <span className="flex items-center gap-0.5 text-xs text-surface-400">
-              <Star className="h-3 w-3 text-amber-400 fill-amber-400" />
-              {game.averageRating.toFixed(1)}
-            </span>
+            <RatingDisplay value={game.averageRating} />
           )}
         </div>
         {subtitle && (

@@ -1,9 +1,12 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Trophy, Star, Clock, Gamepad2, Users, Newspaper } from "lucide-react";
-import { Badge, Skeleton, EmptyState } from "@/components/ui";
+import { RatingDisplay } from "@/components/rating-display";
+import { Skeleton, EmptyState } from "@/components/ui";
+import { ConsoleBadge } from "@/components/console-badge";
 import { useTopRated, useTopRatedCritics, useLongestGames } from "@/hooks/use-top-lists";
 import { PlayInfo } from "@/components/play-info";
+import { CoverImage } from "@/components/cover-image";
 import { cn } from "@/lib/cn";
 import type { TopListGame, LongestGame } from "@/types/api";
 
@@ -75,21 +78,7 @@ function ListSkeleton() {
 }
 
 function GameCover({ coverUrl, name }: { coverUrl?: string; name: string }) {
-  return (
-    <div className="w-14 h-16 flex items-center justify-center flex-shrink-0">
-      {coverUrl ? (
-        <img
-          src={coverUrl}
-          alt={name}
-          className="max-h-16 max-w-14 rounded-lg object-contain"
-        />
-      ) : (
-        <div className="h-16 w-12 rounded-lg bg-surface-800 flex items-center justify-center text-sm font-bold text-surface-600">
-          {name.charAt(0)}
-        </div>
-      )}
-    </div>
-  );
+  return <CoverImage src={coverUrl} alt={name} className="w-12 h-16 rounded-lg flex-shrink-0" />;
 }
 
 function TopRatedList({ games }: { games: TopListGame[] }) {
@@ -119,15 +108,12 @@ function TopRatedList({ games }: { games: TopListGame[] }) {
             </p>
             <div className="mt-1.5 flex items-center gap-2">
               {game.consoleName && (
-                <Badge variant="brand">{game.consoleName}</Badge>
+                <ConsoleBadge code={game.consoleId} label={game.consoleName} />
               )}
             </div>
             <PlayInfo gameId={game.gameId} className="mt-1.5" />
           </div>
-          <span className="flex items-center gap-1 text-sm font-mono text-amber-400 whitespace-nowrap">
-            <Star className="h-3.5 w-3.5 fill-amber-400" />
-            {game.rating.toFixed(1)}
-          </span>
+          <RatingDisplay value={game.rating} />
         </Link>
       ))}
     </div>
@@ -170,7 +156,7 @@ function LongestGamesList({ games }: { games: LongestGame[] }) {
             </p>
             <div className="mt-1.5 flex items-center gap-2">
               {game.consoleName && (
-                <Badge variant="brand">{game.consoleName}</Badge>
+                <ConsoleBadge code={game.consoleId} label={game.consoleName} />
               )}
             </div>
             <PlayInfo gameId={game.gameId} className="mt-1.5" />

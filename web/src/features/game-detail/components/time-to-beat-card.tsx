@@ -1,5 +1,5 @@
 import { Clock, Zap, Gamepad2, Trophy } from "lucide-react";
-import { Card } from "@/components/ui";
+import { Section } from "@/components/ui";
 import type { Game } from "@/types/api";
 
 interface TimeToBeatCardProps {
@@ -44,7 +44,7 @@ export function TimeToBeatCard({ game }: TimeToBeatCardProps) {
   ].filter((t) => t.hours > 0);
 
   return (
-    <Card className="p-6" data-testid="time-to-beat-card">
+    <Section className="p-6" data-testid="time-to-beat-card">
       <div className="flex items-center gap-2.5 mb-5">
         <Clock className="h-5 w-5 text-brand-400" />
         <h3 className="text-lg font-bold text-surface-100">How Long to Beat</h3>
@@ -74,7 +74,7 @@ export function TimeToBeatCard({ game }: TimeToBeatCardProps) {
           );
         })}
       </div>
-    </Card>
+    </Section>
   );
 }
 

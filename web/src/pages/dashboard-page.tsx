@@ -7,12 +7,12 @@ import {
   Trophy,
   Flag,
   Sparkles,
+  ChevronRight,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { GameCard } from "@/components/game-card";
 import { GameGrid } from "@/components/game-grid";
-import { SectionHeader } from "@/components/section-header";
-import { Badge, GameCardSkeleton, Skeleton, EmptyState } from "@/components/ui";
+import { Badge, GameCardSkeleton, Skeleton, EmptyState, TitledSection } from "@/components/ui";
 import { PersonalStatsCard } from "@/features/dashboard/components/personal-stats-card";
 import {
   useRecentGames,
@@ -132,16 +132,27 @@ function RecentAchievementCard({
 function RecentAchievementsSection() {
   const { data: achievements, isLoading } = useRecentAchievements();
 
+  const renderRight = (
+    <Link
+      to="/stats"
+      className="flex items-center gap-1 text-sm text-surface-400 hover:text-brand-400 transition-colors"
+    >
+      View all
+      <ChevronRight className="h-4 w-4" />
+    </Link>
+  );
+
   if (isLoading) {
     return (
-      <section data-testid="recent-achievements-section">
-        <SectionHeader
+      <div data-testid="recent-achievements-section">
+        <TitledSection
           title="Recent Achievements"
           icon={Trophy}
-          linkTo="/stats"
-        />
-        <RecentAchievementsSkeleton />
-      </section>
+          renderRight={renderRight}
+        >
+          <RecentAchievementsSkeleton />
+        </TitledSection>
+      </div>
     );
   }
 
@@ -150,21 +161,22 @@ function RecentAchievementsSection() {
   }
 
   return (
-    <section data-testid="recent-achievements-section">
-      <SectionHeader
+    <div data-testid="recent-achievements-section">
+      <TitledSection
         title="Recent Achievements"
         icon={Trophy}
-        linkTo="/stats"
-      />
-      <div className="flex gap-4 overflow-x-auto pb-2">
-        {achievements.slice(0, 5).map((achievement) => (
-          <RecentAchievementCard
-            key={achievement.achievementRaId}
-            achievement={achievement}
-          />
-        ))}
-      </div>
-    </section>
+        renderRight={renderRight}
+      >
+        <div className="flex gap-4 overflow-x-auto pb-2">
+          {achievements.slice(0, 5).map((achievement) => (
+            <RecentAchievementCard
+              key={achievement.achievementRaId}
+              achievement={achievement}
+            />
+          ))}
+        </div>
+      </TitledSection>
+    </div>
   );
 }
 
@@ -175,44 +187,56 @@ function TrendingChallengesSection() {
     status: "active",
   });
 
+  const renderRight = (
+    <Link
+      to="/challenges"
+      className="flex items-center gap-1 text-sm text-surface-400 hover:text-brand-400 transition-colors"
+    >
+      View all
+      <ChevronRight className="h-4 w-4" />
+    </Link>
+  );
+
   if (isLoading) {
     return (
-      <section data-testid="trending-challenges-section">
-        <SectionHeader
+      <div data-testid="trending-challenges-section">
+        <TitledSection
           title="Trending Challenges"
           icon={Flag}
-          linkTo="/challenges"
-        />
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-5">
-          {Array.from({ length: 4 }, (_, i) => (
-            <div key={i} className="space-y-3">
-              <Skeleton className="aspect-[16/10] rounded-2xl" />
-              <div className="px-1 space-y-1.5">
-                <Skeleton className="h-4 w-32" />
-                <Skeleton className="h-3 w-48" />
+          renderRight={renderRight}
+        >
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-5">
+            {Array.from({ length: 4 }, (_, i) => (
+              <div key={i} className="space-y-3">
+                <Skeleton className="aspect-[16/10] rounded-2xl" />
+                <div className="px-1 space-y-1.5">
+                  <Skeleton className="h-4 w-32" />
+                  <Skeleton className="h-3 w-48" />
+                </div>
               </div>
-            </div>
-          ))}
-        </div>
-      </section>
+            ))}
+          </div>
+        </TitledSection>
+      </div>
     );
   }
 
   if (!data?.data || data.data.length === 0) return null;
 
   return (
-    <section data-testid="trending-challenges-section">
-      <SectionHeader
+    <div data-testid="trending-challenges-section">
+      <TitledSection
         title="Trending Challenges"
         icon={Flag}
-        linkTo="/challenges"
-      />
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-5">
-        {data.data.slice(0, 4).map((challenge) => (
-          <ChallengeCard key={challenge.id} challenge={challenge} />
-        ))}
-      </div>
-    </section>
+        renderRight={renderRight}
+      >
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-5">
+          {data.data.slice(0, 4).map((challenge) => (
+            <ChallengeCard key={challenge.id} challenge={challenge} />
+          ))}
+        </div>
+      </TitledSection>
+    </div>
   );
 }
 
@@ -300,63 +324,98 @@ export function DashboardPage() {
       )}
 
       {(recentGames.isLoading || hasRecent) && (
-        <section>
-          <SectionHeader title="Continue Playing" icon={Play} linkTo="/games" />
+        <TitledSection
+          title="Continue Playing"
+          icon={Play}
+          renderRight={
+            <Link to="/games" className="flex items-center gap-1 text-sm text-surface-400 hover:text-brand-400 transition-colors">
+              View all<ChevronRight className="h-4 w-4" />
+            </Link>
+          }
+        >
           <GameRow
             games={recentGames.data}
             isLoading={recentGames.isLoading}
             onToggleFavorite={handleToggleFavorite}
             onTogglePlayLater={handleTogglePlayLater}
           />
-        </section>
+        </TitledSection>
       )}
 
       {(playLaterGames.isLoading || hasPlayLater) && (
-        <section>
-          <SectionHeader title="Play Later" icon={Clock} linkTo="/play-later" />
+        <TitledSection
+          title="Play Later"
+          icon={Clock}
+          renderRight={
+            <Link to="/play-later" className="flex items-center gap-1 text-sm text-surface-400 hover:text-brand-400 transition-colors">
+              View all<ChevronRight className="h-4 w-4" />
+            </Link>
+          }
+        >
           <GameRow
             games={playLaterGames.data}
             isLoading={playLaterGames.isLoading}
             onToggleFavorite={handleToggleFavorite}
             onTogglePlayLater={handleTogglePlayLater}
           />
-        </section>
+        </TitledSection>
       )}
 
       {(favoriteGames.isLoading || hasFavorites) && (
-        <section>
-          <SectionHeader title="Favorites" icon={Heart} linkTo="/favorites" />
+        <TitledSection
+          title="Favorites"
+          icon={Heart}
+          renderRight={
+            <Link to="/favorites" className="flex items-center gap-1 text-sm text-surface-400 hover:text-brand-400 transition-colors">
+              View all<ChevronRight className="h-4 w-4" />
+            </Link>
+          }
+        >
           <GameRow
             games={favoriteGames.data}
             isLoading={favoriteGames.isLoading}
             onToggleFavorite={handleToggleFavorite}
             onTogglePlayLater={handleTogglePlayLater}
           />
-        </section>
+        </TitledSection>
       )}
 
       {(recentlyAddedGames.isLoading || hasRecentlyAdded) && (
-        <section>
-          <SectionHeader title="Recently Added" icon={Sparkles} linkTo="/games" />
+        <TitledSection
+          title="Recently Added"
+          icon={Sparkles}
+          renderRight={
+            <Link to="/games" className="flex items-center gap-1 text-sm text-surface-400 hover:text-brand-400 transition-colors">
+              View all<ChevronRight className="h-4 w-4" />
+            </Link>
+          }
+        >
           <GameRow
             games={recentlyAddedGames.data?.data}
             isLoading={recentlyAddedGames.isLoading}
             onToggleFavorite={handleToggleFavorite}
             onTogglePlayLater={handleTogglePlayLater}
           />
-        </section>
+        </TitledSection>
       )}
 
       {!hasRecent && !hasFavorites && (allGames.isLoading || hasGames) && (
-        <section>
-          <SectionHeader title="Discover" icon={Gamepad2} linkTo="/games" />
+        <TitledSection
+          title="Discover"
+          icon={Gamepad2}
+          renderRight={
+            <Link to="/games" className="flex items-center gap-1 text-sm text-surface-400 hover:text-brand-400 transition-colors">
+              View all<ChevronRight className="h-4 w-4" />
+            </Link>
+          }
+        >
           <GameRow
             games={allGames.data?.data}
             isLoading={allGames.isLoading}
             onToggleFavorite={handleToggleFavorite}
             onTogglePlayLater={handleTogglePlayLater}
           />
-        </section>
+        </TitledSection>
       )}
 
       {/* Social widgets */}

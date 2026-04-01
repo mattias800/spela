@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import { Puzzle, Gamepad2 } from "lucide-react";
-import { Card } from "@/components/ui";
+import { Section } from "@/components/ui";
 
 interface RomHackEntry {
   id: string;
@@ -18,7 +18,7 @@ export function StandaloneRomHacksSection({
   if (!romHacks || romHacks.length === 0) return null;
 
   return (
-    <Card className="p-6" data-testid="standalone-rom-hacks-section">
+    <Section className="p-6" data-testid="standalone-rom-hacks-section">
       <div className="flex items-center gap-2.5 mb-4">
         <Puzzle className="h-5 w-5 text-brand-400" />
         <h2 className="text-lg font-semibold text-surface-100">ROM Hacks</h2>
@@ -49,6 +49,6 @@ export function StandaloneRomHacksSection({
           </Link>
         ))}
       </div>
-    </Card>
+    </Section>
   );
 }

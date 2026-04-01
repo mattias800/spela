@@ -7,7 +7,7 @@ export const SearchInput = forwardRef<
   InputHTMLAttributes<HTMLInputElement>
 >(({ className, ...props }, ref) => {
   return (
-    <div className="relative">
+    <div data-comp="SearchInput" className="relative">
       <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-surface-500 pointer-events-none" />
       <input
         ref={ref}

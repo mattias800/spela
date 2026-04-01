@@ -7,9 +7,7 @@ import {
 } from "lucide-react";
 import {
   Badge,
-  Card,
-  CardHeader,
-  CardContent,
+  Section,
   Input,
 } from "@/components/ui";
 import { useRAStatus } from "@/hooks/use-admin";
@@ -37,8 +35,8 @@ export function RAConfigCard({
   })();
 
   return (
-    <Card>
-      <CardHeader>
+    <Section>
+      <div className="px-5 pt-5 pb-2">
         <div
           className="flex items-center justify-between"
           id="ra-config"
@@ -54,8 +52,8 @@ export function RAConfigCard({
           configured, achievement lists are fetched automatically during game
           scanning and shown to all users.
         </p>
-      </CardHeader>
-      <CardContent className="space-y-4">
+      </div>
+      <div className="px-5 pb-5 space-y-4">
         {envConfigured ? (
           <div className="rounded-xl bg-surface-800/50 border border-surface-700/50 p-4">
             <div className="flex items-center gap-2">
@@ -115,7 +113,7 @@ export function RAConfigCard({
             />
           </>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </Section>
   );
 }

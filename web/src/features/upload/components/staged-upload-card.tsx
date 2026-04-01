@@ -68,6 +68,7 @@ export function StagedUploadCard({
     <GameSummaryCard
       title={upload.title || upload.canonicalName}
       coverUrl={upload.coverUrl || undefined}
+      consoleId={upload.consoleId}
       consoleName={upload.consoleName}
       rating={upload.rating}
       verificationStatus={upload.verificationStatus || undefined}

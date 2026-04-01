@@ -1,9 +1,11 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { Link } from "react-router-dom";
-import { ChevronLeft, ChevronRight, Star } from "lucide-react";
-import { Badge, Skeleton } from "@/components/ui";
+import { ChevronLeft, ChevronRight } from "lucide-react";
+import { RatingDisplay } from "@/components/rating-display";
+import { Skeleton } from "@/components/ui";
+import { AreaSizedImage } from "@/components/area-sized-image";
+import { ConsoleBadge } from "@/components/console-badge";
 import { cn } from "@/lib/cn";
-import { ensureContrast } from "@/lib/color-utils";
 import type { FeaturedGame } from "@/types/api";
 
 interface HeroCarouselProps {
@@ -89,69 +91,53 @@ function HeroSlide({
 
       {/* Gradient overlays for readability */}
       <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
-      <div className="absolute inset-0 bg-gradient-to-r from-black/50 via-transparent to-transparent" />
+      <div className="absolute inset-0 bg-gradient-to-r from-black/40 via-transparent to-black/40" />
 
-      {/* Content overlay */}
-      <div className="absolute inset-0 flex flex-col justify-end p-6 sm:p-8 lg:p-10">
-        <div className="max-w-2xl space-y-4">
-          {/* Game logo or title */}
-          {game.logoUrl ? (
-            <img
-              src={game.logoUrl}
-              alt={game.title}
-              className="max-h-20 sm:max-h-24 lg:max-h-28 max-w-[60%] object-contain drop-shadow-lg"
-              data-testid={`hero-logo-${game.gameId}`}
-            />
-          ) : (
-            <h2
-              className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white drop-shadow-lg"
-              data-testid={`hero-title-text-${game.gameId}`}
-            >
-              {game.title}
-            </h2>
-          )}
-
-          {/* Metadata badges */}
-          <div className="flex flex-wrap items-center gap-2">
-            {game.consoleAbbreviation && (
-              <Badge
-                variant="brand"
-                style={
-                  game.consoleColor
-                    ? ({
-                        "--badge-color": game.consoleColor,
-                        backgroundColor: `${game.consoleColor}20`,
-                        borderColor: `${game.consoleColor}40`,
-                        color: ensureContrast(game.consoleColor),
-                      } as React.CSSProperties)
-                    : undefined
-                }
+      {/* Content overlay — logo+badges centered left, button bottom-right */}
+      <div className="absolute inset-0 flex flex-col p-6 sm:p-8 lg:p-10">
+        {/* Logo + badges vertically centered */}
+        <div className="flex-1 flex items-center">
+          <div className="flex flex-col items-center gap-3">
+            {game.logoUrl ? (
+              <AreaSizedImage
+                src={game.logoUrl}
+                alt={game.title}
+                targetArea={28000}
+                maxHeight={160}
+                maxWidth={400}
+                minHeight={60}
+                className="drop-shadow-lg"
+              />
+            ) : (
+              <h2
+                className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white drop-shadow-lg"
+                data-testid={`hero-title-text-${game.gameId}`}
               >
-                {game.consoleAbbreviation.toUpperCase()}
-              </Badge>
+                {game.title}
+              </h2>
             )}
-            {game.rating > 0 && (
-              <span className="inline-flex items-center gap-1 text-sm font-medium text-amber-400">
-                <Star className="h-3.5 w-3.5 fill-amber-400" />
-                {game.rating.toFixed(1)}
-              </span>
-            )}
-            {game.genre && (
-              <Badge variant="default">{game.genre}</Badge>
-            )}
-          </div>
 
-          {/* Action button */}
-          <div>
-            <Link
-              to={`/games/${game.gameId}`}
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-brand-600 text-white font-medium text-sm hover:bg-brand-500 transition-colors shadow-lg shadow-brand-600/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 focus-visible:ring-offset-surface-950"
-              tabIndex={isActive ? 0 : -1}
-              data-testid={`hero-view-game-${game.gameId}`}
-            >
-              View Game
-            </Link>
+            <div className="flex flex-wrap items-center justify-center gap-2">
+              {game.consoleAbbreviation && (
+                <ConsoleBadge code={game.consoleAbbreviation} />
+              )}
+              {game.rating > 0 && (
+                <RatingDisplay value={game.rating} />
+              )}
+            </div>
           </div>
+        </div>
+
+        {/* Button pinned to bottom-right */}
+        <div className="flex justify-end">
+          <Link
+            to={`/games/${game.gameId}`}
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-brand-600 text-white font-medium text-sm hover:bg-brand-500 transition-colors shadow-lg shadow-brand-600/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 focus-visible:ring-offset-surface-950"
+            tabIndex={isActive ? 0 : -1}
+            data-testid={`hero-view-game-${game.gameId}`}
+          >
+            View Game
+          </Link>
         </div>
       </div>
     </div>

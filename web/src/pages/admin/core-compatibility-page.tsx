@@ -1,5 +1,5 @@
 import { AlertTriangle, CheckCircle2, Cpu } from "lucide-react";
-import { Card, CardHeader, CardContent, Skeleton, Badge } from "@/components/ui";
+import { Section, Skeleton, Badge } from "@/components/ui";
 import { useCoreCompatibility } from "@/hooks/use-admin";
 
 export function CoreCompatibilityPage() {
@@ -41,14 +41,14 @@ export function CoreCompatibilityPage() {
         </div>
       )}
 
-      <Card>
-        <CardHeader>
+      <Section>
+        <div className="px-5 pt-5 pb-2">
           <h2 className="text-lg font-semibold text-surface-100 flex items-center gap-2">
             <Cpu className="h-5 w-5 text-brand-400" />
             Consoles
           </h2>
-        </CardHeader>
-        <CardContent>
+        </div>
+        <div className="px-5 pb-5">
           {isError ? (
             <p className="text-sm text-danger-500">
               Failed to load core compatibility data.
@@ -118,8 +118,8 @@ export function CoreCompatibilityPage() {
               </table>
             </div>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </Section>
     </div>
   );
 }

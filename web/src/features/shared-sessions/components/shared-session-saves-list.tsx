@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Save, Trash2, Download } from "lucide-react";
-import { Button, Badge, Card, CardContent, ConfirmDeleteModal, EmptyState } from "@/components/ui";
+import { Button, Badge, Section, ConfirmDeleteModal, EmptyState } from "@/components/ui";
 import { PlayerAvatar } from "@/components/player-avatar";
 import { useDeleteSharedSessionSave } from "@/hooks/use-shared-sessions";
 import { formatFileSize, formatRelativeTime } from "@/lib/format";
@@ -45,8 +45,8 @@ export function SharedSessionSavesList({
             const canDelete =
               isOwner || save.userId === currentUserId;
             return (
-              <Card key={save.id} hover>
-                <CardContent className="flex items-center gap-4 py-3">
+              <Section key={save.id} hover>
+                <div className="px-5 pb-5 flex items-center gap-4 py-3">
                   <PlayerAvatar
                     username={save.username}
                     avatarUrl={save.avatarUrl}
@@ -87,8 +87,8 @@ export function SharedSessionSavesList({
                       </Button>
                     )}
                   </div>
-                </CardContent>
-              </Card>
+                </div>
+              </Section>
             );
           })}
         </div>

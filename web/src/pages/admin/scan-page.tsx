@@ -10,7 +10,7 @@ import {
   RotateCcw,
   Square,
 } from "lucide-react";
-import { Button, Card, CardHeader, CardContent, Select } from "@/components/ui";
+import { Button, Section, Select } from "@/components/ui";
 import { useScanLibrary, useScrapeMetadata, useCancelScrape } from "@/hooks/use-admin";
 import { useToast } from "@/components/ui";
 import { useScrapeProgress } from "@/hooks/use-scrape-progress";
@@ -48,14 +48,14 @@ function ScanCard() {
   }, [scanRequested, isActive, isComplete, isError]);
 
   return (
-    <Card>
-      <CardHeader>
+    <Section>
+      <div className="px-5 pt-5 pb-2">
         <h2 className="text-lg font-semibold text-surface-100 flex items-center gap-2">
           <FolderSearch className="h-5 w-5 text-brand-400" />
           Scan for Games
         </h2>
-      </CardHeader>
-      <CardContent className="space-y-4">
+      </div>
+      <div className="px-5 pb-5 space-y-4">
         <p className="text-sm text-surface-400">
           Scan configured game directories for new ROMs. Previously detected
           games will not be duplicated.
@@ -182,8 +182,8 @@ function ScanCard() {
         >
           Start Scan
         </Button>
-      </CardContent>
-    </Card>
+      </div>
+    </Section>
   );
 }
 
@@ -202,14 +202,14 @@ function ScrapeCard() {
   const consoleParam = selectedConsole || undefined;
 
   return (
-    <Card>
-      <CardHeader>
+    <Section>
+      <div className="px-5 pt-5 pb-2">
         <h2 className="text-lg font-semibold text-surface-100 flex items-center gap-2">
           <ScanSearch className="h-5 w-5 text-brand-400" />
           Scrape Metadata
         </h2>
-      </CardHeader>
-      <CardContent className="space-y-4">
+      </div>
+      <div className="px-5 pb-5 space-y-4">
         <p className="text-sm text-surface-400">
           Fetch cover art, descriptions, and other metadata for games that are
           missing information.
@@ -445,8 +445,8 @@ function ScrapeCard() {
             Rescrape All Games
           </Button>
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    </Section>
   );
 }
 

@@ -839,6 +839,7 @@ type NetplaySessionResponse struct {
 	GameTitle        string     `json:"gameTitle"`
 	GameCoverURL     string     `json:"gameCoverUrl,omitempty"`
 	ConsoleName      string     `json:"consoleName,omitempty"`
+	ConsoleID        string     `json:"consoleId,omitempty"`
 	CoverAspectRatio float64    `json:"coverAspectRatio"`
 	Status           string     `json:"status"`
 	EndReason        string     `json:"endReason,omitempty"`

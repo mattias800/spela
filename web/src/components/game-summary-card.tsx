@@ -1,11 +1,14 @@
-import { Star, CheckCircle2, AlertTriangle, File, HardDrive } from "lucide-react";
-import { cn } from "@/lib/cn";
-import { Badge } from "@/components/ui";
+import { CheckCircle2, AlertTriangle, File, HardDrive } from "lucide-react";
+import { Badge, Section } from "@/components/ui";
+import { RatingDisplay } from "@/components/rating-display";
+import { ConsoleBadge } from "@/components/console-badge";
 import { formatFileSize } from "@/lib/format";
+import { CoverImage } from "@/components/cover-image";
 
 interface GameSummaryCardProps {
   title: string;
   coverUrl?: string;
+  consoleId: string;
   consoleName: string;
   rating?: number;
   verificationStatus?: string;
@@ -18,6 +21,7 @@ interface GameSummaryCardProps {
 export function GameSummaryCard({
   title,
   coverUrl,
+  consoleId,
   consoleName,
   rating,
   verificationStatus,
@@ -29,27 +33,10 @@ export function GameSummaryCard({
   const displayTitle = title || fileName;
 
   return (
-    <div
-      className="rounded-2xl bg-surface-900/50 border border-surface-800/50 overflow-hidden"
-      data-testid="game-summary-card"
-    >
+    <Section data-comp="GameSummaryCard" data-testid="game-summary-card">
       <div className="flex gap-4 p-4">
         {/* Cover art */}
-        <div className="w-20 h-28 flex-shrink-0 rounded-lg overflow-hidden bg-surface-800">
-          {coverUrl ? (
-            <img
-              src={coverUrl}
-              alt={displayTitle}
-              className="h-full w-full object-cover"
-            />
-          ) : (
-            <div className="h-full w-full flex items-center justify-center bg-gradient-to-br from-surface-800 to-surface-900">
-              <span className="text-2xl font-bold text-surface-700">
-                {displayTitle.charAt(0)}
-              </span>
-            </div>
-          )}
-        </div>
+        <CoverImage src={coverUrl} alt={displayTitle} className="w-20 h-28 rounded-lg flex-shrink-0" />
 
         {/* Info */}
         <div className="flex-1 min-w-0 space-y-2">
@@ -68,7 +55,7 @@ export function GameSummaryCard({
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
-            <Badge variant="brand">{consoleName}</Badge>
+            <ConsoleBadge code={consoleId} label={consoleName} />
 
             {verificationStatus === "verified" && (
               <Badge variant="success" data-testid="verification-badge">
@@ -90,22 +77,7 @@ export function GameSummaryCard({
           </div>
 
           {rating != null && rating > 0 && (
-            <div className="flex items-center gap-1">
-              {[1, 2, 3, 4, 5].map((star) => (
-                <Star
-                  key={star}
-                  className={cn(
-                    "h-3.5 w-3.5",
-                    star <= Math.round(rating)
-                      ? "text-amber-400 fill-amber-400"
-                      : "text-surface-600",
-                  )}
-                />
-              ))}
-              <span className="text-xs text-surface-400 ml-1">
-                {rating.toFixed(1)}
-              </span>
-            </div>
+            <RatingDisplay value={rating} variant="stars" />
           )}
 
           <div className="flex items-center gap-3 text-xs text-surface-500">
@@ -124,6 +96,6 @@ export function GameSummaryCard({
       {actions && (
         <div className="px-4 pb-4 flex items-center gap-2">{actions}</div>
       )}
-    </div>
+    </Section>
   );
 }

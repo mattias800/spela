@@ -6,7 +6,7 @@ describe("GameSummaryCard", () => {
   const defaultProps = {
     title: "Super Mario Bros.",
     coverUrl: "/covers/mario.jpg",
-    consoleName: "NES",
+    consoleName: "NES", consoleId: "nes",
     rating: 4.5,
     verificationStatus: "verified" as const,
     fileName: "Super Mario Bros.nes",

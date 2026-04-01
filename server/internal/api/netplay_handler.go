@@ -494,9 +494,13 @@ func (h *NetplayHandler) toSessionResponse(s db.NetplaySession) NetplaySessionRe
 	}
 
 	consoleName := ""
+	consoleID := ""
 	var coverAspect float64
 	if s.Game.Console.ID != 0 {
 		consoleName = s.Game.Console.Name
+		if s.Game.Console.Code != nil {
+			consoleID = *s.Game.Console.Code
+		}
 		coverAspect = parseAspectRatio(s.Game.Console.CoverAspect)
 	} else {
 		coverAspect = 0.75
@@ -514,6 +518,7 @@ func (h *NetplayHandler) toSessionResponse(s db.NetplaySession) NetplaySessionRe
 		GameTitle:        s.Game.Title,
 		GameCoverURL:     coverURL,
 		ConsoleName:      consoleName,
+		ConsoleID:        consoleID,
 		CoverAspectRatio: coverAspect,
 		Status:           s.Status,
 		EndReason:       s.EndReason,

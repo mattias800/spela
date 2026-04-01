@@ -9,9 +9,7 @@ import {
 import {
   Badge,
   Button,
-  Card,
-  CardHeader,
-  CardContent,
+  Section,
   Input,
 } from "@/components/ui";
 import { useTestIgdbCredentials, useIgdbStatus } from "@/hooks/use-admin";
@@ -86,8 +84,8 @@ export function IgdbConfigCard({
   })();
 
   return (
-    <Card>
-      <CardHeader>
+    <Section>
+      <div className="px-5 pt-5 pb-2">
         <div className="flex items-center justify-between" id="igdb-config">
           <h2 className="text-lg font-semibold text-surface-100 flex items-center gap-2">
             <Globe className="h-5 w-5 text-brand-400" />
@@ -100,8 +98,8 @@ export function IgdbConfigCard({
           art, and descriptions. IGDB requires Twitch developer credentials to
           authenticate.
         </p>
-      </CardHeader>
-      <CardContent className="space-y-4">
+      </div>
+      <div className="px-5 pb-5 space-y-4">
         {envConfigured ? (
           <div className="rounded-xl bg-surface-800/50 border border-surface-700/50 p-4">
             <div className="flex items-center gap-2">
@@ -201,7 +199,7 @@ export function IgdbConfigCard({
             </div>
           </>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </Section>
   );
 }

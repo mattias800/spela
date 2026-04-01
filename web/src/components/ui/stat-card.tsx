@@ -8,7 +8,7 @@ interface StatCardProps {
 
 export function StatCard({ value, label, highlight }: StatCardProps) {
   return (
-    <div className="bg-surface-800/30 rounded-xl p-4">
+    <div data-comp="StatCard" className="bg-surface-800/30 rounded-xl p-4">
       <p
         className={cn(
           "text-lg font-bold",

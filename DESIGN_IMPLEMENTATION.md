@@ -1,0 +1,237 @@
+# Design Implementation Guide
+
+This document defines the component architecture and design system for all UI work across both the **web frontend** (React/TypeScript/Tailwind) and the **player app** (Kotlin/Compose Multiplatform). These principles are not platform-specific — they apply equally to both codebases.
+
+The player app's design system principles are also documented in `AGENT_TEAM.md`. This document extends those principles with implementation guidance and records decisions made during the design system refactoring.
+
+## Component Hierarchy: Design → Content → Role
+
+All UI components follow a strict three-layer hierarchy. This is not optional.
+
+```
+Layer 1: DESIGN components (the look)
+  Badge, Card, Button, CoverImage
+  → Define visual styling. No domain knowledge.
+  → Accept className for flexible use by higher layers.
+
+Layer 2: CONTENT components (what something looks like)
+  GameCard, GameSummaryCard, SectionHeader
+  → Compose design components into a fixed content layout.
+  → Do NOT accept className — the layout is strict and enforced.
+  → Parent controls sizing via explicit parameters.
+
+Layer 3: ROLE components (what something IS in context)
+  ConsoleBadge, RatingDisplay, TopRatedGameCard
+  → Thin wrappers that delegate to content/design components.
+  → Map domain models to component parameters.
+  → Own domain-specific logic (color mapping, formatting).
+  → No custom UI code — just parameter mapping.
+```
+
+### Why This Matters
+
+Without this hierarchy, every screen becomes a bespoke layout with inline Tailwind that drifts from every other screen. When you need to change how console badges look, you edit 30 files instead of 1. When a new developer joins, they have no idea which pattern to follow because there are 5 different ones.
+
+## Rules
+
+### 1. Components Own Their Domain Logic
+
+A component that represents a domain concept (console, rating, verification status) must own the mapping from domain data to visual presentation.
+
+**Example: Console colors**
+
+```tsx
+// WRONG — caller controls colors, every call site can diverge
+<Badge style={{ backgroundColor: `${game.consoleColor}20`, color: ensureContrast(game.consoleColor) }}>
+  {game.consoleName}
+</Badge>
+
+// RIGHT — component owns the color mapping
+<ConsoleBadge abbreviation="snes" />
+```
+
+**Why:** If the caller provides colors, then:
+- 30 call sites each have their own opacity/contrast logic
+- Some use `ensureContrast()`, some use `"white"`, some use the raw color
+- Changing the color scheme requires editing every call site
+- A new developer will copy-paste the wrong pattern
+
+The component should accept a **platform code** (abbreviation), look up the color internally from the authoritative source (`console-metadata.ts`), and render consistently. The caller should never need to think about colors.
+
+### 2. Components Never Accept `style` for Visual Overrides
+
+If you find yourself passing `style={{ backgroundColor: ... }}` to override a component's visuals, that's a sign the component is missing a variant or the wrong component is being used.
+
+**Allowed:** `className` for layout concerns (margin, width) controlled by the parent.
+**Not allowed:** `style` props that override the component's internal visual design.
+
+### 3. No Inline Badge/Card/Rating Patterns in Feature Files
+
+Feature files (`web/src/features/`) and page files (`web/src/pages/`) should compose shared components. They should not contain:
+- Raw `<Badge>` with inline color styling
+- Cover image + fallback placeholder patterns
+- Rating star + number patterns
+- Card container patterns (`rounded-xl bg-surface-*/border-*`)
+
+If a pattern appears in 2+ files, it must be a shared component.
+
+### 4. Derive State, Don't Sync It
+
+Prefer derived values over `useEffect` state synchronization:
+
+```tsx
+// WRONG — syncing derived state via useEffect
+const [displayName, setDisplayName] = useState("");
+useEffect(() => {
+  setDisplayName(user.firstName + " " + user.lastName);
+}, [user]);
+
+// RIGHT — derive it
+const displayName = user.firstName + " " + user.lastName;
+
+// RIGHT — memoize if expensive
+const displayName = useMemo(() => computeExpensiveName(user), [user]);
+```
+
+`useEffect` is appropriate for: subscriptions, event listeners, DOM measurements, external system synchronization. It is NOT appropriate for: transforming props into state, formatting data, computing derived values.
+
+## Component Reference
+
+### ConsoleBadge (Role component)
+
+Wraps `Badge` to display a console/platform name with the correct brand color.
+
+```tsx
+interface ConsoleBadgeProps {
+  abbreviation: string;  // Console abbreviation: "snes", "nes", "gba", etc.
+  className?: string;    // Layout concerns only (margin, positioning)
+}
+```
+
+**Owns:** Color lookup via `getConsoleStyle()` from `console-metadata.ts`.
+**Does not accept:** `color`, `style`, or any visual override props.
+
+### RatingDisplay (Design component)
+
+Displays a rating value with star icon(s). No domain knowledge — just visual styling. Two variants:
+
+```tsx
+<RatingDisplay value={8.5} />                    // "compact": ★ 8.5
+<RatingDisplay value={8.5} variant="stars" />    // "stars": ★★★★☆ 8.5 (0-10 → 0-5 stars)
+```
+
+**Owns:** Star icon, amber color, number formatting, star fill logic.
+**Does not accept:** color overrides, icon size overrides, custom formatting.
+
+### CoverImage (Design component)
+
+Renders a cover art image with lazy loading and a character-based fallback placeholder.
+
+```tsx
+<CoverImage src={game.coverUrl} alt={game.title} className="w-12 h-16 rounded-lg" />
+```
+
+**Owns:** `overflow-hidden`, `bg-surface-800` placeholder background, `object-cover`, lazy loading, fallback character rendering (first character of `alt`).
+
+**Accepts `className`:** Yes — for size, border radius, aspect ratio, flex-shrink. This is a Design component used by Content components (like `CoverCard`) that need to control its sizing.
+
+**When NOT to use CoverImage:** When the fallback is an icon (e.g. `Gamepad2`, `FolderOpen`, `Loader2` spinner) rather than a character. CoverImage only handles character placeholders. If your fallback is an icon, use the inline pattern or create a separate component.
+
+**Why `className` is allowed on a Design component:** CoverImage's responsibility is the *shared* styling between all cover images (image rendering, fallback, lazy loading). But it's used at many different sizes — small thumbnails (48x64), medium cards (144x192), gallery items with dynamic aspect ratios. The parent knows the size, CoverImage doesn't. This is shared responsibility, not a violation of component ownership.
+
+## Naming Convention: Section vs Card
+
+**Section** — a generic container for grouping related content. Can hold forms, lists, stats, anything. Has surface background, border, rounded corners.
+
+**Card** — the visual pattern with a cover image, hover effects, and overlay. Used for game cards, developer cards, platform cards. Has a specific content layout.
+
+These are distinct concepts. Previously both were called "Card" which caused confusion. The rename:
+- `Card` (old generic container) → `Section`
+- `CardHeader` → removed (use `TitledSection` instead)
+- `CardContent` → removed (use padding directly)
+- `SectionHeader` (old standalone title) → removed (use `TitledSection`)
+
+Components:
+- `Section` — generic container
+- `TitledSection` — container with title bar (required `title`, optional `icon`, optional `renderRight`)
+- `SectionList` — column with standardized gap between children
+
+## data-comp Attribute
+
+All shared UI components add `data-comp="ComponentName"` to their outermost HTML element. This makes it easy to identify which component rendered a particular DOM element in browser devtools.
+
+## Card Taxonomy
+
+Not all card-like containers are the same component. During the refactoring audit, we identified these distinct categories:
+
+**1. Section cards (`Card`)** — Generic content containers. Can hold lists, forms, stats, anything. Use the shared `Card` component from `ui/card.tsx`. This is the most common pattern: `rounded-2xl bg-surface-900/50 border border-surface-800/50`.
+
+**2. Game cards (`GameCard`, `CoverCard`)** — Domain-specific cards with a fixed layout: cover art + title + metadata. These are Content components (Layer 2) with strict internal structure.
+
+**3. Form inputs** (`Input`, `Textarea`, `Select`) — Already shared as UI primitives. Not cards, even though they share some visual DNA (rounded, bordered, surface background).
+
+**4. Tooltips/dropdowns** — Ephemeral floating elements. Different concern, not cards.
+
+**5. Context-specific containers** — Cards with conditional styling (dimmed when unavailable, dashed borders for empty slots, different backgrounds for admin views). These are too specialized for the generic `Card` component. Keep them inline or create purpose-specific components if they appear in 2+ places.
+
+**When to use `Card`:** If your container is a static, rectangular box with the standard surface background and border, use `Card`. If it has conditional styling, dashed borders, or non-standard backgrounds, use inline Tailwind or a purpose-specific component.
+
+## useEffect Guidelines
+
+### The `key` Pattern for Resetting Component State
+
+When a component needs to reset its internal state based on a prop change (e.g., a modal opening with a different entity), do NOT sync props to state via `useEffect`. Instead, extract the stateful content into a child component and use React's `key` prop to unmount/remount it:
+
+```tsx
+// WRONG — syncing props to state
+function EditModal({ user, open, onClose }) {
+  const [email, setEmail] = useState("");
+  useEffect(() => {
+    if (user) setEmail(user.email);  // anti-pattern
+  }, [user]);
+  // ...
+}
+
+// RIGHT — key-based reset
+function EditModal({ user, open, onClose }) {
+  return (
+    <Modal open={open} onClose={onClose}>
+      {user && <EditForm key={user.id} user={user} onClose={onClose} />}
+    </Modal>
+  );
+}
+
+function EditForm({ user, onClose }) {
+  const [email, setEmail] = useState(user.email);  // initialized once, reset by key
+  // ...
+}
+```
+
+**Why:** The `useEffect` approach creates a frame where the old state is visible before the effect fires. It's also easy to forget a state variable in the dependency array. The `key` approach is declarative — React handles the cleanup.
+
+### When useEffect IS Appropriate
+
+- **DOM event listeners** (keyboard, resize, intersection observer)
+- **Body/document manipulation** (scroll lock, overflow)
+- **Timers** (auto-advance, debounce — though prefer `useDebouncedValue` hook)
+- **External system sync** (URL params, WebSocket, WebGL)
+- **Focus management** (auto-focus on mount)
+
+### When useEffect is NOT Appropriate
+
+- **Derived state** — use `useMemo` or compute inline
+- **Prop-to-state sync** — use `key` pattern above
+- **Manual debounce** — use `useDebouncedValue` hook
+- **Event handling** — use event handlers, not effects
+
+## Refactoring Process
+
+This codebase is being incrementally refactored to follow these principles. The process:
+
+1. **One component type at a time** — e.g., all console badges first, then all ratings
+2. **Create the shared component** with the correct API
+3. **Migrate all usages** — every file that has the inline pattern
+4. **Review** — verify no regressions, no remaining inline patterns
+5. **Next component type**
+
+This avoids large PRs that are impossible to review and ensures each step produces a working, testable codebase.

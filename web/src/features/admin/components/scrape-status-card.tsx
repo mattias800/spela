@@ -1,8 +1,6 @@
 import { BarChart2 } from "lucide-react";
 import {
-  Card,
-  CardHeader,
-  CardContent,
+  Section,
   Button,
   Skeleton,
 } from "@/components/ui";
@@ -134,14 +132,14 @@ export function ScrapeStatusCard() {
   }
 
   return (
-    <Card>
-      <CardHeader>
+    <Section>
+      <div className="px-5 pt-5 pb-2">
         <h2 className="text-lg font-semibold text-surface-100 flex items-center gap-2">
           <BarChart2 className="h-5 w-5 text-brand-400" />
           Scrape Status
         </h2>
-      </CardHeader>
-      <CardContent className="space-y-5">
+      </div>
+      <div className="px-5 pb-5 space-y-5">
         <p className="text-sm text-surface-400">
           Per-source breakdown of metadata scrape results across your library.
         </p>
@@ -182,7 +180,7 @@ export function ScrapeStatusCard() {
               />
             </div>
           ))}
-      </CardContent>
-    </Card>
+      </div>
+    </Section>
   );
 }

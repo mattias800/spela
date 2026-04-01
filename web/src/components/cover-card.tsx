@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { Link } from "react-router-dom";
 import { cn } from "@/lib/cn";
+import { CoverImage } from "@/components/cover-image";
 
 /**
  * CONTENT component — a cover art card with title and subtitle.
@@ -34,23 +35,12 @@ export function CoverCard({
   children,
 }: CoverCardProps) {
   const content = (
-    <div className={cn(width, dimmed && "opacity-50")}>
+    <div data-comp="CoverCard" className={cn(width, dimmed && "opacity-50")}>
       <div
-        className="w-full rounded-xl overflow-hidden bg-surface-900 border border-surface-800/50"
+        className="w-full border border-surface-800/50"
         style={{ aspectRatio }}
       >
-        {imageUrl ? (
-          <img
-            src={imageUrl}
-            alt={title}
-            className="w-full h-full object-cover"
-            loading="lazy"
-          />
-        ) : (
-          <div className="w-full h-full flex items-center justify-center text-xl font-bold text-surface-600">
-            {title.slice(0, 2).toUpperCase()}
-          </div>
-        )}
+        <CoverImage src={imageUrl} alt={title} className="w-full h-full rounded-xl" />
       </div>
       <div className="mt-2 px-0.5">
         <p className="text-sm font-medium text-surface-200 truncate">

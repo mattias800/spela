@@ -3,7 +3,7 @@ import { useParams, useNavigate, Link } from "react-router-dom";
 import {
   Button,
   BackButton,
-  Card,
+  Section,
   GameDetailSkeleton,
   Modal,
 } from "@/components/ui";
@@ -310,18 +310,18 @@ export function GameDetailPage() {
         <StandaloneRomHacksSection romHacks={game.romHacks} />
       )}
 
-      <Card className="p-6">
+      <Section className="p-6">
         <GameCommunityStats gameId={game.id} game={game} />
-      </Card>
+      </Section>
 
       {/* Rating section */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        <Card className="p-6">
+        <Section className="p-6">
           <RatingSummaryCard gameId={game.id} />
-        </Card>
-        <Card className="p-6">
+        </Section>
+        <Section className="p-6">
           <GameReviews gameId={game.id} />
-        </Card>
+        </Section>
       </div>
 
       {isPlayable && !isDemo && <GameAchievementLeaderboard gameId={game.id} />}
@@ -333,12 +333,12 @@ export function GameDetailPage() {
 
       {isPlayable && !isDemo && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          <Card className="p-6">
+          <Section className="p-6">
             <SharedSavesList gameId={game.id} />
-          </Card>
-          <Card className="p-6">
+          </Section>
+          <Section className="p-6">
             <GameChallenges gameId={game.id} />
-          </Card>
+          </Section>
         </div>
       )}
 

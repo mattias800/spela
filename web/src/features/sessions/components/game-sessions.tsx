@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Layers, Plus } from "lucide-react";
-import { Button, Card, Skeleton, EmptyState, Input } from "@/components/ui";
+import { Button, Section, Skeleton, EmptyState, Input } from "@/components/ui";
 import {
   useGameSessions,
   useCreateSession,
@@ -79,18 +79,18 @@ export function GameSessions({ gameId }: GameSessionsProps) {
 
   if (isLoading) {
     return (
-      <Card className="p-6">
+      <Section className="p-6">
         <div className="flex items-center gap-2.5 mb-4">
           <Layers className="h-5 w-5 text-brand-400" />
           <h2 className="text-lg font-semibold text-surface-100">Sessions</h2>
         </div>
         <SessionsSkeleton />
-      </Card>
+      </Section>
     );
   }
 
   return (
-    <Card className="p-6">
+    <Section className="p-6">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2.5">
           <Layers className="h-5 w-5 text-brand-400" />
@@ -182,6 +182,6 @@ export function GameSessions({ gameId }: GameSessionsProps) {
           ))}
         </div>
       )}
-    </Card>
+    </Section>
   );
 }

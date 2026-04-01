@@ -1,6 +1,6 @@
 import { useState, useCallback, useRef } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { Card } from "@/components/ui";
+import { Section } from "@/components/ui";
 import { ScreenshotLightbox } from "./screenshot-lightbox";
 
 interface GameScreenshotsProps {
@@ -55,7 +55,7 @@ export function GameScreenshots({
   };
 
   return (
-    <Card className="p-6">
+    <Section className="p-6">
       <h2 className="text-lg font-semibold text-surface-100 mb-4">
         {total === 1 ? "Screenshot" : "Screenshots"}
       </h2>
@@ -133,6 +133,6 @@ export function GameScreenshots({
         onIndexChange={setLightboxIndex}
         gameTitle={gameTitle}
       />
-    </Card>
+    </Section>
   );
 }

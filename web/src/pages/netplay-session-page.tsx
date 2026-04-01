@@ -10,6 +10,7 @@ import {
   Skeleton,
   EmptyState,
 } from "@/components/ui";
+import { ConsoleBadge } from "@/components/console-badge";
 import { useToast } from "@/components/ui";
 import {
   useNetplaySession,
@@ -145,7 +146,7 @@ export function NetplaySessionPage() {
                 {session.gameTitle}
               </h1>
               <div className="flex items-center gap-3 mt-2">
-                <Badge variant="brand">{session.consoleName}</Badge>
+                <ConsoleBadge code={session.consoleId} label={session.consoleName} />
                 <Badge variant={netplayStatusVariant[session.status]}>
                   {netplayStatusLabel[session.status]}
                 </Badge>

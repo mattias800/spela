@@ -1,6 +1,7 @@
 import { Star } from "lucide-react";
-import { Skeleton } from "@/components/ui";
-import { SectionHeader } from "@/components/section-header";
+import { Skeleton, TitledSection } from "@/components/ui";
+import { Link } from "react-router-dom";
+import { ChevronRight } from "lucide-react";
 import { useTopRatedGlobal } from "@/hooks/use-top-lists";
 import { TopRatedGameCard } from "./top-rated-game-card";
 
@@ -24,8 +25,19 @@ export function TopRatedRow() {
   if (!isLoading && (!games || games.length === 0)) return null;
 
   return (
-    <section>
-      <SectionHeader title="Top Rated" icon={Star} linkTo="/top-lists" />
+    <TitledSection
+      title="Top Rated"
+      icon={Star}
+      renderRight={
+        <Link
+          to="/top-lists"
+          className="flex items-center gap-1 text-sm text-surface-400 hover:text-brand-400 transition-colors"
+        >
+          View all
+          <ChevronRight className="h-4 w-4" />
+        </Link>
+      }
+    >
       {isLoading ? (
         <TopRatedSkeleton />
       ) : (
@@ -37,6 +49,6 @@ export function TopRatedRow() {
           ))}
         </div>
       )}
-    </section>
+    </TitledSection>
   );
 }

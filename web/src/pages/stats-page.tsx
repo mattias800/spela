@@ -8,6 +8,7 @@ import { useMyPlayHeatmap } from "@/hooks/use-play-heatmap";
 import { useExplorerBadges, useCompletionistMap } from "@/hooks/use-explore";
 import { ExplorerBadgesSection } from "@/features/explore/components/explorer-badges";
 import { CompletionistMapSection } from "@/features/explore/components/completionist-map";
+import { CoverImage } from "@/components/cover-image";
 import { formatPlayTime, formatRelativeTime } from "@/lib/format";
 import { cn } from "@/lib/cn";
 
@@ -188,19 +189,7 @@ export function StatsPage() {
                     className="flex items-center gap-4 rounded-xl px-4 py-3 bg-surface-900/50 hover:bg-surface-900/80 transition-colors"
                   >
                     <RankBadge rank={rank} />
-                    <div className="h-10 w-8 rounded-lg overflow-hidden bg-surface-800 flex-shrink-0">
-                      {entry.game.coverUrl ? (
-                        <img
-                          src={entry.game.coverUrl}
-                          alt={entry.game.title}
-                          className="h-full w-full object-cover"
-                        />
-                      ) : (
-                        <div className="h-full w-full flex items-center justify-center text-xs font-bold text-surface-600">
-                          {entry.game.title.charAt(0)}
-                        </div>
-                      )}
-                    </div>
+                    <CoverImage src={entry.game.coverUrl} alt={entry.game.title} className="h-10 w-8 rounded-lg flex-shrink-0" />
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-surface-200 truncate">
                         {entry.game.title}
