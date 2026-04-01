@@ -21,7 +21,7 @@ internal fun LazyListScope.shaderDefaultScopeItems(
     viewModel: SettingsViewModel,
 ) {
     item {
-        SpCard {
+        SpCard(onGradient = true) {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()

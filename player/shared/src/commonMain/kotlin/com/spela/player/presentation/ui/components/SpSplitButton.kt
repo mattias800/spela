@@ -8,6 +8,8 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.ui.graphics.Brush
+import com.spela.player.presentation.ui.theme.spelaBrandGradient
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -64,9 +66,13 @@ fun SpSplitButton(
 
     var expanded by remember { mutableStateOf(false) }
 
+    val outerShape = RoundedCornerShape(SpSpacing.RadiusLarge)
+    val sharedGradient = style == SpButtonStyle.Primary && enabled
+
     Row(
         modifier = modifier
-            .height(IntrinsicSize.Min),
+            .height(IntrinsicSize.Min)
+            .then(if (sharedGradient) Modifier.background(spelaBrandGradient(), outerShape) else Modifier),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         SpButton(
@@ -76,6 +82,7 @@ fun SpSplitButton(
             enabled = enabled,
             isLoading = isLoading,
             onGradient = onGradient,
+            skipBackground = sharedGradient,
             shape = RoundedCornerShape(
                 topStart = SpSpacing.RadiusLarge,
                 bottomStart = SpSpacing.RadiusLarge,
@@ -85,17 +92,11 @@ fun SpSplitButton(
         )
 
         // Divider between the two halves
-        val dividerColor = if (onGradient) Color.White.copy(alpha = 0.35f) else when (style) {
-            SpButtonStyle.Primary -> SpColor.OnPrimary.copy(alpha = 0.2f)
-            SpButtonStyle.Secondary -> SpColor.OnSecondary.copy(alpha = 0.2f)
-            SpButtonStyle.Outlined -> SpColor.Divider
-            SpButtonStyle.Ghost -> SpColor.Divider
-        }
         Box(
             modifier = Modifier
                 .fillMaxHeight()
                 .width(1.dp)
-                .background(dividerColor),
+                .background(Color.White.copy(alpha = 0.2f)),
         )
 
         Box {
@@ -105,6 +106,7 @@ fun SpSplitButton(
                 style = style,
                 enabled = enabled,
                 onGradient = onGradient,
+                skipBackground = sharedGradient,
                 modifier = Modifier
                     .width(48.dp)
                     .semantics { contentDescription = menuContentDescription },

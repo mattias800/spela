@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -37,7 +38,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -57,13 +57,17 @@ import com.spela.player.presentation.ui.components.SpTextField
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.ui.theme.SpTypography
+import androidx.compose.ui.graphics.Brush
+import com.spela.player.presentation.ui.components.SpActionCard
+import com.spela.player.presentation.ui.components.SpAmbientGlowBlobs
+import com.spela.player.presentation.ui.theme.spelaBrandGradient
+import com.spela.player.presentation.ui.components.SpBrandedBackgroundColor
+import com.spela.player.presentation.ui.components.SpGradientBackground
+import com.spela.player.presentation.ui.components.SpLogo
 import com.spela.player.presentation.viewmodel.ServerConnectionIntent
 import com.spela.player.presentation.viewmodel.ServerConnectionViewModel
-import org.jetbrains.compose.resources.painterResource
-import spela_player.shared.generated.resources.Res
-import spela_player.shared.generated.resources.spela_logo
 
-// SNES button colors used for ambient glow and decorative dots
+// SNES button colors used for decorative dots
 private val SnesRed = Color(0xFFCC2232)
 private val SnesYellow = Color(0xFFC4B208)
 private val SnesBlue = Color(0xFF2C2CAA)
@@ -134,39 +138,21 @@ private fun MobileLayout(
 ) {
     val state by viewModel.state.collectAsState()
 
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color(0xFF0F0F1A)),
-        contentAlignment = Alignment.Center,
-    ) {
-        // Ambient glow blobs
-        AmbientGlowBlobs()
-
-        // Glass card
+    SpGradientBackground(contentAlignment = Alignment.Center) {
         Column(
             modifier = Modifier
                 .widthIn(max = 400.dp)
                 .fillMaxWidth()
-                .padding(horizontal = SpSpacing.Default)
-                .clip(RoundedCornerShape(24.dp))
-                .background(Color.White.copy(alpha = 0.04f))
-                .border(1.dp, Color.White.copy(alpha = 0.08f), RoundedCornerShape(24.dp))
-                .padding(SpSpacing.XLarge),
+                .padding(horizontal = SpSpacing.XLarge),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            AppIcon(size = 64.dp, radius = 16.dp)
-            Spacer(Modifier.height(SpSpacing.Default))
+            AppIcon(size = 192.dp, radius = 16.dp)
+            Spacer(Modifier.height(SpSpacing.Small))
             Text(
-                text = "Welcome to Spela",
-                style = SpTypography.DisplaySmall,
-                color = SpColor.OnBackground,
-                textAlign = TextAlign.Center,
-            )
-            Text(
-                text = "Connect to your game server",
+                text = "\"Nu spelar vi!\"",
                 style = SpTypography.BodyMedium,
                 color = SpColor.OnBackgroundSecondary,
+                fontStyle = androidx.compose.ui.text.font.FontStyle.Italic,
                 textAlign = TextAlign.Center,
             )
             Spacer(Modifier.height(SpSpacing.XLarge))
@@ -196,63 +182,54 @@ private fun SplitLayout(
 ) {
     val state by viewModel.state.collectAsState()
 
-    Row(modifier = Modifier.fillMaxSize()) {
-        // Left hero panel
-        Box(
-            modifier = Modifier
-                .fillMaxHeight()
-                .fillMaxWidth(leftFraction)
-                .background(Color(0xFF0F0F1A)),
-            contentAlignment = Alignment.Center,
-        ) {
-            AmbientGlowBlobs()
-
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center,
-            ) {
-                AppIcon(size = 80.dp, radius = 20.dp)
-                Spacer(Modifier.height(SpSpacing.Default))
-                Text(
-                    text = "Spela",
-                    style = SpTypography.DisplayMedium,
-                    color = SpColor.OnBackground,
-                    fontWeight = FontWeight.Bold,
-                )
-                Spacer(Modifier.height(SpSpacing.Small))
-                Text(
-                    text = "Your self-hosted\ngame library",
-                    style = SpTypography.BodyMedium,
-                    color = SpColor.OnBackgroundSecondary,
-                    textAlign = TextAlign.Center,
-                )
-                Spacer(Modifier.height(SpSpacing.XLarge))
-                SnesButtonDots()
-            }
-        }
-
-        // Right form panel
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(SpColor.Background),
-            contentAlignment = Alignment.Center,
-        ) {
-            Column(
+    SpGradientBackground {
+        Row(modifier = Modifier.fillMaxSize()) {
+            // Left hero panel
+            Box(
                 modifier = Modifier
-                    .widthIn(max = 380.dp)
-                    .fillMaxWidth()
-                    .padding(horizontal = SpSpacing.XLarge),
-                horizontalAlignment = Alignment.CenterHorizontally,
+                    .fillMaxHeight()
+                    .fillMaxWidth(leftFraction),
+                contentAlignment = Alignment.Center,
             ) {
-                if (state.isLoading) {
-                    SpLoadingIndicator(message = "Loading servers...")
-                } else {
-                    ServerListOrForm(
-                        viewModel = viewModel,
-                        onServerSelected = onServerSelected,
-                        fullWidth = true,
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center,
+                ) {
+                    AppIcon(size = 240.dp, radius = 20.dp)
+                    Spacer(Modifier.height(SpSpacing.Small))
+                    Text(
+                        text = "\"Nu spelar vi!\"",
+                        style = SpTypography.BodyMedium,
+                        color = SpColor.OnBackgroundSecondary,
+                        fontStyle = androidx.compose.ui.text.font.FontStyle.Italic,
+                        textAlign = TextAlign.Center,
                     )
+                    Spacer(Modifier.height(SpSpacing.XLarge))
+                    SnesButtonDots()
+                }
+            }
+
+            // Right form panel
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center,
+            ) {
+                Column(
+                    modifier = Modifier
+                        .widthIn(max = 380.dp)
+                        .fillMaxWidth()
+                        .padding(horizontal = SpSpacing.XLarge),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                ) {
+                    if (state.isLoading) {
+                        SpLoadingIndicator(message = "Loading servers...")
+                    } else {
+                        ServerListOrForm(
+                            viewModel = viewModel,
+                            onServerSelected = onServerSelected,
+                            fullWidth = true,
+                        )
+                    }
                 }
             }
         }
@@ -276,66 +253,60 @@ private fun ServerListOrForm(
         verticalArrangement = Arrangement.spacedBy(SpSpacing.Medium),
     ) {
         items(state.servers) { server ->
-            SpCard(
+            val gradientBrush = spelaBrandGradient()
+            SpActionCard(
                 onClick = {
                     viewModel.onIntent(ServerConnectionIntent.SelectServer(server.id))
                     onServerSelected()
                 },
-                onGradient = true,
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .semantics { contentDescription = server.name }
-                        .padding(SpSpacing.Default),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .size(44.dp)
-                            .clip(CircleShape)
-                            .background(SpColor.PrimaryContainer),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Text(
-                            text = server.name.take(1).uppercase(),
-                            style = SpTypography.TitleLarge,
-                            color = SpColor.Primary,
-                        )
-                    }
-                    Spacer(Modifier.width(SpSpacing.Medium))
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = server.name,
-                            style = SpTypography.TitleLarge,
-                            color = SpColor.OnCard,
-                        )
-                        Text(
-                            text = server.url,
-                            style = SpTypography.BodySmall,
-                            color = SpColor.OnBackgroundTertiary,
-                        )
-                    }
-                    if (server.isActive) {
-                        Box(
-                            modifier = Modifier
-                                .size(12.dp)
-                                .clip(CircleShape)
-                                .background(SpColor.Success),
-                        )
-                        Spacer(Modifier.width(SpSpacing.Medium))
-                    }
+                onAction = {
+                    viewModel.onIntent(ServerConnectionIntent.RemoveServer(server.id))
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .semantics { contentDescription = server.name },
+                action = {
                     Icon(
                         imageVector = Icons.Filled.Delete,
                         contentDescription = "Remove server",
-                        tint = SpColor.OnBackgroundTertiary,
+                        tint = SpColor.AccentPurple,
+                        modifier = Modifier.size(24.dp),
+                    )
+                },
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(44.dp)
+                        .clip(CircleShape)
+                        .background(gradientBrush),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(
+                        text = server.name.take(1).uppercase(),
+                        style = SpTypography.TitleLarge,
+                        color = Color.White,
+                        fontWeight = FontWeight.Bold,
+                    )
+                }
+                Spacer(Modifier.width(SpSpacing.Medium))
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = server.name,
+                        style = SpTypography.TitleLarge,
+                        color = SpColor.OnBackground,
+                    )
+                    Text(
+                        text = server.url,
+                        style = SpTypography.BodySmall,
+                        color = SpColor.AccentPurpleLight,
+                    )
+                }
+                if (server.isActive) {
+                    Box(
                         modifier = Modifier
-                            .size(36.dp)
+                            .size(12.dp)
                             .clip(CircleShape)
-                            .clickable(onClick = {
-                                viewModel.onIntent(ServerConnectionIntent.RemoveServer(server.id))
-                            })
-                            .padding(6.dp),
+                            .background(SpColor.Success),
                     )
                 }
             }
@@ -436,11 +407,7 @@ private fun ServerListOrForm(
 
 @Composable
 private fun AppIcon(size: androidx.compose.ui.unit.Dp, radius: androidx.compose.ui.unit.Dp) {
-    androidx.compose.foundation.Image(
-        painter = painterResource(Res.drawable.spela_logo),
-        contentDescription = "Spela",
-        modifier = Modifier.height(size),
-    )
+    SpLogo(size = size)
 }
 
 @Composable
@@ -457,54 +424,3 @@ private fun SnesButtonDots() {
     }
 }
 
-@Composable
-private fun androidx.compose.foundation.layout.BoxScope.AmbientGlowBlobs() {
-    // Red — top-left
-    Box(
-        modifier = Modifier
-            .matchParentSize()
-            .background(
-                Brush.radialGradient(
-                    colors = listOf(SnesRed.copy(alpha = 0.25f), Color.Transparent),
-                    center = androidx.compose.ui.geometry.Offset(0f, 0f),
-                    radius = 600f,
-                ),
-            ),
-    )
-    // Blue — bottom-right
-    Box(
-        modifier = Modifier
-            .matchParentSize()
-            .background(
-                Brush.radialGradient(
-                    colors = listOf(SnesBlue.copy(alpha = 0.25f), Color.Transparent),
-                    center = androidx.compose.ui.geometry.Offset(Float.MAX_VALUE, Float.MAX_VALUE),
-                    radius = 600f,
-                ),
-            ),
-    )
-    // Green — bottom-center
-    Box(
-        modifier = Modifier
-            .matchParentSize()
-            .background(
-                Brush.radialGradient(
-                    colors = listOf(SnesGreen.copy(alpha = 0.20f), Color.Transparent),
-                    center = androidx.compose.ui.geometry.Offset(Float.MAX_VALUE / 2f, Float.MAX_VALUE),
-                    radius = 500f,
-                ),
-            ),
-    )
-    // Yellow — top-right
-    Box(
-        modifier = Modifier
-            .matchParentSize()
-            .background(
-                Brush.radialGradient(
-                    colors = listOf(SnesYellow.copy(alpha = 0.15f), Color.Transparent),
-                    center = androidx.compose.ui.geometry.Offset(Float.MAX_VALUE, 0f),
-                    radius = 500f,
-                ),
-            ),
-    )
-}

@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsBottomHeight
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -32,6 +33,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.Role
@@ -66,6 +68,22 @@ fun SpBottomNavBar(
             .fillMaxWidth()
             .background(SpColor.Surface),
     ) {
+        // Top edge highlight
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(1.dp)
+                .background(
+                    Brush.linearGradient(
+                        colors = listOf(
+                            SpColor.GradientStart.copy(alpha = 0.3f),
+                            SpColor.GradientMid.copy(alpha = 0.3f),
+                            SpColor.GradientEnd.copy(alpha = 0.3f),
+                        ),
+                    ),
+                ),
+        )
+
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -79,8 +97,8 @@ fun SpBottomNavBar(
                 val isFocused by interactionSource.collectIsFocusedAsState()
                 val color = when {
                     isSelected -> Color.White
-                    isFocused -> Color.White.copy(alpha = 0.7f)
-                    else -> SpColor.OnBackgroundSecondary
+                    isFocused -> SpColor.AccentPurple
+                    else -> SpColor.OnBackgroundTertiary
                 }
 
                 Box(
@@ -89,7 +107,7 @@ fun SpBottomNavBar(
                         .height(64.dp)
                         .clip(RoundedCornerShape(8.dp))
                         .background(
-                            if (isFocused) Color.Black.copy(alpha = 0.3f) else Color.Transparent,
+                            if (isFocused) Color.White.copy(alpha = 0.05f) else Color.Transparent,
                         )
                         .clickable(
                             interactionSource = interactionSource,
@@ -117,6 +135,24 @@ fun SpBottomNavBar(
                             style = SpTypography.LabelSmall,
                             color = color,
                         )
+                        // Active indicator — gradient bar
+                        if (isSelected) {
+                            Box(
+                                modifier = Modifier
+                                    .width(24.dp)
+                                    .height(3.dp)
+                                    .clip(RoundedCornerShape(50))
+                                    .background(
+                                        Brush.linearGradient(
+                                            colors = listOf(
+                                                SpColor.GradientStart,
+                                                SpColor.GradientMid,
+                                                SpColor.GradientEnd,
+                                            ),
+                                        ),
+                                    ),
+                            )
+                        }
                     }
                 }
             }

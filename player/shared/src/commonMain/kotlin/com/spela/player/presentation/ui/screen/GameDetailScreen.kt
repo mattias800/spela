@@ -669,10 +669,6 @@ private fun GameInfoContent(
 @Composable
 private fun IgdbRatingStars(rating: Double) {
     val normalized = rating / 10.0
-    val starValue = normalized / 2.0
-    val fullStars = starValue.toInt()
-    val hasHalf = starValue - fullStars >= 0.5
-    val emptyStars = 5 - fullStars - if (hasHalf) 1 else 0
 
     Row(
         verticalAlignment = Alignment.CenterVertically,
@@ -681,45 +677,14 @@ private fun IgdbRatingStars(rating: Double) {
             contentDescription = "IGDB rating: ${"%.1f".format(normalized)} out of 10"
         },
     ) {
-        repeat(fullStars) {
-            Icon(
-                imageVector = Icons.Filled.Star,
-                contentDescription = null,
-                tint = SpColor.Warning,
-                modifier = Modifier.size(20.dp),
-            )
-        }
-        if (hasHalf) {
-            Box(modifier = Modifier.size(20.dp)) {
-                Icon(
-                    imageVector = Icons.Outlined.StarOutline,
-                    contentDescription = null,
-                    tint = SpColor.Warning,
-                    modifier = Modifier.size(20.dp),
-                )
-                Box(modifier = Modifier.size(width = 10.dp, height = 20.dp).clipToBounds()) {
-                    Icon(
-                        imageVector = Icons.Filled.Star,
-                        contentDescription = null,
-                        tint = SpColor.Warning,
-                        modifier = Modifier.size(20.dp),
-                    )
-                }
-            }
-        }
-        repeat(emptyStars) {
-            Icon(
-                imageVector = Icons.Outlined.StarOutline,
-                contentDescription = null,
-                tint = SpColor.OnBackgroundTertiary,
-                modifier = Modifier.size(20.dp),
-            )
-        }
-
-        Spacer(Modifier.size(SpSpacing.XXSmall))
-
+        Icon(
+            imageVector = Icons.Filled.Star,
+            contentDescription = null,
+            tint = SpColor.Warning,
+            modifier = Modifier.size(16.dp),
+        )
         Text(
-            text = "${"%.1f".format(normalized)}/10",
+            text = "%.1f".format(normalized),
             style = SpTypography.LabelMedium,
             color = SpColor.OnBackgroundSecondary,
         )
@@ -988,7 +953,7 @@ private fun GameHeroContent(
         // Action buttons: Play/Download + Actions menu + playtime
         FlowRow(
             horizontalArrangement = Arrangement.spacedBy(SpSpacing.Small),
-            verticalArrangement = Arrangement.spacedBy(SpSpacing.Small),
+            verticalArrangement = Arrangement.spacedBy(SpSpacing.Medium),
             itemVerticalAlignment = Alignment.CenterVertically,
         ) {
             if (state.isGameCached) {
@@ -1056,6 +1021,9 @@ private fun GameHeroContent(
                 onTogglePlayLater = onTogglePlayLater,
                 onAddToCollection = onAddToCollection,
                 onGradient = true,
+                onAdminScrape = onAdminScrape,
+                onAdminRefreshAchievements = onAdminRefreshAchievements,
+                isAdminActionLoading = state.isAdminActionLoading,
             )
 
             // Status indicators (scraping, syncing, downloading)
@@ -1091,30 +1059,6 @@ private fun GameHeroContent(
                 }
             }
 
-            // Admin actions (scrape + refresh achievements)
-            if (onAdminScrape != null || onAdminRefreshAchievements != null) {
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(SpSpacing.Small),
-                ) {
-                    if (onAdminScrape != null) {
-                        SpSecondaryButton(
-                            text = "Scrape Metadata",
-                            onClick = onAdminScrape,
-                            isLoading = state.isAdminActionLoading,
-                            onGradient = true,
-                        )
-                    }
-                    if (onAdminRefreshAchievements != null) {
-                        SpSecondaryButton(
-                            text = "Update Achievements",
-                            onClick = onAdminRefreshAchievements,
-                            isLoading = state.isAdminActionLoading,
-                            onGradient = true,
-                        )
-                    }
-                }
-            }
-
             // Playtime + last played grouped so they wrap together
             if (game.totalPlayTime > 0 || game.lastPlayedAt != null) {
                 Row(horizontalArrangement = Arrangement.spacedBy(SpSpacing.Small)) {
@@ -1136,7 +1080,7 @@ private fun GameHeroContent(
                         val relative = formatRelativeTime(timestamp)
                         if (relative.isNotEmpty()) {
                             SpChip(
-                                text = "Last played $relative",
+                                text = relative,
                                 onGradient = true,
                                 leadingIcon = {
                                     Icon(

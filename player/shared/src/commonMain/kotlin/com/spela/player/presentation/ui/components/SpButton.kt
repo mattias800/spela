@@ -3,6 +3,7 @@ package com.spela.player.presentation.ui.components
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -25,15 +26,19 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.unit.dp
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.ui.theme.SpTypography
+import com.spela.player.presentation.ui.theme.spelaBrandGradient
 
 enum class SpButtonStyle { Primary, Secondary, Outlined, Ghost }
 
@@ -48,6 +53,7 @@ fun SpButton(
     leadingIcon: (@Composable () -> Unit)? = null,
     shape: Shape = RoundedCornerShape(SpSpacing.RadiusLarge),
     onGradient: Boolean = false,
+    skipBackground: Boolean = false,
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     val focusMods = Modifier
@@ -70,75 +76,85 @@ fun SpButton(
 
     when (style) {
         SpButtonStyle.Primary -> {
-            val containerColor by animateColorAsState(
-                targetValue = when {
-                    !enabled -> SpColor.SurfaceBright
-                    onGradient -> Color.White.copy(alpha = 0.15f)
-                    else -> SpColor.Primary
-                },
-                animationSpec = tween(200),
-                label = "primaryContainerColor",
-            )
-            val contentColor = if (onGradient && enabled) Color.White else SpColor.OnPrimary
+            val brush = spelaBrandGradient()
             Button(
                 onClick = { if (!isLoading) onClick() },
-                modifier = modifier.heightIn(min = 48.dp).then(focusMods),
+                modifier = modifier
+                    .heightIn(min = 48.dp)
+                    .then(if (!skipBackground) Modifier.neonGlow(shape = shape, intense = true) else Modifier)
+                    .then(if (!skipBackground) Modifier.background(
+                        brush = if (enabled) brush else Brush.linearGradient(
+                            listOf(SpColor.SurfaceBright, SpColor.SurfaceBright)
+                        ),
+                        shape = shape,
+                    ) else Modifier)
+                    .then(focusMods),
                 enabled = enabled,
                 shape = shape,
                 interactionSource = interactionSource,
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = containerColor,
-                    contentColor = contentColor,
-                    disabledContainerColor = SpColor.SurfaceBright,
+                    containerColor = Color.Transparent,
+                    contentColor = Color.White,
+                    disabledContainerColor = Color.Transparent,
                     disabledContentColor = SpColor.OnBackgroundTertiary,
                 ),
+                elevation = ButtonDefaults.buttonElevation(0.dp, 0.dp, 0.dp, 0.dp, 0.dp),
                 contentPadding = if (isIconOnly) iconOnlyPadding else defaultPadding,
             ) {
-                ButtonContent(text, isLoading, leadingIcon, if (onGradient && enabled) Color.White else SpColor.OnPrimary)
+                ButtonContent(text, isLoading, leadingIcon, Color.White)
             }
         }
 
         SpButtonStyle.Secondary -> {
+            val brush = spelaBrandGradient()
             Button(
                 onClick = { if (!isLoading) onClick() },
-                modifier = modifier.heightIn(min = 48.dp).then(focusMods),
+                modifier = modifier
+                    .heightIn(min = 48.dp)
+                    .neonGlow(shape = shape, intense = false)
+                    .border(1.5.dp, if (enabled) brush else Brush.linearGradient(listOf(SpColor.Divider, SpColor.Divider)), shape)
+                    .then(focusMods),
                 enabled = enabled,
                 shape = shape,
                 interactionSource = interactionSource,
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = if (onGradient) Color.White.copy(alpha = 0.12f) else SpColor.Secondary,
-                    contentColor = if (onGradient) Color.White else SpColor.OnSecondary,
-                    disabledContainerColor = SpColor.SurfaceBright,
+                    containerColor = Color.Transparent,
+                    contentColor = Color.White,
+                    disabledContainerColor = Color.Transparent,
                     disabledContentColor = SpColor.OnBackgroundTertiary,
                 ),
+                elevation = ButtonDefaults.buttonElevation(0.dp, 0.dp, 0.dp, 0.dp, 0.dp),
                 contentPadding = if (isIconOnly) iconOnlyPadding else defaultPadding,
             ) {
-                ButtonContent(text, isLoading, leadingIcon, if (onGradient) Color.White else SpColor.OnSecondary)
+                ButtonContent(text, isLoading, leadingIcon, Color.White)
             }
         }
 
         SpButtonStyle.Outlined -> {
+            val brush = spelaBrandGradient()
             OutlinedButton(
                 onClick = { if (!isLoading) onClick() },
-                modifier = modifier.heightIn(min = 48.dp).then(focusMods),
+                modifier = modifier
+                    .heightIn(min = 48.dp)
+                    .neonGlow(shape = shape, intense = false)
+                    .then(focusMods),
                 enabled = enabled,
                 shape = shape,
                 interactionSource = interactionSource,
                 border = BorderStroke(
-                    1.dp,
+                    1.5.dp,
                     when {
-                        !enabled -> SpColor.Divider
-                        onGradient -> Color.White.copy(alpha = 0.25f)
-                        else -> SpColor.OnBackgroundSecondary.copy(alpha = 0.5f)
+                        !enabled -> Brush.linearGradient(listOf(SpColor.Divider, SpColor.Divider))
+                        else -> brush
                     },
                 ),
                 colors = ButtonDefaults.outlinedButtonColors(
-                    contentColor = if (onGradient) Color.White else SpColor.OnBackgroundSecondary,
+                    contentColor = Color.White,
                     disabledContentColor = SpColor.OnBackgroundTertiary,
                 ),
                 contentPadding = if (isIconOnly) iconOnlyPadding else defaultPadding,
             ) {
-                ButtonContent(text, isLoading, leadingIcon, if (onGradient) Color.White else SpColor.Primary)
+                ButtonContent(text, isLoading, leadingIcon, Color.White)
             }
         }
 
@@ -220,5 +236,33 @@ fun SpSecondaryButton(
         isLoading = isLoading,
         leadingIcon = leadingIcon,
         onGradient = onGradient,
+    )
+}
+
+/**
+ * Draws a neon glow effect behind the composable using two layered semi-transparent
+ * rounded rect draws (purple glow + pink glow).
+ *
+ * @param shape The shape to use for the glow corner radius.
+ * @param intense If true, uses a stronger glow (for primary buttons); if false, uses a subtler glow.
+ */
+private fun Modifier.neonGlow(
+    shape: Shape = RoundedCornerShape(SpSpacing.RadiusLarge),
+    intense: Boolean = true,
+): Modifier = this.drawBehind {
+    val cr = CornerRadius(SpSpacing.RadiusLarge.toPx())
+    val alpha = if (intense) 0.25f else 0.15f
+    val glowBrush = Brush.linearGradient(
+        colors = listOf(
+            Color(0xFF6B8DD6).copy(alpha = alpha),
+            Color(0xFFa855f7).copy(alpha = alpha),
+            Color(0xFFE056A0).copy(alpha = alpha * 0.7f),
+        ),
+    )
+    drawRoundRect(
+        brush = glowBrush,
+        cornerRadius = cr,
+        size = size,
+        style = Stroke(width = if (intense) 8.dp.toPx() else 6.dp.toPx()),
     )
 }
