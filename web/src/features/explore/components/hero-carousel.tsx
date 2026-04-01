@@ -1,10 +1,10 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { Link } from "react-router-dom";
 import { ChevronLeft, ChevronRight, Star } from "lucide-react";
-import { Badge, Skeleton } from "@/components/ui";
+import { Skeleton } from "@/components/ui";
 import { AreaSizedImage } from "@/components/area-sized-image";
+import { ConsoleBadge } from "@/components/console-badge";
 import { cn } from "@/lib/cn";
-import { ensureContrast } from "@/lib/color-utils";
 import type { FeaturedGame } from "@/types/api";
 
 interface HeroCarouselProps {
@@ -118,21 +118,7 @@ function HeroSlide({
 
             <div className="flex flex-wrap items-center justify-center gap-2">
               {game.consoleAbbreviation && (
-                <Badge
-                  variant="brand"
-                  style={
-                    game.consoleColor
-                      ? ({
-                          "--badge-color": game.consoleColor,
-                          backgroundColor: `${game.consoleColor}40`,
-                          borderColor: `${game.consoleColor}60`,
-                          color: "white",
-                        } as React.CSSProperties)
-                      : undefined
-                  }
-                >
-                  {game.consoleAbbreviation.toUpperCase()}
-                </Badge>
+                <ConsoleBadge code={game.consoleAbbreviation} />
               )}
               {game.rating > 0 && (
                 <span className="inline-flex items-center gap-1 text-sm font-medium text-amber-400">

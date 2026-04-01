@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Trophy, Star, Clock, Gamepad2, Users, Newspaper } from "lucide-react";
-import { Badge, Skeleton, EmptyState } from "@/components/ui";
+import { Skeleton, EmptyState } from "@/components/ui";
+import { ConsoleBadge } from "@/components/console-badge";
 import { useTopRated, useTopRatedCritics, useLongestGames } from "@/hooks/use-top-lists";
 import { PlayInfo } from "@/components/play-info";
 import { cn } from "@/lib/cn";
@@ -119,7 +120,7 @@ function TopRatedList({ games }: { games: TopListGame[] }) {
             </p>
             <div className="mt-1.5 flex items-center gap-2">
               {game.consoleName && (
-                <Badge variant="brand">{game.consoleName}</Badge>
+                <ConsoleBadge code={game.consoleId} label={game.consoleName} />
               )}
             </div>
             <PlayInfo gameId={game.gameId} className="mt-1.5" />
@@ -170,7 +171,7 @@ function LongestGamesList({ games }: { games: LongestGame[] }) {
             </p>
             <div className="mt-1.5 flex items-center gap-2">
               {game.consoleName && (
-                <Badge variant="brand">{game.consoleName}</Badge>
+                <ConsoleBadge code={game.consoleId} label={game.consoleName} />
               )}
             </div>
             <PlayInfo gameId={game.gameId} className="mt-1.5" />

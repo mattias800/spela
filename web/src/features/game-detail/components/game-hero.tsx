@@ -21,6 +21,7 @@ import {
   Award,
 } from "lucide-react";
 import { Button, Badge, ActionsMenu } from "@/components/ui";
+import { ConsoleBadge } from "@/components/console-badge";
 import { VerificationBadge } from "./verification-badge";
 import { CoverArtSelector } from "./cover-art-selector";
 import { MetaItem } from "@/components/meta-item";
@@ -232,7 +233,7 @@ export function GameHero({
                 {game.title}
               </h1>
               <div className="flex flex-wrap items-center gap-2 mt-2">
-                {consoleName && <Badge variant="brand">{consoleName}</Badge>}
+                {consoleName && <ConsoleBadge code={game.consoleId} label={consoleName} />}
                 {!game.playable && (
                   <Badge variant="warning" data-testid="external-emulator-badge">
                     <Monitor className="h-3 w-3 mr-1" />

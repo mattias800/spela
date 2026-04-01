@@ -1,7 +1,6 @@
 import { Link } from "react-router-dom";
-import { Badge } from "@/components/ui";
 import { cn } from "@/lib/cn";
-import { ensureContrast } from "@/lib/color-utils";
+import { ConsoleBadge } from "@/components/console-badge";
 import { getReleaseYear } from "@/lib/date-utils";
 import type { SeriesGame } from "@/types/api";
 
@@ -51,20 +50,7 @@ export function GameTimelineCard({ game, testIdPrefix }: GameTimelineCardProps) 
         </h3>
         <div className="flex items-center gap-2 mt-1">
           {game.consoleName && (
-            <Badge
-              variant="default"
-              style={
-                game.consoleColor
-                  ? {
-                      backgroundColor: `${game.consoleColor}20`,
-                      color: ensureContrast(game.consoleColor),
-                      borderColor: `${game.consoleColor}40`,
-                    }
-                  : undefined
-              }
-            >
-              {game.consoleName}
-            </Badge>
+            <ConsoleBadge code={game.consoleAbbreviation} label={game.consoleName} />
           )}
           {year && (
             <span className="text-xs text-surface-500">{year}</span>

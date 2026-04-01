@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
 import { Heart, Star, Clock, Loader2 } from "lucide-react";
 import { cn } from "@/lib/cn";
-import { Badge } from "@/components/ui";
+import { ConsoleBadge } from "@/components/console-badge";
 import { useAutoScrape } from "@/hooks/use-auto-scrape";
 import { getReleaseYear } from "@/lib/date-utils";
 import type { Game } from "@/types/api";
@@ -108,7 +108,7 @@ export function GameCard({
             "absolute bottom-2.5 left-2.5 transition-opacity duration-300",
             showConsoleBadge ? "opacity-100" : "opacity-0 group-hover:opacity-100",
           )}>
-            <Badge variant="brand">{game.consoleName}</Badge>
+            <ConsoleBadge code={game.consoleId} label={game.consoleName} />
           </div>
         )}
 

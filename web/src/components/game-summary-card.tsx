@@ -1,11 +1,13 @@
 import { Star, CheckCircle2, AlertTriangle, File, HardDrive } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { Badge } from "@/components/ui";
+import { ConsoleBadge } from "@/components/console-badge";
 import { formatFileSize } from "@/lib/format";
 
 interface GameSummaryCardProps {
   title: string;
   coverUrl?: string;
+  consoleId: string;
   consoleName: string;
   rating?: number;
   verificationStatus?: string;
@@ -18,6 +20,7 @@ interface GameSummaryCardProps {
 export function GameSummaryCard({
   title,
   coverUrl,
+  consoleId,
   consoleName,
   rating,
   verificationStatus,
@@ -68,7 +71,7 @@ export function GameSummaryCard({
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
-            <Badge variant="brand">{consoleName}</Badge>
+            <ConsoleBadge code={consoleId} label={consoleName} />
 
             {verificationStatus === "verified" && (
               <Badge variant="success" data-testid="verification-badge">

@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { Badge } from "@/components/ui";
+import { ConsoleBadge } from "@/components/console-badge";
 import { formatFileSize } from "@/lib/format";
 import { getReleaseYear } from "@/lib/date-utils";
 import type { Game } from "@/types/api";
@@ -48,7 +48,7 @@ export function GameListRow({ game, hideConsoleName }: GameListRowProps) {
           )
         )}
       </div>
-      {!hideConsoleName && consoleName && <Badge>{consoleName}</Badge>}
+      {!hideConsoleName && consoleName && <ConsoleBadge code={game.consoleId} label={consoleName} />}
       {game.variantCount != null && game.variantCount > 1 && (
         <span className="text-xs text-surface-400 whitespace-nowrap">
           +{game.variantCount - 1} {game.variantCount === 2 ? "version" : "versions"}

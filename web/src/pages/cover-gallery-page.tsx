@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Grid2x2, Grid3x3, LayoutGrid, ImageIcon } from "lucide-react";
-import { BackButton, Badge, Button, Skeleton, EmptyState } from "@/components/ui";
+import { BackButton, Button, Skeleton, EmptyState } from "@/components/ui";
+import { ConsoleBadge } from "@/components/console-badge";
 import { cn } from "@/lib/cn";
 import { useCoverGallery } from "@/hooks/use-explore";
 import { useConsoles } from "@/hooks/use-consoles";
@@ -64,21 +65,7 @@ function CoverCard({ cover }: { cover: CoverItem }) {
         <p className="text-xs font-semibold text-white truncate">
           {cover.gameTitle}
         </p>
-        <Badge
-          variant="default"
-          className="mt-0.5 w-fit text-[10px] px-1.5 py-0"
-          style={
-            cover.consoleColor
-              ? {
-                  backgroundColor: `${cover.consoleColor}20`,
-                  color: cover.consoleColor,
-                  borderColor: `${cover.consoleColor}40`,
-                }
-              : undefined
-          }
-        >
-          {cover.consoleAbbreviation.toUpperCase()}
-        </Badge>
+        <ConsoleBadge code={cover.consoleAbbreviation} />
       </div>
     </Link>
   );
