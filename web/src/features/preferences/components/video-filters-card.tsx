@@ -1,9 +1,7 @@
 import { Eye } from "lucide-react";
 import { ShaderPreview } from "@/components/shader-preview";
 import {
-  Card,
-  CardHeader,
-  CardContent,
+  Section,
   Select,
   Skeleton,
 } from "@/components/ui";
@@ -28,13 +26,13 @@ export function VideoFiltersCard({
   onPreview,
 }: VideoFiltersCardProps) {
   return (
-    <Card>
-      <CardHeader>
+    <Section>
+      <div className="px-5 pt-5 pb-2">
         <h2 className="text-lg font-semibold text-surface-100">
           Video Filters
         </h2>
-      </CardHeader>
-      <CardContent>
+      </div>
+      <div className="px-5 pb-5">
         {isLoading ? (
           <Skeleton className="h-10 w-64 rounded-lg" />
         ) : (
@@ -137,7 +135,7 @@ export function VideoFiltersCard({
             )}
           </div>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </Section>
   );
 }

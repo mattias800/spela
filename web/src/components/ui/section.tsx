@@ -1,7 +1,5 @@
 import type { HTMLAttributes, ReactNode } from "react";
 import type { LucideIcon } from "lucide-react";
-import { Link } from "react-router-dom";
-import { ChevronRight } from "lucide-react";
 import { cn } from "@/lib/cn";
 
 interface SectionProps extends HTMLAttributes<HTMLDivElement> {
