@@ -60,6 +60,7 @@ export function Modal({
     >
       <div className="fixed inset-0 bg-black/60 backdrop-blur-sm" />
       <div
+        data-comp="Modal"
         role="dialog"
         aria-modal="true"
         aria-label={title}

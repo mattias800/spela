@@ -19,6 +19,7 @@ export function BackButton({
     <Button
       variant="ghost"
       size="sm"
+      data-comp="BackButton"
       className={cn("gap-2 text-surface-400 hover:text-surface-100", className)}
       {...props}
     >

@@ -29,7 +29,7 @@ export function DropdownMenu({
   }, [open]);
 
   return (
-    <div className="relative" ref={ref}>
+    <div className="relative" ref={ref} data-comp="DropdownMenu">
       <div onClick={() => setOpen((prev) => !prev)}>{trigger}</div>
       {open && (
         <div

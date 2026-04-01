@@ -28,6 +28,7 @@ export function ActionsMenu({
     <DropdownMenu
       align={align}
       className="w-56"
+      data-comp="ActionsMenu"
       trigger={
         <Button variant="secondary" size={size} aria-label="Actions" data-testid="actions-menu-btn">
           <Ellipsis className="h-5 w-5" />

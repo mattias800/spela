@@ -9,7 +9,7 @@ interface SelectProps extends SelectHTMLAttributes<HTMLSelectElement> {
 export const Select = forwardRef<HTMLSelectElement, SelectProps>(
   ({ className, label, options, id, ...props }, ref) => {
     return (
-      <div className="space-y-1.5">
+      <div data-comp="Select" className="space-y-1.5">
         {label && (
           <label
             htmlFor={id}

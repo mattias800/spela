@@ -197,7 +197,7 @@ export function Sidebar({ links, user, onLogout, mobileOpen, onMobileClose, vers
   return (
     <>
       {/* Desktop sidebar — always visible at lg and above */}
-      <aside className="hidden lg:flex fixed left-0 top-0 bottom-0 w-64 bg-surface-950 border-r border-surface-800/50 flex-col z-40">
+      <aside data-comp="Sidebar" className="hidden lg:flex fixed left-0 top-0 bottom-0 w-64 bg-surface-950 border-r border-surface-800/50 flex-col z-40">
         <SidebarContent links={links} user={user} onLogout={onLogout} version={version} onSearchClick={onSearchClick} />
       </aside>
 

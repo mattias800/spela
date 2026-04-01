@@ -26,6 +26,7 @@ export function LeaderboardRow({
 }: LeaderboardRowProps) {
   return (
     <div
+      data-comp="LeaderboardRow"
       data-testid={testId}
       className={cn(
         "flex items-center gap-3 rounded-xl px-3 py-2.5",

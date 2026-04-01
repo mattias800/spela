@@ -35,7 +35,7 @@ export function CoverCard({
   children,
 }: CoverCardProps) {
   const content = (
-    <div className={cn(width, dimmed && "opacity-50")}>
+    <div data-comp="CoverCard" className={cn(width, dimmed && "opacity-50")}>
       <div
         className="w-full border border-surface-800/50"
         style={{ aspectRatio }}

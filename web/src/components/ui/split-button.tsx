@@ -48,7 +48,7 @@ export function SplitButton({
   }
 
   return (
-    <div className={cn("inline-flex", className)}>
+    <div data-comp="SplitButton" className={cn("inline-flex", className)}>
       <Button
         variant={variant}
         size={size}

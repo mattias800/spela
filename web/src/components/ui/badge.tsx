@@ -23,6 +23,7 @@ export function Badge({
 }: BadgeProps) {
   return (
     <span
+      data-comp="Badge"
       className={cn(
         "inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-medium",
         variantStyles[variant],

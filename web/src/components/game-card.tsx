@@ -29,7 +29,7 @@ export function GameCard({
   const { ref, isScraping } = useAutoScrape(game);
 
   return (
-    <Link ref={ref} to={`/games/${game.id}`} className="group block space-y-3">
+    <Link ref={ref} to={`/games/${game.id}`} data-comp="GameCard" className="group block space-y-3">
       <div
         className="relative rounded-2xl overflow-hidden bg-surface-900 border border-surface-800/50 transition-all duration-300 group-hover:border-surface-700/50 group-hover:shadow-xl group-hover:shadow-black/30 group-hover:-translate-y-1"
       >

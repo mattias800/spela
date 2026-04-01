@@ -53,6 +53,7 @@ export function AreaSizedImage({
 
   return (
     <img
+      data-comp="AreaSizedImage"
       src={src}
       alt={alt}
       onLoad={onLoad}

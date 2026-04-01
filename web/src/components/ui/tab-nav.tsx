@@ -11,6 +11,7 @@ interface TabNavProps {
 export function TabNav({ children, className }: TabNavProps) {
   return (
     <nav
+      data-comp="TabNav"
       className={cn(
         "flex flex-wrap items-center gap-1 border-b border-surface-800/50",
         className,
@@ -30,6 +31,7 @@ interface TabItemProps {
 export function TabItem({ to, icon: Icon, label }: TabItemProps) {
   return (
     <NavLink
+      data-comp="TabItem"
       to={to}
       end
       className={({ isActive }) =>
@@ -55,6 +57,7 @@ interface StateTabNavProps {
 export function StateTabNav({ children, className }: StateTabNavProps) {
   return (
     <div
+      data-comp="StateTabNav"
       role="tablist"
       className={cn(
         "flex gap-1 rounded-lg bg-surface-900/50 p-1 w-fit",
@@ -79,6 +82,7 @@ export function StateTabItem({
 }: StateTabItemProps) {
   return (
     <button
+      data-comp="StateTabItem"
       role="tab"
       aria-selected={active}
       onClick={onClick}

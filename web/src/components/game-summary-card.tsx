@@ -33,7 +33,7 @@ export function GameSummaryCard({
   const displayTitle = title || fileName;
 
   return (
-    <Section data-testid="game-summary-card">
+    <Section data-comp="GameSummaryCard" data-testid="game-summary-card">
       <div className="flex gap-4 p-4">
         {/* Cover art */}
         <CoverImage src={coverUrl} alt={displayTitle} className="w-20 h-28 rounded-lg flex-shrink-0" />
