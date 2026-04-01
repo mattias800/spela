@@ -113,7 +113,15 @@ interface ConsoleBadgeProps {
 
 ### RatingDisplay (Role component)
 
-*Planned — not yet implemented.*
+Displays a rating value with star icon(s). Two variants:
+
+```tsx
+<RatingDisplay value={8.5} />                    // "compact": ★ 8.5
+<RatingDisplay value={8.5} variant="stars" />    // "stars": ★★★★☆ 8.5 (0-10 → 0-5 stars)
+```
+
+**Owns:** Star icon, amber color, number formatting, star fill logic.
+**Does not accept:** color overrides, icon size overrides, custom formatting.
 
 ### CoverImage (Design component)
 
