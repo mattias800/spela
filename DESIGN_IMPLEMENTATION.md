@@ -176,6 +176,54 @@ Not all card-like containers are the same component. During the refactoring audi
 
 **When to use `Card`:** If your container is a static, rectangular box with the standard surface background and border, use `Card`. If it has conditional styling, dashed borders, or non-standard backgrounds, use inline Tailwind or a purpose-specific component.
 
+## useEffect Guidelines
+
+### The `key` Pattern for Resetting Component State
+
+When a component needs to reset its internal state based on a prop change (e.g., a modal opening with a different entity), do NOT sync props to state via `useEffect`. Instead, extract the stateful content into a child component and use React's `key` prop to unmount/remount it:
+
+```tsx
+// WRONG — syncing props to state
+function EditModal({ user, open, onClose }) {
+  const [email, setEmail] = useState("");
+  useEffect(() => {
+    if (user) setEmail(user.email);  // anti-pattern
+  }, [user]);
+  // ...
+}
+
+// RIGHT — key-based reset
+function EditModal({ user, open, onClose }) {
+  return (
+    <Modal open={open} onClose={onClose}>
+      {user && <EditForm key={user.id} user={user} onClose={onClose} />}
+    </Modal>
+  );
+}
+
+function EditForm({ user, onClose }) {
+  const [email, setEmail] = useState(user.email);  // initialized once, reset by key
+  // ...
+}
+```
+
+**Why:** The `useEffect` approach creates a frame where the old state is visible before the effect fires. It's also easy to forget a state variable in the dependency array. The `key` approach is declarative — React handles the cleanup.
+
+### When useEffect IS Appropriate
+
+- **DOM event listeners** (keyboard, resize, intersection observer)
+- **Body/document manipulation** (scroll lock, overflow)
+- **Timers** (auto-advance, debounce — though prefer `useDebouncedValue` hook)
+- **External system sync** (URL params, WebSocket, WebGL)
+- **Focus management** (auto-focus on mount)
+
+### When useEffect is NOT Appropriate
+
+- **Derived state** — use `useMemo` or compute inline
+- **Prop-to-state sync** — use `key` pattern above
+- **Manual debounce** — use `useDebouncedValue` hook
+- **Event handling** — use event handlers, not effects
+
 ## Refactoring Process
 
 This codebase is being incrementally refactored to follow these principles. The process:

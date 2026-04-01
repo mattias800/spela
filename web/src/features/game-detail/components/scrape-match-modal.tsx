@@ -1,7 +1,8 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Search, Check, AlertTriangle, Loader2 } from "lucide-react";
 import { Modal, SearchInput, Badge, Skeleton, useToast } from "@/components/ui";
 import { useIgdbSearch, useApplyIgdbMatch, useIgdbStatus } from "@/hooks/use-admin";
+import { useDebouncedValue } from "@/hooks/use-debounced-value";
 import { CoverImage } from "@/components/cover-image";
 import { cn } from "@/lib/cn";
 import type { IgdbSearchResult } from "@/types/api";
@@ -23,8 +24,37 @@ export function ScrapeMatchModal({
   open,
   onClose,
 }: ScrapeMatchModalProps) {
+  return (
+    <Modal open={open} onClose={onClose} title="Fix Scrape Match" size="lg">
+      {open && (
+        <ScrapeMatchContent
+          key={`${gameId}-${currentTitle}`}
+          gameId={gameId}
+          currentTitle={currentTitle}
+          fileName={fileName}
+          currentScraperId={currentScraperId}
+          onClose={onClose}
+        />
+      )}
+    </Modal>
+  );
+}
+
+function ScrapeMatchContent({
+  gameId,
+  currentTitle,
+  fileName,
+  currentScraperId,
+  onClose,
+}: {
+  gameId: string;
+  currentTitle: string;
+  fileName?: string;
+  currentScraperId?: string;
+  onClose: () => void;
+}) {
   const [searchInput, setSearchInput] = useState(currentTitle);
-  const [debouncedQuery, setDebouncedQuery] = useState(currentTitle);
+  const debouncedQuery = useDebouncedValue(searchInput, 400);
   const [applyingIgdbId, setApplyingIgdbId] = useState<number | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
@@ -33,31 +63,11 @@ export function ScrapeMatchModal({
   const { data: results, isLoading, isError } = useIgdbSearch(gameId, debouncedQuery);
   const applyMatch = useApplyIgdbMatch();
 
-  // Reset search when modal opens with a new game
+  // Focus input on mount
   useEffect(() => {
-    if (open) {
-      setSearchInput(currentTitle);
-      setDebouncedQuery(currentTitle);
-      setApplyingIgdbId(null);
-    }
-  }, [open, currentTitle]);
-
-  // Debounce search input
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setDebouncedQuery(searchInput);
-    }, 400);
+    const timer = setTimeout(() => inputRef.current?.focus(), 100);
     return () => clearTimeout(timer);
-  }, [searchInput]);
-
-  // Focus input when modal opens
-  useEffect(() => {
-    if (open) {
-      // Small delay to allow modal animation
-      const timer = setTimeout(() => inputRef.current?.focus(), 100);
-      return () => clearTimeout(timer);
-    }
-  }, [open]);
+  }, []);
 
   function handleSelect(result: IgdbSearchResult) {
     if (applyMatch.isPending) return;
@@ -84,77 +94,75 @@ export function ScrapeMatchModal({
     igdbStatus && igdbStatus.status !== "connected";
 
   return (
-    <Modal open={open} onClose={onClose} title="Fix Scrape Match" size="lg">
-      <div className="space-y-4">
-        {fileName && (
-          <p className="text-sm text-surface-400 truncate" title={fileName}>
-            ROM: <span className="text-surface-200 font-mono">{fileName}</span>
+    <div className="space-y-4">
+      {fileName && (
+        <p className="text-sm text-surface-400 truncate" title={fileName}>
+          ROM: <span className="text-surface-200 font-mono">{fileName}</span>
+        </p>
+      )}
+      <SearchInput
+        ref={inputRef}
+        value={searchInput}
+        onChange={(e) => setSearchInput(e.currentTarget.value)}
+        placeholder="Search IGDB..."
+        data-testid="igdb-search-input"
+      />
+
+      {igdbNotConfigured ? (
+        <div className="flex items-center gap-3 rounded-xl bg-warning-500/10 border border-warning-500/20 px-4 py-3">
+          <AlertTriangle className="h-5 w-5 text-warning-500 flex-shrink-0" />
+          <p className="text-sm text-surface-300">
+            IGDB is not configured. Set up credentials in Admin Settings to
+            search for games.
           </p>
-        )}
-        <SearchInput
-          ref={inputRef}
-          value={searchInput}
-          onChange={(e) => setSearchInput(e.currentTarget.value)}
-          placeholder="Search IGDB..."
-          data-testid="igdb-search-input"
-        />
+        </div>
+      ) : (
+        <div
+          className="max-h-96 overflow-y-auto -mx-6 px-6 space-y-1"
+          data-testid="igdb-search-results"
+        >
+          {isLoading && debouncedQuery.length >= 2 && (
+            <SearchResultsSkeleton />
+          )}
 
-        {igdbNotConfigured ? (
-          <div className="flex items-center gap-3 rounded-xl bg-warning-500/10 border border-warning-500/20 px-4 py-3">
-            <AlertTriangle className="h-5 w-5 text-warning-500 flex-shrink-0" />
-            <p className="text-sm text-surface-300">
-              IGDB is not configured. Set up credentials in Admin Settings to
-              search for games.
+          {isError && (
+            <p className="py-8 text-sm text-danger-400 text-center">
+              Failed to search IGDB. Please try again.
             </p>
-          </div>
-        ) : (
-          <div
-            className="max-h-96 overflow-y-auto -mx-6 px-6 space-y-1"
-            data-testid="igdb-search-results"
-          >
-            {isLoading && debouncedQuery.length >= 2 && (
-              <SearchResultsSkeleton />
-            )}
+          )}
 
-            {isError && (
-              <p className="py-8 text-sm text-danger-400 text-center">
-                Failed to search IGDB. Please try again.
+          {!isLoading && !isError && results && results.length === 0 && (
+            <div className="flex flex-col items-center py-8">
+              <Search className="h-8 w-8 text-surface-600 mb-2" />
+              <p className="text-sm text-surface-400">
+                No results found on IGDB
               </p>
-            )}
+            </div>
+          )}
 
-            {!isLoading && !isError && results && results.length === 0 && (
-              <div className="flex flex-col items-center py-8">
-                <Search className="h-8 w-8 text-surface-600 mb-2" />
-                <p className="text-sm text-surface-400">
-                  No results found on IGDB
-                </p>
-              </div>
-            )}
+          {!isLoading &&
+            results?.map((result) => (
+              <IgdbResultItem
+                key={result.igdbId}
+                result={result}
+                isCurrentMatch={
+                  currentIgdbId != null &&
+                  String(result.igdbId) === currentIgdbId
+                }
+                isApplying={applyMatch.isPending}
+                isThisApplying={applyingIgdbId === result.igdbId}
+                onSelect={() => handleSelect(result)}
+              />
+            ))}
 
-            {!isLoading &&
-              results?.map((result) => (
-                <IgdbResultItem
-                  key={result.igdbId}
-                  result={result}
-                  isCurrentMatch={
-                    currentIgdbId != null &&
-                    String(result.igdbId) === currentIgdbId
-                  }
-                  isApplying={applyMatch.isPending}
-                  isThisApplying={applyingIgdbId === result.igdbId}
-                  onSelect={() => handleSelect(result)}
-                />
-              ))}
-
-            {debouncedQuery.length < 2 && !isLoading && (
-              <p className="py-8 text-sm text-surface-500 text-center">
-                Type at least 2 characters to search
-              </p>
-            )}
-          </div>
-        )}
-      </div>
-    </Modal>
+          {debouncedQuery.length < 2 && !isLoading && (
+            <p className="py-8 text-sm text-surface-500 text-center">
+              Type at least 2 characters to search
+            </p>
+          )}
+        </div>
+      )}
+    </div>
   );
 }
 
