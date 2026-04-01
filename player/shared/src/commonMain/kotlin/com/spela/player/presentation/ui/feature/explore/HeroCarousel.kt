@@ -64,6 +64,7 @@ import kotlinx.coroutines.delay
 
 private val HERO_HEIGHT_PORTRAIT = 240.dp
 private val HERO_HEIGHT_LANDSCAPE = 150.dp
+private val HERO_HEIGHT_LANDSCAPE_WIDE = 300.dp
 private const val AUTO_ADVANCE_DELAY_MS = 8_000L
 
 @Composable
@@ -96,8 +97,10 @@ fun HeroCarousel(
     }
 
     BoxWithConstraints(modifier = modifier.fillMaxWidth()) {
-    val isLandscape = maxWidth > maxHeight
-    val heroHeight = if (isLandscape) HERO_HEIGHT_LANDSCAPE else HERO_HEIGHT_PORTRAIT
+    val heroHeight = when {
+        maxWidth > 500.dp -> HERO_HEIGHT_LANDSCAPE_WIDE
+        else -> HERO_HEIGHT_PORTRAIT
+    }
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -240,78 +243,78 @@ private fun HeroSlide(
 
         // Content overlay — responsive: Row on wide screens, Column on narrow
         BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
-            val isWide = maxWidth > 700.dp
+            val isWide = maxWidth > 500.dp
 
-            if (isWide) {
-                // Desktop: left info + right logo
-                Row(
+            val targetArea = if (isWide) 28000f else 16000f
+            val logoMaxH = if (isWide) 200.dp else 120.dp
+            val logoMaxW = if (isWide) 300.dp else 200.dp
+            val logoMinH = if (isWide) 90.dp else 60.dp
+            val titleStyle = if (isWide) SpTypography.HeadlineMedium else SpTypography.HeadlineSmall
+
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(
+                        start = SpSpacing.XLarge,
+                        end = SpSpacing.XLarge,
+                        top = SpSpacing.XLarge,
+                        bottom = SpSpacing.XXXLarge,
+                    ),
+            ) {
+                // Left: logo vertically centered
+                Box(
                     modifier = Modifier
-                        .fillMaxSize()
-                        .padding(start = SpSpacing.XLarge, bottom = SpSpacing.XLarge, top = SpSpacing.XLarge)
-                        .padding(end = SpSpacing.XXXLarge),
-                    verticalAlignment = Alignment.CenterVertically,
+                        .fillMaxHeight()
+                        .align(Alignment.CenterStart),
+                    contentAlignment = Alignment.Center,
                 ) {
-                    Column(
-                        horizontalAlignment = Alignment.Start,
-                        verticalArrangement = Arrangement.Bottom,
-                        modifier = Modifier.weight(1f).fillMaxHeight(),
-                    ) {
-                        HeroInfoContent(game, onGameSelected)
-                    }
-
                     if (game.logoUrl != null) {
                         SpAreaSizedImage(
                             imageUrl = game.logoUrl!!,
                             contentDescription = "${game.title} logo",
-                            targetArea = 28000f,
-                            maxHeight = 200.dp,
-                            maxWidth = 300.dp,
-                            minHeight = 90.dp,
+                            targetArea = targetArea,
+                            maxHeight = logoMaxH,
+                            maxWidth = logoMaxW,
+                            minHeight = logoMinH,
                             error = {
                                 Text(
                                     text = game.title,
-                                    style = SpTypography.HeadlineMedium,
+                                    style = titleStyle,
                                     color = SpColor.OnBackground,
                                     maxLines = 2,
                                     overflow = TextOverflow.Ellipsis,
                                 )
                             },
+                        )
+                    } else {
+                        Text(
+                            text = game.title,
+                            style = titleStyle,
+                            color = SpColor.OnBackground,
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis,
                         )
                     }
                 }
-            } else {
-                // Mobile: logo centered above, info below
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.Bottom,
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(SpSpacing.XLarge)
-                        .padding(bottom = SpSpacing.XLarge),
-                ) {
-                    if (game.logoUrl != null) {
-                        Spacer(Modifier.weight(1f))
-                        SpAreaSizedImage(
-                            imageUrl = game.logoUrl!!,
-                            contentDescription = "${game.title} logo",
-                            targetArea = 28000f,
-                            maxHeight = 200.dp,
-                            maxWidth = 300.dp,
-                            minHeight = 90.dp,
-                            error = {
-                                Text(
-                                    text = game.title,
-                                    style = SpTypography.HeadlineSmall,
-                                    color = SpColor.OnBackground,
-                                    maxLines = 2,
-                                    overflow = TextOverflow.Ellipsis,
-                                )
-                            },
-                        )
-                        Spacer(Modifier.weight(1f))
-                    }
 
-                    HeroInfoContent(game, onGameSelected, centerAligned = true)
+                // Right: button on top, badges below
+                Column(
+                    modifier = Modifier.align(Alignment.BottomEnd),
+                    horizontalAlignment = Alignment.End,
+                    verticalArrangement = Arrangement.spacedBy(SpSpacing.Small),
+                ) {
+                    SpButton(
+                        text = "View Game",
+                        onClick = onGameSelected,
+                        leadingIcon = {
+                            Icon(
+                                imageVector = Icons.Filled.PlayArrow,
+                                contentDescription = null,
+                                modifier = Modifier.size(SpSpacing.IconDefault),
+                            )
+                        },
+                    )
+                    HeroBadges(game)
                 }
             }
         }
@@ -319,44 +322,14 @@ private fun HeroSlide(
 }
 
 @Composable
-private fun HeroInfoContent(
+private fun HeroBadges(
     game: FeaturedGame,
-    onGameSelected: () -> Unit,
-    centerAligned: Boolean = false,
+    modifier: Modifier = Modifier,
 ) {
-    val alignment = if (centerAligned) Alignment.CenterHorizontally else Alignment.Start
-
-    // Title (only when no logo)
-    if (game.logoUrl == null) {
-        Text(
-            text = game.title,
-            style = if (centerAligned) SpTypography.HeadlineSmall else SpTypography.DisplaySmall,
-            color = SpColor.OnBackground,
-            maxLines = 2,
-            overflow = TextOverflow.Ellipsis,
-        )
-        Spacer(Modifier.height(SpSpacing.Small))
-    }
-
-    // Action button
-    SpButton(
-        text = "View Game",
-        onClick = onGameSelected,
-        leadingIcon = {
-            Icon(
-                imageVector = Icons.Filled.PlayArrow,
-                contentDescription = null,
-                modifier = Modifier.size(SpSpacing.IconDefault),
-            )
-        },
-    )
-
-    Spacer(Modifier.height(SpSpacing.Medium))
-
-    // Badges
     Row(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(SpSpacing.Small),
+        modifier = modifier,
     ) {
         val consoleColor = parseHexColor(game.consoleColor, SpColor.Primary)
         SpConsoleChip(
@@ -383,7 +356,6 @@ private fun HeroInfoContent(
                 )
             }
         }
-
     }
 }
 
@@ -392,8 +364,10 @@ fun HeroCarouselSkeleton(
     modifier: Modifier = Modifier,
 ) {
     BoxWithConstraints(modifier = modifier.fillMaxWidth()) {
-    val isLandscape = maxWidth > maxHeight
-    val heroHeight = if (isLandscape) HERO_HEIGHT_LANDSCAPE else HERO_HEIGHT_PORTRAIT
+    val heroHeight = when {
+        maxWidth > 500.dp -> HERO_HEIGHT_LANDSCAPE_WIDE
+        else -> HERO_HEIGHT_PORTRAIT
+    }
     Box(
         modifier = Modifier
             .fillMaxWidth()
