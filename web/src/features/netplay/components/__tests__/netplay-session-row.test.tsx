@@ -40,6 +40,7 @@ const baseSession: NetplaySession = {
   gameTitle: "Super Mario World",
   gameCoverUrl: null,
   consoleName: "SNES",
+  consoleId: "snes",
   coverAspectRatio: 1,
   status: "ended",
   endReason: "completed",

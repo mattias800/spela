@@ -43,7 +43,7 @@ function EditUserForm({
 
   const [editEmail, setEditEmail] = useState(user.email);
   const [editPassword, setEditPassword] = useState("");
-  const [editRole, setEditRole] = useState(user.role);
+  const [editRole, setEditRole] = useState<string>(user.role);
   const [editDisabled, setEditDisabled] = useState(user.disabled);
 
   function handleSaveUser() {
