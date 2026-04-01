@@ -95,7 +95,7 @@ describe("HeroCarousel", () => {
     renderCarousel({
       games: [makeFeaturedGame({ gameId: "1", logoUrl: "/logo/test.png" })],
     });
-    expect(screen.getByTestId("hero-logo-1")).toBeInTheDocument();
+    expect(screen.getByAltText("Test Game")).toBeInTheDocument();
   });
 
   it("falls back to text title when logoUrl is null", () => {
@@ -120,11 +120,11 @@ describe("HeroCarousel", () => {
     expect(screen.getByText("92.5")).toBeInTheDocument();
   });
 
-  it("renders genre chip", () => {
+  it("does not render genre chip (removed from carousel)", () => {
     renderCarousel({
       games: [makeFeaturedGame({ genre: "RPG" })],
     });
-    expect(screen.getByText("RPG")).toBeInTheDocument();
+    expect(screen.queryByText("RPG")).not.toBeInTheDocument();
   });
 
   it("renders View Game button linking to game detail", () => {

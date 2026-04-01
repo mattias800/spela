@@ -66,6 +66,7 @@ const mockWaitingSession = {
   gameTitle: "Super Mario World",
   gameCoverUrl: "https://example.com/cover.png",
   consoleName: "SNES",
+  consoleId: "snes",
   status: "waiting",
   endReason: null,
   inputDelay: 3,
