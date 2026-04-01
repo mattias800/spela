@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { Search, Check, AlertTriangle, Loader2 } from "lucide-react";
 import { Modal, SearchInput, Badge, Skeleton, useToast } from "@/components/ui";
 import { useIgdbSearch, useApplyIgdbMatch, useIgdbStatus } from "@/hooks/use-admin";
+import { CoverImage } from "@/components/cover-image";
 import { cn } from "@/lib/cn";
 import type { IgdbSearchResult } from "@/types/api";
 
@@ -186,25 +187,8 @@ function IgdbResultItem({
       )}
     >
       {/* Cover thumbnail */}
-      <div className="w-12 flex-shrink-0 rounded-lg overflow-hidden bg-surface-800">
-        {result.coverUrl ? (
-          <img
-            src={result.coverUrl}
-            alt={result.name}
-            className="w-full"
-            style={{ aspectRatio: 3 / 4 }}
-            loading="lazy"
-          />
-        ) : (
-          <div
-            className="w-full bg-surface-800 flex items-center justify-center"
-            style={{ aspectRatio: 3 / 4 }}
-          >
-            <span className="text-lg font-bold text-surface-700">
-              {result.name.charAt(0)}
-            </span>
-          </div>
-        )}
+      <div className="w-12 flex-shrink-0" style={{ aspectRatio: 3 / 4 }}>
+        <CoverImage src={result.coverUrl} alt={result.name} className="w-full h-full rounded-lg" />
       </div>
 
       {/* Info */}

@@ -6,6 +6,7 @@ import {
   useRemoveFromPlayLater,
   useReorderPlayLater,
 } from "@/hooks/use-play-later";
+import { CoverImage } from "@/components/cover-image";
 import type { Game } from "@/types/api";
 
 function PlayLaterSkeleton() {
@@ -50,19 +51,7 @@ function PlayLaterItem({
   return (
     <div className="flex items-center gap-4 rounded-xl bg-surface-900/50 border border-surface-800/50 p-4 hover:bg-surface-900/80 transition-colors">
       <Link to={`/games/${game.id}`} className="flex-shrink-0">
-        {game.coverUrl ? (
-          <img
-            src={game.coverUrl}
-            alt={game.title}
-            className="h-20 w-14 rounded-lg object-cover"
-          />
-        ) : (
-          <div className="h-20 w-14 rounded-lg bg-surface-800 flex items-center justify-center">
-            <span className="text-lg font-bold text-surface-600">
-              {game.title.charAt(0)}
-            </span>
-          </div>
-        )}
+        <CoverImage src={game.coverUrl} alt={game.title} className="h-20 w-14 rounded-lg" />
       </Link>
 
       <div className="flex-1 min-w-0">

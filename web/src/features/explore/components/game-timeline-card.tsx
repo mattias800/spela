@@ -3,6 +3,7 @@ import { cn } from "@/lib/cn";
 import { RatingDisplay } from "@/components/rating-display";
 import { ConsoleBadge } from "@/components/console-badge";
 import { getReleaseYear } from "@/lib/date-utils";
+import { CoverImage } from "@/components/cover-image";
 import type { SeriesGame } from "@/types/api";
 
 interface GameTimelineCardProps {
@@ -24,20 +25,7 @@ export function GameTimelineCard({ game, testIdPrefix }: GameTimelineCardProps) 
       data-testid={`${testIdPrefix}-game-${game.igdbGameId}`}
     >
       {/* Cover art */}
-      <div className="w-12 h-16 rounded-lg overflow-hidden bg-surface-800 flex-shrink-0">
-        {game.coverUrl ? (
-          <img
-            src={game.coverUrl}
-            alt={game.name}
-            className="w-full h-full object-cover"
-            loading="lazy"
-          />
-        ) : (
-          <div className="w-full h-full flex items-center justify-center text-surface-600 text-lg font-bold">
-            {game.name.charAt(0)}
-          </div>
-        )}
-      </div>
+      <CoverImage src={game.coverUrl} alt={game.name} className="w-12 h-16 rounded-lg" />
 
       {/* Info */}
       <div className="flex-1 min-w-0">

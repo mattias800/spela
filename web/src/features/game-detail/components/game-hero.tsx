@@ -20,6 +20,7 @@ import {
   Replace,
   Award,
 } from "lucide-react";
+import { CoverImage } from "@/components/cover-image";
 import { Button, Badge, ActionsMenu } from "@/components/ui";
 import { ConsoleBadge } from "@/components/console-badge";
 import { VerificationBadge } from "./verification-badge";
@@ -189,22 +190,9 @@ export function GameHero({
           {/* Cover art */}
           <div className="flex-shrink-0 w-36 md:w-48 self-end">
             <div className="rounded-xl overflow-hidden bg-surface-900/80 border border-white/10 shadow-2xl backdrop-blur-sm">
-              {game.coverUrl ? (
-                <img
-                  src={game.coverUrl}
-                  alt={game.title}
-                  className="w-full"
-                />
-              ) : (
-                <div
-                  className="flex items-center justify-center bg-gradient-to-br from-surface-800 to-surface-900"
-                  style={{ aspectRatio: aspectRatio ?? 3 / 4 }}
-                >
-                  <span className="text-4xl font-bold text-surface-700">
-                    {game.title.charAt(0)}
-                  </span>
-                </div>
-              )}
+              <div style={{ aspectRatio: aspectRatio ?? 3 / 4 }}>
+                <CoverImage src={game.coverUrl} alt={game.title} className="w-full h-full" />
+              </div>
             </div>
             <div className="flex justify-center mt-2">
               <Button

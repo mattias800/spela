@@ -3,6 +3,7 @@ import { Badge } from "@/components/ui";
 import { RatingDisplay } from "@/components/rating-display";
 import { ConsoleBadge } from "@/components/console-badge";
 import { formatFileSize } from "@/lib/format";
+import { CoverImage } from "@/components/cover-image";
 
 interface GameSummaryCardProps {
   title: string;
@@ -38,21 +39,7 @@ export function GameSummaryCard({
     >
       <div className="flex gap-4 p-4">
         {/* Cover art */}
-        <div className="w-20 h-28 flex-shrink-0 rounded-lg overflow-hidden bg-surface-800">
-          {coverUrl ? (
-            <img
-              src={coverUrl}
-              alt={displayTitle}
-              className="h-full w-full object-cover"
-            />
-          ) : (
-            <div className="h-full w-full flex items-center justify-center bg-gradient-to-br from-surface-800 to-surface-900">
-              <span className="text-2xl font-bold text-surface-700">
-                {displayTitle.charAt(0)}
-              </span>
-            </div>
-          )}
-        </div>
+        <CoverImage src={coverUrl} alt={displayTitle} className="w-20 h-28 rounded-lg flex-shrink-0" />
 
         {/* Info */}
         <div className="flex-1 min-w-0 space-y-2">

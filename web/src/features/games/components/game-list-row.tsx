@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import { ConsoleBadge } from "@/components/console-badge";
 import { formatFileSize } from "@/lib/format";
 import { getReleaseYear } from "@/lib/date-utils";
+import { CoverImage } from "@/components/cover-image";
 import type { Game } from "@/types/api";
 
 interface GameListRowProps {
@@ -19,19 +20,7 @@ export function GameListRow({ game, hideConsoleName }: GameListRowProps) {
       to={`/games/${game.id}`}
       className="flex items-center gap-4 px-4 py-3 rounded-xl hover:bg-surface-900/50 transition-colors group"
     >
-      <div className="h-12 w-9 rounded-lg overflow-hidden bg-surface-800 flex-shrink-0">
-        {game.coverUrl ? (
-          <img
-            src={game.coverUrl}
-            alt={game.title}
-            className="h-full w-full object-cover"
-          />
-        ) : (
-          <div className="h-full w-full flex items-center justify-center text-xs font-bold text-surface-600">
-            {game.title.charAt(0)}
-          </div>
-        )}
-      </div>
+      <CoverImage src={game.coverUrl} alt={game.title} className="h-12 w-9 rounded-lg flex-shrink-0" />
       <div className="flex-1 min-w-0">
         <p className="text-sm font-medium text-surface-100 truncate group-hover:text-brand-400 transition-colors">
           {game.title}

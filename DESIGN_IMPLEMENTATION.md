@@ -125,7 +125,19 @@ Displays a rating value with star icon(s). No domain knowledge — just visual s
 
 ### CoverImage (Design component)
 
-*Planned — not yet implemented.*
+Renders a cover art image with lazy loading and a character-based fallback placeholder.
+
+```tsx
+<CoverImage src={game.coverUrl} alt={game.title} className="w-12 h-16 rounded-lg" />
+```
+
+**Owns:** `overflow-hidden`, `bg-surface-800` placeholder background, `object-cover`, lazy loading, fallback character rendering (first character of `alt`).
+
+**Accepts `className`:** Yes — for size, border radius, aspect ratio, flex-shrink. This is a Design component used by Content components (like `CoverCard`) that need to control its sizing.
+
+**When NOT to use CoverImage:** When the fallback is an icon (e.g. `Gamepad2`, `FolderOpen`, `Loader2` spinner) rather than a character. CoverImage only handles character placeholders. If your fallback is an icon, use the inline pattern or create a separate component.
+
+**Why `className` is allowed on a Design component:** CoverImage's responsibility is the *shared* styling between all cover images (image rendering, fallback, lazy loading). But it's used at many different sizes — small thumbnails (48x64), medium cards (144x192), gallery items with dynamic aspect ratios. The parent knows the size, CoverImage doesn't. This is shared responsibility, not a violation of component ownership.
 
 ## Refactoring Process
 

@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { Grid2x2, Grid3x3, LayoutGrid, ImageIcon } from "lucide-react";
 import { BackButton, Button, Skeleton, EmptyState } from "@/components/ui";
 import { ConsoleBadge } from "@/components/console-badge";
+import { CoverImage } from "@/components/cover-image";
 import { cn } from "@/lib/cn";
 import { useCoverGallery } from "@/hooks/use-explore";
 import { useConsoles } from "@/hooks/use-consoles";
@@ -41,21 +42,10 @@ function CoverCard({ cover }: { cover: CoverItem }) {
       data-testid="cover-card"
     >
       <div
-        className="w-full bg-surface-800"
+        className="w-full"
         style={{ aspectRatio: `${cover.coverAspectRatio || 0.75}` }}
       >
-        {cover.coverUrl ? (
-          <img
-            src={cover.coverUrl}
-            alt={cover.gameTitle}
-            className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-            loading="lazy"
-          />
-        ) : (
-          <div className="w-full h-full flex items-center justify-center text-surface-600 text-lg font-bold">
-            {cover.gameTitle.charAt(0)}
-          </div>
-        )}
+        <CoverImage src={cover.coverUrl} alt={cover.gameTitle} className="w-full h-full" />
       </div>
       {/* Hover overlay */}
       <div
