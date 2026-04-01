@@ -2,7 +2,7 @@ import { Trash2 } from "lucide-react";
 import {
   Button,
   Badge,
-  Card,
+  Section,
   EmptyState,
   TableRowSkeleton,
 } from "@/components/ui";
@@ -22,7 +22,7 @@ export function DeletedUsersTable({
   onHardDelete,
 }: DeletedUsersTableProps) {
   return (
-    <Card>
+    <Section>
       <div className="overflow-x-auto">
         <table className="w-full">
           <thead>
@@ -98,6 +98,6 @@ export function DeletedUsersTable({
           </tbody>
         </table>
       </div>
-    </Card>
+    </Section>
   );
 }

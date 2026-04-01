@@ -1,4 +1,4 @@
-import { Card, CardHeader, CardContent, Select, Skeleton } from "@/components/ui";
+import { Section, Select, Skeleton } from "@/components/ui";
 import { cn } from "@/lib/cn";
 import { ControllerVisual } from "@/features/preferences/components/controller-visual";
 import { CustomKeyMappingEditor } from "@/features/preferences/components/custom-key-mapping-editor";
@@ -41,11 +41,11 @@ export function KeyMappingCard({
       : getPresetMapping(selectedMode);
 
   return (
-    <Card>
-      <CardHeader>
+    <Section>
+      <div className="px-5 pt-5 pb-2">
         <h2 className="text-lg font-semibold text-surface-100">Key Mapping</h2>
-      </CardHeader>
-      <CardContent>
+      </div>
+      <div className="px-5 pb-5">
         {isLoading ? (
           <Skeleton className="h-10 w-64 rounded-lg" />
         ) : (
@@ -139,7 +139,7 @@ export function KeyMappingCard({
             )}
           </div>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </Section>
   );
 }

@@ -9,7 +9,7 @@ import {
 } from "lucide-react";
 import {
   Button,
-  Card,
+  Section,
   Badge,
   EmptyState,
   StateTabNav,
@@ -167,7 +167,7 @@ export function MetadataFixPage() {
           }
         />
       ) : (
-        <Card className="p-6">
+        <Section className="p-6">
           <div className="space-y-2">
             {games.map((game) => (
               <GameRow
@@ -178,7 +178,7 @@ export function MetadataFixPage() {
               />
             ))}
           </div>
-        </Card>
+        </Section>
       )}
     </div>
   );

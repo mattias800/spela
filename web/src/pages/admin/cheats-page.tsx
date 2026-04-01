@@ -1,5 +1,5 @@
 import { Gamepad2, Loader2, CheckCircle, Download } from "lucide-react";
-import { Button, Card, CardHeader, CardContent } from "@/components/ui";
+import { Button, Section } from "@/components/ui";
 import { useCheatStats, useImportCheats } from "@/hooks/use-cheats";
 
 export function AdminCheatsPage() {
@@ -17,14 +17,14 @@ export function AdminCheatsPage() {
       </div>
 
       <div className="grid gap-5 md:grid-cols-2">
-        <Card>
-          <CardHeader>
+        <Section>
+          <div className="px-5 pt-5 pb-2">
             <h2 className="text-lg font-semibold text-surface-100 flex items-center gap-2">
               <Gamepad2 className="h-5 w-5 text-brand-400" />
               Cheat Stats
             </h2>
-          </CardHeader>
-          <CardContent>
+          </div>
+          <div className="px-5 pb-5">
             {statsLoading ? (
               <div className="flex items-center gap-2 text-sm">
                 <Loader2 className="h-4 w-4 animate-spin text-brand-400" />
@@ -58,17 +58,17 @@ export function AdminCheatsPage() {
                 </div>
               </div>
             ) : null}
-          </CardContent>
-        </Card>
+          </div>
+        </Section>
 
-        <Card>
-          <CardHeader>
+        <Section>
+          <div className="px-5 pt-5 pb-2">
             <h2 className="text-lg font-semibold text-surface-100 flex items-center gap-2">
               <Download className="h-5 w-5 text-brand-400" />
               Import Cheats
             </h2>
-          </CardHeader>
-          <CardContent className="space-y-4">
+          </div>
+          <div className="px-5 pb-5 space-y-4">
             <p className="text-sm text-surface-400">
               Import cheat codes from the libretro-database. Only verified games
               on supported consoles will be matched.
@@ -130,8 +130,8 @@ export function AdminCheatsPage() {
             >
               Import Cheats
             </Button>
-          </CardContent>
-        </Card>
+          </div>
+        </Section>
       </div>
     </div>
   );

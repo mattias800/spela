@@ -139,6 +139,27 @@ Renders a cover art image with lazy loading and a character-based fallback place
 
 **Why `className` is allowed on a Design component:** CoverImage's responsibility is the *shared* styling between all cover images (image rendering, fallback, lazy loading). But it's used at many different sizes — small thumbnails (48x64), medium cards (144x192), gallery items with dynamic aspect ratios. The parent knows the size, CoverImage doesn't. This is shared responsibility, not a violation of component ownership.
 
+## Naming Convention: Section vs Card
+
+**Section** — a generic container for grouping related content. Can hold forms, lists, stats, anything. Has surface background, border, rounded corners.
+
+**Card** — the visual pattern with a cover image, hover effects, and overlay. Used for game cards, developer cards, platform cards. Has a specific content layout.
+
+These are distinct concepts. Previously both were called "Card" which caused confusion. The rename:
+- `Card` (old generic container) → `Section`
+- `CardHeader` → removed (use `TitledSection` instead)
+- `CardContent` → removed (use padding directly)
+- `SectionHeader` (old standalone title) → removed (use `TitledSection`)
+
+Components:
+- `Section` — generic container
+- `TitledSection` — container with title bar (required `title`, optional `icon`, optional `renderRight`)
+- `SectionList` — column with standardized gap between children
+
+## data-comp Attribute
+
+All shared UI components add `data-comp="ComponentName"` to their outermost HTML element. This makes it easy to identify which component rendered a particular DOM element in browser devtools.
+
 ## Card Taxonomy
 
 Not all card-like containers are the same component. During the refactoring audit, we identified these distinct categories:

@@ -1,9 +1,7 @@
 import { useState } from "react";
 import { AlertTriangle, Trophy, LayoutGrid, Clock } from "lucide-react";
 import {
-  Card,
-  CardHeader,
-  CardContent,
+  Section,
   Skeleton,
   Badge,
 } from "@/components/ui";
@@ -57,20 +55,20 @@ export function GameAchievements({ gameId, achievementsWarning }: GameAchievemen
 
   if (isLoading) {
     return (
-      <Card>
-        <CardHeader>
+      <Section>
+        <div className="px-5 pt-5 pb-2">
           <h2 className="text-lg font-semibold text-surface-100">
             Achievements
           </h2>
-        </CardHeader>
-        <CardContent>
+        </div>
+        <div className="px-5 pb-5">
           <div className="space-y-4">
             {Array.from({ length: 3 }, (_, i) => (
               <Skeleton key={i} className="h-20 w-full rounded-lg" />
             ))}
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </Section>
     );
   }
 
@@ -94,8 +92,8 @@ export function GameAchievements({ gameId, achievementsWarning }: GameAchievemen
   const isComplete = completionPct === 100 && unlockedCount > 0;
 
   return (
-    <Card>
-      <CardHeader>
+    <Section>
+      <div className="px-5 pt-5 pb-2">
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-semibold text-surface-100">
             Achievements
@@ -139,8 +137,8 @@ export function GameAchievements({ gameId, achievementsWarning }: GameAchievemen
             </Badge>
           )}
         </div>
-      </CardHeader>
-      <CardContent>
+      </div>
+      <div className="px-5 pb-5">
         {achievementsWarning && (
           <div
             className="flex items-start gap-3 rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 mb-6"
@@ -183,8 +181,8 @@ export function GameAchievements({ gameId, achievementsWarning }: GameAchievemen
             totalAchievements={achievements.totalCount}
           />
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </Section>
   );
 }
 

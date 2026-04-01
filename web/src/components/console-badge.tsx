@@ -25,6 +25,7 @@ export function ConsoleBadge({ code, label, className }: ConsoleBadgeProps) {
 
   return (
     <Badge
+      data-comp="ConsoleBadge"
       className={className}
       style={{
         backgroundColor: `${color}40`,

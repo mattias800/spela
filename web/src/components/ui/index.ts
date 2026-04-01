@@ -1,6 +1,6 @@
 export { Button } from "./button";
 export { BackButton } from "./back-button";
-export { Card, CardHeader, CardContent } from "./card";
+export { Section, TitledSection, SectionList } from "./section";
 export { Input } from "./input";
 export { Badge } from "./badge";
 export {

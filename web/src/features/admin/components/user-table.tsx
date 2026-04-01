@@ -10,7 +10,7 @@ import {
 import {
   Button,
   Badge,
-  Card,
+  Section,
   EmptyState,
   TableRowSkeleton,
 } from "@/components/ui";
@@ -104,7 +104,7 @@ export function UserTable({
     user.role === "owner" || user.id === currentUser?.id;
 
   return (
-    <Card>
+    <Section>
       <div className="overflow-x-auto">
         <table className="w-full">
           <thead>
@@ -238,6 +238,6 @@ export function UserTable({
           </tbody>
         </table>
       </div>
-    </Card>
+    </Section>
   );
 }

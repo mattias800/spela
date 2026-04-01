@@ -7,7 +7,7 @@ import {
   ChevronRight,
   Trash2,
 } from "lucide-react";
-import { Card, Badge, Button } from "@/components/ui";
+import { Section, Badge, Button } from "@/components/ui";
 import type { BiosConsole, BiosConsoleFile } from "@/types/api";
 
 function statusBadge(status: BiosConsole["status"]) {
@@ -54,7 +54,7 @@ export function BiosConsoleCard({
   const totalFiles = biosConsole.requiredTotal + biosConsole.optionalTotal;
 
   return (
-    <Card
+    <Section
       className={deEmphasized ? "opacity-60" : undefined}
       data-testid={`bios-console-card-${biosConsole.consoleId}`}
     >
@@ -127,6 +127,6 @@ export function BiosConsoleCard({
           ))}
         </div>
       )}
-    </Card>
+    </Section>
   );
 }

@@ -1,5 +1,5 @@
 import { Repeat, Check, X } from "lucide-react";
-import { Button, Card } from "@/components/ui";
+import { Button, Section } from "@/components/ui";
 import { PlayerAvatar } from "@/components/player-avatar";
 import { formatRelativeTime } from "@/lib/format";
 import type { SharedSessionInvitation } from "@/types/api";
@@ -20,7 +20,7 @@ export function InvitationCard({
   isRejecting,
 }: InvitationCardProps) {
   return (
-    <Card
+    <Section
       className="flex items-center gap-4 px-4 py-4"
       data-testid={`shared-session-invitation-${invitation.id}`}
     >
@@ -86,6 +86,6 @@ export function InvitationCard({
           Decline
         </Button>
       </div>
-    </Card>
+    </Section>
   );
 }

@@ -1,6 +1,6 @@
 import { Clock, ChevronUp, ChevronDown, X, AlertCircle } from "lucide-react";
 import { Link } from "react-router-dom";
-import { Button, Card, Skeleton, EmptyState } from "@/components/ui";
+import { Button, Section, Skeleton, EmptyState } from "@/components/ui";
 import {
   usePlayLaterGames,
   useRemoveFromPlayLater,
@@ -49,7 +49,7 @@ function PlayLaterItem({
   onRemove: () => void;
 }) {
   return (
-    <Card hover className="flex items-center gap-4 p-4">
+    <Section hover className="flex items-center gap-4 p-4">
       <Link to={`/games/${game.id}`} className="flex-shrink-0">
         <CoverImage src={game.coverUrl} alt={game.title} className="h-20 w-14 rounded-lg" />
       </Link>

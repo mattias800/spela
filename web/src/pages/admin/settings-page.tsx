@@ -1,9 +1,7 @@
 import { useState, useEffect } from "react";
 import {
   Button,
-  Card,
-  CardHeader,
-  CardContent,
+  Section,
   Select,
   Switch,
 } from "@/components/ui";
@@ -104,11 +102,11 @@ export function AdminSettingsPage() {
 
       {igdbNotConfigured && <IgdbWarningBanner variant="settings" />}
 
-      <Card>
-        <CardHeader>
+      <Section>
+        <div className="px-5 pt-5 pb-2">
           <h2 className="text-lg font-semibold text-surface-100">General</h2>
-        </CardHeader>
-        <CardContent className="space-y-4">
+        </div>
+        <div className="px-5 pb-5 space-y-4">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-surface-200">
@@ -150,17 +148,17 @@ export function AdminSettingsPage() {
               onChange={setBiosAutoDownload}
             />
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </Section>
 
-      <Card>
-        <CardHeader>
+      <Section>
+        <div className="px-5 pt-5 pb-2">
           <h2 className="text-lg font-semibold text-surface-100">Library Defaults</h2>
           <p className="text-xs text-surface-500 mt-1">
             Server-wide defaults for game library display and scraping.
           </p>
-        </CardHeader>
-        <CardContent className="space-y-4">
+        </div>
+        <div className="px-5 pb-5 space-y-4">
           <Select
             id="default-region"
             label="Default Region"
@@ -188,8 +186,8 @@ export function AdminSettingsPage() {
               onChange={setHidePreReleaseDefault}
             />
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </Section>
 
       <IgdbConfigCard
         clientId={igdbClientId}

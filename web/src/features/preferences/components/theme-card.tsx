@@ -1,5 +1,5 @@
 import { Check } from "lucide-react";
-import { Card, CardHeader, CardContent, Skeleton } from "@/components/ui";
+import { Section, Skeleton } from "@/components/ui";
 import { THEME_OPTIONS } from "@/lib/theme-constants";
 
 interface ThemeCardProps {
@@ -14,11 +14,11 @@ export function ThemeCard({
   onThemeChange,
 }: ThemeCardProps) {
   return (
-    <Card>
-      <CardHeader>
+    <Section>
+      <div className="px-5 pt-5 pb-2">
         <h2 className="text-lg font-semibold text-surface-100">Color Theme</h2>
-      </CardHeader>
-      <CardContent>
+      </div>
+      <div className="px-5 pb-5">
         {isLoading ? (
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
             {Array.from({ length: 5 }, (_, i) => (
@@ -65,7 +65,7 @@ export function ThemeCard({
             })}
           </div>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </Section>
   );
 }

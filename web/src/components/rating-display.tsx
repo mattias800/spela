@@ -26,7 +26,7 @@ export function RatingDisplay({
     const fullStars = Math.round(starValue);
 
     return (
-      <span className={cn("inline-flex items-center gap-1", className)}>
+      <span data-comp="RatingDisplay" className={cn("inline-flex items-center gap-1", className)}>
         {[1, 2, 3, 4, 5].map((star) => (
           <Star
             key={star}
@@ -47,6 +47,7 @@ export function RatingDisplay({
 
   return (
     <span
+      data-comp="RatingDisplay"
       className={cn(
         "inline-flex items-center gap-1 text-xs text-amber-400 font-medium",
         className,

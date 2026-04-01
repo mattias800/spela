@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import { Repeat, Users } from "lucide-react";
-import { Badge, Card, Skeleton } from "@/components/ui";
+import { Badge, Section, Skeleton } from "@/components/ui";
 import { useGameSharedSessions } from "@/hooks/use-shared-sessions";
 import { formatRelativeTime } from "@/lib/format";
 
@@ -39,13 +39,13 @@ export function GameActiveSharedSessions({ gameId }: GameActiveSharedSessionsPro
 
   if (isLoading) {
     return (
-      <Card className="p-6">
+      <Section className="p-6">
         <div className="flex items-center gap-2.5 mb-4">
           <Repeat className="h-5 w-5 text-brand-400" />
           <h2 className="text-lg font-semibold text-surface-100">Active Shared Sessions</h2>
         </div>
         <GameActiveSharedSessionsSkeleton />
-      </Card>
+      </Section>
     );
   }
 
@@ -54,7 +54,7 @@ export function GameActiveSharedSessions({ gameId }: GameActiveSharedSessionsPro
   }
 
   return (
-    <Card className="p-6">
+    <Section className="p-6">
       <div className="flex items-center gap-2.5 mb-4">
         <Repeat className="h-5 w-5 text-brand-400" />
         <h2 className="text-lg font-semibold text-surface-100">Active Shared Sessions</h2>
@@ -94,6 +94,6 @@ export function GameActiveSharedSessions({ gameId }: GameActiveSharedSessionsPro
           </Link>
         ))}
       </div>
-    </Card>
+    </Section>
   );
 }

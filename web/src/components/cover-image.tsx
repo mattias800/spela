@@ -18,6 +18,7 @@ interface CoverImageProps {
 export function CoverImage({ src, alt, className }: CoverImageProps) {
   return (
     <div
+      data-comp="CoverImage"
       className={cn(
         "overflow-hidden bg-surface-800 flex-shrink-0",
         className,
