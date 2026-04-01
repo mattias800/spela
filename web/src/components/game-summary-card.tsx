@@ -1,5 +1,5 @@
 import { CheckCircle2, AlertTriangle, File, HardDrive } from "lucide-react";
-import { Badge } from "@/components/ui";
+import { Badge, Card } from "@/components/ui";
 import { RatingDisplay } from "@/components/rating-display";
 import { ConsoleBadge } from "@/components/console-badge";
 import { formatFileSize } from "@/lib/format";
@@ -33,10 +33,7 @@ export function GameSummaryCard({
   const displayTitle = title || fileName;
 
   return (
-    <div
-      className="rounded-2xl bg-surface-900/50 border border-surface-800/50 overflow-hidden"
-      data-testid="game-summary-card"
-    >
+    <Card data-testid="game-summary-card">
       <div className="flex gap-4 p-4">
         {/* Cover art */}
         <CoverImage src={coverUrl} alt={displayTitle} className="w-20 h-28 rounded-lg flex-shrink-0" />
@@ -99,6 +96,6 @@ export function GameSummaryCard({
       {actions && (
         <div className="px-4 pb-4 flex items-center gap-2">{actions}</div>
       )}
-    </div>
+    </Card>
   );
 }

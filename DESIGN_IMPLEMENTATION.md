@@ -139,6 +139,22 @@ Renders a cover art image with lazy loading and a character-based fallback place
 
 **Why `className` is allowed on a Design component:** CoverImage's responsibility is the *shared* styling between all cover images (image rendering, fallback, lazy loading). But it's used at many different sizes — small thumbnails (48x64), medium cards (144x192), gallery items with dynamic aspect ratios. The parent knows the size, CoverImage doesn't. This is shared responsibility, not a violation of component ownership.
 
+## Card Taxonomy
+
+Not all card-like containers are the same component. During the refactoring audit, we identified these distinct categories:
+
+**1. Section cards (`Card`)** — Generic content containers. Can hold lists, forms, stats, anything. Use the shared `Card` component from `ui/card.tsx`. This is the most common pattern: `rounded-2xl bg-surface-900/50 border border-surface-800/50`.
+
+**2. Game cards (`GameCard`, `CoverCard`)** — Domain-specific cards with a fixed layout: cover art + title + metadata. These are Content components (Layer 2) with strict internal structure.
+
+**3. Form inputs** (`Input`, `Textarea`, `Select`) — Already shared as UI primitives. Not cards, even though they share some visual DNA (rounded, bordered, surface background).
+
+**4. Tooltips/dropdowns** — Ephemeral floating elements. Different concern, not cards.
+
+**5. Context-specific containers** — Cards with conditional styling (dimmed when unavailable, dashed borders for empty slots, different backgrounds for admin views). These are too specialized for the generic `Card` component. Keep them inline or create purpose-specific components if they appear in 2+ places.
+
+**When to use `Card`:** If your container is a static, rectangular box with the standard surface background and border, use `Card`. If it has conditional styling, dashed borders, or non-standard backgrounds, use inline Tailwind or a purpose-specific component.
+
 ## Refactoring Process
 
 This codebase is being incrementally refactored to follow these principles. The process:
