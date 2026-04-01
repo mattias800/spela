@@ -111,9 +111,9 @@ interface ConsoleBadgeProps {
 **Owns:** Color lookup via `getConsoleStyle()` from `console-metadata.ts`.
 **Does not accept:** `color`, `style`, or any visual override props.
 
-### RatingDisplay (Role component)
+### RatingDisplay (Design component)
 
-Displays a rating value with star icon(s). Two variants:
+Displays a rating value with star icon(s). No domain knowledge — just visual styling. Two variants:
 
 ```tsx
 <RatingDisplay value={8.5} />                    // "compact": ★ 8.5

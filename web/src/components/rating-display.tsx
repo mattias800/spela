@@ -10,11 +10,11 @@ interface RatingDisplayProps {
 }
 
 /**
- * ROLE component — displays a rating value with star icon(s).
+ * DESIGN component — displays a rating value with star icon(s).
  *
- * Layer 3 in the component hierarchy (Design → Content → Role).
- * Owns all visual styling for rating display — amber color, star sizing,
- * number formatting. All rating displays across the web UI must use this.
+ * Layer 1 in the component hierarchy (Design → Content → Role).
+ * Defines the visual styling for rating displays — amber color, star
+ * sizing, number formatting. No domain knowledge.
  */
 export function RatingDisplay({
   value,
