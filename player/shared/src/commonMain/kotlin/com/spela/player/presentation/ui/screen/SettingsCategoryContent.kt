@@ -118,7 +118,7 @@ private fun androidx.compose.foundation.lazy.LazyListScope.generalContent(
     // Color Theme
     item { SettingsSectionHeader(title = "Color Theme") }
     item {
-        SpCard {
+        SpCard(onGradient = true) {
             Column(
                 modifier = Modifier.fillMaxWidth().padding(vertical = SpSpacing.Small),
             ) {
@@ -139,7 +139,7 @@ private fun androidx.compose.foundation.lazy.LazyListScope.generalContent(
     item { Spacer(Modifier.height(SpSpacing.Medium)) }
     item { SettingsSectionHeader(title = "Display") }
     item {
-        SpCard {
+        SpCard(onGradient = true) {
             Column(
                 modifier = Modifier.fillMaxWidth().padding(vertical = SpSpacing.Small),
             ) {
@@ -175,7 +175,7 @@ private fun androidx.compose.foundation.lazy.LazyListScope.emulationContent(
     // Emulation toggles
     item { SettingsSectionHeader(title = "Emulation") }
     item {
-        SpCard {
+        SpCard(onGradient = true) {
             Column(
                 modifier = Modifier.fillMaxWidth().padding(vertical = SpSpacing.Small),
             ) {
@@ -207,7 +207,7 @@ private fun androidx.compose.foundation.lazy.LazyListScope.emulationContent(
     item { Spacer(Modifier.height(SpSpacing.Medium)) }
     item { SettingsSectionHeader(title = "Second Screen") }
     item {
-        SpCard {
+        SpCard(onGradient = true) {
             Column(
                 modifier = Modifier.fillMaxWidth().padding(vertical = SpSpacing.Small),
             ) {
@@ -312,7 +312,7 @@ private fun androidx.compose.foundation.lazy.LazyListScope.achievementsContent(
     item { SettingsSectionHeader(title = "RetroAchievements") }
     item {
         val raStatus = state.raStatus
-        SpCard {
+        SpCard(onGradient = true) {
             Column(
                 modifier = Modifier.fillMaxWidth().padding(SpSpacing.Default),
             ) {
@@ -364,7 +364,7 @@ private fun androidx.compose.foundation.lazy.LazyListScope.storageSyncContent(
     // Storage
     item { SettingsSectionHeader(title = "Storage") }
     item {
-        SpCard {
+        SpCard(onGradient = true) {
             Row(
                 modifier = Modifier.fillMaxWidth().padding(SpSpacing.Default),
                 verticalAlignment = Alignment.CenterVertically,
@@ -406,7 +406,7 @@ private fun androidx.compose.foundation.lazy.LazyListScope.storageSyncContent(
     item { Spacer(Modifier.height(SpSpacing.Medium)) }
     item { SettingsSectionHeader(title = "Sync") }
     item {
-        SpCard {
+        SpCard(onGradient = true) {
             Column(modifier = Modifier.fillMaxWidth().padding(SpSpacing.Default)) {
                 SpSyncStatusIndicator(syncState = syncState, connectionState = connectionState)
                 Spacer(Modifier.height(SpSpacing.Medium))
@@ -431,7 +431,7 @@ private fun androidx.compose.foundation.lazy.LazyListScope.aboutContent(
     // About info
     item { SettingsSectionHeader(title = "About") }
     item {
-        SpCard {
+        SpCard(onGradient = true) {
             Column(modifier = Modifier.fillMaxWidth().padding(SpSpacing.Default)) {
                 SettingsInfoRow(label = "Version", value = "1.0.0")
                 Spacer(Modifier.height(SpSpacing.Small))
@@ -461,7 +461,7 @@ private fun androidx.compose.foundation.lazy.LazyListScope.aboutContent(
     item { Spacer(Modifier.height(SpSpacing.Medium)) }
     item { SettingsSectionHeader(title = "Device & Account") }
     item {
-        SpCard {
+        SpCard(onGradient = true) {
             Column(modifier = Modifier.fillMaxWidth().padding(SpSpacing.Default)) {
                 SpTextField(
                     value = state.deviceName,

@@ -45,14 +45,14 @@ internal fun DeviceManagementSection(
 ) {
     Column(modifier = modifier.fillMaxWidth()) {
         if (isLoading && devices.isEmpty()) {
-            SpCard {
+            SpCard(onGradient = true) {
                 SpLoadingIndicator(
                     message = "Loading devices...",
                     modifier = Modifier.padding(SpSpacing.Default),
                 )
             }
         } else if (devices.isEmpty()) {
-            SpCard {
+            SpCard(onGradient = true) {
                 Text(
                     text = "No registered devices",
                     style = SpTypography.BodyMedium,
@@ -61,7 +61,7 @@ internal fun DeviceManagementSection(
                 )
             }
         } else {
-            SpCard {
+            SpCard(onGradient = true) {
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()

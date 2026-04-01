@@ -26,7 +26,7 @@ export function AuthFormLayout({
           <img
             src="/api/branding/logo"
             alt="Spela"
-            className="h-28 w-auto"
+            className="h-64 w-auto"
           />
           <div className="text-center">
             <h1 className="text-3xl font-bold tracking-tight text-surface-100">

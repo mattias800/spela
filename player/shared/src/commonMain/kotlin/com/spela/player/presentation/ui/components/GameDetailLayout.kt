@@ -214,7 +214,7 @@ private fun LandscapeLayout(
                                 end = SpSpacing.XLarge,
                                 bottom = SpSpacing.Large,
                             ),
-                        verticalAlignment = Alignment.Bottom,
+                        verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(SpSpacing.Large),
                     ) {
                         // Cover art — max width and height, dynamic sizing, no crop

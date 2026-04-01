@@ -953,7 +953,7 @@ private fun GameHeroContent(
         // Action buttons: Play/Download + Actions menu + playtime
         FlowRow(
             horizontalArrangement = Arrangement.spacedBy(SpSpacing.Small),
-            verticalArrangement = Arrangement.spacedBy(SpSpacing.Small),
+            verticalArrangement = Arrangement.spacedBy(SpSpacing.Medium),
             itemVerticalAlignment = Alignment.CenterVertically,
         ) {
             if (state.isGameCached) {

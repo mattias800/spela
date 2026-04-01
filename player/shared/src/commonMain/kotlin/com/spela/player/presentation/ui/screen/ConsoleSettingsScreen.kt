@@ -127,7 +127,7 @@ fun ConsoleSettingsScreen(
             }
 
             item {
-                SpCard {
+                SpCard(onGradient = true) {
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -174,7 +174,7 @@ fun ConsoleSettingsScreen(
 
             // Device override
             item {
-                SpCard {
+                SpCard(onGradient = true) {
                     Column(modifier = Modifier.fillMaxWidth()) {
                         Row(
                             modifier = Modifier
@@ -267,7 +267,7 @@ fun ConsoleSettingsScreen(
             if (gamepadConfigViewModel != null) {
                 item {
                     val gamepadConfigState by gamepadConfigViewModel.state.collectAsState()
-                    SpCard {
+                    SpCard(onGradient = true) {
                         GamepadConfigScreen(
                             state = gamepadConfigState,
                             onConfigurePort = { port ->
@@ -301,7 +301,7 @@ fun ConsoleSettingsScreen(
                     "Player ${selectedPort + 1} \u2014 ${portAssignment.deviceName}"
                 } else null
 
-                SpCard {
+                SpCard(onGradient = true) {
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -344,7 +344,7 @@ fun ConsoleSettingsScreen(
             }
 
             item {
-                SpCard {
+                SpCard(onGradient = true) {
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
