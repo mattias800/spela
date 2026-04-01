@@ -1,6 +1,6 @@
-import { Star, CheckCircle2, AlertTriangle, File, HardDrive } from "lucide-react";
-import { cn } from "@/lib/cn";
+import { CheckCircle2, AlertTriangle, File, HardDrive } from "lucide-react";
 import { Badge } from "@/components/ui";
+import { RatingDisplay } from "@/components/rating-display";
 import { ConsoleBadge } from "@/components/console-badge";
 import { formatFileSize } from "@/lib/format";
 
@@ -93,22 +93,7 @@ export function GameSummaryCard({
           </div>
 
           {rating != null && rating > 0 && (
-            <div className="flex items-center gap-1">
-              {[1, 2, 3, 4, 5].map((star) => (
-                <Star
-                  key={star}
-                  className={cn(
-                    "h-3.5 w-3.5",
-                    star <= Math.round(rating)
-                      ? "text-amber-400 fill-amber-400"
-                      : "text-surface-600",
-                  )}
-                />
-              ))}
-              <span className="text-xs text-surface-400 ml-1">
-                {rating.toFixed(1)}
-              </span>
-            </div>
+            <RatingDisplay value={rating} variant="stars" />
           )}
 
           <div className="flex items-center gap-3 text-xs text-surface-500">

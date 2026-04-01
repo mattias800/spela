@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { Link } from "react-router-dom";
-import { ChevronLeft, ChevronRight, Star } from "lucide-react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
+import { RatingDisplay } from "@/components/rating-display";
 import { Skeleton } from "@/components/ui";
 import { AreaSizedImage } from "@/components/area-sized-image";
 import { ConsoleBadge } from "@/components/console-badge";
@@ -121,10 +122,7 @@ function HeroSlide({
                 <ConsoleBadge code={game.consoleAbbreviation} />
               )}
               {game.rating > 0 && (
-                <span className="inline-flex items-center gap-1 text-sm font-medium text-amber-400">
-                  <Star className="h-3.5 w-3.5 fill-amber-400" />
-                  {game.rating.toFixed(1)}
-                </span>
+                <RatingDisplay value={game.rating} />
               )}
             </div>
           </div>

@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import { cn } from "@/lib/cn";
+import { RatingDisplay } from "@/components/rating-display";
 import { ConsoleBadge } from "@/components/console-badge";
 import { getReleaseYear } from "@/lib/date-utils";
 import type { SeriesGame } from "@/types/api";
@@ -56,9 +57,7 @@ export function GameTimelineCard({ game, testIdPrefix }: GameTimelineCardProps) 
             <span className="text-xs text-surface-500">{year}</span>
           )}
           {game.rating > 0 && (
-            <span className="text-xs text-surface-400">
-              {game.rating.toFixed(0)}%
-            </span>
+            <RatingDisplay value={game.rating / 10} />
           )}
         </div>
       </div>

@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
-import { Heart, Star, Clock, Loader2 } from "lucide-react";
+import { Heart, Clock, Loader2 } from "lucide-react";
+import { RatingDisplay } from "@/components/rating-display";
 import { cn } from "@/lib/cn";
 import { ConsoleBadge } from "@/components/console-badge";
 import { useAutoScrape } from "@/hooks/use-auto-scrape";
@@ -145,10 +146,7 @@ export function GameCard({
             )
           )}
           {game.averageRating > 0 && (
-            <span className="flex items-center gap-0.5 text-xs text-surface-400">
-              <Star className="h-3 w-3 text-amber-400 fill-amber-400" />
-              {game.averageRating.toFixed(1)}
-            </span>
+            <RatingDisplay value={game.averageRating} />
           )}
         </div>
         {subtitle && (

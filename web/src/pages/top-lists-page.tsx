@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Trophy, Star, Clock, Gamepad2, Users, Newspaper } from "lucide-react";
+import { RatingDisplay } from "@/components/rating-display";
 import { Skeleton, EmptyState } from "@/components/ui";
 import { ConsoleBadge } from "@/components/console-badge";
 import { useTopRated, useTopRatedCritics, useLongestGames } from "@/hooks/use-top-lists";
@@ -125,10 +126,7 @@ function TopRatedList({ games }: { games: TopListGame[] }) {
             </div>
             <PlayInfo gameId={game.gameId} className="mt-1.5" />
           </div>
-          <span className="flex items-center gap-1 text-sm font-mono text-amber-400 whitespace-nowrap">
-            <Star className="h-3.5 w-3.5 fill-amber-400" />
-            {game.rating.toFixed(1)}
-          </span>
+          <RatingDisplay value={game.rating} />
         </Link>
       ))}
     </div>
