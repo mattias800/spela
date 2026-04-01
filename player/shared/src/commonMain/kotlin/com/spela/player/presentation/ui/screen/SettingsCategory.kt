@@ -6,6 +6,7 @@ import androidx.compose.material.icons.filled.EmojiEvents
 import androidx.compose.material.icons.filled.Gamepad
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.SportsEsports
 import androidx.compose.material.icons.filled.Storage
 import androidx.compose.ui.graphics.vector.ImageVector
 
@@ -19,6 +20,7 @@ enum class SettingsCategory(
     GENERAL("General", Icons.Filled.Settings),
     EMULATION("Emulation", Icons.Filled.Build),
     CONTROLS("Controls", Icons.Filled.Gamepad),
+    CONSOLES("Per-Console", Icons.Filled.SportsEsports),
     ACHIEVEMENTS("Achievements", Icons.Filled.EmojiEvents),
     STORAGE_SYNC("Storage & Sync", Icons.Filled.Storage),
     ABOUT("About", Icons.Filled.Info),

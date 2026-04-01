@@ -93,8 +93,9 @@ fun SettingsCategoryContent(
             SettingsCategory.GENERAL -> generalContent(state, viewModel)
             SettingsCategory.EMULATION -> emulationContent(state, viewModel)
             SettingsCategory.CONTROLS -> controlsContent(
-                state, viewModel, keyMappingViewModel, keyMappingState, onNavigateToConsoleSettings,
+                state, viewModel, keyMappingViewModel, keyMappingState,
             )
+            SettingsCategory.CONSOLES -> consolesContent(state, onNavigateToConsoleSettings)
             SettingsCategory.ACHIEVEMENTS -> achievementsContent(state, viewModel)
             SettingsCategory.STORAGE_SYNC -> storageSyncContent(
                 state, viewModel, syncState, isOnline, connectionState,
@@ -235,7 +236,6 @@ private fun androidx.compose.foundation.lazy.LazyListScope.controlsContent(
     viewModel: SettingsViewModel,
     keyMappingViewModel: KeyMappingViewModel?,
     keyMappingState: KeyMappingState?,
-    onNavigateToConsoleSettings: (String) -> Unit,
 ) {
     // Controls presets
     if (keyMappingViewModel != null && keyMappingState != null) {
@@ -251,12 +251,13 @@ private fun androidx.compose.foundation.lazy.LazyListScope.controlsContent(
             },
         )
     }
+}
 
-    // Per-console settings
+private fun androidx.compose.foundation.lazy.LazyListScope.consolesContent(
+    state: SettingsState,
+    onNavigateToConsoleSettings: (String) -> Unit,
+) {
     if (state.consoles.isNotEmpty()) {
-        item { Spacer(Modifier.height(SpSpacing.Medium)) }
-        item { SettingsSectionHeader(title = "Per-console settings") }
-
         items(
             items = state.consoles,
             key = { "console_${it.id}" },
@@ -301,6 +302,14 @@ private fun androidx.compose.foundation.lazy.LazyListScope.controlsContent(
                     )
                 }
             }
+        }
+    } else {
+        item {
+            Text(
+                text = "No consoles with games found",
+                style = SpTypography.BodyMedium,
+                color = SpColor.OnBackgroundTertiary,
+            )
         }
     }
 }

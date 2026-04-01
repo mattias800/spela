@@ -31,6 +31,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
+import com.spela.player.presentation.ui.theme.LocalTitleBarInset
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.ui.theme.SpTypography
@@ -66,13 +67,15 @@ fun SpNavigationRail(
 ) {
     val railWidth = if (showLabels) 200.dp else 72.dp
 
+    val titleBarInset = LocalTitleBarInset.current
+
     Row(modifier = modifier.fillMaxHeight()) {
         Column(
             modifier = Modifier
                 .width(railWidth)
                 .fillMaxHeight()
                 .background(SpColor.Surface)
-                .padding(vertical = SpSpacing.Medium),
+                .padding(top = if (titleBarInset > 0.dp) titleBarInset else SpSpacing.Medium, bottom = SpSpacing.Medium),
             horizontalAlignment = if (showLabels) Alignment.Start else Alignment.CenterHorizontally,
         ) {
             // Main tabs (everything except Settings)
