@@ -565,9 +565,11 @@ private fun ComposeRule.addServerAndLogin(username: String, password: String) {
 }
 
 private fun ComposeRule.doLogin(username: String, password: String) {
-    waitUntil(timeoutMillis = TIMEOUT_MEDIUM) {
-        onAllNodesWithText("Username", substring = true)
-            .fetchSemanticsNodes().isNotEmpty()
+    // Wait for login form — check for Username label or Sign In button
+    waitUntil(timeoutMillis = TIMEOUT_EXTRA_LONG) {
+        isOnLoginScreen() ||
+            onAllNodesWithText("Sign In", substring = true)
+                .fetchSemanticsNodes().isNotEmpty()
     }
 
     // Clear fields first in case they have pre-filled text from a previous session
