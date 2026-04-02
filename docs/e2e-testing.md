@@ -58,10 +58,12 @@ cd player
 **Prerequisites:**
 - Connected Android device (AYN Thor: serial `54071896`)
 - Docker E2E environment running (`docker compose -f docker-compose.e2e.yml up -d --build --wait`)
+- **Device clamshell must be OPEN** and screen visible
 - Device must be awake and unlocked
 
 **Common pitfalls:**
-- **Device sleeps during tests** → All tests fail with `ComposeTimeoutException` because the Compose hierarchy is suspended when the screen is off. Always use `run-e2e.sh` which keeps the screen on.
+- **AYN Thor clamshell must be OPEN** → When the clamshell is closed, the device immediately sleeps after the Activity launches (RESUMED → PAUSED → STOPPED in ~0.2s). The Compose hierarchy becomes unavailable and ALL tests fail with "No compose hierarchies found in the app." `KEYCODE_WAKEUP` does NOT fix this — the device sleeps again instantly when the lid is closed. You must physically open the device.
+- **Device sleeps during tests** → Even with the clamshell open, the screen may turn off. `run-e2e.sh` sets the screen timeout to 10 minutes, but if tests take longer, increase it: `adb shell settings put system screen_off_timeout 1800000` (30 min).
 - **Stale local Go servers** → If a local `go run` server is running on port 8080, it intercepts requests before Docker gets them. Kill stale servers: `lsof -i :8080` and kill any non-Docker processes.
 - **Signature mismatch** → If switching between debug and release APKs, uninstall first: `adb uninstall com.spela.player`
 
