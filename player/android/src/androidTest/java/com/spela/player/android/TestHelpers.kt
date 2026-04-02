@@ -416,8 +416,11 @@ fun ComposeRule.ensureLoggedIn(
     username: String = PLAYER_USERNAME,
     password: String = PLAYER_PASSWORD
 ) {
-    // Wait for any recognizable screen to load (extra long for fresh install / emulator).
-    // Uses both test tags and text fallbacks for robustness.
+    // Give the Activity time to initialize after KoinResetRule module reload.
+    // Without this, the Compose hierarchy may not exist yet.
+    Thread.sleep(2_000)
+
+    // Wait for any recognizable screen to load.
     waitUntil(timeoutMillis = 30_000L) {
         try {
             isOnHomeScreen() ||
