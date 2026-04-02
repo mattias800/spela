@@ -432,7 +432,7 @@ fun ComposeRule.ensureLoggedIn(
                 onAllNodesWithContentDescription("Go back", substring = true)
                     .fetchSemanticsNodes().isNotEmpty()
         } catch (_: IllegalStateException) {
-            false // Compose hierarchy not yet available
+            false // Compose hierarchy not yet available (device asleep or Activity not launched)
         }
     }
 
