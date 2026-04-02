@@ -29,10 +29,9 @@ import org.junit.runner.RunWith
 @RunWith(AndroidJUnit4::class)
 class CollectionsTest {
 
-    @get:Rule(order = 0)
-    val koinResetRule = KoinResetRule()
+    
 
-    @get:Rule(order = 1)
+    @get:Rule
     val rule = createAndroidComposeRule<MainActivity>()
 
     // ── Navigation helpers ──

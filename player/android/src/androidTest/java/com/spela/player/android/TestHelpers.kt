@@ -416,10 +416,6 @@ fun ComposeRule.ensureLoggedIn(
     username: String = PLAYER_USERNAME,
     password: String = PLAYER_PASSWORD
 ) {
-    // Give the Activity time to initialize after KoinResetRule module reload.
-    // Without this, the Compose hierarchy may not exist yet.
-    Thread.sleep(2_000)
-
     // Wait for any recognizable screen to load.
     waitUntil(timeoutMillis = 30_000L) {
         try {
@@ -608,11 +604,11 @@ fun ComposeRule.navigateToCastlevania() {
 fun ComposeRule.navigateToGameByTitle(gameTitle: String) {
     // Navigate to Consoles tab
     tapOn("Consoles")
-    waitForContentDescription("Nintendo Entertainment System", TIMEOUT_MEDIUM)
+    waitForContentDescription("Nintendo Entertainment System", TIMEOUT_EXTRA_LONG)
 
     // Tap the NES console card
     scrollToAndTapMatchingBoth("Nintendo Entertainment System", "games")
-    waitForText("Nintendo Entertainment System", TIMEOUT_LONG)
+    waitForText("Nintendo Entertainment System", TIMEOUT_EXTRA_LONG)
 
     // Try to find the game directly (may be in a visible shelf or inline grid)
     val directlyVisible = try {

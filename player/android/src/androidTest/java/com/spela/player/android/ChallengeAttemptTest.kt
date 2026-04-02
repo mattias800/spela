@@ -36,10 +36,9 @@ class ChallengeAttemptTest {
         private const val SHARED_CHALLENGE = "Attempt E2E Challenge"
     }
 
-    @get:Rule(order = 0)
-    val koinResetRule = KoinResetRule()
+    
 
-    @get:Rule(order = 1)
+    @get:Rule
     val rule = createAndroidComposeRule<MainActivity>()
 
     /**

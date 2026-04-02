@@ -10,10 +10,9 @@ import org.junit.runner.RunWith
 @RunWith(AndroidJUnit4::class)
 class EstablishSessionTest {
 
-    @get:Rule(order = 0)
-    val koinResetRule = KoinResetRule()
+    
 
-    @get:Rule(order = 1)
+    @get:Rule
     val composeTestRule = createAndroidComposeRule<MainActivity>()
 
     @Test
