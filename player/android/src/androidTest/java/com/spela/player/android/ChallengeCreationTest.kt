@@ -243,7 +243,7 @@ class ChallengeCreationTest {
 
         // Exit game to go back to game detail
         rule.openOverlayAndExit()
-        rule.waitForText("About", timeout = 8_000)
+        rule.waitForText("Download", timeout = 8_000)
 
         // Navigate to challenge list via "View Challenges" button
         rule.navigateToChallengeList()

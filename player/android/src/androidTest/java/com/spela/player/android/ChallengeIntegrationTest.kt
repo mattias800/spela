@@ -33,7 +33,7 @@ class ChallengeIntegrationTest {
         rule.navigateToGameAndPlay()
         rule.createChallengeFromOverlay("Activity Feed Test")
         rule.openOverlayAndExit()
-        rule.waitForText("About", timeout = 8_000)
+        rule.waitForText("Download", timeout = 8_000)
 
         // Navigate to challenge and attempt it
         rule.navigateToChallengeList()
@@ -128,7 +128,7 @@ class ChallengeIntegrationTest {
         rule.navigateToCastlevania()
 
         // Existing game detail sections should still work
-        rule.assertVisible("About")
+        rule.assertVisible("Download")
         rule.scrollToAndTapText("Save States")
         rule.scrollToAndTapText("Community Saves")
 

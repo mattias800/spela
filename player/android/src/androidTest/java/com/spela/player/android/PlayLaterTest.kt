@@ -152,13 +152,13 @@ class PlayLaterTest {
 
         // Navigate to a different game first, then back, to force a fresh load
         rule.scrollToAndTapText("Section Z")
-        rule.waitForText("About", timeout = 5_000)
+        rule.waitForText("Download", timeout = 5_000)
         rule.pressBack()
         rule.waitForText("Castlevania", timeout = 8_000)
 
         // Re-navigate to Castlevania
         rule.scrollToAndTapText("Castlevania")
-        rule.waitForText("About", timeout = 5_000)
+        rule.waitForText("Download", timeout = 5_000)
 
         // Wait for the play later button to appear (either Add or Remove)
         waitForPlayLaterButton()

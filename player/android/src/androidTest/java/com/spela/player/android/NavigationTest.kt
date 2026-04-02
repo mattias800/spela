@@ -82,7 +82,7 @@ class NavigationTest {
         }
 
         // Wait for metadata to auto-scrape (generous timeout for network)
-        rule.waitForText("About", timeout = 30_000)
+        rule.waitForText("Download", timeout = 30_000)
 
         // Verify game detail fully populated
         rule.assertTextVisible("Castlevania")

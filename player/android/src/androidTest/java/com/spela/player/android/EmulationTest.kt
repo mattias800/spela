@@ -104,7 +104,7 @@ class EmulationTest {
         setupGame()
         rule.openOverlayAndExit()
 
-        rule.waitForText("About", timeout = 8_000)
+        rule.waitForText("Download", timeout = 8_000)
 
         // Second play session — button may be "Resume" if saves exist
         val hasResume = rule.onAllNodesWithText("Resume", substring = true)

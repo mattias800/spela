@@ -157,7 +157,7 @@ class HwRenderTest {
         setupNesGame()
         rule.openOverlayAndExit()
 
-        rule.waitForText("About", timeout = 8_000)
+        rule.waitForText("Download", timeout = 8_000)
 
         // After exiting, game has a save → "New Game" button appears (fresh start, skip auto-load)
         val hasNewGame = rule.onAllNodesWithText("New Game", substring = true)

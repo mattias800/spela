@@ -150,7 +150,7 @@ class ChallengeBrowsingTest {
         rule.createChallengeFromOverlay("Challenge Alpha")
         rule.createChallengeFromOverlay("Challenge Beta")
         rule.openOverlayAndExit()
-        rule.waitForText("About", timeout = 8_000)
+        rule.waitForText("Download", timeout = 8_000)
 
         // Navigate to challenge list
         rule.navigateToChallengeList()

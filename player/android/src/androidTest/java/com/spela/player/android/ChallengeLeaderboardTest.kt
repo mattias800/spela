@@ -73,7 +73,7 @@ class ChallengeLeaderboardTest {
         rule.navigateToGameAndPlay()
         rule.createChallengeFromOverlay("Leaderboard Entry Test")
         rule.openOverlayAndExit()
-        rule.waitForText("About", timeout = 8_000)
+        rule.waitForText("Download", timeout = 8_000)
 
         // Navigate to challenge detail and start attempt
         rule.navigateToChallengeList()

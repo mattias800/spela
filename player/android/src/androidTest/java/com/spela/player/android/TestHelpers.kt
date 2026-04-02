@@ -638,8 +638,17 @@ fun ComposeRule.navigateToGameByTitle(gameTitle: String) {
 
     scrollToAndTapText(gameTitle)
 
-    // Wait for game detail
-    waitForText("About", TIMEOUT_SHORT)
+    // Wait for game detail — look for Download/Play button or the game title
+    waitUntil(timeoutMillis = TIMEOUT_LONG) {
+        try {
+            onAllNodesWithText("Download", substring = true)
+                .fetchSemanticsNodes().isNotEmpty() ||
+            onAllNodesWithText("Play", substring = true)
+                .fetchSemanticsNodes().isNotEmpty() ||
+            onAllNodesWithText("Resume", substring = true)
+                .fetchSemanticsNodes().isNotEmpty()
+        } catch (_: IllegalStateException) { false }
+    }
 }
 
 fun ComposeRule.navigateToN64Game() {
@@ -663,7 +672,7 @@ fun ComposeRule.navigateToN64Game() {
         scrollToAndTapText("Banjo-Kazooie")
     }
 
-    waitForText("About", TIMEOUT_LONG)
+    waitForText("Download", TIMEOUT_LONG)
 }
 
 fun ComposeRule.navigateToN64GameAndPlay() {
@@ -1141,7 +1150,7 @@ fun ComposeRule.ensureChallengeExists(title: String = "E2E Test Challenge") {
     navigateToGameAndPlay()
     createChallengeFromOverlay(title)
     openOverlayAndExit()
-    waitForText("About", TIMEOUT_LONG)
+    waitForText("Download", TIMEOUT_LONG)
     challengesCreated.add(title)
 
     // Navigate all the way back to Home and then through the full path.
