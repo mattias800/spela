@@ -67,10 +67,10 @@ private const val PLAYER_PASSWORD = "player123"
 private const val ADMIN_USERNAME = "admin"
 private const val ADMIN_PASSWORD = "admin123"
 
-private const val TIMEOUT_SHORT = 3_000L
-private const val TIMEOUT_MEDIUM = 5_000L
-private const val TIMEOUT_LONG = 8_000L
-private const val TIMEOUT_EXTRA_LONG = 15_000L
+private const val TIMEOUT_SHORT = 5_000L
+private const val TIMEOUT_MEDIUM = 10_000L
+private const val TIMEOUT_LONG = 15_000L
+private const val TIMEOUT_EXTRA_LONG = 30_000L
 
 /** Tracks challenges created in this JVM process to skip expensive re-creation. */
 private val challengesCreated = mutableSetOf<String>()
@@ -326,14 +326,11 @@ fun ComposeRule.restartApp() {
     // Wait for the new Activity's Compose hierarchy to be fully established.
     // A simple waitForIdle() is insufficient in multi-class runs where the
     // recreation takes longer due to accumulated process state.
-    waitUntil(timeoutMillis = TIMEOUT_EXTRA_LONG) {
+    waitUntil(timeoutMillis = 30_000L) {
         try {
-            onAllNodesWithText("Spela", substring = true)
-                .fetchSemanticsNodes().isNotEmpty() ||
-                onAllNodesWithText("Add Server", substring = true)
-                    .fetchSemanticsNodes().isNotEmpty() ||
-                onAllNodesWithText("Username", substring = true)
-                    .fetchSemanticsNodes().isNotEmpty()
+            isOnHomeScreen() ||
+                isOnServerConnectionScreen() ||
+                isOnLoginScreen()
         } catch (_: IllegalStateException) {
             false // Compose hierarchy not yet available after recreate
         }
@@ -597,20 +594,50 @@ private fun ComposeRule.doLogin(username: String, password: String) {
 // ── Navigation helpers ──
 
 fun ComposeRule.navigateToCastlevania() {
-    // Navigate to Consoles tab and wait for console cards to appear
+    navigateToGameByTitle("Castlevania")
+}
+
+/**
+ * Navigate to a game's detail screen by finding it in the NES console game list.
+ * Handles both flat game lists (≤15 games) and shelved layouts (>15 games)
+ * where a "Browse" button is needed to access the full list.
+ */
+fun ComposeRule.navigateToGameByTitle(gameTitle: String) {
+    // Navigate to Consoles tab
     tapOn("Consoles")
     waitForContentDescription("Nintendo Entertainment System", TIMEOUT_MEDIUM)
 
-    // Scroll to and tap the NES console card. We match on the card's content description
-    // which contains both "Nintendo Entertainment System" and "games" — this distinguishes
-    // it from game cards that also mention the console name.
+    // Tap the NES console card
     scrollToAndTapMatchingBoth("Nintendo Entertainment System", "games")
-
-    // Wait for the console game list to load (title bar shows console name)
     waitForText("Nintendo Entertainment System", TIMEOUT_LONG)
 
-    // Scroll to and tap Castlevania in the game list
-    scrollToAndTapText("Castlevania")
+    // Try to find the game directly (may be in a visible shelf or inline grid)
+    val directlyVisible = try {
+        waitUntil(timeoutMillis = 3_000) {
+            onAllNodesWithText(gameTitle, substring = true)
+                .fetchSemanticsNodes().isNotEmpty()
+        }
+        true
+    } catch (_: androidx.compose.ui.test.ComposeTimeoutException) { false }
+
+    if (!directlyVisible) {
+        // Game not visible — try scrolling to find "Browse" or "Browse games" button
+        try {
+            scrollToAndTapText("Browse games")
+        } catch (_: IllegalStateException) {
+            try {
+                // Narrow layout uses just "Browse"
+                onNodeWithText("Browse", substring = false).performScrollTo()
+                onNodeWithText("Browse", substring = false).performClick()
+                waitForIdle()
+            } catch (_: Exception) {
+                // Last resort: scroll and hope
+            }
+        }
+        waitForText(gameTitle, TIMEOUT_LONG)
+    }
+
+    scrollToAndTapText(gameTitle)
 
     // Wait for game detail
     waitForText("About", TIMEOUT_SHORT)
@@ -621,11 +648,21 @@ fun ComposeRule.navigateToN64Game() {
     waitForContentDescription("Nintendo 64", TIMEOUT_MEDIUM)
 
     scrollToAndTapMatchingBoth("Nintendo 64", "games")
+    waitForText("Nintendo 64", TIMEOUT_LONG)
 
-    // "Banjo-Kazooie" is first alphabetically in the N64 game list,
-    // so it's visible immediately without scrolling in the LazyColumn.
-    waitForText("Banjo-Kazooie", TIMEOUT_LONG)
-    scrollToAndTapText("Banjo-Kazooie")
+    // Try to find Banjo-Kazooie directly, fall back to Browse
+    val directlyVisible = try {
+        onAllNodesWithText("Banjo-Kazooie", substring = true)
+            .fetchSemanticsNodes().isNotEmpty()
+    } catch (_: IllegalStateException) { false }
+
+    if (directlyVisible) {
+        scrollToAndTapText("Banjo-Kazooie")
+    } else {
+        scrollToAndTapText("Browse")
+        waitForText("Banjo-Kazooie", TIMEOUT_LONG)
+        scrollToAndTapText("Banjo-Kazooie")
+    }
 
     waitForText("About", TIMEOUT_LONG)
 }

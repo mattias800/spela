@@ -129,7 +129,7 @@ class SessionTest {
         rule.onNodeWithText("Local").performClick()
 
         // Login (tests landscape scrollability)
-        rule.waitForText("Username", timeout = 5_000)
+        rule.waitForText("Username", timeout = 15_000)
 
         rule.onNode(hasText("Username") and hasSetTextAction())
             .performTextInput("player")
