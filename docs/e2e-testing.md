@@ -66,6 +66,11 @@ cd player
 - **Device sleeps during tests** → Even with the clamshell open, the screen may turn off. `run-e2e.sh` sets the screen timeout to 10 minutes, but if tests take longer, increase it: `adb shell settings put system screen_off_timeout 1800000` (30 min).
 - **Stale local Go servers** → If a local `go run` server is running on port 8080, it intercepts requests before Docker gets them. Kill stale servers: `lsof -i :8080` and kill any non-Docker processes.
 - **Signature mismatch** → If switching between debug and release APKs, uninstall first: `adb uninstall com.spela.player`
+- **Stale app data** → Always uninstall before installing test APK so you start with clean app data. Leftover server connections from manual testing will cause tests to log into the wrong server.
+- **Console page layout** → The console page shows game shelves (Top Rated, Continue Playing) not a flat game list. For libraries with >15 games, games are behind a "Browse" button. Test helpers handle this via `navigateToGameByTitle()`.
+- **Emulator timeouts** → Emulators are slower than physical devices. Timeouts: SHORT=5s, MEDIUM=10s, LONG=15s, EXTRA_LONG=30s.
+- **Keyboard blocking buttons** → On portrait emulators, the soft keyboard can block buttons. Use `performImeAction()` instead of keyboard dismiss + button click.
+- **Use `run-e2e.sh`** → DO NOT run `./gradlew :android:connectedDebugAndroidTest` directly. The script handles device wake, screen timeout, port forwarding, and cleanup. Running gradle directly skips all of this and tests will fail.
 
 ### Test Tag Convention (Player App)
 
