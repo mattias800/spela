@@ -693,7 +693,7 @@ private fun ComposeRule.addServerAndLogin(username: String, password: String) {
         // trigger ToggleAddServer, and recompose with the form visible.
         Thread.sleep(5_000)
 
-        onNodeWithTag(TestTags.SERVER_NAME_INPUT)
+        onNodeWithTag(TestTags.SERVER_NAME_INPUT, useUnmergedTree = true)
             .performTextInput(SERVER_NAME)
         onNode(hasText("Server URL") and hasSetTextAction())
             .performTextInput(SERVER_URL)
