@@ -591,13 +591,17 @@ fun ComposeRule.ensureLoggedIn(
     }
 
     // On server connection screen — add server then login
-    if (isOnServerConnectionScreen()) {
+    if (onAllNodesWithTag(TestTags.SCREEN_SERVER_CONNECTION)
+            .fetchSemanticsNodes().isNotEmpty()
+    ) {
         addServerAndLogin(username, password)
         return
     }
 
     // On login screen — just login
-    if (isOnLoginScreen()) {
+    if (onAllNodesWithTag(TestTags.SCREEN_LOGIN)
+            .fetchSemanticsNodes().isNotEmpty()
+    ) {
         doLogin(username, password)
         return
     }
@@ -693,7 +697,7 @@ private fun ComposeRule.addServerAndLogin(username: String, password: String) {
         // trigger ToggleAddServer, and recompose with the form visible.
         Thread.sleep(5_000)
 
-        onNodeWithTag(TestTags.SERVER_NAME_INPUT, useUnmergedTree = true)
+        onNodeWithTag(TestTags.SERVER_NAME_INPUT)
             .performTextInput(SERVER_NAME)
         onNode(hasText("Server URL") and hasSetTextAction())
             .performTextInput(SERVER_URL)
