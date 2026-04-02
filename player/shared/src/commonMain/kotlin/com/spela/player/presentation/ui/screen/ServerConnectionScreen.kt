@@ -58,6 +58,8 @@ import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.ui.theme.SpTypography
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.platform.testTag
+import com.spela.player.presentation.ui.TestTags
 import com.spela.player.presentation.ui.components.SpActionCard
 import com.spela.player.presentation.ui.components.SpAmbientGlowBlobs
 import com.spela.player.presentation.ui.theme.spelaBrandGradient
@@ -91,7 +93,7 @@ fun ServerConnectionScreen(
         }
     }
 
-    BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+    BoxWithConstraints(modifier = Modifier.fillMaxSize().testTag(TestTags.SCREEN_SERVER_CONNECTION)) {
         val layoutMode = when {
             maxWidth > 840.dp -> "desktop"
             maxWidth > 600.dp -> "handheld"
@@ -343,6 +345,7 @@ private fun ServerListOrForm(
                         },
                         label = "Server Name",
                         placeholder = "My Home Server",
+                        modifier = Modifier.testTag(TestTags.SERVER_NAME_INPUT),
                     )
                     Spacer(Modifier.height(SpSpacing.Small))
                     SpTextField(
@@ -354,6 +357,7 @@ private fun ServerListOrForm(
                         placeholder = "https://spela.example.com",
                         imeAction = ImeAction.Done,
                         onImeAction = { viewModel.onIntent(ServerConnectionIntent.AddServer) },
+                        modifier = Modifier.testTag(TestTags.SERVER_URL_INPUT),
                     )
                     Spacer(Modifier.height(SpSpacing.Default))
                     if (state.servers.isEmpty()) {
@@ -361,7 +365,7 @@ private fun ServerListOrForm(
                         SpButton(
                             text = "Connect",
                             onClick = { viewModel.onIntent(ServerConnectionIntent.AddServer) },
-                            modifier = Modifier.fillMaxWidth(),
+                            modifier = Modifier.fillMaxWidth().testTag(TestTags.SERVER_CONNECT_BUTTON),
                             enabled = !state.isValidating,
                             isLoading = state.isValidating,
                         )
@@ -394,7 +398,7 @@ private fun ServerListOrForm(
                 SpSecondaryButton(
                     text = "Add Server",
                     onClick = { viewModel.onIntent(ServerConnectionIntent.ToggleAddServer) },
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier.fillMaxWidth().testTag(TestTags.SERVER_ADD_TOGGLE_BUTTON),
                 )
             }
         }

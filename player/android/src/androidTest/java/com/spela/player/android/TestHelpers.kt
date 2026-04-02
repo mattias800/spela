@@ -7,11 +7,13 @@ import androidx.compose.ui.test.hasScrollToNodeAction
 import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
+import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.test.junit4.AndroidComposeTestRule
 import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onAllNodesWithText
+import com.spela.player.presentation.ui.TestTags
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -396,27 +398,13 @@ fun ComposeRule.ensureLoggedIn(
     waitUntil(timeoutMillis = TIMEOUT_EXTRA_LONG) {
         try {
             isOnHomeScreen() ||
-                onAllNodesWithText("Nu spelar vi", substring = true)
+                onAllNodesWithTag(TestTags.SCREEN_SERVER_CONNECTION)
                     .fetchSemanticsNodes().isNotEmpty() ||
-                onAllNodesWithText("Add Server", substring = true)
-                    .fetchSemanticsNodes().isNotEmpty() ||
-                onAllNodesWithText("Server Name", substring = true)
-                    .fetchSemanticsNodes().isNotEmpty() ||
-                onAllNodesWithText("Username", substring = true)
+                onAllNodesWithTag(TestTags.SCREEN_LOGIN)
                     .fetchSemanticsNodes().isNotEmpty() ||
                 onAllNodesWithContentDescription("Settings", substring = true)
                     .fetchSemanticsNodes().isNotEmpty() ||
-                onAllNodesWithText("Play", substring = true)
-                    .fetchSemanticsNodes().isNotEmpty() ||
-                onAllNodesWithText("Resume", substring = true)
-                    .fetchSemanticsNodes().isNotEmpty() ||
-                onAllNodesWithText("About", substring = true)
-                    .fetchSemanticsNodes().isNotEmpty() ||
                 onAllNodesWithContentDescription("Game running", substring = true)
-                    .fetchSemanticsNodes().isNotEmpty() ||
-                onAllNodesWithText("Account", substring = true)
-                    .fetchSemanticsNodes().isNotEmpty() ||
-                onAllNodesWithText("Sign Out", substring = true)
                     .fetchSemanticsNodes().isNotEmpty() ||
                 onAllNodesWithContentDescription("Go back", substring = true)
                     .fetchSemanticsNodes().isNotEmpty()
@@ -426,17 +414,15 @@ fun ComposeRule.ensureLoggedIn(
     }
 
     // On server connection screen — add server then login
-    if (onAllNodesWithText("Add Server", substring = true)
-            .fetchSemanticsNodes().isNotEmpty() ||
-        onAllNodesWithText("Server Name", substring = true)
+    if (onAllNodesWithTag(TestTags.SCREEN_SERVER_CONNECTION)
             .fetchSemanticsNodes().isNotEmpty()
     ) {
         addServerAndLogin(username, password)
         return
     }
 
-    // On login screen — just login (check for Username text field label)
-    if (onAllNodesWithText("Username", substring = true)
+    // On login screen — just login
+    if (onAllNodesWithTag(TestTags.SCREEN_LOGIN)
             .fetchSemanticsNodes().isNotEmpty()
     ) {
         doLogin(username, password)
@@ -514,30 +500,41 @@ private fun ComposeRule.signOutIfLoggedIn() {
     onAllNodesWithText("Sign Out")[signOutNodes.size - 1].performClick()
 
     // Wait for server connection screen
-    waitForText("Add Server", TIMEOUT_EXTRA_LONG)
+    waitUntil(timeoutMillis = TIMEOUT_EXTRA_LONG) {
+        onAllNodesWithTag(TestTags.SCREEN_SERVER_CONNECTION)
+            .fetchSemanticsNodes().isNotEmpty()
+    }
 }
 
 private fun ComposeRule.addServerAndLogin(username: String, password: String) {
     // Wait for server connection screen
-    waitForText("Add Server", TIMEOUT_LONG)
+    waitUntil(timeoutMillis = TIMEOUT_LONG) {
+        onAllNodesWithTag(TestTags.SCREEN_SERVER_CONNECTION)
+            .fetchSemanticsNodes().isNotEmpty()
+    }
 
     // Check if "Local" server already exists
     val hasServer = onAllNodesWithText(SERVER_NAME, substring = true)
         .fetchSemanticsNodes().isNotEmpty()
 
     if (!hasServer) {
-        // Add server
-        onNodeWithText("Add Server").performClick()
-        waitForIdle()
+        // The form auto-opens when no servers exist. If it hasn't, click "Add Server".
+        val formOpen = onAllNodesWithTag(TestTags.SERVER_NAME_INPUT)
+            .fetchSemanticsNodes().isNotEmpty()
+        if (!formOpen) {
+            onNodeWithTag(TestTags.SERVER_ADD_TOGGLE_BUTTON).performClick()
+            waitForIdle()
+        }
 
-        onNode(hasText("Server Name") and hasSetTextAction())
+        onNodeWithTag(TestTags.SERVER_NAME_INPUT)
             .performTextInput(SERVER_NAME)
 
-        onNode(hasText("Server URL") and hasSetTextAction())
+        onNodeWithTag(TestTags.SERVER_URL_INPUT)
             .performTextInput(SERVER_URL)
 
-        onNodeWithText("Add").performScrollTo()
-        onNodeWithText("Add").performClick()
+        // First server uses "Connect", additional servers use "Add"
+        onNodeWithTag(TestTags.SERVER_CONNECT_BUTTON).performScrollTo()
+        onNodeWithTag(TestTags.SERVER_CONNECT_BUTTON).performClick()
         waitForIdle()
     }
 
@@ -550,21 +547,24 @@ private fun ComposeRule.addServerAndLogin(username: String, password: String) {
 }
 
 private fun ComposeRule.doLogin(username: String, password: String) {
-    waitForText("Username", TIMEOUT_MEDIUM)
+    waitUntil(timeoutMillis = TIMEOUT_MEDIUM) {
+        onAllNodesWithTag(TestTags.LOGIN_USERNAME_INPUT)
+            .fetchSemanticsNodes().isNotEmpty()
+    }
 
     // Clear fields first in case they have pre-filled text from a previous session
-    onNode(hasText("Username") and hasSetTextAction())
+    onNodeWithTag(TestTags.LOGIN_USERNAME_INPUT)
         .performTextClearance()
-    onNode(hasText("Username") and hasSetTextAction())
+    onNodeWithTag(TestTags.LOGIN_USERNAME_INPUT)
         .performTextInput(username)
 
-    onNode(hasText("Password") and hasSetTextAction())
+    onNodeWithTag(TestTags.LOGIN_PASSWORD_INPUT)
         .performTextClearance()
-    onNode(hasText("Password") and hasSetTextAction())
+    onNodeWithTag(TestTags.LOGIN_PASSWORD_INPUT)
         .performTextInput(password)
 
-    onNodeWithText("Sign In").performScrollTo()
-    onNodeWithText("Sign In").performClick()
+    onNodeWithTag(TestTags.LOGIN_SUBMIT_BUTTON).performScrollTo()
+    onNodeWithTag(TestTags.LOGIN_SUBMIT_BUTTON).performClick()
 
     // Verify home screen (extra long timeout for multi-class runs where server may be slow)
     waitUntil(timeoutMillis = TIMEOUT_EXTRA_LONG) {

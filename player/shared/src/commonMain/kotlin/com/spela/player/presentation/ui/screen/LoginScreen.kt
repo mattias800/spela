@@ -32,6 +32,8 @@ import androidx.compose.ui.unit.dp
 import com.spela.player.presentation.intent.LoginIntent
 import com.spela.player.presentation.ui.components.SpButton
 import com.spela.player.presentation.ui.components.SpButtonStyle
+import androidx.compose.ui.platform.testTag
+import com.spela.player.presentation.ui.TestTags
 import com.spela.player.presentation.ui.components.SpGradientBackground
 import com.spela.player.presentation.ui.components.SpLogo
 import com.spela.player.presentation.ui.components.SpServerPill
@@ -61,7 +63,7 @@ fun LoginScreen(
         }
     }
 
-    BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+    BoxWithConstraints(modifier = Modifier.fillMaxSize().testTag(TestTags.SCREEN_LOGIN)) {
         val isLandscape = maxWidth > maxHeight
 
         if (isLandscape) {
@@ -199,6 +201,7 @@ private fun LoginForm(
     SpServerPill(
         serverUrl = serverUrl,
         onClick = onChangeServer,
+        modifier = Modifier.testTag(TestTags.LOGIN_SERVER_PILL),
     )
 
     Spacer(Modifier.height(SpSpacing.XLarge))
@@ -209,6 +212,7 @@ private fun LoginForm(
         label = "Username",
         placeholder = "Enter your username",
         enabled = !state.isLoading,
+        modifier = Modifier.testTag(TestTags.LOGIN_USERNAME_INPUT),
     )
 
     Spacer(Modifier.height(SpSpacing.Default))
@@ -222,6 +226,7 @@ private fun LoginForm(
         enabled = !state.isLoading,
         imeAction = ImeAction.Done,
         onImeAction = { viewModel.onIntent(LoginIntent.Submit) },
+        modifier = Modifier.testTag(TestTags.LOGIN_PASSWORD_INPUT),
     )
 
     // Error display
@@ -248,7 +253,7 @@ private fun LoginForm(
     SpButton(
         text = if (state.isRegisterMode) "Create Account" else "Sign In",
         onClick = { viewModel.onIntent(LoginIntent.Submit) },
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth().testTag(TestTags.LOGIN_SUBMIT_BUTTON),
         isLoading = state.isLoading,
         enabled = !state.isLoading,
     )
