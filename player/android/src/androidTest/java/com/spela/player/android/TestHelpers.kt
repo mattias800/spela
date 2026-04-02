@@ -159,30 +159,6 @@ fun ComposeRule.assertNotVisible(label: String) {
     assert(!hasText && !hasDesc) { "Expected '$label' to NOT be visible, but it was found" }
 }
 
-/** Check if we're on the server connection screen (test tag or text fallback). */
-private fun ComposeRule.isOnServerConnectionScreen(): Boolean {
-    return try {
-        onAllNodesWithTag(TestTags.SCREEN_SERVER_CONNECTION, useUnmergedTree = true)
-            .fetchSemanticsNodes().isNotEmpty() ||
-            onAllNodesWithText("Add Server", substring = true)
-                .fetchSemanticsNodes().isNotEmpty() ||
-            onAllNodesWithText("Server Name", substring = true)
-                .fetchSemanticsNodes().isNotEmpty() ||
-            onAllNodesWithText("Nu spelar vi", substring = true)
-                .fetchSemanticsNodes().isNotEmpty()
-    } catch (_: IllegalStateException) { false }
-}
-
-/** Check if we're on the login screen (test tag or text fallback). */
-private fun ComposeRule.isOnLoginScreen(): Boolean {
-    return try {
-        onAllNodesWithTag(TestTags.SCREEN_LOGIN, useUnmergedTree = true)
-            .fetchSemanticsNodes().isNotEmpty() ||
-            onAllNodesWithText("Username", substring = true)
-                .fetchSemanticsNodes().isNotEmpty()
-    } catch (_: IllegalStateException) { false }
-}
-
 /** Check if we're on the Home screen (works in both populated and empty states). */
 private fun ComposeRule.isOnHomeScreen(): Boolean {
     return try {
@@ -419,12 +395,13 @@ fun ComposeRule.ensureLoggedIn(
     password: String = PLAYER_PASSWORD
 ) {
     // Wait for any recognizable screen to load (extra long for fresh install / emulator).
-    // Uses both test tags and text fallbacks for robustness.
-    waitUntil(timeoutMillis = 30_000L) {
+    waitUntil(timeoutMillis = TIMEOUT_EXTRA_LONG) {
         try {
             isOnHomeScreen() ||
-                isOnServerConnectionScreen() ||
-                isOnLoginScreen() ||
+                onAllNodesWithTag(TestTags.SCREEN_SERVER_CONNECTION)
+                    .fetchSemanticsNodes().isNotEmpty() ||
+                onAllNodesWithTag(TestTags.SCREEN_LOGIN)
+                    .fetchSemanticsNodes().isNotEmpty() ||
                 onAllNodesWithContentDescription("Settings", substring = true)
                     .fetchSemanticsNodes().isNotEmpty() ||
                 onAllNodesWithContentDescription("Game running", substring = true)
@@ -437,13 +414,17 @@ fun ComposeRule.ensureLoggedIn(
     }
 
     // On server connection screen — add server then login
-    if (isOnServerConnectionScreen()) {
+    if (onAllNodesWithTag(TestTags.SCREEN_SERVER_CONNECTION)
+            .fetchSemanticsNodes().isNotEmpty()
+    ) {
         addServerAndLogin(username, password)
         return
     }
 
     // On login screen — just login
-    if (isOnLoginScreen()) {
+    if (onAllNodesWithTag(TestTags.SCREEN_LOGIN)
+            .fetchSemanticsNodes().isNotEmpty()
+    ) {
         doLogin(username, password)
         return
     }
@@ -520,7 +501,7 @@ private fun ComposeRule.signOutIfLoggedIn() {
 
     // Wait for server connection screen
     waitUntil(timeoutMillis = TIMEOUT_EXTRA_LONG) {
-        onAllNodesWithTag(TestTags.SCREEN_SERVER_CONNECTION, useUnmergedTree = true)
+        onAllNodesWithTag(TestTags.SCREEN_SERVER_CONNECTION)
             .fetchSemanticsNodes().isNotEmpty()
     }
 }
@@ -528,7 +509,7 @@ private fun ComposeRule.signOutIfLoggedIn() {
 private fun ComposeRule.addServerAndLogin(username: String, password: String) {
     // Wait for server connection screen
     waitUntil(timeoutMillis = TIMEOUT_LONG) {
-        onAllNodesWithTag(TestTags.SCREEN_SERVER_CONNECTION, useUnmergedTree = true)
+        onAllNodesWithTag(TestTags.SCREEN_SERVER_CONNECTION)
             .fetchSemanticsNodes().isNotEmpty()
     }
 
@@ -538,22 +519,22 @@ private fun ComposeRule.addServerAndLogin(username: String, password: String) {
 
     if (!hasServer) {
         // The form auto-opens when no servers exist. If it hasn't, click "Add Server".
-        val formOpen = onAllNodesWithTag(TestTags.SERVER_NAME_INPUT, useUnmergedTree = true)
+        val formOpen = onAllNodesWithTag(TestTags.SERVER_NAME_INPUT)
             .fetchSemanticsNodes().isNotEmpty()
         if (!formOpen) {
-            onNodeWithTag(TestTags.SERVER_ADD_TOGGLE_BUTTON, useUnmergedTree = true).performClick()
+            onNodeWithTag(TestTags.SERVER_ADD_TOGGLE_BUTTON).performClick()
             waitForIdle()
         }
 
-        onNodeWithTag(TestTags.SERVER_NAME_INPUT, useUnmergedTree = true)
+        onNodeWithTag(TestTags.SERVER_NAME_INPUT)
             .performTextInput(SERVER_NAME)
 
-        onNodeWithTag(TestTags.SERVER_URL_INPUT, useUnmergedTree = true)
+        onNodeWithTag(TestTags.SERVER_URL_INPUT)
             .performTextInput(SERVER_URL)
 
         // First server uses "Connect", additional servers use "Add"
-        onNodeWithTag(TestTags.SERVER_CONNECT_BUTTON, useUnmergedTree = true).performScrollTo()
-        onNodeWithTag(TestTags.SERVER_CONNECT_BUTTON, useUnmergedTree = true).performClick()
+        onNodeWithTag(TestTags.SERVER_CONNECT_BUTTON).performScrollTo()
+        onNodeWithTag(TestTags.SERVER_CONNECT_BUTTON).performClick()
         waitForIdle()
     }
 
@@ -572,18 +553,18 @@ private fun ComposeRule.doLogin(username: String, password: String) {
     }
 
     // Clear fields first in case they have pre-filled text from a previous session
-    onNodeWithTag(TestTags.LOGIN_USERNAME_INPUT, useUnmergedTree = true)
+    onNodeWithTag(TestTags.LOGIN_USERNAME_INPUT)
         .performTextClearance()
-    onNodeWithTag(TestTags.LOGIN_USERNAME_INPUT, useUnmergedTree = true)
+    onNodeWithTag(TestTags.LOGIN_USERNAME_INPUT)
         .performTextInput(username)
 
-    onNodeWithTag(TestTags.LOGIN_PASSWORD_INPUT, useUnmergedTree = true)
+    onNodeWithTag(TestTags.LOGIN_PASSWORD_INPUT)
         .performTextClearance()
-    onNodeWithTag(TestTags.LOGIN_PASSWORD_INPUT, useUnmergedTree = true)
+    onNodeWithTag(TestTags.LOGIN_PASSWORD_INPUT)
         .performTextInput(password)
 
-    onNodeWithTag(TestTags.LOGIN_SUBMIT_BUTTON, useUnmergedTree = true).performScrollTo()
-    onNodeWithTag(TestTags.LOGIN_SUBMIT_BUTTON, useUnmergedTree = true).performClick()
+    onNodeWithTag(TestTags.LOGIN_SUBMIT_BUTTON).performScrollTo()
+    onNodeWithTag(TestTags.LOGIN_SUBMIT_BUTTON).performClick()
 
     // Verify home screen (extra long timeout for multi-class runs where server may be slow)
     waitUntil(timeoutMillis = TIMEOUT_EXTRA_LONG) {
