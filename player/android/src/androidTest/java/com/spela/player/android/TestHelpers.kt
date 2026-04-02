@@ -396,7 +396,11 @@ fun ComposeRule.ensureLoggedIn(
     waitUntil(timeoutMillis = TIMEOUT_EXTRA_LONG) {
         try {
             isOnHomeScreen() ||
+                onAllNodesWithText("Nu spelar vi", substring = true)
+                    .fetchSemanticsNodes().isNotEmpty() ||
                 onAllNodesWithText("Add Server", substring = true)
+                    .fetchSemanticsNodes().isNotEmpty() ||
+                onAllNodesWithText("Server Name", substring = true)
                     .fetchSemanticsNodes().isNotEmpty() ||
                 onAllNodesWithText("Username", substring = true)
                     .fetchSemanticsNodes().isNotEmpty() ||
@@ -423,13 +427,15 @@ fun ComposeRule.ensureLoggedIn(
 
     // On server connection screen — add server then login
     if (onAllNodesWithText("Add Server", substring = true)
+            .fetchSemanticsNodes().isNotEmpty() ||
+        onAllNodesWithText("Server Name", substring = true)
             .fetchSemanticsNodes().isNotEmpty()
     ) {
         addServerAndLogin(username, password)
         return
     }
 
-    // On login screen — just login
+    // On login screen — just login (check for Username text field label)
     if (onAllNodesWithText("Username", substring = true)
             .fetchSemanticsNodes().isNotEmpty()
     ) {
