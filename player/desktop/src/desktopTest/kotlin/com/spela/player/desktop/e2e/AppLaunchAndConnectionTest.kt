@@ -19,8 +19,7 @@ class AppLaunchAndConnectionTest {
         setContent { harness.App() }
         advance(harness)
 
-        onNodeWithText("Spela").assertIsDisplayed()
-        onNodeWithText("Connect to your game server").assertIsDisplayed()
+        onNodeWithText("Nu spelar vi!", substring = true).assertIsDisplayed()
         onNodeWithText("Add Server").assertIsDisplayed()
     }
 
@@ -59,7 +58,6 @@ class AppLaunchAndConnectionTest {
         advance(harness)
 
         // Should now be on the login screen
-        onNodeWithText("Welcome Back").assertIsDisplayed()
         onNodeWithText("Username").assertIsDisplayed()
         onNodeWithText("Password").assertIsDisplayed()
         onNodeWithText("Sign In").assertIsDisplayed()
@@ -82,8 +80,8 @@ class AppLaunchAndConnectionTest {
         onNodeWithText("Don't have an account? Register").performClick()
         advanceQuick(harness)
 
-        // "Create Account" appears as both heading and button - verify both exist
-        onAllNodesWithText("Create Account").assertCountEquals(2)
+        // "Create Account" button should be visible
+        onNodeWithText("Create Account").assertIsDisplayed()
         onNodeWithText("Already have an account? Sign In").assertIsDisplayed()
     }
 
@@ -137,8 +135,8 @@ class AppLaunchAndConnectionTest {
         onNodeWithText("Server Name").performTextInput("Test Server")
         onNodeWithText("Server URL").performTextInput("http://localhost:8080")
 
-        // Click Add
-        onNodeWithText("Add").performClick()
+        // Click Connect (first server uses "Connect" instead of "Add")
+        onNodeWithText("Connect").performClick()
         advance(harness)
 
         // Server should be added and form should close
@@ -158,8 +156,8 @@ class AppLaunchAndConnectionTest {
         onNodeWithText("Server Name").performTextInput("Bad Server")
         onNodeWithText("Server URL").performTextInput("http://bad-url:9999")
 
-        // Click Add
-        onNodeWithText("Add").performClick()
+        // Click Connect
+        onNodeWithText("Connect").performClick()
         advance(harness)
 
         // Error should appear, form should stay open with entered values
@@ -179,7 +177,7 @@ class AppLaunchAndConnectionTest {
         // Fill form and try to add
         onNodeWithText("Server Name").performTextInput("My Server")
         onNodeWithText("Server URL").performTextInput("http://bad:9999")
-        onNodeWithText("Add").performClick()
+        onNodeWithText("Connect").performClick()
         advance(harness)
 
         // Should show error
@@ -187,7 +185,7 @@ class AppLaunchAndConnectionTest {
 
         // Fix the validation result and retry
         harness.serverRepo.validateServerResult = true
-        onNodeWithText("Add").performClick()
+        onNodeWithText("Connect").performClick()
         advance(harness)
 
         // Server should now be added and form closed

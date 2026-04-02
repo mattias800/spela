@@ -29,7 +29,7 @@ class SessionTest {
         // The confirm button is the LAST one.
         val nodes = rule.onAllNodesWithText("Sign Out").fetchSemanticsNodes()
         rule.onAllNodesWithText("Sign Out")[nodes.size - 1].performClick()
-        rule.waitForText("Connect to your game server", timeout = 15_000)
+        rule.waitForText("Add Server", timeout = 15_000)
     }
 
     @Test
@@ -65,7 +65,7 @@ class SessionTest {
             try {
                 rule.onAllNodesWithText("Local", substring = true)
                     .fetchSemanticsNodes().isNotEmpty() ||
-                    rule.onAllNodesWithText("Welcome Back", substring = true)
+                    rule.onAllNodesWithText("Username", substring = true)
                         .fetchSemanticsNodes().isNotEmpty()
             } catch (_: IllegalStateException) {
                 false
@@ -74,7 +74,7 @@ class SessionTest {
 
         // If on server connection screen, tap server to get to login
         val onServerScreen = try {
-            rule.onAllNodesWithText("Connect to your game server", substring = true)
+            rule.onAllNodesWithText("Add Server", substring = true)
                 .fetchSemanticsNodes().isNotEmpty()
         } catch (_: IllegalStateException) { false }
         if (onServerScreen) {
@@ -82,7 +82,7 @@ class SessionTest {
         }
 
         // Verify login screen (tokens were cleared)
-        rule.waitForText("Welcome Back", timeout = 8_000)
+        rule.waitForText("Username", timeout = 8_000)
     }
 
     @Test
@@ -129,7 +129,7 @@ class SessionTest {
         rule.onNodeWithText("Local").performClick()
 
         // Login (tests landscape scrollability)
-        rule.waitForText("Welcome Back", timeout = 5_000)
+        rule.waitForText("Username", timeout = 5_000)
 
         rule.onNode(hasText("Username") and hasSetTextAction())
             .performTextInput("player")

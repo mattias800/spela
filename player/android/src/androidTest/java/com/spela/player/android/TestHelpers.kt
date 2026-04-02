@@ -303,9 +303,9 @@ fun ComposeRule.restartApp() {
         try {
             onAllNodesWithText("Spela", substring = true)
                 .fetchSemanticsNodes().isNotEmpty() ||
-                onAllNodesWithText("Connect to your game server", substring = true)
+                onAllNodesWithText("Add Server", substring = true)
                     .fetchSemanticsNodes().isNotEmpty() ||
-                onAllNodesWithText("Welcome Back", substring = true)
+                onAllNodesWithText("Username", substring = true)
                     .fetchSemanticsNodes().isNotEmpty()
         } catch (_: IllegalStateException) {
             false // Compose hierarchy not yet available after recreate
@@ -324,9 +324,9 @@ private fun ComposeRule.navigateBackToHome() {
             if (isOnHomeScreen()) return
 
             // Don't press back on auth screens — it would exit the app
-            if (onAllNodesWithText("Connect to your game server", substring = true)
+            if (onAllNodesWithText("Add Server", substring = true)
                     .fetchSemanticsNodes().isNotEmpty() ||
-                onAllNodesWithText("Welcome Back", substring = true)
+                onAllNodesWithText("Username", substring = true)
                     .fetchSemanticsNodes().isNotEmpty()
             ) return
 
@@ -396,9 +396,9 @@ fun ComposeRule.ensureLoggedIn(
     waitUntil(timeoutMillis = TIMEOUT_EXTRA_LONG) {
         try {
             isOnHomeScreen() ||
-                onAllNodesWithText("Connect to your game server", substring = true)
+                onAllNodesWithText("Add Server", substring = true)
                     .fetchSemanticsNodes().isNotEmpty() ||
-                onAllNodesWithText("Welcome Back", substring = true)
+                onAllNodesWithText("Username", substring = true)
                     .fetchSemanticsNodes().isNotEmpty() ||
                 onAllNodesWithContentDescription("Settings", substring = true)
                     .fetchSemanticsNodes().isNotEmpty() ||
@@ -422,7 +422,7 @@ fun ComposeRule.ensureLoggedIn(
     }
 
     // On server connection screen — add server then login
-    if (onAllNodesWithText("Connect to your game server", substring = true)
+    if (onAllNodesWithText("Add Server", substring = true)
             .fetchSemanticsNodes().isNotEmpty()
     ) {
         addServerAndLogin(username, password)
@@ -430,7 +430,7 @@ fun ComposeRule.ensureLoggedIn(
     }
 
     // On login screen — just login
-    if (onAllNodesWithText("Welcome Back", substring = true)
+    if (onAllNodesWithText("Username", substring = true)
             .fetchSemanticsNodes().isNotEmpty()
     ) {
         doLogin(username, password)
@@ -508,12 +508,12 @@ private fun ComposeRule.signOutIfLoggedIn() {
     onAllNodesWithText("Sign Out")[signOutNodes.size - 1].performClick()
 
     // Wait for server connection screen
-    waitForText("Connect to your game server", TIMEOUT_EXTRA_LONG)
+    waitForText("Add Server", TIMEOUT_EXTRA_LONG)
 }
 
 private fun ComposeRule.addServerAndLogin(username: String, password: String) {
     // Wait for server connection screen
-    waitForText("Connect to your game server", TIMEOUT_LONG)
+    waitForText("Add Server", TIMEOUT_LONG)
 
     // Check if "Local" server already exists
     val hasServer = onAllNodesWithText(SERVER_NAME, substring = true)
@@ -544,7 +544,7 @@ private fun ComposeRule.addServerAndLogin(username: String, password: String) {
 }
 
 private fun ComposeRule.doLogin(username: String, password: String) {
-    waitForText("Welcome Back", TIMEOUT_MEDIUM)
+    waitForText("Username", TIMEOUT_MEDIUM)
 
     // Clear fields first in case they have pre-filled text from a previous session
     onNode(hasText("Username") and hasSetTextAction())

@@ -407,7 +407,7 @@ class CollectionsTest {
         rule.waitForText("re-enter your credentials", timeout = 5_000)
         val nodes = rule.onAllNodesWithText("Sign Out").fetchSemanticsNodes()
         rule.onAllNodesWithText("Sign Out")[nodes.size - 1].performClick()
-        rule.waitForText("Connect to your game server", timeout = 15_000)
+        rule.waitForText("Add Server", timeout = 15_000)
 
         // Restart app to reset LoginViewModel state (isLoggedIn stays true after
         // logout, which causes LoginScreen to auto-redirect to Home via
