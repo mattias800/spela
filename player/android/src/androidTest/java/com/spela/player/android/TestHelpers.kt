@@ -30,8 +30,19 @@ import com.spela.player.di.platformModule
 import org.junit.rules.TestWatcher
 import org.junit.runner.Description
 import org.koin.mp.KoinPlatformTools
+import androidx.test.espresso.IdlingPolicies
+import java.util.concurrent.TimeUnit
 
 typealias ComposeRule = AndroidComposeTestRule<ActivityScenarioRule<MainActivity>, MainActivity>
+
+// Configure Espresso to not wait forever for idle — our neon UI animations
+// (gradient glow, ambient blobs) keep the Choreographer busy, causing
+// AppNotIdleException. This allows actions to proceed after a brief wait.
+private val idlingConfigured = run {
+    IdlingPolicies.setMasterPolicyTimeout(10, TimeUnit.SECONDS)
+    IdlingPolicies.setIdlingResourceTimeout(10, TimeUnit.SECONDS)
+    true
+}
 
 // ── Koin reset rule ──
 
