@@ -1,4 +1,11 @@
+import type { Page } from "@playwright/test";
 import { test, expect, resetServer } from "./fixtures";
+
+/** Navigate to the preferences page and click the Controls tab. */
+async function gotoControlsTab(page: Page) {
+  await page.goto("/preferences");
+  await page.getByRole("tab", { name: "Controls" }).click();
+}
 
 const arrowsLeftPrefs = {
   showPerformanceOverlay: false,
@@ -36,7 +43,7 @@ test.describe("Key Mapping Card", () => {
   });
 
   test("displays Key Mapping heading on preferences page", async ({ page }) => {
-    await page.goto("/preferences");
+    await gotoControlsTab(page);
 
     await expect(
       page.getByRole("heading", { name: "Key Mapping" }),
@@ -44,7 +51,7 @@ test.describe("Key Mapping Card", () => {
   });
 
   test("renders all three mode buttons", async ({ page }) => {
-    await page.goto("/preferences");
+    await gotoControlsTab(page);
 
     await expect(
       page.getByRole("button", { name: "Arrows + Left" }),
@@ -57,7 +64,7 @@ test.describe("Key Mapping Card", () => {
 
   test("Arrows + Left is selected by default", async ({ page }) => {
     await mockPrefsStateful(page);
-    await page.goto("/preferences");
+    await gotoControlsTab(page);
 
     const arrowsBtn = page.getByRole("button", { name: "Arrows + Left" });
     await expect(arrowsBtn).toBeVisible();
@@ -70,7 +77,7 @@ test.describe("Key Mapping Card", () => {
     page,
   }) => {
     await mockPrefsStateful(page);
-    await page.goto("/preferences");
+    await gotoControlsTab(page);
 
     const arrowsBtn = page.getByRole("button", { name: "Arrows + Left" });
     const wasdBtn = page.getByRole("button", { name: "WASD + Arrows" });
@@ -100,7 +107,7 @@ test.describe("Key Mapping Card", () => {
 test.describe("Controller Visual", () => {
   test("shows correct key badges for arrows-left preset", async ({ page }) => {
     await mockPrefsStateful(page);
-    await page.goto("/preferences");
+    await gotoControlsTab(page);
 
     // Ensure arrows-left is active (default)
     await expect(
@@ -125,7 +132,7 @@ test.describe("Controller Visual", () => {
   });
 
   test("shows correct key badges for wasd-arrows preset", async ({ page }) => {
-    await page.goto("/preferences");
+    await gotoControlsTab(page);
 
     // Switch to WASD + Arrows mode
     await page.getByRole("button", { name: "WASD + Arrows" }).click();
@@ -160,7 +167,7 @@ test.describe("Custom Key Mapping Editor", () => {
   test("switching to custom mode shows the key capture editor", async ({
     page,
   }) => {
-    await page.goto("/preferences");
+    await gotoControlsTab(page);
 
     // The controller visual should be visible initially
     const visual = page.getByTestId("controller-visual");
@@ -176,7 +183,7 @@ test.describe("Custom Key Mapping Editor", () => {
   });
 
   test("editor has all four button groups", async ({ page }) => {
-    await page.goto("/preferences");
+    await gotoControlsTab(page);
     await page.getByRole("button", { name: "Custom" }).click();
 
     await expect(page.getByText("D-Pad", { exact: true })).toBeVisible();
@@ -186,7 +193,7 @@ test.describe("Custom Key Mapping Editor", () => {
   });
 
   test("editor has all 14 assignable buttons", async ({ page }) => {
-    await page.goto("/preferences");
+    await gotoControlsTab(page);
     await page.getByRole("button", { name: "Custom" }).click();
 
     // D-Pad (4)
@@ -217,7 +224,7 @@ test.describe("Custom Key Mapping Editor", () => {
   }) => {
     // Mock preferences to ensure known initial state
     await mockPrefsStateful(page);
-    await page.goto("/preferences");
+    await gotoControlsTab(page);
     await expect(
       page.getByRole("button", { name: "Arrows + Left" }),
     ).toHaveClass(/ring-2/);
@@ -249,7 +256,7 @@ test.describe("Custom Key Mapping Editor", () => {
   test("key capture: pressing Escape cancels without changing the key", async ({
     page,
   }) => {
-    await page.goto("/preferences");
+    await gotoControlsTab(page);
     await page.getByRole("button", { name: "Custom" }).click();
 
     const dpadUpRow = page
@@ -283,7 +290,7 @@ test.describe("Per-Console Key Mapping Overrides", () => {
   test("override table renders with console names and dropdowns", async ({
     page,
   }) => {
-    await page.goto("/preferences");
+    await gotoControlsTab(page);
 
     // Find the key mapping table by its unique "Key Mapping" column header (th)
     const table = page
@@ -306,7 +313,7 @@ test.describe("Per-Console Key Mapping Overrides", () => {
   });
 
   test("per-console dropdown has correct options", async ({ page }) => {
-    await page.goto("/preferences");
+    await gotoControlsTab(page);
 
     const table = page
       .locator("table")
@@ -322,7 +329,7 @@ test.describe("Per-Console Key Mapping Overrides", () => {
   });
 
   test("per-console override persists after page reload", async ({ page }) => {
-    await page.goto("/preferences");
+    await gotoControlsTab(page);
 
     // Wait for preferences data to render (longer timeout for full-suite load)
     await expect(
@@ -346,8 +353,9 @@ test.describe("Per-Console Key Mapping Overrides", () => {
     await expect(firstSelect).toHaveValue("wasd-arrows");
     await saveResponse;
 
-    // Reload the page
+    // Reload the page and navigate back to Controls tab
     await page.reload();
+    await page.getByRole("tab", { name: "Controls" }).click();
 
     // Verify the value persisted
     const reloadedTable = page
@@ -365,7 +373,7 @@ test.describe("Key Mapping Persistence", () => {
   });
 
   test("global mode change persists after page reload", async ({ page }) => {
-    await page.goto("/preferences");
+    await gotoControlsTab(page);
 
     // Wait for preferences data to render (longer timeout for full-suite load)
     await expect(
@@ -384,8 +392,9 @@ test.describe("Key Mapping Persistence", () => {
     await saveResponse;
     await expect(wasdBtn).toHaveClass(/ring-2/);
 
-    // Reload
+    // Reload and navigate back to Controls tab
     await page.reload();
+    await page.getByRole("tab", { name: "Controls" }).click();
 
     // Verify WASD + Arrows is still selected
     await expect(
@@ -397,7 +406,7 @@ test.describe("Key Mapping Persistence", () => {
   });
 
   test("custom key assignment persists after page reload", async ({ page }) => {
-    await page.goto("/preferences");
+    await gotoControlsTab(page);
 
     // Switch to custom mode
     await page.getByRole("button", { name: "Custom" }).click();
@@ -422,8 +431,9 @@ test.describe("Key Mapping Persistence", () => {
     // Wait for the debounced API save
     await page.waitForTimeout(1000);
 
-    // Reload
+    // Reload and navigate back to Controls tab
     await page.reload();
+    await page.getByRole("tab", { name: "Controls" }).click();
 
     // Should still be in custom mode
     await expect(page.getByRole("button", { name: "Custom" })).toHaveClass(
