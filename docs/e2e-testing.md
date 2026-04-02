@@ -71,6 +71,7 @@ cd player
 - **Emulator timeouts** → Emulators are slower than physical devices. Timeouts: SHORT=5s, MEDIUM=10s, LONG=15s, EXTRA_LONG=30s.
 - **Keyboard blocking buttons** → On portrait emulators, the soft keyboard can block buttons. Use `performImeAction()` instead of keyboard dismiss + button click.
 - **Use `run-e2e.sh`** → DO NOT run `./gradlew :android:connectedDebugAndroidTest` directly. The script handles device wake, screen timeout, port forwarding, and cleanup. Running gradle directly skips all of this and tests will fail.
+- **Continuous animations cause AppNotIdleException** → The neon UI redesign added continuous Compose animations (gradient glow, ambient blobs) that keep the Choreographer busy. Espresso waits for idle, but the app is never idle. System animation scale = 0 doesn't help because Compose animations are independent. **Fix needed:** the app must check `LocalAnimationsEnabled` and skip continuous animations in test mode. Disable animations on the emulator with `adb shell settings put global animator_duration_scale 0` as a partial mitigation.
 
 ### Test Tag Convention (Player App)
 
