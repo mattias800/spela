@@ -19,6 +19,7 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextClearance
+import androidx.compose.ui.test.performImeAction
 import androidx.compose.ui.test.performTextInput
 import androidx.test.ext.junit.rules.ActivityScenarioRule
 import androidx.test.platform.app.InstrumentationRegistry
@@ -550,9 +551,10 @@ private fun ComposeRule.addServerAndLogin(username: String, password: String) {
         onNode(hasText("Server URL") and hasSetTextAction())
             .performTextInput(SERVER_URL)
 
-        // First server uses "Connect", additional servers use "Add"
-        onNodeWithText("Connect").performScrollTo()
-        onNodeWithText("Connect").performClick()
+        // Use ImeAction to submit (which dismisses keyboard + triggers add)
+        onNode(hasText("Server URL") and hasSetTextAction())
+            .performImeAction()
+        waitForIdle()
         waitForIdle()
     }
 
