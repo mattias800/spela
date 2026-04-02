@@ -520,16 +520,15 @@ private fun ComposeRule.signOutIfLoggedIn() {
 
     // Wait for server connection screen
     waitUntil(timeoutMillis = TIMEOUT_EXTRA_LONG) {
-        onAllNodesWithTag(TestTags.SCREEN_SERVER_CONNECTION, useUnmergedTree = true)
-            .fetchSemanticsNodes().isNotEmpty()
+        isOnServerConnectionScreen()
     }
 }
 
 private fun ComposeRule.addServerAndLogin(username: String, password: String) {
-    // Wait for server connection screen
+    // Wait for server connection screen (use text fallback since test tag on
+    // BoxWithConstraints may not be accessible)
     waitUntil(timeoutMillis = TIMEOUT_LONG) {
-        onAllNodesWithTag(TestTags.SCREEN_SERVER_CONNECTION, useUnmergedTree = true)
-            .fetchSemanticsNodes().isNotEmpty()
+        isOnServerConnectionScreen()
     }
 
     // Check if "Local" server already exists
@@ -538,22 +537,22 @@ private fun ComposeRule.addServerAndLogin(username: String, password: String) {
 
     if (!hasServer) {
         // The form auto-opens when no servers exist. If it hasn't, click "Add Server".
-        val formOpen = onAllNodesWithTag(TestTags.SERVER_NAME_INPUT, useUnmergedTree = true)
+        val formOpen = onAllNodesWithText("Server Name", substring = true)
             .fetchSemanticsNodes().isNotEmpty()
         if (!formOpen) {
-            onNodeWithTag(TestTags.SERVER_ADD_TOGGLE_BUTTON, useUnmergedTree = true).performClick()
+            onNodeWithText("Add Server").performClick()
             waitForIdle()
         }
 
-        onNodeWithTag(TestTags.SERVER_NAME_INPUT, useUnmergedTree = true)
+        onNode(hasText("Server Name") and hasSetTextAction())
             .performTextInput(SERVER_NAME)
 
-        onNodeWithTag(TestTags.SERVER_URL_INPUT, useUnmergedTree = true)
+        onNode(hasText("Server URL") and hasSetTextAction())
             .performTextInput(SERVER_URL)
 
         // First server uses "Connect", additional servers use "Add"
-        onNodeWithTag(TestTags.SERVER_CONNECT_BUTTON, useUnmergedTree = true).performScrollTo()
-        onNodeWithTag(TestTags.SERVER_CONNECT_BUTTON, useUnmergedTree = true).performClick()
+        onNodeWithText("Connect").performScrollTo()
+        onNodeWithText("Connect").performClick()
         waitForIdle()
     }
 
@@ -567,23 +566,23 @@ private fun ComposeRule.addServerAndLogin(username: String, password: String) {
 
 private fun ComposeRule.doLogin(username: String, password: String) {
     waitUntil(timeoutMillis = TIMEOUT_MEDIUM) {
-        onAllNodesWithTag(TestTags.LOGIN_USERNAME_INPUT)
+        onAllNodesWithText("Username", substring = true)
             .fetchSemanticsNodes().isNotEmpty()
     }
 
     // Clear fields first in case they have pre-filled text from a previous session
-    onNodeWithTag(TestTags.LOGIN_USERNAME_INPUT, useUnmergedTree = true)
+    onNode(hasText("Username") and hasSetTextAction())
         .performTextClearance()
-    onNodeWithTag(TestTags.LOGIN_USERNAME_INPUT, useUnmergedTree = true)
+    onNode(hasText("Username") and hasSetTextAction())
         .performTextInput(username)
 
-    onNodeWithTag(TestTags.LOGIN_PASSWORD_INPUT, useUnmergedTree = true)
+    onNode(hasText("Password") and hasSetTextAction())
         .performTextClearance()
-    onNodeWithTag(TestTags.LOGIN_PASSWORD_INPUT, useUnmergedTree = true)
+    onNode(hasText("Password") and hasSetTextAction())
         .performTextInput(password)
 
-    onNodeWithTag(TestTags.LOGIN_SUBMIT_BUTTON, useUnmergedTree = true).performScrollTo()
-    onNodeWithTag(TestTags.LOGIN_SUBMIT_BUTTON, useUnmergedTree = true).performClick()
+    onNodeWithText("Sign In").performScrollTo()
+    onNodeWithText("Sign In").performClick()
 
     // Verify home screen (extra long timeout for multi-class runs where server may be slow)
     waitUntil(timeoutMillis = TIMEOUT_EXTRA_LONG) {
