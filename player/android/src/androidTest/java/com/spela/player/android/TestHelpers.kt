@@ -728,52 +728,54 @@ fun ComposeRule.navigateToCastlevania() {
  * where a "Browse" button is needed to access the full list.
  */
 fun ComposeRule.navigateToGameByTitle(gameTitle: String) {
+    val device = uiDevice()
+
     // Navigate to Consoles tab
     tapOn("Consoles")
     waitForContentDescription("Nintendo Entertainment System", TIMEOUT_EXTRA_LONG)
 
-    // Tap the NES console card
-    scrollToAndTapMatchingBoth("Nintendo Entertainment System", "games")
+    // Tap the NES console card via UiAutomator (avoids Compose compound matcher
+    // which can fail due to Espresso idle synchronization)
+    val nesCard = device.findObject(UiSelector().descriptionContains("Nintendo Entertainment System"))
+    check(nesCard.exists()) { "NES console card not found in accessibility tree" }
+    nesCard.click()
+    Thread.sleep(1_000)
+
+    // Wait for console game list
     waitForText("Nintendo Entertainment System", TIMEOUT_EXTRA_LONG)
 
-    // Try to find the game directly (may be in a visible shelf or inline grid)
-    val directlyVisible = try {
-        pollUntil(timeoutMillis = 3_000) {
-            onAllNodesWithText(gameTitle, substring = true)
-                .fetchSemanticsNodes().isNotEmpty()
+    // Try to find the game directly via UiAutomator
+    val gameObj = device.findObject(UiSelector().textContains(gameTitle))
+    if (!gameObj.waitForExists(3_000)) {
+        // Game not visible — try "Browse games" or "Browse" button
+        val browseGames = device.findObject(UiSelector().textContains("Browse games"))
+        val browse = device.findObject(UiSelector().text("Browse"))
+        if (browseGames.exists()) {
+            browseGames.click()
+        } else if (browse.exists()) {
+            browse.click()
+        } else {
+            // Scroll down to find it
+            val centerX = device.displayWidth / 2
+            val fromY = (device.displayHeight * 0.7).toInt()
+            val toY = (device.displayHeight * 0.3).toInt()
+            repeat(5) { device.swipe(centerX, fromY, centerX, toY, 15) }
         }
-        true
-    } catch (_: androidx.compose.ui.test.ComposeTimeoutException) { false }
-
-    if (!directlyVisible) {
-        // Game not visible — try scrolling to find "Browse" or "Browse games" button
-        try {
-            scrollToAndTapText("Browse games")
-        } catch (_: IllegalStateException) {
-            try {
-                // Narrow layout uses just "Browse"
-                onNodeWithText("Browse", substring = false).performScrollTo()
-                onNodeWithText("Browse", substring = false).performClick()
-                waitForIdle()
-            } catch (_: Exception) {
-                // Last resort: scroll and hope
-            }
-        }
+        Thread.sleep(1_000)
         waitForText(gameTitle, TIMEOUT_LONG)
     }
 
-    scrollToAndTapText(gameTitle)
+    // Tap the game via UiAutomator
+    val game = device.findObject(UiSelector().textContains(gameTitle))
+    check(game.exists()) { "Game '$gameTitle' not found" }
+    game.click()
+    Thread.sleep(500)
 
-    // Wait for game detail — look for Download/Play button or the game title
+    // Wait for game detail — look for Download/Play/Resume button
     pollUntil(timeoutMillis = TIMEOUT_LONG) {
-        try {
-            onAllNodesWithText("Download", substring = true)
-                .fetchSemanticsNodes().isNotEmpty() ||
-            onAllNodesWithText("Play", substring = true)
-                .fetchSemanticsNodes().isNotEmpty() ||
-            onAllNodesWithText("Resume", substring = true)
-                .fetchSemanticsNodes().isNotEmpty()
-        } catch (_: IllegalStateException) { false }
+        device.findObject(UiSelector().textContains("Download")).exists() ||
+            device.findObject(UiSelector().textContains("Play")).exists() ||
+            device.findObject(UiSelector().textContains("Resume")).exists()
     }
 }
 
@@ -956,30 +958,28 @@ fun ComposeRule.scrollToAndTapText(text: String) {
 }
 
 fun ComposeRule.downloadGameIfNeeded() {
-    val downloadNodes = onAllNodesWithText("Download").fetchSemanticsNodes()
-    if (downloadNodes.isNotEmpty()) {
-        onNodeWithText("Download").performClick()
+    val device = uiDevice()
+    if (device.findObject(UiSelector().text("Download")).exists()) {
+        device.findObject(UiSelector().text("Download")).click()
+        Thread.sleep(500)
         // After download, button becomes "Play", "Resume", or "New Game"
         pollUntil(timeoutMillis = TIMEOUT_EXTRA_LONG) {
-            try {
-                onAllNodesWithText("Play", substring = true).fetchSemanticsNodes().isNotEmpty() ||
-                    onAllNodesWithText("Resume", substring = true).fetchSemanticsNodes().isNotEmpty()
-            } catch (_: IllegalStateException) { false }
+            device.findObject(UiSelector().textContains("Play")).exists() ||
+                device.findObject(UiSelector().textContains("Resume")).exists()
         }
     }
 }
 
 fun ComposeRule.startGameAndWait() {
+    val device = uiDevice()
     // If saves exist, the button is "Resume"; otherwise "Play"
-    val hasResume = onAllNodesWithText("Resume", substring = true)
-        .fetchSemanticsNodes().isNotEmpty()
-    if (hasResume) {
-        onNodeWithText("Resume").performClick()
+    if (device.findObject(UiSelector().textContains("Resume")).exists()) {
+        device.findObject(UiSelector().textContains("Resume")).click()
     } else {
-        onNodeWithText("Play").performClick()
+        device.findObject(UiSelector().textContains("Play")).click()
     }
-    // Wait for the "Game running" semantic marker which is always on the primary display,
-    // regardless of touch controls visibility, physical controller, or dual-screen mode.
+    // Wait for the "Game running" semantic marker which is always on the primary display.
+    // This is a zero-size Compose semantics node — requires Compose fallback path.
     waitForVisible("Game running", TIMEOUT_EXTRA_LONG)
 }
 
