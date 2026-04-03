@@ -680,7 +680,7 @@ private fun ComposeRule.addServerAndLogin(username: String, password: String) {
         // LoadServers completes. LaunchedEffect is a coroutine — waitForIdle()
         // returns before it fires. Need Thread.sleep to let the coroutine execute,
         // trigger ToggleAddServer, and recompose with the form visible.
-        Thread.sleep(1_500)
+        Thread.sleep(5_000)
 
         onNode(hasText("Server Name") and hasSetTextAction())
             .performTextInput(SERVER_NAME)
