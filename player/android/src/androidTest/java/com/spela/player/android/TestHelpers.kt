@@ -214,9 +214,14 @@ private fun ComposeRule.isOnServerConnectionScreen(): Boolean {
         device.findObject(UiSelector().textContains("Nu spelar vi")).exists()
 }
 
-/** Check if we're on the login screen (pure UiAutomator). */
+/** Check if we're on the login screen (pure UiAutomator).
+ * Note: TextField labels ("Username") may not be visible to UiAutomator.
+ * Check for the "Sign In" button which is always visible. */
 private fun ComposeRule.isOnLoginScreen(): Boolean {
-    return uiDevice().findObject(UiSelector().textContains("Username")).exists()
+    val device = uiDevice()
+    return device.findObject(UiSelector().textContains("Sign In")).exists() ||
+        device.findObject(UiSelector().textContains("Username")).exists() ||
+        device.findObject(UiSelector().textContains("Create Account")).exists()
 }
 
 /** Check if we're on the app's Home screen (pure UiAutomator — no Espresso idle).
@@ -695,22 +700,26 @@ private fun ComposeRule.doLogin(username: String, password: String) {
             device.findObject(UiSelector().textContains("Sign In")).exists()
     }
 
-    // Enter credentials via UiAutomator (Compose APIs block on Espresso idle
-    // due to neon animations keeping the Choreographer busy)
-    val usernameField = device.findObject(UiSelector().className("android.widget.EditText").instance(0))
-    usernameField.click()
-    usernameField.clearTextField()
-    usernameField.setText(username)
+    // Enter credentials. Compose TextFields may not be visible to UiAutomator
+    // (accessibility tree timing). Use Compose APIs which work despite the idle
+    // timeout (10s each call, but they DO eventually succeed).
+    onNode(hasText("Username") and hasSetTextAction())
+        .performTextClearance()
+    onNode(hasText("Username") and hasSetTextAction())
+        .performTextInput(username)
 
-    val passwordField = device.findObject(UiSelector().className("android.widget.EditText").instance(1))
-    passwordField.click()
-    passwordField.clearTextField()
-    passwordField.setText(password)
+    onNode(hasText("Password") and hasSetTextAction())
+        .performTextClearance()
+    onNode(hasText("Password") and hasSetTextAction())
+        .performTextInput(password)
 
-    // Tap Sign In button
+    // Tap Sign In — try UiAutomator first, Compose fallback
     val signInBtn = device.findObject(UiSelector().textContains("Sign In"))
-    check(signInBtn.exists()) { "Sign In button not found" }
-    signInBtn.click()
+    if (signInBtn.exists()) {
+        signInBtn.click()
+    } else {
+        onNodeWithText("Sign In").performClick()
+    }
 
     // Verify home screen (UiAutomator — no Espresso idle dependency)
     pollUntil(timeoutMillis = TIMEOUT_EXTRA_LONG) {
