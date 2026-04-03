@@ -779,8 +779,9 @@ fun ComposeRule.navigateToGameByTitle(gameTitle: String) {
     // Wait for console game list screen
     waitForContentDescription("Console settings", TIMEOUT_EXTRA_LONG)
 
-    // Try to find the game directly via UiAutomator
-    val gameObj = device.findObject(UiSelector().textContains(gameTitle))
+    // Try to find the game directly via UiAutomator (exact text match to avoid
+    // matching "Castlevania 3" when looking for "Castlevania")
+    val gameObj = device.findObject(UiSelector().text(gameTitle))
     if (!gameObj.waitForExists(3_000)) {
         // Game not visible — try "Browse games" or "Browse" button
         val browseGames = device.findObject(UiSelector().textContains("Browse games"))
@@ -800,10 +801,16 @@ fun ComposeRule.navigateToGameByTitle(gameTitle: String) {
         waitForText(gameTitle, TIMEOUT_LONG)
     }
 
-    // Tap the game via UiAutomator
-    val game = device.findObject(UiSelector().textContains(gameTitle))
-    check(game.exists()) { "Game '$gameTitle' not found" }
-    game.click()
+    // Tap the game via UiAutomator (exact match)
+    val game = device.findObject(UiSelector().text(gameTitle))
+    if (!game.exists()) {
+        // Fallback: substring match if exact fails
+        val gameFuzzy = device.findObject(UiSelector().textContains(gameTitle))
+        check(gameFuzzy.exists()) { "Game '$gameTitle' not found" }
+        gameFuzzy.click()
+    } else {
+        game.click()
+    }
     Thread.sleep(500)
 
     // Wait for game detail — look for Download/Play/Resume button
