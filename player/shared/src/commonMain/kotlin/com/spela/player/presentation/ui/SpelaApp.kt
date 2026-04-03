@@ -216,12 +216,13 @@ fun SpelaApp(
         val isGamepadMode = inputMode == InputMode.GAMEPAD
         val sectionIndicatorVisible = isGamepadMode
 
-        // Hidden indicator for E2E tests: exposes whether the libretro core is running.
+        // Indicator for E2E tests: exposes whether the libretro core is running.
         // Tests wait for "Core idle" instead of Thread.sleep after exiting games.
+        // Uses 1dp size so it appears in the Android accessibility tree for UiAutomator.
         val coreIdleState by emulationViewModel.state.collectAsState()
         Box(
             modifier = Modifier
-                .size(0.dp)
+                .size(1.dp)
                 .semantics {
                     contentDescription = if (coreIdleState.isRunning) "Core running" else "Core idle"
                 },
@@ -1567,12 +1568,16 @@ fun SpelaApp(
                             )
                         }
 
-                        // Invisible semantic marker for E2E tests to detect that a game is running.
+                        // Semantic marker for E2E tests to detect that a game is running.
                         // Always on the primary display, regardless of dual-screen or controller type.
+                        // Uses 1dp size so it appears in the Android accessibility tree
+                        // (zero-size nodes are filtered out by UiAutomator).
                         if (emulationState.isRunning) {
-                            Box(modifier = Modifier.semantics {
-                                contentDescription = "Game running"
-                            })
+                            Box(modifier = Modifier
+                                .size(1.dp)
+                                .semantics {
+                                    contentDescription = "Game running"
+                                })
                         }
 
                         // DS/3DS touch overlay on primary display (when secondary display is not active)

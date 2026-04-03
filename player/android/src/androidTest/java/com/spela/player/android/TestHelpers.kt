@@ -914,7 +914,7 @@ fun ComposeRule.navigateToN64GameAndPlay() {
     }
     // Wait for the "Game running" semantic marker which is always on the primary display,
     // regardless of touch controls visibility, physical controller, or dual-screen mode.
-    waitForVisible("Touch controls", 120_000)
+    waitForVisible("Game running", 120_000)
 }
 
 /**
@@ -1074,10 +1074,11 @@ fun ComposeRule.startGameAndWait() {
     } else {
         device.findObject(UiSelector().textContains("Play")).click()
     }
-    // Wait for touch controls to appear (confirms game is running).
+    // Wait for the "Game running" marker (1dp Box with contentDescription).
     // First run needs to download the libretro core binary (~5-10s on emulator)
     // plus ROM load and first frame render. Use a generous 120s timeout.
-    waitForVisible("Touch controls", 120_000)
+    // Note: "Touch controls" is hidden when physicalControllerActive=true (emulator).
+    waitForVisible("Game running", 120_000)
 }
 
 fun ComposeRule.openOverlay() {
@@ -1133,7 +1134,7 @@ fun ComposeRule.navigateToGameAndPlayFresh() {
     }
     // "Game running" is a zero-size Compose marker invisible to UiAutomator.
     // "Touch controls" has visible size and is always shown during gameplay.
-    waitForVisible("Touch controls", TIMEOUT_EXTRA_LONG)
+    waitForVisible("Game running", TIMEOUT_EXTRA_LONG)
 }
 
 fun ComposeRule.openOverlayAndExit() {
@@ -1289,7 +1290,7 @@ fun ComposeRule.startChallengeAttempt() {
     tapOn("Attempt Challenge")
     // "Game running" is a zero-size Compose marker invisible to UiAutomator.
     // "Touch controls" has visible size and is always shown during gameplay.
-    waitForVisible("Touch controls", TIMEOUT_EXTRA_LONG)
+    waitForVisible("Game running", TIMEOUT_EXTRA_LONG)
 }
 
 /**
@@ -1385,7 +1386,7 @@ fun ComposeRule.createChallengeFromOverlay(title: String = "E2E Test Challenge")
     waitForText("Challenge created!", timeout = 15_000)
 
     // Game resumes after toast
-    waitForVisible("Touch controls", timeout = 5_000)
+    waitForVisible("Game running", timeout = 5_000)
 }
 
 /**
