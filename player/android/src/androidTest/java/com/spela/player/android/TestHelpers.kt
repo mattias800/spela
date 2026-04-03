@@ -60,22 +60,17 @@ private val testConfigured = run {
  * Must be order=0 (outer) so singletons are refreshed BEFORE ComposeRule (order=1)
  * creates the Activity.
  */
+/**
+ * Sets isTestMode=true BEFORE the Activity is created (order=0).
+ * This disables continuous animations so Compose test's waitForIdle() doesn't hang.
+ *
+ * Note: does NOT reset Koin modules. Resetting Koin creates new ViewModels
+ * while the Compose tree keeps old LaunchedEffect keys, causing LaunchedEffects
+ * to not re-fire (e.g., the server form auto-open doesn't trigger).
+ */
 class KoinResetRule : TestWatcher() {
     override fun starting(description: Description?) {
-        // Disable continuous animations BEFORE the Activity is created (order=0).
-        // This prevents Compose's waitForIdle from hanging on the Choreographer.
         MainActivity.isTestMode = true
-
-        try {
-            val koin = KoinPlatformTools.defaultContext().get()
-            val modules = listOf(commonModule, platformModule())
-            // Unload first to clear cached singleton instances from the scope
-            koin.unloadModules(modules)
-            // Reload fresh module definitions
-            koin.loadModules(modules)
-        } catch (_: Exception) {
-            // First test in process — Koin started by SpelaApplication, nothing to reset
-        }
     }
 }
 
