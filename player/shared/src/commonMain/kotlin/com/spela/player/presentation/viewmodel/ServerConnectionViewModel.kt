@@ -58,15 +58,11 @@ class ServerConnectionViewModel(
     }
 
     private fun loadServers() {
-        println("[ServerConnectionVM] loadServers() called")
         _state.update { it.copy(isLoading = true) }
         scope.launch(dispatchers.io) {
-            println("[ServerConnectionVM] IO coroutine started")
             try {
                 val servers = serverRepository.getServers()
-                println("[ServerConnectionVM] getServers returned ${servers.size}")
                 val active = serverRepository.getActiveServer()
-                println("[ServerConnectionVM] getActiveServer returned: ${active?.name}")
                 _state.update {
                     it.copy(
                         servers = servers,
@@ -74,9 +70,7 @@ class ServerConnectionViewModel(
                         isLoading = false,
                     )
                 }
-                println("[ServerConnectionVM] isLoading=false, servers=${servers.size}")
             } catch (e: Exception) {
-                println("[ServerConnectionVM] ERROR: ${e.message}")
                 _state.update { it.copy(error = e.message, isLoading = false) }
             }
         }
