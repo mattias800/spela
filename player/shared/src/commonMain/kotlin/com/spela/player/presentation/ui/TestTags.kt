@@ -22,6 +22,9 @@ object TestTags {
     const val SERVER_ADD_BUTTON = "server_add_button"
     const val SERVER_ADD_TOGGLE_BUTTON = "server_add_toggle_button"
 
+    // Console screen
+    const val SCREEN_CONSOLE = "screen_console"
+
     // Login screen
     const val LOGIN_USERNAME_INPUT = "login_username_input"
     const val LOGIN_PASSWORD_INPUT = "login_password_input"

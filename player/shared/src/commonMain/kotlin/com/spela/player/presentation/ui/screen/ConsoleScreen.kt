@@ -28,10 +28,12 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
+import com.spela.player.presentation.ui.TestTags
 import com.spela.player.presentation.intent.GameListIntent
 import com.spela.player.presentation.ui.components.PlatformBackHandler
 import com.spela.player.presentation.ui.components.SpButton
@@ -112,7 +114,10 @@ fun ConsoleScreen(
         listOf(SpColor.Background, SpColor.Background)
     }
 
-    SpScreen(gradientColors = screenGradientColors) {
+    SpScreen(
+        gradientColors = screenGradientColors,
+        modifier = Modifier.testTag(TestTags.SCREEN_CONSOLE),
+    ) {
             PullToRefreshBox(
                 isRefreshing = state.isLoading,
                 onRefresh = { viewModel.onIntent(GameListIntent.SelectConsole(consoleId)) },

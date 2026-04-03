@@ -741,8 +741,13 @@ fun ComposeRule.navigateToGameByTitle(gameTitle: String) {
     nesCard.click()
     Thread.sleep(1_000)
 
-    // Wait for console game list
-    waitForText("Nintendo Entertainment System", TIMEOUT_EXTRA_LONG)
+    // Wait for console game list screen (test tag, since title uses a logo not text)
+    pollUntil(timeoutMillis = TIMEOUT_EXTRA_LONG) {
+        uiDevice().findObject(UiSelector().descriptionContains(TestTags.SCREEN_CONSOLE)).exists() ||
+            uiDevice().findObject(UiSelector().textContains("Top Rated")).exists() ||
+            uiDevice().findObject(UiSelector().textContains("Browse")).exists() ||
+            uiDevice().findObject(UiSelector().descriptionContains("Console settings")).exists()
+    }
 
     // Try to find the game directly via UiAutomator
     val gameObj = device.findObject(UiSelector().textContains(gameTitle))
