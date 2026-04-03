@@ -668,9 +668,9 @@ private fun ComposeRule.addServerAndLogin(username: String, password: String) {
     }
 
     // Wait for the server connection screen form to fully render.
-    // Wait for the server connection screen to fully render
+    // Wait for the Compose tree to be fully built and the form to render
     val device = uiDevice()
-    Thread.sleep(3_000) // Let the form auto-open via LaunchedEffect
+    waitForIdle() // Syncs with Compose recomposition (may take 1-3s with idle timeout)
     val hasServer = device.findObject(UiSelector().textContains(SERVER_NAME)).exists()
 
     if (!hasServer) {
