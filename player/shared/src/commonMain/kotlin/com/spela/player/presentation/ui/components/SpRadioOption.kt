@@ -1,7 +1,6 @@
 package com.spela.player.presentation.ui.components
 
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -20,7 +19,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
-import com.spela.player.presentation.ui.gamepad.spFocusRing
+import com.spela.player.presentation.ui.gamepad.gamepadFocusable
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.ui.theme.SpTypography
@@ -37,8 +36,7 @@ fun SpRadioOption(
         modifier = modifier
             .fillMaxWidth()
             .clickable(onClick = onClick)
-            .spFocusRing(shape = RoundedCornerShape(SpSpacing.RadiusLarge))
-            .focusable()
+            .gamepadFocusable(shape = RoundedCornerShape(SpSpacing.RadiusLarge))
             .semantics {
                 contentDescription = title
                 role = Role.RadioButton

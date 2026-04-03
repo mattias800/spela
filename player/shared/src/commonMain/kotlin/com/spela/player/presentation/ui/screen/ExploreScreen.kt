@@ -3,7 +3,6 @@ package com.spela.player.presentation.ui.screen
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
@@ -46,7 +45,7 @@ import com.spela.player.presentation.ui.gamepad.LocalFocusMemory
 import com.spela.player.presentation.ui.gamepad.rememberFocus
 import com.spela.player.presentation.ui.gamepad.rememberFocusMemoryState
 import androidx.compose.runtime.CompositionLocalProvider
-import com.spela.player.presentation.ui.gamepad.spFocusRing
+import com.spela.player.presentation.ui.gamepad.gamepadFocusable
 import com.spela.player.presentation.ui.components.SpSnackbar
 import com.spela.player.presentation.ui.components.SpSnackbarData
 import com.spela.player.presentation.ui.components.SpSnackbarType
@@ -780,8 +779,7 @@ private fun SearchBarEntryPoint(
             .background(SpColor.SurfaceVariant)
             .border(1.dp, SpColor.Divider, shape)
             .clickable(onClick = onClick)
-            .spFocusRing(shape = shape)
-            .focusable()
+            .gamepadFocusable(shape = shape)
             .padding(horizontal = SpSpacing.Default, vertical = 14.dp)
             .semantics {
                 contentDescription = "Search games, consoles, developers"

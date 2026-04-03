@@ -22,7 +22,6 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.focusGroup
-import androidx.compose.foundation.focusable
 import androidx.compose.foundation.hoverable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsFocusedAsState
@@ -32,7 +31,7 @@ import androidx.compose.runtime.CompositionLocalProvider
 import com.spela.player.presentation.ui.gamepad.LocalFocusMemory
 import com.spela.player.presentation.ui.gamepad.rememberFocus
 import com.spela.player.presentation.ui.gamepad.rememberFocusMemoryState
-import com.spela.player.presentation.ui.gamepad.spFocusRing
+import com.spela.player.presentation.ui.gamepad.gamepadFocusable
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Settings
@@ -206,8 +205,7 @@ internal fun ConsoleCard(
                 indication = null,
                 onClick = onClick,
             )
-            .spFocusRing(shape = shape)
-            .focusable(interactionSource = interactionSource)
+            .gamepadFocusable(shape = shape, interactionSource = interactionSource)
             .semantics {
                 contentDescription = "${console.name}, ${console.gameCount} games$biosDesc"
                 role = Role.Button

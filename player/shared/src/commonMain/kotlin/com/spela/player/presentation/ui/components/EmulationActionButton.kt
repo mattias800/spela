@@ -2,7 +2,6 @@ package com.spela.player.presentation.ui.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.focusable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Box
@@ -29,7 +28,7 @@ import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import com.spela.player.presentation.ui.gamepad.spFocusRing
+import com.spela.player.presentation.ui.gamepad.gamepadFocusable
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.ui.theme.SpTypography
@@ -85,7 +84,7 @@ fun EmulationActionButton(
                 indication = null,
                 onClick = onClick,
             )
-            .then(if (useFocusRing) Modifier.spFocusRing(shape = RoundedCornerShape(16.dp)).focusable() else Modifier)
+            .then(if (useFocusRing) Modifier.gamepadFocusable(shape = RoundedCornerShape(16.dp)) else Modifier)
             .semantics {
                 contentDescription = label
                 role = Role.Button

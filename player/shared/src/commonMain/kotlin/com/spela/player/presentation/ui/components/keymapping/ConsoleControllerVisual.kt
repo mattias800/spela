@@ -9,7 +9,6 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.fillMaxSize
@@ -40,7 +39,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.spela.player.domain.model.ButtonInfo
 import com.spela.player.domain.model.ConsoleButtonLayout
-import com.spela.player.presentation.ui.gamepad.spFocusRing
+import com.spela.player.presentation.ui.gamepad.gamepadFocusable
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpTypography
 
@@ -196,8 +195,7 @@ private fun ControllerButton(
             .size(width = buttonWidth, height = buttonHeight)
             .clip(shape)
             .clickable(onClick = onClick)
-            .spFocusRing(shape = shape)
-            .focusable()
+            .gamepadFocusable(shape = shape)
             .semantics {
                 contentDescription = if (mappedKeyLabel != null) {
                     "$label mapped to $mappedKeyLabel"

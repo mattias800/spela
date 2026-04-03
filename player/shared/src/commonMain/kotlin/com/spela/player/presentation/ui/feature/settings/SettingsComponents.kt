@@ -2,7 +2,6 @@ package com.spela.player.presentation.ui.feature.settings
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -24,7 +23,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.unit.dp
 import com.spela.player.presentation.ui.components.SpSwitch
-import com.spela.player.presentation.ui.gamepad.spFocusRing
+import com.spela.player.presentation.ui.gamepad.gamepadFocusable
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.ui.theme.SpTypography
@@ -69,8 +68,7 @@ internal fun SettingsToggle(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onToggle)
-            .spFocusRing(shape = RoundedCornerShape(SpSpacing.RadiusLarge))
-            .focusable()
+            .gamepadFocusable(shape = RoundedCornerShape(SpSpacing.RadiusLarge))
             .semantics {
                 contentDescription = title
                 role = Role.Switch

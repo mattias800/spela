@@ -48,7 +48,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Popup
 import androidx.compose.ui.window.PopupProperties
 import coil3.compose.AsyncImage
-import com.spela.player.presentation.ui.gamepad.spFocusRing
+import com.spela.player.presentation.ui.gamepad.gamepadFocusable
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.ui.theme.SpTypography
@@ -186,7 +186,7 @@ fun ScreenshotLightbox(
                     modifier = Modifier
                         .align(Alignment.TopEnd)
                         .padding(SpSpacing.Medium)
-                        .spFocusRing(shape = androidx.compose.foundation.shape.CircleShape),
+                        .gamepadFocusable(shape = androidx.compose.foundation.shape.CircleShape),
                 ) {
                     Icon(Icons.Filled.Close, "Close", Modifier.size(24.dp))
                 }
@@ -207,7 +207,7 @@ fun ScreenshotLightbox(
                             containerColor = NavButtonColor, contentColor = NavButtonContentColor,
                             disabledContainerColor = NavButtonDisabledColor, disabledContentColor = NavButtonDisabledContentColor,
                         ),
-                        modifier = Modifier.spFocusRing(shape = androidx.compose.foundation.shape.CircleShape),
+                        modifier = Modifier.gamepadFocusable(shape = androidx.compose.foundation.shape.CircleShape),
                     ) { Icon(Icons.AutoMirrored.Filled.KeyboardArrowLeft, "Previous", Modifier.size(36.dp)) }
 
                     val hasNext = pagerState.currentPage < screenshotUrls.size - 1
@@ -218,7 +218,7 @@ fun ScreenshotLightbox(
                             containerColor = NavButtonColor, contentColor = NavButtonContentColor,
                             disabledContainerColor = NavButtonDisabledColor, disabledContentColor = NavButtonDisabledContentColor,
                         ),
-                        modifier = Modifier.spFocusRing(shape = androidx.compose.foundation.shape.CircleShape),
+                        modifier = Modifier.gamepadFocusable(shape = androidx.compose.foundation.shape.CircleShape),
                     ) { Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, "Next", Modifier.size(36.dp)) }
                 }
 

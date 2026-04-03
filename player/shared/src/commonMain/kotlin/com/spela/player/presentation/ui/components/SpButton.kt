@@ -12,7 +12,7 @@ import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
-import com.spela.player.presentation.ui.gamepad.spFocusRing
+import com.spela.player.presentation.ui.gamepad.gamepadFocusable
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.heightIn
@@ -68,8 +68,7 @@ fun SpButton(
                 }
             } else false
         }
-        .spFocusRing(shape = shape)
-        .focusable(interactionSource = interactionSource)
+        .gamepadFocusable(shape = shape, interactionSource = interactionSource)
     val isIconOnly = text.isEmpty() && leadingIcon != null
     val defaultPadding = PaddingValues(horizontal = SpSpacing.XLarge, vertical = SpSpacing.Medium)
     val iconOnlyPadding = PaddingValues(SpSpacing.Medium)

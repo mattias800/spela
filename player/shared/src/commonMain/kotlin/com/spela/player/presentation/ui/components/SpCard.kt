@@ -26,7 +26,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import com.spela.player.presentation.ui.gamepad.spFocusRing
+import com.spela.player.presentation.ui.gamepad.gamepadFocusable
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
 
@@ -105,7 +105,7 @@ fun SpCard(
                         interactionSource = interactionSource,
                         indication = null,
                         onClick = onClick,
-                    ).spFocusRing(shape = shape).focusable(interactionSource = interactionSource)
+                    ).gamepadFocusable(shape = shape, interactionSource = interactionSource)
                 } else Modifier
             )
     ) {
@@ -158,7 +158,7 @@ fun SpInnerCard(
                     interactionSource = interactionSource,
                     indication = null,
                     onClick = onClick,
-                ).spFocusRing(shape = shape).focusable(interactionSource = interactionSource) else Modifier
+                ).gamepadFocusable(shape = shape, interactionSource = interactionSource) else Modifier
             )
     ) {
         content()
@@ -186,7 +186,7 @@ fun SpGradientCard(
                     interactionSource = interactionSource,
                     indication = null,
                     onClick = onClick,
-                ).spFocusRing(shape = shape).focusable(interactionSource = interactionSource) else Modifier
+                ).gamepadFocusable(shape = shape, interactionSource = interactionSource) else Modifier
             )
     ) {
         content()

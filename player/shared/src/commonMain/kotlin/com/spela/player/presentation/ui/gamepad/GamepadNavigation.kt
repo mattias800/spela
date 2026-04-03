@@ -3,6 +3,7 @@ package com.spela.player.presentation.ui.gamepad
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.focusable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -181,6 +182,32 @@ fun GamepadHandler(
         content()
     }
 }
+
+/**
+ * Makes an element fully gamepad-focusable with focus ring, scroll-to-center,
+ * and focusable modifier. Single source of truth for gamepad focus behavior.
+ *
+ * Combines: [centerOnFocus] + [spFocusRing] + `.focusable()`.
+ *
+ * Place after `.clickable()` in the modifier chain.
+ *
+ * @param shape Shape for the focus ring outline.
+ * @param scaleOnFocus Whether to scale up slightly when focused.
+ * @param interactionSource Optional shared interaction source for the focusable modifier.
+ */
+fun Modifier.gamepadFocusable(
+    shape: Shape = RoundedCornerShape(12.dp),
+    scaleOnFocus: Boolean = false,
+    interactionSource: MutableInteractionSource? = null,
+): Modifier = this
+    .centerOnFocus()
+    .spFocusRing(shape = shape, scaleOnFocus = scaleOnFocus)
+    .then(
+        if (interactionSource != null)
+            Modifier.focusable(interactionSource = interactionSource)
+        else
+            Modifier.focusable()
+    )
 
 /**
  * Adds a visible focus ring to any focusable element.

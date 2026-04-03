@@ -1,7 +1,6 @@
 package com.spela.player.presentation.ui.feature.search
 
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -30,7 +29,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.spela.player.presentation.ui.components.SpButton
 import com.spela.player.presentation.ui.components.SpButtonStyle
-import com.spela.player.presentation.ui.gamepad.spFocusRing
+import com.spela.player.presentation.ui.gamepad.gamepadFocusable
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.ui.theme.SpTypography
@@ -97,8 +96,7 @@ private fun RecentSearchItem(
             .fillMaxWidth()
             .clip(RoundedCornerShape(SpSpacing.RadiusDefault))
             .clickable(onClick = onClick)
-            .spFocusRing(shape = RoundedCornerShape(SpSpacing.RadiusDefault))
-            .focusable()
+            .gamepadFocusable(shape = RoundedCornerShape(SpSpacing.RadiusDefault))
             .padding(
                 horizontal = SpSpacing.ScreenHorizontal,
                 vertical = SpSpacing.Small,

@@ -2,7 +2,7 @@ package com.spela.player.presentation.ui.screen
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.focusable
+
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -48,7 +48,7 @@ import com.spela.player.presentation.ui.components.SpTopBar
 import com.spela.player.presentation.ui.components.gamepad.GamepadConfigScreen
 import com.spela.player.presentation.ui.components.keymapping.KeyMappingScreen
 import com.spela.player.presentation.ui.components.keymapping.platformKeyName
-import com.spela.player.presentation.ui.gamepad.spFocusRing
+import com.spela.player.presentation.ui.gamepad.gamepadFocusable
 import com.spela.player.presentation.viewmodel.GamepadConfigIntent
 import com.spela.player.presentation.viewmodel.GamepadConfigViewModel
 import com.spela.player.presentation.ui.gamepad.InputMode
@@ -190,8 +190,7 @@ fun ConsoleSettingsScreen(
                                         )
                                     }
                                 }
-                                .spFocusRing(shape = RoundedCornerShape(SpSpacing.RadiusLarge))
-                                .focusable()
+                                .gamepadFocusable(shape = RoundedCornerShape(SpSpacing.RadiusLarge))
                                 .semantics { contentDescription = "Override on this device only" }
                                 .padding(horizontal = SpSpacing.Default, vertical = SpSpacing.Medium),
                             verticalAlignment = Alignment.CenterVertically,
