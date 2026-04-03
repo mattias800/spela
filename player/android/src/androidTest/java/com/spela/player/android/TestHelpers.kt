@@ -161,17 +161,33 @@ fun ComposeRule.waitForCoreIdle(timeout: Long = 10_000) {
 }
 
 fun ComposeRule.waitForText(text: String, timeout: Long = TIMEOUT_MEDIUM) {
-    val obj = uiDevice().findObject(UiSelector().textContains(text))
-    check(obj.waitForExists(timeout)) {
-        "waitForText('$text'): not found within ${timeout}ms"
+    // With isTestMode=true (animations disabled), Compose APIs are fast (~700ms).
+    // Use Compose semantic tree (reliable) with UiAutomator fallback.
+    val deadline = System.currentTimeMillis() + timeout
+    while (System.currentTimeMillis() < deadline) {
+        // Fast: UiAutomator check
+        if (uiDevice().findObject(UiSelector().textContains(text)).exists()) return
+        // Slow fallback: Compose semantic tree (for elements not yet in accessibility tree)
+        try {
+            if (onAllNodesWithText(text, substring = true)
+                    .fetchSemanticsNodes().isNotEmpty()) return
+        } catch (_: Exception) {}
+        Thread.sleep(200)
     }
+    throw IllegalStateException("waitForText('$text'): not found within ${timeout}ms")
 }
 
 fun ComposeRule.waitForContentDescription(desc: String, timeout: Long = TIMEOUT_MEDIUM) {
-    val obj = uiDevice().findObject(UiSelector().descriptionContains(desc))
-    check(obj.waitForExists(timeout)) {
-        "waitForContentDescription('$desc'): not found within ${timeout}ms"
+    val deadline = System.currentTimeMillis() + timeout
+    while (System.currentTimeMillis() < deadline) {
+        if (uiDevice().findObject(UiSelector().descriptionContains(desc)).exists()) return
+        try {
+            if (onAllNodesWithContentDescription(desc, substring = true)
+                    .fetchSemanticsNodes().isNotEmpty()) return
+        } catch (_: Exception) {}
+        Thread.sleep(200)
     }
+    throw IllegalStateException("waitForContentDescription('$desc'): not found within ${timeout}ms")
 }
 
 fun ComposeRule.waitForTextNotVisible(text: String, timeout: Long = TIMEOUT_SHORT) {
