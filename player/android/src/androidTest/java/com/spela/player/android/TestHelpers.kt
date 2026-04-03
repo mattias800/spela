@@ -668,15 +668,21 @@ private fun ComposeRule.addServerAndLogin(username: String, password: String) {
     }
 
     // Wait for the server connection screen form to fully render.
-    // Wait briefly for the screen to render, then check for existing server
+    // Wait for the server connection screen to fully render
     val device = uiDevice()
-    Thread.sleep(2_000)
+    Thread.sleep(3_000) // Let the form auto-open via LaunchedEffect
     val hasServer = device.findObject(UiSelector().textContains(SERVER_NAME)).exists()
 
     if (!hasServer) {
-        // Fill the server form using Compose test APIs (fast with isTestMode=true).
-        // UiAutomator can't reliably find Compose form elements in the accessibility tree,
-        // but Compose's own APIs work quickly (~700ms per call).
+        // Wait for the form to be ready (Compose semantic tree has the field)
+        pollUntil(timeoutMillis = TIMEOUT_MEDIUM) {
+            try {
+                onAllNodesWithText("Server Name", substring = true)
+                    .fetchSemanticsNodes().isNotEmpty()
+            } catch (_: Exception) { false }
+        }
+
+        // Fill the server form using Compose test APIs (fast with isTestMode=true, ~700ms per call)
         onNode(hasText("Server Name") and hasSetTextAction())
             .performTextInput(SERVER_NAME)
         onNode(hasText("Server URL") and hasSetTextAction())
