@@ -18,8 +18,6 @@ import androidx.compose.ui.unit.IntSize
 import com.spela.player.domain.model.ShaderPreset
 import com.spela.player.presentation.ui.feature.shader.drawShaderOverlay
 import com.spela.player.presentation.ui.feature.shader.filterQuality
-import kotlin.math.min
-import kotlin.math.roundToInt
 
 /**
  * Composable that renders emulation video frames from the AndroidLibretroController.
@@ -75,30 +73,16 @@ private fun DrawScope.drawScaledBitmap(
     val srcHeight = if (isDualScreenSplit && splitY > 0) splitY else bitmap.height
     val srcOffset = IntOffset.Zero
 
-    // Use the core-reported display aspect ratio (DAR) if available.
-    // This handles cores that output non-square pixels (e.g. Amiga 320x200
-    // displayed at 4:3, or N64 Angrylion outputting 640x240).
-    val displayWidth: Float
-    val displayHeight: Float
-    if (displayAspectRatio > 0f) {
-        displayWidth = srcHeight.toFloat() * displayAspectRatio
-        displayHeight = srcHeight.toFloat()
-    } else {
-        displayWidth = srcWidth.toFloat()
-        displayHeight = srcHeight.toFloat()
-    }
+    val scaled = computeScaledFrame(
+        srcWidth = srcWidth,
+        srcHeight = srcHeight,
+        canvasWidth = size.width,
+        canvasHeight = size.height,
+        displayAspectRatio = displayAspectRatio,
+    )
 
-    val dstWidth = size.width
-    val dstHeight = size.height
-
-    val scale = min(dstWidth / displayWidth, dstHeight / displayHeight)
-    val scaledWidth = (displayWidth * scale).roundToInt()
-    val scaledHeight = (displayHeight * scale).roundToInt()
-    val offsetX = ((dstWidth - scaledWidth) / 2f).roundToInt()
-    val offsetY = ((dstHeight - scaledHeight) / 2f).roundToInt()
-
-    val dstOffset = IntOffset(offsetX, offsetY)
-    val dstSize = IntSize(scaledWidth, scaledHeight)
+    val dstOffset = IntOffset(scaled.offsetX, scaled.offsetY)
+    val dstSize = IntSize(scaled.width, scaled.height)
     val srcSize = IntSize(srcWidth, srcHeight)
 
     drawImage(
