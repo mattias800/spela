@@ -105,21 +105,24 @@ private val challengesCreated = mutableSetOf<String>()
  * calls nativeRun() → SIGSEGV in the SpelaEmulation thread.
  */
 /**
- * Poll-based wait helpers. These use Thread.sleep polling instead of Compose test's
- * waitUntil(), because waitUntil() calls Espresso.onIdle() internally on every
- * iteration. During gameplay, the 60fps emulation loop keeps the Choreographer
- * busy, and Espresso.onIdle() throws AppNotIdleException after 10 seconds.
+ * UiAutomator-based wait/assert helpers.
  *
- * Thread.sleep + fetchSemanticsNodes() bypasses Espresso entirely:
- * - Thread.sleep doesn't synchronize with Espresso
- * - fetchSemanticsNodes() on SemanticsNodeInteractionCollection accesses the
- *   Compose semantic tree snapshot without waiting for idle
+ * ALL Compose test APIs (including fetchSemanticsNodes()) call waitForIdle()
+ * internally via getRoots(), which triggers Espresso.onIdle(). During gameplay,
+ * the 60fps emulation loop keeps the Choreographer busy, causing AppNotIdleException.
+ *
+ * UiAutomator bypasses Espresso entirely — it accesses the accessibility tree
+ * directly via AccessibilityService, independent of Espresso's idle mechanism.
+ * These helpers use UiAutomator universally (not just during gameplay) for simplicity
+ * and reliability.
  */
+
+private fun uiDevice(): UiDevice =
+    UiDevice.getInstance(InstrumentationRegistry.getInstrumentation())
 
 /**
  * Drop-in replacement for ComposeRule.waitUntil() that doesn't trigger Espresso
- * idle synchronization. Use this everywhere instead of waitUntil() to avoid
- * AppNotIdleException during gameplay.
+ * idle synchronization. Uses Thread.sleep polling.
  */
 fun ComposeRule.pollUntil(timeoutMillis: Long = 1000L, condition: () -> Boolean) {
     val deadline = System.currentTimeMillis() + timeoutMillis
@@ -135,156 +138,113 @@ fun ComposeRule.pollUntil(timeoutMillis: Long = 1000L, condition: () -> Boolean)
 }
 
 fun ComposeRule.waitForCoreIdle(timeout: Long = 10_000) {
-    val deadline = System.currentTimeMillis() + timeout
-    while (System.currentTimeMillis() < deadline) {
-        try {
-            if (onAllNodesWithContentDescription("Core idle", substring = false)
-                    .fetchSemanticsNodes().isNotEmpty()) return
-        } catch (_: Exception) {}
-        Thread.sleep(100)
+    val obj = uiDevice().findObject(UiSelector().descriptionContains("Core idle"))
+    check(obj.waitForExists(timeout)) {
+        "waitForCoreIdle: 'Core idle' not found within ${timeout}ms"
     }
-    throw androidx.compose.ui.test.ComposeTimeoutException(
-        "Condition still not satisfied after $timeout ms"
-    )
 }
 
 fun ComposeRule.waitForText(text: String, timeout: Long = TIMEOUT_MEDIUM) {
-    val deadline = System.currentTimeMillis() + timeout
-    while (System.currentTimeMillis() < deadline) {
-        try {
-            if (onAllNodesWithText(text, substring = true)
-                    .fetchSemanticsNodes().isNotEmpty()) return
-        } catch (_: Exception) {}
-        Thread.sleep(100)
+    val obj = uiDevice().findObject(UiSelector().textContains(text))
+    check(obj.waitForExists(timeout)) {
+        "waitForText('$text'): not found within ${timeout}ms"
     }
-    throw androidx.compose.ui.test.ComposeTimeoutException(
-        "Condition still not satisfied after $timeout ms"
-    )
 }
 
 fun ComposeRule.waitForContentDescription(desc: String, timeout: Long = TIMEOUT_MEDIUM) {
-    val deadline = System.currentTimeMillis() + timeout
-    while (System.currentTimeMillis() < deadline) {
-        try {
-            if (onAllNodesWithContentDescription(desc, substring = true)
-                    .fetchSemanticsNodes().isNotEmpty()) return
-        } catch (_: Exception) {}
-        Thread.sleep(100)
+    val obj = uiDevice().findObject(UiSelector().descriptionContains(desc))
+    check(obj.waitForExists(timeout)) {
+        "waitForContentDescription('$desc'): not found within ${timeout}ms"
     }
-    throw androidx.compose.ui.test.ComposeTimeoutException(
-        "Condition still not satisfied after $timeout ms"
-    )
 }
 
 fun ComposeRule.waitForTextNotVisible(text: String, timeout: Long = TIMEOUT_SHORT) {
-    val deadline = System.currentTimeMillis() + timeout
-    while (System.currentTimeMillis() < deadline) {
-        try {
-            if (onAllNodesWithText(text, substring = true)
-                    .fetchSemanticsNodes().isEmpty()) return
-        } catch (_: Exception) {}
-        Thread.sleep(100)
+    val obj = uiDevice().findObject(UiSelector().textContains(text))
+    if (obj.exists()) {
+        check(obj.waitUntilGone(timeout)) {
+            "waitForTextNotVisible('$text'): still visible after ${timeout}ms"
+        }
     }
-    throw androidx.compose.ui.test.ComposeTimeoutException(
-        "Condition still not satisfied after $timeout ms"
-    )
 }
 
 fun ComposeRule.assertTextVisible(text: String) {
-    // Use fetchSemanticsNodes instead of assertIsDisplayed — the latter
-    // waits for Espresso idle which never arrives during emulation (60fps loop).
-    val nodes = onAllNodesWithText(text, substring = true).fetchSemanticsNodes()
-    assert(nodes.isNotEmpty()) { "Expected '$text' to be visible, but it was not found" }
+    check(uiDevice().findObject(UiSelector().textContains(text)).exists()) {
+        "Expected '$text' to be visible, but it was not found"
+    }
 }
 
 fun ComposeRule.assertTextNotVisible(text: String) {
-    val nodes = onAllNodesWithText(text, substring = true).fetchSemanticsNodes()
-    assert(nodes.isEmpty()) { "Expected '$text' to NOT be visible, but it was found" }
-}
-
-/** Assert visible by checking BOTH text and content description. */
-fun ComposeRule.assertVisible(label: String) {
-    val hasText = onAllNodesWithText(label, substring = true).fetchSemanticsNodes().isNotEmpty()
-    val hasDesc = onAllNodesWithContentDescription(label, substring = true).fetchSemanticsNodes().isNotEmpty()
-    assert(hasText || hasDesc) { "Expected '$label' to be visible (text or contentDescription), but it was not found" }
-}
-
-/** Assert NOT visible by checking BOTH text and content description. */
-fun ComposeRule.assertNotVisible(label: String) {
-    val hasText = onAllNodesWithText(label, substring = true).fetchSemanticsNodes().isNotEmpty()
-    val hasDesc = onAllNodesWithContentDescription(label, substring = true).fetchSemanticsNodes().isNotEmpty()
-    assert(!hasText && !hasDesc) { "Expected '$label' to NOT be visible, but it was found" }
-}
-
-/** Check if we're on the server connection screen (test tag or text fallback). */
-private fun ComposeRule.isOnServerConnectionScreen(): Boolean {
-    return try {
-        onAllNodesWithTag(TestTags.SCREEN_SERVER_CONNECTION, useUnmergedTree = true)
-            .fetchSemanticsNodes().isNotEmpty() ||
-            onAllNodesWithText("Add Server", substring = true)
-                .fetchSemanticsNodes().isNotEmpty() ||
-            onAllNodesWithText("Server Name", substring = true)
-                .fetchSemanticsNodes().isNotEmpty() ||
-            onAllNodesWithText("Nu spelar vi", substring = true)
-                .fetchSemanticsNodes().isNotEmpty()
-    } catch (_: IllegalStateException) { false }
-}
-
-/** Check if we're on the login screen (test tag or text fallback). */
-private fun ComposeRule.isOnLoginScreen(): Boolean {
-    return try {
-        onAllNodesWithTag(TestTags.SCREEN_LOGIN, useUnmergedTree = true)
-            .fetchSemanticsNodes().isNotEmpty() ||
-            onAllNodesWithText("Username", substring = true)
-                .fetchSemanticsNodes().isNotEmpty()
-    } catch (_: IllegalStateException) { false }
-}
-
-/** Check if we're on the Home screen (works in both populated and empty states). */
-private fun ComposeRule.isOnHomeScreen(): Boolean {
-    return try {
-        onAllNodesWithText("Spela", substring = true)
-            .fetchSemanticsNodes().isNotEmpty() ||
-            onAllNodesWithText("Your library is empty", substring = true)
-                .fetchSemanticsNodes().isNotEmpty() ||
-            onAllNodesWithText("Top Rated", substring = true)
-                .fetchSemanticsNodes().isNotEmpty() ||
-            onAllNodesWithText("Continue Playing", substring = true)
-                .fetchSemanticsNodes().isNotEmpty()
-    } catch (_: IllegalStateException) {
-        false
+    check(!uiDevice().findObject(UiSelector().textContains(text)).exists()) {
+        "Expected '$text' to NOT be visible, but it was found"
     }
 }
 
-/** Wait until label is visible in either text or content description. */
+/** Assert visible by checking BOTH text and content description via UiAutomator. */
+fun ComposeRule.assertVisible(label: String) {
+    val device = uiDevice()
+    val hasText = device.findObject(UiSelector().textContains(label)).exists()
+    val hasDesc = device.findObject(UiSelector().descriptionContains(label)).exists()
+    check(hasText || hasDesc) { "Expected '$label' to be visible (text or description), but not found" }
+}
+
+/** Assert NOT visible by checking BOTH text and content description via UiAutomator. */
+fun ComposeRule.assertNotVisible(label: String) {
+    val device = uiDevice()
+    val hasText = device.findObject(UiSelector().textContains(label)).exists()
+    val hasDesc = device.findObject(UiSelector().descriptionContains(label)).exists()
+    check(!hasText && !hasDesc) { "Expected '$label' to NOT be visible, but it was found" }
+}
+
+/** Check if we're on the server connection screen (UiAutomator — no Espresso idle). */
+private fun ComposeRule.isOnServerConnectionScreen(): Boolean {
+    val device = uiDevice()
+    return device.findObject(UiSelector().textContains("Add Server")).exists() ||
+        device.findObject(UiSelector().textContains("Server Name")).exists() ||
+        device.findObject(UiSelector().textContains("Nu spelar vi")).exists()
+}
+
+/** Check if we're on the login screen (UiAutomator — no Espresso idle). */
+private fun ComposeRule.isOnLoginScreen(): Boolean {
+    val device = uiDevice()
+    return device.findObject(UiSelector().textContains("Username")).exists()
+}
+
+/** Check if we're on the Home screen (UiAutomator — no Espresso idle). */
+private fun ComposeRule.isOnHomeScreen(): Boolean {
+    val device = uiDevice()
+    return device.findObject(UiSelector().textContains("Spela")).exists() ||
+        device.findObject(UiSelector().textContains("Your library is empty")).exists() ||
+        device.findObject(UiSelector().textContains("Top Rated")).exists() ||
+        device.findObject(UiSelector().textContains("Continue Playing")).exists()
+}
+
+/** Wait until label is visible in either text or content description (UiAutomator). */
 fun ComposeRule.waitForVisible(label: String, timeout: Long = TIMEOUT_MEDIUM) {
+    val device = uiDevice()
+    val byText = device.findObject(UiSelector().textContains(label))
+    val byDesc = device.findObject(UiSelector().descriptionContains(label))
     val deadline = System.currentTimeMillis() + timeout
     while (System.currentTimeMillis() < deadline) {
-        try {
-            if (onAllNodesWithText(label, substring = true).fetchSemanticsNodes().isNotEmpty() ||
-                onAllNodesWithContentDescription(label, substring = true).fetchSemanticsNodes().isNotEmpty()
-            ) return
-        } catch (_: Exception) {}
+        if (byText.exists() || byDesc.exists()) return
         Thread.sleep(100)
     }
     throw androidx.compose.ui.test.ComposeTimeoutException(
-        "Condition still not satisfied after $timeout ms"
+        "waitForVisible('$label'): not found within $timeout ms"
     )
 }
 
-/** Wait until label is NOT visible in either text or content description. */
+/** Wait until label is NOT visible in either text or content description (UiAutomator). */
 fun ComposeRule.waitForNotVisible(label: String, timeout: Long = TIMEOUT_SHORT) {
+    val device = uiDevice()
     val deadline = System.currentTimeMillis() + timeout
     while (System.currentTimeMillis() < deadline) {
-        try {
-            if (onAllNodesWithText(label, substring = true).fetchSemanticsNodes().isEmpty() &&
-                onAllNodesWithContentDescription(label, substring = true).fetchSemanticsNodes().isEmpty()
-            ) return
-        } catch (_: Exception) {}
+        val hasText = device.findObject(UiSelector().textContains(label)).exists()
+        val hasDesc = device.findObject(UiSelector().descriptionContains(label)).exists()
+        if (!hasText && !hasDesc) return
         Thread.sleep(100)
     }
     throw androidx.compose.ui.test.ComposeTimeoutException(
-        "Condition still not satisfied after $timeout ms"
+        "waitForNotVisible('$label'): still visible after $timeout ms"
     )
 }
 
@@ -363,12 +323,15 @@ fun ComposeRule.tapLastWithText(text: String) {
 }
 
 fun ComposeRule.assertContentDescriptionVisible(desc: String) {
-    onNodeWithContentDescription(desc, substring = true).assertIsDisplayed()
+    check(uiDevice().findObject(UiSelector().descriptionContains(desc)).exists()) {
+        "Expected description '$desc' to be visible, but it was not found"
+    }
 }
 
 fun ComposeRule.assertContentDescriptionNotVisible(desc: String) {
-    val nodes = onAllNodesWithContentDescription(desc, substring = true).fetchSemanticsNodes()
-    assert(nodes.isEmpty()) { "Expected content description '$desc' to NOT be visible, but it was found" }
+    check(!uiDevice().findObject(UiSelector().descriptionContains(desc)).exists()) {
+        "Expected description '$desc' to NOT be visible, but it was found"
+    }
 }
 
 // ── Input helpers ──
