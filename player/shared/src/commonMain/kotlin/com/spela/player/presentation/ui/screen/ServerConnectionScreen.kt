@@ -1,6 +1,8 @@
 package com.spela.player.presentation.ui.screen
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -315,10 +317,11 @@ private fun ServerListOrForm(
         }
 
         item {
+            val animEnabled = com.spela.player.presentation.ui.components.LocalAnimationsEnabled.current
             AnimatedVisibility(
                 visible = state.isAddingServer,
-                enter = expandVertically() + fadeIn(),
-                exit = shrinkVertically() + fadeOut(),
+                enter = if (animEnabled) expandVertically() + fadeIn() else EnterTransition.None,
+                exit = if (animEnabled) shrinkVertically() + fadeOut() else ExitTransition.None,
             ) {
                 Column(
                     modifier = Modifier.fillMaxWidth(),
