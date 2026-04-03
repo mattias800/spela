@@ -1101,7 +1101,9 @@ fun ComposeRule.exitGame(coreIdleTimeout: Long = 10_000) {
 // ── Composite helpers for common patterns ──
 
 fun ComposeRule.navigateToGameAndPlay() {
-    navigateToGameByTitle("Super Mario Bros.")
+    // Use a game with a unique name (no sequels) to avoid substring matching issues.
+    // "Blaster Master" is unique in the NES library.
+    navigateToGameByTitle("Blaster Master")
     downloadGameIfNeeded()
     startGameAndWait()
 }
