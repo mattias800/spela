@@ -37,7 +37,7 @@ class NavigationTest {
         rule.tapOn("Super Mario Bros. 3")
 
         // Verify game detail screen — wait for action buttons (Download/Play/Resume text)
-        rule.waitUntil(timeoutMillis = 15_000) {
+        rule.pollUntil(timeoutMillis = 15_000) {
             try {
                 rule.onAllNodesWithText("Download", substring = true)
                     .fetchSemanticsNodes().isNotEmpty() ||
@@ -73,7 +73,7 @@ class NavigationTest {
         rule.scrollToAndTapText("Castlevania")
 
         // Wait for game detail screen — wait for action buttons (Download/Play/Resume text)
-        rule.waitUntil(timeoutMillis = 15_000) {
+        rule.pollUntil(timeoutMillis = 15_000) {
             try {
                 rule.onAllNodesWithText("Download", substring = true)
                     .fetchSemanticsNodes().isNotEmpty() ||

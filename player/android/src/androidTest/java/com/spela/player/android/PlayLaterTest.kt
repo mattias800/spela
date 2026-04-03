@@ -18,7 +18,7 @@ class PlayLaterTest {
 
     /** Wait for either play later button state to be visible on game detail. */
     private fun waitForPlayLaterButton() {
-        rule.waitUntil(timeoutMillis = 8_000) {
+        rule.pollUntil(timeoutMillis = 8_000) {
             try {
                 rule.onAllNodesWithContentDescription("Add to Play Later", substring = true)
                     .fetchSemanticsNodes().isNotEmpty() ||

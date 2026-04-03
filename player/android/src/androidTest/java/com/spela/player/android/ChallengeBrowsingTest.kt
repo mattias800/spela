@@ -77,7 +77,7 @@ class ChallengeBrowsingTest {
         // challenges for Castlevania. Verify the list screen loaded by checking
         // for either the empty state OR challenge content. Both prove the
         // ChallengeListScreen rendered correctly.
-        rule.waitUntil(timeoutMillis = 8_000) {
+        rule.pollUntil(timeoutMillis = 8_000) {
             try {
                 rule.onAllNodesWithText("No challenges yet", substring = true)
                     .fetchSemanticsNodes().isNotEmpty() ||

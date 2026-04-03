@@ -106,7 +106,7 @@ class HwRenderTest {
 
         // Save state
         rule.tapOn("Save")
-        rule.waitForIdle()
+        Thread.sleep(300)
         rule.ensureOverlayOpen()
 
         // Resume gameplay briefly
@@ -116,14 +116,14 @@ class HwRenderTest {
         // Reopen overlay and load state
         rule.openOverlay()
         rule.tapOn("Load")
-        rule.waitForIdle()
+        Thread.sleep(300)
         rule.ensureOverlayOpen()
 
         // Exit and verify return to game detail
         exitN64Game()
         rule.waitForVisible("Banjo-Kazooie", timeout = 8_000)
         // After exit, button shows "Resume" (save exists) or "Play"
-        rule.waitUntil(timeoutMillis = 3_000) {
+        rule.pollUntil(timeoutMillis = 3_000) {
             try {
                 rule.onAllNodesWithText("Play", substring = true).fetchSemanticsNodes().isNotEmpty() ||
                     rule.onAllNodesWithText("Resume", substring = true).fetchSemanticsNodes().isNotEmpty()

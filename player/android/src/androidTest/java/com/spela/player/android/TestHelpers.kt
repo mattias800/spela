@@ -104,48 +104,90 @@ private val challengesCreated = mutableSetOf<String>()
  * causing core_load() to unload the native library while the old thread still
  * calls nativeRun() → SIGSEGV in the SpelaEmulation thread.
  */
-fun ComposeRule.waitForCoreIdle(timeout: Long = 10_000) {
-    waitUntil(timeoutMillis = timeout) {
+/**
+ * Poll-based wait helpers. These use Thread.sleep polling instead of Compose test's
+ * waitUntil(), because waitUntil() calls Espresso.onIdle() internally on every
+ * iteration. During gameplay, the 60fps emulation loop keeps the Choreographer
+ * busy, and Espresso.onIdle() throws AppNotIdleException after 10 seconds.
+ *
+ * Thread.sleep + fetchSemanticsNodes() bypasses Espresso entirely:
+ * - Thread.sleep doesn't synchronize with Espresso
+ * - fetchSemanticsNodes() on SemanticsNodeInteractionCollection accesses the
+ *   Compose semantic tree snapshot without waiting for idle
+ */
+
+/**
+ * Drop-in replacement for ComposeRule.waitUntil() that doesn't trigger Espresso
+ * idle synchronization. Use this everywhere instead of waitUntil() to avoid
+ * AppNotIdleException during gameplay.
+ */
+fun ComposeRule.pollUntil(timeoutMillis: Long = 1000L, condition: () -> Boolean) {
+    val deadline = System.currentTimeMillis() + timeoutMillis
+    while (System.currentTimeMillis() < deadline) {
         try {
-            onAllNodesWithContentDescription("Core idle", substring = false)
-                .fetchSemanticsNodes().isNotEmpty()
-        } catch (_: IllegalStateException) {
-            false
-        }
+            if (condition()) return
+        } catch (_: Exception) {}
+        Thread.sleep(100)
     }
+    throw androidx.compose.ui.test.ComposeTimeoutException(
+        "Condition still not satisfied after $timeoutMillis ms"
+    )
+}
+
+fun ComposeRule.waitForCoreIdle(timeout: Long = 10_000) {
+    val deadline = System.currentTimeMillis() + timeout
+    while (System.currentTimeMillis() < deadline) {
+        try {
+            if (onAllNodesWithContentDescription("Core idle", substring = false)
+                    .fetchSemanticsNodes().isNotEmpty()) return
+        } catch (_: Exception) {}
+        Thread.sleep(100)
+    }
+    throw androidx.compose.ui.test.ComposeTimeoutException(
+        "Condition still not satisfied after $timeout ms"
+    )
 }
 
 fun ComposeRule.waitForText(text: String, timeout: Long = TIMEOUT_MEDIUM) {
-    waitUntil(timeoutMillis = timeout) {
+    val deadline = System.currentTimeMillis() + timeout
+    while (System.currentTimeMillis() < deadline) {
         try {
-            onAllNodesWithText(text, substring = true)
-                .fetchSemanticsNodes().isNotEmpty()
-        } catch (_: IllegalStateException) {
-            false // Compose hierarchy not yet available
-        }
+            if (onAllNodesWithText(text, substring = true)
+                    .fetchSemanticsNodes().isNotEmpty()) return
+        } catch (_: Exception) {}
+        Thread.sleep(100)
     }
+    throw androidx.compose.ui.test.ComposeTimeoutException(
+        "Condition still not satisfied after $timeout ms"
+    )
 }
 
 fun ComposeRule.waitForContentDescription(desc: String, timeout: Long = TIMEOUT_MEDIUM) {
-    waitUntil(timeoutMillis = timeout) {
+    val deadline = System.currentTimeMillis() + timeout
+    while (System.currentTimeMillis() < deadline) {
         try {
-            onAllNodesWithContentDescription(desc, substring = true)
-                .fetchSemanticsNodes().isNotEmpty()
-        } catch (_: IllegalStateException) {
-            false // Compose hierarchy not yet available
-        }
+            if (onAllNodesWithContentDescription(desc, substring = true)
+                    .fetchSemanticsNodes().isNotEmpty()) return
+        } catch (_: Exception) {}
+        Thread.sleep(100)
     }
+    throw androidx.compose.ui.test.ComposeTimeoutException(
+        "Condition still not satisfied after $timeout ms"
+    )
 }
 
 fun ComposeRule.waitForTextNotVisible(text: String, timeout: Long = TIMEOUT_SHORT) {
-    waitUntil(timeoutMillis = timeout) {
+    val deadline = System.currentTimeMillis() + timeout
+    while (System.currentTimeMillis() < deadline) {
         try {
-            onAllNodesWithText(text, substring = true)
-                .fetchSemanticsNodes().isEmpty()
-        } catch (_: IllegalStateException) {
-            false // Compose hierarchy not yet available
-        }
+            if (onAllNodesWithText(text, substring = true)
+                    .fetchSemanticsNodes().isEmpty()) return
+        } catch (_: Exception) {}
+        Thread.sleep(100)
     }
+    throw androidx.compose.ui.test.ComposeTimeoutException(
+        "Condition still not satisfied after $timeout ms"
+    )
 }
 
 fun ComposeRule.assertTextVisible(text: String) {
@@ -216,26 +258,34 @@ private fun ComposeRule.isOnHomeScreen(): Boolean {
 
 /** Wait until label is visible in either text or content description. */
 fun ComposeRule.waitForVisible(label: String, timeout: Long = TIMEOUT_MEDIUM) {
-    waitUntil(timeoutMillis = timeout) {
+    val deadline = System.currentTimeMillis() + timeout
+    while (System.currentTimeMillis() < deadline) {
         try {
-            onAllNodesWithText(label, substring = true).fetchSemanticsNodes().isNotEmpty() ||
+            if (onAllNodesWithText(label, substring = true).fetchSemanticsNodes().isNotEmpty() ||
                 onAllNodesWithContentDescription(label, substring = true).fetchSemanticsNodes().isNotEmpty()
-        } catch (_: IllegalStateException) {
-            false
-        }
+            ) return
+        } catch (_: Exception) {}
+        Thread.sleep(100)
     }
+    throw androidx.compose.ui.test.ComposeTimeoutException(
+        "Condition still not satisfied after $timeout ms"
+    )
 }
 
 /** Wait until label is NOT visible in either text or content description. */
 fun ComposeRule.waitForNotVisible(label: String, timeout: Long = TIMEOUT_SHORT) {
-    waitUntil(timeoutMillis = timeout) {
+    val deadline = System.currentTimeMillis() + timeout
+    while (System.currentTimeMillis() < deadline) {
         try {
-            onAllNodesWithText(label, substring = true).fetchSemanticsNodes().isEmpty() &&
+            if (onAllNodesWithText(label, substring = true).fetchSemanticsNodes().isEmpty() &&
                 onAllNodesWithContentDescription(label, substring = true).fetchSemanticsNodes().isEmpty()
-        } catch (_: IllegalStateException) {
-            false
-        }
+            ) return
+        } catch (_: Exception) {}
+        Thread.sleep(100)
     }
+    throw androidx.compose.ui.test.ComposeTimeoutException(
+        "Condition still not satisfied after $timeout ms"
+    )
 }
 
 /** Tap a node by text OR content description. Prefers unique matches.
@@ -388,7 +438,7 @@ fun ComposeRule.restartApp() {
     // When this happens, we attempt to recover by pressing Home and relaunching,
     // rather than leaving the app in a broken state for subsequent tests.
     try {
-        waitUntil(timeoutMillis = 30_000L) {
+        pollUntil(timeoutMillis = 30_000L) {
             try {
                 isOnHomeScreen() ||
                     isOnServerConnectionScreen() ||
@@ -411,7 +461,7 @@ fun ComposeRule.restartApp() {
         }
         // Final attempt — if this also fails, the test will fail but at least
         // the app is in a recoverable state for subsequent tests.
-        waitUntil(timeoutMillis = 30_000L) {
+        pollUntil(timeoutMillis = 30_000L) {
             try {
                 isOnHomeScreen() ||
                     isOnServerConnectionScreen() ||
@@ -503,7 +553,7 @@ fun ComposeRule.ensureLoggedIn(
     password: String = PLAYER_PASSWORD
 ) {
     // Wait for any recognizable screen to load.
-    waitUntil(timeoutMillis = 30_000L) {
+    pollUntil(timeoutMillis = 30_000L) {
         try {
             isOnHomeScreen() ||
                 isOnServerConnectionScreen() ||
@@ -539,7 +589,7 @@ fun ComposeRule.ensureLoggedIn(
     // so checking once may miss it. This prevents navigateBackToHome from pressing
     // back and accidentally exiting the app.
     val arrivedHome = try {
-        waitUntil(timeoutMillis = TIMEOUT_MEDIUM) {
+        pollUntil(timeoutMillis = TIMEOUT_MEDIUM) {
             try { isOnHomeScreen() } catch (_: IllegalStateException) { false }
         }
         true
@@ -550,7 +600,7 @@ fun ComposeRule.ensureLoggedIn(
     // Navigate back to Home first, then verify.
     // navigateBackToHome may need time if exiting a game (async core shutdown).
     navigateBackToHome()
-    waitUntil(timeoutMillis = 30_000) {
+    pollUntil(timeoutMillis = 30_000) {
         try { isOnHomeScreen() } catch (_: IllegalStateException) { false }
     }
 }
@@ -599,7 +649,7 @@ private fun ComposeRule.signOutIfLoggedIn() {
     onAllNodesWithText("Sign Out")[signOutNodes.size - 1].performClick()
 
     // Wait for server connection screen
-    waitUntil(timeoutMillis = TIMEOUT_EXTRA_LONG) {
+    pollUntil(timeoutMillis = TIMEOUT_EXTRA_LONG) {
         isOnServerConnectionScreen()
     }
 }
@@ -607,7 +657,7 @@ private fun ComposeRule.signOutIfLoggedIn() {
 private fun ComposeRule.addServerAndLogin(username: String, password: String) {
     // Wait for server connection screen (use text fallback since test tag on
     // BoxWithConstraints may not be accessible)
-    waitUntil(timeoutMillis = TIMEOUT_LONG) {
+    pollUntil(timeoutMillis = TIMEOUT_LONG) {
         isOnServerConnectionScreen()
     }
 
@@ -647,7 +697,7 @@ private fun ComposeRule.addServerAndLogin(username: String, password: String) {
 
 private fun ComposeRule.doLogin(username: String, password: String) {
     // Wait for login form — check for Username label or Sign In button
-    waitUntil(timeoutMillis = TIMEOUT_EXTRA_LONG) {
+    pollUntil(timeoutMillis = TIMEOUT_EXTRA_LONG) {
         isOnLoginScreen() ||
             onAllNodesWithText("Sign In", substring = true)
                 .fetchSemanticsNodes().isNotEmpty()
@@ -668,7 +718,7 @@ private fun ComposeRule.doLogin(username: String, password: String) {
     onNodeWithText("Sign In").performClick()
 
     // Verify home screen (extra long timeout for multi-class runs where server may be slow)
-    waitUntil(timeoutMillis = TIMEOUT_EXTRA_LONG) {
+    pollUntil(timeoutMillis = TIMEOUT_EXTRA_LONG) {
         try { isOnHomeScreen() } catch (_: IllegalStateException) { false }
     }
 }
@@ -695,7 +745,7 @@ fun ComposeRule.navigateToGameByTitle(gameTitle: String) {
 
     // Try to find the game directly (may be in a visible shelf or inline grid)
     val directlyVisible = try {
-        waitUntil(timeoutMillis = 3_000) {
+        pollUntil(timeoutMillis = 3_000) {
             onAllNodesWithText(gameTitle, substring = true)
                 .fetchSemanticsNodes().isNotEmpty()
         }
@@ -722,7 +772,7 @@ fun ComposeRule.navigateToGameByTitle(gameTitle: String) {
     scrollToAndTapText(gameTitle)
 
     // Wait for game detail — look for Download/Play button or the game title
-    waitUntil(timeoutMillis = TIMEOUT_LONG) {
+    pollUntil(timeoutMillis = TIMEOUT_LONG) {
         try {
             onAllNodesWithText("Download", substring = true)
                 .fetchSemanticsNodes().isNotEmpty() ||
@@ -783,7 +833,7 @@ fun ComposeRule.navigateToN64GameAndPlay() {
  */
 fun ComposeRule.tapNodeMatchingBoth(text1: String, text2: String) {
     val matcher = hasText(text1, substring = true) and hasText(text2, substring = true)
-    waitUntil(timeoutMillis = TIMEOUT_LONG) {
+    pollUntil(timeoutMillis = TIMEOUT_LONG) {
         try {
             onAllNodes(matcher).fetchSemanticsNodes().isNotEmpty()
         } catch (_: IllegalStateException) {
@@ -820,7 +870,7 @@ fun ComposeRule.scrollToAndTapMatchingBoth(text1: String, text2: String) {
 
         if (attempt == 0) {
             try {
-                waitUntil(timeoutMillis = 2_000) {
+                pollUntil(timeoutMillis = 2_000) {
                     try {
                         onAllNodes(matcher).fetchSemanticsNodes().isNotEmpty()
                     } catch (_: IllegalStateException) {
@@ -872,7 +922,7 @@ fun ComposeRule.scrollToAndTapText(text: String) {
         if (attempt == 0) {
             // First attempt: wait briefly for initial load before swiping
             try {
-                waitUntil(timeoutMillis = 2_000) {
+                pollUntil(timeoutMillis = 2_000) {
                     try {
                         onAllNodesWithText(text, substring = true)
                             .fetchSemanticsNodes().isNotEmpty()
@@ -917,7 +967,7 @@ fun ComposeRule.downloadGameIfNeeded() {
     if (downloadNodes.isNotEmpty()) {
         onNodeWithText("Download").performClick()
         // After download, button becomes "Play", "Resume", or "New Game"
-        waitUntil(timeoutMillis = TIMEOUT_EXTRA_LONG) {
+        pollUntil(timeoutMillis = TIMEOUT_EXTRA_LONG) {
             try {
                 onAllNodesWithText("Play", substring = true).fetchSemanticsNodes().isNotEmpty() ||
                     onAllNodesWithText("Resume", substring = true).fetchSemanticsNodes().isNotEmpty()
@@ -1096,7 +1146,7 @@ fun ComposeRule.navigateToChallengeList() {
         // so the testTag node may linger for several hundred ms. Use waitUntil to
         // give the transition time to complete.
         try {
-            waitUntil(timeoutMillis = 5_000) {
+            pollUntil(timeoutMillis = 5_000) {
                 try {
                     onAllNodes(hasTestTag(buttonTag))
                         .fetchSemanticsNodes().isEmpty()

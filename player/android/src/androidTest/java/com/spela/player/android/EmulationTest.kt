@@ -229,7 +229,7 @@ class EmulationTest {
 
         // Save state
         rule.tapOn("Save")
-        rule.waitForIdle()
+        Thread.sleep(300)
 
         // Ensure overlay is open (save may dismiss it via click propagation)
         rule.ensureOverlayOpen()
@@ -242,7 +242,7 @@ class EmulationTest {
 
         // Load state
         rule.tapOn("Load")
-        rule.waitForIdle()
+        Thread.sleep(300)
 
         // Ensure overlay is open after load
         rule.ensureOverlayOpen()

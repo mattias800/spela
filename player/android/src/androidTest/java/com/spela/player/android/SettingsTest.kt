@@ -55,7 +55,7 @@ class SettingsTest {
         val nesCard = hasText("Nintendo Entertainment System", substring = true) and
                 hasText("Super", substring = true).not() and
                 hasClickAction()
-        rule.waitUntil(timeoutMillis = 10_000) {
+        rule.pollUntil(timeoutMillis = 10_000) {
             try {
                 rule.onAllNodes(nesCard).fetchSemanticsNodes().isNotEmpty()
             } catch (_: IllegalStateException) { false }

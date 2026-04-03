@@ -59,7 +59,7 @@ class SessionTest {
         rule.restartApp()
 
         // After restart, app shows server connection screen with "Local" still listed
-        rule.waitUntil(timeoutMillis = 15_000) {
+        rule.pollUntil(timeoutMillis = 15_000) {
             try {
                 rule.onAllNodesWithText("Local", substring = true)
                     .fetchSemanticsNodes().isNotEmpty() ||
@@ -99,7 +99,7 @@ class SessionTest {
         rule.restartApp()
 
         // After restart, server should persist (may show Login or server list)
-        rule.waitUntil(timeoutMillis = 15_000) {
+        rule.pollUntil(timeoutMillis = 15_000) {
             try {
                 rule.onAllNodesWithText("Local", substring = true)
                     .fetchSemanticsNodes().isNotEmpty() ||
