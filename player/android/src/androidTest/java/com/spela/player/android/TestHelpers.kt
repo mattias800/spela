@@ -656,9 +656,12 @@ private fun ComposeRule.addServerAndLogin(username: String, password: String) {
         waitForIdle()
     }
 
-    // Tap server card to connect
+    // Tap server card to connect (UiAutomator — Compose performClick blocks on idle)
     waitForText(SERVER_NAME, TIMEOUT_MEDIUM)
-    onNodeWithText(SERVER_NAME).performClick()
+    val serverCard = device.findObject(UiSelector().textContains(SERVER_NAME))
+    check(serverCard.exists()) { "Server card '$SERVER_NAME' not found" }
+    serverCard.click()
+    Thread.sleep(1_000)
 
     // Login
     doLogin(username, password)
