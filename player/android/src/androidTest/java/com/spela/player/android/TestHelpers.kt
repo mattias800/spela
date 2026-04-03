@@ -639,53 +639,66 @@ private fun ComposeRule.addServerAndLogin(username: String, password: String) {
         // The form auto-opens when no servers exist. If it hasn't, click "Add Server".
         val formOpen = device.findObject(UiSelector().textContains("Server Name")).exists()
         if (!formOpen) {
-            onNodeWithText("Add Server").performClick()
-            waitForIdle()
+            val addBtn = device.findObject(UiSelector().textContains("Add Server"))
+            if (addBtn.exists()) addBtn.click()
+            Thread.sleep(1_000)
         }
 
-        onNode(hasText("Server Name") and hasSetTextAction())
-            .performTextInput(SERVER_NAME)
+        // Enter server details via UiAutomator (Compose APIs block on Espresso idle)
+        val nameField = device.findObject(UiSelector().className("android.widget.EditText").instance(0))
+        nameField.click()
+        nameField.setText(SERVER_NAME)
 
-        onNode(hasText("Server URL") and hasSetTextAction())
-            .performTextInput(SERVER_URL)
+        val urlField = device.findObject(UiSelector().className("android.widget.EditText").instance(1))
+        urlField.click()
+        urlField.setText(SERVER_URL)
 
-        // Use ImeAction to submit (which dismisses keyboard + triggers add)
-        onNode(hasText("Server URL") and hasSetTextAction())
-            .performImeAction()
-        waitForIdle()
-        waitForIdle()
+        // Submit via Connect button
+        val connectBtn = device.findObject(UiSelector().textContains("Connect"))
+        if (connectBtn.exists()) {
+            connectBtn.click()
+        } else {
+            // Fallback: press Enter to submit
+            device.pressEnter()
+        }
+        Thread.sleep(2_000)
     }
 
     // Tap server card to connect
     waitForText(SERVER_NAME, TIMEOUT_MEDIUM)
-    tapOn(SERVER_NAME)
+    val serverCard = device.findObject(UiSelector().textContains(SERVER_NAME))
+    serverCard.click()
+    Thread.sleep(1_000)
 
     // Login
     doLogin(username, password)
 }
 
 private fun ComposeRule.doLogin(username: String, password: String) {
+    val device = uiDevice()
+
     // Wait for login form (UiAutomator — no Espresso idle dependency)
     pollUntil(timeoutMillis = TIMEOUT_EXTRA_LONG) {
         isOnLoginScreen() ||
-            uiDevice().findObject(UiSelector().textContains("Sign In")).exists()
+            device.findObject(UiSelector().textContains("Sign In")).exists()
     }
 
-    // Clear fields and enter credentials.
-    // performTextInput/performClick use Compose test APIs which call waitForIdle().
-    // On non-gameplay screens, the 10s IdlingPolicies timeout handles neon animations.
-    onNode(hasText("Username") and hasSetTextAction())
-        .performTextClearance()
-    onNode(hasText("Username") and hasSetTextAction())
-        .performTextInput(username)
+    // Enter credentials via UiAutomator (Compose APIs block on Espresso idle
+    // due to neon animations keeping the Choreographer busy)
+    val usernameField = device.findObject(UiSelector().className("android.widget.EditText").instance(0))
+    usernameField.click()
+    usernameField.clearTextField()
+    usernameField.setText(username)
 
-    onNode(hasText("Password") and hasSetTextAction())
-        .performTextClearance()
-    onNode(hasText("Password") and hasSetTextAction())
-        .performTextInput(password)
+    val passwordField = device.findObject(UiSelector().className("android.widget.EditText").instance(1))
+    passwordField.click()
+    passwordField.clearTextField()
+    passwordField.setText(password)
 
-    onNodeWithText("Sign In").performScrollTo()
-    onNodeWithText("Sign In").performClick()
+    // Tap Sign In button
+    val signInBtn = device.findObject(UiSelector().textContains("Sign In"))
+    check(signInBtn.exists()) { "Sign In button not found" }
+    signInBtn.click()
 
     // Verify home screen (UiAutomator — no Espresso idle dependency)
     pollUntil(timeoutMillis = TIMEOUT_EXTRA_LONG) {
