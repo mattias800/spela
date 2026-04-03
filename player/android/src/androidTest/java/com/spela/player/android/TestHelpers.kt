@@ -644,8 +644,9 @@ private fun ComposeRule.addServerAndLogin(username: String, password: String) {
             Thread.sleep(1_000)
         }
 
-        // Enter server details via UiAutomator (Compose APIs block on Espresso idle)
+        // Wait for the form to render, then enter details via UiAutomator
         val nameField = device.findObject(UiSelector().className("android.widget.EditText").instance(0))
+        check(nameField.waitForExists(TIMEOUT_MEDIUM)) { "Server Name field not found" }
         nameField.click()
         nameField.setText(SERVER_NAME)
 
