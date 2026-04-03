@@ -1112,7 +1112,7 @@ fun ComposeRule.exitGame(coreIdleTimeout: Long = 10_000) {
 // ── Composite helpers for common patterns ──
 
 fun ComposeRule.navigateToGameAndPlay() {
-    navigateToAnyNesGame()
+    navigateToGameByTitle("Super Mario Bros.")
     downloadGameIfNeeded()
     startGameAndWait()
 }
