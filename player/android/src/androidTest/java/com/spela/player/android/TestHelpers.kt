@@ -226,7 +226,8 @@ private fun ComposeRule.isOnHomeScreen(): Boolean {
         device.findObject(UiSelector().textContains("Spela")).exists() ||
         device.findObject(UiSelector().textContains("Your library is empty")).exists() ||
         device.findObject(UiSelector().textContains("Top Rated")).exists() ||
-        device.findObject(UiSelector().textContains("Continue Playing")).exists()
+        device.findObject(UiSelector().textContains("Continue Playing")).exists() ||
+        device.findObject(UiSelector().textContains("Loading your library")).exists()
 }
 
 /** Wait until label is visible in either text or content description.
