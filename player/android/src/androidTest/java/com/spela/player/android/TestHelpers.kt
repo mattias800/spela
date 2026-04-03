@@ -674,15 +674,8 @@ private fun ComposeRule.addServerAndLogin(username: String, password: String) {
     val hasServer = device.findObject(UiSelector().textContains(SERVER_NAME)).exists()
 
     if (!hasServer) {
-        // Wait for the form to be ready (Compose semantic tree has the field)
-        pollUntil(timeoutMillis = TIMEOUT_MEDIUM) {
-            try {
-                onAllNodesWithText("Server Name", substring = true)
-                    .fetchSemanticsNodes().isNotEmpty()
-            } catch (_: Exception) { false }
-        }
-
-        // Fill the server form using Compose test APIs (fast with isTestMode=true, ~700ms per call)
+        // Fill the server form. Compose's performTextInput handles idle synchronization
+        // internally (~700ms per call with isTestMode=true). No need for explicit wait.
         onNode(hasText("Server Name") and hasSetTextAction())
             .performTextInput(SERVER_NAME)
         onNode(hasText("Server URL") and hasSetTextAction())
