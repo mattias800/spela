@@ -138,10 +138,21 @@ fun ComposeRule.pollUntil(timeoutMillis: Long = 1000L, condition: () -> Boolean)
 }
 
 fun ComposeRule.waitForCoreIdle(timeout: Long = 10_000) {
-    val obj = uiDevice().findObject(UiSelector().descriptionContains("Core idle"))
-    check(obj.waitForExists(timeout)) {
-        "waitForCoreIdle: 'Core idle' not found within ${timeout}ms"
+    val device = uiDevice()
+    val deadline = System.currentTimeMillis() + timeout
+    while (System.currentTimeMillis() < deadline) {
+        // UiAutomator path
+        if (device.findObject(UiSelector().descriptionContains("Core idle")).exists()) return
+        // Compose fallback for zero-size marker node
+        try {
+            if (onAllNodesWithContentDescription("Core idle", substring = false)
+                    .fetchSemanticsNodes().isNotEmpty()) return
+        } catch (_: Exception) {}
+        Thread.sleep(100)
     }
+    throw androidx.compose.ui.test.ComposeTimeoutException(
+        "waitForCoreIdle: 'Core idle' not found within ${timeout}ms"
+    )
 }
 
 fun ComposeRule.waitForText(text: String, timeout: Long = TIMEOUT_MEDIUM) {
@@ -242,14 +253,26 @@ private fun ComposeRule.isOnHomeScreen(): Boolean {
     }
 }
 
-/** Wait until label is visible in either text or content description (UiAutomator). */
+/** Wait until label is visible in either text or content description.
+ * Tries UiAutomator first (fast, works during gameplay). Falls back to
+ * Compose semantic tree for zero-size marker nodes (e.g., "Game running",
+ * "Core idle") that UiAutomator can't see in the accessibility tree. */
 fun ComposeRule.waitForVisible(label: String, timeout: Long = TIMEOUT_MEDIUM) {
     val device = uiDevice()
-    val byText = device.findObject(UiSelector().textContains(label))
-    val byDesc = device.findObject(UiSelector().descriptionContains(label))
     val deadline = System.currentTimeMillis() + timeout
     while (System.currentTimeMillis() < deadline) {
-        if (byText.exists() || byDesc.exists()) return
+        // Fast: UiAutomator (no Espresso idle dependency)
+        if (device.findObject(UiSelector().textContains(label)).exists() ||
+            device.findObject(UiSelector().descriptionContains(label)).exists()
+        ) return
+        // Slow fallback: Compose semantic tree (for zero-size marker nodes)
+        try {
+            if (onAllNodesWithText(label, substring = true).fetchSemanticsNodes().isNotEmpty() ||
+                onAllNodesWithContentDescription(label, substring = true).fetchSemanticsNodes().isNotEmpty()
+            ) return
+        } catch (_: Exception) {
+            // AppNotIdleException during gameplay — UiAutomator path will retry
+        }
         Thread.sleep(100)
     }
     throw androidx.compose.ui.test.ComposeTimeoutException(
