@@ -644,22 +644,30 @@ private fun ComposeRule.addServerAndLogin(username: String, password: String) {
             Thread.sleep(1_000)
         }
 
-        // Wait for the form to render, then enter details via UiAutomator
-        val nameField = device.findObject(UiSelector().className("android.widget.EditText").instance(0))
-        check(nameField.waitForExists(TIMEOUT_MEDIUM)) { "Server Name field not found" }
-        nameField.click()
-        nameField.setText(SERVER_NAME)
+        // Wait for the form to render
+        val nameLabel = device.findObject(UiSelector().textContains("Server Name"))
+        check(nameLabel.waitForExists(TIMEOUT_MEDIUM)) { "Server form not found" }
 
-        val urlField = device.findObject(UiSelector().className("android.widget.EditText").instance(1))
-        urlField.click()
-        urlField.setText(SERVER_URL)
+        // Find EditTexts by their parent-child relationship with labels.
+        // Use the label's bounds to tap into the right field, then type.
+        nameLabel.click() // Focuses the Server Name field
+        Thread.sleep(300)
+        // Type the server name using shell input (most reliable)
+        device.executeShellCommand("input text '$SERVER_NAME'")
+        Thread.sleep(300)
+
+        // Tap the Server URL field
+        val urlLabel = device.findObject(UiSelector().textContains("Server URL"))
+        urlLabel.click()
+        Thread.sleep(300)
+        device.executeShellCommand("input text '${SERVER_URL.replace("/", "\\/")}'")
+        Thread.sleep(300)
 
         // Submit via Connect button
         val connectBtn = device.findObject(UiSelector().textContains("Connect"))
         if (connectBtn.exists()) {
             connectBtn.click()
         } else {
-            // Fallback: press Enter to submit
             device.pressEnter()
         }
         Thread.sleep(2_000)
