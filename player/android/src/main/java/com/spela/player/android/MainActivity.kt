@@ -127,6 +127,7 @@ class MainActivity : ComponentActivity() {
             // Choreographer — continuous animations keep it busy, causing
             // AppNotIdleException. LocalAnimationsEnabled = false disables
             // infinite transitions, gradient glow, and ambient blobs.
+            android.util.Log.d("E2E_DEBUG", "isTestMode=$isTestMode")
             if (isTestMode) {
                 androidx.compose.runtime.CompositionLocalProvider(
                     com.spela.player.presentation.ui.components.LocalAnimationsEnabled provides false,
