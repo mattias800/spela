@@ -676,13 +676,11 @@ private fun ComposeRule.addServerAndLogin(username: String, password: String) {
     } catch (_: Exception) { false }
 
     if (!hasServer) {
-        // The form auto-opens via LaunchedEffect AFTER LoadServers completes.
-        // Need to wait for: LoadServers → isLoading=false → LaunchedEffect fires
-        // ToggleAddServer → isAddingServer=true → recomposition → form visible.
-        // Multiple waitForIdle cycles ensure all recompositions complete.
-        waitForIdle()
-        waitForIdle()
-        waitForIdle()
+        // The form auto-opens via LaunchedEffect(servers, isLoading) AFTER
+        // LoadServers completes. LaunchedEffect is a coroutine — waitForIdle()
+        // returns before it fires. Need Thread.sleep to let the coroutine execute,
+        // trigger ToggleAddServer, and recompose with the form visible.
+        Thread.sleep(1_500)
 
         onNode(hasText("Server Name") and hasSetTextAction())
             .performTextInput(SERVER_NAME)
