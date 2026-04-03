@@ -59,6 +59,10 @@ private val testConfigured = run {
  */
 class KoinResetRule : TestWatcher() {
     override fun starting(description: Description?) {
+        // Disable continuous animations BEFORE the Activity is created (order=0).
+        // This prevents Compose's waitForIdle from hanging on the Choreographer.
+        MainActivity.isTestMode = true
+
         try {
             val koin = KoinPlatformTools.defaultContext().get()
             val modules = listOf(commonModule, platformModule())
