@@ -954,16 +954,16 @@ fun ComposeRule.scrollToAndTapMatchingBoth(text1: String, text2: String) {
                 found = true
                 break
             }
-        } catch (_: IllegalStateException) {
-            // Compose hierarchy not yet available
+        } catch (_: Exception) {
+            // Compose hierarchy not available or AppNotIdleException during image loading
         }
 
         if (attempt == 0) {
             try {
-                pollUntil(timeoutMillis = 2_000) {
+                pollUntil(timeoutMillis = 5_000) {
                     try {
                         onAllNodes(matcher).fetchSemanticsNodes().isNotEmpty()
-                    } catch (_: IllegalStateException) {
+                    } catch (_: Exception) {
                         false
                     }
                 }
@@ -1005,18 +1005,18 @@ fun ComposeRule.scrollToAndTapText(text: String) {
                 found = true
                 break
             }
-        } catch (_: IllegalStateException) {
-            // Compose hierarchy not yet available
+        } catch (_: Exception) {
+            // Compose hierarchy not available or AppNotIdleException
         }
 
         if (attempt == 0) {
             // First attempt: wait briefly for initial load before swiping
             try {
-                pollUntil(timeoutMillis = 2_000) {
+                pollUntil(timeoutMillis = 5_000) {
                     try {
                         onAllNodesWithText(text, substring = true)
                             .fetchSemanticsNodes().isNotEmpty()
-                    } catch (_: IllegalStateException) {
+                    } catch (_: Exception) {
                         false
                     }
                 }
