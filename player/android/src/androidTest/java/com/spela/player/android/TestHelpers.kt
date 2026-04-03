@@ -633,45 +633,51 @@ private fun ComposeRule.addServerAndLogin(username: String, password: String) {
         isOnServerConnectionScreen()
     }
 
-    // Check if "Local" server already exists (UiAutomator)
+    // Wait for the form to fully render (EditText labels appear after the initial layout)
     val device = uiDevice()
+    Thread.sleep(2_000) // Let the server connection screen fully compose
+
+    // Check if "Local" server already exists (UiAutomator)
     val hasServer = device.findObject(UiSelector().textContains(SERVER_NAME)).exists()
 
     if (!hasServer) {
         // The form auto-opens when no servers exist. If it hasn't, click "Add Server".
-        val formOpen = device.findObject(UiSelector().textContains("Server Name")).exists()
+        val formOpen = device.findObject(UiSelector().textContains("Connect")).exists()
         if (!formOpen) {
             val addBtn = device.findObject(UiSelector().textContains("Add Server"))
             if (addBtn.exists()) addBtn.click()
-            Thread.sleep(1_000)
+            Thread.sleep(2_000)
         }
 
-        // Wait for the form to render
-        val nameLabel = device.findObject(UiSelector().textContains("Server Name"))
-        check(nameLabel.waitForExists(TIMEOUT_MEDIUM)) { "Server form not found" }
-
-        // Find EditTexts by their parent-child relationship with labels.
-        // Use the label's bounds to tap into the right field, then type.
-        nameLabel.click() // Focuses the Server Name field
-        Thread.sleep(300)
-        // Type the server name using shell input (most reliable)
-        device.executeShellCommand("input text '$SERVER_NAME'")
-        Thread.sleep(300)
-
-        // Tap the Server URL field
-        val urlLabel = device.findObject(UiSelector().textContains("Server URL"))
-        urlLabel.click()
-        Thread.sleep(300)
-        device.executeShellCommand("input text '${SERVER_URL.replace("/", "\\/")}'")
-        Thread.sleep(300)
-
-        // Submit via Connect button
+        // Wait for the Connect button (confirms form is rendered)
         val connectBtn = device.findObject(UiSelector().textContains("Connect"))
-        if (connectBtn.exists()) {
-            connectBtn.click()
+        check(connectBtn.waitForExists(TIMEOUT_MEDIUM)) { "Server form not found" }
+
+        // Enter text into the EditText fields via UiAutomator
+        val firstField = device.findObject(UiSelector().className("android.widget.EditText").instance(0))
+        val secondField = device.findObject(UiSelector().className("android.widget.EditText").instance(1))
+
+        if (firstField.exists() && secondField.exists()) {
+            firstField.click()
+            firstField.setText(SERVER_NAME)
+            secondField.click()
+            secondField.setText(SERVER_URL)
         } else {
-            device.pressEnter()
+            // Fallback: use shell input text command
+            val nameLabel = device.findObject(UiSelector().textContains("Server Name"))
+            if (nameLabel.exists()) nameLabel.click()
+            Thread.sleep(300)
+            device.executeShellCommand("input text '$SERVER_NAME'")
+
+            val urlLabel = device.findObject(UiSelector().textContains("Server URL"))
+            if (urlLabel.exists()) urlLabel.click()
+            Thread.sleep(300)
+            device.executeShellCommand("input text '$SERVER_URL'")
         }
+        Thread.sleep(500)
+
+        // Submit
+        connectBtn.click()
         Thread.sleep(2_000)
     }
 
