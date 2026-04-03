@@ -690,12 +690,20 @@ private fun ComposeRule.addServerAndLogin(username: String, password: String) {
         // since we're NOT during gameplay — the Espresso idle timeout (10s) handles
         // the neon animations.
         try {
+            var t = System.currentTimeMillis()
             onNode(hasText("Server Name") and hasSetTextAction())
                 .performTextInput(SERVER_NAME)
+            android.util.Log.d("E2E_TIMING", "performTextInput(ServerName): ${System.currentTimeMillis()-t}ms")
+
+            t = System.currentTimeMillis()
             onNode(hasText("Server URL") and hasSetTextAction())
                 .performTextInput(SERVER_URL)
+            android.util.Log.d("E2E_TIMING", "performTextInput(ServerURL): ${System.currentTimeMillis()-t}ms")
+
+            t = System.currentTimeMillis()
             onNode(hasText("Server URL") and hasSetTextAction())
                 .performImeAction()
+            android.util.Log.d("E2E_TIMING", "performImeAction: ${System.currentTimeMillis()-t}ms")
         } catch (e: Exception) {
             android.util.Log.w("E2E", "Compose input failed, trying UiAutomator: ${e.message}")
             // Fallback: use EditText + setText
@@ -729,18 +737,26 @@ private fun ComposeRule.doLogin(username: String, password: String) {
             device.findObject(UiSelector().textContains("Sign In")).exists()
     }
 
-    // Enter credentials. Compose TextFields may not be visible to UiAutomator
-    // (accessibility tree timing). Use Compose APIs which work despite the idle
-    // timeout (10s each call, but they DO eventually succeed).
+    // Enter credentials with timing logs to diagnose idle blocking
+    var t = System.currentTimeMillis()
     onNode(hasText("Username") and hasSetTextAction())
         .performTextClearance()
+    android.util.Log.d("E2E_TIMING", "clearUsername: ${System.currentTimeMillis()-t}ms")
+
+    t = System.currentTimeMillis()
     onNode(hasText("Username") and hasSetTextAction())
         .performTextInput(username)
+    android.util.Log.d("E2E_TIMING", "inputUsername: ${System.currentTimeMillis()-t}ms")
 
+    t = System.currentTimeMillis()
     onNode(hasText("Password") and hasSetTextAction())
         .performTextClearance()
+    android.util.Log.d("E2E_TIMING", "clearPassword: ${System.currentTimeMillis()-t}ms")
+
+    t = System.currentTimeMillis()
     onNode(hasText("Password") and hasSetTextAction())
         .performTextInput(password)
+    android.util.Log.d("E2E_TIMING", "inputPassword: ${System.currentTimeMillis()-t}ms")
 
     // Tap Sign In — try UiAutomator first, Compose fallback
     val signInBtn = device.findObject(UiSelector().textContains("Sign In"))
