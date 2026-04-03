@@ -197,9 +197,6 @@ fun ComposeRule.waitForTextNotVisible(text: String, timeout: Long = TIMEOUT_SHOR
             "waitForTextNotVisible('$text'): still visible after ${timeout}ms"
         }
     }
-    throw androidx.compose.ui.test.ComposeTimeoutException(
-        "Condition still not satisfied after $timeout ms"
-    )
 }
 
 fun ComposeRule.assertTextVisible(text: String) {
