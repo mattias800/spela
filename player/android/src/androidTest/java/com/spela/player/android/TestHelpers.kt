@@ -206,35 +206,54 @@ fun ComposeRule.assertNotVisible(label: String) {
     check(!hasText && !hasDesc) { "Expected '$label' to NOT be visible, but it was found" }
 }
 
-/** Check if we're on the server connection screen (pure UiAutomator). */
+/** Check if we're in the Spela app (not the Android launcher or another app). */
+private fun isInSpelaApp(): Boolean =
+    uiDevice().currentPackageName == "com.spela.player"
+
+/** Check if we're on the server connection screen. UiAutomator + Compose fallback. */
 private fun ComposeRule.isOnServerConnectionScreen(): Boolean {
+    if (!isInSpelaApp()) return false
     val device = uiDevice()
-    return device.findObject(UiSelector().textContains("Add Server")).exists() ||
-        device.findObject(UiSelector().textContains("Server Name")).exists() ||
+    if (device.findObject(UiSelector().textContains("Add Server")).exists() ||
         device.findObject(UiSelector().textContains("Nu spelar vi")).exists()
+    ) return true
+    return try {
+        onAllNodesWithText("Add Server", substring = true)
+            .fetchSemanticsNodes().isNotEmpty()
+    } catch (_: Exception) { false }
 }
 
-/** Check if we're on the login screen (pure UiAutomator).
- * Note: TextField labels ("Username") may not be visible to UiAutomator.
- * Check for the "Sign In" button which is always visible. */
+/** Check if we're on the login screen. UiAutomator + Compose fallback. */
 private fun ComposeRule.isOnLoginScreen(): Boolean {
+    if (!isInSpelaApp()) return false
     val device = uiDevice()
-    return device.findObject(UiSelector().textContains("Sign In")).exists() ||
-        device.findObject(UiSelector().textContains("Username")).exists() ||
-        device.findObject(UiSelector().textContains("Create Account")).exists()
+    if (device.findObject(UiSelector().textContains("Sign In")).exists() ||
+        device.findObject(UiSelector().textContains("Username")).exists()
+    ) return true
+    return try {
+        onAllNodesWithText("Sign In", substring = true)
+            .fetchSemanticsNodes().isNotEmpty() ||
+        onAllNodesWithText("Username", substring = true)
+            .fetchSemanticsNodes().isNotEmpty()
+    } catch (_: Exception) { false }
 }
 
-/** Check if we're on the app's Home screen (pure UiAutomator — no Espresso idle).
- * IMPORTANT: Don't match generic text like "Spela" — the Android launcher also
- * shows app names, causing false positives before the app even launches. */
+/** Check if we're on the Home screen. UiAutomator + Compose fallback.
+ * Uses isInSpelaApp() to avoid matching launcher app labels. */
 private fun ComposeRule.isOnHomeScreen(): Boolean {
+    if (!isInSpelaApp()) return false
     val device = uiDevice()
-    // Check for content unique to the app's Home screen (not the Android launcher)
-    return device.findObject(UiSelector().descriptionContains(TestTags.SCREEN_HOME)).exists() ||
+    if (device.findObject(UiSelector().descriptionContains(TestTags.SCREEN_HOME)).exists() ||
+        device.findObject(UiSelector().textContains("Spela")).exists() ||
         device.findObject(UiSelector().textContains("Your library is empty")).exists() ||
         device.findObject(UiSelector().textContains("Top Rated")).exists() ||
         device.findObject(UiSelector().textContains("Continue Playing")).exists() ||
         device.findObject(UiSelector().textContains("Loading your library")).exists()
+    ) return true
+    return try {
+        onAllNodesWithText("Spela", substring = true)
+            .fetchSemanticsNodes().isNotEmpty()
+    } catch (_: Exception) { false }
 }
 
 /** Wait until label is visible in either text or content description.
