@@ -668,61 +668,28 @@ private fun ComposeRule.addServerAndLogin(username: String, password: String) {
     }
 
     // Wait for the server connection screen form to fully render.
-    // The header ("Add Server") appears before the form fields — we need to wait
-    // for the form inputs ("Connect" button) to appear.
+    // Wait briefly for the screen to render, then check for existing server
     val device = uiDevice()
-    val connectBtn = device.findObject(UiSelector().textContains("Connect"))
-    if (!connectBtn.waitForExists(TIMEOUT_EXTRA_LONG)) {
-        // Form might not auto-open. Try clicking "Add Server" to open it.
-        val addBtn = device.findObject(UiSelector().textContains("Add Server"))
-        if (addBtn.exists()) {
-            addBtn.click()
-            Thread.sleep(2_000)
-        }
-    }
-
-    // Check if "Local" server already exists (UiAutomator)
+    Thread.sleep(2_000)
     val hasServer = device.findObject(UiSelector().textContains(SERVER_NAME)).exists()
 
     if (!hasServer) {
-        // The form fields may not be visible to UiAutomator even when rendered
-        // (Compose accessibility tree delays). Use Compose test APIs for text input
-        // since we're NOT during gameplay — the Espresso idle timeout (10s) handles
-        // the neon animations.
-        try {
-            var t = System.currentTimeMillis()
-            onNode(hasText("Server Name") and hasSetTextAction())
-                .performTextInput(SERVER_NAME)
-            android.util.Log.d("E2E_TIMING", "performTextInput(ServerName): ${System.currentTimeMillis()-t}ms")
-
-            t = System.currentTimeMillis()
-            onNode(hasText("Server URL") and hasSetTextAction())
-                .performTextInput(SERVER_URL)
-            android.util.Log.d("E2E_TIMING", "performTextInput(ServerURL): ${System.currentTimeMillis()-t}ms")
-
-            t = System.currentTimeMillis()
-            onNode(hasText("Server URL") and hasSetTextAction())
-                .performImeAction()
-            android.util.Log.d("E2E_TIMING", "performImeAction: ${System.currentTimeMillis()-t}ms")
-        } catch (e: Exception) {
-            android.util.Log.w("E2E", "Compose input failed, trying UiAutomator: ${e.message}")
-            // Fallback: use EditText + setText
-            val firstField = device.findObject(UiSelector().className("android.widget.EditText").instance(0))
-            if (firstField.waitForExists(TIMEOUT_MEDIUM)) {
-                firstField.setText(SERVER_NAME)
-                val secondField = device.findObject(UiSelector().className("android.widget.EditText").instance(1))
-                secondField.setText(SERVER_URL)
-                device.pressEnter()
-            }
-        }
+        // Fill the server form using Compose test APIs (fast with isTestMode=true).
+        // UiAutomator can't reliably find Compose form elements in the accessibility tree,
+        // but Compose's own APIs work quickly (~700ms per call).
+        onNode(hasText("Server Name") and hasSetTextAction())
+            .performTextInput(SERVER_NAME)
+        onNode(hasText("Server URL") and hasSetTextAction())
+            .performTextInput(SERVER_URL)
+        onNode(hasText("Server URL") and hasSetTextAction())
+            .performImeAction()
         Thread.sleep(2_000)
     }
 
-    // Tap server card to connect
+    // Tap server card to connect (Compose API — fast with isTestMode)
     waitForText(SERVER_NAME, TIMEOUT_MEDIUM)
-    val serverCard = device.findObject(UiSelector().textContains(SERVER_NAME))
-    serverCard.click()
-    Thread.sleep(1_000)
+    onNodeWithText(SERVER_NAME).performClick()
+    Thread.sleep(500)
 
     // Login
     doLogin(username, password)
