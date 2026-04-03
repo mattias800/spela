@@ -667,25 +667,17 @@ private fun ComposeRule.addServerAndLogin(username: String, password: String) {
         isOnServerConnectionScreen()
     }
 
-    // Wait for the server connection screen form to fully render.
-    // Wait for Compose to build the tree, then let LaunchedEffect (LoadServers)
-    // complete and auto-open the form.
+    // UiAutomator has a multi-second delay before Compose elements appear in the
+    // accessibility tree. Use Compose APIs directly for all form interactions.
     val device = uiDevice()
-    // Wait for the server connection screen to fully render with the form.
-    // LoadServers sets isLoading=true, queries SQLDelight on IO thread, then
-    // sets isLoading=false. The form auto-opens when isLoading=false && servers.isEmpty().
-    // On emulators, the IO thread can be slow. Use a long sleep.
-    Thread.sleep(5_000)
-    val hasServer = device.findObject(UiSelector().textContains(SERVER_NAME)).exists()
+    val hasServer = try {
+        onAllNodesWithText(SERVER_NAME, substring = true)
+            .fetchSemanticsNodes().isNotEmpty()
+    } catch (_: Exception) { false }
 
     if (!hasServer) {
-        // Debug: check what UiAutomator AND Compose can see
-        val debugTexts = listOf("Add Server", "Server Name", "Server URL", "Connect", "Nu spelar vi")
-        for (txt in debugTexts) {
-            val uiFound = device.findObject(UiSelector().textContains(txt)).exists()
-            android.util.Log.d("E2E_DEBUG", "UiAutomator '$txt': $uiFound")
-        }
-        android.util.Log.d("E2E_DEBUG", "currentPackage: ${device.currentPackageName}")
+        // Fill server form. performTextInput calls waitForIdle internally (~700ms with
+        // isTestMode=true) and finds nodes via the Compose semantic tree directly.
         onNode(hasText("Server Name") and hasSetTextAction())
             .performTextInput(SERVER_NAME)
         onNode(hasText("Server URL") and hasSetTextAction())
