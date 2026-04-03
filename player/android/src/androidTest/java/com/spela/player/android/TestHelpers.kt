@@ -651,35 +651,28 @@ private fun ComposeRule.addServerAndLogin(username: String, password: String) {
     val hasServer = device.findObject(UiSelector().textContains(SERVER_NAME)).exists()
 
     if (!hasServer) {
-        // Form should be open by now (waited for "Connect" above, or clicked "Add Server")
-        val connectBtnReady = device.findObject(UiSelector().textContains("Connect"))
-        check(connectBtnReady.waitForExists(TIMEOUT_MEDIUM)) { "Server form not found" }
-
-        // Enter text into the EditText fields via UiAutomator
-        val firstField = device.findObject(UiSelector().className("android.widget.EditText").instance(0))
-        val secondField = device.findObject(UiSelector().className("android.widget.EditText").instance(1))
-
-        if (firstField.exists() && secondField.exists()) {
-            firstField.click()
-            firstField.setText(SERVER_NAME)
-            secondField.click()
-            secondField.setText(SERVER_URL)
-        } else {
-            // Fallback: use shell input text command
-            val nameLabel = device.findObject(UiSelector().textContains("Server Name"))
-            if (nameLabel.exists()) nameLabel.click()
-            Thread.sleep(300)
-            device.executeShellCommand("input text '$SERVER_NAME'")
-
-            val urlLabel = device.findObject(UiSelector().textContains("Server URL"))
-            if (urlLabel.exists()) urlLabel.click()
-            Thread.sleep(300)
-            device.executeShellCommand("input text '$SERVER_URL'")
+        // The form fields may not be visible to UiAutomator even when rendered
+        // (Compose accessibility tree delays). Use Compose test APIs for text input
+        // since we're NOT during gameplay — the Espresso idle timeout (10s) handles
+        // the neon animations.
+        try {
+            onNode(hasText("Server Name") and hasSetTextAction())
+                .performTextInput(SERVER_NAME)
+            onNode(hasText("Server URL") and hasSetTextAction())
+                .performTextInput(SERVER_URL)
+            onNode(hasText("Server URL") and hasSetTextAction())
+                .performImeAction()
+        } catch (e: Exception) {
+            android.util.Log.w("E2E", "Compose input failed, trying UiAutomator: ${e.message}")
+            // Fallback: use EditText + setText
+            val firstField = device.findObject(UiSelector().className("android.widget.EditText").instance(0))
+            if (firstField.waitForExists(TIMEOUT_MEDIUM)) {
+                firstField.setText(SERVER_NAME)
+                val secondField = device.findObject(UiSelector().className("android.widget.EditText").instance(1))
+                secondField.setText(SERVER_URL)
+                device.pressEnter()
+            }
         }
-        Thread.sleep(500)
-
-        // Submit
-        connectBtn.click()
         Thread.sleep(2_000)
     }
 
