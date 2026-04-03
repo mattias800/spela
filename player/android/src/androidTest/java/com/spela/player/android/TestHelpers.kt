@@ -671,9 +671,15 @@ private fun ComposeRule.addServerAndLogin(username: String, password: String) {
     // Wait for Compose to build the tree, then let LaunchedEffect (LoadServers)
     // complete and auto-open the form.
     val device = uiDevice()
+    // Wait for Compose to build tree + LaunchedEffect to load servers + auto-open form.
+    // The form auto-opens when servers list is empty. Need multiple idle cycles.
     waitForIdle()
-    Thread.sleep(3_000) // LaunchedEffect needs time to load servers + auto-open form
-    waitForIdle() // Re-sync after the form opens
+    Thread.sleep(2_000)
+    waitForIdle()
+    Thread.sleep(2_000)
+    waitForIdle()
+    Thread.sleep(2_000)
+    waitForIdle()
     val hasServer = device.findObject(UiSelector().textContains(SERVER_NAME)).exists()
 
     if (!hasServer) {
