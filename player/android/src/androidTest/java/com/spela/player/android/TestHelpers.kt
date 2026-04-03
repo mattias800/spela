@@ -671,15 +671,11 @@ private fun ComposeRule.addServerAndLogin(username: String, password: String) {
     // Wait for Compose to build the tree, then let LaunchedEffect (LoadServers)
     // complete and auto-open the form.
     val device = uiDevice()
-    // Wait for Compose to build tree + LaunchedEffect to load servers + auto-open form.
-    // The form auto-opens when servers list is empty. Need multiple idle cycles.
-    waitForIdle()
-    Thread.sleep(2_000)
-    waitForIdle()
-    Thread.sleep(2_000)
-    waitForIdle()
-    Thread.sleep(2_000)
-    waitForIdle()
+    // Wait for the server connection screen to fully render with the form.
+    // LoadServers sets isLoading=true, queries SQLDelight on IO thread, then
+    // sets isLoading=false. The form auto-opens when isLoading=false && servers.isEmpty().
+    // On emulators, the IO thread can be slow. Use a long sleep.
+    Thread.sleep(5_000)
     val hasServer = device.findObject(UiSelector().textContains(SERVER_NAME)).exists()
 
     if (!hasServer) {
