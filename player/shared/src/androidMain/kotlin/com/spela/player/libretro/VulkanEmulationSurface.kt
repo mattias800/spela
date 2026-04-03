@@ -28,15 +28,14 @@ import com.spela.player.presentation.ui.feature.shader.gpuShaderId
  * during loadGame). For non-HW-render cores, the SurfaceView sits idle and the
  * software [EmulationSurface] renders via Canvas beneath it.
  *
- * When the in-game overlay is shown, we toggle [SurfaceView.setZOrderOnTop] to
- * push the surface behind Compose content so the overlay is visible.
+ * The SurfaceView renders behind the Compose layer so that Compose-based UI
+ * (touch controls, in-game overlay) is always visible on top of the game.
  */
 @Composable
 fun VulkanEmulationSurface(
     controller: AndroidLibretroController,
     selectedShader: ShaderPreset,
     isHwRenderEnabled: Boolean = false,
-    isOverlayVisible: Boolean = false,
     modifier: Modifier = Modifier,
 ) {
     // Track whether the native surface is available
@@ -47,7 +46,6 @@ fun VulkanEmulationSurface(
         factory = { ctx ->
             SurfaceView(ctx).apply {
                 controller.vulkanSurfaceView = this
-                setZOrderOnTop(true)
                 // Start transparent so software EmulationSurface shows through
                 // until the GPU renderer starts drawing.
                 holder.setFormat(PixelFormat.TRANSLUCENT)
@@ -83,13 +81,7 @@ fun VulkanEmulationSurface(
                 })
             }
         },
-        update = { surfaceView ->
-            // Toggle z-ordering instead of visibility. When the overlay is showing,
-            // push the SurfaceView behind Compose so the overlay is visible on top.
-            // This keeps the surface alive (no surfaceDestroyed), avoiding Vulkan
-            // context teardown that crashes HW render cores like Dolphin.
-            surfaceView.setZOrderOnTop(!isOverlayVisible)
-        },
+        update = { _ -> },
         modifier = modifier.fillMaxSize(),
     )
 
