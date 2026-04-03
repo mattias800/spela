@@ -637,15 +637,16 @@ private fun ComposeRule.addServerAndLogin(username: String, password: String) {
     val device = uiDevice()
     Thread.sleep(2_000)
 
-    // Debug: log what's visible to help diagnose form detection issues
-    try {
-        val dump = device.executeShellCommand("uiautomator dump /dev/stdout")
-        val texts = Regex("text=\"([^\"]+)\"").findAll(dump).map { it.groupValues[1] }.filter { it.isNotEmpty() }.toList()
-        val descs = Regex("content-desc=\"([^\"]+)\"").findAll(dump).map { it.groupValues[1] }.filter { it.isNotEmpty() }.toList()
-        android.util.Log.d("E2E_DEBUG", "Visible texts: $texts")
-        android.util.Log.d("E2E_DEBUG", "Visible descs: $descs")
-    } catch (e: Exception) {
-        android.util.Log.d("E2E_DEBUG", "Dump failed: ${e.message}")
+    // Debug: check what's visible via UiDevice.findObject
+    val debugChecks = listOf("Add Server", "Connect", "Server Name", "Server URL", "Nu spelar vi", "Spela")
+    for (text in debugChecks) {
+        val found = device.findObject(UiSelector().textContains(text)).exists()
+        android.util.Log.d("E2E_DEBUG", "textContains('$text'): $found")
+    }
+    val debugDescs = listOf("Spela", "screen_home", "screen_console")
+    for (desc in debugDescs) {
+        val found = device.findObject(UiSelector().descriptionContains(desc)).exists()
+        android.util.Log.d("E2E_DEBUG", "descContains('$desc'): $found")
     }
 
     // Check if "Local" server already exists (UiAutomator)
