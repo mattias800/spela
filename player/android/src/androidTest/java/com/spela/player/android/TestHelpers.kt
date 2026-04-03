@@ -677,8 +677,13 @@ private fun ComposeRule.addServerAndLogin(username: String, password: String) {
     val hasServer = device.findObject(UiSelector().textContains(SERVER_NAME)).exists()
 
     if (!hasServer) {
-        // Fill the server form. Compose's performTextInput handles idle synchronization
-        // internally (~700ms per call with isTestMode=true). No need for explicit wait.
+        // Fill the server form. Debug: log what nodes are available.
+        try {
+            val allNodes = onAllNodesWithText("Server Name", substring = true).fetchSemanticsNodes()
+            android.util.Log.d("E2E_DEBUG", "Nodes with 'Server Name': ${allNodes.size}")
+        } catch (e: Exception) {
+            android.util.Log.d("E2E_DEBUG", "fetchSemanticsNodes failed: ${e.javaClass.simpleName}")
+        }
         onNode(hasText("Server Name") and hasSetTextAction())
             .performTextInput(SERVER_NAME)
         onNode(hasText("Server URL") and hasSetTextAction())
