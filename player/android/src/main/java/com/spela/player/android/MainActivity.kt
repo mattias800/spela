@@ -34,6 +34,11 @@ import kotlinx.coroutines.launch
 import org.koin.android.ext.android.inject
 
 class MainActivity : ComponentActivity() {
+    companion object {
+        /** Set by instrumentation tests to disable continuous animations. */
+        @JvmStatic
+        var isTestMode = false
+    }
 
     private val libretroController: LibretroController by inject()
     private val androidController: AndroidLibretroController?
@@ -122,12 +127,7 @@ class MainActivity : ComponentActivity() {
             // Choreographer — continuous animations keep it busy, causing
             // AppNotIdleException. LocalAnimationsEnabled = false disables
             // infinite transitions, gradient glow, and ambient blobs.
-            val isInstrumented = try {
-                Class.forName("androidx.test.InstrumentationRegistry")
-                true
-            } catch (_: ClassNotFoundException) { false }
-
-            if (isInstrumented) {
+            if (isTestMode) {
                 androidx.compose.runtime.CompositionLocalProvider(
                     com.spela.player.presentation.ui.components.LocalAnimationsEnabled provides false,
                 ) {

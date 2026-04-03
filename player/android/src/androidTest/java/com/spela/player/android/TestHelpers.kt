@@ -38,9 +38,12 @@ typealias ComposeRule = AndroidComposeTestRule<ActivityScenarioRule<MainActivity
 // Configure Espresso to not wait forever for idle — our neon UI animations
 // (gradient glow, ambient blobs) keep the Choreographer busy, causing
 // AppNotIdleException. This allows actions to proceed after a brief wait.
-private val idlingConfigured = run {
+private val testConfigured = run {
     IdlingPolicies.setMasterPolicyTimeout(10, TimeUnit.SECONDS)
     IdlingPolicies.setIdlingResourceTimeout(10, TimeUnit.SECONDS)
+    // Disable continuous animations (gradient glow, ambient blobs, infinite transitions)
+    // so Compose test's waitForIdle() doesn't hang on the Choreographer.
+    MainActivity.isTestMode = true
     true
 }
 
