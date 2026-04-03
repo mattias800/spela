@@ -772,20 +772,12 @@ fun ComposeRule.navigateToGameByTitle(gameTitle: String) {
     tapOn("Consoles")
     waitForContentDescription("Nintendo Entertainment System", TIMEOUT_EXTRA_LONG)
 
-    // Tap the NES console card via UiAutomator (avoids Compose compound matcher
-    // which can fail due to Espresso idle synchronization)
-    val nesCard = device.findObject(UiSelector().descriptionContains("Nintendo Entertainment System"))
-    check(nesCard.exists()) { "NES console card not found in accessibility tree" }
-    nesCard.click()
-    Thread.sleep(1_000)
+    // Tap the NES console card. With isTestMode=true, Compose APIs are fast.
+    // Use the compound matcher to find the card with both "NES" and "games".
+    scrollToAndTapMatchingBoth("Nintendo Entertainment System", "games")
 
-    // Wait for console game list screen (test tag, since title uses a logo not text)
-    pollUntil(timeoutMillis = TIMEOUT_EXTRA_LONG) {
-        uiDevice().findObject(UiSelector().descriptionContains(TestTags.SCREEN_CONSOLE)).exists() ||
-            uiDevice().findObject(UiSelector().textContains("Top Rated")).exists() ||
-            uiDevice().findObject(UiSelector().textContains("Browse")).exists() ||
-            uiDevice().findObject(UiSelector().descriptionContains("Console settings")).exists()
-    }
+    // Wait for console game list screen
+    waitForContentDescription("Console settings", TIMEOUT_EXTRA_LONG)
 
     // Try to find the game directly via UiAutomator
     val gameObj = device.findObject(UiSelector().textContains(gameTitle))
@@ -862,7 +854,7 @@ fun ComposeRule.navigateToN64GameAndPlay() {
     }
     // Wait for the "Game running" semantic marker which is always on the primary display,
     // regardless of touch controls visibility, physical controller, or dual-screen mode.
-    waitForVisible("Game running", 120_000)
+    waitForVisible("Touch controls", 120_000)
 }
 
 /**
@@ -1023,7 +1015,9 @@ fun ComposeRule.startGameAndWait() {
     }
     // Wait for the "Game running" semantic marker which is always on the primary display.
     // This is a zero-size Compose semantics node — requires Compose fallback path.
-    waitForVisible("Game running", TIMEOUT_EXTRA_LONG)
+    // "Game running" is a zero-size Compose marker invisible to UiAutomator.
+    // "Touch controls" has visible size and is always shown during gameplay.
+    waitForVisible("Touch controls", TIMEOUT_EXTRA_LONG)
 }
 
 fun ComposeRule.openOverlay() {
@@ -1077,7 +1071,9 @@ fun ComposeRule.navigateToGameAndPlayFresh() {
     } else {
         onNodeWithText("Play").performClick()
     }
-    waitForVisible("Game running", TIMEOUT_EXTRA_LONG)
+    // "Game running" is a zero-size Compose marker invisible to UiAutomator.
+    // "Touch controls" has visible size and is always shown during gameplay.
+    waitForVisible("Touch controls", TIMEOUT_EXTRA_LONG)
 }
 
 fun ComposeRule.openOverlayAndExit() {
@@ -1231,7 +1227,9 @@ fun ComposeRule.navigateToChallenge(challengeName: String) {
  */
 fun ComposeRule.startChallengeAttempt() {
     tapOn("Attempt Challenge")
-    waitForVisible("Game running", TIMEOUT_EXTRA_LONG)
+    // "Game running" is a zero-size Compose marker invisible to UiAutomator.
+    // "Touch controls" has visible size and is always shown during gameplay.
+    waitForVisible("Touch controls", TIMEOUT_EXTRA_LONG)
 }
 
 /**
@@ -1327,7 +1325,7 @@ fun ComposeRule.createChallengeFromOverlay(title: String = "E2E Test Challenge")
     waitForText("Challenge created!", timeout = 15_000)
 
     // Game resumes after toast
-    waitForVisible("Game running", timeout = 5_000)
+    waitForVisible("Touch controls", timeout = 5_000)
 }
 
 /**
