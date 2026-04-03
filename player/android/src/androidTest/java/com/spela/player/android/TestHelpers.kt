@@ -633,9 +633,20 @@ private fun ComposeRule.addServerAndLogin(username: String, password: String) {
         isOnServerConnectionScreen()
     }
 
-    // Wait for the form to fully render (EditText labels appear after the initial layout)
+    // Wait for the form to fully render
     val device = uiDevice()
-    Thread.sleep(2_000) // Let the server connection screen fully compose
+    Thread.sleep(2_000)
+
+    // Debug: log what's visible to help diagnose form detection issues
+    try {
+        val dump = device.executeShellCommand("uiautomator dump /dev/stdout")
+        val texts = Regex("text=\"([^\"]+)\"").findAll(dump).map { it.groupValues[1] }.filter { it.isNotEmpty() }.toList()
+        val descs = Regex("content-desc=\"([^\"]+)\"").findAll(dump).map { it.groupValues[1] }.filter { it.isNotEmpty() }.toList()
+        android.util.Log.d("E2E_DEBUG", "Visible texts: $texts")
+        android.util.Log.d("E2E_DEBUG", "Visible descs: $descs")
+    } catch (e: Exception) {
+        android.util.Log.d("E2E_DEBUG", "Dump failed: ${e.message}")
+    }
 
     // Check if "Local" server already exists (UiAutomator)
     val hasServer = device.findObject(UiSelector().textContains(SERVER_NAME)).exists()
