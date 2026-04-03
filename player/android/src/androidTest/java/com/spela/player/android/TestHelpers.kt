@@ -219,11 +219,13 @@ private fun ComposeRule.isOnLoginScreen(): Boolean {
     return uiDevice().findObject(UiSelector().textContains("Username")).exists()
 }
 
-/** Check if we're on the Home screen (pure UiAutomator — no Espresso idle). */
+/** Check if we're on the app's Home screen (pure UiAutomator — no Espresso idle).
+ * IMPORTANT: Don't match generic text like "Spela" — the Android launcher also
+ * shows app names, causing false positives before the app even launches. */
 private fun ComposeRule.isOnHomeScreen(): Boolean {
     val device = uiDevice()
+    // Check for content unique to the app's Home screen (not the Android launcher)
     return device.findObject(UiSelector().descriptionContains(TestTags.SCREEN_HOME)).exists() ||
-        device.findObject(UiSelector().textContains("Spela")).exists() ||
         device.findObject(UiSelector().textContains("Your library is empty")).exists() ||
         device.findObject(UiSelector().textContains("Top Rated")).exists() ||
         device.findObject(UiSelector().textContains("Continue Playing")).exists() ||
