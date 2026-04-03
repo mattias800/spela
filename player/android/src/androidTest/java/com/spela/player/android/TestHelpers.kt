@@ -52,13 +52,18 @@ private val testConfigured = run {
     true
 }
 
-/** Unregister Espresso idling resources once, so Compose APIs don't wait for idle. */
+/** Unregister Espresso idling resources once, so Compose APIs don't wait for idle.
+ * After unregistering, Compose's waitForIdle() still syncs with the Compose clock
+ * (recomposition/layout) but skips Espresso's Choreographer idle check. */
 private var idlingResourcesUnregistered = false
 private fun ensureIdlingResourcesUnregistered() {
     if (!idlingResourcesUnregistered) {
         idlingResourcesUnregistered = true
         val registry = androidx.test.espresso.IdlingRegistry.getInstance()
         registry.resources.toList().forEach { registry.unregister(it) }
+        // Give Compose a moment to finish any pending recomposition
+        // after the idling resource is removed.
+        Thread.sleep(1_000)
     }
 }
 
