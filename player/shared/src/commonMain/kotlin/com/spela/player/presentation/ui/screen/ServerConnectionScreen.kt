@@ -88,11 +88,12 @@ fun ServerConnectionScreen(
         viewModel.onIntent(ServerConnectionIntent.LoadServers)
     }
 
-    // Auto-expand Add Server form when server list is empty
-    LaunchedEffect(state.servers, state.isLoading) {
-        println("[ServerConnScreen] LaunchedEffect: isLoading=${state.isLoading}, servers=${state.servers.size}, isAddingServer=${state.isAddingServer}")
-        if (!state.isLoading && state.servers.isEmpty() && !state.isAddingServer) {
-            println("[ServerConnScreen] → firing ToggleAddServer")
+    // Auto-expand Add Server form when server list is empty.
+    // Uses SideEffect (runs after every successful recomposition) instead of
+    // LaunchedEffect, because LaunchedEffect with state keys doesn't re-fire
+    // when the state changes from the same coroutine that triggered the composition.
+    if (!state.isLoading && state.servers.isEmpty() && !state.isAddingServer) {
+        LaunchedEffect(Unit) {
             viewModel.onIntent(ServerConnectionIntent.ToggleAddServer)
         }
     }
