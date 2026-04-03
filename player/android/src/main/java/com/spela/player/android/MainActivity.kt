@@ -117,7 +117,25 @@ class MainActivity : ComponentActivity() {
         }
 
         setContent {
-            App()
+            // Disable continuous animations during instrumentation tests.
+            // Compose test's waitForIdle() syncs with Espresso which checks the
+            // Choreographer — continuous animations keep it busy, causing
+            // AppNotIdleException. LocalAnimationsEnabled = false disables
+            // infinite transitions, gradient glow, and ambient blobs.
+            val isInstrumented = try {
+                Class.forName("androidx.test.InstrumentationRegistry")
+                true
+            } catch (_: ClassNotFoundException) { false }
+
+            if (isInstrumented) {
+                androidx.compose.runtime.CompositionLocalProvider(
+                    com.spela.player.presentation.ui.components.LocalAnimationsEnabled provides false,
+                ) {
+                    App()
+                }
+            } else {
+                App()
+            }
         }
     }
 
