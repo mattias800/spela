@@ -43,8 +43,9 @@ typealias ComposeRule = AndroidComposeTestRule<ActivityScenarioRule<MainActivity
 // main looper non-idle briefly. A 1-second timeout lets these one-shot operations
 // complete while preventing long hangs from any remaining continuous activity.
 private val testConfigured = run {
-    IdlingPolicies.setMasterPolicyTimeout(1, TimeUnit.SECONDS)
-    IdlingPolicies.setIdlingResourceTimeout(1, TimeUnit.SECONDS)
+    // 3s gives Coil AsyncImage loading time to settle (console icons, cover art)
+    IdlingPolicies.setMasterPolicyTimeout(3, TimeUnit.SECONDS)
+    IdlingPolicies.setIdlingResourceTimeout(3, TimeUnit.SECONDS)
     MainActivity.isTestMode = true
     true
 }
@@ -761,6 +762,58 @@ fun ComposeRule.navigateToCastlevania() {
 }
 
 /**
+ * Navigate to any available NES game. The test doesn't care WHICH game —
+ * it just needs a downloadable/playable game.
+ * Returns the game title for later assertions.
+ */
+fun ComposeRule.navigateToAnyNesGame(): String {
+    val device = uiDevice()
+
+    // Navigate to Consoles tab
+    tapOn("Consoles")
+    waitForContentDescription("Nintendo Entertainment System", TIMEOUT_EXTRA_LONG)
+
+    // Tap the NES console card
+    scrollToAndTapMatchingBoth("Nintendo Entertainment System", "games")
+
+    // Wait for console game list screen
+    waitForContentDescription("Console settings", TIMEOUT_EXTRA_LONG)
+
+    // Find the first game card by looking for "Download" or any game with a cover
+    // The Top Rated section shows games. Tap the first one visible.
+    Thread.sleep(2_000) // Let game list load
+    waitForText("Top Rated", TIMEOUT_LONG)
+
+    // Find any game card by looking for nodes that have both a title and the console name
+    // Just tap the first game we find after "Top Rated"
+    val device2 = uiDevice()
+    // Swipe right in the Top Rated carousel to see games, then tap the first one
+    tapOn("Top Rated") // This might tap the section header — OK, it scrolls to it
+
+    // Wait a moment for carousel to render, then tap on any visible game
+    Thread.sleep(1_000)
+
+    // Find the first clickable game by trying common NES game names
+    val commonGames = listOf("Super Mario Bros.", "Castlevania", "Mega Man", "Zelda", "Metroid",
+        "Contra", "Ninja Gaiden", "Double Dragon", "Kirby", "Punch-Out")
+    for (name in commonGames) {
+        val gameNode = device2.findObject(UiSelector().textContains(name))
+        if (gameNode.exists()) {
+            gameNode.click()
+            Thread.sleep(500)
+            // Wait for game detail
+            pollUntil(timeoutMillis = TIMEOUT_LONG) {
+                device2.findObject(UiSelector().textContains("Download")).exists() ||
+                    device2.findObject(UiSelector().textContains("Play")).exists() ||
+                    device2.findObject(UiSelector().textContains("Resume")).exists()
+            }
+            return name
+        }
+    }
+    throw IllegalStateException("No NES game found from common game list")
+}
+
+/**
  * Navigate to a game's detail screen by finding it in the NES console game list.
  * Handles both flat game lists (≤15 games) and shelved layouts (>15 games)
  * where a "Browse" button is needed to access the full list.
@@ -1058,7 +1111,7 @@ fun ComposeRule.exitGame(coreIdleTimeout: Long = 10_000) {
 // ── Composite helpers for common patterns ──
 
 fun ComposeRule.navigateToGameAndPlay() {
-    navigateToCastlevania()
+    navigateToAnyNesGame()
     downloadGameIfNeeded()
     startGameAndWait()
 }
