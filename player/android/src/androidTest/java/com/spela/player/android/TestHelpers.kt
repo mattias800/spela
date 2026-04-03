@@ -442,45 +442,38 @@ fun ComposeRule.restartApp() {
  * Stops early on auth screens (server connection, login) to avoid exiting the Activity.
  */
 private fun ComposeRule.navigateBackToHome() {
+    val device = uiDevice()
     for (i in 1..10) {
         try {
             if (isOnHomeScreen()) return
 
             // Don't press back on auth screens — it would exit the app
-            if (onAllNodesWithText("Add Server", substring = true)
-                    .fetchSemanticsNodes().isNotEmpty() ||
-                onAllNodesWithText("Username", substring = true)
-                    .fetchSemanticsNodes().isNotEmpty()
-            ) return
+            if (isOnServerConnectionScreen() || isOnLoginScreen()) return
 
-            // In-game overlay — exit game
-            if (onAllNodesWithText("Exit Game", substring = true)
-                    .fetchSemanticsNodes().isNotEmpty()
-            ) {
-                onNodeWithText("Exit Game").performClick()
-                waitForIdle()
+            // In-game overlay — exit game (UiAutomator for gameplay)
+            if (device.findObject(UiSelector().textContains("Exit Game")).exists()) {
+                device.findObject(UiSelector().textContains("Exit Game")).click()
+                Thread.sleep(500)
                 waitForCoreIdle()
                 continue
             }
 
-            // Challenge mode overlay — give up to exit
-            val giveUpNodes = onAllNodesWithText("Give Up", substring = true)
-                .fetchSemanticsNodes()
-            if (giveUpNodes.isNotEmpty() &&
-                onAllNodesWithText("Exit Game", substring = true)
-                    .fetchSemanticsNodes().isEmpty()
-            ) {
+            // Challenge mode overlay — give up to exit (UiAutomator for gameplay)
+            val hasGiveUp = device.findObject(UiSelector().textContains("Give Up")).exists()
+            val hasExitGame = device.findObject(UiSelector().textContains("Exit Game")).exists()
+            if (hasGiveUp && !hasExitGame) {
                 try {
-                    onAllNodesWithText("Give Up", substring = true)[0].performClick()
-                    waitForIdle()
+                    device.findObject(UiSelector().textContains("Give Up")).click()
                     Thread.sleep(500)
                     // Confirm the give up dialog if it appeared
-                    if (onAllNodesWithText("Give Up Challenge?", substring = true)
-                            .fetchSemanticsNodes().isNotEmpty()
-                    ) {
-                        val confirmNodes = onAllNodesWithText("Give Up").fetchSemanticsNodes()
-                        onAllNodesWithText("Give Up")[confirmNodes.size - 1].performClick()
-                        waitForIdle()
+                    if (device.findObject(UiSelector().textContains("Give Up Challenge?")).exists()) {
+                        // Find and click the last "Give Up" (confirm button)
+                        var lastIdx = 0
+                        while (device.findObject(UiSelector().text("Give Up").instance(lastIdx + 1)).exists()) {
+                            lastIdx++
+                        }
+                        device.findObject(UiSelector().text("Give Up").instance(lastIdx)).click()
+                        Thread.sleep(500)
                     }
                 } catch (_: Exception) {
                     // Best effort — screen may have changed between check and click
@@ -490,7 +483,7 @@ private fun ComposeRule.navigateBackToHome() {
             }
 
             pressBack()
-            waitForIdle()
+            Thread.sleep(300)
             // Let the screen transition settle before the next check
             Thread.sleep(500)
         } catch (_: IllegalStateException) {
@@ -515,21 +508,15 @@ fun ComposeRule.ensureLoggedIn(
     username: String = PLAYER_USERNAME,
     password: String = PLAYER_PASSWORD
 ) {
-    // Wait for any recognizable screen to load.
+    // Wait for any recognizable screen to load (UiAutomator — no Espresso idle).
+    val device = uiDevice()
     pollUntil(timeoutMillis = 30_000L) {
-        try {
-            isOnHomeScreen() ||
-                isOnServerConnectionScreen() ||
-                isOnLoginScreen() ||
-                onAllNodesWithContentDescription("Settings", substring = true)
-                    .fetchSemanticsNodes().isNotEmpty() ||
-                onAllNodesWithContentDescription("Game running", substring = true)
-                    .fetchSemanticsNodes().isNotEmpty() ||
-                onAllNodesWithContentDescription("Go back", substring = true)
-                    .fetchSemanticsNodes().isNotEmpty()
-        } catch (_: IllegalStateException) {
-            false // Compose hierarchy not yet available (device asleep or Activity not launched)
-        }
+        isOnHomeScreen() ||
+            isOnServerConnectionScreen() ||
+            isOnLoginScreen() ||
+            device.findObject(UiSelector().descriptionContains("Settings")).exists() ||
+            device.findObject(UiSelector().descriptionContains("Game running")).exists() ||
+            device.findObject(UiSelector().descriptionContains("Go back")).exists()
     }
 
     // On server connection screen — add server then login
@@ -596,20 +583,16 @@ fun ComposeRule.loginAsAdmin() {
 }
 
 private fun ComposeRule.signOutIfLoggedIn() {
-    // Check if we're on Home screen (logged in)
-    val onHome = onAllNodesWithText("Spela", substring = true)
-        .fetchSemanticsNodes().isNotEmpty()
-    if (!onHome) return
+    // Check if we're on Home screen (logged in) via UiAutomator
+    if (!isOnHomeScreen()) return
 
     // Navigate to Settings → About category (where Sign Out lives)
     navigateToSettingsCategory("About")
     scrollToAndTapText("Sign Out")
 
-    // Confirm sign out dialog — tap the LAST "Sign Out" node
-    // (dialog title + confirm button + settings text = 3 nodes; button is last)
+    // Confirm sign out dialog — tap the LAST "Sign Out" button (UiAutomator)
     waitForText("re-enter your credentials", TIMEOUT_SHORT)
-    val signOutNodes = onAllNodesWithText("Sign Out").fetchSemanticsNodes()
-    onAllNodesWithText("Sign Out")[signOutNodes.size - 1].performClick()
+    tapLastWithText("Sign Out")
 
     // Wait for server connection screen
     pollUntil(timeoutMillis = TIMEOUT_EXTRA_LONG) {
@@ -624,14 +607,13 @@ private fun ComposeRule.addServerAndLogin(username: String, password: String) {
         isOnServerConnectionScreen()
     }
 
-    // Check if "Local" server already exists
-    val hasServer = onAllNodesWithText(SERVER_NAME, substring = true)
-        .fetchSemanticsNodes().isNotEmpty()
+    // Check if "Local" server already exists (UiAutomator)
+    val device = uiDevice()
+    val hasServer = device.findObject(UiSelector().textContains(SERVER_NAME)).exists()
 
     if (!hasServer) {
         // The form auto-opens when no servers exist. If it hasn't, click "Add Server".
-        val formOpen = onAllNodesWithText("Server Name", substring = true)
-            .fetchSemanticsNodes().isNotEmpty()
+        val formOpen = device.findObject(UiSelector().textContains("Server Name")).exists()
         if (!formOpen) {
             onNodeWithText("Add Server").performClick()
             waitForIdle()
@@ -659,14 +641,15 @@ private fun ComposeRule.addServerAndLogin(username: String, password: String) {
 }
 
 private fun ComposeRule.doLogin(username: String, password: String) {
-    // Wait for login form — check for Username label or Sign In button
+    // Wait for login form (UiAutomator — no Espresso idle dependency)
     pollUntil(timeoutMillis = TIMEOUT_EXTRA_LONG) {
         isOnLoginScreen() ||
-            onAllNodesWithText("Sign In", substring = true)
-                .fetchSemanticsNodes().isNotEmpty()
+            uiDevice().findObject(UiSelector().textContains("Sign In")).exists()
     }
 
-    // Clear fields first in case they have pre-filled text from a previous session
+    // Clear fields and enter credentials.
+    // performTextInput/performClick use Compose test APIs which call waitForIdle().
+    // On non-gameplay screens, the 10s IdlingPolicies timeout handles neon animations.
     onNode(hasText("Username") and hasSetTextAction())
         .performTextClearance()
     onNode(hasText("Username") and hasSetTextAction())
@@ -680,9 +663,9 @@ private fun ComposeRule.doLogin(username: String, password: String) {
     onNodeWithText("Sign In").performScrollTo()
     onNodeWithText("Sign In").performClick()
 
-    // Verify home screen (extra long timeout for multi-class runs where server may be slow)
+    // Verify home screen (UiAutomator — no Espresso idle dependency)
     pollUntil(timeoutMillis = TIMEOUT_EXTRA_LONG) {
-        try { isOnHomeScreen() } catch (_: IllegalStateException) { false }
+        isOnHomeScreen()
     }
 }
 
