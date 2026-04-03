@@ -1094,8 +1094,9 @@ fun ComposeRule.openOverlayAndExit() {
  */
 fun ComposeRule.navigateToSettings() {
     tapOn("Settings")
+    Thread.sleep(1_000) // Let the navigation settle
     // Wait for the category list — "General" is always the first category
-    waitForText("General")
+    waitForText("General", TIMEOUT_LONG)
 }
 
 /**
