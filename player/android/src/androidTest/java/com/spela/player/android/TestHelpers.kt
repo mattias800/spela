@@ -39,8 +39,8 @@ typealias ComposeRule = AndroidComposeTestRule<ActivityScenarioRule<MainActivity
 // (gradient glow, ambient blobs) keep the Choreographer busy, causing
 // AppNotIdleException. This allows actions to proceed after a brief wait.
 private val testConfigured = run {
-    IdlingPolicies.setMasterPolicyTimeout(10, TimeUnit.SECONDS)
-    IdlingPolicies.setIdlingResourceTimeout(10, TimeUnit.SECONDS)
+    IdlingPolicies.setMasterPolicyTimeout(3, TimeUnit.SECONDS)
+    IdlingPolicies.setIdlingResourceTimeout(3, TimeUnit.SECONDS)
     // Disable continuous animations (gradient glow, ambient blobs, infinite transitions)
     // so Compose test's waitForIdle() doesn't hang on the Choreographer.
     MainActivity.isTestMode = true
