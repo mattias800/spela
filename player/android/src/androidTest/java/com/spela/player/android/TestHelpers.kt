@@ -1074,11 +1074,28 @@ fun ComposeRule.startGameAndWait() {
     } else {
         device.findObject(UiSelector().textContains("Play")).click()
     }
-    // Wait for the "Game running" marker (1dp Box with contentDescription).
-    // First run needs to download the libretro core binary (~5-10s on emulator)
-    // plus ROM load and first frame render. Use a generous 120s timeout.
-    // Note: "Touch controls" is hidden when physicalControllerActive=true (emulator).
-    waitForVisible("Game running", 120_000)
+    // Detect gameplay by trying to open the overlay (press Back → "Exit Game" appears).
+    // This works regardless of UiAutomator accessibility tree delays, because
+    // pressBack() uses UiDevice and waitForText checks both UiAutomator and Compose.
+    // First run needs to download the libretro core binary + ROM (~30-60s on emulator).
+    val deadline = System.currentTimeMillis() + 120_000
+    while (System.currentTimeMillis() < deadline) {
+        Thread.sleep(3_000)
+        // Try pressing Back to see if the game overlay opens
+        device.pressBack()
+        Thread.sleep(1_000)
+        // Check if "Exit Game" appears (confirms game is running)
+        if (device.findObject(UiSelector().textContains("Exit Game")).exists()) {
+            // Game is running! Dismiss the overlay by pressing Back again
+            // (or tapping Continue)
+            val continueBtn = device.findObject(UiSelector().textContains("Continue"))
+            if (continueBtn.exists()) continueBtn.click()
+            else device.pressBack()
+            Thread.sleep(500)
+            return
+        }
+    }
+    throw IllegalStateException("Game did not start within 120 seconds")
 }
 
 fun ComposeRule.openOverlay() {
