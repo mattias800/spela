@@ -1058,7 +1058,8 @@ fun ComposeRule.downloadGameIfNeeded() {
         device.findObject(UiSelector().text("Download")).click()
         Thread.sleep(500)
         // After download, button becomes "Play", "Resume", or "New Game"
-        pollUntil(timeoutMillis = TIMEOUT_EXTRA_LONG) {
+        // ROM download can be slow on emulator — use 60s timeout
+        pollUntil(timeoutMillis = 60_000) {
             device.findObject(UiSelector().textContains("Play")).exists() ||
                 device.findObject(UiSelector().textContains("Resume")).exists()
         }
@@ -1073,11 +1074,10 @@ fun ComposeRule.startGameAndWait() {
     } else {
         device.findObject(UiSelector().textContains("Play")).click()
     }
-    // Wait for the "Game running" semantic marker which is always on the primary display.
-    // This is a zero-size Compose semantics node — requires Compose fallback path.
-    // "Game running" is a zero-size Compose marker invisible to UiAutomator.
-    // "Touch controls" has visible size and is always shown during gameplay.
-    waitForVisible("Touch controls", TIMEOUT_EXTRA_LONG)
+    // Wait for touch controls to appear (confirms game is running).
+    // First run needs to download the libretro core binary (~5-10s on emulator)
+    // plus ROM load and first frame render. Use a generous 120s timeout.
+    waitForVisible("Touch controls", 120_000)
 }
 
 fun ComposeRule.openOverlay() {
