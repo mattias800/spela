@@ -237,11 +237,6 @@ private fun ComposeRule.isOnServerConnectionScreen(): Boolean {
     val device = uiDevice()
     if (device.findObject(UiSelector().textContains("Add Server")).exists() ||
         device.findObject(UiSelector().textContains("Nu spelar vi")).exists()
-    ) return true
-    return try {
-        onAllNodesWithText("Add Server", substring = true)
-            .fetchSemanticsNodes().isNotEmpty()
-    } catch (_: Exception) { false }
 }
 
 /** Check if we're on the login screen. UiAutomator + Compose fallback. */
