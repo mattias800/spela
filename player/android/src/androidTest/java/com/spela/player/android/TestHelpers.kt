@@ -195,27 +195,51 @@ fun ComposeRule.assertNotVisible(label: String) {
     check(!hasText && !hasDesc) { "Expected '$label' to NOT be visible, but it was found" }
 }
 
-/** Check if we're on the server connection screen (UiAutomator — no Espresso idle). */
+/** Check if we're on the server connection screen. */
 private fun ComposeRule.isOnServerConnectionScreen(): Boolean {
     val device = uiDevice()
-    return device.findObject(UiSelector().textContains("Add Server")).exists() ||
+    if (device.findObject(UiSelector().textContains("Add Server")).exists() ||
         device.findObject(UiSelector().textContains("Server Name")).exists() ||
         device.findObject(UiSelector().textContains("Nu spelar vi")).exists()
+    ) return true
+    return try {
+        onAllNodesWithText("Add Server", substring = true)
+            .fetchSemanticsNodes().isNotEmpty()
+    } catch (_: Exception) { false }
 }
 
-/** Check if we're on the login screen (UiAutomator — no Espresso idle). */
+/** Check if we're on the login screen. */
 private fun ComposeRule.isOnLoginScreen(): Boolean {
     val device = uiDevice()
-    return device.findObject(UiSelector().textContains("Username")).exists()
+    if (device.findObject(UiSelector().textContains("Username")).exists()) return true
+    return try {
+        onAllNodesWithText("Username", substring = true)
+            .fetchSemanticsNodes().isNotEmpty()
+    } catch (_: Exception) { false }
 }
 
-/** Check if we're on the Home screen (UiAutomator — no Espresso idle). */
+/** Check if we're on the Home screen.
+ * Uses UiAutomator first (fast, no Espresso idle dependency).
+ * Falls back to Compose test API for merged semantic nodes that UiAutomator can't see.
+ * The Compose fallback blocks for up to 10s on non-gameplay screens (acceptable). */
 private fun ComposeRule.isOnHomeScreen(): Boolean {
     val device = uiDevice()
-    return device.findObject(UiSelector().textContains("Spela")).exists() ||
+    // Fast path: UiAutomator (works during gameplay, no Espresso dependency)
+    if (device.findObject(UiSelector().textContains("Spela")).exists() ||
         device.findObject(UiSelector().textContains("Your library is empty")).exists() ||
         device.findObject(UiSelector().textContains("Top Rated")).exists() ||
-        device.findObject(UiSelector().textContains("Continue Playing")).exists()
+        device.findObject(UiSelector().textContains("Continue Playing")).exists() ||
+        device.findObject(UiSelector().descriptionContains("Search")).exists()
+    ) return true
+    // Slow path: Compose test API (handles merged semantic nodes)
+    // Only used when UiAutomator fails. During gameplay, UiAutomator should succeed
+    // so this path won't block the 60fps loop's Espresso idle.
+    return try {
+        onAllNodesWithText("Spela", substring = true)
+            .fetchSemanticsNodes().isNotEmpty()
+    } catch (_: Exception) {
+        false
+    }
 }
 
 /** Wait until label is visible in either text or content description (UiAutomator). */
