@@ -56,6 +56,7 @@ class LibretroJni {
     external fun nativeGetTargetFps(): Double
     external fun nativeGetSampleRate(): Double
     external fun nativeGetCoreName(): String?
+    external fun nativeGetAspectRatio(): Float
 
     /* Paths */
     external fun nativeSetSystemDir(dir: String)

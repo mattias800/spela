@@ -80,6 +80,9 @@ class AndroidLibretroController(
     private val _frameBitmap = MutableStateFlow<Bitmap?>(null)
     val frameBitmap: StateFlow<Bitmap?> = _frameBitmap.asStateFlow()
 
+    /** Core-reported display aspect ratio (DAR). Returns 0 if unavailable. */
+    fun getAspectRatio(): Float = jni.nativeGetAspectRatio()
+
     /* Audio output — native SINC resampler with dynamic rate control */
     private var audioPlayer: AndroidAudioPlayer? = null
 

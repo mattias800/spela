@@ -23,7 +23,7 @@ import kotlin.math.roundToInt
 
 /**
  * Composable that renders emulation video frames from the AndroidLibretroController.
- * Scales the frame to fit the available space while maintaining aspect ratio.
+ * Scales the frame to fit the available space while maintaining the core's display aspect ratio.
  */
 /**
  * @param isDualScreenSplit When true, only the top portion of the framebuffer is rendered
@@ -49,7 +49,8 @@ fun EmulationSurface(
         Canvas(modifier = Modifier.fillMaxSize()) {
             bitmap?.let { bmp ->
                 if (!bmp.isRecycled) {
-                    drawScaledBitmap(bmp, shader = selectedShader, isDualScreenSplit = isDualScreenSplit, splitY = splitY)
+                    val dar = controller.getAspectRatio()
+                    drawScaledBitmap(bmp, shader = selectedShader, isDualScreenSplit = isDualScreenSplit, splitY = splitY, displayAspectRatio = dar)
                 }
             }
         }
@@ -57,8 +58,9 @@ fun EmulationSurface(
 }
 
 /**
- * Draw a bitmap scaled to fit within the canvas, centered, maintaining aspect ratio.
- * Applies the selected shader's filter quality and overlay effects.
+ * Draw a bitmap scaled to fit within the canvas, centered, maintaining the core's
+ * display aspect ratio (DAR). When DAR is unavailable, falls back to bitmap pixel
+ * dimensions.
  *
  * When [isDualScreenSplit] is true, only renders the top portion up to [splitY].
  */
@@ -67,17 +69,31 @@ private fun DrawScope.drawScaledBitmap(
     shader: ShaderPreset,
     isDualScreenSplit: Boolean = false,
     splitY: Int = 0,
+    displayAspectRatio: Float = 0f,
 ) {
     val srcWidth = bitmap.width
     val srcHeight = if (isDualScreenSplit && splitY > 0) splitY else bitmap.height
     val srcOffset = IntOffset.Zero
 
+    // Use the core-reported display aspect ratio (DAR) if available.
+    // This handles cores that output non-square pixels (e.g. Amiga 320x200
+    // displayed at 4:3, or N64 Angrylion outputting 640x240).
+    val displayWidth: Float
+    val displayHeight: Float
+    if (displayAspectRatio > 0f) {
+        displayWidth = srcHeight.toFloat() * displayAspectRatio
+        displayHeight = srcHeight.toFloat()
+    } else {
+        displayWidth = srcWidth.toFloat()
+        displayHeight = srcHeight.toFloat()
+    }
+
     val dstWidth = size.width
     val dstHeight = size.height
 
-    val scale = min(dstWidth / srcWidth.toFloat(), dstHeight / srcHeight.toFloat())
-    val scaledWidth = (srcWidth * scale).roundToInt()
-    val scaledHeight = (srcHeight * scale).roundToInt()
+    val scale = min(dstWidth / displayWidth, dstHeight / displayHeight)
+    val scaledWidth = (displayWidth * scale).roundToInt()
+    val scaledHeight = (displayHeight * scale).roundToInt()
     val offsetX = ((dstWidth - scaledWidth) / 2f).roundToInt()
     val offsetY = ((dstHeight - scaledHeight) / 2f).roundToInt()
 
