@@ -37,14 +37,29 @@ typealias ComposeRule = AndroidComposeTestRule<ActivityScenarioRule<MainActivity
 
 // Configure Espresso to not wait forever for idle — our neon UI animations
 // (gradient glow, ambient blobs) keep the Choreographer busy, causing
-// AppNotIdleException. This allows actions to proceed after a brief wait.
+// Disable Espresso idle synchronization. Compose's EspressoLink idling resource
+// keeps Espresso non-idle even with LocalAnimationsEnabled=false, because
+// the Compose framework itself schedules Choreographer callbacks during
+// recomposition/layout. By unregistering all idling resources, Compose test
+// APIs (performClick, performTextInput) execute immediately without waiting.
 private val testConfigured = run {
     IdlingPolicies.setMasterPolicyTimeout(3, TimeUnit.SECONDS)
     IdlingPolicies.setIdlingResourceTimeout(3, TimeUnit.SECONDS)
-    // Disable continuous animations (gradient glow, ambient blobs, infinite transitions)
-    // so Compose test's waitForIdle() doesn't hang on the Choreographer.
     MainActivity.isTestMode = true
+    // Unregister idling resources after a short delay (ComposeTestRule registers
+    // EspressoLink during rule initialization, not at class load time).
+    // This is done lazily — the first test helper call will trigger unregistration.
     true
+}
+
+/** Unregister Espresso idling resources once, so Compose APIs don't wait for idle. */
+private var idlingResourcesUnregistered = false
+private fun ensureIdlingResourcesUnregistered() {
+    if (!idlingResourcesUnregistered) {
+        idlingResourcesUnregistered = true
+        val registry = androidx.test.espresso.IdlingRegistry.getInstance()
+        registry.resources.toList().forEach { registry.unregister(it) }
+    }
 }
 
 // ── Koin reset rule ──
@@ -565,6 +580,10 @@ fun ComposeRule.ensureLoggedIn(
     username: String = PLAYER_USERNAME,
     password: String = PLAYER_PASSWORD
 ) {
+    // Unregister Espresso idling resources so Compose APIs execute immediately.
+    // Without this, every performClick/performTextInput blocks for 3-10s.
+    ensureIdlingResourcesUnregistered()
+
     // Wait for any recognizable screen to load (UiAutomator — no Espresso idle).
     val device = uiDevice()
     pollUntil(timeoutMillis = 30_000L) {
