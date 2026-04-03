@@ -1594,8 +1594,8 @@ fun SpelaApp(
                             visible = emulationState.isRunning && !emulationState.showOverlay
                                 && !emulationState.secondaryDisplayActive
                                 && !emulationState.isDualScreenConsole,
-                            enter = fadeIn(),
-                            exit = fadeOut(),
+                            enter = if (animationsEnabled) fadeIn() else EnterTransition.None,
+                            exit = if (animationsEnabled) fadeOut() else ExitTransition.None,
                         ) {
                             PlatformTouchControls(
                                 controller = libretroController,

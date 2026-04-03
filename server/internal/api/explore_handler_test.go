@@ -204,11 +204,11 @@ func TestGetExploreFeatured_FavoriteAndPlayLater(t *testing.T) {
 	assert.True(t, resp[0].IsPlayLater)
 }
 
-func TestGetExploreFeatured_Limit8(t *testing.T) {
+func TestGetExploreFeatured_Limit10(t *testing.T) {
 	env := setupExploreTestEnv(t)
 
-	// Create 10 games with hero art — should only return 8
-	for i := 0; i < 10; i++ {
+	// Create 15 games with hero art — should only return 10
+	for i := 0; i < 15; i++ {
 		game := createExploreGame(t, env.database, "NES", fmt.Sprintf("Game %d", i), float64(90-i))
 		env.database.Create(&db.GameArtwork{
 			GameID:  game.ID,
@@ -226,7 +226,7 @@ func TestGetExploreFeatured_Limit8(t *testing.T) {
 
 	var resp []FeaturedGameResponse
 	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
-	assert.Len(t, resp, 8)
+	assert.Len(t, resp, 10)
 }
 
 // --- Rows endpoint tests ---
