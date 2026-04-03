@@ -47,10 +47,9 @@ class SessionTest {
     fun logoutClearsTokensPreservesServer() {
         rule.ensureLoggedIn()
 
-        // Navigate to Settings and sign out
-        rule.navigateToSettings()
-        rule.waitForText("Sign Out", timeout = 3_000)
-        rule.onNodeWithText("Sign Out").performClick()
+        // Navigate to Settings → About category (where Sign Out lives)
+        rule.navigateToSettingsCategory("About")
+        rule.scrollToAndTapText("Sign Out")
         confirmSignOutDialog()
 
         // Verify server still listed
@@ -88,10 +87,9 @@ class SessionTest {
     fun serverPersistsAcrossRestart() {
         rule.ensureLoggedIn()
 
-        // Navigate to Settings → Sign Out
-        rule.navigateToSettings()
-        rule.waitForText("Sign Out", timeout = 3_000)
-        rule.onNodeWithText("Sign Out").performClick()
+        // Navigate to Settings → About → Sign Out
+        rule.navigateToSettingsCategory("About")
+        rule.scrollToAndTapText("Sign Out")
         confirmSignOutDialog()
 
         // Verify server is visible
@@ -118,9 +116,8 @@ class SessionTest {
         rule.ensureLoggedIn()
 
         // Sign out to get to a clean state
-        rule.navigateToSettings()
-        rule.waitForText("Sign Out", timeout = 3_000)
-        rule.onNodeWithText("Sign Out").performClick()
+        rule.navigateToSettingsCategory("About")
+        rule.scrollToAndTapText("Sign Out")
         confirmSignOutDialog()
 
         // Server should still be listed — tap it
@@ -147,14 +144,12 @@ class SessionTest {
     fun preferencesSyncAcrossRestart() {
         rule.ensureLoggedIn()
 
-        // Navigate to Settings
-        rule.navigateToSettings()
-
-        // Scroll to Auto Save on Exit
-        rule.waitForText("Auto Save on Exit", timeout = 8_000)
+        // Navigate to Settings → Emulation category (where Auto Save lives)
+        rule.navigateToSettingsCategory("Emulation")
 
         // Toggle Auto Save on Exit
-        rule.onNodeWithText("Auto Save on Exit").performClick()
+        rule.waitForText("Auto Save on Exit", timeout = 8_000)
+        rule.tapOn("Auto Save on Exit")
 
         // Restart app
         rule.restartApp()
@@ -162,8 +157,8 @@ class SessionTest {
         // Session restored
         rule.waitForText("Spela", timeout = 15_000)
 
-        // Navigate to Settings and verify toggle persisted
-        rule.navigateToSettings()
+        // Navigate to Settings → Emulation and verify toggle persisted
+        rule.navigateToSettingsCategory("Emulation")
 
         rule.waitForText("Auto Save on Exit", timeout = 8_000)
     }

@@ -73,7 +73,7 @@ class GamepadNavigationTest {
         rule.assertTextVisible("Exit Game")
 
         // Dismiss overlay
-        rule.onNodeWithText("Continue").performClick()
+        rule.tapOn("Continue")
 
         // Verify overlay dismissed and game resumed
         rule.waitForTextNotVisible("Continue")

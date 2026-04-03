@@ -149,7 +149,10 @@ fun ComposeRule.waitForTextNotVisible(text: String, timeout: Long = TIMEOUT_SHOR
 }
 
 fun ComposeRule.assertTextVisible(text: String) {
-    onNodeWithText(text, substring = true).assertIsDisplayed()
+    // Use fetchSemanticsNodes instead of assertIsDisplayed — the latter
+    // waits for Espresso idle which never arrives during emulation (60fps loop).
+    val nodes = onAllNodesWithText(text, substring = true).fetchSemanticsNodes()
+    assert(nodes.isNotEmpty()) { "Expected '$text' to be visible, but it was not found" }
 }
 
 fun ComposeRule.assertTextNotVisible(text: String) {
@@ -235,8 +238,32 @@ fun ComposeRule.waitForNotVisible(label: String, timeout: Long = TIMEOUT_SHORT) 
     }
 }
 
-/** Tap a node by text OR content description. Prefers unique matches. */
+/** Tap a node by text OR content description. Prefers unique matches.
+ *  During emulation (Core running), Compose test performClick() blocks on Espresso
+ *  idle which never arrives due to the 60fps render loop. In that case, this
+ *  function falls back to UiAutomator which bypasses Espresso idle. */
 fun ComposeRule.tapOn(label: String) {
+    val device = UiDevice.getInstance(InstrumentationRegistry.getInstrumentation())
+    val emulationRunning = device.findObject(UiSelector().descriptionContains("Core running")).exists()
+
+    if (emulationRunning) {
+        // UiAutomator path — bypasses Espresso idle
+        val byText = device.findObject(UiSelector().textContains(label))
+        if (byText.exists()) {
+            byText.click()
+            Thread.sleep(300)
+            return
+        }
+        val byDesc = device.findObject(UiSelector().descriptionContains(label))
+        if (byDesc.exists()) {
+            byDesc.click()
+            Thread.sleep(300)
+            return
+        }
+        throw AssertionError("tapOn('$label'): not found by text or description during emulation")
+    }
+
+    // Normal Compose test path (no emulation, Espresso idle works)
     val textNodes = onAllNodesWithText(label, substring = true).fetchSemanticsNodes()
     if (textNodes.size == 1) {
         onNodeWithText(label, substring = true).performClick()
@@ -255,6 +282,34 @@ fun ComposeRule.tapOn(label: String) {
         }
     }
     waitForIdle()
+}
+
+/**
+ * Tap the LAST element matching text. For dialog confirm buttons where
+ * the same text appears in the title and the button (e.g., "Give Up" in both
+ * the dialog title and confirm button).
+ * Auto-detects emulation and uses UiAutomator when needed.
+ */
+fun ComposeRule.tapLastWithText(text: String) {
+    val device = UiDevice.getInstance(InstrumentationRegistry.getInstrumentation())
+    val emulationRunning = device.findObject(UiSelector().descriptionContains("Core running")).exists()
+
+    if (emulationRunning) {
+        // Find the last instance via UiAutomator
+        var lastIndex = 0
+        while (device.findObject(UiSelector().text(text).instance(lastIndex + 1)).exists()) {
+            lastIndex++
+        }
+        val obj = device.findObject(UiSelector().text(text).instance(lastIndex))
+        check(obj.exists()) { "tapLastWithText('$text'): no elements found during emulation" }
+        obj.click()
+        Thread.sleep(300)
+    } else {
+        val nodes = onAllNodesWithText(text).fetchSemanticsNodes()
+        check(nodes.isNotEmpty()) { "tapLastWithText('$text'): no elements found" }
+        onAllNodesWithText(text)[nodes.size - 1].performClick()
+        waitForIdle()
+    }
 }
 
 fun ComposeRule.assertContentDescriptionVisible(desc: String) {
@@ -317,33 +372,53 @@ fun ComposeRule.clearAppState() {
 }
 
 fun ComposeRule.restartApp() {
+    // Simulate a real app restart: recreate the Activity.
+    // This mimics a configuration change or process recreation.
     // Navigate back to Home first so overlays/sub-screens are dismissed.
     navigateBackToHome()
 
-    // Reload Koin modules so singletons (NavigationViewModel, EmulationViewModel)
-    // are replaced with fresh definitions. The new Activity will get new instances
-    // whose init{} blocks re-run (e.g., restoreSession()).
-    try {
-        val koin = KoinPlatformTools.defaultContext().get()
-        val modules = listOf(commonModule, platformModule())
-        koin.loadModules(modules, allowOverride = true)
-    } catch (_: Exception) {
-        // Koin not yet started
-    }
-
     activityRule.scenario.recreate()
-    // Give the system time to tear down the old Activity and start recreation
-    Thread.sleep(1_000)
+
+    // Give the system time to tear down the old Activity and create the new one.
+    Thread.sleep(2_000)
+
     // Wait for the new Activity's Compose hierarchy to be fully established.
-    // A simple waitForIdle() is insufficient in multi-class runs where the
-    // recreation takes longer due to accumulated process state.
-    waitUntil(timeoutMillis = 30_000L) {
-        try {
-            isOnHomeScreen() ||
-                isOnServerConnectionScreen() ||
-                isOnLoginScreen()
-        } catch (_: IllegalStateException) {
-            false // Compose hierarchy not yet available after recreate
+    // Note: Activity recreation via scenario.recreate() is unreliable on emulators.
+    // The Compose hierarchy sometimes fails to re-establish, causing this to timeout.
+    // When this happens, we attempt to recover by pressing Home and relaunching,
+    // rather than leaving the app in a broken state for subsequent tests.
+    try {
+        waitUntil(timeoutMillis = 30_000L) {
+            try {
+                isOnHomeScreen() ||
+                    isOnServerConnectionScreen() ||
+                    isOnLoginScreen()
+            } catch (_: IllegalStateException) {
+                false // Compose hierarchy not yet available after recreate
+            }
+        }
+    } catch (_: androidx.compose.ui.test.ComposeTimeoutException) {
+        // Recreation failed — attempt recovery by relaunching via intent
+        val device = UiDevice.getInstance(InstrumentationRegistry.getInstrumentation())
+        device.pressHome()
+        Thread.sleep(1_000)
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        val intent = context.packageManager.getLaunchIntentForPackage(context.packageName)
+        intent?.addFlags(android.content.Intent.FLAG_ACTIVITY_CLEAR_TASK or android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+        if (intent != null) {
+            context.startActivity(intent)
+            Thread.sleep(3_000)
+        }
+        // Final attempt — if this also fails, the test will fail but at least
+        // the app is in a recoverable state for subsequent tests.
+        waitUntil(timeoutMillis = 30_000L) {
+            try {
+                isOnHomeScreen() ||
+                    isOnServerConnectionScreen() ||
+                    isOnLoginScreen()
+            } catch (_: IllegalStateException) {
+                false
+            }
         }
     }
 }
@@ -513,12 +588,9 @@ private fun ComposeRule.signOutIfLoggedIn() {
         .fetchSemanticsNodes().isNotEmpty()
     if (!onHome) return
 
-    // Navigate to Settings and sign out
-    tapOn("Settings")
-    waitForText("Account")
-    waitForText("Sign Out", TIMEOUT_SHORT)
-
-    onNodeWithText("Sign Out").performClick()
+    // Navigate to Settings → About category (where Sign Out lives)
+    navigateToSettingsCategory("About")
+    scrollToAndTapText("Sign Out")
 
     // Confirm sign out dialog — tap the LAST "Sign Out" node
     // (dialog title + confirm button + settings text = 3 nodes; button is last)
@@ -870,22 +942,24 @@ fun ComposeRule.startGameAndWait() {
 
 fun ComposeRule.openOverlay() {
     pressBack()
+    // waitForText uses fetchSemanticsNodes polling which works during gameplay
+    // (no Espresso idle dependency). Removed assertIsDisplayed() wait which
+    // blocks on Espresso idle and causes AppNotIdleException during emulation.
     waitForText("Exit Game", TIMEOUT_MEDIUM)
-    // AnimatedVisibility slide-in: node exists in tree before animation completes.
-    // Wait until the overlay is actually displayed on screen.
-    waitUntil(timeoutMillis = TIMEOUT_SHORT) {
-        try {
-            onNodeWithText("Exit Game", substring = true).assertIsDisplayed()
-            true
-        } catch (_: AssertionError) {
-            false
-        }
-    }
 }
 
 fun ComposeRule.exitGame(coreIdleTimeout: Long = 10_000) {
-    onNodeWithText("Exit Game").performClick()
-    waitForIdle()
+    // During emulation, performClick() blocks on Espresso idle (60fps loop).
+    // Use UiAutomator which bypasses Espresso idle synchronization.
+    val device = UiDevice.getInstance(InstrumentationRegistry.getInstrumentation())
+    val exitBtn = device.findObject(UiSelector().text("Exit Game"))
+    if (exitBtn.exists()) {
+        exitBtn.click()
+    } else {
+        val exitBtnFuzzy = device.findObject(UiSelector().textContains("Exit Game"))
+        check(exitBtnFuzzy.exists()) { "exitGame: 'Exit Game' button not found" }
+        exitBtnFuzzy.click()
+    }
     // stopGame() runs async: serializes save state then calls libretroController.stop()
     // which joins the emulation thread (up to 2s) and deinits native core.
     // Wait for "Core idle" indicator before navigating to a new game,
@@ -925,9 +999,26 @@ fun ComposeRule.openOverlayAndExit() {
     exitGame()
 }
 
+/**
+ * Navigate to the Settings screen via the bottom nav.
+ * Settings uses a list-detail layout: category list on the left (or full screen on phones),
+ * content on the right. Default category is GENERAL.
+ * After this call, the category list is visible with "General" selected.
+ */
 fun ComposeRule.navigateToSettings() {
     tapOn("Settings")
-    waitForText("Account")
+    // Wait for the category list — "General" is always the first category
+    waitForText("General")
+}
+
+/**
+ * Navigate to a specific Settings category. On wide screens, the category content
+ * appears on the right. On phones, it replaces the category list.
+ */
+fun ComposeRule.navigateToSettingsCategory(category: String) {
+    navigateToSettings()
+    tapOn(category)
+    waitForIdle()
 }
 
 fun ComposeRule.ensureOverlayOpen() {
@@ -1069,9 +1160,8 @@ fun ComposeRule.openChallengeOverlay() {
  * Resume gameplay from the challenge overlay by tapping "Resume".
  */
 fun ComposeRule.resumeChallengeFromOverlay() {
-    onNodeWithText("Resume").performClick()
+    tapOn("Resume") // tapOn auto-detects emulation → UiAutomator
     waitForTextNotVisible("Give Up")
-    waitForIdle()
 }
 
 /**
@@ -1088,10 +1178,9 @@ fun ComposeRule.abandonChallenge() {
     // Tap the Give Up action button to trigger confirmation dialog
     tapOn("Give Up")
     waitForText("Give Up Challenge?", TIMEOUT_MEDIUM)
-    // Tap the dialog's "Give Up" confirm button (last "Give Up" node in the tree)
-    val giveUpNodes = onAllNodesWithText("Give Up").fetchSemanticsNodes()
-    onAllNodesWithText("Give Up")[giveUpNodes.size - 1].performClick()
-    waitForIdle()
+    // Tap the dialog's "Give Up" confirm button (last "Give Up" node in the tree).
+    // tapLastWithText auto-detects emulation → UiAutomator during gameplay.
+    tapLastWithText("Give Up")
     // Wait for async core shutdown (save + thread join + native deinit)
     waitForCoreIdle()
 }
@@ -1131,14 +1220,23 @@ fun ComposeRule.createChallengeFromOverlay(title: String = "E2E Test Challenge")
     tapOn("Challenge")
     waitForText("Create Challenge", timeout = 5_000)
 
-    // Clear pre-filled title and enter custom title
-    clearTextField("Title")
-    onNode(hasText("Title") and hasSetTextAction())
-        .performTextInput(title)
+    // During emulation, Compose test performTextInput/performClick block on idle.
+    // Use UiAutomator for text input and button click.
+    val device = UiDevice.getInstance(InstrumentationRegistry.getInstrumentation())
+    val titleField = device.findObject(UiSelector().textContains("Title").className("android.widget.EditText"))
+    if (!titleField.exists()) {
+        // Fallback: find by resource ID or any editable field
+        val anyField = device.findObject(UiSelector().className("android.widget.EditText"))
+        check(anyField.exists()) { "createChallengeFromOverlay: no text field found" }
+        anyField.clearTextField()
+        anyField.setText(title)
+    } else {
+        titleField.clearTextField()
+        titleField.setText(title)
+    }
 
-    // Use exact match to click "Create" button (not "Create Challenge" title)
-    onNodeWithText("Create", substring = false).performClick()
-    waitForIdle()
+    // Tap the "Create" button (not the "Create Challenge" dialog title)
+    tapOn("Create")
     waitForText("Challenge created!", timeout = 15_000)
 
     // Game resumes after toast

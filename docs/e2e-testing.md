@@ -56,14 +56,24 @@ cd player
 - Restoring screen timeout after tests complete
 
 **Prerequisites:**
-- Connected Android device (AYN Thor: serial `54071896`)
+- Android emulator OR physical device (see "Emulator vs Physical Device" below)
 - Docker E2E environment running (`docker compose -f docker-compose.e2e.yml up -d --build --wait`)
-- **Device clamshell must be OPEN** and screen visible
-- Device must be awake and unlocked
+- Reverse port forwarding: `adb reverse tcp:8080 tcp:8080`
+
+#### Emulator vs Physical Device
+
+**Recommended: Android Emulator (ARM64, API 35)**
+- AVD name: `spela-test` (sdk_gphone64_arm64)
+- **Density override required:** `adb shell wm density 280` — the Settings screen uses a 600dp breakpoint for list-detail layout. At the default 420 DPI, the emulator is only 411dp wide. Lowering to 280 DPI gives 617dp, crossing the breakpoint.
+- JNI/libretro works: ARM64 emulator runs NES (nestopia) and other cores via the JNI bridge. Games actually run on the emulator.
+- The emulator must have reverse port forwarding set up: `adb -s emulator-5554 reverse tcp:8080 tcp:8080`
+
+**Alternative: AYN Thor physical device (serial `54071896`)**
+- Clamshell device — **must be physically OPEN** or the screen sleeps instantly
+- `KEYCODE_WAKEUP` does NOT prevent sleep when the clamshell is closed
+- The `run-e2e.sh` script targets this device by default
 
 **Common pitfalls:**
-- **AYN Thor clamshell must be OPEN** → When the clamshell is closed, the device immediately sleeps after the Activity launches (RESUMED → PAUSED → STOPPED in ~0.2s). The Compose hierarchy becomes unavailable and ALL tests fail with "No compose hierarchies found in the app." `KEYCODE_WAKEUP` does NOT fix this — the device sleeps again instantly when the lid is closed. You must physically open the device.
-- **Device sleeps during tests** → Even with the clamshell open, the screen may turn off. `run-e2e.sh` sets the screen timeout to 10 minutes, but if tests take longer, increase it: `adb shell settings put system screen_off_timeout 1800000` (30 min).
 - **Stale local Go servers** → If a local `go run` server is running on port 8080, it intercepts requests before Docker gets them. Kill stale servers: `lsof -i :8080` and kill any non-Docker processes.
 - **Signature mismatch** → If switching between debug and release APKs, uninstall first: `adb uninstall com.spela.player`
 - **Stale app data** → Always uninstall before installing test APK so you start with clean app data. Leftover server connections from manual testing will cause tests to log into the wrong server.
@@ -71,7 +81,11 @@ cd player
 - **Emulator timeouts** → Emulators are slower than physical devices. Timeouts: SHORT=5s, MEDIUM=10s, LONG=15s, EXTRA_LONG=30s.
 - **Keyboard blocking buttons** → On portrait emulators, the soft keyboard can block buttons. Use `performImeAction()` instead of keyboard dismiss + button click.
 - **Use `run-e2e.sh`** → DO NOT run `./gradlew :android:connectedDebugAndroidTest` directly. The script handles device wake, screen timeout, port forwarding, and cleanup. Running gradle directly skips all of this and tests will fail.
-- **Continuous animations cause AppNotIdleException** → The neon UI redesign added continuous Compose animations (gradient glow, ambient blobs) that keep the Choreographer busy. Espresso waits for idle, but the app is never idle. System animation scale = 0 doesn't help because Compose animations are independent. **Fix needed:** the app must check `LocalAnimationsEnabled` and skip continuous animations in test mode. Disable animations on the emulator with `adb shell settings put global animator_duration_scale 0` as a partial mitigation.
+- **AppNotIdleException during gameplay** → The 60fps emulation loop keeps the Choreographer busy. Compose test's `performClick()` and `assertIsDisplayed()` wait for Espresso idle, which never arrives. **Fix:** `tapOn()` auto-detects emulation (via "Core running" content description) and falls back to UiAutomator, which bypasses Espresso idle. All gameplay overlay interactions use this pattern.
+- **Settings list-detail layout** → Settings was redesigned with a 600dp breakpoint. On narrow screens, the category list shows first (General, Emulation, Controls, etc.). Use `navigateToSettingsCategory("About")` to access Sign Out, `navigateToSettingsCategory("Emulation")` for Auto Save, etc.
+- **`restartApp()` unreliable on emulators** → `activityRule.scenario.recreate()` sometimes fails to re-establish the Compose hierarchy. Tests that use `restartApp()` (sessionPersistsAcrossRestart, preferencesSyncAcrossRestart, shaderSelectionPersists) may timeout. These persistence tests are better covered by desktop tests.
+- **Cascading test failures** → A failed `restartApp()` can leave the app in a broken state, causing subsequent tests to fail. Tests are designed to recover via `ensureLoggedIn()` but this doesn't always work after a stuck Activity recreation.
+- **Continuous Compose animations** → The neon UI has continuous animations (gradient glow, ambient blobs). `IdlingPolicies.setMasterPolicyTimeout(10s)` is set as mitigation. System animation scale = 0 doesn't help because Compose animations are independent of system settings.
 
 ### Test Tag Convention (Player App)
 

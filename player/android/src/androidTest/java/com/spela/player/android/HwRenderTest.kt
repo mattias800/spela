@@ -110,7 +110,7 @@ class HwRenderTest {
         rule.ensureOverlayOpen()
 
         // Resume gameplay briefly
-        rule.onNodeWithText("Continue").performClick()
+        rule.tapOn("Continue")
         rule.waitForTextNotVisible("Exit Game")
 
         // Reopen overlay and load state

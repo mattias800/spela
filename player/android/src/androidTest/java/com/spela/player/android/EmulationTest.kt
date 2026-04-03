@@ -60,7 +60,7 @@ class EmulationTest {
         rule.assertTextVisible("Continue")
 
         // Dismiss overlay
-        rule.onNodeWithText("Continue").performClick()
+        rule.tapOn("Continue")
         rule.waitForTextNotVisible("Exit Game")
 
         // Reopen
@@ -190,7 +190,7 @@ class EmulationTest {
         rule.assertVisible("Load")
         rule.assertNotVisible("Touch controls")
 
-        rule.onNodeWithText("Continue").performClick()
+        rule.tapOn("Continue")
         rule.waitForTextNotVisible("Exit Game")
 
         rule.assertTextNotVisible("Exit Game")
@@ -235,7 +235,7 @@ class EmulationTest {
         rule.ensureOverlayOpen()
 
         // Dismiss overlay and reopen for load
-        rule.onNodeWithText("Continue").performClick()
+        rule.tapOn("Continue")
         rule.waitForTextNotVisible("Exit Game")
 
         rule.openOverlay()

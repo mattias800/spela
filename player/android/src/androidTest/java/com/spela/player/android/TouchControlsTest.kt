@@ -84,7 +84,7 @@ class TouchControlsTest {
         rule.assertNotVisible("Button A")
         rule.assertNotVisible("Button Start")
 
-        rule.onNodeWithText("Continue").performClick()
+        rule.tapOn("Continue")
         rule.waitForTextNotVisible("Exit Game")
 
         rule.assertVisible("Touch controls")
@@ -105,7 +105,7 @@ class TouchControlsTest {
         rule.openOverlay()
         rule.assertNotVisible("Touch controls")
 
-        rule.onNodeWithText("Continue").performClick()
+        rule.tapOn("Continue")
         rule.waitForTextNotVisible("Exit Game")
 
         rule.assertVisible("Touch controls")
@@ -127,7 +127,7 @@ class TouchControlsTest {
         rule.openOverlay()
         rule.assertNotVisible("Touch controls")
 
-        rule.onNodeWithText("Continue").performClick()
+        rule.tapOn("Continue")
         rule.waitForTextNotVisible("Exit Game")
 
         rule.assertVisible("Touch controls")
@@ -163,7 +163,7 @@ class TouchControlsTest {
         rule.assertTextVisible("Exit Game")
 
         // Dismiss, touch controls return
-        rule.onNodeWithText("Continue").performClick()
+        rule.tapOn("Continue")
         rule.waitForTextNotVisible("Exit Game")
 
         rule.assertVisible("Touch controls")
