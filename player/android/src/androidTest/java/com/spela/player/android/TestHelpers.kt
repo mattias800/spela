@@ -477,7 +477,7 @@ fun ComposeRule.restartApp() {
                 isOnHomeScreen() ||
                     isOnServerConnectionScreen() ||
                     isOnLoginScreen()
-            } catch (_: IllegalStateException) {
+            } catch (_: Exception) {
                 false // Compose hierarchy not yet available after recreate
             }
         }
@@ -500,7 +500,7 @@ fun ComposeRule.restartApp() {
                 isOnHomeScreen() ||
                     isOnServerConnectionScreen() ||
                     isOnLoginScreen()
-            } catch (_: IllegalStateException) {
+            } catch (_: Exception) {
                 false
             }
         }
@@ -557,7 +557,7 @@ private fun ComposeRule.navigateBackToHome() {
             Thread.sleep(300)
             // Let the screen transition settle before the next check
             Thread.sleep(500)
-        } catch (_: IllegalStateException) {
+        } catch (_: Exception) {
             // Compose hierarchy temporarily unavailable (Activity recreation between tests)
             Thread.sleep(500)
         }
@@ -611,7 +611,7 @@ fun ComposeRule.ensureLoggedIn(
     // back and accidentally exiting the app.
     val arrivedHome = try {
         pollUntil(timeoutMillis = TIMEOUT_MEDIUM) {
-            try { isOnHomeScreen() } catch (_: IllegalStateException) { false }
+            try { isOnHomeScreen() } catch (_: Exception) { false }
         }
         true
     } catch (_: androidx.compose.ui.test.ComposeTimeoutException) { false }
@@ -622,7 +622,7 @@ fun ComposeRule.ensureLoggedIn(
     // navigateBackToHome may need time if exiting a game (async core shutdown).
     navigateBackToHome()
     pollUntil(timeoutMillis = 30_000) {
-        try { isOnHomeScreen() } catch (_: IllegalStateException) { false }
+        try { isOnHomeScreen() } catch (_: Exception) { false }
     }
 }
 
@@ -885,7 +885,7 @@ fun ComposeRule.navigateToN64Game() {
     val directlyVisible = try {
         onAllNodesWithText("Banjo-Kazooie", substring = true)
             .fetchSemanticsNodes().isNotEmpty()
-    } catch (_: IllegalStateException) { false }
+    } catch (_: Exception) { false }
 
     if (directlyVisible) {
         scrollToAndTapText("Banjo-Kazooie")
@@ -926,7 +926,7 @@ fun ComposeRule.tapNodeMatchingBoth(text1: String, text2: String) {
     pollUntil(timeoutMillis = TIMEOUT_LONG) {
         try {
             onAllNodes(matcher).fetchSemanticsNodes().isNotEmpty()
-        } catch (_: IllegalStateException) {
+        } catch (_: Exception) {
             false
         }
     }

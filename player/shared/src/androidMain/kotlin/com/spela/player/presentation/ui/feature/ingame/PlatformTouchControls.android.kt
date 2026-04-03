@@ -22,10 +22,11 @@ actual fun PlatformTouchControls(
     // Auto-hide touch controls when a physical controller is actively being used
     val physicalControllerActive by androidController.physicalControllerActive.collectAsState()
 
+    val animEnabled = com.spela.player.presentation.ui.components.LocalAnimationsEnabled.current
     AnimatedVisibility(
         visible = !physicalControllerActive,
-        enter = fadeIn(),
-        exit = fadeOut(),
+        enter = if (animEnabled) fadeIn() else androidx.compose.animation.EnterTransition.None,
+        exit = if (animEnabled) fadeOut() else androidx.compose.animation.ExitTransition.None,
     ) {
         TouchGamepadOverlay(
             controller = androidController,
