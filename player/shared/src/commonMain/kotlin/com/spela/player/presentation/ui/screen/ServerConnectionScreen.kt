@@ -90,7 +90,9 @@ fun ServerConnectionScreen(
 
     // Auto-expand Add Server form when server list is empty
     LaunchedEffect(state.servers, state.isLoading) {
+        println("[ServerConnScreen] LaunchedEffect: isLoading=${state.isLoading}, servers=${state.servers.size}, isAddingServer=${state.isAddingServer}")
         if (!state.isLoading && state.servers.isEmpty() && !state.isAddingServer) {
+            println("[ServerConnScreen] → firing ToggleAddServer")
             viewModel.onIntent(ServerConnectionIntent.ToggleAddServer)
         }
     }
