@@ -676,8 +676,14 @@ private fun ComposeRule.addServerAndLogin(username: String, password: String) {
     } catch (_: Exception) { false }
 
     if (!hasServer) {
-        // Fill server form. performTextInput calls waitForIdle internally (~700ms with
-        // isTestMode=true) and finds nodes via the Compose semantic tree directly.
+        // The form auto-opens via LaunchedEffect AFTER LoadServers completes.
+        // Need to wait for: LoadServers → isLoading=false → LaunchedEffect fires
+        // ToggleAddServer → isAddingServer=true → recomposition → form visible.
+        // Multiple waitForIdle cycles ensure all recompositions complete.
+        waitForIdle()
+        waitForIdle()
+        waitForIdle()
+
         onNode(hasText("Server Name") and hasSetTextAction())
             .performTextInput(SERVER_NAME)
         onNode(hasText("Server URL") and hasSetTextAction())
