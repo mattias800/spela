@@ -47,25 +47,7 @@ private val testConfigured = run {
     IdlingPolicies.setMasterPolicyTimeout(3, TimeUnit.SECONDS)
     IdlingPolicies.setIdlingResourceTimeout(3, TimeUnit.SECONDS)
     MainActivity.isTestMode = true
-    // Unregister idling resources after a short delay (ComposeTestRule registers
-    // EspressoLink during rule initialization, not at class load time).
-    // This is done lazily — the first test helper call will trigger unregistration.
     true
-}
-
-/** Unregister Espresso idling resources once, so Compose APIs don't wait for idle.
- * After unregistering, Compose's waitForIdle() still syncs with the Compose clock
- * (recomposition/layout) but skips Espresso's Choreographer idle check. */
-private var idlingResourcesUnregistered = false
-private fun ensureIdlingResourcesUnregistered() {
-    if (!idlingResourcesUnregistered) {
-        idlingResourcesUnregistered = true
-        val registry = androidx.test.espresso.IdlingRegistry.getInstance()
-        registry.resources.toList().forEach { registry.unregister(it) }
-        // Give Compose a moment to finish any pending recomposition
-        // after the idling resource is removed.
-        Thread.sleep(1_000)
-    }
 }
 
 // ── Koin reset rule ──
@@ -597,10 +579,6 @@ fun ComposeRule.ensureLoggedIn(
     username: String = PLAYER_USERNAME,
     password: String = PLAYER_PASSWORD
 ) {
-    // Unregister Espresso idling resources so Compose APIs execute immediately.
-    // Without this, every performClick/performTextInput blocks for 3-10s.
-    ensureIdlingResourcesUnregistered()
-
     // Wait for any recognizable screen to load (UiAutomator — no Espresso idle).
     val device = uiDevice()
     pollUntil(timeoutMillis = 30_000L) {
