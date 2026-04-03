@@ -829,42 +829,14 @@ fun ComposeRule.navigateToGameByTitle(gameTitle: String) {
     // Use the compound matcher to find the card with both "NES" and "games".
     scrollToAndTapMatchingBoth("Nintendo Entertainment System", "games")
 
-    // Wait for console game list screen
-    waitForContentDescription("Console settings", TIMEOUT_EXTRA_LONG)
+    // Wait for console page, then navigate to "Browse" (flat game grid) to find the game.
+    // Carousel items in LazyRow are unreliable for UiAutomator. The flat grid is more stable.
+    waitForText("Browse", TIMEOUT_EXTRA_LONG)
+    tapOn("Browse")
+    Thread.sleep(2_000)
 
-    // Try to find the game directly via UiAutomator (exact text match to avoid
-    // matching "Castlevania 3" when looking for "Castlevania")
-    val gameObj = device.findObject(UiSelector().text(gameTitle))
-    if (!gameObj.waitForExists(3_000)) {
-        // Game not visible — try "Browse games" or "Browse" button
-        val browseGames = device.findObject(UiSelector().textContains("Browse games"))
-        val browse = device.findObject(UiSelector().text("Browse"))
-        if (browseGames.exists()) {
-            browseGames.click()
-        } else if (browse.exists()) {
-            browse.click()
-        } else {
-            // Scroll down to find it
-            val centerX = device.displayWidth / 2
-            val fromY = (device.displayHeight * 0.7).toInt()
-            val toY = (device.displayHeight * 0.3).toInt()
-            repeat(5) { device.swipe(centerX, fromY, centerX, toY, 15) }
-        }
-        Thread.sleep(1_000)
-        waitForText(gameTitle, TIMEOUT_LONG)
-    }
-
-    // Tap the game via UiAutomator (exact match)
-    val game = device.findObject(UiSelector().text(gameTitle))
-    if (!game.exists()) {
-        // Fallback: substring match if exact fails
-        val gameFuzzy = device.findObject(UiSelector().textContains(gameTitle))
-        check(gameFuzzy.exists()) { "Game '$gameTitle' not found" }
-        gameFuzzy.click()
-    } else {
-        game.click()
-    }
-    Thread.sleep(500)
+    // Find and tap the game in the grid (use scrollToAndTapText for scrollable grid)
+    scrollToAndTapText(gameTitle)
 
     // Wait for game detail — look for Download/Play/Resume button
     pollUntil(timeoutMillis = TIMEOUT_LONG) {
