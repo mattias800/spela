@@ -679,13 +679,13 @@ private fun ComposeRule.addServerAndLogin(username: String, password: String) {
     val hasServer = device.findObject(UiSelector().textContains(SERVER_NAME)).exists()
 
     if (!hasServer) {
-        // Fill the server form. Debug: log what nodes are available.
-        try {
-            val allNodes = onAllNodesWithText("Server Name", substring = true).fetchSemanticsNodes()
-            android.util.Log.d("E2E_DEBUG", "Nodes with 'Server Name': ${allNodes.size}")
-        } catch (e: Exception) {
-            android.util.Log.d("E2E_DEBUG", "fetchSemanticsNodes failed: ${e.javaClass.simpleName}")
+        // Debug: check what UiAutomator AND Compose can see
+        val debugTexts = listOf("Add Server", "Server Name", "Server URL", "Connect", "Nu spelar vi")
+        for (txt in debugTexts) {
+            val uiFound = device.findObject(UiSelector().textContains(txt)).exists()
+            android.util.Log.d("E2E_DEBUG", "UiAutomator '$txt': $uiFound")
         }
+        android.util.Log.d("E2E_DEBUG", "currentPackage: ${device.currentPackageName}")
         onNode(hasText("Server Name") and hasSetTextAction())
             .performTextInput(SERVER_NAME)
         onNode(hasText("Server URL") and hasSetTextAction())
