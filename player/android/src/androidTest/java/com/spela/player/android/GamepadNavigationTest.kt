@@ -11,10 +11,9 @@ import org.junit.runner.RunWith
 @RunWith(AndroidJUnit4::class)
 class GamepadNavigationTest {
 
-    @get:Rule(order = 0)
-    val koinResetRule = KoinResetRule()
+    
 
-    @get:Rule(order = 1)
+    @get:Rule
     val rule = createAndroidComposeRule<MainActivity>()
 
     @Test
@@ -74,7 +73,7 @@ class GamepadNavigationTest {
         rule.assertTextVisible("Exit Game")
 
         // Dismiss overlay
-        rule.onNodeWithText("Continue").performClick()
+        rule.tapOn("Continue")
 
         // Verify overlay dismissed and game resumed
         rule.waitForTextNotVisible("Continue")

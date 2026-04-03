@@ -3,8 +3,7 @@ package com.spela.player.presentation.ui.screen
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.focusGroup
-import androidx.compose.foundation.focusable
-import com.spela.player.presentation.ui.gamepad.spFocusRing
+import com.spela.player.presentation.ui.gamepad.gamepadFocusable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -102,8 +101,7 @@ fun SettingsCategoryList(
                     .clip(RoundedCornerShape(8.dp))
                     .background(bgColor)
                     .clickable { onSelectCategory(category) }
-                    .spFocusRing(shape = RoundedCornerShape(8.dp))
-                    .focusable()
+                    .gamepadFocusable(shape = RoundedCornerShape(8.dp))
                     .padding(horizontal = SpSpacing.Medium, vertical = SpSpacing.Medium)
                     .semantics { contentDescription = category.label },
                 verticalAlignment = Alignment.CenterVertically,

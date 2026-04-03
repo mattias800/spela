@@ -11,10 +11,9 @@ import org.junit.runner.RunWith
 @RunWith(AndroidJUnit4::class)
 class TouchControlsTest {
 
-    @get:Rule(order = 0)
-    val koinResetRule = KoinResetRule()
+    
 
-    @get:Rule(order = 1)
+    @get:Rule
     val rule = createAndroidComposeRule<MainActivity>()
 
     private fun setupGame() {
@@ -85,7 +84,7 @@ class TouchControlsTest {
         rule.assertNotVisible("Button A")
         rule.assertNotVisible("Button Start")
 
-        rule.onNodeWithText("Continue").performClick()
+        rule.tapOn("Continue")
         rule.waitForTextNotVisible("Exit Game")
 
         rule.assertVisible("Touch controls")
@@ -106,7 +105,7 @@ class TouchControlsTest {
         rule.openOverlay()
         rule.assertNotVisible("Touch controls")
 
-        rule.onNodeWithText("Continue").performClick()
+        rule.tapOn("Continue")
         rule.waitForTextNotVisible("Exit Game")
 
         rule.assertVisible("Touch controls")
@@ -128,7 +127,7 @@ class TouchControlsTest {
         rule.openOverlay()
         rule.assertNotVisible("Touch controls")
 
-        rule.onNodeWithText("Continue").performClick()
+        rule.tapOn("Continue")
         rule.waitForTextNotVisible("Exit Game")
 
         rule.assertVisible("Touch controls")
@@ -164,7 +163,7 @@ class TouchControlsTest {
         rule.assertTextVisible("Exit Game")
 
         // Dismiss, touch controls return
-        rule.onNodeWithText("Continue").performClick()
+        rule.tapOn("Continue")
         rule.waitForTextNotVisible("Exit Game")
 
         rule.assertVisible("Touch controls")

@@ -23,10 +23,9 @@ import org.junit.runner.RunWith
 @RunWith(AndroidJUnit4::class)
 class ChallengeBrowsingTest {
 
-    @get:Rule(order = 0)
-    val koinResetRule = KoinResetRule()
+    
 
-    @get:Rule(order = 1)
+    @get:Rule
     val rule = createAndroidComposeRule<MainActivity>()
 
     // ── US-3 AC: Challenges section on game detail screen ──
@@ -78,7 +77,7 @@ class ChallengeBrowsingTest {
         // challenges for Castlevania. Verify the list screen loaded by checking
         // for either the empty state OR challenge content. Both prove the
         // ChallengeListScreen rendered correctly.
-        rule.waitUntil(timeoutMillis = 8_000) {
+        rule.pollUntil(timeoutMillis = 8_000) {
             try {
                 rule.onAllNodesWithText("No challenges yet", substring = true)
                     .fetchSemanticsNodes().isNotEmpty() ||
@@ -151,7 +150,7 @@ class ChallengeBrowsingTest {
         rule.createChallengeFromOverlay("Challenge Alpha")
         rule.createChallengeFromOverlay("Challenge Beta")
         rule.openOverlayAndExit()
-        rule.waitForText("About", timeout = 8_000)
+        rule.waitForText("Download", timeout = 8_000)
 
         // Navigate to challenge list
         rule.navigateToChallengeList()

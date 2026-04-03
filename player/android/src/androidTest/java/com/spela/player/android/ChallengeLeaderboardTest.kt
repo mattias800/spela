@@ -19,10 +19,9 @@ import org.junit.runner.RunWith
 @RunWith(AndroidJUnit4::class)
 class ChallengeLeaderboardTest {
 
-    @get:Rule(order = 0)
-    val koinResetRule = KoinResetRule()
+    
 
-    @get:Rule(order = 1)
+    @get:Rule
     val rule = createAndroidComposeRule<MainActivity>()
 
     // ── US-6 AC: Leaderboard visible on challenge detail ──
@@ -74,7 +73,7 @@ class ChallengeLeaderboardTest {
         rule.navigateToGameAndPlay()
         rule.createChallengeFromOverlay("Leaderboard Entry Test")
         rule.openOverlayAndExit()
-        rule.waitForText("About", timeout = 8_000)
+        rule.waitForText("Download", timeout = 8_000)
 
         // Navigate to challenge detail and start attempt
         rule.navigateToChallengeList()

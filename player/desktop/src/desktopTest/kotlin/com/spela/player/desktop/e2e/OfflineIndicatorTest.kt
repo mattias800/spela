@@ -93,7 +93,7 @@ class OfflineIndicatorTest {
         advance(harness)
 
         // The server connection screen should be shown
-        onNodeWithText("Connect to your game server").assertIsDisplayed()
+        onNodeWithText("Add Server").assertIsDisplayed()
 
         // "Back online" snackbar must NOT appear — the app was never offline
         onNodeWithText("Back online").assertDoesNotExist()

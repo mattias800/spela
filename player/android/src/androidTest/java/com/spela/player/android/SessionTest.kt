@@ -16,10 +16,9 @@ import org.junit.runner.RunWith
 @RunWith(AndroidJUnit4::class)
 class SessionTest {
 
-    @get:Rule(order = 0)
-    val koinResetRule = KoinResetRule()
+    
 
-    @get:Rule(order = 1)
+    @get:Rule
     val rule = createAndroidComposeRule<MainActivity>()
 
     /** Tap the confirm button in the sign-out dialog and wait for server connection screen. */
@@ -29,7 +28,7 @@ class SessionTest {
         // The confirm button is the LAST one.
         val nodes = rule.onAllNodesWithText("Sign Out").fetchSemanticsNodes()
         rule.onAllNodesWithText("Sign Out")[nodes.size - 1].performClick()
-        rule.waitForText("Connect to your game server", timeout = 15_000)
+        rule.waitForText("Add Server", timeout = 15_000)
     }
 
     @Test
@@ -48,10 +47,9 @@ class SessionTest {
     fun logoutClearsTokensPreservesServer() {
         rule.ensureLoggedIn()
 
-        // Navigate to Settings and sign out
-        rule.navigateToSettings()
-        rule.waitForText("Sign Out", timeout = 3_000)
-        rule.onNodeWithText("Sign Out").performClick()
+        // Navigate to Settings → About category (where Sign Out lives)
+        rule.navigateToSettingsCategory("About")
+        rule.scrollToAndTapText("Sign Out")
         confirmSignOutDialog()
 
         // Verify server still listed
@@ -61,11 +59,11 @@ class SessionTest {
         rule.restartApp()
 
         // After restart, app shows server connection screen with "Local" still listed
-        rule.waitUntil(timeoutMillis = 15_000) {
+        rule.pollUntil(timeoutMillis = 15_000) {
             try {
                 rule.onAllNodesWithText("Local", substring = true)
                     .fetchSemanticsNodes().isNotEmpty() ||
-                    rule.onAllNodesWithText("Welcome Back", substring = true)
+                    rule.onAllNodesWithText("Username", substring = true)
                         .fetchSemanticsNodes().isNotEmpty()
             } catch (_: IllegalStateException) {
                 false
@@ -74,7 +72,7 @@ class SessionTest {
 
         // If on server connection screen, tap server to get to login
         val onServerScreen = try {
-            rule.onAllNodesWithText("Connect to your game server", substring = true)
+            rule.onAllNodesWithText("Add Server", substring = true)
                 .fetchSemanticsNodes().isNotEmpty()
         } catch (_: IllegalStateException) { false }
         if (onServerScreen) {
@@ -82,17 +80,16 @@ class SessionTest {
         }
 
         // Verify login screen (tokens were cleared)
-        rule.waitForText("Welcome Back", timeout = 8_000)
+        rule.waitForText("Username", timeout = 8_000)
     }
 
     @Test
     fun serverPersistsAcrossRestart() {
         rule.ensureLoggedIn()
 
-        // Navigate to Settings → Sign Out
-        rule.navigateToSettings()
-        rule.waitForText("Sign Out", timeout = 3_000)
-        rule.onNodeWithText("Sign Out").performClick()
+        // Navigate to Settings → About → Sign Out
+        rule.navigateToSettingsCategory("About")
+        rule.scrollToAndTapText("Sign Out")
         confirmSignOutDialog()
 
         // Verify server is visible
@@ -102,7 +99,7 @@ class SessionTest {
         rule.restartApp()
 
         // After restart, server should persist (may show Login or server list)
-        rule.waitUntil(timeoutMillis = 15_000) {
+        rule.pollUntil(timeoutMillis = 15_000) {
             try {
                 rule.onAllNodesWithText("Local", substring = true)
                     .fetchSemanticsNodes().isNotEmpty() ||
@@ -119,9 +116,8 @@ class SessionTest {
         rule.ensureLoggedIn()
 
         // Sign out to get to a clean state
-        rule.navigateToSettings()
-        rule.waitForText("Sign Out", timeout = 3_000)
-        rule.onNodeWithText("Sign Out").performClick()
+        rule.navigateToSettingsCategory("About")
+        rule.scrollToAndTapText("Sign Out")
         confirmSignOutDialog()
 
         // Server should still be listed — tap it
@@ -129,7 +125,7 @@ class SessionTest {
         rule.onNodeWithText("Local").performClick()
 
         // Login (tests landscape scrollability)
-        rule.waitForText("Welcome Back", timeout = 5_000)
+        rule.waitForText("Username", timeout = 15_000)
 
         rule.onNode(hasText("Username") and hasSetTextAction())
             .performTextInput("player")
@@ -148,14 +144,12 @@ class SessionTest {
     fun preferencesSyncAcrossRestart() {
         rule.ensureLoggedIn()
 
-        // Navigate to Settings
-        rule.navigateToSettings()
-
-        // Scroll to Auto Save on Exit
-        rule.waitForText("Auto Save on Exit", timeout = 8_000)
+        // Navigate to Settings → Emulation category (where Auto Save lives)
+        rule.navigateToSettingsCategory("Emulation")
 
         // Toggle Auto Save on Exit
-        rule.onNodeWithText("Auto Save on Exit").performClick()
+        rule.waitForText("Auto Save on Exit", timeout = 8_000)
+        rule.tapOn("Auto Save on Exit")
 
         // Restart app
         rule.restartApp()
@@ -163,8 +157,8 @@ class SessionTest {
         // Session restored
         rule.waitForText("Spela", timeout = 15_000)
 
-        // Navigate to Settings and verify toggle persisted
-        rule.navigateToSettings()
+        // Navigate to Settings → Emulation and verify toggle persisted
+        rule.navigateToSettingsCategory("Emulation")
 
         rule.waitForText("Auto Save on Exit", timeout = 8_000)
     }

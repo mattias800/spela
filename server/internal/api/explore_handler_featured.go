@@ -1,20 +1,25 @@
 package api
 
 import (
+	"math/rand"
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/spela/server/internal/db"
 )
 
 // GetExploreFeatured returns featured games for the hero carousel.
-// Games must have both hero art and logo art from SteamGridDB, sorted by IGDB rating descending.
+// Selects 10 games via weighted random sampling (higher-rated games are more
+// likely to appear). The selection is seeded by the current date so results
+// are stable within a day but rotate daily. Games must have both hero art
+// and logo art.
 func (h *ExploreHandler) GetExploreFeatured(c *gin.Context) {
 	userID := getUserID(c)
 
-	// Find games that have hero art AND logo art, sorted by rating desc, limit 8
+	// Load all games that have hero art AND logo art
 	type featuredRow struct {
 		GameID    uint
 		Title     string
@@ -25,21 +30,27 @@ func (h *ExploreHandler) GetExploreFeatured(c *gin.Context) {
 		ConsoleID uint
 	}
 
-	var rows []featuredRow
+	var allRows []featuredRow
 	err := h.DB.
 		Table("games").
-		Select("games.id AS game_id, games.title, game_artworks.hero_url, game_artworks.logo_url, games.rating, games.genre, games.console_id").
+		Select("games.id AS game_id, games.title, game_artworks.hero_url, game_artworks.logo_url, "+effectiveRatingPrefixed+" AS rating, games.genre, games.console_id").
 		Joins("JOIN game_artworks ON game_artworks.game_id = games.id").
 		Where("games.deleted_at IS NULL").
 		Where("games.is_primary = true").
 		Where("game_artworks.hero_url != '' AND game_artworks.logo_url != ''").
-		Order(effectiveRatingPrefixed + " DESC").
-		Limit(8).
-		Scan(&rows).Error
+		Scan(&allRows).Error
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch featured games"})
 		return
 	}
+
+	// Weighted random sampling: pick 10 games, seeded by today's date
+	rows := weightedSample(allRows, 10, func(r featuredRow) float64 {
+		if r.Rating > 0 {
+			return r.Rating
+		}
+		return 10 // base weight for unrated games so they're not excluded
+	})
 
 	if len(rows) == 0 {
 		c.Header("Cache-Control", "private, max-age=300")
@@ -324,4 +335,57 @@ func (h *ExploreHandler) buildMostPlayedRow(userID uint) (*ExploreRowResponse, e
 		Title: "Most Played on Your Server",
 		Games: ToGameResponses(sortedGames, h.DB, userID),
 	}, nil
+}
+
+// weightedSample picks n items from pool using weighted random sampling without
+// replacement. The weight function determines each item's relative probability
+// of being selected. Uses today's date as seed for stable daily results.
+func weightedSample[T any](pool []T, n int, weight func(T) float64) []T {
+	if len(pool) <= n {
+		return pool
+	}
+
+	// Seed with today's date for daily rotation
+	today := time.Now().UTC().Truncate(24 * time.Hour)
+	rng := rand.New(rand.NewSource(today.UnixNano()))
+
+	// Build cumulative weights
+	weights := make([]float64, len(pool))
+	for i, item := range pool {
+		weights[i] = weight(item)
+	}
+
+	// Weighted sampling without replacement
+	selected := make([]T, 0, n)
+	remaining := make([]int, len(pool))
+	for i := range remaining {
+		remaining[i] = i
+	}
+
+	for len(selected) < n && len(remaining) > 0 {
+		// Compute cumulative sum of remaining weights
+		var totalWeight float64
+		for _, idx := range remaining {
+			totalWeight += weights[idx]
+		}
+
+		// Pick a random point in the weight space
+		target := rng.Float64() * totalWeight
+		var cumulative float64
+		pickedPos := len(remaining) - 1 // fallback to last
+		for pos, idx := range remaining {
+			cumulative += weights[idx]
+			if cumulative >= target {
+				pickedPos = pos
+				break
+			}
+		}
+
+		selected = append(selected, pool[remaining[pickedPos]])
+		// Remove picked item from remaining (swap with last, shrink)
+		remaining[pickedPos] = remaining[len(remaining)-1]
+		remaining = remaining[:len(remaining)-1]
+	}
+
+	return selected
 }

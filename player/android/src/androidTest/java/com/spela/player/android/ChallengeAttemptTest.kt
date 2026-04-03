@@ -36,10 +36,9 @@ class ChallengeAttemptTest {
         private const val SHARED_CHALLENGE = "Attempt E2E Challenge"
     }
 
-    @get:Rule(order = 0)
-    val koinResetRule = KoinResetRule()
+    
 
-    @get:Rule(order = 1)
+    @get:Rule
     val rule = createAndroidComposeRule<MainActivity>()
 
     /**
@@ -171,10 +170,8 @@ class ChallengeAttemptTest {
         rule.assertTextVisible("Your current attempt will be abandoned")
         rule.assertTextVisible("Keep Playing")
 
-        // Confirm give up
-        val giveUpNodes = rule.onAllNodesWithText("Give Up").fetchSemanticsNodes()
-        rule.onAllNodesWithText("Give Up")[giveUpNodes.size - 1].performClick()
-        rule.waitForIdle()
+        // Confirm give up — tapLastWithText handles UiAutomator during emulation
+        rule.tapLastWithText("Give Up")
 
         // Wait for core shutdown after give-up exits the game
         rule.waitForCoreIdle()

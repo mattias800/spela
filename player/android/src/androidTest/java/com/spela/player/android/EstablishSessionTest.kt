@@ -23,7 +23,7 @@ class EstablishSessionTest {
 
         // Verify we're on the Home screen — check multiple indicators since the
         // Home screen may show "Your library is empty" for users with no play history
-        composeTestRule.waitUntil(timeoutMillis = 8000) {
+        composeTestRule.pollUntil(timeoutMillis = 8000) {
             composeTestRule.onAllNodesWithText("Spela")
                 .fetchSemanticsNodes().isNotEmpty() ||
                 composeTestRule.onAllNodesWithText("Your library is empty", substring = true)

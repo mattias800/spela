@@ -34,8 +34,6 @@ actual fun PlatformEmulationSurface(
         hwRenderEnabled || gpuActive
     }
 
-    val isOverlayVisible = emulationState.showOverlay || emulationState.showKeyMapping || emulationState.showGamepadConfig
-
     // Set flag so emulation loop populates frameBitmap via CPU readback
     // (for both primary and secondary displays in dual-screen mode) and
     // skips GPU present (primary uses EmulationSurface instead).
@@ -49,7 +47,6 @@ actual fun PlatformEmulationSurface(
         controller = androidController,
         selectedShader = selectedShader,
         isHwRenderEnabled = hwRenderEnabled,
-        isOverlayVisible = isOverlayVisible,
         modifier = modifier,
     )
 

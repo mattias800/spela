@@ -1,9 +1,8 @@
 package com.spela.player.presentation.ui.feature.gamedetail
 
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.focusable
 import androidx.compose.foundation.shape.RoundedCornerShape
-import com.spela.player.presentation.ui.gamepad.spFocusRing
+import com.spela.player.presentation.ui.gamepad.gamepadFocusable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
@@ -139,8 +138,7 @@ private fun MetadataItem(
             .then(
                 if (isClickable) Modifier
                     .clickable(onClick = onClick!!)
-                    .spFocusRing(shape = RoundedCornerShape(SpSpacing.Small))
-                    .focusable()
+                    .gamepadFocusable(shape = RoundedCornerShape(SpSpacing.Small))
                 else Modifier
             ),
         verticalAlignment = Alignment.CenterVertically,

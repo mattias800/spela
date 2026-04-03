@@ -18,12 +18,10 @@ import androidx.compose.ui.unit.IntSize
 import com.spela.player.domain.model.ShaderPreset
 import com.spela.player.presentation.ui.feature.shader.drawShaderOverlay
 import com.spela.player.presentation.ui.feature.shader.filterQuality
-import kotlin.math.min
-import kotlin.math.roundToInt
 
 /**
  * Composable that renders emulation video frames from the AndroidLibretroController.
- * Scales the frame to fit the available space while maintaining aspect ratio.
+ * Scales the frame to fit the available space while maintaining the core's display aspect ratio.
  */
 /**
  * @param isDualScreenSplit When true, only the top portion of the framebuffer is rendered
@@ -49,7 +47,8 @@ fun EmulationSurface(
         Canvas(modifier = Modifier.fillMaxSize()) {
             bitmap?.let { bmp ->
                 if (!bmp.isRecycled) {
-                    drawScaledBitmap(bmp, shader = selectedShader, isDualScreenSplit = isDualScreenSplit, splitY = splitY)
+                    val dar = controller.getAspectRatio()
+                    drawScaledBitmap(bmp, shader = selectedShader, isDualScreenSplit = isDualScreenSplit, splitY = splitY, displayAspectRatio = dar)
                 }
             }
         }
@@ -57,8 +56,9 @@ fun EmulationSurface(
 }
 
 /**
- * Draw a bitmap scaled to fit within the canvas, centered, maintaining aspect ratio.
- * Applies the selected shader's filter quality and overlay effects.
+ * Draw a bitmap scaled to fit within the canvas, centered, maintaining the core's
+ * display aspect ratio (DAR). When DAR is unavailable, falls back to bitmap pixel
+ * dimensions.
  *
  * When [isDualScreenSplit] is true, only renders the top portion up to [splitY].
  */
@@ -67,22 +67,22 @@ private fun DrawScope.drawScaledBitmap(
     shader: ShaderPreset,
     isDualScreenSplit: Boolean = false,
     splitY: Int = 0,
+    displayAspectRatio: Float = 0f,
 ) {
     val srcWidth = bitmap.width
     val srcHeight = if (isDualScreenSplit && splitY > 0) splitY else bitmap.height
     val srcOffset = IntOffset.Zero
 
-    val dstWidth = size.width
-    val dstHeight = size.height
+    val scaled = computeScaledFrame(
+        srcWidth = srcWidth,
+        srcHeight = srcHeight,
+        canvasWidth = size.width,
+        canvasHeight = size.height,
+        displayAspectRatio = displayAspectRatio,
+    )
 
-    val scale = min(dstWidth / srcWidth.toFloat(), dstHeight / srcHeight.toFloat())
-    val scaledWidth = (srcWidth * scale).roundToInt()
-    val scaledHeight = (srcHeight * scale).roundToInt()
-    val offsetX = ((dstWidth - scaledWidth) / 2f).roundToInt()
-    val offsetY = ((dstHeight - scaledHeight) / 2f).roundToInt()
-
-    val dstOffset = IntOffset(offsetX, offsetY)
-    val dstSize = IntSize(scaledWidth, scaledHeight)
+    val dstOffset = IntOffset(scaled.offsetX, scaled.offsetY)
+    val dstSize = IntSize(scaled.width, scaled.height)
     val srcSize = IntSize(srcWidth, srcHeight)
 
     drawImage(

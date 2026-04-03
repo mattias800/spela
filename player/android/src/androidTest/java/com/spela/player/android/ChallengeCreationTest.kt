@@ -25,10 +25,9 @@ import org.junit.runner.RunWith
 @RunWith(AndroidJUnit4::class)
 class ChallengeCreationTest {
 
-    @get:Rule(order = 0)
-    val koinResetRule = KoinResetRule()
+    
 
-    @get:Rule(order = 1)
+    @get:Rule
     val rule = createAndroidComposeRule<MainActivity>()
 
     private fun setupGame() {
@@ -244,7 +243,7 @@ class ChallengeCreationTest {
 
         // Exit game to go back to game detail
         rule.openOverlayAndExit()
-        rule.waitForText("About", timeout = 8_000)
+        rule.waitForText("Download", timeout = 8_000)
 
         // Navigate to challenge list via "View Challenges" button
         rule.navigateToChallengeList()

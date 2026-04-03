@@ -51,6 +51,7 @@ import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.platform.testTag
+import com.spela.player.presentation.ui.TestTags
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.role
@@ -153,7 +154,10 @@ fun HomeScreen(
         SpColor.Primary.darken(0.70f),
         SpColor.Accent.darken(0.75f),
     )
-    SpScreen(gradientColors = gradientColors) {
+    SpScreen(
+        gradientColors = gradientColors,
+        modifier = Modifier.semantics { contentDescription = TestTags.SCREEN_HOME },
+    ) {
             if (!hasInitiallyLoaded) {
                 Box(
                     modifier = Modifier.fillMaxSize(),

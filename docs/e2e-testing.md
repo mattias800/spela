@@ -1,9 +1,12 @@
-# Web E2E Testing Guide
+# E2E Testing Guide
 
-This document explains how to run the Playwright E2E tests for the web frontend
-reliably, what the infrastructure does, and how to troubleshoot common issues.
+This document explains how to run E2E tests across all three platforms (web,
+Android, desktop), what the infrastructure does, and how to troubleshoot
+common issues.
 
-## Quick Start
+## Quick Start — All Platforms
+
+### Web (Playwright)
 
 From the repository root:
 
@@ -28,6 +31,81 @@ SKIP_BUILD=1 ./run-e2e.sh
 ```
 
 That's it. The script handles everything.
+
+### Desktop Player (Compose UI Test)
+
+```bash
+cd player
+./run-desktop-tests.sh
+```
+
+Desktop tests use `SpelaTestHarness` with fake repositories — no device or
+backend needed. This is the primary UI test suite for the player app.
+
+### Android Player (Instrumented Tests)
+
+```bash
+cd player
+./run-e2e.sh
+```
+
+**Important:** Always use `run-e2e.sh`, never `./gradlew :android:connectedDebugAndroidTest` directly. The script handles:
+- Waking the device (`KEYCODE_WAKEUP`)
+- Setting screen timeout to 10 minutes (prevents sleep during tests)
+- Setting up reverse port forwarding (`device:8080 → host:8080`)
+- Restoring screen timeout after tests complete
+
+**Prerequisites:**
+- Android emulator OR physical device (see "Emulator vs Physical Device" below)
+- Docker E2E environment running (`docker compose -f docker-compose.e2e.yml up -d --build --wait`)
+- Reverse port forwarding: `adb reverse tcp:8080 tcp:8080`
+
+#### Emulator vs Physical Device
+
+**Recommended: Android Emulator (ARM64, API 35)**
+- AVD name: `spela-test` (sdk_gphone64_arm64)
+- **Density override required:** `adb shell wm density 280` — the Settings screen uses a 600dp breakpoint for list-detail layout. At the default 420 DPI, the emulator is only 411dp wide. Lowering to 280 DPI gives 617dp, crossing the breakpoint.
+- JNI/libretro works: ARM64 emulator runs NES (nestopia) and other cores via the JNI bridge. Games actually run on the emulator.
+- The emulator must have reverse port forwarding set up: `adb -s emulator-5554 reverse tcp:8080 tcp:8080`
+
+**Alternative: AYN Thor physical device (serial `54071896`)**
+- Clamshell device — **must be physically OPEN** or the screen sleeps instantly
+- `KEYCODE_WAKEUP` does NOT prevent sleep when the clamshell is closed
+- The `run-e2e.sh` script targets this device by default
+
+**Common pitfalls:**
+- **Stale local Go servers** → If a local `go run` server is running on port 8080, it intercepts requests before Docker gets them. Kill stale servers: `lsof -i :8080` and kill any non-Docker processes.
+- **Signature mismatch** → If switching between debug and release APKs, uninstall first: `adb uninstall com.spela.player`
+- **Stale app data** → Always uninstall before installing test APK so you start with clean app data. Leftover server connections from manual testing will cause tests to log into the wrong server.
+- **Console page layout** → The console page shows game shelves (Top Rated, Continue Playing) not a flat game list. For libraries with >15 games, games are behind a "Browse" button. Test helpers handle this via `navigateToGameByTitle()`.
+- **Emulator timeouts** → Emulators are slower than physical devices. Timeouts: SHORT=5s, MEDIUM=10s, LONG=15s, EXTRA_LONG=30s.
+- **Keyboard blocking buttons** → On portrait emulators, the soft keyboard can block buttons. Use `performImeAction()` instead of keyboard dismiss + button click.
+- **Use `run-e2e.sh`** → DO NOT run `./gradlew :android:connectedDebugAndroidTest` directly. The script handles device wake, screen timeout, port forwarding, and cleanup. Running gradle directly skips all of this and tests will fail.
+- **AppNotIdleException during gameplay** → The 60fps emulation loop keeps the Choreographer busy. Compose test's `performClick()` and `assertIsDisplayed()` wait for Espresso idle, which never arrives. **Fix:** `tapOn()` auto-detects emulation (via "Core running" content description) and falls back to UiAutomator, which bypasses Espresso idle. All gameplay overlay interactions use this pattern.
+- **Settings list-detail layout** → Settings was redesigned with a 600dp breakpoint. On narrow screens, the category list shows first (General, Emulation, Controls, etc.). Use `navigateToSettingsCategory("About")` to access Sign Out, `navigateToSettingsCategory("Emulation")` for Auto Save, etc.
+- **`restartApp()` unreliable on emulators** → `activityRule.scenario.recreate()` sometimes fails to re-establish the Compose hierarchy. Tests that use `restartApp()` (sessionPersistsAcrossRestart, preferencesSyncAcrossRestart, shaderSelectionPersists) may timeout. These persistence tests are better covered by desktop tests.
+- **Cascading test failures** → A failed `restartApp()` can leave the app in a broken state, causing subsequent tests to fail. Tests are designed to recover via `ensureLoggedIn()` but this doesn't always work after a stuck Activity recreation.
+- **Continuous Compose animations** → The neon UI has continuous animations (gradient glow, ambient blobs). `IdlingPolicies.setMasterPolicyTimeout(10s)` is set as mitigation. System animation scale = 0 doesn't help because Compose animations are independent of system settings.
+
+### Test Tag Convention (Player App)
+
+Screen-level and element-level test tags are defined in `player/shared/src/commonMain/kotlin/com/spela/player/presentation/ui/TestTags.kt`. Both the composables and the test suites reference these constants, so tests don't break when display text changes.
+
+```kotlin
+// In composables:
+Modifier.testTag(TestTags.SCREEN_SERVER_CONNECTION)
+
+// In tests:
+onNodeWithTag(TestTags.SCREEN_SERVER_CONNECTION, useUnmergedTree = true)
+```
+
+**Always use `useUnmergedTree = true`** when searching by test tag — Compose's merged semantics tree may not expose tags on container nodes like `BoxWithConstraints`.
+
+When adding new screens or interactive elements, add a test tag constant and apply it. This makes tests resilient to text changes and helps agents understand that a component is tested.
+
+---
+
+## Web E2E Details
 
 ## What `run-e2e.sh` Does
 
@@ -234,13 +312,22 @@ state, or rely on `resetServer()` within tests.
 - `run-e2e.sh` automatically removes old `storage-state.json`
 - If running manually, delete `web/e2e/.auth/storage-state.json`
 
-### Port already in use after a crash
+### Port already in use / stale local servers
 
 ```bash
 # Kill processes on E2E ports
 kill $(lsof -ti :8080) 2>/dev/null
 kill $(lsof -ti :5173) 2>/dev/null
 ```
+
+**Watch out for stale Go servers.** If you previously ran the backend with
+`go run ./cmd/server`, those processes survive in the background and intercept
+port 8080 before Docker. The Docker E2E container maps to `0.0.0.0:8080`, but
+a local process on `localhost:8080` takes priority. Symptoms: health check
+passes (local server), but `POST /api/test/reset` returns 404 (local server
+doesn't have test mode enabled).
+
+Fix: `lsof -i :8080` — kill any `server` process that isn't Docker.
 
 ### Tests pass locally but fail in CI
 

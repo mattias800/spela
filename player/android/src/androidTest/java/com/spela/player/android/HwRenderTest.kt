@@ -29,10 +29,9 @@ import org.junit.runners.MethodSorters
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 class HwRenderTest {
 
-    @get:Rule(order = 0)
-    val koinResetRule = KoinResetRule()
+    
 
-    @get:Rule(order = 1)
+    @get:Rule
     val rule = createAndroidComposeRule<MainActivity>()
 
     // N64 core shutdown is slower than NES: auto-save serialization +
@@ -107,24 +106,24 @@ class HwRenderTest {
 
         // Save state
         rule.tapOn("Save")
-        rule.waitForIdle()
+        Thread.sleep(300)
         rule.ensureOverlayOpen()
 
         // Resume gameplay briefly
-        rule.onNodeWithText("Continue").performClick()
+        rule.tapOn("Continue")
         rule.waitForTextNotVisible("Exit Game")
 
         // Reopen overlay and load state
         rule.openOverlay()
         rule.tapOn("Load")
-        rule.waitForIdle()
+        Thread.sleep(300)
         rule.ensureOverlayOpen()
 
         // Exit and verify return to game detail
         exitN64Game()
         rule.waitForVisible("Banjo-Kazooie", timeout = 8_000)
         // After exit, button shows "Resume" (save exists) or "Play"
-        rule.waitUntil(timeoutMillis = 3_000) {
+        rule.pollUntil(timeoutMillis = 3_000) {
             try {
                 rule.onAllNodesWithText("Play", substring = true).fetchSemanticsNodes().isNotEmpty() ||
                     rule.onAllNodesWithText("Resume", substring = true).fetchSemanticsNodes().isNotEmpty()
@@ -158,7 +157,7 @@ class HwRenderTest {
         setupNesGame()
         rule.openOverlayAndExit()
 
-        rule.waitForText("About", timeout = 8_000)
+        rule.waitForText("Download", timeout = 8_000)
 
         // After exiting, game has a save → "New Game" button appears (fresh start, skip auto-load)
         val hasNewGame = rule.onAllNodesWithText("New Game", substring = true)

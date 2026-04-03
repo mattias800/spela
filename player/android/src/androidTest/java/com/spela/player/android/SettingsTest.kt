@@ -21,10 +21,9 @@ import org.junit.runner.RunWith
 @RunWith(AndroidJUnit4::class)
 class SettingsTest {
 
-    @get:Rule(order = 0)
-    val koinResetRule = KoinResetRule()
+    
 
-    @get:Rule(order = 1)
+    @get:Rule
     val rule = createAndroidComposeRule<MainActivity>()
 
     /** Scroll down in the LazyColumn until a node with the given contentDescription appears. */
@@ -56,7 +55,7 @@ class SettingsTest {
         val nesCard = hasText("Nintendo Entertainment System", substring = true) and
                 hasText("Super", substring = true).not() and
                 hasClickAction()
-        rule.waitUntil(timeoutMillis = 10_000) {
+        rule.pollUntil(timeoutMillis = 10_000) {
             try {
                 rule.onAllNodes(nesCard).fetchSemanticsNodes().isNotEmpty()
             } catch (_: IllegalStateException) { false }
@@ -70,8 +69,8 @@ class SettingsTest {
     fun shaderPreview() {
         rule.startLoggedIn()
 
-        // Navigate to Settings
-        rule.navigateToSettings()
+        // Navigate to Settings → Emulation (where Video Filter lives)
+        rule.navigateToSettingsCategory("Emulation")
 
         // Scroll to Video Filter
         rule.scrollToAndTapText("Video Filter")
@@ -80,9 +79,10 @@ class SettingsTest {
         // Select CRT Classic
         rule.scrollToAndTapText("CRT Classic")
 
-        // Navigate to Per Console tab
-        rule.onNodeWithText("Per Console").performScrollTo()
-        rule.onNodeWithText("Per Console").performClick()
+        // Navigate to Per-Console category for console-specific shaders
+        rule.pressBack() // Back to category list
+        rule.waitForText("General")
+        rule.tapOn("Per-Console")
 
         // Tap NES console and wait for ConsoleSettingsScreen
         tapNESConsole()
@@ -99,21 +99,15 @@ class SettingsTest {
 
         // Navigate back to Settings
         rule.pressBack()
-        rule.waitForText("Account", timeout = 8_000)
+        rule.waitForText("General", timeout = 8_000)
     }
 
     @Test
     fun consoleShaderPersists() {
         rule.startLoggedIn()
 
-        // Navigate to Settings
-        rule.navigateToSettings()
-
-        // Open Video Filter section, then switch to Per Console tab
-        rule.scrollToAndTapText("Video Filter")
-        rule.waitForText("Video Filter")
-        rule.onNodeWithText("Per Console").performScrollTo()
-        rule.onNodeWithText("Per Console").performClick()
+        // Navigate to Settings → Per-Console category
+        rule.navigateToSettingsCategory("Per-Console")
 
         // Tap NES console and wait for ConsoleSettingsScreen
         tapNESConsole()
@@ -123,20 +117,14 @@ class SettingsTest {
 
         // Navigate back to Settings
         rule.pressBack()
-        rule.waitForText("Account", timeout = 8_000)
+        rule.waitForText("General", timeout = 8_000)
 
         // Navigate back to Home
         rule.pressBack()
         rule.waitForText("Spela", timeout = 3_000)
 
-        // Return to Settings
-        rule.navigateToSettings()
-
-        // Open Video Filter section and go to Per Console tab
-        rule.scrollToAndTapText("Video Filter")
-        rule.waitForText("Video Filter")
-        rule.onNodeWithText("Per Console").performScrollTo()
-        rule.onNodeWithText("Per Console").performClick()
+        // Return to Settings → Per-Console
+        rule.navigateToSettingsCategory("Per-Console")
 
         // Verify NES still shows CRT Classic
         rule.waitForText("Nintendo Entertainment System", timeout = 10_000)
@@ -147,17 +135,16 @@ class SettingsTest {
     fun deviceShaderOverride() {
         rule.startLoggedIn()
 
-        // Navigate to Settings
-        rule.navigateToSettings()
-
-        // Set global shader to CRT Classic
+        // Navigate to Settings → Emulation → set global shader
+        rule.navigateToSettingsCategory("Emulation")
         rule.scrollToAndTapText("Video Filter")
         rule.waitForText("Video Filter")
         rule.scrollToAndTapText("CRT Classic")
 
-        // Switch to Per Console tab
-        rule.onNodeWithText("Per Console").performScrollTo()
-        rule.onNodeWithText("Per Console").performClick()
+        // Go to Per-Console category
+        rule.pressBack() // Back to category list
+        rule.waitForText("General")
+        rule.tapOn("Per-Console")
 
         // Tap NES console and wait for ConsoleSettingsScreen
         tapNESConsole()
@@ -172,20 +159,14 @@ class SettingsTest {
 
         // Navigate back to Settings
         rule.pressBack()
-        rule.waitForText("Account", timeout = 8_000)
+        rule.waitForText("General", timeout = 8_000)
 
         // Navigate back to Home
         rule.pressBack()
         rule.waitForText("Spela", timeout = 3_000)
 
-        // Return to Settings
-        rule.navigateToSettings()
-
-        // Open Video Filter and go to Per Console tab
-        rule.scrollToAndTapText("Video Filter")
-        rule.waitForText("Video Filter")
-        rule.onNodeWithText("Per Console").performScrollTo()
-        rule.onNodeWithText("Per Console").performClick()
+        // Return to Settings → Per-Console
+        rule.navigateToSettingsCategory("Per-Console")
 
         // Verify NES shows Bilinear with device override indicator
         rule.waitForText("Nintendo Entertainment System", timeout = 10_000)
@@ -196,8 +177,8 @@ class SettingsTest {
     fun shaderSelectionPersists() {
         rule.ensureLoggedIn()
 
-        // Navigate to Settings
-        rule.navigateToSettings()
+        // Navigate to Settings → Emulation (where Video Filter lives)
+        rule.navigateToSettingsCategory("Emulation")
 
         // Scroll to Video Filter
         rule.scrollToAndTapText("Video Filter")
@@ -212,8 +193,8 @@ class SettingsTest {
         // Session restored - expect Home screen
         rule.waitForText("Spela", timeout = 15_000)
 
-        // Navigate to Settings and verify shader persisted
-        rule.navigateToSettings()
+        // Navigate to Settings → Emulation and verify shader persisted
+        rule.navigateToSettingsCategory("Emulation")
 
         rule.scrollToAndTapText("Video Filter")
         rule.waitForText("Video Filter")
@@ -224,12 +205,8 @@ class SettingsTest {
     fun retroAchievementsSection() {
         rule.ensureLoggedIn()
 
-        // Navigate to Settings
-        rule.navigateToSettings()
-
-        // Scroll to RetroAchievements section
-        rule.scrollToAndTapText("RetroAchievements")
-        rule.waitForText("RetroAchievements")
+        // Navigate to Settings → Achievements category
+        rule.navigateToSettingsCategory("Achievements")
 
         // Assert Link Account button visible
         rule.waitForText("Link Account")

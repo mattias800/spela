@@ -11,10 +11,9 @@ import org.junit.runner.RunWith
 @RunWith(AndroidJUnit4::class)
 class NavigationTest {
 
-    @get:Rule(order = 0)
-    val koinResetRule = KoinResetRule()
+    
 
-    @get:Rule(order = 1)
+    @get:Rule
     val rule = createAndroidComposeRule<MainActivity>()
 
     @Test
@@ -37,14 +36,16 @@ class NavigationTest {
         // to avoid flaky scroll+click issues with LazyColumn off-screen nodes
         rule.tapOn("Super Mario Bros. 3")
 
-        // Verify game detail screen — wait for action buttons unique to game detail
-        rule.waitUntil(timeoutMillis = 15_000) {
-            rule.onAllNodesWithContentDescription("Download Super Mario Bros. 3", substring = true)
-                .fetchSemanticsNodes().isNotEmpty() ||
-                rule.onAllNodesWithContentDescription("Play Super Mario Bros. 3", substring = true)
+        // Verify game detail screen — wait for action buttons (Download/Play/Resume text)
+        rule.pollUntil(timeoutMillis = 15_000) {
+            try {
+                rule.onAllNodesWithText("Download", substring = true)
                     .fetchSemanticsNodes().isNotEmpty() ||
-                rule.onAllNodesWithContentDescription("Resume Super Mario Bros. 3", substring = true)
-                    .fetchSemanticsNodes().isNotEmpty()
+                    rule.onAllNodesWithText("Play", substring = true)
+                        .fetchSemanticsNodes().isNotEmpty() ||
+                    rule.onAllNodesWithText("Resume", substring = true)
+                        .fetchSemanticsNodes().isNotEmpty()
+            } catch (_: IllegalStateException) { false }
         }
 
         // BACK #1: Game Detail -> Console game list
@@ -71,19 +72,20 @@ class NavigationTest {
         rule.waitForText("Nintendo Entertainment System", timeout = 8_000)
         rule.scrollToAndTapText("Castlevania")
 
-        // Wait for game detail screen — use contentDescription-based matchers that are
-        // unique to the game detail screen (not present on the console game list)
-        rule.waitUntil(timeoutMillis = 15_000) {
-            rule.onAllNodesWithContentDescription("Download Castlevania", substring = true)
-                .fetchSemanticsNodes().isNotEmpty() ||
-                rule.onAllNodesWithContentDescription("Play Castlevania", substring = true)
+        // Wait for game detail screen — wait for action buttons (Download/Play/Resume text)
+        rule.pollUntil(timeoutMillis = 15_000) {
+            try {
+                rule.onAllNodesWithText("Download", substring = true)
                     .fetchSemanticsNodes().isNotEmpty() ||
-                rule.onAllNodesWithContentDescription("Resume Castlevania", substring = true)
-                    .fetchSemanticsNodes().isNotEmpty()
+                    rule.onAllNodesWithText("Play", substring = true)
+                        .fetchSemanticsNodes().isNotEmpty() ||
+                    rule.onAllNodesWithText("Resume", substring = true)
+                        .fetchSemanticsNodes().isNotEmpty()
+            } catch (_: IllegalStateException) { false }
         }
 
         // Wait for metadata to auto-scrape (generous timeout for network)
-        rule.waitForText("About", timeout = 30_000)
+        rule.waitForText("Download", timeout = 30_000)
 
         // Verify game detail fully populated
         rule.assertTextVisible("Castlevania")

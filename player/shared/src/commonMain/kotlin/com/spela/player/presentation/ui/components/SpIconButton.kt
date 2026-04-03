@@ -2,7 +2,6 @@ package com.spela.player.presentation.ui.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.size
@@ -19,7 +18,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
-import com.spela.player.presentation.ui.gamepad.spFocusRing
+import com.spela.player.presentation.ui.gamepad.gamepadFocusable
 import com.spela.player.presentation.ui.theme.SpColor
 
 /**
@@ -47,8 +46,7 @@ fun SpIconButton(
                 .clip(CircleShape)
                 .background(if (onGradient) Color.Black.copy(alpha = 0.30f) else SpColor.SurfaceVariant)
                 .clickable(onClick = onClick)
-                .spFocusRing(shape = CircleShape)
-                .focusable()
+                .gamepadFocusable(shape = CircleShape)
                 .semantics {
                     this.contentDescription = contentDescription
                     this.role = Role.Button

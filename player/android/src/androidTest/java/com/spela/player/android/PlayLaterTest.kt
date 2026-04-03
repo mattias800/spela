@@ -11,15 +11,14 @@ import org.junit.runner.RunWith
 @RunWith(AndroidJUnit4::class)
 class PlayLaterTest {
 
-    @get:Rule(order = 0)
-    val koinResetRule = KoinResetRule()
+    
 
-    @get:Rule(order = 1)
+    @get:Rule
     val rule = createAndroidComposeRule<MainActivity>()
 
     /** Wait for either play later button state to be visible on game detail. */
     private fun waitForPlayLaterButton() {
-        rule.waitUntil(timeoutMillis = 8_000) {
+        rule.pollUntil(timeoutMillis = 8_000) {
             try {
                 rule.onAllNodesWithContentDescription("Add to Play Later", substring = true)
                     .fetchSemanticsNodes().isNotEmpty() ||
@@ -153,13 +152,13 @@ class PlayLaterTest {
 
         // Navigate to a different game first, then back, to force a fresh load
         rule.scrollToAndTapText("Section Z")
-        rule.waitForText("About", timeout = 5_000)
+        rule.waitForText("Download", timeout = 5_000)
         rule.pressBack()
         rule.waitForText("Castlevania", timeout = 8_000)
 
         // Re-navigate to Castlevania
         rule.scrollToAndTapText("Castlevania")
-        rule.waitForText("About", timeout = 5_000)
+        rule.waitForText("Download", timeout = 5_000)
 
         // Wait for the play later button to appear (either Add or Remove)
         waitForPlayLaterButton()

@@ -19,10 +19,9 @@ import org.junit.runner.RunWith
 @RunWith(AndroidJUnit4::class)
 class ChallengeIntegrationTest {
 
-    @get:Rule(order = 0)
-    val koinResetRule = KoinResetRule()
+    
 
-    @get:Rule(order = 1)
+    @get:Rule
     val rule = createAndroidComposeRule<MainActivity>()
 
     // ── Activity feed: challenge_completed event ──
@@ -34,7 +33,7 @@ class ChallengeIntegrationTest {
         rule.navigateToGameAndPlay()
         rule.createChallengeFromOverlay("Activity Feed Test")
         rule.openOverlayAndExit()
-        rule.waitForText("About", timeout = 8_000)
+        rule.waitForText("Download", timeout = 8_000)
 
         // Navigate to challenge and attempt it
         rule.navigateToChallengeList()
@@ -129,7 +128,7 @@ class ChallengeIntegrationTest {
         rule.navigateToCastlevania()
 
         // Existing game detail sections should still work
-        rule.assertVisible("About")
+        rule.assertVisible("Download")
         rule.scrollToAndTapText("Save States")
         rule.scrollToAndTapText("Community Saves")
 

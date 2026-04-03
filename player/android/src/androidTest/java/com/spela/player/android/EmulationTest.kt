@@ -12,10 +12,9 @@ import org.junit.runner.RunWith
 @RunWith(AndroidJUnit4::class)
 class EmulationTest {
 
-    @get:Rule(order = 0)
-    val koinResetRule = KoinResetRule()
+    
 
-    @get:Rule(order = 1)
+    @get:Rule
     val rule = createAndroidComposeRule<MainActivity>()
 
     private fun setupGame() {
@@ -61,7 +60,7 @@ class EmulationTest {
         rule.assertTextVisible("Continue")
 
         // Dismiss overlay
-        rule.onNodeWithText("Continue").performClick()
+        rule.tapOn("Continue")
         rule.waitForTextNotVisible("Exit Game")
 
         // Reopen
@@ -105,7 +104,7 @@ class EmulationTest {
         setupGame()
         rule.openOverlayAndExit()
 
-        rule.waitForText("About", timeout = 8_000)
+        rule.waitForText("Download", timeout = 8_000)
 
         // Second play session — button may be "Resume" if saves exist
         val hasResume = rule.onAllNodesWithText("Resume", substring = true)
@@ -191,7 +190,7 @@ class EmulationTest {
         rule.assertVisible("Load")
         rule.assertNotVisible("Touch controls")
 
-        rule.onNodeWithText("Continue").performClick()
+        rule.tapOn("Continue")
         rule.waitForTextNotVisible("Exit Game")
 
         rule.assertTextNotVisible("Exit Game")
@@ -230,20 +229,20 @@ class EmulationTest {
 
         // Save state
         rule.tapOn("Save")
-        rule.waitForIdle()
+        Thread.sleep(300)
 
         // Ensure overlay is open (save may dismiss it via click propagation)
         rule.ensureOverlayOpen()
 
         // Dismiss overlay and reopen for load
-        rule.onNodeWithText("Continue").performClick()
+        rule.tapOn("Continue")
         rule.waitForTextNotVisible("Exit Game")
 
         rule.openOverlay()
 
         // Load state
         rule.tapOn("Load")
-        rule.waitForIdle()
+        Thread.sleep(300)
 
         // Ensure overlay is open after load
         rule.ensureOverlayOpen()

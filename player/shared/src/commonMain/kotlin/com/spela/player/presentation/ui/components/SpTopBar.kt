@@ -2,8 +2,7 @@ package com.spela.player.presentation.ui.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.focusable
-import com.spela.player.presentation.ui.gamepad.spFocusRing
+import com.spela.player.presentation.ui.gamepad.gamepadFocusable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -75,8 +74,7 @@ fun SpTopBar(
                         .clip(CircleShape)
                         .background(if (onGradient) Color.Black.copy(alpha = 0.30f) else SpColor.SurfaceVariant)
                         .clickable(onClick = onBack)
-                        .spFocusRing(shape = CircleShape)
-                        .focusable()
+                        .gamepadFocusable(shape = CircleShape)
                         .semantics {
                             contentDescription = "Go back"
                             role = Role.Button
