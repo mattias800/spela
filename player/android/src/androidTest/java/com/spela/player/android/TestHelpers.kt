@@ -46,6 +46,7 @@ private val testConfigured = run {
     IdlingPolicies.setMasterPolicyTimeout(1, TimeUnit.SECONDS)
     IdlingPolicies.setIdlingResourceTimeout(1, TimeUnit.SECONDS)
     MainActivity.isTestMode = true
+    android.util.Log.d("E2E_DEBUG", "testConfigured: idling timeout set to 1s, isTestMode=true")
     true
 }
 
