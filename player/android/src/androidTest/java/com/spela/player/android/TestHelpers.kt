@@ -633,37 +633,27 @@ private fun ComposeRule.addServerAndLogin(username: String, password: String) {
         isOnServerConnectionScreen()
     }
 
-    // Wait for the form to fully render
+    // Wait for the server connection screen form to fully render.
+    // The header ("Add Server") appears before the form fields — we need to wait
+    // for the form inputs ("Connect" button) to appear.
     val device = uiDevice()
-    Thread.sleep(2_000)
-
-    // Debug: check what's visible via UiDevice.findObject
-    val debugChecks = listOf("Add Server", "Connect", "Server Name", "Server URL", "Nu spelar vi", "Spela")
-    for (text in debugChecks) {
-        val found = device.findObject(UiSelector().textContains(text)).exists()
-        android.util.Log.d("E2E_DEBUG", "textContains('$text'): $found")
-    }
-    val debugDescs = listOf("Spela", "screen_home", "screen_console")
-    for (desc in debugDescs) {
-        val found = device.findObject(UiSelector().descriptionContains(desc)).exists()
-        android.util.Log.d("E2E_DEBUG", "descContains('$desc'): $found")
+    val connectBtn = device.findObject(UiSelector().textContains("Connect"))
+    if (!connectBtn.waitForExists(TIMEOUT_EXTRA_LONG)) {
+        // Form might not auto-open. Try clicking "Add Server" to open it.
+        val addBtn = device.findObject(UiSelector().textContains("Add Server"))
+        if (addBtn.exists()) {
+            addBtn.click()
+            Thread.sleep(2_000)
+        }
     }
 
     // Check if "Local" server already exists (UiAutomator)
     val hasServer = device.findObject(UiSelector().textContains(SERVER_NAME)).exists()
 
     if (!hasServer) {
-        // The form auto-opens when no servers exist. If it hasn't, click "Add Server".
-        val formOpen = device.findObject(UiSelector().textContains("Connect")).exists()
-        if (!formOpen) {
-            val addBtn = device.findObject(UiSelector().textContains("Add Server"))
-            if (addBtn.exists()) addBtn.click()
-            Thread.sleep(2_000)
-        }
-
-        // Wait for the Connect button (confirms form is rendered)
-        val connectBtn = device.findObject(UiSelector().textContains("Connect"))
-        check(connectBtn.waitForExists(TIMEOUT_MEDIUM)) { "Server form not found" }
+        // Form should be open by now (waited for "Connect" above, or clicked "Add Server")
+        val connectBtnReady = device.findObject(UiSelector().textContains("Connect"))
+        check(connectBtnReady.waitForExists(TIMEOUT_MEDIUM)) { "Server form not found" }
 
         // Enter text into the EditText fields via UiAutomator
         val firstField = device.findObject(UiSelector().className("android.widget.EditText").instance(0))
