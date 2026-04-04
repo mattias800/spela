@@ -847,16 +847,10 @@ fun ComposeRule.navigateToGameByTitle(gameTitle: String) {
     // Use the compound matcher to find the card with both "NES" and "games".
     scrollToAndTapMatchingBoth("Nintendo Entertainment System", "games")
 
-    // Wait for console page, then navigate to "Browse" (flat game grid) to find the game.
-    // Carousel items in LazyRow are unreliable for UiAutomator. The flat grid is more stable.
-    waitForText("Browse", TIMEOUT_EXTRA_LONG)
-    tapOn("Browse")
-
-    // Wait for the browse grid to load games
-    waitForText(gameTitle, TIMEOUT_EXTRA_LONG)
-
-    // Tap the game
-    tapOn(gameTitle)
+    // Wait for the console page to load, then find the game.
+    // Use scrollToAndTapText which handles both carousels and grids.
+    Thread.sleep(3_000) // Let game data load from API
+    scrollToAndTapText(gameTitle)
 
     // Wait for game detail — look for Download/Play/Resume button
     pollUntil(timeoutMillis = TIMEOUT_LONG) {
