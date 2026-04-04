@@ -1040,32 +1040,52 @@ fun ComposeRule.downloadGameIfNeeded() {
 
 fun ComposeRule.startGameAndWait() {
     val device = uiDevice()
-    // If saves exist, the button is "Resume"; otherwise "Play"
-    if (device.findObject(UiSelector().textContains("Resume")).exists()) {
-        device.findObject(UiSelector().textContains("Resume")).click()
+    // Click Play/Resume via Compose API (reliable with isTestMode=true)
+    val hasResume = try {
+        onAllNodesWithText("Resume", substring = true).fetchSemanticsNodes().isNotEmpty()
+    } catch (_: Exception) { false }
+    if (hasResume) {
+        onNodeWithText("Resume").performClick()
     } else {
-        device.findObject(UiSelector().textContains("Play")).click()
+        onNodeWithText("Play").performClick()
     }
-    // Detect gameplay by trying to open the overlay (press Back → "Exit Game" appears).
-    // This works regardless of UiAutomator accessibility tree delays, because
-    // pressBack() uses UiDevice and waitForText checks both UiAutomator and Compose.
-    // First run needs to download the libretro core binary + ROM (~30-60s on emulator).
+
+    // Wait for the game to fully start. The first run downloads the core binary.
+    // Use a generous initial wait, then poll for the overlay.
+    android.util.Log.d("E2E_GAMEPLAY", "Play clicked, waiting for game to start...")
+    Thread.sleep(10_000) // Initial wait for core download + ROM load
+
     val deadline = System.currentTimeMillis() + 120_000
     while (System.currentTimeMillis() < deadline) {
-        Thread.sleep(3_000)
-        // Try pressing Back to see if the game overlay opens
+        // Check if we're still on the game detail page (Play didn't work)
+        if (device.findObject(UiSelector().textContains("Download")).exists()) {
+            android.util.Log.d("E2E_GAMEPLAY", "Still on game detail (Download visible) — game didn't start")
+            break
+        }
+
+        // Try pressing Back to open the overlay
         device.pressBack()
-        Thread.sleep(1_000)
+        Thread.sleep(1_500)
+
         // Check if "Exit Game" appears (confirms game is running)
         if (device.findObject(UiSelector().textContains("Exit Game")).exists()) {
-            // Game is running! Dismiss the overlay by pressing Back again
-            // (or tapping Continue)
+            android.util.Log.d("E2E_GAMEPLAY", "Game running! Exit Game overlay detected.")
+            // Dismiss overlay
             val continueBtn = device.findObject(UiSelector().textContains("Continue"))
             if (continueBtn.exists()) continueBtn.click()
-            else device.pressBack()
             Thread.sleep(500)
             return
         }
+
+        // Check if we navigated back to game list (Back went too far)
+        if (device.findObject(UiSelector().textContains("Top Rated")).exists() ||
+            device.findObject(UiSelector().textContains("Essentials")).exists()) {
+            android.util.Log.d("E2E_GAMEPLAY", "Navigated back to game list — retrying Play")
+            // Navigate back to game and try again
+            break
+        }
+
+        Thread.sleep(2_000)
     }
     throw IllegalStateException("Game did not start within 120 seconds")
 }
