@@ -344,25 +344,43 @@ fun ComposeRule.tapOn(label: String) {
         throw AssertionError("tapOn('$label'): not found by text or description during emulation")
     }
 
-    // Normal Compose test path (no emulation, Espresso idle works)
-    val textNodes = onAllNodesWithText(label, substring = true).fetchSemanticsNodes()
-    if (textNodes.size == 1) {
-        onNodeWithText(label, substring = true).performClick()
-    } else {
-        // Multiple text matches or no text matches — try contentDescription
-        val descNodes = onAllNodesWithContentDescription(label, substring = true).fetchSemanticsNodes()
-        if (descNodes.size == 1) {
-            onNodeWithContentDescription(label, substring = true).performClick()
-        } else if (descNodes.isNotEmpty()) {
-            onAllNodesWithContentDescription(label, substring = true)[0].performClick()
-        } else if (textNodes.isNotEmpty()) {
-            onAllNodesWithText(label, substring = true)[0].performClick()
+    // Normal Compose test path. Falls back to UiAutomator if Compose throws
+    // AppNotIdleException (e.g., Coil image loading keeps Choreographer busy).
+    try {
+        val textNodes = onAllNodesWithText(label, substring = true).fetchSemanticsNodes()
+        if (textNodes.size == 1) {
+            onNodeWithText(label, substring = true).performClick()
+        } else {
+            val descNodes = onAllNodesWithContentDescription(label, substring = true).fetchSemanticsNodes()
+            if (descNodes.size == 1) {
+                onNodeWithContentDescription(label, substring = true).performClick()
+            } else if (descNodes.isNotEmpty()) {
+                onAllNodesWithContentDescription(label, substring = true)[0].performClick()
+            } else if (textNodes.isNotEmpty()) {
+                onAllNodesWithText(label, substring = true)[0].performClick()
         } else {
             // Force failure with a clear error
             onNodeWithText(label, substring = true).performClick()
         }
+        }
+        waitForIdle()
+    } catch (_: Exception) {
+        // Compose failed (AppNotIdleException from image loading, etc.)
+        // Fall back to UiAutomator which bypasses Espresso idle.
+        val byText = device.findObject(UiSelector().textContains(label))
+        if (byText.exists()) {
+            byText.click()
+            Thread.sleep(300)
+            return
+        }
+        val byDesc = device.findObject(UiSelector().descriptionContains(label))
+        if (byDesc.exists()) {
+            byDesc.click()
+            Thread.sleep(300)
+            return
+        }
+        throw AssertionError("tapOn('$label'): Compose failed and UiAutomator couldn't find it")
     }
-    waitForIdle()
 }
 
 /**
