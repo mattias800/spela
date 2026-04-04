@@ -833,10 +833,12 @@ fun ComposeRule.navigateToGameByTitle(gameTitle: String) {
     // Carousel items in LazyRow are unreliable for UiAutomator. The flat grid is more stable.
     waitForText("Browse", TIMEOUT_EXTRA_LONG)
     tapOn("Browse")
-    Thread.sleep(2_000)
 
-    // Find and tap the game in the grid (use scrollToAndTapText for scrollable grid)
-    scrollToAndTapText(gameTitle)
+    // Wait for the browse grid to load games
+    waitForText(gameTitle, TIMEOUT_EXTRA_LONG)
+
+    // Tap the game
+    tapOn(gameTitle)
 
     // Wait for game detail — look for Download/Play/Resume button
     pollUntil(timeoutMillis = TIMEOUT_LONG) {
