@@ -860,6 +860,7 @@ fun ComposeRule.navigateToGameByTitle(gameTitle: String) {
 
     // Wait for the game to appear and tap it
     waitForText(gameTitle, TIMEOUT_EXTRA_LONG)
+    Thread.sleep(1_000) // Let layout settle before tap
     tapOn(gameTitle)
 
     // Wait for game detail — look for Download/Play/Resume button
