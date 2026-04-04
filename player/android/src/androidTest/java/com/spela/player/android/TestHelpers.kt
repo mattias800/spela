@@ -2,6 +2,7 @@ package com.spela.player.android
 
 import android.view.KeyEvent
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.hasScrollToNodeAction
 import androidx.compose.ui.test.hasContentDescription
@@ -838,37 +839,184 @@ fun ComposeRule.navigateToAnyNesGame(): String {
  */
 fun ComposeRule.navigateToGameByTitle(gameTitle: String) {
     val device = uiDevice()
+    val tag = "E2E_NAV"
 
     // Navigate to Consoles tab
+    android.util.Log.d(tag, "Step 1: Tapping Consoles tab")
     tapOn("Consoles")
+    android.util.Log.d(tag, "Step 2: Waiting for NES content description")
     waitForContentDescription("Nintendo Entertainment System", TIMEOUT_EXTRA_LONG)
+    android.util.Log.d(tag, "Step 2: NES found")
 
     // Tap the NES console card. With isTestMode=true, Compose APIs are fast.
     // Use the compound matcher to find the card with both "NES" and "games".
+    android.util.Log.d(tag, "Step 3: Tapping NES card")
     scrollToAndTapMatchingBoth("Nintendo Entertainment System", "games")
+    android.util.Log.d(tag, "Step 3: NES card tapped, waiting for console screen")
 
-    // Wait for console page, then use "Browse" to open the full game grid.
-    // Carousels only show a subset of games — the grid shows all.
-    Thread.sleep(3_000) // Let page load
+    // Verify we navigated to the console screen
+    waitForContentDescription("screen_console", TIMEOUT_LONG)
+    android.util.Log.d(tag, "Step 3: Console screen confirmed")
 
-    // The "Browse" button is at the top of the console page
-    val browseBtn = device.findObject(UiSelector().text("Browse"))
-    if (browseBtn.waitForExists(TIMEOUT_MEDIUM)) {
-        browseBtn.click()
-        Thread.sleep(2_000)
+    // Wait for the page to load and try to find Browse button.
+    // Use Compose tree (not UiAutomator) since SpButton text may not appear
+    // in the accessibility tree as a standalone text node during test mode.
+    android.util.Log.d(tag, "Step 4: Waiting for Browse button")
+    Thread.sleep(3_000) // Let API call complete and UI recompose
+
+    // Try multiple strategies to find and click Browse
+    var browseClicked = false
+
+    // Strategy 1: Compose tree — exact text "Browse" (not "Browser play")
+    if (!browseClicked) {
+        try {
+            val nodes = onAllNodesWithText("Browse", substring = false).fetchSemanticsNodes()
+            if (nodes.isNotEmpty()) {
+                android.util.Log.d(tag, "Step 5: Found 'Browse' via Compose (${nodes.size} nodes)")
+                onNodeWithText("Browse", substring = false).performClick()
+                waitForIdle()
+                browseClicked = true
+                Thread.sleep(2_000)
+            }
+        } catch (e: Exception) {
+            android.util.Log.d(tag, "Step 5: Compose Browse failed: ${e.message?.take(80)}")
+        }
     }
 
-    // Wait for the game to appear and tap it
-    waitForText(gameTitle, TIMEOUT_EXTRA_LONG)
-    Thread.sleep(1_000) // Let layout settle before tap
-    tapOn(gameTitle)
+    // Strategy 2: UiAutomator exact text
+    if (!browseClicked) {
+        val browseBtn = device.findObject(UiSelector().text("Browse"))
+        if (browseBtn.waitForExists(5_000)) {
+            android.util.Log.d(tag, "Step 5: Found 'Browse' via UiAutomator")
+            browseBtn.click()
+            browseClicked = true
+            Thread.sleep(2_000)
+        }
+    }
+
+    // Strategy 3: UiAutomator "Browse games" (wide layout)
+    if (!browseClicked) {
+        val browseGamesBtn = device.findObject(UiSelector().text("Browse games"))
+        if (browseGamesBtn.waitForExists(5_000)) {
+            android.util.Log.d(tag, "Step 5: Found 'Browse games' via UiAutomator")
+            browseGamesBtn.click()
+            browseClicked = true
+            Thread.sleep(2_000)
+        }
+    }
+
+    if (!browseClicked) {
+        android.util.Log.d(tag, "Step 5: No Browse button found — scrolling to find game")
+        val centerX = device.displayWidth / 2
+        val fromY = (device.displayHeight * 0.7).toInt()
+        val toY = (device.displayHeight * 0.3).toInt()
+        device.swipe(centerX, fromY, centerX, toY, 15)
+        Thread.sleep(1_000)
+    }
+
+    // Wait for the ConsoleGames screen to load
+    android.util.Log.d(tag, "Step 6: Waiting for games screen")
+    pollUntil(timeoutMillis = TIMEOUT_EXTRA_LONG) {
+        try {
+            onAllNodes(hasTestTag("console_games_screen")).fetchSemanticsNodes().isNotEmpty()
+        } catch (_: Exception) { false }
+    }
+    Thread.sleep(2_000) // Let games load and grid render
+    android.util.Log.d(tag, "Step 6: Games screen loaded")
+
+    // Scroll to the game using Compose's performScrollToNode, then click.
+    // Important: click the CARD (which has onClick), not the text child.
+    // The card is a clickable node that is an ancestor of the text node.
+    android.util.Log.d(tag, "Step 7: Finding and clicking '$gameTitle'")
+    try {
+        val gameMatcher = hasText(gameTitle, substring = true)
+
+        // Scroll to make the game visible in the LazyVerticalGrid
+        val gridMatcher = hasScrollToNodeAction()
+        try {
+            onNode(gridMatcher).performScrollToNode(gameMatcher)
+            waitForIdle()
+            Thread.sleep(500)
+        } catch (_: Exception) {
+            // Game might already be visible
+        }
+
+        // Find the clickable node containing this game title.
+        // SpGameCard has onClick on the Card wrapper. The text is a child.
+        // hasClickAction() matches nodes that have a semantic onClick action.
+        val clickableMatcher = hasText(gameTitle, substring = true) and hasClickAction()
+        val clickableNodes = onAllNodes(clickableMatcher).fetchSemanticsNodes()
+        android.util.Log.d(tag, "Step 7: clickable+text nodes: ${clickableNodes.size}")
+
+        // Also check all text nodes to understand the tree
+        val textNodes = onAllNodesWithText(gameTitle, substring = true).fetchSemanticsNodes()
+        android.util.Log.d(tag, "Step 7: text-only nodes: ${textNodes.size}")
+
+        if (clickableNodes.isNotEmpty()) {
+            // Click the first node that has both text AND click action
+            onAllNodes(clickableMatcher)[0].performClick()
+            waitForIdle()
+            android.util.Log.d(tag, "Step 7: Clicked via clickable+text matcher")
+        } else if (textNodes.size == 1) {
+            // Only text node exists — try performClick which MAY propagate
+            // up the semantic tree to find an onClick ancestor
+            onNodeWithText(gameTitle, substring = true).performClick()
+            waitForIdle()
+            android.util.Log.d(tag, "Step 7: Clicked text node")
+        } else if (textNodes.size > 1) {
+            // Multiple matches — try each one
+            for (i in textNodes.indices) {
+                try {
+                    onAllNodesWithText(gameTitle, substring = true)[i].performClick()
+                    waitForIdle()
+                    android.util.Log.d(tag, "Step 7: Clicked text node [$i]")
+                    break
+                } catch (_: Exception) {
+                    continue
+                }
+            }
+        }
+    } catch (e: Exception) {
+        android.util.Log.d(tag, "Step 7: Compose failed: ${e.message?.take(100)}")
+        // Fallback: UiAutomator
+        val gameText = device.findObject(UiSelector().textContains(gameTitle))
+        if (gameText.exists()) {
+            gameText.click()
+            android.util.Log.d(tag, "Step 7: UiAutomator fallback")
+            Thread.sleep(1_000)
+        }
+    }
+
+    // Dump what's visible after clicking the game
+    val afterClickText = mutableListOf<String>()
+    try {
+        for (i in 0..15) {
+            val obj = device.findObject(UiSelector().className("android.widget.TextView").instance(i))
+            if (obj.exists()) afterClickText.add(obj.text ?: "(null)")
+        }
+    } catch (_: Exception) {}
+    android.util.Log.d(tag, "Step 8: After click visible: $afterClickText")
+
+    // Dump more UI info at this point
+    Thread.sleep(3_000)
+    val detailText = mutableListOf<String>()
+    try {
+        for (i in 0..25) {
+            val obj = device.findObject(UiSelector().className("android.widget.TextView").instance(i))
+            if (obj.exists()) detailText.add(obj.text ?: "(null)")
+        }
+    } catch (_: Exception) {}
+    android.util.Log.d(tag, "Step 8: Full page text: $detailText")
 
     // Wait for game detail — look for Download/Play/Resume button
-    pollUntil(timeoutMillis = TIMEOUT_LONG) {
+    // Use longer timeout — game detail page loads game info from API
+    android.util.Log.d(tag, "Step 8: Waiting for game detail (Download/Play/Resume)")
+    pollUntil(timeoutMillis = TIMEOUT_EXTRA_LONG) {
         device.findObject(UiSelector().textContains("Download")).exists() ||
             device.findObject(UiSelector().textContains("Play")).exists() ||
             device.findObject(UiSelector().textContains("Resume")).exists()
     }
+    android.util.Log.d(tag, "Step 8: Game detail loaded")
 }
 
 fun ComposeRule.navigateToN64Game() {
@@ -1050,58 +1198,90 @@ fun ComposeRule.scrollToAndTapText(text: String) {
 }
 
 fun ComposeRule.downloadGameIfNeeded() {
-    val device = uiDevice()
-    if (device.findObject(UiSelector().text("Download")).exists()) {
-        device.findObject(UiSelector().text("Download")).click()
-        Thread.sleep(500)
+    // Use Compose tree — UiAutomator accessibility tree can be stale after navigation
+    val hasDownload = try {
+        onAllNodesWithText("Download", substring = false).fetchSemanticsNodes().isNotEmpty()
+    } catch (_: Exception) { false }
+
+    if (hasDownload) {
+        android.util.Log.d("E2E_NAV", "downloadGameIfNeeded: Clicking Download")
+        onNodeWithText("Download", substring = false).performClick()
+        waitForIdle()
         // After download, button becomes "Play", "Resume", or "New Game"
         // ROM download can be slow on emulator — use 60s timeout
         pollUntil(timeoutMillis = 60_000) {
-            device.findObject(UiSelector().textContains("Play")).exists() ||
-                device.findObject(UiSelector().textContains("Resume")).exists()
+            try {
+                onAllNodesWithText("Play", substring = false).fetchSemanticsNodes().isNotEmpty() ||
+                    onAllNodesWithText("Resume", substring = false).fetchSemanticsNodes().isNotEmpty()
+            } catch (_: Exception) { false }
         }
+        android.util.Log.d("E2E_NAV", "downloadGameIfNeeded: Download complete")
     }
 }
 
 fun ComposeRule.startGameAndWait() {
-    // Click Play/Resume. Use tapOn which handles both UiAutomator and Compose paths.
-    val device = uiDevice()
-    if (device.findObject(UiSelector().textContains("Resume")).exists()) {
-        tapOn("Resume")
-    } else {
-        tapOn("Play")
-    }
+    // Click Play/Resume using Compose tree
+    // Find the Play/Resume button — must have BOTH text AND click action
+    // to avoid clicking non-interactive text nodes
+    val playMatcher = hasText("Play", substring = false) and hasClickAction()
+    val resumeMatcher = hasText("Resume", substring = false) and hasClickAction()
+    val hasResume = try {
+        onAllNodes(resumeMatcher).fetchSemanticsNodes().isNotEmpty()
+    } catch (_: Exception) { false }
+    val hasPlay = try {
+        onAllNodes(playMatcher).fetchSemanticsNodes().isNotEmpty()
+    } catch (_: Exception) { false }
 
-    // Wait for emulation to start. We detect this by checking logcat for the
-    // libretro core initialization message "retro_init" which the native bridge
-    // prints when the core starts. This is the most reliable signal since it
-    // comes directly from the emulation layer, bypassing all UI framework issues.
-    //
-    // First run downloads the libretro core binary + ROM. Give up to 120s.
+    android.util.Log.d("E2E_NAV", "startGameAndWait: hasResume=$hasResume, hasPlay=$hasPlay")
+
+    if (hasResume) {
+        android.util.Log.d("E2E_NAV", "startGameAndWait: Clicking Resume")
+        onAllNodes(resumeMatcher)[0].performClick()
+    } else if (hasPlay) {
+        android.util.Log.d("E2E_NAV", "startGameAndWait: Clicking Play (clickable)")
+        onAllNodes(playMatcher)[0].performClick()
+    } else {
+        android.util.Log.d("E2E_NAV", "startGameAndWait: No clickable Play/Resume, trying text-only")
+        onNodeWithText("Play", substring = false).performClick()
+    }
+    waitForIdle()
+
+    // Wait for emulation to start using multiple signals
+    val device = uiDevice()
     val deadline = System.currentTimeMillis() + 120_000
     while (System.currentTimeMillis() < deadline) {
-        // Check logcat for core running signal
+        // Signal 1: Compose "Game running" marker
         try {
-            val logOutput = device.executeShellCommand("logcat -d -t 30 | grep -i 'retro_run\\|nativeRun\\|Core running\\|emulation started'")
-            if (logOutput.isNotEmpty()) {
-                android.util.Log.d("E2E_GAMEPLAY", "Game started! Logcat: ${logOutput.take(100)}")
-                Thread.sleep(2_000) // Let the first few frames render
+            if (onAllNodesWithContentDescription("Game running", substring = false)
+                    .fetchSemanticsNodes().isNotEmpty()) {
+                android.util.Log.d("E2E_GAMEPLAY", "Game started! Compose 'Game running' marker")
+                Thread.sleep(2_000)
                 return
             }
         } catch (_: Exception) {}
 
-        // Also try UiAutomator for the 1dp "Core running" marker
+        // Signal 2: UiAutomator "Core running" marker
         if (device.findObject(UiSelector().descriptionContains("Core running")).exists()) {
-            android.util.Log.d("E2E_GAMEPLAY", "Game started! Core running marker detected")
+            android.util.Log.d("E2E_GAMEPLAY", "Game started! UiAutomator 'Core running' marker")
             return
         }
 
-        // Also check if game detail page is gone (no more Download/Play/Resume)
-        val stillOnDetail = device.findObject(UiSelector().text("Download")).exists() ||
-            device.findObject(UiSelector().text("Play")).exists()
+        // Signal 3: Logcat core messages
+        try {
+            val logOutput = device.executeShellCommand("logcat -d -t 30 | grep -i 'retro_run\\|nativeRun\\|Core running\\|emulation started'")
+            if (logOutput.isNotEmpty()) {
+                android.util.Log.d("E2E_GAMEPLAY", "Game started! Logcat: ${logOutput.take(100)}")
+                Thread.sleep(2_000)
+                return
+            }
+        } catch (_: Exception) {}
+
+        // Signal 4: Game detail page gone (Download/Play no longer in Compose tree)
+        val stillOnDetail = try {
+            onAllNodesWithText("Download", substring = false).fetchSemanticsNodes().isNotEmpty() ||
+                onAllNodesWithText("Play", substring = false).fetchSemanticsNodes().isNotEmpty()
+        } catch (_: Exception) { false }
         if (!stillOnDetail) {
-            // Game detail disappeared — emulation screen likely took over
-            // Wait a bit for the core to initialize
             Thread.sleep(5_000)
             android.util.Log.d("E2E_GAMEPLAY", "Game detail gone — assuming game started")
             return
@@ -1143,9 +1323,65 @@ fun ComposeRule.exitGame(coreIdleTimeout: Long = 10_000) {
 // ── Composite helpers for common patterns ──
 
 fun ComposeRule.navigateToGameAndPlay() {
-    // Use a game with a unique one-word name to avoid substring matching issues.
-    // "Golf" is in the seeded NES test data and has no sequels.
-    navigateToGameByTitle("Golf")
+    val device = uiDevice()
+    val tag = "E2E_NAV"
+
+    // Navigate to Consoles → NES → tap a game directly on the console page.
+    // The console page has a hero banner. Scroll down to find game cards.
+    android.util.Log.d(tag, "navigateToGameAndPlay: Starting")
+    tapOn("Consoles")
+    waitForContentDescription("Nintendo Entertainment System", TIMEOUT_EXTRA_LONG)
+    scrollToAndTapMatchingBoth("Nintendo Entertainment System", "games")
+    waitForContentDescription("screen_console", TIMEOUT_LONG)
+
+    // Wait for games to load (Browse button appears after state.games > 15)
+    Thread.sleep(3_000)
+    try {
+        val browseNodes = onAllNodesWithText("Browse", substring = false).fetchSemanticsNodes()
+        if (browseNodes.isNotEmpty()) {
+            android.util.Log.d(tag, "navigateToGameAndPlay: Clicking Browse")
+            onNodeWithText("Browse", substring = false).performClick()
+            waitForIdle()
+            Thread.sleep(3_000)
+
+            // On ConsoleGamesScreen — find first game and click
+            pollUntil(timeoutMillis = TIMEOUT_EXTRA_LONG) {
+                try {
+                    onAllNodes(hasTestTag("console_games_screen")).fetchSemanticsNodes().isNotEmpty()
+                } catch (_: Exception) { false }
+            }
+            Thread.sleep(2_000)
+
+            // Find any clickable node with a game title
+            // The first game alphabetically is "Balloon Fight"
+            val gameMatcher = hasText("Balloon Fight", substring = true) and hasClickAction()
+            val gameNodes = onAllNodes(gameMatcher).fetchSemanticsNodes()
+            android.util.Log.d(tag, "navigateToGameAndPlay: Balloon Fight clickable nodes: ${gameNodes.size}")
+            if (gameNodes.isNotEmpty()) {
+                onAllNodes(gameMatcher)[0].performClick()
+                waitForIdle()
+                Thread.sleep(5_000) // Give time for navigation + API + recomposition
+                android.util.Log.d(tag, "navigateToGameAndPlay: Clicked Balloon Fight")
+            }
+        }
+    } catch (e: Exception) {
+        android.util.Log.d(tag, "navigateToGameAndPlay: Failed: ${e.message?.take(100)}")
+    }
+
+    // Wait for game detail — use Compose tree to check for game detail content
+    // UiAutomator may show stale accessibility nodes from previous screens
+    android.util.Log.d(tag, "navigateToGameAndPlay: Waiting for game detail")
+    pollUntil(timeoutMillis = 60_000) {
+        try {
+            val hasDownload = onAllNodesWithText("Download", substring = true).fetchSemanticsNodes().isNotEmpty()
+            val hasPlay = onAllNodesWithText("Play", substring = true).fetchSemanticsNodes().isNotEmpty()
+            val hasResume = onAllNodesWithText("Resume", substring = true).fetchSemanticsNodes().isNotEmpty()
+            val hasBalloon = onAllNodesWithText("Balloon Fight", substring = true).fetchSemanticsNodes().isNotEmpty()
+            android.util.Log.d(tag, "navigateToGameAndPlay: Poll — Download=$hasDownload Play=$hasPlay Resume=$hasResume BalloonFight=$hasBalloon")
+            hasDownload || hasPlay || hasResume
+        } catch (_: Exception) { false }
+    }
+    android.util.Log.d(tag, "navigateToGameAndPlay: Game detail loaded!")
     downloadGameIfNeeded()
     startGameAndWait()
 }

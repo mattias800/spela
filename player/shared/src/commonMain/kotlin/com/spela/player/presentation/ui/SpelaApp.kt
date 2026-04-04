@@ -28,6 +28,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.key
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -438,20 +439,11 @@ fun SpelaApp(
                         lastClearedRoute = currentRoute
                     }
 
-                    AnimatedContent(
-                        targetState = navState.currentScreen,
-                        transitionSpec = {
-                            if (!animationsEnabled || navState.isTabSwitch) {
-                                EnterTransition.None togetherWith ExitTransition.None
-                            } else if (navState.isGoingBack) {
-                                (slideInHorizontally { -it / 3 } + fadeIn())
-                                    .togetherWith(slideOutHorizontally { it / 3 } + fadeOut())
-                            } else {
-                                (slideInHorizontally { it / 3 } + fadeIn())
-                                    .togetherWith(slideOutHorizontally { -it / 3 } + fadeOut())
-                            }
-                        },
-                    ) { screen ->
+                    // In test mode (animations disabled), bypass AnimatedContent entirely.
+                    // AnimatedContent transitions can interfere with Compose test framework's
+                    // waitForIdle(), causing the new screen to be briefly composed then removed.
+                    @Composable
+                    fun ScreenContent(screen: com.spela.player.presentation.navigation.SpScreen) {
                         val isForward = !navState.isGoingBack && !navState.isTabSwitch
                         saveableStateHolder.SaveableStateProvider(screen.route) {
                         CompositionLocalProvider(LocalIsForwardNavigation provides isForward) {
@@ -1454,7 +1446,35 @@ fun SpelaApp(
                         } // when (screen)
                         } // CompositionLocalProvider (LocalIsForwardNavigation)
                         } // SaveableStateProvider
-                    } // AnimatedContent
+                    } // ScreenContent
+
+                    if (animationsEnabled) {
+                        AnimatedContent(
+                            targetState = navState.currentScreen,
+                            transitionSpec = {
+                                if (navState.isTabSwitch) {
+                                    EnterTransition.None togetherWith ExitTransition.None
+                                } else if (navState.isGoingBack) {
+                                    (slideInHorizontally { -it / 3 } + fadeIn())
+                                        .togetherWith(slideOutHorizontally { it / 3 } + fadeOut())
+                                } else {
+                                    (slideInHorizontally { it / 3 } + fadeIn())
+                                        .togetherWith(slideOutHorizontally { -it / 3 } + fadeOut())
+                                }
+                            },
+                        ) { screen ->
+                            ScreenContent(screen)
+                        }
+                    } else {
+                        // Test mode: render current screen directly without AnimatedContent.
+                        // key() on the route forces Compose to fully dispose and recreate
+                        // the screen composable when navigation changes. Without this,
+                        // the composable tree can get "stuck" and stop observing StateFlow
+                        // updates from ViewModels.
+                        key(navState.currentScreen.route) {
+                            ScreenContent(navState.currentScreen)
+                        }
+                    }
 
                     // Emulation surface + in-game overlay
                     if (navState.showInGameOverlay) {
