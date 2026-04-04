@@ -290,7 +290,7 @@ fun SpelaApp(
                 { navigationViewModel.onIntent(NavigationIntent.PreviousSection) }
             } else null,
             onGamepadInput = { gamepadPortManager?.setInputMode(InputMode.GAMEPAD) },
-            focusResetKey = if (isGamepadMode) Pair(navState.activeTab, navState.currentScreen) else null,
+            focusResetKey = Pair(navState.activeTab, navState.currentScreen),
             isGoingBack = navState.isGoingBack,
         ) {
         Box(

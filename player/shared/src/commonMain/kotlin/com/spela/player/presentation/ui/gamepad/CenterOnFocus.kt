@@ -10,47 +10,46 @@ import androidx.compose.ui.composed
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.layout.onGloballyPositioned
-import androidx.compose.ui.layout.positionInParent
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
 
 /**
- * When this element gains focus, scrolls it toward the vertical center
- * of the scrollable parent rather than the edge.
+ * When this element gains focus, scrolls it toward the center of
+ * the scrollable parent — both vertically and horizontally.
  *
- * Works by expanding the "bring into view" rectangle with padding above
- * and below, which tricks the scroll system into scrolling further than
- * it normally would.
+ * Works by expanding the "bring into view" rectangle with padding
+ * in all directions. The scroll system tries to show the full
+ * rectangle, which overshoots and places the element near center.
+ *
+ * This propagates to all scrollable ancestors:
+ * - Vertical padding centers within Column(verticalScroll)
+ * - Horizontal padding centers within LazyRow/SpCarousel
  */
 @OptIn(ExperimentalFoundationApi::class)
 fun Modifier.centerOnFocus(): Modifier = composed {
     val bringIntoViewRequester = remember { BringIntoViewRequester() }
     val scope = rememberCoroutineScope()
     val density = LocalDensity.current
-    val isGamepad = LocalInputMode.current == InputMode.GAMEPAD
-
-    if (!isGamepad) return@composed this
-
+    var elementWidth = 0f
     var elementHeight = 0f
 
     this
         .bringIntoViewRequester(bringIntoViewRequester)
         .onGloballyPositioned { coordinates ->
+            elementWidth = coordinates.size.width.toFloat()
             elementHeight = coordinates.size.height.toFloat()
         }
         .onFocusChanged { state ->
             if (state.hasFocus) {
                 scope.launch {
-                    // Request a tall rectangle centered on the element.
-                    // The extra padding makes the scroll system overshoot,
-                    // placing the element near the vertical center.
                     val verticalPadding = with(density) { 200.dp.toPx() }
+                    val horizontalPadding = with(density) { 300.dp.toPx() }
                     bringIntoViewRequester.bringIntoView(
                         Rect(
-                            left = 0f,
+                            left = -horizontalPadding,
                             top = -verticalPadding,
-                            right = 0f,
+                            right = elementWidth + horizontalPadding,
                             bottom = elementHeight + verticalPadding,
                         )
                     )

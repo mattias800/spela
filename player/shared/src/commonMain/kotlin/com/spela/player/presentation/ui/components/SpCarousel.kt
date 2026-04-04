@@ -28,6 +28,8 @@ import kotlinx.coroutines.launch
  *   the previously focused item is re-focused.
  * - Wrap-around: d-pad left on the first item wraps to the last item,
  *   and d-pad right on the last item wraps to the first.
+ * - Centering: items use centerOnFocus (via gamepadFocusable on SpCard)
+ *   to scroll toward the horizontal center when focused.
  *
  * Drop-in replacement for LazyRow in any section that contains focusable items.
  */

@@ -4,6 +4,7 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -199,15 +200,13 @@ fun Modifier.gamepadFocusable(
     shape: Shape = RoundedCornerShape(12.dp),
     scaleOnFocus: Boolean = false,
     interactionSource: MutableInteractionSource? = null,
-): Modifier = this
-    .centerOnFocus()
-    .spFocusRing(shape = shape, scaleOnFocus = scaleOnFocus)
-    .then(
-        if (interactionSource != null)
-            Modifier.focusable(interactionSource = interactionSource)
-        else
-            Modifier.focusable()
-    )
+): Modifier = composed {
+    val source = interactionSource ?: remember { MutableInteractionSource() }
+    this
+        .centerOnFocus()
+        .spFocusRing(shape = shape, scaleOnFocus = scaleOnFocus, interactionSource = source)
+        .focusable(interactionSource = source)
+}
 
 /**
  * Adds a visible focus ring to any focusable element.
@@ -215,15 +214,22 @@ fun Modifier.gamepadFocusable(
  * Uses [drawWithContent] to render the ring on top of the composable's content,
  * so it works even after `.clip()`.
  *
- * **Placement:** Must be right before `.focusable()` in the modifier chain.
- * Do NOT place it before `.clickable()` — the clickable modifier intercepts
- * focus events and prevents [onFocusChanged] from firing.
+ * When [interactionSource] is provided, focus detection uses
+ * `collectIsFocusedAsState()` which works regardless of modifier
+ * chain position — essential when `.clickable()` creates a separate
+ * focus target above this modifier.
  */
 fun Modifier.spFocusRing(
     shape: Shape = RoundedCornerShape(12.dp),
     scaleOnFocus: Boolean = false,
+    interactionSource: MutableInteractionSource? = null,
 ): Modifier = composed {
-    var isFocused by remember { mutableStateOf(false) }
+    var fallbackFocused by remember { mutableStateOf(false) }
+    val isFocused = if (interactionSource != null) {
+        interactionSource.collectIsFocusedAsState().value
+    } else {
+        fallbackFocused
+    }
 
     val focusScale by animateFloatAsState(
         targetValue = if (isFocused && scaleOnFocus) 1.04f else 1f,
@@ -235,7 +241,11 @@ fun Modifier.spFocusRing(
 
     this
         .scale(focusScale)
-        .onFocusChanged { isFocused = it.isFocused || it.hasFocus }
+        .then(
+            if (interactionSource == null)
+                Modifier.onFocusChanged { fallbackFocused = it.isFocused || it.hasFocus }
+            else Modifier
+        )
         .drawWithContent {
             drawContent()
             if (isFocused) {
