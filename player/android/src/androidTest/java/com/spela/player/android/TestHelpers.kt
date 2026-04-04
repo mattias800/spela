@@ -1045,8 +1045,10 @@ fun ComposeRule.startGameAndWait() {
         onAllNodesWithText("Resume", substring = true).fetchSemanticsNodes().isNotEmpty()
     } catch (_: Exception) { false }
     if (hasResume) {
+        onNodeWithText("Resume").performScrollTo()
         onNodeWithText("Resume").performClick()
     } else {
+        onNodeWithText("Play").performScrollTo()
         onNodeWithText("Play").performClick()
     }
 
