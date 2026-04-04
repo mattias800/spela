@@ -847,10 +847,20 @@ fun ComposeRule.navigateToGameByTitle(gameTitle: String) {
     // Use the compound matcher to find the card with both "NES" and "games".
     scrollToAndTapMatchingBoth("Nintendo Entertainment System", "games")
 
-    // Wait for the console page to load, then find the game.
-    // Use scrollToAndTapText which handles both carousels and grids.
-    Thread.sleep(3_000) // Let game data load from API
-    scrollToAndTapText(gameTitle)
+    // Wait for console page, then use "Browse" to open the full game grid.
+    // Carousels only show a subset of games — the grid shows all.
+    Thread.sleep(3_000) // Let page load
+
+    // The "Browse" button is at the top of the console page
+    val browseBtn = device.findObject(UiSelector().text("Browse"))
+    if (browseBtn.waitForExists(TIMEOUT_MEDIUM)) {
+        browseBtn.click()
+        Thread.sleep(2_000)
+    }
+
+    // Wait for the game to appear and tap it
+    waitForText(gameTitle, TIMEOUT_EXTRA_LONG)
+    tapOn(gameTitle)
 
     // Wait for game detail — look for Download/Play/Resume button
     pollUntil(timeoutMillis = TIMEOUT_LONG) {
@@ -1132,9 +1142,9 @@ fun ComposeRule.exitGame(coreIdleTimeout: Long = 10_000) {
 // ── Composite helpers for common patterns ──
 
 fun ComposeRule.navigateToGameAndPlay() {
-    // Use a game with a unique name (no sequels) to avoid substring matching issues.
-    // "Balloon Fight" is unique in the seeded NES test data.
-    navigateToGameByTitle("Balloon Fight")
+    // Use a game with a unique one-word name to avoid substring matching issues.
+    // "Golf" is in the seeded NES test data and has no sequels.
+    navigateToGameByTitle("Golf")
     downloadGameIfNeeded()
     startGameAndWait()
 }
