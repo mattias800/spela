@@ -869,9 +869,9 @@ func SeedConsoles(db *gorm.DB) error {
 				db.Model(&existing).Update("name", c.Name)
 				slog.Info("backfilled Name", "old", existing.Name, "new", c.Name)
 			}
-			if existing.EmulatorJSCore == "" && c.EmulatorJSCore != "" {
+			if c.EmulatorJSCore != "" && existing.EmulatorJSCore != c.EmulatorJSCore {
 				db.Model(&existing).Update("emulator_js_core", c.EmulatorJSCore)
-				slog.Info("backfilled EmulatorJSCore", "name", existing.Name, "core", c.EmulatorJSCore)
+				slog.Info("backfilled EmulatorJSCore", "name", existing.Name, "old", existing.EmulatorJSCore, "new", c.EmulatorJSCore)
 			}
 			if c.DefaultCore != "" && existing.DefaultCore != c.DefaultCore {
 				db.Model(&existing).Update("default_core", c.DefaultCore)
