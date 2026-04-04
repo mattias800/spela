@@ -1040,60 +1040,21 @@ fun ComposeRule.downloadGameIfNeeded() {
 
 fun ComposeRule.startGameAndWait() {
     val device = uiDevice()
-    // Click Play/Resume via UiAutomator (Compose performClick/performScrollTo can fail
-    // on the game detail page due to SpSplitButton's complex layout)
+    // Click Play/Resume. Use tapOn which handles both UiAutomator and Compose paths.
     val device = uiDevice()
     if (device.findObject(UiSelector().textContains("Resume")).exists()) {
-        device.findObject(UiSelector().textContains("Resume")).click()
+        tapOn("Resume")
     } else {
-        // Wait for Play button to appear
-        val playBtn = device.findObject(UiSelector().text("Play"))
-        if (playBtn.waitForExists(TIMEOUT_MEDIUM)) {
-            playBtn.click()
-        } else {
-            // Fallback: try substring match
-            device.findObject(UiSelector().textContains("Play")).click()
-        }
+        tapOn("Play")
     }
 
-    // Wait for the game to fully start. The first run downloads the core binary.
-    // Use a generous initial wait, then poll for the overlay.
-    android.util.Log.d("E2E_GAMEPLAY", "Play clicked, waiting for game to start...")
-    Thread.sleep(10_000) // Initial wait for core download + ROM load
-
-    val deadline = System.currentTimeMillis() + 120_000
-    while (System.currentTimeMillis() < deadline) {
-        // Check if we're still on the game detail page (Play didn't work)
-        if (device.findObject(UiSelector().textContains("Download")).exists()) {
-            android.util.Log.d("E2E_GAMEPLAY", "Still on game detail (Download visible) — game didn't start")
-            break
-        }
-
-        // Try pressing Back to open the overlay
-        device.pressBack()
-        Thread.sleep(1_500)
-
-        // Check if "Exit Game" appears (confirms game is running)
-        if (device.findObject(UiSelector().textContains("Exit Game")).exists()) {
-            android.util.Log.d("E2E_GAMEPLAY", "Game running! Exit Game overlay detected.")
-            // Dismiss overlay
-            val continueBtn = device.findObject(UiSelector().textContains("Continue"))
-            if (continueBtn.exists()) continueBtn.click()
-            Thread.sleep(500)
-            return
-        }
-
-        // Check if we navigated back to game list (Back went too far)
-        if (device.findObject(UiSelector().textContains("Top Rated")).exists() ||
-            device.findObject(UiSelector().textContains("Essentials")).exists()) {
-            android.util.Log.d("E2E_GAMEPLAY", "Navigated back to game list — retrying Play")
-            // Navigate back to game and try again
-            break
-        }
-
-        Thread.sleep(2_000)
-    }
-    throw IllegalStateException("Game did not start within 120 seconds")
+    // Wait for emulation to start by checking the Compose semantic tree for the
+    // "Core running" content description (set by EmulationViewModel.isRunning).
+    // With isTestMode=true, Compose APIs work after 3s idle timeout even during
+    // the 60fps emulation loop. The marker is 1dp so UiAutomator might also find it.
+    //
+    // First run downloads the libretro core binary + ROM. Give up to 120s.
+    waitForVisible("Core running", 120_000)
 }
 
 fun ComposeRule.openOverlay() {
