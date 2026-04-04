@@ -1119,8 +1119,8 @@ fun ComposeRule.exitGame(coreIdleTimeout: Long = 10_000) {
 
 fun ComposeRule.navigateToGameAndPlay() {
     // Use a game with a unique name (no sequels) to avoid substring matching issues.
-    // "Blaster Master" is unique in the NES library.
-    navigateToGameByTitle("Blaster Master")
+    // "Balloon Fight" is unique in the seeded NES test data.
+    navigateToGameByTitle("Balloon Fight")
     downloadGameIfNeeded()
     startGameAndWait()
 }
