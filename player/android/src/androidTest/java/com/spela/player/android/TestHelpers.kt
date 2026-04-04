@@ -1040,16 +1040,20 @@ fun ComposeRule.downloadGameIfNeeded() {
 
 fun ComposeRule.startGameAndWait() {
     val device = uiDevice()
-    // Click Play/Resume via Compose API (reliable with isTestMode=true)
-    val hasResume = try {
-        onAllNodesWithText("Resume", substring = true).fetchSemanticsNodes().isNotEmpty()
-    } catch (_: Exception) { false }
-    if (hasResume) {
-        onNodeWithText("Resume").performScrollTo()
-        onNodeWithText("Resume").performClick()
+    // Click Play/Resume via UiAutomator (Compose performClick/performScrollTo can fail
+    // on the game detail page due to SpSplitButton's complex layout)
+    val device = uiDevice()
+    if (device.findObject(UiSelector().textContains("Resume")).exists()) {
+        device.findObject(UiSelector().textContains("Resume")).click()
     } else {
-        onNodeWithText("Play").performScrollTo()
-        onNodeWithText("Play").performClick()
+        // Wait for Play button to appear
+        val playBtn = device.findObject(UiSelector().text("Play"))
+        if (playBtn.waitForExists(TIMEOUT_MEDIUM)) {
+            playBtn.click()
+        } else {
+            // Fallback: try substring match
+            device.findObject(UiSelector().textContains("Play")).click()
+        }
     }
 
     // Wait for the game to fully start. The first run downloads the core binary.
