@@ -777,19 +777,19 @@ func SeedConsoles(db *gorm.DB) error {
 	consoles := []Console{
 		// 3rd Generation
 		{Name: "Nintendo Entertainment System", Abbreviation: "NES", Extensions: ".nes,.fds", DefaultCore: "nestopia", EmulatorJSCore: "nestopia", FolderName: "nes", ColorTheme: "#e60012", CoverAspect: "5:7", Generation: 3, SaveStateSupport: true, Playable: true},
-		{Name: "Sega Master System", Abbreviation: "SMS", Extensions: ".sms", DefaultCore: "genesis_plus_gx", EmulatorJSCore: "genesis_plus_gx", FolderName: "mastersystem", ColorTheme: "#0060a8", Generation: 3, SaveStateSupport: true, Playable: true},
+		{Name: "Sega Master System", Abbreviation: "SMS", Extensions: ".sms", DefaultCore: "genesis_plus_gx", EmulatorJSCore: "segaMS", FolderName: "mastersystem", ColorTheme: "#0060a8", Generation: 3, SaveStateSupport: true, Playable: true},
 		{Name: "Atari 7800", Abbreviation: "A78", Extensions: ".a78,.bin", DefaultCore: "prosystem", EmulatorJSCore: "prosystem", FolderName: "atari7800", ColorTheme: "#8b4513", Generation: 3, SaveStateSupport: true, Playable: true},
 		// 4th Generation
 		{Name: "Super Nintendo", Abbreviation: "SNES", Extensions: ".sfc,.smc", DefaultCore: "snes9x", EmulatorJSCore: "snes9x", FolderName: "snes", ColorTheme: "#7b7db5", CoverAspect: "4:3", Generation: 4, SaveStateSupport: true, Playable: true},
-		{Name: "Sega Genesis", Abbreviation: "GEN", Extensions: ".md,.gen,.bin", DefaultCore: "genesis_plus_gx", EmulatorJSCore: "genesis_plus_gx", FolderName: "genesis", ColorTheme: "#171717", Generation: 4, SaveStateSupport: true, Playable: true},
+		{Name: "Sega Genesis", Abbreviation: "GEN", Extensions: ".md,.gen,.bin", DefaultCore: "genesis_plus_gx", EmulatorJSCore: "segaMD", FolderName: "genesis", ColorTheme: "#171717", Generation: 4, SaveStateSupport: true, Playable: true},
 		{Name: "Game Boy", Abbreviation: "GB", Extensions: ".gb", DefaultCore: "gambatte", EmulatorJSCore: "gambatte", FolderName: "gb", ColorTheme: "#8bac0f", CoverAspect: "7:8", Generation: 4, SaveStateSupport: true, Playable: true},
-		{Name: "Game Gear", Abbreviation: "GG", Extensions: ".gg", DefaultCore: "genesis_plus_gx", EmulatorJSCore: "genesis_plus_gx", FolderName: "gamegear", ColorTheme: "#1a1a1a", CoverAspect: "1:1", Generation: 4, SaveStateSupport: true, Playable: true},
+		{Name: "Game Gear", Abbreviation: "GG", Extensions: ".gg", DefaultCore: "genesis_plus_gx", EmulatorJSCore: "segaGG", FolderName: "gamegear", ColorTheme: "#1a1a1a", CoverAspect: "1:1", Generation: 4, SaveStateSupport: true, Playable: true},
 		{Name: "TurboGrafx-16", Abbreviation: "PCE", Extensions: ".pce", DefaultCore: "mednafen_pce", EmulatorJSCore: "mednafen_pce", FolderName: "tg16", ColorTheme: "#ff6600", Generation: 4, SaveStateSupport: true, Playable: true},
 		{Name: "TurboGrafx-CD", Abbreviation: "PCECD", Extensions: ".chd,.cue,.iso,.m3u", DefaultCore: "mednafen_pce", EmulatorJSCore: "mednafen_pce", FolderName: "tg16cd", ColorTheme: "#ff6600", Generation: 4, SaveStateSupport: true, Playable: true},
 		{Name: "Neo Geo", Abbreviation: "NEOGEO", Extensions: ".zip", DefaultCore: "fbneo", EmulatorJSCore: "fbneo", FolderName: "neogeo", ColorTheme: "#ffcc00", Generation: 4, SaveStateSupport: true, Playable: true},
 		{Name: "Neo Geo CD", Abbreviation: "NEOCD", Extensions: ".chd,.cue,.iso", DefaultCore: "neocd", EmulatorJSCore: "", FolderName: "neogeocd", ColorTheme: "#ffcc00", Generation: 4, SaveStateSupport: true, Playable: true},
 		{Name: "Atari Lynx", Abbreviation: "LYNX", Extensions: ".lnx,.lyx", DefaultCore: "handy", EmulatorJSCore: "handy", FolderName: "atarilynx", ColorTheme: "#8b4513", CoverAspect: "1:1", Generation: 4, SaveStateSupport: true, Playable: true},
-		{Name: "Sega CD", Abbreviation: "SCD", Extensions: ".iso,.bin,.cue,.m3u", DefaultCore: "clownmdemu", EmulatorJSCore: "genesis_plus_gx", FolderName: "segacd", ColorTheme: "#1a1a1a", Generation: 4, SaveStateSupport: true, Playable: true},
+		{Name: "Sega CD", Abbreviation: "SCD", Extensions: ".iso,.bin,.cue,.m3u", DefaultCore: "clownmdemu", EmulatorJSCore: "segaCD", FolderName: "segacd", ColorTheme: "#1a1a1a", Generation: 4, SaveStateSupport: true, Playable: true},
 		{Name: "Philips CD-i", Abbreviation: "CDI", Extensions: ".chd,.cue,.iso", DefaultCore: "same_cdi", EmulatorJSCore: "same_cdi", FolderName: "cdi", ColorTheme: "#006633", Generation: 4, SaveStateSupport: true, Playable: true},
 		// 5th Generation
 		{Name: "PlayStation", Abbreviation: "PSX", Extensions: ".bin,.cue,.iso,.pbp,.m3u", DefaultCore: "beetle_psx_hw", EmulatorJSCore: "mednafen_psx_hw", FolderName: "psx", ColorTheme: "#003087", CoverAspect: "1:1", Generation: 5, SaveStateSupport: true, Playable: true},
@@ -801,7 +801,7 @@ func SeedConsoles(db *gorm.DB) error {
 		{Name: "3DO", Abbreviation: "3DO", Extensions: ".iso,.bin,.cue,.chd", DefaultCore: "opera", EmulatorJSCore: "opera", FolderName: "3do", ColorTheme: "#c0c0c0", Generation: 5, SaveStateSupport: true, Playable: true},
 		{Name: "Neo Geo Pocket / Color", Abbreviation: "NGP", Extensions: ".ngp,.ngc", DefaultCore: "beetle_ngp", EmulatorJSCore: "mednafen_ngp", FolderName: "ngp", ColorTheme: "#1a75bc", CoverAspect: "1:1", Generation: 5, SaveStateSupport: true, Playable: true},
 		{Name: "WonderSwan", Abbreviation: "WS", Extensions: ".ws,.wsc", DefaultCore: "beetle_wswan", EmulatorJSCore: "mednafen_wswan", FolderName: "wonderswan", ColorTheme: "#4b0082", CoverAspect: "1:1", Generation: 5, SaveStateSupport: true, Playable: true},
-		{Name: "Sega 32X", Abbreviation: "32X", Extensions: ".32x", DefaultCore: "picodrive", EmulatorJSCore: "picodrive", FolderName: "sega32x", ColorTheme: "#1a1a1a", Generation: 5, SaveStateSupport: true, Playable: true},
+		{Name: "Sega 32X", Abbreviation: "32X", Extensions: ".32x", DefaultCore: "picodrive", EmulatorJSCore: "sega32x", FolderName: "sega32x", ColorTheme: "#1a1a1a", Generation: 5, SaveStateSupport: true, Playable: true},
 		{Name: "PC-FX", Abbreviation: "PCFX", Extensions: ".iso,.cue,.m3u", DefaultCore: "beetle_pcfx", EmulatorJSCore: "mednafen_pcfx", FolderName: "pcfx", ColorTheme: "#ff6600", Generation: 5, SaveStateSupport: true, Playable: true},
 		{Name: "Amiga CD32", Abbreviation: "ACD32", Extensions: ".iso,.cue,.bin,.chd", DefaultCore: "", EmulatorJSCore: "", FolderName: "acd32", ColorTheme: "#6c5eb5", CoverAspect: "8:11", Generation: 5, SaveStateSupport: false, Playable: false},
 		// 6th Generation
