@@ -35,6 +35,14 @@
     });
   });
   window.addEventListener("unhandledrejection", function (event) {
+    // Safari rejects AudioContext creation/resume when the user gesture has
+    // expired (e.g. after async core loading). This is not fatal — the game
+    // runs fine without audio, and we resume it on the next user interaction.
+    if (event.reason && event.reason.name === "NotAllowedError") {
+      event.preventDefault();
+      setupAudioResumeOnInteraction();
+      return;
+    }
     var reason =
       event.reason instanceof Error
         ? event.reason.message
@@ -69,6 +77,45 @@
       binary += String.fromCharCode(bytes[i]);
     }
     return btoa(binary);
+  }
+
+  /**
+   * Resume any suspended AudioContexts on the next user interaction.
+   * Safari blocks AudioContext creation without a gesture, so we wait for
+   * the user to click/tap/press a key, then resume all contexts.
+   */
+  var audioResumeSetup = false;
+  function setupAudioResumeOnInteraction() {
+    if (audioResumeSetup) return;
+    audioResumeSetup = true;
+
+    function resumeAudio() {
+      // Resume all AudioContexts that Emscripten/OpenAL may have created
+      try {
+        var emu = window.EJS_emulator;
+        if (emu && emu.Module && emu.Module.AL && emu.Module.AL.currentCtx) {
+          var ctx = emu.Module.AL.currentCtx.gain.context;
+          if (ctx.state === "suspended") {
+            ctx.resume();
+          }
+        }
+      } catch (_) {}
+
+      // Also try the global AudioContext if one exists
+      try {
+        if (window.audioContext && window.audioContext.state === "suspended") {
+          window.audioContext.resume();
+        }
+      } catch (_) {}
+
+      window.removeEventListener("click", resumeAudio, true);
+      window.removeEventListener("touchstart", resumeAudio, true);
+      window.removeEventListener("keydown", resumeAudio, true);
+    }
+
+    window.addEventListener("click", resumeAudio, true);
+    window.addEventListener("touchstart", resumeAudio, true);
+    window.addEventListener("keydown", resumeAudio, true);
   }
 
   var initialized = false;
@@ -114,6 +161,11 @@
   });
 
   function initEmulator(config) {
+    // Proactively set up audio resume for Safari — the AudioContext created
+    // by Emscripten/OpenAL during core init will likely be suspended because
+    // the user gesture from "Play in browser" has expired by this point.
+    setupAudioResumeOnInteraction();
+
     // Use pre-loaded data if provided (disc switch flow)
     if (config.romData) {
       var blob = new Blob([config.romData], { type: "application/zip" });
