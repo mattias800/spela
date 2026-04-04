@@ -1276,17 +1276,6 @@ fun ComposeRule.startGameAndWait() {
             }
         } catch (_: Exception) {}
 
-        // Signal 4: Game detail page gone (Download/Play no longer in Compose tree)
-        val stillOnDetail = try {
-            onAllNodesWithText("Download", substring = false).fetchSemanticsNodes().isNotEmpty() ||
-                onAllNodesWithText("Play", substring = false).fetchSemanticsNodes().isNotEmpty()
-        } catch (_: Exception) { false }
-        if (!stillOnDetail) {
-            Thread.sleep(5_000)
-            android.util.Log.d("E2E_GAMEPLAY", "Game detail gone — assuming game started")
-            return
-        }
-
         Thread.sleep(2_000)
     }
     throw IllegalStateException("Game did not start within 120 seconds")
