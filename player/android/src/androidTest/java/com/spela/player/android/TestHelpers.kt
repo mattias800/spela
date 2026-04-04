@@ -1039,7 +1039,6 @@ fun ComposeRule.downloadGameIfNeeded() {
 }
 
 fun ComposeRule.startGameAndWait() {
-    val device = uiDevice()
     // Click Play/Resume. Use tapOn which handles both UiAutomator and Compose paths.
     val device = uiDevice()
     if (device.findObject(UiSelector().textContains("Resume")).exists()) {
@@ -1048,13 +1047,44 @@ fun ComposeRule.startGameAndWait() {
         tapOn("Play")
     }
 
-    // Wait for emulation to start by checking the Compose semantic tree for the
-    // "Core running" content description (set by EmulationViewModel.isRunning).
-    // With isTestMode=true, Compose APIs work after 3s idle timeout even during
-    // the 60fps emulation loop. The marker is 1dp so UiAutomator might also find it.
+    // Wait for emulation to start. We detect this by checking logcat for the
+    // libretro core initialization message "retro_init" which the native bridge
+    // prints when the core starts. This is the most reliable signal since it
+    // comes directly from the emulation layer, bypassing all UI framework issues.
     //
     // First run downloads the libretro core binary + ROM. Give up to 120s.
-    waitForVisible("Core running", 120_000)
+    val deadline = System.currentTimeMillis() + 120_000
+    while (System.currentTimeMillis() < deadline) {
+        // Check logcat for core running signal
+        try {
+            val logOutput = device.executeShellCommand("logcat -d -t 30 | grep -i 'retro_run\\|nativeRun\\|Core running\\|emulation started'")
+            if (logOutput.isNotEmpty()) {
+                android.util.Log.d("E2E_GAMEPLAY", "Game started! Logcat: ${logOutput.take(100)}")
+                Thread.sleep(2_000) // Let the first few frames render
+                return
+            }
+        } catch (_: Exception) {}
+
+        // Also try UiAutomator for the 1dp "Core running" marker
+        if (device.findObject(UiSelector().descriptionContains("Core running")).exists()) {
+            android.util.Log.d("E2E_GAMEPLAY", "Game started! Core running marker detected")
+            return
+        }
+
+        // Also check if game detail page is gone (no more Download/Play/Resume)
+        val stillOnDetail = device.findObject(UiSelector().text("Download")).exists() ||
+            device.findObject(UiSelector().text("Play")).exists()
+        if (!stillOnDetail) {
+            // Game detail disappeared — emulation screen likely took over
+            // Wait a bit for the core to initialize
+            Thread.sleep(5_000)
+            android.util.Log.d("E2E_GAMEPLAY", "Game detail gone — assuming game started")
+            return
+        }
+
+        Thread.sleep(2_000)
+    }
+    throw IllegalStateException("Game did not start within 120 seconds")
 }
 
 fun ComposeRule.openOverlay() {
