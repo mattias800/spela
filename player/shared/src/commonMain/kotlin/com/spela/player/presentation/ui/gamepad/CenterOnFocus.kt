@@ -1,59 +1,54 @@
 package com.spela.player.presentation.ui.gamepad
 
-import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.relocation.BringIntoViewRequester
-import androidx.compose.foundation.relocation.bringIntoViewRequester
-import androidx.compose.runtime.remember
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsFocusedAsState
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
-import androidx.compose.ui.focus.onFocusChanged
-import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.layout.onGloballyPositioned
-import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.unit.dp
-import kotlinx.coroutines.launch
+import androidx.compose.ui.layout.positionInRoot
+import com.spela.player.presentation.ui.components.LocalScrollState
 
 /**
- * When this element gains focus, scrolls it toward the center of
- * the scrollable parent — both vertically and horizontally.
+ * When this element gains focus, scrolls the nearest [SpScrollableContent]
+ * so this element is vertically centered in the viewport.
  *
- * Works by expanding the "bring into view" rectangle with padding
- * in all directions. The scroll system tries to show the full
- * rectangle, which overshoots and places the element near center.
+ * Uses the [interactionSource] for focus detection (same source shared
+ * with `.clickable()` and `.focusable()`), so it detects focus regardless
+ * of which node in the modifier chain holds it.
  *
- * This propagates to all scrollable ancestors:
- * - Vertical padding centers within Column(verticalScroll)
- * - Horizontal padding centers within LazyRow/SpCarousel
+ * Uses the [LocalScrollState] provided by [SpScrollableContent] to
+ * calculate and animate the scroll position directly.
  */
-@OptIn(ExperimentalFoundationApi::class)
-fun Modifier.centerOnFocus(): Modifier = composed {
-    val bringIntoViewRequester = remember { BringIntoViewRequester() }
-    val scope = rememberCoroutineScope()
-    val density = LocalDensity.current
-    var elementWidth = 0f
+fun Modifier.centerOnFocus(
+    interactionSource: MutableInteractionSource,
+): Modifier = composed {
+    val scrollState = LocalScrollState.current
+    val isFocused by interactionSource.collectIsFocusedAsState()
+    var positionInRoot = 0f
     var elementHeight = 0f
 
-    this
-        .bringIntoViewRequester(bringIntoViewRequester)
-        .onGloballyPositioned { coordinates ->
-            elementWidth = coordinates.size.width.toFloat()
-            elementHeight = coordinates.size.height.toFloat()
+    if (scrollState == null) return@composed this
+
+    LaunchedEffect(isFocused) {
+        if (isFocused) {
+            val currentScroll = scrollState.value
+            val elementTop = positionInRoot + currentScroll
+            val viewportHeight = scrollState.viewportSize.toFloat()
+
+            val targetScroll = (elementTop - (viewportHeight / 2f) + (elementHeight / 2f))
+                .toInt()
+                .coerceIn(0, scrollState.maxValue)
+
+            scrollState.animateScrollTo(targetScroll)
         }
-        .onFocusChanged { state ->
-            if (state.hasFocus) {
-                scope.launch {
-                    val verticalPadding = with(density) { 200.dp.toPx() }
-                    val horizontalPadding = with(density) { 300.dp.toPx() }
-                    bringIntoViewRequester.bringIntoView(
-                        Rect(
-                            left = -horizontalPadding,
-                            top = -verticalPadding,
-                            right = elementWidth + horizontalPadding,
-                            bottom = elementHeight + verticalPadding,
-                        )
-                    )
-                }
-            }
-        }
+    }
+
+    this.onGloballyPositioned { coordinates ->
+        positionInRoot = coordinates.positionInRoot().y
+        elementHeight = coordinates.size.height.toFloat()
+    }
 }

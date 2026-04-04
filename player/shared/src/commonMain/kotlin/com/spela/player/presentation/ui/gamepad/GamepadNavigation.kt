@@ -215,7 +215,7 @@ fun Modifier.gamepadFocusable(
 ): Modifier = composed {
     val source = interactionSource ?: remember { MutableInteractionSource() }
     this
-        .centerOnFocus()
+        .centerOnFocus(interactionSource = source)
         .spFocusRing(shape = shape, scaleOnFocus = scaleOnFocus, interactionSource = source)
         .focusable(interactionSource = source)
 }
