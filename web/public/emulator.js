@@ -35,6 +35,14 @@
     });
   });
   window.addEventListener("unhandledrejection", function (event) {
+    // Safari rejects AudioContext creation/resume when the user gesture has
+    // expired (e.g. after async core loading). This is not fatal — the game
+    // runs fine without audio, and we resume it on the next user interaction.
+    if (event.reason && event.reason.name === "NotAllowedError") {
+      event.preventDefault();
+      setupAudioResumeOnInteraction();
+      return;
+    }
     var reason =
       event.reason instanceof Error
         ? event.reason.message
@@ -69,6 +77,45 @@
       binary += String.fromCharCode(bytes[i]);
     }
     return btoa(binary);
+  }
+
+  /**
+   * Resume any suspended AudioContexts on the next user interaction.
+   * Safari blocks AudioContext creation without a gesture, so we wait for
+   * the user to click/tap/press a key, then resume all contexts.
+   */
+  var audioResumeSetup = false;
+  function setupAudioResumeOnInteraction() {
+    if (audioResumeSetup) return;
+    audioResumeSetup = true;
+
+    function resumeAudio() {
+      // Resume all AudioContexts that Emscripten/OpenAL may have created
+      try {
+        var emu = window.EJS_emulator;
+        if (emu && emu.Module && emu.Module.AL && emu.Module.AL.currentCtx) {
+          var ctx = emu.Module.AL.currentCtx.gain.context;
+          if (ctx.state === "suspended") {
+            ctx.resume();
+          }
+        }
+      } catch (_) {}
+
+      // Also try the global AudioContext if one exists
+      try {
+        if (window.audioContext && window.audioContext.state === "suspended") {
+          window.audioContext.resume();
+        }
+      } catch (_) {}
+
+      window.removeEventListener("click", resumeAudio, true);
+      window.removeEventListener("touchstart", resumeAudio, true);
+      window.removeEventListener("keydown", resumeAudio, true);
+    }
+
+    window.addEventListener("click", resumeAudio, true);
+    window.addEventListener("touchstart", resumeAudio, true);
+    window.addEventListener("keydown", resumeAudio, true);
   }
 
   var initialized = false;
@@ -114,6 +161,11 @@
   });
 
   function initEmulator(config) {
+    // Proactively set up audio resume for Safari — the AudioContext created
+    // by Emscripten/OpenAL during core init will likely be suspended because
+    // the user gesture from "Play in browser" has expired by this point.
+    setupAudioResumeOnInteraction();
+
     // Use pre-loaded data if provided (disc switch flow)
     if (config.romData) {
       var blob = new Blob([config.romData], { type: "application/zip" });
@@ -127,7 +179,13 @@
     window.EJS_core = config.core;
     window.EJS_gameName = config.gameName;
     window.EJS_color = "#00a3e0"; // brand-cyan
-    window.EJS_startOnLoaded = true;
+    // Safari requires a user gesture in the same call stack to create an
+    // AudioContext. By the time the WASM core finishes loading, the gesture
+    // from "Play in browser" has expired. Disable auto-start on Safari so
+    // EmulatorJS shows its built-in play button — that click provides a
+    // fresh gesture for AudioContext. Other browsers auto-start as before.
+    var isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+    window.EJS_startOnLoaded = !isSafari;
     window.EJS_backgroundBlur = true;
     window.EJS_backgroundColor = "#16191d";
 
@@ -239,6 +297,45 @@
         };
       }
     }
+    // Add gamepad button mappings (value2).
+    // For 2-button systems, rotate face buttons so left+bottom map to B+A.
+    // EmulatorJS gamepad buttons: BUTTON_1=bottom, BUTTON_2=right, BUTTON_3=left, BUTTON_4=top
+    var twoButtonSystems = ["nes", "gb", "segaMS", "segaGG"];
+    var isTwoButton = twoButtonSystems.indexOf(window.EJS_core) !== -1;
+
+    // Default gamepad mapping (matches EmulatorJS built-in)
+    var gamepadMap = {
+      0: "BUTTON_2",  // B → right
+      1: "BUTTON_4",  // Y → top
+      2: "SELECT",
+      3: "START",
+      4: "DPAD_UP",
+      5: "DPAD_DOWN",
+      6: "DPAD_LEFT",
+      7: "DPAD_RIGHT",
+      8: "BUTTON_1",  // A → bottom
+      9: "BUTTON_3",  // X → left
+      10: "LEFT_TOP_SHOULDER",
+      11: "RIGHT_TOP_SHOULDER",
+      12: "LEFT_BOTTOM_SHOULDER",
+      13: "RIGHT_BOTTOM_SHOULDER",
+    };
+
+    if (isTwoButton) {
+      // Rotate: B→left, A→bottom, Y→top (unused), X→right (unused)
+      gamepadMap[0] = "BUTTON_3";  // B → left
+      gamepadMap[8] = "BUTTON_1";  // A → bottom (unchanged)
+      gamepadMap[1] = "BUTTON_4";  // Y → top (unchanged, unused by core)
+      gamepadMap[9] = "BUTTON_2";  // X → right (unused by core)
+    }
+
+    // Apply gamepad mapping to controls
+    for (var btnId in gamepadMap) {
+      if (controls[parseInt(btnId)]) {
+        controls[parseInt(btnId)].value2 = gamepadMap[btnId];
+      }
+    }
+
     window.EJS_defaultControls = {
       0: controls,
       1: controls,

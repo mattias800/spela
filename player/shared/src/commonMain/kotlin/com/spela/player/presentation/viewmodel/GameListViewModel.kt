@@ -258,6 +258,7 @@ class GameListViewModel(
             )
         }
         consoleGamesJob = scope.launch(dispatchers.io) {
+            println("[GameListVM] loadGamesForConsole($consoleId) API call starting")
             getGamesForConsoleUseCase(consoleId).fold(
                 onSuccess = { games ->
                     _state.update { it.copy(games = games, isLoading = false) }

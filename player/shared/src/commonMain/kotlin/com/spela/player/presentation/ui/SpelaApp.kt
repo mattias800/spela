@@ -28,6 +28,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.key
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -216,12 +217,13 @@ fun SpelaApp(
         val isGamepadMode = inputMode == InputMode.GAMEPAD
         val sectionIndicatorVisible = isGamepadMode
 
-        // Hidden indicator for E2E tests: exposes whether the libretro core is running.
+        // Indicator for E2E tests: exposes whether the libretro core is running.
         // Tests wait for "Core idle" instead of Thread.sleep after exiting games.
+        // Uses 1dp size so it appears in the Android accessibility tree for UiAutomator.
         val coreIdleState by emulationViewModel.state.collectAsState()
         Box(
             modifier = Modifier
-                .size(0.dp)
+                .size(1.dp)
                 .semantics {
                     contentDescription = if (coreIdleState.isRunning) "Core running" else "Core idle"
                 },
@@ -437,20 +439,11 @@ fun SpelaApp(
                         lastClearedRoute = currentRoute
                     }
 
-                    AnimatedContent(
-                        targetState = navState.currentScreen,
-                        transitionSpec = {
-                            if (!animationsEnabled || navState.isTabSwitch) {
-                                EnterTransition.None togetherWith ExitTransition.None
-                            } else if (navState.isGoingBack) {
-                                (slideInHorizontally { -it / 3 } + fadeIn())
-                                    .togetherWith(slideOutHorizontally { it / 3 } + fadeOut())
-                            } else {
-                                (slideInHorizontally { it / 3 } + fadeIn())
-                                    .togetherWith(slideOutHorizontally { -it / 3 } + fadeOut())
-                            }
-                        },
-                    ) { screen ->
+                    // In test mode (animations disabled), bypass AnimatedContent entirely.
+                    // AnimatedContent transitions can interfere with Compose test framework's
+                    // waitForIdle(), causing the new screen to be briefly composed then removed.
+                    @Composable
+                    fun ScreenContent(screen: com.spela.player.presentation.navigation.SpScreen) {
                         val isForward = !navState.isGoingBack && !navState.isTabSwitch
                         saveableStateHolder.SaveableStateProvider(screen.route) {
                         CompositionLocalProvider(LocalIsForwardNavigation provides isForward) {
@@ -1453,7 +1446,35 @@ fun SpelaApp(
                         } // when (screen)
                         } // CompositionLocalProvider (LocalIsForwardNavigation)
                         } // SaveableStateProvider
-                    } // AnimatedContent
+                    } // ScreenContent
+
+                    if (animationsEnabled) {
+                        AnimatedContent(
+                            targetState = navState.currentScreen,
+                            transitionSpec = {
+                                if (navState.isTabSwitch) {
+                                    EnterTransition.None togetherWith ExitTransition.None
+                                } else if (navState.isGoingBack) {
+                                    (slideInHorizontally { -it / 3 } + fadeIn())
+                                        .togetherWith(slideOutHorizontally { it / 3 } + fadeOut())
+                                } else {
+                                    (slideInHorizontally { it / 3 } + fadeIn())
+                                        .togetherWith(slideOutHorizontally { -it / 3 } + fadeOut())
+                                }
+                            },
+                        ) { screen ->
+                            ScreenContent(screen)
+                        }
+                    } else {
+                        // Test mode: render current screen directly without AnimatedContent.
+                        // key() on the route forces Compose to fully dispose and recreate
+                        // the screen composable when navigation changes. Without this,
+                        // the composable tree can get "stuck" and stop observing StateFlow
+                        // updates from ViewModels.
+                        key(navState.currentScreen.route) {
+                            ScreenContent(navState.currentScreen)
+                        }
+                    }
 
                     // Emulation surface + in-game overlay
                     if (navState.showInGameOverlay) {
@@ -1567,12 +1588,16 @@ fun SpelaApp(
                             )
                         }
 
-                        // Invisible semantic marker for E2E tests to detect that a game is running.
+                        // Semantic marker for E2E tests to detect that a game is running.
                         // Always on the primary display, regardless of dual-screen or controller type.
+                        // Uses 1dp size so it appears in the Android accessibility tree
+                        // (zero-size nodes are filtered out by UiAutomator).
                         if (emulationState.isRunning) {
-                            Box(modifier = Modifier.semantics {
-                                contentDescription = "Game running"
-                            })
+                            Box(modifier = Modifier
+                                .size(1.dp)
+                                .semantics {
+                                    contentDescription = "Game running"
+                                })
                         }
 
                         // DS/3DS touch overlay on primary display (when secondary display is not active)
