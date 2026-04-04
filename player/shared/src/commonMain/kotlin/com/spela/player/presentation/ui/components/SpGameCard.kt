@@ -121,7 +121,7 @@ fun SpGameCard(
                     text = title,
                     style = SpTypography.TitleSmall,
                     color = SpColor.OnCard,
-                    maxLines = 2,
+                    maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
 

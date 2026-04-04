@@ -32,6 +32,7 @@ import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.isShiftPressed
 import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.platform.LocalDensity
@@ -104,8 +105,6 @@ fun GamepadHandler(
 
                 // When the wrapper Box itself has focus (no child focused yet),
                 // any d-pad press should enter the content via moveFocus(Next).
-                // Directional moves don't work from a full-screen Box (nothing
-                // is spatially above/below/left/right of it).
                 if (isSelfFocused || !hasFocus) {
                     when (event.key) {
                         Key.DirectionUp, Key.DirectionDown,
@@ -118,27 +117,10 @@ fun GamepadHandler(
                     }
                 }
 
+                // Non-directional keys handled here (capture phase).
+                // Directional keys are handled in onKeyEvent (bubble phase)
+                // so children like SpCarousel can intercept them first.
                 when (event.key) {
-                    Key.DirectionUp -> {
-                        focusManager.moveFocus(FocusDirection.Up)
-                        onGamepadInput?.invoke()
-                        true
-                    }
-                    Key.DirectionDown -> {
-                        focusManager.moveFocus(FocusDirection.Down)
-                        onGamepadInput?.invoke()
-                        true
-                    }
-                    Key.DirectionLeft -> {
-                        focusManager.moveFocus(FocusDirection.Left)
-                        onGamepadInput?.invoke()
-                        true
-                    }
-                    Key.DirectionRight -> {
-                        focusManager.moveFocus(FocusDirection.Right)
-                        onGamepadInput?.invoke()
-                        true
-                    }
                     Key.Escape -> {
                         onBack?.invoke()
                         onBack != null
@@ -175,6 +157,36 @@ fun GamepadHandler(
                         } else {
                             false // Let default Tab focus navigation work
                         }
+                    }
+                    else -> false
+                }
+            }
+            .onKeyEvent { event ->
+                // Directional keys in bubble phase — children (SpCarousel)
+                // get first chance to handle via onPreviewKeyEvent.
+                if (!enabled) return@onKeyEvent false
+                if (event.type != KeyEventType.KeyDown) return@onKeyEvent false
+
+                when (event.key) {
+                    Key.DirectionUp -> {
+                        focusManager.moveFocus(FocusDirection.Up)
+                        onGamepadInput?.invoke()
+                        true
+                    }
+                    Key.DirectionDown -> {
+                        focusManager.moveFocus(FocusDirection.Down)
+                        onGamepadInput?.invoke()
+                        true
+                    }
+                    Key.DirectionLeft -> {
+                        focusManager.moveFocus(FocusDirection.Left)
+                        onGamepadInput?.invoke()
+                        true
+                    }
+                    Key.DirectionRight -> {
+                        focusManager.moveFocus(FocusDirection.Right)
+                        onGamepadInput?.invoke()
+                        true
                     }
                     else -> false
                 }

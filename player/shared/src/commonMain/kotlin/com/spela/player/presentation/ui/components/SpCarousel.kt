@@ -10,7 +10,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusDirection
-import androidx.compose.ui.focus.focusRestorer
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.key
@@ -21,17 +22,17 @@ import com.spela.player.presentation.ui.theme.SpSpacing
 import kotlinx.coroutines.launch
 
 /**
- * Horizontal carousel with built-in focus restoration and wrap-around
- * navigation for gamepad.
+ * Horizontal carousel with gamepad navigation:
  *
- * - Focus restoration: when focus leaves (d-pad down) and returns (d-pad up),
- *   the previously focused item is re-focused.
- * - Wrap-around: d-pad left on the first item wraps to the last item,
- *   and d-pad right on the last item wraps to the first.
- * - Centering: items use centerOnFocus (via gamepadFocusable on SpCard)
- *   to scroll toward the horizontal center when focused.
+ * - **Left/right**: navigates between items. Wraps around at edges.
+ * - **Up/down**: always exits the carousel to the previous/next section.
+ *   Never moves to a neighbor card in the same row — prevents the
+ *   confusing jump to a taller card.
  *
- * Drop-in replacement for LazyRow in any section that contains focusable items.
+ * Combined with [centerOnFocus] on each card, the focused item is
+ * always horizontally centered. When returning to a carousel via
+ * spatial focus (up/down), the visually closest item is naturally
+ * the one that was previously centered — no explicit focus memory needed.
  */
 @Composable
 fun SpCarousel(
@@ -48,12 +49,10 @@ fun SpCarousel(
         state = listState,
         modifier = modifier
             .focusGroup()
-            .focusRestorer()
             .onPreviewKeyEvent { event ->
                 if (event.type != KeyEventType.KeyDown) return@onPreviewKeyEvent false
                 when (event.key) {
                     Key.DirectionLeft -> {
-                        // If moveFocus fails, we're at the start — wrap to end
                         if (!focusManager.moveFocus(FocusDirection.Left)) {
                             val lastIndex = listState.layoutInfo.totalItemsCount - 1
                             if (lastIndex >= 0) {
@@ -66,7 +65,6 @@ fun SpCarousel(
                         } else true
                     }
                     Key.DirectionRight -> {
-                        // If moveFocus fails, we're at the end — wrap to start
                         if (!focusManager.moveFocus(FocusDirection.Right)) {
                             scope.launch {
                                 listState.scrollToItem(0)
