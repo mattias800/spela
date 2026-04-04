@@ -72,6 +72,31 @@ private val testConfigured = run {
 class KoinResetRule : TestWatcher() {
     override fun starting(description: Description?) {
         MainActivity.isTestMode = true
+        // Ensure cores are cached before each test (app reinstall wipes files)
+        preCacheCores()
+    }
+
+    private fun preCacheCores() {
+        try {
+            val context = InstrumentationRegistry.getInstrumentation().targetContext
+            val coresDir = java.io.File(context.filesDir, "cores")
+            coresDir.mkdirs()
+            val knownCores = listOf("nestopia", "snes9x", "mgba", "gambatte", "genesis_plus_gx",
+                "mupen64plus_next", "mednafen_psx_hw", "ppsspp", "desmume")
+            for (coreName in knownCores) {
+                val fileName = "${coreName}_libretro_android.so"
+                val src = java.io.File("/data/local/tmp/$fileName")
+                val dest = java.io.File(coresDir, fileName)
+                if (src.exists() && !dest.exists()) {
+                    src.inputStream().use { input ->
+                        dest.outputStream().use { output -> input.copyTo(output) }
+                    }
+                    android.util.Log.d("E2E_SETUP", "Pre-cached core: $fileName")
+                }
+            }
+        } catch (e: Exception) {
+            android.util.Log.e("E2E_SETUP", "Core pre-cache failed: ${e.message}")
+        }
     }
 }
 
@@ -1283,10 +1308,15 @@ fun ComposeRule.startGameAndWait() {
 
 fun ComposeRule.openOverlay() {
     pressBack()
-    // waitForText uses fetchSemanticsNodes polling which works during gameplay
-    // (no Espresso idle dependency). Removed assertIsDisplayed() wait which
-    // blocks on Espresso idle and causes AppNotIdleException during emulation.
-    waitForText("Exit Game", TIMEOUT_MEDIUM)
+    // During emulation, Compose/Espresso APIs block on idle (60fps Choreographer).
+    // Use UiAutomator-only polling to wait for the overlay to appear.
+    val device = uiDevice()
+    val deadline = System.currentTimeMillis() + TIMEOUT_MEDIUM
+    while (System.currentTimeMillis() < deadline) {
+        if (device.findObject(UiSelector().textContains("Exit Game")).exists()) return
+        Thread.sleep(200)
+    }
+    throw IllegalStateException("openOverlay: 'Exit Game' not found within ${TIMEOUT_MEDIUM}ms")
 }
 
 fun ComposeRule.exitGame(coreIdleTimeout: Long = 10_000) {
