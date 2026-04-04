@@ -179,7 +179,13 @@
     window.EJS_core = config.core;
     window.EJS_gameName = config.gameName;
     window.EJS_color = "#00a3e0"; // brand-cyan
-    window.EJS_startOnLoaded = true;
+    // Safari requires a user gesture in the same call stack to create an
+    // AudioContext. By the time the WASM core finishes loading, the gesture
+    // from "Play in browser" has expired. Disable auto-start on Safari so
+    // EmulatorJS shows its built-in play button — that click provides a
+    // fresh gesture for AudioContext. Other browsers auto-start as before.
+    var isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+    window.EJS_startOnLoaded = !isSafari;
     window.EJS_backgroundBlur = true;
     window.EJS_backgroundColor = "#16191d";
 
