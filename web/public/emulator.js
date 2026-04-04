@@ -297,6 +297,45 @@
         };
       }
     }
+    // Add gamepad button mappings (value2).
+    // For 2-button systems, rotate face buttons so left+bottom map to B+A.
+    // EmulatorJS gamepad buttons: BUTTON_1=bottom, BUTTON_2=right, BUTTON_3=left, BUTTON_4=top
+    var twoButtonSystems = ["nes", "gb", "segaMS", "segaGG"];
+    var isTwoButton = twoButtonSystems.indexOf(window.EJS_core) !== -1;
+
+    // Default gamepad mapping (matches EmulatorJS built-in)
+    var gamepadMap = {
+      0: "BUTTON_2",  // B → right
+      1: "BUTTON_4",  // Y → top
+      2: "SELECT",
+      3: "START",
+      4: "DPAD_UP",
+      5: "DPAD_DOWN",
+      6: "DPAD_LEFT",
+      7: "DPAD_RIGHT",
+      8: "BUTTON_1",  // A → bottom
+      9: "BUTTON_3",  // X → left
+      10: "LEFT_TOP_SHOULDER",
+      11: "RIGHT_TOP_SHOULDER",
+      12: "LEFT_BOTTOM_SHOULDER",
+      13: "RIGHT_BOTTOM_SHOULDER",
+    };
+
+    if (isTwoButton) {
+      // Rotate: B→left, A→bottom, Y→top (unused), X→right (unused)
+      gamepadMap[0] = "BUTTON_3";  // B → left
+      gamepadMap[8] = "BUTTON_1";  // A → bottom (unchanged)
+      gamepadMap[1] = "BUTTON_4";  // Y → top (unchanged, unused by core)
+      gamepadMap[9] = "BUTTON_2";  // X → right (unused by core)
+    }
+
+    // Apply gamepad mapping to controls
+    for (var btnId in gamepadMap) {
+      if (controls[parseInt(btnId)]) {
+        controls[parseInt(btnId)].value2 = gamepadMap[btnId];
+      }
+    }
+
     window.EJS_defaultControls = {
       0: controls,
       1: controls,

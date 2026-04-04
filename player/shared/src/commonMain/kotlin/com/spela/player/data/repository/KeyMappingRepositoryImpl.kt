@@ -7,6 +7,7 @@ import com.spela.player.domain.model.KeyMappingProfile
 import com.spela.player.domain.model.detectDevicePreset
 import com.spela.player.domain.model.getPlatformPresets
 import com.spela.player.domain.repository.KeyMappingRepository
+import com.spela.player.presentation.viewmodel.LibretroButtons
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
 
@@ -64,8 +65,46 @@ class KeyMappingRepositoryImpl(
             if (globalMapping != null) return globalMapping.bindings
         }
 
-        // Fall back to hardcoded platform defaults
-        return platformDefaultMapping
+        // Fall back to hardcoded platform defaults, with per-console adjustments
+        return getDefaultsForConsole(consoleId)
+    }
+
+    /**
+     * Returns the platform default mapping, adjusted for the console type.
+     *
+     * For 2-button systems (NES, Game Boy, Game Gear, Master System), the face
+     * buttons are shifted so the bottom-left pair (Y + B on Nintendo controllers,
+     * X + A on Xbox controllers) maps to the system's two action buttons. This
+     * feels more natural than using the bottom-right pair.
+     */
+    private fun getDefaultsForConsole(consoleId: String): Map<Int, Int> {
+        if (consoleId.lowercase() !in twoButtonConsoles) return platformDefaultMapping
+
+        // Rotate face buttons so the left+bottom pair maps to B+A:
+        //   B → left button (was Y's key)
+        //   A → bottom button (was B's key)
+        //   Y → top button (was X's key, unused by core)
+        //   X → right button (was A's key, unused by core)
+        val bKey = platformDefaultMapping[LibretroButtons.B]    // bottom
+        val yKey = platformDefaultMapping[LibretroButtons.Y]    // left
+        val aKey = platformDefaultMapping[LibretroButtons.A]    // right
+        val xKey = platformDefaultMapping[LibretroButtons.X]    // top
+        if (bKey == null || yKey == null || aKey == null || xKey == null) {
+            return platformDefaultMapping
+        }
+
+        return buildMap {
+            putAll(platformDefaultMapping)
+            put(LibretroButtons.B, yKey)   // B → left
+            put(LibretroButtons.A, bKey)   // A → bottom
+            put(LibretroButtons.Y, xKey)   // Y → top (unused)
+            put(LibretroButtons.X, aKey)   // X → right (unused)
+        }
+    }
+
+    companion object {
+        /** Console IDs for systems with only 2 action buttons (B + A). */
+        private val twoButtonConsoles = setOf("nes", "gb", "gbc", "gg", "sms")
     }
 
     override fun getDefaultMapping(): Map<Int, Int> = platformDefaultMapping
