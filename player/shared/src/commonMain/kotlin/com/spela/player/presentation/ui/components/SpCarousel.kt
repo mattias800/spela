@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
@@ -21,24 +22,18 @@ import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInParent
 import com.spela.player.presentation.ui.theme.SpSpacing
 
 /**
- * Horizontal carousel with explicit per-item focus management.
+ * Horizontal carousel with explicit per-item focus management and
+ * horizontal centering.
  *
- * Each item gets a [FocusRequester] via the [content] lambda's index parameter.
- * Left/right navigation uses `requestFocus()` on the target item — no spatial
- * focus guessing. Stops at first and last item.
- *
- * Usage:
- * ```
- * SpCarousel(itemCount = games.size) { index, focusRequester ->
- *     GameCard(modifier = Modifier.focusRequester(focusRequester))
- * }
- * ```
- *
- * @param itemCount Number of items in the carousel.
- * @param content Lambda receiving (index, FocusRequester) for each item.
+ * - Left/right uses FocusRequester per item — no spatial guessing.
+ * - Stops at first and last item.
+ * - Focused item is scrolled to the horizontal center of the carousel.
+ * - Focus index syncs automatically when entering from any direction.
  */
 @Composable
 fun SpCarousel(
@@ -49,6 +44,25 @@ fun SpCarousel(
     val scrollState = rememberScrollState()
     val requesters = remember(itemCount) { List(itemCount) { FocusRequester() } }
     var focusedIndex by remember { mutableIntStateOf(0) }
+
+    // Track each item's position and width within the Row
+    val itemPositions = remember(itemCount) { FloatArray(itemCount) }
+    val itemWidths = remember(itemCount) { FloatArray(itemCount) }
+
+    // Center the focused item horizontally when focusedIndex changes
+    LaunchedEffect(focusedIndex) {
+        val itemX = itemPositions[focusedIndex]
+        val itemWidth = itemWidths[focusedIndex]
+        if (itemWidth <= 0f) return@LaunchedEffect
+
+        val viewportWidth = scrollState.viewportSize.toFloat()
+        val itemCenter = itemX + itemWidth / 2f
+        val targetScroll = (itemCenter - viewportWidth / 2f)
+            .toInt()
+            .coerceIn(0, scrollState.maxValue)
+
+        scrollState.animateScrollTo(targetScroll)
+    }
 
     Row(
         modifier = modifier
@@ -81,11 +95,16 @@ fun SpCarousel(
     ) {
         for (i in 0 until itemCount) {
             Box(
-                modifier = Modifier.onFocusChanged { state ->
-                    if (state.hasFocus) {
-                        focusedIndex = i
+                modifier = Modifier
+                    .onGloballyPositioned { coordinates ->
+                        itemPositions[i] = coordinates.positionInParent().x
+                        itemWidths[i] = coordinates.size.width.toFloat()
                     }
-                }
+                    .onFocusChanged { state ->
+                        if (state.hasFocus) {
+                            focusedIndex = i
+                        }
+                    }
             ) {
                 content(i, requesters[i])
             }
