@@ -4,8 +4,9 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.snapshotFlow
+import androidx.compose.runtime.mutableLongStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
 import androidx.compose.ui.layout.onGloballyPositioned
@@ -22,6 +23,9 @@ import com.spela.player.presentation.ui.components.LocalScrollState
  *
  * Uses the [LocalScrollState] provided by [SpScrollableContent] to
  * calculate and animate the scroll position directly.
+ *
+ * During rapid focus changes (key repeat, <200ms between changes),
+ * scrolls instantly instead of animating for responsive feel.
  */
 fun Modifier.centerOnFocus(
     interactionSource: MutableInteractionSource,
@@ -30,6 +34,7 @@ fun Modifier.centerOnFocus(
     val isFocused by interactionSource.collectIsFocusedAsState()
     var positionInRoot = 0f
     var elementHeight = 0f
+    var lastFocusTime by remember { mutableLongStateOf(0L) }
 
     if (scrollState == null) return@composed this
 
@@ -43,7 +48,15 @@ fun Modifier.centerOnFocus(
                 .toInt()
                 .coerceIn(0, scrollState.maxValue)
 
-            scrollState.animateScrollTo(targetScroll)
+            val now = System.currentTimeMillis()
+            val isRapid = now - lastFocusTime < 100
+            lastFocusTime = now
+
+            if (isRapid) {
+                scrollState.scrollTo(targetScroll)
+            } else {
+                scrollState.animateScrollTo(targetScroll)
+            }
         }
     }
 

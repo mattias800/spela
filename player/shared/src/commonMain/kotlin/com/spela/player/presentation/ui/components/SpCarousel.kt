@@ -11,6 +11,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -49,6 +50,9 @@ fun SpCarousel(
     val itemPositions = remember(itemCount) { FloatArray(itemCount) }
     val itemWidths = remember(itemCount) { FloatArray(itemCount) }
 
+    // Track rapid key presses for instant vs animated scroll
+    var lastFocusChangeTime by remember { mutableLongStateOf(0L) }
+
     // Center the focused item horizontally when focusedIndex changes
     LaunchedEffect(focusedIndex) {
         val itemX = itemPositions[focusedIndex]
@@ -61,7 +65,15 @@ fun SpCarousel(
             .toInt()
             .coerceIn(0, scrollState.maxValue)
 
-        scrollState.animateScrollTo(targetScroll)
+        val now = System.currentTimeMillis()
+        val isRapid = now - lastFocusChangeTime < 100
+        lastFocusChangeTime = now
+
+        if (isRapid) {
+            scrollState.scrollTo(targetScroll)
+        } else {
+            scrollState.animateScrollTo(targetScroll)
+        }
     }
 
     Row(
