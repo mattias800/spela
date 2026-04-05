@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -28,6 +27,9 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.spela.player.domain.model.Theme
+import androidx.compose.foundation.layout.Box
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import com.spela.player.presentation.ui.components.SpCard
 import com.spela.player.presentation.ui.components.SpCarousel
 import com.spela.player.presentation.ui.theme.SpColor
@@ -55,10 +57,12 @@ fun ThemeGrid(
     modifier: Modifier = Modifier,
 ) {
     SpCarousel(
+        itemCount = themes.size,
         modifier = modifier.testTag("theme_grid"),
-    ) {
-        items(themes, key = { it.id }) { theme ->
-            val gradientIndex = themes.indexOf(theme) % themeGradients.size
+    ) { index, focusRequester ->
+        val theme = themes[index]
+        val gradientIndex = index % themeGradients.size
+        Box(modifier = Modifier.focusRequester(focusRequester)) {
             ThemeCard(
                 theme = theme,
                 gradientColors = themeGradients[gradientIndex],

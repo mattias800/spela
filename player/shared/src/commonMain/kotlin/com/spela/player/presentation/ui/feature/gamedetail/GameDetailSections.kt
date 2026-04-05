@@ -4,7 +4,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.ui.platform.testTag
@@ -14,7 +13,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -36,6 +34,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import com.spela.player.domain.model.SharedSaveState
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import com.spela.player.presentation.ui.components.SpCarousel
 import com.spela.player.presentation.ui.components.ScreenshotLightbox
 import com.spela.player.presentation.ui.components.social.formatRelativeTime
@@ -60,21 +60,19 @@ fun ScreenshotsSection(screenshots: List<String>) {
         icon = Icons.Filled.CameraAlt,
         edgeToEdgeContent = true,
     ) {
-    SpCarousel(
-        contentPadding = PaddingValues(horizontal = SpSpacing.Default),
-    ) {
-        items(screenshots.size, key = { "${it}_${screenshots[it]}" }) { index ->
-            SpInnerCard(
+    SpCarousel(itemCount = screenshots.size) { index, focusRequester ->
+        SpInnerCard(
+            modifier = Modifier
+                .focusRequester(focusRequester)
+                .height(180.dp),
+            onClick = { lightboxIndex = index },
+        ) {
+            AsyncImage(
+                model = screenshots[index],
+                contentDescription = "Screenshot ${index + 1}",
                 modifier = Modifier.height(180.dp),
-                onClick = { lightboxIndex = index },
-            ) {
-                AsyncImage(
-                    model = screenshots[index],
-                    contentDescription = "Screenshot ${index + 1}",
-                    modifier = Modifier.height(180.dp),
-                    contentScale = ContentScale.FillHeight,
-                )
-            }
+                contentScale = ContentScale.FillHeight,
+            )
         }
     }
     } // SpTitledSection

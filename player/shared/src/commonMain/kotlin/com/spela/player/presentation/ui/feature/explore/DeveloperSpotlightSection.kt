@@ -14,7 +14,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Star
@@ -35,6 +34,9 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.spela.player.domain.model.DeveloperSpotlight
 import com.spela.player.domain.model.Game
+import androidx.compose.foundation.layout.Box
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import com.spela.player.presentation.ui.components.SpCard
 import com.spela.player.presentation.ui.components.SpCarousel
 import com.spela.player.presentation.ui.components.SpCarouselGameCard
@@ -153,12 +155,13 @@ fun DeveloperSpotlightSection(
         // Top games row
         if (spotlight.topGames.isNotEmpty()) {
             SpCarousel(
+                itemCount = spotlight.topGames.size,
                 modifier = Modifier.testTag("developer_spotlight_games"),
-            ) {
-                items(spotlight.topGames, key = { it.id }) { game ->
+            ) { index, focusRequester ->
+                Box(modifier = Modifier.focusRequester(focusRequester)) {
                     SpotlightGameCard(
-                        game = game,
-                        onClick = { onGameSelected(game.id) },
+                        game = spotlight.topGames[index],
+                        onClick = { onGameSelected(spotlight.topGames[index].id) },
                     )
                 }
             }

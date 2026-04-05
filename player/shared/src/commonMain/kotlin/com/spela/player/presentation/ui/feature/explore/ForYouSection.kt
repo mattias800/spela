@@ -11,7 +11,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Star
@@ -30,6 +29,9 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.spela.player.domain.model.ForYouRow
 import com.spela.player.domain.model.Game
+import androidx.compose.foundation.layout.Box
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import com.spela.player.presentation.ui.components.SpCard
 import com.spela.player.presentation.ui.components.SpCarousel
 import com.spela.player.presentation.ui.components.SpCarouselGameCard
@@ -103,11 +105,11 @@ private fun ForYouRowSection(
         Spacer(Modifier.height(SpSpacing.Medium))
 
         // Horizontal game shelf
-        SpCarousel {
-            items(row.games, key = { it.id }) { game ->
+        SpCarousel(itemCount = row.games.size) { index, focusRequester ->
+            Box(modifier = Modifier.focusRequester(focusRequester)) {
                 ForYouGameCard(
-                    game = game,
-                    onClick = { onGameSelected(game.id) },
+                    game = row.games[index],
+                    onClick = { onGameSelected(row.games[index].id) },
                 )
             }
         }

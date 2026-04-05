@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -28,6 +27,9 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.spela.player.domain.model.MoodDefinition
+import androidx.compose.foundation.layout.Box
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import com.spela.player.presentation.ui.components.SpCarousel
 import com.spela.player.presentation.ui.components.SpMoodTile
 import com.spela.player.presentation.ui.components.SpShimmer
@@ -42,9 +44,11 @@ fun MoodPicker(
     modifier: Modifier = Modifier,
 ) {
     SpCarousel(
+        itemCount = moods.size,
         modifier = modifier.testTag("mood_picker"),
-    ) {
-        itemsIndexed(moods, key = { _, item -> item.id }) { _, item ->
+    ) { index, focusRequester ->
+        val item = moods[index]
+        Box(modifier = Modifier.focusRequester(focusRequester)) {
             MoodCard(
                 mood = item,
                 onClick = { onMoodSelected(item.id, item.name) },

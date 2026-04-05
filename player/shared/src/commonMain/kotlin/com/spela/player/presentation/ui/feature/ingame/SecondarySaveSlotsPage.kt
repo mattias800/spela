@@ -10,13 +10,11 @@ import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -38,6 +36,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import coil3.compose.SubcomposeAsyncImage
 import com.spela.player.presentation.state.SaveSlotInfo
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import com.spela.player.presentation.ui.components.SpCarousel
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
@@ -92,13 +92,12 @@ fun SecondarySaveSlotsPage(
         )
 
         // Horizontal scrollable row of slot cards
-        SpCarousel(
-            contentPadding = PaddingValues(horizontal = SpSpacing.Medium),
-            horizontalArrangement = Arrangement.spacedBy(SpSpacing.Small),
-        ) {
-            items(SLOT_RANGE.toList()) { slot ->
-                val isActive = slot == activeSlot
-                val slotInfo = saveSlots[slot]
+        val slots = SLOT_RANGE.toList()
+        SpCarousel(itemCount = slots.size) { index, focusRequester ->
+            val slot = slots[index]
+            val isActive = slot == activeSlot
+            val slotInfo = saveSlots[slot]
+            Box(modifier = Modifier.focusRequester(focusRequester)) {
                 SaveSlotCard(
                     slot = slot,
                     isActive = isActive,

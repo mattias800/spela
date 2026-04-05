@@ -6,7 +6,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -16,6 +15,9 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.spela.player.domain.model.ConsoleHighlight
+import androidx.compose.foundation.layout.Box
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import com.spela.player.presentation.ui.components.SpCarousel
 import com.spela.player.presentation.ui.components.SpConsoleTile
 import com.spela.player.presentation.ui.components.SpShimmer
@@ -31,12 +33,13 @@ fun ConsoleQuickJumpSection(
     modifier: Modifier = Modifier,
 ) {
     SpCarousel(
+        itemCount = consoles.size,
         modifier = modifier.testTag("console_quick_jump"),
-    ) {
-        items(consoles, key = { it.id }) { console ->
+    ) { index, focusRequester ->
+        Box(modifier = Modifier.focusRequester(focusRequester)) {
             ConsoleQuickJumpCard(
-                console = console,
-                onClick = { onConsoleSelected(console.id) },
+                console = consoles[index],
+                onClick = { onConsoleSelected(consoles[index].id) },
             )
         }
     }

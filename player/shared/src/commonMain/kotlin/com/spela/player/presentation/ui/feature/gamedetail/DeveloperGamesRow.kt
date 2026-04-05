@@ -1,15 +1,16 @@
 package com.spela.player.presentation.ui.feature.gamedetail
 
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.layout.Box
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Business
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import com.spela.player.domain.model.DeveloperGame
 import com.spela.player.presentation.ui.components.SpCarousel
 import com.spela.player.presentation.ui.components.SpGameCard
 import com.spela.player.presentation.ui.components.SpTitledSection
-import com.spela.player.presentation.ui.theme.SpSpacing
 
 @Composable
 internal fun DeveloperGamesSection(
@@ -26,13 +27,11 @@ internal fun DeveloperGamesSection(
         icon = Icons.Outlined.Business,
         edgeToEdgeContent = true,
     ) {
-        SpCarousel(
-            contentPadding = PaddingValues(horizontal = SpSpacing.XLarge),
-        ) {
-            items(games, key = { it.id }) { game ->
+        SpCarousel(itemCount = games.size) { index, focusRequester ->
+            Box(modifier = Modifier.focusRequester(focusRequester)) {
                 DeveloperGameCard(
-                    game = game,
-                    onClick = { onGameSelected(game.id) },
+                    game = games[index],
+                    onClick = { onGameSelected(games[index].id) },
                 )
             }
         }

@@ -3,12 +3,13 @@ package com.spela.player.presentation.ui.feature.explore
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import com.spela.player.domain.model.Keyword
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import com.spela.player.presentation.ui.components.SpCarousel
 import com.spela.player.presentation.ui.components.SpChip
 import com.spela.player.presentation.ui.components.SpShimmer
@@ -21,16 +22,17 @@ fun KeywordChips(
     modifier: Modifier = Modifier,
 ) {
     SpCarousel(
+        itemCount = keywords.size,
         modifier = modifier.testTag("keyword_chips"),
-        horizontalArrangement = Arrangement.spacedBy(SpSpacing.Small),
-    ) {
-        items(keywords, key = { it.id }) { keyword ->
-            SpChip(
-                text = "${keyword.name} (${keyword.gameCount})",
-                onClick = { onKeywordSelected(keyword.id, keyword.name) },
-                modifier = Modifier.testTag("keyword_chip_${keyword.id}"),
-            )
-        }
+    ) { index, focusRequester ->
+        val keyword = keywords[index]
+        SpChip(
+            text = "${keyword.name} (${keyword.gameCount})",
+            onClick = { onKeywordSelected(keyword.id, keyword.name) },
+            modifier = Modifier
+                .focusRequester(focusRequester)
+                .testTag("keyword_chip_${keyword.id}"),
+        )
     }
 }
 
