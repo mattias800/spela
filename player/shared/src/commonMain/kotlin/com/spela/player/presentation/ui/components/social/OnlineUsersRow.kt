@@ -2,14 +2,12 @@ package com.spela.player.presentation.ui.components.social
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -24,6 +22,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.spela.player.domain.model.OnlineUser
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import com.spela.player.presentation.ui.components.SpAvatar
 import com.spela.player.presentation.ui.components.SpCarousel
 import com.spela.player.presentation.ui.theme.SpColor
@@ -37,12 +37,14 @@ fun OnlineUsersRow(
     onUserSelected: (String) -> Unit = {},
 ) {
     SpCarousel(
+        itemCount = users.size,
         modifier = modifier,
-        horizontalArrangement = Arrangement.spacedBy(SpSpacing.Default),
-    ) {
-        items(users, key = { it.id }) { user ->
-            OnlineUserItem(user = user, onUserSelected = onUserSelected)
-        }
+    ) { index, focusRequester ->
+        OnlineUserItem(
+            user = users[index],
+            onUserSelected = onUserSelected,
+            modifier = Modifier.focusRequester(focusRequester),
+        )
     }
 }
 

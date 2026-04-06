@@ -69,8 +69,8 @@ const mockDeveloperDetail: DeveloperDetailResponse = {
     makeGame({ id: "5", title: "Breath of Fire", consoleName: "SNES", genre: "RPG", developer: "Capcom" }),
   ],
   topGames: [
-    makeGame({ id: "1", title: "Mega Man X", consoleName: "SNES", rating: 95 }),
-    makeGame({ id: "4", title: "Street Fighter II", consoleName: "SNES", rating: 92 }),
+    makeGame({ id: "1", title: "Mega Man X", consoleName: "SNES", igdbCriticsRating: 95 }),
+    makeGame({ id: "4", title: "Street Fighter II", consoleName: "SNES", igdbCriticsRating: 92 }),
   ],
   genreBreakdown: [
     { name: "Platformer", gameCount: 2 },

@@ -65,9 +65,9 @@ fun GameDto.toDomain(): Game = Game(
     coreOverride = coreOverride,
     scrapeAttempts = scrapeAttempts,
     players = players,
-    rating = rating,
-    averageRating = averageRating,
-    ratingCount = ratingCount,
+    igdbCriticsRating = igdbCriticsRating,
+    communityRating = averageRating,
+    communityRatingCount = ratingCount,
     userRating = userRating,
     isFavorite = isFavorite,
     isInPlayLater = isInPlayLater,
@@ -927,7 +927,7 @@ fun CommunityTopGameDto.toDomain(): CommunityTopGame = CommunityTopGame(
 fun CultClassicGameDto.toDomain(): CultClassicGame = CultClassicGame(
     game = game.toDomain(),
     communityRating = communityRating,
-    igdbRating = igdbRating,
+    igdbCriticsRating = igdbCriticsRating,
     ratingCount = ratingCount,
 )
 

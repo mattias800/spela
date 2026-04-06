@@ -8,12 +8,13 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -36,33 +37,34 @@ fun OnThisDaySection(
     modifier: Modifier = Modifier,
 ) {
     SpCarousel(
+        itemCount = games.size,
         modifier = modifier.testTag("on_this_day_row"),
-    ) {
-        items(games, key = { it.id }) { game ->
-            Column(
-                modifier = Modifier
-                    .width(CardWidth)
-                    .semantics {
-                        val year = game.releaseDate?.take(4) ?: ""
-                        contentDescription = "${game.title}, released $year"
-                    },
-            ) {
-                ExploreGameCard(
-                    game = game,
-                    onClick = { onGameSelected(game.id) },
+    ) { index, focusRequester ->
+        val game = games[index]
+        Column(
+            modifier = Modifier
+                .focusRequester(focusRequester)
+                .width(CardWidth)
+                .semantics {
+                    val year = game.releaseDate?.take(4) ?: ""
+                    contentDescription = "${game.title}, released $year"
+                },
+        ) {
+            ExploreGameCard(
+                game = game,
+                onClick = { onGameSelected(game.id) },
+            )
+            Spacer(Modifier.height(4.dp))
+            val year = game.releaseDate?.take(4) ?: ""
+            if (year.isNotEmpty()) {
+                Text(
+                    text = "Released $year",
+                    style = SpTypography.LabelSmall,
+                    color = SpColor.OnBackgroundTertiary,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.testTag("on_this_day_year_${game.id}"),
                 )
-                Spacer(Modifier.height(4.dp))
-                val year = game.releaseDate?.take(4) ?: ""
-                if (year.isNotEmpty()) {
-                    Text(
-                        text = "Released $year",
-                        style = SpTypography.LabelSmall,
-                        color = SpColor.OnBackgroundTertiary,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.testTag("on_this_day_year_${game.id}"),
-                    )
-                }
             }
         }
     }
@@ -75,30 +77,31 @@ fun AnniversariesSection(
     modifier: Modifier = Modifier,
 ) {
     SpCarousel(
+        itemCount = anniversaries.size,
         modifier = modifier.testTag("anniversaries_row"),
-    ) {
-        items(anniversaries, key = { "${it.game.id}_${it.yearsAgo}" }) { item ->
-            Column(
-                modifier = Modifier
-                    .width(CardWidth)
-                    .semantics {
-                        contentDescription = "${item.game.title}, ${item.yearsAgo} year${if (item.yearsAgo != 1) "s" else ""} ago"
-                    },
-            ) {
-                ExploreGameCard(
-                    game = item.game,
-                    onClick = { onGameSelected(item.game.id) },
-                )
-                Spacer(Modifier.height(4.dp))
-                Text(
-                    text = "${item.yearsAgo} year${if (item.yearsAgo != 1) "s" else ""} ago",
-                    style = SpTypography.LabelSmall,
-                    color = SpColor.OnBackgroundTertiary,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.testTag("anniversary_years_${item.game.id}"),
-                )
-            }
+    ) { index, focusRequester ->
+        val item = anniversaries[index]
+        Column(
+            modifier = Modifier
+                .focusRequester(focusRequester)
+                .width(CardWidth)
+                .semantics {
+                    contentDescription = "${item.game.title}, ${item.yearsAgo} year${if (item.yearsAgo != 1) "s" else ""} ago"
+                },
+        ) {
+            ExploreGameCard(
+                game = item.game,
+                onClick = { onGameSelected(item.game.id) },
+            )
+            Spacer(Modifier.height(4.dp))
+            Text(
+                text = "${item.yearsAgo} year${if (item.yearsAgo != 1) "s" else ""} ago",
+                style = SpTypography.LabelSmall,
+                color = SpColor.OnBackgroundTertiary,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.testTag("anniversary_years_${item.game.id}"),
+            )
         }
     }
 }

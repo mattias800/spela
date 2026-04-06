@@ -82,7 +82,7 @@ class GameListViewModel(
                     releaseDate = scraped.releaseDate,
                     genre = scraped.genre,
                     players = scraped.players,
-                    rating = scraped.rating,
+                    igdbCriticsRating = scraped.igdbCriticsRating,
                     scrapeAttempts = scraped.scrapeAttempts,
                 )
             } else {

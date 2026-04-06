@@ -6,7 +6,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -44,7 +43,7 @@ private const val CAROUSEL_DEFAULT_ASPECT_RATIO = 0.75f
  *
  * Layer 2 in the component hierarchy (Design → Content → Role).
  * Composes [SpCard] + [SpCoverArt] into a fixed layout:
- * cover art → title → subtitle → rating → variant count → favorite/play later indicators.
+ * cover art (with variant count badge) → title → subtitle → rating → favorite/play later indicators.
  *
  * Does NOT accept a modifier parameter — the layout is strict.
  * Sizing modes (mutually exclusive):
@@ -107,9 +106,18 @@ fun SpGameCard(
                         resolvedAspectRatio = ratio
                     } else null,
                 )
-                if (coverBadge != null) {
-                    Box(modifier = Modifier.align(Alignment.BottomStart).padding(SpSpacing.XSmall)) {
-                        coverBadge()
+                val hasAnyBadge = coverBadge != null || variantCount > 1
+                if (hasAnyBadge) {
+                    Column(
+                        modifier = Modifier.align(Alignment.BottomStart).padding(SpSpacing.XSmall),
+                        verticalArrangement = Arrangement.spacedBy(SpSpacing.XXSmall),
+                    ) {
+                        if (coverBadge != null) {
+                            coverBadge()
+                        }
+                        if (variantCount > 1) {
+                            SpCoverBadge(text = "$variantCount versions")
+                        }
                     }
                 }
             }
@@ -121,7 +129,7 @@ fun SpGameCard(
                     text = title,
                     style = SpTypography.TitleSmall,
                     color = SpColor.OnCard,
-                    maxLines = 2,
+                    maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
 
@@ -137,34 +145,22 @@ fun SpGameCard(
                     )
                 }
 
-                // Rating (third line)
-                if (rating > 0) {
-                    Spacer(Modifier.height(SpSpacing.XSmall))
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(SpSpacing.XXSmall),
-                    ) {
-                        Icon(
-                            imageVector = Icons.Filled.Star,
-                            contentDescription = null,
-                            tint = SpColor.Rating,
-                            modifier = Modifier.size(SpSpacing.IconXSmall),
-                        )
-                        Text(
-                            text = formatRating(rating),
-                            style = SpTypography.BodySmall,
-                            color = SpColor.OnBackgroundSecondary,
-                        )
-                    }
-                }
-
-                // Variant count
-                if (variantCount > 1) {
-                    Spacer(Modifier.height(SpSpacing.XSmall))
+                // Rating (third line — always shown for uniform card height)
+                Spacer(Modifier.height(SpSpacing.XSmall))
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(SpSpacing.XXSmall),
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.Star,
+                        contentDescription = null,
+                        tint = if (rating > 0) SpColor.Rating else SpColor.OnBackgroundTertiary,
+                        modifier = Modifier.size(SpSpacing.IconXSmall),
+                    )
                     Text(
-                        text = "$variantCount versions",
+                        text = if (rating > 0) formatRating(rating) else "N/A",
                         style = SpTypography.BodySmall,
-                        color = SpColor.OnBackgroundTertiary,
+                        color = if (rating > 0) SpColor.OnBackgroundSecondary else SpColor.OnBackgroundTertiary,
                     )
                 }
 

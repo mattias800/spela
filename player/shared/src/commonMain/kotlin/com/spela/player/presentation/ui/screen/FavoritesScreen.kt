@@ -5,7 +5,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import com.spela.player.presentation.ui.components.SpLazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
@@ -57,7 +57,7 @@ fun FavoritesScreen(
                         SpEmptyStates.NoFavorites()
                     }
                 } else {
-                    LazyVerticalGrid(
+                    SpLazyVerticalGrid(
                         columns = GridCells.Adaptive(SpSpacing.GridCellMinWidth),
                         modifier = Modifier.fillMaxSize(),
                         contentPadding = PaddingValues(

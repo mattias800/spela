@@ -110,7 +110,7 @@ func (s *Scraper) applyPouetMetadata(game *db.Game, prod *pouet.Prod, console db
 
 	// Rating
 	if rating := pouet.Rating(prod); rating > 0 {
-		game.Rating = rating
+		game.IGDBCriticsRating = rating
 	}
 
 	// Download screenshot

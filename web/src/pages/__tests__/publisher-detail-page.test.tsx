@@ -69,8 +69,8 @@ const mockPublisherDetail: PublisherDetailResponse = {
     makeGame({ id: "5", title: "Kirby's Adventure", consoleName: "NES", genre: "Platformer", publisher: "Nintendo" }),
   ],
   topGames: [
-    makeGame({ id: "1", title: "Super Mario World", consoleName: "SNES", rating: 96 }),
-    makeGame({ id: "2", title: "Zelda: ALTTP", consoleName: "SNES", rating: 95 }),
+    makeGame({ id: "1", title: "Super Mario World", consoleName: "SNES", igdbCriticsRating: 96 }),
+    makeGame({ id: "2", title: "Zelda: ALTTP", consoleName: "SNES", igdbCriticsRating: 95 }),
   ],
   genreBreakdown: [
     { name: "Platformer", gameCount: 3 },

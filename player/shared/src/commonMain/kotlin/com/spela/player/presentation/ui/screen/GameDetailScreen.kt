@@ -219,8 +219,8 @@ fun GameDetailScreen(
                     ) {
                         StarRatingRow(
                             currentRating = state.myRating,
-                            averageRating = state.ratingSummary?.averageRating ?: game.averageRating,
-                            ratingCount = state.ratingSummary?.totalRatings ?: game.ratingCount,
+                            averageRating = state.ratingSummary?.averageRating ?: game.communityRating,
+                            ratingCount = state.ratingSummary?.totalRatings ?: game.communityRatingCount,
                             onRate = { rating ->
                                 viewModel.onIntent(GameDetailIntent.RateGame(rating))
                             },
@@ -323,8 +323,8 @@ fun GameDetailScreen(
                     ) {
                         StarRatingRow(
                             currentRating = state.myRating,
-                            averageRating = state.ratingSummary?.averageRating ?: game.averageRating,
-                            ratingCount = state.ratingSummary?.totalRatings ?: game.ratingCount,
+                            averageRating = state.ratingSummary?.averageRating ?: game.communityRating,
+                            ratingCount = state.ratingSummary?.totalRatings ?: game.communityRatingCount,
                             onRate = { rating ->
                                 viewModel.onIntent(GameDetailIntent.RateGame(rating))
                             },
@@ -924,13 +924,13 @@ private fun GameHeroContent(
                 verificationStatus = game.verificationStatus,
                 verificationTag = game.verificationTag,
             )
-            if (game.rating > 0) {
-                IgdbRatingStars(rating = game.rating)
+            if (game.igdbCriticsRating > 0) {
+                IgdbRatingStars(rating = game.igdbCriticsRating)
             }
-            if (game.averageRating > 0) {
+            if (game.communityRating > 0) {
                 CommunityRatingBadge(
-                    averageRating = game.averageRating,
-                    ratingCount = game.ratingCount,
+                    averageRating = game.communityRating,
+                    ratingCount = game.communityRatingCount,
                 )
             }
             if (state.achievements.isNotEmpty()) {

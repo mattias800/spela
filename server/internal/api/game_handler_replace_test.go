@@ -276,7 +276,7 @@ func TestReplaceROM_PreservesMetadata(t *testing.T) {
 	game.Developer = "Test Dev"
 	game.Publisher = "Test Pub"
 	game.Genre = "Action"
-	game.Rating = 85.5
+	game.IGDBCriticsRating = 85.5
 	game.CoverURL = "https://example.com/cover.jpg"
 	require.NoError(t, env.db.Save(&game).Error)
 
@@ -292,7 +292,7 @@ func TestReplaceROM_PreservesMetadata(t *testing.T) {
 	assert.Equal(t, "Test Dev", updatedGame.Developer)
 	assert.Equal(t, "Test Pub", updatedGame.Publisher)
 	assert.Equal(t, "Action", updatedGame.Genre)
-	assert.Equal(t, 85.5, updatedGame.Rating)
+	assert.Equal(t, 85.5, updatedGame.IGDBCriticsRating)
 	assert.Equal(t, "https://example.com/cover.jpg", updatedGame.CoverURL)
 
 	// But CRC and file size should be updated

@@ -23,7 +23,7 @@ type FeaturedGameResponse struct {
 	ConsoleName         string  `json:"consoleName"`
 	ConsoleAbbreviation string  `json:"consoleAbbreviation"`
 	ConsoleColor        string  `json:"consoleColor"`
-	Rating              float64 `json:"rating"`
+	IGDBCriticsRating   float64 `json:"igdbCriticsRating"`
 	Genre               string  `json:"genre"`
 	IsFavorite          bool    `json:"isFavorite"`
 	IsPlayLater         bool    `json:"isPlayLater"`
@@ -95,7 +95,7 @@ type TimelineGame struct {
 	ID       string  `json:"id"`
 	Title    string  `json:"title"`
 	CoverURL string  `json:"coverUrl"`
-	Rating   float64 `json:"rating"`
+	IGDBCriticsRating float64 `json:"igdbCriticsRating"`
 }
 
 // TimelineEntry groups games by release year.

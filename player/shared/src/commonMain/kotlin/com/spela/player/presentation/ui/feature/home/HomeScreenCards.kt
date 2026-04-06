@@ -2,7 +2,6 @@ package com.spela.player.presentation.ui.feature.home
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -10,7 +9,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.SportsEsports
@@ -28,6 +26,9 @@ import androidx.compose.ui.unit.dp
 import com.spela.player.domain.model.Game
 import com.spela.player.domain.model.NetplaySession
 import com.spela.player.domain.model.NetplaySessionStatus
+import androidx.compose.foundation.layout.Box
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import com.spela.player.presentation.ui.components.SpCarousel
 import com.spela.player.presentation.ui.components.SpCard
 import com.spela.player.presentation.ui.components.SpCoverArt
@@ -44,15 +45,12 @@ import com.spela.player.util.formatPlayTime
 internal fun ContinuePlayingRow(
     games: List<Game>,
     onGameSelected: (String) -> Unit,
-    contentPadding: PaddingValues = PaddingValues(horizontal = SpSpacing.ScreenHorizontal),
 ) {
-    SpCarousel(
-        contentPadding = contentPadding,
-    ) {
-        items(games, key = { "continue_${it.id}" }) { game ->
+    SpCarousel(itemCount = games.size) { index, focusRequester ->
+        Box(modifier = Modifier.focusRequester(focusRequester)) {
             ContinuePlayingCard(
-                game = game,
-                onClick = { onGameSelected(game.id) },
+                game = games[index],
+                onClick = { onGameSelected(games[index].id) },
             )
         }
     }
@@ -89,11 +87,11 @@ internal fun GameCarouselRow(
     onGameSelected: (String) -> Unit,
     keyPrefix: String = "carousel",
 ) {
-    SpCarousel {
-        items(games, key = { "${keyPrefix}_${it.id}" }) { game ->
+    SpCarousel(itemCount = games.size) { index, focusRequester ->
+        Box(modifier = Modifier.focusRequester(focusRequester)) {
             GameCoverCard(
-                game = game,
-                onClick = { onGameSelected(game.id) },
+                game = games[index],
+                onClick = { onGameSelected(games[index].id) },
             )
         }
     }
@@ -110,7 +108,7 @@ internal fun GameCoverCard(
         subtitle = game.consoleName,
         coverUrl = game.coverUrl,
         onClick = onClick,
-        rating = game.rating,
+        rating = game.communityRating,
         isFavorite = game.isFavorite,
         isInPlayLater = game.isInPlayLater,
     )

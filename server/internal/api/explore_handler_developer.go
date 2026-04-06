@@ -504,7 +504,7 @@ func (h *ExploreHandler) findHeroURL(games []db.Game) string {
 func buildTopGames(gameResponses []GameResponse, limit int) []GameResponse {
 	var top []GameResponse
 	for _, gr := range gameResponses {
-		if gr.Rating > 0 {
+		if gr.IGDBCriticsRating > 0 {
 			top = append(top, gr)
 			if len(top) >= limit {
 				break
@@ -808,7 +808,7 @@ func buildActiveYears(games []db.Game) *ActiveYears {
 func buildRatingDistribution(games []db.Game) RatingDistribution {
 	var dist RatingDistribution
 	for _, g := range games {
-		r := g.Rating
+		r := g.IGDBCriticsRating
 		switch {
 		case r == 0:
 			dist.Unrated++
@@ -870,7 +870,7 @@ func buildTimeline(games []db.Game) []TimelineEntry {
 			ID:       strconv.FormatUint(uint64(g.ID), 10),
 			Title:    g.Title,
 			CoverURL: resolveImageURL(g.CoverURL),
-			Rating:   g.Rating,
+			IGDBCriticsRating: g.IGDBCriticsRating,
 		})
 	}
 	if datedCount < 3 || len(yearGames) < 2 {
@@ -898,8 +898,8 @@ func calcRatingAndConsoles(games []db.Game) (float64, []string) {
 	consoleSet := make(map[string]bool)
 
 	for _, g := range games {
-		if g.Rating > 0 {
-			ratingSum += g.Rating
+		if g.IGDBCriticsRating > 0 {
+			ratingSum += g.IGDBCriticsRating
 			ratingCount++
 		}
 		if g.Console.Name != "" {

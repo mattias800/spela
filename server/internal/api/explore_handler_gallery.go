@@ -58,7 +58,7 @@ type CoverItem struct {
 	ConsoleName      string  `json:"consoleName"`
 	ConsoleAbbr      string  `json:"consoleAbbreviation"`
 	ConsoleColor     string  `json:"consoleColor"`
-	Rating           float64 `json:"rating"`
+	IGDBCriticsRating float64 `json:"igdbCriticsRating"`
 	CoverAspectRatio float64 `json:"coverAspectRatio"`
 }
 
@@ -291,7 +291,7 @@ func (h *ExploreHandler) GetCoverGallery(c *gin.Context) {
 			ConsoleName:      r.ConsoleName,
 			ConsoleAbbr:      r.ConsoleAbbr,
 			ConsoleColor:     r.ConsoleColor,
-			Rating:           r.Rating,
+			IGDBCriticsRating: r.Rating,
 			CoverAspectRatio: parseAspectRatio(r.CoverAspect),
 		})
 	}

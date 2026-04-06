@@ -217,7 +217,7 @@ fun ExploreDeveloperScreen(
                                                 subtitle = game.consoleName,
                                                 coverUrl = game.coverUrl,
                                                 onClick = { onGameSelected(game.id) },
-                                                rating = game.averageRating,
+                                                rating = game.communityRating,
                                                 isFavorite = game.isFavorite,
                                                 isInPlayLater = game.isInPlayLater,
                                             )

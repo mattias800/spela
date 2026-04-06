@@ -11,7 +11,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import com.spela.player.presentation.ui.components.SpLazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.lazy.items
@@ -128,7 +128,7 @@ fun AllGamesScreen(
                         }
                     }
 
-                    LazyVerticalGrid(
+                    SpLazyVerticalGrid(
                         columns = GridCells.Adaptive(SpSpacing.GridCellMinWidth),
                         state = gridState,
                         modifier = Modifier.fillMaxSize(),

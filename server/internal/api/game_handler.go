@@ -496,7 +496,7 @@ func (h *GameHandler) UpdateMetadata(c *gin.Context) {
 		ReleaseDate   string  `json:"releaseDate"`
 		Genre         string  `json:"genre"`
 		Players       int     `json:"players"`
-		Rating        float64 `json:"rating"`
+		IGDBCriticsRating float64 `json:"igdbCriticsRating"`
 		CoreOverride  string  `json:"coreOverride"`
 		PartyInfo     string  `json:"partyInfo"`
 	}
@@ -533,8 +533,8 @@ func (h *GameHandler) UpdateMetadata(c *gin.Context) {
 	if req.Players > 0 {
 		game.Players = req.Players
 	}
-	if req.Rating > 0 {
-		game.Rating = req.Rating
+	if req.IGDBCriticsRating > 0 {
+		game.IGDBCriticsRating = req.IGDBCriticsRating
 	}
 	if req.CoreOverride != "" {
 		game.CoreOverride = req.CoreOverride

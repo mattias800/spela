@@ -289,7 +289,7 @@ data class CommunityTopGame(
 data class CultClassicGame(
     val game: Game,
     val communityRating: Double,
-    val igdbRating: Double,
+    val igdbCriticsRating: Double,
     val ratingCount: Int,
 )
 

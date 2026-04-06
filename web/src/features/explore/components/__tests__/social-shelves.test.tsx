@@ -169,7 +169,7 @@ describe("CultClassicsShelf", () => {
       {
         game: makeGame({ id: "cu1", title: "Hidden Treasure" }),
         communityRating: 4.5,
-        igdbRating: 60,
+        igdbCriticsRating: 60,
         ratingCount: 3,
       },
     ];

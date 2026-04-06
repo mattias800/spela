@@ -358,7 +358,7 @@ class EmulationViewModel(
                             gamePublisher = detail.game.publisher,
                             gameReleaseDate = detail.game.releaseDate,
                             gameGenre = detail.game.genre,
-                            gameRating = detail.game.rating,
+                            gameRating = detail.game.igdbCriticsRating,
                             gamePlayers = detail.game.players,
                         )
                     }

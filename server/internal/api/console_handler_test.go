@@ -370,7 +370,7 @@ func TestGetTopListAvailable_ReturnsOnlyLocalMatches(t *testing.T) {
 	assert.Equal(t, "Super Mario Bros.", result[0].Name)
 	assert.Equal(t, "/api/images/covers/nes/smb.png", result[0].CoverUrl)
 	assert.Equal(t, "nes", result[0].ConsoleId)
-	assert.Equal(t, 92.5, result[0].Rating)
+	assert.Equal(t, 92.5, result[0].IGDBCriticsRating)
 }
 
 func TestGetTopListAvailable_SortedByRatingDesc(t *testing.T) {
@@ -416,11 +416,11 @@ func TestGetTopListAvailable_SortedByRatingDesc(t *testing.T) {
 
 	require.Len(t, result, 3)
 	assert.Equal(t, "Game B", result[0].Name)
-	assert.Equal(t, 95.0, result[0].Rating)
+	assert.Equal(t, 95.0, result[0].IGDBCriticsRating)
 	assert.Equal(t, "Game C", result[1].Name)
-	assert.Equal(t, 88.0, result[1].Rating)
+	assert.Equal(t, 88.0, result[1].IGDBCriticsRating)
 	assert.Equal(t, "Game A", result[2].Name)
-	assert.Equal(t, 80.0, result[2].Rating)
+	assert.Equal(t, 80.0, result[2].IGDBCriticsRating)
 }
 
 func TestGetTopListAvailable_SequentialRanks(t *testing.T) {
@@ -794,7 +794,7 @@ func TestGetTopListAvailable_UsesTotalRatingNotUserRating(t *testing.T) {
 
 	assert.Len(t, result, 1, "should include game with total_rating even if user_rating is 0")
 	assert.Equal(t, "Mega Man 2", result[0].Name)
-	assert.Equal(t, 88.0, result[0].Rating)
+	assert.Equal(t, 88.0, result[0].IGDBCriticsRating)
 }
 
 func TestGetTopListCritics_ReturnsGamesWithCriticRating(t *testing.T) {
@@ -822,7 +822,7 @@ func TestGetTopListCritics_ReturnsGamesWithCriticRating(t *testing.T) {
 	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &result))
 
 	assert.Len(t, result, 1)
-	assert.Equal(t, 95.0, result[0].Rating)
+	assert.Equal(t, 95.0, result[0].IGDBCriticsRating)
 }
 
 func TestGetTopListAvailable_ExcludesDemoConsoles(t *testing.T) {

@@ -1,7 +1,6 @@
 package com.spela.player.presentation.ui.feature.home
 
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -9,7 +8,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Icon
@@ -25,6 +23,9 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.spela.player.domain.model.TopRatedGame
+import androidx.compose.foundation.layout.Box
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import com.spela.player.presentation.ui.components.SpAvailabilityGameCard
 import com.spela.player.presentation.ui.components.SpCarousel
 import com.spela.player.presentation.ui.components.SpCard
@@ -37,12 +38,10 @@ import com.spela.player.presentation.ui.theme.SpTypography
 internal fun TopRatedRow(
     games: List<TopRatedGame>,
     onGameSelected: (String) -> Unit,
-    contentPadding: PaddingValues = PaddingValues(horizontal = SpSpacing.ScreenHorizontal),
 ) {
-    SpCarousel(
-        contentPadding = contentPadding,
-    ) {
-        items(games, key = { it.rank }) { game ->
+    SpCarousel(itemCount = games.size) { index, focusRequester ->
+        val game = games[index]
+        Box(modifier = Modifier.focusRequester(focusRequester)) {
             TopRatedCard(
                 game = game,
                 onClick = if (game.localGameId != null) {

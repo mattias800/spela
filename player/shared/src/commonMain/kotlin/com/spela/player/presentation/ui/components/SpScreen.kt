@@ -1,5 +1,6 @@
 package com.spela.player.presentation.ui.components
 
+import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.focusGroup
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -16,8 +17,16 @@ import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.compositionLocalOf
 import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.ui.theme.spScreenBackground
+
+/**
+ * Provides the vertical [ScrollState] from [SpScrollableContent] to descendants.
+ * Used by [centerOnFocus] to scroll the focused element to the viewport center.
+ */
+val LocalScrollState = compositionLocalOf<ScrollState?> { null }
 
 /**
  * Root layout for every screen. Provides the screen background,
@@ -72,13 +81,16 @@ fun SpScrollableContent(
     modifier: Modifier = Modifier,
     content: @Composable ColumnScope.() -> Unit,
 ) {
-    Column(
-        modifier = modifier
-            .fillMaxSize()
-            .focusGroup()
-            .verticalScroll(rememberScrollState()),
-        content = content,
-    )
+    val scrollState = rememberScrollState()
+    CompositionLocalProvider(LocalScrollState provides scrollState) {
+        Column(
+            modifier = modifier
+                .fillMaxSize()
+                .focusGroup()
+                .verticalScroll(scrollState),
+            content = content,
+        )
+    }
 }
 
 /**

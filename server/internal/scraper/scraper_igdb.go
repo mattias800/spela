@@ -210,7 +210,7 @@ func (s *Scraper) ScrapeGame(game *db.Game) error {
 	// Only runs after a successful save, so cancelled scrapes keep old files.
 	s.cleanGameImages(game, console.Abbreviation, gameIDStr)
 
-	slog.Info("scraped metadata", "game", game.Title, "scraperId", game.ScraperID, "rating", game.Rating)
+	slog.Info("scraped metadata", "game", game.Title, "scraperId", game.ScraperID, "rating", game.IGDBCriticsRating)
 	return nil
 }
 
@@ -357,7 +357,7 @@ func (s *Scraper) applyIGDBMatch(game *db.Game, console db.Console, match igdb.G
 		game.Storyline = match.Storyline
 	}
 	if match.AggregatedRating > 0 {
-		game.Rating = match.AggregatedRating
+		game.IGDBCriticsRating = match.AggregatedRating
 	}
 	slog.Info("IGDB rating data",
 		"game", game.Title,
@@ -571,7 +571,7 @@ func (s *Scraper) ScrapeGameWithIGDBMatch(game *db.Game, igdbID int) error {
 	game.Genre = ""
 	game.GameModes = ""
 	game.Storyline = ""
-	game.Rating = 0
+	game.IGDBCriticsRating = 0
 	game.TotalRating = 0
 	game.TotalRatingCount = 0
 	game.IGDBUserRating = 0

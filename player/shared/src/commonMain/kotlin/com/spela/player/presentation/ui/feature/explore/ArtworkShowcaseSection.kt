@@ -11,7 +11,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -30,6 +29,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil3.compose.SubcomposeAsyncImage
 import com.spela.player.domain.model.ArtworkItem
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import com.spela.player.presentation.ui.components.SpCard
 import com.spela.player.presentation.ui.components.SpCarousel
 import com.spela.player.presentation.ui.components.SpShimmer
@@ -51,12 +52,13 @@ fun ArtworkShowcaseSection(
         modifier = modifier.testTag("artwork_showcase"),
     ) {
         SpCarousel(
+            itemCount = artworks.size,
             modifier = Modifier.testTag("artwork_showcase_row"),
-        ) {
-            items(artworks, key = { "${it.gameId}_${it.url}" }) { artwork ->
+        ) { index, focusRequester ->
+            Box(modifier = Modifier.focusRequester(focusRequester)) {
                 ArtworkCard(
-                    artwork = artwork,
-                    onClick = { onGameSelected(artwork.gameId) },
+                    artwork = artworks[index],
+                    onClick = { onGameSelected(artworks[index].gameId) },
                 )
             }
         }

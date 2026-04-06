@@ -44,7 +44,7 @@ class ExploreAchievementTest {
         releaseDate = null,
         genre = "Action",
         players = 1,
-        rating = 80.0,
+        igdbCriticsRating = 80.0,
         isFavorite = false,
         isInPlayLater = false,
         coverAspectRatio = 0.75f,

@@ -7,7 +7,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import com.spela.player.presentation.ui.components.SpLazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
@@ -74,7 +74,7 @@ fun ChallengeListScreen(
         CompositionLocalProvider(LocalFocusMemory provides focusMemory) {
         if (state.isLoadingGameChallenges && state.gameChallenges.isEmpty()) {
             // Skeleton grid while loading
-            LazyVerticalGrid(
+            SpLazyVerticalGrid(
                 columns = GridCells.Adaptive(minSize = SpSpacing.ChallengeCellMinWidth),
                 modifier = Modifier.fillMaxSize(),
                 contentPadding = PaddingValues(SpSpacing.ScreenHorizontal),
@@ -97,7 +97,7 @@ fun ChallengeListScreen(
                         SpEmptyStates.NoChallenges()
                     }
                 } else {
-                    LazyVerticalGrid(
+                    SpLazyVerticalGrid(
                         columns = GridCells.Adaptive(minSize = SpSpacing.ChallengeCellMinWidth),
                         modifier = Modifier.fillMaxSize(),
                         contentPadding = PaddingValues(SpSpacing.ScreenHorizontal),

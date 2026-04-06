@@ -10,6 +10,7 @@ import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.outlined.LibraryAdd
 import androidx.compose.material.icons.outlined.WatchLater
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -132,7 +133,7 @@ internal fun GameActionsMenu(
                     DropdownMenuItem(
                         text = {
                             Text(
-                                text = "Scrape Metadata",
+                                text = if (isAdminActionLoading) "Scraping…" else "Scrape Metadata",
                                 style = SpTypography.BodyMedium,
                             )
                         },
@@ -142,11 +143,18 @@ internal fun GameActionsMenu(
                         },
                         enabled = !isAdminActionLoading,
                         leadingIcon = {
-                            Icon(
-                                imageVector = Icons.Filled.Refresh,
-                                contentDescription = null,
-                                modifier = Modifier.size(20.dp),
-                            )
+                            if (isAdminActionLoading) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(20.dp),
+                                    strokeWidth = 2.dp,
+                                )
+                            } else {
+                                Icon(
+                                    imageVector = Icons.Filled.Refresh,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(20.dp),
+                                )
+                            }
                         },
                     )
                 }

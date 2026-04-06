@@ -113,7 +113,7 @@ function TopRatedList({ games }: { games: TopListGame[] }) {
             </div>
             <PlayInfo gameId={game.gameId} className="mt-1.5" />
           </div>
-          <RatingDisplay value={game.rating} />
+          <RatingDisplay value={game.igdbCriticsRating} />
         </Link>
       ))}
     </div>

@@ -70,9 +70,9 @@ const mockMoods: MoodDefinition[] = [
 ];
 
 const mockGames: Game[] = [
-  makeGame({ id: "1", title: "Stardew Valley", rating: 92 }),
-  makeGame({ id: "2", title: "Animal Crossing", rating: 88 }),
-  makeGame({ id: "3", title: "Harvest Moon", rating: 85 }),
+  makeGame({ id: "1", title: "Stardew Valley", igdbCriticsRating: 92 }),
+  makeGame({ id: "2", title: "Animal Crossing", igdbCriticsRating: 88 }),
+  makeGame({ id: "3", title: "Harvest Moon", igdbCriticsRating: 85 }),
 ];
 
 function renderPage(moodId = "chill") {

@@ -243,8 +243,8 @@ export function GameHero({
                     </Badge>
                   </Link>
                 )}
-                {(game.rating ?? 0) > 0 ? (
-                  <IgdbRatingStars rating={game.rating!} />
+                {(game.igdbCriticsRating ?? 0) > 0 ? (
+                  <IgdbRatingStars rating={game.igdbCriticsRating!} />
                 ) : (game.igdbUserRating ?? 0) > 0 ? (
                   <IgdbRatingStars rating={game.igdbUserRating!} />
                 ) : null}

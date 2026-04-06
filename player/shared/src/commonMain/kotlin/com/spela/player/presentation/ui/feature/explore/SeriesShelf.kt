@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -28,6 +27,9 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.spela.player.domain.model.FeaturedSeries
+import androidx.compose.foundation.layout.Box
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import com.spela.player.presentation.ui.components.SpCard
 import com.spela.player.presentation.ui.components.SpCarousel
 import com.spela.player.presentation.ui.theme.SpColor
@@ -55,10 +57,12 @@ fun SeriesShelf(
     modifier: Modifier = Modifier,
 ) {
     SpCarousel(
+        itemCount = series.size,
         modifier = modifier.testTag("series_shelf"),
-    ) {
-        itemsIndexed(series, key = { _, item -> item.id }) { index, item ->
-            val gradientIndex = index % seriesGradients.size
+    ) { index, focusRequester ->
+        val item = series[index]
+        val gradientIndex = index % seriesGradients.size
+        Box(modifier = Modifier.focusRequester(focusRequester)) {
             SeriesCard(
                 series = item,
                 gradientColors = seriesGradients[gradientIndex],

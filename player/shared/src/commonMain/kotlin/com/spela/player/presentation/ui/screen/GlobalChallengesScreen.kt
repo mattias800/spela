@@ -9,7 +9,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import com.spela.player.presentation.ui.components.SpLazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Tab
@@ -142,7 +142,7 @@ fun GlobalChallengesScreen(
         val focusMemory = rememberFocusMemoryState()
         CompositionLocalProvider(LocalFocusMemory provides focusMemory) {
         if (isLoading && challenges.isEmpty()) {
-            LazyVerticalGrid(
+            SpLazyVerticalGrid(
                 columns = GridCells.Adaptive(minSize = SpSpacing.ChallengeCellMinWidth),
                 modifier = Modifier.fillMaxSize(),
                 contentPadding = PaddingValues(SpSpacing.ScreenHorizontal),
@@ -169,7 +169,7 @@ fun GlobalChallengesScreen(
                         }
                     }
                 } else {
-                    LazyVerticalGrid(
+                    SpLazyVerticalGrid(
                         columns = GridCells.Adaptive(minSize = SpSpacing.ChallengeCellMinWidth),
                         modifier = Modifier.fillMaxSize(),
                         contentPadding = PaddingValues(SpSpacing.ScreenHorizontal),

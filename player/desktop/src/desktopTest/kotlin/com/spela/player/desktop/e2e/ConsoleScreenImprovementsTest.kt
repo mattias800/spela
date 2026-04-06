@@ -282,9 +282,9 @@ class ConsoleScreenImprovementsTest {
     fun gameWithHighRatingShowsStarRating() = runComposeUiTest {
         val harness = createLoggedInHarness()
 
-        // Set Castlevania to have averageRating = 4.5
+        // Set Castlevania to have communityRating = 4.5
         harness.gameRepo.games = harness.gameRepo.games.map {
-            if (it.id == "1") it.copy(averageRating = 4.5) else it
+            if (it.id == "1") it.copy(communityRating = 4.5) else it
         }
 
         setContent { harness.App() }
@@ -298,7 +298,7 @@ class ConsoleScreenImprovementsTest {
     fun gameWithLowRatingDoesNotShowStarRating() = runComposeUiTest {
         val harness = createLoggedInHarness()
 
-        // All games have default averageRating = 0.0 — no star should show
+        // All games have default communityRating = 0.0 — no star should show
         setContent { harness.App() }
         navigateToConsoleGames(harness)
 
@@ -312,7 +312,7 @@ class ConsoleScreenImprovementsTest {
 
         // Edge case: exactly 1.0 should show the star
         harness.gameRepo.games = harness.gameRepo.games.map {
-            if (it.id == "2") it.copy(averageRating = 1.0) else it
+            if (it.id == "2") it.copy(communityRating = 1.0) else it
         }
 
         setContent { harness.App() }
@@ -327,7 +327,7 @@ class ConsoleScreenImprovementsTest {
 
         // Edge case: 0.9 should NOT show the star
         harness.gameRepo.games = harness.gameRepo.games.map {
-            if (it.id == "1") it.copy(averageRating = 0.9) else it
+            if (it.id == "1") it.copy(communityRating = 0.9) else it
         }
 
         setContent { harness.App() }
@@ -343,9 +343,9 @@ class ConsoleScreenImprovementsTest {
         // Give different ratings to multiple games
         harness.gameRepo.games = harness.gameRepo.games.map {
             when (it.id) {
-                "1" -> it.copy(averageRating = 4.5)
-                "2" -> it.copy(averageRating = 3.2)
-                "3" -> it.copy(averageRating = 0.5) // below threshold
+                "1" -> it.copy(communityRating = 4.5)
+                "2" -> it.copy(communityRating = 3.2)
+                "3" -> it.copy(communityRating = 0.5) // below threshold
                 else -> it
             }
         }
@@ -418,7 +418,7 @@ class ConsoleScreenImprovementsTest {
 
         // Game with both favorite and high rating
         harness.gameRepo.games = harness.gameRepo.games.map {
-            if (it.id == "1") it.copy(isFavorite = true, averageRating = 4.8) else it
+            if (it.id == "1") it.copy(isFavorite = true, communityRating = 4.8) else it
         }
 
         setContent { harness.App() }
@@ -436,9 +436,9 @@ class ConsoleScreenImprovementsTest {
         // Give distinct ratings to NES games
         harness.gameRepo.games = harness.gameRepo.games.map {
             when (it.id) {
-                "1" -> it.copy(averageRating = 2.0) // Castlevania
-                "2" -> it.copy(averageRating = 5.0) // Super Mario Bros.
-                "3" -> it.copy(averageRating = 3.5) // Mega Man 2
+                "1" -> it.copy(communityRating = 2.0) // Castlevania
+                "2" -> it.copy(communityRating = 5.0) // Super Mario Bros.
+                "3" -> it.copy(communityRating = 3.5) // Mega Man 2
                 else -> it
             }
         }

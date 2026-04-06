@@ -77,7 +77,7 @@ func withReleaseDate(rd string) func(*db.Game) {
 }
 
 func withRating(r float64) func(*db.Game) {
-	return func(g *db.Game) { g.Rating = r }
+	return func(g *db.Game) { g.IGDBCriticsRating = r }
 }
 
 func withGenre(genre string) func(*db.Game) {

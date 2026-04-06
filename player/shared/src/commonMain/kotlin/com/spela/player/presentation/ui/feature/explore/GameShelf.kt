@@ -1,13 +1,13 @@
 package com.spela.player.presentation.ui.feature.explore
 
 import com.spela.player.presentation.ui.components.rememberResolvedCoverUrl
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
 import com.spela.player.presentation.ui.components.SpCarousel
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material3.Icon
@@ -16,6 +16,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import com.spela.player.domain.model.Game
 import com.spela.player.presentation.ui.components.SpCard
 import com.spela.player.presentation.ui.components.SpCarouselGameCard
@@ -34,12 +36,13 @@ fun GameShelf(
     modifier: Modifier = Modifier,
 ) {
     SpCarousel(
+        itemCount = games.size,
         modifier = modifier.testTag("game_shelf"),
-    ) {
-        items(games, key = { it.id }) { game ->
+    ) { index, focusRequester ->
+        Box(modifier = Modifier.focusRequester(focusRequester)) {
             ExploreGameCard(
-                game = game,
-                onClick = { onGameSelected(game.id) },
+                game = games[index],
+                onClick = { onGameSelected(games[index].id) },
             )
         }
     }
@@ -57,7 +60,7 @@ internal fun ExploreGameCard(
         subtitle = game.consoleName,
         coverUrl = resolvedCoverUrl,
         onClick = onClick,
-        rating = game.rating,
+        rating = game.communityRating,
         isFavorite = game.isFavorite,
         isInPlayLater = game.isInPlayLater,
         testTag = "explore_game_card_${game.id}",

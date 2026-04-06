@@ -1,60 +1,105 @@
 package com.spela.player.presentation.ui.gamepad
 
-import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.relocation.BringIntoViewRequester
-import androidx.compose.foundation.relocation.bringIntoViewRequester
+import androidx.compose.foundation.gestures.animateScrollBy
+import androidx.compose.foundation.gestures.scrollBy
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsFocusedAsState
+import androidx.compose.foundation.lazy.grid.LazyGridState
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.compositionLocalOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
-import androidx.compose.ui.focus.onFocusChanged
-import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.layout.onGloballyPositioned
-import androidx.compose.ui.layout.positionInParent
-import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.unit.dp
-import kotlinx.coroutines.launch
+import androidx.compose.ui.layout.positionInRoot
+import com.spela.player.presentation.ui.components.LocalScrollState
 
 /**
- * When this element gains focus, scrolls it toward the vertical center
- * of the scrollable parent rather than the edge.
- *
- * Works by expanding the "bring into view" rectangle with padding above
- * and below, which tricks the scroll system into scrolling further than
- * it normally would.
+ * Holds the [LazyGridState] and the grid container's vertical position
+ * in root coordinates. Provided by [SpLazyVerticalGrid] via [LocalLazyGridCenterInfo].
  */
-@OptIn(ExperimentalFoundationApi::class)
-fun Modifier.centerOnFocus(): Modifier = composed {
-    val bringIntoViewRequester = remember { BringIntoViewRequester() }
-    val scope = rememberCoroutineScope()
-    val density = LocalDensity.current
-    val isGamepad = LocalInputMode.current == InputMode.GAMEPAD
+class LazyGridCenterInfo(
+    val state: LazyGridState,
+) {
+    /** Updated by [SpLazyVerticalGrid] via onGloballyPositioned. */
+    var containerTopInRoot: Float = 0f
+}
 
-    if (!isGamepad) return@composed this
+/**
+ * Provides [LazyGridCenterInfo] to descendants so [centerOnFocus] can
+ * scroll a [LazyVerticalGrid] to center the focused element.
+ */
+val LocalLazyGridCenterInfo = compositionLocalOf<LazyGridCenterInfo?> { null }
 
+/**
+ * When this element gains focus, scrolls the nearest scrollable parent
+ * so this element is vertically centered in the viewport.
+ *
+ * Supports two scrollable types:
+ * - [LocalScrollState] from [SpScrollableContent] (regular Column + verticalScroll)
+ * - [LocalLazyGridCenterInfo] from [SpLazyVerticalGrid] (lazy grid)
+ *
+ * Uses the [interactionSource] for focus detection (same source shared
+ * with `.clickable()` and `.focusable()`), so it detects focus regardless
+ * of which node in the modifier chain holds it.
+ *
+ * During rapid focus changes (key repeat, <200ms between changes),
+ * scrolls instantly instead of animating for responsive feel.
+ */
+fun Modifier.centerOnFocus(
+    interactionSource: MutableInteractionSource,
+): Modifier = composed {
+    val scrollState = LocalScrollState.current
+    val lazyGridInfo = LocalLazyGridCenterInfo.current
+    val isFocused by interactionSource.collectIsFocusedAsState()
+    var positionInRoot = 0f
     var elementHeight = 0f
+    var lastFocusTime by remember { mutableLongStateOf(0L) }
 
-    this
-        .bringIntoViewRequester(bringIntoViewRequester)
-        .onGloballyPositioned { coordinates ->
-            elementHeight = coordinates.size.height.toFloat()
-        }
-        .onFocusChanged { state ->
-            if (state.hasFocus) {
-                scope.launch {
-                    // Request a tall rectangle centered on the element.
-                    // The extra padding makes the scroll system overshoot,
-                    // placing the element near the vertical center.
-                    val verticalPadding = with(density) { 200.dp.toPx() }
-                    bringIntoViewRequester.bringIntoView(
-                        Rect(
-                            left = 0f,
-                            top = -verticalPadding,
-                            right = 0f,
-                            bottom = elementHeight + verticalPadding,
-                        )
-                    )
-                }
+    if (scrollState == null && lazyGridInfo == null) return@composed this
+
+    LaunchedEffect(isFocused) {
+        if (!isFocused) return@LaunchedEffect
+
+        val now = System.currentTimeMillis()
+        val isRapid = now - lastFocusTime < 100
+        lastFocusTime = now
+
+        if (scrollState != null) {
+            // Regular ScrollState: compute absolute target scroll position
+            val currentScroll = scrollState.value
+            val elementTop = positionInRoot + currentScroll
+            val viewportHeight = scrollState.viewportSize.toFloat()
+
+            val targetScroll = (elementTop - (viewportHeight / 2f) + (elementHeight / 2f))
+                .toInt()
+                .coerceIn(0, scrollState.maxValue)
+
+            if (isRapid) {
+                scrollState.scrollTo(targetScroll)
+            } else {
+                scrollState.animateScrollTo(targetScroll)
+            }
+        } else if (lazyGridInfo != null) {
+            // LazyGridState: compute scroll delta from element's screen position
+            val viewportHeight = lazyGridInfo.state.layoutInfo.viewportSize.height.toFloat()
+            val elementCenterOnScreen = positionInRoot + elementHeight / 2f
+            val viewportCenterOnScreen = lazyGridInfo.containerTopInRoot + viewportHeight / 2f
+            val delta = elementCenterOnScreen - viewportCenterOnScreen
+
+            if (isRapid) {
+                lazyGridInfo.state.scrollBy(delta)
+            } else {
+                lazyGridInfo.state.animateScrollBy(delta)
             }
         }
+    }
+
+    this.onGloballyPositioned { coordinates ->
+        positionInRoot = coordinates.positionInRoot().y
+        elementHeight = coordinates.size.height.toFloat()
+    }
 }
