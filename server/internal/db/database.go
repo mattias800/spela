@@ -693,8 +693,8 @@ func mergeGameMetadata(database *gorm.DB, keeper, dup *Game) {
 	if keeper.Players == 0 && dup.Players > 0 {
 		updates["players"] = dup.Players
 	}
-	if keeper.Rating == 0 && dup.Rating > 0 {
-		updates["rating"] = dup.Rating
+	if keeper.IGDBCriticsRating == 0 && dup.IGDBCriticsRating > 0 {
+		updates["rating"] = dup.IGDBCriticsRating
 	}
 	if keeper.Region == "" && dup.Region != "" {
 		updates["region"] = dup.Region

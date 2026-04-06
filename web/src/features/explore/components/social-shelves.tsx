@@ -283,7 +283,7 @@ export function CultClassicsShelf({
             <span data-testid="cult-community-rating">
               {item.communityRating.toFixed(1)}/5
             </span>
-            <span className="text-surface-500">vs IGDB {item.igdbRating.toFixed(0)}/100</span>
+            <span className="text-surface-500">vs IGDB {item.igdbCriticsRating.toFixed(0)}/100</span>
           </div>
         </div>
       ))}

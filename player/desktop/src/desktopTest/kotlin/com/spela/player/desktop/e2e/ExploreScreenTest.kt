@@ -67,7 +67,7 @@ class ExploreScreenTest {
             consoleName = "SNES",
             consoleId = "snes",
             coverUrl = null,
-            rating = 88.0,
+            igdbCriticsRating = 88.0,
         ),
         Game(
             id = "11",
@@ -75,7 +75,7 @@ class ExploreScreenTest {
             consoleName = "SNES",
             consoleId = "snes",
             coverUrl = null,
-            rating = 94.0,
+            igdbCriticsRating = 94.0,
         ),
         Game(
             id = "12",
@@ -83,7 +83,7 @@ class ExploreScreenTest {
             consoleName = "SNES",
             consoleId = "snes",
             coverUrl = null,
-            rating = 85.0,
+            igdbCriticsRating = 85.0,
         ),
     )
 
@@ -103,7 +103,7 @@ class ExploreScreenTest {
                     consoleName = "SNES",
                     consoleId = "snes",
                     coverUrl = null,
-                    rating = 96.0,
+                    igdbCriticsRating = 96.0,
                 ),
             ),
         ),

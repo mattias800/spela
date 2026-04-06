@@ -509,8 +509,8 @@ func (s *Scraper) propagateGroupMetadata(game *db.Game) bool {
 	if game.GameModes == "" && sibling.GameModes != "" {
 		game.GameModes = sibling.GameModes
 	}
-	if game.Rating == 0 && sibling.Rating != 0 {
-		game.Rating = sibling.Rating
+	if game.IGDBCriticsRating == 0 && sibling.IGDBCriticsRating != 0 {
+		game.IGDBCriticsRating = sibling.IGDBCriticsRating
 	}
 	if game.ReleaseDate == "" && sibling.ReleaseDate != "" {
 		game.ReleaseDate = sibling.ReleaseDate

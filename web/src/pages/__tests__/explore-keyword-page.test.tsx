@@ -59,8 +59,8 @@ const mockKeywords: Keyword[] = [
 
 const mockGamesResponse: GamesResponse = {
   data: [
-    makeGame({ id: "1", title: "Chrono Trigger", rating: 95 }),
-    makeGame({ id: "2", title: "Chrono Cross", rating: 88 }),
+    makeGame({ id: "1", title: "Chrono Trigger", igdbCriticsRating: 95 }),
+    makeGame({ id: "2", title: "Chrono Cross", igdbCriticsRating: 88 }),
   ],
   total: 2,
   page: 1,

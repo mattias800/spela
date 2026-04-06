@@ -13,7 +13,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import com.spela.player.presentation.ui.components.SpLazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Category
@@ -89,7 +89,7 @@ fun ExploreThemeScreen(
 
             when {
                 state.isLoading && state.games.isEmpty() -> {
-                    LazyVerticalGrid(
+                    SpLazyVerticalGrid(
                         columns = GridCells.Adaptive(SpSpacing.GridCellMinWidth),
                         modifier = Modifier
                             .fillMaxSize()
@@ -119,7 +119,7 @@ fun ExploreThemeScreen(
                 }
 
                 else -> {
-                    LazyVerticalGrid(
+                    SpLazyVerticalGrid(
                         columns = GridCells.Adaptive(SpSpacing.GridCellMinWidth),
                         modifier = Modifier
                             .fillMaxSize()
@@ -203,7 +203,7 @@ private fun ThemeGameCard(
                         color = SpColor.OnBackgroundTertiary,
                         maxLines = 1,
                     )
-                    if (game.rating > 0) {
+                    if (game.igdbCriticsRating > 0) {
                         Icon(
                             imageVector = Icons.Filled.Star,
                             contentDescription = null,
@@ -211,7 +211,7 @@ private fun ThemeGameCard(
                             modifier = Modifier.size(10.dp),
                         )
                         Text(
-                            text = formatRating(game.rating),
+                            text = formatRating(game.igdbCriticsRating),
                             style = SpTypography.LabelSmall,
                             color = SpColor.OnBackgroundTertiary,
                         )

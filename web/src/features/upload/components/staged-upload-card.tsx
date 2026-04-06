@@ -70,7 +70,7 @@ export function StagedUploadCard({
       coverUrl={upload.coverUrl || undefined}
       consoleId={upload.consoleId}
       consoleName={upload.consoleName}
-      rating={upload.rating}
+      rating={upload.igdbCriticsRating}
       verificationStatus={upload.verificationStatus || undefined}
       fileName={upload.fileName}
       fileSize={upload.fileSize}

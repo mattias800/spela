@@ -13,7 +13,7 @@ function makeFeaturedGame(overrides: Partial<FeaturedGame> = {}): FeaturedGame {
     logoUrl: "/logo/test.png",
     consoleAbbreviation: "snes",
     consoleColor: "#805ad5",
-    rating: 92.5,
+    igdbCriticsRating: 92.5,
     genre: "RPG",
     isFavorite: false,
     isPlayLater: false,
@@ -115,7 +115,7 @@ describe("HeroCarousel", () => {
 
   it("renders rating", () => {
     renderCarousel({
-      games: [makeFeaturedGame({ rating: 92.5 })],
+      games: [makeFeaturedGame({ igdbCriticsRating: 92.5 })],
     });
     expect(screen.getByText("92.5")).toBeInTheDocument();
   });

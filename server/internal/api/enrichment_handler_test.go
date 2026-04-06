@@ -45,7 +45,7 @@ func createEnrichTestGame(t *testing.T, database *gorm.DB, title string, rating 
 		Title:     title,
 		FileName:  title + ".nes",
 		FilePath:  "NES/" + title + ".nes",
-		Rating:    rating,
+		IGDBCriticsRating: rating,
 		ScraperID: fmt.Sprintf("igdb:%d", 1000+int(rating)),
 		IsPrimary: true,
 	}
@@ -630,7 +630,7 @@ func TestGetSeriesDetail_ExtendedFields(t *testing.T) {
 		Title:       "Zelda2",
 		FileName:    "Zelda2.sfc",
 		FilePath:    "SNES/Zelda2.sfc",
-		Rating:      95,
+		IGDBCriticsRating: 95,
 		ReleaseDate: "1991-11-21",
 		ScraperID:   "igdb:2000",
 	}
@@ -701,13 +701,13 @@ func TestGetSeriesDetail_ExtendedFields(t *testing.T) {
 
 	assert.True(t, zelda1.InLibrary)
 	assert.Equal(t, "1986-02-21", zelda1.ReleaseDate)
-	assert.Equal(t, 90.0, zelda1.Rating)
+	assert.Equal(t, 90.0, zelda1.IGDBCriticsRating)
 	assert.Equal(t, "nes", zelda1.ConsoleAbbreviation)
 	assert.NotEmpty(t, zelda1.ConsoleName)
 
 	assert.True(t, zelda2.InLibrary)
 	assert.Equal(t, "1991-11-21", zelda2.ReleaseDate)
-	assert.Equal(t, 95.0, zelda2.Rating)
+	assert.Equal(t, 95.0, zelda2.IGDBCriticsRating)
 	assert.Equal(t, "snes", zelda2.ConsoleAbbreviation)
 
 	// Non-local game should have no per-game fields
@@ -720,7 +720,7 @@ func TestGetSeriesDetail_ExtendedFields(t *testing.T) {
 	require.NotNil(t, zelda3)
 	assert.False(t, zelda3.InLibrary)
 	assert.Empty(t, zelda3.ReleaseDate)
-	assert.Equal(t, 0.0, zelda3.Rating)
+	assert.Equal(t, 0.0, zelda3.IGDBCriticsRating)
 	assert.Empty(t, zelda3.ConsoleAbbreviation)
 }
 
@@ -1106,7 +1106,7 @@ func TestGetFranchiseDetail_ExtendedFields(t *testing.T) {
 		Title:       "Zelda2",
 		FileName:    "Zelda2.sfc",
 		FilePath:    "SNES/Zelda2.sfc",
-		Rating:      95,
+		IGDBCriticsRating: 95,
 		ReleaseDate: "1991-11-21",
 		ScraperID:   "igdb:2001",
 	}
@@ -1172,13 +1172,13 @@ func TestGetFranchiseDetail_ExtendedFields(t *testing.T) {
 	require.NotNil(t, zelda1)
 	assert.True(t, zelda1.InLibrary)
 	assert.Equal(t, "1986-02-21", zelda1.ReleaseDate)
-	assert.Equal(t, 90.0, zelda1.Rating)
+	assert.Equal(t, 90.0, zelda1.IGDBCriticsRating)
 	assert.Equal(t, "nes", zelda1.ConsoleAbbreviation)
 
 	require.NotNil(t, zelda2)
 	assert.True(t, zelda2.InLibrary)
 	assert.Equal(t, "1991-11-21", zelda2.ReleaseDate)
-	assert.Equal(t, 95.0, zelda2.Rating)
+	assert.Equal(t, 95.0, zelda2.IGDBCriticsRating)
 	assert.Equal(t, "snes", zelda2.ConsoleAbbreviation)
 }
 

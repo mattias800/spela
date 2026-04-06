@@ -32,7 +32,7 @@ internal fun GameGridItem(
         subtitle = game.consoleName,
         coverUrl = game.coverUrl,
         onClick = onClick,
-        rating = game.averageRating,
+        rating = game.communityRating,
         isFavorite = game.isFavorite,
         isInPlayLater = game.isInPlayLater,
         variantCount = game.variantCount,

@@ -11,7 +11,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import com.spela.player.presentation.ui.components.SpLazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
@@ -53,7 +53,6 @@ import com.spela.player.presentation.ui.components.SpTopBar
 import com.spela.player.presentation.ui.feature.library.GameGridItem
 import com.spela.player.presentation.ui.gamepad.InputMode
 import com.spela.player.presentation.ui.gamepad.LocalInputMode
-import com.spela.player.presentation.ui.gamepad.autoFocus
 import com.spela.player.presentation.ui.gamepad.LocalFocusMemory
 import com.spela.player.presentation.ui.gamepad.rememberFocus
 import com.spela.player.presentation.ui.gamepad.rememberFocusMemoryState
@@ -119,8 +118,8 @@ fun ConsoleGamesScreen(
         }
         val asc = state.sortOrder != "desc"
         when (state.sortBy) {
-            "rating" -> if (asc) filtered.sortedBy { it.averageRating }
-                        else filtered.sortedByDescending { it.averageRating }
+            "rating" -> if (asc) filtered.sortedBy { it.communityRating }
+                        else filtered.sortedByDescending { it.communityRating }
             "releaseDate" -> if (asc) filtered.sortedBy { it.releaseDate ?: "" }
                              else filtered.sortedByDescending { it.releaseDate ?: "" }
             "lastPlayed" -> filtered.sortedByDescending { it.lastPlayedAt ?: "" }
@@ -140,7 +139,7 @@ fun ConsoleGamesScreen(
             modifier = Modifier.fillMaxSize(),
         ) {
             CompositionLocalProvider(LocalFocusMemory provides focusMemory) {
-            LazyVerticalGrid(
+            SpLazyVerticalGrid(
                 columns = GridCells.Adaptive(SpSpacing.GridCellMinWidth),
                 modifier = Modifier.fillMaxSize(),
                 contentPadding = PaddingValues(
@@ -197,7 +196,6 @@ fun ConsoleGamesScreen(
                                 icon = Icons.Filled.SwapVert,
                                 contentDescription = "Sort games",
                                 onClick = { showSortMenu = true },
-                                modifier = Modifier.autoFocus(),
                             )
                             DropdownMenu(
                                 expanded = showSortMenu,

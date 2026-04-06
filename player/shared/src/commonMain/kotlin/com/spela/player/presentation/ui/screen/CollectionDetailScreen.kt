@@ -12,7 +12,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import com.spela.player.presentation.ui.components.SpLazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -120,7 +120,7 @@ fun CollectionDetailScreen(
                     }
                 }
 
-                LazyVerticalGrid(
+                SpLazyVerticalGrid(
                     columns = GridCells.Adaptive(SpSpacing.GridCellMinWidth),
                     modifier = Modifier.fillMaxSize(),
                     contentPadding = PaddingValues(

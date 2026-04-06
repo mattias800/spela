@@ -180,7 +180,7 @@ private fun SpotlightGameCard(
         subtitle = game.consoleName,
         coverUrl = game.coverUrl,
         onClick = onClick,
-        rating = game.rating,
+        rating = game.communityRating,
         testTag = "developer_spotlight_game_${game.id}",
     )
 }

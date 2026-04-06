@@ -127,7 +127,7 @@ private fun ForYouGameCard(
         subtitle = game.consoleName,
         coverUrl = game.coverUrl,
         onClick = onClick,
-        rating = game.rating,
+        rating = game.communityRating,
         isFavorite = game.isFavorite,
         isInPlayLater = game.isInPlayLater,
         testTag = "for_you_game_${game.id}",

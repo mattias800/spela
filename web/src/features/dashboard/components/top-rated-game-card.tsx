@@ -22,7 +22,7 @@ export function TopRatedGameCard({ game }: { game: TopRatedGame }) {
     >
       <span className="flex items-center gap-0.5 text-xs text-amber-400">
         <Star className="h-3 w-3 fill-amber-400" />
-        {game.rating.toFixed(0)}
+        {game.igdbCriticsRating.toFixed(0)}
       </span>
     </CoverCard>
   );

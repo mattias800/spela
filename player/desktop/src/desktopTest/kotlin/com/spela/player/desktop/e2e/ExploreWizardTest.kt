@@ -35,7 +35,7 @@ class ExploreWizardTest {
             consoleId = "snes",
             consoleName = "SNES",
             coverUrl = null,
-            rating = 90.0,
+            igdbCriticsRating = 90.0,
             genre = "Action",
         ),
         Game(
@@ -44,7 +44,7 @@ class ExploreWizardTest {
             consoleId = "nes",
             consoleName = "NES",
             coverUrl = null,
-            rating = 85.0,
+            igdbCriticsRating = 85.0,
             genre = "Shooter",
         ),
     )

@@ -12,7 +12,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import com.spela.player.presentation.ui.components.SpLazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.FilterList
@@ -121,7 +121,7 @@ fun ExploreSearchScreen(
 
             when {
                 searchState.isLoading && searchState.results.isEmpty() -> {
-                    LazyVerticalGrid(
+                    SpLazyVerticalGrid(
                         columns = GridCells.Adaptive(SpSpacing.GridCellMinWidth),
                         modifier = Modifier
                             .fillMaxSize()
@@ -174,7 +174,7 @@ fun ExploreSearchScreen(
                             .testTag("search_results_count"),
                     )
                     Spacer(Modifier.height(SpSpacing.Small))
-                    LazyVerticalGrid(
+                    SpLazyVerticalGrid(
                         columns = GridCells.Adaptive(SpSpacing.GridCellMinWidth),
                         modifier = Modifier
                             .fillMaxSize()
@@ -257,7 +257,7 @@ private fun SearchResultGameCard(
                         color = SpColor.OnBackgroundTertiary,
                         maxLines = 1,
                     )
-                    if (game.rating > 0) {
+                    if (game.igdbCriticsRating > 0) {
                         Icon(
                             imageVector = Icons.Filled.Star,
                             contentDescription = null,
@@ -265,7 +265,7 @@ private fun SearchResultGameCard(
                             modifier = Modifier.size(10.dp),
                         )
                         Text(
-                            text = formatRating(game.rating),
+                            text = formatRating(game.igdbCriticsRating),
                             style = SpTypography.LabelSmall,
                             color = SpColor.OnBackgroundTertiary,
                         )

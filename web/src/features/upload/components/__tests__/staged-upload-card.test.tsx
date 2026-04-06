@@ -15,7 +15,7 @@ function makeUpload(overrides: Partial<StagedUpload> = {}): StagedUpload {
     status: "ready",
     title: "Super Mario Bros.",
     coverUrl: "",
-    rating: 4.0,
+    igdbCriticsRating: 4.0,
     verificationStatus: "verified",
     crc32: "abc",
     canonicalName: "Super Mario Bros. (World).nes",

@@ -145,7 +145,7 @@ data class DeveloperDetailState(
                 filteredGames.filter { it.title.contains(gamesSearchQuery, ignoreCase = true) }
             } else filteredGames
             return when (gamesSortBy) {
-                "rating" -> filtered.sortedByDescending { it.rating }
+                "rating" -> filtered.sortedByDescending { it.igdbCriticsRating }
                 "releaseDate" -> filtered.sortedBy { it.releaseDate ?: "" }
                 else -> filtered.sortedBy { it.title.lowercase() }
             }

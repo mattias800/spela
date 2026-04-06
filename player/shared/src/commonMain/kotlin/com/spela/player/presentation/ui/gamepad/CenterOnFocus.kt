@@ -1,8 +1,12 @@
 package com.spela.player.presentation.ui.gamepad
 
+import androidx.compose.foundation.gestures.animateScrollBy
+import androidx.compose.foundation.gestures.scrollBy
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsFocusedAsState
+import androidx.compose.foundation.lazy.grid.LazyGridState
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.remember
@@ -14,15 +18,33 @@ import androidx.compose.ui.layout.positionInRoot
 import com.spela.player.presentation.ui.components.LocalScrollState
 
 /**
- * When this element gains focus, scrolls the nearest [SpScrollableContent]
+ * Holds the [LazyGridState] and the grid container's vertical position
+ * in root coordinates. Provided by [SpLazyVerticalGrid] via [LocalLazyGridCenterInfo].
+ */
+class LazyGridCenterInfo(
+    val state: LazyGridState,
+) {
+    /** Updated by [SpLazyVerticalGrid] via onGloballyPositioned. */
+    var containerTopInRoot: Float = 0f
+}
+
+/**
+ * Provides [LazyGridCenterInfo] to descendants so [centerOnFocus] can
+ * scroll a [LazyVerticalGrid] to center the focused element.
+ */
+val LocalLazyGridCenterInfo = compositionLocalOf<LazyGridCenterInfo?> { null }
+
+/**
+ * When this element gains focus, scrolls the nearest scrollable parent
  * so this element is vertically centered in the viewport.
+ *
+ * Supports two scrollable types:
+ * - [LocalScrollState] from [SpScrollableContent] (regular Column + verticalScroll)
+ * - [LocalLazyGridCenterInfo] from [SpLazyVerticalGrid] (lazy grid)
  *
  * Uses the [interactionSource] for focus detection (same source shared
  * with `.clickable()` and `.focusable()`), so it detects focus regardless
  * of which node in the modifier chain holds it.
- *
- * Uses the [LocalScrollState] provided by [SpScrollableContent] to
- * calculate and animate the scroll position directly.
  *
  * During rapid focus changes (key repeat, <200ms between changes),
  * scrolls instantly instead of animating for responsive feel.
@@ -31,15 +53,23 @@ fun Modifier.centerOnFocus(
     interactionSource: MutableInteractionSource,
 ): Modifier = composed {
     val scrollState = LocalScrollState.current
+    val lazyGridInfo = LocalLazyGridCenterInfo.current
     val isFocused by interactionSource.collectIsFocusedAsState()
     var positionInRoot = 0f
     var elementHeight = 0f
     var lastFocusTime by remember { mutableLongStateOf(0L) }
 
-    if (scrollState == null) return@composed this
+    if (scrollState == null && lazyGridInfo == null) return@composed this
 
     LaunchedEffect(isFocused) {
-        if (isFocused) {
+        if (!isFocused) return@LaunchedEffect
+
+        val now = System.currentTimeMillis()
+        val isRapid = now - lastFocusTime < 100
+        lastFocusTime = now
+
+        if (scrollState != null) {
+            // Regular ScrollState: compute absolute target scroll position
             val currentScroll = scrollState.value
             val elementTop = positionInRoot + currentScroll
             val viewportHeight = scrollState.viewportSize.toFloat()
@@ -48,14 +78,22 @@ fun Modifier.centerOnFocus(
                 .toInt()
                 .coerceIn(0, scrollState.maxValue)
 
-            val now = System.currentTimeMillis()
-            val isRapid = now - lastFocusTime < 100
-            lastFocusTime = now
-
             if (isRapid) {
                 scrollState.scrollTo(targetScroll)
             } else {
                 scrollState.animateScrollTo(targetScroll)
+            }
+        } else if (lazyGridInfo != null) {
+            // LazyGridState: compute scroll delta from element's screen position
+            val viewportHeight = lazyGridInfo.state.layoutInfo.viewportSize.height.toFloat()
+            val elementCenterOnScreen = positionInRoot + elementHeight / 2f
+            val viewportCenterOnScreen = lazyGridInfo.containerTopInRoot + viewportHeight / 2f
+            val delta = elementCenterOnScreen - viewportCenterOnScreen
+
+            if (isRapid) {
+                lazyGridInfo.state.scrollBy(delta)
+            } else {
+                lazyGridInfo.state.animateScrollBy(delta)
             }
         }
     }

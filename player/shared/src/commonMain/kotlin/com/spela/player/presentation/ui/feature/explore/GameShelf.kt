@@ -60,7 +60,7 @@ internal fun ExploreGameCard(
         subtitle = game.consoleName,
         coverUrl = resolvedCoverUrl,
         onClick = onClick,
-        rating = game.rating,
+        rating = game.communityRating,
         isFavorite = game.isFavorite,
         isInPlayLater = game.isInPlayLater,
         testTag = "explore_game_card_${game.id}",

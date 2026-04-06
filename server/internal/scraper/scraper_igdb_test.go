@@ -146,7 +146,7 @@ func TestScrapeGame_IGDBMetadata(t *testing.T) {
 	assert.Equal(t, "Nintendo", game.Publisher)
 	assert.Equal(t, "Platform", game.Genre)
 	assert.Equal(t, "1985-09-29", game.ReleaseDate)
-	assert.InDelta(t, 85.5, game.Rating, 0.01)
+	assert.InDelta(t, 85.5, game.IGDBCriticsRating, 0.01)
 	assert.Equal(t, 2, game.Players)
 	assert.Equal(t, "igdb:42", game.ScraperID)
 
@@ -231,7 +231,7 @@ func TestScrapeGame_IGDBStoresRatings1to1(t *testing.T) {
 	require.NoError(t, err)
 
 	// Rating (aggregated_rating) stays 0 — DB mirrors IGDB 1:1
-	assert.InDelta(t, 0, game.Rating, 0.01)
+	assert.InDelta(t, 0, game.IGDBCriticsRating, 0.01)
 	// TotalRating and IGDBUserRating stored separately
 	assert.InDelta(t, 88.5, game.TotalRating, 0.01)
 	assert.Equal(t, 200, game.TotalRatingCount)
@@ -918,7 +918,7 @@ func TestScrapeGameWithIGDBMatch_Success(t *testing.T) {
 		Developer:      "Bootleg Corp",
 		Publisher:      "Bootleg Corp",
 		Genre:          "Action",
-		Rating:         10.0,
+		IGDBCriticsRating: 10.0,
 		Players:        1,
 		ReleaseDate:    "2000-01-01",
 		ScraperID:      "igdb:555",
@@ -951,7 +951,7 @@ func TestScrapeGameWithIGDBMatch_Success(t *testing.T) {
 	assert.Equal(t, "Nintendo", game.Publisher)
 	assert.Equal(t, "Platform", game.Genre)
 	assert.Equal(t, "1993-11-22", game.ReleaseDate)
-	assert.InDelta(t, 82.0, game.Rating, 0.01)
+	assert.InDelta(t, 82.0, game.IGDBCriticsRating, 0.01)
 	assert.Equal(t, 1, game.Players)
 	assert.Equal(t, "igdb:999", game.ScraperID)
 	assert.Equal(t, 2, game.ScrapeAttempts)

@@ -45,7 +45,7 @@ class ExploreDeveloperTest {
             consoleId = "snes",
             consoleName = "SNES",
             genre = "RPG",
-            rating = 92.0,
+            igdbCriticsRating = 92.0,
         ),
         Game(
             id = "game-dev-2",
@@ -53,7 +53,7 @@ class ExploreDeveloperTest {
             consoleId = "snes",
             consoleName = "SNES",
             genre = "RPG",
-            rating = 95.0,
+            igdbCriticsRating = 95.0,
         ),
         Game(
             id = "game-dev-3",
@@ -61,7 +61,7 @@ class ExploreDeveloperTest {
             consoleId = "ps2",
             consoleName = "PS2",
             genre = "Action RPG",
-            rating = 85.0,
+            igdbCriticsRating = 85.0,
         ),
     )
 
@@ -95,7 +95,7 @@ class ExploreDeveloperTest {
                 consoleId = "snes",
                 consoleName = "SNES",
                 genre = "Platformer",
-                rating = 90.0,
+                igdbCriticsRating = 90.0,
             ),
             Game(
                 id = "top-2",
@@ -103,7 +103,7 @@ class ExploreDeveloperTest {
                 consoleId = "snes",
                 consoleName = "SNES",
                 genre = "Fighting",
-                rating = 88.0,
+                igdbCriticsRating = 88.0,
             ),
             Game(
                 id = "top-3",
@@ -111,7 +111,7 @@ class ExploreDeveloperTest {
                 consoleId = "snes",
                 consoleName = "SNES",
                 genre = "RPG",
-                rating = 78.0,
+                igdbCriticsRating = 78.0,
             ),
         ),
         genreBreakdown = listOf(
@@ -133,7 +133,7 @@ class ExploreDeveloperTest {
                 consoleId = "snes",
                 consoleName = "SNES",
                 genre = "Platformer",
-                rating = 90.0,
+                igdbCriticsRating = 90.0,
             ),
         ),
         publishers = listOf(
@@ -141,14 +141,14 @@ class ExploreDeveloperTest {
             DeveloperDetailPublisher("Nintendo", 2),
         ),
         games = listOf(
-            Game(id = "cap-1", title = "Mega Man X", consoleId = "snes", consoleName = "SNES", genre = "Platformer", rating = 90.0),
-            Game(id = "cap-2", title = "Street Fighter II", consoleId = "snes", consoleName = "SNES", genre = "Fighting", rating = 88.0),
-            Game(id = "cap-3", title = "Breath of Fire", consoleId = "snes", consoleName = "SNES", genre = "RPG", rating = 78.0),
-            Game(id = "cap-4", title = "Mega Man Zero", consoleId = "gba", consoleName = "GBA", genre = "Platformer", rating = 85.0),
-            Game(id = "cap-5", title = "Street Fighter Alpha", consoleId = "gba", consoleName = "GBA", genre = "Fighting", rating = 75.0),
-            Game(id = "cap-6", title = "Final Fight One", consoleId = "gba", consoleName = "GBA", genre = "Action", rating = 72.0),
-            Game(id = "cap-7", title = "Mega Man Battle Network", consoleId = "gba", consoleName = "GBA", genre = "Platformer", rating = 80.0, coverUrl = null),
-            Game(id = "cap-8", title = "Mega Man X2", consoleId = "snes", consoleName = "SNES", genre = "Platformer", rating = 87.0),
+            Game(id = "cap-1", title = "Mega Man X", consoleId = "snes", consoleName = "SNES", genre = "Platformer", igdbCriticsRating = 90.0),
+            Game(id = "cap-2", title = "Street Fighter II", consoleId = "snes", consoleName = "SNES", genre = "Fighting", igdbCriticsRating = 88.0),
+            Game(id = "cap-3", title = "Breath of Fire", consoleId = "snes", consoleName = "SNES", genre = "RPG", igdbCriticsRating = 78.0),
+            Game(id = "cap-4", title = "Mega Man Zero", consoleId = "gba", consoleName = "GBA", genre = "Platformer", igdbCriticsRating = 85.0),
+            Game(id = "cap-5", title = "Street Fighter Alpha", consoleId = "gba", consoleName = "GBA", genre = "Fighting", igdbCriticsRating = 75.0),
+            Game(id = "cap-6", title = "Final Fight One", consoleId = "gba", consoleName = "GBA", genre = "Action", igdbCriticsRating = 72.0),
+            Game(id = "cap-7", title = "Mega Man Battle Network", consoleId = "gba", consoleName = "GBA", genre = "Platformer", igdbCriticsRating = 80.0, coverUrl = null),
+            Game(id = "cap-8", title = "Mega Man X2", consoleId = "snes", consoleName = "SNES", genre = "Platformer", igdbCriticsRating = 87.0),
         ),
     )
 

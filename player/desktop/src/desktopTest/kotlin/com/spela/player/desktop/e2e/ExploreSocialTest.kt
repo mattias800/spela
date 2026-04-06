@@ -48,7 +48,7 @@ class ExploreSocialTest {
         releaseDate = "",
         genre = "Action",
         players = 1,
-        rating = 80.0,
+        igdbCriticsRating = 80.0,
         isFavorite = false,
         isInPlayLater = false,
         coverAspectRatio = 0.75f,
@@ -93,7 +93,7 @@ class ExploreSocialTest {
             CultClassicGame(
                 game = makeGame("cu1", "Hidden Treasure"),
                 communityRating = 4.5,
-                igdbRating = 55.0,
+                igdbCriticsRating = 55.0,
                 ratingCount = 3,
             ),
         )

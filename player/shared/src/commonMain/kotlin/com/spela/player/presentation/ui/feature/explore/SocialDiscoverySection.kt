@@ -123,7 +123,7 @@ fun CultClassicsSection(
                 .focusRequester(focusRequester)
                 .width(CardWidth)
                 .semantics {
-                    contentDescription = "${item.game.title}, community ${item.communityRating} vs IGDB ${item.igdbRating.toInt()}"
+                    contentDescription = "${item.game.title}, community ${item.communityRating} vs IGDB ${item.igdbCriticsRating.toInt()}"
                 },
         ) {
             ExploreGameCard(
@@ -132,7 +132,7 @@ fun CultClassicsSection(
             )
             Spacer(Modifier.height(4.dp))
             Text(
-                text = "★ ${String.format("%.1f", item.communityRating)}/5 vs IGDB ${item.igdbRating.toInt()}/100",
+                text = "★ ${String.format("%.1f", item.communityRating)}/5 vs IGDB ${item.igdbCriticsRating.toInt()}/100",
                 style = SpTypography.LabelSmall,
                 color = SpColor.OnBackgroundTertiary,
                 maxLines = 1,

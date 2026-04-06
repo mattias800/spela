@@ -121,8 +121,8 @@ function HeroSlide({
               {game.consoleAbbreviation && (
                 <ConsoleBadge code={game.consoleAbbreviation} />
               )}
-              {game.rating > 0 && (
-                <RatingDisplay value={game.rating} />
+              {game.igdbCriticsRating > 0 && (
+                <RatingDisplay value={game.igdbCriticsRating} />
               )}
             </div>
           </div>

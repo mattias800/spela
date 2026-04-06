@@ -45,9 +45,9 @@ export function ExploreKeywordPage() {
   const sortedGames = [...games].sort((a, b) => {
     switch (sortBy) {
       case "rating-desc":
-        return (b.rating ?? 0) - (a.rating ?? 0);
+        return (b.igdbCriticsRating ?? 0) - (a.igdbCriticsRating ?? 0);
       case "rating-asc":
-        return (a.rating ?? 0) - (b.rating ?? 0);
+        return (a.igdbCriticsRating ?? 0) - (b.igdbCriticsRating ?? 0);
       case "title-asc":
         return a.title.localeCompare(b.title);
       case "title-desc":

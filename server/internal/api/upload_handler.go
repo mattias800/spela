@@ -58,7 +58,7 @@ type StagedUploadResponse struct {
 	Title              string   `json:"title,omitempty"`
 	CoverURL           string   `json:"coverUrl,omitempty"`
 	Description        string   `json:"description,omitempty"`
-	Rating             float64  `json:"rating,omitempty"`
+	IGDBCriticsRating  float64  `json:"igdbCriticsRating,omitempty"`
 	Developer          string   `json:"developer,omitempty"`
 	Publisher          string   `json:"publisher,omitempty"`
 	Genre              string   `json:"genre,omitempty"`
@@ -81,7 +81,7 @@ func toStagedUploadResponse(su db.StagedUpload, database *gorm.DB) StagedUploadR
 		Title:              su.Title,
 		CoverURL:           resolveImageURL(su.CoverURL),
 		Description:        su.Description,
-		Rating:             su.Rating,
+		IGDBCriticsRating:  su.IGDBCriticsRating,
 		Developer:          su.Developer,
 		Publisher:          su.Publisher,
 		Genre:              su.Genre,
@@ -818,7 +818,7 @@ func (h *UploadHandler) acceptStaged(staged *db.StagedUpload) (*db.Game, error) 
 		ReleaseDate:        staged.ReleaseDate,
 		Genre:              staged.Genre,
 		Players:            staged.Players,
-		Rating:             staged.Rating,
+		IGDBCriticsRating:  staged.IGDBCriticsRating,
 		VerificationStatus: staged.VerificationStatus,
 		CRC32:              staged.CRC32,
 	}

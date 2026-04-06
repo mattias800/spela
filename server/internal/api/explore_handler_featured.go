@@ -112,7 +112,7 @@ func (h *ExploreHandler) GetExploreFeatured(c *gin.Context) {
 			ConsoleName:         con.Name,
 			ConsoleAbbreviation: abbr,
 			ConsoleColor:        con.ColorTheme,
-			Rating:              r.Rating,
+			IGDBCriticsRating:   r.Rating,
 			Genre:               r.Genre,
 			IsFavorite:          favorites[r.GameID],
 			IsPlayLater:         playLater[r.GameID],

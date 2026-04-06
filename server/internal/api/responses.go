@@ -103,7 +103,7 @@ type GameResponse struct {
 	TimeToBeatNormally   int                         `json:"timeToBeatNormally,omitempty"`
 	TimeToBeatCompletely int                         `json:"timeToBeatCompletely,omitempty"`
 	Players              int                         `json:"players"`
-	Rating               float64                     `json:"rating"`
+	IGDBCriticsRating    float64                     `json:"igdbCriticsRating"`
 	ReleaseDates         []ReleaseDateResponse       `json:"releaseDates,omitempty"`
 	Videos               []VideoResponse             `json:"videos,omitempty"`
 	LanguageSupports     []LanguageSupportResponse   `json:"languageSupports,omitempty"`
@@ -430,7 +430,7 @@ func toGameResponseWithData(g db.Game, data *userGameData) GameResponse {
 		TimeToBeatNormally:   g.TimeToBeatNormally,
 		TimeToBeatCompletely: g.TimeToBeatCompletely,
 		Players:              g.Players,
-		Rating:               g.Rating,
+		IGDBCriticsRating:    g.IGDBCriticsRating,
 		PartyInfo:           g.PartyInfo,
 		Playable:            g.Console.Playable,
 		CoreOverride:        g.CoreOverride,

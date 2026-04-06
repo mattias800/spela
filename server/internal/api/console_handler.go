@@ -405,7 +405,7 @@ type TopRatedGameResponse struct {
 	Rank        int     `json:"rank"`
 	Name        string  `json:"name"`
 	CoverUrl    string  `json:"coverUrl"`
-	Rating      float64 `json:"rating"`
+	IGDBCriticsRating float64 `json:"igdbCriticsRating"`
 	LocalGameId *string `json:"localGameId"`
 	ConsoleName string  `json:"consoleName"`
 }
@@ -528,7 +528,7 @@ type TopListGameResponse struct {
 	CoverUrl    string  `json:"coverUrl"`
 	ConsoleName string  `json:"consoleName"`
 	ConsoleId   string  `json:"consoleId"`
-	Rating      float64 `json:"rating"`
+	IGDBCriticsRating float64 `json:"igdbCriticsRating"`
 }
 
 // GetTopListAvailable returns IGDB audience top-rated games that have a matching
@@ -594,7 +594,7 @@ func (h *ConsoleHandler) getTopListByRating(c *gin.Context, ratingColumn string,
 			CoverUrl:    resolveImageURL(r.CoverURL),
 			ConsoleName: r.ConsoleName,
 			ConsoleId:   strings.ToLower(r.ConsoleAbbr),
-			Rating:      r.Rating,
+			IGDBCriticsRating: r.Rating,
 		}
 	}
 
@@ -697,7 +697,7 @@ func (h *ConsoleHandler) buildTopRatedResponses(cached []db.TopRatedGame, rerank
 		resp := TopRatedGameResponse{
 			Rank:        rank,
 			Name:        tr.Name,
-			Rating:      tr.TotalRating,
+			IGDBCriticsRating: tr.TotalRating,
 			ConsoleName: consoleName,
 		}
 

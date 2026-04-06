@@ -126,7 +126,7 @@ export interface Game {
   languageSupports?: LanguageSupportInfo[];
   ageRatings?: AgeRatingInfo[];
   players?: number;
-  rating?: number;
+  igdbCriticsRating?: number;
   coreOverride?: string;
   scraperId?: string;
   scrapeAttempts: number;
@@ -782,14 +782,14 @@ export interface TopListGame {
   coverUrl: string;
   consoleName: string;
   consoleId: string;
-  rating: number;
+  igdbCriticsRating: number;
 }
 
 export interface TopRatedGame {
   rank: number;
   name: string;
   coverUrl: string;
-  rating: number;
+  igdbCriticsRating: number;
   localGameId: string | null;
   consoleName: string;
 }
@@ -1030,7 +1030,7 @@ export interface SeriesGame {
   localGameId: string | null;
   coverUrl: string | null;
   releaseDate: string | null;
-  rating: number;
+  igdbCriticsRating: number;
   consoleAbbreviation: string;
   consoleName: string;
   consoleColor: string;
@@ -1114,7 +1114,7 @@ export interface CoverItem {
   consoleName: string;
   consoleAbbreviation: string;
   consoleColor: string;
-  rating: number;
+  igdbCriticsRating: number;
   coverAspectRatio: number;
 }
 
@@ -1175,7 +1175,7 @@ export interface FeaturedGame {
   logoUrl: string | null;
   consoleAbbreviation: string;
   consoleColor: string;
-  rating: number;
+  igdbCriticsRating: number;
   genre: string;
   isFavorite: boolean;
   isPlayLater: boolean;
@@ -1371,7 +1371,7 @@ export interface StagedUpload {
   status: StagedUploadStatus;
   title: string;
   coverUrl: string;
-  rating: number;
+  igdbCriticsRating: number;
   verificationStatus: string;
   crc32: string;
   canonicalName: string;
@@ -1401,7 +1401,7 @@ export interface CommunityTopResponse {
 export interface CultClassicGame {
   game: Game;
   communityRating: number;
-  igdbRating: number;
+  igdbCriticsRating: number;
   ratingCount: number;
 }
 

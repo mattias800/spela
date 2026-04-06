@@ -138,7 +138,7 @@ type Game struct {
 	TimeToBeatNormally   int     `json:"timeToBeatNormally,omitempty"`
 	TimeToBeatCompletely int     `json:"timeToBeatCompletely,omitempty"`
 	Players              int     `json:"players,omitempty"`
-	Rating               float64 `json:"rating,omitempty"`
+	IGDBCriticsRating    float64 `gorm:"column:rating" json:"igdbCriticsRating,omitempty"`
 	CoreOverride         string  `gorm:"size:128" json:"coreOverride,omitempty"`
 	LibRetroCoverURL    string         `gorm:"size:512" json:"-"`
 	IGDBCoverURL        string         `gorm:"size:512" json:"-"`
@@ -631,9 +631,9 @@ type SimilarGame struct {
 	IGDBGameID   int            `gorm:"not null" json:"igdbGameId"`
 	Name         string         `gorm:"size:255;not null" json:"name"`
 	CoverImageID   string         `gorm:"size:128" json:"coverImageId"`
-	CoverLocalPath string         `gorm:"size:512" json:"-"`
-	Rating         float64        `json:"rating"`
-	LocalGameID  *uint          `json:"localGameId,omitempty"`
+	CoverLocalPath    string         `gorm:"size:512" json:"-"`
+	IGDBCriticsRating float64        `gorm:"column:rating" json:"igdbCriticsRating"`
+	LocalGameID       *uint          `json:"localGameId,omitempty"`
 }
 
 // Core represents a libretro core.
@@ -896,9 +896,9 @@ type StagedUpload struct {
 	// Scrape results
 	Title       string  `gorm:"size:255" json:"title,omitempty"`
 	CoverURL    string  `gorm:"size:512" json:"coverUrl,omitempty"`
-	Description string  `gorm:"type:text" json:"description,omitempty"`
-	Rating      float64 `json:"rating,omitempty"`
-	Developer   string  `gorm:"size:255" json:"developer,omitempty"`
+	Description       string  `gorm:"type:text" json:"description,omitempty"`
+	IGDBCriticsRating float64 `gorm:"column:rating" json:"igdbCriticsRating,omitempty"`
+	Developer         string  `gorm:"size:255" json:"developer,omitempty"`
 	Publisher   string  `gorm:"size:255" json:"publisher,omitempty"`
 	Genre       string  `gorm:"size:128" json:"genre,omitempty"`
 	Players     int     `json:"players,omitempty"`

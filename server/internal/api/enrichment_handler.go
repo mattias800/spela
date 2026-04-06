@@ -308,7 +308,7 @@ type SeriesGameResponse struct {
 	LocalGameID       *string `json:"localGameId"`
 	CoverURL          *string `json:"coverUrl"`
 	ReleaseDate       string  `json:"releaseDate,omitempty"`
-	Rating            float64 `json:"rating"`
+	IGDBCriticsRating float64 `json:"igdbCriticsRating"`
 	ConsoleAbbreviation string `json:"consoleAbbreviation,omitempty"`
 	ConsoleName       string  `json:"consoleName,omitempty"`
 	ConsoleColor      string  `json:"consoleColor,omitempty"`
@@ -386,7 +386,7 @@ func (h *EnrichmentHandler) GetSeriesDetail(c *gin.Context) {
 						gameResp.CoverURL = &coverURL
 					}
 					gameResp.ReleaseDate = g.ReleaseDate
-					gameResp.Rating = g.Rating
+					gameResp.IGDBCriticsRating = g.IGDBCriticsRating
 
 					if g.Console.ID != 0 {
 						abbr := strings.ToLower(g.Console.Abbreviation)
@@ -399,8 +399,8 @@ func (h *EnrichmentHandler) GetSeriesDetail(c *gin.Context) {
 
 					// Track best hero art (highest rated) and first logo
 					if artwork, ok := artworkMap[*entry.GameID]; ok {
-						if g.Rating > bestHeroRating {
-							bestHeroRating = g.Rating
+						if g.IGDBCriticsRating > bestHeroRating {
+							bestHeroRating = g.IGDBCriticsRating
 							bestHeroURL = resolveImageURL(artwork.HeroURL)
 						}
 						if bestLogoURL == "" && artwork.LogoURL != "" {
@@ -631,7 +631,7 @@ func (h *EnrichmentHandler) GetFranchiseDetail(c *gin.Context) {
 						gameResp.CoverURL = &coverURL
 					}
 					gameResp.ReleaseDate = g.ReleaseDate
-					gameResp.Rating = g.Rating
+					gameResp.IGDBCriticsRating = g.IGDBCriticsRating
 
 					if g.Console.ID != 0 {
 						abbr := strings.ToLower(g.Console.Abbreviation)
@@ -643,8 +643,8 @@ func (h *EnrichmentHandler) GetFranchiseDetail(c *gin.Context) {
 					}
 
 					if artwork, ok := artworkMap[*entry.GameID]; ok {
-						if g.Rating > bestHeroRating {
-							bestHeroRating = g.Rating
+						if g.IGDBCriticsRating > bestHeroRating {
+							bestHeroRating = g.IGDBCriticsRating
 							bestHeroURL = resolveImageURL(artwork.HeroURL)
 						}
 						if bestLogoURL == "" && artwork.LogoURL != "" {

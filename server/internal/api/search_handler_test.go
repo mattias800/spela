@@ -51,11 +51,11 @@ func seedSearchData(t *testing.T, database *gorm.DB) {
 
 	// Create games
 	games := []db.Game{
-		{ConsoleID: snes.ID, Title: "Super Mario World", FileName: "smw.smc", FilePath: "/roms/snes/smw.smc", Developer: "Nintendo", Publisher: "Nintendo", Genre: "Platformer", Rating: 95},
-		{ConsoleID: snes.ID, Title: "Super Metroid", FileName: "sm.smc", FilePath: "/roms/snes/sm.smc", Developer: "Nintendo", Publisher: "Nintendo", Genre: "Action", Rating: 96},
-		{ConsoleID: nes.ID, Title: "Super Mario Bros", FileName: "smb.nes", FilePath: "/roms/nes/smb.nes", Developer: "Nintendo", Publisher: "Nintendo", Genre: "Platformer", Rating: 90},
-		{ConsoleID: snes.ID, Title: "Chrono Trigger", FileName: "ct.smc", FilePath: "/roms/snes/ct.smc", Developer: "Square", Publisher: "Square", Genre: "RPG", Rating: 98},
-		{ConsoleID: nes.ID, Title: "Mega Man 2", FileName: "mm2.nes", FilePath: "/roms/nes/mm2.nes", Developer: "Capcom", Publisher: "Capcom", Genre: "Action", Rating: 85},
+		{ConsoleID: snes.ID, Title: "Super Mario World", FileName: "smw.smc", FilePath: "/roms/snes/smw.smc", Developer: "Nintendo", Publisher: "Nintendo", Genre: "Platformer", IGDBCriticsRating: 95},
+		{ConsoleID: snes.ID, Title: "Super Metroid", FileName: "sm.smc", FilePath: "/roms/snes/sm.smc", Developer: "Nintendo", Publisher: "Nintendo", Genre: "Action", IGDBCriticsRating: 96},
+		{ConsoleID: nes.ID, Title: "Super Mario Bros", FileName: "smb.nes", FilePath: "/roms/nes/smb.nes", Developer: "Nintendo", Publisher: "Nintendo", Genre: "Platformer", IGDBCriticsRating: 90},
+		{ConsoleID: snes.ID, Title: "Chrono Trigger", FileName: "ct.smc", FilePath: "/roms/snes/ct.smc", Developer: "Square", Publisher: "Square", Genre: "RPG", IGDBCriticsRating: 98},
+		{ConsoleID: nes.ID, Title: "Mega Man 2", FileName: "mm2.nes", FilePath: "/roms/nes/mm2.nes", Developer: "Capcom", Publisher: "Capcom", Genre: "Action", IGDBCriticsRating: 85},
 	}
 	for i := range games {
 		require.NoError(t, database.Create(&games[i]).Error)

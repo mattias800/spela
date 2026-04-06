@@ -46,7 +46,7 @@ func createExploreGame(t *testing.T, database *gorm.DB, consoleAbbr, title strin
 		Title:     title,
 		FileName:  title + ".rom",
 		FilePath:  consoleAbbr + "/" + title + ".rom",
-		Rating:    rating,
+		IGDBCriticsRating: rating,
 		Genre:     "Action",
 		IsPrimary: true,
 	}
@@ -64,7 +64,7 @@ func createExploreGameWithTime(t *testing.T, database *gorm.DB, consoleAbbr, tit
 		Title:     title,
 		FileName:  title + ".rom",
 		FilePath:  consoleAbbr + "/" + title + ".rom",
-		Rating:    rating,
+		IGDBCriticsRating: rating,
 		Genre:     "Action",
 		IsPrimary: true,
 	}
@@ -134,13 +134,13 @@ func TestGetExploreFeatured_WithHeroArt(t *testing.T) {
 
 	// Should be sorted by rating DESC
 	assert.Equal(t, "Chrono Trigger", resp[0].Title)
-	assert.Equal(t, 95.0, resp[0].Rating)
+	assert.Equal(t, 95.0, resp[0].IGDBCriticsRating)
 	assert.Equal(t, "https://cdn.steamgriddb.com/hero/chrono.png", resp[0].HeroURL)
 	assert.Equal(t, "https://cdn.steamgriddb.com/logo/chrono.png", resp[0].LogoURL)
 	assert.Equal(t, "Action", resp[0].Genre)
 
 	assert.Equal(t, "Super Mario Bros 3", resp[1].Title)
-	assert.Equal(t, 90.0, resp[1].Rating)
+	assert.Equal(t, 90.0, resp[1].IGDBCriticsRating)
 }
 
 func TestGetExploreFeatured_ConsoleInfo(t *testing.T) {
@@ -282,7 +282,7 @@ func TestGetExploreRows_TopRated(t *testing.T) {
 	// Should have 3 rated games, sorted by rating DESC
 	assert.Len(t, topRated.Games, 3)
 	assert.Equal(t, "Top Game", topRated.Games[0].Title)
-	assert.Equal(t, 95.0, topRated.Games[0].Rating)
+	assert.Equal(t, 95.0, topRated.Games[0].IGDBCriticsRating)
 	assert.Equal(t, "Good Game", topRated.Games[1].Title)
 	assert.Equal(t, "Average Game", topRated.Games[2].Title)
 }
@@ -692,7 +692,7 @@ func TestGetExploreRows_GamesIncludeConsoleInfo(t *testing.T) {
 	assert.NotEmpty(t, game.ConsoleName)
 	assert.NotEmpty(t, game.ID)
 	assert.Equal(t, "SNES Game", game.Title)
-	assert.Equal(t, 90.0, game.Rating)
+	assert.Equal(t, 90.0, game.IGDBCriticsRating)
 }
 
 func TestGetExploreRows_TopRated_CrossConsole(t *testing.T) {
@@ -1068,7 +1068,7 @@ func createExploreGameWithGenre(t *testing.T, database *gorm.DB, consoleAbbr, ti
 		Title:     title,
 		FileName:  title + ".rom",
 		FilePath:  consoleAbbr + "/" + title + ".rom",
-		Rating:    rating,
+		IGDBCriticsRating: rating,
 		Genre:     genre,
 		Players:   players,
 		IsPrimary: true,
@@ -1087,7 +1087,7 @@ func createExploreGameWithCover(t *testing.T, database *gorm.DB, consoleAbbr, ti
 		Title:     title,
 		FileName:  title + ".rom",
 		FilePath:  consoleAbbr + "/" + title + ".rom",
-		Rating:    rating,
+		IGDBCriticsRating: rating,
 		Genre:     "Action",
 		CoverURL:  "https://images.igdb.com/cover/" + title + ".jpg",
 		IsPrimary: true,
@@ -1418,7 +1418,7 @@ func TestGetSurpriseGame(t *testing.T) {
 	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
 	assert.NotEmpty(t, resp.ID)
 	assert.NotEmpty(t, resp.Title)
-	assert.Greater(t, resp.Rating, 70.0)
+	assert.Greater(t, resp.IGDBCriticsRating, 70.0)
 	assert.NotEmpty(t, resp.CoverURL)
 }
 
@@ -1963,7 +1963,7 @@ func createExploreGameWithDev(t *testing.T, database *gorm.DB, consoleAbbr, titl
 		Title:     title,
 		FileName:  title + ".rom",
 		FilePath:  consoleAbbr + "/" + title + ".rom",
-		Rating:    rating,
+		IGDBCriticsRating: rating,
 		Genre:     "Action",
 		Developer: developer,
 		Publisher: publisher,
@@ -2227,7 +2227,7 @@ func createExploreGameFull(t *testing.T, database *gorm.DB, consoleAbbr, title s
 		Title:     title,
 		FileName:  title + ".rom",
 		FilePath:  consoleAbbr + "/" + title + ".rom",
-		Rating:    rating,
+		IGDBCriticsRating: rating,
 		Genre:     genre,
 		Developer: developer,
 		Publisher: publisher,
@@ -2703,12 +2703,12 @@ func TestGetCoverGallery_Success(t *testing.T) {
 
 	// Ordered by rating DESC
 	assert.Equal(t, "Chrono Trigger", resp.Covers[0].GameTitle)
-	assert.Equal(t, 95.0, resp.Covers[0].Rating)
+	assert.Equal(t, 95.0, resp.Covers[0].IGDBCriticsRating)
 	assert.Contains(t, resp.Covers[0].CoverURL, "snes/chrono/cover.jpg")
 	assert.Greater(t, resp.Covers[0].CoverAspectRatio, 0.0)
 
 	assert.Equal(t, "Super Mario Bros", resp.Covers[1].GameTitle)
-	assert.Equal(t, 85.0, resp.Covers[1].Rating)
+	assert.Equal(t, 85.0, resp.Covers[1].IGDBCriticsRating)
 }
 
 func TestGetCoverGallery_ConsoleFilter(t *testing.T) {
@@ -2951,7 +2951,7 @@ func TestGetCultClassics_ReturnsHighCommunityLowIGDB(t *testing.T) {
 	require.Len(t, resp.Games, 1)
 	assert.Equal(t, "Cult Classic", resp.Games[0].Game.Title)
 	assert.GreaterOrEqual(t, resp.Games[0].CommunityRating, 4.0)
-	assert.Less(t, resp.Games[0].IgdbRating, 75.0)
+	assert.Less(t, resp.Games[0].IGDBCriticsRating, 75.0)
 }
 
 func TestGetRecentlyReviewed_Empty(t *testing.T) {
@@ -3062,7 +3062,7 @@ func createExploreGameWithRelease(t *testing.T, database *gorm.DB, consoleAbbr, 
 		Title:       title,
 		FileName:    title + ".rom",
 		FilePath:    consoleAbbr + "/" + title + ".rom",
-		Rating:      rating,
+		IGDBCriticsRating: rating,
 		Genre:       "Action",
 		ReleaseDate: releaseDate,
 		IsPrimary:   true,
@@ -4374,7 +4374,7 @@ func TestGetDeveloperDetail_TopGames(t *testing.T) {
 	assert.Len(t, resp.TopGames, 8)
 	// All topGames should have rating > 0
 	for _, g := range resp.TopGames {
-		assert.Greater(t, g.Rating, 0.0)
+		assert.Greater(t, g.IGDBCriticsRating, 0.0)
 	}
 	// games should include all 10
 	assert.Len(t, resp.Games, 10)
@@ -4716,7 +4716,7 @@ func createExploreGameComplete(t *testing.T, database *gorm.DB, consoleAbbr, tit
 		Title:       title,
 		FileName:    title + ".rom",
 		FilePath:    consoleAbbr + "/" + title + ".rom",
-		Rating:      rating,
+		IGDBCriticsRating: rating,
 		Genre:       genre,
 		Developer:   developer,
 		Publisher:   publisher,
@@ -4996,7 +4996,7 @@ func TestGetDeveloperDetail_Timeline(t *testing.T) {
 	game := resp.Timeline[1].Games[0]
 	assert.NotEmpty(t, game.ID)
 	assert.Equal(t, "Game 1995", game.Title)
-	assert.Equal(t, 90.0, game.Rating)
+	assert.Equal(t, 90.0, game.IGDBCriticsRating)
 }
 
 func TestGetDeveloperDetail_Timeline_TooFewGames(t *testing.T) {
@@ -5423,7 +5423,7 @@ func TestConsoleShowcase_OnlyPrimaryGames(t *testing.T) {
 		Title:     "Super Mario World (USA)",
 		FileName:  "Super Mario World (USA).sfc",
 		FilePath:  "SNES/Super Mario World (USA).sfc",
-		Rating:    92,
+		IGDBCriticsRating: 92,
 		Genre:     "Platformer",
 		IsPrimary: true,
 		GroupKey:   "snes:super-mario-world",
@@ -5436,7 +5436,7 @@ func TestConsoleShowcase_OnlyPrimaryGames(t *testing.T) {
 		Title:     "Super Mario World (Europe)",
 		FileName:  "Super Mario World (Europe).sfc",
 		FilePath:  "SNES/Super Mario World (Europe).sfc",
-		Rating:    92,
+		IGDBCriticsRating: 92,
 		Genre:     "Platformer",
 		IsPrimary: false,
 		GroupKey:   "snes:super-mario-world",

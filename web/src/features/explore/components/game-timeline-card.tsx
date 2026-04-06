@@ -44,8 +44,8 @@ export function GameTimelineCard({ game, testIdPrefix }: GameTimelineCardProps) 
           {year && (
             <span className="text-xs text-surface-500">{year}</span>
           )}
-          {game.rating > 0 && (
-            <RatingDisplay value={game.rating / 10} />
+          {game.igdbCriticsRating > 0 && (
+            <RatingDisplay value={game.igdbCriticsRating / 10} />
           )}
         </div>
       </div>

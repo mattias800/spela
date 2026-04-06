@@ -94,7 +94,7 @@ internal fun GameListRowItem(
                         )
                     }
 
-                    if (game.averageRating > 0) {
+                    if (game.communityRating > 0) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Icon(
                                 imageVector = Icons.Filled.Star,
@@ -104,7 +104,7 @@ internal fun GameListRowItem(
                             )
                             Spacer(Modifier.width(SpSpacing.XXSmall))
                             Text(
-                                text = String.format("%.1f", game.averageRating),
+                                text = String.format("%.1f", game.communityRating),
                                 style = SpTypography.LabelSmall,
                                 color = SpColor.OnBackgroundTertiary,
                             )

@@ -206,7 +206,7 @@ fun ConsoleScreen(
                                             subtitle = game.consoleName,
                                             coverUrl = game.coverUrl,
                                             onClick = { onGameSelected(game.id) },
-                                            rating = game.rating,
+                                            rating = game.communityRating,
                                             isFavorite = game.isFavorite,
                                             isInPlayLater = game.isInPlayLater,
                                         )

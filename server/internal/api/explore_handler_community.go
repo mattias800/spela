@@ -40,7 +40,7 @@ type CommunityTopResponse struct {
 type CultClassicGame struct {
 	Game            GameResponse `json:"game"`
 	CommunityRating float64     `json:"communityRating"`
-	IgdbRating      float64     `json:"igdbRating"`
+	IGDBCriticsRating float64   `json:"igdbCriticsRating"`
 	RatingCount     int         `json:"ratingCount"`
 }
 
@@ -285,7 +285,7 @@ func (h *ExploreHandler) GetCultClassics(c *gin.Context) {
 		result = append(result, CultClassicGame{
 			Game:            toGameResponseWithData(g, &userData),
 			CommunityRating: math.Round(r.CommunityRating*100) / 100,
-			IgdbRating:      g.Rating,
+			IGDBCriticsRating: g.IGDBCriticsRating,
 			RatingCount:     r.RatingCount,
 		})
 	}

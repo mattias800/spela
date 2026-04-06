@@ -112,7 +112,7 @@ func TestGetSimilarGames_ReturnsCachedData(t *testing.T) {
 		Name:           "Super Mario Bros. 2",
 		CoverImageID:   "co9999",
 		CoverLocalPath: "NES/5678/cover.jpg",
-		Rating:         85.5,
+		IGDBCriticsRating: 85.5,
 	}
 	similar2 := db.SimilarGame{
 		GameID:         game.ID,
@@ -120,7 +120,7 @@ func TestGetSimilarGames_ReturnsCachedData(t *testing.T) {
 		Name:           "Kirby's Adventure",
 		CoverImageID:   "co8888",
 		CoverLocalPath: "NES/9012/cover.jpg",
-		Rating:       82.0,
+		IGDBCriticsRating: 82.0,
 	}
 	err = database.Create(&similar1).Error
 	require.NoError(t, err)
@@ -138,7 +138,7 @@ func TestGetSimilarGames_ReturnsCachedData(t *testing.T) {
 	require.NoError(t, err)
 	assert.Len(t, result, 2)
 	assert.Equal(t, "Super Mario Bros. 2", result[0].Name)
-	assert.Equal(t, 85.5, result[0].Rating)
+	assert.Equal(t, 85.5, result[0].IGDBCriticsRating)
 	assert.Contains(t, result[0].CoverUrl, "/api/images/NES/5678/cover.jpg")
 	assert.Nil(t, result[0].LocalGameId, "should be nil when no local game matches")
 }
@@ -178,7 +178,7 @@ func TestGetSimilarGames_CrossReferencesLocalLibrary(t *testing.T) {
 		IGDBGameID:   9012,
 		Name:         "Kirby's Adventure",
 		CoverImageID: "co8888",
-		Rating:       82.0,
+		IGDBCriticsRating: 82.0,
 	}
 	err = database.Create(&similar).Error
 	require.NoError(t, err)

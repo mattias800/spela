@@ -26,7 +26,7 @@ type SimilarGameResponse struct {
 	IGDBGameID  int     `json:"igdbGameId"`
 	Name        string  `json:"name"`
 	CoverUrl    string  `json:"coverUrl"`
-	Rating      float64 `json:"rating"`
+	IGDBCriticsRating float64 `json:"igdbCriticsRating"`
 	LocalGameId *string `json:"localGameId"`
 }
 
@@ -82,7 +82,7 @@ func (h *GameDiscoveryHandler) GetSimilarGames(c *gin.Context) {
 		resp := SimilarGameResponse{
 			IGDBGameID: sg.IGDBGameID,
 			Name:       sg.Name,
-			Rating:     sg.Rating,
+			IGDBCriticsRating: sg.IGDBCriticsRating,
 		}
 
 		// Check for local game match by case-insensitive title
@@ -126,7 +126,7 @@ func (h *GameDiscoveryHandler) upsertSimilarGames(gameID uint, games []igdb.Simi
 			Name:           g.Name,
 			CoverImageID:   coverImageID,
 			CoverLocalPath: coverLocalPath,
-			Rating:         g.TotalRating,
+			IGDBCriticsRating: g.TotalRating,
 		}
 
 		// Upsert: update if exists, create if not
@@ -136,7 +136,7 @@ func (h *GameDiscoveryHandler) upsertSimilarGames(gameID uint, games []igdb.Simi
 			updates := map[string]interface{}{
 				"name":           sg.Name,
 				"cover_image_id": sg.CoverImageID,
-				"rating":         sg.Rating,
+				"rating":         sg.IGDBCriticsRating,
 			}
 			if coverLocalPath != "" {
 				updates["cover_local_path"] = coverLocalPath

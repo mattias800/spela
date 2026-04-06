@@ -111,7 +111,7 @@ data class GameDto(
     val releaseDate: String? = null,
     val genre: String? = null,
     val players: Int = 0,
-    val rating: Double = 0.0,
+    val igdbCriticsRating: Double = 0.0,
     val averageRating: Double = 0.0,
     val ratingCount: Long = 0,
     val userRating: Int? = null,
@@ -1517,7 +1517,7 @@ data class CommunityTopResponseDto(
 data class CultClassicGameDto(
     val game: GameDto,
     val communityRating: Double,
-    val igdbRating: Double,
+    val igdbCriticsRating: Double,
     val ratingCount: Int,
 )
 

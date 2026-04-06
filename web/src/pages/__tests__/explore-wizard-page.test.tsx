@@ -70,7 +70,7 @@ const mockResults: WizardResultsResponse = {
       totalPlayTime: 0,
       createdAt: "2024-01-01",
       updatedAt: "2024-01-01",
-      rating: 85,
+      igdbCriticsRating: 85,
     },
   ],
   title: "Action-Packed Picks",

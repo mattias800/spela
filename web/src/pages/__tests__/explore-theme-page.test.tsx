@@ -59,9 +59,9 @@ const mockThemes: Theme[] = [
 
 const mockGamesResponse: GamesResponse = {
   data: [
-    makeGame({ id: "1", title: "Metroid", rating: 90 }),
-    makeGame({ id: "2", title: "Star Fox", rating: 85 }),
-    makeGame({ id: "3", title: "Mega Man X", rating: 88 }),
+    makeGame({ id: "1", title: "Metroid", igdbCriticsRating: 90 }),
+    makeGame({ id: "2", title: "Star Fox", igdbCriticsRating: 85 }),
+    makeGame({ id: "3", title: "Mega Man X", igdbCriticsRating: 88 }),
   ],
   total: 3,
   page: 1,

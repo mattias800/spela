@@ -108,7 +108,7 @@ internal fun GameCoverCard(
         subtitle = game.consoleName,
         coverUrl = game.coverUrl,
         onClick = onClick,
-        rating = game.rating,
+        rating = game.communityRating,
         isFavorite = game.isFavorite,
         isInPlayLater = game.isInPlayLater,
     )

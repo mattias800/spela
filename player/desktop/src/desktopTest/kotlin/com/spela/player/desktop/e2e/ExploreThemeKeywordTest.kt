@@ -51,7 +51,7 @@ class ExploreThemeKeywordTest {
             consoleName = "GC",
             consoleId = "gc",
             coverUrl = null,
-            rating = 96.0,
+            igdbCriticsRating = 96.0,
         ),
         Game(
             id = "51",
@@ -59,7 +59,7 @@ class ExploreThemeKeywordTest {
             consoleName = "SNES",
             consoleId = "snes",
             coverUrl = null,
-            rating = 88.0,
+            igdbCriticsRating = 88.0,
         ),
     )
 
@@ -70,7 +70,7 @@ class ExploreThemeKeywordTest {
             consoleName = "SNES",
             consoleId = "snes",
             coverUrl = null,
-            rating = 95.0,
+            igdbCriticsRating = 95.0,
         ),
     )
 

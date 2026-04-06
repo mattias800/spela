@@ -30,7 +30,7 @@ const mockCovers: CoverGalleryResponse = {
       consoleName: "SNES",
       consoleAbbreviation: "snes",
       consoleColor: "#805ad5",
-      rating: 92,
+      igdbCriticsRating: 92,
       coverAspectRatio: 0.75,
     },
     {
@@ -40,7 +40,7 @@ const mockCovers: CoverGalleryResponse = {
       consoleName: "SNES",
       consoleAbbreviation: "snes",
       consoleColor: "#805ad5",
-      rating: 95,
+      igdbCriticsRating: 95,
       coverAspectRatio: 0.75,
     },
     {
@@ -50,7 +50,7 @@ const mockCovers: CoverGalleryResponse = {
       consoleName: "Genesis",
       consoleAbbreviation: "gen",
       consoleColor: "#3b82f6",
-      rating: 85,
+      igdbCriticsRating: 85,
       coverAspectRatio: 0.75,
     },
   ],
