@@ -45,7 +45,7 @@ const mockTopRatedGames = [
     coverUrl: "/api/images/covers/smw.jpg",
     consoleName: "SNES",
     consoleId: "2",
-    rating: 92.5,
+    igdbCriticsRating: 92.5,
   },
   {
     rank: 2,
@@ -54,7 +54,7 @@ const mockTopRatedGames = [
     coverUrl: "/api/images/covers/zelda.jpg",
     consoleName: "NES",
     consoleId: "1",
-    rating: 91.0,
+    igdbCriticsRating: 91.0,
   },
   {
     rank: 3,
@@ -63,7 +63,7 @@ const mockTopRatedGames = [
     coverUrl: "/api/images/covers/ct.jpg",
     consoleName: "SNES",
     consoleId: "2",
-    rating: 90.3,
+    igdbCriticsRating: 90.3,
   },
 ];
 
