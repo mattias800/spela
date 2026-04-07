@@ -163,7 +163,7 @@ class SpelaTestHarness(
     val presenceService = PresenceService(fakeApiClient, stubEngineFactory, dispatchers, scope)
 
     val keyMappingRepo = FakeKeyMappingRepository()
-    val gamepadPortManager = GamepadPortManager(keyMappingRepo)
+    val gamepadPortManager = GamepadPortManager(keyMappingRepo, scope)
 
     private val emulationState = MutableStateFlow(EmulationState())
 

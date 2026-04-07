@@ -2,6 +2,11 @@ package com.spela.player.libretro
 
 import com.spela.player.domain.repository.KeyMappingRepository
 import com.spela.player.presentation.ui.gamepad.InputMode
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -18,9 +23,12 @@ import kotlin.time.Clock
  */
 class GamepadPortManager(
     private val keyMappingRepository: KeyMappingRepository,
+    private val scope: CoroutineScope? = null,
 ) {
     companion object {
         const val MAX_PORTS = 8
+        const val ACTIVITY_TIMEOUT_MS = 300L
+        const val ACTIVITY_REFRESH_INTERVAL_MS = 100L
     }
 
     /**
@@ -59,6 +67,13 @@ class GamepadPortManager(
     private val _inputMode = MutableStateFlow(InputMode.TOUCH)
     val inputMode: StateFlow<InputMode> = _inputMode.asStateFlow()
 
+    /** Observable controller status for UI indicators. */
+    private val _controllerStatus = MutableStateFlow(ControllerStatusState.Empty)
+    val controllerStatus: StateFlow<ControllerStatusState> = _controllerStatus.asStateFlow()
+
+    /** Coroutine that periodically refreshes activity flags. */
+    private var activityRefreshJob: Job? = null
+
     fun setInputMode(mode: InputMode) {
         _inputMode.value = mode
     }
@@ -81,6 +96,8 @@ class GamepadPortManager(
         val assignment = PortAssignment(deviceId = deviceId, port = port, deviceName = deviceName)
         deviceToPort[deviceId] = assignment
         _assignments.value = deviceToPort.values.toList()
+        emitControllerStatus()
+        startActivityRefreshIfNeeded()
         return port
     }
 
@@ -94,6 +111,7 @@ class GamepadPortManager(
         if (!occupiedPorts[port]) return
         lastActivityMs[port] = Clock.System.now().toEpochMilliseconds()
         _portActivity.value = buildActivityMap()
+        emitControllerStatus()
     }
 
     /**
@@ -107,6 +125,8 @@ class GamepadPortManager(
         lastActivityMs[assignment.port] = 0L
         _assignments.value = deviceToPort.values.toList()
         _portActivity.value = buildActivityMap()
+        emitControllerStatus()
+        stopActivityRefreshIfNotNeeded()
     }
 
     /**
@@ -277,6 +297,42 @@ class GamepadPortManager(
         lastActivityMs.fill(0L)
         _assignments.value = emptyList()
         _portActivity.value = emptyMap()
+        emitControllerStatus()
+        stopActivityRefresh()
+    }
+
+    private fun emitControllerStatus() {
+        val now = Clock.System.now().toEpochMilliseconds()
+        _controllerStatus.value = ControllerStatusState.fromPortData(
+            occupiedPorts = occupiedPorts.copyOf(),
+            lastActivityMs = lastActivityMs.copyOf(),
+            nowMs = now,
+            activityTimeoutMs = ACTIVITY_TIMEOUT_MS,
+        )
+    }
+
+    private fun startActivityRefreshIfNeeded() {
+        if (activityRefreshJob?.isActive == true) return
+        if (deviceToPort.size < 2) return
+        val currentScope = scope ?: return
+        activityRefreshJob = currentScope.launch {
+            while (isActive) {
+                delay(ACTIVITY_REFRESH_INTERVAL_MS)
+                synchronized(this@GamepadPortManager) {
+                    emitControllerStatus()
+                }
+            }
+        }
+    }
+
+    private fun stopActivityRefreshIfNotNeeded() {
+        if (deviceToPort.size >= 2) return
+        stopActivityRefresh()
+    }
+
+    private fun stopActivityRefresh() {
+        activityRefreshJob?.cancel()
+        activityRefreshJob = null
     }
 
     /**
