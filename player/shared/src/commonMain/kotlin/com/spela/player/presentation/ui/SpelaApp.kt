@@ -12,6 +12,7 @@ import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -1714,7 +1715,13 @@ fun SpelaApp(
                                     color = Color.Black.copy(alpha = 0.6f),
                                     shape = androidx.compose.foundation.shape.RoundedCornerShape(24.dp),
                                 )
-                                .padding(horizontal = SpSpacing.Default, vertical = SpSpacing.Small),
+                                .clickable {
+                                    navigationViewModel.onIntent(
+                                        NavigationIntent.SwitchTab(SpScreen.Settings)
+                                    )
+                                }
+                                .padding(horizontal = SpSpacing.Default, vertical = SpSpacing.Small)
+                                .semantics { contentDescription = "${controllerStatus.connectedCount} controllers connected" },
                             horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp),
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
