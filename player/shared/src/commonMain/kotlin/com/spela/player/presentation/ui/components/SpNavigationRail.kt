@@ -1,5 +1,12 @@
 package com.spela.player.presentation.ui.components
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.ExitTransition
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.focusable
@@ -31,6 +38,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
+import com.spela.player.libretro.ControllerStatusState
 import com.spela.player.presentation.ui.theme.LocalTitleBarInset
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
@@ -63,6 +71,8 @@ fun SpNavigationRail(
     activeTab: BottomNavTab,
     onTabSelected: (BottomNavTab) -> Unit,
     showLabels: Boolean,
+    controllerStatus: ControllerStatusState = ControllerStatusState.Empty,
+    onControllerStatusClick: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     val railWidth = if (showLabels) 200.dp else 72.dp
@@ -88,8 +98,48 @@ fun SpNavigationRail(
                 )
             }
 
-            // Push Settings to the bottom
+            // Push Settings + controller indicator to the bottom
             Spacer(Modifier.weight(1f))
+
+            // Controller status indicator (only when 2+ controllers)
+            val animationsEnabled = LocalAnimationsEnabled.current
+            AnimatedVisibility(
+                visible = controllerStatus.isMultiplayer,
+                enter = if (animationsEnabled) fadeIn() + slideInVertically(initialOffsetY = { it }) else EnterTransition.None,
+                exit = if (animationsEnabled) fadeOut() + slideOutVertically(targetOffsetY = { it }) else ExitTransition.None,
+            ) {
+                if (showLabels) {
+                    // Labeled rail: full card
+                    SpControllerStatusCard(
+                        ports = controllerStatus.ports,
+                        onClick = onControllerStatusClick,
+                        modifier = Modifier
+                            .padding(horizontal = SpSpacing.Small)
+                            .padding(bottom = SpSpacing.Small),
+                    )
+                } else {
+                    // Icon-only rail: stacked dots, no labels, no card
+                    Column(
+                        modifier = Modifier
+                            .padding(bottom = SpSpacing.Small)
+                            .clip(RoundedCornerShape(8.dp))
+                            .clickable { onControllerStatusClick() }
+                            .focusable()
+                            .padding(vertical = SpSpacing.Small),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(SpSpacing.XSmall),
+                    ) {
+                        controllerStatus.ports.filter { it.connected }.forEach { port ->
+                            SpControllerDot(
+                                connected = port.connected,
+                                active = port.active,
+                                port = port.port,
+                                size = 10.dp,
+                            )
+                        }
+                    }
+                }
+            }
 
             // Settings tab
             RailItem(
