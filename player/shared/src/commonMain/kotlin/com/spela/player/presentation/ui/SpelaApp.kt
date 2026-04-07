@@ -1697,14 +1697,14 @@ fun SpelaApp(
             }
 
             // Floating controller mini-pill (phone layout, 2+ controllers, no gamepad pill visible)
-            if (showNavArea && !isGamepadMode && navLayoutMode == NavigationLayoutMode.BOTTOM_BAR && controllerStatus.isMultiplayer) {
+            if (showNavArea && !isGamepadMode && navLayoutMode == NavigationLayoutMode.BOTTOM_BAR) {
                 Box(
                     modifier = Modifier.fillMaxSize(),
                     contentAlignment = Alignment.TopCenter,
                 ) {
                     val animationsEnabled = com.spela.player.presentation.ui.components.LocalAnimationsEnabled.current
                     AnimatedVisibility(
-                        visible = true,
+                        visible = controllerStatus.isMultiplayer,
                         enter = if (animationsEnabled) fadeIn() + slideInVertically(initialOffsetY = { -it }) else EnterTransition.None,
                         exit = if (animationsEnabled) fadeOut() + slideOutVertically(targetOffsetY = { -it }) else ExitTransition.None,
                     ) {
@@ -1713,7 +1713,7 @@ fun SpelaApp(
                                 .padding(top = SpSpacing.Default)
                                 .background(
                                     color = Color.Black.copy(alpha = 0.6f),
-                                    shape = androidx.compose.foundation.shape.RoundedCornerShape(24.dp),
+                                    shape = androidx.compose.foundation.shape.RoundedCornerShape(SpSpacing.RadiusXLarge),
                                 )
                                 .clickable {
                                     navigationViewModel.onIntent(
@@ -1722,7 +1722,7 @@ fun SpelaApp(
                                 }
                                 .padding(horizontal = SpSpacing.Default, vertical = SpSpacing.Small)
                                 .semantics { contentDescription = "${controllerStatus.connectedCount} controllers connected" },
-                            horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp),
+                            horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(SpSpacing.Small),
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
                             com.spela.player.presentation.ui.components.SpControllerStatusRow(

@@ -119,12 +119,20 @@ fun SpNavigationRail(
                     )
                 } else {
                     // Icon-only rail: stacked dots, no labels, no card
+                    val dotInteractionSource = remember { MutableInteractionSource() }
+                    val dotsFocused by dotInteractionSource.collectIsFocusedAsState()
                     Column(
                         modifier = Modifier
                             .padding(bottom = SpSpacing.Small)
-                            .clip(RoundedCornerShape(8.dp))
-                            .clickable { onControllerStatusClick() }
-                            .focusable()
+                            .clip(RoundedCornerShape(SpSpacing.RadiusMedium))
+                            .background(
+                                if (dotsFocused) Color.White.copy(alpha = 0.05f) else Color.Transparent,
+                            )
+                            .clickable(
+                                interactionSource = dotInteractionSource,
+                                indication = null,
+                            ) { onControllerStatusClick() }
+                            .focusable(interactionSource = dotInteractionSource)
                             .padding(vertical = SpSpacing.Small),
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.spacedBy(SpSpacing.XSmall),

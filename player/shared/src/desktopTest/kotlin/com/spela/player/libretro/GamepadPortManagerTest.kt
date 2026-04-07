@@ -356,6 +356,21 @@ class GamepadPortManagerTest {
         assertFalse(status.isMultiplayer)
     }
 
+    @Test
+    fun controllerStatusUpdatesOnSwap() {
+        manager.connectDevice(100, "Xbox")
+        manager.connectDevice(200, "DualSense")
+        val before = manager.controllerStatus.value
+        assertTrue(before.ports[0].connected)
+        assertTrue(before.ports[1].connected)
+
+        manager.swapPorts(0, 1)
+        val after = manager.controllerStatus.value
+        // Both ports still connected after swap
+        assertTrue(after.ports[0].connected)
+        assertTrue(after.ports[1].connected)
+    }
+
     private class FakeKeyMappingRepo : KeyMappingRepository {
         val effectiveMappings = mutableMapOf<String, Map<Int, Int>>()
 

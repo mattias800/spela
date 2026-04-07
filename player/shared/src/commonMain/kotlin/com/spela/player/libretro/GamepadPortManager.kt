@@ -283,6 +283,7 @@ class GamepadPortManager(
 
         _assignments.value = deviceToPort.values.toList()
         _portActivity.value = buildActivityMap()
+        emitControllerStatus()
     }
 
     /**
@@ -311,6 +312,8 @@ class GamepadPortManager(
         )
     }
 
+    /** Starts the periodic activity refresh if multiplayer and not already running.
+     *  Must be called while holding the monitor (from a @Synchronized method). */
     private fun startActivityRefreshIfNeeded() {
         if (activityRefreshJob?.isActive == true) return
         if (deviceToPort.size < 2) return
@@ -325,11 +328,15 @@ class GamepadPortManager(
         }
     }
 
+    /** Stops the periodic activity refresh if there are fewer than 2 controllers.
+     *  Must be called while holding the monitor (from a @Synchronized method). */
     private fun stopActivityRefreshIfNotNeeded() {
         if (deviceToPort.size >= 2) return
         stopActivityRefresh()
     }
 
+    /** Cancels the periodic activity refresh job unconditionally.
+     *  Must be called while holding the monitor (from a @Synchronized method). */
     private fun stopActivityRefresh() {
         activityRefreshJob?.cancel()
         activityRefreshJob = null
