@@ -9,9 +9,12 @@ import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
@@ -23,6 +26,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.graphics.Color
+import com.spela.player.libretro.ControllerStatusState
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
 
@@ -30,6 +34,7 @@ import com.spela.player.presentation.ui.theme.SpSpacing
 fun SpSectionIndicator(
     activeTab: BottomNavTab,
     visible: Boolean,
+    controllerStatus: ControllerStatusState = ControllerStatusState.Empty,
     modifier: Modifier = Modifier,
 ) {
     val animationsEnabled = LocalAnimationsEnabled.current
@@ -74,6 +79,24 @@ fun SpSectionIndicator(
                 color = SpColor.OnBackgroundSecondary,
                 fontSize = 12.sp,
             )
+
+            // Controller status dots (only when multiplayer)
+            if (controllerStatus.isMultiplayer) {
+                // Vertical separator
+                Box(
+                    modifier = Modifier
+                        .width(1.dp)
+                        .height(18.dp)
+                        .background(Color.White.copy(alpha = 0.15f)),
+                )
+
+                SpControllerStatusRow(
+                    ports = controllerStatus.ports,
+                    showEmptySlots = false,
+                    dotSize = 8.dp,
+                    spacing = SpSpacing.Small,
+                )
+            }
         }
     }
 }
