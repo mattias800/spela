@@ -7,7 +7,9 @@ import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 
@@ -159,6 +161,7 @@ import com.spela.player.presentation.viewmodel.GamepadConfigViewModel
 import com.spela.player.presentation.viewmodel.SocialViewModel
 import com.spela.player.presentation.viewmodel.StatsViewModel
 import com.spela.player.presentation.viewmodel.TopListsViewModel
+import com.spela.player.libretro.ControllerStatusState
 import com.spela.player.libretro.GamepadPortManager
 import com.spela.player.presentation.ui.components.SpSectionIndicator
 
@@ -215,6 +218,8 @@ fun SpelaApp(
         val inputMode by gamepadPortManager?.inputMode?.collectAsState()
             ?: remember { mutableStateOf(InputMode.TOUCH) }
         val isGamepadMode = inputMode == InputMode.GAMEPAD
+        val controllerStatus by gamepadPortManager?.controllerStatus?.collectAsState()
+            ?: remember { mutableStateOf(ControllerStatusState.Empty) }
         val sectionIndicatorVisible = isGamepadMode
 
         // Indicator for E2E tests: exposes whether the libretro core is running.
@@ -353,6 +358,12 @@ fun SpelaApp(
                         )
                     },
                     showLabels = navLayoutMode == NavigationLayoutMode.LABELED_RAIL,
+                    controllerStatus = controllerStatus,
+                    onControllerStatusClick = {
+                        navigationViewModel.onIntent(
+                            NavigationIntent.SwitchTab(SpScreen.Settings)
+                        )
+                    },
                 )
             }
 
@@ -1678,8 +1689,43 @@ fun SpelaApp(
                     SpSectionIndicator(
                         activeTab = navState.activeTab,
                         visible = sectionIndicatorVisible,
+                        controllerStatus = controllerStatus,
                         modifier = Modifier.padding(top = SpSpacing.Default),
                     )
+                }
+            }
+
+            // Floating controller mini-pill (phone layout, 2+ controllers, no gamepad pill visible)
+            if (showNavArea && !isGamepadMode && navLayoutMode == NavigationLayoutMode.BOTTOM_BAR && controllerStatus.isMultiplayer) {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.TopCenter,
+                ) {
+                    val animationsEnabled = com.spela.player.presentation.ui.components.LocalAnimationsEnabled.current
+                    AnimatedVisibility(
+                        visible = true,
+                        enter = if (animationsEnabled) fadeIn() + slideInVertically(initialOffsetY = { -it }) else EnterTransition.None,
+                        exit = if (animationsEnabled) fadeOut() + slideOutVertically(targetOffsetY = { -it }) else ExitTransition.None,
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .padding(top = SpSpacing.Default)
+                                .background(
+                                    color = Color.Black.copy(alpha = 0.6f),
+                                    shape = androidx.compose.foundation.shape.RoundedCornerShape(24.dp),
+                                )
+                                .padding(horizontal = SpSpacing.Default, vertical = SpSpacing.Small),
+                            horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            com.spela.player.presentation.ui.components.SpControllerStatusRow(
+                                ports = controllerStatus.ports,
+                                showEmptySlots = false,
+                                dotSize = 8.dp,
+                                spacing = SpSpacing.Small,
+                            )
+                        }
+                    }
                 }
             }
             } // BoxWithConstraints
