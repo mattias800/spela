@@ -72,7 +72,7 @@ val commonModule = module {
     single<ExploreRepository> { ExploreRepositoryImpl(get()) }
     single<SearchRepository> { SearchRepositoryImpl(get(), get()) }
     single { BiosRepository(get(), get()) }
-    single { GamepadPortManager(get()) }
+    single { GamepadPortManager(get(), get()) }
 
     /* Use Cases */
     factory { LoginUseCase(get(), get()) }

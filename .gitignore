@@ -3,6 +3,9 @@
 .claude/
 .vscode/
 
+# Worktrees
+.worktrees/
+
 # Go
 server/.playwright-cli/
 

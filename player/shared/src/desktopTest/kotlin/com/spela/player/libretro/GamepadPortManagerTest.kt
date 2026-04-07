@@ -6,6 +6,7 @@ import kotlinx.coroutines.test.runTest
 import com.spela.player.presentation.viewmodel.LibretroAnalog
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
@@ -297,6 +298,77 @@ class GamepadPortManagerTest {
         val afterSwap = manager.assignments.value
         assertEquals(1, afterSwap.find { it.deviceId == 100 }?.port)
         assertEquals(0, afterSwap.find { it.deviceId == 200 }?.port)
+    }
+
+    @Test
+    fun controllerStatusEmptyByDefault() {
+        val status = manager.controllerStatus.value
+        assertEquals(0, status.connectedCount)
+        assertFalse(status.isMultiplayer)
+        status.ports.forEach { assertFalse(it.connected) }
+    }
+
+    @Test
+    fun controllerStatusUpdatesOnConnect() {
+        manager.connectDevice(100, "Xbox")
+        manager.connectDevice(200, "DualSense")
+        val status = manager.controllerStatus.value
+        assertEquals(2, status.connectedCount)
+        assertTrue(status.isMultiplayer)
+        assertTrue(status.ports[0].connected)
+        assertTrue(status.ports[1].connected)
+        assertFalse(status.ports[2].connected)
+    }
+
+    @Test
+    fun controllerStatusUpdatesOnDisconnect() {
+        manager.connectDevice(100, "Xbox")
+        manager.connectDevice(200, "DualSense")
+        assertTrue(manager.controllerStatus.value.isMultiplayer)
+
+        manager.disconnectDevice(100)
+        val status = manager.controllerStatus.value
+        assertEquals(1, status.connectedCount)
+        assertFalse(status.isMultiplayer)
+        assertFalse(status.ports[0].connected)
+        assertTrue(status.ports[1].connected)
+    }
+
+    @Test
+    fun controllerStatusReflectsActivityAfterReport() {
+        manager.connectDevice(100, "Xbox")
+        manager.connectDevice(200, "DualSense")
+        manager.reportActivity(0)
+        val status = manager.controllerStatus.value
+        assertTrue(status.ports[0].connected)
+        assertTrue(status.ports[1].connected)
+    }
+
+    @Test
+    fun controllerStatusClearsOnClear() {
+        manager.connectDevice(100, "Xbox")
+        manager.connectDevice(200, "DualSense")
+        assertTrue(manager.controllerStatus.value.isMultiplayer)
+
+        manager.clear()
+        val status = manager.controllerStatus.value
+        assertEquals(0, status.connectedCount)
+        assertFalse(status.isMultiplayer)
+    }
+
+    @Test
+    fun controllerStatusUpdatesOnSwap() {
+        manager.connectDevice(100, "Xbox")
+        manager.connectDevice(200, "DualSense")
+        val before = manager.controllerStatus.value
+        assertTrue(before.ports[0].connected)
+        assertTrue(before.ports[1].connected)
+
+        manager.swapPorts(0, 1)
+        val after = manager.controllerStatus.value
+        // Both ports still connected after swap
+        assertTrue(after.ports[0].connected)
+        assertTrue(after.ports[1].connected)
     }
 
     private class FakeKeyMappingRepo : KeyMappingRepository {
