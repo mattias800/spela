@@ -777,7 +777,9 @@ func SeedConsoles(db *gorm.DB) error {
 	consoles := []Console{
 		// 3rd Generation
 		{Name: "Nintendo Entertainment System", Abbreviation: "NES", Extensions: ".nes,.fds", DefaultCore: "nestopia", EmulatorJSCore: "nestopia", FolderName: "nes", ColorTheme: "#e60012", CoverAspect: "5:7", Generation: 3, SaveStateSupport: true, Playable: true},
+		{Name: "Famicom Disk System", Abbreviation: "FDS", Extensions: ".fds", DefaultCore: "nestopia", EmulatorJSCore: "nestopia", FolderName: "fds", ColorTheme: "#e60012", CoverAspect: "1:1", Generation: 3, SaveStateSupport: true, Playable: true},
 		{Name: "Sega Master System", Abbreviation: "SMS", Extensions: ".sms", DefaultCore: "genesis_plus_gx", EmulatorJSCore: "segaMS", FolderName: "mastersystem", ColorTheme: "#0060a8", Generation: 3, SaveStateSupport: true, Playable: true},
+		{Name: "Sega SG-1000", Abbreviation: "SG1K", Extensions: ".sg,.sc,.sf7,.bin", DefaultCore: "genesis_plus_gx", EmulatorJSCore: "segaMS", FolderName: "sg-1000", ColorTheme: "#0060a8", Generation: 3, SaveStateSupport: true, Playable: true},
 		{Name: "Atari 7800", Abbreviation: "A78", Extensions: ".a78,.bin", DefaultCore: "prosystem", EmulatorJSCore: "prosystem", FolderName: "atari7800", ColorTheme: "#8b4513", Generation: 3, SaveStateSupport: true, Playable: true},
 		// 4th Generation
 		{Name: "Super Nintendo", Abbreviation: "SNES", Extensions: ".sfc,.smc", DefaultCore: "snes9x", EmulatorJSCore: "snes9x", FolderName: "snes", ColorTheme: "#7b7db5", CoverAspect: "4:3", Generation: 4, SaveStateSupport: true, Playable: true},
@@ -786,6 +788,7 @@ func SeedConsoles(db *gorm.DB) error {
 		{Name: "Game Gear", Abbreviation: "GG", Extensions: ".gg", DefaultCore: "genesis_plus_gx", EmulatorJSCore: "segaGG", FolderName: "gamegear", ColorTheme: "#1a1a1a", CoverAspect: "1:1", Generation: 4, SaveStateSupport: true, Playable: true},
 		{Name: "TurboGrafx-16", Abbreviation: "PCE", Extensions: ".pce", DefaultCore: "mednafen_pce", EmulatorJSCore: "mednafen_pce", FolderName: "tg16", ColorTheme: "#ff6600", Generation: 4, SaveStateSupport: true, Playable: true},
 		{Name: "TurboGrafx-CD", Abbreviation: "PCECD", Extensions: ".chd,.cue,.iso,.m3u", DefaultCore: "mednafen_pce", EmulatorJSCore: "mednafen_pce", FolderName: "tg16cd", ColorTheme: "#ff6600", Generation: 4, SaveStateSupport: true, Playable: true},
+		{Name: "PC Engine SuperGrafx", Abbreviation: "SGX", Extensions: ".sgx,.pce", DefaultCore: "mednafen_supergrafx", EmulatorJSCore: "mednafen_supergrafx", FolderName: "supergrafx", ColorTheme: "#ff6600", Generation: 4, SaveStateSupport: true, Playable: true},
 		{Name: "Neo Geo", Abbreviation: "NEOGEO", Extensions: ".zip", DefaultCore: "fbneo", EmulatorJSCore: "fbneo", FolderName: "neogeo", ColorTheme: "#ffcc00", Generation: 4, SaveStateSupport: true, Playable: true},
 		{Name: "Neo Geo CD", Abbreviation: "NEOCD", Extensions: ".chd,.cue,.iso", DefaultCore: "neocd", EmulatorJSCore: "", FolderName: "neogeocd", ColorTheme: "#ffcc00", Generation: 4, SaveStateSupport: true, Playable: true},
 		{Name: "Atari Lynx", Abbreviation: "LYNX", Extensions: ".lnx,.lyx", DefaultCore: "handy", EmulatorJSCore: "handy", FolderName: "atarilynx", ColorTheme: "#8b4513", CoverAspect: "1:1", Generation: 4, SaveStateSupport: true, Playable: true},
@@ -819,6 +822,7 @@ func SeedConsoles(db *gorm.DB) error {
 		{Name: "Nintendo DS", Abbreviation: "NDS", Extensions: ".nds", DefaultCore: "desmume", EmulatorJSCore: "desmume", FolderName: "nds", ColorTheme: "#b0b0b0", CoverAspect: "10:9", Generation: 7, SaveStateSupport: true, Playable: true},
 		// 8th Generation
 		{Name: "Nintendo Wii U", Abbreviation: "WIIU", Extensions: ".rpx,.wud,.wux", DefaultCore: "", EmulatorJSCore: "", FolderName: "wiiu", ColorTheme: "#009ac7", CoverAspect: "8:11", Generation: 8, SaveStateSupport: false, Playable: false},
+		{Name: "PlayStation Vita", Abbreviation: "VITA", Extensions: ".vpk,.mai,.zip", DefaultCore: "", EmulatorJSCore: "", FolderName: "psvita", ColorTheme: "#003087", CoverAspect: "8:11", Generation: 8, SaveStateSupport: false, Playable: false},
 		{Name: "PlayStation 4", Abbreviation: "PS4", Extensions: ".pkg", DefaultCore: "", EmulatorJSCore: "", FolderName: "ps4", ColorTheme: "#003087", CoverAspect: "8:11", Generation: 8, SaveStateSupport: false, Playable: false},
 		{Name: "Xbox One", Abbreviation: "XONE", Extensions: ".xvd", DefaultCore: "", EmulatorJSCore: "", FolderName: "xboxone", ColorTheme: "#107c10", CoverAspect: "8:11", Generation: 8, SaveStateSupport: false, Playable: false},
 		{Name: "Nintendo 3DS", Abbreviation: "3DS", Extensions: ".3ds,.cci,.cia", DefaultCore: "azahar", EmulatorJSCore: "", FolderName: "n3ds", ColorTheme: "#ce181e", Generation: 8, SaveStateSupport: true, Playable: true},
@@ -830,7 +834,15 @@ func SeedConsoles(db *gorm.DB) error {
 		{Name: "Atari 2600", Abbreviation: "A26", Extensions: ".a26,.bin", DefaultCore: "stella", EmulatorJSCore: "stella2014", FolderName: "atari2600", ColorTheme: "#8b4513", Generation: 2, SaveStateSupport: true, Playable: true},
 		{Name: "Atari 5200", Abbreviation: "A52", Extensions: ".a52,.bin", DefaultCore: "atari800", EmulatorJSCore: "atari800", FolderName: "atari5200", ColorTheme: "#8b4513", Generation: 2, SaveStateSupport: true, Playable: true},
 		{Name: "ColecoVision", Abbreviation: "CV", Extensions: ".col,.rom", DefaultCore: "gearcoleco", EmulatorJSCore: "gearcoleco", FolderName: "colecovision", ColorTheme: "#000000", Generation: 2, SaveStateSupport: true, Playable: true},
+		{Name: "Fairchild Channel F", Abbreviation: "CHAF", Extensions: ".bin,.chf", DefaultCore: "freechaf", EmulatorJSCore: "freechaf", FolderName: "channelf", ColorTheme: "#cc6600", Generation: 2, SaveStateSupport: true, Playable: true},
+		{Name: "Magnavox Odyssey 2", Abbreviation: "O2", Extensions: ".bin,.o2", DefaultCore: "o2em", EmulatorJSCore: "o2em", FolderName: "odyssey2", ColorTheme: "#b8860b", Generation: 2, SaveStateSupport: true, Playable: true},
+		{Name: "Mattel Intellivision", Abbreviation: "INTV", Extensions: ".int,.bin,.rom", DefaultCore: "freeintv", EmulatorJSCore: "freeintv", FolderName: "intellivision", ColorTheme: "#8b6914", Generation: 2, SaveStateSupport: true, Playable: true},
+		{Name: "GCE Vectrex", Abbreviation: "VEC", Extensions: ".bin,.vec", DefaultCore: "vecx", EmulatorJSCore: "vecx", FolderName: "vectrex", ColorTheme: "#333333", Generation: 2, SaveStateSupport: true, Playable: true},
+		// Handheld / Pre-generation
+		{Name: "Nintendo Game & Watch", Abbreviation: "GW", Extensions: ".mgw", DefaultCore: "gw", EmulatorJSCore: "gw", FolderName: "gameandwatch", ColorTheme: "#c0392b", CoverAspect: "1:1", Generation: 1, SaveStateSupport: true, Playable: true},
 		// Home Computers (generation = 100)
+		{Name: "Atari 8-bit", Abbreviation: "A800", Extensions: ".a52,.atr,.atx,.bas,.bin,.car,.cas,.com,.rom,.xex,.xfd", DefaultCore: "atari800", EmulatorJSCore: "atari800", FolderName: "atari800", ColorTheme: "#8b4513", Generation: 100, SaveStateSupport: true, Playable: true},
+		{Name: "Atari ST", Abbreviation: "ATARIST", Extensions: ".st,.stx,.msa,.dim,.ipf,.m3u", DefaultCore: "hatari", EmulatorJSCore: "hatari", FolderName: "atarist", ColorTheme: "#8b4513", Generation: 100, SaveStateSupport: true, Playable: true},
 		{Name: "Commodore 64", Abbreviation: "C64", Extensions: ".d64,.t64,.prg,.crt,.tap", DefaultCore: "vice_x64sc", EmulatorJSCore: "vice_x64sc", FolderName: "c64", ColorTheme: "#6c5eb5", Generation: 100, SaveStateSupport: true, Playable: true},
 		{Name: "Commodore 128", Abbreviation: "C128", Extensions: ".d64,.d71,.d81,.t64,.prg,.crt", DefaultCore: "vice_x128", EmulatorJSCore: "vice_x128", FolderName: "c128", ColorTheme: "#6c5eb5", Generation: 100, SaveStateSupport: true, Playable: true},
 		{Name: "Commodore PET", Abbreviation: "PET", Extensions: ".prg,.d64,.t64", DefaultCore: "vice_xpet", EmulatorJSCore: "vice_xpet", FolderName: "pet", ColorTheme: "#6c5eb5", Generation: 100, SaveStateSupport: true, Playable: true},
@@ -959,6 +971,13 @@ func SeedCores(db *gorm.DB) error {
 			DownloadURL: "https://github.com/azahar-emu/azahar/releases/download/2125.0.1/azahar-libretro-{platform}-2125.0.1.zip",
 		},
 		{Name: "scummvm", DisplayName: "ScummVM", Description: "Point-and-click adventure game engine", Platforms: "windows,linux,macos,android"},
+		{Name: "freechaf", DisplayName: "FreeChaF", Description: "Fairchild Channel F emulator", Platforms: "windows,linux,macos,android"},
+		{Name: "o2em", DisplayName: "O2EM", Description: "Magnavox Odyssey 2 / Philips Videopac emulator", Platforms: "windows,linux,macos,android"},
+		{Name: "freeintv", DisplayName: "FreeIntv", Description: "Mattel Intellivision emulator", Platforms: "windows,linux,macos,android"},
+		{Name: "vecx", DisplayName: "vecx", Description: "GCE Vectrex emulator", Platforms: "windows,linux,macos,android"},
+		{Name: "mednafen_supergrafx", DisplayName: "Beetle SuperGrafx", Description: "NEC PC Engine SuperGrafx emulator", Platforms: "windows,linux,macos,android"},
+		{Name: "gw", DisplayName: "GW", Description: "Nintendo Game & Watch simulator", Platforms: "windows,linux,macos,android"},
+		{Name: "hatari", DisplayName: "Hatari", Description: "Atari ST/STE/TT/Falcon emulator", Platforms: "windows,linux,macos,android"},
 	}
 
 	for _, c := range cores {
