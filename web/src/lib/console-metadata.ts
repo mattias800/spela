@@ -293,6 +293,61 @@ const consoleStyles: Record<string, ConsoleStyle> = {
     gradient: "from-blue-500 to-blue-800",
     color: "#4a86c8",
   },
+  channelf: {
+    icon: Tv,
+    gradient: "from-orange-600 to-orange-900",
+    color: "#cc6600",
+  },
+  odyssey2: {
+    icon: Tv,
+    gradient: "from-amber-600 to-amber-900",
+    color: "#b8860b",
+  },
+  intellivision: {
+    icon: Tv,
+    gradient: "from-yellow-700 to-yellow-950",
+    color: "#8b6914",
+  },
+  vectrex: {
+    icon: Tv,
+    gradient: "from-gray-600 to-gray-900",
+    color: "#333333",
+  },
+  "sg-1000": {
+    icon: Tv,
+    gradient: "from-blue-500 to-blue-800",
+    color: "#0060a8",
+  },
+  sgx: {
+    icon: Tv,
+    gradient: "from-orange-500 to-red-800",
+    color: "#ed8936",
+  },
+  fds: {
+    icon: Gamepad2,
+    gradient: "from-red-600 to-yellow-800",
+    color: "#e60012",
+  },
+  gw: {
+    icon: Smartphone,
+    gradient: "from-red-600 to-red-900",
+    color: "#c0392b",
+  },
+  atari800: {
+    icon: Monitor,
+    gradient: "from-amber-700 to-amber-950",
+    color: "#8b4513",
+  },
+  atarist: {
+    icon: Monitor,
+    gradient: "from-amber-700 to-amber-950",
+    color: "#8b4513",
+  },
+  vita: {
+    icon: Smartphone,
+    gradient: "from-blue-700 to-blue-950",
+    color: "#003087",
+  },
 };
 
 // Map backend abbreviations to our internal keys
@@ -303,6 +358,12 @@ const abbreviationAliases: Record<string, string> = {
   pce: "tg16",
   a26: "atari2600",
   mame: "arcade",
+  chaf: "channelf",
+  o2: "odyssey2",
+  intv: "intellivision",
+  vec: "vectrex",
+  sg1k: "sg-1000",
+  a800: "atari800",
 };
 
 const defaultStyle: ConsoleStyle = {
