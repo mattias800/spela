@@ -153,6 +153,7 @@ test.describe("RetroAchievements - Preferences Page", () => {
     });
 
     await page.goto("/preferences");
+    await page.getByRole("tab", { name: "Achievements" }).click();
 
     await expect(
       page.getByRole("heading", { name: "RetroAchievements" }),
@@ -188,6 +189,7 @@ test.describe("RetroAchievements - Preferences Page", () => {
     });
 
     await page.goto("/preferences");
+    await page.getByRole("tab", { name: "Achievements" }).click();
 
     await page.getByTestId("ra-username-input").fill("testuser");
     await page.getByTestId("ra-password-input").fill("testpass");
@@ -249,6 +251,7 @@ test.describe("RetroAchievements - Preferences Page", () => {
     });
 
     await page.goto("/preferences");
+    await page.getByRole("tab", { name: "Achievements" }).click();
 
     // Fill in credentials and link
     await page.getByTestId("ra-username-input").fill("RetroUser");
@@ -275,6 +278,7 @@ test.describe("RetroAchievements - Preferences Page", () => {
     });
 
     await page.goto("/preferences");
+    await page.getByRole("tab", { name: "Achievements" }).click();
 
     // Should show linked account info
     await expect(page.getByText("Linked Account")).toBeVisible();
@@ -315,6 +319,7 @@ test.describe("RetroAchievements - Preferences Page", () => {
     });
 
     await page.goto("/preferences");
+    await page.getByRole("tab", { name: "Achievements" }).click();
 
     await expect(page.getByTestId("hardcore-toggle")).toBeVisible();
 
@@ -375,6 +380,7 @@ test.describe("RetroAchievements - Preferences Page", () => {
     });
 
     await page.goto("/preferences");
+    await page.getByRole("tab", { name: "Achievements" }).click();
 
     await expect(page.getByTestId("unlink-ra-btn")).toBeVisible();
     await page.getByTestId("unlink-ra-btn").click();

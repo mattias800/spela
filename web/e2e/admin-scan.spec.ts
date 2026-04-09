@@ -50,11 +50,15 @@ test.describe("Admin Scan Page", () => {
     let scrapeURL = "";
     await page.route("**/api/admin/scrape**", (route) => {
       scrapeURL = route.request().url();
-      route.fulfill({ status: 200, json: {} });
+      route.fulfill({ status: 200, json: { total: 0 } });
     });
 
     await page.route("**/api/admin/scrape/status", (route) => {
       route.fulfill({ status: 200, json: { active: false } });
+    });
+
+    await page.route("**/api/admin/scrape/counts", (route) => {
+      route.fulfill({ status: 200, json: { sources: [] } });
     });
 
     await page.goto("/admin/scan");
@@ -70,11 +74,15 @@ test.describe("Admin Scan Page", () => {
     let scrapeURL = "";
     await page.route("**/api/admin/scrape**", (route) => {
       scrapeURL = route.request().url();
-      route.fulfill({ status: 200, json: {} });
+      route.fulfill({ status: 200, json: { total: 0 } });
     });
 
     await page.route("**/api/admin/scrape/status", (route) => {
       route.fulfill({ status: 200, json: { active: false } });
+    });
+
+    await page.route("**/api/admin/scrape/counts", (route) => {
+      route.fulfill({ status: 200, json: { sources: [] } });
     });
 
     await page.goto("/admin/scan");

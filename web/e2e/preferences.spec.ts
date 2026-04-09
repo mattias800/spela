@@ -11,6 +11,7 @@ test.describe("Preferences Page", () => {
     await expect(
       page.getByRole("heading", { name: "Preferences" }),
     ).toBeVisible();
+    await page.getByRole("tab", { name: "Emulation" }).click();
     await expect(
       page.getByRole("heading", { name: "Emulation Settings" }),
     ).toBeVisible();
@@ -24,6 +25,7 @@ test.describe("Preferences Page", () => {
     page,
   }) => {
     await page.goto("/preferences");
+    await page.getByRole("tab", { name: "Video Filters" }).click();
 
     await expect(
       page.getByRole("heading", { name: "Video Filters" }),
@@ -40,6 +42,7 @@ test.describe("Preferences Page", () => {
 
   test("can toggle a preference switch", async ({ page }) => {
     await page.goto("/preferences");
+    await page.getByRole("tab", { name: "Emulation" }).click();
 
     // Wait for preferences data to be rendered (Auto Save is true after reset,
     // so its switch will be [checked] only once the API response is processed).
@@ -69,6 +72,7 @@ test.describe("Preferences Page", () => {
 
   test("can change global shader selection", async ({ page }) => {
     await page.goto("/preferences");
+    await page.getByRole("tab", { name: "Video Filters" }).click();
 
     const select = page.locator("select").first();
     await select.selectOption("scanlines");
@@ -77,6 +81,7 @@ test.describe("Preferences Page", () => {
 
   test("displays devices section", async ({ page }) => {
     await page.goto("/preferences");
+    await page.getByRole("tab", { name: "Devices" }).click();
 
     await expect(
       page.getByRole("heading", { name: "Devices", exact: true }),
@@ -87,6 +92,7 @@ test.describe("Preferences Page", () => {
 test.describe("Shader Preview", () => {
   test("shows preview canvas with 4:3 aspect ratio", async ({ page }) => {
     await page.goto("/preferences");
+    await page.getByRole("tab", { name: "Video Filters" }).click();
 
     const preview = page.locator("canvas").first();
     await expect(preview).toBeVisible({ timeout: 10_000 });
@@ -100,6 +106,7 @@ test.describe("Shader Preview", () => {
 
   test("preview canvas renders non-empty content", async ({ page }) => {
     await page.goto("/preferences");
+    await page.getByRole("tab", { name: "Video Filters" }).click();
 
     const preview = page.locator("canvas").first();
     await expect(preview).toBeVisible({ timeout: 10_000 });
@@ -158,6 +165,7 @@ test.describe("Shader Preview", () => {
     });
 
     await page.goto("/preferences");
+    await page.getByRole("tab", { name: "Video Filters" }).click();
 
     const preview = page.locator("canvas").first();
     await expect(preview).toBeVisible({ timeout: 10_000 });
@@ -172,6 +180,7 @@ test.describe("Shader Preview", () => {
 
   test("opens fullscreen shader preview modal on click", async ({ page }) => {
     await page.goto("/preferences");
+    await page.getByRole("tab", { name: "Video Filters" }).click();
 
     const preview = page.locator("canvas").first();
     await expect(preview).toBeVisible({ timeout: 10_000 });
@@ -187,6 +196,7 @@ test.describe("Shader Preview", () => {
 
   test("closes fullscreen preview modal on Escape", async ({ page }) => {
     await page.goto("/preferences");
+    await page.getByRole("tab", { name: "Video Filters" }).click();
 
     const preview = page.locator("canvas").first();
     await expect(preview).toBeVisible({ timeout: 10_000 });
@@ -202,6 +212,7 @@ test.describe("Shader Preview", () => {
 
   test("closes fullscreen preview modal on overlay click", async ({ page }) => {
     await page.goto("/preferences");
+    await page.getByRole("tab", { name: "Video Filters" }).click();
 
     const preview = page.locator("canvas").first();
     await expect(preview).toBeVisible({ timeout: 10_000 });
@@ -227,6 +238,7 @@ test.describe("Shader Preview", () => {
     });
 
     await page.goto("/preferences");
+    await page.getByRole("tab", { name: "Video Filters" }).click();
 
     // Wait for the per-console table to render
     const previewButtons = page.locator("table button");
@@ -277,6 +289,7 @@ test.describe("Shader Preview", () => {
     page,
   }) => {
     await page.goto("/preferences");
+    await page.getByRole("tab", { name: "Video Filters" }).click();
 
     const preview = page.locator("canvas").first();
     await expect(preview).toBeVisible({ timeout: 10_000 });
@@ -340,6 +353,7 @@ test.describe("Shader Preview", () => {
     page,
   }) => {
     await page.goto("/preferences");
+    await page.getByRole("tab", { name: "Video Filters" }).click();
 
     const preview = page.locator("canvas").first();
     await expect(preview).toBeVisible({ timeout: 10_000 });

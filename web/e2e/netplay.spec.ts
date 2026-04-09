@@ -14,6 +14,8 @@ function mockSession(overrides?: Record<string, unknown>) {
     gameTitle: "Super Mario World",
     gameCoverUrl: "https://example.com/cover.png",
     consoleName: "SNES",
+    consoleId: "snes",
+    coverAspectRatio: 0.75,
     status: "waiting",
     endReason: null,
     inputDelay: 3,
