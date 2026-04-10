@@ -106,11 +106,41 @@ export function AppLayout() {
         { to: "/storage", icon: HardDrive, label: "Storage" },
       ],
     },
+    // Admin nav is split into two sub-sections so the 10-item flat list
+    // doesn't feel like one dense block. "Content" manages the game
+    // library; "System" manages users and server health. The "Admin · "
+    // prefix is intentionally dropped — the section header chrome
+    // already communicates grouping, and the links are admin-gated + all
+    // live under /admin/, so "ADMIN" would be redundant in the label.
     ...(isAdmin
       ? [
           {
-            section: "Admin",
+            section: "Content",
             items: [
+              // Ordered by frequency of daily use.
+              { to: "/admin/scan", icon: ScanSearch, label: "Library Scan" },
+              { to: "/admin/upload", icon: Upload, label: "Upload ROMs" },
+              { to: "/admin/rom-hacks", icon: Puzzle, label: "ROM Hacks" },
+              {
+                to: "/admin/metadata",
+                icon: FileSearch,
+                label: "Metadata Fix",
+              },
+              { to: "/admin/cheats", icon: Gamepad2, label: "Cheats" },
+              {
+                to: "/admin/bios",
+                icon: Cpu,
+                label: "BIOS Files",
+                warning: hasMissingBios,
+              },
+            ],
+          },
+          {
+            section: "System",
+            items: [
+              // Ordered by frequency of use. Security Events is last
+              // because it's an incident-response surface — rarely
+              // visited, but critical when needed.
               { to: "/admin/users", icon: Users, label: "Users" },
               {
                 to: "/admin/settings",
@@ -118,21 +148,6 @@ export function AppLayout() {
                 label: "Settings",
                 warning: igdbNotConfigured,
               },
-              {
-                to: "/admin/bios",
-                icon: Cpu,
-                label: "BIOS Files",
-                warning: hasMissingBios,
-              },
-              { to: "/admin/upload", icon: Upload, label: "Upload ROMs" },
-              { to: "/admin/rom-hacks", icon: Puzzle, label: "ROM Hacks" },
-              { to: "/admin/scan", icon: ScanSearch, label: "Library Scan" },
-              {
-                to: "/admin/metadata",
-                icon: FileSearch,
-                label: "Metadata Fix",
-              },
-              { to: "/admin/cheats", icon: Gamepad2, label: "Cheats" },
               {
                 to: "/admin/core-compatibility",
                 icon: GitCompareArrows,
