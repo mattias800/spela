@@ -40,6 +40,12 @@ export interface SecurityEvent {
   ip?: string;
   path?: string;
   metadata?: Record<string, unknown>;
+  /**
+   * Populated only when the server failed to parse a stored metadata blob
+   * (legacy rows, manual DB edits). The UI should fall back to showing this
+   * raw string so investigators don't lose the data silently.
+   */
+  metadataRaw?: string;
 }
 
 export interface SecurityEventsListResponse {

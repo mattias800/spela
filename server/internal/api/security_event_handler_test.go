@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	neturl "net/url"
 	"strconv"
 	"strings"
 	"testing"
@@ -53,13 +54,15 @@ func TestListSecurityEvents_RequiresAdmin(t *testing.T) {
 	assert.Equal(t, http.StatusUnauthorized, w.Code)
 }
 
-func TestListSecurityEvents_ReturnsAllByDefault(t *testing.T) {
+func TestListSecurityEvents_DefaultWindowReturnsRecentRows(t *testing.T) {
 	database, cfg := setupTestEnv(t)
 	router, cleanup := NewRouter(*cfg)
 	defer cleanup()
 	_, adminToken := createAdminUser(t, database)
 	seedSecurityEvents(t, database)
 
+	// The seed rows are all within the 30d default window. This verifies the
+	// default view renders as expected without the caller specifying `since`.
 	req := httptest.NewRequest("GET", "/api/admin/security-events", nil)
 	req.Header.Set("Authorization", "Bearer "+adminToken)
 	w := httptest.NewRecorder()
@@ -75,6 +78,69 @@ func TestListSecurityEvents_ReturnsAllByDefault(t *testing.T) {
 	for i := 1; i < len(resp.Data); i++ {
 		assert.False(t, resp.Data[i].CreatedAt.After(resp.Data[i-1].CreatedAt))
 	}
+}
+
+func TestListSecurityEvents_DefaultSinceExcludesOldRows(t *testing.T) {
+	database, cfg := setupTestEnv(t)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
+	_, adminToken := createAdminUser(t, database)
+
+	// One row inside the default 30d window, one row well outside it.
+	fresh := makeSecurityEvent(db.SecurityEvent{
+		EventType: db.SecurityEventLoginFailed,
+		Username:  "alice",
+		IP:        "10.0.0.1",
+		CreatedAt: time.Now().Add(-1 * time.Hour),
+	})
+	ancient := makeSecurityEvent(db.SecurityEvent{
+		EventType: db.SecurityEventLoginFailed,
+		Username:  "bob",
+		IP:        "10.0.0.2",
+		CreatedAt: time.Now().Add(-45 * 24 * time.Hour),
+	})
+	require.NoError(t, database.Create(&fresh).Error)
+	require.NoError(t, database.Create(&ancient).Error)
+
+	// Default query (no `since` param) must exclude the ancient row.
+	req := httptest.NewRequest("GET", "/api/admin/security-events", nil)
+	req.Header.Set("Authorization", "Bearer "+adminToken)
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+
+	require.Equal(t, http.StatusOK, w.Code)
+	var resp SecurityEventsListResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+	assert.Equal(t, int64(1), resp.Total)
+	require.Len(t, resp.Data, 1)
+	assert.Equal(t, "alice", resp.Data[0].Username)
+}
+
+func TestListSecurityEvents_SinceAllOptsIntoUnboundedWindow(t *testing.T) {
+	database, cfg := setupTestEnv(t)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
+	_, adminToken := createAdminUser(t, database)
+
+	// An ancient row that would normally be excluded by the default window.
+	ancient := makeSecurityEvent(db.SecurityEvent{
+		EventType: db.SecurityEventLoginFailed,
+		Username:  "ghost",
+		IP:        "10.0.0.99",
+		CreatedAt: time.Now().Add(-200 * 24 * time.Hour),
+	})
+	require.NoError(t, database.Create(&ancient).Error)
+
+	// since=all must include it.
+	req := httptest.NewRequest("GET", "/api/admin/security-events?since=all", nil)
+	req.Header.Set("Authorization", "Bearer "+adminToken)
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+
+	require.Equal(t, http.StatusOK, w.Code)
+	var resp SecurityEventsListResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+	assert.Equal(t, int64(1), resp.Total)
 }
 
 func TestListSecurityEvents_FilterByEventType(t *testing.T) {
@@ -271,54 +337,215 @@ func TestGetSecurityEventTypes(t *testing.T) {
 	require.Equal(t, http.StatusOK, w.Code)
 	var resp SecurityEventTypesResponse
 	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
-	assert.Contains(t, resp.Types, db.SecurityEventLoginFailed)
-	assert.Contains(t, resp.Types, db.SecurityEventLoginSuccess)
-	assert.Contains(t, resp.Types, db.SecurityEventAccountLocked)
+	// Must include every constant declared in models.go, not just a
+	// handpicked subset — the slice is the source of truth.
+	assert.ElementsMatch(t, db.AllSecurityEventTypes, resp.Types)
+}
+
+func TestListSecurityEvents_UsernameFilterTooLongReturns400(t *testing.T) {
+	database, cfg := setupTestEnv(t)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
+	_, adminToken := createAdminUser(t, database)
+
+	long := strings.Repeat("a", maxUsernameFilterLength+1)
+	req := httptest.NewRequest("GET", "/api/admin/security-events?username="+long, nil)
+	req.Header.Set("Authorization", "Bearer "+adminToken)
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusBadRequest, w.Code)
+	assert.Contains(t, w.Body.String(), "username filter too long")
+}
+
+func TestListSecurityEvents_InvalidIPFilterReturns400(t *testing.T) {
+	database, cfg := setupTestEnv(t)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
+	_, adminToken := createAdminUser(t, database)
+
+	req := httptest.NewRequest("GET", "/api/admin/security-events?ip=10.o.0.1", nil)
+	req.Header.Set("Authorization", "Bearer "+adminToken)
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusBadRequest, w.Code)
+	assert.Contains(t, w.Body.String(), "invalid ip filter")
+}
+
+func TestListSecurityEvents_LikeWildcardsEscaped(t *testing.T) {
+	// Each case seeds a row whose username contains a LIKE metacharacter
+	// (or the escape char itself) plus a decoy that would erroneously match
+	// if the escape were skipped. The filter query should return only the
+	// literal-matching row.
+	cases := []struct {
+		name    string
+		literal string
+		decoy   string
+		query   string // raw query value; caller URL-encodes
+	}{
+		{
+			name:    "percent_literal",
+			literal: "user%admin",
+			decoy:   "abc",
+			query:   "%", // `%` matches any string in unescaped LIKE
+		},
+		{
+			name:    "underscore_literal",
+			literal: "user_admin",
+			decoy:   "user1admin", // would match `user_admin` under unescaped LIKE
+			query:   "_",
+		},
+		{
+			name:    "backslash_literal",
+			literal: `us\er`,
+			decoy:   "user",
+			query:   `\`,
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			database, cfg := setupTestEnv(t)
+			router, cleanup := NewRouter(*cfg)
+			defer cleanup()
+			_, adminToken := createAdminUser(t, database)
+
+			literal := makeSecurityEvent(db.SecurityEvent{
+				EventType: db.SecurityEventLoginFailed,
+				Username:  tc.literal,
+				IP:        "10.0.0.1",
+				CreatedAt: time.Now().Add(-1 * time.Hour),
+			})
+			decoy := makeSecurityEvent(db.SecurityEvent{
+				EventType: db.SecurityEventLoginFailed,
+				Username:  tc.decoy,
+				IP:        "10.0.0.2",
+				CreatedAt: time.Now().Add(-1 * time.Hour),
+			})
+			require.NoError(t, database.Create(&literal).Error)
+			require.NoError(t, database.Create(&decoy).Error)
+
+			url := "/api/admin/security-events?username=" + netURLQueryEscape(tc.query)
+			req := httptest.NewRequest("GET", url, nil)
+			req.Header.Set("Authorization", "Bearer "+adminToken)
+			w := httptest.NewRecorder()
+			router.ServeHTTP(w, req)
+
+			require.Equal(t, http.StatusOK, w.Code)
+			var resp SecurityEventsListResponse
+			require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+			require.Equal(t, int64(1), resp.Total, "decoy row %q should not match literal search %q", tc.decoy, tc.query)
+			assert.Equal(t, tc.literal, resp.Data[0].Username)
+		})
+	}
+}
+
+// netURLQueryEscape wraps url.QueryEscape locally so the test file doesn't
+// need a separate import line for one call.
+func netURLQueryEscape(s string) string {
+	return neturl.QueryEscape(s)
+}
+
+func TestGetSecurityEvent_MalformedMetadataFallsBackToRaw(t *testing.T) {
+	database, cfg := setupTestEnv(t)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
+	_, adminToken := createAdminUser(t, database)
+
+	// A legacy/edited row with a metadata blob that isn't valid JSON. The
+	// handler must not drop the data silently — it should surface it via
+	// MetadataRaw so investigators still see something.
+	row := db.SecurityEvent{
+		EventType: db.SecurityEventLoginFailed,
+		Username:  "alice",
+		IP:        "10.0.0.1",
+		Metadata:  "not-json-{broken",
+	}
+	require.NoError(t, database.Create(&row).Error)
+
+	req := httptest.NewRequest("GET", "/api/admin/security-events/"+strconv.FormatUint(uint64(row.ID), 10), nil)
+	req.Header.Set("Authorization", "Bearer "+adminToken)
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+
+	require.Equal(t, http.StatusOK, w.Code)
+	var resp SecurityEventResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+	assert.Nil(t, resp.Metadata)
+	assert.Equal(t, "not-json-{broken", resp.MetadataRaw)
 }
 
 func TestParseSinceParam(t *testing.T) {
 	cases := []struct {
-		name    string
-		input   string
-		isZero  bool
-		// approxDelta is compared against time.Since(result) for preset cases.
+		name         string
+		input        string
+		wantExplicit bool
+		wantZero     bool
+		// approx is compared against time.Since(result) for preset cases.
 		approx time.Duration
 	}{
-		{name: "empty", input: "", isZero: true},
-		{name: "all", input: "all", isZero: true},
-		{name: "ALL upper", input: "ALL", isZero: true},
-		{name: "garbage", input: "not-a-time", isZero: true},
-		{name: "1h", input: "1h", isZero: false, approx: time.Hour},
-		{name: "24h", input: "24h", isZero: false, approx: 24 * time.Hour},
-		{name: "1d alias", input: "1d", isZero: false, approx: 24 * time.Hour},
-		{name: "7d", input: "7d", isZero: false, approx: 7 * 24 * time.Hour},
-		{name: "30d", input: "30d", isZero: false, approx: 30 * 24 * time.Hour},
+		{name: "empty", input: "", wantExplicit: false, wantZero: true},
+		{name: "garbage", input: "not-a-time", wantExplicit: false, wantZero: true},
+		{name: "all", input: "all", wantExplicit: true, wantZero: true},
+		{name: "ALL upper", input: "ALL", wantExplicit: true, wantZero: true},
+		{name: "1h", input: "1h", wantExplicit: true, wantZero: false, approx: time.Hour},
+		{name: "24h", input: "24h", wantExplicit: true, wantZero: false, approx: 24 * time.Hour},
+		{name: "1d alias", input: "1d", wantExplicit: true, wantZero: false, approx: 24 * time.Hour},
+		{name: "7d", input: "7d", wantExplicit: true, wantZero: false, approx: 7 * 24 * time.Hour},
+		{name: "30d", input: "30d", wantExplicit: true, wantZero: false, approx: 30 * 24 * time.Hour},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			got := parseSinceParam(tc.input)
-			if tc.isZero {
+			got, explicit := parseSinceParam(tc.input)
+			assert.Equal(t, tc.wantExplicit, explicit)
+			if tc.wantZero {
 				assert.True(t, got.IsZero(), "expected zero time, got %v", got)
 				return
 			}
 			diff := time.Since(got)
-			// Allow 1s slack for test jitter.
 			assert.InDelta(t, tc.approx.Seconds(), diff.Seconds(), 1.0)
 		})
 	}
 
 	t.Run("RFC3339 timestamp", func(t *testing.T) {
 		iso := "2026-03-15T10:00:00Z"
-		got := parseSinceParam(iso)
+		got, explicit := parseSinceParam(iso)
+		assert.True(t, explicit)
 		assert.False(t, got.IsZero())
 		expected, _ := time.Parse(time.RFC3339, iso)
 		assert.True(t, got.Equal(expected))
 	})
 
 	t.Run("case-insensitive presets with whitespace", func(t *testing.T) {
-		got := parseSinceParam("  24h  ")
+		got, explicit := parseSinceParam("  24h  ")
+		assert.True(t, explicit)
 		assert.False(t, got.IsZero())
 	})
+}
+
+func TestValidateIPFilter(t *testing.T) {
+	cases := []struct {
+		name  string
+		input string
+		ok    bool
+	}{
+		{name: "empty", input: "", ok: true},
+		{name: "ipv4_full", input: "10.0.0.1", ok: true},
+		{name: "ipv4_prefix_single_octet", input: "10.", ok: true},
+		{name: "ipv4_prefix_three_octets", input: "10.0.0.", ok: true},
+		{name: "ipv6_prefix", input: "2001:db8::", ok: true},
+		{name: "ipv6_loopback", input: "::1", ok: true},
+		{name: "ipv6_link_local", input: "FF02::1", ok: true},
+		{name: "letter_o_rejected", input: "10.o.0.1", ok: false},
+		{name: "nonsense_text", input: "nonsense", ok: false},
+		{name: "sql_injection_attempt", input: "10.0.0.1 DROP", ok: false},
+		{name: "too_long", input: strings.Repeat("1", 46), ok: false},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			assert.Equal(t, tc.ok, validateIPFilter(tc.input))
+		})
+	}
 }
 
 func TestPruneExpiredSecurityEvents(t *testing.T) {
