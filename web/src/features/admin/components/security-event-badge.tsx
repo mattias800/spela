@@ -9,7 +9,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { Badge } from "@/components/ui";
-import type { SecurityEventType } from "@/types/api";
+import type { SecurityEventType, SecurityEventTypeLike } from "@/types/api";
 
 type Variant = "default" | "brand" | "success" | "warning" | "danger";
 
@@ -80,22 +80,43 @@ export const SECURITY_EVENT_META: Record<SecurityEventType, EventMeta> = {
   },
 };
 
+// The prop accepts `SecurityEventTypeLike` so this component is a real
+// defensive path when the backend ships a new event type before the UI
+// catalog is updated. The `(string & {})` trick in the type preserves
+// autocomplete for the known union while still accepting arbitrary
+// strings — unknown types get a generic amber warning badge with the
+// raw type string as the label instead of crashing the row renderer.
 interface SecurityEventBadgeProps {
-  type: SecurityEventType;
+  type: SecurityEventTypeLike;
+}
+
+const UNKNOWN_EVENT_META: EventMeta = {
+  label: "Unknown event",
+  variant: "default",
+  icon: AlertTriangle,
+  severity: "notice",
+};
+
+/**
+ * getSecurityEventLabel returns a human-readable label for an event type,
+ * falling back to the raw type string when the catalog doesn't know it.
+ * Exported so the detail modal title and the badge agree on the fallback.
+ */
+export function getSecurityEventLabel(type: SecurityEventTypeLike): string {
+  const meta = (SECURITY_EVENT_META as Record<string, EventMeta>)[type];
+  return meta?.label ?? type;
 }
 
 export function SecurityEventBadge({ type }: SecurityEventBadgeProps) {
-  const meta = SECURITY_EVENT_META[type] ?? {
-    label: type,
-    variant: "default" as Variant,
-    icon: AlertTriangle,
-    severity: "notice" as const,
-  };
+  const meta =
+    (SECURITY_EVENT_META as Record<string, EventMeta>)[type] ??
+    UNKNOWN_EVENT_META;
   const Icon = meta.icon;
+  const label = getSecurityEventLabel(type);
   return (
     <Badge variant={meta.variant}>
-      <Icon className="h-3 w-3 mr-1" />
-      {meta.label}
+      <Icon aria-hidden="true" className="h-3 w-3 mr-1" />
+      {label}
     </Badge>
   );
 }

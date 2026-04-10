@@ -45,6 +45,11 @@ export function AdminSecurityEventsPage() {
   // updateParams merges a partial set of filter changes back into the URL,
   // resetting the page counter whenever a filter other than `page` changes
   // so the user never lands on an empty page after a filter change.
+  //
+  // Deletion convention: pass `null`, `""`, or `[]` to remove a key from
+  // the URL entirely. This is how callers clear a filter — e.g.
+  // `{ username: null }` removes the `?username=...` param rather than
+  // setting it to the literal string "null".
   const updateParams = useCallback(
     (updates: Record<string, string | string[] | null>) => {
       const next = new URLSearchParams(searchParams);
@@ -155,6 +160,34 @@ export function AdminSecurityEventsPage() {
       <SecurityEventDetailModal
         event={detailEvent}
         onClose={() => setDetailEvent(null)}
+        onPivotToUsername={(u) => {
+          // Pivot semantics: drop every other active filter and open the
+          // time window wide. During an incident investigation the admin
+          // almost always wants "everything this user has ever done", not
+          // "their actions in the current 24h slice", so we intentionally
+          // forget the current `since` and event-type selections. Clearing
+          // the complementary `ip` filter prevents a stale IP from a
+          // previous search from silently AND-ing with the new view.
+          updateParams({
+            eventType: [],
+            username: u,
+            ip: null,
+            since: "all",
+          });
+          setDetailEvent(null);
+        }}
+        onPivotToIp={(addr) => {
+          // Same pivot semantics as onPivotToUsername — widen to all-time
+          // and drop every other filter so the admin gets a clean "all
+          // events from this IP" view.
+          updateParams({
+            eventType: [],
+            username: null,
+            ip: addr,
+            since: "all",
+          });
+          setDetailEvent(null);
+        }}
       />
     </div>
   );

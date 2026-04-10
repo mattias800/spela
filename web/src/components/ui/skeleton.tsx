@@ -86,11 +86,16 @@ export function GameListRowSkeleton() {
   );
 }
 
+// TableRowSkeleton is a generic loading placeholder for admin tables.
+// The `px-5 py-3` cell padding matches the admin table convention used by
+// user-table, deleted-users-table, and security-events-table; using a
+// different value here caused a 1-column horizontal jitter when the skeleton
+// resolved to real rows.
 export function TableRowSkeleton({ columns = 5 }: { columns?: number }) {
   return (
     <tr>
       {Array.from({ length: columns }, (_, i) => (
-        <td key={i} className="px-4 py-3">
+        <td key={i} className="px-5 py-3">
           <Skeleton className="h-4 w-full" />
         </td>
       ))}

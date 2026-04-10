@@ -30,10 +30,19 @@ export type SecurityEventType =
   | "token_user_missing"
   | "stale_token_version";
 
+// SecurityEventTypeLike preserves autocomplete for the known union while
+// still accepting arbitrary strings at runtime. The `(string & {})` trick
+// prevents TypeScript from eagerly collapsing the union down to `string`
+// and losing the literal suggestions. Used on wire types where the
+// backend may ship a new event type before the UI catalog is updated.
+export type SecurityEventTypeLike = SecurityEventType | (string & {});
+
 export interface SecurityEvent {
   id: number;
   createdAt: string;
-  eventType: SecurityEventType;
+  // Widened at the runtime boundary: the JSON from the server is a string,
+  // and the badge has a forward-compatible fallback for unknown types.
+  eventType: SecurityEventTypeLike;
   reason?: string;
   username?: string;
   userId?: number;

@@ -214,4 +214,80 @@ describe("AdminSecurityEventsPage", () => {
 
     window.getSelection = originalGetSelection;
   });
+
+  it("detail modal shows pivot actions for IP and username", async () => {
+    const user = userEvent.setup();
+    renderPage();
+
+    const rows = screen.getAllByRole("row");
+    await user.click(rows[1]);
+
+    await waitFor(() => {
+      expect(screen.getByTestId("security-event-pivot-actions")).toBeInTheDocument();
+    });
+    expect(
+      screen.getByRole("button", { name: /View all events from user alice/ }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /View all events from IP 10\.0\.0\.1/ }),
+    ).toBeInTheDocument();
+  });
+
+  it("clicking the username pivot narrows the filters and closes the modal", async () => {
+    const user = userEvent.setup();
+    renderPage();
+
+    const rows = screen.getAllByRole("row");
+    await user.click(rows[1]);
+    await waitFor(() =>
+      expect(screen.getByRole("dialog")).toBeInTheDocument(),
+    );
+
+    await user.click(
+      screen.getByRole("button", { name: /View all events from user alice/ }),
+    );
+
+    // Modal should close.
+    await waitFor(() => {
+      expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    });
+    // The hook should be called with the username filter and since=all.
+    await waitFor(() => {
+      expect(mockUseSecurityEvents).toHaveBeenLastCalledWith(
+        expect.objectContaining({
+          username: "alice",
+          since: "all",
+          eventType: [],
+        }),
+      );
+    });
+  });
+
+  it("clicking the IP pivot narrows the filters and closes the modal", async () => {
+    const user = userEvent.setup();
+    renderPage();
+
+    const rows = screen.getAllByRole("row");
+    await user.click(rows[1]);
+    await waitFor(() =>
+      expect(screen.getByRole("dialog")).toBeInTheDocument(),
+    );
+
+    await user.click(
+      screen.getByRole("button", { name: /View all events from IP 10\.0\.0\.1/ }),
+    );
+
+    await waitFor(() => {
+      expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    });
+    await waitFor(() => {
+      expect(mockUseSecurityEvents).toHaveBeenLastCalledWith(
+        expect.objectContaining({
+          ip: "10.0.0.1",
+          since: "all",
+          eventType: [],
+        }),
+      );
+    });
+  });
 });
