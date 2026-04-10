@@ -148,15 +148,12 @@ func (h *AuthHandler) Login(c *gin.Context) {
 		return
 	}
 
-	clientIP := c.ClientIP()
-
 	// Check account lockout before proceeding
 	if h.isLockedOut(req.Username) {
-		slog.Warn("security: login attempt against locked account",
-			"event", "login_locked",
-			"username", req.Username,
-			"ip", clientIP,
-		)
+		recordSecurityEventCtx(h.DB, c, securityEventInput{
+			EventType: db.SecurityEventLoginLocked,
+			Username:  req.Username,
+		})
 		apiError(c, http.StatusTooManyRequests, "account locked", "Your account has been temporarily locked due to too many failed login attempts. Please try again later.")
 		return
 	}
@@ -170,12 +167,11 @@ func (h *AuthHandler) Login(c *gin.Context) {
 		// "wrong password" (slow bcrypt) by measuring response time.
 		auth.CheckPassword(req.Password, dummyBcryptHash)
 		h.recordFailedLogin(req.Username)
-		slog.Warn("security: failed login (unknown user)",
-			"event", "login_failed",
-			"reason", "unknown_user",
-			"username", req.Username,
-			"ip", clientIP,
-		)
+		recordSecurityEventCtx(h.DB, c, securityEventInput{
+			EventType: db.SecurityEventLoginFailed,
+			Reason:    "unknown_user",
+			Username:  req.Username,
+		})
 		apiError(c, http.StatusUnauthorized, "invalid credentials", "Invalid username or password.")
 		return
 	}
@@ -185,56 +181,57 @@ func (h *AuthHandler) Login(c *gin.Context) {
 		// Re-read the attempt to log the new failure count and detect lockout escalation.
 		var attempt db.LoginAttempt
 		h.DB.Where("username = ?", hashUsername(req.Username)).First(&attempt)
-		slog.Warn("security: failed login (bad password)",
-			"event", "login_failed",
-			"reason", "bad_password",
-			"username", req.Username,
-			"ip", clientIP,
-			"failedCount", attempt.FailedCount,
-		)
+		recordSecurityEventCtx(h.DB, c, securityEventInput{
+			EventType: db.SecurityEventLoginFailed,
+			Reason:    "bad_password",
+			Username:  req.Username,
+			UserID:    &user.ID,
+			Metadata:  map[string]any{"failedCount": attempt.FailedCount},
+		})
 		if attempt.FailedCount >= maxLoginAttempts {
-			slog.Warn("security: account locked due to repeated failures",
-				"event", "account_locked",
-				"username", req.Username,
-				"ip", clientIP,
-				"failedCount", attempt.FailedCount,
-				"lockedUntil", attempt.LockedUntil,
-			)
+			recordSecurityEventCtx(h.DB, c, securityEventInput{
+				EventType: db.SecurityEventAccountLocked,
+				Username:  req.Username,
+				UserID:    &user.ID,
+				Metadata: map[string]any{
+					"failedCount": attempt.FailedCount,
+					"lockedUntil": attempt.LockedUntil,
+				},
+			})
 		}
 		apiError(c, http.StatusUnauthorized, "invalid credentials", "Invalid username or password.")
 		return
 	}
 
 	if user.PendingApproval {
-		slog.Warn("security: login attempt on pending account",
-			"event", "login_blocked",
-			"reason", "pending_approval",
-			"username", req.Username,
-			"ip", clientIP,
-		)
+		recordSecurityEventCtx(h.DB, c, securityEventInput{
+			EventType: db.SecurityEventLoginBlocked,
+			Reason:    "pending_approval",
+			Username:  req.Username,
+			UserID:    &user.ID,
+		})
 		apiError(c, http.StatusForbidden, "account pending approval", "Your account is awaiting admin approval. Please try again once an admin has approved it.")
 		return
 	}
 
 	if user.Disabled {
-		slog.Warn("security: login attempt on disabled account",
-			"event", "login_blocked",
-			"reason", "disabled",
-			"username", req.Username,
-			"ip", clientIP,
-		)
+		recordSecurityEventCtx(h.DB, c, securityEventInput{
+			EventType: db.SecurityEventLoginBlocked,
+			Reason:    "disabled",
+			Username:  req.Username,
+			UserID:    &user.ID,
+		})
 		apiError(c, http.StatusForbidden, "account is disabled", "Your account has been disabled. Please contact an administrator.")
 		return
 	}
 
 	// Successful login — clear any failed attempts
 	h.clearFailedLogins(req.Username)
-	slog.Info("security: successful login",
-		"event", "login_success",
-		"username", req.Username,
-		"userId", user.ID,
-		"ip", clientIP,
-	)
+	recordSecurityEventCtx(h.DB, c, securityEventInput{
+		EventType: db.SecurityEventLoginSuccess,
+		Username:  req.Username,
+		UserID:    &user.ID,
+	})
 
 	accessToken, err := auth.GenerateAccessToken(user.ID, user.Username, user.Role, h.JWTSecret, user.TokenVersion)
 	if err != nil {
@@ -494,6 +491,18 @@ func (h *AuthHandler) SetupStatus(c *gin.Context) {
 	})
 }
 
+// securityEventRetention is how long admin security event rows are kept.
+// Older rows are pruned by StartTokenCleanup.
+const securityEventRetention = 90 * 24 * time.Hour
+
+// pruneExpiredSecurityEvents deletes security_events rows older than the
+// retention window. Extracted from StartTokenCleanup so it can be exercised
+// by unit tests without starting the background goroutine.
+func pruneExpiredSecurityEvents(database *gorm.DB) int64 {
+	result := database.Where("created_at < ?", time.Now().Add(-securityEventRetention)).Delete(&db.SecurityEvent{})
+	return result.RowsAffected
+}
+
 // StartTokenCleanup starts a background goroutine that periodically deletes
 // expired refresh tokens from the database to prevent unbounded growth.
 func StartTokenCleanup(database *gorm.DB, interval time.Duration) {
@@ -516,6 +525,10 @@ func StartTokenCleanup(database *gorm.DB, interval time.Duration) {
 			blResult := database.Where("expires_at < ?", time.Now()).Delete(&db.TokenBlacklist{})
 			if blResult.RowsAffected > 0 {
 				slog.Info("cleaned up expired blacklist entries", "count", blResult.RowsAffected)
+			}
+			// Prune security events older than the retention window
+			if count := pruneExpiredSecurityEvents(database); count > 0 {
+				slog.Info("pruned old security events", "count", count)
 			}
 		}
 	}()

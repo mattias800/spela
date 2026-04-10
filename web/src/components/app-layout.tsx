@@ -22,6 +22,7 @@ import {
   Gamepad2,
   GitCompareArrows,
   Puzzle,
+  ShieldAlert,
 } from "lucide-react";
 import { Sidebar } from "@/components/ui";
 import { useAuth } from "@/hooks/use-auth";
@@ -136,6 +137,11 @@ export function AppLayout() {
                 to: "/admin/core-compatibility",
                 icon: GitCompareArrows,
                 label: "Core Compatibility",
+              },
+              {
+                to: "/admin/security-events",
+                icon: ShieldAlert,
+                label: "Security Events",
               },
             ],
           },
