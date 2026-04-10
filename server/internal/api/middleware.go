@@ -76,7 +76,7 @@ func AuthMiddleware(jwtSecret string, database *gorm.DB) gin.HandlerFunc {
 		userID := claims.UserID
 		// Reject revoked (logged-out) access tokens
 		if IsTokenBlacklisted(database, token) {
-			recordSecurityEventCtx(database, c, securityEventInput{
+			recordSecurityEventCtx(database, c, db.SecurityEventInput{
 				EventType: db.SecurityEventRevokedTokenUsed,
 				Username:  claims.Username,
 				UserID:    &userID,
@@ -88,7 +88,7 @@ func AuthMiddleware(jwtSecret string, database *gorm.DB) gin.HandlerFunc {
 		// Reject disabled users even if their access token is still valid
 		var user db.User
 		if err := database.Select("id", "disabled", "token_version").First(&user, claims.UserID).Error; err != nil {
-			recordSecurityEventCtx(database, c, securityEventInput{
+			recordSecurityEventCtx(database, c, db.SecurityEventInput{
 				EventType: db.SecurityEventTokenUserMissing,
 				Username:  claims.Username,
 				UserID:    &userID,
@@ -97,7 +97,7 @@ func AuthMiddleware(jwtSecret string, database *gorm.DB) gin.HandlerFunc {
 			return
 		}
 		if user.Disabled {
-			recordSecurityEventCtx(database, c, securityEventInput{
+			recordSecurityEventCtx(database, c, db.SecurityEventInput{
 				EventType: db.SecurityEventDisabledAccountToken,
 				Username:  claims.Username,
 				UserID:    &userID,
@@ -108,7 +108,7 @@ func AuthMiddleware(jwtSecret string, database *gorm.DB) gin.HandlerFunc {
 
 		// Reject tokens minted before a role/password/disabled change
 		if claims.TokenVersion != user.TokenVersion {
-			recordSecurityEventCtx(database, c, securityEventInput{
+			recordSecurityEventCtx(database, c, db.SecurityEventInput{
 				EventType: db.SecurityEventStaleTokenVersion,
 				Username:  claims.Username,
 				UserID:    &userID,

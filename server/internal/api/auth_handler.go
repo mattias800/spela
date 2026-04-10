@@ -150,7 +150,7 @@ func (h *AuthHandler) Login(c *gin.Context) {
 
 	// Check account lockout before proceeding
 	if h.isLockedOut(req.Username) {
-		recordSecurityEventCtx(h.DB, c, securityEventInput{
+		recordSecurityEventCtx(h.DB, c, db.SecurityEventInput{
 			EventType: db.SecurityEventLoginLocked,
 			Username:  req.Username,
 		})
@@ -167,7 +167,7 @@ func (h *AuthHandler) Login(c *gin.Context) {
 		// "wrong password" (slow bcrypt) by measuring response time.
 		auth.CheckPassword(req.Password, dummyBcryptHash)
 		h.recordFailedLogin(req.Username)
-		recordSecurityEventCtx(h.DB, c, securityEventInput{
+		recordSecurityEventCtx(h.DB, c, db.SecurityEventInput{
 			EventType: db.SecurityEventLoginFailed,
 			Reason:    "unknown_user",
 			Username:  req.Username,
@@ -181,7 +181,7 @@ func (h *AuthHandler) Login(c *gin.Context) {
 		// Re-read the attempt to log the new failure count and detect lockout escalation.
 		var attempt db.LoginAttempt
 		h.DB.Where("username = ?", hashUsername(req.Username)).First(&attempt)
-		recordSecurityEventCtx(h.DB, c, securityEventInput{
+		recordSecurityEventCtx(h.DB, c, db.SecurityEventInput{
 			EventType: db.SecurityEventLoginFailed,
 			Reason:    "bad_password",
 			Username:  req.Username,
@@ -189,7 +189,7 @@ func (h *AuthHandler) Login(c *gin.Context) {
 			Metadata:  map[string]any{"failedCount": attempt.FailedCount},
 		})
 		if attempt.FailedCount >= maxLoginAttempts {
-			recordSecurityEventCtx(h.DB, c, securityEventInput{
+			recordSecurityEventCtx(h.DB, c, db.SecurityEventInput{
 				EventType: db.SecurityEventAccountLocked,
 				Username:  req.Username,
 				UserID:    &user.ID,
@@ -204,7 +204,7 @@ func (h *AuthHandler) Login(c *gin.Context) {
 	}
 
 	if user.PendingApproval {
-		recordSecurityEventCtx(h.DB, c, securityEventInput{
+		recordSecurityEventCtx(h.DB, c, db.SecurityEventInput{
 			EventType: db.SecurityEventLoginBlocked,
 			Reason:    "pending_approval",
 			Username:  req.Username,
@@ -215,7 +215,7 @@ func (h *AuthHandler) Login(c *gin.Context) {
 	}
 
 	if user.Disabled {
-		recordSecurityEventCtx(h.DB, c, securityEventInput{
+		recordSecurityEventCtx(h.DB, c, db.SecurityEventInput{
 			EventType: db.SecurityEventLoginBlocked,
 			Reason:    "disabled",
 			Username:  req.Username,
@@ -227,7 +227,7 @@ func (h *AuthHandler) Login(c *gin.Context) {
 
 	// Successful login — clear any failed attempts
 	h.clearFailedLogins(req.Username)
-	recordSecurityEventCtx(h.DB, c, securityEventInput{
+	recordSecurityEventCtx(h.DB, c, db.SecurityEventInput{
 		EventType: db.SecurityEventLoginSuccess,
 		Username:  req.Username,
 		UserID:    &user.ID,
