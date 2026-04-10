@@ -6,7 +6,7 @@ import {
 } from "@/components/ui";
 import { formatDateTime } from "@/lib/format";
 import { cn } from "@/lib/cn";
-import { SecurityEventBadge, SECURITY_EVENT_META } from "./security-event-badge";
+import { SecurityEventBadge, getSecurityEventMeta } from "./security-event-badge";
 import type { SecurityEvent } from "@/types/api";
 
 interface SecurityEventsTableProps {
@@ -75,7 +75,7 @@ export function SecurityEventsTable({
               </tr>
             ) : (
               events.map((e) => {
-                const meta = SECURITY_EVENT_META[e.eventType];
+                const meta = getSecurityEventMeta(e.eventType);
                 const isAlert = meta?.severity === "alert";
                 // handleRowActivate opens the detail modal, but only when the
                 // click is not finishing a text-selection gesture. Admins

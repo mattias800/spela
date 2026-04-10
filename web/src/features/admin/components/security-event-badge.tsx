@@ -98,19 +98,30 @@ const UNKNOWN_EVENT_META: EventMeta = {
 };
 
 /**
+ * getSecurityEventMeta returns the presentation metadata for an event type,
+ * or undefined when the catalog doesn't know it. Callers should handle the
+ * undefined case (typically by rendering a neutral fallback). Exported so
+ * the table and the badge can share the same lookup without duplicating
+ * the `as Record<string, EventMeta>` cast that the widened
+ * `SecurityEventTypeLike` forces.
+ */
+export function getSecurityEventMeta(
+  type: SecurityEventTypeLike,
+): EventMeta | undefined {
+  return (SECURITY_EVENT_META as Record<string, EventMeta>)[type];
+}
+
+/**
  * getSecurityEventLabel returns a human-readable label for an event type,
  * falling back to the raw type string when the catalog doesn't know it.
  * Exported so the detail modal title and the badge agree on the fallback.
  */
 export function getSecurityEventLabel(type: SecurityEventTypeLike): string {
-  const meta = (SECURITY_EVENT_META as Record<string, EventMeta>)[type];
-  return meta?.label ?? type;
+  return getSecurityEventMeta(type)?.label ?? type;
 }
 
 export function SecurityEventBadge({ type }: SecurityEventBadgeProps) {
-  const meta =
-    (SECURITY_EVENT_META as Record<string, EventMeta>)[type] ??
-    UNKNOWN_EVENT_META;
+  const meta = getSecurityEventMeta(type) ?? UNKNOWN_EVENT_META;
   const Icon = meta.icon;
   const label = getSecurityEventLabel(type);
   return (
