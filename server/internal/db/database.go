@@ -187,6 +187,17 @@ func Initialize(dbPath string) (*gorm.DB, error) {
 		return nil, fmt.Errorf("running migrations: %w", err)
 	}
 
+	// Defensive: ensure the token_blacklist token_hash index exists.
+	// AutoMigrate creates indexes for new tables, but databases that predate
+	// the uniqueIndex annotation can end up without it, causing the auth
+	// middleware's lookup to fall back to a table scan on every request.
+	if err := db.Exec("CREATE UNIQUE INDEX IF NOT EXISTS idx_token_blacklists_token_hash ON token_blacklists(token_hash)").Error; err != nil {
+		slog.Warn("failed to ensure token_blacklists token_hash index", "error", err)
+	}
+	if err := db.Exec("CREATE INDEX IF NOT EXISTS idx_token_blacklists_expires_at ON token_blacklists(expires_at)").Error; err != nil {
+		slog.Warn("failed to ensure token_blacklists expires_at index", "error", err)
+	}
+
 	// Promote the first user to owner if no owner exists (handles upgrades).
 	var ownerCount int64
 	db.Model(&User{}).Where("role = ?", RoleOwner).Count(&ownerCount)

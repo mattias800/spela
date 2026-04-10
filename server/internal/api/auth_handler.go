@@ -148,8 +148,15 @@ func (h *AuthHandler) Login(c *gin.Context) {
 		return
 	}
 
+	clientIP := c.ClientIP()
+
 	// Check account lockout before proceeding
 	if h.isLockedOut(req.Username) {
+		slog.Warn("security: login attempt against locked account",
+			"event", "login_locked",
+			"username", req.Username,
+			"ip", clientIP,
+		)
 		apiError(c, http.StatusTooManyRequests, "account locked", "Your account has been temporarily locked due to too many failed login attempts. Please try again later.")
 		return
 	}
@@ -163,28 +170,71 @@ func (h *AuthHandler) Login(c *gin.Context) {
 		// "wrong password" (slow bcrypt) by measuring response time.
 		auth.CheckPassword(req.Password, dummyBcryptHash)
 		h.recordFailedLogin(req.Username)
+		slog.Warn("security: failed login (unknown user)",
+			"event", "login_failed",
+			"reason", "unknown_user",
+			"username", req.Username,
+			"ip", clientIP,
+		)
 		apiError(c, http.StatusUnauthorized, "invalid credentials", "Invalid username or password.")
 		return
 	}
 
 	if !auth.CheckPassword(req.Password, user.PasswordHash) {
 		h.recordFailedLogin(req.Username)
+		// Re-read the attempt to log the new failure count and detect lockout escalation.
+		var attempt db.LoginAttempt
+		h.DB.Where("username = ?", hashUsername(req.Username)).First(&attempt)
+		slog.Warn("security: failed login (bad password)",
+			"event", "login_failed",
+			"reason", "bad_password",
+			"username", req.Username,
+			"ip", clientIP,
+			"failedCount", attempt.FailedCount,
+		)
+		if attempt.FailedCount >= maxLoginAttempts {
+			slog.Warn("security: account locked due to repeated failures",
+				"event", "account_locked",
+				"username", req.Username,
+				"ip", clientIP,
+				"failedCount", attempt.FailedCount,
+				"lockedUntil", attempt.LockedUntil,
+			)
+		}
 		apiError(c, http.StatusUnauthorized, "invalid credentials", "Invalid username or password.")
 		return
 	}
 
 	if user.PendingApproval {
+		slog.Warn("security: login attempt on pending account",
+			"event", "login_blocked",
+			"reason", "pending_approval",
+			"username", req.Username,
+			"ip", clientIP,
+		)
 		apiError(c, http.StatusForbidden, "account pending approval", "Your account is awaiting admin approval. Please try again once an admin has approved it.")
 		return
 	}
 
 	if user.Disabled {
+		slog.Warn("security: login attempt on disabled account",
+			"event", "login_blocked",
+			"reason", "disabled",
+			"username", req.Username,
+			"ip", clientIP,
+		)
 		apiError(c, http.StatusForbidden, "account is disabled", "Your account has been disabled. Please contact an administrator.")
 		return
 	}
 
 	// Successful login — clear any failed attempts
 	h.clearFailedLogins(req.Username)
+	slog.Info("security: successful login",
+		"event", "login_success",
+		"username", req.Username,
+		"userId", user.ID,
+		"ip", clientIP,
+	)
 
 	accessToken, err := auth.GenerateAccessToken(user.ID, user.Username, user.Role, h.JWTSecret, user.TokenVersion)
 	if err != nil {
@@ -509,11 +559,19 @@ func (h *AuthHandler) Logout(c *gin.Context) {
 }
 
 // IsTokenBlacklisted checks if a JWT access token has been revoked.
+//
+// Uses an existence-style query (SELECT id ... LIMIT 1) instead of COUNT(*),
+// because COUNT scans all matching rows even when only existence is needed.
+// On the indexed token_hash column the query short-circuits at the first
+// match, keeping middleware overhead minimal even on large blacklist tables.
 func IsTokenBlacklisted(database *gorm.DB, token string) bool {
 	hash := sha256.Sum256([]byte(token))
-	var count int64
-	database.Model(&db.TokenBlacklist{}).Where("token_hash = ?", hex.EncodeToString(hash[:])).Count(&count)
-	return count > 0
+	var bl db.TokenBlacklist
+	err := database.Select("id").
+		Where("token_hash = ?", hex.EncodeToString(hash[:])).
+		Limit(1).
+		Take(&bl).Error
+	return err == nil
 }
 
 // Setup creates the initial owner account. Only works when no users exist.
