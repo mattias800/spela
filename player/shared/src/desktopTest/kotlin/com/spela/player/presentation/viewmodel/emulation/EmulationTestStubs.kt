@@ -550,6 +550,29 @@ class EmulationViewModelTestBuilder {
         vmScheduler.runCurrent()
     }
 
+    /**
+     * Advance the VM's virtual clock by [ms] milliseconds and then drain the
+     * scheduler across multiple passes, without blocking on the VM's
+     * long-running background coroutines (e.g. the challenge elapsed-time
+     * loop). Prefer this over plain [advanceTimeBy] for assertions that
+     * depend on a chain of coroutines hopping between dispatchers — a single
+     * pass of `runCurrent()` only drains the first continuation, so a task
+     * that is `launch(dispatchers.io)` then `withContext(dispatchers.main)`
+     * will leave the main-thread step unscheduled on the first pass and
+     * produce a flaky "expected 1, got 0" assertion under load.
+     *
+     * A plain [kotlinx.coroutines.test.TestCoroutineScheduler.advanceUntilIdle]
+     * would also work, but the VM launches background loops (challenge
+     * timer, session heartbeat) that never terminate, so advanceUntilIdle
+     * exhausts memory. This bounded drain is the compromise.
+     */
+    fun advanceTimeByAndDrain(ms: Long, passes: Int = 10) {
+        vmScheduler.advanceTimeBy(ms)
+        repeat(passes) {
+            vmScheduler.runCurrent()
+        }
+    }
+
     fun build(): EmulationViewModel {
         vmScope = CoroutineScope(testDispatcher + Job())
         val apiClient = SpelaApiClient(StubMockEngineFactory, TokenManager())
