@@ -288,6 +288,22 @@ const (
 	SecurityEventStaleTokenVersion    = "stale_token_version"
 )
 
+// AllSecurityEventTypes is the canonical catalog of security event type
+// strings. Every type above must appear here so API responses and UI filters
+// stay in sync with the emitted events. Adding a new type is a one-line
+// change: add the const above, add it to this slice, done.
+var AllSecurityEventTypes = []string{
+	SecurityEventLoginSuccess,
+	SecurityEventLoginFailed,
+	SecurityEventLoginLocked,
+	SecurityEventLoginBlocked,
+	SecurityEventAccountLocked,
+	SecurityEventRevokedTokenUsed,
+	SecurityEventDisabledAccountToken,
+	SecurityEventTokenUserMissing,
+	SecurityEventStaleTokenVersion,
+}
+
 // SecurityEvent records an admin-only audit entry for an authentication or
 // session-related event. These rows back the /admin/security-events page so
 // admins can investigate suspicious activity without tailing container logs.

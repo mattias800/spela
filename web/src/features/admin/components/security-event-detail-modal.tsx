@@ -59,6 +59,17 @@ export function SecurityEventDetailModal({
               </pre>
             </div>
           )}
+
+          {event.metadataRaw && (
+            <div>
+              <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-warning-500">
+                Metadata (raw — failed to parse)
+              </p>
+              <pre className="max-h-64 overflow-auto rounded-xl border border-warning-500/40 bg-surface-950 px-4 py-3 text-xs text-surface-300">
+                {event.metadataRaw}
+              </pre>
+            </div>
+          )}
         </div>
       )}
     </Modal>
