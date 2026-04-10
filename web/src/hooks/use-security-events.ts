@@ -27,12 +27,16 @@ function buildSecurityEventsQuery(filters: SecurityEventsListFilters): string {
 
 export function useSecurityEvents(filters: SecurityEventsListFilters) {
   const qs = buildSecurityEventsQuery(filters);
+  // Each branch narrows to a literal type ApiGetPath accepts. A single
+  // template literal like `/admin/security-events${qs ? `?${qs}` : ""}`
+  // widens to `/admin/security-events${string}`, which would match paths
+  // like `/admin/security-events-extra` and so is correctly rejected.
+  const path = qs
+    ? (`/admin/security-events?${qs}` as const)
+    : ("/admin/security-events" as const);
   return useQuery({
     queryKey: ["admin", "security-events", filters],
-    queryFn: () =>
-      api.get<SecurityEventsListResponse>(
-        `/admin/security-events${qs ? `?${qs}` : ""}` as const,
-      ),
+    queryFn: () => api.get<SecurityEventsListResponse>(path),
     // Poll every 60s so admins see new events without manual refresh.
     // Events are also mirrored to slog, so we don't need sub-minute latency
     // here — the page is for investigation, not live monitoring.
@@ -44,8 +48,10 @@ export function useSecurityEvents(filters: SecurityEventsListFilters) {
 export function useSecurityEvent(id: number | null) {
   return useQuery({
     queryKey: ["admin", "security-events", id],
-    queryFn: () =>
-      api.get<SecurityEvent>(`/admin/security-events/${id}` as const),
+    queryFn: () => {
+      const path = `/admin/security-events/${id}` as const;
+      return api.get<SecurityEvent>(path);
+    },
     enabled: id !== null,
   });
 }
