@@ -1,23 +1,32 @@
-import { Modal } from "@/components/ui";
+import { Filter } from "lucide-react";
+import { Button, Modal } from "@/components/ui";
 import { cn } from "@/lib/cn";
 import { formatDateTime } from "@/lib/format";
 import {
   SecurityEventBadge,
-  SECURITY_EVENT_META,
+  getSecurityEventLabel,
 } from "./security-event-badge";
 import type { SecurityEvent } from "@/types/api";
 
 interface SecurityEventDetailModalProps {
   event: SecurityEvent | null;
   onClose: () => void;
+  /** Called when the admin clicks "View all events from this IP". */
+  onPivotToIp?: (ip: string) => void;
+  /** Called when the admin clicks "View all events from this user". */
+  onPivotToUsername?: (username: string) => void;
 }
 
 export function SecurityEventDetailModal({
   event,
   onClose,
+  onPivotToIp,
+  onPivotToUsername,
 }: SecurityEventDetailModalProps) {
+  // Modal title mirrors the badge's fallback so an unknown event type
+  // displays the raw string in both places instead of diverging.
   const title = event
-    ? (SECURITY_EVENT_META[event.eventType]?.label ?? "Security event")
+    ? getSecurityEventLabel(event.eventType)
     : "Security event";
 
   return (
@@ -48,6 +57,48 @@ export function SecurityEventDetailModal({
             <DetailRow label="IP address" value={event.ip ?? "—"} mono />
             <DetailRow label="Request path" value={event.path ?? "—"} mono />
           </DetailGrid>
+
+          {/* Pivot actions — the single most useful operation during an
+              incident investigation is jumping from "this event" to "every
+              other event tied to the same actor". Only render the button
+              when the field is populated. Long usernames/IPs are truncated
+              in the label via a nested span with max-width + truncate so
+              the button never blows out the modal width. */}
+          {(event.username || event.ip) && (
+            <div
+              data-testid="security-event-pivot-actions"
+              className="flex flex-wrap gap-2 border-t border-surface-800/50 pt-4"
+            >
+              {event.username && onPivotToUsername && (
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  icon={<Filter aria-hidden="true" className="h-3.5 w-3.5" />}
+                  onClick={() => onPivotToUsername(event.username!)}
+                  className="max-w-full"
+                >
+                  {"View all events from user "}
+                  <span className="inline-block max-w-[20ch] truncate align-bottom">
+                    {event.username}
+                  </span>
+                </Button>
+              )}
+              {event.ip && onPivotToIp && (
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  icon={<Filter aria-hidden="true" className="h-3.5 w-3.5" />}
+                  onClick={() => onPivotToIp(event.ip!)}
+                  className="max-w-full"
+                >
+                  {"View all events from IP "}
+                  <span className="inline-block max-w-[20ch] truncate align-bottom font-mono">
+                    {event.ip}
+                  </span>
+                </Button>
+              )}
+            </div>
+          )}
 
           {event.metadata && Object.keys(event.metadata).length > 0 && (
             <div>
