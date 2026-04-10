@@ -15,7 +15,6 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
-import kotlin.test.Ignore
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -215,41 +214,11 @@ class EmulationViewModelChallengeTest {
         assertFalse(vm.state.value.isPaused)
     }
 
-    // TODO: flaky in CI despite multiple fixes (see IMPROVEMENTS.md 2026-04-10
-    // entry). The test has been blocking unrelated PRs for six CI runs now.
-    // Skipping until someone can invest time in a proper root-cause
-    // investigation of the coroutine-test-dispatcher race inside
-    // ChallengeManager.restartChallenge. The PR #359 drain helper
-    // (advanceTimeByAndDrain) passes 5/5 locally but still fails
-    // intermittently on GitHub Actions runners.
-    @Ignore
-    @Test
-    fun restartChallengeReloadsAndStartsNewAttempt() = runTest {
-        builder.challengeRepository.startAttemptResult = Result.success(
-            ChallengeAttempt(id = "attempt-2", challengeId = "c1", userId = "u1", username = "test",
-                avatarUrl = null, status = "in_progress", startedAt = "", completedAt = null,
-                durationMs = 0, isBest = false)
-        )
-        val vm = builder.build()
-        vm.onIntent(EmulationIntent.StartGame("game1", challengeId = "c1"))
-        // Drain across multiple passes: ChallengeManager.restartChallenge
-        // launches on dispatchers.io and later hops to dispatchers.main via
-        // withContext(), so a single runCurrent() pass leaves the main-thread
-        // state update unscheduled and the test becomes flaky under CI load.
-        builder.advanceTimeByAndDrain(100)
-
-        // First attempt
-        assertEquals("attempt-2", vm.state.value.challengeAttemptId)
-
-        vm.onIntent(EmulationIntent.RestartChallenge)
-        builder.advanceTimeByAndDrain(100)
-
-        // Should have abandoned previous attempt and started new one
-        assertEquals(1, builder.challengeRepository.abandonAttemptCallCount)
-        // startAttempt called twice: once for initial start, once for restart
-        assertEquals(2, builder.challengeRepository.startAttemptCallCount)
-        assertEquals(0, vm.state.value.challengeElapsedMs)
-    }
+    // restartChallenge coverage moved to ChallengeManagerTest (same
+    // directory), which exercises the manager directly with an
+    // UnconfinedTestDispatcher so the io → main hop completes
+    // synchronously without the race that made the VM-level version
+    // flaky (PRs #355, #356, #357, #358, #361).
 
     @Test
     fun confirmGiveUpAbandonsAndExits() = runTest {
