@@ -274,6 +274,51 @@ type TokenBlacklist struct {
 	ExpiresAt time.Time `gorm:"not null;index"`
 }
 
+// Security event types. Keep in sync with the slog event= discriminators
+// emitted by auth_handler.go and middleware.go.
+const (
+	SecurityEventLoginSuccess         = "login_success"
+	SecurityEventLoginFailed          = "login_failed"
+	SecurityEventLoginLocked          = "login_locked"
+	SecurityEventLoginBlocked         = "login_blocked"
+	SecurityEventAccountLocked        = "account_locked"
+	SecurityEventRevokedTokenUsed     = "revoked_token_used"
+	SecurityEventDisabledAccountToken = "disabled_account_token"
+	SecurityEventTokenUserMissing     = "token_user_missing"
+	SecurityEventStaleTokenVersion    = "stale_token_version"
+)
+
+// SecurityEvent records an admin-only audit entry for an authentication or
+// session-related event. These rows back the /admin/security-events page so
+// admins can investigate suspicious activity without tailing container logs.
+//
+// Unlike LoginAttempt (which stores a SHA-256 hash of the username for lockout
+// counters), SecurityEvent deliberately stores the raw username — admins need
+// to read it to investigate incidents, and the table has a short retention
+// window (see securityEventRetention in auth_handler.go) to limit exposure.
+//
+// Username is stored as a free-form string (not a foreign key) so events
+// referencing deleted or never-existed accounts are still useful. UserID is
+// optional for the same reason. Metadata is a JSON blob for any extra
+// per-event-type fields (failedCount, lockedUntil, etc.).
+//
+// UsernameLower is a denormalized lowercased copy of Username, used by the
+// case-insensitive filter query so an index lookup can be used instead of a
+// `LOWER(username) LIKE ?` table scan (SQLite has no functional indexes).
+// It is populated automatically by the recorder on every write.
+type SecurityEvent struct {
+	ID            uint      `gorm:"primarykey"`
+	CreatedAt     time.Time `gorm:"index;not null"`
+	EventType     string    `gorm:"size:64;not null;index"`
+	Reason        string    `gorm:"size:64;index"`
+	Username      string    `gorm:"size:128;index"`
+	UsernameLower string    `gorm:"size:128;index"`
+	UserID        *uint     `gorm:"index"`
+	IP            string    `gorm:"size:64;index"`
+	Path          string    `gorm:"size:256"`
+	Metadata      string    `gorm:"type:text"`
+}
+
 // ServerSetting stores key-value server configuration.
 type ServerSetting struct {
 	Key   string `gorm:"primarykey;size:128" json:"key"`

@@ -2,7 +2,6 @@ package api
 
 import (
 	"fmt"
-	"log/slog"
 	"net/http"
 	"os"
 	"strconv"
@@ -74,15 +73,14 @@ func AuthMiddleware(jwtSecret string, database *gorm.DB) gin.HandlerFunc {
 			return
 		}
 
+		userID := claims.UserID
 		// Reject revoked (logged-out) access tokens
 		if IsTokenBlacklisted(database, token) {
-			slog.Warn("security: revoked token used",
-				"event", "revoked_token_used",
-				"username", claims.Username,
-				"userId", claims.UserID,
-				"ip", c.ClientIP(),
-				"path", c.Request.URL.Path,
-			)
+			recordSecurityEventCtx(database, c, securityEventInput{
+				EventType: db.SecurityEventRevokedTokenUsed,
+				Username:  claims.Username,
+				UserID:    &userID,
+			})
 			abortWithError(c, http.StatusUnauthorized, "token has been revoked", "Your session has ended. Please sign in again.")
 			return
 		}
@@ -90,36 +88,35 @@ func AuthMiddleware(jwtSecret string, database *gorm.DB) gin.HandlerFunc {
 		// Reject disabled users even if their access token is still valid
 		var user db.User
 		if err := database.Select("id", "disabled", "token_version").First(&user, claims.UserID).Error; err != nil {
-			slog.Warn("security: token references missing user",
-				"event", "token_user_missing",
-				"username", claims.Username,
-				"userId", claims.UserID,
-				"ip", c.ClientIP(),
-			)
+			recordSecurityEventCtx(database, c, securityEventInput{
+				EventType: db.SecurityEventTokenUserMissing,
+				Username:  claims.Username,
+				UserID:    &userID,
+			})
 			abortWithError(c, http.StatusUnauthorized, "user not found", "Your account could not be found. Please sign in again.")
 			return
 		}
 		if user.Disabled {
-			slog.Warn("security: disabled account used valid token",
-				"event", "disabled_account_token",
-				"username", claims.Username,
-				"userId", claims.UserID,
-				"ip", c.ClientIP(),
-			)
+			recordSecurityEventCtx(database, c, securityEventInput{
+				EventType: db.SecurityEventDisabledAccountToken,
+				Username:  claims.Username,
+				UserID:    &userID,
+			})
 			abortWithError(c, http.StatusForbidden, "account is disabled", "Your account has been disabled. Please contact an administrator.")
 			return
 		}
 
 		// Reject tokens minted before a role/password/disabled change
 		if claims.TokenVersion != user.TokenVersion {
-			slog.Warn("security: stale token version used",
-				"event", "stale_token_version",
-				"username", claims.Username,
-				"userId", claims.UserID,
-				"ip", c.ClientIP(),
-				"tokenVersion", claims.TokenVersion,
-				"currentVersion", user.TokenVersion,
-			)
+			recordSecurityEventCtx(database, c, securityEventInput{
+				EventType: db.SecurityEventStaleTokenVersion,
+				Username:  claims.Username,
+				UserID:    &userID,
+				Metadata: map[string]any{
+					"tokenVersion":   claims.TokenVersion,
+					"currentVersion": user.TokenVersion,
+				},
+			})
 			abortWithError(c, http.StatusUnauthorized, "token has been invalidated", "Your session is no longer valid. Please sign in again.")
 			return
 		}

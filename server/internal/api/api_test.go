@@ -37,6 +37,7 @@ func setupTestEnv(t *testing.T) (*gorm.DB, *Config) {
 		&db.User{}, &db.Console{}, &db.Game{}, &db.GameDisc{},
 		&db.Favorite{}, &db.PlayHistory{}, &db.RefreshToken{},
 		&db.TokenBlacklist{}, &db.LoginAttempt{},
+		&db.SecurityEvent{},
 		&db.ServerSetting{}, &db.Core{},
 		&db.ConsoleShaderPreference{},
 		&db.ConsoleKeyMappingPreference{},

@@ -151,6 +151,7 @@ func Initialize(dbPath string) (*gorm.DB, error) {
 		&SimilarGame{},
 		&LoginAttempt{},
 		&TokenBlacklist{},
+		&SecurityEvent{},
 		&CheatCode{},
 		&GameSession{},
 		&SessionSaveState{},

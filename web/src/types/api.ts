@@ -16,6 +16,49 @@ export interface RateLimitStatus {
   isLockedOut: boolean;
 }
 
+// Security event audit log (admin-only). Mirrors the SecurityEvent model on
+// the server. The metadata blob is per-event-type and may include things like
+// failedCount, lockedUntil, tokenVersion, etc.
+export type SecurityEventType =
+  | "login_success"
+  | "login_failed"
+  | "login_locked"
+  | "login_blocked"
+  | "account_locked"
+  | "revoked_token_used"
+  | "disabled_account_token"
+  | "token_user_missing"
+  | "stale_token_version";
+
+export interface SecurityEvent {
+  id: number;
+  createdAt: string;
+  eventType: SecurityEventType;
+  reason?: string;
+  username?: string;
+  userId?: number;
+  ip?: string;
+  path?: string;
+  metadata?: Record<string, unknown>;
+}
+
+export interface SecurityEventsListResponse {
+  data: SecurityEvent[];
+  total: number;
+  page: number;
+  pageSize: number;
+}
+
+export interface SecurityEventsListFilters {
+  page?: number;
+  pageSize?: number;
+  eventType?: SecurityEventType[];
+  username?: string;
+  ip?: string;
+  /** Preset (1h, 24h, 7d, 30d, all) or RFC3339 timestamp. */
+  since?: string;
+}
+
 export interface DeletedUser {
   id: string;
   username: string;

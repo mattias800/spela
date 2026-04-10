@@ -22,6 +22,7 @@ import { MetadataFixPage } from "@/pages/admin/metadata-fix-page";
 import { AdminCheatsPage } from "@/pages/admin/cheats-page";
 import { AdminBiosPage } from "@/pages/admin/bios-page";
 import { CoreCompatibilityPage } from "@/pages/admin/core-compatibility-page";
+import { AdminSecurityEventsPage } from "@/pages/admin/security-events-page";
 import { UploadRomsPage } from "@/pages/admin/upload-roms-page";
 import { RomHacksPage } from "@/pages/admin/rom-hacks-page";
 import { PreferencesPage } from "@/pages/preferences-page";
@@ -253,6 +254,14 @@ export function App() {
                       element={
                         <ProtectedRoute requireAdmin>
                           <CoreCompatibilityPage />
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="admin/security-events"
+                      element={
+                        <ProtectedRoute requireAdmin>
+                          <AdminSecurityEventsPage />
                         </ProtectedRoute>
                       }
                     />

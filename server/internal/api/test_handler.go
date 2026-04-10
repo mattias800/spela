@@ -74,6 +74,7 @@ func (h *TestHandler) Reset(c *gin.Context) {
 		tx.Unscoped().Where("1 = 1").Delete(&db.RefreshToken{})
 		tx.Unscoped().Where("1 = 1").Delete(&db.TokenBlacklist{})
 		tx.Unscoped().Where("1 = 1").Delete(&db.LoginAttempt{})
+		tx.Unscoped().Where("1 = 1").Delete(&db.SecurityEvent{})
 
 		// 10. Staged uploads
 		tx.Unscoped().Where("1 = 1").Delete(&db.StagedUpload{})

@@ -223,6 +223,9 @@ export type ApiGetPath = WithQuery<
   | "/admin/uploads"
   | "/admin/uploads/writable"
   | "/admin/core-compatibility"
+  | "/admin/security-events"
+  | "/admin/security-events/types"
+  | `/admin/security-events/${string}`
 
   // WebSocket
   | "/ws"
