@@ -574,56 +574,9 @@ func TestPruneExpiredSecurityEvents(t *testing.T) {
 	assert.Equal(t, "alice", remaining[0].Username)
 }
 
-func TestSecurityEventDedup_SuppressesRepeats(t *testing.T) {
-	database, _ := setupTestEnv(t)
-
-	// Reset global dedup state so tests don't interfere with each other.
-	globalSecurityEventDedup.mu.Lock()
-	globalSecurityEventDedup.lastSeen = make(map[dedupKey]time.Time)
-	globalSecurityEventDedup.mu.Unlock()
-
-	// A dedup-eligible event (revoked_token_used) hit 5 times in a row from
-	// the same IP should only produce a single DB row.
-	uid := uint(42)
-	for i := 0; i < 5; i++ {
-		recordSecurityEvent(database, securityEventInput{
-			EventType: db.SecurityEventRevokedTokenUsed,
-			Username:  "attacker",
-			UserID:    &uid,
-			IP:        "203.0.113.7",
-		})
-	}
-	var count int64
-	database.Model(&db.SecurityEvent{}).
-		Where("event_type = ?", db.SecurityEventRevokedTokenUsed).
-		Count(&count)
-	assert.Equal(t, int64(1), count)
-}
-
-func TestSecurityEventDedup_LoginEventsNotDeduped(t *testing.T) {
-	database, _ := setupTestEnv(t)
-
-	// Reset global dedup state.
-	globalSecurityEventDedup.mu.Lock()
-	globalSecurityEventDedup.lastSeen = make(map[dedupKey]time.Time)
-	globalSecurityEventDedup.mu.Unlock()
-
-	// login_failed should NOT be deduped — each attempt is independently
-	// meaningful for admins.
-	for i := 0; i < 3; i++ {
-		recordSecurityEvent(database, securityEventInput{
-			EventType: db.SecurityEventLoginFailed,
-			Reason:    "bad_password",
-			Username:  "alice",
-			IP:        "10.0.0.1",
-		})
-	}
-	var count int64
-	database.Model(&db.SecurityEvent{}).
-		Where("event_type = ?", db.SecurityEventLoginFailed).
-		Count(&count)
-	assert.Equal(t, int64(3), count)
-}
+// Dedup behavior is unit-tested in the db package
+// (security_event_recorder_test.go). The api layer only exercises the gin
+// adapter via the end-to-end login failure test below.
 
 // Failed-login flow integration test: hitting /api/auth/login with bad creds
 // must persist a security event the admin can then query.
