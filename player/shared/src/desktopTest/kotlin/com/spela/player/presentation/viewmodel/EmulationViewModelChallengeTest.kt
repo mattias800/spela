@@ -223,13 +223,17 @@ class EmulationViewModelChallengeTest {
         )
         val vm = builder.build()
         vm.onIntent(EmulationIntent.StartGame("game1", challengeId = "c1"))
-        builder.advanceTimeBy(100)
+        // Drain across multiple passes: ChallengeManager.restartChallenge
+        // launches on dispatchers.io and later hops to dispatchers.main via
+        // withContext(), so a single runCurrent() pass leaves the main-thread
+        // state update unscheduled and the test becomes flaky under CI load.
+        builder.advanceTimeByAndDrain(100)
 
         // First attempt
         assertEquals("attempt-2", vm.state.value.challengeAttemptId)
 
         vm.onIntent(EmulationIntent.RestartChallenge)
-        builder.advanceTimeBy(100)
+        builder.advanceTimeByAndDrain(100)
 
         // Should have abandoned previous attempt and started new one
         assertEquals(1, builder.challengeRepository.abandonAttemptCallCount)
