@@ -25,22 +25,23 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.AnnotatedString
 import com.spela.player.domain.model.NetplaySessionStatus
 import com.spela.player.presentation.intent.NetplayLobbyIntent
 import com.spela.player.presentation.ui.feature.netplay.InputDelaySection
 import com.spela.player.presentation.ui.feature.netplay.LobbyHeader
 import com.spela.player.presentation.ui.components.InvitePlayerSheet
 import com.spela.player.presentation.ui.components.SpButton
+import com.spela.player.presentation.ui.components.createTextClipEntry
 import com.spela.player.presentation.ui.components.SpSecondaryButton
 import com.spela.player.presentation.ui.components.SpLoadingIndicator
 import com.spela.player.presentation.ui.components.SpNetplayPlayerSlot
@@ -60,6 +61,7 @@ import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.ui.theme.SpTypography
 import com.spela.player.presentation.viewmodel.NetplayLobbyViewModel
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 data class NetplayStartConfig(
     val gameId: String,
@@ -79,7 +81,8 @@ fun NetplayLobbyScreen(
     onStartGame: (NetplayStartConfig) -> Unit,
 ) {
     val state by viewModel.state.collectAsState()
-    val clipboardManager = LocalClipboardManager.current
+    val clipboard = LocalClipboard.current
+    val clipboardScope = rememberCoroutineScope()
 
     LaunchedEffect(sessionId) {
         viewModel.onIntent(NetplayLobbyIntent.LoadSession(sessionId))
@@ -169,7 +172,9 @@ fun NetplayLobbyScreen(
                                 SpSessionCode(
                                     code = session.inviteCode,
                                     onCopy = {
-                                        clipboardManager.setText(AnnotatedString(session.inviteCode))
+                                        clipboardScope.launch {
+                                            clipboard.setClipEntry(createTextClipEntry(session.inviteCode))
+                                        }
                                     },
                                     modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
                                 )
