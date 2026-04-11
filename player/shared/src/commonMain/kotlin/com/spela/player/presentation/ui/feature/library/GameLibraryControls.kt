@@ -74,8 +74,7 @@ internal fun GameLibraryControls(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .horizontalScroll(rememberScrollState())
-                .padding(horizontal = SpSpacing.ScreenHorizontal),
+                .horizontalScroll(rememberScrollState()),
             horizontalArrangement = Arrangement.spacedBy(SpSpacing.Small),
         ) {
             FilterChip(
@@ -94,9 +93,7 @@ internal fun GameLibraryControls(
 
         // Sort controls + hide betas + view mode toggle
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = SpSpacing.ScreenHorizontal),
+            modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(SpSpacing.Small),
         ) {
