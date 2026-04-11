@@ -138,7 +138,7 @@ fun ChallengeDetailScreen(
                 }
 
                 Column(
-                    modifier = Modifier.padding(SpSpacing.ScreenHorizontal),
+                    modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
                 ) {
                     Spacer(Modifier.height(SpSpacing.Large))
 
@@ -377,7 +377,7 @@ private fun ChallengeDetailSkeleton() {
             modifier = Modifier.fillMaxWidth().aspectRatio(16f / 10f),
         )
 
-        Column(modifier = Modifier.padding(SpSpacing.ScreenHorizontal)) {
+        Column(modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal)) {
             Spacer(Modifier.height(SpSpacing.Large))
             SpShimmer(width = 220.dp, height = 28.dp) // Title
             Spacer(Modifier.height(SpSpacing.Small))
