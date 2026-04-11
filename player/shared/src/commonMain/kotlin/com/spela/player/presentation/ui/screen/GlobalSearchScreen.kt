@@ -183,7 +183,11 @@ fun GlobalSearchScreen(
                     SearchResultSkeleton(
                         modifier = Modifier
                             .fillMaxSize()
-                            .padding(top = SpSpacing.Default)
+                            .padding(
+                                start = SpSpacing.ScreenHorizontal,
+                                top = SpSpacing.Default,
+                                end = SpSpacing.ScreenHorizontal,
+                            )
                             .testTag("search_loading"),
                     )
                 }

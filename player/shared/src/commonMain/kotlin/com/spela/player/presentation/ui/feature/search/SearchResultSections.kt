@@ -53,12 +53,7 @@ fun SearchSectionHeader(
     modifier: Modifier = Modifier,
 ) {
     Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(
-                horizontal = SpSpacing.ScreenHorizontal,
-                vertical = SpSpacing.Small,
-            ),
+        modifier = modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
@@ -109,7 +104,7 @@ fun GameSearchResultItem(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Box(modifier = modifier.padding(horizontal = SpSpacing.ScreenHorizontal, vertical = SpSpacing.XXSmall)) {
+    Box(modifier = modifier) {
         SpWideGameCard(
             title = game.title,
             subtitle = game.consoleName,
@@ -139,7 +134,7 @@ fun ConsoleSearchResultItem(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Box(modifier = modifier.padding(horizontal = SpSpacing.ScreenHorizontal, vertical = SpSpacing.XXSmall)) {
+    Box(modifier = modifier) {
         SpWideIconCard(
             title = console.name,
             subtitle = "${console.gameCount} games",
@@ -174,7 +169,7 @@ fun CompanySearchResultItem(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Box(modifier = modifier.padding(horizontal = SpSpacing.ScreenHorizontal, vertical = SpSpacing.XXSmall)) {
+    Box(modifier = modifier) {
         SpWideIconCard(
             title = name,
             subtitle = "$gameCount games",
@@ -217,7 +212,7 @@ fun CollectionSearchResultItem(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Box(modifier = modifier.padding(horizontal = SpSpacing.ScreenHorizontal, vertical = SpSpacing.XXSmall)) {
+    Box(modifier = modifier) {
         SpWideIconCard(
             title = collection.name,
             subtitle = "${collection.username} \u00B7 ${collection.gameCount} games",
@@ -244,7 +239,7 @@ fun GroupSearchResultItem(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Box(modifier = modifier.padding(horizontal = SpSpacing.ScreenHorizontal, vertical = SpSpacing.XXSmall)) {
+    Box(modifier = modifier) {
         SpWideIconCard(
             title = name,
             subtitle = subtitle,
@@ -298,9 +293,7 @@ fun SearchResultSkeleton(
     modifier: Modifier = Modifier,
 ) {
     Column(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(horizontal = SpSpacing.ScreenHorizontal),
+        modifier = modifier.fillMaxWidth(),
     ) {
         SpShimmer(width = 80.dp, height = 16.dp)
         Spacer(Modifier.height(SpSpacing.Medium))
