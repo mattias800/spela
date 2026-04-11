@@ -13,10 +13,9 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import com.spela.player.presentation.ui.components.SpLazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.SecondaryTabRow
 import androidx.compose.material3.Tab
-import androidx.compose.material3.TabRow
 import androidx.compose.material3.TabRowDefaults
-import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.material3.Text
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
@@ -88,18 +87,16 @@ fun GlobalChallengesScreen(
 
         // Tabs
         val selectedTabIndex = tabs.indexOfFirst { it.first == state.selectedTab }
-        TabRow(
+        SecondaryTabRow(
             selectedTabIndex = selectedTabIndex,
             modifier = Modifier.fillMaxWidth(),
             containerColor = SpColor.Surface,
             contentColor = SpColor.OnSurface,
-            indicator = { tabPositions ->
-                if (selectedTabIndex < tabPositions.size) {
-                    TabRowDefaults.SecondaryIndicator(
-                        modifier = Modifier.tabIndicatorOffset(tabPositions[selectedTabIndex]),
-                        color = SpColor.Link,
-                    )
-                }
+            indicator = {
+                TabRowDefaults.SecondaryIndicator(
+                    modifier = Modifier.tabIndicatorOffset(selectedTabIndex, matchContentSize = false),
+                    color = SpColor.Link,
+                )
             },
         ) {
             tabs.forEachIndexed { index, (tab, title) ->
