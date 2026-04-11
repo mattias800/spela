@@ -59,6 +59,7 @@ fun KeyMappingScreen(
     onClearBinding: (() -> Unit)? = null,
     keyNameResolver: (Int) -> String = { "Key $it" },
     portLabel: String? = null,
+    modifier: Modifier = Modifier,
 ) {
     val buttonStates = remember(layout, state.currentBindings, state.currentMappingButton) {
         buildButtonStates(layout, state.currentBindings, state.currentMappingButton)
@@ -69,10 +70,9 @@ fun KeyMappingScreen(
     }
 
     BoxWithConstraints(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxSize()
-            .background(SpColor.Background)
-            .padding(SpSpacing.ScreenHorizontal),
+            .background(SpColor.Background),
     ) {
         val isWide = maxWidth > 600.dp
 

@@ -65,6 +65,8 @@ jobs:
             player-gradle-
       - name: Run shared desktop tests
         run: ./gradlew :shared:desktopTest
+      - name: Run detekt rules unit tests
+        run: ./gradlew :detekt-rules:test
       - name: Run detekt (design-system rules)
         run: ./gradlew :shared:detekt :android:detekt :desktop:detekt
 

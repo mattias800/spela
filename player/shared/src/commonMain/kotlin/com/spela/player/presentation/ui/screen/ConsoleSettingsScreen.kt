@@ -332,6 +332,7 @@ fun ConsoleSettingsScreen(
                             },
                             keyNameResolver = ::platformKeyName,
                             portLabel = portLabel,
+                            modifier = Modifier.padding(SpSpacing.ScreenHorizontal),
                         )
                     }
                 }

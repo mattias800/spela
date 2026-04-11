@@ -43,6 +43,7 @@ class ComponentOuterSpacingRule(config: Config) : Rule(
         "Row",
         "Column",
         "Box",
+        "BoxWithConstraints",
         "LazyColumn",
         "LazyRow",
         "LazyVerticalGrid",
@@ -126,14 +127,24 @@ class ComponentOuterSpacingRule(config: Config) : Rule(
 
     private fun paddingCallUsesScreenHorizontal(padding: KtCallExpression): Boolean {
         val args = padding.valueArguments
-        // Named arg: padding(horizontal = SpSpacing.ScreenHorizontal, ...)
+        // Positional single arg: padding(SpSpacing.ScreenHorizontal) → resolves to
+        // padding(all: Dp) and applies ScreenHorizontal to all four sides,
+        // including left/right — so it controls horizontal outer spacing.
+        if (args.size == 1 && args[0].getArgumentName() == null) {
+            val valueText = args[0].getArgumentExpression()?.text?.trim()
+            if (valueText == "SpSpacing.ScreenHorizontal") {
+                return true
+            }
+        }
         for (arg in args) {
             val name = arg.getArgumentName()?.asName?.asString()
             val valueText = arg.getArgumentExpression()?.text?.trim() ?: continue
             if (name == "horizontal" && valueText == "SpSpacing.ScreenHorizontal") {
                 return true
             }
-            // start/end equivalent
+            if (name == "all" && valueText == "SpSpacing.ScreenHorizontal") {
+                return true
+            }
             if ((name == "start" || name == "end") && valueText == "SpSpacing.ScreenHorizontal") {
                 return true
             }
