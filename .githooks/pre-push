@@ -1,0 +1,111 @@
+#!/usr/bin/env bash
+# Pre-push hook: verify that web/ and server/ still build before the push
+# hits CI. Runs only the builds whose directories actually contain changes
+# being pushed, so a player-only push is unaffected.
+#
+# Installation (once per clone):
+#   git config core.hooksPath .githooks
+#
+# Bypass for a single push (use sparingly):
+#   git push --no-verify
+#
+# What this catches that `tsc --noEmit` / `go vet` alone don't:
+#   - TS errors that only show up via vite/rollup bundle-time checks
+#     (e.g. path-literal narrowing) — PR #360 round-tripped CI for one.
+#   - Go build-tag / cross-package compile errors that unit tests in a
+#     single package can miss.
+#
+# It does NOT run tests — just the builds. Tests go through CI.
+
+set -euo pipefail
+
+# Colors for terminals that support them.
+if [[ -t 2 ]]; then
+    RED=$'\033[0;31m'
+    GREEN=$'\033[0;32m'
+    YELLOW=$'\033[1;33m'
+    DIM=$'\033[2m'
+    RESET=$'\033[0m'
+else
+    RED=""
+    GREEN=""
+    YELLOW=""
+    DIM=""
+    RESET=""
+fi
+
+log() { printf '%s[pre-push]%s %s\n' "$DIM" "$RESET" "$*" >&2; }
+warn() { printf '%s[pre-push]%s %s\n' "$YELLOW" "$RESET" "$*" >&2; }
+die() { printf '%s[pre-push]%s %s\n' "$RED" "$RESET" "$*" >&2; exit 1; }
+
+# Read all refs being pushed from stdin. Each line is:
+#   <local_ref> <local_sha> <remote_ref> <remote_sha>
+# A zero sha on the remote side means "new branch" — in that case we
+# diff against the upstream merge-base so the hook still only builds
+# what's actually changing on this branch vs. master.
+changed_files=""
+while read -r local_ref local_sha remote_ref remote_sha; do
+    if [[ -z "$local_sha" ]]; then
+        continue
+    fi
+    # Deleted ref (local is zero): nothing to build.
+    if [[ "$local_sha" =~ ^0+$ ]]; then
+        continue
+    fi
+    if [[ "$remote_sha" =~ ^0+$ ]]; then
+        # New branch on remote: diff against the merge-base with master.
+        base=$(git merge-base "$local_sha" origin/master 2>/dev/null || true)
+        if [[ -z "$base" ]]; then
+            # No master reference locally — just scan the full commit range
+            # starting from the root. Uncommon (fresh clone w/ no master
+            # fetch) but handle it gracefully.
+            range="$local_sha"
+        else
+            range="${base}..${local_sha}"
+        fi
+    else
+        range="${remote_sha}..${local_sha}"
+    fi
+    changed_files+=$'\n'$(git diff --name-only "$range" 2>/dev/null || true)
+done
+
+# If no refs came in on stdin at all (e.g. `git push` with nothing to
+# push), skip the hook entirely.
+if [[ -z "${changed_files// /}" ]]; then
+    exit 0
+fi
+
+run_web=false
+run_server=false
+while IFS= read -r f; do
+    [[ -z "$f" ]] && continue
+    case "$f" in
+        web/*) run_web=true ;;
+        server/*) run_server=true ;;
+    esac
+done <<< "$changed_files"
+
+if ! $run_web && ! $run_server; then
+    log "no web/ or server/ changes in this push — skipping builds"
+    exit 0
+fi
+
+repo_root=$(git rev-parse --show-toplevel)
+cd "$repo_root"
+
+if $run_web; then
+    log "running ${GREEN}npm run build${RESET} in web/ ..."
+    if ! (cd web && npm run build); then
+        die "web build failed — fix it or push with ${YELLOW}--no-verify${RED} if you know what you're doing"
+    fi
+fi
+
+if $run_server; then
+    log "running ${GREEN}go build ./...${RESET} in server/ ..."
+    if ! (cd server && go build ./...); then
+        die "server build failed — fix it or push with ${YELLOW}--no-verify${RED} if you know what you're doing"
+    fi
+fi
+
+log "${GREEN}builds clean${RESET}"
+exit 0

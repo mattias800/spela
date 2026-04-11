@@ -15,6 +15,20 @@ Spela is a self-hosted game emulation service with three components:
 2. **Web frontend** (React + TypeScript) - Server administration and game management
 3. **Player app** (Kotlin Multiplatform + Compose Multiplatform) - Native game player
 
+## One-time setup
+
+After cloning the repo, point git at the tracked hooks directory so the
+pre-push hook runs automatically on every push:
+
+```sh
+git config core.hooksPath .githooks
+```
+
+The pre-push hook runs `npm run build` for pushes that touch `web/` and
+`go build ./...` for pushes that touch `server/`. Player-only pushes are
+skipped. Bypass for a single push with `git push --no-verify`. See
+`.githooks/pre-push` for the script.
+
 ## Rules
 1. **No web technology in the player app** - No HTML, CSS, or JavaScript. Must be fully native.
 2. **Web UI uses React + TypeScript** - Vite build, Tailwind CSS, TanStack Query.
