@@ -111,7 +111,11 @@ fun SearchResultsList(
             onCollapse = onCollapseCategory,
             itemKey = { "game_${it.id}" },
         ) { game ->
-            GameSearchResultItem(game = game, onClick = { onGameSelected(game.id) })
+            GameSearchResultItem(
+                game = game,
+                onClick = { onGameSelected(game.id) },
+                modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal, vertical = SpSpacing.XXSmall),
+            )
         }
 
         searchSection(
@@ -123,7 +127,11 @@ fun SearchResultsList(
             onCollapse = onCollapseCategory,
             itemKey = { "console_${it.id}" },
         ) { console ->
-            ConsoleSearchResultItem(console = console, onClick = { onConsoleSelected(console.id) })
+            ConsoleSearchResultItem(
+                console = console,
+                onClick = { onConsoleSelected(console.id) },
+                modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal, vertical = SpSpacing.XXSmall),
+            )
         }
 
         searchSection(
@@ -141,6 +149,7 @@ fun SearchResultsList(
                 avgRating = developer.avgRating,
                 label = "Developer",
                 onClick = { onDeveloperSelected(developer.name) },
+                modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal, vertical = SpSpacing.XXSmall),
             )
         }
 
@@ -159,6 +168,7 @@ fun SearchResultsList(
                 avgRating = publisher.avgRating,
                 label = "Publisher",
                 onClick = { onPublisherSelected(publisher.name) },
+                modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal, vertical = SpSpacing.XXSmall),
             )
         }
 
@@ -174,6 +184,7 @@ fun SearchResultsList(
             CollectionSearchResultItem(
                 collection = collection,
                 onClick = { onCollectionSelected(collection.id) },
+                modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal, vertical = SpSpacing.XXSmall),
             )
         }
 
@@ -189,6 +200,7 @@ fun SearchResultsList(
             SeriesSearchResultItem(
                 series = series,
                 onClick = { onSeriesSelected(series.id, series.name) },
+                modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal, vertical = SpSpacing.XXSmall),
             )
         }
 
@@ -204,6 +216,7 @@ fun SearchResultsList(
             FranchiseSearchResultItem(
                 franchise = franchise,
                 onClick = { onFranchiseSelected(franchise.id, franchise.name) },
+                modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal, vertical = SpSpacing.XXSmall),
             )
         }
 
@@ -238,6 +251,7 @@ private fun <T> LazyListScope.searchSection(
             isExpanded = isExpanded,
             onSeeAll = { onExpand(name) },
             onShowLess = { onCollapse(name) },
+            modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal, vertical = SpSpacing.Small),
         )
     }
     items(
