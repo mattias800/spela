@@ -37,9 +37,7 @@ internal fun PersonalStatsSection(
     modifier: Modifier = Modifier,
 ) {
     Column(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(horizontal = SpSpacing.ScreenHorizontal),
+        modifier = modifier.fillMaxWidth(),
     ) {
         SpSectionHeader(title = "Your Stats")
 
