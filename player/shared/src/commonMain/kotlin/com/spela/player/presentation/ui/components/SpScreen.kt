@@ -119,9 +119,3 @@ fun SpMainContentPadding(
     )
 }
 
-/**
- * Horizontal screen padding as a modifier. Use on individual items
- * that need consistent horizontal insets within an edge-to-edge container.
- */
-fun Modifier.spScreenHorizontalPadding(): Modifier =
-    this.padding(horizontal = SpSpacing.ScreenHorizontal)

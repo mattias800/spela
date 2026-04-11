@@ -71,6 +71,7 @@ fun KeyMappingDialog(
                     onClearBinding = onClearBinding,
                     keyNameResolver = keyNameResolver,
                     portLabel = portLabel,
+                    modifier = Modifier.padding(SpSpacing.ScreenHorizontal),
                 )
             }
         }
