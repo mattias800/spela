@@ -5,7 +5,6 @@ import com.spela.player.data.remote.api.SpelaApiClient
 import com.spela.player.data.remote.dto.toDomain
 import com.spela.player.domain.model.GlobalSearchResult
 import com.spela.player.domain.repository.SearchRepository
-import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 
 class SearchRepositoryImpl(

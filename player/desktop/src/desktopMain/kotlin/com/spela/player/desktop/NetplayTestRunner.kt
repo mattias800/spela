@@ -14,8 +14,6 @@ import com.spela.player.platform.DesktopFileStorage
 import com.spela.player.util.DispatcherProvider
 import io.ktor.client.engine.cio.CIO
 import kotlinx.coroutines.*
-import com.spela.player.netplay.ControlMessage
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.takeWhile
 import java.awt.image.BufferedImage
 import java.io.File

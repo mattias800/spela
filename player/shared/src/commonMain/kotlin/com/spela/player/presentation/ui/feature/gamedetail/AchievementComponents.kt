@@ -1,7 +1,6 @@
 package com.spela.player.presentation.ui.feature.gamedetail
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.IntrinsicSize
@@ -21,13 +20,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.spela.player.domain.model.AchievementPlayerRanking
-import com.spela.player.domain.model.AchievementProgress
 import com.spela.player.domain.model.AchievementTimelineEntry
 import com.spela.player.domain.model.GameAchievement
 import com.spela.player.presentation.ui.components.SpAchievementBadge

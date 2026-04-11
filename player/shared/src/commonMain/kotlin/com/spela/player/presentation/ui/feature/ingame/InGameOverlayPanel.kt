@@ -50,7 +50,6 @@ import com.spela.player.presentation.state.EmulationState
 import com.spela.player.presentation.ui.components.EmulationActionButton
 import com.spela.player.presentation.ui.components.SpButton
 import com.spela.player.presentation.ui.components.SpSecondaryButton
-import com.spela.player.presentation.ui.components.SpButtonStyle
 import com.spela.player.presentation.ui.components.challenge.formatDuration
 import com.spela.player.presentation.ui.components.fpsColor
 import com.spela.player.presentation.ui.components.pingColor

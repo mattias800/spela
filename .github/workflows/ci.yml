@@ -67,8 +67,8 @@ jobs:
         run: ./gradlew :shared:desktopTest
       - name: Run detekt rules unit tests
         run: ./gradlew :detekt-rules:test
-      - name: Run detekt (design-system rules)
-        run: ./gradlew :shared:detekt :android:detekt :desktop:detekt
+      - name: Run detekt (design-system rules + style:UnusedImport, type resolution)
+        run: ./gradlew :shared:detektMainDesktop :android:detektDebugAndroid :desktop:detektMainDesktop
 
   docker:
     name: Build & push Docker image

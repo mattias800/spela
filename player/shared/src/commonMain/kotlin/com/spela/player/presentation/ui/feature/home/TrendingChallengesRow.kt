@@ -4,12 +4,10 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import com.spela.player.domain.model.Challenge
 import com.spela.player.presentation.ui.components.SpCarousel
 import com.spela.player.presentation.ui.components.challenge.SpChallengeCard
-import com.spela.player.presentation.ui.theme.SpSpacing
 
 @Composable
 internal fun TrendingChallengesRow(
