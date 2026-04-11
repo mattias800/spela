@@ -48,17 +48,13 @@ internal fun SessionCheatsSection(
     val cheatsUnavailable = cheatsLoadAttempted && !isLoadingCheats && availableCheats.isEmpty()
 
     Column(modifier = modifier) {
-        SpSectionHeader(
-            title = "Cheats",
-            modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
-        )
+        SpSectionHeader(title = "Cheats")
         Spacer(Modifier.height(SpSpacing.Small))
 
         // Master toggle
         SpInnerCard(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = SpSpacing.ScreenHorizontal)
                 .testTag("session_cheats_section"),
         ) {
             Column(
@@ -124,25 +120,19 @@ internal fun SessionCheatsSection(
                     text = "Loading cheats\u2026",
                     style = SpTypography.BodyMedium,
                     color = SpColor.OnBackgroundSecondary,
-                    modifier = Modifier
-                        .padding(horizontal = SpSpacing.ScreenHorizontal)
-                        .testTag("session_cheats_loading"),
+                    modifier = Modifier.testTag("session_cheats_loading"),
                 )
             } else if (availableCheats.isEmpty()) {
                 Text(
                     text = "No cheats available for this game",
                     style = SpTypography.BodyMedium,
                     color = SpColor.OnBackgroundSecondary,
-                    modifier = Modifier
-                        .padding(horizontal = SpSpacing.ScreenHorizontal)
-                        .testTag("session_cheats_empty"),
+                    modifier = Modifier.testTag("session_cheats_empty"),
                 )
             } else {
                 // Select All / Deselect All actions
                 Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = SpSpacing.ScreenHorizontal),
+                    modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.End,
                 ) {
                     TextButton(
@@ -167,7 +157,6 @@ internal fun SessionCheatsSection(
                         label = "Search cheats",
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = SpSpacing.ScreenHorizontal)
                             .testTag("session_cheats_search"),
                     )
                     Spacer(Modifier.height(SpSpacing.Small))
@@ -195,10 +184,7 @@ internal fun SessionCheatsSection(
                             onToggle = { onToggleCheatAtIndex(cheat.index) },
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(
-                                    horizontal = SpSpacing.ScreenHorizontal,
-                                    vertical = SpSpacing.XXSmall,
-                                ),
+                                .padding(vertical = SpSpacing.XXSmall),
                         )
                     }
                 }

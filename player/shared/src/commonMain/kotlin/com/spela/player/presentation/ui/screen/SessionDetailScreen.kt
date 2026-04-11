@@ -244,6 +244,7 @@ fun SessionDetailScreen(
                                         SessionDetailIntent.DeselectAllCheats(sessionId)
                                     )
                                 },
+                                modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
                             )
                         }
 
