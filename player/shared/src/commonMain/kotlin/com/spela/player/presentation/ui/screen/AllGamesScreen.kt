@@ -85,7 +85,7 @@ fun AllGamesScreen(
             onSortOrderChanged = { viewModel.onIntent(GameListIntent.SetSortOrder(it)) },
             onToggleViewMode = { viewModel.onIntent(GameListIntent.ToggleViewMode) },
             onToggleHideBetas = { viewModel.onIntent(GameListIntent.ToggleHideBetas) },
-            modifier = Modifier.padding(vertical = SpSpacing.Small),
+            modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal, vertical = SpSpacing.Small),
         )
 
         Spacer(Modifier.height(SpSpacing.Small))
