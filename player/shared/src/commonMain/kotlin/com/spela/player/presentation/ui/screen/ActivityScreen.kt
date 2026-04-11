@@ -159,6 +159,7 @@ fun ActivityScreen(
                                 event = event,
                                 onGameSelected = onGameSelected,
                                 onUserSelected = onUserSelected,
+                                modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
                             )
                         }
 
@@ -189,20 +190,18 @@ private fun ActivityFeedItem(
     event: ActivityEvent,
     onGameSelected: (String) -> Unit,
     onUserSelected: (String) -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     val actionText = formatActivityAction(event)
     val description = "${event.username} $actionText"
 
     Row(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .clickable {
                 event.gameId?.let { onGameSelected(it) }
             }
-            .padding(
-                horizontal = SpSpacing.ScreenHorizontal,
-                vertical = SpSpacing.Medium,
-            )
+            .padding(vertical = SpSpacing.Medium)
             .semantics { contentDescription = description },
         verticalAlignment = Alignment.Top,
     ) {

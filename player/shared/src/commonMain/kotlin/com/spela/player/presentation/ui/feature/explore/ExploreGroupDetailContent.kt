@@ -335,16 +335,14 @@ internal fun TimelineItem(
     game: SeriesGame,
     testTagPrefix: String,
     onClick: (() -> Unit)?,
+    modifier: Modifier = Modifier,
 ) {
     val itemAlpha = if (game.inLibrary) 1f else 0.5f
 
     SpCard(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
-            .padding(
-                horizontal = SpSpacing.ScreenHorizontal,
-                vertical = SpSpacing.XSmall,
-            )
+            .padding(vertical = SpSpacing.XSmall)
             .alpha(itemAlpha)
             .testTag("${testTagPrefix}_game_${game.igdbGameId}")
             .semantics {

@@ -176,6 +176,7 @@ fun SessionDetailScreen(
                                 game = state.game,
                                 onRename = { showRenameDialog = true },
                                 onPlay = { onPlay(session.gameId, session.id) },
+                                modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
                             )
                             Spacer(Modifier.height(SpSpacing.XLarge))
                         }
@@ -403,11 +404,11 @@ private fun SessionDetailHeader(
     game: Game?,
     onRename: () -> Unit,
     onPlay: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     Column(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = SpSpacing.ScreenHorizontal)
             .testTag("session_detail_header")
             .semantics { contentDescription = "Session: $sessionName" },
     ) {

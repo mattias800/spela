@@ -51,10 +51,7 @@ fun RecentSearchesSection(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(
-                    horizontal = SpSpacing.ScreenHorizontal,
-                    vertical = SpSpacing.Small,
-                ),
+                .padding(vertical = SpSpacing.Small),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
@@ -97,10 +94,7 @@ private fun RecentSearchItem(
             .clip(RoundedCornerShape(SpSpacing.RadiusDefault))
             .clickable(onClick = onClick)
             .gamepadFocusable(shape = RoundedCornerShape(SpSpacing.RadiusDefault))
-            .padding(
-                horizontal = SpSpacing.ScreenHorizontal,
-                vertical = SpSpacing.Small,
-            )
+            .padding(vertical = SpSpacing.Small)
             .testTag("recent_search_item_$query")
             .semantics {
                 contentDescription = "Recent search: $query"

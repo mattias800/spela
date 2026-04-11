@@ -44,10 +44,7 @@ fun ActivityEventItem(
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .padding(
-                horizontal = SpSpacing.ScreenHorizontal,
-                vertical = SpSpacing.Small,
-            )
+            .padding(vertical = SpSpacing.Small)
             .semantics { contentDescription = description },
         verticalAlignment = Alignment.CenterVertically,
     ) {
