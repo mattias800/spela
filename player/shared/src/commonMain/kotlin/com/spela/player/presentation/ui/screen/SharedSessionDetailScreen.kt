@@ -108,6 +108,7 @@ fun SharedSessionDetailScreen(
                                 onTakeTurn = { viewModel.onIntent(SharedSessionDetailIntent.TakeTurn(sharedSessionId)) },
                                 onReleaseTurn = { viewModel.onIntent(SharedSessionDetailIntent.ReleaseTurn(sharedSessionId)) },
                                 onPlay = { onPlay(sharedSession.gameId, sharedSessionId) },
+                                modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
                             )
                             Spacer(Modifier.height(SpSpacing.XLarge))
                         }
@@ -127,6 +128,7 @@ fun SharedSessionDetailScreen(
                             MemberItem(
                                 member = member,
                                 isActive = member.userId == sharedSession.activeUserId,
+                                modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal, vertical = SpSpacing.Small),
                             )
                         }
 
@@ -141,6 +143,7 @@ fun SharedSessionDetailScreen(
                                 onShowInviteSheet = {
                                     viewModel.onIntent(SharedSessionDetailIntent.ShowInviteSheet)
                                 },
+                                modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
                             )
                             Spacer(Modifier.height(SpSpacing.XLarge))
                         }
@@ -175,6 +178,7 @@ fun SharedSessionDetailScreen(
                                             SharedSessionDetailIntent.CopySaveToGame(sharedSessionId, save.id)
                                         )
                                     },
+                                    modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal, vertical = SpSpacing.XSmall),
                                 )
                             }
                         }
