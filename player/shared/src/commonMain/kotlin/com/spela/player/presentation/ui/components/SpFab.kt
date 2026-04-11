@@ -20,7 +20,6 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.spela.player.presentation.ui.gamepad.gamepadFocusable
-import com.spela.player.presentation.ui.theme.SpSpacing
 
 /**
  * Shared floating action button with focus ring support for gamepad navigation.

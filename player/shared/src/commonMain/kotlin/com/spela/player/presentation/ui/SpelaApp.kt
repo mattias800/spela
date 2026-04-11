@@ -94,7 +94,6 @@ import com.spela.player.presentation.ui.feature.ingame.PlatformTouchControls
 
 import com.spela.player.presentation.ui.screen.NetplayListScreen
 import com.spela.player.presentation.ui.screen.NetplayLobbyScreen
-import com.spela.player.presentation.ui.screen.NetplayStartConfig
 import com.spela.player.presentation.ui.screen.SharedSessionDetailScreen
 import com.spela.player.presentation.ui.screen.SessionDetailScreen
 import com.spela.player.presentation.ui.screen.SharedSessionsScreen

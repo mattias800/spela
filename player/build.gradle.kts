@@ -21,8 +21,10 @@ subprojects {
     detekt {
         config.setFrom("$rootDir/detekt.yml")
         buildUponDefaultConfig = false
-        // Only run the custom :spela: rule set — no default rules for now.
-        disableDefaultRuleSets = true
+        // Default rule sets are loaded but each rule is off by default —
+        // detekt.yml explicitly activates only the specific rules we want
+        // (currently :spela:ComponentOuterSpacingRule + style:UnusedImport).
+        disableDefaultRuleSets = false
         parallel = true
         autoCorrect = false
         // Kotlin Multiplatform puts sources under src/commonMain/kotlin, etc.
@@ -44,5 +46,8 @@ subprojects {
 
     afterEvaluate {
         dependencies.add("detektPlugins", project(":detekt-rules"))
+        // Upstream detekt-rules-style: we pick individual rules from it
+        // (currently only `UnusedImport`) via detekt.yml.
+        dependencies.add("detektPlugins", "dev.detekt:detekt-rules-style:2.0.0-alpha.2")
     }
 }

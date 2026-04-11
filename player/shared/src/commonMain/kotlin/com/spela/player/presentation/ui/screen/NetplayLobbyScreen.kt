@@ -42,7 +42,6 @@ import com.spela.player.presentation.ui.feature.netplay.LobbyHeader
 import com.spela.player.presentation.ui.components.InvitePlayerSheet
 import com.spela.player.presentation.ui.components.SpButton
 import com.spela.player.presentation.ui.components.SpSecondaryButton
-import com.spela.player.presentation.ui.components.SpButtonStyle
 import com.spela.player.presentation.ui.components.SpLoadingIndicator
 import com.spela.player.presentation.ui.components.SpNetplayPlayerSlot
 import com.spela.player.presentation.ui.components.SpProgressBar

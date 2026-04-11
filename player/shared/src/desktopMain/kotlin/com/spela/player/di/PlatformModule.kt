@@ -1,7 +1,6 @@
 package com.spela.player.di
 
 import app.cash.sqldelight.driver.jdbc.sqlite.JdbcSqliteDriver
-import com.spela.player.data.local.DatabaseHealthCheck
 import com.spela.player.data.local.ExpectedSchema
 import com.spela.player.data.local.SpelaDatabase
 import com.spela.player.data.remote.api.SpelaApiClient

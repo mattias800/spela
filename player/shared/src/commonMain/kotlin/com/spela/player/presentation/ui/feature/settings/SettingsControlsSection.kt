@@ -7,9 +7,7 @@ import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import com.spela.player.domain.model.KeyMappingPreset
-import com.spela.player.presentation.ui.components.SpButton
 import com.spela.player.presentation.ui.components.SpSecondaryButton
-import com.spela.player.presentation.ui.components.SpButtonStyle
 import com.spela.player.presentation.ui.components.SpCard
 import com.spela.player.presentation.ui.components.SpRadioOption
 import com.spela.player.presentation.ui.theme.SpSpacing

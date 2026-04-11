@@ -33,7 +33,6 @@ import com.spela.player.domain.model.ChallengeType
 import com.spela.player.domain.model.SaveState
 import com.spela.player.presentation.ui.components.SpButton
 import com.spela.player.presentation.ui.components.SpSecondaryButton
-import com.spela.player.presentation.ui.components.SpButtonStyle
 import com.spela.player.presentation.ui.components.SpChip
 import com.spela.player.presentation.ui.components.SpTextField
 import com.spela.player.presentation.ui.theme.SpColor

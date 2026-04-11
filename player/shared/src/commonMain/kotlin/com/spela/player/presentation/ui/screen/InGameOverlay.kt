@@ -26,9 +26,7 @@ import com.spela.player.presentation.ui.feature.ingame.NetplaySessionExpiredOver
 import com.spela.player.presentation.ui.feature.ingame.OverlayConfirmDialog
 import com.spela.player.presentation.ui.feature.ingame.OverlayToast
 import com.spela.player.presentation.intent.KeyMappingIntent
-import com.spela.player.presentation.ui.components.SpButton
 import com.spela.player.presentation.ui.components.SpSecondaryButton
-import com.spela.player.presentation.ui.components.SpButtonStyle
 import com.spela.player.presentation.ui.components.SpCountdownOverlay
 import com.spela.player.presentation.ui.components.challenge.ChallengeCreationPanel
 import com.spela.player.presentation.ui.components.gamepad.GamepadConfigDialog

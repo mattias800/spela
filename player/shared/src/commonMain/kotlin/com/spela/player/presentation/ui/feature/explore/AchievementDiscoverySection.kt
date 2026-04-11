@@ -27,7 +27,6 @@ import com.spela.player.domain.model.AchievementGameItem
 import com.spela.player.domain.model.AlmostDoneGame
 import com.spela.player.domain.model.ExploreChallenge
 import com.spela.player.domain.model.FreshChallengeGame
-import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import com.spela.player.presentation.ui.components.SpCarousel
 import com.spela.player.presentation.ui.components.SpShimmer

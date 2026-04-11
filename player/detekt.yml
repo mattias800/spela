@@ -2,9 +2,15 @@ config:
   validation: false
   warningsAsErrors: false
 
+# Default detekt rule sets are loaded (build.gradle.kts sets
+# disableDefaultRuleSets = false) but `buildUponDefaultConfig = false`
+# means rules are inactive unless explicitly enabled below.
+style:
+  active: true
+  UnusedImport:
+    active: true
+
 # Custom Spela rule set.
-# Default detekt rule sets are disabled globally via `disableDefaultRuleSets = true`
-# in the root build.gradle.kts.
 spela:
   active: true
   ComponentOuterSpacingRule:

@@ -17,7 +17,6 @@ import com.spela.player.presentation.viewmodel.*
 import org.koin.core.qualifier.named
 import com.spela.player.util.DefaultDispatcherProvider
 import com.spela.player.util.DispatcherProvider
-import com.spela.player.domain.controller.AchievementsController
 import com.spela.player.domain.controller.ScreenshotCapture
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob

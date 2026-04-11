@@ -25,9 +25,7 @@ import androidx.compose.ui.unit.dp
 import com.spela.player.domain.model.NetplaySession
 import com.spela.player.domain.model.NetplaySessionStatus
 import com.spela.player.presentation.ui.feature.library.getConsoleColor
-import com.spela.player.presentation.ui.components.SpButton
 import com.spela.player.presentation.ui.components.SpSecondaryButton
-import com.spela.player.presentation.ui.components.SpButtonStyle
 import com.spela.player.presentation.ui.components.SpCard
 import com.spela.player.presentation.ui.components.SpChip
 import com.spela.player.presentation.ui.components.SpConsoleChip
