@@ -118,12 +118,12 @@ internal fun GameCoverCard(
 internal fun NetplaySessionCard(
     session: NetplaySession,
     onClick: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     SpCard(
         onGradient = true,
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = SpSpacing.ScreenHorizontal, vertical = SpSpacing.XSmall)
             .semantics {
                 contentDescription = when (session.status) {
                     NetplaySessionStatus.WAITING -> "${session.gameTitle} netplay session, waiting for player"
