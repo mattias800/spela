@@ -6,4 +6,43 @@ plugins {
     alias(libs.plugins.android.library) apply false
     alias(libs.plugins.compose.multiplatform) apply false
     alias(libs.plugins.sqldelight) apply false
+    alias(libs.plugins.kotlin.jvm) apply false
+    alias(libs.plugins.detekt)
+}
+
+// Apply detekt to every subproject except :detekt-rules itself.
+// The custom Spela rule set only targets the main source modules; the rules
+// module is a pure Kotlin JVM build that produces the rule JAR.
+subprojects {
+    if (project.name == "detekt-rules") return@subprojects
+
+    apply(plugin = "dev.detekt")
+
+    detekt {
+        config.setFrom("$rootDir/detekt.yml")
+        buildUponDefaultConfig = false
+        // Only run the custom :spela: rule set — no default rules for now.
+        disableDefaultRuleSets = true
+        parallel = true
+        autoCorrect = false
+        // Kotlin Multiplatform puts sources under src/commonMain/kotlin, etc.
+        // detekt's default source.setFrom of src/main/kotlin doesn't cover this.
+        source.setFrom(
+            "src/commonMain/kotlin",
+            "src/androidMain/kotlin",
+            "src/desktopMain/kotlin",
+            "src/main/kotlin",
+        )
+        // Per-subproject baseline file. detekt will only fail on NEW issues
+        // beyond those captured in the baseline. Baseline entries are tracked
+        // in IMPROVEMENTS.md and cleaned up in follow-up PRs.
+        val baselineFile = file("$projectDir/detekt-baseline.xml")
+        if (baselineFile.exists()) {
+            baseline = baselineFile
+        }
+    }
+
+    afterEvaluate {
+        dependencies.add("detektPlugins", project(":detekt-rules"))
+    }
 }

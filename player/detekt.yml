@@ -1,0 +1,26 @@
+config:
+  validation: false
+  warningsAsErrors: false
+
+# Custom Spela rule set.
+# Default detekt rule sets are disabled globally via `disableDefaultRuleSets = true`
+# in the root build.gradle.kts.
+spela:
+  active: true
+  ComponentOuterSpacingRule:
+    active: true
+    excludes:
+      # Design-system primitives whose entire purpose is applying screen padding.
+      # SpMainContentPadding in SpScreen.kt is the layout primitive that all
+      # screens use to get consistent horizontal insets; SpCarousel uses the
+      # `.horizontalScroll().padding(horizontal = ScreenHorizontal)` pattern
+      # to position the first carousel item flush with screen content while
+      # scrolling past the edge.
+      - '**/components/SpScreen.kt'
+      - '**/components/SpCarousel.kt'
+      # "Edge-to-edge carousel/hero with inset header" pattern — these files
+      # intentionally apply ScreenHorizontal to headers while keeping hero/carousel
+      # children edge-to-edge. Applying caller-modifier padding to the root would
+      # break the edge-to-edge elements.
+      - '**/feature/explore/ForYouSection.kt'
+      - '**/feature/explore/DeveloperDetailComponents.kt'
