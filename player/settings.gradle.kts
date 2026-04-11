@@ -22,3 +22,4 @@ rootProject.name = "spela-player"
 include(":shared")
 include(":android")
 include(":desktop")
+include(":detekt-rules")

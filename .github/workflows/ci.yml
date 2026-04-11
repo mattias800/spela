@@ -65,6 +65,8 @@ jobs:
             player-gradle-
       - name: Run shared desktop tests
         run: ./gradlew :shared:desktopTest
+      - name: Run detekt (design-system rules)
+        run: ./gradlew :shared:detekt :android:detekt :desktop:detekt
 
   docker:
     name: Build & push Docker image
