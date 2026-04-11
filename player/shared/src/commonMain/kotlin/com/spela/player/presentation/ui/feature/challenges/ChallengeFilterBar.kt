@@ -46,9 +46,7 @@ internal fun ChallengeFilterBar(
     modifier: Modifier = Modifier,
 ) {
     Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(horizontal = SpSpacing.ScreenHorizontal),
+        modifier = modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(SpSpacing.Small),
     ) {
         val consoleOptions = listOf(FilterOption(null, "All Consoles")) +

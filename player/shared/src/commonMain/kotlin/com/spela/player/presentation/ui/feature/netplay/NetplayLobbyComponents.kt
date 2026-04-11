@@ -53,11 +53,12 @@ internal fun NetplayStatusChip(status: NetplaySessionStatus) {
 }
 
 @Composable
-internal fun LobbyHeader(session: NetplaySession) {
+internal fun LobbyHeader(
+    session: NetplaySession,
+    modifier: Modifier = Modifier,
+) {
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = SpSpacing.ScreenHorizontal),
+        modifier = modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         SpCoverArt(
@@ -95,11 +96,10 @@ internal fun InputDelaySection(
     isHost: Boolean,
     isUpdating: Boolean,
     onChangeDelay: (Int) -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = SpSpacing.ScreenHorizontal),
+        modifier = modifier.fillMaxWidth(),
     ) {
         Text(
             text = "Input Delay",

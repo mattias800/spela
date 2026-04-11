@@ -157,7 +157,10 @@ fun NetplayLobbyScreen(
                     ) {
                         // Game header
                         item {
-                            LobbyHeader(session = session)
+                            LobbyHeader(
+                                session = session,
+                                modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
+                            )
                             Spacer(Modifier.height(SpSpacing.XLarge))
                         }
 
@@ -274,6 +277,7 @@ fun NetplayLobbyScreen(
                                 onChangeDelay = { newDelay ->
                                     viewModel.onIntent(NetplayLobbyIntent.UpdateInputDelay(newDelay))
                                 },
+                                modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
                             )
                         }
 
