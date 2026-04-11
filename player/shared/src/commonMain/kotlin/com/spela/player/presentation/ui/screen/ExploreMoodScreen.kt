@@ -163,10 +163,13 @@ fun ExploreMoodScreen(
                             items = state.games,
                             key = { it.id },
                         ) { game ->
+                            val itemModifier = Modifier
+                                .padding(horizontal = SpSpacing.ScreenHorizontal)
+                                .let { if (game == state.games.firstOrNull()) it.autoFocus() else it }
                             MoodGameItem(
                                 game = game,
                                 onClick = { onGameSelected(game.id) },
-                                modifier = if (game == state.games.firstOrNull()) Modifier.autoFocus() else Modifier,
+                                modifier = itemModifier,
                             )
                         }
                     }
@@ -212,10 +215,7 @@ private fun MoodGameItem(
     SpCard(
         modifier = modifier
             .fillMaxWidth()
-            .padding(
-                horizontal = SpSpacing.ScreenHorizontal,
-                vertical = SpSpacing.XSmall,
-            )
+            .padding(vertical = SpSpacing.XSmall)
             .testTag("mood_game_${game.id}")
             .semantics {
                 contentDescription = buildString {

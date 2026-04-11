@@ -158,7 +158,9 @@ fun NetplayListScreen(
                                 NetplaySessionItem(
                                     session = session,
                                     onClick = { onSessionSelected(session.id) },
-                                    modifier = Modifier.rememberFocus("session_${session.id}"),
+                                    modifier = Modifier
+                                        .padding(horizontal = SpSpacing.ScreenHorizontal)
+                                        .rememberFocus("session_${session.id}"),
                                 )
                             }
                         }
@@ -224,7 +226,7 @@ private fun NetplaySessionItem(
         onGradient = true,
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = SpSpacing.ScreenHorizontal, vertical = SpSpacing.XSmall)
+            .padding(vertical = SpSpacing.XSmall)
             .semantics {
                 contentDescription = "Session: ${session.gameTitle}, host: ${session.hostUsername}"
                 role = Role.Button

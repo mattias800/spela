@@ -197,7 +197,9 @@ fun TopListsScreen(
                                         TopListGameItem(
                                             game = item,
                                             onClick = { onGameSelected(item.gameId) },
-                                            modifier = Modifier.rememberFocus("toplist_${item.gameId}"),
+                                            modifier = Modifier
+                                                .padding(horizontal = SpSpacing.ScreenHorizontal)
+                                                .rememberFocus("toplist_${item.gameId}"),
                                         )
                                     }
                                 }
@@ -214,7 +216,9 @@ fun TopListsScreen(
                                         LongestGameItem(
                                             game = item,
                                             onClick = { onGameSelected(item.gameId) },
-                                            modifier = Modifier.rememberFocus("longest_${item.gameId}"),
+                                            modifier = Modifier
+                                                .padding(horizontal = SpSpacing.ScreenHorizontal)
+                                                .rememberFocus("longest_${item.gameId}"),
                                         )
                                     }
                                 }
@@ -252,7 +256,7 @@ private fun TopListGameItem(
         onGradient = true,
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = SpSpacing.ScreenHorizontal, vertical = SpSpacing.XSmall)
+            .padding(vertical = SpSpacing.XSmall)
             .testTag("top_list_item_${game.gameId}")
             .semantics {
                 contentDescription = "Rank ${game.rank}: ${game.name}, rated %.1f".format(game.rating)
@@ -331,7 +335,7 @@ private fun LongestGameItem(
         onGradient = true,
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = SpSpacing.ScreenHorizontal, vertical = SpSpacing.XSmall)
+            .padding(vertical = SpSpacing.XSmall)
             .testTag("longest_game_item_${game.gameId}")
             .semantics {
                 contentDescription = "Rank ${game.rank}: ${game.name}, ${formatTimeToBeat(primaryTime)} to beat"

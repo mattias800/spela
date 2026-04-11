@@ -150,7 +150,9 @@ fun SharedSessionsScreen(
                                         invitation = invitation,
                                         onAccept = { viewModel.onIntent(SharedSessionIntent.AcceptInvitation(invitation.id)) },
                                         onReject = { viewModel.onIntent(SharedSessionIntent.RejectInvitation(invitation.id)) },
-                                        modifier = (if (invitation == state.invitations.firstOrNull()) Modifier.autoFocus() else Modifier)
+                                        modifier = Modifier
+                                            .padding(horizontal = SpSpacing.ScreenHorizontal)
+                                            .then(if (invitation == state.invitations.firstOrNull()) Modifier.autoFocus() else Modifier)
                                             .rememberFocus("invite_${invitation.id}"),
                                     )
                                 }
@@ -175,7 +177,9 @@ fun SharedSessionsScreen(
                                     SharedSessionItem(
                                         sharedSession = sharedSession,
                                         onClick = { onSharedSessionSelected(sharedSession.id) },
-                                        modifier = (if (state.invitations.isEmpty() && sharedSession == state.sharedSessions.firstOrNull()) Modifier.autoFocus() else Modifier)
+                                        modifier = Modifier
+                                            .padding(horizontal = SpSpacing.ScreenHorizontal)
+                                            .then(if (state.invitations.isEmpty() && sharedSession == state.sharedSessions.firstOrNull()) Modifier.autoFocus() else Modifier)
                                             .rememberFocus("shared_${sharedSession.id}"),
                                     )
                                 }
@@ -224,7 +228,7 @@ private fun SharedSessionItem(
         onGradient = true,
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = SpSpacing.ScreenHorizontal, vertical = SpSpacing.XSmall)
+            .padding(vertical = SpSpacing.XSmall)
             .semantics {
                 contentDescription = "Shared Session: ${sharedSession.name}, game: ${sharedSession.gameTitle}"
                 role = Role.Button
@@ -286,7 +290,7 @@ private fun InvitationItem(
         onGradient = true,
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = SpSpacing.ScreenHorizontal, vertical = SpSpacing.XSmall)
+            .padding(vertical = SpSpacing.XSmall)
             .semantics {
                 contentDescription = "${invitation.inviterUsername} invited you to ${invitation.sharedSessionName}"
             },
