@@ -42,13 +42,13 @@ func (h *AdminHandler) SearchIGDB(c *gin.Context) {
 		return
 	}
 
-	platformID, ok := igdb.AbbreviationToIGDBPlatform[game.Console.Abbreviation]
+	platformIDs, ok := igdb.AbbreviationToIGDBPlatform[game.Console.Abbreviation]
 	if !ok {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "no IGDB platform mapping for this console"})
 		return
 	}
 
-	games, err := h.Scraper.IGDBClient.SearchGame(query, platformID)
+	games, err := h.Scraper.IGDBClient.SearchGame(query, platformIDs)
 	if err != nil {
 		slog.Warn("IGDB search failed", "query", query, "error", err)
 		c.JSON(http.StatusBadGateway, gin.H{"error": "IGDB search failed"})

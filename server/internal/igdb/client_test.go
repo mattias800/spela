@@ -232,7 +232,7 @@ func TestSearchGame_Success(t *testing.T) {
 		rateLimiter:  time.Tick(time.Millisecond),
 	}
 
-	games, err := c.SearchGame("Super Mario Bros", 18)
+	games, err := c.SearchGame("Super Mario Bros", []int{18})
 	require.NoError(t, err)
 	require.Len(t, games, 1)
 
@@ -287,7 +287,7 @@ func TestSearchGame_APIError(t *testing.T) {
 		rateLimiter:  time.Tick(time.Millisecond),
 	}
 
-	_, err := c.SearchGame("test", 18)
+	_, err := c.SearchGame("test", []int{18})
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "429")
 }
@@ -323,7 +323,7 @@ func TestSearchGame_NoResults(t *testing.T) {
 		rateLimiter:  time.Tick(time.Millisecond),
 	}
 
-	games, err := c.SearchGame("nonexistent-game-xyz", 18)
+	games, err := c.SearchGame("nonexistent-game-xyz", []int{18})
 	require.NoError(t, err)
 	assert.Empty(t, games)
 }
@@ -461,7 +461,7 @@ func TestRateLimiting(t *testing.T) {
 
 	start := time.Now()
 	for i := 0; i < 3; i++ {
-		_, err := c.SearchGame("test", 18)
+		_, err := c.SearchGame("test", []int{18})
 		require.NoError(t, err)
 	}
 	elapsed := time.Since(start)
@@ -888,11 +888,17 @@ func TestGetTimeToBeat_APIError(t *testing.T) {
 
 func TestPlatformMapping(t *testing.T) {
 	// Verify key platform mappings exist
-	assert.Equal(t, 18, AbbreviationToIGDBPlatform["NES"])
-	assert.Equal(t, 19, AbbreviationToIGDBPlatform["SNES"])
-	assert.Equal(t, 7, AbbreviationToIGDBPlatform["PSX"])
-	assert.Equal(t, 29, AbbreviationToIGDBPlatform["GEN"])
-	assert.Equal(t, 4, AbbreviationToIGDBPlatform["N64"])
+	assert.Equal(t, []int{18}, AbbreviationToIGDBPlatform["NES"])
+	// SNES maps to both the international SNES id (19) AND the Japanese
+	// Super Famicom id (58). Japan-only releases like Alcahest (IGDB id
+	// 3651) are filed under Super Famicom on IGDB and would not be found
+	// by a single-id search filter. See scraper_igdb_test.go /
+	// TestScrapeGame_SNESJapanOnlyGame_SearchesSuperFamicomPlatform for
+	// the full regression test.
+	assert.Equal(t, []int{19, 58}, AbbreviationToIGDBPlatform["SNES"])
+	assert.Equal(t, []int{7}, AbbreviationToIGDBPlatform["PSX"])
+	assert.Equal(t, []int{29}, AbbreviationToIGDBPlatform["GEN"])
+	assert.Equal(t, []int{4}, AbbreviationToIGDBPlatform["N64"])
 
 	// Unknown platform returns zero value
 	_, exists := AbbreviationToIGDBPlatform["UNKNOWN"]

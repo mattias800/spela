@@ -432,7 +432,7 @@ func (h *ConsoleHandler) GetTopRated(c *gin.Context) {
 	}
 
 	abbr := strings.ToUpper(console.Abbreviation)
-	igdbPlatformID, ok := igdb.AbbreviationToIGDBPlatform[abbr]
+	igdbPlatformIDs, ok := igdb.AbbreviationToIGDBPlatform[abbr]
 	if !ok {
 		c.JSON(http.StatusOK, []TopRatedGameResponse{})
 		return
@@ -456,7 +456,7 @@ func (h *ConsoleHandler) GetTopRated(c *gin.Context) {
 		// Fetch a larger pool from IGDB, then apply Bayesian weighting to match
 		// the IGDB website's ranking (which favors well-known, highly-rated games
 		// over obscure titles with few but high ratings).
-		topGames, err := h.Scraper.IGDBClient.GetTopGames(igdbPlatformID, 100)
+		topGames, err := h.Scraper.IGDBClient.GetTopGames(igdbPlatformIDs, 100)
 		if err != nil {
 			slog.Warn("failed to fetch top-rated games from IGDB", "console", abbr, "error", err)
 			// Fall through to serve stale data if available

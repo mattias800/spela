@@ -19,68 +19,87 @@ var (
 	igdbImageBase  = "https://images.igdb.com/igdb/image/upload"
 )
 
-// AbbreviationToIGDBPlatform maps Spela console abbreviations to IGDB platform IDs.
-var AbbreviationToIGDBPlatform = map[string]int{
-	"NES":    18,
-	"SNES":   19,
-	"GB":     33,
-	"GBC":    22,
-	"GBA":    24,
-	"N64":    4,
-	"NDS":    20,
-	"SMS":    64,
-	"GEN":    29,
-	"SAT":    32,
-	"PSX":    7,
-	"PSP":    38,
-	"NEOGEO": 80,
-	"NEOCD":  136, // Neo Geo CD
-	"PCE":    86,
-	"PCECD":  150, // TurboGrafx-CD / PC Engine CD
-	"A26":    59,
-	"GG":     35,
-	"SCD":    78,
-	"32X":    30,
-	"DC":     23,
-	"VB":     87,
-	"3DS":    37,
-	"GC":     21,
-	"PS2":    8,
-	"C64":    15,
-	"AMIGA":  16,
-	"ACD32":  114,
+// AbbreviationToIGDBPlatform maps Spela console abbreviations to one or more
+// IGDB platform IDs. Most consoles have a single ID because IGDB merged the
+// regional variants under one hardware-family entry (NES covers Famicom,
+// Mega Drive/Genesis is id 29, Master System/Mark III is id 64, TG16/PC Engine
+// is id 86, etc.). The SNES is the one exception: IGDB filed the Japanese
+// Super Famicom under a separate platform id (58), so Japan-only releases
+// like Alcahest (IGDB id 3651) are NOT reachable through SNES id 19 alone.
+// Mapping SNES to both [19, 58] causes the search query to include the
+// Japanese variant as well.
+var AbbreviationToIGDBPlatform = map[string][]int{
+	"NES":    {18},
+	"SNES":   {19, 58}, // SNES + Super Famicom (Japan); see package doc above
+	"GB":     {33},
+	"GBC":    {22},
+	"GBA":    {24},
+	"N64":    {4},
+	"NDS":    {20},
+	"SMS":    {64},
+	"GEN":    {29},
+	"SAT":    {32},
+	"PSX":    {7},
+	"PSP":    {38},
+	"NEOGEO": {80},
+	"NEOCD":  {136}, // Neo Geo CD
+	"PCE":    {86},
+	"PCECD":  {150}, // TurboGrafx-CD / PC Engine CD
+	"A26":    {59},
+	"GG":     {35},
+	"SCD":    {78},
+	"32X":    {30},
+	"DC":     {23},
+	"VB":     {87},
+	"3DS":    {37},
+	"GC":     {21},
+	"PS2":    {8},
+	"C64":    {15},
+	"AMIGA":  {16},
+	"ACD32":  {114},
 	// ADEMO (Amiga Demos) intentionally omitted — demoscene productions
 	// don't exist in IGDB and would match against commercial games.
-	"DOS": 13,
+	"DOS": {13},
 	// DDEMO (DOS Demos) intentionally omitted — same reason as ADEMO.
-	"A52":    66,
-	"A78":    60,
-	"LYNX":   61,
-	"JAG":    62,
-	"NGP":    120,
-	"WS":     57,
-	"CV":     68,
-	"PCFX":   274,
-	"PKMN":   166,
-	"MSX1":   27,
-	"MSX2":   53,
-	"ARCADE": 52,
-	"PS3":    9,
-	"PS4":    48,
-	"PS5":    167,
-	"XBOX":   11,
-	"X360":   12,
-	"XONE":   49,
-	"XSX":    169,
-	"3DO":    50,
-	"CDI":    117,
-	"WII":    5,
-	"WIIU":   41,
-	"NSW":    130,
-	"C128":   15, // shares IGDB platform with C64
-	"PET":    90,
-	"PLUS4":  94,
-	"VIC20":  71,
+	"A52":    {66},
+	"A78":    {60},
+	"LYNX":   {61},
+	"JAG":    {62},
+	"NGP":    {120},
+	"WS":     {57},
+	"CV":     {68},
+	"PCFX":   {274},
+	"PKMN":   {166},
+	"MSX1":   {27},
+	"MSX2":   {53},
+	"ARCADE": {52},
+	"PS3":    {9},
+	"PS4":    {48},
+	"PS5":    {167},
+	"XBOX":   {11},
+	"X360":   {12},
+	"XONE":   {49},
+	"XSX":    {169},
+	"3DO":    {50},
+	"CDI":    {117},
+	"WII":    {5},
+	"WIIU":   {41},
+	"NSW":    {130},
+	"C128":   {15}, // shares IGDB platform with C64
+	"PET":    {90},
+	"PLUS4":  {94},
+	"VIC20":  {71},
+}
+
+// formatPlatformList renders a list of platform IDs as an IGDB query tuple:
+// [19, 58] → "(19, 58)". This matches IGDB's syntax for matching a game
+// where any of the listed platforms is present.
+func formatPlatformList(platformIDs []int) string {
+	parts := make([]string, len(platformIDs))
+	for i, id := range platformIDs {
+		parts[i] = fmt.Sprintf("%d", id)
+	}
+	return "(" + strings.Join(parts, ", ") + ")"
 }
 
 // oauthToken holds a Twitch OAuth token with its expiration.
@@ -311,21 +330,27 @@ func ImageURL(imageID, size string) string {
 	return fmt.Sprintf("%s/t_%s/%s.jpg", igdbImageBase, size, imageID)
 }
 
-// SearchGame searches IGDB for a game by name and platform.
-func (c *Client) SearchGame(name string, platformID int) ([]Game, error) {
+// SearchGame searches IGDB for a game by name, accepting one or more platform
+// IDs. The platform filter is expressed as `platforms = (id1, id2, ...)` so
+// games that match ANY of the listed platforms are returned. Callers that
+// only have a single id can pass a single-element slice.
+func (c *Client) SearchGame(name string, platformIDs []int) ([]Game, error) {
 	if err := c.authenticate(); err != nil {
 		return nil, fmt.Errorf("IGDB authentication: %w", err)
+	}
+	if len(platformIDs) == 0 {
+		return nil, fmt.Errorf("IGDB search: no platform IDs supplied")
 	}
 
 	// Wait for rate limiter
 	<-c.rateLimiter
 
 	query := fmt.Sprintf(
-		`search "%s"; fields name,summary,storyline,cover.image_id,screenshots.image_id,genres.name,involved_companies.company.name,involved_companies.company.logo.image_id,involved_companies.developer,involved_companies.publisher,first_release_date,aggregated_rating,total_rating,total_rating_count,rating,rating_count,game_modes.name,release_dates.date,release_dates.region,release_dates.platform.name,release_dates.human; where platforms = (%d); limit 5;`,
-		escapeQuery(name), platformID,
+		`search "%s"; fields name,summary,storyline,cover.image_id,screenshots.image_id,genres.name,involved_companies.company.name,involved_companies.company.logo.image_id,involved_companies.developer,involved_companies.publisher,first_release_date,aggregated_rating,total_rating,total_rating_count,rating,rating_count,game_modes.name,release_dates.date,release_dates.region,release_dates.platform.name,release_dates.human; where platforms = %s; limit 5;`,
+		escapeQuery(name), formatPlatformList(platformIDs),
 	)
 
-	slog.Info("IGDB search request", "name", name, "platformID", platformID, "query", query)
+	slog.Info("IGDB search request", "name", name, "platformIDs", platformIDs, "query", query)
 
 	c.mu.Lock()
 	token := c.token.AccessToken
@@ -363,13 +388,17 @@ func (c *Client) SearchGame(name string, platformID int) ([]Game, error) {
 	return games, nil
 }
 
-// SearchGameExact queries IGDB for a game by exact name match and platform.
-// Uses a "where name" clause instead of the "search" keyword to avoid text-search
-// relevance ranking which can omit the exact game (e.g. "Super Mario 64" text search
-// returns the unreleased sequel but not the original).
-func (c *Client) SearchGameExact(name string, platformID int) ([]Game, error) {
+// SearchGameExact queries IGDB for a game by exact name match, accepting one
+// or more platform IDs. Uses a "where name" clause instead of the "search"
+// keyword to avoid text-search relevance ranking which can omit the exact
+// game (e.g. "Super Mario 64" text search returns the unreleased sequel but
+// not the original).
+func (c *Client) SearchGameExact(name string, platformIDs []int) ([]Game, error) {
 	if err := c.authenticate(); err != nil {
 		return nil, fmt.Errorf("IGDB authentication: %w", err)
+	}
+	if len(platformIDs) == 0 {
+		return nil, fmt.Errorf("IGDB exact search: no platform IDs supplied")
 	}
 
 	// Wait for rate limiter
@@ -377,11 +406,11 @@ func (c *Client) SearchGameExact(name string, platformID int) ([]Game, error) {
 
 	// Case-insensitive exact match using ~ operator
 	query := fmt.Sprintf(
-		`fields name,summary,storyline,cover.image_id,screenshots.image_id,genres.name,involved_companies.company.name,involved_companies.company.logo.image_id,involved_companies.developer,involved_companies.publisher,first_release_date,aggregated_rating,total_rating,total_rating_count,rating,rating_count,game_modes.name,release_dates.date,release_dates.region,release_dates.platform.name,release_dates.human; where name ~ "%s" & platforms = (%d); limit 5;`,
-		escapeQuery(name), platformID,
+		`fields name,summary,storyline,cover.image_id,screenshots.image_id,genres.name,involved_companies.company.name,involved_companies.company.logo.image_id,involved_companies.developer,involved_companies.publisher,first_release_date,aggregated_rating,total_rating,total_rating_count,rating,rating_count,game_modes.name,release_dates.date,release_dates.region,release_dates.platform.name,release_dates.human; where name ~ "%s" & platforms = %s; limit 5;`,
+		escapeQuery(name), formatPlatformList(platformIDs),
 	)
 
-	slog.Info("IGDB exact search request", "name", name, "platformID", platformID, "query", query)
+	slog.Info("IGDB exact search request", "name", name, "platformIDs", platformIDs, "query", query)
 
 	c.mu.Lock()
 	token := c.token.AccessToken
@@ -540,24 +569,29 @@ type TopGame struct {
 	CriticRatingCount     int     `json:"aggregated_rating_count"`
 }
 
-// GetTopGames fetches the top-rated games for a given IGDB platform.
+// GetTopGames fetches the top-rated games for the given IGDB platform(s).
 // Only includes games that have both user ratings (rating_count > 5) AND
 // at least one critic/aggregated rating, to filter out games with inflated
-// user-only scores.
-func (c *Client) GetTopGames(platformID int, limit int) ([]TopGame, error) {
+// user-only scores. Accepts multiple platform IDs so the SNES top list
+// includes Japan-only releases living under Super Famicom (58) alongside
+// the international SNES (19).
+func (c *Client) GetTopGames(platformIDs []int, limit int) ([]TopGame, error) {
 	if err := c.authenticate(); err != nil {
 		return nil, fmt.Errorf("IGDB authentication: %w", err)
+	}
+	if len(platformIDs) == 0 {
+		return nil, fmt.Errorf("IGDB top games: no platform IDs supplied")
 	}
 
 	// Wait for rate limiter
 	<-c.rateLimiter
 
 	query := fmt.Sprintf(
-		`fields name, cover.image_id, total_rating, total_rating_count, rating, rating_count, aggregated_rating, aggregated_rating_count; where platforms = (%d) & total_rating != null & total_rating_count > 5 & aggregated_rating != null; sort total_rating desc; limit %d;`,
-		platformID, limit,
+		`fields name, cover.image_id, total_rating, total_rating_count, rating, rating_count, aggregated_rating, aggregated_rating_count; where platforms = %s & total_rating != null & total_rating_count > 5 & aggregated_rating != null; sort total_rating desc; limit %d;`,
+		formatPlatformList(platformIDs), limit,
 	)
 
-	slog.Info("IGDB top games request", "platformID", platformID, "limit", limit)
+	slog.Info("IGDB top games request", "platformIDs", platformIDs, "limit", limit)
 
 	c.mu.Lock()
 	token := c.token.AccessToken
@@ -586,7 +620,7 @@ func (c *Client) GetTopGames(platformID int, limit int) ([]TopGame, error) {
 		return nil, fmt.Errorf("decoding IGDB response: %w", err)
 	}
 
-	slog.Info("IGDB top games response", "platformID", platformID, "resultCount", len(games))
+	slog.Info("IGDB top games response", "platformIDs", platformIDs, "resultCount", len(games))
 
 	return games, nil
 }
