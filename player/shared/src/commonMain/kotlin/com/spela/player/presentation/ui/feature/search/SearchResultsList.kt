@@ -97,6 +97,7 @@ fun SearchResultsList(
                     onCollectionSelected = onCollectionSelected,
                     onSeriesSelected = onSeriesSelected,
                     onFranchiseSelected = onFranchiseSelected,
+                    modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
                 )
             }
         }
