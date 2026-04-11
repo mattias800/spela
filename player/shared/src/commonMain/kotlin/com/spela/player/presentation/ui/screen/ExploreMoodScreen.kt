@@ -94,7 +94,7 @@ fun ExploreMoodScreen(
                     Column(
                         modifier = Modifier
                             .fillMaxSize()
-                            .padding(SpSpacing.ScreenHorizontal)
+                            .padding(horizontal = SpSpacing.ScreenHorizontal)
                             .testTag("mood_detail_loading"),
                     ) {
                         Spacer(Modifier.height(SpSpacing.Large))

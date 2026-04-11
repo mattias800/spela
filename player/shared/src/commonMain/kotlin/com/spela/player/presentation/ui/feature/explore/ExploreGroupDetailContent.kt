@@ -108,7 +108,7 @@ fun ExploreGroupDetailContent(
                     Column(
                         modifier = Modifier
                             .fillMaxSize()
-                            .padding(SpSpacing.ScreenHorizontal)
+                            .padding(horizontal = SpSpacing.ScreenHorizontal)
                             .testTag("${groupLabel}_detail_loading"),
                     ) {
                         Spacer(Modifier.height(SpSpacing.Large))
