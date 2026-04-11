@@ -55,11 +55,7 @@ fun QuickResultsSection(
             text = "Quick results",
             style = SpTypography.TitleMedium,
             color = SpColor.OnBackgroundTertiary,
-            modifier = Modifier
-                .padding(
-                    horizontal = SpSpacing.ScreenHorizontal,
-                    vertical = SpSpacing.Small,
-                ),
+            modifier = Modifier.padding(vertical = SpSpacing.Small),
         )
 
         suggestions.forEach { suggestion ->
@@ -91,7 +87,7 @@ private fun QuickResultItem(
     SpCard(
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = SpSpacing.ScreenHorizontal, vertical = SpSpacing.XXSmall)
+            .padding(vertical = SpSpacing.XXSmall)
             .testTag("quick_result_${suggestion.type.lowercase()}_${suggestion.id}"),
         onClick = onClick,
     ) {
