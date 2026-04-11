@@ -268,7 +268,7 @@ private fun HeroSlide(
                 ) {
                     if (game.logoUrl != null) {
                         SpAreaSizedImage(
-                            imageUrl = game.logoUrl!!,
+                            imageUrl = game.logoUrl,
                             contentDescription = "${game.title} logo",
                             targetArea = targetArea,
                             maxHeight = logoMaxH,

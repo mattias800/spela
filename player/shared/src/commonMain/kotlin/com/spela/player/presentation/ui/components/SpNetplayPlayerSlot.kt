@@ -75,7 +75,7 @@ fun SpNetplayPlayerSlot(
             // Avatar
             if (isFilled) {
                 SpAvatar(
-                    username = username!!,
+                    username = username,
                     avatarUrl = avatarUrl,
                     size = 40.dp,
                 )
@@ -100,7 +100,7 @@ fun SpNetplayPlayerSlot(
 
             if (isFilled) {
                 Text(
-                    text = username!!,
+                    text = username,
                     style = SpTypography.TitleMedium,
                     color = SpColor.OnCard,
                     modifier = Modifier.weight(1f),

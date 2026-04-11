@@ -10,6 +10,20 @@ plugins {
 }
 
 kotlin {
+    // Opt into KT-61573: `expect`/`actual` classes are in Beta and emit a
+    // warning on every commonMain expect declaration unless explicitly
+    // acknowledged via this compiler arg. Applied to every target so the
+    // shared module compiles cleanly.
+    targets.configureEach {
+        compilations.configureEach {
+            compileTaskProvider.configure {
+                compilerOptions {
+                    freeCompilerArgs.add("-Xexpect-actual-classes")
+                }
+            }
+        }
+    }
+
     androidTarget {
         compilerOptions {
             jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)

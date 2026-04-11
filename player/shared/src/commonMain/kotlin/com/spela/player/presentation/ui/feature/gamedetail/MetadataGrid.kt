@@ -55,11 +55,11 @@ internal fun MetadataGrid(
 ) {
     val items = buildList {
         game.developer?.takeIf { it.isNotBlank() }?.let {
-            add(MetaItem(Icons.Filled.Domain, if (isDemoConsole) "Group" else "Developer", it, onClick = onDeveloperClick?.let { cb -> { cb(game.developer!!) } }))
+            add(MetaItem(Icons.Filled.Domain, if (isDemoConsole) "Group" else "Developer", it, onClick = onDeveloperClick?.let { cb -> { cb(game.developer) } }))
         }
         if (!isDemoConsole) {
             game.publisher?.takeIf { it.isNotBlank() }?.let {
-                add(MetaItem(Icons.Filled.Domain, "Publisher", it, onClick = onPublisherClick?.let { cb -> { cb(game.publisher!!) } }))
+                add(MetaItem(Icons.Filled.Domain, "Publisher", it, onClick = onPublisherClick?.let { cb -> { cb(game.publisher) } }))
             }
         }
         game.releaseDate?.takeIf { it.isNotBlank() }?.let {
@@ -135,8 +135,8 @@ private fun MetadataItem(
         modifier = modifier
             .padding(vertical = SpSpacing.XSmall)
             .then(
-                if (isClickable) Modifier
-                    .clickable(onClick = onClick!!)
+                if (onClick != null) Modifier
+                    .clickable(onClick = onClick)
                     .gamepadFocusable(shape = RoundedCornerShape(SpSpacing.Small))
                 else Modifier
             ),
