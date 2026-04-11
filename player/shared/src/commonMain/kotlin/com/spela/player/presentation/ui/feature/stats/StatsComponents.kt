@@ -72,7 +72,6 @@ internal fun MostPlayedGameItem(
         onGradient = true,
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = SpSpacing.ScreenHorizontal, vertical = SpSpacing.XSmall)
             .semantics {
                 contentDescription = "Rank $rank: ${item.game.title}, ${formatPlayTime(item.totalPlayTime)} play time"
                 role = Role.Button
@@ -136,7 +135,6 @@ internal fun ActivePlayerItem(
         onGradient = true,
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = SpSpacing.ScreenHorizontal, vertical = SpSpacing.XSmall)
             .semantics {
                 contentDescription = "Rank $rank: ${item.username}, ${formatPlayTime(item.totalPlayTime)} play time"
                 role = Role.Button

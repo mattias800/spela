@@ -113,7 +113,10 @@ fun StatsScreen(
                             // Personal Stats section
                             if (state.personalStats != null) {
                                 item {
-                                    PersonalStatsSection(stats = state.personalStats!!)
+                                    PersonalStatsSection(
+                                        stats = state.personalStats!!,
+                                        modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
+                                    )
                                     Spacer(Modifier.height(SpSpacing.XXLarge))
                                 }
                             }
@@ -137,7 +140,8 @@ fun StatsScreen(
                                         item = item,
                                         onClick = { onGameSelected(item.game.id) },
                                         modifier = (if (index == 0) Modifier.autoFocus() else Modifier)
-                                            .rememberFocus("game_${item.game.id}"),
+                                            .rememberFocus("game_${item.game.id}")
+                                            .padding(horizontal = SpSpacing.ScreenHorizontal, vertical = SpSpacing.XSmall),
                                     )
                                 }
 
@@ -164,7 +168,8 @@ fun StatsScreen(
                                         rank = index + 1,
                                         item = item,
                                         onClick = { onUserSelected(item.userId) },
-                                        modifier = Modifier.rememberFocus("player_${item.userId}"),
+                                        modifier = Modifier.rememberFocus("player_${item.userId}")
+                                            .padding(horizontal = SpSpacing.ScreenHorizontal, vertical = SpSpacing.XSmall),
                                     )
                                 }
                             }
