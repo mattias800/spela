@@ -4,6 +4,7 @@ import com.spela.player.data.remote.api.SpelaApiClient
 import com.spela.player.util.DispatcherProvider
 import io.ktor.client.plugins.*
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.ExperimentalForInheritanceCoroutinesApi
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -25,6 +26,7 @@ class ConnectivityMonitor(
     val connectionState: StateFlow<ConnectionState> = _connectionState.asStateFlow()
 
     /** Backward-compatible derived flow. Repositories using isOnline.value continue working. */
+    @OptIn(ExperimentalForInheritanceCoroutinesApi::class)
     val isOnline: StateFlow<Boolean> = object : StateFlow<Boolean> {
         override val value: Boolean get() = _connectionState.value.isConnected
         override val replayCache: List<Boolean> get() = listOf(value)

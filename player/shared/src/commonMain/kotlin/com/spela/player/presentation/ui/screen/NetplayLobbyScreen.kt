@@ -100,7 +100,7 @@ fun NetplayLobbyScreen(
     var autoLaunchCountdown by remember { mutableIntStateOf(0) }
 
     LaunchedEffect(bothConnected, session?.inputDelay) {
-        if (bothConnected && session != null) {
+        if (bothConnected) {
             autoLaunchCountdown = 3
             while (autoLaunchCountdown > 0) {
                 delay(1000)

@@ -1,7 +1,7 @@
 package com.spela.player.data.remote.dto
 
 import com.spela.player.domain.model.*
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 
 fun AuthResponse.toDomain(): AuthTokens = AuthTokens(
     accessToken = accessToken,

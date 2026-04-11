@@ -27,7 +27,7 @@ object ScrapeUpdates {
 
     fun onGameScraped(game: Game) {
         if (!game.coverUrl.isNullOrEmpty()) {
-            _updatedCovers.value = _updatedCovers.value + (game.id to game.coverUrl!!)
+            _updatedCovers.value = _updatedCovers.value + (game.id to game.coverUrl)
         }
     }
 }

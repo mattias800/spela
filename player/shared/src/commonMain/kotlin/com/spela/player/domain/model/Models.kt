@@ -1,6 +1,6 @@
 package com.spela.player.domain.model
 
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 import kotlinx.serialization.Serializable
 
 data class PaginatedResult<T>(

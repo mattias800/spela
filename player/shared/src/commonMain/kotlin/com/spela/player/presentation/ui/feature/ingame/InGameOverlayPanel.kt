@@ -28,8 +28,8 @@ import androidx.compose.material.icons.filled.Save
 import androidx.compose.material.icons.filled.Code
 import androidx.compose.material.icons.filled.SportsEsports
 import androidx.compose.material.icons.filled.Stop
-import androidx.compose.material.icons.filled.VolumeUp
-import androidx.compose.material.icons.filled.VolumeOff
+import androidx.compose.material.icons.automirrored.filled.VolumeUp
+import androidx.compose.material.icons.automirrored.filled.VolumeOff
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import com.spela.player.presentation.ui.components.SpSlider
@@ -294,7 +294,7 @@ internal fun InGameOverlayPanel(
                         horizontalArrangement = Arrangement.spacedBy(SpSpacing.Small),
                     ) {
                         Icon(
-                            imageVector = if (state.volume < 0.01f) Icons.Filled.VolumeOff else Icons.Filled.VolumeUp,
+                            imageVector = if (state.volume < 0.01f) Icons.AutoMirrored.Filled.VolumeOff else Icons.AutoMirrored.Filled.VolumeUp,
                             contentDescription = "Volume",
                             tint = SpColor.OnBackgroundSecondary,
                         )

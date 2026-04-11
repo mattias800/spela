@@ -297,7 +297,7 @@ class GameDetailViewModel(
                     _state.update {
                         val updatedGame = it.gameDetail?.game?.copy(isFavorite = !currentlyFavorite)
                         it.copy(
-                            gameDetail = updatedGame?.let { g -> it.gameDetail?.copy(game = g) }
+                            gameDetail = updatedGame?.let { g -> it.gameDetail.copy(game = g) }
                         )
                     }
                 },
@@ -314,7 +314,7 @@ class GameDetailViewModel(
         // Optimistic update: flip immediately to prevent double-clicks
         _state.update {
             val updatedGame = it.gameDetail?.game?.copy(isInPlayLater = !currentlyInPlayLater)
-            it.copy(gameDetail = updatedGame?.let { g -> it.gameDetail?.copy(game = g) })
+            it.copy(gameDetail = updatedGame?.let { g -> it.gameDetail.copy(game = g) })
         }
         scope.launch(dispatchers.io) {
             togglePlayLaterUseCase(detail.game.id, currentlyInPlayLater).fold(
@@ -324,7 +324,7 @@ class GameDetailViewModel(
                     _state.update {
                         val revertedGame = it.gameDetail?.game?.copy(isInPlayLater = currentlyInPlayLater)
                         it.copy(
-                            gameDetail = revertedGame?.let { g -> it.gameDetail?.copy(game = g) },
+                            gameDetail = revertedGame?.let { g -> it.gameDetail.copy(game = g) },
                             error = error.message,
                         )
                     }

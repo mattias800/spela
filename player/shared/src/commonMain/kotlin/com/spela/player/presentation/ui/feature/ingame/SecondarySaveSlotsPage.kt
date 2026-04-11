@@ -208,7 +208,7 @@ private fun SaveSlotCard(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center,
         ) {
-            if (isFilled && slotInfo != null && slotInfo.screenshotUrl != null) {
+            if (isFilled && slotInfo.screenshotUrl != null) {
                 // Thumbnail image
                 SubcomposeAsyncImage(
                     model = slotInfo.screenshotUrl,

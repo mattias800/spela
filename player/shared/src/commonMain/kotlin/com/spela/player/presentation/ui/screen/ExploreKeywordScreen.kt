@@ -15,7 +15,7 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import com.spela.player.presentation.ui.components.SpLazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Label
+import androidx.compose.material.icons.automirrored.filled.Label
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
@@ -109,7 +109,7 @@ fun ExploreKeywordScreen(
                         contentAlignment = Alignment.Center,
                     ) {
                         SpEmptyState(
-                            icon = Icons.Filled.Label,
+                            icon = Icons.AutoMirrored.Filled.Label,
                             title = "No games found",
                             message = "No games match this keyword yet.",
                             modifier = Modifier.testTag("keyword_empty_state"),

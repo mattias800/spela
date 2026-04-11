@@ -357,7 +357,7 @@ private fun SessionItem(
                                 },
                                 onClick = {
                                     showPlayMenu = false
-                                    onContinueFromTitleScreen?.invoke()
+                                    onContinueFromTitleScreen()
                                 },
                             )
                         }
