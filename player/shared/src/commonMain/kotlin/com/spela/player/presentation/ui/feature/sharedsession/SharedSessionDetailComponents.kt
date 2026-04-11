@@ -58,11 +58,10 @@ internal fun SharedSessionHeader(
     onTakeTurn: () -> Unit,
     onReleaseTurn: () -> Unit,
     onPlay: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = SpSpacing.ScreenHorizontal),
+        modifier = modifier.fillMaxWidth(),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             SpCoverArt(
@@ -193,11 +192,11 @@ internal fun SharedSessionStatusChip(status: String) {
 internal fun MemberItem(
     member: SharedSessionMember,
     isActive: Boolean,
+    modifier: Modifier = Modifier,
 ) {
     Row(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = SpSpacing.ScreenHorizontal, vertical = SpSpacing.Small)
             .semantics {
                 contentDescription = "${member.username}, ${member.role}" +
                         if (isActive) ", currently playing" else ""
@@ -245,11 +244,10 @@ internal fun InviteSection(
     isInviting: Boolean,
     onInvite: (String) -> Unit,
     onShowInviteSheet: () -> Unit = {},
+    modifier: Modifier = Modifier,
 ) {
     Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = SpSpacing.ScreenHorizontal),
+        modifier = modifier.fillMaxWidth(),
     ) {
         Text(
             text = "Invite a friend",
@@ -269,12 +267,11 @@ internal fun SharedSessionSaveItem(
     save: SharedSessionSave,
     isCopying: Boolean = false,
     onCopyToGame: (() -> Unit)? = null,
+    modifier: Modifier = Modifier,
 ) {
     SpCard(
         onGradient = true,
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = SpSpacing.ScreenHorizontal, vertical = SpSpacing.XSmall),
+        modifier = modifier.fillMaxWidth(),
     ) {
         Row(
             modifier = Modifier
