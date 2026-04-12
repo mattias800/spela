@@ -102,6 +102,59 @@ func formatPlatformList(platformIDs []int) string {
 	return "(" + strings.Join(parts, ", ") + ")"
 }
 
+// SearchNameVariants returns a deduplicated list of search-name candidates
+// derived from the cleaned ROM title. It handles the common mismatch between
+// No-Intro ROM naming ("Title - Subtitle") and IGDB naming ("Title: Subtitle")
+// by generating both separator styles. Callers pass the list to the IGDB
+// exact-match query which ORs over all variants in a single round trip.
+//
+// The input is always included verbatim; the variants are additional forms.
+// Order is stable so tests can pin expectations.
+func SearchNameVariants(name string) []string {
+	out := []string{name}
+	seen := map[string]bool{name: true}
+	add := func(s string) {
+		if s != "" && !seen[s] {
+			seen[s] = true
+			out = append(out, s)
+		}
+	}
+	// " - " ↔ ": " — No-Intro vs IGDB. Applied to the FIRST occurrence only;
+	// multi-dash names ("Tom Clancy's Rainbow Six - Rogue Spear - Black Thorn")
+	// fan out combinatorially otherwise and most real cases only have one
+	// title/subtitle boundary.
+	if strings.Contains(name, " - ") {
+		add(strings.Replace(name, " - ", ": ", 1))
+	}
+	if strings.Contains(name, ": ") {
+		add(strings.Replace(name, ": ", " - ", 1))
+	}
+	return out
+}
+
+// buildExactMatchWhereClause returns the IGDB `where` subclause that matches
+// any of the given name variants against EITHER the primary `name` field
+// or the `alternative_names.name` field. Alternative names are how IGDB
+// stores regional/localized titles (e.g. "Broken Sword: The Shadow of the
+// Templars" is an alternative_name for game id 616 "Circle of Blood"), so
+// searching only `name` misses a lot of region-mismatched ROM lookups.
+//
+// Example output for ["Broken Sword - …", "Broken Sword: …"]:
+//
+//	(name ~ "Broken Sword - …" | name ~ "Broken Sword: …" |
+//	 alternative_names.name ~ "Broken Sword - …" |
+//	 alternative_names.name ~ "Broken Sword: …")
+func buildExactMatchWhereClause(nameVariants []string) string {
+	parts := make([]string, 0, len(nameVariants)*2)
+	for _, v := range nameVariants {
+		parts = append(parts, fmt.Sprintf(`name ~ "%s"`, escapeQuery(v)))
+	}
+	for _, v := range nameVariants {
+		parts = append(parts, fmt.Sprintf(`alternative_names.name ~ "%s"`, escapeQuery(v)))
+	}
+	return "(" + strings.Join(parts, " | ") + ")"
+}
+
 // oauthToken holds a Twitch OAuth token with its expiration.
 type oauthToken struct {
 	AccessToken string
@@ -389,10 +442,11 @@ func (c *Client) SearchGame(name string, platformIDs []int) ([]Game, error) {
 }
 
 // SearchGameExact queries IGDB for a game by exact name match, accepting one
-// or more platform IDs. Uses a "where name" clause instead of the "search"
-// keyword to avoid text-search relevance ranking which can omit the exact
-// game (e.g. "Super Mario 64" text search returns the unreleased sequel but
-// not the original).
+// or more platform IDs. Uses a "where" clause over both the primary `name`
+// field and `alternative_names.name` (regional/localized titles), with
+// separator-style variants (" - " vs ": ") auto-expanded so No-Intro ROM
+// filenames match IGDB's colon-separated titles. A single query ORs all
+// combinations so the whole lookup is one round trip.
 func (c *Client) SearchGameExact(name string, platformIDs []int) ([]Game, error) {
 	if err := c.authenticate(); err != nil {
 		return nil, fmt.Errorf("IGDB authentication: %w", err)
@@ -404,13 +458,16 @@ func (c *Client) SearchGameExact(name string, platformIDs []int) ([]Game, error)
 	// Wait for rate limiter
 	<-c.rateLimiter
 
-	// Case-insensitive exact match using ~ operator
+	variants := SearchNameVariants(name)
+	whereNames := buildExactMatchWhereClause(variants)
+
+	// Case-insensitive exact match using ~ operator over name + alt names.
 	query := fmt.Sprintf(
-		`fields name,summary,storyline,cover.image_id,screenshots.image_id,genres.name,involved_companies.company.name,involved_companies.company.logo.image_id,involved_companies.developer,involved_companies.publisher,first_release_date,aggregated_rating,total_rating,total_rating_count,rating,rating_count,game_modes.name,release_dates.date,release_dates.region,release_dates.platform.name,release_dates.human; where name ~ "%s" & platforms = %s; limit 5;`,
-		escapeQuery(name), formatPlatformList(platformIDs),
+		`fields name,summary,storyline,cover.image_id,screenshots.image_id,genres.name,involved_companies.company.name,involved_companies.company.logo.image_id,involved_companies.developer,involved_companies.publisher,first_release_date,aggregated_rating,total_rating,total_rating_count,rating,rating_count,game_modes.name,release_dates.date,release_dates.region,release_dates.platform.name,release_dates.human; where %s & platforms = %s; limit 5;`,
+		whereNames, formatPlatformList(platformIDs),
 	)
 
-	slog.Info("IGDB exact search request", "name", name, "platformIDs", platformIDs, "query", query)
+	slog.Info("IGDB exact search request", "name", name, "variants", variants, "platformIDs", platformIDs, "query", query)
 
 	c.mu.Lock()
 	token := c.token.AccessToken
