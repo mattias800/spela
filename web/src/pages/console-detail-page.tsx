@@ -78,7 +78,7 @@ export function ConsoleDetailPage() {
       .map((f) => f.fileName) ?? [];
 
   return (
-    <PageLayout backButtonVariant="standard" backTo="/consoles">
+    <PageLayout backButtonVariant="standard" backTo="/consoles" backLabel="Consoles">
       <SectionList>
 
       {/* Console hero banner */}

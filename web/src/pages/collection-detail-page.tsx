@@ -133,7 +133,7 @@ export function CollectionDetailPage() {
 
   if (isLoading) {
     return (
-      <PageLayout backButtonVariant="standard" backTo="/collections">
+      <PageLayout backButtonVariant="standard" backTo="/collections" backLabel="Collections">
         <SectionList>
           <CollectionDetailSkeleton />
         </SectionList>
@@ -153,7 +153,7 @@ export function CollectionDetailPage() {
   }
 
   return (
-    <PageLayout backButtonVariant="standard" backTo="/collections">
+    <PageLayout backButtonVariant="standard" backTo="/collections" backLabel="Collections">
       <SectionList>
 
       {/* Header */}

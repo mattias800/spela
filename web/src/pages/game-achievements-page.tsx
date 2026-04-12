@@ -8,7 +8,7 @@ export function GameAchievementsPage() {
   const { data: game } = useGame(id ?? "");
 
   return (
-    <PageLayout backButtonVariant="standard" backTo={`/games/${id}`}>
+    <PageLayout backButtonVariant="standard" backTo={`/games/${id}`} backLabel="Game">
       <SectionList className="max-w-5xl">
 
       {game && (

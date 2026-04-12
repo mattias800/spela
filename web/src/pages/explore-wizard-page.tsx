@@ -56,7 +56,7 @@ export function ExploreWizardPage() {
 
   if (isStepsLoading) {
     return (
-      <PageLayout backButtonVariant="standard" backTo="/explore">
+      <PageLayout backButtonVariant="standard" backTo="/explore" backLabel="Explore">
         <SectionList>
           <Skeleton className="h-10 w-72" />
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -70,7 +70,7 @@ export function ExploreWizardPage() {
   }
 
   return (
-    <PageLayout backButtonVariant="standard" backTo="/explore" data-testid="wizard-page">
+    <PageLayout backButtonVariant="standard" backTo="/explore" backLabel="Explore" data-testid="wizard-page">
       <SectionList>
 
       {/* Header */}

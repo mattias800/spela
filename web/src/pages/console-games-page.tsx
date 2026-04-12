@@ -167,7 +167,7 @@ export function ConsoleGamesPage() {
       .map((f) => f.fileName) ?? [];
 
   return (
-    <PageLayout backButtonVariant="standard" backTo={`/consoles/${id}`} data-testid="console-games-page">
+    <PageLayout backButtonVariant="standard" backTo={`/consoles/${id}`} backLabel="Console" data-testid="console-games-page">
       <SectionList>
 
       <ConsoleHeroBanner console={console} gameCount={data?.total} />

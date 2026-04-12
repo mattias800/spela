@@ -34,7 +34,7 @@ export function ExploreFranchisePage() {
 
   if (isLoading) {
     return (
-      <PageLayout backButtonVariant="standard" backTo="/explore">
+      <PageLayout backButtonVariant="standard" backTo="/explore" backLabel="Explore">
         <SectionList className="max-w-4xl">
           <FranchisePageSkeleton />
         </SectionList>
@@ -44,7 +44,7 @@ export function ExploreFranchisePage() {
 
   if (!franchise) {
     return (
-      <PageLayout backButtonVariant="standard" backTo="/explore">
+      <PageLayout backButtonVariant="standard" backTo="/explore" backLabel="Explore">
         <SectionList className="max-w-4xl">
           <p className="text-surface-400 text-center py-20">
             Franchise not found
@@ -71,7 +71,7 @@ export function ExploreFranchisePage() {
       : 0;
 
   return (
-    <PageLayout backButtonVariant="standard" backTo="/explore" data-testid="franchise-detail-page">
+    <PageLayout backButtonVariant="standard" backTo="/explore" backLabel="Explore" data-testid="franchise-detail-page">
       <SectionList>
       {/* Full-width hero banner */}
       {franchise.heroUrl ? (

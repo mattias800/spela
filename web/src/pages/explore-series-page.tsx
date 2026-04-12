@@ -39,7 +39,7 @@ export function ExploreSeriesPage() {
 
   if (isLoading) {
     return (
-      <PageLayout backButtonVariant="standard" backTo="/explore">
+      <PageLayout backButtonVariant="standard" backTo="/explore" backLabel="Explore">
         <SectionList>
           <SeriesPageSkeleton />
         </SectionList>
@@ -49,7 +49,7 @@ export function ExploreSeriesPage() {
 
   if (!series) {
     return (
-      <PageLayout backButtonVariant="standard" backTo="/explore">
+      <PageLayout backButtonVariant="standard" backTo="/explore" backLabel="Explore">
         <SectionList>
           <p className="text-surface-400 text-center py-20">
             Series not found
@@ -78,7 +78,7 @@ export function ExploreSeriesPage() {
       : 0;
 
   return (
-    <PageLayout backButtonVariant="standard" backTo="/explore" data-testid="series-detail-page">
+    <PageLayout backButtonVariant="standard" backTo="/explore" backLabel="Explore" data-testid="series-detail-page">
       <SectionList>
       {/* Full-width hero banner */}
       {series.heroUrl ? (

@@ -61,7 +61,7 @@ export function ExploreThemePage() {
   });
 
   return (
-    <PageLayout backButtonVariant="standard" backTo="/explore" data-testid="theme-detail-page">
+    <PageLayout backButtonVariant="standard" backTo="/explore" backLabel="Explore" data-testid="theme-detail-page">
       <SectionList>
 
       {/* Page header */}

@@ -61,7 +61,7 @@ export function ExploreKeywordPage() {
   });
 
   return (
-    <PageLayout backButtonVariant="standard" backTo="/explore" data-testid="keyword-detail-page">
+    <PageLayout backButtonVariant="standard" backTo="/explore" backLabel="Explore" data-testid="keyword-detail-page">
       <SectionList>
 
       {/* Page header */}

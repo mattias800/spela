@@ -28,7 +28,7 @@ export function ExploreMoodPage() {
   const moodGradient = mood?.gradient ?? [];
 
   return (
-    <PageLayout backButtonVariant="standard" backTo="/explore" data-testid="mood-results-page">
+    <PageLayout backButtonVariant="standard" backTo="/explore" backLabel="Explore" data-testid="mood-results-page">
       <SectionList>
 
       {/* Mood banner header */}
