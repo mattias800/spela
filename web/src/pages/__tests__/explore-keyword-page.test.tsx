@@ -124,7 +124,7 @@ describe("ExploreKeywordPage", () => {
   it("renders back button", () => {
     renderPage();
     expect(
-      screen.getByRole("button", { name: /back/i }),
+      screen.getByRole("button", { name: /explore/i }),
     ).toBeInTheDocument();
   });
 

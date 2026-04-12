@@ -12,6 +12,8 @@ interface PageLayoutProps extends HTMLAttributes<HTMLDivElement> {
   backButtonVariant?: "standard" | "floating";
   /** Path to navigate to when the back button is clicked. Defaults to browser history back. */
   backTo?: string;
+  /** Label for the back button. Defaults to "Back". Example: "Explore", "Consoles". */
+  backLabel?: string;
   children: ReactNode;
 }
 
@@ -29,6 +31,7 @@ export function PageLayout({
   renderHeader,
   backButtonVariant,
   backTo,
+  backLabel,
   children,
   ...rest
 }: PageLayoutProps) {
@@ -45,7 +48,9 @@ export function PageLayout({
               <BackButton
                 onClick={handleBack}
                 className="bg-black/40 backdrop-blur-sm text-white/80 hover:text-white hover:bg-black/60"
-              />
+              >
+                {backLabel}
+              </BackButton>
             </div>
           )}
         </div>
@@ -53,7 +58,7 @@ export function PageLayout({
       <div className="p-6">
         {backButtonVariant === "standard" && (
           <div className="mb-6">
-            <BackButton onClick={handleBack} />
+            <BackButton onClick={handleBack}>{backLabel}</BackButton>
           </div>
         )}
         {children}
