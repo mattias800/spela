@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { ChevronLeft, ChevronRight, ArrowRight } from "lucide-react";
 import { Skeleton } from "@/components/ui";
 import { GameCard } from "@/components/game-card";
+import { CAROUSEL_CARD_HEIGHT } from "@/lib/carousel-constants";
 import type { DeveloperSpotlightResponse, Game } from "@/types/api";
 
 interface DeveloperSpotlightProps {
@@ -151,11 +152,12 @@ export function DeveloperSpotlight({
                 {spotlight.topGames.map((game) => (
                   <div
                     key={game.id}
-                    className="w-40 sm:w-44 lg:w-48 flex-shrink-0"
+                    className="flex-shrink-0"
                     role="listitem"
                   >
                     <GameCard
                       game={game}
+                      coverHeight={CAROUSEL_CARD_HEIGHT}
                       showConsoleBadge
                       onToggleFavorite={onToggleFavorite}
                       onTogglePlayLater={onTogglePlayLater}
