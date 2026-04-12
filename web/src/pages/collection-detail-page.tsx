@@ -3,7 +3,6 @@ import { useParams, useNavigate } from "react-router-dom";
 import { Globe, Lock, Pencil, Trash2, Gamepad2 } from "lucide-react";
 import {
   Button,
-  BackButton,
   Input,
   Modal,
   Switch,
@@ -12,6 +11,7 @@ import {
   EmptyState,
   SearchInput,
 } from "@/components/ui";
+import { PageLayout, SectionList } from "@/components/layout";
 import { useToast } from "@/components/ui";
 import { GameCard } from "@/components/game-card";
 import { GameGrid } from "@/components/game-grid";
@@ -133,9 +133,11 @@ export function CollectionDetailPage() {
 
   if (isLoading) {
     return (
-      <div className="max-w-5xl">
-        <CollectionDetailSkeleton />
-      </div>
+      <PageLayout backButtonVariant="standard" backTo="/collections">
+        <SectionList>
+          <CollectionDetailSkeleton />
+        </SectionList>
+      </PageLayout>
     );
   }
 
@@ -151,10 +153,8 @@ export function CollectionDetailPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <BackButton onClick={() => navigate("/collections")}>
-        Collections
-      </BackButton>
+    <PageLayout backButtonVariant="standard" backTo="/collections">
+      <SectionList>
 
       {/* Header */}
       <div className="flex items-start justify-between">
@@ -364,6 +364,7 @@ export function CollectionDetailPage() {
           </div>
         </div>
       </Modal>
-    </div>
+    </SectionList>
+    </PageLayout>
   );
 }

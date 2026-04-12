@@ -10,6 +10,8 @@ interface PageLayoutProps extends HTMLAttributes<HTMLDivElement> {
    *  - "floating" — renders floating over the header content (top-left, semi-transparent).
    */
   backButtonVariant?: "standard" | "floating";
+  /** Path to navigate to when the back button is clicked. Defaults to browser history back. */
+  backTo?: string;
   children: ReactNode;
 }
 
@@ -26,10 +28,12 @@ interface PageLayoutProps extends HTMLAttributes<HTMLDivElement> {
 export function PageLayout({
   renderHeader,
   backButtonVariant,
+  backTo,
   children,
   ...rest
 }: PageLayoutProps) {
   const navigate = useNavigate();
+  const handleBack = () => (backTo ? navigate(backTo) : navigate(-1));
 
   return (
     <div data-comp="PageLayout" {...rest}>
@@ -39,7 +43,7 @@ export function PageLayout({
           {backButtonVariant === "floating" && (
             <div className="absolute top-4 left-4 z-20">
               <BackButton
-                onClick={() => navigate(-1)}
+                onClick={handleBack}
                 className="bg-black/40 backdrop-blur-sm text-white/80 hover:text-white hover:bg-black/60"
               />
             </div>
@@ -49,7 +53,7 @@ export function PageLayout({
       <div className="p-6">
         {backButtonVariant === "standard" && (
           <div className="mb-6">
-            <BackButton onClick={() => navigate(-1)} />
+            <BackButton onClick={handleBack} />
           </div>
         )}
         {children}

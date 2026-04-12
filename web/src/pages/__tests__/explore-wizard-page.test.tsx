@@ -152,7 +152,7 @@ describe("ExploreWizardPage", () => {
     renderComponent();
     fireEvent.click(screen.getByTestId("wizard-option-action"));
     expect(screen.getByText("Pick an era")).toBeInTheDocument();
-    fireEvent.click(screen.getByText("Back"));
+    fireEvent.click(screen.getByTestId("wizard-back-step"));
     expect(
       screen.getByText("What are you in the mood for?"),
     ).toBeInTheDocument();

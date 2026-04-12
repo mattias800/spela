@@ -245,7 +245,7 @@ describe("ScreenshotGalleryPage", () => {
   it("renders back button", () => {
     renderPage();
     expect(
-      screen.getByRole("button", { name: /back to explore/i }),
+      screen.getByRole("button", { name: /back/i }),
     ).toBeInTheDocument();
   });
 

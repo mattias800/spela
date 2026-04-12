@@ -3,11 +3,11 @@ import { useParams, useNavigate, Link } from "react-router-dom";
 import { Flag, Download, Trash2, Users, Clock, Play } from "lucide-react";
 import {
   Button,
-  BackButton,
   Badge,
   Skeleton,
   Modal,
 } from "@/components/ui";
+import { PageLayout, SectionList } from "@/components/layout";
 import { useToast } from "@/components/ui";
 import { PlayerAvatar } from "@/components/player-avatar";
 import { ChallengeDifficultyBadge } from "@/features/challenges/components/challenge-difficulty-badge";
@@ -82,8 +82,8 @@ export function ChallengeDetailPage() {
   }
 
   return (
-    <div className="max-w-5xl space-y-8">
-      <BackButton onClick={() => navigate(-1)} />
+    <PageLayout backButtonVariant="standard">
+      <SectionList className="max-w-5xl">
 
       {/* Hero section */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -255,6 +255,7 @@ export function ChallengeDetailPage() {
           </Button>
         </div>
       </Modal>
-    </div>
+    </SectionList>
+    </PageLayout>
   );
 }

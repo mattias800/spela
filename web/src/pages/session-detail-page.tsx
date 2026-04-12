@@ -20,6 +20,7 @@ import {
   Switch,
   ConfirmDeleteModal,
 } from "@/components/ui";
+import { PageLayout, SectionList } from "@/components/layout";
 import {
   useSession,
   useSessionSaves,
@@ -132,7 +133,13 @@ export function SessionDetailPage() {
   }
 
   if (isLoading) {
-    return <SessionDetailSkeleton />;
+    return (
+      <PageLayout>
+        <SectionList className="max-w-4xl">
+          <SessionDetailSkeleton />
+        </SectionList>
+      </PageLayout>
+    );
   }
 
   if (!session) {
@@ -151,7 +158,9 @@ export function SessionDetailPage() {
   }
 
   return (
-    <div className="max-w-4xl space-y-6">
+    <PageLayout>
+      <SectionList className="max-w-4xl">
+
       <BackButton onClick={() => game ? navigate(`/games/${game.id}`) : navigate(-1)}>
         {game ? game.title : "Back"}
       </BackButton>
@@ -413,6 +422,7 @@ export function SessionDetailPage() {
         }}
         isPending={deleteSave.isPending}
       />
-    </div>
+    </SectionList>
+    </PageLayout>
   );
 }

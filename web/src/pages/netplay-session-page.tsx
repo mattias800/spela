@@ -3,13 +3,13 @@ import { useParams, useNavigate } from "react-router-dom";
 import { Gamepad2, Trash2, Monitor, Plus, UserPlus } from "lucide-react";
 import {
   Button,
-  BackButton,
   Badge,
   ConfirmDeleteModal,
   Modal,
   Skeleton,
   EmptyState,
 } from "@/components/ui";
+import { PageLayout, SectionList } from "@/components/layout";
 import { ConsoleBadge } from "@/components/console-badge";
 import { useToast } from "@/components/ui";
 import {
@@ -97,7 +97,13 @@ export function NetplaySessionPage() {
   }
 
   if (isLoading) {
-    return <NetplaySessionSkeleton />;
+    return (
+      <PageLayout backButtonVariant="standard">
+        <SectionList className="max-w-5xl">
+          <NetplaySessionSkeleton />
+        </SectionList>
+      </PageLayout>
+    );
   }
 
   if (!session) {
@@ -116,8 +122,8 @@ export function NetplaySessionPage() {
   }
 
   return (
-    <div className="max-w-5xl space-y-8">
-      <BackButton onClick={() => navigate(-1)} />
+    <PageLayout backButtonVariant="standard">
+      <SectionList className="max-w-5xl">
 
       {/* Hero section */}
       <div className="flex flex-col items-center gap-6 md:flex-row md:items-start md:gap-8">
@@ -354,6 +360,7 @@ export function NetplaySessionPage() {
         onConfirm={handleDelete}
         isPending={deleteSession.isPending}
       />
-    </div>
+    </SectionList>
+    </PageLayout>
   );
 }

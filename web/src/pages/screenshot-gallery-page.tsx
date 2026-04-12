@@ -1,7 +1,8 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { ImageIcon } from "lucide-react";
-import { BackButton, Button, Skeleton, EmptyState } from "@/components/ui";
+import { Button, Skeleton, EmptyState } from "@/components/ui";
+import { PageLayout, SectionList } from "@/components/layout";
 import { ConsoleBadge } from "@/components/console-badge";
 import { useScreenshotGallery } from "@/hooks/use-explore";
 import { useConsoles } from "@/hooks/use-consoles";
@@ -53,7 +54,6 @@ function ScreenshotCard({ screenshot }: { screenshot: ScreenshotItem }) {
 }
 
 export function ScreenshotGalleryPage() {
-  const navigate = useNavigate();
   const [page, setPage] = useState(1);
   const [consoleFilter, setConsoleFilter] = useState<string | undefined>();
   const { data: consolesData } = useConsoles();
@@ -88,11 +88,8 @@ export function ScreenshotGalleryPage() {
   const isInitialLoading = isLoading && page === 1;
 
   return (
-    <div
-      className="max-w-6xl space-y-6"
-      data-testid="screenshot-gallery-page"
-    >
-      <BackButton onClick={() => navigate(-1)}>Back to Explore</BackButton>
+    <PageLayout backButtonVariant="standard" data-testid="screenshot-gallery-page">
+      <SectionList className="max-w-6xl">
 
       <div>
         <h1 className="text-3xl font-bold text-surface-100">
@@ -160,6 +157,7 @@ export function ScreenshotGalleryPage() {
           )}
         </>
       )}
-    </div>
+    </SectionList>
+    </PageLayout>
   );
 }

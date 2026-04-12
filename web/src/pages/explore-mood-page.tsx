@@ -1,13 +1,13 @@
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import { AlertCircle, Library } from "lucide-react";
 import { GameCard } from "@/components/game-card";
 import { GameGrid } from "@/components/game-grid";
 import {
-  BackButton,
   Button,
   GameCardSkeleton,
   EmptyState,
 } from "@/components/ui";
+import { PageLayout, SectionList } from "@/components/layout";
 import { useMoods, useMoodGames } from "@/hooks/use-explore";
 import { useToggleFavorite } from "@/hooks/use-games";
 import { useTogglePlayLater } from "@/hooks/use-play-later";
@@ -15,7 +15,6 @@ import { buildGradient } from "@/features/explore/utils/gradient";
 
 export function ExploreMoodPage() {
   const { mood: moodId } = useParams<{ mood: string }>();
-  const navigate = useNavigate();
   const { toggle: handleToggleFavorite } = useToggleFavorite();
   const { toggle: handleTogglePlayLater } = useTogglePlayLater();
 
@@ -29,11 +28,8 @@ export function ExploreMoodPage() {
   const moodGradient = mood?.gradient ?? [];
 
   return (
-    <div className="space-y-6" data-testid="mood-results-page">
-      {/* Back button */}
-      <BackButton onClick={() => navigate("/explore")}>
-        Back to Explore
-      </BackButton>
+    <PageLayout backButtonVariant="standard" backTo="/explore" data-testid="mood-results-page">
+      <SectionList>
 
       {/* Mood banner header */}
       <div
@@ -95,6 +91,7 @@ export function ExploreMoodPage() {
           ))}
         </GameGrid>
       )}
-    </div>
+    </SectionList>
+    </PageLayout>
   );
 }

@@ -1,14 +1,14 @@
 import { useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import { Library } from "lucide-react";
 import { GameCard } from "@/components/game-card";
 import { GameGrid } from "@/components/game-grid";
 import {
-  BackButton,
   GameCardSkeleton,
   EmptyState,
   Select,
 } from "@/components/ui";
+import { PageLayout, SectionList } from "@/components/layout";
 import { Pagination } from "@/components/pagination";
 import { useThemes, useThemeGames } from "@/hooks/use-explore";
 import { useToggleFavorite } from "@/hooks/use-games";
@@ -27,7 +27,6 @@ const SORT_OPTIONS = [
 
 export function ExploreThemePage() {
   const { id } = useParams<{ id: string }>();
-  const navigate = useNavigate();
   const [page, setPage] = useState(1);
   const [sortBy, setSortBy] = useState("rating-desc");
   const { toggle: handleToggleFavorite } = useToggleFavorite();
@@ -62,11 +61,8 @@ export function ExploreThemePage() {
   });
 
   return (
-    <div className="space-y-6" data-testid="theme-detail-page">
-      {/* Back button */}
-      <BackButton onClick={() => navigate("/explore")}>
-        Back to Explore
-      </BackButton>
+    <PageLayout backButtonVariant="standard" backTo="/explore" data-testid="theme-detail-page">
+      <SectionList>
 
       {/* Page header */}
       <div>
@@ -124,6 +120,7 @@ export function ExploreThemePage() {
           onPageChange={setPage}
         />
       )}
-    </div>
+    </SectionList>
+    </PageLayout>
   );
 }

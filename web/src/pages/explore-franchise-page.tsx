@@ -1,6 +1,7 @@
 import { useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
-import { BackButton, Skeleton } from "@/components/ui";
+import { useParams } from "react-router-dom";
+import { Skeleton } from "@/components/ui";
+import { PageLayout, SectionList } from "@/components/layout";
 import { useFranchiseDetail } from "@/hooks/use-explore";
 import { GameTimelineCard } from "@/features/explore/components/game-timeline-card";
 import { cn } from "@/lib/cn";
@@ -28,31 +29,28 @@ function FranchisePageSkeleton() {
 
 export function ExploreFranchisePage() {
   const { id } = useParams<{ id: string }>();
-  const navigate = useNavigate();
   const { data: franchise, isLoading } = useFranchiseDetail(id);
   const [consoleFilter, setConsoleFilter] = useState<string | null>(null);
 
   if (isLoading) {
     return (
-      <div className="max-w-4xl space-y-6">
-        <BackButton onClick={() => navigate("/explore")}>
-          Back to Explore
-        </BackButton>
-        <FranchisePageSkeleton />
-      </div>
+      <PageLayout backButtonVariant="standard" backTo="/explore">
+        <SectionList className="max-w-4xl">
+          <FranchisePageSkeleton />
+        </SectionList>
+      </PageLayout>
     );
   }
 
   if (!franchise) {
     return (
-      <div className="max-w-4xl space-y-6">
-        <BackButton onClick={() => navigate("/explore")}>
-          Back to Explore
-        </BackButton>
-        <p className="text-surface-400 text-center py-20">
-          Franchise not found
-        </p>
-      </div>
+      <PageLayout backButtonVariant="standard" backTo="/explore">
+        <SectionList className="max-w-4xl">
+          <p className="text-surface-400 text-center py-20">
+            Franchise not found
+          </p>
+        </SectionList>
+      </PageLayout>
     );
   }
 
@@ -73,7 +71,8 @@ export function ExploreFranchisePage() {
       : 0;
 
   return (
-    <div className="space-y-8" data-testid="franchise-detail-page">
+    <PageLayout backButtonVariant="standard" backTo="/explore" data-testid="franchise-detail-page">
+      <SectionList>
       {/* Full-width hero banner */}
       {franchise.heroUrl ? (
         <div className="relative w-full h-64 sm:h-80 lg:h-96 -mx-6">
@@ -86,13 +85,6 @@ export function ExploreFranchisePage() {
             {/* Multi-layer gradient for depth */}
             <div className="absolute inset-0 bg-gradient-to-t from-surface-950 via-surface-950/60 to-transparent" />
             <div className="absolute inset-0 bg-gradient-to-r from-surface-950/40 via-transparent to-surface-950/40" />
-
-            {/* Back button overlaid on hero */}
-            <div className="absolute top-4 left-4">
-              <BackButton onClick={() => navigate("/explore")}>
-                Back to Explore
-              </BackButton>
-            </div>
 
             {/* Title + progress overlaid at bottom */}
             <div className="absolute bottom-0 left-0 right-0 p-6 sm:p-8">
@@ -120,9 +112,6 @@ export function ExploreFranchisePage() {
         </div>
       ) : (
         <>
-          <BackButton onClick={() => navigate("/explore")}>
-            Back to Explore
-          </BackButton>
           <h1 className="text-4xl font-bold text-surface-100">{franchise.name}</h1>
           <div data-testid="ownership-progress">
             <p className="text-sm text-surface-400 mb-2">
@@ -198,6 +187,7 @@ export function ExploreFranchisePage() {
           </p>
         )}
       </div>
-    </div>
+    </SectionList>
+    </PageLayout>
   );
 }

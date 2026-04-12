@@ -1,6 +1,7 @@
 import { useState } from "react";
-import { useParams, useNavigate, Link } from "react-router-dom";
-import { BackButton, Skeleton, Badge, FilterChip } from "@/components/ui";
+import { useParams, Link } from "react-router-dom";
+import { Skeleton, Badge, FilterChip } from "@/components/ui";
+import { PageLayout, SectionList } from "@/components/layout";
 import { GameCard } from "@/components/game-card";
 import { GameCardSkeleton } from "@/components/ui";
 import { GameShelf } from "@/features/explore/components/game-shelf";
@@ -73,7 +74,6 @@ function DeveloperPageSkeleton() {
 export function DeveloperDetailPage() {
   const { name: rawName } = useParams<{ name: string }>();
   const name = rawName ? decodeURIComponent(rawName) : "";
-  const navigate = useNavigate();
   const { data: developer, isLoading } = useDeveloperDetail(name);
   const { toggle: handleToggleFavorite } = useToggleFavorite();
   const { toggle: handleTogglePlayLater } = useTogglePlayLater();
@@ -82,25 +82,23 @@ export function DeveloperDetailPage() {
 
   if (isLoading) {
     return (
-      <div className="max-w-6xl space-y-6" data-testid="developer-detail-page">
-        <BackButton onClick={() => navigate(-1)}>
-          Back to Explore
-        </BackButton>
-        <DeveloperPageSkeleton />
-      </div>
+      <PageLayout backButtonVariant="standard" data-testid="developer-detail-page">
+        <SectionList className="max-w-6xl">
+          <DeveloperPageSkeleton />
+        </SectionList>
+      </PageLayout>
     );
   }
 
   if (!developer) {
     return (
-      <div className="max-w-6xl space-y-6" data-testid="developer-detail-page">
-        <BackButton onClick={() => navigate(-1)}>
-          Back to Explore
-        </BackButton>
-        <p className="text-surface-400 text-center py-20">
-          No games found for this developer
-        </p>
-      </div>
+      <PageLayout backButtonVariant="standard" data-testid="developer-detail-page">
+        <SectionList className="max-w-6xl">
+          <p className="text-surface-400 text-center py-20">
+            No games found for this developer
+          </p>
+        </SectionList>
+      </PageLayout>
     );
   }
 
@@ -162,10 +160,8 @@ export function DeveloperDetailPage() {
     !consoleFilter && platformOrder.length > 1;
 
   return (
-    <div className="max-w-6xl space-y-8" data-testid="developer-detail-page">
-      <BackButton onClick={() => navigate(-1)}>
-        Back to Explore
-      </BackButton>
+    <PageLayout backButtonVariant="standard" data-testid="developer-detail-page">
+      <SectionList className="max-w-6xl">
 
       {/* Hero Banner */}
       <DeveloperHeroBanner
@@ -393,6 +389,7 @@ export function DeveloperDetailPage() {
           </div>
         </section>
       )}
-    </div>
+    </SectionList>
+    </PageLayout>
   );
 }

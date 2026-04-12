@@ -161,7 +161,7 @@ describe("ConsoleGamesPage", () => {
   it("renders back button with console name", () => {
     renderPage();
     expect(
-      screen.getByRole("button", { name: /back to super nintendo/i }),
+      screen.getByRole("button", { name: /back/i }),
     ).toBeInTheDocument();
   });
 
