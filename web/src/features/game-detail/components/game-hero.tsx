@@ -166,9 +166,9 @@ export function GameHero({
   ];
 
   return (
-    <div className="relative -mx-6 -mt-6 overflow-hidden rounded-b-2xl">
+    <div className="relative -mx-6 -mt-6 overflow-hidden">
       {/* Hero banner background */}
-      <div className="relative min-h-[280px] md:min-h-[340px]">
+      <div className="relative min-h-[320px] md:min-h-[400px]">
         {heroImage ? (
           <img
             src={heroImage}
@@ -179,12 +179,11 @@ export function GameHero({
           <div className="absolute inset-0 bg-gradient-to-br from-surface-800 via-surface-900 to-surface-950" />
         )}
 
-        {/* Gradient overlays for text readability */}
-        <div className="absolute inset-0 bg-gradient-to-t from-surface-950 via-surface-950/70 to-transparent" />
-        <div className="absolute inset-0 bg-gradient-to-r from-surface-950/80 to-transparent" />
+        {/* Subtle bottom gradient — just enough for transition to page background */}
+        <div className="absolute inset-0 bg-gradient-to-t from-surface-950 via-transparent to-transparent" />
 
         {/* Content overlay */}
-        <div className="relative z-10 flex items-end min-h-[280px] md:min-h-[340px] p-6 md:p-8 gap-6 md:gap-8">
+        <div className="relative z-10 flex items-end min-h-[320px] md:min-h-[400px] p-6 md:p-8 gap-6 md:gap-8">
           {/* Cover art */}
           <div className="flex-shrink-0 w-36 md:w-48 self-end">
             <div className="rounded-xl overflow-hidden bg-surface-900/80 border border-white/10 shadow-2xl backdrop-blur-sm">
@@ -209,10 +208,10 @@ export function GameHero({
             />
           </div>
 
-          {/* Title, badges, buttons */}
-          <div className="flex-1 min-w-0 space-y-3 pb-1">
+          {/* Title, badges, buttons — semi-transparent container */}
+          <div className="flex-1 min-w-0 rounded-2xl bg-black/40 backdrop-blur-sm p-5 space-y-3">
             <div>
-              <h1 className="text-2xl font-bold text-white md:text-3xl drop-shadow-lg">
+              <h1 className="text-2xl font-bold text-white md:text-3xl">
                 {game.title}
               </h1>
               <div className="flex flex-wrap items-center gap-2 mt-2">
