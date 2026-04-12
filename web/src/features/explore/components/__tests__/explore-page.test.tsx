@@ -402,8 +402,8 @@ describe("ExplorePage", () => {
     });
     renderPage();
     expect(screen.getByTestId("hero-carousel-skeleton")).toBeInTheDocument();
-    expect(screen.getByTestId("shelf-skeleton-Top Rated")).toBeInTheDocument();
-    expect(screen.getByTestId("shelf-skeleton-Recently Added")).toBeInTheDocument();
+    expect(screen.getByTestId("shelf-Top Rated-skeleton")).toBeInTheDocument();
+    expect(screen.getByTestId("shelf-Recently Added-skeleton")).toBeInTheDocument();
   });
 
   it("renders hero carousel and rows independently when one loads first", () => {
@@ -419,7 +419,7 @@ describe("ExplorePage", () => {
     // Carousel should render
     expect(screen.getByTestId("hero-carousel")).toBeInTheDocument();
     // Rows should show skeleton
-    expect(screen.getByTestId("shelf-skeleton-Top Rated")).toBeInTheDocument();
+    expect(screen.getByTestId("shelf-Top Rated-skeleton")).toBeInTheDocument();
   });
 
   it("does not render carousel when featured games empty but rows exist", () => {
@@ -597,7 +597,7 @@ describe("ExplorePage", () => {
       isLoading: true,
     });
     renderPage();
-    expect(screen.getByTestId("players-like-you-skeleton")).toBeInTheDocument();
+    expect(screen.getByTestId("players-like-you-shelf-skeleton")).toBeInTheDocument();
   });
 
   it("renders the developer spotlight section", () => {

@@ -1,17 +1,14 @@
 import { Link } from "react-router-dom";
 import { Zap, Trophy } from "lucide-react";
 import { Skeleton } from "@/components/ui";
+import { TitledSection } from "@/components/layout";
 import { useUserStats } from "@/hooks/use-stats";
 import { formatPlayTime } from "@/lib/format";
 import { cn } from "@/lib/cn";
 
 function PersonalStatsSkeleton() {
   return (
-    <div className="bg-surface-800/50 rounded-2xl p-5">
-      <div className="flex items-center gap-2.5 mb-4">
-        <Skeleton className="h-5 w-5" />
-        <Skeleton className="h-5 w-32" />
-      </div>
+    <TitledSection title="Your Stats" icon={Trophy} contained>
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {Array.from({ length: 4 }, (_, i) => (
           <div key={i} className="bg-surface-800/30 rounded-xl p-4">
@@ -20,7 +17,7 @@ function PersonalStatsSkeleton() {
           </div>
         ))}
       </div>
-    </div>
+    </TitledSection>
   );
 }
 
@@ -38,12 +35,7 @@ export function PersonalStatsCard() {
   const streakHighlight = stats.currentStreak >= 3;
 
   return (
-    <div className="bg-surface-800/50 rounded-2xl p-5">
-      <div className="flex items-center gap-2.5 mb-4">
-        <Trophy className="h-5 w-5 text-brand-400" />
-        <h2 className="text-lg font-bold text-surface-100">Your Stats</h2>
-      </div>
-
+    <TitledSection title="Your Stats" icon={Trophy} contained>
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {/* Total play time */}
         <div className="bg-surface-800/30 rounded-xl p-4">
@@ -96,6 +88,6 @@ export function PersonalStatsCard() {
           </div>
         )}
       </div>
-    </div>
+    </TitledSection>
   );
 }

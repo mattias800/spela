@@ -11,8 +11,9 @@ import {
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { GameCard } from "@/components/game-card";
-import { GameGrid } from "@/components/game-grid";
-import { Badge, GameCardSkeleton, Skeleton, EmptyState, TitledSection } from "@/components/ui";
+import { ScrollShelf } from "@/components/scroll-shelf";
+import { CAROUSEL_CARD_HEIGHT } from "@/lib/carousel-constants";
+import { Badge, Skeleton, EmptyState, TitledSection } from "@/components/ui";
 import { PersonalStatsCard } from "@/features/dashboard/components/personal-stats-card";
 import {
   useRecentGames,
@@ -33,44 +34,8 @@ import { OnlineUsers } from "@/features/social/components/online-users";
 import { ChallengeCard } from "@/features/challenges/components/challenge-card";
 import { useChallenges } from "@/hooks/use-challenges";
 import { formatRelativeTime } from "@/lib/format";
-import type { Game, RecentAchievement } from "@/types/api";
+import type { RecentAchievement } from "@/types/api";
 
-function GameRow({
-  games,
-  isLoading,
-  onToggleFavorite,
-  onTogglePlayLater,
-}: {
-  games: Game[] | undefined;
-  isLoading: boolean;
-  onToggleFavorite: (game: Game) => void;
-  onTogglePlayLater?: (game: Game) => void;
-}) {
-  if (isLoading) {
-    return (
-      <GameGrid>
-        {Array.from({ length: 6 }, (_, i) => (
-          <GameCardSkeleton key={i} />
-        ))}
-      </GameGrid>
-    );
-  }
-
-  if (!games || games.length === 0) return null;
-
-  return (
-    <GameGrid>
-      {games.slice(0, 6).map((game) => (
-        <GameCard
-          key={game.id}
-          game={game}
-          onToggleFavorite={onToggleFavorite}
-          onTogglePlayLater={onTogglePlayLater}
-        />
-      ))}
-    </GameGrid>
-  );
-}
 
 function RecentAchievementsSkeleton() {
   return (
@@ -324,98 +289,133 @@ export function DashboardPage() {
       )}
 
       {(recentGames.isLoading || hasRecent) && (
-        <TitledSection
+        <ScrollShelf
           title="Continue Playing"
           icon={Play}
-          renderRight={
+          testId="shelf-continue-playing"
+          isLoading={recentGames.isLoading}
+          isEmpty={!recentGames.data || recentGames.data.length === 0}
+          headerRight={
             <Link to="/games" className="flex items-center gap-1 text-sm text-surface-400 hover:text-brand-400 transition-colors">
               View all<ChevronRight className="h-4 w-4" />
             </Link>
           }
         >
-          <GameRow
-            games={recentGames.data}
-            isLoading={recentGames.isLoading}
-            onToggleFavorite={handleToggleFavorite}
-            onTogglePlayLater={handleTogglePlayLater}
-          />
-        </TitledSection>
+          {recentGames.data?.map((game) => (
+            <div key={game.id} className="flex-shrink-0" role="listitem">
+              <GameCard
+                game={game}
+                coverHeight={CAROUSEL_CARD_HEIGHT}
+                onToggleFavorite={handleToggleFavorite}
+                onTogglePlayLater={handleTogglePlayLater}
+              />
+            </div>
+          ))}
+        </ScrollShelf>
       )}
 
       {(playLaterGames.isLoading || hasPlayLater) && (
-        <TitledSection
+        <ScrollShelf
           title="Play Later"
           icon={Clock}
-          renderRight={
+          testId="shelf-play-later"
+          isLoading={playLaterGames.isLoading}
+          isEmpty={!playLaterGames.data || playLaterGames.data.length === 0}
+          headerRight={
             <Link to="/play-later" className="flex items-center gap-1 text-sm text-surface-400 hover:text-brand-400 transition-colors">
               View all<ChevronRight className="h-4 w-4" />
             </Link>
           }
         >
-          <GameRow
-            games={playLaterGames.data}
-            isLoading={playLaterGames.isLoading}
-            onToggleFavorite={handleToggleFavorite}
-            onTogglePlayLater={handleTogglePlayLater}
-          />
-        </TitledSection>
+          {playLaterGames.data?.map((game) => (
+            <div key={game.id} className="flex-shrink-0" role="listitem">
+              <GameCard
+                game={game}
+                coverHeight={CAROUSEL_CARD_HEIGHT}
+                onToggleFavorite={handleToggleFavorite}
+                onTogglePlayLater={handleTogglePlayLater}
+              />
+            </div>
+          ))}
+        </ScrollShelf>
       )}
 
       {(favoriteGames.isLoading || hasFavorites) && (
-        <TitledSection
+        <ScrollShelf
           title="Favorites"
           icon={Heart}
-          renderRight={
+          testId="shelf-favorites"
+          isLoading={favoriteGames.isLoading}
+          isEmpty={!favoriteGames.data || favoriteGames.data.length === 0}
+          headerRight={
             <Link to="/favorites" className="flex items-center gap-1 text-sm text-surface-400 hover:text-brand-400 transition-colors">
               View all<ChevronRight className="h-4 w-4" />
             </Link>
           }
         >
-          <GameRow
-            games={favoriteGames.data}
-            isLoading={favoriteGames.isLoading}
-            onToggleFavorite={handleToggleFavorite}
-            onTogglePlayLater={handleTogglePlayLater}
-          />
-        </TitledSection>
+          {favoriteGames.data?.map((game) => (
+            <div key={game.id} className="flex-shrink-0" role="listitem">
+              <GameCard
+                game={game}
+                coverHeight={CAROUSEL_CARD_HEIGHT}
+                onToggleFavorite={handleToggleFavorite}
+                onTogglePlayLater={handleTogglePlayLater}
+              />
+            </div>
+          ))}
+        </ScrollShelf>
       )}
 
       {(recentlyAddedGames.isLoading || hasRecentlyAdded) && (
-        <TitledSection
+        <ScrollShelf
           title="Recently Added"
           icon={Sparkles}
-          renderRight={
+          testId="shelf-recently-added"
+          isLoading={recentlyAddedGames.isLoading}
+          isEmpty={!recentlyAddedGames.data?.data || recentlyAddedGames.data.data.length === 0}
+          headerRight={
             <Link to="/games" className="flex items-center gap-1 text-sm text-surface-400 hover:text-brand-400 transition-colors">
               View all<ChevronRight className="h-4 w-4" />
             </Link>
           }
         >
-          <GameRow
-            games={recentlyAddedGames.data?.data}
-            isLoading={recentlyAddedGames.isLoading}
-            onToggleFavorite={handleToggleFavorite}
-            onTogglePlayLater={handleTogglePlayLater}
-          />
-        </TitledSection>
+          {recentlyAddedGames.data?.data?.map((game) => (
+            <div key={game.id} className="flex-shrink-0" role="listitem">
+              <GameCard
+                game={game}
+                coverHeight={CAROUSEL_CARD_HEIGHT}
+                onToggleFavorite={handleToggleFavorite}
+                onTogglePlayLater={handleTogglePlayLater}
+              />
+            </div>
+          ))}
+        </ScrollShelf>
       )}
 
       {!hasRecent && !hasFavorites && (allGames.isLoading || hasGames) && (
-        <TitledSection
+        <ScrollShelf
           title="Discover"
           icon={Gamepad2}
-          renderRight={
+          testId="shelf-discover"
+          isLoading={allGames.isLoading}
+          isEmpty={!allGames.data?.data || allGames.data.data.length === 0}
+          headerRight={
             <Link to="/games" className="flex items-center gap-1 text-sm text-surface-400 hover:text-brand-400 transition-colors">
               View all<ChevronRight className="h-4 w-4" />
             </Link>
           }
         >
-          <GameRow
-            games={allGames.data?.data}
-            isLoading={allGames.isLoading}
-            onToggleFavorite={handleToggleFavorite}
-            onTogglePlayLater={handleTogglePlayLater}
-          />
-        </TitledSection>
+          {allGames.data?.data?.map((game) => (
+            <div key={game.id} className="flex-shrink-0" role="listitem">
+              <GameCard
+                game={game}
+                coverHeight={CAROUSEL_CARD_HEIGHT}
+                onToggleFavorite={handleToggleFavorite}
+                onTogglePlayLater={handleTogglePlayLater}
+              />
+            </div>
+          ))}
+        </ScrollShelf>
       )}
 
       {/* Social widgets */}

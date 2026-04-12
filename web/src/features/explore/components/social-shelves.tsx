@@ -1,8 +1,5 @@
-import { useRef, useState, useEffect, useCallback } from "react";
 import { Link } from "react-router-dom";
 import {
-  ChevronLeft,
-  ChevronRight,
   TrendingUp,
   Star,
   Gem,
@@ -12,7 +9,9 @@ import {
   Swords,
 } from "lucide-react";
 import { GameCard } from "@/components/game-card";
-import { GameCardSkeleton, Badge, Skeleton } from "@/components/ui";
+import { Badge } from "@/components/ui";
+import { ScrollShelf } from "@/components/scroll-shelf";
+import { CAROUSEL_CARD_HEIGHT } from "@/lib/carousel-constants";
 import type {
   Game,
   TrendingGame,
@@ -21,127 +20,6 @@ import type {
   RecentReviewItem,
   ActiveNowItem,
 } from "@/types/api";
-
-// --- Shared scroll shelf wrapper ---
-
-function ScrollShelf({
-  title,
-  subtitle,
-  icon: Icon,
-  testId,
-  isLoading,
-  isEmpty,
-  children,
-}: {
-  title: string;
-  subtitle?: string;
-  icon: React.ElementType;
-  testId: string;
-  isLoading: boolean;
-  isEmpty: boolean;
-  children: React.ReactNode;
-}) {
-  const scrollRef = useRef<HTMLDivElement>(null);
-  const [canScrollLeft, setCanScrollLeft] = useState(false);
-  const [canScrollRight, setCanScrollRight] = useState(false);
-
-  const updateScrollState = useCallback(() => {
-    const el = scrollRef.current;
-    if (!el) return;
-    setCanScrollLeft(el.scrollLeft > 0);
-    setCanScrollRight(
-      el.scrollLeft + el.clientWidth < el.scrollWidth - 1,
-    );
-  }, []);
-
-  useEffect(() => {
-    const el = scrollRef.current;
-    if (!el) return;
-    updateScrollState();
-    el.addEventListener("scroll", updateScrollState, { passive: true });
-    window.addEventListener("resize", updateScrollState);
-    return () => {
-      el.removeEventListener("scroll", updateScrollState);
-      window.removeEventListener("resize", updateScrollState);
-    };
-  }, [updateScrollState, children]);
-
-  const scroll = useCallback((direction: "left" | "right") => {
-    const el = scrollRef.current;
-    if (!el) return;
-    const scrollAmount = el.clientWidth * 0.7;
-    el.scrollBy({
-      left: direction === "left" ? -scrollAmount : scrollAmount,
-      behavior: "smooth",
-    });
-  }, []);
-
-  if (isLoading) {
-    return (
-      <section data-testid={`${testId}-skeleton`}>
-        <div className="flex items-center gap-2 mb-1">
-          <Icon className="h-5 w-5 text-surface-400" />
-          <Skeleton className="h-7 w-60 rounded" />
-        </div>
-        {subtitle && (
-          <Skeleton className="h-4 w-40 rounded mt-1 mb-5" />
-        )}
-        <div className="flex gap-5 overflow-hidden mt-4">
-          {Array.from({ length: 6 }, (_, i) => (
-            <div key={i} className="w-40 sm:w-44 lg:w-48 flex-shrink-0">
-              <GameCardSkeleton />
-            </div>
-          ))}
-        </div>
-      </section>
-    );
-  }
-
-  if (isEmpty) return null;
-
-  return (
-    <section data-testid={testId} className="group/shelf relative">
-      <div className="flex items-center gap-2 mb-1">
-        <Icon className="h-5 w-5 text-brand-400" />
-        <h2 className="text-xl font-bold text-surface-100">{title}</h2>
-      </div>
-      {subtitle && (
-        <p className="text-sm text-surface-400 mb-4">{subtitle}</p>
-      )}
-
-      <div className="relative">
-        {canScrollLeft && (
-          <button
-            onClick={() => scroll("left")}
-            className="absolute -left-2 top-1/2 -translate-y-1/2 z-10 p-2 rounded-full bg-surface-900/90 text-surface-300 hover:text-surface-100 hover:bg-surface-800 opacity-0 group-hover/shelf:opacity-100 group-focus-within/shelf:opacity-100 focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 transition-all duration-300 shadow-lg"
-            aria-label={`Scroll ${title} left`}
-          >
-            <ChevronLeft className="h-5 w-5" />
-          </button>
-        )}
-        {canScrollRight && (
-          <button
-            onClick={() => scroll("right")}
-            className="absolute -right-2 top-1/2 -translate-y-1/2 z-10 p-2 rounded-full bg-surface-900/90 text-surface-300 hover:text-surface-100 hover:bg-surface-800 opacity-0 group-hover/shelf:opacity-100 group-focus-within/shelf:opacity-100 focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 transition-all duration-300 shadow-lg"
-            aria-label={`Scroll ${title} right`}
-          >
-            <ChevronRight className="h-5 w-5" />
-          </button>
-        )}
-
-        <div
-          ref={scrollRef}
-          className="flex gap-5 overflow-x-auto scrollbar-hide pb-2"
-          style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
-          role="list"
-          aria-label={title}
-        >
-          {children}
-        </div>
-      </div>
-    </section>
-  );
-}
 
 // --- Trending Shelf ---
 
@@ -170,12 +48,13 @@ export function TrendingShelf({
       {games?.map((item) => (
         <div
           key={item.game.id}
-          className="w-40 sm:w-44 lg:w-48 flex-shrink-0"
+          className="flex-shrink-0"
           role="listitem"
         >
           <GameCard
             game={item.game}
             showConsoleBadge
+            coverHeight={CAROUSEL_CARD_HEIGHT}
             onToggleFavorite={onToggleFavorite}
             onTogglePlayLater={onTogglePlayLater}
           />
@@ -218,12 +97,13 @@ export function CommunityTopShelf({
       {games?.map((item) => (
         <div
           key={item.game.id}
-          className="w-40 sm:w-44 lg:w-48 flex-shrink-0"
+          className="flex-shrink-0"
           role="listitem"
         >
           <GameCard
             game={item.game}
             showConsoleBadge
+            coverHeight={CAROUSEL_CARD_HEIGHT}
             onToggleFavorite={onToggleFavorite}
             onTogglePlayLater={onTogglePlayLater}
           />
@@ -269,12 +149,13 @@ export function CultClassicsShelf({
       {games?.map((item) => (
         <div
           key={item.game.id}
-          className="w-40 sm:w-44 lg:w-48 flex-shrink-0"
+          className="flex-shrink-0"
           role="listitem"
         >
           <GameCard
             game={item.game}
             showConsoleBadge
+            coverHeight={CAROUSEL_CARD_HEIGHT}
             onToggleFavorite={onToggleFavorite}
             onTogglePlayLater={onTogglePlayLater}
           />
@@ -393,12 +274,13 @@ export function ActiveNowShelf({
       {games?.map((item) => (
         <div
           key={item.game.id}
-          className="w-40 sm:w-44 lg:w-48 flex-shrink-0"
+          className="flex-shrink-0"
           role="listitem"
         >
           <GameCard
             game={item.game}
             showConsoleBadge
+            coverHeight={CAROUSEL_CARD_HEIGHT}
             onToggleFavorite={onToggleFavorite}
             onTogglePlayLater={onTogglePlayLater}
           />

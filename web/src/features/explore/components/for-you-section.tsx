@@ -2,6 +2,7 @@ import { useRef, useState, useEffect, useCallback } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { GameCard } from "@/components/game-card";
 import { GameCardSkeleton } from "@/components/ui";
+import { CAROUSEL_CARD_HEIGHT } from "@/lib/carousel-constants";
 import type { ForYouRow, Game } from "@/types/api";
 
 interface ForYouSectionProps {
@@ -19,9 +20,7 @@ function ForYouSkeleton() {
           <div className="h-7 w-64 rounded bg-surface-800 animate-pulse mb-5" />
           <div className="flex gap-5 overflow-hidden">
             {Array.from({ length: 6 }, (_, j) => (
-              <div key={j} className="w-40 sm:w-44 lg:w-48 flex-shrink-0">
-                <GameCardSkeleton />
-              </div>
+              <GameCardSkeleton key={j} coverHeight={CAROUSEL_CARD_HEIGHT} />
             ))}
           </div>
         </section>
@@ -135,11 +134,12 @@ function ForYouShelf({
           {row.games.map((game) => (
             <div
               key={game.id}
-              className="w-40 sm:w-44 lg:w-48 flex-shrink-0"
+              className="flex-shrink-0"
               role="listitem"
             >
               <GameCard
                 game={game}
+                coverHeight={CAROUSEL_CARD_HEIGHT}
                 showConsoleBadge
                 onToggleFavorite={onToggleFavorite}
                 onTogglePlayLater={onTogglePlayLater}

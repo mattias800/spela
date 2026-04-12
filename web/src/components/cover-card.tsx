@@ -21,6 +21,7 @@ interface CoverCardProps {
   dimmed?: boolean;
   aspectRatio?: string;
   width?: string;
+  coverHeight?: number;
   children?: ReactNode;
 }
 
@@ -32,15 +33,16 @@ export function CoverCard({
   dimmed = false,
   aspectRatio = "3/4",
   width = "w-36",
+  coverHeight,
   children,
 }: CoverCardProps) {
   const content = (
-    <div data-comp="CoverCard" className={cn(width, dimmed && "opacity-50")}>
+    <div data-comp="CoverCard" className={cn(coverHeight ? "flex-shrink-0" : width, dimmed && "opacity-50")}>
       <div
         className="w-full border border-surface-800/50"
-        style={{ aspectRatio }}
+        style={coverHeight ? { height: coverHeight } : { aspectRatio }}
       >
-        <CoverImage src={imageUrl} alt={title} className="w-full h-full rounded-xl" />
+        <CoverImage src={imageUrl} alt={title} className={coverHeight ? "h-full w-auto rounded-xl" : "w-full h-full rounded-xl"} />
       </div>
       <div className="mt-2 px-0.5">
         <p className="text-sm font-medium text-surface-200 truncate">

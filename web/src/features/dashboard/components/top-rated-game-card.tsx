@@ -9,7 +9,7 @@ import type { TopRatedGame } from "@/types/api";
  * Maps TopRatedGame domain data to CoverCard. Dimmed when the game
  * is not available in the local library.
  */
-export function TopRatedGameCard({ game }: { game: TopRatedGame }) {
+export function TopRatedGameCard({ game, coverHeight }: { game: TopRatedGame; coverHeight?: number }) {
   const isAvailable = game.localGameId != null;
 
   return (
@@ -18,6 +18,7 @@ export function TopRatedGameCard({ game }: { game: TopRatedGame }) {
       title={game.name}
       subtitle={game.consoleName}
       linkTo={isAvailable ? `/games/${game.localGameId}` : undefined}
+      coverHeight={coverHeight}
     >
       <span className="flex items-center gap-0.5 text-xs text-amber-400">
         <Star className="h-3 w-3 fill-amber-400" />
