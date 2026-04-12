@@ -1535,5 +1535,23 @@ func GameTitle(filename string) string {
 			name = name[:start] + name[start+end+1:]
 		}
 	}
+	name = strings.TrimSpace(name)
+
+	// No-Intro article-suffix convention: "Name, The - Subtitle" or "Name, The"
+	// Move the article to the front for a natural display title.
+	for _, article := range []string{"The", "A", "An"} {
+		suffix := ", " + article
+		// "Legend of Zelda, The - A Link to the Past" → "The Legend of Zelda - A Link to the Past"
+		if idx := strings.Index(name, suffix+" - "); idx >= 0 {
+			name = article + " " + name[:idx] + " - " + name[idx+len(suffix)+3:]
+			break
+		}
+		// "Addams Family, The" → "The Addams Family"
+		if strings.HasSuffix(name, suffix) {
+			name = article + " " + name[:len(name)-len(suffix)]
+			break
+		}
+	}
+
 	return strings.TrimSpace(name)
 }

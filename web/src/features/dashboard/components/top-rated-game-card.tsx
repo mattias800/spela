@@ -18,12 +18,14 @@ export function TopRatedGameCard({ game }: { game: TopRatedGame }) {
       title={game.name}
       subtitle={game.consoleName}
       linkTo={isAvailable ? `/games/${game.localGameId}` : undefined}
-      dimmed={!isAvailable}
     >
       <span className="flex items-center gap-0.5 text-xs text-amber-400">
         <Star className="h-3 w-3 fill-amber-400" />
         {game.igdbCriticsRating.toFixed(0)}
       </span>
+      {!isAvailable && (
+        <span className="text-xs text-surface-500">Not in library</span>
+      )}
     </CoverCard>
   );
 }

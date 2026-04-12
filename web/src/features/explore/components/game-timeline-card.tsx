@@ -20,7 +20,7 @@ export function GameTimelineCard({ game, testIdPrefix }: GameTimelineCardProps) 
         "flex items-center gap-4 p-4 rounded-xl border transition-all duration-200",
         game.inLibrary
           ? "bg-surface-900/60 border-surface-800/50 hover:border-surface-700/50 hover:bg-surface-800/60 cursor-pointer"
-          : "bg-surface-950/40 border-surface-800/30 opacity-50 cursor-default",
+          : "bg-surface-950/40 border-surface-800/30 cursor-default",
       )}
       data-testid={`${testIdPrefix}-game-${game.igdbGameId}`}
     >
