@@ -248,17 +248,11 @@ export function DashboardPage() {
   const showEmptyState = !isLoading && !hasRecent && !hasFavorites && !hasGames;
 
   return (
-    <PageLayout>
+    <PageLayout
+      title={`Welcome back, ${user?.username}`}
+      subtitle="Pick up where you left off or discover something new."
+    >
       <SectionList>
-      <div>
-        <h1 className="text-3xl font-bold text-surface-100">
-          Welcome back, {user?.username}
-        </h1>
-        <p className="mt-1 text-surface-400">
-          Pick up where you left off or discover something new.
-        </p>
-      </div>
-
       {hasMissingBios && (
         <BiosWarningBanner
           message="Some consoles are missing required BIOS files. Games may not work correctly."

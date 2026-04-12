@@ -198,18 +198,8 @@ export function TopListsPage() {
   ];
 
   return (
-    <PageLayout>
+    <PageLayout title="Top Lists" subtitle="Discover the best and biggest games in your library." icon={Trophy}>
       <SectionList className="max-w-5xl">
-      <div>
-        <h1 className="text-3xl font-bold text-surface-100 flex items-center gap-3">
-          <Trophy className="h-8 w-8 text-brand-400" />
-          Top Lists
-        </h1>
-        <p className="mt-1 text-surface-400">
-          Discover the best and biggest games in your library.
-        </p>
-      </div>
-
       <div
         className="flex gap-1 p-1 rounded-xl bg-surface-900/60 border border-surface-800/50 w-fit"
         role="tablist"

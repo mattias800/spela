@@ -128,15 +128,8 @@ export function PreferencesPage() {
   }
 
   return (
-    <PageLayout>
+    <PageLayout title="Preferences" subtitle="Manage your emulation settings and devices.">
       <SectionList>
-      <div>
-        <h1 className="text-3xl font-bold text-surface-100">Preferences</h1>
-        <p className="mt-1 text-surface-400">
-          Manage your emulation settings and devices.
-        </p>
-      </div>
-
       <StateTabNav>
         <StateTabItem active={activeTab === "general"} onClick={() => setActiveTab("general")}>
           General

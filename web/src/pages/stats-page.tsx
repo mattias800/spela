@@ -119,18 +119,8 @@ export function StatsPage() {
     (!mostActive?.players || mostActive.players.length === 0);
 
   return (
-    <PageLayout>
+    <PageLayout title="Stats" subtitle="See how you stack up against other players." icon={BarChart3}>
       <SectionList className="max-w-5xl">
-      <div>
-        <h1 className="text-3xl font-bold text-surface-100 flex items-center gap-3">
-          <BarChart3 className="h-8 w-8 text-brand-400" />
-          Stats
-        </h1>
-        <p className="mt-1 text-surface-400">
-          See how you stack up against other players.
-        </p>
-      </div>
-
       {hasNoData && (
         <EmptyState
           icon={Trophy}

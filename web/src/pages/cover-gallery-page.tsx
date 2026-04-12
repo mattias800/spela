@@ -93,20 +93,11 @@ export function CoverGalleryPage() {
   const isInitialLoading = isLoading && page === 1;
 
   return (
-    <PageLayout backButtonVariant="standard" data-testid="cover-gallery-page">
+    <PageLayout backButtonVariant="standard" data-testid="cover-gallery-page" title="Cover Art Wall" subtitle="Browse cover art from your library.">
       <SectionList className="max-w-7xl">
 
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold text-surface-100">
-            Cover Art Wall
-          </h1>
-          <p className="mt-1 text-surface-400">
-            Browse cover art from your library.
-          </p>
-        </div>
-
-        {/* Zoom controls */}
+      {/* Zoom controls */}
+      <div className="flex justify-end">
         <div
           className="flex items-center gap-1 rounded-lg border border-surface-700 bg-surface-900 p-1"
           role="group"

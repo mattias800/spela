@@ -137,15 +137,9 @@ export function CollectionsPage() {
   }
 
   return (
-    <PageLayout>
+    <PageLayout title="Collections" subtitle="Organize your games into custom collections.">
       <SectionList>
-      <div className="flex items-start justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-surface-100">Collections</h1>
-          <p className="mt-1 text-surface-400">
-            Organize your games into custom collections.
-          </p>
-        </div>
+      <div className="flex justify-end">
         <Button onClick={() => setShowCreateModal(true)}>
           <Plus className="h-4 w-4" />
           Create Collection

@@ -70,21 +70,8 @@ export function ExploreWizardPage() {
   }
 
   return (
-    <PageLayout backButtonVariant="standard" backTo="/explore" backLabel="Explore" data-testid="wizard-page">
+    <PageLayout backButtonVariant="standard" backTo="/explore" backLabel="Explore" data-testid="wizard-page" title="Decision Wizard" subtitle="Answer 3 questions and we'll find the perfect game for you." icon={Wand2}>
       <SectionList>
-
-      {/* Header */}
-      <div className="flex items-center gap-3">
-        <Wand2 className="h-8 w-8 text-brand-400" />
-        <div>
-          <h1 className="text-3xl font-bold text-surface-100">
-            Decision Wizard
-          </h1>
-          <p className="mt-1 text-surface-400">
-            Answer 3 questions and we'll find the perfect game for you.
-          </p>
-        </div>
-      </div>
 
       {/* Progress bar */}
       {steps.length > 0 && (

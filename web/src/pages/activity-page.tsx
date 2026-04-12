@@ -32,18 +32,8 @@ export function ActivityPage() {
   const hasMore = data ? page * pageSize < data.total : false;
 
   return (
-    <PageLayout>
+    <PageLayout title="Activity" subtitle="See what everyone has been up to." icon={Activity}>
       <SectionList className="max-w-5xl">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-surface-100 flex items-center gap-3">
-          <Activity className="h-8 w-8 text-brand-400" />
-          Activity
-        </h1>
-        <p className="mt-1 text-surface-400">
-          See what everyone has been up to.
-        </p>
-      </div>
-
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Main feed */}
         <div className="lg:col-span-2">

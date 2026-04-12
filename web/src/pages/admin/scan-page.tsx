@@ -453,15 +453,8 @@ function ScrapeCard() {
 
 export function AdminScanPage() {
   return (
-    <PageLayout>
+    <PageLayout title="Library Scan" subtitle="Scan game directories and update metadata.">
       <SectionList className="max-w-3xl">
-      <div>
-        <h1 className="text-3xl font-bold text-surface-100">Library Scan</h1>
-        <p className="mt-1 text-surface-400">
-          Scan game directories and update metadata.
-        </p>
-      </div>
-
       <ScrapeStatusCard />
 
       <div className="grid gap-5 md:grid-cols-2">

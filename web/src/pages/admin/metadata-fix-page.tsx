@@ -123,17 +123,8 @@ export function MetadataFixPage() {
         : incomplete;
 
   return (
-    <PageLayout>
+    <PageLayout title="Metadata Review" subtitle="Review games that need attention. Click a game to view its details.">
       <SectionList className="max-w-5xl">
-      <div>
-        <h1 className="text-3xl font-bold text-surface-100">
-          Metadata Review
-        </h1>
-        <p className="mt-1 text-surface-400">
-          Review games that need attention. Click a game to view its details.
-        </p>
-      </div>
-
       <StateTabNav>
         <StateTabItem active={tab === "unscraped"} onClick={() => setTab("unscraped")}>
           <ScanSearch className="h-4 w-4" />

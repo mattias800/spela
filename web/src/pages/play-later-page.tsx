@@ -126,15 +126,8 @@ export function PlayLaterPage() {
   }
 
   return (
-    <PageLayout>
+    <PageLayout title="Play Later" subtitle="Your backlog — games you want to play next.">
       <SectionList>
-      <div>
-        <h1 className="text-3xl font-bold text-surface-100">Play Later</h1>
-        <p className="mt-1 text-surface-400">
-          Your backlog — games you want to play next.
-        </p>
-      </div>
-
       {isLoading ? (
         <PlayLaterSkeleton />
       ) : isError ? (

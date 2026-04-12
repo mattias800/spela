@@ -95,15 +95,8 @@ export function AdminSettingsPage() {
   const raEnvConfigured = raStatus?.source === "env";
 
   return (
-    <PageLayout>
+    <PageLayout title="Server Settings" subtitle="Configure server behavior and game scanning.">
       <SectionList className="max-w-3xl">
-      <div>
-        <h1 className="text-3xl font-bold text-surface-100">Server Settings</h1>
-        <p className="mt-1 text-surface-400">
-          Configure server behavior and game scanning.
-        </p>
-      </div>
-
       {igdbNotConfigured && <IgdbWarningBanner variant="settings" />}
 
       <Section>

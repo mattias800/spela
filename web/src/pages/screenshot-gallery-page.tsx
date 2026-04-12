@@ -88,17 +88,8 @@ export function ScreenshotGalleryPage() {
   const isInitialLoading = isLoading && page === 1;
 
   return (
-    <PageLayout backButtonVariant="standard" data-testid="screenshot-gallery-page">
+    <PageLayout backButtonVariant="standard" data-testid="screenshot-gallery-page" title="Screenshot Gallery" subtitle="Browse screenshots from your library.">
       <SectionList className="max-w-6xl">
-
-      <div>
-        <h1 className="text-3xl font-bold text-surface-100">
-          Screenshot Gallery
-        </h1>
-        <p className="mt-1 text-surface-400">
-          Browse screenshots from your library.
-        </p>
-      </div>
 
       {/* Filter bar */}
       <div className="flex flex-wrap gap-3" data-testid="gallery-filters">

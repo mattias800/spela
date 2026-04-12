@@ -204,13 +204,7 @@ export function ExplorePage() {
   // Empty library state
   if (hasNoData && !isFeaturedLoading && !isRowsLoading) {
     return (
-      <div className="space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold text-surface-100">Explore</h1>
-          <p className="mt-1 text-surface-400">
-            Discover games in your library.
-          </p>
-        </div>
+      <PageLayout title="Explore" subtitle="Discover games in your library.">
         <EmptyState
           icon={Library}
           title="Nothing to explore yet"
@@ -227,7 +221,7 @@ export function ExplorePage() {
             ) : undefined
           }
         />
-      </div>
+      </PageLayout>
     );
   }
 
@@ -236,15 +230,12 @@ export function ExplorePage() {
   const remainingRows = rows.slice(1);
 
   return (
-    <PageLayout data-testid="explore-page">
+    <PageLayout
+      data-testid="explore-page"
+      title="Explore"
+      subtitle="Discover games in your library."
+    >
       <SectionList>
-      <div>
-        <h1 className="text-3xl font-bold text-surface-100">Explore</h1>
-        <p className="mt-1 text-surface-400">
-          Discover games in your library.
-        </p>
-      </div>
-
       {/* Hero Carousel */}
       <HeroCarousel games={featuredGames} isLoading={isFeaturedLoading} />
 

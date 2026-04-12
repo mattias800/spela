@@ -73,17 +73,8 @@ export function AdminSecurityEventsPage() {
   );
 
   return (
-    <PageLayout>
+    <PageLayout title="Security Events" subtitle="Audit log of authentication events. Failed logins, lockouts, and token misuse are recorded here so you can investigate suspicious activity without tailing container logs.">
       <SectionList>
-      <div>
-        <h1 className="text-3xl font-bold text-surface-100">Security Events</h1>
-        <p className="mt-1 text-surface-400">
-          Audit log of authentication events. Failed logins, lockouts, and
-          token misuse are recorded here so you can investigate suspicious
-          activity without tailing container logs.
-        </p>
-      </div>
-
       <SecurityEventsFilters
         eventTypes={eventTypes}
         username={username}

@@ -9,15 +9,8 @@ export function AdminCheatsPage() {
   const importResult = importCheats.data;
 
   return (
-    <PageLayout>
+    <PageLayout title="Cheats" subtitle="Import and manage cheat codes from the libretro-database.">
       <SectionList className="max-w-3xl">
-      <div>
-        <h1 className="text-3xl font-bold text-surface-100">Cheats</h1>
-        <p className="mt-1 text-surface-400">
-          Import and manage cheat codes from the libretro-database.
-        </p>
-      </div>
-
       <div className="grid gap-5 md:grid-cols-2">
         <Section>
           <div className="px-5 pt-5 pb-2">

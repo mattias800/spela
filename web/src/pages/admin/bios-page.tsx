@@ -131,15 +131,8 @@ export function AdminBiosPage() {
   const hasFiles = (biosData?.files ?? []).length > 0;
 
   return (
-    <PageLayout>
+    <PageLayout title="BIOS Files" subtitle="Manage firmware and BIOS files required by emulation cores.">
       <SectionList className="max-w-4xl">
-      <div>
-        <h1 className="text-3xl font-bold text-surface-100">BIOS Files</h1>
-        <p className="mt-1 text-surface-400">
-          Manage firmware and BIOS files required by emulation cores.
-        </p>
-      </div>
-
       {/* Download missing BIOS */}
       <div className="flex items-center gap-4">
         <Button

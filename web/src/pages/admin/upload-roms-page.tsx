@@ -209,15 +209,8 @@ export function UploadRomsPage() {
   );
 
   return (
-    <PageLayout>
+    <PageLayout title="Upload ROMs" subtitle="Upload ROM files to add games to your library.">
       <SectionList className="max-w-4xl">
-      <div>
-        <h1 className="text-3xl font-bold text-surface-100">Upload ROMs</h1>
-        <p className="mt-1 text-surface-400">
-          Upload ROM files to add games to your library.
-        </p>
-      </div>
-
       {isReadonly && (
         <div
           role="alert"

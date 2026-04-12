@@ -66,15 +66,8 @@ export function RomHacksPage() {
   );
 
   return (
-    <PageLayout>
+    <PageLayout title="Add ROM Hack" subtitle="Upload a patch file to apply to a base game ROM.">
       <SectionList className="max-w-2xl">
-      <div>
-        <h1 className="text-3xl font-bold text-surface-100">Add ROM Hack</h1>
-        <p className="mt-1 text-surface-400">
-          Upload a patch file to apply to a base game ROM.
-        </p>
-      </div>
-
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Game picker */}
         <GamePicker

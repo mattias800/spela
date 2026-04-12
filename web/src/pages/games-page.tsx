@@ -148,17 +148,8 @@ export function GamesPage() {
   const games = data?.data ?? [];
 
   return (
-    <PageLayout>
+    <PageLayout title="Games" subtitle={data ? `${data.total} games in your library` : "Browse your game library"}>
       <SectionList>
-      <div>
-        <h1 className="text-3xl font-bold text-surface-100">Games</h1>
-        <p className="mt-1 text-surface-400">
-          {data
-            ? `${data.total} games in your library`
-            : "Browse your game library"}
-        </p>
-      </div>
-
       <GamesFilterBar
         filters={filters}
         onFiltersChange={setFilters}

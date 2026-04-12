@@ -91,18 +91,8 @@ export function ChallengesPage() {
   ];
 
   return (
-    <PageLayout>
+    <PageLayout title="Challenges" subtitle="Compete with other players on community-created challenges." icon={Flag}>
       <SectionList className="max-w-5xl">
-      <div>
-        <h1 className="text-3xl font-bold text-surface-100 flex items-center gap-3">
-          <Flag className="h-8 w-8 text-brand-400" />
-          Challenges
-        </h1>
-        <p className="mt-1 text-surface-400">
-          Compete with other players on community-created challenges.
-        </p>
-      </div>
-
       {/* Tabs */}
       <StateTabNav>
         <StateTabItem

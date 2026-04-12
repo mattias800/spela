@@ -67,14 +67,8 @@ export function StoragePage() {
 
   if (isLoading) {
     return (
-      <PageLayout>
+      <PageLayout title="Storage" subtitle="Manage your save state storage.">
         <SectionList>
-          <div>
-            <h1 className="text-3xl font-bold text-surface-100">Storage</h1>
-            <p className="mt-1 text-surface-400">
-              Manage your save state storage.
-            </p>
-          </div>
           <StorageSkeleton />
         </SectionList>
       </PageLayout>
@@ -83,14 +77,8 @@ export function StoragePage() {
 
   if (error || !storage) {
     return (
-      <PageLayout>
+      <PageLayout title="Storage" subtitle="Manage your save state storage.">
         <SectionList>
-          <div>
-            <h1 className="text-3xl font-bold text-surface-100">Storage</h1>
-            <p className="mt-1 text-surface-400">
-              Manage your save state storage.
-            </p>
-          </div>
           <EmptyState
             icon={HardDrive}
             title="Unable to load storage info"
@@ -108,15 +96,8 @@ export function StoragePage() {
   const hasSaves = totalSaves > 0;
 
   return (
-    <PageLayout>
+    <PageLayout title="Storage" subtitle="Manage your save state storage.">
       <SectionList>
-      <div>
-        <h1 className="text-3xl font-bold text-surface-100">Storage</h1>
-        <p className="mt-1 text-surface-400">
-          Manage your save state storage.
-        </p>
-      </div>
-
       {/* Storage usage card */}
       <Section>
         <div className="px-5 pt-5 pb-2">

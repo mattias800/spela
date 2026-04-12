@@ -12,15 +12,8 @@ export function FavoritesPage() {
   const { toggle: handleTogglePlayLater } = useTogglePlayLater();
 
   return (
-    <PageLayout>
+    <PageLayout title="Favorites" subtitle="Your favorite games, all in one place.">
       <SectionList>
-      <div>
-        <h1 className="text-3xl font-bold text-surface-100">Favorites</h1>
-        <p className="mt-1 text-surface-400">
-          Your favorite games, all in one place.
-        </p>
-      </div>
-
       {isLoading ? (
         <GameGrid>
           {Array.from({ length: 12 }, (_, i) => (
