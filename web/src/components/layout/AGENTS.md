@@ -33,3 +33,7 @@ consumers controlled this padding, every page would drift.
    grouping that benefits from a subtle background.
 3. **Use non-contained for grids and lists** — content that flows naturally
    without a card wrapper (e.g., genre breakdowns, theme grids).
+4. **No negative margins** — never use `-mx-*`, `-mt-*` to break out of parent
+   padding. If a component needs full-width rendering (flush to viewport edges),
+   it must be a direct child of `<main>`, not nested inside a padded container
+   with negative margins to escape. Restructure the component hierarchy instead.

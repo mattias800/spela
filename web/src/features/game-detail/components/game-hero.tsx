@@ -166,7 +166,7 @@ export function GameHero({
   ];
 
   return (
-    <div className="relative -mx-6 -mt-6 overflow-hidden">
+    <div className="relative overflow-hidden">
       {/* Hero banner background */}
       <div className="relative min-h-[320px] md:min-h-[400px]">
         {heroImage ? (

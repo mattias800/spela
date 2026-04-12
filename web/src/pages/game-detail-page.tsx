@@ -7,6 +7,7 @@ import {
   GameDetailSkeleton,
   Modal,
 } from "@/components/ui";
+import { PageLayout } from "@/components/layout";
 import { useToast } from "@/components/ui";
 import {
   useGame,
@@ -190,18 +191,9 @@ export function GameDetailPage() {
   }
 
   return (
-    <div className="max-w-5xl space-y-8">
-      <BackButton onClick={() => navigate(-1)} />
-
-      {showBiosWarning && (
-        <BiosWarningBanner
-          message={`Missing BIOS: ${game!.consoleName} requires firmware files to play. ${missingBiosFiles.length > 0 ? missingBiosFiles.join(", ") + " not found." : ""}`}
-          isAdmin={isAdmin}
-          missingFiles={missingBiosFiles}
-        />
-      )}
-
-      <GameHero
+    <PageLayout
+      renderHeader={() => (
+        <GameHero
         game={game}
         canPlayInBrowser={canPlayInBrowser}
         isAdmin={isAdmin}
@@ -237,6 +229,18 @@ export function GameDetailPage() {
             : undefined
         }
       />
+      )}
+    >
+      <div className="max-w-5xl space-y-8">
+      <BackButton onClick={() => navigate(-1)} />
+
+      {showBiosWarning && (
+        <BiosWarningBanner
+          message={`Missing BIOS: ${game!.consoleName} requires firmware files to play. ${missingBiosFiles.length > 0 ? missingBiosFiles.join(", ") + " not found." : ""}`}
+          isAdmin={isAdmin}
+          missingFiles={missingBiosFiles}
+        />
+      )}
 
       <ScrapeMatchModal
         gameId={game.id}
@@ -342,6 +346,7 @@ export function GameDetailPage() {
       )}
 
       {isPlayable && !isDemo && <GameActiveSharedSessions gameId={game.id} />}
-    </div>
+      </div>
+    </PageLayout>
   );
 }
