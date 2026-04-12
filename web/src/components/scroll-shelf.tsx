@@ -63,7 +63,7 @@ export function ScrollShelf({
 
   if (isLoading) {
     return (
-      <Section data-testid={`${testId}-skeleton`} className="p-5">
+      <Section data-testid={`${testId}-skeleton`} className="border-0 bg-white/[0.03] p-5">
         <div className="flex items-center gap-2 mb-1">
           {icon && <icon className="h-5 w-5 text-surface-400" />}
           <div className="h-7 w-60 rounded bg-surface-800 animate-pulse" />
@@ -85,7 +85,7 @@ export function ScrollShelf({
   if (isEmpty) return null;
 
   return (
-    <Section data-testid={testId} data-comp="ScrollShelf" className="group/shelf relative p-5">
+    <Section data-testid={testId} data-comp="ScrollShelf" className="group/shelf relative border-0 bg-white/[0.03] p-5">
       <TitledSection title={title} icon={icon} renderRight={headerRight}>
         {subtitle && <p className="text-sm text-surface-400 -mt-3 mb-4">{subtitle}</p>}
 
