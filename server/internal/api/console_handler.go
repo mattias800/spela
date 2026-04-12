@@ -476,8 +476,16 @@ func (h *ConsoleHandler) GetTopRated(c *gin.Context) {
 // SNES, Wii, 3DS). We deduplicate by igdb_game_id, preferring the console entry
 // that has a matching local library game so the card shows as "available".
 func (h *ConsoleHandler) GetTopRatedGlobal(c *gin.Context) {
+	// Only consider consoles that have at least one library game.
+	var libraryConsoleIDs []uint
+	h.DB.Model(&db.Game{}).Where("deleted_at IS NULL").Distinct("console_id").Pluck("console_id", &libraryConsoleIDs)
+
 	var all []db.TopRatedGame
-	h.DB.Order("total_rating desc").Find(&all)
+	if len(libraryConsoleIDs) == 0 {
+		c.JSON(http.StatusOK, []TopRatedGameResponse{})
+		return
+	}
+	h.DB.Where("console_id IN ?", libraryConsoleIDs).Order("total_rating desc").Find(&all)
 
 	// Build a set of (igdb_game_id → console_id) pairs that have a local game match,
 	// so we can prefer those entries during dedup.
@@ -487,7 +495,11 @@ func (h *ConsoleHandler) GetTopRatedGlobal(c *gin.Context) {
 			continue
 		}
 		var count int64
-		h.DB.Model(&db.Game{}).Where("LOWER(title) = LOWER(?) AND console_id = ?", tr.Name, tr.ConsoleID).Count(&count)
+		scraperID := fmt.Sprintf("igdb:%d", tr.IGDBGameID)
+		h.DB.Model(&db.Game{}).Where(
+			"(scraper_id = ? OR LOWER(title) = LOWER(?)) AND console_id = ?",
+			scraperID, tr.Name, tr.ConsoleID,
+		).Count(&count)
 		if count > 0 {
 			localConsoles[tr.IGDBGameID] = tr.ConsoleID
 		}
@@ -563,7 +575,7 @@ func (h *ConsoleHandler) getTopListByRating(c *gin.Context, ratingColumn string,
 				consoles.name AS console_name,
 				consoles.abbreviation AS console_abbr,
 				`+ratingColumn+` AS rating`).
-		Joins("JOIN games ON LOWER(games.title) = LOWER(top_rated_games.name) AND games.console_id = top_rated_games.console_id AND games.deleted_at IS NULL AND games.is_primary = true").
+		Joins("JOIN games ON (games.scraper_id = ('igdb:' || CAST(top_rated_games.igdb_game_id AS TEXT)) OR LOWER(games.title) = LOWER(top_rated_games.name)) AND games.console_id = top_rated_games.console_id AND games.deleted_at IS NULL AND games.is_primary = true").
 		Joins("JOIN consoles ON consoles.id = top_rated_games.console_id AND consoles.deleted_at IS NULL").
 		Where("top_rated_games.deleted_at IS NULL AND "+ratingFilter).
 		Where("consoles.abbreviation NOT IN ?", demoConsoleAbbreviations)
@@ -701,9 +713,14 @@ func (h *ConsoleHandler) buildTopRatedResponses(cached []db.TopRatedGame, rerank
 			ConsoleName: consoleName,
 		}
 
-		// Check for local game match by case-insensitive title, scoped to the same console
+		// Check for local game match — prefer scraper_id (stable IGDB FK),
+		// fall back to title match for games scraped before scraper_id existed.
 		var localGame db.Game
-		if err := h.DB.Where("LOWER(title) = LOWER(?) AND console_id = ?", tr.Name, tr.ConsoleID).First(&localGame).Error; err == nil {
+		scraperID := fmt.Sprintf("igdb:%d", tr.IGDBGameID)
+		if err := h.DB.Where(
+			"(scraper_id = ? OR LOWER(title) = LOWER(?)) AND console_id = ?",
+			scraperID, tr.Name, tr.ConsoleID,
+		).First(&localGame).Error; err == nil {
 			id := fmt.Sprintf("%d", localGame.ID)
 			resp.LocalGameId = &id
 			if localGame.CoverURL != "" {

@@ -934,6 +934,16 @@ func TestGetTopRatedGlobal_DeduplicatesSameGameAcrossConsoles(t *testing.T) {
 	require.NoError(t, database.Where("abbreviation = ?", "SNES").First(&snes).Error)
 	require.NoError(t, database.Where("abbreviation = ?", "GBA").First(&gba).Error)
 
+	// Create library games so the console filter includes both SNES and GBA.
+	database.Create(&db.Game{
+		ConsoleID: snes.ID, Title: "Some SNES Game",
+		FileName: "some.sfc", FilePath: "SNES/some.sfc",
+	})
+	database.Create(&db.Game{
+		ConsoleID: gba.ID, Title: "Some GBA Game",
+		FileName: "some.gba", FilePath: "GBA/some.gba",
+	})
+
 	// Insert the same game (same IGDB game ID) as top-rated on two consoles.
 	// This happens because IGDB lists "Super Metroid" on both SNES and GBA
 	// (or virtual console re-releases), and upsertTopRatedGames runs per-console.
