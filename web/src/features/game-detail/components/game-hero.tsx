@@ -252,8 +252,8 @@ export function GameHero({
               </div>
             </div>
 
-            {/* Action buttons */}
-            <div className="flex flex-wrap items-center gap-2">
+            {/* Action buttons + play stats */}
+            <div className="flex flex-wrap items-center gap-3">
               {game.playable ? (
                 <Button
                   variant="primary"
@@ -286,42 +286,42 @@ export function GameHero({
               )}
               <ActionsMenu items={actionsMenuItems} />
               {isScraping && (
-                <span className="flex items-center gap-1.5 text-sm text-brand-400 ml-1">
+                <span className="flex items-center gap-1.5 text-sm text-brand-400">
                   <RefreshCw className="h-4 w-4 animate-spin" />
                   Scraping…
                 </span>
               )}
-            </div>
-
-            {/* Play time + rating */}
-            <div className="flex flex-wrap items-center gap-4 text-sm text-white/60">
-              <span className="flex items-center gap-1">
+              <span className="flex items-center gap-1 text-sm text-white/60">
                 <Clock className="h-4 w-4" />
                 {game.totalPlayTime > 0
                   ? formatPlayTime(game.totalPlayTime)
                   : "Not played yet"}
               </span>
               {game.lastPlayedAt && (
-                <span className="flex items-center gap-1">
+                <span className="flex items-center gap-1 text-sm text-white/60">
                   <Calendar className="h-4 w-4" />
                   {formatRelativeTime(game.lastPlayedAt)}
                 </span>
               )}
-              <UserRating gameId={game.id} />
             </div>
           </div>
         </div>
       </div>
 
-      {/* Description + metadata below the banner */}
-      <div className="px-6 md:px-8 py-5 bg-surface-950 space-y-4">
-        {game.description && (
-          <p className="text-sm text-surface-300 leading-relaxed">
-            {game.description}
-          </p>
-        )}
+      {/* Rating + description + metadata below the banner */}
+      <div className="px-6 md:px-8 py-5 bg-surface-950">
+        <div className="flex gap-6">
+          <div className="flex-shrink-0">
+            <UserRating gameId={game.id} />
+          </div>
+          <div className="flex-1 min-w-0 space-y-4">
+            {game.description && (
+              <p className="text-sm text-surface-300 leading-relaxed">
+                {game.description}
+              </p>
+            )}
 
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
           {game.developer && (
             <MetaItem
               icon={Building2}
@@ -378,6 +378,8 @@ export function GameHero({
               href={`/games/${game.id}/achievements`}
             />
           )}
+            </div>
+          </div>
         </div>
       </div>
     </div>
