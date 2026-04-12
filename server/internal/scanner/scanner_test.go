@@ -36,6 +36,14 @@ func TestGameTitle(t *testing.T) {
 		{"Pokemon [J].gba", "Pokemon"},
 		{"Chrono Trigger (USA) [!].sfc", "Chrono Trigger"},
 		{"Final Fantasy VI.smc", "Final Fantasy VI"},
+		// No-Intro article-suffix convention: move article to front
+		{"Legend of Zelda, The - A Link to the Past (USA).sfc", "The Legend of Zelda - A Link to the Past"},
+		{"Legend of Zelda, The - Ocarina of Time (USA).z64", "The Legend of Zelda - Ocarina of Time"},
+		{"Legend of Zelda, The - The Minish Cap (USA).gba", "The Legend of Zelda - The Minish Cap"},
+		{"Boy and His Blob, A - Trouble on Blobolonia (USA).nes", "A Boy and His Blob - Trouble on Blobolonia"},
+		// Article at end (no subtitle)
+		{"Addams Family, The (USA).sfc", "The Addams Family"},
+		{"Boy and His Blob, A (USA).nes", "A Boy and His Blob"},
 	}
 
 	for _, tt := range tests {

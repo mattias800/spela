@@ -130,6 +130,23 @@ func TestNormalizeName(t *testing.T) {
 			expected: "legend of zelda",
 		},
 
+		// Articles before subtitle separator (No-Intro mid-string convention)
+		{
+			name:     "strips mid-string article before dash subtitle",
+			input:    "Legend of Zelda, The - A Link to the Past (USA).sfc",
+			expected: "legend of zelda a link to the past",
+		},
+		{
+			name:     "mid-string article matches IGDB leading-article form",
+			input:    "Legend of Zelda, The - A Link to the Past",
+			expected: normalizeName("The Legend of Zelda: A Link to the Past"),
+		},
+		{
+			name:     "mid-string A article before subtitle",
+			input:    "Boy and His Blob, A - Trouble on Blobolonia (USA)",
+			expected: "boy and his blob trouble on blobolonia",
+		},
+
 		// Edge cases
 		{
 			name:     "empty string",

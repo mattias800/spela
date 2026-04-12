@@ -52,8 +52,18 @@ func normalizeName(name string) string {
 	// Trim whitespace left over from stripped tags before checking articles
 	name = strings.TrimSpace(name)
 
-	// 3. Handle articles: trailing ", The" / ", A" / ", An"
+	// 3. Handle articles: No-Intro puts them after the main title with a comma,
+	//    either at the end ("Addams Family, The") or before a subtitle separator
+	//    ("Legend of Zelda, The - A Link to the Past"). Strip the article in
+	//    both positions so the normalized form matches IGDB's leading-article
+	//    convention ("The Legend of Zelda: A Link to the Past").
 	for _, article := range []string{", The", ", A", ", An"} {
+		// Mid-string: "Name, The - Subtitle" → "Name - Subtitle"
+		if idx := strings.Index(name, article+" - "); idx >= 0 {
+			name = name[:idx] + " - " + name[idx+len(article)+3:]
+			break
+		}
+		// End of string: "Name, The" → "Name"
 		if strings.HasSuffix(name, article) {
 			name = name[:len(name)-len(article)]
 			break
