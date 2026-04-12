@@ -281,18 +281,20 @@ export function GameHero({
                   Scraping…
                 </span>
               )}
-              <span className="flex items-center gap-1 text-sm text-white/60">
-                <Clock className="h-4 w-4" />
-                {game.totalPlayTime > 0
-                  ? formatPlayTime(game.totalPlayTime)
-                  : "Not played yet"}
-              </span>
-              {game.lastPlayedAt && (
-                <span className="flex items-center gap-1 text-sm text-white/60">
-                  <Calendar className="h-4 w-4" />
-                  {formatRelativeTime(game.lastPlayedAt)}
+              <div className="flex items-center gap-3 text-sm text-white/60">
+                <span className="flex items-center gap-1">
+                  <Clock className="h-4 w-4" />
+                  {game.totalPlayTime > 0
+                    ? formatPlayTime(game.totalPlayTime)
+                    : "Not played yet"}
                 </span>
-              )}
+                {game.lastPlayedAt && (
+                  <span className="flex items-center gap-1">
+                    <Calendar className="h-4 w-4" />
+                    {formatRelativeTime(game.lastPlayedAt)}
+                  </span>
+                )}
+              </div>
             </div>
           </div>
         </div>
