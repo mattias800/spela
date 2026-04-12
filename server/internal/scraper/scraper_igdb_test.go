@@ -1367,3 +1367,130 @@ func TestScrapeGame_SNESJapanOnlyGame_SearchesSuperFamicomPlatform(t *testing.T)
 	assert.Equal(t, "igdb:3651", game.ScraperID)
 }
 
+// TestScrapeGame_AlternativeNameAndSeparatorVariant verifies that the IGDB
+// scraper finds games whose primary IGDB name differs from the ROM filename
+// AND where the separator style (` - ` vs ` : `) doesn't match.
+//
+// Real example: "Broken Sword - The Shadow of the Templars (USA).bin" on PSX.
+// IGDB stores this game at id 616 with primary name "Circle of Blood" (the
+// original US release title) and ships "Broken Sword: The Shadow of the
+// Templars" as an entry in `alternative_names`. Two things have to work for
+// a match:
+//
+//  1. Query must check `alternative_names.name`, not just `name` — the
+//     primary name "Circle of Blood" bears no resemblance to the ROM
+//     filename so the current `name ~ "X"` clause returns zero.
+//  2. Query must normalize ` - ` ↔ ` : ` separators — No-Intro ROM names
+//     use dashes, IGDB uses colons, and the `~` operator is literal
+//     (no punctuation fuzzing).
+//
+// The mock IGDB server here returns the game stub only when the query body
+// contains both the `alternative_names.name ~` literal AND the colon
+// variant of the title — mimicking the real API's requirements.
+func TestScrapeGame_AlternativeNameAndSeparatorVariant(t *testing.T) {
+	tokenServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"access_token": "test-token",
+			"expires_in":   3600,
+			"token_type":   "bearer",
+		})
+	}))
+	defer tokenServer.Close()
+
+	var capturedQueries []string
+	igdbServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if !strings.HasSuffix(r.URL.Path, "/games") {
+			json.NewEncoder(w).Encode([]map[string]any{})
+			return
+		}
+
+		body, _ := io.ReadAll(r.Body)
+		query := string(body)
+		capturedQueries = append(capturedQueries, query)
+
+		// Only return the game if the query both:
+		//   (a) references alternative_names.name, and
+		//   (b) contains the colon-separator variant of the title.
+		hasAltName := strings.Contains(query, "alternative_names.name")
+		hasColonVariant := strings.Contains(query, "Broken Sword: The Shadow of the Templars")
+		if !hasAltName || !hasColonVariant {
+			json.NewEncoder(w).Encode([]igdb.Game{})
+			return
+		}
+
+		json.NewEncoder(w).Encode([]igdb.Game{
+			{
+				ID:               616,
+				Name:             "Circle of Blood",
+				Summary:          "A point-and-click adventure game.",
+				AggregatedRating: 82.5,
+				TotalRating:      82.5,
+				TotalRatingCount: 35,
+			},
+		})
+	}))
+	defer igdbServer.Close()
+
+	origTokenURL := igdb.TwitchTokenURLForTest()
+	origAPIBase := igdb.IGDBAPIBaseForTest()
+	igdb.SetTwitchTokenURLForTest(tokenServer.URL)
+	igdb.SetIGDBAPIBaseForTest(igdbServer.URL + "/v4")
+	defer func() {
+		igdb.SetTwitchTokenURLForTest(origTokenURL)
+		igdb.SetIGDBAPIBaseForTest(origAPIBase)
+	}()
+
+	database := setupTestDB(t)
+	store := setupTestStorage(t)
+
+	console := db.Console{Abbreviation: "PSX", Name: "Sony PlayStation"}
+	require.NoError(t, database.Create(&console).Error)
+
+	game := db.Game{
+		ConsoleID: console.ID,
+		Console:   console,
+		Title:     "Broken Sword - The Shadow of the Templars (USA)",
+		FileName:  "Broken Sword - The Shadow of the Templars (USA).bin",
+	}
+	require.NoError(t, database.Create(&game).Error)
+
+	igdbClient := igdb.NewClient("test-id", "test-secret")
+	igdbClient.HTTPClient = &http.Client{Timeout: 5 * time.Second}
+
+	s := &Scraper{
+		DB:         database,
+		Storage:    store,
+		HTTPClient: &http.Client{Timeout: 5 * time.Second},
+		IGDBClient: igdbClient,
+		DATCache:   NewDATCache(t.TempDir(), &http.Client{Timeout: 5 * time.Second}),
+		cache:      &nameCache{entries: make(map[string][]nameEntry)},
+	}
+
+	err := s.ScrapeGame(&game)
+	require.NoError(t, err)
+
+	foundAlt := false
+	foundColon := false
+	for _, q := range capturedQueries {
+		if strings.Contains(q, "alternative_names.name") {
+			foundAlt = true
+		}
+		if strings.Contains(q, "Broken Sword: The Shadow of the Templars") {
+			foundColon = true
+		}
+	}
+	assert.True(t, foundAlt,
+		"scraper did not issue any IGDB /games query that filters on alternative_names.name; captured: %v",
+		capturedQueries)
+	assert.True(t, foundColon,
+		"scraper did not include the colon-separator variant of the title in any query; captured: %v",
+		capturedQueries)
+
+	assert.NotEmpty(t, game.Description,
+		"description should be populated from the Broken Sword response — "+
+			"empty means neither the alt-name filter nor the separator variant hit")
+	assert.Greater(t, game.IGDBCriticsRating, 0.0,
+		"IGDB rating should be populated from the Broken Sword response")
+	assert.Equal(t, "igdb:616", game.ScraperID)
+}
+
