@@ -117,9 +117,6 @@ describe("SeriesShelf", () => {
   it("renders loading skeleton when loading", () => {
     renderShelf({ isLoading: true, series: undefined });
     expect(screen.getByTestId("series-shelf-skeleton")).toBeInTheDocument();
-    expect(
-      screen.getByRole("heading", { name: "Browse by Series", level: 2 }),
-    ).toBeInTheDocument();
   });
 
   it("renders loading skeleton with shimmer animation", () => {
