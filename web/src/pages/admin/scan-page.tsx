@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
+import { PageLayout, SectionList } from "@/components/layout";
 import {
   ScanSearch,
   FolderSearch,
@@ -452,7 +453,8 @@ function ScrapeCard() {
 
 export function AdminScanPage() {
   return (
-    <div className="space-y-6 max-w-3xl">
+    <PageLayout>
+      <SectionList className="max-w-3xl">
       <div>
         <h1 className="text-3xl font-bold text-surface-100">Library Scan</h1>
         <p className="mt-1 text-surface-400">
@@ -466,6 +468,7 @@ export function AdminScanPage() {
         <ScanCard />
         <ScrapeCard />
       </div>
-    </div>
+    </SectionList>
+    </PageLayout>
   );
 }

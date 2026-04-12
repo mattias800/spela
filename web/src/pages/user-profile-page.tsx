@@ -1,4 +1,5 @@
 import { useParams, Link } from "react-router-dom";
+import { PageLayout, SectionList } from "@/components/layout";
 import { User, Clock, Calendar, Gamepad2, Heart, Trophy } from "lucide-react";
 import { usePublicProfile } from "@/hooks/use-public-profile";
 import { useUserPlayHeatmap } from "@/hooks/use-play-heatmap";
@@ -102,9 +103,11 @@ export function UserProfilePage() {
 
   if (isLoading) {
     return (
-      <div className="max-w-4xl mx-auto space-y-8">
-        <ProfileSkeleton />
-      </div>
+      <PageLayout>
+        <SectionList className="max-w-4xl mx-auto">
+          <ProfileSkeleton />
+        </SectionList>
+      </PageLayout>
     );
   }
 
@@ -119,7 +122,8 @@ export function UserProfilePage() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto space-y-8">
+    <PageLayout>
+      <SectionList className="max-w-4xl mx-auto">
       {/* Header */}
       <div className="flex items-start gap-6">
         <div className="relative">
@@ -224,6 +228,7 @@ export function UserProfilePage() {
           </ProfileSection>
         )}
       </div>
-    </div>
+    </SectionList>
+    </PageLayout>
   );
 }

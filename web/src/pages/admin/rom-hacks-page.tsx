@@ -1,5 +1,6 @@
 import { useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
+import { PageLayout, SectionList } from "@/components/layout";
 import { Loader2, Puzzle } from "lucide-react";
 import { Button, Input } from "@/components/ui";
 import { useToast } from "@/components/ui";
@@ -65,7 +66,8 @@ export function RomHacksPage() {
   );
 
   return (
-    <div className="space-y-6 max-w-2xl">
+    <PageLayout>
+      <SectionList className="max-w-2xl">
       <div>
         <h1 className="text-3xl font-bold text-surface-100">Add ROM Hack</h1>
         <p className="mt-1 text-surface-400">
@@ -220,6 +222,7 @@ export function RomHacksPage() {
           {createRomHack.isPending ? "Applying patch..." : "Create ROM Hack"}
         </Button>
       </form>
-    </div>
+    </SectionList>
+    </PageLayout>
   );
 }

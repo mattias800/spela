@@ -1,4 +1,5 @@
 import { Gamepad2, Loader2, CheckCircle, Download } from "lucide-react";
+import { PageLayout, SectionList } from "@/components/layout";
 import { Button, Section } from "@/components/ui";
 import { useCheatStats, useImportCheats } from "@/hooks/use-cheats";
 
@@ -8,7 +9,8 @@ export function AdminCheatsPage() {
   const importResult = importCheats.data;
 
   return (
-    <div className="space-y-6 max-w-3xl">
+    <PageLayout>
+      <SectionList className="max-w-3xl">
       <div>
         <h1 className="text-3xl font-bold text-surface-100">Cheats</h1>
         <p className="mt-1 text-surface-400">
@@ -133,6 +135,7 @@ export function AdminCheatsPage() {
           </div>
         </Section>
       </div>
-    </div>
+    </SectionList>
+    </PageLayout>
   );
 }

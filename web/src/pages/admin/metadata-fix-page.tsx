@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { PageLayout, SectionList } from "@/components/layout";
 import {
   FileSearch,
   ScanSearch,
@@ -87,10 +88,12 @@ export function MetadataFixPage() {
 
   if (isLoading) {
     return (
-      <div className="space-y-6 max-w-5xl">
-        <div className="h-8 w-48 rounded-lg bg-surface-800 animate-pulse" />
-        <div className="h-96 rounded-2xl bg-surface-900 animate-pulse" />
-      </div>
+      <PageLayout>
+        <SectionList className="max-w-5xl">
+          <div className="h-8 w-48 rounded-lg bg-surface-800 animate-pulse" />
+          <div className="h-96 rounded-2xl bg-surface-900 animate-pulse" />
+        </SectionList>
+      </PageLayout>
     );
   }
 
@@ -120,7 +123,8 @@ export function MetadataFixPage() {
         : incomplete;
 
   return (
-    <div className="space-y-6 max-w-5xl">
+    <PageLayout>
+      <SectionList className="max-w-5xl">
       <div>
         <h1 className="text-3xl font-bold text-surface-100">
           Metadata Review
@@ -180,6 +184,7 @@ export function MetadataFixPage() {
           </div>
         </Section>
       )}
-    </div>
+    </SectionList>
+    </PageLayout>
   );
 }

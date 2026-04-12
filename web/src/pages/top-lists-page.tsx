@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
+import { PageLayout, SectionList } from "@/components/layout";
 import { Trophy, Star, Clock, Gamepad2, Users, Newspaper } from "lucide-react";
 import { RatingDisplay } from "@/components/rating-display";
 import { Skeleton, EmptyState } from "@/components/ui";
@@ -197,7 +198,8 @@ export function TopListsPage() {
   ];
 
   return (
-    <div className="max-w-5xl space-y-10">
+    <PageLayout>
+      <SectionList className="max-w-5xl">
       <div>
         <h1 className="text-3xl font-bold text-surface-100 flex items-center gap-3">
           <Trophy className="h-8 w-8 text-brand-400" />
@@ -291,6 +293,7 @@ export function TopListsPage() {
           )}
         </section>
       )}
-    </div>
+    </SectionList>
+    </PageLayout>
   );
 }

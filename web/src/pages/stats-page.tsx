@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import { BarChart3, Calendar, Trophy, Users } from "lucide-react";
+import { PageLayout, SectionList } from "@/components/layout";
 import { Badge, Skeleton, EmptyState } from "@/components/ui";
 import { PlayerAvatar } from "@/components/player-avatar";
 import { PlayHeatmap } from "@/components/play-heatmap";
@@ -118,7 +119,8 @@ export function StatsPage() {
     (!mostActive?.players || mostActive.players.length === 0);
 
   return (
-    <div className="max-w-5xl space-y-10">
+    <PageLayout>
+      <SectionList className="max-w-5xl">
       <div>
         <h1 className="text-3xl font-bold text-surface-100 flex items-center gap-3">
           <BarChart3 className="h-8 w-8 text-brand-400" />
@@ -267,6 +269,7 @@ export function StatsPage() {
           )}
         </section>
       )}
-    </div>
+    </SectionList>
+    </PageLayout>
   );
 }

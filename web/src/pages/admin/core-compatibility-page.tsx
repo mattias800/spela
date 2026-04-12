@@ -1,4 +1,5 @@
 import { AlertTriangle, CheckCircle2, Cpu } from "lucide-react";
+import { PageLayout, SectionList } from "@/components/layout";
 import { Section, Skeleton, Badge } from "@/components/ui";
 import { useCoreCompatibility } from "@/hooks/use-admin";
 
@@ -7,10 +8,12 @@ export function CoreCompatibilityPage() {
 
   if (isLoading) {
     return (
-      <div className="space-y-6 max-w-3xl">
-        <Skeleton className="h-8 w-48" />
-        <Skeleton className="h-64 w-full rounded-2xl" />
-      </div>
+      <PageLayout>
+        <SectionList className="max-w-3xl">
+          <Skeleton className="h-8 w-48" />
+          <Skeleton className="h-64 w-full rounded-2xl" />
+        </SectionList>
+      </PageLayout>
     );
   }
 
@@ -18,7 +21,8 @@ export function CoreCompatibilityPage() {
   const mismatchCount = consoles.filter((c) => !c.matched).length;
 
   return (
-    <div className="space-y-6 max-w-3xl">
+    <PageLayout>
+      <SectionList className="max-w-3xl">
       <div>
         <h1 className="text-3xl font-bold text-surface-100">
           Core Compatibility
@@ -120,6 +124,7 @@ export function CoreCompatibilityPage() {
           )}
         </div>
       </Section>
-    </div>
+    </SectionList>
+    </PageLayout>
   );
 }
