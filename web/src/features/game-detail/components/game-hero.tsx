@@ -37,7 +37,6 @@ import type { Game } from "@/types/api";
 
 interface GameHeroProps {
   game: Game;
-  aspectRatio?: number;
   canPlayInBrowser: boolean;
   isAdmin: boolean;
   isFavorite: boolean;
@@ -63,7 +62,6 @@ interface GameHeroProps {
 
 export function GameHero({
   game,
-  aspectRatio,
   canPlayInBrowser,
   isAdmin,
   isFavorite,
@@ -190,9 +188,7 @@ export function GameHero({
           {/* Cover art */}
           <div className="flex-shrink-0 w-36 md:w-48 self-end">
             <div className="rounded-xl overflow-hidden bg-surface-900/80 border border-white/10 shadow-2xl backdrop-blur-sm">
-              <div style={{ aspectRatio: aspectRatio ?? 3 / 4 }}>
-                <CoverImage src={game.coverUrl} alt={game.title} className="w-full h-full" />
-              </div>
+              <CoverImage src={game.coverUrl} alt={game.title} className="w-full h-auto" />
             </div>
             <div className="flex justify-center mt-2">
               <Button
@@ -210,7 +206,6 @@ export function GameHero({
               open={showCoverModal}
               onClose={() => setShowCoverModal(false)}
               gameId={game.id}
-              aspectRatio={aspectRatio}
             />
           </div>
 

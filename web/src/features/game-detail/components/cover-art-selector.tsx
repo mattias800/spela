@@ -9,14 +9,12 @@ import { cn } from "@/lib/cn";
 
 interface CoverArtSelectorProps {
   gameId: string;
-  aspectRatio?: number;
   open: boolean;
   onClose: () => void;
 }
 
 export function CoverArtSelector({
   gameId,
-  aspectRatio,
   open,
   onClose,
 }: CoverArtSelectorProps) {
@@ -78,14 +76,11 @@ export function CoverArtSelector({
                 setCover.isPending && "opacity-50 cursor-not-allowed",
               )}
             >
-              <div
-                className="w-24 md:w-32"
-                style={{ aspectRatio: aspectRatio ?? 3 / 4 }}
-              >
+              <div className="w-24 md:w-32">
                 <img
                   src={cover.url}
                   alt={`${label} cover`}
-                  className="h-full w-full object-cover"
+                  className="w-full h-auto"
                   loading="lazy"
                 />
               </div>
