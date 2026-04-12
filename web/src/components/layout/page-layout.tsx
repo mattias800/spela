@@ -47,6 +47,7 @@ export function PageLayout({
             <div className="absolute top-4 left-4 z-20">
               <BackButton
                 onClick={handleBack}
+                data-testid="page-back-button"
                 className="bg-black/40 backdrop-blur-sm text-white/80 hover:text-white hover:bg-black/60"
               >
                 {backLabel}
@@ -58,7 +59,7 @@ export function PageLayout({
       <div className="p-6">
         {backButtonVariant === "standard" && (
           <div className="mb-6">
-            <BackButton onClick={handleBack}>{backLabel}</BackButton>
+            <BackButton onClick={handleBack} data-testid="page-back-button">{backLabel}</BackButton>
           </div>
         )}
         {children}

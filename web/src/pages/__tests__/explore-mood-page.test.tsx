@@ -162,7 +162,7 @@ describe("ExploreMoodPage", () => {
   it("back button links to explore", () => {
     renderPage();
     expect(
-      screen.getByRole("button", { name: /explore/i }),
+      screen.getByTestId("page-back-button"),
     ).toBeInTheDocument();
   });
 

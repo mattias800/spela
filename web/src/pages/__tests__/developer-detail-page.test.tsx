@@ -132,7 +132,7 @@ describe("DeveloperDetailPage", () => {
   it("renders back button", () => {
     renderPage();
     expect(
-      screen.getByRole("button", { name: /back/i }),
+      screen.getByTestId("page-back-button"),
     ).toBeInTheDocument();
   });
 
