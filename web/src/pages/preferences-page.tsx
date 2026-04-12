@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
+import { PageLayout, SectionList } from "@/components/layout";
 import { ShaderPreviewModal } from "@/components/shader-preview-modal";
 import { ThemeCard } from "@/features/preferences/components/theme-card";
 import { EmulationSettingsCard } from "@/features/preferences/components/emulation-settings-card";
@@ -127,7 +128,8 @@ export function PreferencesPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <PageLayout>
+      <SectionList>
       <div>
         <h1 className="text-3xl font-bold text-surface-100">Preferences</h1>
         <p className="mt-1 text-surface-400">
@@ -240,6 +242,7 @@ export function PreferencesPage() {
         }
         shader={previewModal?.shader ?? "none"}
       />
-    </div>
+    </SectionList>
+    </PageLayout>
   );
 }

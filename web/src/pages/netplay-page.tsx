@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Gamepad2, Plus } from "lucide-react";
+import { PageLayout, SectionList } from "@/components/layout";
 import {
   Button,
   Input,
@@ -70,7 +71,8 @@ export function NetplayPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <PageLayout>
+      <SectionList>
       <div className="flex items-start justify-between">
         <div>
           <h1 className="text-3xl font-bold text-surface-100">Netplay</h1>
@@ -156,6 +158,7 @@ export function NetplayPage() {
           navigate(`/netplay/${sessionId}`);
         }}
       />
-    </div>
+    </SectionList>
+    </PageLayout>
   );
 }

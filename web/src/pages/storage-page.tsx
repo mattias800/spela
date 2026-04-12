@@ -5,6 +5,7 @@ import {
   Skeleton,
   EmptyState,
 } from "@/components/ui";
+import { PageLayout, SectionList } from "@/components/layout";
 import { useToast } from "@/components/ui";
 import { useStorage, useCompactSaves } from "@/hooks/use-storage";
 import { formatFileSize } from "@/lib/format";
@@ -66,33 +67,37 @@ export function StoragePage() {
 
   if (isLoading) {
     return (
-      <div className="space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold text-surface-100">Storage</h1>
-          <p className="mt-1 text-surface-400">
-            Manage your save state storage.
-          </p>
-        </div>
-        <StorageSkeleton />
-      </div>
+      <PageLayout>
+        <SectionList>
+          <div>
+            <h1 className="text-3xl font-bold text-surface-100">Storage</h1>
+            <p className="mt-1 text-surface-400">
+              Manage your save state storage.
+            </p>
+          </div>
+          <StorageSkeleton />
+        </SectionList>
+      </PageLayout>
     );
   }
 
   if (error || !storage) {
     return (
-      <div className="space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold text-surface-100">Storage</h1>
-          <p className="mt-1 text-surface-400">
-            Manage your save state storage.
-          </p>
-        </div>
-        <EmptyState
-          icon={HardDrive}
-          title="Unable to load storage info"
-          description="Something went wrong while fetching your storage data. Please try again later."
-        />
-      </div>
+      <PageLayout>
+        <SectionList>
+          <div>
+            <h1 className="text-3xl font-bold text-surface-100">Storage</h1>
+            <p className="mt-1 text-surface-400">
+              Manage your save state storage.
+            </p>
+          </div>
+          <EmptyState
+            icon={HardDrive}
+            title="Unable to load storage info"
+            description="Something went wrong while fetching your storage data. Please try again later."
+          />
+        </SectionList>
+      </PageLayout>
     );
   }
 
@@ -103,7 +108,8 @@ export function StoragePage() {
   const hasSaves = totalSaves > 0;
 
   return (
-    <div className="space-y-6">
+    <PageLayout>
+      <SectionList>
       <div>
         <h1 className="text-3xl font-bold text-surface-100">Storage</h1>
         <p className="mt-1 text-surface-400">
@@ -165,6 +171,7 @@ export function StoragePage() {
           )}
         </div>
       </Section>
-    </div>
+    </SectionList>
+    </PageLayout>
   );
 }

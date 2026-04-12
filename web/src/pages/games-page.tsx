@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Library } from "lucide-react";
+import { PageLayout, SectionList } from "@/components/layout";
 import { GameCard } from "@/components/game-card";
 import { GameGrid } from "@/components/game-grid";
 import { GameCardSkeleton, GameListRowSkeleton, EmptyState } from "@/components/ui";
@@ -147,7 +148,8 @@ export function GamesPage() {
   const games = data?.data ?? [];
 
   return (
-    <div className="space-y-6">
+    <PageLayout>
+      <SectionList>
       <div>
         <h1 className="text-3xl font-bold text-surface-100">Games</h1>
         <p className="mt-1 text-surface-400">
@@ -258,6 +260,7 @@ export function GamesPage() {
           onPageChange={(page) => setFilters((f) => ({ ...f, page }))}
         />
       )}
-    </div>
+    </SectionList>
+    </PageLayout>
   );
 }

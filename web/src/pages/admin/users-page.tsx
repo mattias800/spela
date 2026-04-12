@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Plus } from "lucide-react";
+import { PageLayout, SectionList } from "@/components/layout";
 import { Button, StateTabNav, StateTabItem } from "@/components/ui";
 import {
   useAdminUsers,
@@ -43,7 +44,8 @@ export function AdminUsersPage() {
   const deletedCount = deletedUsers?.length ?? 0;
 
   return (
-    <div className="space-y-6">
+    <PageLayout>
+      <SectionList>
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-surface-100">
@@ -119,6 +121,7 @@ export function AdminUsersPage() {
           onClose={() => setDevicesUser(null)}
         />
       )}
-    </div>
+    </SectionList>
+    </PageLayout>
   );
 }

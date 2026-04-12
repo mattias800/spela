@@ -1,6 +1,7 @@
 import { useCallback, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { AlertTriangle } from "lucide-react";
+import { PageLayout, SectionList } from "@/components/layout";
 import { Button, Section } from "@/components/ui";
 import { Pagination } from "@/components/pagination";
 import {
@@ -72,7 +73,8 @@ export function AdminSecurityEventsPage() {
   );
 
   return (
-    <div className="space-y-6">
+    <PageLayout>
+      <SectionList>
       <div>
         <h1 className="text-3xl font-bold text-surface-100">Security Events</h1>
         <p className="mt-1 text-surface-400">
@@ -189,6 +191,7 @@ export function AdminSecurityEventsPage() {
           setDetailEvent(null);
         }}
       />
-    </div>
+    </SectionList>
+    </PageLayout>
   );
 }
