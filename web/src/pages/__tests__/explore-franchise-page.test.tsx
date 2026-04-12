@@ -210,10 +210,10 @@ describe("ExploreFranchisePage", () => {
     expect(link).toHaveAttribute("href", "/games/game-1");
   });
 
-  it("renders not-in-library games as dimmed", () => {
+  it("renders not-in-library games without dimming", () => {
     renderPage();
-    const dimmedGame = screen.getByTestId("franchise-game-4");
-    expect(dimmedGame).toHaveClass("opacity-50");
+    const notInLibraryGame = screen.getByTestId("franchise-game-4");
+    expect(notInLibraryGame).not.toHaveClass("opacity-50");
   });
 
   it("shows not in library text for games not in library", () => {
