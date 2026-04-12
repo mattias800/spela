@@ -13,7 +13,7 @@ import { Link } from "react-router-dom";
 import { GameCard } from "@/components/game-card";
 import { ScrollShelf } from "@/components/scroll-shelf";
 import { CAROUSEL_CARD_HEIGHT } from "@/lib/carousel-constants";
-import { Badge, GameCardSkeleton, Skeleton, EmptyState, TitledSection } from "@/components/ui";
+import { Badge, Skeleton, EmptyState, TitledSection } from "@/components/ui";
 import { PersonalStatsCard } from "@/features/dashboard/components/personal-stats-card";
 import {
   useRecentGames,
@@ -34,7 +34,7 @@ import { OnlineUsers } from "@/features/social/components/online-users";
 import { ChallengeCard } from "@/features/challenges/components/challenge-card";
 import { useChallenges } from "@/hooks/use-challenges";
 import { formatRelativeTime } from "@/lib/format";
-import type { Game, RecentAchievement } from "@/types/api";
+import type { RecentAchievement } from "@/types/api";
 
 
 function RecentAchievementsSkeleton() {
