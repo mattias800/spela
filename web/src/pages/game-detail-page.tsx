@@ -46,6 +46,19 @@ import { TimeToBeatCard } from "@/features/game-detail/components/time-to-beat-c
 import { GameVariantsSection } from "@/features/game-detail/components/game-variants-section";
 import { BasedOnLink } from "@/features/game-detail/components/based-on-link";
 import { StandaloneRomHacksSection } from "@/features/game-detail/components/standalone-rom-hacks-section";
+import { UserRating } from "@/features/game-detail/components/user-rating";
+import { MetaItem } from "@/components/meta-item";
+import {
+  Building2,
+  Calendar,
+  Star,
+  Users,
+  HardDrive,
+  Disc,
+  Trophy,
+  Award,
+} from "lucide-react";
+import { formatFileSize } from "@/lib/format";
 import { api } from "@/lib/api-client";
 import type { Collection } from "@/types/api";
 
@@ -205,7 +218,6 @@ export function GameDetailPage() {
         achievementCount={achievementCount}
         achievementUnlocked={achievementUnlocked}
         biosMissing={showBiosWarning}
-        isDemo={isDemo}
         onPlay={() => navigate(`/games/${game.id}/play/${sessions && sessions.length > 0 ? sessions[0].id : "new"}`)}
         onScrape={() => scrapeGame.mutate(game.id)}
         onRefreshAchievements={() => refreshAchievements.mutate(game.id)}
@@ -239,6 +251,78 @@ export function GameDetailPage() {
           missingFiles={missingBiosFiles}
         />
       )}
+
+      {/* Rating + description + metadata */}
+      <div className="flex gap-6">
+        <div className="flex-shrink-0">
+          <UserRating gameId={game.id} />
+        </div>
+        <div className="flex-1 min-w-0 space-y-4">
+          {game.description && (
+            <p className="text-sm text-surface-300 leading-relaxed">
+              {game.description}
+            </p>
+          )}
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+            {game.developer && (
+              <MetaItem
+                icon={Building2}
+                label={isDemo ? "Group" : "Developer"}
+                value={game.developer}
+                href={isDemo ? undefined : `/explore/developers/${encodeURIComponent(game.developer)}`}
+              />
+            )}
+            {!isDemo && game.publisher && (
+              <MetaItem
+                icon={Building2}
+                label="Publisher"
+                value={game.publisher}
+                href={`/explore/publishers/${encodeURIComponent(game.publisher)}`}
+              />
+            )}
+            {game.releaseDate && (
+              <MetaItem
+                icon={Calendar}
+                label={isDemo ? "Year" : "Released"}
+                value={game.releaseDate}
+              />
+            )}
+            {game.genre && (
+              <MetaItem icon={Star} label={isDemo ? "Type" : "Genre"} value={game.genre} />
+            )}
+            {isDemo && game.partyInfo && (
+              <MetaItem icon={Award} label="Party" value={game.partyInfo} />
+            )}
+            {!isDemo && game.players != null && (
+              <MetaItem icon={Users} label="Players" value={`${game.players}`} />
+            )}
+            <MetaItem
+              icon={HardDrive}
+              label="Size"
+              value={formatFileSize(game.fileSize)}
+            />
+            {game.discCount > 1 && (
+              <MetaItem
+                icon={Disc}
+                label="Discs"
+                value={`${game.discCount}`}
+              />
+            )}
+            {achievementCount != null && achievementCount > 0 && (
+              <MetaItem
+                icon={Trophy}
+                label="Achievements"
+                value={
+                  achievementUnlocked != null
+                    ? `${achievementUnlocked} / ${achievementCount}`
+                    : `${achievementCount}`
+                }
+                href={`/games/${game.id}/achievements`}
+              />
+            )}
+          </div>
+        </div>
+      </div>
 
       <ScrapeMatchModal
         gameId={game.id}

@@ -3,11 +3,7 @@ import { Link } from "react-router-dom";
 import {
   Heart,
   Calendar,
-  Users,
-  Building2,
   Star,
-  HardDrive,
-  Disc,
   RefreshCw,
   Play,
   Trophy,
@@ -18,21 +14,17 @@ import {
   Download,
   Monitor,
   Replace,
-  Award,
 } from "lucide-react";
 import { CoverImage } from "@/components/cover-image";
 import { Button, Badge, ActionsMenu } from "@/components/ui";
 import { ConsoleBadge } from "@/components/console-badge";
 import { VerificationBadge } from "./verification-badge";
 import { CoverArtSelector } from "./cover-art-selector";
-import { MetaItem } from "@/components/meta-item";
 import {
-  formatFileSize,
   formatPlayTime,
   formatRelativeTime,
 } from "@/lib/format";
 import { cn } from "@/lib/cn";
-import { UserRating } from "./user-rating";
 import type { Game } from "@/types/api";
 
 interface GameHeroProps {
@@ -48,7 +40,6 @@ interface GameHeroProps {
   achievementCount?: number;
   achievementUnlocked?: number;
   biosMissing?: boolean;
-  isDemo?: boolean;
   onPlay: () => void;
   onScrape: () => void;
   onRefreshAchievements?: () => void;
@@ -73,7 +64,6 @@ export function GameHero({
   achievementCount,
   achievementUnlocked,
   biosMissing,
-  isDemo,
   onPlay,
   onScrape,
   onRefreshAchievements,
@@ -308,80 +298,6 @@ export function GameHero({
         </div>
       </div>
 
-      {/* Rating + description + metadata below the banner */}
-      <div className="px-6 md:px-8 py-5 bg-surface-950">
-        <div className="flex gap-6">
-          <div className="flex-shrink-0">
-            <UserRating gameId={game.id} />
-          </div>
-          <div className="flex-1 min-w-0 space-y-4">
-            {game.description && (
-              <p className="text-sm text-surface-300 leading-relaxed">
-                {game.description}
-              </p>
-            )}
-
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-          {game.developer && (
-            <MetaItem
-              icon={Building2}
-              label={isDemo ? "Group" : "Developer"}
-              value={game.developer}
-              href={isDemo ? undefined : `/explore/developers/${encodeURIComponent(game.developer)}`}
-            />
-          )}
-          {!isDemo && game.publisher && (
-            <MetaItem
-              icon={Building2}
-              label="Publisher"
-              value={game.publisher}
-              href={`/explore/publishers/${encodeURIComponent(game.publisher)}`}
-            />
-          )}
-          {game.releaseDate && (
-            <MetaItem
-              icon={Calendar}
-              label={isDemo ? "Year" : "Released"}
-              value={game.releaseDate}
-            />
-          )}
-          {game.genre && (
-            <MetaItem icon={Star} label={isDemo ? "Type" : "Genre"} value={game.genre} />
-          )}
-          {isDemo && game.partyInfo && (
-            <MetaItem icon={Award} label="Party" value={game.partyInfo} />
-          )}
-          {!isDemo && game.players != null && (
-            <MetaItem icon={Users} label="Players" value={`${game.players}`} />
-          )}
-          <MetaItem
-            icon={HardDrive}
-            label="Size"
-            value={formatFileSize(game.fileSize)}
-          />
-          {game.discCount > 1 && (
-            <MetaItem
-              icon={Disc}
-              label="Discs"
-              value={`${game.discCount}`}
-            />
-          )}
-          {achievementCount != null && achievementCount > 0 && (
-            <MetaItem
-              icon={Trophy}
-              label="Achievements"
-              value={
-                achievementUnlocked != null
-                  ? `${achievementUnlocked} / ${achievementCount}`
-                  : `${achievementCount}`
-              }
-              href={`/games/${game.id}/achievements`}
-            />
-          )}
-            </div>
-          </div>
-        </div>
-      </div>
     </div>
   );
 }
