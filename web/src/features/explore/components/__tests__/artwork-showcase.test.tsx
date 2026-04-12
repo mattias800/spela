@@ -161,7 +161,7 @@ describe("ArtworkShowcase", () => {
   it("renders the scrollable list with label", () => {
     renderShowcase();
     expect(
-      screen.getByRole("list", { name: "Artwork showcase" }),
+      screen.getByRole("list", { name: "Artwork Showcase" }),
     ).toBeInTheDocument();
   });
 });
