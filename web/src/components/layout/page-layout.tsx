@@ -1,4 +1,5 @@
 import type { HTMLAttributes, ReactNode } from "react";
+import type { LucideIcon } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { BackButton } from "@/components/ui";
 
@@ -14,6 +15,12 @@ interface PageLayoutProps extends HTMLAttributes<HTMLDivElement> {
   backTo?: string;
   /** Label for the back button. Defaults to "Back". Example: "Explore", "Consoles". */
   backLabel?: string;
+  /** Page title rendered as an h1 in the padded content area. */
+  title?: string;
+  /** Subtitle rendered below the title. */
+  subtitle?: string;
+  /** Icon rendered next to the title. */
+  icon?: LucideIcon;
   children: ReactNode;
 }
 
@@ -32,6 +39,9 @@ export function PageLayout({
   backButtonVariant,
   backTo,
   backLabel,
+  title,
+  subtitle,
+  icon: Icon,
   children,
   ...rest
 }: PageLayoutProps) {
@@ -60,6 +70,17 @@ export function PageLayout({
         {backButtonVariant === "standard" && (
           <div className="mb-6">
             <BackButton onClick={handleBack} data-testid="page-back-button">{backLabel}</BackButton>
+          </div>
+        )}
+        {title && (
+          <div className="mb-8">
+            <h1 className="text-3xl font-bold text-surface-100 flex items-center gap-3">
+              {Icon && <Icon className="h-8 w-8 text-brand-400" />}
+              {title}
+            </h1>
+            {subtitle && (
+              <p className="mt-1 text-surface-400">{subtitle}</p>
+            )}
           </div>
         )}
         {children}
