@@ -68,7 +68,6 @@ describe("PlayersLikeYouShelf", () => {
 
     renderComponent({ games, similarUsersCount: 12 });
 
-    expect(screen.getByTestId("similar-users-count")).toBeInTheDocument();
     expect(screen.getByText("Based on 12 players with similar taste")).toBeInTheDocument();
   });
 
@@ -83,7 +82,7 @@ describe("PlayersLikeYouShelf", () => {
   it("shows skeleton when loading", () => {
     renderComponent({ isLoading: true });
 
-    expect(screen.getByTestId("players-like-you-skeleton")).toBeInTheDocument();
+    expect(screen.getByTestId("players-like-you-shelf-skeleton")).toBeInTheDocument();
     expect(screen.queryByTestId("players-like-you-shelf")).not.toBeInTheDocument();
   });
 
