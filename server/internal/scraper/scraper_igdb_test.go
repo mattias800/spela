@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"hash/crc32"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -1101,22 +1102,22 @@ func TestEarliestPlatformReleaseDate(t *testing.T) {
 	tests := []struct {
 		name       string
 		dates      []igdb.ReleaseDate
-		platformID int
-		want       int64
+		platformIDs []int
+		want        int64
 	}{
 		{
 			name:       "no dates",
 			dates:      nil,
-			platformID: 19,
-			want:       0,
+			platformIDs: []int{19},
+			want:        0,
 		},
 		{
 			name: "no matching platform",
 			dates: []igdb.ReleaseDate{
 				{Date: 500000000, Platform: &igdb.ReleasePlatform{ID: 18, Name: "NES"}},
 			},
-			platformID: 19,
-			want:       0,
+			platformIDs: []int{19},
+			want:        0,
 		},
 		{
 			name: "single matching platform",
@@ -1124,8 +1125,8 @@ func TestEarliestPlatformReleaseDate(t *testing.T) {
 				{Date: 500000000, Platform: &igdb.ReleasePlatform{ID: 18, Name: "NES"}},
 				{Date: 700000000, Platform: &igdb.ReleasePlatform{ID: 19, Name: "SNES"}},
 			},
-			platformID: 19,
-			want:       700000000,
+			platformIDs: []int{19},
+			want:        700000000,
 		},
 		{
 			name: "multiple regions same platform picks earliest",
@@ -1134,8 +1135,8 @@ func TestEarliestPlatformReleaseDate(t *testing.T) {
 				{Date: 720000000, Platform: &igdb.ReleasePlatform{ID: 19, Name: "SNES"}, Region: 2}, // NA
 				{Date: 710000000, Platform: &igdb.ReleasePlatform{ID: 19, Name: "SNES"}, Region: 1}, // Europe
 			},
-			platformID: 19,
-			want:       700000000,
+			platformIDs: []int{19},
+			want:        700000000,
 		},
 		{
 			name: "skips entries with nil platform",
@@ -1143,8 +1144,8 @@ func TestEarliestPlatformReleaseDate(t *testing.T) {
 				{Date: 600000000, Platform: nil},
 				{Date: 700000000, Platform: &igdb.ReleasePlatform{ID: 19, Name: "SNES"}},
 			},
-			platformID: 19,
-			want:       700000000,
+			platformIDs: []int{19},
+			want:        700000000,
 		},
 		{
 			name: "skips entries with zero date",
@@ -1152,14 +1153,14 @@ func TestEarliestPlatformReleaseDate(t *testing.T) {
 				{Date: 0, Platform: &igdb.ReleasePlatform{ID: 19, Name: "SNES"}},
 				{Date: 700000000, Platform: &igdb.ReleasePlatform{ID: 19, Name: "SNES"}},
 			},
-			platformID: 19,
-			want:       700000000,
+			platformIDs: []int{19},
+			want:        700000000,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := earliestPlatformReleaseDate(tt.dates, tt.platformID)
+			got := earliestPlatformReleaseDate(tt.dates, tt.platformIDs)
 			assert.Equal(t, tt.want, got)
 		})
 	}
@@ -1244,3 +1245,125 @@ func TestScrapeGame_UsesPlatformSpecificReleaseDate(t *testing.T) {
 	// Should use SNES release date (1992), NOT the global first release (1987)
 	assert.Equal(t, "1992-01-01", game.ReleaseDate, "should use platform-specific release date, not global FirstReleaseDate")
 }
+
+// TestScrapeGame_SNESJapanOnlyGame_SearchesSuperFamicomPlatform verifies that
+// when scraping a Japanese-only SNES game, the IGDB search query includes
+// both the SNES (19) AND Super Famicom (58) platform IDs. IGDB is the only
+// console in Spela's mapping where the international and Japanese SKUs live
+// under separate platform IDs — Japan-only releases like "Alcahest (Japan)"
+// (IGDB id 3651) are filed under Super Famicom (58) only, so a query that
+// filters by SNES (19) alone returns zero results and the scraper records
+// the game as not_found.
+//
+// The mock IGDB server here intentionally returns results only when the
+// query body contains the literal "58" (Super Famicom platform ID),
+// mimicking IGDB's real behaviour for Alcahest. The test passes iff the
+// scraper populates the game's description and rating from the mock
+// response — proving the query included the Japanese platform ID.
+func TestScrapeGame_SNESJapanOnlyGame_SearchesSuperFamicomPlatform(t *testing.T) {
+	tokenServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"access_token": "test-token",
+			"expires_in":   3600,
+			"token_type":   "bearer",
+		})
+	}))
+	defer tokenServer.Close()
+
+	var capturedQueries []string
+	igdbServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// The /games endpoint gets hit twice (exact search then text search
+		// fallback) plus enrichment endpoints. Only the /games requests
+		// carry a query body we care about.
+		if !strings.HasSuffix(r.URL.Path, "/games") {
+			json.NewEncoder(w).Encode([]map[string]any{})
+			return
+		}
+
+		body, _ := io.ReadAll(r.Body)
+		query := string(body)
+		capturedQueries = append(capturedQueries, query)
+
+		// Return the Alcahest data ONLY if the query names Super Famicom
+		// (platform id 58). This is the behaviour the real IGDB API exhibits
+		// for Japan-only SNES releases — the game isn't reachable through
+		// platform 19 alone.
+		if !strings.Contains(query, "58") {
+			json.NewEncoder(w).Encode([]igdb.Game{})
+			return
+		}
+
+		json.NewEncoder(w).Encode([]igdb.Game{
+			{
+				ID:               3651,
+				Name:             "Alcahest",
+				Summary:          "Alcahest is an action role-playing game with a top-down perspective that plays similar to The Legend of Zelda.",
+				AggregatedRating: 79.9,
+				TotalRating:      79.9,
+				TotalRatingCount: 42,
+			},
+		})
+	}))
+	defer igdbServer.Close()
+
+	origTokenURL := igdb.TwitchTokenURLForTest()
+	origAPIBase := igdb.IGDBAPIBaseForTest()
+	igdb.SetTwitchTokenURLForTest(tokenServer.URL)
+	igdb.SetIGDBAPIBaseForTest(igdbServer.URL + "/v4")
+	defer func() {
+		igdb.SetTwitchTokenURLForTest(origTokenURL)
+		igdb.SetIGDBAPIBaseForTest(origAPIBase)
+	}()
+
+	database := setupTestDB(t)
+	store := setupTestStorage(t)
+
+	console := db.Console{Abbreviation: "SNES", Name: "Super Nintendo Entertainment System"}
+	require.NoError(t, database.Create(&console).Error)
+
+	game := db.Game{
+		ConsoleID: console.ID,
+		Console:   console,
+		Title:     "Alcahest (Japan)",
+		FileName:  "Alcahest (Japan).sfc",
+	}
+	require.NoError(t, database.Create(&game).Error)
+
+	igdbClient := igdb.NewClient("test-id", "test-secret")
+	igdbClient.HTTPClient = &http.Client{Timeout: 5 * time.Second}
+
+	s := &Scraper{
+		DB:         database,
+		Storage:    store,
+		HTTPClient: &http.Client{Timeout: 5 * time.Second},
+		IGDBClient: igdbClient,
+		DATCache:   NewDATCache(t.TempDir(), &http.Client{Timeout: 5 * time.Second}),
+		cache:      &nameCache{entries: make(map[string][]nameEntry)},
+	}
+
+	err := s.ScrapeGame(&game)
+	require.NoError(t, err)
+
+	// At least one /games query must have included the Super Famicom platform id.
+	foundSFC := false
+	for _, q := range capturedQueries {
+		if strings.Contains(q, "58") {
+			foundSFC = true
+			break
+		}
+	}
+	assert.True(t, foundSFC,
+		"scraper did not include Super Famicom (58) in any IGDB /games query; captured queries: %v",
+		capturedQueries)
+
+	// The scraper should have matched and populated metadata.
+	assert.Equal(t, "Alcahest", game.Title)
+	assert.NotEmpty(t, game.Description,
+		"game description should be populated from IGDB Alcahest response — "+
+			"if this is empty, the scraper's search returned nothing, which means "+
+			"the query did not include the Super Famicom platform")
+	assert.Greater(t, game.IGDBCriticsRating, 0.0,
+		"IGDB rating should be populated from the Alcahest response")
+	assert.Equal(t, "igdb:3651", game.ScraperID)
+}
+

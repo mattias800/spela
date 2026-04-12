@@ -462,12 +462,12 @@ func (h *AdminHandler) refreshTopRatedForAllConsoles() {
 
 	for _, console := range consoles {
 		abbr := console.Abbreviation
-		platformID, ok := igdb.AbbreviationToIGDBPlatform[abbr]
+		platformIDs, ok := igdb.AbbreviationToIGDBPlatform[abbr]
 		if !ok {
 			continue
 		}
 
-		topGames, err := h.Scraper.IGDBClient.GetTopGames(platformID, 100)
+		topGames, err := h.Scraper.IGDBClient.GetTopGames(platformIDs, 100)
 		if err != nil {
 			slog.Warn("failed to fetch top-rated games", "console", abbr, "error", err)
 			continue

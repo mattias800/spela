@@ -216,7 +216,7 @@ func (s *Scraper) ScrapeGame(game *db.Game) error {
 
 // scrapeIGDB searches IGDB for game metadata and downloads images.
 func (s *Scraper) scrapeIGDB(game *db.Game, console db.Console, gameIDStr string) error {
-	platformID, ok := igdb.AbbreviationToIGDBPlatform[console.Abbreviation]
+	platformIDs, ok := igdb.AbbreviationToIGDBPlatform[console.Abbreviation]
 	if !ok {
 		return fmt.Errorf("no IGDB platform ID for console %s", console.Abbreviation)
 	}
@@ -301,14 +301,14 @@ func (s *Scraper) scrapeIGDB(game *db.Game, console db.Console, gameIDStr string
 	// not the original).
 	var games []igdb.Game
 	var err error
-	games, err = s.IGDBClient.SearchGameExact(searchName, platformID)
+	games, err = s.IGDBClient.SearchGameExact(searchName, platformIDs)
 	if err != nil {
 		slog.Warn("IGDB exact search failed, falling back to text search", "game", searchName, "error", err)
 	}
 
 	// Fall back to text search if exact match found nothing
 	if len(games) == 0 {
-		games, err = s.IGDBClient.SearchGame(searchName, platformID)
+		games, err = s.IGDBClient.SearchGame(searchName, platformIDs)
 		if err != nil {
 			return fmt.Errorf("IGDB search: %w", err)
 		}
@@ -396,8 +396,8 @@ func (s *Scraper) applyIGDBMatch(game *db.Game, console db.Console, match igdb.G
 	// Use platform-specific release date when available (e.g. SNES release of
 	// a game that originally launched on another platform), falling back to
 	// the global first release date.
-	platformID, _ := igdb.AbbreviationToIGDBPlatform[console.Abbreviation]
-	if rd := earliestPlatformReleaseDate(match.ReleaseDates, platformID); rd > 0 {
+	platformIDs := igdb.AbbreviationToIGDBPlatform[console.Abbreviation]
+	if rd := earliestPlatformReleaseDate(match.ReleaseDates, platformIDs); rd > 0 {
 		t := time.Unix(rd, 0)
 		game.ReleaseDate = t.Format("2006-01-02")
 	} else if match.FirstReleaseDate > 0 {
@@ -694,15 +694,21 @@ func (s *Scraper) cleanGameImages(game *db.Game, consoleAbbr, gameIDStr string) 
 }
 
 // earliestPlatformReleaseDate returns the earliest release date (unix timestamp)
-// from the given release dates that matches the specified IGDB platform ID.
-// Returns 0 if no matching platform release date is found.
-func earliestPlatformReleaseDate(dates []igdb.ReleaseDate, platformID int) int64 {
+// from the given release dates that matches any of the supplied IGDB platform
+// IDs. For multi-region consoles like SNES (which maps to both 19 and 58 to
+// pick up Japan-only releases), this returns the earliest date across all
+// regional variants. Returns 0 if no matching platform release date is found.
+func earliestPlatformReleaseDate(dates []igdb.ReleaseDate, platformIDs []int) int64 {
+	match := make(map[int]bool, len(platformIDs))
+	for _, id := range platformIDs {
+		match[id] = true
+	}
 	var earliest int64
 	for _, rd := range dates {
 		if rd.Platform == nil || rd.Date == 0 {
 			continue
 		}
-		if rd.Platform.ID == platformID {
+		if match[rd.Platform.ID] {
 			if earliest == 0 || rd.Date < earliest {
 				earliest = rd.Date
 			}
