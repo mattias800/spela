@@ -14,7 +14,7 @@ import { GameCard } from "@/components/game-card";
 import { ScrollShelf } from "@/components/scroll-shelf";
 import { CAROUSEL_CARD_HEIGHT } from "@/lib/carousel-constants";
 import { Badge, Skeleton, EmptyState, TitledSection } from "@/components/ui";
-import { PageLayout } from "@/components/layout";
+import { PageLayout, SectionList } from "@/components/layout";
 import { PersonalStatsCard } from "@/features/dashboard/components/personal-stats-card";
 import {
   useRecentGames,
@@ -249,6 +249,7 @@ export function DashboardPage() {
 
   return (
     <PageLayout>
+      <SectionList>
       <div>
         <h1 className="text-3xl font-bold text-surface-100">
           Welcome back, {user?.username}
@@ -430,6 +431,7 @@ export function DashboardPage() {
           </div>
         </div>
       </div>
+      </SectionList>
     </PageLayout>
   );
 }

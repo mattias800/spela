@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Library } from "lucide-react";
 import { Link } from "react-router-dom";
 import { EmptyState, Button } from "@/components/ui";
-import { PageLayout } from "@/components/layout";
+import { PageLayout, SectionList } from "@/components/layout";
 import { HeroCarousel } from "@/features/explore/components/hero-carousel";
 import { GameShelf } from "@/features/explore/components/game-shelf";
 import { ThemeGrid } from "@/features/explore/components/theme-grid";
@@ -237,6 +237,7 @@ export function ExplorePage() {
 
   return (
     <PageLayout data-testid="explore-page">
+      <SectionList>
       <div>
         <h1 className="text-3xl font-bold text-surface-100">Explore</h1>
         <p className="mt-1 text-surface-400">
@@ -438,6 +439,7 @@ export function ExplorePage() {
         ))
       )}
 
+    </SectionList>
     </PageLayout>
   );
 }

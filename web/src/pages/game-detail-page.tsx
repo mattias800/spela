@@ -7,7 +7,7 @@ import {
   GameDetailSkeleton,
   Modal,
 } from "@/components/ui";
-import { PageLayout } from "@/components/layout";
+import { PageLayout, SectionList } from "@/components/layout";
 import { useToast } from "@/components/ui";
 import {
   useGame,
@@ -231,7 +231,7 @@ export function GameDetailPage() {
       />
       )}
     >
-      <div className="max-w-5xl space-y-8">
+      <SectionList className="max-w-5xl">
       <BackButton onClick={() => navigate(-1)} />
 
       {showBiosWarning && (
@@ -346,7 +346,7 @@ export function GameDetailPage() {
       )}
 
       {isPlayable && !isDemo && <GameActiveSharedSessions gameId={game.id} />}
-      </div>
+    </SectionList>
     </PageLayout>
   );
 }
