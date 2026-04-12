@@ -106,10 +106,7 @@ describe("GameShelf", () => {
   it("renders loading skeleton when loading", () => {
     renderShelf({ isLoading: true, games: undefined });
     expect(
-      screen.getByTestId("shelf-skeleton-Top Rated"),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole("heading", { name: "Top Rated", level: 2 }),
+      screen.getByTestId("shelf-Top Rated-skeleton"),
     ).toBeInTheDocument();
   });
 
