@@ -203,7 +203,6 @@ export function GameDetailPage() {
 
       <GameHero
         game={game}
-        aspectRatio={consoleInfo?.coverAspectRatio}
         canPlayInBrowser={canPlayInBrowser}
         isAdmin={isAdmin}
         isFavorite={isFavorite}
