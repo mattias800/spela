@@ -16,14 +16,16 @@ export function Skeleton({ className, style }: SkeletonProps) {
 
 export function GameCardSkeleton({
   aspectRatio,
+  coverHeight,
 }: {
   aspectRatio?: number;
+  coverHeight?: number;
 }) {
   return (
-    <div className="space-y-3">
+    <div className={`space-y-3${coverHeight ? " flex-shrink-0" : ""}`}>
       <Skeleton
-        className="w-full rounded-2xl"
-        style={{ aspectRatio: aspectRatio ?? 3 / 4 }}
+        className="rounded-2xl"
+        style={coverHeight ? { height: coverHeight, aspectRatio: aspectRatio ?? 3 / 4 } : { aspectRatio: aspectRatio ?? 3 / 4, width: "100%" }}
       />
       <div className="space-y-2 px-1">
         <Skeleton className="h-4 w-3/4" />
