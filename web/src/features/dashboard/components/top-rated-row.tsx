@@ -1,19 +1,17 @@
 import { Star } from "lucide-react";
-import { Skeleton, TitledSection } from "@/components/ui";
 import { Link } from "react-router-dom";
 import { ChevronRight } from "lucide-react";
 import { useTopRatedGlobal } from "@/hooks/use-top-lists";
+import { ScrollShelf } from "@/components/scroll-shelf";
+import { GameCardSkeleton } from "@/components/ui";
+import { CAROUSEL_CARD_HEIGHT } from "@/lib/carousel-constants";
 import { TopRatedGameCard } from "./top-rated-game-card";
 
-function TopRatedSkeleton() {
+function TopRatedSkeletonContent() {
   return (
-    <div className="flex gap-4 overflow-x-auto pb-2">
+    <div className="flex gap-4 overflow-hidden">
       {Array.from({ length: 6 }, (_, i) => (
-        <div key={i} className="flex-shrink-0 w-36 space-y-2">
-          <Skeleton className="aspect-[3/4] w-full rounded-xl" />
-          <Skeleton className="h-4 w-28" />
-          <Skeleton className="h-3 w-20" />
-        </div>
+        <GameCardSkeleton key={i} coverHeight={CAROUSEL_CARD_HEIGHT} />
       ))}
     </div>
   );
@@ -25,10 +23,14 @@ export function TopRatedRow() {
   if (!isLoading && (!games || games.length === 0)) return null;
 
   return (
-    <TitledSection
+    <ScrollShelf
       title="Top Rated"
       icon={Star}
-      renderRight={
+      testId="top-rated-row"
+      isLoading={isLoading}
+      isEmpty={!games || games.length === 0}
+      loadingSkeleton={<TopRatedSkeletonContent />}
+      headerRight={
         <Link
           to="/top-lists"
           className="flex items-center gap-1 text-sm text-surface-400 hover:text-brand-400 transition-colors"
@@ -38,17 +40,11 @@ export function TopRatedRow() {
         </Link>
       }
     >
-      {isLoading ? (
-        <TopRatedSkeleton />
-      ) : (
-        <div className="flex gap-4 overflow-x-auto pb-2">
-          {games?.map((game) => (
-            <div key={`${game.rank}-${game.name}`} className="flex-shrink-0">
-              <TopRatedGameCard game={game} />
-            </div>
-          ))}
+      {games?.map((game) => (
+        <div key={`${game.rank}-${game.name}`} className="flex-shrink-0" role="listitem">
+          <TopRatedGameCard game={game} coverHeight={CAROUSEL_CARD_HEIGHT} />
         </div>
-      )}
-    </TitledSection>
+      ))}
+    </ScrollShelf>
   );
 }
