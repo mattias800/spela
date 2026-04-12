@@ -1,8 +1,15 @@
 import type { HTMLAttributes, ReactNode } from "react";
+import { useNavigate } from "react-router-dom";
+import { BackButton } from "@/components/ui";
 
 interface PageLayoutProps extends HTMLAttributes<HTMLDivElement> {
   /** Full-width content rendered above the padded area (e.g., hero banners). */
   renderHeader?: () => ReactNode;
+  /** Back button variant. Omit for no back button.
+   *  - "standard" — renders at the top of the padded content area.
+   *  - "floating" — renders floating over the header content (top-left, semi-transparent).
+   */
+  backButtonVariant?: "standard" | "floating";
   children: ReactNode;
 }
 
@@ -16,11 +23,35 @@ interface PageLayoutProps extends HTMLAttributes<HTMLDivElement> {
  *
  * This is a direct child of `<main>` and provides the p-6 content padding.
  */
-export function PageLayout({ renderHeader, children, ...rest }: PageLayoutProps) {
+export function PageLayout({
+  renderHeader,
+  backButtonVariant,
+  children,
+  ...rest
+}: PageLayoutProps) {
+  const navigate = useNavigate();
+
   return (
     <div data-comp="PageLayout" {...rest}>
-      {renderHeader?.()}
+      {renderHeader && (
+        <div className="relative">
+          {renderHeader()}
+          {backButtonVariant === "floating" && (
+            <div className="absolute top-4 left-4 z-20">
+              <BackButton
+                onClick={() => navigate(-1)}
+                className="bg-black/40 backdrop-blur-sm text-white/80 hover:text-white hover:bg-black/60"
+              />
+            </div>
+          )}
+        </div>
+      )}
       <div className="p-6">
+        {backButtonVariant === "standard" && (
+          <div className="mb-6">
+            <BackButton onClick={() => navigate(-1)} />
+          </div>
+        )}
         {children}
       </div>
     </div>

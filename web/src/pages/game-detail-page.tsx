@@ -2,7 +2,6 @@ import { useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import {
   Button,
-  BackButton,
   Section,
   GameDetailSkeleton,
   Modal,
@@ -192,6 +191,7 @@ export function GameDetailPage() {
 
   return (
     <PageLayout
+      backButtonVariant="floating"
       renderHeader={() => (
         <GameHero
         game={game}
@@ -232,8 +232,6 @@ export function GameDetailPage() {
       )}
     >
       <SectionList className="max-w-5xl">
-      <BackButton onClick={() => navigate(-1)} />
-
       {showBiosWarning && (
         <BiosWarningBanner
           message={`Missing BIOS: ${game!.consoleName} requires firmware files to play. ${missingBiosFiles.length > 0 ? missingBiosFiles.join(", ") + " not found." : ""}`}
