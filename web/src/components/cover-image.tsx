@@ -6,6 +6,8 @@ interface CoverImageProps {
   /** Alt text for accessibility. First character used as placeholder. */
   alt: string;
   className?: string;
+  /** How the image fits its container. Default "cover" crops to fill. */
+  objectFit?: "cover" | "contain";
 }
 
 /**
@@ -15,7 +17,7 @@ interface CoverImageProps {
  * Handles image rendering with lazy loading and a character-based
  * placeholder when no image is available. Fills its container.
  */
-export function CoverImage({ src, alt, className }: CoverImageProps) {
+export function CoverImage({ src, alt, className, objectFit = "cover" }: CoverImageProps) {
   return (
     <div
       data-comp="CoverImage"
@@ -28,7 +30,7 @@ export function CoverImage({ src, alt, className }: CoverImageProps) {
         <img
           src={src}
           alt={alt}
-          className="h-full w-full object-cover"
+          className={cn("h-full w-full", objectFit === "cover" ? "object-cover" : "object-contain")}
           loading="lazy"
         />
       ) : (

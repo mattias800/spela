@@ -40,17 +40,17 @@ export function CoverCard({
   children,
 }: CoverCardProps) {
   const content = (
-    <div data-comp="CoverCard" className={cn(coverHeight ? "flex-shrink-0" : width, dimmed && "opacity-50")}>
+    <div data-comp="CoverCard" className={cn(coverHeight ? "flex-shrink-0 inline-block" : width, dimmed && "opacity-50")}>
       <div
-        className="relative w-full border border-surface-800/50"
-        style={coverHeight ? { height: coverHeight } : { aspectRatio }}
+        className="relative border border-surface-800/50"
+        style={coverHeight ? { height: coverHeight, width: "fit-content" } : { aspectRatio }}
       >
-        <CoverImage src={imageUrl} alt={title} className={coverHeight ? "h-full w-auto rounded-xl" : "w-full h-full rounded-xl"} />
+        <CoverImage src={imageUrl} alt={title} className={coverHeight ? "h-full w-auto rounded-xl" : "w-full h-full rounded-xl"} objectFit={coverHeight ? "contain" : "cover"} />
         {overlay && (
           <div className="absolute bottom-2 left-2 z-10">{overlay}</div>
         )}
       </div>
-      <div className="mt-2 px-0.5">
+      <div className={cn("mt-2 px-0.5", coverHeight && "w-0 min-w-full overflow-hidden")}>
         <p className="text-sm font-medium text-surface-200 truncate">
           {title}
         </p>

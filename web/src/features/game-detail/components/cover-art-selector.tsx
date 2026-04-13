@@ -18,14 +18,11 @@ export function CoverArtSelector({
   open,
   onClose,
 }: CoverArtSelectorProps) {
-  const { data, isLoading, isError } = useGameCovers(gameId);
+  const { data, isLoading } = useGameCovers(gameId);
   const setCover = useSetGameCover();
   const { toast } = useToast();
 
-  if (isLoading || isError || !data) return null;
-
-  // Only show if there are multiple cover options
-  if (data.covers.length < 2) return null;
+  const hasCovers = data && data.covers.length >= 2;
 
   function handleSelect(cover: CoverOption) {
     if (cover.source === data!.active && cover.source !== "libretro-regional") {
@@ -52,8 +49,15 @@ export function CoverArtSelector({
 
   return (
     <Modal open={open} onClose={onClose} title="Cover Art Source" size="lg">
+      {isLoading ? (
+        <p className="text-sm text-surface-400 py-4">Loading cover options...</p>
+      ) : !hasCovers ? (
+        <p className="text-sm text-surface-400 py-4">
+          No alternative cover art available. Scrape the game&apos;s metadata to find cover options from different sources.
+        </p>
+      ) : (
       <div className="flex flex-wrap gap-4" data-testid="cover-art-selector">
-        {data.covers.map((cover, index) => {
+        {data!.covers.map((cover, index) => {
           const isActive =
             cover.source === data.active &&
             cover.source !== "libretro-regional";
@@ -105,6 +109,7 @@ export function CoverArtSelector({
           );
         })}
       </div>
+      )}
     </Modal>
   );
 }
