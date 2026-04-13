@@ -640,25 +640,38 @@ func (h *GameHandler) ScanGames(c *gin.Context) {
 
 		// Auto-scrape new games if IGDB is configured
 		if result.NewGames > 0 && h.Scraper.IsIGDBConfigured() {
-			if scrapeCtx, ok := h.Scraper.TryStartScrape(); ok {
-				h.Hub.Broadcast(ws.Event{Type: "scrape_started", Payload: nil})
-				count, total, scrapeErr := h.Scraper.ScrapeAll(scrapeCtx, "new", 0, func(p scraper.ScrapeProgress) {
-					h.Scraper.SetScrapeProgress(&p)
-					h.Hub.Broadcast(ws.Event{Type: "scrape_progress", Payload: p})
-				})
-				h.Scraper.FinishScrape()
-				if scrapeErr != nil {
-					if scrapeCtx.Err() != nil {
-						slog.Info("auto-scrape cancelled", "scraped", count, "total", total)
-						h.Hub.Broadcast(ws.Event{Type: "scrape_cancelled", Payload: gin.H{"scraped": count, "total": total}})
-						return
+			// Collect new (unscraped) game IDs
+			var gameIDs []uint
+			h.DB.Model(&db.Game{}).
+				Where("scraper_id = '' OR scraper_id IS NULL").
+				Pluck("id", &gameIDs)
+
+			if len(gameIDs) > 0 {
+				activeJob, _ := h.Scraper.Queue.GetActiveJob()
+				if activeJob != nil {
+					added, mergeErr := h.Scraper.Queue.MergeGames(activeJob.ID, gameIDs)
+					if mergeErr != nil {
+						slog.Error("failed to merge new games into active scrape job", "error", mergeErr)
+					} else if added > 0 {
+						slog.Info("merged new games into active scrape job", "added", added, "jobId", activeJob.ID)
 					}
-					slog.Error("auto-scrape after scan failed", "error", scrapeErr)
-					h.Hub.Broadcast(ws.Event{Type: "scrape_error", Payload: gin.H{"error": "auto-scrape failed"}})
-					return
+				} else {
+					job, jobErr := h.Scraper.Queue.CreateJob("new", "", "", "", len(gameIDs))
+					if jobErr != nil {
+						slog.Error("failed to create scan auto-scrape job", "error", jobErr)
+					} else {
+						if enqErr := h.Scraper.Queue.EnqueueGames(job.ID, gameIDs, 0); enqErr != nil {
+							slog.Error("failed to enqueue scan auto-scrape games", "error", enqErr)
+						} else {
+							slog.Info("scan auto-scrape job created", "jobId", job.ID, "total", len(gameIDs))
+							h.Hub.Broadcast(ws.Event{Type: "scrape_started", Payload: gin.H{
+								"jobId": job.ID,
+								"total": len(gameIDs),
+								"mode":  "new",
+							}})
+						}
+					}
 				}
-				slog.Info("auto-scrape after scan complete", "scraped", count, "total", total)
-				h.Hub.Broadcast(ws.Event{Type: "scrape_complete", Payload: gin.H{"scraped": count, "total": total}})
 			}
 		}
 	}()
@@ -682,8 +695,8 @@ func (h *GameHandler) ScanStatus(c *gin.Context) {
 	})
 }
 
-// ScrapeIfNeeded triggers an async scrape for a game that has never been scraped.
-// Returns 202 if scraping was started, 200 if the game was already scraped.
+// ScrapeIfNeeded enqueues an unscraped game for scraping with high priority.
+// Returns 202 if queued, 200 if already scraped.
 func (h *GameHandler) ScrapeIfNeeded(c *gin.Context) {
 	id := c.Param("id")
 	var game db.Game
@@ -697,41 +710,27 @@ func (h *GameHandler) ScrapeIfNeeded(c *gin.Context) {
 		return
 	}
 
-	// If a bulk scrape is already running, don't race with it — the bulk
-	// scrape will get to this game eventually. Concurrent IGDB API calls
-	// from the same account can hit rate limits and cause silent failures.
-	if active, _ := h.Scraper.GetScrapeStatus(); active {
-		c.JSON(http.StatusConflict, gin.H{"status": "bulk_scrape_in_progress"})
-		return
-	}
-
 	// Configure SteamGridDB if API key is set (best-effort artwork)
 	if apiKey := steamGridDBAPIKey(h.DB); apiKey != "" {
 		h.Scraper.ConfigureSteamGridDB(apiKey)
 	}
 
-	go func() {
-		var g db.Game
-		if err := h.DB.Preload("Console").First(&g, id).Error; err != nil {
-			slog.Warn("auto-scrape: failed to load game", "id", id, "error", err)
-			return
-		}
-		if err := h.Scraper.ScrapeGame(&g); err != nil {
-			slog.Warn("auto-scrape failed", "game", g.Title, "error", err)
-			return
-		}
-		// Reload with Screenshots so the WebSocket broadcast includes them.
-		if err := h.DB.Preload("Console").Preload("Screenshots").First(&g, id).Error; err != nil {
-			slog.Warn("auto-scrape: failed to reload game after scrape", "id", id, "error", err)
-			return
-		}
-		h.Hub.Broadcast(ws.Event{
-			Type:    "game_scraped",
-			Payload: ToGameResponse(g, h.DB, 0),
-		})
-	}()
+	// Attach to active job if one exists
+	activeJob, _ := h.Scraper.Queue.GetActiveJob()
+	var jobID *uint
+	if activeJob != nil {
+		jobID = &activeJob.ID
+		h.DB.Model(&db.ScrapeJob{}).Where("id = ?", activeJob.ID).
+			Update("total_items", gorm.Expr("total_items + 1"))
+	}
 
-	c.JSON(http.StatusAccepted, gin.H{"status": "scraping"})
+	if err := h.Scraper.Queue.EnqueueGame(game.ID, jobID, 100); err != nil {
+		slog.Warn("auto-scrape: failed to enqueue", "game", game.Title, "error", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to enqueue"})
+		return
+	}
+
+	c.JSON(http.StatusAccepted, gin.H{"status": "queued"})
 }
 
 // UpdatePlayTime increments the play time for a game.

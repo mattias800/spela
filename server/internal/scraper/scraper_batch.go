@@ -1,7 +1,6 @@
 package scraper
 
 import (
-	"context"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -9,7 +8,6 @@ import (
 	"strings"
 
 	"github.com/spela/server/internal/db"
-	"github.com/spela/server/internal/scanner"
 	"gorm.io/gorm"
 )
 
@@ -309,163 +307,6 @@ type ScrapeProgress struct {
 	Successes   int    `json:"successes"`
 	Failures    int    `json:"failures"`
 	Verified    int    `json:"verified"`
-}
-
-// ScrapeAll fetches metadata for games.
-// Mode controls which games are scraped:
-//   - "new": only games without scraper IDs (default)
-//   - "all": re-scrape every game
-//   - "fallback": re-scrape games that were only scraped via LibRetro fallback (no IGDB match)
-//
-// If consoleID is non-zero, only games belonging to that console are scraped.
-// If onProgress is non-nil, it is called after each game attempt with the current progress.
-// Returns the number of successes, the total number of games attempted, and any error.
-func (s *Scraper) ScrapeAll(ctx context.Context, mode string, consoleID uint, onProgress func(ScrapeProgress)) (int, int, error) {
-	// Build base query for counting and pagination
-	baseQ := func() *gorm.DB {
-		q := s.DB.Model(&db.Game{})
-		if consoleID > 0 {
-			q = q.Where("console_id = ?", consoleID)
-		}
-		switch mode {
-		case "all":
-			// no additional filter
-		case "fallback":
-			q = q.Where("scraper_id = 'libretro'")
-		default:
-			q = q.Where("scraper_id = '' OR scraper_id IS NULL")
-		}
-		return q
-	}
-
-	var total64 int64
-	if err := baseQ().Count(&total64).Error; err != nil {
-		return 0, 0, fmt.Errorf("counting games: %w", err)
-	}
-	total := int(total64)
-
-	// Load consoles into a map to avoid Preload on every batch
-	var consoles []db.Console
-	s.DB.Find(&consoles)
-	consoleMap := make(map[uint]db.Console, len(consoles))
-	for _, c := range consoles {
-		consoleMap[c.ID] = c
-	}
-
-	successes := 0
-	failures := 0
-	verified := 0
-	processed := 0
-
-	progress := func(game *db.Game) ScrapeProgress {
-		consoleName := ""
-		consoleAbbr := ""
-		if c, ok := consoleMap[game.ConsoleID]; ok {
-			consoleName = c.Name
-			consoleAbbr = c.Abbreviation
-		}
-		return ScrapeProgress{
-			Current:     processed,
-			Total:       total,
-			GameID:      game.ID,
-			GameName:    game.Title,
-			ConsoleName: consoleName,
-			ConsoleAbbr: consoleAbbr,
-			Successes:   successes,
-			Failures:    failures,
-			Verified:    verified,
-		}
-	}
-
-	// Track groups we've already scraped a primary for, so we can propagate
-	// metadata to other variants in the same group instead of re-scraping.
-	scrapedGroups := make(map[string]uint) // "consoleID:groupKey" -> scraped game ID
-
-	const batchSize = 100
-	for offset := 0; offset < total; offset += batchSize {
-		var batch []db.Game
-		if err := baseQ().Limit(batchSize).Offset(offset).Find(&batch).Error; err != nil {
-			return successes, total, fmt.Errorf("loading game batch at offset %d: %w", offset, err)
-		}
-
-		for i := range batch {
-			// Check for cancellation before each game
-			if ctx.Err() != nil {
-				slog.Info("scrape cancelled", "completed", processed, "total", total)
-				return successes, total, ctx.Err()
-			}
-
-			game := &batch[i]
-			// Attach console from map instead of Preload
-			if c, ok := consoleMap[game.ConsoleID]; ok {
-				game.Console = c
-			}
-
-			processed++
-
-			// Smart scraping: if this game belongs to a variant group, try to
-			// propagate metadata from an already-scraped sibling instead of
-			// hitting external APIs again.
-			// Skip propagation in "all" mode (re-scrape everything) and "fallback"
-			// mode (retry IGDB for games that only had LibRetro matches — propagating
-			// from other LibRetro siblings would defeat the purpose).
-			if game.GroupKey != "" && mode == "new" {
-				groupID := fmt.Sprintf("%d:%s", game.ConsoleID, game.GroupKey)
-
-				// Check if we've already scraped a game in this group during this run
-				if _, done := scrapedGroups[groupID]; done {
-					if s.propagateGroupMetadata(game) {
-						successes++
-						if onProgress != nil {
-							onProgress(progress(game))
-						}
-						continue
-					}
-				}
-
-				// Check if any sibling in the DB already has metadata
-				if s.propagateGroupMetadata(game) {
-					scrapedGroups[groupID] = game.ID
-					successes++
-					if onProgress != nil {
-						onProgress(progress(game))
-					}
-					continue
-				}
-			}
-
-			if err := s.ScrapeGame(game); err != nil {
-				slog.Warn("failed to scrape game", "game", game.Title, "error", err)
-				failures++
-			} else {
-				successes++
-				if game.VerificationStatus == "verified" {
-					verified++
-				}
-				// After scraping, propagate to other unscraped variants in the group
-				if game.GroupKey != "" {
-					groupID := fmt.Sprintf("%d:%s", game.ConsoleID, game.GroupKey)
-					scrapedGroups[groupID] = game.ID
-					s.propagateToGroup(game)
-				}
-			}
-
-			if onProgress != nil {
-				onProgress(progress(game))
-			}
-		}
-	}
-
-	// Merge games that share the same IGDB ID but have different GroupKeys
-	// (e.g., "Sonic CD" USA and "Sonic the Hedgehog CD" Japan).
-	// Protected by a title similarity check to prevent false merges.
-	if merged, err := scanner.MergeGroupsByIGDBID(s.DB); err != nil {
-		slog.Warn("IGDB group merge failed", "error", err)
-	} else if merged > 0 {
-		slog.Info("merged groups by IGDB ID", "merged", merged)
-	}
-
-	return successes, total, nil
 }
 
 // propagateGroupMetadata copies metadata from a scraped sibling in the same

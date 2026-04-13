@@ -183,6 +183,10 @@ func main() {
 	metaScraper := scraper.NewScraper(database, store, datDir, gameDirs)
 	go metaScraper.DATCache.RefreshAll()
 
+	// Context for background workers — cancelled on shutdown
+	workerCtx, workerCancel := context.WithCancel(context.Background())
+	defer workerCancel()
+
 	// Start periodic expired refresh token cleanup (every hour)
 	api.StartTokenCleanup(database, 1*time.Hour)
 
@@ -230,6 +234,11 @@ func main() {
 		Version:                      version,
 		TestMode:                     testMode,
 	})
+
+	// Start background scrape worker (must start before auto-scan goroutine
+	// so any enqueued items get processed)
+	scrapeWorker := scraper.NewScrapeWorker(database, metaScraper.Queue, metaScraper, hub, nil)
+	go scrapeWorker.Run(workerCtx)
 
 	// Auto-scan game library on startup (non-blocking).
 	// Uses the same scan flow as the manual "Scan library" button so progress
@@ -315,24 +324,44 @@ func main() {
 					metaScraper.ConfigureSteamGridDB(setting.Value)
 				}
 			}
-			if scrapeCtx, ok := metaScraper.TryStartScrape(); ok {
-				hub.Broadcast(websocket.Event{Type: "scrape_started", Payload: nil})
-				count, total, scrapeErr := metaScraper.ScrapeAll(scrapeCtx, "new", 0, func(p scraper.ScrapeProgress) {
-					metaScraper.SetScrapeProgress(&p)
-					hub.Broadcast(websocket.Event{Type: "scrape_progress", Payload: p})
-				})
-				metaScraper.FinishScrape()
-				if scrapeErr != nil {
-					slog.Error("startup auto-scrape failed", "error", scrapeErr)
-					hub.Broadcast(websocket.Event{Type: "scrape_error", Payload: map[string]string{"error": "auto-scrape failed"}})
-					return
+
+			// Collect new (unscraped) game IDs
+			var gameIDs []uint
+			database.Model(&db.Game{}).
+				Where("scraper_id = '' OR scraper_id IS NULL").
+				Pluck("id", &gameIDs)
+
+			if len(gameIDs) > 0 {
+				// Use merge if there's an existing job (e.g., resuming after restart)
+				activeJob, _ := metaScraper.Queue.GetActiveJob()
+				if activeJob != nil {
+					added, mergeErr := metaScraper.Queue.MergeGames(activeJob.ID, gameIDs)
+					if mergeErr != nil {
+						slog.Error("failed to merge new games into active scrape job", "error", mergeErr)
+					} else if added > 0 {
+						slog.Info("merged new games into active scrape job", "added", added, "jobId", activeJob.ID)
+					}
+				} else {
+					job, jobErr := metaScraper.Queue.CreateJob("new", "", "", "", len(gameIDs))
+					if jobErr != nil {
+						slog.Error("failed to create startup scrape job", "error", jobErr)
+					} else {
+						if enqErr := metaScraper.Queue.EnqueueGames(job.ID, gameIDs, 0); enqErr != nil {
+							slog.Error("failed to enqueue startup scrape games", "error", enqErr)
+						} else {
+							slog.Info("startup scrape job created", "jobId", job.ID, "total", len(gameIDs))
+							hub.Broadcast(websocket.Event{Type: "scrape_started", Payload: map[string]interface{}{
+								"jobId": job.ID,
+								"total": len(gameIDs),
+								"mode":  "new",
+							}})
+						}
+					}
 				}
-				slog.Info("startup auto-scrape complete", "scraped", count, "total", total)
-				hub.Broadcast(websocket.Event{Type: "scrape_complete", Payload: map[string]interface{}{"scraped": count, "total": total}})
 			}
 		}
 
-		// Standalone RA achievement scraping for games that weren't covered by ScrapeAll
+		// Standalone RA achievement scraping for games that weren't covered by the scrape queue
 		// (e.g., when IGDB is not configured but RA is, or for existing games)
 		if metaScraper.IsRAConfigured() {
 			slog.Info("scraping RetroAchievements data...")
@@ -362,6 +391,8 @@ func main() {
 	go func() {
 		sig := <-shutdownCh
 		slog.Info("shutdown signal received, draining connections", "signal", sig)
+		// Stop the scrape worker (finishes current game, then exits)
+		workerCancel()
 		ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 		defer cancel()
 		if err := srv.Shutdown(ctx); err != nil {
