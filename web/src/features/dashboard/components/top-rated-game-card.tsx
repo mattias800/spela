@@ -19,14 +19,12 @@ export function TopRatedGameCard({ game, coverHeight }: { game: TopRatedGame; co
       subtitle={game.consoleName}
       linkTo={isAvailable ? `/games/${game.localGameId}` : undefined}
       coverHeight={coverHeight}
+      overlay={!isAvailable ? <span className="rounded-full bg-black/60 px-3 py-1 text-xs font-medium text-white/90">Not in library</span> : undefined}
     >
       <span className="flex items-center gap-0.5 text-xs text-amber-400">
         <Star className="h-3 w-3 fill-amber-400" />
         {game.igdbCriticsRating.toFixed(0)}
       </span>
-      {!isAvailable && (
-        <span className="text-xs text-surface-500">Not in library</span>
-      )}
     </CoverCard>
   );
 }

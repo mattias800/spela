@@ -22,6 +22,8 @@ interface CoverCardProps {
   aspectRatio?: string;
   width?: string;
   coverHeight?: number;
+  /** Content rendered over the cover image (badges, tags, etc). */
+  overlay?: ReactNode;
   children?: ReactNode;
 }
 
@@ -34,15 +36,19 @@ export function CoverCard({
   aspectRatio = "3/4",
   width = "w-36",
   coverHeight,
+  overlay,
   children,
 }: CoverCardProps) {
   const content = (
     <div data-comp="CoverCard" className={cn(coverHeight ? "flex-shrink-0" : width, dimmed && "opacity-50")}>
       <div
-        className="w-full border border-surface-800/50"
+        className="relative w-full border border-surface-800/50"
         style={coverHeight ? { height: coverHeight } : { aspectRatio }}
       >
         <CoverImage src={imageUrl} alt={title} className={coverHeight ? "h-full w-auto rounded-xl" : "w-full h-full rounded-xl"} />
+        {overlay && (
+          <div className="absolute bottom-2 left-2 z-10">{overlay}</div>
+        )}
       </div>
       <div className="mt-2 px-0.5">
         <p className="text-sm font-medium text-surface-200 truncate">
