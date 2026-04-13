@@ -95,6 +95,28 @@ func Initialize(dbPath string) (*gorm.DB, error) {
 		return nil, fmt.Errorf("opening database: %w", err)
 	}
 
+	// SQLite performance pragmas:
+	// - WAL mode: allows concurrent reads during writes, reduces fsync overhead.
+	// - synchronous=NORMAL: safe with WAL — fsyncs on checkpoint, not every commit.
+	//   (FULL fsyncs every commit, which is the default and causes I/O saturation during bulk writes.)
+	// - journal_size_limit: cap WAL file growth at 64MB.
+	// - busy_timeout: wait up to 5 seconds for locks instead of failing immediately.
+	sqlDB, err := db.DB()
+	if err != nil {
+		return nil, fmt.Errorf("getting underlying sql.DB: %w", err)
+	}
+	for _, pragma := range []string{
+		"PRAGMA journal_mode=WAL",
+		"PRAGMA synchronous=NORMAL",
+		"PRAGMA journal_size_limit=67108864",
+		"PRAGMA busy_timeout=5000",
+	} {
+		if _, err := sqlDB.Exec(pragma); err != nil {
+			slog.Warn("failed to set SQLite pragma", "pragma", pragma, "error", err)
+		}
+	}
+	slog.Info("SQLite pragmas configured", "journal_mode", "WAL", "synchronous", "NORMAL")
+
 	// Restrict database file permissions to owner-only (0600).
 	if err := os.Chmod(dbPath, 0600); err != nil {
 		slog.Warn("failed to set database file permissions", "path", dbPath, "error", err)

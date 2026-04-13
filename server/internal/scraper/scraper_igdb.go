@@ -459,8 +459,9 @@ func (s *Scraper) applyIGDBMatch(game *db.Game, console db.Console, match igdb.G
 		}
 	}
 
-	// Regional release dates
+	// Regional release dates — batch upsert in one transaction
 	if len(match.ReleaseDates) > 0 {
+		rdTx := s.DB.Begin()
 		for _, rd := range match.ReleaseDates {
 			regionName := igdb.RegionName(rd.Region)
 			if regionName == "" || rd.Date == 0 {
@@ -477,14 +478,18 @@ func (s *Scraper) applyIGDBMatch(game *db.Game, console db.Console, match igdb.G
 				Date:     t.Format("2006-01-02"),
 				Platform: platformName,
 			}
-			s.DB.Where("game_id = ? AND region = ?", game.ID, regionName).
+			rdTx.Where("game_id = ? AND region = ?", game.ID, regionName).
 				Assign(releaseDate).
 				FirstOrCreate(&releaseDate)
 		}
+		rdTx.Commit()
 	}
 
-	// Download cover art and screenshots concurrently
+	// Download cover art and screenshots concurrently.
+	// Collect screenshot records, then batch-insert in one transaction.
 	var imgWg sync.WaitGroup
+	var screenshotMu sync.Mutex
+	var screenshotRecords []db.GameScreenshot
 
 	if match.Cover != nil && match.Cover.ImageID != "" {
 		imgWg.Add(1)
@@ -513,12 +518,19 @@ func (s *Scraper) applyIGDBMatch(game *db.Game, console db.Console, match igdb.G
 			screenshotURL := igdb.ImageURL(imageID, "original")
 			screenshotSubpath := fmt.Sprintf("%s/%s/screenshot_%d.jpg", console.Abbreviation, gameIDStr, idx)
 			if path := s.DownloadExternalImage(screenshotURL, screenshotSubpath); path != "" {
-				s.DB.Create(&db.GameScreenshot{GameID: game.ID, URL: path, Position: idx})
+				screenshotMu.Lock()
+				screenshotRecords = append(screenshotRecords, db.GameScreenshot{GameID: game.ID, URL: path, Position: idx})
+				screenshotMu.Unlock()
 			}
 		}(i, ss.ImageID)
 	}
 
 	imgWg.Wait()
+
+	// Batch-insert all screenshots in one transaction
+	if len(screenshotRecords) > 0 {
+		s.DB.CreateInBatches(&screenshotRecords, 100)
+	}
 }
 
 // ScrapeGameWithIGDBMatch re-scrapes a game using a specific IGDB game ID

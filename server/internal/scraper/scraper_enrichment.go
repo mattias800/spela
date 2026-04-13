@@ -28,16 +28,24 @@ func (s *Scraper) enrichGameMetadata(game *db.Game, igdbGameID int) {
 }
 
 // storeEnrichmentData persists enrichment data to the DB, replacing any existing data.
+// All deletes and inserts are wrapped in a single transaction to reduce SQLite fsync overhead.
 func (s *Scraper) storeEnrichmentData(game *db.Game, enrichment *igdb.GameEnrichment, igdbGameID int) {
+	tx := s.DB.Begin()
+	defer func() {
+		if r := recover(); r != nil {
+			tx.Rollback()
+		}
+	}()
+
 	// Delete old enrichment data to prevent duplicates on re-scrape
-	s.DB.Where("game_id = ?", game.ID).Delete(&db.GameTheme{})
-	s.DB.Where("game_id = ?", game.ID).Delete(&db.GameKeyword{})
-	s.DB.Where("game_id = ?", game.ID).Delete(&db.GamePlayerPerspective{})
-	s.DB.Where("game_id = ?", game.ID).Delete(&db.GameFranchise{})
-	s.DB.Where("game_id = ?", game.ID).Delete(&db.GameArtworkImage{})
-	s.DB.Where("game_id = ?", game.ID).Delete(&db.GameVideo{})
-	s.DB.Where("game_id = ?", game.ID).Delete(&db.GameLanguageSupport{})
-	s.DB.Where("game_id = ?", game.ID).Delete(&db.GameAgeRating{})
+	tx.Where("game_id = ?", game.ID).Delete(&db.GameTheme{})
+	tx.Where("game_id = ?", game.ID).Delete(&db.GameKeyword{})
+	tx.Where("game_id = ?", game.ID).Delete(&db.GamePlayerPerspective{})
+	tx.Where("game_id = ?", game.ID).Delete(&db.GameFranchise{})
+	tx.Where("game_id = ?", game.ID).Delete(&db.GameArtworkImage{})
+	tx.Where("game_id = ?", game.ID).Delete(&db.GameVideo{})
+	tx.Where("game_id = ?", game.ID).Delete(&db.GameLanguageSupport{})
+	tx.Where("game_id = ?", game.ID).Delete(&db.GameAgeRating{})
 
 	// Batch insert themes
 	if len(enrichment.Themes) > 0 {
@@ -49,7 +57,7 @@ func (s *Scraper) storeEnrichmentData(game *db.Game, enrichment *igdb.GameEnrich
 				Name:        t.Name,
 			})
 		}
-		s.DB.CreateInBatches(&themes, 100)
+		tx.CreateInBatches(&themes, 100)
 	}
 
 	// Batch insert keywords
@@ -62,7 +70,7 @@ func (s *Scraper) storeEnrichmentData(game *db.Game, enrichment *igdb.GameEnrich
 				Name:          k.Name,
 			})
 		}
-		s.DB.CreateInBatches(&keywords, 100)
+		tx.CreateInBatches(&keywords, 100)
 	}
 
 	// Batch insert player perspectives
@@ -75,7 +83,7 @@ func (s *Scraper) storeEnrichmentData(game *db.Game, enrichment *igdb.GameEnrich
 				Name:              p.Name,
 			})
 		}
-		s.DB.CreateInBatches(&perspectives, 100)
+		tx.CreateInBatches(&perspectives, 100)
 	}
 
 	// Store franchises (reuse name from existing DB entries when possible)
@@ -85,7 +93,7 @@ func (s *Scraper) storeEnrichmentData(game *db.Game, enrichment *igdb.GameEnrich
 		if err := s.DB.Where("igdb_franchise_id = ?", fID).First(&existing).Error; err == nil {
 			// Reuse the cached franchise name
 			franchiseName = existing.FranchiseName
-			s.DB.Create(&db.GameFranchise{
+			tx.Create(&db.GameFranchise{
 				GameID:          game.ID,
 				IGDBFranchiseID: fID,
 				FranchiseName:   franchiseName,
@@ -99,7 +107,7 @@ func (s *Scraper) storeEnrichmentData(game *db.Game, enrichment *igdb.GameEnrich
 			}
 			if franchise != nil {
 				franchiseName = franchise.Name
-				s.DB.Create(&db.GameFranchise{
+				tx.Create(&db.GameFranchise{
 					GameID:          game.ID,
 					IGDBFranchiseID: fID,
 					FranchiseName:   franchiseName,
@@ -111,7 +119,7 @@ func (s *Scraper) storeEnrichmentData(game *db.Game, enrichment *igdb.GameEnrich
 		}
 	}
 
-	// Store artworks (download images locally)
+	// Store artworks — download images outside the transaction, insert records inside.
 	var artworkConsole db.Console
 	s.DB.First(&artworkConsole, game.ConsoleID)
 	consoleAbbr := strings.ToLower(artworkConsole.Abbreviation)
@@ -127,7 +135,7 @@ func (s *Scraper) storeEnrichmentData(game *db.Game, enrichment *igdb.GameEnrich
 		if path := s.DownloadExternalImage(artworkURL, subpath); path != "" {
 			localPath = path
 		}
-		s.DB.Create(&db.GameArtworkImage{
+		tx.Create(&db.GameArtworkImage{
 			GameID:      game.ID,
 			IGDBImageID: a.ImageID,
 			LocalPath:   localPath,
@@ -150,7 +158,7 @@ func (s *Scraper) storeEnrichmentData(game *db.Game, enrichment *igdb.GameEnrich
 			})
 		}
 		if len(videos) > 0 {
-			s.DB.CreateInBatches(&videos, 100)
+			tx.CreateInBatches(&videos, 100)
 		}
 	}
 
@@ -168,7 +176,7 @@ func (s *Scraper) storeEnrichmentData(game *db.Game, enrichment *igdb.GameEnrich
 			})
 		}
 		if len(langSupports) > 0 {
-			s.DB.CreateInBatches(&langSupports, 100)
+			tx.CreateInBatches(&langSupports, 100)
 		}
 	}
 
@@ -188,11 +196,16 @@ func (s *Scraper) storeEnrichmentData(game *db.Game, enrichment *igdb.GameEnrich
 			})
 		}
 		if len(ageRatings) > 0 {
-			s.DB.CreateInBatches(&ageRatings, 100)
+			tx.CreateInBatches(&ageRatings, 100)
 		}
 	}
 
-	// Handle series (IGDB collection)
+	// Commit the enrichment transaction (all deletes + inserts in one fsync)
+	if err := tx.Commit().Error; err != nil {
+		slog.Warn("failed to commit enrichment transaction", "game", game.Title, "error", err)
+	}
+
+	// Handle series (IGDB collection) — may involve external IGDB calls, runs outside tx
 	if enrichment.CollectionID != nil {
 		s.handleSeriesForGame(game, *enrichment.CollectionID)
 	}
