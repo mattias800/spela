@@ -1,0 +1,292 @@
+package scraper
+
+import (
+	"testing"
+
+	"github.com/spela/server/internal/db"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"gorm.io/driver/sqlite"
+	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
+)
+
+func setupQueueTestDB(t *testing.T) *gorm.DB {
+	t.Helper()
+	database, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{
+		Logger: logger.Default.LogMode(logger.Silent),
+	})
+	require.NoError(t, err)
+	require.NoError(t, database.AutoMigrate(&db.ScrapeJob{}, &db.ScrapeQueueItem{}))
+	return database
+}
+
+func TestCreateJob(t *testing.T) {
+	q := NewScrapeQueue(setupQueueTestDB(t))
+
+	job, err := q.CreateJob("all", "", "", "", 100)
+	require.NoError(t, err)
+	assert.Equal(t, "running", job.Status)
+	assert.Equal(t, "all", job.Mode)
+	assert.Equal(t, 100, job.TotalItems)
+	assert.NotNil(t, job.StartedAt)
+	assert.NotZero(t, job.ID)
+}
+
+func TestGetActiveJob(t *testing.T) {
+	q := NewScrapeQueue(setupQueueTestDB(t))
+
+	job, err := q.GetActiveJob()
+	require.NoError(t, err)
+	assert.Nil(t, job)
+
+	created, err := q.CreateJob("new", "", "", "", 50)
+	require.NoError(t, err)
+
+	job, err = q.GetActiveJob()
+	require.NoError(t, err)
+	require.NotNil(t, job)
+	assert.Equal(t, created.ID, job.ID)
+}
+
+func TestEnqueueGames(t *testing.T) {
+	database := setupQueueTestDB(t)
+	q := NewScrapeQueue(database)
+
+	job, err := q.CreateJob("all", "", "", "", 3)
+	require.NoError(t, err)
+
+	err = q.EnqueueGames(job.ID, []uint{10, 20, 30}, 0)
+	require.NoError(t, err)
+
+	var count int64
+	database.Model(&db.ScrapeQueueItem{}).Where("job_id = ?", job.ID).Count(&count)
+	assert.Equal(t, int64(3), count)
+}
+
+func TestEnqueueGamesEmpty(t *testing.T) {
+	q := NewScrapeQueue(setupQueueTestDB(t))
+	err := q.EnqueueGames(1, []uint{}, 0)
+	require.NoError(t, err)
+}
+
+func TestEnqueueGame(t *testing.T) {
+	database := setupQueueTestDB(t)
+	q := NewScrapeQueue(database)
+
+	err := q.EnqueueGame(42, nil, 100)
+	require.NoError(t, err)
+
+	var item db.ScrapeQueueItem
+	require.NoError(t, database.First(&item).Error)
+	assert.Equal(t, uint(42), item.GameID)
+	assert.Nil(t, item.JobID)
+	assert.Equal(t, 100, item.Priority)
+	assert.Equal(t, "pending", item.Status)
+}
+
+func TestDequeue(t *testing.T) {
+	database := setupQueueTestDB(t)
+	q := NewScrapeQueue(database)
+
+	item, err := q.Dequeue()
+	require.NoError(t, err)
+	assert.Nil(t, item)
+
+	job, _ := q.CreateJob("all", "", "", "", 3)
+	require.NoError(t, q.EnqueueGames(job.ID, []uint{1, 2}, 0))
+	require.NoError(t, q.EnqueueGame(3, &job.ID, 100))
+
+	item, err = q.Dequeue()
+	require.NoError(t, err)
+	require.NotNil(t, item)
+	assert.Equal(t, uint(3), item.GameID)
+	assert.Equal(t, "in_progress", item.Status)
+
+	item, err = q.Dequeue()
+	require.NoError(t, err)
+	require.NotNil(t, item)
+	assert.Equal(t, uint(1), item.GameID)
+}
+
+func TestMarkCompleted(t *testing.T) {
+	database := setupQueueTestDB(t)
+	q := NewScrapeQueue(database)
+
+	job, _ := q.CreateJob("all", "", "", "", 2)
+	require.NoError(t, q.EnqueueGames(job.ID, []uint{1, 2}, 0))
+
+	item, _ := q.Dequeue()
+	jobDone, err := q.MarkCompleted(item)
+	require.NoError(t, err)
+	assert.False(t, jobDone)
+
+	var updated db.ScrapeQueueItem
+	database.First(&updated, item.ID)
+	assert.Equal(t, "completed", updated.Status)
+	assert.NotNil(t, updated.CompletedAt)
+
+	var updatedJob db.ScrapeJob
+	database.First(&updatedJob, job.ID)
+	assert.Equal(t, 1, updatedJob.CompletedItems)
+	assert.Equal(t, "running", updatedJob.Status)
+}
+
+func TestMarkFailed(t *testing.T) {
+	database := setupQueueTestDB(t)
+	q := NewScrapeQueue(database)
+
+	job, _ := q.CreateJob("all", "", "", "", 1)
+	require.NoError(t, q.EnqueueGames(job.ID, []uint{1}, 0))
+
+	item, _ := q.Dequeue()
+	jobDone, err := q.MarkFailed(item, "IGDB timeout")
+	require.NoError(t, err)
+	assert.True(t, jobDone)
+
+	var updated db.ScrapeQueueItem
+	database.First(&updated, item.ID)
+	assert.Equal(t, "failed", updated.Status)
+	assert.Equal(t, "IGDB timeout", updated.ErrorMessage)
+
+	var updatedJob db.ScrapeJob
+	database.First(&updatedJob, job.ID)
+	assert.Equal(t, 1, updatedJob.FailedItems)
+	assert.Equal(t, "completed", updatedJob.Status)
+	assert.NotNil(t, updatedJob.CompletedAt)
+}
+
+func TestJobAutoCompletes(t *testing.T) {
+	database := setupQueueTestDB(t)
+	q := NewScrapeQueue(database)
+
+	job, _ := q.CreateJob("new", "", "", "", 2)
+	require.NoError(t, q.EnqueueGames(job.ID, []uint{1, 2}, 0))
+
+	item1, _ := q.Dequeue()
+	jobDone, _ := q.MarkCompleted(item1)
+	assert.False(t, jobDone)
+
+	item2, _ := q.Dequeue()
+	jobDone, _ = q.MarkCompleted(item2)
+	assert.True(t, jobDone)
+
+	var updatedJob db.ScrapeJob
+	database.First(&updatedJob, job.ID)
+	assert.Equal(t, "completed", updatedJob.Status)
+	assert.Equal(t, 2, updatedJob.CompletedItems)
+}
+
+func TestMarkCompletedStandaloneItem(t *testing.T) {
+	database := setupQueueTestDB(t)
+	q := NewScrapeQueue(database)
+
+	require.NoError(t, q.EnqueueGame(42, nil, 100))
+
+	item, _ := q.Dequeue()
+	jobDone, err := q.MarkCompleted(item)
+	require.NoError(t, err)
+	assert.False(t, jobDone)
+
+	var updated db.ScrapeQueueItem
+	database.First(&updated, item.ID)
+	assert.Equal(t, "completed", updated.Status)
+}
+
+func TestCancelJob(t *testing.T) {
+	database := setupQueueTestDB(t)
+	q := NewScrapeQueue(database)
+
+	job, _ := q.CreateJob("all", "", "", "", 3)
+	require.NoError(t, q.EnqueueGames(job.ID, []uint{1, 2, 3}, 0))
+
+	item, _ := q.Dequeue()
+	q.MarkCompleted(item)
+
+	require.NoError(t, q.CancelJob(job.ID))
+
+	var updatedJob db.ScrapeJob
+	database.First(&updatedJob, job.ID)
+	assert.Equal(t, "cancelled", updatedJob.Status)
+	assert.NotNil(t, updatedJob.CompletedAt)
+
+	var cancelledCount int64
+	database.Model(&db.ScrapeQueueItem{}).
+		Where("job_id = ? AND status = ?", job.ID, "cancelled").Count(&cancelledCount)
+	assert.Equal(t, int64(2), cancelledCount)
+
+	var completedCount int64
+	database.Model(&db.ScrapeQueueItem{}).
+		Where("job_id = ? AND status = ?", job.ID, "completed").Count(&completedCount)
+	assert.Equal(t, int64(1), completedCount)
+}
+
+func TestResetInProgressItems(t *testing.T) {
+	database := setupQueueTestDB(t)
+	q := NewScrapeQueue(database)
+
+	job, _ := q.CreateJob("all", "", "", "", 2)
+	require.NoError(t, q.EnqueueGames(job.ID, []uint{1, 2}, 0))
+
+	q.Dequeue()
+
+	count, err := q.ResetInProgressItems()
+	require.NoError(t, err)
+	assert.Equal(t, int64(1), count)
+
+	var pendingCount int64
+	database.Model(&db.ScrapeQueueItem{}).
+		Where("status = ?", "pending").Count(&pendingCount)
+	assert.Equal(t, int64(2), pendingCount)
+}
+
+func TestMergeGames(t *testing.T) {
+	database := setupQueueTestDB(t)
+	q := NewScrapeQueue(database)
+
+	job, _ := q.CreateJob("all", "", "", "", 2)
+	require.NoError(t, q.EnqueueGames(job.ID, []uint{1, 2}, 0))
+
+	added, err := q.MergeGames(job.ID, []uint{2, 3, 4})
+	require.NoError(t, err)
+	assert.Equal(t, 2, added)
+
+	var updatedJob db.ScrapeJob
+	database.First(&updatedJob, job.ID)
+	assert.Equal(t, 4, updatedJob.TotalItems)
+
+	var totalCount int64
+	database.Model(&db.ScrapeQueueItem{}).Where("job_id = ?", job.ID).Count(&totalCount)
+	assert.Equal(t, int64(4), totalCount)
+}
+
+func TestMergeGamesEmpty(t *testing.T) {
+	q := NewScrapeQueue(setupQueueTestDB(t))
+	job, _ := q.CreateJob("all", "", "", "", 0)
+	added, err := q.MergeGames(job.ID, []uint{})
+	require.NoError(t, err)
+	assert.Equal(t, 0, added)
+}
+
+func TestReplaceJob(t *testing.T) {
+	database := setupQueueTestDB(t)
+	q := NewScrapeQueue(database)
+
+	oldJob, _ := q.CreateJob("all", "", "", "", 3)
+	require.NoError(t, q.EnqueueGames(oldJob.ID, []uint{1, 2, 3}, 0))
+	item, _ := q.Dequeue()
+	q.MarkCompleted(item)
+
+	require.NoError(t, q.CancelJob(oldJob.ID))
+
+	newJob, _ := q.CreateJob("all", "", "", "", 2)
+	require.NoError(t, q.EnqueueGames(newJob.ID, []uint{10, 20}, 0))
+
+	var old db.ScrapeJob
+	database.First(&old, oldJob.ID)
+	assert.Equal(t, "cancelled", old.Status)
+
+	active, _ := q.GetActiveJob()
+	require.NotNil(t, active)
+	assert.Equal(t, newJob.ID, active.ID)
+}
