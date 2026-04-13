@@ -1,6 +1,7 @@
 package api
 
 import (
+	"fmt"
 	"log/slog"
 	"net/http"
 	"os"
@@ -9,23 +10,23 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/spela/server/internal/db"
 	"github.com/spela/server/internal/igdb"
-	"github.com/spela/server/internal/scraper"
 	ws "github.com/spela/server/internal/websocket"
 	"gorm.io/gorm"
 )
 
-// TriggerScrape starts a metadata scraping operation (admin only).
-// Only one scrape can run at a time; concurrent requests are rejected.
+// TriggerScrape creates a scrape job and enqueues matching games (admin only).
 // Pass ?mode=all to re-scrape all games, ?mode=fallback to re-scrape
 // games that only have LibRetro metadata. Default scrapes unscraped games only.
 // Pass ?console=<abbreviation> to scrape only games for a specific console.
+// Pass ?conflict=replace to cancel the current scrape and start a new one,
+// or ?conflict=merge to add games to the current scrape.
 // Legacy ?force=true is equivalent to ?mode=all.
 func (h *AdminHandler) TriggerScrape(c *gin.Context) {
 	h.tryConfigureIGDB()
 	h.tryConfigureSteamGridDB()
 
-	mode := c.Query("mode")
-	if mode == "" && c.Query("force") == "true" {
+	mode := c.DefaultQuery("mode", "new")
+	if c.Query("force") == "true" {
 		mode = "all"
 	}
 
@@ -40,27 +41,104 @@ func (h *AdminHandler) TriggerScrape(c *gin.Context) {
 		consoleID = console.ID
 	}
 
-	ctx, ok := h.Scraper.TryStartScrape()
-	if !ok {
-		c.JSON(http.StatusConflict, gin.H{"error": "A scrape operation is already in progress"})
+	source := c.Query("source")
+	status := c.Query("status")
+	conflict := c.DefaultQuery("conflict", "reject")
+
+	// Check for active job
+	activeJob, err := h.Scraper.Queue.GetActiveJob()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "checking active job"})
 		return
 	}
 
-	// Count matching games before launching the goroutine so we can
-	// return the total in the HTTP response for immediate user feedback.
-	var total int64
+	if activeJob != nil {
+		switch conflict {
+		case "replace":
+			if err := h.Scraper.Queue.CancelJob(activeJob.ID); err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{"error": "cancelling active job"})
+				return
+			}
+			h.Hub.Broadcast(ws.Event{Type: "scrape_cancelled", Payload: gin.H{}})
+		case "merge":
+			gameIDs, err := h.collectGameIDs(mode, consoleID, source, status)
+			if err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{"error": "collecting games"})
+				return
+			}
+			added, err := h.Scraper.Queue.MergeGames(activeJob.ID, gameIDs)
+			if err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{"error": "merging games"})
+				return
+			}
+			c.JSON(http.StatusOK, gin.H{
+				"jobId":      activeJob.ID,
+				"added":      added,
+				"totalItems": activeJob.TotalItems + added,
+			})
+			return
+		default: // reject
+			c.JSON(http.StatusConflict, gin.H{
+				"error":      "scrape already in progress",
+				"jobId":      activeJob.ID,
+				"totalItems": activeJob.TotalItems,
+				"completed":  activeJob.CompletedItems,
+				"failed":     activeJob.FailedItems,
+			})
+			return
+		}
+	}
+
+	// Collect game IDs matching the query
+	gameIDs, err := h.collectGameIDs(mode, consoleID, source, status)
+	if err != nil {
+		slog.Error("failed to collect game IDs for scrape", "error", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "collecting games"})
+		return
+	}
+
+	if len(gameIDs) == 0 {
+		c.JSON(http.StatusOK, gin.H{"total": 0, "message": "no games to scrape"})
+		return
+	}
+
+	consoleFilter := c.Query("console")
+
+	// Create job and enqueue
+	job, err := h.Scraper.Queue.CreateJob(mode, source, status, consoleFilter, len(gameIDs))
+	if err != nil {
+		slog.Error("failed to create scrape job", "error", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "creating job"})
+		return
+	}
+
+	if err := h.Scraper.Queue.EnqueueGames(job.ID, gameIDs, 0); err != nil {
+		slog.Error("failed to enqueue games", "error", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "enqueuing games"})
+		return
+	}
+
+	h.Hub.Broadcast(ws.Event{Type: "scrape_started", Payload: gin.H{
+		"jobId": job.ID,
+		"total": len(gameIDs),
+		"mode":  mode,
+	}})
+
+	adminID, _ := c.Get("userId")
+	slog.Info("audit: admin triggered scrape", "admin_id", adminID, "mode", mode, "console_id", consoleID, "total", len(gameIDs))
+	c.JSON(http.StatusOK, gin.H{"jobId": job.ID, "total": len(gameIDs)})
+}
+
+// collectGameIDs builds the game query based on filters and returns matching IDs.
+func (h *AdminHandler) collectGameIDs(mode string, consoleID uint, source, status string) ([]uint, error) {
 	q := h.DB.Model(&db.Game{})
 	if consoleID > 0 {
 		q = q.Where("console_id = ?", consoleID)
 	}
 
-	source := c.Query("source")
-	status := c.Query("status")
 	if source != "" && status != "" {
-		// Filter by games with matching scrape result
 		cooldownCutoff := time.Now().AddDate(0, 0, -7)
 		if status == "not_attempted" {
-			// Games that DON'T have a result row for this source
 			q = q.Where("id NOT IN (SELECT game_id FROM game_scrape_results WHERE source = ?)", source)
 		} else {
 			subQ := "id IN (SELECT game_id FROM game_scrape_results WHERE source = ? AND status = ?"
@@ -72,92 +150,73 @@ func (h *AdminHandler) TriggerScrape(c *gin.Context) {
 			subQ += ")"
 			q = q.Where(subQ, args...)
 		}
-		q.Count(&total)
 	} else {
 		switch mode {
 		case "all":
-			q.Count(&total)
+			// no filter
 		case "fallback":
-			q.Where("scraper_id = 'libretro'").Count(&total)
+			q = q.Where("scraper_id = 'libretro'")
 		default:
-			q.Where("scraper_id = '' OR scraper_id IS NULL").Count(&total)
+			q = q.Where("scraper_id = '' OR scraper_id IS NULL")
 		}
 	}
 
-	h.Hub.Broadcast(ws.Event{Type: "scrape_started", Payload: nil})
-
-	go func() {
-		count, total, err := h.Scraper.ScrapeAll(ctx, mode, consoleID, func(p scraper.ScrapeProgress) {
-			h.Scraper.SetScrapeProgress(&p)
-			h.Hub.Broadcast(ws.Event{Type: "scrape_progress", Payload: p})
-		})
-		if err != nil {
-			h.Scraper.FinishScrape()
-			if ctx.Err() != nil {
-				slog.Info("metadata scrape cancelled", "scraped", count, "total", total)
-				h.Hub.Broadcast(ws.Event{Type: "scrape_cancelled", Payload: gin.H{"scraped": count, "total": total}})
-				return
-			}
-			slog.Error("metadata scrape failed", "error", err)
-			h.Hub.Broadcast(ws.Event{Type: "scrape_error", Payload: gin.H{"error": "metadata scrape failed"}})
-			return
-		}
-		h.Hub.Broadcast(ws.Event{Type: "scrape_complete", Payload: gin.H{"scraped": count, "total": total}})
-
-		// Release the scrape lock BEFORE refreshing top-rated cache.
-		// This allows new scrapes to start while top-rated refresh runs.
-		h.Scraper.FinishScrape()
-
-		// Refresh top-rated cache for all consoles with IGDB platform mappings.
-		// Runs after scrape lock is released so the UI doesn't show "stuck".
-		if h.Scraper.IGDBClient != nil && h.Scraper.IGDBClient.IsConfigured() {
-			h.refreshTopRatedForAllConsoles()
-		}
-	}()
-
-	adminID, _ := c.Get("userId")
-	slog.Info("audit: admin triggered scrape", "admin_id", adminID, "mode", mode, "console_id", consoleID)
-	c.JSON(http.StatusAccepted, gin.H{"message": "scrape started in background", "total": total})
+	var gameIDs []uint
+	if err := q.Pluck("id", &gameIDs).Error; err != nil {
+		return nil, fmt.Errorf("collecting game IDs: %w", err)
+	}
+	return gameIDs, nil
 }
 
 // CancelScrape stops the running scrape operation (admin only).
 func (h *AdminHandler) CancelScrape(c *gin.Context) {
-	if !h.Scraper.CancelScrape() {
+	job, err := h.Scraper.Queue.GetActiveJob()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "checking active job"})
+		return
+	}
+	if job == nil {
 		c.JSON(http.StatusConflict, gin.H{"error": "no scrape operation is running"})
 		return
 	}
 
-	// Broadcast immediately so the frontend stops spinning.
-	// The goroutine will also broadcast when it detects the cancel, but that
-	// can be delayed by seconds while the current game finishes scraping.
-	// Receiving the event twice is harmless (frontend just sets phase="complete").
-	h.Hub.Broadcast(ws.Event{Type: "scrape_cancelled", Payload: gin.H{}})
+	if err := h.Scraper.Queue.CancelJob(job.ID); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "cancelling job"})
+		return
+	}
+
+	h.Hub.Broadcast(ws.Event{Type: "scrape_cancelled", Payload: gin.H{
+		"jobId": job.ID,
+	}})
 
 	adminID, _ := c.Get("userId")
-	slog.Info("audit: admin cancelled scrape", "admin_id", adminID)
+	slog.Info("audit: admin cancelled scrape", "admin_id", adminID, "jobId", job.ID)
 	c.JSON(http.StatusOK, gin.H{"message": "scrape cancellation requested"})
 }
 
 // ScrapeStatus returns the current scrape operation status.
 func (h *AdminHandler) ScrapeStatus(c *gin.Context) {
-	active, progress := h.Scraper.GetScrapeStatus()
+	job, err := h.Scraper.Queue.GetActiveJob()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "checking active job"})
+		return
+	}
 
-	if !active || progress == nil {
+	if job == nil {
 		c.JSON(http.StatusOK, gin.H{"active": false})
 		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"active":      true,
-		"current":     progress.Current,
-		"total":       progress.Total,
-		"gameId":      progress.GameID,
-		"gameName":    progress.GameName,
-		"consoleName": progress.ConsoleName,
-		"consoleAbbr": progress.ConsoleAbbr,
-		"successes":   progress.Successes,
-		"failures":    progress.Failures,
-		"verified":    progress.Verified,
+		"active":    true,
+		"jobId":     job.ID,
+		"current":   job.CompletedItems + job.FailedItems,
+		"total":     job.TotalItems,
+		"successes": job.CompletedItems,
+		"failures":  job.FailedItems,
+		"verified":  job.VerifiedItems,
+		"mode":      job.Mode,
+		"startedAt": job.StartedAt,
 	})
 }
 
@@ -263,7 +322,7 @@ func (h *AdminHandler) ScrapeStatusCounts(c *gin.Context) {
 func (h *AdminHandler) ScrapeGame(c *gin.Context) {
 	id := c.Param("id")
 	var game db.Game
-	if err := h.DB.Preload("Console").First(&game, id).Error; err != nil {
+	if err := h.DB.First(&game, id).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "game not found"})
 		return
 	}
@@ -271,17 +330,24 @@ func (h *AdminHandler) ScrapeGame(c *gin.Context) {
 	h.tryConfigureIGDB()
 	h.tryConfigureSteamGridDB()
 
-	if err := h.Scraper.ScrapeGame(&game); err != nil {
-		slog.Warn("scrape failed", "game", game.Title, "error", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "scrape failed"})
+	// Attach to active job if one exists
+	activeJob, _ := h.Scraper.Queue.GetActiveJob()
+	var jobID *uint
+	if activeJob != nil {
+		jobID = &activeJob.ID
+		h.DB.Model(&db.ScrapeJob{}).Where("id = ?", activeJob.ID).
+			Update("total_items", gorm.Expr("total_items + 1"))
+	}
+
+	if err := h.Scraper.Queue.EnqueueGame(game.ID, jobID, 100); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to enqueue game"})
 		return
 	}
 
-	// Reload with screenshots for the response
-	h.DB.Preload("Screenshots").First(&game, game.ID)
-	userID, _ := c.Get("userId")
-	uid, _ := userID.(uint)
-	c.JSON(http.StatusOK, ToGameResponse(game, h.DB, uid))
+	c.JSON(http.StatusAccepted, gin.H{
+		"status": "queued",
+		"gameId": game.ID,
+	})
 }
 
 // RefreshAchievements invalidates the achievement cache for a single game,

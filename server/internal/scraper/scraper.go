@@ -1,7 +1,6 @@
 package scraper
 
 import (
-	"context"
 	"net/http"
 	"sync"
 	"time"
@@ -27,11 +26,8 @@ type Scraper struct {
 	GameDirs         []string
 	cache            *nameCache
 
-	// Scrape state tracking (shared across handlers)
-	scrapeMu       sync.Mutex
-	scraping       bool
-	scrapeProgress *ScrapeProgress
-	scrapeCancel   context.CancelFunc
+	// Persistent scrape queue (replaces in-memory lock)
+	Queue *ScrapeQueue
 
 	// Enrichment state tracking
 	enrichMu       sync.Mutex
@@ -52,6 +48,7 @@ func NewScraper(database *gorm.DB, store *storage.Storage, datDir string, gameDi
 		DATCache:    NewDATCache(datDir, httpClient),
 		GameDirs:    gameDirs,
 		cache:       &nameCache{entries: make(map[string][]nameEntry)},
+		Queue:       NewScrapeQueue(database),
 	}
 }
 
@@ -65,75 +62,18 @@ func (s *Scraper) IsRAConfigured() bool {
 	return s.RAClient != nil && s.RAAPIKey != ""
 }
 
-// TryStartScrape attempts to acquire the scrape lock.
-// Returns a context and true if the lock was acquired. The context is cancelled
-// when CancelScrape is called or when FinishScrape cleans up.
-// Also checks the enrichment lock — scraping and enrichment are mutually exclusive.
-func (s *Scraper) TryStartScrape() (context.Context, bool) {
-	s.scrapeMu.Lock()
-	defer s.scrapeMu.Unlock()
-	s.enrichMu.Lock()
-	defer s.enrichMu.Unlock()
-	if s.scraping || s.enriching {
-		return nil, false
-	}
-	s.scraping = true
-	ctx, cancel := context.WithCancel(context.Background())
-	s.scrapeCancel = cancel
-	return ctx, true
-}
-
-// CancelScrape signals the running scrape to stop gracefully.
-// Returns true if a scrape was running and was cancelled.
-func (s *Scraper) CancelScrape() bool {
-	s.scrapeMu.Lock()
-	defer s.scrapeMu.Unlock()
-	if !s.scraping || s.scrapeCancel == nil {
-		return false
-	}
-	s.scrapeCancel()
-	return true
-}
-
-// FinishScrape releases the scrape lock and clears progress.
-func (s *Scraper) FinishScrape() {
-	s.scrapeMu.Lock()
-	s.scraping = false
-	s.scrapeProgress = nil
-	if s.scrapeCancel != nil {
-		s.scrapeCancel()
-		s.scrapeCancel = nil
-	}
-	s.scrapeMu.Unlock()
-}
-
-// SetScrapeProgress updates the current scrape progress.
-func (s *Scraper) SetScrapeProgress(p *ScrapeProgress) {
-	s.scrapeMu.Lock()
-	s.scrapeProgress = p
-	s.scrapeMu.Unlock()
-}
-
-// GetScrapeStatus returns whether a scrape is active and the current progress.
-func (s *Scraper) GetScrapeStatus() (bool, *ScrapeProgress) {
-	s.scrapeMu.Lock()
-	defer s.scrapeMu.Unlock()
-	if s.scrapeProgress == nil {
-		return s.scraping, nil
-	}
-	p := *s.scrapeProgress
-	return s.scraping, &p
-}
-
 // TryStartEnrich attempts to acquire the enrichment lock.
 // Returns true if the lock was acquired (caller must call FinishEnrich when done).
-// Also checks the scrape lock — enrichment and scraping are mutually exclusive.
+// Also checks the scrape queue — enrichment and scraping are mutually exclusive.
 func (s *Scraper) TryStartEnrich() bool {
-	s.scrapeMu.Lock()
-	defer s.scrapeMu.Unlock()
 	s.enrichMu.Lock()
 	defer s.enrichMu.Unlock()
-	if s.scraping || s.enriching {
+	if s.enriching {
+		return false
+	}
+	// Scraping and enrichment are mutually exclusive
+	activeJob, _ := s.Queue.GetActiveJob()
+	if activeJob != nil {
 		return false
 	}
 	s.enriching = true

@@ -1,0 +1,35 @@
+package db
+
+import (
+	"time"
+)
+
+// ScrapeJob represents a bulk scraping operation that can be paused and resumed.
+type ScrapeJob struct {
+	ID             uint       `gorm:"primarykey" json:"id"`
+	CreatedAt      time.Time  `json:"createdAt"`
+	UpdatedAt      time.Time  `json:"updatedAt"`
+	Status         string     `gorm:"size:32;not null;default:'pending';index" json:"status"` // pending, running, completed, cancelled
+	Mode           string     `gorm:"size:32;not null" json:"mode"`                           // new, all, fallback
+	SourceFilter   string     `gorm:"size:64" json:"sourceFilter,omitempty"`
+	StatusFilter   string     `gorm:"size:64" json:"statusFilter,omitempty"`
+	ConsoleFilter  string     `gorm:"size:64" json:"consoleFilter,omitempty"`
+	TotalItems     int        `json:"totalItems"`
+	CompletedItems int        `json:"completedItems"`
+	FailedItems    int        `json:"failedItems"`
+	VerifiedItems  int        `json:"verifiedItems"`
+	StartedAt      *time.Time `json:"startedAt,omitempty"`
+	CompletedAt    *time.Time `json:"completedAt,omitempty"`
+}
+
+// ScrapeQueueItem represents a single game queued for scraping.
+type ScrapeQueueItem struct {
+	ID           uint       `gorm:"primarykey" json:"id"`
+	CreatedAt    time.Time  `gorm:"index:idx_queue_dequeue,priority:3" json:"createdAt"`
+	JobID        *uint      `gorm:"index" json:"jobId,omitempty"`
+	GameID       uint       `gorm:"not null" json:"gameId"`
+	Priority     int        `gorm:"not null;default:0;index:idx_queue_dequeue,priority:2,sort:desc" json:"priority"` // 0 = bulk, 100 = manual
+	Status       string     `gorm:"size:32;not null;default:'pending';index:idx_queue_dequeue,priority:1" json:"status"` // pending, in_progress, completed, failed, cancelled
+	ErrorMessage string     `gorm:"size:512" json:"errorMessage,omitempty"`
+	CompletedAt  *time.Time `json:"completedAt,omitempty"`
+}

@@ -205,6 +205,9 @@ func Initialize(dbPath string) (*gorm.DB, error) {
 		&UserAchievementShowcase{},
 		// Scrape results per source
 		&GameScrapeResult{},
+		// Persistent scrape queue
+		&ScrapeJob{},
+		&ScrapeQueueItem{},
 	)
 	if err != nil {
 		return nil, fmt.Errorf("running migrations: %w", err)
