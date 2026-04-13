@@ -237,7 +237,13 @@ func main() {
 
 	// Start background scrape worker (must start before auto-scan goroutine
 	// so any enqueued items get processed)
-	scrapeWorker := scraper.NewScrapeWorker(database, metaScraper.Queue, metaScraper, hub, nil)
+	scrapeWorker := scraper.NewScrapeWorker(database, metaScraper.Queue, metaScraper, hub, func() {
+		if merged, err := scanner.MergeGroupsByIGDBID(database); err != nil {
+			slog.Warn("IGDB group merge failed", "error", err)
+		} else if merged > 0 {
+			slog.Info("merged groups by IGDB ID", "merged", merged)
+		}
+	})
 	go scrapeWorker.Run(workerCtx)
 
 	// Auto-scan game library on startup (non-blocking).

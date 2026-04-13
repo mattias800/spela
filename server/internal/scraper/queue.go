@@ -83,6 +83,15 @@ func (q *ScrapeQueue) EnqueueGame(gameID uint, jobID *uint, priority int) error 
 	return nil
 }
 
+// IsGameQueued returns true if the game already has a pending or in_progress queue item.
+func (q *ScrapeQueue) IsGameQueued(gameID uint) (bool, error) {
+	var count int64
+	err := q.db.Model(&db.ScrapeQueueItem{}).
+		Where("game_id = ? AND status IN ?", gameID, []string{"pending", "in_progress"}).
+		Count(&count).Error
+	return count > 0, err
+}
+
 // Dequeue returns the next pending item (highest priority first, then oldest)
 // and marks it as in_progress. Returns nil if queue is empty.
 func (q *ScrapeQueue) Dequeue() (*db.ScrapeQueueItem, error) {
@@ -149,7 +158,7 @@ func (q *ScrapeQueue) finishItem(item *db.ScrapeQueueItem, status, errMsg string
 		if err := tx.First(&job, *item.JobID).Error; err != nil {
 			return err
 		}
-		if job.CompletedItems+job.FailedItems >= job.TotalItems {
+		if job.Status == "running" && job.CompletedItems+job.FailedItems >= job.TotalItems {
 			now := time.Now()
 			if err := tx.Model(&job).Updates(map[string]interface{}{
 				"status":       "completed",
