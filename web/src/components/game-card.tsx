@@ -31,10 +31,10 @@ export function GameCard({
   const { ref, isScraping } = useAutoScrape(game);
 
   return (
-    <Link ref={ref} to={`/games/${game.id}`} data-comp="GameCard" className={cn("group block space-y-3", coverHeight && "flex-shrink-0")}>
+    <Link ref={ref} to={`/games/${game.id}`} data-comp="GameCard" className={cn("group block space-y-3", coverHeight && "flex-shrink-0 inline-block")}>
       <div
         className="relative rounded-2xl overflow-hidden bg-surface-900 border border-surface-800/50 transition-all duration-300 group-hover:border-surface-700/50 group-hover:shadow-xl group-hover:shadow-black/30 group-hover:-translate-y-1"
-        style={coverHeight ? { height: coverHeight } : undefined}
+        style={coverHeight ? { height: coverHeight, width: "fit-content" } : undefined}
       >
         {game.coverUrl ? (
           <img
@@ -126,7 +126,7 @@ export function GameCard({
         )}
       </div>
 
-      <div className="px-1 space-y-1">
+      <div className={cn("px-1 space-y-1", coverHeight && "w-0 min-w-full overflow-hidden")}>
         <h3 className="text-sm font-semibold text-surface-100 truncate group-hover:text-brand-400 transition-colors">
           {game.title}
         </h3>

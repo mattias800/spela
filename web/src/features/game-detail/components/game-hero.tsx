@@ -15,7 +15,7 @@ import {
   Monitor,
   Replace,
 } from "lucide-react";
-import { CoverImage } from "@/components/cover-image";
+import { AreaSizedImage } from "@/components/area-sized-image";
 import { Button, Badge, ActionsMenu } from "@/components/ui";
 import { ConsoleBadge } from "@/components/console-badge";
 import { VerificationBadge } from "./verification-badge";
@@ -83,6 +83,11 @@ export function GameHero({
   const actionsMenuItems = [
     ...(isAdmin
       ? [
+          {
+            label: "Change Cover",
+            icon: <ImageIcon className="h-4 w-4" />,
+            onClick: () => setShowCoverModal(true),
+          },
           {
             label: "Scrape Metadata",
             icon: <RefreshCw className="h-4 w-4" />,
@@ -175,21 +180,23 @@ export function GameHero({
         {/* Content overlay */}
         <div className="relative z-10 flex flex-col items-center md:flex-row md:items-end min-h-[320px] md:min-h-[400px] p-6 md:p-8 gap-6 md:gap-8">
           {/* Cover art */}
-          <div className="flex-shrink-0 w-40 md:w-64 self-center md:self-end">
+          <div className="flex-shrink-0 self-center md:self-end">
             <div className="rounded-xl overflow-hidden bg-surface-900/80 border border-white/10 shadow-2xl backdrop-blur-sm">
-              <CoverImage src={game.coverUrl} alt={game.title} className="w-full h-auto" />
-            </div>
-            <div className="flex justify-center mt-2">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setShowCoverModal(true)}
-                className="text-white/60 hover:text-white/90 text-xs"
-                data-testid="change-cover-btn"
-              >
-                <ImageIcon className="h-3 w-3" />
-                Change cover
-              </Button>
+              {game.coverUrl ? (
+                <AreaSizedImage
+                  src={game.coverUrl}
+                  alt={game.title}
+                  targetArea={55000}
+                  maxHeight={360}
+                  maxWidth={320}
+                  minHeight={160}
+                  className="rounded-xl"
+                />
+              ) : (
+                <div className="w-48 flex items-center justify-center bg-surface-800" style={{ aspectRatio: "3/4" }}>
+                  <span className="text-3xl font-bold text-surface-600">{game.title.charAt(0).toUpperCase()}</span>
+                </div>
+              )}
             </div>
             <CoverArtSelector
               open={showCoverModal}
