@@ -173,9 +173,9 @@ export function GameHero({
         <div className="absolute inset-0 bg-gradient-to-t from-surface-950 via-transparent to-transparent" />
 
         {/* Content overlay */}
-        <div className="relative z-10 flex items-end min-h-[320px] md:min-h-[400px] p-6 md:p-8 gap-6 md:gap-8">
+        <div className="relative z-10 flex flex-col items-center md:flex-row md:items-end min-h-[320px] md:min-h-[400px] p-6 md:p-8 gap-6 md:gap-8">
           {/* Cover art */}
-          <div className="flex-shrink-0 w-36 md:w-48 self-end">
+          <div className="flex-shrink-0 w-40 md:w-64 self-center md:self-end">
             <div className="rounded-xl overflow-hidden bg-surface-900/80 border border-white/10 shadow-2xl backdrop-blur-sm">
               <CoverImage src={game.coverUrl} alt={game.title} className="w-full h-auto" />
             </div>
