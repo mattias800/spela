@@ -35,7 +35,7 @@ export function DropdownMenu({
         <div
           role="menu"
           className={cn(
-            "absolute top-full mt-2 z-40 rounded-xl bg-surface-900 border border-surface-800 shadow-2xl py-1 max-h-64 overflow-y-auto",
+            "absolute top-full mt-2 z-40 rounded-xl bg-surface-900 border border-surface-800 shadow-2xl py-1",
             align === "right" ? "right-0" : "left-0",
             className,
           )}

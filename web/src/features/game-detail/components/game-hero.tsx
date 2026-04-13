@@ -161,9 +161,9 @@ export function GameHero({
   ];
 
   return (
-    <div className="relative overflow-hidden">
+    <div className="relative">
       {/* Hero banner background */}
-      <div className="relative min-h-[320px] md:min-h-[400px]">
+      <div className="relative min-h-[320px] md:min-h-[400px] overflow-hidden">
         {heroImage ? (
           <img
             src={heroImage}
@@ -176,10 +176,11 @@ export function GameHero({
 
         {/* Subtle bottom gradient — just enough for transition to page background */}
         <div className="absolute inset-0 bg-gradient-to-t from-surface-950 via-transparent to-transparent" />
+      </div>
 
-        {/* Content overlay */}
-        <div className="relative z-10 flex flex-col items-center md:flex-row md:items-end min-h-[320px] md:min-h-[400px] p-6 md:p-8 gap-6 md:gap-8">
-          {/* Cover art */}
+      {/* Content overlay — outside overflow-hidden so dropdowns aren't clipped */}
+      <div className="absolute inset-0 z-10 flex flex-col items-center md:flex-row md:items-end min-h-[320px] md:min-h-[400px] p-6 md:p-8 gap-6 md:gap-8">
+        {/* Cover art */}
           <div className="flex-shrink-0 self-center md:self-end">
             <div className="rounded-xl overflow-hidden bg-surface-900/80 border border-white/10 shadow-2xl backdrop-blur-sm">
               {game.coverUrl ? (
@@ -306,8 +307,6 @@ export function GameHero({
           </div>
         </div>
       </div>
-
-    </div>
   );
 }
 
