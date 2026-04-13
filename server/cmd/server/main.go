@@ -285,28 +285,26 @@ func main() {
 			"total", result.TotalGames,
 		)
 
-		// Auto-scrape new games if IGDB is configured.
-		// Load IGDB credentials from env vars or database settings (same logic
-		// as admin_handler_scraper.go:tryConfigureIGDB).
-		if result.NewGames > 0 {
-			clientID := os.Getenv("SPELA_IGDB_CLIENT_ID")
-			clientSecret := os.Getenv("SPELA_IGDB_CLIENT_SECRET")
-			if clientID == "" || clientSecret == "" {
-				var settings []db.ServerSetting
-				database.Where("key IN ?", []string{"igdb_client_id", "igdb_client_secret"}).Find(&settings)
-				for _, s := range settings {
-					switch s.Key {
-					case "igdb_client_id":
-						clientID = s.Value
-					case "igdb_client_secret":
-						clientSecret = s.Value
-					}
+		// Configure scraper clients unconditionally — the worker may need
+		// them to resume an interrupted scrape job even if no new games were found.
+		clientID := os.Getenv("SPELA_IGDB_CLIENT_ID")
+		clientSecret := os.Getenv("SPELA_IGDB_CLIENT_SECRET")
+		if clientID == "" || clientSecret == "" {
+			var settings []db.ServerSetting
+			database.Where("key IN ?", []string{"igdb_client_id", "igdb_client_secret"}).Find(&settings)
+			for _, s := range settings {
+				switch s.Key {
+				case "igdb_client_id":
+					clientID = s.Value
+				case "igdb_client_secret":
+					clientSecret = s.Value
 				}
 			}
-			if clientID != "" && clientSecret != "" {
-				metaScraper.IGDBClient = igdb.NewClient(clientID, clientSecret)
-			}
 		}
+		if clientID != "" && clientSecret != "" {
+			metaScraper.IGDBClient = igdb.NewClient(clientID, clientSecret)
+		}
+
 		// Configure RA API key for achievement scraping
 		raAPIKey := os.Getenv("SPELA_RA_API_KEY")
 		if raAPIKey == "" {
@@ -320,17 +318,17 @@ func main() {
 			slog.Info("RA API key configured for achievement scraping")
 		}
 
-		if result.NewGames > 0 && metaScraper.IsIGDBConfigured() {
-			// Configure SteamGridDB for hero art (env var or DB setting)
-			if sgdbKey := os.Getenv("SPELA_STEAMGRIDDB_API_KEY"); sgdbKey != "" {
-				metaScraper.ConfigureSteamGridDB(sgdbKey)
-			} else {
-				var setting db.ServerSetting
-				if err := database.Where("key = ?", "steamgriddb_api_key").First(&setting).Error; err == nil && setting.Value != "" {
-					metaScraper.ConfigureSteamGridDB(setting.Value)
-				}
+		// Configure SteamGridDB for hero art (env var or DB setting)
+		if sgdbKey := os.Getenv("SPELA_STEAMGRIDDB_API_KEY"); sgdbKey != "" {
+			metaScraper.ConfigureSteamGridDB(sgdbKey)
+		} else {
+			var setting db.ServerSetting
+			if err := database.Where("key = ?", "steamgriddb_api_key").First(&setting).Error; err == nil && setting.Value != "" {
+				metaScraper.ConfigureSteamGridDB(setting.Value)
 			}
+		}
 
+		if result.NewGames > 0 && metaScraper.IsIGDBConfigured() {
 			// Collect new (unscraped) game IDs
 			var gameIDs []uint
 			database.Model(&db.Game{}).
