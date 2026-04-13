@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { Repeat, Layers } from "lucide-react";
-import { Button, BackButton, Modal, Skeleton, EmptyState, Section } from "@/components/ui";
+import { Button, Modal, EmptyState, Section, Skeleton } from "@/components/ui";
+import { PageLayout, SectionList } from "@/components/layout";
 import { useToast } from "@/components/ui";
 import {
   useSharedSession,
@@ -67,7 +68,13 @@ export function SharedSessionDetailPage() {
   const canPlayInBrowser = !!consoleInfo?.emulatorJsCore;
 
   if (isLoading) {
-    return <SharedSessionDetailSkeleton />;
+    return (
+      <PageLayout backButtonVariant="standard">
+        <SectionList className="max-w-5xl">
+          <SharedSessionDetailSkeleton />
+        </SectionList>
+      </PageLayout>
+    );
   }
 
   if (!sharedSession) {
@@ -115,8 +122,8 @@ export function SharedSessionDetailPage() {
   }
 
   return (
-    <div className="max-w-5xl space-y-8">
-      <BackButton onClick={() => navigate(-1)} />
+    <PageLayout backButtonVariant="standard">
+      <SectionList className="max-w-5xl">
 
       <SharedSessionHero
         sharedSession={sharedSession}
@@ -219,6 +226,7 @@ export function SharedSessionDetailPage() {
           </Button>
         </div>
       </Modal>
-    </div>
+    </SectionList>
+    </PageLayout>
   );
 }

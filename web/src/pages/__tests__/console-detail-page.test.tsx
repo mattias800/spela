@@ -153,7 +153,7 @@ describe("ConsoleDetailPage", () => {
     it("renders back to consoles button", () => {
       renderPage();
       expect(
-        screen.getByRole("button", { name: /back to consoles/i }),
+        screen.getByTestId("page-back-button"),
       ).toBeInTheDocument();
     });
 

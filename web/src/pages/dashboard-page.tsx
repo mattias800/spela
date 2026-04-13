@@ -14,6 +14,7 @@ import { GameCard } from "@/components/game-card";
 import { ScrollShelf } from "@/components/scroll-shelf";
 import { CAROUSEL_CARD_HEIGHT } from "@/lib/carousel-constants";
 import { Badge, Skeleton, EmptyState, TitledSection } from "@/components/ui";
+import { PageLayout, SectionList } from "@/components/layout";
 import { PersonalStatsCard } from "@/features/dashboard/components/personal-stats-card";
 import {
   useRecentGames,
@@ -247,16 +248,11 @@ export function DashboardPage() {
   const showEmptyState = !isLoading && !hasRecent && !hasFavorites && !hasGames;
 
   return (
-    <div className="space-y-10">
-      <div>
-        <h1 className="text-3xl font-bold text-surface-100">
-          Welcome back, {user?.username}
-        </h1>
-        <p className="mt-1 text-surface-400">
-          Pick up where you left off or discover something new.
-        </p>
-      </div>
-
+    <PageLayout
+      title={`Welcome back, ${user?.username}`}
+      subtitle="Pick up where you left off or discover something new."
+    >
+      <SectionList>
       {hasMissingBios && (
         <BiosWarningBanner
           message="Some consoles are missing required BIOS files. Games may not work correctly."
@@ -429,6 +425,7 @@ export function DashboardPage() {
           </div>
         </div>
       </div>
-    </div>
+      </SectionList>
+    </PageLayout>
   );
 }

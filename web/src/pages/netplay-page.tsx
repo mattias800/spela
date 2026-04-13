@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Gamepad2, Plus } from "lucide-react";
+import { PageLayout, SectionList } from "@/components/layout";
 import {
   Button,
   Input,
@@ -70,14 +71,9 @@ export function NetplayPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-start justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-surface-100">Netplay</h1>
-          <p className="mt-1 text-surface-400">
-            Real-time multiplayer sessions.
-          </p>
-        </div>
+    <PageLayout title="Netplay" subtitle="Real-time multiplayer sessions.">
+      <SectionList>
+      <div className="flex justify-end">
         <Button onClick={() => setShowCreateModal(true)}>
           <Plus className="h-4 w-4" />
           Create Session
@@ -156,6 +152,7 @@ export function NetplayPage() {
           navigate(`/netplay/${sessionId}`);
         }}
       />
-    </div>
+    </SectionList>
+    </PageLayout>
   );
 }

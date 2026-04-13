@@ -1,4 +1,5 @@
 import { useState, useCallback, useRef } from "react";
+import { PageLayout, SectionList } from "@/components/layout";
 import { Upload, Cpu, Download } from "lucide-react";
 import {
   Button,
@@ -110,16 +111,18 @@ export function AdminBiosPage() {
 
   if (isLoading) {
     return (
-      <div className="space-y-6 max-w-4xl">
-        <Skeleton className="h-8 w-48" />
-        <Skeleton className="h-4 w-80" />
-        <Skeleton className="h-32 w-full rounded-2xl" />
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <Skeleton className="h-24 rounded-2xl" />
-          <Skeleton className="h-24 rounded-2xl" />
-          <Skeleton className="h-24 rounded-2xl" />
-        </div>
-      </div>
+      <PageLayout>
+        <SectionList className="max-w-4xl">
+          <Skeleton className="h-8 w-48" />
+          <Skeleton className="h-4 w-80" />
+          <Skeleton className="h-32 w-full rounded-2xl" />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Skeleton className="h-24 rounded-2xl" />
+            <Skeleton className="h-24 rounded-2xl" />
+            <Skeleton className="h-24 rounded-2xl" />
+          </div>
+        </SectionList>
+      </PageLayout>
     );
   }
 
@@ -128,14 +131,8 @@ export function AdminBiosPage() {
   const hasFiles = (biosData?.files ?? []).length > 0;
 
   return (
-    <div className="space-y-6 max-w-4xl">
-      <div>
-        <h1 className="text-3xl font-bold text-surface-100">BIOS Files</h1>
-        <p className="mt-1 text-surface-400">
-          Manage firmware and BIOS files required by emulation cores.
-        </p>
-      </div>
-
+    <PageLayout title="BIOS Files" subtitle="Manage firmware and BIOS files required by emulation cores.">
+      <SectionList className="max-w-4xl">
       {/* Download missing BIOS */}
       <div className="flex items-center gap-4">
         <Button
@@ -231,6 +228,7 @@ export function AdminBiosPage() {
         onConfirm={handleDeleteConfirm}
         isPending={deleteBios.isPending}
       />
-    </div>
+    </SectionList>
+    </PageLayout>
   );
 }

@@ -1,4 +1,5 @@
 import { AlertTriangle, CheckCircle2, Cpu } from "lucide-react";
+import { PageLayout, SectionList } from "@/components/layout";
 import { Section, Skeleton, Badge } from "@/components/ui";
 import { useCoreCompatibility } from "@/hooks/use-admin";
 
@@ -7,10 +8,12 @@ export function CoreCompatibilityPage() {
 
   if (isLoading) {
     return (
-      <div className="space-y-6 max-w-3xl">
-        <Skeleton className="h-8 w-48" />
-        <Skeleton className="h-64 w-full rounded-2xl" />
-      </div>
+      <PageLayout>
+        <SectionList className="max-w-3xl">
+          <Skeleton className="h-8 w-48" />
+          <Skeleton className="h-64 w-full rounded-2xl" />
+        </SectionList>
+      </PageLayout>
     );
   }
 
@@ -18,17 +21,8 @@ export function CoreCompatibilityPage() {
   const mismatchCount = consoles.filter((c) => !c.matched).length;
 
   return (
-    <div className="space-y-6 max-w-3xl">
-      <div>
-        <h1 className="text-3xl font-bold text-surface-100">
-          Core Compatibility
-        </h1>
-        <p className="mt-1 text-surface-400">
-          Compare emulator cores used on native devices versus the web browser.
-          Mismatched cores mean save states are not portable between platforms.
-        </p>
-      </div>
-
+    <PageLayout title="Core Compatibility" subtitle="Compare emulator cores used on native devices versus the web browser. Mismatched cores mean save states are not portable between platforms.">
+      <SectionList className="max-w-3xl">
       {mismatchCount > 0 && (
         <div className="flex items-start gap-3 rounded-xl border border-warning-500/30 bg-warning-500/10 px-4 py-3">
           <AlertTriangle className="h-5 w-5 text-warning-500 flex-shrink-0 mt-0.5" />
@@ -120,6 +114,7 @@ export function CoreCompatibilityPage() {
           )}
         </div>
       </Section>
-    </div>
+    </SectionList>
+    </PageLayout>
   );
 }

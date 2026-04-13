@@ -1,15 +1,14 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { Wand2, ArrowRight, ArrowLeft, Sparkles, Library } from "lucide-react";
 import { GameCard } from "@/components/game-card";
 import { GameGrid } from "@/components/game-grid";
 import {
-  BackButton,
   Button,
   GameCardSkeleton,
   EmptyState,
   Skeleton,
 } from "@/components/ui";
+import { PageLayout, SectionList } from "@/components/layout";
 import { useWizardSteps, useWizardResults } from "@/hooks/use-explore";
 import { useToggleFavorite } from "@/hooks/use-games";
 import { useTogglePlayLater } from "@/hooks/use-play-later";
@@ -17,7 +16,6 @@ import { cn } from "@/lib/cn";
 import type { WizardOption } from "@/types/api";
 
 export function ExploreWizardPage() {
-  const navigate = useNavigate();
   const { data: wizardData, isLoading: isStepsLoading } = useWizardSteps();
   const { toggle: handleToggleFavorite } = useToggleFavorite();
   const { toggle: handleTogglePlayLater } = useTogglePlayLater();
@@ -58,38 +56,22 @@ export function ExploreWizardPage() {
 
   if (isStepsLoading) {
     return (
-      <div className="space-y-6">
-        <BackButton onClick={() => navigate("/explore")}>
-          Back to Explore
-        </BackButton>
-        <Skeleton className="h-10 w-72" />
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {Array.from({ length: 5 }, (_, i) => (
-            <Skeleton key={i} className="h-24 rounded-xl" />
-          ))}
-        </div>
-      </div>
+      <PageLayout backButtonVariant="standard" backTo="/explore" backLabel="Explore">
+        <SectionList>
+          <Skeleton className="h-10 w-72" />
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {Array.from({ length: 5 }, (_, i) => (
+              <Skeleton key={i} className="h-24 rounded-xl" />
+            ))}
+          </div>
+        </SectionList>
+      </PageLayout>
     );
   }
 
   return (
-    <div className="space-y-8" data-testid="wizard-page">
-      <BackButton onClick={() => navigate("/explore")}>
-        Back to Explore
-      </BackButton>
-
-      {/* Header */}
-      <div className="flex items-center gap-3">
-        <Wand2 className="h-8 w-8 text-brand-400" />
-        <div>
-          <h1 className="text-3xl font-bold text-surface-100">
-            Decision Wizard
-          </h1>
-          <p className="mt-1 text-surface-400">
-            Answer 3 questions and we'll find the perfect game for you.
-          </p>
-        </div>
-      </div>
+    <PageLayout backButtonVariant="standard" backTo="/explore" backLabel="Explore" data-testid="wizard-page" title="Decision Wizard" subtitle="Answer 3 questions and we'll find the perfect game for you." icon={Wand2}>
+      <SectionList>
 
       {/* Progress bar */}
       {steps.length > 0 && (
@@ -148,6 +130,7 @@ export function ExploreWizardPage() {
               onClick={handleBack}
               icon={<ArrowLeft className="h-4 w-4" />}
               className="mt-6"
+              data-testid="wizard-back-step"
             >
               Back
             </Button>
@@ -212,6 +195,7 @@ export function ExploreWizardPage() {
           )}
         </div>
       ) : null}
-    </div>
+    </SectionList>
+    </PageLayout>
   );
 }

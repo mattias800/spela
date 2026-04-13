@@ -129,7 +129,7 @@ describe("ExploreThemePage", () => {
   it("renders back button", () => {
     renderPage();
     expect(
-      screen.getByRole("button", { name: /back to explore/i }),
+      screen.getByTestId("page-back-button"),
     ).toBeInTheDocument();
   });
 

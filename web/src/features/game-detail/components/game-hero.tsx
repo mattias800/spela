@@ -3,11 +3,7 @@ import { Link } from "react-router-dom";
 import {
   Heart,
   Calendar,
-  Users,
-  Building2,
   Star,
-  HardDrive,
-  Disc,
   RefreshCw,
   Play,
   Trophy,
@@ -18,21 +14,17 @@ import {
   Download,
   Monitor,
   Replace,
-  Award,
 } from "lucide-react";
 import { CoverImage } from "@/components/cover-image";
 import { Button, Badge, ActionsMenu } from "@/components/ui";
 import { ConsoleBadge } from "@/components/console-badge";
 import { VerificationBadge } from "./verification-badge";
 import { CoverArtSelector } from "./cover-art-selector";
-import { MetaItem } from "@/components/meta-item";
 import {
-  formatFileSize,
   formatPlayTime,
   formatRelativeTime,
 } from "@/lib/format";
 import { cn } from "@/lib/cn";
-import { UserRating } from "./user-rating";
 import type { Game } from "@/types/api";
 
 interface GameHeroProps {
@@ -48,7 +40,6 @@ interface GameHeroProps {
   achievementCount?: number;
   achievementUnlocked?: number;
   biosMissing?: boolean;
-  isDemo?: boolean;
   onPlay: () => void;
   onScrape: () => void;
   onRefreshAchievements?: () => void;
@@ -73,7 +64,6 @@ export function GameHero({
   achievementCount,
   achievementUnlocked,
   biosMissing,
-  isDemo,
   onPlay,
   onScrape,
   onRefreshAchievements,
@@ -166,9 +156,9 @@ export function GameHero({
   ];
 
   return (
-    <div className="relative -mx-6 -mt-6 overflow-hidden rounded-b-2xl">
+    <div className="relative overflow-hidden">
       {/* Hero banner background */}
-      <div className="relative min-h-[280px] md:min-h-[340px]">
+      <div className="relative min-h-[320px] md:min-h-[400px]">
         {heroImage ? (
           <img
             src={heroImage}
@@ -179,12 +169,11 @@ export function GameHero({
           <div className="absolute inset-0 bg-gradient-to-br from-surface-800 via-surface-900 to-surface-950" />
         )}
 
-        {/* Gradient overlays for text readability */}
-        <div className="absolute inset-0 bg-gradient-to-t from-surface-950 via-surface-950/70 to-transparent" />
-        <div className="absolute inset-0 bg-gradient-to-r from-surface-950/80 to-transparent" />
+        {/* Subtle bottom gradient — just enough for transition to page background */}
+        <div className="absolute inset-0 bg-gradient-to-t from-surface-950 via-transparent to-transparent" />
 
         {/* Content overlay */}
-        <div className="relative z-10 flex items-end min-h-[280px] md:min-h-[340px] p-6 md:p-8 gap-6 md:gap-8">
+        <div className="relative z-10 flex items-end min-h-[320px] md:min-h-[400px] p-6 md:p-8 gap-6 md:gap-8">
           {/* Cover art */}
           <div className="flex-shrink-0 w-36 md:w-48 self-end">
             <div className="rounded-xl overflow-hidden bg-surface-900/80 border border-white/10 shadow-2xl backdrop-blur-sm">
@@ -209,10 +198,10 @@ export function GameHero({
             />
           </div>
 
-          {/* Title, badges, buttons */}
-          <div className="flex-1 min-w-0 space-y-3 pb-1">
+          {/* Title, badges, buttons — semi-transparent container */}
+          <div className="flex-1 min-w-0 rounded-2xl bg-black/40 backdrop-blur-sm p-5 space-y-3">
             <div>
-              <h1 className="text-2xl font-bold text-white md:text-3xl drop-shadow-lg">
+              <h1 className="text-2xl font-bold text-white md:text-3xl">
                 {game.title}
               </h1>
               <div className="flex flex-wrap items-center gap-2 mt-2">
@@ -253,8 +242,8 @@ export function GameHero({
               </div>
             </div>
 
-            {/* Action buttons */}
-            <div className="flex flex-wrap items-center gap-2">
+            {/* Action buttons + play stats */}
+            <div className="flex flex-wrap items-center gap-3">
               {game.playable ? (
                 <Button
                   variant="primary"
@@ -287,100 +276,30 @@ export function GameHero({
               )}
               <ActionsMenu items={actionsMenuItems} />
               {isScraping && (
-                <span className="flex items-center gap-1.5 text-sm text-brand-400 ml-1">
+                <span className="flex items-center gap-1.5 text-sm text-brand-400">
                   <RefreshCw className="h-4 w-4 animate-spin" />
                   Scraping…
                 </span>
               )}
-            </div>
-
-            {/* Play time + rating */}
-            <div className="flex flex-wrap items-center gap-4 text-sm text-white/60">
-              <span className="flex items-center gap-1">
-                <Clock className="h-4 w-4" />
-                {game.totalPlayTime > 0
-                  ? formatPlayTime(game.totalPlayTime)
-                  : "Not played yet"}
-              </span>
-              {game.lastPlayedAt && (
+              <div className="flex items-center gap-3 text-sm text-white/60">
                 <span className="flex items-center gap-1">
-                  <Calendar className="h-4 w-4" />
-                  {formatRelativeTime(game.lastPlayedAt)}
+                  <Clock className="h-4 w-4" />
+                  {game.totalPlayTime > 0
+                    ? formatPlayTime(game.totalPlayTime)
+                    : "Not played yet"}
                 </span>
-              )}
-              <UserRating gameId={game.id} />
+                {game.lastPlayedAt && (
+                  <span className="flex items-center gap-1">
+                    <Calendar className="h-4 w-4" />
+                    {formatRelativeTime(game.lastPlayedAt)}
+                  </span>
+                )}
+              </div>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Description + metadata below the banner */}
-      <div className="px-6 md:px-8 py-5 bg-surface-950 space-y-4">
-        {game.description && (
-          <p className="text-sm text-surface-300 leading-relaxed">
-            {game.description}
-          </p>
-        )}
-
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-          {game.developer && (
-            <MetaItem
-              icon={Building2}
-              label={isDemo ? "Group" : "Developer"}
-              value={game.developer}
-              href={isDemo ? undefined : `/explore/developers/${encodeURIComponent(game.developer)}`}
-            />
-          )}
-          {!isDemo && game.publisher && (
-            <MetaItem
-              icon={Building2}
-              label="Publisher"
-              value={game.publisher}
-              href={`/explore/publishers/${encodeURIComponent(game.publisher)}`}
-            />
-          )}
-          {game.releaseDate && (
-            <MetaItem
-              icon={Calendar}
-              label={isDemo ? "Year" : "Released"}
-              value={game.releaseDate}
-            />
-          )}
-          {game.genre && (
-            <MetaItem icon={Star} label={isDemo ? "Type" : "Genre"} value={game.genre} />
-          )}
-          {isDemo && game.partyInfo && (
-            <MetaItem icon={Award} label="Party" value={game.partyInfo} />
-          )}
-          {!isDemo && game.players != null && (
-            <MetaItem icon={Users} label="Players" value={`${game.players}`} />
-          )}
-          <MetaItem
-            icon={HardDrive}
-            label="Size"
-            value={formatFileSize(game.fileSize)}
-          />
-          {game.discCount > 1 && (
-            <MetaItem
-              icon={Disc}
-              label="Discs"
-              value={`${game.discCount}`}
-            />
-          )}
-          {achievementCount != null && achievementCount > 0 && (
-            <MetaItem
-              icon={Trophy}
-              label="Achievements"
-              value={
-                achievementUnlocked != null
-                  ? `${achievementUnlocked} / ${achievementCount}`
-                  : `${achievementCount}`
-              }
-              href={`/games/${game.id}/achievements`}
-            />
-          )}
-        </div>
-      </div>
     </div>
   );
 }

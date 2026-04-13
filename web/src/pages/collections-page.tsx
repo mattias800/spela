@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { FolderOpen, Plus, Globe, Lock, Gamepad2 } from "lucide-react";
+import { PageLayout, SectionList } from "@/components/layout";
 import {
   Button,
   Input,
@@ -136,14 +137,9 @@ export function CollectionsPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-start justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-surface-100">Collections</h1>
-          <p className="mt-1 text-surface-400">
-            Organize your games into custom collections.
-          </p>
-        </div>
+    <PageLayout title="Collections" subtitle="Organize your games into custom collections.">
+      <SectionList>
+      <div className="flex justify-end">
         <Button onClick={() => setShowCreateModal(true)}>
           <Plus className="h-4 w-4" />
           Create Collection
@@ -284,6 +280,7 @@ export function CollectionsPage() {
           </div>
         </form>
       </Modal>
-    </div>
+    </SectionList>
+    </PageLayout>
   );
 }

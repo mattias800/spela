@@ -1,7 +1,8 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { Grid2x2, Grid3x3, LayoutGrid, ImageIcon } from "lucide-react";
-import { BackButton, Button, Skeleton, EmptyState } from "@/components/ui";
+import { Button, Skeleton, EmptyState } from "@/components/ui";
+import { PageLayout, SectionList } from "@/components/layout";
 import { ConsoleBadge } from "@/components/console-badge";
 import { CoverImage } from "@/components/cover-image";
 import { cn } from "@/lib/cn";
@@ -62,7 +63,6 @@ function CoverCard({ cover }: { cover: CoverItem }) {
 }
 
 export function CoverGalleryPage() {
-  const navigate = useNavigate();
   const [page, setPage] = useState(1);
   const [consoleFilter, setConsoleFilter] = useState<string | undefined>();
   const [zoom, setZoom] = useState<ZoomLevel>("medium");
@@ -93,23 +93,11 @@ export function CoverGalleryPage() {
   const isInitialLoading = isLoading && page === 1;
 
   return (
-    <div
-      className="max-w-7xl space-y-6"
-      data-testid="cover-gallery-page"
-    >
-      <BackButton onClick={() => navigate(-1)}>Back to Explore</BackButton>
+    <PageLayout backButtonVariant="standard" data-testid="cover-gallery-page" title="Cover Art Wall" subtitle="Browse cover art from your library.">
+      <SectionList className="max-w-7xl">
 
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold text-surface-100">
-            Cover Art Wall
-          </h1>
-          <p className="mt-1 text-surface-400">
-            Browse cover art from your library.
-          </p>
-        </div>
-
-        {/* Zoom controls */}
+      {/* Zoom controls */}
+      <div className="flex justify-end">
         <div
           className="flex items-center gap-1 rounded-lg border border-surface-700 bg-surface-900 p-1"
           role="group"
@@ -241,6 +229,7 @@ export function CoverGalleryPage() {
           )}
         </>
       )}
-    </div>
+    </SectionList>
+    </PageLayout>
   );
 }

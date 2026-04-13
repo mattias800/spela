@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Flag } from "lucide-react";
+import { PageLayout, SectionList } from "@/components/layout";
 import {
   EmptyState,
   Skeleton,
@@ -90,17 +91,8 @@ export function ChallengesPage() {
   ];
 
   return (
-    <div className="max-w-5xl space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold text-surface-100 flex items-center gap-3">
-          <Flag className="h-8 w-8 text-brand-400" />
-          Challenges
-        </h1>
-        <p className="mt-1 text-surface-400">
-          Compete with other players on community-created challenges.
-        </p>
-      </div>
-
+    <PageLayout title="Challenges" subtitle="Compete with other players on community-created challenges." icon={Flag}>
+      <SectionList className="max-w-5xl">
       {/* Tabs */}
       <StateTabNav>
         <StateTabItem
@@ -196,6 +188,7 @@ export function ChallengesPage() {
           </div>
         );
       })()}
-    </div>
+    </SectionList>
+    </PageLayout>
   );
 }

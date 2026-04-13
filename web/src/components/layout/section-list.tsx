@@ -12,12 +12,16 @@ interface SectionListProps {
  * Use as the top-level container for a page's section layout. Direct children
  * should be TitledSection components.
  *
+ * Uses block layout with space-y (margin-based) instead of flex gap so that
+ * zero-height elements (e.g., IntersectionObserver sentinels) don't create
+ * extra gaps — CSS margin collapsing handles them naturally.
+ *
  * This component is allowed to own its own gap because it is a core layout
  * component. See AGENTS.md in this directory.
  */
 export function SectionList({ children, className }: SectionListProps) {
   return (
-    <div data-comp="SectionList" className={cn("flex flex-col gap-8", className)}>
+    <div data-comp="SectionList" className={cn("space-y-8", className)}>
       {children}
     </div>
   );

@@ -4,6 +4,7 @@ import { GameGrid } from "@/components/game-grid";
 import { GameCardSkeleton, EmptyState } from "@/components/ui";
 import { useFavoriteGames, useToggleFavorite } from "@/hooks/use-games";
 import { useTogglePlayLater } from "@/hooks/use-play-later";
+import { PageLayout, SectionList } from "@/components/layout";
 
 export function FavoritesPage() {
   const { data: games, isLoading } = useFavoriteGames();
@@ -11,14 +12,8 @@ export function FavoritesPage() {
   const { toggle: handleTogglePlayLater } = useTogglePlayLater();
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold text-surface-100">Favorites</h1>
-        <p className="mt-1 text-surface-400">
-          Your favorite games, all in one place.
-        </p>
-      </div>
-
+    <PageLayout title="Favorites" subtitle="Your favorite games, all in one place.">
+      <SectionList>
       {isLoading ? (
         <GameGrid>
           {Array.from({ length: 12 }, (_, i) => (
@@ -43,6 +38,7 @@ export function FavoritesPage() {
           ))}
         </GameGrid>
       )}
-    </div>
+    </SectionList>
+    </PageLayout>
   );
 }

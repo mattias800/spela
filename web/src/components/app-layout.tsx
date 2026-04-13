@@ -201,7 +201,7 @@ export function AppLayout() {
 
       {/* Content area — left padding on desktop, top padding on mobile */}
       <div className="pt-14 lg:pt-0 lg:pl-64">
-        <main className="p-6">
+        <main>
           <Outlet />
         </main>
       </div>

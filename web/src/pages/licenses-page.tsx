@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import { ArrowLeft, ExternalLink } from "lucide-react";
+import { PageLayout, SectionList } from "@/components/layout";
 
 interface CreditEntry {
   name: string;
@@ -68,7 +69,8 @@ const credits: CreditEntry[] = [
 
 export function LicensesPage() {
   return (
-    <div className="max-w-2xl mx-auto space-y-8">
+    <PageLayout>
+      <SectionList className="max-w-2xl mx-auto">
       <div className="flex items-center gap-3">
         <Link
           to="/preferences"
@@ -113,6 +115,7 @@ export function LicensesPage() {
           </div>
         ))}
       </div>
-    </div>
+    </SectionList>
+    </PageLayout>
   );
 }

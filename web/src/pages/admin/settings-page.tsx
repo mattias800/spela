@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { PageLayout, SectionList } from "@/components/layout";
 import {
   Button,
   Section,
@@ -79,10 +80,12 @@ export function AdminSettingsPage() {
 
   if (isLoading) {
     return (
-      <div className="space-y-6">
-        <Skeleton className="h-8 w-48" />
-        <Skeleton className="h-64 w-full rounded-2xl" />
-      </div>
+      <PageLayout>
+        <SectionList>
+          <Skeleton className="h-8 w-48" />
+          <Skeleton className="h-64 w-full rounded-2xl" />
+        </SectionList>
+      </PageLayout>
     );
   }
 
@@ -92,14 +95,8 @@ export function AdminSettingsPage() {
   const raEnvConfigured = raStatus?.source === "env";
 
   return (
-    <div className="space-y-6 max-w-3xl">
-      <div>
-        <h1 className="text-3xl font-bold text-surface-100">Server Settings</h1>
-        <p className="mt-1 text-surface-400">
-          Configure server behavior and game scanning.
-        </p>
-      </div>
-
+    <PageLayout title="Server Settings" subtitle="Configure server behavior and game scanning.">
+      <SectionList className="max-w-3xl">
       {igdbNotConfigured && <IgdbWarningBanner variant="settings" />}
 
       <Section>
@@ -218,6 +215,7 @@ export function AdminSettingsPage() {
           Save Settings
         </Button>
       </div>
-    </div>
+    </SectionList>
+    </PageLayout>
   );
 }

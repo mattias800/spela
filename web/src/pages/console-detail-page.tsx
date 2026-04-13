@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useParams, useNavigate, Link } from "react-router-dom";
+import { useParams, Link } from "react-router-dom";
 import {
   Library,
   FolderSearch,
@@ -9,11 +9,11 @@ import { GameCard } from "@/components/game-card";
 import { GameGrid } from "@/components/game-grid";
 import { ConsoleHeroBanner } from "@/components/console-hero-banner";
 import {
-  BackButton,
   EmptyState,
   GameCardSkeleton,
   SearchInput,
 } from "@/components/ui";
+import { PageLayout, SectionList } from "@/components/layout";
 import { useConsoles } from "@/hooks/use-consoles";
 import { useGames, useToggleFavorite } from "@/hooks/use-games";
 import { useTogglePlayLater } from "@/hooks/use-play-later";
@@ -36,7 +36,6 @@ const SMALL_LIBRARY_THRESHOLD = 24;
 
 export function ConsoleDetailPage() {
   const { id } = useParams<{ id: string }>();
-  const navigate = useNavigate();
   const { data: consoles } = useConsoles();
   const { toggle: handleToggleFavorite } = useToggleFavorite();
   const { toggle: handleTogglePlayLater } = useTogglePlayLater();
@@ -79,11 +78,8 @@ export function ConsoleDetailPage() {
       .map((f) => f.fileName) ?? [];
 
   return (
-    <div className="space-y-6">
-      {/* Back button */}
-      <BackButton onClick={() => navigate("/consoles")}>
-        Back to Consoles
-      </BackButton>
+    <PageLayout backButtonVariant="standard" backTo="/consoles" backLabel="Consoles">
+      <SectionList>
 
       {/* Console hero banner */}
       <ConsoleHeroBanner
@@ -179,7 +175,8 @@ export function ConsoleDetailPage() {
           <ConsoleRecentlyAdded consoleId={id!} />
         </>
       )}
-    </div>
+    </SectionList>
+    </PageLayout>
   );
 }
 

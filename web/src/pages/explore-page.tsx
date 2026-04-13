@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Library } from "lucide-react";
 import { Link } from "react-router-dom";
 import { EmptyState, Button } from "@/components/ui";
+import { PageLayout, SectionList } from "@/components/layout";
 import { HeroCarousel } from "@/features/explore/components/hero-carousel";
 import { GameShelf } from "@/features/explore/components/game-shelf";
 import { ThemeGrid } from "@/features/explore/components/theme-grid";
@@ -203,13 +204,7 @@ export function ExplorePage() {
   // Empty library state
   if (hasNoData && !isFeaturedLoading && !isRowsLoading) {
     return (
-      <div className="space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold text-surface-100">Explore</h1>
-          <p className="mt-1 text-surface-400">
-            Discover games in your library.
-          </p>
-        </div>
+      <PageLayout title="Explore" subtitle="Discover games in your library.">
         <EmptyState
           icon={Library}
           title="Nothing to explore yet"
@@ -226,7 +221,7 @@ export function ExplorePage() {
             ) : undefined
           }
         />
-      </div>
+      </PageLayout>
     );
   }
 
@@ -235,14 +230,12 @@ export function ExplorePage() {
   const remainingRows = rows.slice(1);
 
   return (
-    <div className="space-y-10" data-testid="explore-page">
-      <div>
-        <h1 className="text-3xl font-bold text-surface-100">Explore</h1>
-        <p className="mt-1 text-surface-400">
-          Discover games in your library.
-        </p>
-      </div>
-
+    <PageLayout
+      data-testid="explore-page"
+      title="Explore"
+      subtitle="Discover games in your library."
+    >
+      <SectionList>
       {/* Hero Carousel */}
       <HeroCarousel games={featuredGames} isLoading={isFeaturedLoading} />
 
@@ -259,7 +252,7 @@ export function ExplorePage() {
       <WildFeaturesSection />
 
       {/* Personalized & Social Discovery — lazy-loaded */}
-      <div ref={social.ref} />
+      <div ref={social.ref}  />
       <ForYouSection
         rows={forYouData?.rows}
         isLoading={isForYouLoading}
@@ -312,7 +305,7 @@ export function ExplorePage() {
       />
 
       {/* Temporal Discovery — lazy-loaded */}
-      <div ref={temporal.ref} />
+      <div ref={temporal.ref}  />
       <OnThisDayShelf
         data={onThisDayData}
         isLoading={isOnThisDayLoading}
@@ -344,7 +337,7 @@ export function ExplorePage() {
       />
 
       {/* Achievement & Challenge Discovery — lazy-loaded */}
-      <div ref={achievements.ref} />
+      <div ref={achievements.ref}  />
       <EasyToCompleteShelf
         data={easyToCompleteData}
         isLoading={isEasyToCompleteLoading}
@@ -397,7 +390,7 @@ export function ExplorePage() {
       ) : null}
 
       {/* Catalog bottom — lazy-loaded */}
-      <div ref={catalogBottom.ref} />
+      <div ref={catalogBottom.ref}  />
       <ThemeGrid themes={themes} isLoading={isThemesLoading} />
 
       <KeywordChips keywords={keywords} isLoading={isKeywordsLoading} />
@@ -437,6 +430,7 @@ export function ExplorePage() {
         ))
       )}
 
-    </div>
+    </SectionList>
+    </PageLayout>
   );
 }

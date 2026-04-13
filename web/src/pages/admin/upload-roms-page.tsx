@@ -1,4 +1,5 @@
 import { useState, useCallback } from "react";
+import { PageLayout, SectionList } from "@/components/layout";
 import {
   AlertTriangle,
   CheckCheck,
@@ -208,14 +209,8 @@ export function UploadRomsPage() {
   );
 
   return (
-    <div className="space-y-6 max-w-4xl">
-      <div>
-        <h1 className="text-3xl font-bold text-surface-100">Upload ROMs</h1>
-        <p className="mt-1 text-surface-400">
-          Upload ROM files to add games to your library.
-        </p>
-      </div>
-
+    <PageLayout title="Upload ROMs" subtitle="Upload ROM files to add games to your library.">
+      <SectionList className="max-w-4xl">
       {isReadonly && (
         <div
           role="alert"
@@ -347,6 +342,7 @@ export function UploadRomsPage() {
           description="Upload ROM files using the drop zone above. After uploading, you can review and accept them into your library."
         />
       )}
-    </div>
+    </SectionList>
+    </PageLayout>
   );
 }

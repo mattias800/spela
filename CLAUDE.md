@@ -85,6 +85,7 @@ The player app uses **Compose Multiplatform** — all UI composables, ViewModels
 - Functional components only
 - Named exports (no default exports)
 - CSS via Tailwind utility classes
+- **No negative margins** — never use `-mx-*`, `-mt-*`, etc. to break out of parent padding. Restructure the layout hierarchy so the component renders at the correct level instead.
 - Tests with Vitest + React Testing Library
 - File naming: kebab-case for files, PascalCase for components
 

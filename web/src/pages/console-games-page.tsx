@@ -1,15 +1,15 @@
 import { useState, useEffect, useCallback } from "react";
-import { useParams, useNavigate, useSearchParams } from "react-router-dom";
+import { useParams, useSearchParams } from "react-router-dom";
 import { Library } from "lucide-react";
 import { GameCard } from "@/components/game-card";
 import { GameGrid } from "@/components/game-grid";
 import { ConsoleHeroBanner } from "@/components/console-hero-banner";
 import {
-  BackButton,
   GameCardSkeleton,
   GameListRowSkeleton,
   EmptyState,
 } from "@/components/ui";
+import { PageLayout, SectionList } from "@/components/layout";
 import { useConsoles } from "@/hooks/use-consoles";
 import { useGames, useToggleFavorite } from "@/hooks/use-games";
 import { useTogglePlayLater } from "@/hooks/use-play-later";
@@ -93,7 +93,6 @@ function filtersToUrl(filters: GameFilters): URLSearchParams {
 
 export function ConsoleGamesPage() {
   const { id } = useParams<{ id: string }>();
-  const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const [viewMode, setViewMode] = useState<ViewMode>("grid");
   const [searchInput, setSearchInput] = useState(searchParams.get("search") ?? "");
@@ -168,10 +167,8 @@ export function ConsoleGamesPage() {
       .map((f) => f.fileName) ?? [];
 
   return (
-    <div className="space-y-6" data-testid="console-games-page">
-      <BackButton onClick={() => navigate(`/consoles/${id}`)}>
-        {`Back to ${consoleName}`}
-      </BackButton>
+    <PageLayout backButtonVariant="standard" backTo={`/consoles/${id}`} backLabel="Console" data-testid="console-games-page">
+      <SectionList>
 
       <ConsoleHeroBanner console={console} gameCount={data?.total} />
 
@@ -291,6 +288,7 @@ export function ConsoleGamesPage() {
           onPageChange={(page) => setFilters((f) => ({ ...f, page }))}
         />
       )}
-    </div>
+    </SectionList>
+    </PageLayout>
   );
 }

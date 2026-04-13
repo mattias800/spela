@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Plus } from "lucide-react";
+import { PageLayout, SectionList } from "@/components/layout";
 import { Button, StateTabNav, StateTabItem } from "@/components/ui";
 import {
   useAdminUsers,
@@ -43,23 +44,16 @@ export function AdminUsersPage() {
   const deletedCount = deletedUsers?.length ?? 0;
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-surface-100">
-            User Management
-          </h1>
-          <p className="mt-1 text-surface-400">
-            Manage user accounts and permissions.
-          </p>
-        </div>
-        {tab === "active" && (
+    <PageLayout title="User Management" subtitle="Manage user accounts and permissions.">
+      <SectionList>
+      {tab === "active" && (
+        <div className="flex justify-end">
           <Button onClick={() => setShowCreate(true)}>
             <Plus className="h-4 w-4 mr-1.5" />
             Create User
           </Button>
-        )}
-      </div>
+        </div>
+      )}
 
       {stats && <UserStatsGrid stats={stats} />}
 
@@ -119,6 +113,7 @@ export function AdminUsersPage() {
           onClose={() => setDevicesUser(null)}
         />
       )}
-    </div>
+    </SectionList>
+    </PageLayout>
   );
 }

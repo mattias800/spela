@@ -1,16 +1,15 @@
-import { useParams, useNavigate } from "react-router-dom";
-import { BackButton } from "@/components/ui";
+import { useParams } from "react-router-dom";
+import { PageLayout, SectionList } from "@/components/layout";
 import { GameAchievements } from "@/features/game-detail/components/game-achievements";
 import { useGame } from "@/hooks/use-games";
 
 export function GameAchievementsPage() {
   const { id } = useParams<{ id: string }>();
-  const navigate = useNavigate();
   const { data: game } = useGame(id ?? "");
 
   return (
-    <div className="max-w-5xl space-y-6">
-      <BackButton onClick={() => navigate(`/games/${id}`)} />
+    <PageLayout backButtonVariant="standard" backTo={`/games/${id}`} backLabel="Game">
+      <SectionList className="max-w-5xl">
 
       {game && (
         <h1 className="text-2xl font-bold text-surface-100">
@@ -22,6 +21,7 @@ export function GameAchievementsPage() {
         gameId={id ?? ""}
         achievementsWarning={game?.achievementsWarning}
       />
-    </div>
+    </SectionList>
+    </PageLayout>
   );
 }

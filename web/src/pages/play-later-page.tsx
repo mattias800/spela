@@ -1,6 +1,7 @@
 import { Clock, ChevronUp, ChevronDown, X, AlertCircle } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button, Section, Skeleton, EmptyState } from "@/components/ui";
+import { PageLayout, SectionList } from "@/components/layout";
 import {
   usePlayLaterGames,
   useRemoveFromPlayLater,
@@ -125,14 +126,8 @@ export function PlayLaterPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold text-surface-100">Play Later</h1>
-        <p className="mt-1 text-surface-400">
-          Your backlog — games you want to play next.
-        </p>
-      </div>
-
+    <PageLayout title="Play Later" subtitle="Your backlog — games you want to play next.">
+      <SectionList>
       {isLoading ? (
         <PlayLaterSkeleton />
       ) : isError ? (
@@ -167,6 +162,7 @@ export function PlayLaterPage() {
           ))}
         </div>
       )}
-    </div>
+    </SectionList>
+    </PageLayout>
   );
 }

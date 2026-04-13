@@ -1,6 +1,7 @@
 import { useState } from "react";
-import { useParams, useNavigate, Link } from "react-router-dom";
-import { BackButton, Skeleton, Badge, FilterChip } from "@/components/ui";
+import { useParams, Link } from "react-router-dom";
+import { Skeleton, Badge, FilterChip } from "@/components/ui";
+import { PageLayout, SectionList } from "@/components/layout";
 import { GameCard } from "@/components/game-card";
 import { GameCardSkeleton } from "@/components/ui";
 import { GameShelf } from "@/features/explore/components/game-shelf";
@@ -73,7 +74,6 @@ function PublisherPageSkeleton() {
 export function PublisherDetailPage() {
   const { name: rawName } = useParams<{ name: string }>();
   const name = rawName ? decodeURIComponent(rawName) : "";
-  const navigate = useNavigate();
   const { data: publisher, isLoading } = usePublisherDetail(name);
   const { toggle: handleToggleFavorite } = useToggleFavorite();
   const { toggle: handleTogglePlayLater } = useTogglePlayLater();
@@ -82,31 +82,23 @@ export function PublisherDetailPage() {
 
   if (isLoading) {
     return (
-      <div
-        className="max-w-6xl space-y-6"
-        data-testid="publisher-detail-page"
-      >
-        <BackButton onClick={() => navigate(-1)}>
-          Back to Explore
-        </BackButton>
-        <PublisherPageSkeleton />
-      </div>
+      <PageLayout backButtonVariant="standard" data-testid="publisher-detail-page">
+        <SectionList className="max-w-6xl">
+          <PublisherPageSkeleton />
+        </SectionList>
+      </PageLayout>
     );
   }
 
   if (!publisher) {
     return (
-      <div
-        className="max-w-6xl space-y-6"
-        data-testid="publisher-detail-page"
-      >
-        <BackButton onClick={() => navigate(-1)}>
-          Back to Explore
-        </BackButton>
-        <p className="text-surface-400 text-center py-20">
-          No games found for this publisher
-        </p>
-      </div>
+      <PageLayout backButtonVariant="standard" data-testid="publisher-detail-page">
+        <SectionList className="max-w-6xl">
+          <p className="text-surface-400 text-center py-20">
+            No games found for this publisher
+          </p>
+        </SectionList>
+      </PageLayout>
     );
   }
 
@@ -168,13 +160,8 @@ export function PublisherDetailPage() {
     !consoleFilter && platformOrder.length > 1;
 
   return (
-    <div
-      className="max-w-6xl space-y-8"
-      data-testid="publisher-detail-page"
-    >
-      <BackButton onClick={() => navigate(-1)}>
-        Back to Explore
-      </BackButton>
+    <PageLayout backButtonVariant="standard" data-testid="publisher-detail-page">
+      <SectionList className="max-w-6xl">
 
       {/* Hero Banner */}
       <DeveloperHeroBanner
@@ -402,6 +389,7 @@ export function PublisherDetailPage() {
           </div>
         </section>
       )}
-    </div>
+    </SectionList>
+    </PageLayout>
   );
 }

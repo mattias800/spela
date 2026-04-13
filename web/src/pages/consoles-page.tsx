@@ -4,6 +4,7 @@ import { ConsoleCard } from "@/components/console-card";
 import { ConsoleCardSkeleton, EmptyState } from "@/components/ui";
 import { useConsoles } from "@/hooks/use-consoles";
 import type { Console } from "@/types/api";
+import { PageLayout, SectionList } from "@/components/layout";
 
 interface GenerationInfo {
   label: string;
@@ -63,14 +64,8 @@ export function ConsolesPage() {
   );
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold text-surface-100">Consoles</h1>
-        <p className="mt-1 text-surface-400">
-          Browse your game library by platform.
-        </p>
-      </div>
-
+    <PageLayout title="Consoles" subtitle="Browse your game library by platform.">
+      <SectionList>
       {isLoading ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
           {Array.from({ length: 8 }, (_, i) => (
@@ -106,6 +101,7 @@ export function ConsolesPage() {
           ))}
         </div>
       )}
-    </div>
+    </SectionList>
+    </PageLayout>
   );
 }

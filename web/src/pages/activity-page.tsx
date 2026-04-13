@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Activity } from "lucide-react";
+import { PageLayout, SectionList } from "@/components/layout";
 import { Button, Skeleton, EmptyState } from "@/components/ui";
 import { ActivityEventItem } from "@/features/social/components/activity-event-item";
 import { useActivityFeed, useActivityRealtime } from "@/hooks/use-social";
@@ -31,17 +32,8 @@ export function ActivityPage() {
   const hasMore = data ? page * pageSize < data.total : false;
 
   return (
-    <div className="max-w-5xl">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-surface-100 flex items-center gap-3">
-          <Activity className="h-8 w-8 text-brand-400" />
-          Activity
-        </h1>
-        <p className="mt-1 text-surface-400">
-          See what everyone has been up to.
-        </p>
-      </div>
-
+    <PageLayout title="Activity" subtitle="See what everyone has been up to." icon={Activity}>
+      <SectionList className="max-w-5xl">
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Main feed */}
         <div className="lg:col-span-2">
@@ -94,6 +86,7 @@ export function ActivityPage() {
           </div>
         </div>
       </div>
-    </div>
+    </SectionList>
+    </PageLayout>
   );
 }

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { PageLayout, SectionList } from "@/components/layout";
 import {
   FileSearch,
   ScanSearch,
@@ -87,10 +88,12 @@ export function MetadataFixPage() {
 
   if (isLoading) {
     return (
-      <div className="space-y-6 max-w-5xl">
-        <div className="h-8 w-48 rounded-lg bg-surface-800 animate-pulse" />
-        <div className="h-96 rounded-2xl bg-surface-900 animate-pulse" />
-      </div>
+      <PageLayout>
+        <SectionList className="max-w-5xl">
+          <div className="h-8 w-48 rounded-lg bg-surface-800 animate-pulse" />
+          <div className="h-96 rounded-2xl bg-surface-900 animate-pulse" />
+        </SectionList>
+      </PageLayout>
     );
   }
 
@@ -120,16 +123,8 @@ export function MetadataFixPage() {
         : incomplete;
 
   return (
-    <div className="space-y-6 max-w-5xl">
-      <div>
-        <h1 className="text-3xl font-bold text-surface-100">
-          Metadata Review
-        </h1>
-        <p className="mt-1 text-surface-400">
-          Review games that need attention. Click a game to view its details.
-        </p>
-      </div>
-
+    <PageLayout title="Metadata Review" subtitle="Review games that need attention. Click a game to view its details.">
+      <SectionList className="max-w-5xl">
       <StateTabNav>
         <StateTabItem active={tab === "unscraped"} onClick={() => setTab("unscraped")}>
           <ScanSearch className="h-4 w-4" />
@@ -180,6 +175,7 @@ export function MetadataFixPage() {
           </div>
         </Section>
       )}
-    </div>
+    </SectionList>
+    </PageLayout>
   );
 }
