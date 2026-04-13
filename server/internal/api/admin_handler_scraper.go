@@ -330,6 +330,12 @@ func (h *AdminHandler) ScrapeGame(c *gin.Context) {
 	h.tryConfigureIGDB()
 	h.tryConfigureSteamGridDB()
 
+	// Skip if already queued
+	if queued, _ := h.Scraper.Queue.IsGameQueued(game.ID); queued {
+		c.JSON(http.StatusAccepted, gin.H{"status": "already_queued", "gameId": game.ID})
+		return
+	}
+
 	// Attach to active job if one exists
 	activeJob, _ := h.Scraper.Queue.GetActiveJob()
 	var jobID *uint

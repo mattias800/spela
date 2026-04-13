@@ -221,6 +221,64 @@ func TestCancelJob(t *testing.T) {
 	assert.Equal(t, int64(1), completedCount)
 }
 
+func TestCancelledJobNotOverwrittenByCompletion(t *testing.T) {
+	database := setupQueueTestDB(t)
+	q := NewScrapeQueue(database)
+
+	job, _ := q.CreateJob("all", "", "", "", 2)
+	require.NoError(t, q.EnqueueGames(job.ID, []uint{1, 2}, 0))
+
+	// Dequeue both items
+	item1, _ := q.Dequeue()
+	item2, _ := q.Dequeue()
+
+	// Complete the first
+	q.MarkCompleted(item1)
+
+	// Cancel the job while item2 is in_progress
+	require.NoError(t, q.CancelJob(job.ID))
+
+	// Complete the second item (simulates worker finishing current game)
+	jobDone, err := q.MarkCompleted(item2)
+	require.NoError(t, err)
+	assert.False(t, jobDone) // should NOT report done — job was cancelled
+
+	// Job should still be cancelled, not completed
+	var updatedJob db.ScrapeJob
+	database.First(&updatedJob, job.ID)
+	assert.Equal(t, "cancelled", updatedJob.Status)
+}
+
+func TestIsGameQueued(t *testing.T) {
+	database := setupQueueTestDB(t)
+	q := NewScrapeQueue(database)
+
+	// Not queued
+	queued, err := q.IsGameQueued(42)
+	require.NoError(t, err)
+	assert.False(t, queued)
+
+	// Enqueue it
+	require.NoError(t, q.EnqueueGame(42, nil, 0))
+	queued, err = q.IsGameQueued(42)
+	require.NoError(t, err)
+	assert.True(t, queued)
+
+	// Dequeue (in_progress) — still considered queued
+	q.Dequeue()
+	queued, err = q.IsGameQueued(42)
+	require.NoError(t, err)
+	assert.True(t, queued)
+
+	// Complete — no longer queued
+	var item db.ScrapeQueueItem
+	database.First(&item)
+	q.MarkCompleted(&item)
+	queued, err = q.IsGameQueued(42)
+	require.NoError(t, err)
+	assert.False(t, queued)
+}
+
 func TestResetInProgressItems(t *testing.T) {
 	database := setupQueueTestDB(t)
 	q := NewScrapeQueue(database)
