@@ -1,5 +1,6 @@
 package com.spela.player.presentation.viewmodel
 
+import com.spela.player.data.remote.ScrapeService
 import com.spela.player.data.remote.api.SpelaApiClient
 import com.spela.player.data.remote.interceptor.TokenManager
 import com.spela.player.domain.model.*
@@ -72,6 +73,7 @@ class GameDetailPlayFromSharedSaveTest {
             sharedSessionRepository = PlayFromSharedSaveTestSharedSessionRepository(),
             gameRepository = testGameRepo,
             apiClient = apiClient,
+            scrapeService = ScrapeService(apiClient, testDispatchers, scope),
             dispatchers = testDispatchers,
             scope = scope,
             sessionRepository = fakeSessionRepo,

@@ -1,8 +1,6 @@
 package com.spela.player.data.remote
 
 import com.spela.player.data.remote.api.SpelaApiClient
-import com.spela.player.data.remote.dto.GameDto
-import com.spela.player.data.remote.dto.toDomain
 import com.spela.player.util.DispatcherProvider
 import io.ktor.client.*
 import io.ktor.client.plugins.websocket.*
@@ -13,7 +11,6 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.decodeFromJsonElement
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 
@@ -151,12 +148,10 @@ class PresenceService(
             val payload = event["payload"]?.jsonObject ?: return
 
             when (type) {
-                "game_scraped" -> {
-                    val gameDto = json.decodeFromJsonElement<GameDto>(payload)
-                    val game = gameDto.toDomain().copy(
-                        coverUrl = apiClient.resolveUrl(gameDto.coverUrl),
-                    )
-                    scrapeService?.onGameScraped(game)
+                "game_scrape_status" -> {
+                    val gameId = payload["gameId"]?.jsonPrimitive?.content ?: return
+                    val status = payload["status"]?.jsonPrimitive?.content ?: return
+                    scrapeService?.onScrapeStatusChanged(gameId, status)
                 }
             }
         } catch (_: Exception) {

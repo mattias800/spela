@@ -1,5 +1,6 @@
 package com.spela.player.presentation.viewmodel
 
+import com.spela.player.data.remote.ScrapeService
 import com.spela.player.data.remote.api.SpelaApiClient
 import com.spela.player.data.repository.BiosRepository
 import com.spela.player.domain.usecase.AddGameToCollectionUseCase
@@ -24,7 +25,6 @@ import com.spela.player.presentation.state.AchievementsViewMode
 import com.spela.player.presentation.state.GameDetailState
 import com.spela.player.util.DispatcherProvider
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -47,6 +47,7 @@ class GameDetailViewModel(
     private val sharedSessionRepository: SharedSessionRepository,
     private val gameRepository: GameRepository,
     private val apiClient: SpelaApiClient,
+    private val scrapeService: ScrapeService,
     private val dispatchers: DispatcherProvider,
     private val scope: CoroutineScope,
     private val biosRepository: BiosRepository? = null,
@@ -121,17 +122,13 @@ class GameDetailViewModel(
 
     private fun adminScrapeGame() {
         val gameId = currentGameId ?: return
-        _state.update { it.copy(isAdminActionLoading = true) }
         scope.launch(dispatchers.io) {
             runCatching { apiClient.adminScrapeGame(gameId) }
-                .onSuccess {
-                    // Reload game detail to show updated metadata
-                    loadGame(gameId)
-                    _state.update { it.copy(isAdminActionLoading = false, successMessage = "Metadata scraped") }
-                }
                 .onFailure { error ->
-                    _state.update { it.copy(isAdminActionLoading = false, error = error.message) }
+                    _state.update { it.copy(error = error.message) }
                 }
+            // No need to reload — the WebSocket game_scrape_status event will
+            // set isScraping=true, and on idle the observer reloads the game.
         }
     }
 
@@ -210,6 +207,9 @@ class GameDetailViewModel(
             }
         }
 
+        // Observe WebSocket scrape status for this game
+        observeScrapeStatus(gameId)
+
         // Load community data that applies to all games (playable or not)
         loadGameStats(gameId)
         loadReviews(gameId)
@@ -233,32 +233,37 @@ class GameDetailViewModel(
         }
     }
 
+    private fun observeScrapeStatus(gameId: String) {
+        // Track scraping state from WebSocket events
+        scope.launch(dispatchers.io) {
+            scrapeService.scrapingGameIds.collect { scrapingIds ->
+                _state.update { it.copy(isScraping = gameId in scrapingIds) }
+            }
+        }
+
+        // Reload game data when scraping finishes
+        scope.launch(dispatchers.io) {
+            scrapeService.gameScrapeDone.collect { doneGameId ->
+                if (doneGameId == gameId) {
+                    getGameDetailUseCase(gameId).fold(
+                        onSuccess = { detail ->
+                            _state.update { it.copy(gameDetail = detail) }
+                        },
+                        onFailure = { /* ignore reload failure */ },
+                    )
+                }
+            }
+        }
+    }
+
     private fun scrapeAndRefresh(gameId: String) {
         scope.launch(dispatchers.io) {
             try {
-                _state.update { it.copy(isScraping = true) }
                 apiClient.scrapeIfNeeded(gameId)
-
-                var attempts = 0
-                val maxAttempts = 30
-                while (attempts < maxAttempts) {
-                    delay(1000)
-                    getGameDetailUseCase(gameId).fold(
-                        onSuccess = { refreshed ->
-                            if (refreshed.game.scrapeAttempts > 0) {
-                                _state.update { it.copy(gameDetail = refreshed, isScraping = false) }
-                                return@launch
-                            }
-                        },
-                        onFailure = { /* continue polling */ },
-                    )
-                    attempts++
-                }
-
-                _state.update { it.copy(isScraping = false) }
+                // The WebSocket game_scrape_status events drive isScraping state.
+                // The observer in observeScrapeStatus() handles reload on completion.
             } catch (e: Exception) {
-                println("GameDetailViewModel: scrape failed for game $gameId: ${e.message}")
-                _state.update { it.copy(isScraping = false) }
+                println("GameDetailViewModel: scrape request failed for game $gameId: ${e.message}")
             }
         }
     }

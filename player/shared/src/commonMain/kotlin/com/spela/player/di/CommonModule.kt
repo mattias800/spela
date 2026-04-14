@@ -162,6 +162,7 @@ val commonModule = module {
             sharedSessionRepository = get(),
             gameRepository = get(),
             apiClient = get(),
+            scrapeService = get(),
             dispatchers = get(),
             scope = get(),
             biosRepository = get(),

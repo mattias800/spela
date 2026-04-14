@@ -207,8 +207,8 @@ fun SpelaApp(
     ) {
         // Observe scrape completions and update cover art reactively
         LaunchedEffect(scrapeService) {
-            scrapeService?.scrapedGames?.collect { game ->
-                ScrapeUpdates.onGameScraped(game)
+            scrapeService?.scrapedCovers?.collect { (gameId, coverUrl) ->
+                ScrapeUpdates.onCoverUpdated(gameId, coverUrl)
             }
         }
 

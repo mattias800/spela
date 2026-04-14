@@ -6,7 +6,6 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.getValue
 import com.spela.player.data.remote.ScrapeService
-import com.spela.player.domain.model.Game
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -25,10 +24,8 @@ object ScrapeUpdates {
     private val _updatedCovers = MutableStateFlow<Map<String, String>>(emptyMap())
     val updatedCovers: StateFlow<Map<String, String>> = _updatedCovers.asStateFlow()
 
-    fun onGameScraped(game: Game) {
-        if (!game.coverUrl.isNullOrEmpty()) {
-            _updatedCovers.value = _updatedCovers.value + (game.id to game.coverUrl)
-        }
+    fun onCoverUpdated(gameId: String, coverUrl: String) {
+        _updatedCovers.value = _updatedCovers.value + (gameId to coverUrl)
     }
 }
 
