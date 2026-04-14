@@ -281,24 +281,33 @@ func main() {
 	// Start background scrape worker (must start before auto-scan goroutine
 	// so any enqueued items get processed)
 	scrapeWorker := scraper.NewScrapeWorker(database, metaScraper.Queue, metaScraper, hub, func() {
+		if err := scanner.GroupAndElectPrimaries(database); err != nil {
+			slog.Warn("post-scrape regrouping failed", "error", err)
+		}
 		if merged, err := scanner.MergeGroupsByIGDBID(database); err != nil {
-			slog.Warn("IGDB group merge failed", "error", err)
+			slog.Warn("post-scrape IGDB group merge failed", "error", err)
 		} else if merged > 0 {
-			slog.Info("merged groups by IGDB ID", "merged", merged)
+			slog.Info("post-scrape IGDB group merge complete", "merged", merged)
 		}
 	})
 	go scrapeWorker.Run(workerCtx)
 
-	// Merge variant groups by IGDB ID on startup — catches any unmerged
-	// groups from previous sessions (e.g., games scraped before the merge
-	// was re-enabled, or groups that weren't merged because the scrape job
-	// hadn't completed yet).
+	// Rebuild variant groups from scratch on startup. This is idempotent —
+	// the result depends only on filenames and IGDB IDs, not on existing
+	// group state. Fixes any corruption from previous runs.
 	go func() {
+		if err := scanner.RecomputeGroupKeys(database); err != nil {
+			slog.Warn("startup group key recompute failed", "error", err)
+		}
+		if err := scanner.GroupAndElectPrimaries(database); err != nil {
+			slog.Warn("startup regrouping failed", "error", err)
+		}
 		if merged, err := scanner.MergeGroupsByIGDBID(database); err != nil {
 			slog.Warn("startup IGDB group merge failed", "error", err)
 		} else if merged > 0 {
 			slog.Info("startup IGDB group merge complete", "merged", merged)
 		}
+		slog.Info("startup variant grouping complete")
 	}()
 
 	// Auto-scan game library on startup (non-blocking).

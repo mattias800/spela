@@ -559,3 +559,104 @@ func TestReElectPrimaryForGroup(t *testing.T) {
 	require.NoError(t, database.Where("file_path = ?", "nes/Game (Europe).nes").First(&europeGame).Error)
 	assert.True(t, europeGame.IsPrimary, "Europe game should be elected as new primary")
 }
+
+// TestFullRegroupingIsIdempotent verifies that running GroupAndElectPrimaries
+// followed by MergeGroupsByIGDBID produces the correct result regardless of
+// starting state. This is the core "stateless" guarantee.
+func TestFullRegroupingIsIdempotent(t *testing.T) {
+	database := setupTestDB(t)
+
+	var gc db.Console
+	require.NoError(t, database.Where("abbreviation = ?", "GC").First(&gc).Error)
+
+	// Set up: 3 Smash Bros games with different filenames, same IGDB ID,
+	// and one starts in a corrupted catch-all group with unrelated games.
+	smashUSA := db.Game{
+		ConsoleID: gc.ID, Title: "Super Smash Bros. Melee",
+		FileName: "Super Smash Bros. Melee (USA) (En,Ja).rvz",
+		FilePath: "gc/Super Smash Bros. Melee (USA) (En,Ja).rvz",
+		GroupKey: "corrupted group", ScraperID: "igdb:1627",
+	}
+	smashJP := db.Game{
+		ConsoleID: gc.ID, Title: "Super Smash Bros. Melee",
+		FileName: "Dairantou Smash Brothers DX (Japan) (En,Ja).rvz",
+		FilePath: "gc/Dairantou Smash Brothers DX (Japan) (En,Ja).rvz",
+		GroupKey: "corrupted group", ScraperID: "igdb:1627",
+	}
+	smashDemo := db.Game{
+		ConsoleID: gc.ID, Title: "Super Smash Bros. Melee",
+		FileName: "Dairantou Smash Brothers DX (Japan) (Taikenban).rvz",
+		FilePath: "gc/Dairantou Smash Brothers DX (Japan) (Taikenban).rvz",
+		GroupKey: "dairantou smash brothers dx", ScraperID: "igdb:1627",
+	}
+	// Unrelated games in the corrupted group
+	unrelated1 := db.Game{
+		ConsoleID: gc.ID, Title: "Ace Golf",
+		FileName: "Ace Golf (Europe).rvz",
+		FilePath: "gc/Ace Golf (Europe).rvz",
+		GroupKey: "corrupted group", ScraperID: "igdb:9999",
+	}
+	unrelated2 := db.Game{
+		ConsoleID: gc.ID, Title: "Beach Spikers",
+		FileName: "Beach Spikers (USA).rvz",
+		FilePath: "gc/Beach Spikers (USA).rvz",
+		GroupKey: "corrupted group", ScraperID: "igdb:8888",
+	}
+	for _, g := range []*db.Game{&smashUSA, &smashJP, &smashDemo, &unrelated1, &unrelated2} {
+		require.NoError(t, database.Create(g).Error)
+	}
+
+	// Run the full pipeline: recompute keys, regroup, then merge by IGDB ID
+	require.NoError(t, RecomputeGroupKeys(database))
+	require.NoError(t, GroupAndElectPrimaries(database))
+	merged, err := MergeGroupsByIGDBID(database)
+	require.NoError(t, err)
+
+	// Reload all games
+	var postUSA, postJP, postDemo, postAce, postBeach db.Game
+	database.First(&postUSA, smashUSA.ID)
+	database.First(&postJP, smashJP.ID)
+	database.First(&postDemo, smashDemo.ID)
+	database.First(&postAce, unrelated1.ID)
+	database.First(&postBeach, unrelated2.ID)
+
+	// All 3 Smash Bros games should be in the same group
+	assert.Equal(t, postUSA.GroupKey, postJP.GroupKey, "Smash USA and JP should be grouped")
+	assert.Equal(t, postUSA.GroupKey, postDemo.GroupKey, "Smash USA and Demo should be grouped")
+	assert.True(t, merged > 0, "should have merged at least one game")
+
+	// Unrelated games should NOT be in the Smash group
+	assert.NotEqual(t, postUSA.GroupKey, postAce.GroupKey, "Ace Golf should not be in Smash group")
+	assert.NotEqual(t, postUSA.GroupKey, postBeach.GroupKey, "Beach Spikers should not be in Smash group")
+
+	// Ace Golf and Beach Spikers should be in their own groups (ungrouped from each other too)
+	assert.NotEqual(t, postAce.GroupKey, postBeach.GroupKey, "unrelated games should be in separate groups")
+
+	// Exactly one Smash game should be primary
+	smashPrimaries := 0
+	for _, g := range []db.Game{postUSA, postJP, postDemo} {
+		if g.IsPrimary {
+			smashPrimaries++
+		}
+	}
+	assert.Equal(t, 1, smashPrimaries, "exactly one Smash game should be primary")
+
+	// Run the whole thing again — result should be identical (idempotent)
+	require.NoError(t, RecomputeGroupKeys(database))
+	require.NoError(t, GroupAndElectPrimaries(database))
+	_, err = MergeGroupsByIGDBID(database)
+	require.NoError(t, err)
+
+	var postUSA2, postJP2, postDemo2, postAce2, postBeach2 db.Game
+	database.First(&postUSA2, smashUSA.ID)
+	database.First(&postJP2, smashJP.ID)
+	database.First(&postDemo2, smashDemo.ID)
+	database.First(&postAce2, unrelated1.ID)
+	database.First(&postBeach2, unrelated2.ID)
+
+	assert.Equal(t, postUSA.GroupKey, postUSA2.GroupKey, "idempotent: USA group unchanged")
+	assert.Equal(t, postJP.GroupKey, postJP2.GroupKey, "idempotent: JP group unchanged")
+	assert.Equal(t, postDemo.GroupKey, postDemo2.GroupKey, "idempotent: Demo group unchanged")
+	assert.Equal(t, postAce.GroupKey, postAce2.GroupKey, "idempotent: Ace group unchanged")
+	assert.Equal(t, postBeach.GroupKey, postBeach2.GroupKey, "idempotent: Beach group unchanged")
+}
