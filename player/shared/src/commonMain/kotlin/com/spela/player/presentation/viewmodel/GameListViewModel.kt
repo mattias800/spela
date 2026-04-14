@@ -45,15 +45,15 @@ class GameListViewModel(
     private var consoleGamesJob: Job? = null
 
     init {
-        // Observe scrape completions and update games in state
+        // Observe scrape completions and update cover art in game lists
         scope.launch(dispatchers.io) {
-            scrapeService.scrapedGames.collect { scrapedGame ->
+            scrapeService.scrapedCovers.collect { (gameId, coverUrl) ->
                 _state.update { state ->
                     state.copy(
-                        games = updateGameInList(state.games, scrapedGame),
-                        recentGames = updateGameInList(state.recentGames, scrapedGame),
-                        favoriteGames = updateGameInList(state.favoriteGames, scrapedGame),
-                        playLaterGames = updateGameInList(state.playLaterGames, scrapedGame),
+                        games = updateCoverInList(state.games, gameId, coverUrl),
+                        recentGames = updateCoverInList(state.recentGames, gameId, coverUrl),
+                        favoriteGames = updateCoverInList(state.favoriteGames, gameId, coverUrl),
+                        playLaterGames = updateCoverInList(state.playLaterGames, gameId, coverUrl),
                     )
                 }
             }
@@ -69,22 +69,12 @@ class GameListViewModel(
         }
     }
 
-    private fun updateGameInList(games: List<Game>, scraped: Game): List<Game> {
+    private fun updateCoverInList(games: List<Game>, gameId: String, coverUrl: String): List<Game> {
         var changed = false
         val result = games.map { existing ->
-            if (existing.id == scraped.id) {
+            if (existing.id == gameId) {
                 changed = true
-                existing.copy(
-                    coverUrl = scraped.coverUrl,
-                    description = scraped.description,
-                    developer = scraped.developer,
-                    publisher = scraped.publisher,
-                    releaseDate = scraped.releaseDate,
-                    genre = scraped.genre,
-                    players = scraped.players,
-                    igdbCriticsRating = scraped.igdbCriticsRating,
-                    scrapeAttempts = scraped.scrapeAttempts,
-                )
+                existing.copy(coverUrl = coverUrl, scrapeAttempts = existing.scrapeAttempts.coerceAtLeast(1))
             } else {
                 existing
             }
