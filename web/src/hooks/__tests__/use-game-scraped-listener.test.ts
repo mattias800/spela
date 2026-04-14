@@ -35,68 +35,41 @@ beforeEach(() => {
   });
 });
 
-const makeGame = (overrides = {}) => ({
-  id: "42",
-  title: "Test Game",
-  consoleId: "nes",
-  consoleName: "NES",
-  coverUrl: "",
-  description: "",
-  developer: "",
-  publisher: "",
-  releaseDate: "",
-  genre: "",
-  players: 1,
-  rating: 0,
-  scraperId: "",
-  scrapeAttempts: 0,
-  screenshotUrls: [],
-  isFavorite: false,
-  isInPlayLater: false,
-  playable: true,
-  ...overrides,
-});
-
 describe("useGameScrapedListener", () => {
-  it("does not clobber sub-queries like cheats when game is scraped", () => {
-    // Pre-populate the cheats query for game 42
-    const cheats = [
-      { id: 1, index: 0, description: "Infinite lives", code: "AAEAULPA" },
-    ];
-    queryClient.setQueryData(["game", "42", "cheats"], cheats);
-
-    // Pre-populate the game query
-    const game = makeGame({ scrapeAttempts: 0 });
-    queryClient.setQueryData(["game", "42"], game);
+  it("invalidates game and list queries on game_scrape_status idle", () => {
+    const invalidateSpy = vi.spyOn(queryClient, "invalidateQueries");
 
     renderHook(() => useGameScrapedListener(), { wrapper });
 
-    // Simulate the server broadcasting game_scraped after scrape completes
-    const scraped = makeGame({
-      scrapeAttempts: 1,
-      coverUrl: "https://example.com/cover.jpg",
-      description: "A great game",
+    act(() => {
+      wsHandlers["game_scrape_status"]({ gameId: 42, status: "idle" });
     });
+
+    expect(invalidateSpy).toHaveBeenCalledWith({
+      queryKey: ["game", "42"],
+      exact: true,
+    });
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ["games"] });
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ["consoles"] });
+  });
+
+  it("does not invalidate on game_scrape_status scraping", () => {
+    const invalidateSpy = vi.spyOn(queryClient, "invalidateQueries");
+
+    renderHook(() => useGameScrapedListener(), { wrapper });
 
     act(() => {
-      wsHandlers["game_scraped"](scraped);
+      wsHandlers["game_scrape_status"]({ gameId: 42, status: "scraping" });
     });
 
-    // Cheats query must still be an array — this was the original bug
-    const updatedCheats = queryClient.getQueryData(["game", "42", "cheats"]);
-    expect(Array.isArray(updatedCheats)).toBe(true);
-    expect(updatedCheats).toEqual(cheats);
+    expect(invalidateSpy).not.toHaveBeenCalled();
   });
 
   it("invalidates game query on scrape_progress during batch scrape", () => {
     const invalidateSpy = vi.spyOn(queryClient, "invalidateQueries");
 
-    // Pre-populate the game query
-    queryClient.setQueryData(["game", "42"], makeGame());
-
     renderHook(() => useGameScrapedListener(), { wrapper });
 
-    // Simulate batch scrape progress event
     act(() => {
       wsHandlers["scrape_progress"]({
         current: 5,

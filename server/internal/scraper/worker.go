@@ -85,8 +85,11 @@ func (w *ScrapeWorker) processItem(ctx context.Context, item *db.ScrapeQueueItem
 	if err := w.db.Preload("Console").First(&game, item.GameID).Error; err != nil {
 		slog.Warn("scrape worker: game not found", "gameId", item.GameID, "error", err)
 		w.queue.MarkFailed(item, fmt.Sprintf("game not found: %v", err))
+		w.broadcastScrapeStatus(item.GameID, "idle")
 		return
 	}
+
+	w.broadcastScrapeStatus(game.ID, "scraping")
 
 	// Variant group propagation for 'new' mode jobs
 	propagated := false
@@ -106,6 +109,7 @@ func (w *ScrapeWorker) processItem(ctx context.Context, item *db.ScrapeQueueItem
 			slog.Warn("scrape worker: scrape failed", "game", game.Title, "error", err)
 			jobDone, _ := w.queue.MarkFailed(item, err.Error())
 			w.broadcastProgress(item, &game, false, jobDone)
+			w.broadcastScrapeStatus(game.ID, "idle")
 			return
 		}
 
@@ -123,6 +127,7 @@ func (w *ScrapeWorker) processItem(ctx context.Context, item *db.ScrapeQueueItem
 
 	jobDone, _ := w.queue.MarkCompleted(item)
 	w.broadcastProgress(item, &game, verified, jobDone)
+	w.broadcastScrapeStatus(game.ID, "idle")
 }
 
 func (w *ScrapeWorker) broadcastProgress(item *db.ScrapeQueueItem, game *db.Game, verified bool, jobDone bool) {
@@ -165,13 +170,17 @@ func (w *ScrapeWorker) broadcastProgress(item *db.ScrapeQueueItem, game *db.Game
 		}
 	}
 
-	// For high-priority items (manual scrapes), broadcast game_scraped
-	// so the frontend can update the game detail page.
-	if item.Priority >= 100 {
-		w.db.Preload("Console").Preload("Screenshots").First(game, game.ID)
-		w.hub.Broadcast(ws.Event{
-			Type:    "game_scraped",
-			Payload: game,
-		})
+}
+
+func (w *ScrapeWorker) broadcastScrapeStatus(gameID uint, status string) {
+	if w.hub == nil {
+		return
 	}
+	w.hub.Broadcast(ws.Event{
+		Type: "game_scrape_status",
+		Payload: map[string]interface{}{
+			"gameId": gameID,
+			"status": status,
+		},
+	})
 }
