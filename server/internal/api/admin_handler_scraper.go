@@ -10,6 +10,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/spela/server/internal/db"
 	"github.com/spela/server/internal/igdb"
+	"github.com/spela/server/internal/scanner"
 	ws "github.com/spela/server/internal/websocket"
 	"gorm.io/gorm"
 )
@@ -188,6 +189,15 @@ func (h *AdminHandler) CancelScrape(c *gin.Context) {
 	h.Hub.Broadcast(ws.Event{Type: "scrape_cancelled", Payload: gin.H{
 		"jobId": job.ID,
 	}})
+
+	// Merge variant groups for any games scraped before cancellation
+	go func() {
+		if merged, err := scanner.MergeGroupsByIGDBID(h.DB); err != nil {
+			slog.Warn("IGDB group merge after cancel failed", "error", err)
+		} else if merged > 0 {
+			slog.Info("merged groups by IGDB ID after cancel", "merged", merged)
+		}
+	}()
 
 	adminID, _ := c.Get("userId")
 	slog.Info("audit: admin cancelled scrape", "admin_id", adminID, "jobId", job.ID)
