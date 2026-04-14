@@ -58,6 +58,7 @@ import {
   Disc,
   Trophy,
   Award,
+  FileText,
 } from "lucide-react";
 import { formatFileSize } from "@/lib/format";
 import { api } from "@/lib/api-client";
@@ -308,6 +309,13 @@ export function GameDetailPage() {
                 icon={Disc}
                 label="Discs"
                 value={`${game.discCount}`}
+              />
+            )}
+            {isAdmin && game.fileName && (
+              <MetaItem
+                icon={FileText}
+                label="Filename"
+                value={game.fileName}
               />
             )}
             {achievementCount != null && achievementCount > 0 && (
