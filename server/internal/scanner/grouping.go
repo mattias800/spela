@@ -10,6 +10,44 @@ import (
 	"gorm.io/gorm"
 )
 
+// RecomputeGroupKeys recomputes every game's group_key from its filename.
+// This ensures group keys are always derived from source data, not from
+// potentially corrupted state. Safe to run at any time — idempotent.
+func RecomputeGroupKeys(database *gorm.DB) error {
+	const batchSize = 500
+	var offset int
+	updated := 0
+
+	for {
+		var games []db.Game
+		if err := database.Select("id, file_name, group_key").
+			Where("deleted_at IS NULL").
+			Order("id ASC").
+			Limit(batchSize).Offset(offset).
+			Find(&games).Error; err != nil {
+			return fmt.Errorf("loading games for group key recompute: %w", err)
+		}
+		if len(games) == 0 {
+			break
+		}
+
+		for i := range games {
+			newKey := normalizeGroupKey(games[i].FileName)
+			if newKey != games[i].GroupKey {
+				database.Model(&games[i]).Update("group_key", newKey)
+				updated++
+			}
+		}
+
+		offset += batchSize
+	}
+
+	if updated > 0 {
+		slog.Info("recomputed group keys", "updated", updated)
+	}
+	return nil
+}
+
 // GroupAndElectPrimaries groups games by (console_id, group_key) and elects
 // the best variant in each group as primary.
 // Processes one console at a time to bound memory usage for large libraries.

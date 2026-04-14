@@ -190,12 +190,15 @@ func (h *AdminHandler) CancelScrape(c *gin.Context) {
 		"jobId": job.ID,
 	}})
 
-	// Merge variant groups for any games scraped before cancellation
+	// Rebuild variant groups after cancellation
 	go func() {
+		if err := scanner.GroupAndElectPrimaries(h.DB); err != nil {
+			slog.Warn("regrouping after cancel failed", "error", err)
+		}
 		if merged, err := scanner.MergeGroupsByIGDBID(h.DB); err != nil {
 			slog.Warn("IGDB group merge after cancel failed", "error", err)
 		} else if merged > 0 {
-			slog.Info("merged groups by IGDB ID after cancel", "merged", merged)
+			slog.Info("IGDB group merge after cancel complete", "merged", merged)
 		}
 	}()
 
