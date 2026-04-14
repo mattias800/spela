@@ -34,6 +34,8 @@ skipped. Bypass for a single push with `git push --no-verify`. See
 2. **Web UI uses React + TypeScript** - Vite build, Tailwind CSS, TanStack Query.
 3. **Automated tests whenever reasonable** - For bugs: write failing test first, then fix.
 4. **libretro only** - No custom emulation code. All emulation via libretro cores.
+6. **Idiomatic code** - Follow the conventions and patterns natural to each language (Go, TypeScript, Kotlin). Code should look like it was written by someone experienced in that ecosystem.
+7. **Idempotent operations** - Operations that derive state (grouping, migrations, sync) should produce the same result regardless of starting state. `f(f(x)) = f(x)`. Derive from source data, not from potentially corrupted previous state.
 5. **A feature is not done until all tests pass** - Every change must have appropriate test coverage (E2E and/or unit tests), and the ENTIRE test suite must pass before a task is considered complete. No regressions allowed.
    - **Player app**: See "Player App Testing Strategy" below for the desktop-primary / Android-smoke approach.
    - **Web frontend**: Playwright E2E tests + Vitest unit tests.
