@@ -451,8 +451,9 @@ func MergeGroupsByIGDBID(database *gorm.DB) (int, error) {
 			continue
 		}
 
-		// Use the first GroupKey (alphabetically lowest) as the canonical one
-		canonicalGroupKey := games[0].GroupKey
+		// Pick the best group key: prefer one that doesn't contain games
+		// with different IGDB IDs (avoids merging into corrupted catch-all groups).
+		canonicalGroupKey := pickCanonicalGroupKey(database, games, c.ScraperID)
 		affectedGroupKeys := make(map[string]bool)
 
 		for _, g := range games {
@@ -491,6 +492,44 @@ func MergeGroupsByIGDBID(database *gorm.DB) (int, error) {
 		slog.Info("IGDB group merge complete", "merged", mergedCount, "candidates", len(candidates))
 	}
 	return mergedCount, nil
+}
+
+// pickCanonicalGroupKey selects the best group key for merging. It prefers
+// a group key whose existing members all share the same IGDB ID (a "pure"
+// group). This avoids merging into corrupted catch-all groups that contain
+// hundreds of unrelated games. Falls back to alphabetically first if all
+// groups are equally pure (or equally impure).
+func pickCanonicalGroupKey(database *gorm.DB, games []db.Game, scraperID string) string {
+	// Collect unique group keys
+	groupKeys := make([]string, 0)
+	seen := make(map[string]bool)
+	for _, g := range games {
+		if !seen[g.GroupKey] {
+			seen[g.GroupKey] = true
+			groupKeys = append(groupKeys, g.GroupKey)
+		}
+	}
+
+	// For each group key, count how many distinct IGDB IDs it contains
+	type purity struct {
+		key          string
+		distinctIDs  int64
+	}
+	best := purity{key: groupKeys[0], distinctIDs: 999999}
+
+	for _, gk := range groupKeys {
+		var count int64
+		database.Model(&db.Game{}).
+			Where("group_key = ? AND scraper_id != '' AND deleted_at IS NULL", gk).
+			Select("COUNT(DISTINCT scraper_id)").
+			Scan(&count)
+
+		if count < best.distinctIDs || (count == best.distinctIDs && gk < best.key) {
+			best = purity{key: gk, distinctIDs: count}
+		}
+	}
+
+	return best.key
 }
 
 // titlesRelated checks if a set of games have related titles (at least one

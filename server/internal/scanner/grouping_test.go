@@ -1,6 +1,7 @@
 package scanner
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/spela/server/internal/db"
@@ -452,6 +453,59 @@ func TestMergeGroupsByIGDBID_SkipsUnrelatedTitles(t *testing.T) {
 	assert.True(t, post1.IsPrimary)
 	assert.True(t, post2.IsPrimary)
 	assert.NotEqual(t, post1.GroupKey, post2.GroupKey, "group keys should remain different")
+}
+
+func TestMergeGroupsByIGDBID_AvoidsCorruptedGroupKey(t *testing.T) {
+	database := setupTestDB(t)
+
+	var gc db.Console
+	require.NoError(t, database.Where("abbreviation = ?", "GC").First(&gc).Error)
+
+	// Simulate a corrupted catch-all group: "bad group" has games with many different IGDB IDs
+	for i := 0; i < 5; i++ {
+		database.Create(&db.Game{
+			ConsoleID: gc.ID,
+			Title:     fmt.Sprintf("Unrelated Game %d", i),
+			FileName:  fmt.Sprintf("Unrelated Game %d.rvz", i),
+			FilePath:  fmt.Sprintf("gc/Unrelated Game %d.rvz", i),
+			GroupKey:  "bad group",
+			ScraperID: fmt.Sprintf("igdb:%d", 5000+i),
+		})
+	}
+
+	// One of the Smash Bros games is in the corrupted group
+	smashJP := db.Game{
+		ConsoleID: gc.ID,
+		Title:     "Super Smash Bros. Melee",
+		FileName:  "Dairantou Smash Brothers DX (Japan).rvz",
+		FilePath:  "gc/Dairantou Smash Brothers DX (Japan).rvz",
+		GroupKey:  "bad group",
+		ScraperID: "igdb:1627",
+	}
+	// The other is in its own clean group
+	smashUSA := db.Game{
+		ConsoleID: gc.ID,
+		Title:     "Super Smash Bros. Melee",
+		FileName:  "Super Smash Bros. Melee (USA).rvz",
+		FilePath:  "gc/Super Smash Bros. Melee (USA).rvz",
+		GroupKey:  "super smash bros melee",
+		ScraperID: "igdb:1627",
+	}
+	require.NoError(t, database.Create(&smashJP).Error)
+	require.NoError(t, database.Create(&smashUSA).Error)
+	require.NoError(t, GroupAndElectPrimaries(database))
+
+	merged, err := MergeGroupsByIGDBID(database)
+	require.NoError(t, err)
+	assert.Equal(t, 1, merged)
+
+	// The canonical key should be "super smash bros melee" (the pure group),
+	// NOT "bad group" (which contains games with other IGDB IDs).
+	var postJP, postUSA db.Game
+	database.First(&postJP, smashJP.ID)
+	database.First(&postUSA, smashUSA.ID)
+	assert.Equal(t, "super smash bros melee", postJP.GroupKey, "should merge into the pure group")
+	assert.Equal(t, "super smash bros melee", postUSA.GroupKey)
 }
 
 func TestTitlesRelated(t *testing.T) {
