@@ -13,6 +13,7 @@ import {
   useToggleFavorite,
   useScrapeIfNeeded,
 } from "@/hooks/use-games";
+import { useGameScrapeStatus } from "@/hooks/use-game-scrape-status";
 import { useTogglePlayLater } from "@/hooks/use-play-later";
 import { useAuth } from "@/hooks/use-auth";
 import { useScrapeGame, useRefreshAchievements } from "@/hooks/use-admin";
@@ -128,6 +129,7 @@ export function GameDetailPage() {
   const togglePlayLater = useTogglePlayLater();
   const { user: currentUser } = useAuth();
   const scrapeGame = useScrapeGame();
+  const { isScraping } = useGameScrapeStatus(id!);
   const refreshAchievements = useRefreshAchievements();
   const scrapeIfNeeded = useScrapeIfNeeded();
   const { data: consoles } = useConsoles();
@@ -213,7 +215,7 @@ export function GameDetailPage() {
         isFavorite={isFavorite}
         isInPlayLater={isInPlayLater}
         isPlayLaterPending={togglePlayLater.isPending}
-        isScraping={scrapeGame.isPending}
+        isScraping={isScraping}
         hasAchievements={hasAchievements}
         achievementCount={achievementCount}
         achievementUnlocked={achievementUnlocked}
