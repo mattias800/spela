@@ -183,6 +183,49 @@ func main() {
 	metaScraper := scraper.NewScraper(database, store, datDir, gameDirs)
 	go metaScraper.DATCache.RefreshAll()
 
+	// Configure scraper clients synchronously before starting the worker,
+	// so resumed scrape jobs have access to IGDB/SteamGridDB/RA immediately.
+	{
+		clientID := os.Getenv("SPELA_IGDB_CLIENT_ID")
+		clientSecret := os.Getenv("SPELA_IGDB_CLIENT_SECRET")
+		if clientID == "" || clientSecret == "" {
+			var settings []db.ServerSetting
+			database.Where("key IN ?", []string{"igdb_client_id", "igdb_client_secret"}).Find(&settings)
+			for _, s := range settings {
+				switch s.Key {
+				case "igdb_client_id":
+					clientID = s.Value
+				case "igdb_client_secret":
+					clientSecret = s.Value
+				}
+			}
+		}
+		if clientID != "" && clientSecret != "" {
+			metaScraper.IGDBClient = igdb.NewClient(clientID, clientSecret)
+		}
+
+		raAPIKey := os.Getenv("SPELA_RA_API_KEY")
+		if raAPIKey == "" {
+			var setting db.ServerSetting
+			database.Where("key = ?", "ra_api_key").First(&setting)
+			raAPIKey = setting.Value
+		}
+		if raAPIKey != "" {
+			metaScraper.RAClient = retroachievements.NewRAClient()
+			metaScraper.RAAPIKey = raAPIKey
+			slog.Info("RA API key configured for achievement scraping")
+		}
+
+		if sgdbKey := os.Getenv("SPELA_STEAMGRIDDB_API_KEY"); sgdbKey != "" {
+			metaScraper.ConfigureSteamGridDB(sgdbKey)
+		} else {
+			var setting db.ServerSetting
+			if err := database.Where("key = ?", "steamgriddb_api_key").First(&setting).Error; err == nil && setting.Value != "" {
+				metaScraper.ConfigureSteamGridDB(setting.Value)
+			}
+		}
+	}
+
 	// Context for background workers — cancelled on shutdown
 	workerCtx, workerCancel := context.WithCancel(context.Background())
 	defer workerCancel()
@@ -296,49 +339,6 @@ func main() {
 			"removed", result.RemovedGames,
 			"total", result.TotalGames,
 		)
-
-		// Configure scraper clients unconditionally — the worker may need
-		// them to resume an interrupted scrape job even if no new games were found.
-		clientID := os.Getenv("SPELA_IGDB_CLIENT_ID")
-		clientSecret := os.Getenv("SPELA_IGDB_CLIENT_SECRET")
-		if clientID == "" || clientSecret == "" {
-			var settings []db.ServerSetting
-			database.Where("key IN ?", []string{"igdb_client_id", "igdb_client_secret"}).Find(&settings)
-			for _, s := range settings {
-				switch s.Key {
-				case "igdb_client_id":
-					clientID = s.Value
-				case "igdb_client_secret":
-					clientSecret = s.Value
-				}
-			}
-		}
-		if clientID != "" && clientSecret != "" {
-			metaScraper.IGDBClient = igdb.NewClient(clientID, clientSecret)
-		}
-
-		// Configure RA API key for achievement scraping
-		raAPIKey := os.Getenv("SPELA_RA_API_KEY")
-		if raAPIKey == "" {
-			var setting db.ServerSetting
-			database.Where("key = ?", "ra_api_key").First(&setting)
-			raAPIKey = setting.Value
-		}
-		if raAPIKey != "" {
-			metaScraper.RAClient = retroachievements.NewRAClient()
-			metaScraper.RAAPIKey = raAPIKey
-			slog.Info("RA API key configured for achievement scraping")
-		}
-
-		// Configure SteamGridDB for hero art (env var or DB setting)
-		if sgdbKey := os.Getenv("SPELA_STEAMGRIDDB_API_KEY"); sgdbKey != "" {
-			metaScraper.ConfigureSteamGridDB(sgdbKey)
-		} else {
-			var setting db.ServerSetting
-			if err := database.Where("key = ?", "steamgriddb_api_key").First(&setting).Error; err == nil && setting.Value != "" {
-				metaScraper.ConfigureSteamGridDB(setting.Value)
-			}
-		}
 
 		if result.NewGames > 0 && metaScraper.IsIGDBConfigured() {
 			// Collect new (unscraped) game IDs
