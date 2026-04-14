@@ -378,6 +378,15 @@ func ReElectPrimaryForGroup(database *gorm.DB, consoleID uint, groupKey string) 
 	return electPrimaryForGroup(database, consoleID, groupKey)
 }
 
+// igdbMergeExcludedConsoles lists console abbreviations where IGDB-based
+// group merging is skipped. Demoscene platforms don't have regional releases
+// and their short/generic titles cause false IGDB matches that lead to
+// incorrect metadata propagation.
+var igdbMergeExcludedConsoles = []string{
+	"ADEMO", // Amiga demos
+	"DDEMO", // DOS demos
+}
+
 // MergeGroupsByIGDBID finds games that share the same IGDB game ID on the
 // same console but have different GroupKeys (e.g., "Sonic CD" USA and
 // "Sonic the Hedgehog CD" Japan). It merges them into a single group by
@@ -385,6 +394,14 @@ func ReElectPrimaryForGroup(database *gorm.DB, consoleID uint, groupKey string) 
 //
 // This should be called after scraping, when ScraperID is populated.
 func MergeGroupsByIGDBID(database *gorm.DB) (int, error) {
+	// Look up console IDs to exclude
+	var excludedConsoleIDs []uint
+	if len(igdbMergeExcludedConsoles) > 0 {
+		database.Model(&db.Console{}).
+			Where("abbreviation IN ?", igdbMergeExcludedConsoles).
+			Pluck("id", &excludedConsoleIDs)
+	}
+
 	// Find IGDB IDs that appear on 2+ games with different GroupKeys (same console)
 	type mergeCandidate struct {
 		ConsoleID uint
@@ -392,10 +409,13 @@ func MergeGroupsByIGDBID(database *gorm.DB) (int, error) {
 		GroupKeys int
 	}
 	var candidates []mergeCandidate
-	if err := database.Model(&db.Game{}).
+	q := database.Model(&db.Game{}).
 		Select("console_id, scraper_id, COUNT(DISTINCT group_key) as group_keys").
-		Where("scraper_id != '' AND group_key != '' AND deleted_at IS NULL").
-		Group("console_id, scraper_id").
+		Where("scraper_id != '' AND group_key != '' AND deleted_at IS NULL")
+	if len(excludedConsoleIDs) > 0 {
+		q = q.Where("console_id NOT IN ?", excludedConsoleIDs)
+	}
+	if err := q.Group("console_id, scraper_id").
 		Having("group_keys > 1").
 		Scan(&candidates).Error; err != nil {
 		return 0, fmt.Errorf("finding IGDB merge candidates: %w", err)
