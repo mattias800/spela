@@ -246,6 +246,18 @@ func main() {
 	})
 	go scrapeWorker.Run(workerCtx)
 
+	// Merge variant groups by IGDB ID on startup — catches any unmerged
+	// groups from previous sessions (e.g., games scraped before the merge
+	// was re-enabled, or groups that weren't merged because the scrape job
+	// hadn't completed yet).
+	go func() {
+		if merged, err := scanner.MergeGroupsByIGDBID(database); err != nil {
+			slog.Warn("startup IGDB group merge failed", "error", err)
+		} else if merged > 0 {
+			slog.Info("startup IGDB group merge complete", "merged", merged)
+		}
+	}()
+
 	// Auto-scan game library on startup (non-blocking).
 	// Uses the same scan flow as the manual "Scan library" button so progress
 	// is visible in the web UI via WebSocket events.
