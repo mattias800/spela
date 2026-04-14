@@ -239,25 +239,29 @@ function ScrapeCard() {
                 Scraping game {scrape.current} of {scrape.total}...
               </span>
             </div>
-            {scrape.gameName && (
-              <p className="text-sm text-surface-400 truncate">
-                {scrape.gameId ? (
-                  <Link
-                    to={`/games/${scrape.gameId}`}
-                    className="text-brand-400 hover:text-brand-300 transition-colors"
-                  >
-                    {scrape.gameName}
-                  </Link>
-                ) : (
-                  scrape.gameName
-                )}
-                {scrape.consoleName && (
-                  <span className="text-surface-500 ml-2">
-                    ({scrape.consoleName})
-                  </span>
-                )}
-              </p>
-            )}
+            <p className="text-sm text-surface-400 truncate">
+              {scrape.gameName ? (
+                <>
+                  {scrape.gameId ? (
+                    <Link
+                      to={`/games/${scrape.gameId}`}
+                      className="text-brand-400 hover:text-brand-300 transition-colors"
+                    >
+                      {scrape.gameName}
+                    </Link>
+                  ) : (
+                    scrape.gameName
+                  )}
+                  {scrape.consoleName && (
+                    <span className="text-surface-500 ml-2">
+                      ({scrape.consoleName})
+                    </span>
+                  )}
+                </>
+              ) : (
+                "\u00A0"
+              )}
+            </p>
             <ProgressBar value={scrape.current} max={scrape.total} />
             <div className="flex gap-4 text-xs text-surface-400">
               <span className="text-success-500">
