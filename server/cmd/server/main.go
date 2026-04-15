@@ -281,6 +281,9 @@ func main() {
 	// Start background scrape worker (must start before auto-scan goroutine
 	// so any enqueued items get processed)
 	scrapeWorker := scraper.NewScrapeWorker(database, metaScraper.Queue, metaScraper, hub, func() {
+		if err := scanner.RecomputeGroupKeys(database, nil); err != nil {
+			slog.Warn("post-scrape group key recompute failed", "error", err)
+		}
 		if err := scanner.GroupAndElectPrimaries(database); err != nil {
 			slog.Warn("post-scrape regrouping failed", "error", err)
 		}
@@ -296,17 +299,29 @@ func main() {
 	// the result depends only on filenames and IGDB IDs, not on existing
 	// group state. Fixes any corruption from previous runs.
 	go func() {
-		if err := scanner.RecomputeGroupKeys(database); err != nil {
+		broadcastGrouping := func(message string, current, total int) {
+			hub.Broadcast(websocket.Event{Type: "grouping_progress", Payload: map[string]interface{}{
+				"message": message,
+				"current": current,
+				"total":   total,
+			}})
+		}
+
+		broadcastGrouping("Recomputing group keys...", 0, 0)
+		if err := scanner.RecomputeGroupKeys(database, broadcastGrouping); err != nil {
 			slog.Warn("startup group key recompute failed", "error", err)
 		}
+		broadcastGrouping("Electing primary variants...", 0, 0)
 		if err := scanner.GroupAndElectPrimaries(database); err != nil {
 			slog.Warn("startup regrouping failed", "error", err)
 		}
+		broadcastGrouping("Merging cross-language variants...", 0, 0)
 		if merged, err := scanner.MergeGroupsByIGDBID(database); err != nil {
 			slog.Warn("startup IGDB group merge failed", "error", err)
 		} else if merged > 0 {
 			slog.Info("startup IGDB group merge complete", "merged", merged)
 		}
+		hub.Broadcast(websocket.Event{Type: "grouping_complete", Payload: nil})
 		slog.Info("startup variant grouping complete")
 	}()
 

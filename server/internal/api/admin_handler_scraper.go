@@ -192,6 +192,9 @@ func (h *AdminHandler) CancelScrape(c *gin.Context) {
 
 	// Rebuild variant groups after cancellation
 	go func() {
+		if err := scanner.RecomputeGroupKeys(h.DB, nil); err != nil {
+			slog.Warn("group key recompute after cancel failed", "error", err)
+		}
 		if err := scanner.GroupAndElectPrimaries(h.DB); err != nil {
 			slog.Warn("regrouping after cancel failed", "error", err)
 		}
