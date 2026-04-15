@@ -4,6 +4,7 @@ import (
 	"crypto/md5"
 	"encoding/hex"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -228,4 +229,108 @@ func TestFetchRAAchievements_NoRAConfig(t *testing.T) {
 
 	err := s.FetchRAAchievements(&game)
 	assert.Error(t, err)
+}
+
+func TestTryFetchRAAchievements_SkipsWhenNotConfigured(t *testing.T) {
+	database := setupRAFetchTestDB(t)
+	console := db.Console{Name: "NES", Abbreviation: "nes", Playable: true}
+	require.NoError(t, database.Create(&console).Error)
+	game := db.Game{ConsoleID: console.ID, Title: "Test", FileName: "t.nes", FilePath: "t.nes"}
+	require.NoError(t, database.Create(&game).Error)
+
+	s := &Scraper{DB: database} // No RA config
+	s.tryFetchRAAchievements(&game)
+	// Should not panic or error — just a no-op
+	assert.False(t, s.raCircuitOpen)
+}
+
+func TestTryFetchRAAchievements_SkipsWhenCircuitOpen(t *testing.T) {
+	database := setupRAFetchTestDB(t)
+	mockRA := newTestRAServer(t)
+	defer mockRA.Close()
+
+	console := db.Console{Name: "NES", Abbreviation: "nes", Playable: true}
+	require.NoError(t, database.Create(&console).Error)
+	game := db.Game{ConsoleID: console.ID, Title: "Test", FileName: "t.nes", FilePath: "t.nes"}
+	require.NoError(t, database.Create(&game).Error)
+
+	s := &Scraper{
+		DB:            database,
+		RAClient:      &retroachievements.RAClient{BaseURL: mockRA.URL, HTTPClient: mockRA.Client()},
+		RAAPIKey:      "test-key",
+		GameDirs:      []string{t.TempDir()},
+		raCircuitOpen: true, // Already tripped
+	}
+
+	s.tryFetchRAAchievements(&game)
+	// Should skip — no RA calls made, no cache populated
+	var count int64
+	database.Model(&db.GameAchievementCache{}).Count(&count)
+	assert.Equal(t, int64(0), count)
+}
+
+func TestTryFetchRAAchievements_CircuitTripsAfterConsecutiveFailures(t *testing.T) {
+	database := setupRAFetchTestDB(t)
+
+	// Mock RA server that always returns 500
+	failingRA := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte("internal error"))
+	}))
+	defer failingRA.Close()
+
+	console := db.Console{Name: "NES", Abbreviation: "nes", Playable: true}
+	require.NoError(t, database.Create(&console).Error)
+
+	tmpDir := t.TempDir()
+
+	s := &Scraper{
+		DB:       database,
+		RAClient: &retroachievements.RAClient{BaseURL: failingRA.URL, HTTPClient: failingRA.Client()},
+		RAAPIKey: "test-key",
+		GameDirs: []string{tmpDir},
+	}
+
+	// Create 6 games with ROM files (circuit trips at 5)
+	for i := 0; i < 6; i++ {
+		fname := fmt.Sprintf("game%d.nes", i)
+		os.WriteFile(filepath.Join(tmpDir, fname), []byte(fmt.Sprintf("rom%d", i)), 0o644)
+		game := db.Game{ConsoleID: console.ID, Title: fname, FileName: fname, FilePath: fname}
+		require.NoError(t, database.Create(&game).Error)
+		s.tryFetchRAAchievements(&game)
+	}
+
+	assert.True(t, s.raCircuitOpen)
+	assert.Equal(t, 5, s.raConsecutiveFailures) // Stops incrementing after trip
+}
+
+func TestTryFetchRAAchievements_SuccessResetsCounter(t *testing.T) {
+	database := setupRAFetchTestDB(t)
+	mockRA := newTestRAServer(t)
+	defer mockRA.Close()
+
+	tmpDir := t.TempDir()
+	os.MkdirAll(filepath.Join(tmpDir, "roms"), 0o755)
+	os.WriteFile(filepath.Join(tmpDir, "roms/game.nes"), testROMContent, 0o644)
+
+	console := db.Console{Name: "NES", Abbreviation: "nes", Playable: true}
+	require.NoError(t, database.Create(&console).Error)
+	game := db.Game{
+		ConsoleID: console.ID, Console: console,
+		Title: "Test Game", FileName: "game.nes", FilePath: "roms/game.nes",
+	}
+	require.NoError(t, database.Create(&game).Error)
+
+	s := &Scraper{
+		DB:                    database,
+		RAClient:              &retroachievements.RAClient{BaseURL: mockRA.URL, HTTPClient: mockRA.Client()},
+		RAAPIKey:              "test-key",
+		GameDirs:              []string{tmpDir},
+		raConsecutiveFailures: 3, // Some prior failures
+	}
+
+	s.tryFetchRAAchievements(&game)
+
+	assert.False(t, s.raCircuitOpen)
+	assert.Equal(t, 0, s.raConsecutiveFailures)
 }

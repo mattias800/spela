@@ -1,10 +1,12 @@
 package scraper
 
 import (
+	"log/slog"
 	"net/http"
 	"sync"
 	"time"
 
+	"github.com/spela/server/internal/db"
 	"github.com/spela/server/internal/igdb"
 	"github.com/spela/server/internal/pouet"
 	"github.com/spela/server/internal/retroachievements"
@@ -33,6 +35,13 @@ type Scraper struct {
 	enrichMu       sync.Mutex
 	enriching      bool
 	enrichProgress *EnrichProgress
+
+	// RA circuit breaker — trips after consecutive RA API failures during a
+	// scrape to avoid hammering a broken/blocked endpoint for thousands of games.
+	// These are non-persisted struct fields that reset on server restart or new
+	// Scraper instance, so the circuit automatically re-closes on the next scrape.
+	raCircuitOpen          bool
+	raConsecutiveFailures  int
 }
 
 // NewScraper creates a new metadata scraper instance.
@@ -60,6 +69,29 @@ func (s *Scraper) IsIGDBConfigured() bool {
 // IsRAConfigured returns whether the scraper has a configured RA client and API key.
 func (s *Scraper) IsRAConfigured() bool {
 	return s.RAClient != nil && s.RAAPIKey != ""
+}
+
+const raCircuitBreakerThreshold = 5
+
+// tryFetchRAAchievements attempts to fetch RA achievements for a game during
+// a scrape. Respects the circuit breaker and never returns an error — RA
+// failures are logged but don't fail the overall scrape.
+func (s *Scraper) tryFetchRAAchievements(game *db.Game) {
+	if !s.IsRAConfigured() || s.raCircuitOpen {
+		return
+	}
+	if err := s.FetchRAAchievements(game); err != nil {
+		s.raConsecutiveFailures++
+		if s.raConsecutiveFailures >= raCircuitBreakerThreshold {
+			s.raCircuitOpen = true
+			slog.Warn("RA achievements disabled for remainder of scrape",
+				"consecutiveFailures", s.raConsecutiveFailures, "lastError", err)
+		} else {
+			slog.Warn("RA achievement fetch failed", "game", game.Title, "error", err)
+		}
+	} else {
+		s.raConsecutiveFailures = 0
+	}
 }
 
 // TryStartEnrich attempts to acquire the enrichment lock.
