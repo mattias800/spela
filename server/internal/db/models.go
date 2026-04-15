@@ -790,15 +790,16 @@ type SessionCheatSetting struct {
 
 // GameArtwork stores SteamGridDB artwork URLs for a game (hero banners, grids, logos, icons).
 type GameArtwork struct {
-	ID            uint      `gorm:"primarykey" json:"id"`
-	GameID        uint      `gorm:"uniqueIndex;not null" json:"gameId"`
-	SteamGridDBID int       `json:"steamGridDbId,omitempty"`
-	HeroURL       string    `gorm:"size:1024" json:"heroUrl,omitempty"`
-	GridURL       string    `gorm:"size:1024" json:"gridUrl,omitempty"`
-	LogoURL       string    `gorm:"size:1024" json:"logoUrl,omitempty"`
-	IconURL       string    `gorm:"size:1024" json:"iconUrl,omitempty"`
-	CreatedAt     time.Time `json:"createdAt"`
-	UpdatedAt     time.Time `json:"updatedAt"`
+	ID              uint      `gorm:"primarykey" json:"id"`
+	GameID          uint      `gorm:"uniqueIndex;not null" json:"gameId"`
+	SteamGridDBID   int       `json:"steamGridDbId,omitempty"`
+	HeroURL         string    `gorm:"size:1024" json:"heroUrl,omitempty"`
+	HeroManuallySet bool      `gorm:"default:false" json:"-"` // When true, scraper skips overwriting hero during rescrapes
+	GridURL         string    `gorm:"size:1024" json:"gridUrl,omitempty"`
+	LogoURL         string    `gorm:"size:1024" json:"logoUrl,omitempty"`
+	IconURL         string    `gorm:"size:1024" json:"iconUrl,omitempty"`
+	CreatedAt       time.Time `json:"createdAt"`
+	UpdatedAt       time.Time `json:"updatedAt"`
 }
 
 // Company represents an IGDB game development/publishing company with metadata.

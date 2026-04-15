@@ -185,8 +185,19 @@ func (s *Scraper) scrapeSteamGridDBArtwork(game *db.Game, console db.Console) {
 	artwork.GameID = game.ID
 	gameIDStr := strconv.FormatUint(uint64(game.ID), 10)
 
-	// Download images locally instead of storing CDN URLs
-	if artwork.HeroURL != "" {
+	// Check if hero was manually set by admin — preserve it during rescrape.
+	var existingArtwork db.GameArtwork
+	heroManuallySet := false
+	if s.DB.Where("game_id = ?", game.ID).First(&existingArtwork).Error == nil {
+		heroManuallySet = existingArtwork.HeroManuallySet
+	}
+
+	// Download images locally instead of storing CDN URLs.
+	// Skip hero download if admin manually chose one — keep their selection.
+	if heroManuallySet {
+		artwork.HeroURL = existingArtwork.HeroURL
+		artwork.HeroManuallySet = true
+	} else if artwork.HeroURL != "" {
 		if path := s.DownloadExternalImage(artwork.HeroURL, fmt.Sprintf("%s/%s/artwork-hero.jpg", console.Abbreviation, gameIDStr)); path != "" {
 			artwork.HeroURL = path
 		}
@@ -244,7 +255,18 @@ func (s *Scraper) scrapeSteamGridDBArtworkResult(game *db.Game, console db.Conso
 	artwork.GameID = game.ID
 	gameIDStr := strconv.FormatUint(uint64(game.ID), 10)
 
-	if artwork.HeroURL != "" {
+	// Check if hero was manually set by admin — preserve it during rescrape.
+	var existingArtwork db.GameArtwork
+	heroManuallySet := false
+	if s.DB.Where("game_id = ?", game.ID).First(&existingArtwork).Error == nil {
+		heroManuallySet = existingArtwork.HeroManuallySet
+	}
+
+	// Skip hero download if admin manually chose one — keep their selection.
+	if heroManuallySet {
+		artwork.HeroURL = existingArtwork.HeroURL
+		artwork.HeroManuallySet = true
+	} else if artwork.HeroURL != "" {
 		if path := s.DownloadExternalImage(artwork.HeroURL, fmt.Sprintf("%s/%s/artwork-hero.jpg", console.Abbreviation, gameIDStr)); path != "" {
 			artwork.HeroURL = path
 		}

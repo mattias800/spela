@@ -344,6 +344,43 @@ export function useSetGameCover() {
   });
 }
 
+export interface HeroOption {
+  url: string;
+  thumb: string;
+  id: number;
+}
+
+export interface GameHeroesResponse {
+  activeUrl: string;
+  heroes: HeroOption[];
+}
+
+export function useGameHeroes(gameId: string) {
+  return useQuery({
+    queryKey: ["admin", "game-heroes", gameId],
+    queryFn: () =>
+      api.get<GameHeroesResponse>(`/admin/games/${gameId}/heroes`),
+    enabled: !!gameId,
+  });
+}
+
+export function useSetGameHero() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ gameId, url }: { gameId: string; url: string }) => {
+      await api.put(`/admin/games/${gameId}/heroes`, { url });
+    },
+    onSuccess: (_data, { gameId }) => {
+      queryClient.invalidateQueries({ queryKey: ["game", gameId] });
+      queryClient.invalidateQueries({ queryKey: ["games"] });
+      queryClient.invalidateQueries({
+        queryKey: ["admin", "game-heroes", gameId],
+      });
+    },
+  });
+}
+
 export function useIgdbStatus() {
   return useQuery({
     queryKey: ["admin", "igdb-status"],
