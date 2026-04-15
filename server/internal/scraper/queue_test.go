@@ -279,6 +279,65 @@ func TestIsGameQueued(t *testing.T) {
 	assert.False(t, queued)
 }
 
+func TestEnqueueGameWithType(t *testing.T) {
+	database := setupQueueTestDB(t)
+	q := NewScrapeQueue(database)
+
+	err := q.EnqueueGameWithType(42, nil, 100, "ra_fetch")
+	require.NoError(t, err)
+
+	var item db.ScrapeQueueItem
+	require.NoError(t, database.First(&item).Error)
+	assert.Equal(t, uint(42), item.GameID)
+	assert.Equal(t, 100, item.Priority)
+	assert.Equal(t, "ra_fetch", item.Type)
+	assert.Equal(t, "pending", item.Status)
+	assert.Nil(t, item.JobID)
+}
+
+func TestIsGameQueuedForType(t *testing.T) {
+	database := setupQueueTestDB(t)
+	q := NewScrapeQueue(database)
+
+	// Nothing queued yet
+	queued, err := q.IsGameQueuedForType(42, "ra_fetch")
+	require.NoError(t, err)
+	assert.False(t, queued)
+
+	// Enqueue a scrape item for game 42 (default type via EnqueueGame)
+	err = q.EnqueueGame(42, nil, 0)
+	require.NoError(t, err)
+
+	// "scrape" type should be queued (default type), but "ra_fetch" should not
+	queued, err = q.IsGameQueuedForType(42, "scrape")
+	require.NoError(t, err)
+	assert.True(t, queued)
+
+	queued, err = q.IsGameQueuedForType(42, "ra_fetch")
+	require.NoError(t, err)
+	assert.False(t, queued)
+}
+
+func TestIsGameQueuedForType_IgnoresCompletedItems(t *testing.T) {
+	database := setupQueueTestDB(t)
+	q := NewScrapeQueue(database)
+
+	err := q.EnqueueGameWithType(42, nil, 100, "ra_fetch")
+	require.NoError(t, err)
+
+	// Dequeue and complete the item
+	item, err := q.Dequeue()
+	require.NoError(t, err)
+	require.NotNil(t, item)
+	_, err = q.MarkCompleted(item)
+	require.NoError(t, err)
+
+	// Should no longer be queued
+	queued, err := q.IsGameQueuedForType(42, "ra_fetch")
+	require.NoError(t, err)
+	assert.False(t, queued)
+}
+
 func TestResetInProgressItems(t *testing.T) {
 	database := setupQueueTestDB(t)
 	q := NewScrapeQueue(database)

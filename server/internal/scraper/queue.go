@@ -92,6 +92,32 @@ func (q *ScrapeQueue) IsGameQueued(gameID uint) (bool, error) {
 	return count > 0, err
 }
 
+// EnqueueGameWithType adds a single game to the queue with a specific type.
+// Type determines what the worker does: "scrape" for full metadata, "ra_fetch" for RA achievements only.
+func (q *ScrapeQueue) EnqueueGameWithType(gameID uint, jobID *uint, priority int, itemType string) error {
+	item := &db.ScrapeQueueItem{
+		JobID:    jobID,
+		GameID:   gameID,
+		Priority: priority,
+		Status:   "pending",
+		Type:     itemType,
+	}
+	if err := q.db.Create(item).Error; err != nil {
+		return fmt.Errorf("enqueuing game %d (type=%s): %w", gameID, itemType, err)
+	}
+	return nil
+}
+
+// IsGameQueuedForType checks whether a game already has a pending or in-progress
+// queue item of the given type. Use this to prevent duplicate enqueuing.
+func (q *ScrapeQueue) IsGameQueuedForType(gameID uint, itemType string) (bool, error) {
+	var count int64
+	err := q.db.Model(&db.ScrapeQueueItem{}).
+		Where("game_id = ? AND type = ? AND status IN ?", gameID, itemType, []string{"pending", "in_progress"}).
+		Count(&count).Error
+	return count > 0, err
+}
+
 // Dequeue returns the next pending item (highest priority first, then oldest)
 // and marks it as in_progress. Returns nil if queue is empty.
 func (q *ScrapeQueue) Dequeue() (*db.ScrapeQueueItem, error) {
