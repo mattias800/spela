@@ -65,15 +65,15 @@ review, and implementation. Improvements include but are not limited to:
 - Architecture drift (layer violations, wrong dependency direction)
 - Features that feel incomplete or could be extended
 
-**When you notice something:** append it to `IMPROVEMENTS.md` in the repo root.
-Always append — never remove or reorder existing entries. This creates a timeline
-of observations that feeds into planning. Use the format documented at the top of
-that file. Multiple entries per session are fine; there are no strict rules on
-granularity. Even small observations are valuable.
+**When you notice something:** create a GitHub issue using `gh issue create`.
+Use a descriptive title with the appropriate conventional commit prefix
+(`refactor:`, `fix:`, `feat:`, `investigate:`, etc.). Include enough context
+in the body for someone to act on it later. Even small observations are
+valuable — if it's not part of the current task, log it and move on.
 
 **When to log:** During any task — implementation, code review, UI review, test
 writing, bug investigation, or even casual file reads. If something catches your
-eye and it's not part of the current task, log it and move on.
+eye and it's not part of the current task, create an issue and move on.
 
 ## PR Review Gate
 
