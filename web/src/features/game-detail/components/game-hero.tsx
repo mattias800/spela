@@ -214,6 +214,11 @@ export function GameHero({
               </h1>
               <div className="flex flex-wrap items-center gap-2 mt-2">
                 {consoleName && <ConsoleBadge code={game.consoleId} label={consoleName} />}
+                {game.isPreRelease && (
+                  <Badge variant="warning" data-testid="pre-release-badge">
+                    Pre-release
+                  </Badge>
+                )}
                 {!game.playable && (
                   <Badge variant="warning" data-testid="external-emulator-badge">
                     <Monitor className="h-3 w-3 mr-1" />

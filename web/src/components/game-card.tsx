@@ -106,6 +106,15 @@ export function GameCard({
           </div>
         )}
 
+        {/* Pre-release badge */}
+        {game.isPreRelease && (
+          <div className="absolute top-2.5 left-2.5 z-10">
+            <span className="inline-flex items-center rounded-full bg-warning-500/80 backdrop-blur-sm px-2 py-0.5 text-[10px] font-medium text-white">
+              Pre-release
+            </span>
+          </div>
+        )}
+
         {/* Console badge */}
         {game.consoleName && (
           <div className={cn(
