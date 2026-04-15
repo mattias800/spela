@@ -113,10 +113,19 @@ func (h *AdminHandler) TriggerScrape(c *gin.Context) {
 		return
 	}
 
-	if err := h.Scraper.Queue.EnqueueGames(job.ID, gameIDs, 0); err != nil {
-		slog.Error("failed to enqueue games", "error", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "enqueuing games"})
-		return
+	// RA mode enqueues as "ra_fetch" items; all other modes enqueue as default "scrape".
+	if mode == "ra" {
+		if err := h.Scraper.Queue.EnqueueGamesWithType(job.ID, gameIDs, 0, "ra_fetch"); err != nil {
+			slog.Error("failed to enqueue RA fetch games", "error", err)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "enqueuing games"})
+			return
+		}
+	} else {
+		if err := h.Scraper.Queue.EnqueueGames(job.ID, gameIDs, 0); err != nil {
+			slog.Error("failed to enqueue games", "error", err)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "enqueuing games"})
+			return
+		}
 	}
 
 	h.Hub.Broadcast(ws.Event{Type: "scrape_started", Payload: gin.H{
@@ -157,6 +166,16 @@ func (h *AdminHandler) collectGameIDs(mode string, consoleID uint, source, statu
 			// no filter
 		case "fallback":
 			q = q.Where("scraper_id = 'libretro'")
+		case "ra":
+			// Games on playable consoles that either:
+			//   - Haven't been checked against RA yet (RAHashChecked=false), OR
+			//   - Have a known RA game ID but no fresh achievement cache
+			// Excludes known non-matches (RAHashChecked=true, RAGameID=0).
+			q = q.Joins("JOIN consoles ON consoles.id = games.console_id AND consoles.playable = ?", true).
+				Where(`(games.ra_hash_checked = ? OR (games.ra_game_id > 0 AND games.ra_game_id NOT IN (
+					SELECT ra_game_id FROM game_achievement_caches
+					WHERE ra_game_id = games.ra_game_id AND cached_at > ?
+				)))`, false, time.Now().Add(-24*time.Hour))
 		default:
 			q = q.Where("scraper_id = '' OR scraper_id IS NULL")
 		}
