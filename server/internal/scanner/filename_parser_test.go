@@ -206,6 +206,24 @@ func TestParseFilenameMetadata(t *testing.T) {
 			wantPreRel:   false,
 			wantGroupKey: "chrono cross",
 		},
+		{
+			name:         "demo tag marks pre-release",
+			filename:     "Mega Man Battle Network 5 (USA) (Demo).gba",
+			wantRegion:   "USA",
+			wantRevision: "",
+			wantTags:     "demo",
+			wantPreRel:   true,
+			wantGroupKey: "mega man battle network 5",
+		},
+		{
+			name:         "taikenban (Japanese demo) marks pre-release",
+			filename:     "Dairantou Smash Brothers DX (Japan) (Taikenban).rvz",
+			wantRegion:   "Japan",
+			wantRevision: "",
+			wantTags:     "demo",
+			wantPreRel:   true,
+			wantGroupKey: "dairantou smash brothers dx",
+		},
 	}
 
 	for _, tt := range tests {
