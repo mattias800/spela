@@ -31,12 +31,21 @@ func RecomputeGroupKeys(database *gorm.DB) error {
 			break
 		}
 
-		for i := range games {
-			newKey := normalizeGroupKey(games[i].FileName)
-			if newKey != games[i].GroupKey {
-				database.Model(&games[i]).Update("group_key", newKey)
-				updated++
+		// Batch updates in a single transaction per batch
+		err := database.Transaction(func(tx *gorm.DB) error {
+			for i := range games {
+				newKey := normalizeGroupKey(games[i].FileName)
+				if newKey != games[i].GroupKey {
+					if err := tx.Model(&games[i]).Update("group_key", newKey).Error; err != nil {
+						return err
+					}
+					updated++
+				}
 			}
+			return nil
+		})
+		if err != nil {
+			return fmt.Errorf("updating group keys: %w", err)
 		}
 
 		offset += batchSize
