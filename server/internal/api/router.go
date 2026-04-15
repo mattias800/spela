@@ -173,7 +173,16 @@ func NewRouter(cfg Config) (*gin.Engine, func()) {
 	playLaterHandler := &PlayLaterHandler{DB: cfg.DB, Hub: cfg.Hub}
 	sharedSessionHandler := &SharedSessionHandler{DB: cfg.DB, Storage: cfg.Storage, Hub: cfg.Hub}
 	netplayHandler := &NetplayHandler{DB: cfg.DB, Hub: cfg.Hub, NetplayHub: cfg.NetplayHub}
-	raHandler := &RAHandler{DB: cfg.DB, RAClient: raClient, GameDir: cfg.GameDirs[0], EncryptionKey: encryptionKey}
+	var raQueue *scraper.ScrapeQueue
+	var raAPIKey string
+	if cfg.Scraper != nil {
+		raQueue = cfg.Scraper.Queue
+		raAPIKey = cfg.Scraper.RAAPIKey
+	}
+	raHandler := &RAHandler{
+		DB: cfg.DB, RAClient: raClient, GameDir: cfg.GameDirs[0],
+		EncryptionKey: encryptionKey, Queue: raQueue, RAAPIKey: raAPIKey,
+	}
 	biosHandler := &BiosHandler{Storage: cfg.Storage, DB: cfg.DB, Hub: cfg.Hub}
 	gameKeyMappingHandler := &GameKeyMappingHandler{DB: cfg.DB}
 	challengeHandler := NewChallengeHandler(cfg.DB, cfg.Storage, cfg.Hub)

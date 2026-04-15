@@ -1055,3 +1055,141 @@ func TestGetAchievementLeaderboard_MultipleUsers(t *testing.T) {
 	assert.Equal(t, float64(1), second["unlockedCount"])
 	assert.Equal(t, false, second["isComplete"])
 }
+
+func TestGetGameAchievements_AutoEnqueuesRAFetch(t *testing.T) {
+	mockRA, router, cfg := setupRATestEnv(t)
+	defer mockRA.Close()
+
+	token := registerAndGetToken(t, router)
+	game := createGameWithROM(t, cfg)
+
+	// Set server RA API key so auto-fetch is enabled
+	cfg.DB.Create(&db.ServerSetting{Key: "ra_api_key", Value: "test-server-key"})
+	// Configure the scraper's RA API key so it's passed to RAHandler
+	cfg.Scraper.RAAPIKey = "test-server-key"
+	// Rebuild router to pick up the new RA API key
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", fmt.Sprintf("/api/games/%d/achievements", game.ID), nil)
+	req.Header.Set("Authorization", "Bearer "+token)
+	router.ServeHTTP(w, req)
+
+	// Should return 202 with pending status (no cache, no user RA creds)
+	assert.Equal(t, http.StatusAccepted, w.Code)
+
+	var resp map[string]interface{}
+	json.Unmarshal(w.Body.Bytes(), &resp)
+	assert.Equal(t, "pending", resp["status"])
+}
+
+func TestGetGameAchievements_ReturnsPendingWhenAlreadyQueued(t *testing.T) {
+	mockRA, router, cfg := setupRATestEnv(t)
+	defer mockRA.Close()
+
+	token := registerAndGetToken(t, router)
+	game := createGameWithROM(t, cfg)
+
+	cfg.Scraper.RAAPIKey = "test-server-key"
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
+
+	// Manually enqueue an ra_fetch item
+	cfg.Scraper.Queue.EnqueueGameWithType(game.ID, nil, 100, "ra_fetch")
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", fmt.Sprintf("/api/games/%d/achievements", game.ID), nil)
+	req.Header.Set("Authorization", "Bearer "+token)
+	router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusAccepted, w.Code)
+	var resp map[string]interface{}
+	json.Unmarshal(w.Body.Bytes(), &resp)
+	assert.Equal(t, "pending", resp["status"])
+}
+
+func TestGetGameAchievements_ReturnsCachedData(t *testing.T) {
+	mockRA, router, cfg := setupRATestEnv(t)
+	defer mockRA.Close()
+
+	token := registerAndGetToken(t, router)
+	game := createGameWithROM(t, cfg)
+
+	// Pre-populate the RA game ID and cache
+	cfg.DB.Model(&db.Game{}).Where("id = ?", game.ID).
+		Updates(map[string]interface{}{"ra_game_id": 42, "ra_hash_checked": true})
+	achJSON, _ := json.Marshal([]map[string]interface{}{
+		{"ID": 501, "Title": "Test Achievement", "Description": "Do thing", "Points": 10, "BadgeName": "badge1", "type": "core"},
+	})
+	cfg.DB.Create(&db.GameAchievementCache{
+		RAGameID: 42, GameID: game.ID, Title: "Test ROM Game",
+		AchievementJSON: string(achJSON), TotalCount: 1, TotalPoints: 10,
+		CachedAt: time.Now(),
+	})
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", fmt.Sprintf("/api/games/%d/achievements", game.ID), nil)
+	req.Header.Set("Authorization", "Bearer "+token)
+	router.ServeHTTP(w, req)
+
+	// Should return 200 with cached data
+	assert.Equal(t, http.StatusOK, w.Code)
+	var resp map[string]interface{}
+	json.Unmarshal(w.Body.Bytes(), &resp)
+	assert.Equal(t, float64(1), resp["totalCount"])
+}
+
+func TestGetGameAchievements_NoAutoFetchWithoutRAKey(t *testing.T) {
+	mockRA, router, cfg := setupRATestEnv(t)
+	defer mockRA.Close()
+
+	token := registerAndGetToken(t, router)
+	game := createGameWithROM(t, cfg)
+
+	// Pre-set RAGameID so we skip the inline hash lookup (which would call the mock RA server)
+	cfg.DB.Model(&db.Game{}).Where("id = ?", game.ID).
+		Updates(map[string]interface{}{"ra_game_id": 42, "ra_hash_checked": true})
+
+	// No server RA API key configured, no user RA credentials
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", fmt.Sprintf("/api/games/%d/achievements", game.ID), nil)
+	req.Header.Set("Authorization", "Bearer "+token)
+	router.ServeHTTP(w, req)
+
+	// Should return 200 with empty response (no auto-fetch without RA key)
+	assert.Equal(t, http.StatusOK, w.Code)
+	var resp map[string]interface{}
+	json.Unmarshal(w.Body.Bytes(), &resp)
+	achievements := resp["achievements"].([]interface{})
+	assert.Empty(t, achievements)
+}
+
+func TestGetGameAchievements_SkipsAutoFetchWhenHashCheckedNoMatch(t *testing.T) {
+	mockRA, router, cfg := setupRATestEnv(t)
+	defer mockRA.Close()
+
+	token := registerAndGetToken(t, router)
+	game := createGameWithROM(t, cfg)
+
+	// Mark game as checked but no RA match
+	cfg.DB.Model(&db.Game{}).Where("id = ?", game.ID).
+		Updates(map[string]interface{}{"ra_hash_checked": true, "ra_game_id": 0})
+
+	cfg.Scraper.RAAPIKey = "test-server-key"
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", fmt.Sprintf("/api/games/%d/achievements", game.ID), nil)
+	req.Header.Set("Authorization", "Bearer "+token)
+	router.ServeHTTP(w, req)
+
+	// Should return 200 empty — no enqueue, no pending
+	assert.Equal(t, http.StatusOK, w.Code)
+	var resp map[string]interface{}
+	json.Unmarshal(w.Body.Bytes(), &resp)
+	achievements := resp["achievements"].([]interface{})
+	assert.Empty(t, achievements)
+}

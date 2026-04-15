@@ -14,6 +14,7 @@ import (
 	"github.com/spela/server/internal/auth"
 	"github.com/spela/server/internal/db"
 	"github.com/spela/server/internal/retroachievements"
+	"github.com/spela/server/internal/scraper"
 	"github.com/spela/server/internal/storage"
 	"gorm.io/gorm"
 )
@@ -23,7 +24,9 @@ type RAHandler struct {
 	DB            *gorm.DB
 	RAClient      *retroachievements.RAClient
 	GameDir       string
-	EncryptionKey []byte // AES-256 key for encrypting RA tokens at rest
+	EncryptionKey []byte                // AES-256 key for encrypting RA tokens at rest
+	Queue         *scraper.ScrapeQueue  // Scrape queue for async RA fetch jobs
+	RAAPIKey      string                // Server-level RA API key; empty = auto-fetch disabled
 }
 
 // decryptRAToken decrypts the RA token from a credential record.
@@ -208,6 +211,14 @@ func (h *RAHandler) GetGameAchievements(c *gin.Context) {
 
 	// Determine RA game ID: use cached value if available, otherwise compute hash and look up
 	raGameID := game.RAGameID
+
+	// If we already checked and RA doesn't have this game, return empty.
+	// See Game model for RAHashChecked + RAGameID sentinel documentation.
+	if game.RAHashChecked && raGameID == 0 {
+		c.JSON(http.StatusOK, emptyResponse)
+		return
+	}
+
 	if raGameID == 0 {
 		// No cached RA game ID — compute hash and look up
 		romPath := filepath.Join(h.GameDir, game.FilePath)
@@ -231,8 +242,9 @@ func (h *RAHandler) GetGameAchievements(c *gin.Context) {
 			return
 		}
 
-		// Cache the RA game ID on the game record for future requests
-		h.DB.Model(&db.Game{}).Where("id = ?", game.ID).Update("ra_game_id", raGameID)
+		// Cache the RA game ID and mark hash as checked on the game record
+		h.DB.Model(&db.Game{}).Where("id = ?", game.ID).
+			Updates(map[string]interface{}{"ra_game_id": raGameID, "ra_hash_checked": true})
 	}
 
 	// Check cache (valid for 24 hours) — this is available to ALL authenticated users
@@ -256,73 +268,79 @@ func (h *RAHandler) GetGameAchievements(c *gin.Context) {
 
 	// Cache is stale or missing — try to refresh using user's RA credentials
 	var cred db.RetroAchievementCredential
-	if err := h.DB.Where("user_id = ?", uid).First(&cred).Error; err != nil {
-		// User has no RA credentials. If we have a stale cache, return it anyway.
-		if cacheHit {
-			var achievements []retroachievements.Achievement
-			if err := json.Unmarshal([]byte(cache.AchievementJSON), &achievements); err == nil {
+	hasUserCreds := h.DB.Where("user_id = ?", uid).First(&cred).Error == nil
+
+	if hasUserCreds {
+		raToken, err := h.decryptRAToken(&cred)
+		if err != nil {
+			slog.Error("failed to decrypt RA token", "user_id", uid, "error", err)
+			// Fall through to server-key auto-fetch below
+		} else {
+			gameInfo, _, err := h.RAClient.GetGameInfoAndUserProgress(cred.RAUsername, raToken, raGameID)
+			if err != nil {
+				slog.Error("failed to fetch RA game info", "ra_game_id", raGameID, "error", err)
+				// Fall through to server-key auto-fetch below
+			} else {
+				// Success — cache and return
+				achJSON, _ := json.Marshal(gameInfo.Achievements)
+				if cacheHit {
+					cache.Title = gameInfo.Title
+					cache.AchievementJSON = string(achJSON)
+					cache.TotalCount = gameInfo.TotalCount
+					cache.TotalPoints = gameInfo.TotalPoints
+					cache.CachedAt = time.Now()
+					cache.GameID = game.ID
+					h.DB.Save(&cache)
+				} else {
+					h.DB.Create(&db.GameAchievementCache{
+						RAGameID:        raGameID,
+						GameID:          game.ID,
+						Title:           gameInfo.Title,
+						AchievementJSON: string(achJSON),
+						TotalCount:      gameInfo.TotalCount,
+						TotalPoints:     gameInfo.TotalPoints,
+						CachedAt:        time.Now(),
+					})
+				}
 				c.JSON(http.StatusOK, gin.H{
 					"raGameId":     raGameID,
-					"title":        cache.Title,
-					"achievements": achievements,
-					"totalCount":   cache.TotalCount,
-					"totalPoints":  cache.TotalPoints,
+					"title":        gameInfo.Title,
+					"achievements": gameInfo.Achievements,
+					"totalCount":   gameInfo.TotalCount,
+					"totalPoints":  gameInfo.TotalPoints,
 				})
 				return
 			}
 		}
-		c.JSON(http.StatusOK, emptyResponse)
+	}
+
+	// No user credentials or user fetch failed — try server-level auto-fetch via queue.
+	if h.Queue != nil && h.RAAPIKey != "" {
+		queued, _ := h.Queue.IsGameQueuedForType(game.ID, "ra_fetch")
+		if !queued {
+			if err := h.Queue.EnqueueGameWithType(game.ID, nil, 100, "ra_fetch"); err != nil {
+				slog.Warn("RA auto-fetch: failed to enqueue", "game", game.Title, "error", err)
+			}
+		}
+		c.JSON(http.StatusAccepted, gin.H{"status": "pending"})
 		return
 	}
 
-	// Decrypt RA token for API call
-	raToken, err := h.decryptRAToken(&cred)
-	if err != nil {
-		slog.Error("failed to decrypt RA token", "user_id", uid, "error", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to access RA credentials"})
-		return
-	}
-
-	// Fetch from RA API
-	gameInfo, _, err := h.RAClient.GetGameInfoAndUserProgress(cred.RAUsername, raToken, raGameID)
-	if err != nil {
-		slog.Error("failed to fetch RA game info", "ra_game_id", raGameID, "error", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch achievements from RetroAchievements"})
-		return
-	}
-
-	// Cache the result
-	achJSON, err := json.Marshal(gameInfo.Achievements)
-	if err != nil {
-		slog.Warn("failed to marshal achievement data for cache", "ra_game_id", raGameID, "error", err)
-	}
+	// No server RA key configured — return stale cache if available, otherwise empty.
 	if cacheHit {
-		cache.Title = gameInfo.Title
-		cache.AchievementJSON = string(achJSON)
-		cache.TotalCount = gameInfo.TotalCount
-		cache.TotalPoints = gameInfo.TotalPoints
-		cache.CachedAt = time.Now()
-		cache.GameID = game.ID
-		h.DB.Save(&cache)
-	} else {
-		h.DB.Create(&db.GameAchievementCache{
-			RAGameID:        raGameID,
-			GameID:          game.ID,
-			Title:           gameInfo.Title,
-			AchievementJSON: string(achJSON),
-			TotalCount:      gameInfo.TotalCount,
-			TotalPoints:     gameInfo.TotalPoints,
-			CachedAt:        time.Now(),
-		})
+		var achievements []retroachievements.Achievement
+		if err := json.Unmarshal([]byte(cache.AchievementJSON), &achievements); err == nil {
+			c.JSON(http.StatusOK, gin.H{
+				"raGameId":     raGameID,
+				"title":        cache.Title,
+				"achievements": achievements,
+				"totalCount":   cache.TotalCount,
+				"totalPoints":  cache.TotalPoints,
+			})
+			return
+		}
 	}
-
-	c.JSON(http.StatusOK, gin.H{
-		"raGameId":     raGameID,
-		"title":        gameInfo.Title,
-		"achievements": gameInfo.Achievements,
-		"totalCount":   gameInfo.TotalCount,
-		"totalPoints":  gameInfo.TotalPoints,
-	})
+	c.JSON(http.StatusOK, emptyResponse)
 }
 
 // GetAchievementProgress returns the user's achievement progress for a game.

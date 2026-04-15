@@ -91,31 +91,51 @@ func (w *ScrapeWorker) processItem(ctx context.Context, item *db.ScrapeQueueItem
 
 	w.broadcastScrapeStatus(game.ID, "scraping")
 
-	// Variant group propagation for 'new' mode jobs
-	propagated := false
-	if item.JobID != nil {
-		var job db.ScrapeJob
-		if err := w.db.First(&job, *item.JobID).Error; err == nil {
-			if job.Mode == "new" && game.GroupKey != "" {
-				if w.scraper.propagateGroupMetadata(&game) {
-					propagated = true
-				}
-			}
-		}
+	// Dispatch based on queue item type.
+	// Default to "scrape" for backward compatibility with items created before
+	// the Type field was added (they have Type="" due to GORM zero-value).
+	itemType := item.Type
+	if itemType == "" {
+		itemType = "scrape"
 	}
 
-	if !propagated {
-		if err := w.scraper.ScrapeGame(&game); err != nil {
-			slog.Warn("scrape worker: scrape failed", "game", game.Title, "error", err)
+	switch itemType {
+	case "ra_fetch":
+		if err := w.scraper.FetchRAAchievements(&game); err != nil {
+			slog.Warn("scrape worker: RA fetch failed", "game", game.Title, "error", err)
 			jobDone, _ := w.queue.MarkFailed(item, err.Error())
 			w.broadcastProgress(item, &game, false, jobDone)
 			w.broadcastScrapeStatus(game.ID, "idle")
 			return
 		}
 
-		// Propagate metadata to unscraped siblings in the same variant group
-		if game.GroupKey != "" {
-			w.scraper.propagateToGroup(&game)
+	default: // "scrape" — full metadata scrape
+		// Variant group propagation for 'new' mode jobs
+		propagated := false
+		if item.JobID != nil {
+			var job db.ScrapeJob
+			if err := w.db.First(&job, *item.JobID).Error; err == nil {
+				if job.Mode == "new" && game.GroupKey != "" {
+					if w.scraper.propagateGroupMetadata(&game) {
+						propagated = true
+					}
+				}
+			}
+		}
+
+		if !propagated {
+			if err := w.scraper.ScrapeGame(&game); err != nil {
+				slog.Warn("scrape worker: scrape failed", "game", game.Title, "error", err)
+				jobDone, _ := w.queue.MarkFailed(item, err.Error())
+				w.broadcastProgress(item, &game, false, jobDone)
+				w.broadcastScrapeStatus(game.ID, "idle")
+				return
+			}
+
+			// Propagate metadata to unscraped siblings in the same variant group
+			if game.GroupKey != "" {
+				w.scraper.propagateToGroup(&game)
+			}
 		}
 	}
 

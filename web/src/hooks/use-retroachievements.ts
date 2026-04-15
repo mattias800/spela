@@ -58,6 +58,14 @@ export function useGameAchievements(gameId: string | undefined) {
     queryKey: ["game-achievements", gameId],
     queryFn: () => api.get<GameAchievements>(`/games/${gameId}/achievements`),
     enabled: !!gameId,
+    refetchInterval: (query) => {
+      // Poll every 2 seconds while the server is processing an RA fetch.
+      // Stop polling once we have actual achievement data.
+      if (query.state.data?.status === "pending") {
+        return 2000;
+      }
+      return false;
+    },
   });
 }
 

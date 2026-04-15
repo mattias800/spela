@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log/slog"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/spela/server/internal/db"
@@ -130,4 +131,123 @@ func (s *Scraper) ScrapeRAAchievements(ctx context.Context, onProgress func(curr
 	}
 
 	return successes, total, nil
+}
+
+// FetchRAAchievements fetches RetroAchievements data for a single game using
+// the server-level API key. This is called by the queue worker for "ra_fetch"
+// items, triggered when a user views a game detail page without cached achievements.
+//
+// The function is idempotent:
+//   - If the GameAchievementCache is already fresh (< 24h), it's a no-op.
+//   - If RAHashChecked=true and RAGameID=0, the game has no RA match — skip.
+//   - If RAGameID > 0, skip the hash lookup and go straight to fetching achievements.
+//
+// See the Game model for the RAHashChecked + RAGameID sentinel documentation.
+func (s *Scraper) FetchRAAchievements(game *db.Game) error {
+	// Check sentinel and cache BEFORE requiring RA config — these early
+	// returns don't need the RA client and allow idempotent no-ops.
+	if game.RAHashChecked && game.RAGameID == 0 {
+		return nil // Already checked, RA doesn't have this game.
+	}
+
+	raGameID := game.RAGameID
+
+	// If we already have a RAGameID, check if cache is fresh before requiring RA config.
+	if raGameID > 0 {
+		var cache db.GameAchievementCache
+		cacheHit := s.DB.Where("ra_game_id = ?", raGameID).First(&cache).Error == nil
+		if cacheHit && time.Since(cache.CachedAt) < 24*time.Hour {
+			return nil // Cache is fresh, nothing to do.
+		}
+	}
+
+	// Beyond this point we need the RA client to do actual work.
+	if !s.IsRAConfigured() {
+		return fmt.Errorf("RA client or API key not configured")
+	}
+
+	// Resolve RAGameID if not cached yet.
+	if raGameID == 0 {
+		var hash string
+		for _, dir := range s.GameDirs {
+			candidate := filepath.Join(dir, game.FilePath)
+			if h, err := retroachievements.ComputeMD5(candidate); err == nil {
+				hash = h
+				break
+			}
+		}
+		if hash == "" {
+			// ROM file not found — mark as checked so we don't retry.
+			s.DB.Model(&db.Game{}).Where("id = ?", game.ID).
+				Updates(map[string]interface{}{"ra_hash_checked": true})
+			slog.Warn("RA fetch: ROM file not found", "game", game.Title, "path", game.FilePath)
+			return nil
+		}
+
+		time.Sleep(500 * time.Millisecond) // RA API rate limit
+		id, err := s.RAClient.GetGameIDFromHash(hash)
+		if err != nil {
+			// GetGameIDFromHash returns an error both for transient failures
+			// AND when RA simply doesn't recognize the hash (GameID=0).
+			// Check if this is a "no match" (contains "no RA game found") vs transient.
+			if strings.Contains(err.Error(), "no RA game found") {
+				// RA doesn't have this game — mark checked so we don't rehash.
+				s.DB.Model(&db.Game{}).Where("id = ?", game.ID).
+					Updates(map[string]interface{}{"ra_hash_checked": true})
+				slog.Debug("RA fetch: no RA match for game", "game", game.Title)
+				return nil
+			}
+			// Transient error — do NOT set RAHashChecked, allow retry.
+			return fmt.Errorf("RA hash lookup failed for %q: %w", game.Title, err)
+		}
+
+		// Match found — cache the RA game ID and mark hash as checked.
+		s.DB.Model(&db.Game{}).Where("id = ?", game.ID).
+			Updates(map[string]interface{}{"ra_hash_checked": true, "ra_game_id": id})
+		raGameID = id
+	}
+
+	// Check if cache is already fresh (< 24h). This re-check handles the case
+	// where raGameID was just resolved from a hash lookup.
+	var cache db.GameAchievementCache
+	cacheHit := s.DB.Where("ra_game_id = ?", raGameID).First(&cache).Error == nil
+	if cacheHit && time.Since(cache.CachedAt) < 24*time.Hour {
+		return nil // Cache is fresh, nothing to do.
+	}
+
+	// Fetch achievements from RA using server API key.
+	time.Sleep(500 * time.Millisecond) // RA API rate limit
+	gameInfo, err := s.RAClient.GetGameExtended(s.RAAPIKey, raGameID)
+	if err != nil {
+		return fmt.Errorf("RA achievement fetch failed for %q (raGameID=%d): %w", game.Title, raGameID, err)
+	}
+
+	achJSON, err := json.Marshal(gameInfo.Achievements)
+	if err != nil {
+		return fmt.Errorf("marshalling achievements for %q: %w", game.Title, err)
+	}
+
+	// Upsert cache entry.
+	if cacheHit {
+		cache.Title = gameInfo.Title
+		cache.AchievementJSON = string(achJSON)
+		cache.TotalCount = gameInfo.TotalCount
+		cache.TotalPoints = gameInfo.TotalPoints
+		cache.CachedAt = time.Now()
+		cache.GameID = game.ID
+		s.DB.Save(&cache)
+	} else {
+		s.DB.Create(&db.GameAchievementCache{
+			RAGameID:        raGameID,
+			GameID:          game.ID,
+			Title:           gameInfo.Title,
+			AchievementJSON: string(achJSON),
+			TotalCount:      gameInfo.TotalCount,
+			TotalPoints:     gameInfo.TotalPoints,
+			CachedAt:        time.Now(),
+		})
+	}
+
+	slog.Info("RA fetch: cached achievements", "game", game.Title, "raGameId", raGameID, "count", gameInfo.TotalCount)
+	return nil
 }

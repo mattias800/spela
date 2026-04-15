@@ -159,6 +159,13 @@ type Game struct {
 	PartyInfo           string         `gorm:"size:512" json:"partyInfo,omitempty"`                // Demo party and placement, e.g. "Assembly 1993, 1st place"
 	CRC32               string         `gorm:"size:16" json:"-"`
 	RAGameID            uint           `gorm:"index" json:"-"` // RetroAchievements game ID (cached from hash lookup)
+	// RAHashChecked + RAGameID sentinel logic:
+	//   RAHashChecked=false, RAGameID=0  → Not yet looked up. Compute ROM MD5 and query RA.
+	//   RAHashChecked=true,  RAGameID=0  → Looked up, but RA doesn't have this game. Do NOT retry.
+	//   RAHashChecked=true,  RAGameID>0  → Valid RA game ID cached.
+	// RAHashChecked is ONLY set to true after a successful API response (even if RA returned no match).
+	// Transient errors (network, 403) leave RAHashChecked=false so the next visit retries.
+	RAHashChecked       bool           `gorm:"default:false" json:"-"`
 	Screenshots      []GameScreenshot      `gorm:"foreignKey:GameID" json:"-"`
 	ReleaseDates     []GameReleaseDate     `gorm:"foreignKey:GameID" json:"-"`
 	Videos           []GameVideo           `gorm:"foreignKey:GameID" json:"-"`

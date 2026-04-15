@@ -360,6 +360,7 @@ export interface Achievement {
 }
 
 export interface GameAchievements {
+  status?: "pending";
   raGameId: number;
   totalCount: number;
   totalPoints: number;
