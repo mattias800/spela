@@ -13,10 +13,19 @@ import (
 // RecomputeGroupKeys recomputes every game's group_key from its filename.
 // This ensures group keys are always derived from source data, not from
 // potentially corrupted state. Safe to run at any time — idempotent.
-func RecomputeGroupKeys(database *gorm.DB) error {
+// GroupingProgress is called during long-running grouping operations
+// to report progress. The message describes the current phase, and
+// current/total indicate progress within that phase (0/0 if unknown).
+type GroupingProgress func(message string, current, total int)
+
+func RecomputeGroupKeys(database *gorm.DB, onProgress GroupingProgress) error {
 	const batchSize = 500
 	var offset int
 	updated := 0
+
+	// Count total games for progress reporting
+	var totalGames int64
+	database.Model(&db.Game{}).Where("deleted_at IS NULL").Count(&totalGames)
 
 	for {
 		var games []db.Game
@@ -49,6 +58,13 @@ func RecomputeGroupKeys(database *gorm.DB) error {
 		}
 
 		offset += batchSize
+		if onProgress != nil {
+			processed := offset
+			if processed > int(totalGames) {
+				processed = int(totalGames)
+			}
+			onProgress("Recomputing group keys...", processed, int(totalGames))
+		}
 	}
 
 	if updated > 0 {

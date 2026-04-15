@@ -16,6 +16,7 @@ import { useScanLibrary, useScrapeMetadata, useCancelScrape } from "@/hooks/use-
 import { useToast } from "@/components/ui";
 import { useScrapeProgress } from "@/hooks/use-scrape-progress";
 import { useScanProgress } from "@/hooks/use-scan-progress";
+import { useGroupingProgress } from "@/hooks/use-grouping-progress";
 import { useConsoles } from "@/hooks/use-consoles";
 import { ScrapeStatusCard } from "@/features/admin/components/scrape-status-card";
 
@@ -455,17 +456,44 @@ function ScrapeCard() {
   );
 }
 
+function GroupingStatus() {
+  const grouping = useGroupingProgress();
+
+  if (!grouping.active) return null;
+
+  return (
+    <Section>
+      <div className="px-5 py-4 space-y-3">
+        <div className="flex items-center gap-2 text-sm">
+          <Loader2 className="h-4 w-4 animate-spin text-brand-400" />
+          <span className="text-surface-200">{grouping.message}</span>
+        </div>
+        {grouping.total > 0 && (
+          <>
+            <ProgressBar value={grouping.current} max={grouping.total} />
+            <p className="text-xs text-surface-400">
+              {grouping.current.toLocaleString()} / {grouping.total.toLocaleString()}
+            </p>
+          </>
+        )}
+      </div>
+    </Section>
+  );
+}
+
 export function AdminScanPage() {
   return (
     <PageLayout title="Library Scan" subtitle="Scan game directories and update metadata.">
       <SectionList className="max-w-3xl">
-      <ScrapeStatusCard />
+        <GroupingStatus />
 
-      <div className="grid gap-5 md:grid-cols-2">
-        <ScanCard />
-        <ScrapeCard />
-      </div>
-    </SectionList>
+        <div className="grid gap-5 md:grid-cols-2">
+          <ScanCard />
+          <ScrapeCard />
+        </div>
+
+        <ScrapeStatusCard />
+      </SectionList>
     </PageLayout>
   );
 }

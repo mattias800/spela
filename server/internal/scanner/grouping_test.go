@@ -607,7 +607,7 @@ func TestFullRegroupingIsIdempotent(t *testing.T) {
 	}
 
 	// Run the full pipeline: recompute keys, regroup, then merge by IGDB ID
-	require.NoError(t, RecomputeGroupKeys(database))
+	require.NoError(t, RecomputeGroupKeys(database, nil))
 	require.NoError(t, GroupAndElectPrimaries(database))
 	merged, err := MergeGroupsByIGDBID(database)
 	require.NoError(t, err)
@@ -642,7 +642,7 @@ func TestFullRegroupingIsIdempotent(t *testing.T) {
 	assert.Equal(t, 1, smashPrimaries, "exactly one Smash game should be primary")
 
 	// Run the whole thing again — result should be identical (idempotent)
-	require.NoError(t, RecomputeGroupKeys(database))
+	require.NoError(t, RecomputeGroupKeys(database, nil))
 	require.NoError(t, GroupAndElectPrimaries(database))
 	_, err = MergeGroupsByIGDBID(database)
 	require.NoError(t, err)
