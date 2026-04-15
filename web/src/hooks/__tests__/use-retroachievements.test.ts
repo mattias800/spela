@@ -230,6 +230,33 @@ describe("useGameAchievements", () => {
 
     await waitFor(() => expect(result.current.isError).toBe(true));
   });
+
+  it("polls when status is pending and stops when data arrives", async () => {
+    const pendingResponse = { status: "pending" as const };
+    mockApi.get
+      .mockResolvedValueOnce(pendingResponse)
+      .mockResolvedValueOnce(pendingResponse)
+      .mockResolvedValueOnce(mockAchievements);
+
+    const { result } = renderHook(() => useGameAchievements("game-1"), {
+      wrapper: createWrapper(),
+    });
+
+    // First call returns pending
+    await waitFor(() => expect(result.current.data).toBeDefined());
+    expect(result.current.data?.status).toBe("pending");
+
+    // Should eventually get real data via refetch
+    await waitFor(
+      () => {
+        expect(result.current.data?.achievements).toBeDefined();
+        expect(result.current.data?.achievements?.length).toBeGreaterThan(0);
+      },
+      { timeout: 10000 },
+    );
+
+    expect(result.current.data?.totalCount).toBe(2);
+  });
 });
 
 describe("useGameAchievementProgress", () => {
