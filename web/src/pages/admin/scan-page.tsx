@@ -10,6 +10,7 @@ import {
   RefreshCw,
   RotateCcw,
   Square,
+  Trophy,
 } from "lucide-react";
 import { Button, Section, Select } from "@/components/ui";
 import { useScanLibrary, useScrapeMetadata, useCancelScrape } from "@/hooks/use-admin";
@@ -449,6 +450,36 @@ function ScrapeCard() {
             className="w-full"
           >
             Rescrape All Games
+          </Button>
+          <Button
+            onClick={() =>
+              scrapeMetadata.mutate(
+                { mode: "ra", console: consoleParam },
+                {
+                  onSuccess: (data) => {
+                    const n = data.total;
+                    toast(
+                      n === 0 ? "info" : "success",
+                      n === 0
+                        ? "All games already have achievement data"
+                        : `Fetching achievements for ${n} game${n === 1 ? "" : "s"}...`,
+                    );
+                  },
+                  onError: (err) =>
+                    toast(
+                      "error",
+                      err instanceof Error ? err.message : "Scrape failed",
+                    ),
+                },
+              )
+            }
+            loading={scrapeMetadata.isPending}
+            disabled={isActive}
+            variant="secondary"
+            icon={<Trophy className="h-4 w-4" />}
+            className="w-full"
+          >
+            Scrape Missing Achievements
           </Button>
         </div>
       </div>

@@ -69,6 +69,27 @@ func (q *ScrapeQueue) EnqueueGames(jobID uint, gameIDs []uint, priority int) err
 	return nil
 }
 
+// EnqueueGamesWithType inserts multiple queue items with a specific type.
+func (q *ScrapeQueue) EnqueueGamesWithType(jobID uint, gameIDs []uint, priority int, itemType string) error {
+	if len(gameIDs) == 0 {
+		return nil
+	}
+	items := make([]db.ScrapeQueueItem, len(gameIDs))
+	for i, gid := range gameIDs {
+		items[i] = db.ScrapeQueueItem{
+			JobID:    &jobID,
+			GameID:   gid,
+			Priority: priority,
+			Status:   "pending",
+			Type:     itemType,
+		}
+	}
+	if err := q.db.CreateInBatches(items, 500).Error; err != nil {
+		return fmt.Errorf("enqueuing %d games (type=%s): %w", len(gameIDs), itemType, err)
+	}
+	return nil
+}
+
 // EnqueueGame inserts a single queue item. jobID may be nil for standalone scrapes.
 func (q *ScrapeQueue) EnqueueGame(gameID uint, jobID *uint, priority int) error {
 	item := &db.ScrapeQueueItem{

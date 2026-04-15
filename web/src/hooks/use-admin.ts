@@ -103,7 +103,7 @@ export interface ScrapeStartResponse {
   total: number;
 }
 
-export type ScrapeMode = "new" | "all" | "fallback";
+export type ScrapeMode = "new" | "all" | "fallback" | "ra";
 
 export function useScrapeMetadata() {
   const queryClient = useQueryClient();
