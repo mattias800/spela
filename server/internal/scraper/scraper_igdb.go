@@ -211,6 +211,10 @@ func (s *Scraper) ScrapeGame(game *db.Game) error {
 	s.cleanGameImages(game, console.Abbreviation, gameIDStr)
 
 	slog.Info("scraped metadata", "game", game.Title, "scraperId", game.ScraperID, "rating", game.IGDBCriticsRating)
+
+	// Fetch RetroAchievements data (best-effort, never fails the scrape).
+	s.tryFetchRAAchievements(game)
+
 	return nil
 }
 
@@ -665,6 +669,10 @@ func (s *Scraper) ScrapeGameWithIGDBMatch(game *db.Game, igdbID int) error {
 	s.cleanGameImages(game, console.Abbreviation, gameIDStr)
 
 	slog.Info("re-scraped with manual IGDB match", "game", game.Title, "igdbId", igdbID, "scraperId", game.ScraperID)
+
+	// Fetch RetroAchievements data (best-effort, never fails the scrape).
+	s.tryFetchRAAchievements(game)
+
 	return nil
 }
 
