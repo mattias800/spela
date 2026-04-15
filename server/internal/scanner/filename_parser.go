@@ -31,10 +31,11 @@ var bracketContentPattern = regexp.MustCompile(`\[([^\]]*)\]`)
 // tagKeywords maps lowercase tag keywords to their canonical form.
 // Tags that indicate pre-release status are marked separately.
 var preReleaseTags = map[string]bool{
-	"beta":  true,
-	"proto": true,
-	"sample": true,
-	"demo":  true,
+	"beta":      true,
+	"proto":     true,
+	"sample":    true,
+	"demo":      true,
+	"taikenban": true, // Japanese for "trial version" / demo
 }
 
 // allKnownTags are tags we extract from filenames.
@@ -44,6 +45,7 @@ var allKnownTags = map[string]string{
 	"prototype":       "proto",
 	"sample":          "sample",
 	"demo":            "demo",
+	"taikenban":       "demo",
 	"unl":             "unl",
 	"unlicensed":      "unl",
 	"hack":            "hack",

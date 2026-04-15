@@ -660,3 +660,45 @@ func TestFullRegroupingIsIdempotent(t *testing.T) {
 	assert.Equal(t, postAce.GroupKey, postAce2.GroupKey, "idempotent: Ace group unchanged")
 	assert.Equal(t, postBeach.GroupKey, postBeach2.GroupKey, "idempotent: Beach group unchanged")
 }
+
+func TestDemoGameIsNotElectedPrimary(t *testing.T) {
+	database := setupTestDB(t)
+
+	var gc db.Console
+	require.NoError(t, database.Where("abbreviation = ?", "GC").First(&gc).Error)
+
+	// Full release and demo of the same game, same IGDB ID
+	fullGame := db.Game{
+		ConsoleID: gc.ID, Title: "Super Smash Bros. Melee",
+		FileName: "Super Smash Bros. Melee (USA) (En,Ja).rvz",
+		FilePath: "gc/Super Smash Bros. Melee (USA) (En,Ja).rvz",
+		GroupKey: "super smash bros melee", ScraperID: "igdb:1627",
+		Region: "USA",
+	}
+	demoGame := db.Game{
+		ConsoleID: gc.ID, Title: "Super Smash Bros. Melee",
+		FileName: "Dairantou Smash Brothers DX (Japan) (Taikenban).rvz",
+		FilePath: "gc/Dairantou Smash Brothers DX (Japan) (Taikenban).rvz",
+		GroupKey: "dairantou smash brothers dx", ScraperID: "igdb:1627",
+		Region: "Japan", IsPreRelease: true, // Taikenban = demo
+	}
+	require.NoError(t, database.Create(&fullGame).Error)
+	require.NoError(t, database.Create(&demoGame).Error)
+
+	// Group and merge
+	require.NoError(t, GroupAndElectPrimaries(database))
+	_, err := MergeGroupsByIGDBID(database)
+	require.NoError(t, err)
+
+	// Reload
+	var postFull, postDemo db.Game
+	database.First(&postFull, fullGame.ID)
+	database.First(&postDemo, demoGame.ID)
+
+	// Same group
+	assert.Equal(t, postFull.GroupKey, postDemo.GroupKey, "should be in same group")
+
+	// Full game is primary, demo is not
+	assert.True(t, postFull.IsPrimary, "full game should be primary")
+	assert.False(t, postDemo.IsPrimary, "demo should not be primary")
+}
