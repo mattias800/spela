@@ -20,6 +20,7 @@ import { Button, Badge, ActionsMenu } from "@/components/ui";
 import { ConsoleBadge } from "@/components/console-badge";
 import { VerificationBadge } from "./verification-badge";
 import { CoverArtSelector } from "./cover-art-selector";
+import { HeroArtSelector } from "./hero-art-selector";
 import {
   formatPlayTime,
   formatRelativeTime,
@@ -75,6 +76,7 @@ export function GameHero({
   onReplaceRom,
 }: GameHeroProps) {
   const [showCoverModal, setShowCoverModal] = useState(false);
+  const [showHeroModal, setShowHeroModal] = useState(false);
   const consoleName = game.consoleName ?? "";
 
   // Prefer hero art (from SteamGridDB), fall back to first screenshot
@@ -87,6 +89,11 @@ export function GameHero({
             label: "Change Cover",
             icon: <ImageIcon className="h-4 w-4" />,
             onClick: () => setShowCoverModal(true),
+          },
+          {
+            label: "Change Hero Art",
+            icon: <ImageIcon className="h-4 w-4" />,
+            onClick: () => setShowHeroModal(true),
           },
           {
             label: "Scrape Metadata",
@@ -202,6 +209,11 @@ export function GameHero({
             <CoverArtSelector
               open={showCoverModal}
               onClose={() => setShowCoverModal(false)}
+              gameId={game.id}
+            />
+            <HeroArtSelector
+              open={showHeroModal}
+              onClose={() => setShowHeroModal(false)}
               gameId={game.id}
             />
           </div>

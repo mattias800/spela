@@ -214,6 +214,7 @@ export type ApiGetPath = WithQuery<
   | "/admin/scrape/counts"
   | "/admin/games/scan/status"
   | `/admin/games/${string}/covers`
+  | `/admin/games/${string}/heroes`
   | `/admin/games/${string}/igdb-search`
   | "/admin/metadata-matches"
   | "/admin/igdb/status"
@@ -356,6 +357,7 @@ export type ApiPutPath = WithQuery<
   | `/admin/users/${string}`
   | "/admin/settings"
   | `/admin/games/${string}/covers`
+  | `/admin/games/${string}/heroes`
   | `/admin/games/${string}/verification-tag`
   | `/admin/games/${string}/replace-rom`
 >;

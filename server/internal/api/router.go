@@ -566,6 +566,8 @@ func NewRouter(cfg Config) (*gin.Engine, func()) {
 			admin.POST("/games/:id/achievements/refresh", adminHandler.RefreshAchievements)
 			admin.GET("/games/:id/covers", adminHandler.GetGameCovers)
 			admin.PUT("/games/:id/covers", adminHandler.SetGameCover)
+			admin.GET("/games/:id/heroes", adminHandler.GetGameHeroes)
+			admin.PUT("/games/:id/heroes", adminHandler.SetGameHero)
 			admin.GET("/metadata-matches", adminHandler.MetadataMatches)
 			admin.GET("/games/:id/igdb-search", adminHandler.SearchIGDB)
 			admin.POST("/games/:id/igdb-match", adminHandler.ApplyIGDBMatch)
