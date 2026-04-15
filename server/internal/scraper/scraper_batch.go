@@ -166,13 +166,6 @@ func (s *Scraper) scrapeSteamGridDBArtwork(game *db.Game, console db.Console) {
 		return
 	}
 
-	// Check if artwork already exists for this game
-	var existing db.GameArtwork
-	if err := s.DB.Where("game_id = ?", game.ID).First(&existing).Error; err == nil {
-		// Artwork already exists, skip
-		return
-	}
-
 	artwork, err := s.SteamGridDBClient.GetBestArtwork(game.Title, console.Abbreviation, parseReleaseYear(game.ReleaseDate))
 	if err != nil {
 		slog.Debug("SteamGridDB artwork fetch failed", "game", game.Title, "error", err)
@@ -214,6 +207,9 @@ func (s *Scraper) scrapeSteamGridDBArtwork(game *db.Game, console db.Console) {
 		}
 	}
 
+	// Delete any existing artwork before inserting fresh data
+	s.DB.Where("game_id = ?", game.ID).Delete(&db.GameArtwork{})
+
 	if err := s.DB.Create(artwork).Error; err != nil {
 		slog.Warn("failed to save SteamGridDB artwork", "game", game.Title, "error", err)
 		RecordScrapeResult(s.DB, game.ID, "steamgriddb", "error", "", err.Error())
@@ -230,11 +226,6 @@ func (s *Scraper) scrapeSteamGridDBArtwork(game *db.Game, console db.Console) {
 func (s *Scraper) scrapeSteamGridDBArtworkResult(game *db.Game, console db.Console) (status string, errorMsg string) {
 	if s.SteamGridDBClient == nil {
 		return "not_found", ""
-	}
-
-	var existing db.GameArtwork
-	if err := s.DB.Where("game_id = ?", game.ID).First(&existing).Error; err == nil {
-		return "matched", "" // already exists
 	}
 
 	artwork, err := s.SteamGridDBClient.GetBestArtwork(game.Title, console.Abbreviation, parseReleaseYear(game.ReleaseDate))
@@ -273,6 +264,9 @@ func (s *Scraper) scrapeSteamGridDBArtworkResult(game *db.Game, console db.Conso
 			artwork.IconURL = path
 		}
 	}
+
+	// Delete any existing artwork before inserting fresh data
+	s.DB.Where("game_id = ?", game.ID).Delete(&db.GameArtwork{})
 
 	if err := s.DB.Create(artwork).Error; err != nil {
 		slog.Warn("failed to save SteamGridDB artwork", "game", game.Title, "error", err)

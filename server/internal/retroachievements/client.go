@@ -23,9 +23,21 @@ func NewRAClient() *RAClient {
 	return &RAClient{
 		BaseURL: "https://retroachievements.org",
 		HTTPClient: &http.Client{
-			Timeout: 15 * time.Second,
+			Timeout:   15 * time.Second,
+			Transport: &uaTransport{base: http.DefaultTransport},
 		},
 	}
+}
+
+// uaTransport sets a User-Agent header on every request.
+// The default Go UA ("Go-http-client/2.0") triggers Cloudflare bot detection.
+type uaTransport struct {
+	base http.RoundTripper
+}
+
+func (t *uaTransport) RoundTrip(req *http.Request) (*http.Response, error) {
+	req.Header.Set("User-Agent", "Spela/1.0 (game metadata scraper; +https://github.com/mattias800/spela)")
+	return t.base.RoundTrip(req)
 }
 
 // Achievement represents a single RA achievement.
@@ -234,7 +246,12 @@ func (c *RAClient) GetGameIDFromHash(hash string) (uint, error) {
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		return 0, fmt.Errorf("RA gameid returned status %d: %s", resp.StatusCode, string(body))
+		// Truncate body to avoid dumping entire HTML pages (e.g., Cloudflare 403 blocks) into logs
+		bodyStr := string(body)
+		if len(bodyStr) > 200 {
+			bodyStr = bodyStr[:200] + "..."
+		}
+		return 0, fmt.Errorf("RA gameid returned status %d: %s", resp.StatusCode, bodyStr)
 	}
 
 	var result struct {
