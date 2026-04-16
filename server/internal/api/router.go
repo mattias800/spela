@@ -104,21 +104,13 @@ func NewRouter(cfg Config) (*gin.Engine, func()) {
 	imageHandler := &ImageHandler{ImageDir: cfg.Storage.ImageDir, JWTSecret: cfg.JWTSecret, DB: cfg.DB, Scraper: cfg.Scraper}
 	r.GET("/api/images/*filepath", imageHandler.ServeImage)
 
-	// Health check (public, no auth required)
-	r.GET("/api/health", func(c *gin.Context) {
-		status := "ok"
-		sqlDB, err := cfg.DB.DB()
-		if err != nil {
-			status = "degraded"
-		} else if err := sqlDB.Ping(); err != nil {
-			status = "degraded"
-		}
+	// Bootstrap the huma API. Registered handlers below run alongside the raw
+	// gin handlers that follow — the two stacks coexist during the migration.
+	// The OpenAPI spec is exposed at /api/openapi and Swagger UI at /api/docs.
+	humaAPI := SetupHumaAPI(r, cfg.Version)
 
-		c.JSON(200, gin.H{
-			"status":  status,
-			"version": cfg.Version,
-		})
-	})
+	// Health check (public, no auth required)
+	RegisterSystemRoutes(humaAPI, cfg.DB, cfg.Version)
 
 	// Rate limiter for auth endpoints (login, register, setup)
 	authLimiter := NewRateLimiter(120, time.Minute)
