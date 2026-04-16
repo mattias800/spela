@@ -151,7 +151,7 @@ jobs:
           ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: ./gradlew :android:assembleRelease -PappVersion=${RELEASE_TAG#v}
       - name: Upload APK
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v7
         with:
           name: spela-android-apk
           path: player/android/build/outputs/apk/release/*.apk
@@ -255,7 +255,7 @@ jobs:
           hdiutil create -volname "Spela" -srcfolder "$APP_DIR" -ov -format UDZO "$DMG_PATH"
           echo "Repackaged $DMG_PATH"
       - name: Upload artifact
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v7
         with:
           name: ${{ matrix.artifact-name }}
           path: ${{ matrix.artifact-path }}
@@ -296,7 +296,7 @@ jobs:
         working-directory: player
         run: bash linux/build-appimage.sh --arch x86_64
       - name: Upload AppImage
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v7
         with:
           name: spela-linux-appimage-x86_64
           path: player/desktop/build/appimage/Spela-x86_64.AppImage
@@ -345,7 +345,7 @@ jobs:
         working-directory: player
         run: bash linux/flatpak/build-flatpak.sh
       - name: Upload Flatpak
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v7
         with:
           name: spela-linux-flatpak
           path: player/desktop/build/flatpak/spela.flatpak
@@ -392,12 +392,12 @@ jobs:
         working-directory: player
         run: bash linux/build-appimage.sh --arch aarch64
       - name: Upload DEB
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v7
         with:
           name: spela-linux-arm64-deb
           path: player/desktop/build/compose/binaries/main/deb/*.deb
       - name: Upload AppImage
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v7
         with:
           name: spela-linux-appimage-aarch64
           path: player/desktop/build/appimage/Spela-aarch64.AppImage
@@ -419,7 +419,7 @@ jobs:
         with:
           ref: ${{ env.RELEASE_TAG }}
       - name: Download all artifacts
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v8
         with:
           path: artifacts
           pattern: spela-*
@@ -453,7 +453,7 @@ jobs:
           echo "Release artifacts:"
           ls -lh .
       - name: Create Release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           tag_name: ${{ env.RELEASE_TAG }}
           generate_release_notes: true

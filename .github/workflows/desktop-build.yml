@@ -76,7 +76,7 @@ jobs:
         run: ./gradlew ${{ matrix.format }}
 
       - name: Upload artifact
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v7
         with:
           name: ${{ matrix.artifact-name }}
           path: ${{ matrix.artifact-path }}
@@ -122,7 +122,7 @@ jobs:
         run: bash linux/build-appimage.sh --arch x86_64
 
       - name: Upload AppImage
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v7
         with:
           name: spela-linux-appimage-x86_64
           path: player/desktop/build/appimage/Spela-x86_64.AppImage
@@ -176,7 +176,7 @@ jobs:
         run: bash linux/flatpak/build-flatpak.sh
 
       - name: Upload Flatpak
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v7
         with:
           name: spela-linux-flatpak
           path: player/desktop/build/flatpak/spela.flatpak
@@ -226,13 +226,13 @@ jobs:
         run: bash linux/build-appimage.sh --arch aarch64
 
       - name: Upload DEB
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v7
         with:
           name: spela-linux-arm64-deb
           path: player/desktop/build/compose/binaries/main/deb/*.deb
 
       - name: Upload AppImage
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v7
         with:
           name: spela-linux-appimage-aarch64
           path: player/desktop/build/appimage/Spela-aarch64.AppImage
