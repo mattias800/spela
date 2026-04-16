@@ -3,6 +3,7 @@ package scraper
 import (
 	"log/slog"
 	"net/http"
+	"strings"
 	"sync"
 	"time"
 
@@ -81,11 +82,29 @@ func (s *Scraper) tryFetchRAAchievements(game *db.Game) {
 		return
 	}
 	if err := s.FetchRAAchievements(game); err != nil {
+		errStr := err.Error()
+		// Detect auth/blocked errors to emit a credentials event
+		if strings.Contains(errStr, "status 401") || strings.Contains(errStr, "status 403") {
+			db.RecordOperationalEvent(s.DB, db.SystemEventInput{
+				EventType: db.SystemEventAPICredentialsInvalid,
+				Metadata: map[string]any{
+					"service": "retroachievements",
+					"error":   errStr,
+				},
+			})
+		}
 		s.raConsecutiveFailures++
 		if s.raConsecutiveFailures >= raCircuitBreakerThreshold {
 			s.raCircuitOpen = true
 			slog.Warn("RA achievements disabled for remainder of scrape",
 				"consecutiveFailures", s.raConsecutiveFailures, "lastError", err)
+			db.RecordOperationalEvent(s.DB, db.SystemEventInput{
+				EventType: db.SystemEventRACircuitBreakerTripped,
+				Metadata: map[string]any{
+					"consecutiveFailures": s.raConsecutiveFailures,
+					"lastError":           errStr,
+				},
+			})
 		} else {
 			slog.Warn("RA achievement fetch failed", "game", game.Title, "error", err)
 		}

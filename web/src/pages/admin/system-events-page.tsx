@@ -5,52 +5,56 @@ import { PageLayout, SectionList } from "@/components/layout";
 import { Button, Section } from "@/components/ui";
 import { Pagination } from "@/components/pagination";
 import {
-  SecurityEventsFilters,
+  SystemEventsFilters,
   type SinceOption,
-  DEFAULT_SECURITY_EVENTS_SINCE,
-} from "@/features/admin/components/security-events-filters";
-import { SecurityEventsTable } from "@/features/admin/components/security-events-table";
-import { SecurityEventDetailModal } from "@/features/admin/components/security-event-detail-modal";
-import { useSecurityEvents } from "@/hooks/use-security-events";
-import type { SecurityEvent, SecurityEventType } from "@/types/api";
+  DEFAULT_SYSTEM_EVENTS_SINCE,
+} from "@/features/admin/components/system-events-filters";
+import { SystemEventsTable } from "@/features/admin/components/system-events-table";
+import { SystemEventDetailModal } from "@/features/admin/components/system-event-detail-modal";
+import {
+  useSystemEvents,
+  useSystemEventTypes,
+  useDismissSystemEvent,
+} from "@/hooks/use-system-events";
+import type {
+  SystemEvent,
+  SystemEventType,
+  SystemEventCategoryCode,
+} from "@/types/api";
 
 const PAGE_SIZE = 50;
-const DEFAULT_SINCE: SinceOption = DEFAULT_SECURITY_EVENTS_SINCE;
+const DEFAULT_SINCE: SinceOption = DEFAULT_SYSTEM_EVENTS_SINCE;
 
-// AdminSecurityEventsPage shows an auditable log of authentication events.
-// Filter state lives in the URL query string so views are bookmarkable and
-// shareable between admins during an incident.
-export function AdminSecurityEventsPage() {
+export function AdminSystemEventsPage() {
   const [searchParams, setSearchParams] = useSearchParams();
 
   const eventTypes = useMemo(
-    () => searchParams.getAll("eventType") as SecurityEventType[],
+    () => searchParams.getAll("eventType") as SystemEventType[],
     [searchParams],
   );
+  const category = (searchParams.get("category") as SystemEventCategoryCode) ?? null;
   const username = searchParams.get("username") ?? "";
   const ip = searchParams.get("ip") ?? "";
   const since = (searchParams.get("since") ?? DEFAULT_SINCE) as SinceOption;
+  const showDismissed = searchParams.get("dismissed") === "true";
   const page = Number(searchParams.get("page") ?? "1") || 1;
 
-  const [detailEvent, setDetailEvent] = useState<SecurityEvent | null>(null);
+  const [detailEvent, setDetailEvent] = useState<SystemEvent | null>(null);
 
-  const { data, isLoading, isError, error, refetch } = useSecurityEvents({
+  const { data, isLoading, isError, error, refetch } = useSystemEvents({
     page,
     pageSize: PAGE_SIZE,
     eventType: eventTypes,
+    category: category || undefined,
     username: username || undefined,
     ip: ip || undefined,
     since,
+    dismissed: showDismissed,
   });
 
-  // updateParams merges a partial set of filter changes back into the URL,
-  // resetting the page counter whenever a filter other than `page` changes
-  // so the user never lands on an empty page after a filter change.
-  //
-  // Deletion convention: pass `null`, `""`, or `[]` to remove a key from
-  // the URL entirely. This is how callers clear a filter — e.g.
-  // `{ username: null }` removes the `?username=...` param rather than
-  // setting it to the literal string "null".
+  const { data: typesData } = useSystemEventTypes();
+  const dismissMutation = useDismissSystemEvent();
+
   const updateParams = useCallback(
     (updates: Record<string, string | string[] | null>) => {
       const next = new URLSearchParams(searchParams);
@@ -73,25 +77,37 @@ export function AdminSecurityEventsPage() {
   );
 
   return (
-    <PageLayout title="Security Events" subtitle="Audit log of authentication events. Failed logins, lockouts, and token misuse are recorded here so you can investigate suspicious activity without tailing container logs.">
+    <PageLayout
+      title="System Events"
+      subtitle="Audit log of system events. Security events track authentication activity; operational events surface infrastructure issues like scraper failures and missing ROMs."
+    >
       <SectionList>
-      <SecurityEventsFilters
+      <SystemEventsFilters
         eventTypes={eventTypes}
+        category={category}
         username={username}
         ip={ip}
         since={since}
+        showDismissed={showDismissed}
+        typeInfos={typesData?.types}
         onEventTypesChange={(t) => updateParams({ eventType: t })}
+        onCategoryChange={(c) => updateParams({ category: c })}
         onUsernameChange={(v) => updateParams({ username: v })}
         onIpChange={(v) => updateParams({ ip: v })}
         onSinceChange={(v) =>
           updateParams({ since: v === DEFAULT_SINCE ? null : v })
         }
+        onShowDismissedChange={(v) =>
+          updateParams({ dismissed: v ? "true" : null })
+        }
         onClear={() =>
           updateParams({
             eventType: [],
+            category: null,
             username: null,
             ip: null,
             since: null,
+            dismissed: null,
           })
         }
       />
@@ -99,13 +115,13 @@ export function AdminSecurityEventsPage() {
       {isError ? (
         <Section>
           <div
-            data-testid="security-events-error"
+            data-testid="system-events-error"
             className="flex flex-col items-center gap-3 px-6 py-10 text-center"
           >
             <AlertTriangle className="h-10 w-10 text-danger-500" />
             <div>
               <p className="text-sm font-semibold text-surface-100">
-                Failed to load security events
+                Failed to load system events
               </p>
               <p className="mt-1 text-sm text-surface-400">
                 {error instanceof Error
@@ -135,10 +151,11 @@ export function AdminSecurityEventsPage() {
             </div>
           )}
 
-          <SecurityEventsTable
+          <SystemEventsTable
             events={data?.data}
             isLoading={isLoading}
             onRowClick={setDetailEvent}
+            onDismiss={(id) => dismissMutation.mutate(id)}
           />
 
           <Pagination
@@ -150,17 +167,10 @@ export function AdminSecurityEventsPage() {
         </>
       )}
 
-      <SecurityEventDetailModal
+      <SystemEventDetailModal
         event={detailEvent}
         onClose={() => setDetailEvent(null)}
         onPivotToUsername={(u) => {
-          // Pivot semantics: drop every other active filter and open the
-          // time window wide. During an incident investigation the admin
-          // almost always wants "everything this user has ever done", not
-          // "their actions in the current 24h slice", so we intentionally
-          // forget the current `since` and event-type selections. Clearing
-          // the complementary `ip` filter prevents a stale IP from a
-          // previous search from silently AND-ing with the new view.
           updateParams({
             eventType: [],
             username: u,
@@ -170,9 +180,6 @@ export function AdminSecurityEventsPage() {
           setDetailEvent(null);
         }}
         onPivotToIp={(addr) => {
-          // Same pivot semantics as onPivotToUsername — widen to all-time
-          // and drop every other filter so the admin gets a clean "all
-          // events from this IP" view.
           updateParams({
             eventType: [],
             username: null,

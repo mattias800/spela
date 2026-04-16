@@ -173,7 +173,8 @@ func Initialize(dbPath string) (*gorm.DB, error) {
 		&SimilarGame{},
 		&LoginAttempt{},
 		&TokenBlacklist{},
-		&SecurityEvent{},
+		&SystemEventCategory{},
+		&SystemEvent{},
 		&CheatCode{},
 		&GameSession{},
 		&SessionSaveState{},
@@ -211,6 +212,16 @@ func Initialize(dbPath string) (*gorm.DB, error) {
 	)
 	if err != nil {
 		return nil, fmt.Errorf("running migrations: %w", err)
+	}
+
+	// Seed system event categories (security, operational).
+	if err := seedSystemEventCategories(db); err != nil {
+		return nil, fmt.Errorf("seeding system event categories: %w", err)
+	}
+
+	// Migrate old security_events table to system_events if it still exists.
+	if err := migrateSecurityEventsToSystemEvents(db); err != nil {
+		slog.Warn("security_events migration failed (may already be done)", "error", err)
 	}
 
 	// Defensive: ensure the token_blacklist token_hash index exists.
@@ -1124,5 +1135,50 @@ func MigrateScrapeResults(database *gorm.DB) error {
 	}
 
 	slog.Info("scrape-result migration completed", "rows_inserted", totalInserted)
+	return nil
+}
+
+// seedSystemEventCategories inserts the code-defined categories if they don't
+// already exist. Called on startup after AutoMigrate.
+func seedSystemEventCategories(database *gorm.DB) error {
+	categories := []SystemEventCategory{
+		{Code: CategorySecurity, Name: "Security"},
+		{Code: CategoryOperational, Name: "Operational"},
+	}
+	for _, cat := range categories {
+		if err := database.Where("code = ?", cat.Code).FirstOrCreate(&cat).Error; err != nil {
+			return fmt.Errorf("seeding category %q: %w", cat.Code, err)
+		}
+	}
+	return nil
+}
+
+// migrateSecurityEventsToSystemEvents renames the old security_events table
+// and backfills category_id for existing rows. Idempotent — skips if the old
+// table no longer exists.
+func migrateSecurityEventsToSystemEvents(database *gorm.DB) error {
+	if !database.Migrator().HasTable("security_events") {
+		return nil
+	}
+
+	var cat SystemEventCategory
+	if err := database.Where("code = ?", CategorySecurity).First(&cat).Error; err != nil {
+		return fmt.Errorf("finding security category for migration: %w", err)
+	}
+
+	err := database.Exec(
+		"INSERT INTO system_events (id, created_at, category_id, event_type, reason, username, username_lower, user_id, ip, path, metadata) "+
+			"SELECT id, created_at, ?, event_type, reason, username, username_lower, user_id, ip, path, metadata FROM security_events",
+		cat.ID,
+	).Error
+	if err != nil {
+		return fmt.Errorf("migrating security_events rows: %w", err)
+	}
+
+	if err := database.Exec("DROP TABLE security_events").Error; err != nil {
+		return fmt.Errorf("dropping security_events: %w", err)
+	}
+
+	slog.Info("migrated security_events to system_events")
 	return nil
 }

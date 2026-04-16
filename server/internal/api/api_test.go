@@ -37,7 +37,8 @@ func setupTestEnv(t *testing.T) (*gorm.DB, *Config) {
 		&db.User{}, &db.Console{}, &db.Game{}, &db.GameDisc{},
 		&db.Favorite{}, &db.PlayHistory{}, &db.RefreshToken{},
 		&db.TokenBlacklist{}, &db.LoginAttempt{},
-		&db.SecurityEvent{},
+		&db.SystemEventCategory{},
+		&db.SystemEvent{},
 		&db.ServerSetting{}, &db.Core{},
 		&db.ConsoleShaderPreference{},
 		&db.ConsoleKeyMappingPreference{},
@@ -95,6 +96,10 @@ func setupTestEnv(t *testing.T) (*gorm.DB, *Config) {
 	require.NoError(t, err)
 	err = db.SeedCores(database)
 	require.NoError(t, err)
+	// Seed system event categories for handler tests.
+	database.Create(&db.SystemEventCategory{Code: db.CategorySecurity, Name: "Security"})
+	database.Create(&db.SystemEventCategory{Code: db.CategoryOperational, Name: "Operational"})
+	db.ResetCategoryIDCacheForTest()
 
 	tmpDir := t.TempDir()
 	store, err := storage.NewStorage(tmpDir+"/saves", tmpDir+"/cores", tmpDir+"/images", tmpDir+"/bios")

@@ -150,8 +150,8 @@ func (h *AuthHandler) Login(c *gin.Context) {
 
 	// Check account lockout before proceeding
 	if h.isLockedOut(req.Username) {
-		recordSecurityEventCtx(h.DB, c, db.SecurityEventInput{
-			EventType: db.SecurityEventLoginLocked,
+		recordSecurityEventCtx(h.DB, c, db.SystemEventInput{
+			EventType: db.SystemEventLoginLocked,
 			Username:  req.Username,
 		})
 		apiError(c, http.StatusTooManyRequests, "account locked", "Your account has been temporarily locked due to too many failed login attempts. Please try again later.")
@@ -167,8 +167,8 @@ func (h *AuthHandler) Login(c *gin.Context) {
 		// "wrong password" (slow bcrypt) by measuring response time.
 		auth.CheckPassword(req.Password, dummyBcryptHash)
 		h.recordFailedLogin(req.Username)
-		recordSecurityEventCtx(h.DB, c, db.SecurityEventInput{
-			EventType: db.SecurityEventLoginFailed,
+		recordSecurityEventCtx(h.DB, c, db.SystemEventInput{
+			EventType: db.SystemEventLoginFailed,
 			Reason:    "unknown_user",
 			Username:  req.Username,
 		})
@@ -181,16 +181,16 @@ func (h *AuthHandler) Login(c *gin.Context) {
 		// Re-read the attempt to log the new failure count and detect lockout escalation.
 		var attempt db.LoginAttempt
 		h.DB.Where("username = ?", hashUsername(req.Username)).First(&attempt)
-		recordSecurityEventCtx(h.DB, c, db.SecurityEventInput{
-			EventType: db.SecurityEventLoginFailed,
+		recordSecurityEventCtx(h.DB, c, db.SystemEventInput{
+			EventType: db.SystemEventLoginFailed,
 			Reason:    "bad_password",
 			Username:  req.Username,
 			UserID:    &user.ID,
 			Metadata:  map[string]any{"failedCount": attempt.FailedCount},
 		})
 		if attempt.FailedCount >= maxLoginAttempts {
-			recordSecurityEventCtx(h.DB, c, db.SecurityEventInput{
-				EventType: db.SecurityEventAccountLocked,
+			recordSecurityEventCtx(h.DB, c, db.SystemEventInput{
+				EventType: db.SystemEventAccountLocked,
 				Username:  req.Username,
 				UserID:    &user.ID,
 				Metadata: map[string]any{
@@ -204,8 +204,8 @@ func (h *AuthHandler) Login(c *gin.Context) {
 	}
 
 	if user.PendingApproval {
-		recordSecurityEventCtx(h.DB, c, db.SecurityEventInput{
-			EventType: db.SecurityEventLoginBlocked,
+		recordSecurityEventCtx(h.DB, c, db.SystemEventInput{
+			EventType: db.SystemEventLoginBlocked,
 			Reason:    "pending_approval",
 			Username:  req.Username,
 			UserID:    &user.ID,
@@ -215,8 +215,8 @@ func (h *AuthHandler) Login(c *gin.Context) {
 	}
 
 	if user.Disabled {
-		recordSecurityEventCtx(h.DB, c, db.SecurityEventInput{
-			EventType: db.SecurityEventLoginBlocked,
+		recordSecurityEventCtx(h.DB, c, db.SystemEventInput{
+			EventType: db.SystemEventLoginBlocked,
 			Reason:    "disabled",
 			Username:  req.Username,
 			UserID:    &user.ID,
@@ -227,8 +227,8 @@ func (h *AuthHandler) Login(c *gin.Context) {
 
 	// Successful login — clear any failed attempts
 	h.clearFailedLogins(req.Username)
-	recordSecurityEventCtx(h.DB, c, db.SecurityEventInput{
-		EventType: db.SecurityEventLoginSuccess,
+	recordSecurityEventCtx(h.DB, c, db.SystemEventInput{
+		EventType: db.SystemEventLoginSuccess,
 		Username:  req.Username,
 		UserID:    &user.ID,
 	})
@@ -491,15 +491,15 @@ func (h *AuthHandler) SetupStatus(c *gin.Context) {
 	})
 }
 
-// securityEventRetention is how long admin security event rows are kept.
+// systemEventRetention is how long admin system event rows are kept.
 // Older rows are pruned by StartTokenCleanup.
-const securityEventRetention = 90 * 24 * time.Hour
+const systemEventRetention = 90 * 24 * time.Hour
 
-// pruneExpiredSecurityEvents deletes security_events rows older than the
+// pruneExpiredSystemEvents deletes system_events rows older than the
 // retention window. Extracted from StartTokenCleanup so it can be exercised
 // by unit tests without starting the background goroutine.
-func pruneExpiredSecurityEvents(database *gorm.DB) int64 {
-	result := database.Where("created_at < ?", time.Now().Add(-securityEventRetention)).Delete(&db.SecurityEvent{})
+func pruneExpiredSystemEvents(database *gorm.DB) int64 {
+	result := database.Where("created_at < ?", time.Now().Add(-systemEventRetention)).Delete(&db.SystemEvent{})
 	return result.RowsAffected
 }
 
@@ -527,8 +527,8 @@ func StartTokenCleanup(database *gorm.DB, interval time.Duration) {
 				slog.Info("cleaned up expired blacklist entries", "count", blResult.RowsAffected)
 			}
 			// Prune security events older than the retention window
-			if count := pruneExpiredSecurityEvents(database); count > 0 {
-				slog.Info("pruned old security events", "count", count)
+			if count := pruneExpiredSystemEvents(database); count > 0 {
+				slog.Info("pruned old system events", "count", count)
 			}
 		}
 	}()

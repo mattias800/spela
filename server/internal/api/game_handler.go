@@ -405,6 +405,14 @@ func (h *GameHandler) DownloadGame(c *gin.Context) {
 	// Resolve relative path to absolute for filesystem access
 	absPath, err := storage.ResolveGamePath(game.FilePath, h.GameDirs)
 	if err != nil {
+		db.RecordOperationalEvent(h.DB, db.SystemEventInput{
+			EventType: db.SystemEventROMFileMissing,
+			Metadata: map[string]any{
+				"gameId":       game.ID,
+				"gameTitle":    game.Title,
+				"expectedPath": game.FilePath,
+			},
+		})
 		c.JSON(http.StatusNotFound, gin.H{"error": "game file not found"})
 		return
 	}

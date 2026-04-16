@@ -1,14 +1,16 @@
+import { useMemo } from "react";
 import { Search, X } from "lucide-react";
 import { Button, FilterChip, Input } from "@/components/ui";
-import { SECURITY_EVENT_META } from "./security-event-badge";
-import type { SecurityEventType } from "@/types/api";
+import { SYSTEM_EVENT_META } from "./system-event-badge";
+import type {
+  SystemEventType,
+  SystemEventCategoryCode,
+  SystemEventTypeInfo,
+} from "@/types/api";
 
 export type SinceOption = "1h" | "24h" | "7d" | "30d" | "all";
 
-// DEFAULT_SECURITY_EVENTS_SINCE is the preset applied on first load. Both the
-// page and the filters component reference this so "is the default active?"
-// checks never drift.
-export const DEFAULT_SECURITY_EVENTS_SINCE: SinceOption = "24h";
+export const DEFAULT_SYSTEM_EVENTS_SINCE: SinceOption = "24h";
 
 const SINCE_LABELS: Record<SinceOption, string> = {
   "1h": "Last hour",
@@ -20,44 +22,40 @@ const SINCE_LABELS: Record<SinceOption, string> = {
 
 const SINCE_OPTIONS: SinceOption[] = ["1h", "24h", "7d", "30d", "all"];
 
-// Event types rendered as filter chips, ordered alert → notice → info so
-// the most urgent events are always at the front of the row.
-const EVENT_TYPE_ORDER: SecurityEventType[] = [
-  "account_locked",
-  "revoked_token_used",
-  "disabled_account_token",
-  "token_user_missing",
-  "login_failed",
-  "login_locked",
-  "login_blocked",
-  "stale_token_version",
-  "login_success",
-];
-
-interface SecurityEventsFiltersProps {
-  eventTypes: SecurityEventType[];
+interface SystemEventsFiltersProps {
+  eventTypes: SystemEventType[];
+  category: SystemEventCategoryCode | null;
   username: string;
   ip: string;
   since: SinceOption;
-  onEventTypesChange: (types: SecurityEventType[]) => void;
+  showDismissed: boolean;
+  typeInfos: SystemEventTypeInfo[] | undefined;
+  onEventTypesChange: (types: SystemEventType[]) => void;
+  onCategoryChange: (category: SystemEventCategoryCode | null) => void;
   onUsernameChange: (v: string) => void;
   onIpChange: (v: string) => void;
   onSinceChange: (v: SinceOption) => void;
+  onShowDismissedChange: (v: boolean) => void;
   onClear: () => void;
 }
 
-export function SecurityEventsFilters({
+export function SystemEventsFilters({
   eventTypes,
+  category,
   username,
   ip,
   since,
+  showDismissed,
+  typeInfos,
   onEventTypesChange,
+  onCategoryChange,
   onUsernameChange,
   onIpChange,
   onSinceChange,
+  onShowDismissedChange,
   onClear,
-}: SecurityEventsFiltersProps) {
-  function toggleEventType(t: SecurityEventType) {
+}: SystemEventsFiltersProps) {
+  function toggleEventType(t: SystemEventType) {
     if (eventTypes.includes(t)) {
       onEventTypesChange(eventTypes.filter((x) => x !== t));
     } else {
@@ -65,11 +63,22 @@ export function SecurityEventsFilters({
     }
   }
 
+  const filteredEventTypes = useMemo(() => {
+    if (!typeInfos)
+      return Object.keys(SYSTEM_EVENT_META) as SystemEventType[];
+    const filtered = category
+      ? typeInfos.filter((ti) => ti.category === category)
+      : typeInfos;
+    return filtered.map((ti) => ti.type as SystemEventType);
+  }, [typeInfos, category]);
+
   const hasFilters =
     eventTypes.length > 0 ||
+    category !== null ||
     username !== "" ||
     ip !== "" ||
-    since !== DEFAULT_SECURITY_EVENTS_SINCE;
+    showDismissed ||
+    since !== DEFAULT_SYSTEM_EVENTS_SINCE;
 
   return (
     <div className="space-y-4 rounded-2xl border border-surface-800/50 bg-surface-900/50 p-5">
@@ -85,8 +94,30 @@ export function SecurityEventsFilters({
         )}
       </div>
 
-      {/* Time range row — segmented buttons feel more like a toggle than a select. */}
-      <div className="flex flex-wrap gap-2">
+      {/* Category row */}
+      <div>
+        <p className="mb-2 text-xs font-medium text-surface-500">Category</p>
+        <div className="flex flex-wrap gap-2">
+          <FilterChip
+            label="All"
+            isSelected={category === null}
+            onClick={() => onCategoryChange(null)}
+          />
+          <FilterChip
+            label="Security"
+            isSelected={category === "security"}
+            onClick={() => onCategoryChange("security")}
+          />
+          <FilterChip
+            label="Operational"
+            isSelected={category === "operational"}
+            onClick={() => onCategoryChange("operational")}
+          />
+        </div>
+      </div>
+
+      {/* Time range row */}
+      <div className="flex flex-wrap items-center gap-2">
         {SINCE_OPTIONS.map((opt) => (
           <FilterChip
             key={opt}
@@ -95,6 +126,15 @@ export function SecurityEventsFilters({
             onClick={() => onSinceChange(opt)}
           />
         ))}
+        <label className="ml-4 flex items-center gap-2 text-sm text-surface-400 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={showDismissed}
+            onChange={(e) => onShowDismissedChange(e.target.checked)}
+            className="rounded border-surface-600 bg-surface-800 text-brand-500 focus:ring-brand-500"
+          />
+          Show dismissed
+        </label>
       </div>
 
       {/* Username + IP search row */}
@@ -129,14 +169,14 @@ export function SecurityEventsFilters({
         </div>
       </div>
 
-      {/* Event type chips */}
+      {/* Event type chips — filtered by selected category */}
       <div>
         <p className="mb-2 text-xs font-medium text-surface-500">Event type</p>
         <div className="flex flex-wrap gap-2">
-          {EVENT_TYPE_ORDER.map((t) => (
+          {filteredEventTypes.map((t) => (
             <FilterChip
               key={t}
-              label={SECURITY_EVENT_META[t].label}
+              label={SYSTEM_EVENT_META[t]?.label ?? t}
               isSelected={eventTypes.includes(t)}
               onClick={() => toggleEventType(t)}
             />

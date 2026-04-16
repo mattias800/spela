@@ -16,85 +16,82 @@ import (
 	"gorm.io/gorm"
 )
 
-// makeSecurityEvent is a test helper that mirrors the recorder's behavior of
+// makeSystemEvent is a test helper that mirrors the recorder's behavior of
 // denormalizing the lowercase username so unit tests exercising the filter
 // path go through the same index.
-func makeSecurityEvent(e db.SecurityEvent) db.SecurityEvent {
+func makeSystemEvent(e db.SystemEvent) db.SystemEvent {
 	e.UsernameLower = strings.ToLower(e.Username)
+	if e.CategoryID == 0 {
+		e.CategoryID = 1 // security category (seeded as ID 1 in setupTestEnv)
+	}
 	return e
 }
 
-// seedSecurityEvents inserts a known set of security events for filtering tests.
-// CreatedAt is set explicitly so the test can assert the "since" filter behavior
-// without depending on row insertion order.
-func seedSecurityEvents(t *testing.T, database *gorm.DB) {
+// seedSystemEvents inserts a known set of system events for filtering tests.
+func seedSystemEvents(t *testing.T, database *gorm.DB) {
 	t.Helper()
 	now := time.Now()
-	rows := []db.SecurityEvent{
-		makeSecurityEvent(db.SecurityEvent{EventType: db.SecurityEventLoginFailed, Reason: "bad_password", Username: "alice", IP: "10.0.0.1", CreatedAt: now.Add(-30 * time.Minute)}),
-		makeSecurityEvent(db.SecurityEvent{EventType: db.SecurityEventLoginFailed, Reason: "bad_password", Username: "alice", IP: "10.0.0.1", CreatedAt: now.Add(-25 * time.Minute)}),
-		makeSecurityEvent(db.SecurityEvent{EventType: db.SecurityEventAccountLocked, Username: "alice", IP: "10.0.0.1", CreatedAt: now.Add(-20 * time.Minute)}),
-		makeSecurityEvent(db.SecurityEvent{EventType: db.SecurityEventLoginSuccess, Username: "bob", IP: "10.0.0.2", CreatedAt: now.Add(-2 * time.Hour)}),
-		makeSecurityEvent(db.SecurityEvent{EventType: db.SecurityEventRevokedTokenUsed, Username: "carol", IP: "192.168.1.5", CreatedAt: now.Add(-10 * 24 * time.Hour)}),
+	rows := []db.SystemEvent{
+		makeSystemEvent(db.SystemEvent{EventType: db.SystemEventLoginFailed, Reason: "bad_password", Username: "alice", IP: "10.0.0.1", CreatedAt: now.Add(-30 * time.Minute)}),
+		makeSystemEvent(db.SystemEvent{EventType: db.SystemEventLoginFailed, Reason: "bad_password", Username: "alice", IP: "10.0.0.1", CreatedAt: now.Add(-25 * time.Minute)}),
+		makeSystemEvent(db.SystemEvent{EventType: db.SystemEventAccountLocked, Username: "alice", IP: "10.0.0.1", CreatedAt: now.Add(-20 * time.Minute)}),
+		makeSystemEvent(db.SystemEvent{EventType: db.SystemEventLoginSuccess, Username: "bob", IP: "10.0.0.2", CreatedAt: now.Add(-2 * time.Hour)}),
+		makeSystemEvent(db.SystemEvent{EventType: db.SystemEventRevokedTokenUsed, Username: "carol", IP: "192.168.1.5", CreatedAt: now.Add(-10 * 24 * time.Hour)}),
 	}
 	for i := range rows {
 		require.NoError(t, database.Create(&rows[i]).Error)
 	}
 }
 
-func TestListSecurityEvents_RequiresAdmin(t *testing.T) {
+func TestListSystemEvents_RequiresAdmin(t *testing.T) {
 	_, cfg := setupTestEnv(t)
 	router, cleanup := NewRouter(*cfg)
 	defer cleanup()
 
-	req := httptest.NewRequest("GET", "/api/admin/security-events", nil)
+	req := httptest.NewRequest("GET", "/api/admin/system-events", nil)
 	w := httptest.NewRecorder()
 	router.ServeHTTP(w, req)
 
 	assert.Equal(t, http.StatusUnauthorized, w.Code)
 }
 
-func TestListSecurityEvents_DefaultWindowReturnsRecentRows(t *testing.T) {
+func TestListSystemEvents_DefaultWindowReturnsRecentRows(t *testing.T) {
 	database, cfg := setupTestEnv(t)
 	router, cleanup := NewRouter(*cfg)
 	defer cleanup()
 	_, adminToken := createAdminUser(t, database)
-	seedSecurityEvents(t, database)
+	seedSystemEvents(t, database)
 
-	// The seed rows are all within the 30d default window. This verifies the
-	// default view renders as expected without the caller specifying `since`.
-	req := httptest.NewRequest("GET", "/api/admin/security-events", nil)
+	req := httptest.NewRequest("GET", "/api/admin/system-events", nil)
 	req.Header.Set("Authorization", "Bearer "+adminToken)
 	w := httptest.NewRecorder()
 	router.ServeHTTP(w, req)
 
 	require.Equal(t, http.StatusOK, w.Code)
-	var resp SecurityEventsListResponse
+	var resp SystemEventsListResponse
 	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
 	assert.Equal(t, int64(5), resp.Total)
 	assert.Equal(t, 1, resp.Page)
 	assert.Equal(t, 50, resp.PageSize)
-	// Newest first.
 	for i := 1; i < len(resp.Data); i++ {
 		assert.False(t, resp.Data[i].CreatedAt.After(resp.Data[i-1].CreatedAt))
 	}
 }
 
-func TestListSecurityEvents_DefaultSinceExcludesOldRows(t *testing.T) {
+func TestListSystemEvents_DefaultSinceExcludesOldRows(t *testing.T) {
 	database, cfg := setupTestEnv(t)
 	router, cleanup := NewRouter(*cfg)
 	defer cleanup()
 	_, adminToken := createAdminUser(t, database)
 
-	// One row inside the default 30d window, one row well outside it.
-	fresh := makeSecurityEvent(db.SecurityEvent{
-		EventType: db.SecurityEventLoginFailed,
+	fresh := makeSystemEvent(db.SystemEvent{
+		EventType: db.SystemEventLoginFailed,
 		Username:  "alice",
 		IP:        "10.0.0.1",
 		CreatedAt: time.Now().Add(-1 * time.Hour),
 	})
-	ancient := makeSecurityEvent(db.SecurityEvent{
-		EventType: db.SecurityEventLoginFailed,
+	ancient := makeSystemEvent(db.SystemEvent{
+		EventType: db.SystemEventLoginFailed,
 		Username:  "bob",
 		IP:        "10.0.0.2",
 		CreatedAt: time.Now().Add(-45 * 24 * time.Hour),
@@ -102,100 +99,97 @@ func TestListSecurityEvents_DefaultSinceExcludesOldRows(t *testing.T) {
 	require.NoError(t, database.Create(&fresh).Error)
 	require.NoError(t, database.Create(&ancient).Error)
 
-	// Default query (no `since` param) must exclude the ancient row.
-	req := httptest.NewRequest("GET", "/api/admin/security-events", nil)
+	req := httptest.NewRequest("GET", "/api/admin/system-events", nil)
 	req.Header.Set("Authorization", "Bearer "+adminToken)
 	w := httptest.NewRecorder()
 	router.ServeHTTP(w, req)
 
 	require.Equal(t, http.StatusOK, w.Code)
-	var resp SecurityEventsListResponse
+	var resp SystemEventsListResponse
 	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
 	assert.Equal(t, int64(1), resp.Total)
 	require.Len(t, resp.Data, 1)
 	assert.Equal(t, "alice", resp.Data[0].Username)
 }
 
-func TestListSecurityEvents_SinceAllOptsIntoUnboundedWindow(t *testing.T) {
+func TestListSystemEvents_SinceAllOptsIntoUnboundedWindow(t *testing.T) {
 	database, cfg := setupTestEnv(t)
 	router, cleanup := NewRouter(*cfg)
 	defer cleanup()
 	_, adminToken := createAdminUser(t, database)
 
-	// An ancient row that would normally be excluded by the default window.
-	ancient := makeSecurityEvent(db.SecurityEvent{
-		EventType: db.SecurityEventLoginFailed,
+	ancient := makeSystemEvent(db.SystemEvent{
+		EventType: db.SystemEventLoginFailed,
 		Username:  "ghost",
 		IP:        "10.0.0.99",
 		CreatedAt: time.Now().Add(-200 * 24 * time.Hour),
 	})
 	require.NoError(t, database.Create(&ancient).Error)
 
-	// since=all must include it.
-	req := httptest.NewRequest("GET", "/api/admin/security-events?since=all", nil)
+	req := httptest.NewRequest("GET", "/api/admin/system-events?since=all", nil)
 	req.Header.Set("Authorization", "Bearer "+adminToken)
 	w := httptest.NewRecorder()
 	router.ServeHTTP(w, req)
 
 	require.Equal(t, http.StatusOK, w.Code)
-	var resp SecurityEventsListResponse
+	var resp SystemEventsListResponse
 	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
 	assert.Equal(t, int64(1), resp.Total)
 }
 
-func TestListSecurityEvents_FilterByEventType(t *testing.T) {
+func TestListSystemEvents_FilterByEventType(t *testing.T) {
 	database, cfg := setupTestEnv(t)
 	router, cleanup := NewRouter(*cfg)
 	defer cleanup()
 	_, adminToken := createAdminUser(t, database)
-	seedSecurityEvents(t, database)
+	seedSystemEvents(t, database)
 
-	req := httptest.NewRequest("GET", "/api/admin/security-events?eventType=login_failed", nil)
+	req := httptest.NewRequest("GET", "/api/admin/system-events?eventType=login_failed", nil)
 	req.Header.Set("Authorization", "Bearer "+adminToken)
 	w := httptest.NewRecorder()
 	router.ServeHTTP(w, req)
 
 	require.Equal(t, http.StatusOK, w.Code)
-	var resp SecurityEventsListResponse
+	var resp SystemEventsListResponse
 	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
 	assert.Equal(t, int64(2), resp.Total)
 	for _, e := range resp.Data {
-		assert.Equal(t, db.SecurityEventLoginFailed, e.EventType)
+		assert.Equal(t, db.SystemEventLoginFailed, e.EventType)
 	}
 }
 
-func TestListSecurityEvents_FilterByMultipleEventTypes(t *testing.T) {
+func TestListSystemEvents_FilterByMultipleEventTypes(t *testing.T) {
 	database, cfg := setupTestEnv(t)
 	router, cleanup := NewRouter(*cfg)
 	defer cleanup()
 	_, adminToken := createAdminUser(t, database)
-	seedSecurityEvents(t, database)
+	seedSystemEvents(t, database)
 
-	req := httptest.NewRequest("GET", "/api/admin/security-events?eventType=login_failed&eventType=account_locked", nil)
+	req := httptest.NewRequest("GET", "/api/admin/system-events?eventType=login_failed&eventType=account_locked", nil)
 	req.Header.Set("Authorization", "Bearer "+adminToken)
 	w := httptest.NewRecorder()
 	router.ServeHTTP(w, req)
 
 	require.Equal(t, http.StatusOK, w.Code)
-	var resp SecurityEventsListResponse
+	var resp SystemEventsListResponse
 	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
 	assert.Equal(t, int64(3), resp.Total)
 }
 
-func TestListSecurityEvents_FilterByUsername(t *testing.T) {
+func TestListSystemEvents_FilterByUsername(t *testing.T) {
 	database, cfg := setupTestEnv(t)
 	router, cleanup := NewRouter(*cfg)
 	defer cleanup()
 	_, adminToken := createAdminUser(t, database)
-	seedSecurityEvents(t, database)
+	seedSystemEvents(t, database)
 
-	req := httptest.NewRequest("GET", "/api/admin/security-events?username=alice", nil)
+	req := httptest.NewRequest("GET", "/api/admin/system-events?username=alice", nil)
 	req.Header.Set("Authorization", "Bearer "+adminToken)
 	w := httptest.NewRecorder()
 	router.ServeHTTP(w, req)
 
 	require.Equal(t, http.StatusOK, w.Code)
-	var resp SecurityEventsListResponse
+	var resp SystemEventsListResponse
 	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
 	assert.Equal(t, int64(3), resp.Total)
 	for _, e := range resp.Data {
@@ -203,119 +197,119 @@ func TestListSecurityEvents_FilterByUsername(t *testing.T) {
 	}
 }
 
-func TestListSecurityEvents_FilterByUsernameSubstringCaseInsensitive(t *testing.T) {
+func TestListSystemEvents_FilterByUsernameSubstringCaseInsensitive(t *testing.T) {
 	database, cfg := setupTestEnv(t)
 	router, cleanup := NewRouter(*cfg)
 	defer cleanup()
 	_, adminToken := createAdminUser(t, database)
-	seedSecurityEvents(t, database)
+	seedSystemEvents(t, database)
 
-	req := httptest.NewRequest("GET", "/api/admin/security-events?username=AL", nil)
+	req := httptest.NewRequest("GET", "/api/admin/system-events?username=AL", nil)
 	req.Header.Set("Authorization", "Bearer "+adminToken)
 	w := httptest.NewRecorder()
 	router.ServeHTTP(w, req)
 
 	require.Equal(t, http.StatusOK, w.Code)
-	var resp SecurityEventsListResponse
+	var resp SystemEventsListResponse
 	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
 	assert.Equal(t, int64(3), resp.Total)
 }
 
-func TestListSecurityEvents_FilterByIPPrefix(t *testing.T) {
+func TestListSystemEvents_FilterByIPPrefix(t *testing.T) {
 	database, cfg := setupTestEnv(t)
 	router, cleanup := NewRouter(*cfg)
 	defer cleanup()
 	_, adminToken := createAdminUser(t, database)
-	seedSecurityEvents(t, database)
+	seedSystemEvents(t, database)
 
-	req := httptest.NewRequest("GET", "/api/admin/security-events?ip=10.0.0.", nil)
+	req := httptest.NewRequest("GET", "/api/admin/system-events?ip=10.0.0.", nil)
 	req.Header.Set("Authorization", "Bearer "+adminToken)
 	w := httptest.NewRecorder()
 	router.ServeHTTP(w, req)
 
 	require.Equal(t, http.StatusOK, w.Code)
-	var resp SecurityEventsListResponse
+	var resp SystemEventsListResponse
 	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
 	assert.Equal(t, int64(4), resp.Total)
 }
 
-func TestListSecurityEvents_FilterBySincePreset(t *testing.T) {
+func TestListSystemEvents_FilterBySincePreset(t *testing.T) {
 	database, cfg := setupTestEnv(t)
 	router, cleanup := NewRouter(*cfg)
 	defer cleanup()
 	_, adminToken := createAdminUser(t, database)
-	seedSecurityEvents(t, database)
+	seedSystemEvents(t, database)
 
-	// Last hour: only the alice rows. carol (10d ago) and bob (2h ago) excluded.
-	req := httptest.NewRequest("GET", "/api/admin/security-events?since=1h", nil)
+	req := httptest.NewRequest("GET", "/api/admin/system-events?since=1h", nil)
 	req.Header.Set("Authorization", "Bearer "+adminToken)
 	w := httptest.NewRecorder()
 	router.ServeHTTP(w, req)
 
 	require.Equal(t, http.StatusOK, w.Code)
-	var resp SecurityEventsListResponse
+	var resp SystemEventsListResponse
 	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
 	assert.Equal(t, int64(3), resp.Total)
 }
 
-func TestListSecurityEvents_Pagination(t *testing.T) {
+func TestListSystemEvents_Pagination(t *testing.T) {
 	database, cfg := setupTestEnv(t)
 	router, cleanup := NewRouter(*cfg)
 	defer cleanup()
 	_, adminToken := createAdminUser(t, database)
-	seedSecurityEvents(t, database)
+	seedSystemEvents(t, database)
 
-	req := httptest.NewRequest("GET", "/api/admin/security-events?pageSize=2&page=1", nil)
+	req := httptest.NewRequest("GET", "/api/admin/system-events?pageSize=2&page=1", nil)
 	req.Header.Set("Authorization", "Bearer "+adminToken)
 	w := httptest.NewRecorder()
 	router.ServeHTTP(w, req)
 
 	require.Equal(t, http.StatusOK, w.Code)
-	var resp SecurityEventsListResponse
+	var resp SystemEventsListResponse
 	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
 	assert.Len(t, resp.Data, 2)
 	assert.Equal(t, 2, resp.PageSize)
 	assert.GreaterOrEqual(t, resp.Total, int64(5))
 }
 
-func TestGetSecurityEvent_ReturnsRow(t *testing.T) {
+func TestGetSystemEvent_ReturnsRow(t *testing.T) {
 	database, cfg := setupTestEnv(t)
 	router, cleanup := NewRouter(*cfg)
 	defer cleanup()
 	_, adminToken := createAdminUser(t, database)
 
-	row := db.SecurityEvent{
-		EventType: db.SecurityEventLoginFailed,
+	row := makeSystemEvent(db.SystemEvent{
+		EventType: db.SystemEventLoginFailed,
 		Reason:    "bad_password",
 		Username:  "dave",
 		IP:        "1.2.3.4",
 		Path:      "/api/auth/login",
 		Metadata:  `{"failedCount":3}`,
-	}
+	})
 	require.NoError(t, database.Create(&row).Error)
 
-	req := httptest.NewRequest("GET", "/api/admin/security-events/"+strconv.FormatUint(uint64(row.ID), 10), nil)
+	req := httptest.NewRequest("GET", "/api/admin/system-events/"+strconv.FormatUint(uint64(row.ID), 10), nil)
 	req.Header.Set("Authorization", "Bearer "+adminToken)
 	w := httptest.NewRecorder()
 	router.ServeHTTP(w, req)
 
 	require.Equal(t, http.StatusOK, w.Code)
-	var resp SecurityEventResponse
+	var resp SystemEventResponse
 	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
 	assert.Equal(t, row.ID, resp.ID)
 	assert.Equal(t, "bad_password", resp.Reason)
 	assert.Equal(t, "dave", resp.Username)
+	assert.Equal(t, "security", resp.CategoryCode)
 	require.NotNil(t, resp.Metadata)
 	assert.EqualValues(t, 3, resp.Metadata["failedCount"])
 }
 
-func TestGetSecurityEvent_NotFound(t *testing.T) {
+func TestGetSystemEvent_NotFound(t *testing.T) {
 	_, cfg := setupTestEnv(t)
 	router, cleanup := NewRouter(*cfg)
 	defer cleanup()
 	_, adminToken := createAdminUser(t, cfg.DB)
 
-	req := httptest.NewRequest("GET", "/api/admin/security-events/99999", nil)
+	req := httptest.NewRequest("GET", "/api/admin/system-events/99999", nil)
 	req.Header.Set("Authorization", "Bearer "+adminToken)
 	w := httptest.NewRecorder()
 	router.ServeHTTP(w, req)
@@ -323,33 +317,137 @@ func TestGetSecurityEvent_NotFound(t *testing.T) {
 	assert.Equal(t, http.StatusNotFound, w.Code)
 }
 
-func TestGetSecurityEventTypes(t *testing.T) {
+func TestGetSystemEventTypes(t *testing.T) {
 	database, cfg := setupTestEnv(t)
 	router, cleanup := NewRouter(*cfg)
 	defer cleanup()
 	_, adminToken := createAdminUser(t, database)
 
-	req := httptest.NewRequest("GET", "/api/admin/security-events/types", nil)
+	req := httptest.NewRequest("GET", "/api/admin/system-events/types", nil)
 	req.Header.Set("Authorization", "Bearer "+adminToken)
 	w := httptest.NewRecorder()
 	router.ServeHTTP(w, req)
 
 	require.Equal(t, http.StatusOK, w.Code)
-	var resp SecurityEventTypesResponse
+	var resp SystemEventTypesResponse
 	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
-	// Must include every constant declared in models.go, not just a
-	// handpicked subset — the slice is the source of truth.
-	assert.ElementsMatch(t, db.AllSecurityEventTypes, resp.Types)
+	assert.Len(t, resp.Types, len(db.AllSystemEventTypes))
+	for _, ti := range resp.Types {
+		assert.NotEmpty(t, ti.Category)
+	}
 }
 
-func TestListSecurityEvents_UsernameFilterTooLongReturns400(t *testing.T) {
+func TestGetSystemEventCategories(t *testing.T) {
+	database, cfg := setupTestEnv(t)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
+	_, adminToken := createAdminUser(t, database)
+
+	req := httptest.NewRequest("GET", "/api/admin/system-events/categories", nil)
+	req.Header.Set("Authorization", "Bearer "+adminToken)
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+
+	require.Equal(t, http.StatusOK, w.Code)
+	var cats []struct {
+		Code string `json:"code"`
+		Name string `json:"name"`
+	}
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &cats))
+	assert.Len(t, cats, 2)
+	codes := []string{cats[0].Code, cats[1].Code}
+	assert.Contains(t, codes, "security")
+	assert.Contains(t, codes, "operational")
+}
+
+func TestListSystemEvents_FilterByCategory(t *testing.T) {
+	database, cfg := setupTestEnv(t)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
+	_, adminToken := createAdminUser(t, database)
+
+	var secCat, opCat db.SystemEventCategory
+	database.Where("code = ?", db.CategorySecurity).First(&secCat)
+	database.Where("code = ?", db.CategoryOperational).First(&opCat)
+
+	secEvent := makeSystemEvent(db.SystemEvent{
+		CategoryID: secCat.ID,
+		EventType:  db.SystemEventLoginFailed,
+		Username:   "alice",
+		IP:         "10.0.0.1",
+		CreatedAt:  time.Now().Add(-1 * time.Hour),
+	})
+	opEvent := makeSystemEvent(db.SystemEvent{
+		CategoryID: opCat.ID,
+		EventType:  db.SystemEventRACircuitBreakerTripped,
+		CreatedAt:  time.Now().Add(-1 * time.Hour),
+	})
+	require.NoError(t, database.Create(&secEvent).Error)
+	require.NoError(t, database.Create(&opEvent).Error)
+
+	req := httptest.NewRequest("GET", "/api/admin/system-events?category=operational", nil)
+	req.Header.Set("Authorization", "Bearer "+adminToken)
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+
+	require.Equal(t, http.StatusOK, w.Code)
+	var resp SystemEventsListResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+	assert.Equal(t, int64(1), resp.Total)
+	assert.Equal(t, db.SystemEventRACircuitBreakerTripped, resp.Data[0].EventType)
+}
+
+func TestDismissSystemEvent(t *testing.T) {
+	database, cfg := setupTestEnv(t)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
+	_, adminToken := createAdminUser(t, database)
+
+	row := makeSystemEvent(db.SystemEvent{
+		EventType: db.SystemEventLoginFailed,
+		Username:  "alice",
+		CreatedAt: time.Now(),
+	})
+	require.NoError(t, database.Create(&row).Error)
+
+	// Dismiss it
+	req := httptest.NewRequest("PUT", "/api/admin/system-events/"+strconv.FormatUint(uint64(row.ID), 10)+"/dismiss", nil)
+	req.Header.Set("Authorization", "Bearer "+adminToken)
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+	require.Equal(t, http.StatusOK, w.Code)
+
+	// Default list should exclude it
+	req = httptest.NewRequest("GET", "/api/admin/system-events", nil)
+	req.Header.Set("Authorization", "Bearer "+adminToken)
+	w = httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+	require.Equal(t, http.StatusOK, w.Code)
+
+	var resp SystemEventsListResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+	assert.Equal(t, int64(0), resp.Total)
+
+	// dismissed=true should include it
+	req = httptest.NewRequest("GET", "/api/admin/system-events?dismissed=true", nil)
+	req.Header.Set("Authorization", "Bearer "+adminToken)
+	w = httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+	require.Equal(t, http.StatusOK, w.Code)
+
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+	assert.Equal(t, int64(1), resp.Total)
+	assert.NotNil(t, resp.Data[0].DismissedAt)
+}
+
+func TestListSystemEvents_UsernameFilterTooLongReturns400(t *testing.T) {
 	database, cfg := setupTestEnv(t)
 	router, cleanup := NewRouter(*cfg)
 	defer cleanup()
 	_, adminToken := createAdminUser(t, database)
 
 	long := strings.Repeat("a", maxUsernameFilterLength+1)
-	req := httptest.NewRequest("GET", "/api/admin/security-events?username="+long, nil)
+	req := httptest.NewRequest("GET", "/api/admin/system-events?username="+long, nil)
 	req.Header.Set("Authorization", "Bearer "+adminToken)
 	w := httptest.NewRecorder()
 	router.ServeHTTP(w, req)
@@ -358,13 +456,13 @@ func TestListSecurityEvents_UsernameFilterTooLongReturns400(t *testing.T) {
 	assert.Contains(t, w.Body.String(), "username filter too long")
 }
 
-func TestListSecurityEvents_InvalidIPFilterReturns400(t *testing.T) {
+func TestListSystemEvents_InvalidIPFilterReturns400(t *testing.T) {
 	database, cfg := setupTestEnv(t)
 	router, cleanup := NewRouter(*cfg)
 	defer cleanup()
 	_, adminToken := createAdminUser(t, database)
 
-	req := httptest.NewRequest("GET", "/api/admin/security-events?ip=10.o.0.1", nil)
+	req := httptest.NewRequest("GET", "/api/admin/system-events?ip=10.o.0.1", nil)
 	req.Header.Set("Authorization", "Bearer "+adminToken)
 	w := httptest.NewRecorder()
 	router.ServeHTTP(w, req)
@@ -373,27 +471,23 @@ func TestListSecurityEvents_InvalidIPFilterReturns400(t *testing.T) {
 	assert.Contains(t, w.Body.String(), "invalid ip filter")
 }
 
-func TestListSecurityEvents_LikeWildcardsEscaped(t *testing.T) {
-	// Each case seeds a row whose username contains a LIKE metacharacter
-	// (or the escape char itself) plus a decoy that would erroneously match
-	// if the escape were skipped. The filter query should return only the
-	// literal-matching row.
+func TestListSystemEvents_LikeWildcardsEscaped(t *testing.T) {
 	cases := []struct {
 		name    string
 		literal string
 		decoy   string
-		query   string // raw query value; caller URL-encodes
+		query   string
 	}{
 		{
 			name:    "percent_literal",
 			literal: "user%admin",
 			decoy:   "abc",
-			query:   "%", // `%` matches any string in unescaped LIKE
+			query:   "%",
 		},
 		{
 			name:    "underscore_literal",
 			literal: "user_admin",
-			decoy:   "user1admin", // would match `user_admin` under unescaped LIKE
+			decoy:   "user1admin",
 			query:   "_",
 		},
 		{
@@ -410,14 +504,14 @@ func TestListSecurityEvents_LikeWildcardsEscaped(t *testing.T) {
 			defer cleanup()
 			_, adminToken := createAdminUser(t, database)
 
-			literal := makeSecurityEvent(db.SecurityEvent{
-				EventType: db.SecurityEventLoginFailed,
+			literal := makeSystemEvent(db.SystemEvent{
+				EventType: db.SystemEventLoginFailed,
 				Username:  tc.literal,
 				IP:        "10.0.0.1",
 				CreatedAt: time.Now().Add(-1 * time.Hour),
 			})
-			decoy := makeSecurityEvent(db.SecurityEvent{
-				EventType: db.SecurityEventLoginFailed,
+			decoy := makeSystemEvent(db.SystemEvent{
+				EventType: db.SystemEventLoginFailed,
 				Username:  tc.decoy,
 				IP:        "10.0.0.2",
 				CreatedAt: time.Now().Add(-1 * time.Hour),
@@ -425,14 +519,14 @@ func TestListSecurityEvents_LikeWildcardsEscaped(t *testing.T) {
 			require.NoError(t, database.Create(&literal).Error)
 			require.NoError(t, database.Create(&decoy).Error)
 
-			url := "/api/admin/security-events?username=" + netURLQueryEscape(tc.query)
+			url := "/api/admin/system-events?username=" + netURLQueryEscape(tc.query)
 			req := httptest.NewRequest("GET", url, nil)
 			req.Header.Set("Authorization", "Bearer "+adminToken)
 			w := httptest.NewRecorder()
 			router.ServeHTTP(w, req)
 
 			require.Equal(t, http.StatusOK, w.Code)
-			var resp SecurityEventsListResponse
+			var resp SystemEventsListResponse
 			require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
 			require.Equal(t, int64(1), resp.Total, "decoy row %q should not match literal search %q", tc.decoy, tc.query)
 			assert.Equal(t, tc.literal, resp.Data[0].Username)
@@ -440,36 +534,31 @@ func TestListSecurityEvents_LikeWildcardsEscaped(t *testing.T) {
 	}
 }
 
-// netURLQueryEscape wraps url.QueryEscape locally so the test file doesn't
-// need a separate import line for one call.
 func netURLQueryEscape(s string) string {
 	return neturl.QueryEscape(s)
 }
 
-func TestGetSecurityEvent_MalformedMetadataFallsBackToRaw(t *testing.T) {
+func TestGetSystemEvent_MalformedMetadataFallsBackToRaw(t *testing.T) {
 	database, cfg := setupTestEnv(t)
 	router, cleanup := NewRouter(*cfg)
 	defer cleanup()
 	_, adminToken := createAdminUser(t, database)
 
-	// A legacy/edited row with a metadata blob that isn't valid JSON. The
-	// handler must not drop the data silently — it should surface it via
-	// MetadataRaw so investigators still see something.
-	row := db.SecurityEvent{
-		EventType: db.SecurityEventLoginFailed,
+	row := makeSystemEvent(db.SystemEvent{
+		EventType: db.SystemEventLoginFailed,
 		Username:  "alice",
 		IP:        "10.0.0.1",
 		Metadata:  "not-json-{broken",
-	}
+	})
 	require.NoError(t, database.Create(&row).Error)
 
-	req := httptest.NewRequest("GET", "/api/admin/security-events/"+strconv.FormatUint(uint64(row.ID), 10), nil)
+	req := httptest.NewRequest("GET", "/api/admin/system-events/"+strconv.FormatUint(uint64(row.ID), 10), nil)
 	req.Header.Set("Authorization", "Bearer "+adminToken)
 	w := httptest.NewRecorder()
 	router.ServeHTTP(w, req)
 
 	require.Equal(t, http.StatusOK, w.Code)
-	var resp SecurityEventResponse
+	var resp SystemEventResponse
 	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
 	assert.Nil(t, resp.Metadata)
 	assert.Equal(t, "not-json-{broken", resp.MetadataRaw)
@@ -481,8 +570,7 @@ func TestParseSinceParam(t *testing.T) {
 		input        string
 		wantExplicit bool
 		wantZero     bool
-		// approx is compared against time.Since(result) for preset cases.
-		approx time.Duration
+		approx       time.Duration
 	}{
 		{name: "empty", input: "", wantExplicit: false, wantZero: true},
 		{name: "garbage", input: "not-a-time", wantExplicit: false, wantZero: true},
@@ -548,49 +636,43 @@ func TestValidateIPFilter(t *testing.T) {
 	}
 }
 
-func TestPruneExpiredSecurityEvents(t *testing.T) {
+func TestPruneExpiredSystemEvents(t *testing.T) {
 	database, _ := setupTestEnv(t)
 
-	// Fresh row (keep) + old row (delete).
-	fresh := db.SecurityEvent{
-		EventType: db.SecurityEventLoginFailed,
+	fresh := makeSystemEvent(db.SystemEvent{
+		EventType: db.SystemEventLoginFailed,
 		Username:  "alice",
 		CreatedAt: time.Now().Add(-1 * time.Hour),
-	}
-	old := db.SecurityEvent{
-		EventType: db.SecurityEventLoginFailed,
+	})
+	old := makeSystemEvent(db.SystemEvent{
+		EventType: db.SystemEventLoginFailed,
 		Username:  "bob",
 		CreatedAt: time.Now().Add(-100 * 24 * time.Hour),
-	}
+	})
 	require.NoError(t, database.Create(&fresh).Error)
 	require.NoError(t, database.Create(&old).Error)
 
-	pruned := pruneExpiredSecurityEvents(database)
+	pruned := pruneExpiredSystemEvents(database)
 	assert.Equal(t, int64(1), pruned)
 
-	var remaining []db.SecurityEvent
+	var remaining []db.SystemEvent
 	require.NoError(t, database.Find(&remaining).Error)
 	require.Len(t, remaining, 1)
 	assert.Equal(t, "alice", remaining[0].Username)
 }
 
-// Dedup behavior is unit-tested in the db package
-// (security_event_recorder_test.go). The api layer only exercises the gin
-// adapter via the end-to-end login failure test below.
-
-// Failed-login flow integration test: hitting /api/auth/login with bad creds
-// must persist a security event the admin can then query.
-func TestLoginFailureRecordsSecurityEvent(t *testing.T) {
+func TestLoginFailureRecordsSystemEvent(t *testing.T) {
 	database, cfg := setupTestEnv(t)
 	router, cleanup := NewRouter(*cfg)
 	defer cleanup()
 	_, adminToken := createAdminUser(t, database)
+	db.ResetSystemEventDedupForTest()
+	db.ResetCategoryIDCacheForTest()
 
-	// Create a non-admin user to fail-login against.
 	user := db.User{
 		Username:     "victim",
 		Email:        "victim@test.com",
-		PasswordHash: "$2a$10$AAAAAAAAAAAAAAAAAAAAAOYL5eXPeq3xFV2DdRbHeBwM8tCKZWfQO", // dummy
+		PasswordHash: "$2a$10$AAAAAAAAAAAAAAAAAAAAAOYL5eXPeq3xFV2DdRbHeBwM8tCKZWfQO",
 		Role:         "user",
 	}
 	require.NoError(t, database.Create(&user).Error)
@@ -602,16 +684,15 @@ func TestLoginFailureRecordsSecurityEvent(t *testing.T) {
 	router.ServeHTTP(w, req)
 	assert.Equal(t, http.StatusUnauthorized, w.Code)
 
-	// Now query the security log as admin and verify the event is present.
-	req = httptest.NewRequest("GET", "/api/admin/security-events?username=victim", nil)
+	req = httptest.NewRequest("GET", "/api/admin/system-events?username=victim", nil)
 	req.Header.Set("Authorization", "Bearer "+adminToken)
 	w = httptest.NewRecorder()
 	router.ServeHTTP(w, req)
 	require.Equal(t, http.StatusOK, w.Code)
 
-	var resp SecurityEventsListResponse
+	var resp SystemEventsListResponse
 	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
 	require.Equal(t, int64(1), resp.Total)
-	assert.Equal(t, db.SecurityEventLoginFailed, resp.Data[0].EventType)
+	assert.Equal(t, db.SystemEventLoginFailed, resp.Data[0].EventType)
 	assert.Equal(t, "bad_password", resp.Data[0].Reason)
 }

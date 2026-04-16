@@ -224,9 +224,10 @@ export type ApiGetPath = WithQuery<
   | "/admin/uploads"
   | "/admin/uploads/writable"
   | "/admin/core-compatibility"
-  | "/admin/security-events"
-  | "/admin/security-events/types"
-  | `/admin/security-events/${string}`
+  | "/admin/system-events"
+  | "/admin/system-events/types"
+  | "/admin/system-events/categories"
+  | `/admin/system-events/${string}`
 
   // WebSocket
   | "/ws"
@@ -360,6 +361,7 @@ export type ApiPutPath = WithQuery<
   | `/admin/games/${string}/heroes`
   | `/admin/games/${string}/verification-tag`
   | `/admin/games/${string}/replace-rom`
+  | `/admin/system-events/${string}/dismiss`
 >;
 
 // ── DELETE ────────────────────────────────────────────────────────────────────
