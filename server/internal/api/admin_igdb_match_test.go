@@ -91,7 +91,7 @@ func createIGDBMatchTestUser(t *testing.T, database *gorm.DB) string {
 		Role:         "admin",
 	}
 	require.NoError(t, database.Create(&user).Error)
-	token, err := auth.GenerateAccessToken(user.ID, user.Username, user.Role, igdbMatchTestSecret)
+	token, err := auth.GenerateAccessToken(user.ID, user.Username, string(user.Role), igdbMatchTestSecret)
 	require.NoError(t, err)
 	return token
 }

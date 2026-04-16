@@ -233,7 +233,7 @@ func (h *AuthHandler) Login(c *gin.Context) {
 		UserID:    &user.ID,
 	})
 
-	accessToken, err := auth.GenerateAccessToken(user.ID, user.Username, user.Role, h.JWTSecret, user.TokenVersion)
+	accessToken, err := auth.GenerateAccessToken(user.ID, user.Username, string(user.Role), h.JWTSecret, user.TokenVersion)
 	if err != nil {
 		apiError(c, http.StatusInternalServerError, "failed to generate token", "Sign in failed. Please try again.")
 		return
@@ -341,7 +341,7 @@ func (h *AuthHandler) Register(c *gin.Context) {
 		return
 	}
 
-	accessToken, err := auth.GenerateAccessToken(user.ID, user.Username, user.Role, h.JWTSecret)
+	accessToken, err := auth.GenerateAccessToken(user.ID, user.Username, string(user.Role), h.JWTSecret)
 	if err != nil {
 		apiError(c, http.StatusInternalServerError, "failed to generate token", "Account created but sign-in failed. Please sign in manually.")
 		return
@@ -427,7 +427,7 @@ func (h *AuthHandler) Refresh(c *gin.Context) {
 		return
 	}
 
-	accessToken, err := auth.GenerateAccessToken(user.ID, user.Username, user.Role, h.JWTSecret, user.TokenVersion)
+	accessToken, err := auth.GenerateAccessToken(user.ID, user.Username, string(user.Role), h.JWTSecret, user.TokenVersion)
 	if err != nil {
 		apiError(c, http.StatusInternalServerError, "failed to generate token", "Session refresh failed. Please sign in again.")
 		return
@@ -627,7 +627,7 @@ func (h *AuthHandler) Setup(c *gin.Context) {
 		return
 	}
 
-	accessToken, err := auth.GenerateAccessToken(user.ID, user.Username, user.Role, h.JWTSecret)
+	accessToken, err := auth.GenerateAccessToken(user.ID, user.Username, string(user.Role), h.JWTSecret)
 	if err != nil {
 		apiError(c, http.StatusInternalServerError, "failed to generate token", "Setup failed. Please try again.")
 		return

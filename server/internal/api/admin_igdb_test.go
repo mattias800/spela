@@ -63,16 +63,16 @@ func setupIGDBTestEnv(t *testing.T, twitchServer *httptest.Server) (*gorm.DB, *g
 	return database, router
 }
 
-func createIGDBTestUser(t *testing.T, database *gorm.DB, role string) string {
+func createIGDBTestUser(t *testing.T, database *gorm.DB, role db.UserRole) string {
 	t.Helper()
 	user := db.User{
-		Username:     "igdb-test-" + role,
-		Email:        "igdb-test-" + role + "@test.com",
+		Username:     "igdb-test-" + string(role),
+		Email:        "igdb-test-" + string(role) + "@test.com",
 		PasswordHash: "unused",
 		Role:         role,
 	}
 	require.NoError(t, database.Create(&user).Error)
-	token, err := auth.GenerateAccessToken(user.ID, user.Username, user.Role, igdbTestJWTSecret)
+	token, err := auth.GenerateAccessToken(user.ID, user.Username, string(user.Role), igdbTestJWTSecret)
 	require.NoError(t, err)
 	return token
 }

@@ -6,15 +6,25 @@ import (
 	"gorm.io/gorm"
 )
 
+// UserRole is the typed user role enumeration. The wire format remains a
+// plain string ("owner" / "admin" / "user") since UserRole's underlying type
+// is string. The named type lets handlers and OpenAPI annotations express
+// the bounded set of valid values precisely.
+type UserRole string
+
 // Role constants for the role hierarchy: owner > admin > user.
 const (
-	RoleOwner = "owner"
-	RoleAdmin = "admin"
-	RoleUser  = "user"
+	RoleOwner UserRole = "owner"
+	RoleAdmin UserRole = "admin"
+	RoleUser  UserRole = "user"
 )
 
+// AllUserRoles is the canonical list of valid user roles. Used by the
+// OpenAPI generator and any handler that needs to enumerate valid roles.
+var AllUserRoles = []UserRole{RoleOwner, RoleAdmin, RoleUser}
+
 // IsAdminOrOwner returns true if the role is admin or owner.
-func IsAdminOrOwner(role string) bool {
+func IsAdminOrOwner(role UserRole) bool {
 	return role == RoleAdmin || role == RoleOwner
 }
 
@@ -27,7 +37,7 @@ type User struct {
 	Username     string         `gorm:"uniqueIndex;size:64;not null" json:"username"`
 	Email        string         `gorm:"uniqueIndex;size:255;not null" json:"email"`
 	PasswordHash string         `gorm:"not null" json:"-"`
-	Role         string         `gorm:"size:16;default:user" json:"role"` // "owner", "admin", or "user"
+	Role         UserRole       `gorm:"size:16;default:user" json:"role"`
 	AvatarURL    string         `gorm:"size:512" json:"avatarUrl,omitempty"`
 	TokenVersion        int            `gorm:"default:0" json:"-"`
 	Disabled            bool           `gorm:"default:false" json:"disabled"`

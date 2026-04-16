@@ -28,10 +28,10 @@ func (h *AdminHandler) ListUsers(c *gin.Context) {
 // CreateUser creates a new user account (admin only).
 func (h *AdminHandler) CreateUser(c *gin.Context) {
 	var req struct {
-		Username string `json:"username" binding:"required,min=3,max=64"`
-		Email    string `json:"email" binding:"required,email"`
-		Password string `json:"password" binding:"required,min=8,max=72"`
-		Role     string `json:"role"`
+		Username string       `json:"username" binding:"required,min=3,max=64"`
+		Email    string       `json:"email" binding:"required,email"`
+		Password string       `json:"password" binding:"required,min=8,max=72"`
+		Role     db.UserRole  `json:"role"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
 		slog.Debug("request binding failed", "error", err)
@@ -40,9 +40,9 @@ func (h *AdminHandler) CreateUser(c *gin.Context) {
 	}
 
 	if req.Role == "" {
-		req.Role = "user"
+		req.Role = db.RoleUser
 	}
-	if req.Role != "admin" && req.Role != "user" {
+	if req.Role != db.RoleAdmin && req.Role != db.RoleUser {
 		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "role must be 'admin' or 'user'"})
 		return
 	}
@@ -92,11 +92,11 @@ func (h *AdminHandler) UpdateUser(c *gin.Context) {
 	}
 
 	var req struct {
-		Role            string `json:"role"`
-		Email           string `json:"email"`
-		Password        string `json:"password"`
-		Disabled        *bool  `json:"disabled"`
-		PendingApproval *bool  `json:"pendingApproval"`
+		Role            db.UserRole `json:"role"`
+		Email           string      `json:"email"`
+		Password        string      `json:"password"`
+		Disabled        *bool       `json:"disabled"`
+		PendingApproval *bool       `json:"pendingApproval"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
 		slog.Debug("request binding failed", "error", err)
