@@ -1,6 +1,7 @@
 import { type ReactNode, useEffect, useRef } from "react";
 import { NavLink, useLocation } from "react-router-dom";
 import { cn } from "@/lib/cn";
+import { Divider } from "./divider";
 import { Gamepad2, LogOut, Search } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
@@ -119,7 +120,9 @@ function SidebarContent({ links, user, onLogout, version, onSearchClick }: Sideb
       </nav>
 
       {user && (
-        <div className="border-t border-surface-800/50 px-3 py-4">
+        <>
+        <Divider />
+        <div className="px-3 py-4">
           <div className="flex items-center gap-3">
             <div className="h-9 w-9 flex-shrink-0 rounded-full bg-gradient-to-br from-brand-500 to-brand-700 flex items-center justify-center text-sm font-bold text-white">
               {user.username.charAt(0).toUpperCase()}
@@ -142,6 +145,7 @@ function SidebarContent({ links, user, onLogout, version, onSearchClick }: Sideb
             )}
           </div>
         </div>
+        </>
       )}
 
       {version && (
