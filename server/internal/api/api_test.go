@@ -468,7 +468,7 @@ func TestAdminEndpoint_NonAdmin(t *testing.T) {
 	// Verify user is not admin
 	var user db.User
 	database.Where("username = ?", "regularuser").First(&user)
-	assert.Equal(t, "user", user.Role)
+	assert.Equal(t, db.RoleUser, user.Role)
 
 	// Try admin endpoint
 	w := httptest.NewRecorder()
@@ -2491,7 +2491,7 @@ func TestScrapeStatus_NonAdmin(t *testing.T) {
 	// Verify user is not admin
 	var user db.User
 	database.Where("username = ?", "regularuser2").First(&user)
-	assert.Equal(t, "user", user.Role)
+	assert.Equal(t, db.RoleUser, user.Role)
 
 	// Non-admin should be rejected
 	w := httptest.NewRecorder()
