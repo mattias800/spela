@@ -107,7 +107,7 @@ func (h *RatingHandler) GetRatings(c *gin.Context) {
 		result = append(result, h.toRatingResponse(r, uid))
 	}
 
-	c.JSON(http.StatusOK, PaginatedResponse{
+	c.JSON(http.StatusOK, PaginatedResponse[GameRatingResponse]{
 		Data:     result,
 		Total:    total,
 		Page:     page,

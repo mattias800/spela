@@ -189,12 +189,15 @@ type RomHackGameResponse struct {
 	CoverURL string `json:"coverUrl,omitempty"`
 }
 
-// PaginatedResponse wraps a paginated list with standard keys.
-type PaginatedResponse struct {
-	Data     interface{} `json:"data"`
-	Total    int64       `json:"total"`
-	Page     int         `json:"page"`
-	PageSize int         `json:"pageSize"`
+// PaginatedResponse wraps a paginated list with standard keys. The type
+// parameter is the element type of Data so each call site declares exactly
+// what is being paginated (e.g. PaginatedResponse[GameResponse]). Tests that
+// don't care about element shape can use PaginatedResponse[json.RawMessage].
+type PaginatedResponse[T any] struct {
+	Data     []T   `json:"data"`
+	Total    int64 `json:"total"`
+	Page     int   `json:"page"`
+	PageSize int   `json:"pageSize"`
 }
 
 // ToConsoleResponse converts a db.Console to its API response.

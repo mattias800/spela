@@ -297,7 +297,7 @@ func TestListChallenges(t *testing.T) {
 		env.router.ServeHTTP(w, req)
 		assert.Equal(t, http.StatusOK, w.Code)
 
-		var resp PaginatedResponse
+		var resp PaginatedResponse[json.RawMessage]
 		json.Unmarshal(w.Body.Bytes(), &resp)
 		assert.Equal(t, int64(3), resp.Total)
 	})
@@ -309,7 +309,7 @@ func TestListChallenges(t *testing.T) {
 		env.router.ServeHTTP(w, req)
 		assert.Equal(t, http.StatusOK, w.Code)
 
-		var resp PaginatedResponse
+		var resp PaginatedResponse[json.RawMessage]
 		json.Unmarshal(w.Body.Bytes(), &resp)
 		assert.Equal(t, int64(3), resp.Total)
 	})
@@ -321,7 +321,7 @@ func TestListChallenges(t *testing.T) {
 		env.router.ServeHTTP(w, req)
 		assert.Equal(t, http.StatusOK, w.Code)
 
-		var resp PaginatedResponse
+		var resp PaginatedResponse[json.RawMessage]
 		json.Unmarshal(w.Body.Bytes(), &resp)
 		assert.Equal(t, int64(2), resp.Total)
 	})
@@ -709,7 +709,7 @@ func TestLeaderboard(t *testing.T) {
 	env.router.ServeHTTP(w, req)
 	assert.Equal(t, http.StatusOK, w.Code)
 
-	var resp PaginatedResponse
+	var resp PaginatedResponse[json.RawMessage]
 	json.Unmarshal(w.Body.Bytes(), &resp)
 	assert.Equal(t, int64(2), resp.Total)
 
@@ -775,7 +775,7 @@ func TestLeaderboardBestAttemptOnly(t *testing.T) {
 	env.router.ServeHTTP(w, req)
 	assert.Equal(t, http.StatusOK, w.Code)
 
-	var resp PaginatedResponse
+	var resp PaginatedResponse[json.RawMessage]
 	json.Unmarshal(w.Body.Bytes(), &resp)
 	assert.Equal(t, int64(1), resp.Total, "leaderboard should show only best attempt per user")
 }
@@ -889,7 +889,7 @@ func TestListGameChallenges(t *testing.T) {
 	env.router.ServeHTTP(w, req)
 	assert.Equal(t, http.StatusOK, w.Code)
 
-	var resp PaginatedResponse
+	var resp PaginatedResponse[json.RawMessage]
 	json.Unmarshal(w.Body.Bytes(), &resp)
 	assert.Equal(t, int64(2), resp.Total)
 }
@@ -908,7 +908,7 @@ func TestListMyChallenges(t *testing.T) {
 	env.router.ServeHTTP(w, req)
 	assert.Equal(t, http.StatusOK, w.Code)
 
-	var resp PaginatedResponse
+	var resp PaginatedResponse[json.RawMessage]
 	json.Unmarshal(w.Body.Bytes(), &resp)
 	assert.Equal(t, int64(2), resp.Total)
 }
@@ -1101,7 +1101,7 @@ func TestSurvivalLeaderboard(t *testing.T) {
 	env.router.ServeHTTP(w, req)
 	assert.Equal(t, http.StatusOK, w.Code)
 
-	var resp PaginatedResponse
+	var resp PaginatedResponse[json.RawMessage]
 	json.Unmarshal(w.Body.Bytes(), &resp)
 	assert.Equal(t, int64(2), resp.Total)
 
@@ -1170,7 +1170,7 @@ func TestSurvivalBestAttempt(t *testing.T) {
 	env.router.ServeHTTP(w, req)
 	assert.Equal(t, http.StatusOK, w.Code)
 
-	var resp PaginatedResponse
+	var resp PaginatedResponse[json.RawMessage]
 	json.Unmarshal(w.Body.Bytes(), &resp)
 	assert.Equal(t, int64(1), resp.Total, "leaderboard should show only best attempt per user")
 }

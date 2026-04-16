@@ -61,7 +61,7 @@ func (h *GameHandler) ListGames(c *gin.Context) {
 		}
 		if len(consoleIDs) == 0 {
 			// All abbreviations unknown — return empty list
-			c.JSON(http.StatusOK, PaginatedResponse{
+			c.JSON(http.StatusOK, PaginatedResponse[GameResponse]{
 				Data:     []GameResponse{},
 				Total:    0,
 				Page:     1,
@@ -313,7 +313,7 @@ func (h *GameHandler) ListGames(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, PaginatedResponse{
+	c.JSON(http.StatusOK, PaginatedResponse[GameResponse]{
 		Data:     ToGameResponses(games, h.DB, userID),
 		Total:    total,
 		Page:     page,

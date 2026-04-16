@@ -327,7 +327,7 @@ func TestNetplay_ListSessions(t *testing.T) {
 	ctx.router.ServeHTTP(w, req)
 
 	assert.Equal(t, http.StatusOK, w.Code)
-	var resp PaginatedResponse
+	var resp PaginatedResponse[json.RawMessage]
 	json.Unmarshal(w.Body.Bytes(), &resp)
 	assert.True(t, resp.Total >= 1)
 	assert.Equal(t, 1, resp.Page)
@@ -340,7 +340,7 @@ func TestNetplay_ListSessions(t *testing.T) {
 	ctx.router.ServeHTTP(w, req)
 
 	assert.Equal(t, http.StatusOK, w.Code)
-	var resp2 PaginatedResponse
+	var resp2 PaginatedResponse[json.RawMessage]
 	json.Unmarshal(w.Body.Bytes(), &resp2)
 	assert.True(t, resp2.Total >= 1)
 }
@@ -360,16 +360,14 @@ func TestNetplay_ListSessions_Pagination(t *testing.T) {
 	ctx.router.ServeHTTP(w, req)
 
 	assert.Equal(t, http.StatusOK, w.Code)
-	var resp PaginatedResponse
+	var resp PaginatedResponse[json.RawMessage]
 	json.Unmarshal(w.Body.Bytes(), &resp)
 	assert.Equal(t, int64(3), resp.Total)
 	assert.Equal(t, 1, resp.Page)
 	assert.Equal(t, 2, resp.PageSize)
 
 	// The data array should have 2 items
-	dataSlice, ok := resp.Data.([]interface{})
-	require.True(t, ok)
-	assert.Len(t, dataSlice, 2)
+	assert.Len(t, resp.Data, 2)
 }
 
 func TestNetplay_LeaveSession_Host(t *testing.T) {

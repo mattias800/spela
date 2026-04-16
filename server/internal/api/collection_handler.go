@@ -94,7 +94,7 @@ func (h *CollectionHandler) ListMyCollections(c *gin.Context) {
 		result = append(result, h.toCollectionResponse(col, uid))
 	}
 
-	c.JSON(http.StatusOK, PaginatedResponse{
+	c.JSON(http.StatusOK, PaginatedResponse[CollectionResponse]{
 		Data:     result,
 		Total:    total,
 		Page:     page,
@@ -148,7 +148,7 @@ func (h *CollectionHandler) ListPublicCollections(c *gin.Context) {
 		result = append(result, h.toCollectionResponse(col, uid))
 	}
 
-	c.JSON(http.StatusOK, PaginatedResponse{
+	c.JSON(http.StatusOK, PaginatedResponse[CollectionResponse]{
 		Data:     result,
 		Total:    total,
 		Page:     page,

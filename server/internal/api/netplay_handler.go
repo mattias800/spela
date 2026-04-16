@@ -146,7 +146,7 @@ func (h *NetplayHandler) ListSessions(c *gin.Context) {
 		result = append(result, h.toSessionResponse(s))
 	}
 
-	c.JSON(http.StatusOK, PaginatedResponse{
+	c.JSON(http.StatusOK, PaginatedResponse[NetplaySessionResponse]{
 		Data:     result,
 		Total:    total,
 		Page:     page,
