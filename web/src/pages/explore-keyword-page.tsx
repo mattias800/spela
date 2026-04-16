@@ -124,3 +124,5 @@ export function ExploreKeywordPage() {
     </PageLayout>
   );
 }
+
+export default ExploreKeywordPage;

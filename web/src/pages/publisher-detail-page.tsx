@@ -393,3 +393,5 @@ export function PublisherDetailPage() {
     </PageLayout>
   );
 }
+
+export default PublisherDetailPage;

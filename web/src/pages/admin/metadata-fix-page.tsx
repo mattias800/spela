@@ -179,3 +179,5 @@ export function MetadataFixPage() {
     </PageLayout>
   );
 }
+
+export default MetadataFixPage;

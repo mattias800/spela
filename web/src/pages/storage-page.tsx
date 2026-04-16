@@ -156,3 +156,5 @@ export function StoragePage() {
     </PageLayout>
   );
 }
+
+export default StoragePage;

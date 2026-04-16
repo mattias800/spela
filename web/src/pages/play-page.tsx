@@ -488,3 +488,5 @@ export function PlayPage() {
     </div>
   );
 }
+
+export default PlayPage;

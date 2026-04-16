@@ -118,3 +118,5 @@ export function CoreCompatibilityPage() {
     </PageLayout>
   );
 }
+
+export default CoreCompatibilityPage;

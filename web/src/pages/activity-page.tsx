@@ -90,3 +90,5 @@ export function ActivityPage() {
     </PageLayout>
   );
 }
+
+export default ActivityPage;

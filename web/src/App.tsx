@@ -1,68 +1,86 @@
+import { lazy, Suspense } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { AuthProvider } from "@/hooks/use-auth";
 import { ToastProvider } from "@/components/ui";
 import { AppLayout } from "@/components/app-layout";
 import { ProtectedRoute } from "@/components/protected-route";
-import { LoginPage } from "@/pages/login-page";
-import { RegisterPage } from "@/pages/register-page";
-import { DashboardPage } from "@/pages/dashboard-page";
-import { ConsolesPage } from "@/pages/consoles-page";
-import { ConsoleDetailPage } from "@/pages/console-detail-page";
-import { ConsoleGamesPage } from "@/pages/console-games-page";
-import { GamesPage } from "@/pages/games-page";
-import { GameDetailPage } from "@/pages/game-detail-page";
-import { GameAchievementsPage } from "@/pages/game-achievements-page";
-import { FavoritesPage } from "@/pages/favorites-page";
-import { PlayLaterPage } from "@/pages/play-later-page";
-import { AdminUsersPage } from "@/pages/admin/users-page";
-import { AdminSettingsPage } from "@/pages/admin/settings-page";
-import { AdminScanPage } from "@/pages/admin/scan-page";
-import { MetadataFixPage } from "@/pages/admin/metadata-fix-page";
-import { AdminCheatsPage } from "@/pages/admin/cheats-page";
-import { AdminBiosPage } from "@/pages/admin/bios-page";
-import { CoreCompatibilityPage } from "@/pages/admin/core-compatibility-page";
-import { AdminSystemEventsPage } from "@/pages/admin/system-events-page";
-import { UploadRomsPage } from "@/pages/admin/upload-roms-page";
-import { RomHacksPage } from "@/pages/admin/rom-hacks-page";
-import { PreferencesPage } from "@/pages/preferences-page";
-import { PlayPage } from "@/pages/play-page";
-import { StatsPage } from "@/pages/stats-page";
-import { ActivityPage } from "@/pages/activity-page";
-import { CollectionsPage } from "@/pages/collections-page";
-import { CollectionDetailPage } from "@/pages/collection-detail-page";
-import { UserProfilePage } from "@/pages/user-profile-page";
-import { SharedSessionsPage } from "@/pages/shared-sessions-page";
-import { SharedSessionDetailPage } from "@/pages/shared-session-detail-page";
-import { NetplayPage } from "@/pages/netplay-page";
-import { NetplaySessionPage } from "@/pages/netplay-session-page";
-import { LicensesPage } from "@/pages/licenses-page";
-import { ChallengesPage } from "@/pages/challenges-page";
-import { TopListsPage } from "@/pages/top-lists-page";
-import { ExplorePage } from "@/pages/explore-page";
-import { ExploreThemePage } from "@/pages/explore-theme-page";
-import { ExploreKeywordPage } from "@/pages/explore-keyword-page";
-import { ExploreSeriesPage } from "@/pages/explore-series-page";
-import { ExploreFranchisePage } from "@/pages/explore-franchise-page";
-import { DeveloperDetailPage } from "@/pages/developer-detail-page";
-import { PublisherDetailPage } from "@/pages/publisher-detail-page";
-import { ExploreMoodPage } from "@/pages/explore-mood-page";
-import { ExploreWizardPage } from "@/pages/explore-wizard-page";
-import { ScreenshotGalleryPage } from "@/pages/screenshot-gallery-page";
-import { CoverGalleryPage } from "@/pages/cover-gallery-page";
-import { ChallengeDetailPage } from "@/pages/challenge-detail-page";
-import { SessionDetailPage } from "@/pages/session-detail-page";
-import { SetupWizardPage } from "@/pages/setup-wizard-page";
-import { StoragePage } from "@/pages/storage-page";
 import { LibraryLayout } from "@/components/library-layout";
 import { ErrorBoundary } from "@/components/error-boundary";
 import { useTheme } from "@/hooks/use-theme";
+
+// Lazy-loaded pages — one chunk per screen via the router. Each page uses
+// `export default`; tests still use the named export. See feedback memory
+// "Code-split per screen via lazy router imports" for the convention.
+const LoginPage = lazy(() => import("@/pages/login-page"));
+const RegisterPage = lazy(() => import("@/pages/register-page"));
+const DashboardPage = lazy(() => import("@/pages/dashboard-page"));
+const ConsolesPage = lazy(() => import("@/pages/consoles-page"));
+const ConsoleDetailPage = lazy(() => import("@/pages/console-detail-page"));
+const ConsoleGamesPage = lazy(() => import("@/pages/console-games-page"));
+const GamesPage = lazy(() => import("@/pages/games-page"));
+const GameDetailPage = lazy(() => import("@/pages/game-detail-page"));
+const GameAchievementsPage = lazy(() => import("@/pages/game-achievements-page"));
+const FavoritesPage = lazy(() => import("@/pages/favorites-page"));
+const PlayLaterPage = lazy(() => import("@/pages/play-later-page"));
+const AdminUsersPage = lazy(() => import("@/pages/admin/users-page"));
+const AdminSettingsPage = lazy(() => import("@/pages/admin/settings-page"));
+const AdminScanPage = lazy(() => import("@/pages/admin/scan-page"));
+const MetadataFixPage = lazy(() => import("@/pages/admin/metadata-fix-page"));
+const AdminCheatsPage = lazy(() => import("@/pages/admin/cheats-page"));
+const AdminBiosPage = lazy(() => import("@/pages/admin/bios-page"));
+const CoreCompatibilityPage = lazy(() => import("@/pages/admin/core-compatibility-page"));
+const AdminSystemEventsPage = lazy(() => import("@/pages/admin/system-events-page"));
+const UploadRomsPage = lazy(() => import("@/pages/admin/upload-roms-page"));
+const RomHacksPage = lazy(() => import("@/pages/admin/rom-hacks-page"));
+const PreferencesPage = lazy(() => import("@/pages/preferences-page"));
+const PlayPage = lazy(() => import("@/pages/play-page"));
+const StatsPage = lazy(() => import("@/pages/stats-page"));
+const ActivityPage = lazy(() => import("@/pages/activity-page"));
+const CollectionsPage = lazy(() => import("@/pages/collections-page"));
+const CollectionDetailPage = lazy(() => import("@/pages/collection-detail-page"));
+const UserProfilePage = lazy(() => import("@/pages/user-profile-page"));
+const SharedSessionsPage = lazy(() => import("@/pages/shared-sessions-page"));
+const SharedSessionDetailPage = lazy(() => import("@/pages/shared-session-detail-page"));
+const NetplayPage = lazy(() => import("@/pages/netplay-page"));
+const NetplaySessionPage = lazy(() => import("@/pages/netplay-session-page"));
+const LicensesPage = lazy(() => import("@/pages/licenses-page"));
+const ChallengesPage = lazy(() => import("@/pages/challenges-page"));
+const TopListsPage = lazy(() => import("@/pages/top-lists-page"));
+const ExplorePage = lazy(() => import("@/pages/explore-page"));
+const ExploreThemePage = lazy(() => import("@/pages/explore-theme-page"));
+const ExploreKeywordPage = lazy(() => import("@/pages/explore-keyword-page"));
+const ExploreSeriesPage = lazy(() => import("@/pages/explore-series-page"));
+const ExploreFranchisePage = lazy(() => import("@/pages/explore-franchise-page"));
+const DeveloperDetailPage = lazy(() => import("@/pages/developer-detail-page"));
+const PublisherDetailPage = lazy(() => import("@/pages/publisher-detail-page"));
+const ExploreMoodPage = lazy(() => import("@/pages/explore-mood-page"));
+const ExploreWizardPage = lazy(() => import("@/pages/explore-wizard-page"));
+const ScreenshotGalleryPage = lazy(() => import("@/pages/screenshot-gallery-page"));
+const CoverGalleryPage = lazy(() => import("@/pages/cover-gallery-page"));
+const ChallengeDetailPage = lazy(() => import("@/pages/challenge-detail-page"));
+const SessionDetailPage = lazy(() => import("@/pages/session-detail-page"));
+const SetupWizardPage = lazy(() => import("@/pages/setup-wizard-page"));
+const StoragePage = lazy(() => import("@/pages/storage-page"));
 
 import { queryClient } from "@/lib/query-client";
 
 function ThemeApplier({ children }: { children: React.ReactNode }) {
   useTheme();
   return <>{children}</>;
+}
+
+// Minimal full-screen fallback shown while a lazy-loaded route chunk is
+// downloading. Intentionally subtle — most chunks load in <100ms on a warm
+// connection, so a heavy spinner would flash and feel worse than nothing.
+function RouteFallback() {
+  return (
+    <div
+      data-testid="route-fallback"
+      className="min-h-screen bg-surface-950"
+      aria-hidden="true"
+    />
+  );
 }
 
 export function App() {
@@ -73,6 +91,7 @@ export function App() {
           <AuthProvider>
             <ToastProvider>
               <ThemeApplier>
+                <Suspense fallback={<RouteFallback />}>
                 <Routes>
                   {/* Auth routes */}
                   <Route path="/setup" element={<SetupWizardPage />} />
@@ -270,6 +289,7 @@ export function App() {
                   {/* Fallback */}
                   <Route path="*" element={<Navigate to="/" replace />} />
                 </Routes>
+                </Suspense>
               </ThemeApplier>
             </ToastProvider>
           </AuthProvider>

@@ -152,3 +152,5 @@ export function ScreenshotGalleryPage() {
     </PageLayout>
   );
 }
+
+export default ScreenshotGalleryPage;

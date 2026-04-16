@@ -219,3 +219,5 @@ export function AdminSettingsPage() {
     </PageLayout>
   );
 }
+
+export default AdminSettingsPage;

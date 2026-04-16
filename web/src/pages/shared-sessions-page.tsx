@@ -217,3 +217,5 @@ export function SharedSessionsPage() {
     </PageLayout>
   );
 }
+
+export default SharedSessionsPage;

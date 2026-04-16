@@ -42,3 +42,5 @@ export function FavoritesPage() {
     </PageLayout>
   );
 }
+
+export default FavoritesPage;

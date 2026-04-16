@@ -232,3 +232,5 @@ export function UserProfilePage() {
     </PageLayout>
   );
 }
+
+export default UserProfilePage;

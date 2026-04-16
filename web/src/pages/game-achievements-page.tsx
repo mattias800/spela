@@ -25,3 +25,5 @@ export function GameAchievementsPage() {
     </PageLayout>
   );
 }
+
+export default GameAchievementsPage;

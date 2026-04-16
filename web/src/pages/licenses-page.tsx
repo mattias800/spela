@@ -119,3 +119,5 @@ export function LicensesPage() {
     </PageLayout>
   );
 }
+
+export default LicensesPage;

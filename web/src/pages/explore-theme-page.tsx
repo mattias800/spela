@@ -124,3 +124,5 @@ export function ExploreThemePage() {
     </PageLayout>
   );
 }
+
+export default ExploreThemePage;

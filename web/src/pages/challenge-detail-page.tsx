@@ -259,3 +259,5 @@ export function ChallengeDetailPage() {
     </PageLayout>
   );
 }
+
+export default ChallengeDetailPage;

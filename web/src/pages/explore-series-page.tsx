@@ -201,3 +201,5 @@ export function ExploreSeriesPage() {
     </PageLayout>
   );
 }
+
+export default ExploreSeriesPage;

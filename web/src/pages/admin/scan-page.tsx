@@ -528,3 +528,5 @@ export function AdminScanPage() {
     </PageLayout>
   );
 }
+
+export default AdminScanPage;

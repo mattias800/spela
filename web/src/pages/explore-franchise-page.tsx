@@ -191,3 +191,5 @@ export function ExploreFranchisePage() {
     </PageLayout>
   );
 }
+
+export default ExploreFranchisePage;

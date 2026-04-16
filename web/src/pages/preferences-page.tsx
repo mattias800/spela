@@ -239,3 +239,5 @@ export function PreferencesPage() {
     </PageLayout>
   );
 }
+
+export default PreferencesPage;

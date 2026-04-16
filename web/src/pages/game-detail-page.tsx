@@ -442,3 +442,5 @@ export function GameDetailPage() {
     </PageLayout>
   );
 }
+
+export default GameDetailPage;

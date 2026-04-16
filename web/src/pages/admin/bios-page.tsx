@@ -232,3 +232,5 @@ export function AdminBiosPage() {
     </PageLayout>
   );
 }
+
+export default AdminBiosPage;

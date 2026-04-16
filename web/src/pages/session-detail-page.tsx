@@ -426,3 +426,5 @@ export function SessionDetailPage() {
     </PageLayout>
   );
 }
+
+export default SessionDetailPage;

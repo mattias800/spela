@@ -78,3 +78,5 @@ export function LoginPage() {
     </AuthFormLayout>
   );
 }
+
+export default LoginPage;
