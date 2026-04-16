@@ -19,19 +19,6 @@ type AchievementShowcaseHandler struct {
 	DB *gorm.DB
 }
 
-// showcaseResponse is the enriched response for a single showcased achievement.
-type showcaseResponse struct {
-	AchievementRAID uint    `json:"achievementRaId"`
-	RAGameID        uint    `json:"raGameId"`
-	ShowcaseOrder   int     `json:"showcaseOrder"`
-	Title           string  `json:"title,omitempty"`
-	Description     string  `json:"description,omitempty"`
-	Points          int     `json:"points,omitempty"`
-	BadgeURL        string  `json:"badgeUrl,omitempty"`
-	RarityPercent   float64 `json:"rarityPercent,omitempty"`
-	GameTitle       string  `json:"gameTitle,omitempty"`
-}
-
 // GetShowcase returns the current user's showcased achievements.
 func (h *AchievementShowcaseHandler) GetShowcase(c *gin.Context) {
 	uid := getUserID(c)
@@ -115,9 +102,9 @@ func (h *AchievementShowcaseHandler) UpdateShowcase(c *gin.Context) {
 }
 
 // enrichShowcaseEntries loads GameAchievementCache data and enriches showcase entries.
-func (h *AchievementShowcaseHandler) enrichShowcaseEntries(entries []db.UserAchievementShowcase) []showcaseResponse {
+func (h *AchievementShowcaseHandler) enrichShowcaseEntries(entries []db.UserAchievementShowcase) []ShowcaseEntryResponse {
 	if len(entries) == 0 {
-		return []showcaseResponse{}
+		return []ShowcaseEntryResponse{}
 	}
 
 	// Collect unique RA game IDs
@@ -157,9 +144,9 @@ func (h *AchievementShowcaseHandler) enrichShowcaseEntries(entries []db.UserAchi
 	}
 
 	// Build enriched responses
-	results := make([]showcaseResponse, 0, len(entries))
+	results := make([]ShowcaseEntryResponse, 0, len(entries))
 	for _, e := range entries {
-		resp := showcaseResponse{
+		resp := ShowcaseEntryResponse{
 			AchievementRAID: e.AchievementRAID,
 			RAGameID:        e.RAGameID,
 			ShowcaseOrder:   e.ShowcaseOrder,

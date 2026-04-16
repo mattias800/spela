@@ -1120,13 +1120,7 @@ func (h *SessionHandler) GetStorageUsage(c *gin.Context) {
 
 	// Per-console breakdown via JOINs:
 	// session_save_states → game_sessions → games → consoles
-	type consoleRow struct {
-		ConsoleID   string `json:"consoleId"`
-		ConsoleName string `json:"consoleName"`
-		Bytes       int64  `json:"bytes"`
-		SaveCount   int64  `json:"saveCount"`
-	}
-	var rows []consoleRow
+	var rows []SessionStorageConsoleBreakdown
 	h.DB.Model(&db.SessionSaveState{}).
 		Joins("JOIN game_sessions ON game_sessions.id = session_save_states.session_id AND game_sessions.deleted_at IS NULL").
 		Joins("JOIN games ON games.id = game_sessions.game_id AND games.deleted_at IS NULL").
@@ -1138,7 +1132,7 @@ func (h *SessionHandler) GetStorageUsage(c *gin.Context) {
 		Scan(&rows)
 
 	if rows == nil {
-		rows = []consoleRow{}
+		rows = []SessionStorageConsoleBreakdown{}
 	}
 
 	c.JSON(http.StatusOK, gin.H{

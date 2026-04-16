@@ -341,7 +341,7 @@ func TestHeatmap_Empty(t *testing.T) {
 	router.ServeHTTP(w, req)
 	assert.Equal(t, http.StatusOK, w.Code)
 
-	var entries []heatmapEntry
+	var entries []HeatmapEntry
 	err := json.Unmarshal(w.Body.Bytes(), &entries)
 	require.NoError(t, err)
 	assert.Len(t, entries, 0)
@@ -368,7 +368,7 @@ func TestHeatmap_WithData(t *testing.T) {
 	router.ServeHTTP(w, req)
 	assert.Equal(t, http.StatusOK, w.Code)
 
-	var entries []heatmapEntry
+	var entries []HeatmapEntry
 	err := json.Unmarshal(w.Body.Bytes(), &entries)
 	require.NoError(t, err)
 	assert.Len(t, entries, 2)
@@ -399,7 +399,7 @@ func TestHeatmap_PublicEndpoint(t *testing.T) {
 	router.ServeHTTP(w, req)
 	assert.Equal(t, http.StatusOK, w.Code)
 
-	var entries []heatmapEntry
+	var entries []HeatmapEntry
 	err := json.Unmarshal(w.Body.Bytes(), &entries)
 	require.NoError(t, err)
 	assert.Len(t, entries, 1)
@@ -430,7 +430,7 @@ func TestHeatmap_UserIsolation(t *testing.T) {
 	router.ServeHTTP(w, req)
 	assert.Equal(t, http.StatusOK, w.Code)
 
-	var entries []heatmapEntry
+	var entries []HeatmapEntry
 	err := json.Unmarshal(w.Body.Bytes(), &entries)
 	require.NoError(t, err)
 	assert.Len(t, entries, 1)

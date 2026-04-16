@@ -548,23 +548,6 @@ func (h *GameHandler) UpdateMetadata(c *gin.Context) {
 	c.JSON(http.StatusOK, ToGameResponse(game, h.DB, userID))
 }
 
-// scanGameSummary is a lightweight game entry returned in scan results.
-type scanGameSummary struct {
-	ID          string `json:"id"`
-	Title       string `json:"title"`
-	ConsoleName string `json:"consoleName"`
-}
-
-// scanResultResponse extends the scan result with new game details and auto-scrape status.
-type scanResultResponse struct {
-	NewGames     int               `json:"newGames"`
-	UpdatedGames int               `json:"updatedGames"`
-	RemovedGames int               `json:"removedGames"`
-	TotalGames   int               `json:"totalGames"`
-	NewGamesList []scanGameSummary `json:"newGamesList,omitempty"`
-	AutoScraping bool              `json:"autoScraping"`
-}
-
 // ScanGames triggers a library scan in the background.
 // Returns 202 immediately; progress is reported via WebSocket events.
 // Pass ?console=<abbreviation> to scan only games for a specific console.
@@ -607,7 +590,7 @@ func (h *GameHandler) ScanGames(c *gin.Context) {
 		}
 
 		// Build response with new game summaries
-		resp := scanResultResponse{
+		resp := GameScanResultResponse{
 			NewGames:     result.NewGames,
 			UpdatedGames: result.UpdatedGames,
 			RemovedGames: result.RemovedGames,
@@ -618,7 +601,7 @@ func (h *GameHandler) ScanGames(c *gin.Context) {
 			var newGames []db.Game
 			h.DB.Preload("Console").Where("id IN ?", result.NewGameIDs).Find(&newGames)
 			for _, g := range newGames {
-				resp.NewGamesList = append(resp.NewGamesList, scanGameSummary{
+				resp.NewGamesList = append(resp.NewGamesList, GameScanSummary{
 					ID:          strconv.FormatUint(uint64(g.ID), 10),
 					Title:       g.Title,
 					ConsoleName: g.Console.Name,
@@ -1019,22 +1002,6 @@ func (h *GameHandler) GetRecommendedCore(c *gin.Context) {
 	c.JSON(http.StatusOK, core)
 }
 
-// gameStatsTopPlayer is a player entry in the game stats response.
-type gameStatsTopPlayer struct {
-	UserID   string `json:"userId"`
-	Username string `json:"username"`
-	AvatarURL string `json:"avatarUrl"`
-	PlayTime int64  `json:"playTime"`
-}
-
-// gameStatsResponse is the response for GET /api/games/:id/stats.
-type gameStatsResponse struct {
-	TotalPlayers   int64                `json:"totalPlayers"`
-	TotalPlayTime  int64                `json:"totalPlayTime"`
-	AveragePlayTime int64              `json:"averagePlayTime"`
-	TopPlayers     []gameStatsTopPlayer `json:"topPlayers"`
-}
-
 // GetGameStats returns aggregate community play statistics for a game.
 func (h *GameHandler) GetGameStats(c *gin.Context) {
 	id := c.Param("id")
@@ -1081,9 +1048,9 @@ func (h *GameHandler) GetGameStats(c *gin.Context) {
 		return
 	}
 
-	topPlayers := make([]gameStatsTopPlayer, 0, len(rows))
+	topPlayers := make([]GameStatsTopPlayer, 0, len(rows))
 	for _, r := range rows {
-		topPlayers = append(topPlayers, gameStatsTopPlayer{
+		topPlayers = append(topPlayers, GameStatsTopPlayer{
 			UserID:   strconv.FormatUint(uint64(r.UserID), 10),
 			Username: r.Username,
 			AvatarURL: r.AvatarURL,
@@ -1091,7 +1058,7 @@ func (h *GameHandler) GetGameStats(c *gin.Context) {
 		})
 	}
 
-	c.JSON(http.StatusOK, gameStatsResponse{
+	c.JSON(http.StatusOK, GameStatsResponse{
 		TotalPlayers:    stats.TotalPlayers,
 		TotalPlayTime:   stats.TotalPlayTime,
 		AveragePlayTime: averagePlayTime,
@@ -1112,15 +1079,9 @@ func (h *GameHandler) GetGameCheats(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to fetch cheats"})
 		return
 	}
-	type CheatResponse struct {
-		ID          uint   `json:"id"`
-		Index       int    `json:"index"`
-		Description string `json:"description"`
-		Code        string `json:"code"`
-	}
-	resp := make([]CheatResponse, len(cheats))
+	resp := make([]GameCheatResponse, len(cheats))
 	for i, ch := range cheats {
-		resp[i] = CheatResponse{
+		resp[i] = GameCheatResponse{
 			ID:          ch.ID,
 			Index:       ch.CheatIndex,
 			Description: ch.Description,

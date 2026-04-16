@@ -16,18 +16,6 @@ type StatsHandler struct {
 	DB *gorm.DB
 }
 
-// mostPlayedEntry is a single entry in the most-played games response.
-type mostPlayedEntry struct {
-	Game         GameResponse `json:"game"`
-	TotalPlayers int64        `json:"totalPlayers"`
-	TotalPlayTime int64       `json:"totalPlayTime"`
-}
-
-// mostPlayedResponse is the response for GET /api/stats/most-played.
-type mostPlayedResponse struct {
-	Games []mostPlayedEntry `json:"games"`
-}
-
 // MostPlayedGames returns the top 25 most played games across all users.
 func (h *StatsHandler) MostPlayedGames(c *gin.Context) {
 	type row struct {
@@ -47,7 +35,7 @@ func (h *StatsHandler) MostPlayedGames(c *gin.Context) {
 	}
 
 	if len(rows) == 0 {
-		c.JSON(http.StatusOK, mostPlayedResponse{Games: []mostPlayedEntry{}})
+		c.JSON(http.StatusOK, MostPlayedResponse{Games: []MostPlayedEntry{}})
 		return
 	}
 
@@ -67,35 +55,20 @@ func (h *StatsHandler) MostPlayedGames(c *gin.Context) {
 	userID := getUserID(c)
 	data := loadUserGameData(h.DB, userID, gameIDs)
 
-	entries := make([]mostPlayedEntry, 0, len(rows))
+	entries := make([]MostPlayedEntry, 0, len(rows))
 	for _, r := range rows {
 		game, ok := gameMap[r.GameID]
 		if !ok {
 			continue
 		}
-		entries = append(entries, mostPlayedEntry{
+		entries = append(entries, MostPlayedEntry{
 			Game:          toGameResponseWithData(game, &data),
 			TotalPlayers:  r.TotalPlayers,
 			TotalPlayTime: r.TotalPlayTime,
 		})
 	}
 
-	c.JSON(http.StatusOK, mostPlayedResponse{Games: entries})
-}
-
-// activePlayerEntry is a single entry in the most-active players response.
-type activePlayerEntry struct {
-	UserID        string     `json:"userId"`
-	Username      string     `json:"username"`
-	AvatarURL     string     `json:"avatarUrl"`
-	TotalPlayTime int64      `json:"totalPlayTime"`
-	GamesPlayed   int64      `json:"gamesPlayed"`
-	LastPlayed    time.Time  `json:"lastPlayed"`
-}
-
-// mostActivePlayersResponse is the response for GET /api/stats/most-active-players.
-type mostActivePlayersResponse struct {
-	Players []activePlayerEntry `json:"players"`
+	c.JSON(http.StatusOK, MostPlayedResponse{Games: entries})
 }
 
 // MostActivePlayers returns the top 25 most active players.
@@ -120,10 +93,10 @@ func (h *StatsHandler) MostActivePlayers(c *gin.Context) {
 		return
 	}
 
-	players := make([]activePlayerEntry, 0, len(rows))
+	players := make([]ActivePlayerEntry, 0, len(rows))
 	for _, r := range rows {
 		lastPlayed := parseTimeString(r.LastPlayed)
-		players = append(players, activePlayerEntry{
+		players = append(players, ActivePlayerEntry{
 			UserID:        strconv.FormatUint(uint64(r.UserID), 10),
 			Username:      r.Username,
 			AvatarURL:     r.AvatarURL,
@@ -133,7 +106,7 @@ func (h *StatsHandler) MostActivePlayers(c *gin.Context) {
 		})
 	}
 
-	c.JSON(http.StatusOK, mostActivePlayersResponse{Players: players})
+	c.JSON(http.StatusOK, MostActivePlayersResponse{Players: players})
 }
 
 // parseTimeString attempts to parse a time string in common formats returned by
@@ -172,12 +145,6 @@ func RecordDailyPlayActivity(database *gorm.DB, userID uint, seconds int64) {
 	}
 }
 
-// heatmapEntry is a single day's play activity for the heatmap response.
-type heatmapEntry struct {
-	Date     string `json:"date"`
-	PlayTime int64  `json:"playTime"`
-}
-
 // GetPlayHeatmap returns the current user's daily play activity for the past 365 days.
 // GET /api/user/play-heatmap
 func (h *StatsHandler) GetPlayHeatmap(c *gin.Context) {
@@ -212,9 +179,9 @@ func (h *StatsHandler) getHeatmapForUser(c *gin.Context, userID uint) {
 		Order("date ASC").
 		Find(&activities)
 
-	entries := make([]heatmapEntry, 0, len(activities))
+	entries := make([]HeatmapEntry, 0, len(activities))
 	for _, a := range activities {
-		entries = append(entries, heatmapEntry{
+		entries = append(entries, HeatmapEntry{
 			Date:     a.Date.Format("2006-01-02"),
 			PlayTime: a.PlayTime,
 		})

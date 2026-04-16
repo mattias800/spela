@@ -12,16 +12,6 @@ import (
 	"gorm.io/gorm"
 )
 
-// BackfillImagesResponse is the result of a backfill-images operation.
-type BackfillImagesResponse struct {
-	ArtworkDownloaded  int `json:"artworkDownloaded"`
-	TopRatedDownloaded int `json:"topRatedDownloaded"`
-	SimilarDownloaded  int `json:"similarDownloaded"`
-	GalleryDownloaded  int `json:"galleryDownloaded"`
-	CompanyDownloaded  int `json:"companyDownloaded"`
-	Errors             int `json:"errors"`
-}
-
 // BackfillImages downloads external image URLs (IGDB, SteamGridDB) and
 // replaces them with locally cached copies. This is an admin-only endpoint
 // intended for one-time migration after upgrading.
