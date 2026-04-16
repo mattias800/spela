@@ -75,6 +75,19 @@ valuable — if it's not part of the current task, log it and move on.
 writing, bug investigation, or even casual file reads. If something catches your
 eye and it's not part of the current task, create an issue and move on.
 
+## Issue Tracking for PRs
+
+Every PR must reference at least one GitHub issue in its body via "Closes #N",
+"Fixes #N", or "Refs #N". This keeps the issue → PR → release chain traceable
+for future agents and humans.
+
+If the work fits an existing issue, reference it. If not, file an issue first
+with `gh issue create`, then reference it in the PR. Multiple issues per PR is
+fine when they're naturally bundled.
+
+Drive-by fixes without an issue link are tracking debt — file a one-line issue
+even for small things so the change is discoverable later.
+
 ## PR Review Gate
 
 Before presenting any PR to the user for manual testing or merge approval,
