@@ -368,3 +368,5 @@ export function CollectionDetailPage() {
     </PageLayout>
   );
 }
+
+export default CollectionDetailPage;

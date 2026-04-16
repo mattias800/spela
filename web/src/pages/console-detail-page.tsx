@@ -216,3 +216,5 @@ function ScanButton({
     </button>
   );
 }
+
+export default ConsoleDetailPage;

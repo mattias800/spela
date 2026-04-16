@@ -263,3 +263,5 @@ export function StatsPage() {
     </PageLayout>
   );
 }
+
+export default StatsPage;

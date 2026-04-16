@@ -287,3 +287,5 @@ export function TopListsPage() {
     </PageLayout>
   );
 }
+
+export default TopListsPage;

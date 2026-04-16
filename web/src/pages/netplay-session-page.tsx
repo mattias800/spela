@@ -364,3 +364,5 @@ export function NetplaySessionPage() {
     </PageLayout>
   );
 }
+
+export default NetplaySessionPage;

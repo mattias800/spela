@@ -95,3 +95,5 @@ export function ExploreMoodPage() {
     </PageLayout>
   );
 }
+
+export default ExploreMoodPage;

@@ -98,3 +98,5 @@ export function SetupPage() {
     </AuthFormLayout>
   );
 }
+
+export default SetupPage;

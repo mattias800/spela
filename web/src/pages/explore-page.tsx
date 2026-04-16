@@ -434,3 +434,5 @@ export function ExplorePage() {
     </PageLayout>
   );
 }
+
+export default ExplorePage;

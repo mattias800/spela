@@ -117,3 +117,5 @@ export function AdminUsersPage() {
     </PageLayout>
   );
 }
+
+export default AdminUsersPage;

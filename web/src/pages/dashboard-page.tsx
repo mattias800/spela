@@ -429,3 +429,5 @@ export function DashboardPage() {
     </PageLayout>
   );
 }
+
+export default DashboardPage;

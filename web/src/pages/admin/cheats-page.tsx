@@ -132,3 +132,5 @@ export function AdminCheatsPage() {
     </PageLayout>
   );
 }
+
+export default AdminCheatsPage;

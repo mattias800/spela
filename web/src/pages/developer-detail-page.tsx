@@ -393,3 +393,5 @@ export function DeveloperDetailPage() {
     </PageLayout>
   );
 }
+
+export default DeveloperDetailPage;

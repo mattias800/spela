@@ -105,3 +105,5 @@ export function ConsolesPage() {
     </PageLayout>
   );
 }
+
+export default ConsolesPage;

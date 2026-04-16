@@ -199,3 +199,5 @@ export function ExploreWizardPage() {
     </PageLayout>
   );
 }
+
+export default ExploreWizardPage;

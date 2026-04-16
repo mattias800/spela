@@ -284,3 +284,5 @@ export function CollectionsPage() {
     </PageLayout>
   );
 }
+
+export default CollectionsPage;

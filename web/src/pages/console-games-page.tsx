@@ -292,3 +292,5 @@ export function ConsoleGamesPage() {
     </PageLayout>
   );
 }
+
+export default ConsoleGamesPage;

@@ -166,3 +166,5 @@ export function PlayLaterPage() {
     </PageLayout>
   );
 }
+
+export default PlayLaterPage;

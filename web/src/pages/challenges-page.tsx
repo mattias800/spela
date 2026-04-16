@@ -192,3 +192,5 @@ export function ChallengesPage() {
     </PageLayout>
   );
 }
+
+export default ChallengesPage;

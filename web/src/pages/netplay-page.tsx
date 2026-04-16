@@ -156,3 +156,5 @@ export function NetplayPage() {
     </PageLayout>
   );
 }
+
+export default NetplayPage;

@@ -233,3 +233,5 @@ export function CoverGalleryPage() {
     </PageLayout>
   );
 }
+
+export default CoverGalleryPage;

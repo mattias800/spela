@@ -230,3 +230,5 @@ export function SharedSessionDetailPage() {
     </PageLayout>
   );
 }
+
+export default SharedSessionDetailPage;

@@ -346,3 +346,5 @@ export function UploadRomsPage() {
     </PageLayout>
   );
 }
+
+export default UploadRomsPage;

@@ -193,3 +193,5 @@ export function AdminSystemEventsPage() {
     </PageLayout>
   );
 }
+
+export default AdminSystemEventsPage;

@@ -219,3 +219,5 @@ export function RomHacksPage() {
     </PageLayout>
   );
 }
+
+export default RomHacksPage;

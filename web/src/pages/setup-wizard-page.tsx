@@ -57,3 +57,5 @@ export function SetupWizardPage() {
     </WizardLayout>
   );
 }
+
+export default SetupWizardPage;
