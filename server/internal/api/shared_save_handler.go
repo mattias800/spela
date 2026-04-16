@@ -120,7 +120,7 @@ func (h *SharedSaveHandler) ListSharedSaves(c *gin.Context) {
 		result = append(result, h.toResponse(s, uid))
 	}
 
-	c.JSON(http.StatusOK, PaginatedResponse{
+	c.JSON(http.StatusOK, PaginatedResponse[SharedSaveResponse]{
 		Data:     result,
 		Total:    total,
 		Page:     page,

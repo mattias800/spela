@@ -31,7 +31,7 @@ func TestSearchUsers_EmptyQuery_ReturnsAllUsers(t *testing.T) {
 	router.ServeHTTP(w, req)
 	require.Equal(t, http.StatusOK, w.Code)
 
-	var resp PaginatedResponse
+	var resp PaginatedResponse[json.RawMessage]
 	err := json.Unmarshal(w.Body.Bytes(), &resp)
 	require.NoError(t, err)
 
@@ -78,7 +78,7 @@ func TestSearchUsers_WithQuery_MatchesByPrefix(t *testing.T) {
 	router.ServeHTTP(w, req)
 	require.Equal(t, http.StatusOK, w.Code)
 
-	var resp PaginatedResponse
+	var resp PaginatedResponse[json.RawMessage]
 	err := json.Unmarshal(w.Body.Bytes(), &resp)
 	require.NoError(t, err)
 	assert.Equal(t, int64(2), resp.Total) // alice, alex (apitest excluded as self)
@@ -117,7 +117,7 @@ func TestSearchUsers_Pagination(t *testing.T) {
 	router.ServeHTTP(w, req)
 	require.Equal(t, http.StatusOK, w.Code)
 
-	var resp PaginatedResponse
+	var resp PaginatedResponse[json.RawMessage]
 	err := json.Unmarshal(w.Body.Bytes(), &resp)
 	require.NoError(t, err)
 	assert.Equal(t, int64(5), resp.Total)
@@ -157,7 +157,7 @@ func TestSearchUsers_PageSizeClampedTo50(t *testing.T) {
 	router.ServeHTTP(w, req)
 	require.Equal(t, http.StatusOK, w.Code)
 
-	var resp PaginatedResponse
+	var resp PaginatedResponse[json.RawMessage]
 	err := json.Unmarshal(w.Body.Bytes(), &resp)
 	require.NoError(t, err)
 	assert.Equal(t, 20, resp.PageSize) // clamped to default 20 since >50
@@ -199,7 +199,7 @@ func TestSearchUsers_ExcludesSelf(t *testing.T) {
 	router.ServeHTTP(w, req)
 	require.Equal(t, http.StatusOK, w.Code)
 
-	var resp PaginatedResponse
+	var resp PaginatedResponse[json.RawMessage]
 	err := json.Unmarshal(w.Body.Bytes(), &resp)
 	require.NoError(t, err)
 	assert.Equal(t, int64(0), resp.Total) // self excluded

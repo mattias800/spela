@@ -242,7 +242,7 @@ func (h *SocialHandler) SearchUsers(c *gin.Context) {
 		})
 	}
 
-	c.JSON(http.StatusOK, PaginatedResponse{
+	c.JSON(http.StatusOK, PaginatedResponse[UserSearchResult]{
 		Data:     result,
 		Total:    total,
 		Page:     page,
@@ -445,7 +445,7 @@ func (h *SocialHandler) GetActivityFeed(c *gin.Context) {
 		})
 	}
 
-	c.JSON(http.StatusOK, PaginatedResponse{
+	c.JSON(http.StatusOK, PaginatedResponse[ActivityEventResponse]{
 		Data:     result,
 		Total:    total,
 		Page:     page,

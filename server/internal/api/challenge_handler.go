@@ -305,7 +305,7 @@ func (h *ChallengeHandler) ListChallenges(c *gin.Context) {
 		result = append(result, h.toChallengeResponse(ch))
 	}
 
-	c.JSON(http.StatusOK, PaginatedResponse{
+	c.JSON(http.StatusOK, PaginatedResponse[ChallengeResponse]{
 		Data:     result,
 		Total:    total,
 		Page:     page,
@@ -770,7 +770,7 @@ func (h *ChallengeHandler) GetLeaderboard(c *gin.Context) {
 		})
 	}
 
-	c.JSON(http.StatusOK, PaginatedResponse{
+	c.JSON(http.StatusOK, PaginatedResponse[ChallengeLeaderboardEntry]{
 		Data:     result,
 		Total:    total,
 		Page:     page,
@@ -815,7 +815,7 @@ func (h *ChallengeHandler) ListGameChallenges(c *gin.Context) {
 		result = append(result, h.toChallengeResponse(ch))
 	}
 
-	c.JSON(http.StatusOK, PaginatedResponse{
+	c.JSON(http.StatusOK, PaginatedResponse[ChallengeResponse]{
 		Data:     result,
 		Total:    total,
 		Page:     page,
@@ -855,7 +855,7 @@ func (h *ChallengeHandler) ListMyChallenges(c *gin.Context) {
 		result = append(result, h.toChallengeResponse(ch))
 	}
 
-	c.JSON(http.StatusOK, PaginatedResponse{
+	c.JSON(http.StatusOK, PaginatedResponse[ChallengeResponse]{
 		Data:     result,
 		Total:    total,
 		Page:     page,

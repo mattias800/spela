@@ -115,7 +115,7 @@ func TestListThemeGames_Success(t *testing.T) {
 	env.router.ServeHTTP(w, req)
 	assert.Equal(t, http.StatusOK, w.Code)
 
-	var resp PaginatedResponse
+	var resp PaginatedResponse[json.RawMessage]
 	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
 	assert.Equal(t, int64(2), resp.Total)
 	assert.Equal(t, 1, resp.Page)
@@ -211,7 +211,7 @@ func TestListKeywordGames_Success(t *testing.T) {
 	env.router.ServeHTTP(w, req)
 	assert.Equal(t, http.StatusOK, w.Code)
 
-	var resp PaginatedResponse
+	var resp PaginatedResponse[json.RawMessage]
 	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
 	assert.Equal(t, int64(1), resp.Total)
 }
@@ -287,7 +287,7 @@ func TestListFranchiseGames_Success(t *testing.T) {
 	env.router.ServeHTTP(w, req)
 	assert.Equal(t, http.StatusOK, w.Code)
 
-	var resp PaginatedResponse
+	var resp PaginatedResponse[json.RawMessage]
 	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
 	assert.Equal(t, int64(2), resp.Total)
 	assert.Equal(t, 1, resp.Page)
@@ -539,7 +539,7 @@ func TestListGames_FilterByTheme(t *testing.T) {
 	env.router.ServeHTTP(w, req)
 	assert.Equal(t, http.StatusOK, w.Code)
 
-	var resp PaginatedResponse
+	var resp PaginatedResponse[json.RawMessage]
 	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
 	assert.Equal(t, int64(1), resp.Total)
 }
@@ -558,7 +558,7 @@ func TestListGames_FilterByKeyword(t *testing.T) {
 	env.router.ServeHTTP(w, req)
 	assert.Equal(t, http.StatusOK, w.Code)
 
-	var resp PaginatedResponse
+	var resp PaginatedResponse[json.RawMessage]
 	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
 	assert.Equal(t, int64(1), resp.Total)
 }
@@ -577,7 +577,7 @@ func TestListGames_FilterByPerspective(t *testing.T) {
 	env.router.ServeHTTP(w, req)
 	assert.Equal(t, http.StatusOK, w.Code)
 
-	var resp PaginatedResponse
+	var resp PaginatedResponse[json.RawMessage]
 	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
 	assert.Equal(t, int64(1), resp.Total)
 }

@@ -206,7 +206,7 @@ func (h *ConsoleHandler) ListConsoleGames(c *gin.Context) {
 	}
 
 	userID := getUserID(c)
-	c.JSON(http.StatusOK, PaginatedResponse{
+	c.JSON(http.StatusOK, PaginatedResponse[GameResponse]{
 		Data:     ToGameResponses(games, h.DB, userID),
 		Total:    total,
 		Page:     page,

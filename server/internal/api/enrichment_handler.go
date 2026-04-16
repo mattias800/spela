@@ -114,7 +114,7 @@ func (h *EnrichmentHandler) ListThemeGames(c *gin.Context) {
 	}
 
 	userID := getUserID(c)
-	c.JSON(http.StatusOK, PaginatedResponse{
+	c.JSON(http.StatusOK, PaginatedResponse[GameResponse]{
 		Data:     ToGameResponses(games, h.DB, userID),
 		Total:    total,
 		Page:     page,
@@ -219,7 +219,7 @@ func (h *EnrichmentHandler) ListKeywordGames(c *gin.Context) {
 	}
 
 	userID := getUserID(c)
-	c.JSON(http.StatusOK, PaginatedResponse{
+	c.JSON(http.StatusOK, PaginatedResponse[GameResponse]{
 		Data:     ToGameResponses(games, h.DB, userID),
 		Total:    total,
 		Page:     page,
@@ -534,7 +534,7 @@ func (h *EnrichmentHandler) ListFranchiseGames(c *gin.Context) {
 	}
 
 	userID := getUserID(c)
-	c.JSON(http.StatusOK, PaginatedResponse{
+	c.JSON(http.StatusOK, PaginatedResponse[GameResponse]{
 		Data:     ToGameResponses(games, h.DB, userID),
 		Total:    total,
 		Page:     page,
