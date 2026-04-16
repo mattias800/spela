@@ -58,13 +58,13 @@ func (h *ExploreHandler) GetMoodGames(c *gin.Context) {
 	case "together":
 		games, err = h.getMoodTogetherGames()
 	default:
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid mood"})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid mood"})
 		return
 	}
 
 	if err != nil {
 		slog.Error("failed to fetch mood games", "mood", mood, "error", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch mood games"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to fetch mood games"})
 		return
 	}
 
@@ -323,11 +323,11 @@ func (h *ExploreHandler) GetSurpriseGame(c *gin.Context) {
 	var game db.Game
 	if err := query.Order("RANDOM()").Limit(1).First(&game).Error; err != nil {
 		if err.Error() == "record not found" {
-			c.JSON(http.StatusNotFound, gin.H{"error": "no eligible games found"})
+			c.JSON(http.StatusNotFound, ErrorResponse{Error: "no eligible games found"})
 			return
 		}
 		slog.Error("failed to fetch surprise game", "error", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch surprise game"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to fetch surprise game"})
 		return
 	}
 

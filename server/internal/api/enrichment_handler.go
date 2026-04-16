@@ -46,7 +46,7 @@ func (h *EnrichmentHandler) ListThemes(c *gin.Context) {
 		Having("game_count > 0").
 		Order("game_count DESC").
 		Scan(&rows).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch themes"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to fetch themes"})
 		return
 	}
 
@@ -68,7 +68,7 @@ func (h *EnrichmentHandler) ListThemes(c *gin.Context) {
 func (h *EnrichmentHandler) ListThemeGames(c *gin.Context) {
 	themeID, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid theme ID"})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid theme ID"})
 		return
 	}
 
@@ -76,7 +76,7 @@ func (h *EnrichmentHandler) ListThemeGames(c *gin.Context) {
 	var count int64
 	h.DB.Model(&db.GameTheme{}).Where("igdb_theme_id = ?", themeID).Count(&count)
 	if count == 0 {
-		c.JSON(http.StatusNotFound, gin.H{"error": "theme not found"})
+		c.JSON(http.StatusNotFound, ErrorResponse{Error: "theme not found"})
 		return
 	}
 
@@ -109,7 +109,7 @@ func (h *EnrichmentHandler) ListThemeGames(c *gin.Context) {
 		Order("games.rating DESC").
 		Offset(offset).Limit(pageSize).
 		Find(&games).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch theme games"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to fetch theme games"})
 		return
 	}
 
@@ -154,7 +154,7 @@ func (h *EnrichmentHandler) ListKeywords(c *gin.Context) {
 		Order("game_count DESC").
 		Limit(limit).
 		Scan(&rows).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch keywords"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to fetch keywords"})
 		return
 	}
 
@@ -176,14 +176,14 @@ func (h *EnrichmentHandler) ListKeywords(c *gin.Context) {
 func (h *EnrichmentHandler) ListKeywordGames(c *gin.Context) {
 	keywordID, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid keyword ID"})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid keyword ID"})
 		return
 	}
 
 	var count int64
 	h.DB.Model(&db.GameKeyword{}).Where("igdb_keyword_id = ?", keywordID).Count(&count)
 	if count == 0 {
-		c.JSON(http.StatusNotFound, gin.H{"error": "keyword not found"})
+		c.JSON(http.StatusNotFound, ErrorResponse{Error: "keyword not found"})
 		return
 	}
 
@@ -214,7 +214,7 @@ func (h *EnrichmentHandler) ListKeywordGames(c *gin.Context) {
 		Order("games.rating DESC").
 		Offset(offset).Limit(pageSize).
 		Find(&games).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch keyword games"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to fetch keyword games"})
 		return
 	}
 
@@ -261,7 +261,7 @@ func (h *EnrichmentHandler) ListSeries(c *gin.Context) {
 		Having("library_games > 0").
 		Order("library_games DESC").
 		Scan(&rows).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch series"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to fetch series"})
 		return
 	}
 
@@ -320,7 +320,7 @@ func (h *EnrichmentHandler) GetSeriesDetail(c *gin.Context) {
 	id := c.Param("id")
 	var series db.GameSeries
 	if err := h.DB.Preload("Entries").First(&series, id).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "series not found"})
+		c.JSON(http.StatusNotFound, ErrorResponse{Error: "series not found"})
 		return
 	}
 
@@ -468,7 +468,7 @@ func (h *EnrichmentHandler) ListFranchises(c *gin.Context) {
 		Having("game_count > 0").
 		Order("game_count DESC").
 		Scan(&rows).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch franchises"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to fetch franchises"})
 		return
 	}
 
@@ -489,14 +489,14 @@ func (h *EnrichmentHandler) ListFranchises(c *gin.Context) {
 func (h *EnrichmentHandler) ListFranchiseGames(c *gin.Context) {
 	franchiseID, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid franchise ID"})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid franchise ID"})
 		return
 	}
 
 	var count int64
 	h.DB.Model(&db.GameFranchise{}).Where("igdb_franchise_id = ?", franchiseID).Count(&count)
 	if count == 0 {
-		c.JSON(http.StatusNotFound, gin.H{"error": "franchise not found"})
+		c.JSON(http.StatusNotFound, ErrorResponse{Error: "franchise not found"})
 		return
 	}
 
@@ -529,7 +529,7 @@ func (h *EnrichmentHandler) ListFranchiseGames(c *gin.Context) {
 		Order("games.release_date ASC, games.title ASC").
 		Offset(offset).Limit(pageSize).
 		Find(&games).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch franchise games"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to fetch franchise games"})
 		return
 	}
 
@@ -566,7 +566,7 @@ func (h *EnrichmentHandler) GetFranchiseDetail(c *gin.Context) {
 	// before the GameFranchiseGroup has been populated.
 	if err := h.DB.Preload("Entries").First(&franchise, id).Error; err != nil {
 		if err2 := h.DB.Preload("Entries").Where("igdb_franchise_id = ?", id).First(&franchise).Error; err2 != nil {
-			c.JSON(http.StatusNotFound, gin.H{"error": "franchise not found"})
+			c.JSON(http.StatusNotFound, ErrorResponse{Error: "franchise not found"})
 			return
 		}
 	}
@@ -702,21 +702,21 @@ type GameSeriesResponse struct {
 func (h *EnrichmentHandler) GetGameSeries(c *gin.Context) {
 	gameID, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid game ID"})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid game ID"})
 		return
 	}
 
 	// Check game exists
 	var game db.Game
 	if err := h.DB.First(&game, gameID).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "game not found"})
+		c.JSON(http.StatusNotFound, ErrorResponse{Error: "game not found"})
 		return
 	}
 
 	// Find series entries for this game, then load the full series with counts
 	var entries []db.GameSeriesEntry
 	if err := h.DB.Where("game_id = ?", gameID).Find(&entries).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch series"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to fetch series"})
 		return
 	}
 
@@ -754,7 +754,7 @@ func (h *EnrichmentHandler) GetGameSeries(c *gin.Context) {
 		Where("game_series.id IN ?", seriesIDs).
 		Group("game_series.id").
 		Scan(&rows).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch series details"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to fetch series details"})
 		return
 	}
 
@@ -784,21 +784,21 @@ type GameFranchiseResponse struct {
 func (h *EnrichmentHandler) GetGameFranchises(c *gin.Context) {
 	gameID, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid game ID"})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid game ID"})
 		return
 	}
 
 	// Check game exists
 	var game db.Game
 	if err := h.DB.First(&game, gameID).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "game not found"})
+		c.JSON(http.StatusNotFound, ErrorResponse{Error: "game not found"})
 		return
 	}
 
 	// Find franchise associations for this game
 	var franchises []db.GameFranchise
 	if err := h.DB.Where("game_id = ?", gameID).Find(&franchises).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch franchises"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to fetch franchises"})
 		return
 	}
 
@@ -858,14 +858,14 @@ func (h *EnrichmentHandler) GetGameFranchises(c *gin.Context) {
 // POST /api/admin/enrich-metadata?mode=missing|all
 func (h *EnrichmentHandler) TriggerEnrichMetadata(c *gin.Context) {
 	if h.Scraper.IGDBClient == nil || !h.Scraper.IGDBClient.IsConfigured() {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "IGDB credentials not configured"})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "IGDB credentials not configured"})
 		return
 	}
 
 	mode := c.DefaultQuery("mode", "missing")
 
 	if !h.Scraper.TryStartEnrich() {
-		c.JSON(http.StatusConflict, gin.H{"error": "An enrichment or scrape operation is already in progress"})
+		c.JSON(http.StatusConflict, ErrorResponse{Error: "An enrichment or scrape operation is already in progress"})
 		return
 	}
 
@@ -896,7 +896,7 @@ func (h *EnrichmentHandler) TriggerEnrichMetadata(c *gin.Context) {
 		if err != nil {
 			slog.Error("metadata enrichment failed", "error", err)
 			if h.Hub != nil {
-				h.Hub.Broadcast(ws.Event{Type: "enrich_error", Payload: gin.H{"error": "enrichment failed"}})
+				h.Hub.Broadcast(ws.Event{Type: "enrich_error", Payload: ErrorResponse{Error: "enrichment failed"}})
 			}
 			return
 		}

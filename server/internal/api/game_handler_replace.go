@@ -38,7 +38,7 @@ func (h *GameHandler) ReplaceROM(c *gin.Context) {
 	id := c.Param("id")
 	var game db.Game
 	if err := h.DB.Preload("Console").First(&game, id).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "game not found"})
+		c.JSON(http.StatusNotFound, ErrorResponse{Error: "game not found"})
 		return
 	}
 
@@ -46,7 +46,7 @@ func (h *GameHandler) ReplaceROM(c *gin.Context) {
 	c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, maxROMUploadSize)
 	file, header, err := c.Request.FormFile("file")
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "file required in 'file' field"})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "file required in 'file' field"})
 		return
 	}
 	defer file.Close()
@@ -57,7 +57,7 @@ func (h *GameHandler) ReplaceROM(c *gin.Context) {
 	tmpDir := os.TempDir()
 	tmpFile, err := os.CreateTemp(tmpDir, "replace-rom-*"+ext)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create temp file"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to create temp file"})
 		return
 	}
 	tmpPath := tmpFile.Name()
@@ -66,7 +66,7 @@ func (h *GameHandler) ReplaceROM(c *gin.Context) {
 	written, err := io.Copy(tmpFile, file)
 	tmpFile.Close()
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to write uploaded file"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to write uploaded file"})
 		return
 	}
 
@@ -79,7 +79,7 @@ func (h *GameHandler) ReplaceROM(c *gin.Context) {
 	if ext == ".zip" {
 		extractedPath, extractedExt, extractedSize, extractErr := extractFirstROMFromZip(tmpPath, maxROMUploadSize)
 		if extractErr != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": extractErr.Error()})
+			c.JSON(http.StatusBadRequest, ErrorResponse{Error: extractErr.Error()})
 			return
 		}
 		romPath = extractedPath
@@ -90,7 +90,7 @@ func (h *GameHandler) ReplaceROM(c *gin.Context) {
 	} else {
 		// Validate extension is a recognized ROM type
 		if !scanner.RomExtensions[ext] {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "unrecognized ROM file extension: " + ext})
+			c.JSON(http.StatusBadRequest, ErrorResponse{Error: "unrecognized ROM file extension: " + ext})
 			return
 		}
 		romPath = tmpPath
@@ -102,7 +102,7 @@ func (h *GameHandler) ReplaceROM(c *gin.Context) {
 	crc, err := scraper.ComputeFileCRC32(romPath)
 	if err != nil {
 		slog.Warn("failed to compute CRC32 for replacement ROM", "error", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to compute CRC32"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to compute CRC32"})
 		return
 	}
 
@@ -144,7 +144,7 @@ func (h *GameHandler) ReplaceROM(c *gin.Context) {
 	oldAbsPath, err := storage.ResolveGamePath(game.FilePath, h.GameDirs)
 	if err != nil {
 		slog.Warn("could not resolve existing game file path", "filePath", game.FilePath, "error", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to locate existing ROM file"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to locate existing ROM file"})
 		return
 	}
 
@@ -162,7 +162,7 @@ func (h *GameHandler) ReplaceROM(c *gin.Context) {
 
 	// Copy new ROM to target location
 	if err := copyFile(romPath, targetPath); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to write replacement ROM"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to write replacement ROM"})
 		return
 	}
 
@@ -178,7 +178,7 @@ func (h *GameHandler) ReplaceROM(c *gin.Context) {
 		if targetPath != oldAbsPath {
 			os.Remove(targetPath)
 		}
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to update game record"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to update game record"})
 		return
 	}
 

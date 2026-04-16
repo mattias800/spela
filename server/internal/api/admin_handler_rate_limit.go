@@ -14,7 +14,7 @@ func (h *AdminHandler) GetUserRateLimit(c *gin.Context) {
 	id := c.Param("id")
 	var user db.User
 	if err := h.DB.First(&user, id).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "user not found"})
+		c.JSON(http.StatusNotFound, ErrorResponse{Error: "user not found"})
 		return
 	}
 
@@ -58,7 +58,7 @@ func (h *AdminHandler) ResetUserRateLimit(c *gin.Context) {
 	id := c.Param("id")
 	var user db.User
 	if err := h.DB.First(&user, id).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "user not found"})
+		c.JSON(http.StatusNotFound, ErrorResponse{Error: "user not found"})
 		return
 	}
 

@@ -26,32 +26,32 @@ func (h *AdminHandler) SearchIGDB(c *gin.Context) {
 	id := c.Param("id")
 	var game db.Game
 	if err := h.DB.Preload("Console").First(&game, id).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "game not found"})
+		c.JSON(http.StatusNotFound, ErrorResponse{Error: "game not found"})
 		return
 	}
 
 	query := c.Query("q")
 	if query == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "query parameter 'q' is required"})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "query parameter 'q' is required"})
 		return
 	}
 
 	h.tryConfigureIGDB()
 	if h.Scraper.IGDBClient == nil || !h.Scraper.IGDBClient.IsConfigured() {
-		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "IGDB is not configured"})
+		c.JSON(http.StatusServiceUnavailable, ErrorResponse{Error: "IGDB is not configured"})
 		return
 	}
 
 	platformIDs, ok := igdb.AbbreviationToIGDBPlatform[game.Console.Abbreviation]
 	if !ok {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "no IGDB platform mapping for this console"})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "no IGDB platform mapping for this console"})
 		return
 	}
 
 	games, err := h.Scraper.IGDBClient.SearchGame(query, platformIDs)
 	if err != nil {
 		slog.Warn("IGDB search failed", "query", query, "error", err)
-		c.JSON(http.StatusBadGateway, gin.H{"error": "IGDB search failed"})
+		c.JSON(http.StatusBadGateway, ErrorResponse{Error: "IGDB search failed"})
 		return
 	}
 
@@ -86,7 +86,7 @@ func (h *AdminHandler) ApplyIGDBMatch(c *gin.Context) {
 	id := c.Param("id")
 	var game db.Game
 	if err := h.DB.Preload("Console").First(&game, id).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "game not found"})
+		c.JSON(http.StatusNotFound, ErrorResponse{Error: "game not found"})
 		return
 	}
 
@@ -95,7 +95,7 @@ func (h *AdminHandler) ApplyIGDBMatch(c *gin.Context) {
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
 		slog.Debug("request binding failed", "error", err)
-		c.JSON(http.StatusBadRequest, gin.H{"error": "igdbId is required and must be a positive integer"})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "igdbId is required and must be a positive integer"})
 		return
 	}
 
@@ -104,7 +104,7 @@ func (h *AdminHandler) ApplyIGDBMatch(c *gin.Context) {
 
 	if err := h.Scraper.ScrapeGameWithIGDBMatch(&game, req.IGDBID); err != nil {
 		slog.Warn("IGDB match failed", "game", game.Title, "igdbId", req.IGDBID, "error", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to apply IGDB match"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to apply IGDB match"})
 		return
 	}
 

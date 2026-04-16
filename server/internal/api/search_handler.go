@@ -97,7 +97,7 @@ func (h *SearchHandler) Search(c *gin.Context) {
 	query := strings.TrimSpace(c.Query("q"))
 
 	if len(query) < 2 {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "query must be at least 2 characters"})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "query must be at least 2 characters"})
 		return
 	}
 

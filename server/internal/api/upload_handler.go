@@ -194,20 +194,20 @@ func (h *UploadHandler) CheckWritable(c *gin.Context) {
 // POST /api/admin/uploads
 func (h *UploadHandler) UploadROMs(c *gin.Context) {
 	if err := os.MkdirAll(h.StagingDir, 0700); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create staging directory"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to create staging directory"})
 		return
 	}
 
 	c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, maxROMUploadSize)
 	form, err := c.MultipartForm()
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "multipart form required"})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "multipart form required"})
 		return
 	}
 
 	files := form.File["files"]
 	if len(files) == 0 {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "at least one file required"})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "at least one file required"})
 		return
 	}
 
@@ -497,7 +497,7 @@ func (h *UploadHandler) extractAndStageZip(zipPath string, originalZipName strin
 func (h *UploadHandler) ListUploads(c *gin.Context) {
 	var uploads []db.StagedUpload
 	if err := h.DB.Order("created_at desc").Find(&uploads).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch uploads"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to fetch uploads"})
 		return
 	}
 
@@ -514,7 +514,7 @@ func (h *UploadHandler) SetConsole(c *gin.Context) {
 	id := c.Param("id")
 	var staged db.StagedUpload
 	if err := h.DB.First(&staged, id).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "upload not found"})
+		c.JSON(http.StatusNotFound, ErrorResponse{Error: "upload not found"})
 		return
 	}
 
@@ -522,20 +522,20 @@ func (h *UploadHandler) SetConsole(c *gin.Context) {
 		ConsoleID string `json:"consoleId" binding:"required"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "consoleId required"})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "consoleId required"})
 		return
 	}
 
 	var console db.Console
 	if err := h.DB.Where("LOWER(abbreviation) = LOWER(?)", req.ConsoleID).First(&console).Error; err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "unknown console"})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "unknown console"})
 		return
 	}
 
 	staged.ConsoleID = &console.ID
 	staged.Status = "pending_scrape"
 	if err := h.DB.Save(&staged).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to update upload"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to update upload"})
 		return
 	}
 
@@ -548,12 +548,12 @@ func (h *UploadHandler) ScrapeUpload(c *gin.Context) {
 	id := c.Param("id")
 	var staged db.StagedUpload
 	if err := h.DB.First(&staged, id).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "upload not found"})
+		c.JSON(http.StatusNotFound, ErrorResponse{Error: "upload not found"})
 		return
 	}
 
 	if staged.ConsoleID == nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "console must be set before scraping"})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "console must be set before scraping"})
 		return
 	}
 
@@ -567,7 +567,7 @@ func (h *UploadHandler) ScrapeUpload(c *gin.Context) {
 func (h *UploadHandler) ScrapeAllUploads(c *gin.Context) {
 	var uploads []db.StagedUpload
 	if err := h.DB.Where("status = ?", "pending_scrape").Find(&uploads).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch uploads"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to fetch uploads"})
 		return
 	}
 
@@ -747,19 +747,19 @@ func (h *UploadHandler) AcceptUpload(c *gin.Context) {
 	id := c.Param("id")
 	var staged db.StagedUpload
 	if err := h.DB.First(&staged, id).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "upload not found"})
+		c.JSON(http.StatusNotFound, ErrorResponse{Error: "upload not found"})
 		return
 	}
 
 	if staged.ConsoleID == nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "console must be set before accepting"})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "console must be set before accepting"})
 		return
 	}
 
 	game, err := h.acceptStaged(&staged)
 	if err != nil {
 		slog.Warn("failed to accept upload", "id", id, "error", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to accept upload"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to accept upload"})
 		return
 	}
 
@@ -838,7 +838,7 @@ func (h *UploadHandler) RejectUpload(c *gin.Context) {
 	id := c.Param("id")
 	var staged db.StagedUpload
 	if err := h.DB.First(&staged, id).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "upload not found"})
+		c.JSON(http.StatusNotFound, ErrorResponse{Error: "upload not found"})
 		return
 	}
 
@@ -853,7 +853,7 @@ func (h *UploadHandler) RejectUpload(c *gin.Context) {
 func (h *UploadHandler) AcceptAllUploads(c *gin.Context) {
 	var uploads []db.StagedUpload
 	if err := h.DB.Where("status IN ? AND console_id IS NOT NULL", []string{"ready", "pending_scrape"}).Find(&uploads).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch uploads"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to fetch uploads"})
 		return
 	}
 
@@ -874,7 +874,7 @@ func (h *UploadHandler) AcceptAllUploads(c *gin.Context) {
 func (h *UploadHandler) RejectAllUploads(c *gin.Context) {
 	var uploads []db.StagedUpload
 	if err := h.DB.Find(&uploads).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch uploads"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to fetch uploads"})
 		return
 	}
 
@@ -891,7 +891,7 @@ func (h *UploadHandler) RejectAllUploads(c *gin.Context) {
 func (h *UploadHandler) ClearStaging(c *gin.Context) {
 	var uploads []db.StagedUpload
 	if err := h.DB.Find(&uploads).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch uploads"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to fetch uploads"})
 		return
 	}
 

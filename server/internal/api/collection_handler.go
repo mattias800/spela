@@ -26,7 +26,7 @@ func (h *CollectionHandler) CreateCollection(c *gin.Context) {
 		IsPublic    bool   `json:"isPublic"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request: name is required"})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid request: name is required"})
 		return
 	}
 
@@ -37,7 +37,7 @@ func (h *CollectionHandler) CreateCollection(c *gin.Context) {
 		IsPublic:    req.IsPublic,
 	}
 	if err := h.DB.Create(&collection).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create collection"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to create collection"})
 		return
 	}
 
@@ -85,7 +85,7 @@ func (h *CollectionHandler) ListMyCollections(c *gin.Context) {
 		Offset((page - 1) * pageSize).
 		Limit(pageSize).
 		Find(&collections).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch collections"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to fetch collections"})
 		return
 	}
 
@@ -139,7 +139,7 @@ func (h *CollectionHandler) ListPublicCollections(c *gin.Context) {
 		Offset((page - 1) * pageSize).
 		Limit(pageSize).
 		Find(&collections).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch public collections"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to fetch public collections"})
 		return
 	}
 
@@ -163,18 +163,18 @@ func (h *CollectionHandler) GetCollection(c *gin.Context) {
 
 	cid, err := strconv.ParseUint(id, 10, 64)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid collection ID"})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid collection ID"})
 		return
 	}
 
 	// Check ownership/visibility before loading expensive relationships
 	var collection db.GameCollection
 	if err := h.DB.First(&collection, cid).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "collection not found"})
+		c.JSON(http.StatusNotFound, ErrorResponse{Error: "collection not found"})
 		return
 	}
 	if collection.UserID != uid && !collection.IsPublic {
-		c.JSON(http.StatusNotFound, gin.H{"error": "collection not found"})
+		c.JSON(http.StatusNotFound, ErrorResponse{Error: "collection not found"})
 		return
 	}
 
@@ -205,18 +205,18 @@ func (h *CollectionHandler) UpdateCollection(c *gin.Context) {
 
 	cid, err := strconv.ParseUint(id, 10, 64)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid collection ID"})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid collection ID"})
 		return
 	}
 
 	var collection db.GameCollection
 	if err := h.DB.Preload("User").Preload("Items").First(&collection, cid).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "collection not found"})
+		c.JSON(http.StatusNotFound, ErrorResponse{Error: "collection not found"})
 		return
 	}
 
 	if collection.UserID != uid {
-		c.JSON(http.StatusForbidden, gin.H{"error": "not authorized"})
+		c.JSON(http.StatusForbidden, ErrorResponse{Error: "not authorized"})
 		return
 	}
 
@@ -226,16 +226,16 @@ func (h *CollectionHandler) UpdateCollection(c *gin.Context) {
 		IsPublic    *bool   `json:"isPublic"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request"})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid request"})
 		return
 	}
 
 	if req.Name != nil && len(*req.Name) > 255 {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "name must be 255 characters or fewer"})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "name must be 255 characters or fewer"})
 		return
 	}
 	if req.Description != nil && len(*req.Description) > 2048 {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "description must be 2048 characters or fewer"})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "description must be 2048 characters or fewer"})
 		return
 	}
 
@@ -250,7 +250,7 @@ func (h *CollectionHandler) UpdateCollection(c *gin.Context) {
 	}
 
 	if err := h.DB.Save(&collection).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to update collection"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to update collection"})
 		return
 	}
 
@@ -264,18 +264,18 @@ func (h *CollectionHandler) DeleteCollection(c *gin.Context) {
 
 	cid, err := strconv.ParseUint(id, 10, 64)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid collection ID"})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid collection ID"})
 		return
 	}
 
 	var collection db.GameCollection
 	if err := h.DB.First(&collection, cid).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "collection not found"})
+		c.JSON(http.StatusNotFound, ErrorResponse{Error: "collection not found"})
 		return
 	}
 
 	if collection.UserID != uid {
-		c.JSON(http.StatusForbidden, gin.H{"error": "not authorized"})
+		c.JSON(http.StatusForbidden, ErrorResponse{Error: "not authorized"})
 		return
 	}
 
@@ -293,18 +293,18 @@ func (h *CollectionHandler) AddGame(c *gin.Context) {
 
 	cid, err := strconv.ParseUint(id, 10, 64)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid collection ID"})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid collection ID"})
 		return
 	}
 
 	var collection db.GameCollection
 	if err := h.DB.First(&collection, cid).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "collection not found"})
+		c.JSON(http.StatusNotFound, ErrorResponse{Error: "collection not found"})
 		return
 	}
 
 	if collection.UserID != uid {
-		c.JSON(http.StatusForbidden, gin.H{"error": "not authorized"})
+		c.JSON(http.StatusForbidden, ErrorResponse{Error: "not authorized"})
 		return
 	}
 
@@ -312,21 +312,21 @@ func (h *CollectionHandler) AddGame(c *gin.Context) {
 		GameID uint `json:"gameId" binding:"required"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request: gameId is required"})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid request: gameId is required"})
 		return
 	}
 
 	// Verify game exists
 	var game db.Game
 	if err := h.DB.First(&game, req.GameID).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "game not found"})
+		c.JSON(http.StatusNotFound, ErrorResponse{Error: "game not found"})
 		return
 	}
 
 	// Check for duplicate
 	var existing db.CollectionItem
 	if err := h.DB.Where("collection_id = ? AND game_id = ?", cid, req.GameID).First(&existing).Error; err == nil {
-		c.JSON(http.StatusConflict, gin.H{"error": "game already in collection"})
+		c.JSON(http.StatusConflict, ErrorResponse{Error: "game already in collection"})
 		return
 	}
 
@@ -343,7 +343,7 @@ func (h *CollectionHandler) AddGame(c *gin.Context) {
 		Position:     maxPos.MaxPos + 1,
 	}
 	if err := h.DB.Create(&item).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to add game to collection"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to add game to collection"})
 		return
 	}
 
@@ -361,30 +361,30 @@ func (h *CollectionHandler) RemoveGame(c *gin.Context) {
 
 	cid, err := strconv.ParseUint(id, 10, 64)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid collection ID"})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid collection ID"})
 		return
 	}
 
 	gameID, err := strconv.ParseUint(gameIDStr, 10, 64)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid game ID"})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid game ID"})
 		return
 	}
 
 	var collection db.GameCollection
 	if err := h.DB.First(&collection, cid).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "collection not found"})
+		c.JSON(http.StatusNotFound, ErrorResponse{Error: "collection not found"})
 		return
 	}
 
 	if collection.UserID != uid {
-		c.JSON(http.StatusForbidden, gin.H{"error": "not authorized"})
+		c.JSON(http.StatusForbidden, ErrorResponse{Error: "not authorized"})
 		return
 	}
 
 	result := h.DB.Where("collection_id = ? AND game_id = ?", cid, gameID).Delete(&db.CollectionItem{})
 	if result.RowsAffected == 0 {
-		c.JSON(http.StatusNotFound, gin.H{"error": "game not in collection"})
+		c.JSON(http.StatusNotFound, ErrorResponse{Error: "game not in collection"})
 		return
 	}
 

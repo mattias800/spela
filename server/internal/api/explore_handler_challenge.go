@@ -120,7 +120,7 @@ func (h *ExploreHandler) GetEasyToComplete(c *gin.Context) {
 		Limit(20).
 		Scan(&rows).Error; err != nil {
 		slog.Error("failed to fetch easy-to-complete games", "error", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch easy-to-complete games"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to fetch easy-to-complete games"})
 		return
 	}
 
@@ -138,7 +138,7 @@ func (h *ExploreHandler) GetEasyToComplete(c *gin.Context) {
 	var games []db.Game
 	if err := h.DB.Preload("Console").Where("id IN ?", gameIDs).Find(&games).Error; err != nil {
 		slog.Error("failed to load easy-to-complete games", "error", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to load games"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to load games"})
 		return
 	}
 
@@ -244,7 +244,7 @@ func (h *ExploreHandler) GetHardestGames(c *gin.Context) {
 		Limit(20).
 		Scan(&rows).Error; err != nil {
 		slog.Error("failed to fetch hardest games", "error", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch hardest games"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to fetch hardest games"})
 		return
 	}
 
@@ -266,7 +266,7 @@ func (h *ExploreHandler) GetHardestGames(c *gin.Context) {
 	var games []db.Game
 	if err := h.DB.Preload("Console").Where("id IN ?", gameIDs).Find(&games).Error; err != nil {
 		slog.Error("failed to load hardest games", "error", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to load games"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to load games"})
 		return
 	}
 
@@ -346,7 +346,7 @@ func (h *ExploreHandler) GetAlmostDone(c *gin.Context) {
 		Group("game_achievement_caches.game_id, game_achievement_caches.ra_game_id, game_achievement_caches.total_count").
 		Scan(&rows).Error; err != nil {
 		slog.Error("failed to fetch almost-done games", "error", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch almost-done games"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to fetch almost-done games"})
 		return
 	}
 
@@ -383,7 +383,7 @@ func (h *ExploreHandler) GetAlmostDone(c *gin.Context) {
 	var games []db.Game
 	if err := h.DB.Preload("Console").Where("id IN ?", gameIDs).Find(&games).Error; err != nil {
 		slog.Error("failed to load almost-done games", "error", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to load games"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to load games"})
 		return
 	}
 
@@ -426,7 +426,7 @@ func (h *ExploreHandler) GetFreshChallenges(c *gin.Context) {
 		Where("user_id = ? AND deleted_at IS NULL", userID).
 		Scan(&startedRAGameIDs).Error; err != nil {
 		slog.Error("failed to fetch started RA games", "error", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch fresh challenges"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to fetch fresh challenges"})
 		return
 	}
 
@@ -450,7 +450,7 @@ func (h *ExploreHandler) GetFreshChallenges(c *gin.Context) {
 		Limit(20).
 		Scan(&rows).Error; err != nil {
 		slog.Error("failed to fetch fresh challenges", "error", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch fresh challenges"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to fetch fresh challenges"})
 		return
 	}
 
@@ -468,7 +468,7 @@ func (h *ExploreHandler) GetFreshChallenges(c *gin.Context) {
 	var games []db.Game
 	if err := h.DB.Preload("Console").Where("id IN ?", gameIDs).Find(&games).Error; err != nil {
 		slog.Error("failed to load fresh challenge games", "error", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to load games"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to load games"})
 		return
 	}
 
@@ -512,7 +512,7 @@ func (h *ExploreHandler) GetActiveChallenges(c *gin.Context) {
 		Limit(10).
 		Find(&challenges).Error; err != nil {
 		slog.Error("failed to fetch active challenges", "error", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch active challenges"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to fetch active challenges"})
 		return
 	}
 

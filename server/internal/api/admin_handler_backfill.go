@@ -28,7 +28,7 @@ type BackfillImagesResponse struct {
 // POST /api/admin/backfill-images
 func (h *AdminHandler) BackfillImages(c *gin.Context) {
 	if h.Scraper == nil {
-		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "scraper not configured"})
+		c.JSON(http.StatusServiceUnavailable, ErrorResponse{Error: "scraper not configured"})
 		return
 	}
 

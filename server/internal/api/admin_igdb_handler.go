@@ -21,11 +21,11 @@ func (h *IGDBHandler) TestIGDB(c *gin.Context) {
 		ClientSecret string `json:"clientSecret"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "clientId and clientSecret are required"})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "clientId and clientSecret are required"})
 		return
 	}
 	if req.ClientID == "" || req.ClientSecret == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "clientId and clientSecret are required"})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "clientId and clientSecret are required"})
 		return
 	}
 

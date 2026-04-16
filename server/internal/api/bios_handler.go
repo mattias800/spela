@@ -323,7 +323,7 @@ func (h *BiosHandler) GetBiosFile(c *gin.Context) {
 			}
 		}
 		if _, err := os.Stat(path); os.IsNotExist(err) {
-			c.JSON(http.StatusNotFound, gin.H{"error": "bios file not found"})
+			c.JSON(http.StatusNotFound, ErrorResponse{Error: "bios file not found"})
 			return
 		}
 	}
@@ -331,18 +331,18 @@ func (h *BiosHandler) GetBiosFile(c *gin.Context) {
 	// Validate the resolved path stays within BiosDir
 	absPath, err := filepath.Abs(path)
 	if err != nil {
-		c.JSON(http.StatusForbidden, gin.H{"error": "access denied"})
+		c.JSON(http.StatusForbidden, ErrorResponse{Error: "access denied"})
 		return
 	}
 	absBiosDir, err := filepath.Abs(h.Storage.BiosDir)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "internal error"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "internal error"})
 		return
 	}
 	if _, statErr := os.Stat(absPath); statErr == nil {
 		realPath, evalErr := filepath.EvalSymlinks(absPath)
 		if evalErr != nil {
-			c.JSON(http.StatusForbidden, gin.H{"error": "access denied"})
+			c.JSON(http.StatusForbidden, ErrorResponse{Error: "access denied"})
 			return
 		}
 		absPath = realPath
@@ -351,7 +351,7 @@ func (h *BiosHandler) GetBiosFile(c *gin.Context) {
 		absBiosDir = realDir
 	}
 	if !strings.HasPrefix(absPath, absBiosDir+string(filepath.Separator)) {
-		c.JSON(http.StatusForbidden, gin.H{"error": "access denied"})
+		c.JSON(http.StatusForbidden, ErrorResponse{Error: "access denied"})
 		return
 	}
 
@@ -365,16 +365,16 @@ func (h *BiosHandler) UploadBiosFile(c *gin.Context) {
 	file, header, err := c.Request.FormFile("file")
 	if err != nil {
 		if err.Error() == "http: request body too large" {
-			c.JSON(http.StatusRequestEntityTooLarge, gin.H{"error": "file too large, maximum 16 MB"})
+			c.JSON(http.StatusRequestEntityTooLarge, ErrorResponse{Error: "file too large, maximum 16 MB"})
 			return
 		}
-		c.JSON(http.StatusBadRequest, gin.H{"error": "file upload required"})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "file upload required"})
 		return
 	}
 	defer file.Close()
 
 	if header.Size > maxBiosUploadSize {
-		c.JSON(http.StatusRequestEntityTooLarge, gin.H{"error": "file too large, maximum 16 MB"})
+		c.JSON(http.StatusRequestEntityTooLarge, ErrorResponse{Error: "file too large, maximum 16 MB"})
 		return
 	}
 
@@ -385,7 +385,7 @@ func (h *BiosHandler) UploadBiosFile(c *gin.Context) {
 	// Write the file
 	dst, err := os.Create(safePath)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to save file"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to save file"})
 		return
 	}
 	defer dst.Close()
@@ -393,7 +393,7 @@ func (h *BiosHandler) UploadBiosFile(c *gin.Context) {
 	written, err := io.Copy(dst, file)
 	if err != nil {
 		os.Remove(safePath)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to save file"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to save file"})
 		return
 	}
 
@@ -473,7 +473,7 @@ func (h *BiosHandler) DeleteBiosFile(c *gin.Context) {
 			}
 		}
 		if _, err := os.Stat(path); os.IsNotExist(err) {
-			c.JSON(http.StatusNotFound, gin.H{"error": "bios file not found"})
+			c.JSON(http.StatusNotFound, ErrorResponse{Error: "bios file not found"})
 			return
 		}
 	}
@@ -481,12 +481,12 @@ func (h *BiosHandler) DeleteBiosFile(c *gin.Context) {
 	// Validate the resolved path stays within BiosDir (same check as GetBiosFile)
 	absPath, err := filepath.Abs(path)
 	if err != nil {
-		c.JSON(http.StatusForbidden, gin.H{"error": "access denied"})
+		c.JSON(http.StatusForbidden, ErrorResponse{Error: "access denied"})
 		return
 	}
 	absBiosDir, err := filepath.Abs(h.Storage.BiosDir)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "internal error"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "internal error"})
 		return
 	}
 	if realPath, e := filepath.EvalSymlinks(absPath); e == nil {
@@ -496,12 +496,12 @@ func (h *BiosHandler) DeleteBiosFile(c *gin.Context) {
 		absBiosDir = realDir
 	}
 	if !strings.HasPrefix(absPath, absBiosDir+string(filepath.Separator)) {
-		c.JSON(http.StatusForbidden, gin.H{"error": "access denied"})
+		c.JSON(http.StatusForbidden, ErrorResponse{Error: "access denied"})
 		return
 	}
 
 	if err := os.Remove(absPath); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to delete file"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to delete file"})
 		return
 	}
 
@@ -514,7 +514,7 @@ func (h *BiosHandler) TriggerDownload(c *gin.Context) {
 	h.downloadMu.Lock()
 	if h.downloading {
 		h.downloadMu.Unlock()
-		c.JSON(http.StatusConflict, gin.H{"error": "A BIOS download is already in progress"})
+		c.JSON(http.StatusConflict, ErrorResponse{Error: "A BIOS download is already in progress"})
 		return
 	}
 	h.downloading = true

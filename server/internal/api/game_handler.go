@@ -309,7 +309,7 @@ func (h *GameHandler) ListGames(c *gin.Context) {
 
 	offset := (page - 1) * perPage
 	if err := query.Offset(offset).Limit(perPage).Find(&games).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch games"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to fetch games"})
 		return
 	}
 
@@ -326,7 +326,7 @@ func (h *GameHandler) GetGame(c *gin.Context) {
 	id := c.Param("id")
 	var game db.Game
 	if err := h.DB.Preload("Console").Preload("Discs").Preload("Screenshots").Preload("ReleaseDates").Preload("Videos").Preload("LanguageSupports").Preload("AgeRatings").First(&game, id).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "game not found"})
+		c.JSON(http.StatusNotFound, ErrorResponse{Error: "game not found"})
 		return
 	}
 
@@ -398,7 +398,7 @@ func (h *GameHandler) DownloadGame(c *gin.Context) {
 	id := c.Param("id")
 	var game db.Game
 	if err := h.DB.First(&game, id).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "game not found"})
+		c.JSON(http.StatusNotFound, ErrorResponse{Error: "game not found"})
 		return
 	}
 
@@ -413,13 +413,13 @@ func (h *GameHandler) DownloadGame(c *gin.Context) {
 				"expectedPath": game.FilePath,
 			},
 		})
-		c.JSON(http.StatusNotFound, gin.H{"error": "game file not found"})
+		c.JSON(http.StatusNotFound, ErrorResponse{Error: "game file not found"})
 		return
 	}
 
 	// Security: validate the file path is within allowed directories
 	if !storage.ValidateROMPath(absPath, h.GameDirs) {
-		c.JSON(http.StatusForbidden, gin.H{"error": "file access denied"})
+		c.JSON(http.StatusForbidden, ErrorResponse{Error: "file access denied"})
 		return
 	}
 
@@ -455,7 +455,7 @@ func (h *GameHandler) DownloadGame(c *gin.Context) {
 	if strings.HasSuffix(lower, ".cue") || strings.HasSuffix(lower, ".gdi") {
 		companions, _, err := scanner.DiscCompanionFiles(absPath)
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to read disc files"})
+			c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to read disc files"})
 			return
 		}
 
@@ -490,7 +490,7 @@ func (h *GameHandler) UpdateMetadata(c *gin.Context) {
 	id := c.Param("id")
 	var game db.Game
 	if err := h.DB.First(&game, id).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "game not found"})
+		c.JSON(http.StatusNotFound, ErrorResponse{Error: "game not found"})
 		return
 	}
 
@@ -510,7 +510,7 @@ func (h *GameHandler) UpdateMetadata(c *gin.Context) {
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
 		slog.Debug("request binding failed", "error", err)
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body"})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid request body"})
 		return
 	}
 
@@ -552,7 +552,7 @@ func (h *GameHandler) UpdateMetadata(c *gin.Context) {
 	}
 
 	if err := h.DB.Save(&game).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to update game"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to update game"})
 		return
 	}
 
@@ -588,14 +588,14 @@ func (h *GameHandler) ScanGames(c *gin.Context) {
 	if consoleAbbrev != "" {
 		var con db.Console
 		if err := h.DB.Where("LOWER(abbreviation) = LOWER(?)", consoleAbbrev).First(&con).Error; err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "unknown console"})
+			c.JSON(http.StatusBadRequest, ErrorResponse{Error: "unknown console"})
 			return
 		}
 		consoleAbbrev = con.Abbreviation // normalize casing
 	}
 
 	if !h.Scanner.TryStartScan() {
-		c.JSON(http.StatusConflict, gin.H{"error": "A scan is already in progress"})
+		c.JSON(http.StatusConflict, ErrorResponse{Error: "A scan is already in progress"})
 		return
 	}
 
@@ -615,7 +615,7 @@ func (h *GameHandler) ScanGames(c *gin.Context) {
 		}, scanArgs...)
 		if err != nil {
 			slog.Error("game library scan failed", "error", err)
-			h.Hub.Broadcast(ws.Event{Type: "scan_error", Payload: gin.H{"error": "library scan failed"}})
+			h.Hub.Broadcast(ws.Event{Type: "scan_error", Payload: ErrorResponse{Error: "library scan failed"}})
 			return
 		}
 
@@ -709,7 +709,7 @@ func (h *GameHandler) ScrapeIfNeeded(c *gin.Context) {
 	id := c.Param("id")
 	var game db.Game
 	if err := h.DB.First(&game, id).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "game not found"})
+		c.JSON(http.StatusNotFound, ErrorResponse{Error: "game not found"})
 		return
 	}
 
@@ -740,7 +740,7 @@ func (h *GameHandler) ScrapeIfNeeded(c *gin.Context) {
 
 	if err := h.Scraper.Queue.EnqueueGame(game.ID, jobID, 100); err != nil {
 		slog.Warn("auto-scrape: failed to enqueue", "game", game.Title, "error", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to enqueue"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to enqueue"})
 		return
 	}
 
@@ -754,20 +754,20 @@ func (h *GameHandler) UpdatePlayTime(c *gin.Context) {
 	userID, _ := c.Get("userId")
 	uid, ok := userID.(uint)
 	if !ok {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		c.JSON(http.StatusUnauthorized, ErrorResponse{Error: "unauthorized"})
 		return
 	}
 
 	gid, err := strconv.ParseUint(gameID, 10, 64)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid game ID"})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid game ID"})
 		return
 	}
 
 	// Verify game exists
 	var game db.Game
 	if err := h.DB.First(&game, gid).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "game not found"})
+		c.JSON(http.StatusNotFound, ErrorResponse{Error: "game not found"})
 		return
 	}
 
@@ -778,7 +778,7 @@ func (h *GameHandler) UpdatePlayTime(c *gin.Context) {
 		Seconds int64 `json:"seconds" binding:"min=0,max=86400"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request: seconds must be between 0 and 86400"})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid request: seconds must be between 0 and 86400"})
 		return
 	}
 
@@ -792,7 +792,7 @@ func (h *GameHandler) UpdatePlayTime(c *gin.Context) {
 			PlayTime:   req.Seconds,
 		}
 		if err := h.DB.Create(&ph).Error; err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create play history"})
+			c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to create play history"})
 			return
 		}
 	} else {
@@ -803,7 +803,7 @@ func (h *GameHandler) UpdatePlayTime(c *gin.Context) {
 		ph.PlayTime = newTotal
 		ph.LastPlayed = time.Now()
 		if err := h.DB.Save(&ph).Error; err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to update play time"})
+			c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to update play time"})
 			return
 		}
 	}
@@ -833,7 +833,7 @@ func (h *GameHandler) StopPlaying(c *gin.Context) {
 	userID, _ := c.Get("userId")
 	uid, ok := userID.(uint)
 	if !ok {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		c.JSON(http.StatusUnauthorized, ErrorResponse{Error: "unauthorized"})
 		return
 	}
 
@@ -852,33 +852,33 @@ func (h *GameHandler) DownloadDisc(c *gin.Context) {
 	discNumberStr := c.Param("discNumber")
 	discNumber, err := strconv.Atoi(discNumberStr)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid disc number"})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid disc number"})
 		return
 	}
 
 	var disc db.GameDisc
 	if err := h.DB.Where("game_id = ? AND disc_number = ?", gameID, discNumber).First(&disc).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "disc not found"})
+		c.JSON(http.StatusNotFound, ErrorResponse{Error: "disc not found"})
 		return
 	}
 
 	// Resolve relative path to absolute for filesystem access
 	absDiscPath, err := storage.ResolveGamePath(disc.FilePath, h.GameDirs)
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "disc file not found"})
+		c.JSON(http.StatusNotFound, ErrorResponse{Error: "disc file not found"})
 		return
 	}
 
 	// Security: validate the disc file path is within allowed directories
 	if !storage.ValidateROMPath(absDiscPath, h.GameDirs) {
-		c.JSON(http.StatusForbidden, gin.H{"error": "file access denied"})
+		c.JSON(http.StatusForbidden, ErrorResponse{Error: "file access denied"})
 		return
 	}
 
 	// Get companion files for this disc
 	companions, _, err := scanner.DiscCompanionFiles(absDiscPath)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to read disc files"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to read disc files"})
 		return
 	}
 
@@ -991,7 +991,7 @@ func (h *GameHandler) UpdateVerificationTag(c *gin.Context) {
 	id := c.Param("id")
 	var game db.Game
 	if err := h.DB.First(&game, id).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "game not found"})
+		c.JSON(http.StatusNotFound, ErrorResponse{Error: "game not found"})
 		return
 	}
 
@@ -999,13 +999,13 @@ func (h *GameHandler) UpdateVerificationTag(c *gin.Context) {
 		Tag string `json:"tag"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request"})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid request"})
 		return
 	}
 
 	game.VerificationTag = req.Tag
 	if err := h.DB.Save(&game).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to update verification tag"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to update verification tag"})
 		return
 	}
 
@@ -1017,7 +1017,7 @@ func (h *GameHandler) GetRecommendedCore(c *gin.Context) {
 	id := c.Param("id")
 	var game db.Game
 	if err := h.DB.Preload("Console").First(&game, id).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "game not found"})
+		c.JSON(http.StatusNotFound, ErrorResponse{Error: "game not found"})
 		return
 	}
 
@@ -1057,7 +1057,7 @@ func (h *GameHandler) GetGameStats(c *gin.Context) {
 	id := c.Param("id")
 	var game db.Game
 	if err := h.DB.First(&game, id).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "game not found"})
+		c.JSON(http.StatusNotFound, ErrorResponse{Error: "game not found"})
 		return
 	}
 
@@ -1070,7 +1070,7 @@ func (h *GameHandler) GetGameStats(c *gin.Context) {
 		Where("game_id = ?", game.ID).
 		Select("COUNT(DISTINCT user_id) as total_players, COALESCE(SUM(play_time), 0) as total_play_time").
 		Scan(&stats).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch game stats"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to fetch game stats"})
 		return
 	}
 
@@ -1094,7 +1094,7 @@ func (h *GameHandler) GetGameStats(c *gin.Context) {
 		Order("play_histories.play_time DESC").
 		Limit(10).
 		Scan(&rows).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch top players"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to fetch top players"})
 		return
 	}
 
@@ -1121,12 +1121,12 @@ func (h *GameHandler) GetGameCheats(c *gin.Context) {
 	id := c.Param("id")
 	var game db.Game
 	if err := h.DB.First(&game, id).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "game not found"})
+		c.JSON(http.StatusNotFound, ErrorResponse{Error: "game not found"})
 		return
 	}
 	var cheats []db.CheatCode
 	if err := h.DB.Where("game_id = ?", game.ID).Order("cheat_index ASC").Find(&cheats).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch cheats"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to fetch cheats"})
 		return
 	}
 	type CheatResponse struct {

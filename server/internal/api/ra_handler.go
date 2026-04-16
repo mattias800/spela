@@ -44,14 +44,14 @@ func (h *RAHandler) LinkAccount(c *gin.Context) {
 		Password string `json:"password" binding:"required"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "username and password are required"})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "username and password are required"})
 		return
 	}
 
 	token, err := h.RAClient.LoginWithPassword(req.Username, req.Password)
 	if err != nil {
 		slog.Warn("RA login failed", "user_id", uid, "error", err)
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "RetroAchievements login failed: invalid credentials"})
+		c.JSON(http.StatusUnauthorized, ErrorResponse{Error: "RetroAchievements login failed: invalid credentials"})
 		return
 	}
 
@@ -60,9 +60,9 @@ func (h *RAHandler) LinkAccount(c *gin.Context) {
 	if err != nil {
 		slog.Error("failed to encrypt RA token", "error", err)
 		if strings.Contains(err.Error(), "invalid key size") {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "encryption key misconfigured: SPELA_ENCRYPTION_KEY must be exactly 16, 24, or 32 bytes"})
+			c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "encryption key misconfigured: SPELA_ENCRYPTION_KEY must be exactly 16, 24, or 32 bytes"})
 		} else {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to store RA credentials"})
+			c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to store RA credentials"})
 		}
 		return
 	}
@@ -74,7 +74,7 @@ func (h *RAHandler) LinkAccount(c *gin.Context) {
 		cred.RAUsername = req.Username
 		cred.RAToken = encryptedToken
 		if err := h.DB.Save(&cred).Error; err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to update RA credentials"})
+			c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to update RA credentials"})
 			return
 		}
 	} else {
@@ -84,7 +84,7 @@ func (h *RAHandler) LinkAccount(c *gin.Context) {
 			RAToken:    encryptedToken,
 		}
 		if err := h.DB.Create(&cred).Error; err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to store RA credentials"})
+			c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to store RA credentials"})
 			return
 		}
 	}
@@ -98,7 +98,7 @@ func (h *RAHandler) UnlinkAccount(c *gin.Context) {
 
 	result := h.DB.Where("user_id = ?", uid).Delete(&db.RetroAchievementCredential{})
 	if result.RowsAffected == 0 {
-		c.JSON(http.StatusNotFound, gin.H{"error": "no RA account linked"})
+		c.JSON(http.StatusNotFound, ErrorResponse{Error: "no RA account linked"})
 		return
 	}
 
@@ -131,13 +131,13 @@ func (h *RAHandler) UpdateSettings(c *gin.Context) {
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
 		slog.Debug("request binding failed", "error", err)
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body"})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid request body"})
 		return
 	}
 
 	var cred db.RetroAchievementCredential
 	if err := h.DB.Where("user_id = ?", uid).First(&cred).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "no RA account linked"})
+		c.JSON(http.StatusNotFound, ErrorResponse{Error: "no RA account linked"})
 		return
 	}
 
@@ -146,7 +146,7 @@ func (h *RAHandler) UpdateSettings(c *gin.Context) {
 	}
 
 	if err := h.DB.Save(&cred).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to update RA settings"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to update RA settings"})
 		return
 	}
 
@@ -163,7 +163,7 @@ func (h *RAHandler) GetToken(c *gin.Context) {
 
 	var cred db.RetroAchievementCredential
 	if err := h.DB.Where("user_id = ?", uid).First(&cred).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "no RA account linked"})
+		c.JSON(http.StatusNotFound, ErrorResponse{Error: "no RA account linked"})
 		return
 	}
 
@@ -171,7 +171,7 @@ func (h *RAHandler) GetToken(c *gin.Context) {
 	token, err := auth.Decrypt(cred.RAToken, h.EncryptionKey)
 	if err != nil {
 		slog.Error("failed to decrypt RA token", "user_id", uid, "error", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to retrieve RA token"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to retrieve RA token"})
 		return
 	}
 
@@ -200,12 +200,12 @@ func (h *RAHandler) GetGameAchievements(c *gin.Context) {
 	// Look up the game
 	var game db.Game
 	if err := h.DB.First(&game, "id = ?", gameID).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "game not found"})
+		c.JSON(http.StatusNotFound, ErrorResponse{Error: "game not found"})
 		return
 	}
 
 	if err := requirePlayableConsole(h.DB, game.ID); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": errNonPlayableConsole.Error()})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: errNonPlayableConsole.Error()})
 		return
 	}
 
@@ -351,12 +351,12 @@ func (h *RAHandler) GetAchievementProgress(c *gin.Context) {
 	// Look up the game
 	var game db.Game
 	if err := h.DB.First(&game, "id = ?", gameID).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "game not found"})
+		c.JSON(http.StatusNotFound, ErrorResponse{Error: "game not found"})
 		return
 	}
 
 	if err := requirePlayableConsole(h.DB, game.ID); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": errNonPlayableConsole.Error()})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: errNonPlayableConsole.Error()})
 		return
 	}
 
@@ -394,7 +394,7 @@ func (h *RAHandler) GetAchievementProgress(c *gin.Context) {
 	raToken, err := h.decryptRAToken(&cred)
 	if err != nil {
 		slog.Error("failed to decrypt RA token", "user_id", uid, "error", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to access RA credentials"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to access RA credentials"})
 		return
 	}
 
@@ -402,7 +402,7 @@ func (h *RAHandler) GetAchievementProgress(c *gin.Context) {
 	_, userProgress, err := h.RAClient.GetGameInfoAndUserProgress(cred.RAUsername, raToken, raGameID)
 	if err != nil {
 		slog.Error("failed to fetch RA progress", "ra_game_id", raGameID, "error", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch progress from RetroAchievements"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to fetch progress from RetroAchievements"})
 		return
 	}
 
@@ -486,7 +486,7 @@ func (h *RAHandler) GetRecentAchievements(c *gin.Context) {
 		Order("unlocked_at DESC").
 		Limit(20).
 		Find(&progressRows).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch recent achievements"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to fetch recent achievements"})
 		return
 	}
 
@@ -597,7 +597,7 @@ func (h *RAHandler) GetUnlockedAchievements(c *gin.Context) {
 	if err := h.DB.Where("user_id = ?", uid).
 		Order("unlocked_at DESC").
 		Find(&progressRows).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch unlocked achievements"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to fetch unlocked achievements"})
 		return
 	}
 
@@ -699,12 +699,12 @@ func (h *RAHandler) GetAchievementTimeline(c *gin.Context) {
 	// Look up the game
 	var game db.Game
 	if err := h.DB.Preload("Console").First(&game, "id = ?", gameID).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "game not found"})
+		c.JSON(http.StatusNotFound, ErrorResponse{Error: "game not found"})
 		return
 	}
 
 	if err := requirePlayableConsole(h.DB, game.ID); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": errNonPlayableConsole.Error()})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: errNonPlayableConsole.Error()})
 		return
 	}
 
@@ -797,12 +797,12 @@ func (h *RAHandler) GetAchievementLeaderboard(c *gin.Context) {
 	// Look up the game
 	var game db.Game
 	if err := h.DB.First(&game, "id = ?", gameID).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "game not found"})
+		c.JSON(http.StatusNotFound, ErrorResponse{Error: "game not found"})
 		return
 	}
 
 	if err := requirePlayableConsole(h.DB, game.ID); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": errNonPlayableConsole.Error()})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: errNonPlayableConsole.Error()})
 		return
 	}
 

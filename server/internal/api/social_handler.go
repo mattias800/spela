@@ -31,7 +31,7 @@ func (h *SocialHandler) GetOnlineUsers(c *gin.Context) {
 
 	var users []db.User
 	if err := h.DB.Where("id IN ?", onlineIDs).Find(&users).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch online users"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to fetch online users"})
 		return
 	}
 
@@ -73,7 +73,7 @@ func (h *SocialHandler) GetPublicProfile(c *gin.Context) {
 
 	var user db.User
 	if err := h.DB.First(&user, userID).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "user not found"})
+		c.JSON(http.StatusNotFound, ErrorResponse{Error: "user not found"})
 		return
 	}
 
@@ -229,7 +229,7 @@ func (h *SocialHandler) SearchUsers(c *gin.Context) {
 		Offset((page - 1) * pageSize).
 		Limit(pageSize).
 		Find(&users).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to search users"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to search users"})
 		return
 	}
 
@@ -407,7 +407,7 @@ func (h *SocialHandler) GetActivityFeed(c *gin.Context) {
 		Offset((page - 1) * pageSize).
 		Limit(pageSize).
 		Find(&events).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch activity feed"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to fetch activity feed"})
 		return
 	}
 

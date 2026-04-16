@@ -10,6 +10,20 @@ import (
 	"gorm.io/gorm"
 )
 
+// ErrorResponse is the standard JSON shape returned by every handler that
+// reports an error to the client. Wire format is { "error": "..." } or
+// { "error": "...", "message": "..." } when a user-facing message is
+// available. This matches the historical ad-hoc shape so existing consumers
+// keep working unchanged.
+//
+// Error  — technical message (for logging / forensic context)
+// Message — user-facing message intended for display in the UI; omit if
+// the same as Error.
+type ErrorResponse struct {
+	Error   string `json:"error"`
+	Message string `json:"message,omitempty"`
+}
+
 // MediaTypeCategoryResponse is the API response for a media type category.
 type MediaTypeCategoryResponse struct {
 	Code string `json:"code"`

@@ -17,7 +17,7 @@ type MakerHandler struct {
 func (h *MakerHandler) ListMakers(c *gin.Context) {
 	var makers []db.HardwareMaker
 	if err := h.DB.Order("name ASC").Find(&makers).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch makers"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to fetch makers"})
 		return
 	}
 
@@ -51,7 +51,7 @@ func (h *MakerHandler) GetMaker(c *gin.Context) {
 
 	var maker db.HardwareMaker
 	if err := h.DB.Where("code = ?", code).First(&maker).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "maker not found"})
+		c.JSON(http.StatusNotFound, ErrorResponse{Error: "maker not found"})
 		return
 	}
 

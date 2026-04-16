@@ -40,7 +40,7 @@ func (h *ExploreHandler) GetExploreFeatured(c *gin.Context) {
 		Where("game_artworks.hero_url != '' AND game_artworks.logo_url != ''").
 		Scan(&allRows).Error
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch featured games"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to fetch featured games"})
 		return
 	}
 
@@ -65,7 +65,7 @@ func (h *ExploreHandler) GetExploreFeatured(c *gin.Context) {
 	}
 	var consoles []db.Console
 	if err := h.DB.Where("id IN ?", consoleIDs).Find(&consoles).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch console data"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to fetch console data"})
 		return
 	}
 	consoleMap := make(map[uint]db.Console, len(consoles))
@@ -83,7 +83,7 @@ func (h *ExploreHandler) GetExploreFeatured(c *gin.Context) {
 	if userID > 0 {
 		var favs []db.Favorite
 		if err := h.DB.Where("user_id = ? AND game_id IN ?", userID, gameIDs).Find(&favs).Error; err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch favorites"})
+			c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to fetch favorites"})
 			return
 		}
 		for _, f := range favs {
@@ -91,7 +91,7 @@ func (h *ExploreHandler) GetExploreFeatured(c *gin.Context) {
 		}
 		var plItems []db.PlayLaterItem
 		if err := h.DB.Where("user_id = ? AND game_id IN ?", userID, gameIDs).Find(&plItems).Error; err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch play later items"})
+			c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to fetch play later items"})
 			return
 		}
 		for _, item := range plItems {
@@ -132,7 +132,7 @@ func (h *ExploreHandler) GetExploreRows(c *gin.Context) {
 
 	// Top Rated: top 20 games by IGDB rating, rating > 0
 	if row, err := h.buildTopRatedRow(userID); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to build top-rated row"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to build top-rated row"})
 		return
 	} else if row != nil {
 		rows = append(rows, *row)
@@ -140,7 +140,7 @@ func (h *ExploreHandler) GetExploreRows(c *gin.Context) {
 
 	// Recently Added: top 20 games by created_at DESC
 	if row, err := h.buildRecentlyAddedRow(userID); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to build recently-added row"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to build recently-added row"})
 		return
 	} else if row != nil {
 		rows = append(rows, *row)
@@ -148,7 +148,7 @@ func (h *ExploreHandler) GetExploreRows(c *gin.Context) {
 
 	// Hidden Gems: high rating + low play time across all users
 	if row, err := h.buildHiddenGemsRow(userID); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to build hidden-gems row"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to build hidden-gems row"})
 		return
 	} else if row != nil {
 		rows = append(rows, *row)
@@ -156,7 +156,7 @@ func (h *ExploreHandler) GetExploreRows(c *gin.Context) {
 
 	// Most Played on Your Server: top 20 by total play time across all users
 	if row, err := h.buildMostPlayedRow(userID); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to build most-played row"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to build most-played row"})
 		return
 	} else if row != nil {
 		rows = append(rows, *row)

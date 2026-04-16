@@ -21,7 +21,7 @@ func (h *AdminHandler) GetGameHeroes(c *gin.Context) {
 	id := c.Param("id")
 	var game db.Game
 	if err := h.DB.First(&game, id).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "game not found"})
+		c.JSON(http.StatusNotFound, ErrorResponse{Error: "game not found"})
 		return
 	}
 
@@ -74,7 +74,7 @@ func (h *AdminHandler) SetGameHero(c *gin.Context) {
 	id := c.Param("id")
 	var game db.Game
 	if err := h.DB.Preload("Console").First(&game, id).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "game not found"})
+		c.JSON(http.StatusNotFound, ErrorResponse{Error: "game not found"})
 		return
 	}
 
@@ -82,12 +82,12 @@ func (h *AdminHandler) SetGameHero(c *gin.Context) {
 		URL string `json:"url" binding:"required"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body"})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid request body"})
 		return
 	}
 
 	if h.Scraper == nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "scraper not available"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "scraper not available"})
 		return
 	}
 
@@ -96,7 +96,7 @@ func (h *AdminHandler) SetGameHero(c *gin.Context) {
 	subpath := fmt.Sprintf("%s/%s/artwork-hero.jpg", game.Console.Abbreviation, gameIDStr)
 	localPath := h.Scraper.DownloadExternalImage(req.URL, subpath)
 	if localPath == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "failed to download hero image"})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "failed to download hero image"})
 		return
 	}
 
@@ -110,12 +110,12 @@ func (h *AdminHandler) SetGameHero(c *gin.Context) {
 
 	if artwork.ID == 0 {
 		if err := h.DB.Create(&artwork).Error; err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to save hero art"})
+			c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to save hero art"})
 			return
 		}
 	} else {
 		if err := h.DB.Save(&artwork).Error; err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to save hero art"})
+			c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to save hero art"})
 			return
 		}
 	}
@@ -126,7 +126,7 @@ func (h *AdminHandler) SetGameHero(c *gin.Context) {
 	userID, _ := c.Get("userId")
 	uid, _ := userID.(uint)
 	if err := h.DB.Preload("Console").Preload("Discs").Preload("Screenshots").First(&game, id).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to reload game"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to reload game"})
 		return
 	}
 	c.JSON(http.StatusOK, ToGameResponse(game, h.DB, uid))

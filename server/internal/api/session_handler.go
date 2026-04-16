@@ -29,13 +29,13 @@ func (h *SessionHandler) CreateSession(c *gin.Context) {
 
 	gid, err := strconv.ParseUint(gameID, 10, 64)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid game ID"})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid game ID"})
 		return
 	}
 
 	var game db.Game
 	if err := h.DB.First(&game, gid).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "game not found"})
+		c.JSON(http.StatusNotFound, ErrorResponse{Error: "game not found"})
 		return
 	}
 
@@ -43,12 +43,12 @@ func (h *SessionHandler) CreateSession(c *gin.Context) {
 		Name string `json:"name" binding:"required,max=255"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "name is required and must be 255 characters or fewer"})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "name is required and must be 255 characters or fewer"})
 		return
 	}
 
 	if strings.TrimSpace(req.Name) == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "name cannot be empty"})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "name cannot be empty"})
 		return
 	}
 
@@ -58,7 +58,7 @@ func (h *SessionHandler) CreateSession(c *gin.Context) {
 		Name:    req.Name,
 	}
 	if err := h.DB.Create(&session).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create session"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to create session"})
 		return
 	}
 
@@ -75,30 +75,30 @@ func (h *SessionHandler) CreateFromSharedSave(c *gin.Context) {
 
 	gid, err := strconv.ParseUint(gameID, 10, 64)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid game ID"})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid game ID"})
 		return
 	}
 
 	sid, err := strconv.ParseUint(saveID, 10, 64)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid save ID"})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid save ID"})
 		return
 	}
 
 	var game db.Game
 	if err := h.DB.First(&game, gid).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "game not found"})
+		c.JSON(http.StatusNotFound, ErrorResponse{Error: "game not found"})
 		return
 	}
 
 	var sharedSave db.SharedSaveState
 	if err := h.DB.First(&sharedSave, sid).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "shared save not found"})
+		c.JSON(http.StatusNotFound, ErrorResponse{Error: "shared save not found"})
 		return
 	}
 
 	if sharedSave.GameID != uint(gid) {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "shared save does not belong to this game"})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "shared save does not belong to this game"})
 		return
 	}
 
@@ -109,14 +109,14 @@ func (h *SessionHandler) CreateFromSharedSave(c *gin.Context) {
 		Name:    fmt.Sprintf("From: %s", sharedSave.Name),
 	}
 	if err := h.DB.Create(&session).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create session"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to create session"})
 		return
 	}
 
 	// Copy the shared save file to the new session
 	srcFile, err := os.Open(sharedSave.FilePath)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to read shared save file"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to read shared save file"})
 		return
 	}
 	defer srcFile.Close()
@@ -124,7 +124,7 @@ func (h *SessionHandler) CreateFromSharedSave(c *gin.Context) {
 	filename := filepath.Base(sharedSave.FilePath)
 	path, size, err := h.Storage.WriteSessionSave(session.ID, filename, srcFile)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to copy save file"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to copy save file"})
 		return
 	}
 
@@ -139,7 +139,7 @@ func (h *SessionHandler) CreateFromSharedSave(c *gin.Context) {
 		IsAuto:        false,
 	}
 	if err := h.DB.Create(&save).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create save record"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to create save record"})
 		return
 	}
 
@@ -159,7 +159,7 @@ func (h *SessionHandler) ListSessions(c *gin.Context) {
 
 	gid, err := strconv.ParseUint(gameID, 10, 64)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid game ID"})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid game ID"})
 		return
 	}
 
@@ -169,7 +169,7 @@ func (h *SessionHandler) ListSessions(c *gin.Context) {
 		Preload("Owner").
 		Order("updated_at DESC").
 		Find(&ownSessions).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch sessions"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to fetch sessions"})
 		return
 	}
 
@@ -278,13 +278,13 @@ func (h *SessionHandler) UpdateSession(c *gin.Context) {
 		CoreName      *string `json:"coreName"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request"})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid request"})
 		return
 	}
 
 	if req.Name != nil {
 		if len(*req.Name) > 255 || strings.TrimSpace(*req.Name) == "" {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "name must be between 1 and 255 characters"})
+			c.JSON(http.StatusBadRequest, ErrorResponse{Error: "name must be between 1 and 255 characters"})
 			return
 		}
 		session.Name = *req.Name
@@ -297,7 +297,7 @@ func (h *SessionHandler) UpdateSession(c *gin.Context) {
 	}
 
 	if err := h.DB.Save(&session).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to update session"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to update session"})
 		return
 	}
 
@@ -351,13 +351,13 @@ func (h *SessionHandler) DuplicateSession(c *gin.Context) {
 	sessionID := c.Param("id")
 	sid, err := strconv.ParseUint(sessionID, 10, 64)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid session ID"})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid session ID"})
 		return
 	}
 
 	var session db.GameSession
 	if err := h.DB.Preload("Owner").First(&session, sid).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "session not found"})
+		c.JSON(http.StatusNotFound, ErrorResponse{Error: "session not found"})
 		return
 	}
 
@@ -369,7 +369,7 @@ func (h *SessionHandler) DuplicateSession(c *gin.Context) {
 			Where("shared_sessions.session_id = ? AND shared_session_members.user_id = ?", session.ID, uid).
 			Count(&count)
 		if count == 0 {
-			c.JSON(http.StatusForbidden, gin.H{"error": "not the session owner or a shared session member"})
+			c.JSON(http.StatusForbidden, ErrorResponse{Error: "not the session owner or a shared session member"})
 			return
 		}
 	}
@@ -394,7 +394,7 @@ func (h *SessionHandler) DuplicateSession(c *gin.Context) {
 		CheatsEnabled: session.CheatsEnabled,
 	}
 	if err := h.DB.Create(&newSession).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create session"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to create session"})
 		return
 	}
 
@@ -486,7 +486,7 @@ func (h *SessionHandler) ListSessionSaves(c *gin.Context) {
 		Preload("User").
 		Order("created_at DESC").
 		Find(&saves).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch saves"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to fetch saves"})
 		return
 	}
 
@@ -517,13 +517,13 @@ func (h *SessionHandler) UploadSessionSave(c *gin.Context) {
 	c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, maxSaveUploadSize)
 	file, header, err := c.Request.FormFile("save")
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "save file required"})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "save file required"})
 		return
 	}
 	defer file.Close()
 
 	if err := checkStorageQuota(h.DB, uid, header.Size); err != nil {
-		c.JSON(http.StatusRequestEntityTooLarge, gin.H{"error": "storage quota exceeded"})
+		c.JSON(http.StatusRequestEntityTooLarge, ErrorResponse{Error: "storage quota exceeded"})
 		return
 	}
 
@@ -541,7 +541,7 @@ func (h *SessionHandler) UploadSessionSave(c *gin.Context) {
 
 	path, size, err := h.Storage.WriteSessionSave(session.ID, header.Filename, file)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to save file"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to save file"})
 		return
 	}
 
@@ -556,7 +556,7 @@ func (h *SessionHandler) UploadSessionSave(c *gin.Context) {
 		IsAuto:        false,
 	}
 	if err := h.DB.Create(&save).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create save record"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to create save record"})
 		return
 	}
 
@@ -587,12 +587,12 @@ func (h *SessionHandler) DownloadSessionSave(c *gin.Context) {
 	saveID := c.Param("saveId")
 	var save db.SessionSaveState
 	if err := h.DB.Where("id = ? AND session_id = ?", saveID, session.ID).First(&save).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "save not found"})
+		c.JSON(http.StatusNotFound, ErrorResponse{Error: "save not found"})
 		return
 	}
 
 	if !storage.ValidateROMPath(save.FilePath, []string{h.Storage.SaveDir}) {
-		c.JSON(http.StatusForbidden, gin.H{"error": "file access denied"})
+		c.JSON(http.StatusForbidden, ErrorResponse{Error: "file access denied"})
 		return
 	}
 
@@ -612,7 +612,7 @@ func (h *SessionHandler) DeleteSessionSave(c *gin.Context) {
 	saveID := c.Param("saveId")
 	var save db.SessionSaveState
 	if err := h.DB.Where("id = ? AND session_id = ?", saveID, session.ID).First(&save).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "save not found"})
+		c.JSON(http.StatusNotFound, ErrorResponse{Error: "save not found"})
 		return
 	}
 
@@ -637,7 +637,7 @@ func (h *SessionHandler) UpdateSessionSave(c *gin.Context) {
 	saveID := c.Param("saveId")
 	var save db.SessionSaveState
 	if err := h.DB.Where("id = ? AND session_id = ?", saveID, session.ID).First(&save).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "save not found"})
+		c.JSON(http.StatusNotFound, ErrorResponse{Error: "save not found"})
 		return
 	}
 
@@ -646,27 +646,27 @@ func (h *SessionHandler) UpdateSessionSave(c *gin.Context) {
 		Notes *string `json:"notes"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request"})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid request"})
 		return
 	}
 
 	if req.Name != nil {
 		if len(*req.Name) > 255 || strings.TrimSpace(*req.Name) == "" {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "name must be between 1 and 255 characters"})
+			c.JSON(http.StatusBadRequest, ErrorResponse{Error: "name must be between 1 and 255 characters"})
 			return
 		}
 		save.Name = *req.Name
 	}
 	if req.Notes != nil {
 		if len(*req.Notes) > 200 {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "notes must be 200 characters or less"})
+			c.JSON(http.StatusBadRequest, ErrorResponse{Error: "notes must be 200 characters or less"})
 			return
 		}
 		save.Notes = *req.Notes
 	}
 
 	if err := h.DB.Save(&save).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to update save"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to update save"})
 		return
 	}
 
@@ -691,13 +691,13 @@ func (h *SessionHandler) UploadAutoSave(c *gin.Context) {
 	c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, maxSaveUploadSize)
 	file, header, err := c.Request.FormFile("save")
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "save file required"})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "save file required"})
 		return
 	}
 	defer file.Close()
 
 	if err := checkStorageQuota(h.DB, uid, header.Size); err != nil {
-		c.JSON(http.StatusRequestEntityTooLarge, gin.H{"error": "storage quota exceeded"})
+		c.JSON(http.StatusRequestEntityTooLarge, ErrorResponse{Error: "storage quota exceeded"})
 		return
 	}
 
@@ -715,7 +715,7 @@ func (h *SessionHandler) UploadAutoSave(c *gin.Context) {
 
 	path, size, err := h.Storage.WriteSessionSave(session.ID, filename, file)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to save file"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to save file"})
 		return
 	}
 
@@ -731,7 +731,7 @@ func (h *SessionHandler) UploadAutoSave(c *gin.Context) {
 		IsCurrent:     true,
 	}
 	if err := h.DB.Create(&save).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create save record"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to create save record"})
 		return
 	}
 
@@ -777,13 +777,13 @@ func (h *SessionHandler) GetAutoSave(c *gin.Context) {
 		Preload("User").
 		Order("created_at DESC").
 		First(&save).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "no auto-save found"})
+		c.JSON(http.StatusNotFound, ErrorResponse{Error: "no auto-save found"})
 		return
 	}
 
 	// Serve the file directly
 	if !storage.ValidateROMPath(save.FilePath, []string{h.Storage.SaveDir}) {
-		c.JSON(http.StatusForbidden, gin.H{"error": "file access denied"})
+		c.JSON(http.StatusForbidden, ErrorResponse{Error: "file access denied"})
 		return
 	}
 
@@ -803,20 +803,20 @@ func (h *SessionHandler) UpsertSlotSave(c *gin.Context) {
 	slotStr := c.Param("slot")
 	slotNum, err := strconv.Atoi(slotStr)
 	if err != nil || slotNum < 1 || slotNum > 10 {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "slot must be between 1 and 10"})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "slot must be between 1 and 10"})
 		return
 	}
 
 	c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, maxSaveUploadSize)
 	file, fileHeader, err := c.Request.FormFile("save")
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "save file required"})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "save file required"})
 		return
 	}
 	defer file.Close()
 
 	if err := checkStorageQuota(h.DB, uid, fileHeader.Size); err != nil {
-		c.JSON(http.StatusRequestEntityTooLarge, gin.H{"error": "storage quota exceeded"})
+		c.JSON(http.StatusRequestEntityTooLarge, ErrorResponse{Error: "storage quota exceeded"})
 		return
 	}
 
@@ -834,7 +834,7 @@ func (h *SessionHandler) UpsertSlotSave(c *gin.Context) {
 
 	path, size, err := h.Storage.WriteSessionSave(session.ID, filename, file)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to save file"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to save file"})
 		return
 	}
 
@@ -886,18 +886,18 @@ func (h *SessionHandler) DownloadSlotSave(c *gin.Context) {
 	slotStr := c.Param("slot")
 	slotNum, err := strconv.Atoi(slotStr)
 	if err != nil || slotNum < 1 || slotNum > 10 {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "slot must be between 1 and 10"})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "slot must be between 1 and 10"})
 		return
 	}
 
 	var save db.SessionSaveState
 	if err := h.DB.Where("session_id = ? AND slot = ?", session.ID, slotNum).First(&save).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "no save in this slot"})
+		c.JSON(http.StatusNotFound, ErrorResponse{Error: "no save in this slot"})
 		return
 	}
 
 	if !storage.ValidateROMPath(save.FilePath, []string{h.Storage.SaveDir}) {
-		c.JSON(http.StatusForbidden, gin.H{"error": "file access denied"})
+		c.JSON(http.StatusForbidden, ErrorResponse{Error: "file access denied"})
 		return
 	}
 
@@ -919,7 +919,7 @@ func (h *SessionHandler) ListSlotSaves(c *gin.Context) {
 		Preload("User").
 		Order("slot ASC").
 		Find(&saves).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch slot saves"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to fetch slot saves"})
 		return
 	}
 
@@ -945,19 +945,19 @@ func (h *SessionHandler) UploadSRAM(c *gin.Context) {
 	c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, maxSaveUploadSize)
 	file, header, err := c.Request.FormFile("file")
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "file required"})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "file required"})
 		return
 	}
 	defer file.Close()
 
 	if err := checkStorageQuota(h.DB, uid, header.Size); err != nil {
-		c.JSON(http.StatusRequestEntityTooLarge, gin.H{"error": "storage quota exceeded"})
+		c.JSON(http.StatusRequestEntityTooLarge, ErrorResponse{Error: "storage quota exceeded"})
 		return
 	}
 
 	path, size, err := h.Storage.WriteSessionSRAM(session.ID, header.Filename, file)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to save SRAM file"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to save SRAM file"})
 		return
 	}
 
@@ -995,12 +995,12 @@ func (h *SessionHandler) DownloadSRAM(c *gin.Context) {
 
 	var sd db.SessionSaveData
 	if err := h.DB.Where("session_id = ?", session.ID).First(&sd).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "no SRAM data found"})
+		c.JSON(http.StatusNotFound, ErrorResponse{Error: "no SRAM data found"})
 		return
 	}
 
 	if !storage.ValidateROMPath(sd.FilePath, []string{h.Storage.SaveDir}) {
-		c.JSON(http.StatusForbidden, gin.H{"error": "file access denied"})
+		c.JSON(http.StatusForbidden, ErrorResponse{Error: "file access denied"})
 		return
 	}
 
@@ -1021,12 +1021,12 @@ func (h *SessionHandler) UpdatePlayTime(c *gin.Context) {
 		Seconds int64 `json:"seconds" binding:"required"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "seconds is required"})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "seconds is required"})
 		return
 	}
 
 	if req.Seconds < 0 {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "seconds must be non-negative"})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "seconds must be non-negative"})
 		return
 	}
 
@@ -1095,7 +1095,7 @@ func (h *SessionHandler) UpdateSessionCheats(c *gin.Context) {
 		EnabledIndices []int `json:"enabledIndices"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request"})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid request"})
 		return
 	}
 
@@ -1130,7 +1130,7 @@ func (h *SessionHandler) GetStorageUsage(c *gin.Context) {
 	var usedBytes int64
 	if err := h.DB.Model(&db.SessionSaveState{}).Where("user_id = ?", uid).
 		Select("COALESCE(SUM(file_size), 0)").Scan(&usedBytes).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to query storage usage"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to query storage usage"})
 		return
 	}
 
@@ -1176,7 +1176,7 @@ func (h *SessionHandler) BulkDeleteSessionSaves(c *gin.Context) {
 
 	var saves []db.SessionSaveState
 	if err := h.DB.Where("session_id = ?", session.ID).Find(&saves).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch saves"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to fetch saves"})
 		return
 	}
 
@@ -1207,7 +1207,7 @@ func (h *SessionHandler) CompactSaves(c *gin.Context) {
 	// Find all sessions owned by this user
 	var sessions []db.GameSession
 	if err := h.DB.Where("owner_id = ?", uid).Find(&sessions).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch sessions"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to fetch sessions"})
 		return
 	}
 
@@ -1291,18 +1291,18 @@ func (h *SessionHandler) loadSessionWithOwnerCheck(c *gin.Context, uid uint) (db
 	sessionID := c.Param("id")
 	sid, err := strconv.ParseUint(sessionID, 10, 64)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid session ID"})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid session ID"})
 		return db.GameSession{}, false
 	}
 
 	var session db.GameSession
 	if err := h.DB.Preload("Owner").First(&session, sid).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "session not found"})
+		c.JSON(http.StatusNotFound, ErrorResponse{Error: "session not found"})
 		return db.GameSession{}, false
 	}
 
 	if session.OwnerID != uid {
-		c.JSON(http.StatusForbidden, gin.H{"error": "not the session owner"})
+		c.JSON(http.StatusForbidden, ErrorResponse{Error: "not the session owner"})
 		return db.GameSession{}, false
 	}
 
@@ -1476,7 +1476,7 @@ func (h *SessionHandler) checkSharedSessionTurn(c *gin.Context, sessionID, uid u
 
 	// A shared session backs this session — user must hold the turn
 	if sharedSession.ActiveUserID == nil || *sharedSession.ActiveUserID != uid {
-		c.JSON(http.StatusForbidden, gin.H{"error": "shared session turn required: you must hold the turn to upload saves"})
+		c.JSON(http.StatusForbidden, ErrorResponse{Error: "shared session turn required: you must hold the turn to upload saves"})
 		return false
 	}
 	return true

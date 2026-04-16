@@ -39,7 +39,7 @@ func (h *GameDiscoveryHandler) GetSimilarGames(c *gin.Context) {
 	id := c.Param("id")
 	var game db.Game
 	if err := h.DB.Preload("Console").First(&game, id).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "game not found"})
+		c.JSON(http.StatusNotFound, ErrorResponse{Error: "game not found"})
 		return
 	}
 
@@ -171,7 +171,7 @@ func (h *GameDiscoveryHandler) GetDeveloperGames(c *gin.Context) {
 	id := c.Param("id")
 	var game db.Game
 	if err := h.DB.First(&game, id).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "game not found"})
+		c.JSON(http.StatusNotFound, ErrorResponse{Error: "game not found"})
 		return
 	}
 
@@ -186,7 +186,7 @@ func (h *GameDiscoveryHandler) GetDeveloperGames(c *gin.Context) {
 		Order("title asc").
 		Limit(20).
 		Find(&otherGames).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch developer games"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to fetch developer games"})
 		return
 	}
 

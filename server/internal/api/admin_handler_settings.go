@@ -20,7 +20,7 @@ var secretSettingKeys = map[string]bool{
 func (h *AdminHandler) GetSettings(c *gin.Context) {
 	var settings []db.ServerSetting
 	if err := h.DB.Find(&settings).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch settings"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to fetch settings"})
 		return
 	}
 
@@ -59,7 +59,7 @@ func (h *AdminHandler) UpdateSettings(c *gin.Context) {
 	var req map[string]string
 	if err := c.ShouldBindJSON(&req); err != nil {
 		slog.Debug("request binding failed", "error", err)
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body"})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid request body"})
 		return
 	}
 
@@ -93,7 +93,7 @@ func (h *AdminHandler) MetadataMatches(c *gin.Context) {
 	if err := h.DB.Where("scraper_id = '' OR scraper_id IS NULL").
 		Preload("Console").Preload("Discs").
 		Find(&unscraped).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch unscraped games"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to fetch unscraped games"})
 		return
 	}
 
@@ -101,7 +101,7 @@ func (h *AdminHandler) MetadataMatches(c *gin.Context) {
 	if err := h.DB.Where("verification_status = ? AND (verification_tag = '' OR verification_tag IS NULL)", "unverified").
 		Preload("Console").Preload("Discs").
 		Find(&unverified).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch unverified games"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to fetch unverified games"})
 		return
 	}
 
@@ -109,7 +109,7 @@ func (h *AdminHandler) MetadataMatches(c *gin.Context) {
 	if err := h.DB.Where("scraper_id = 'libretro'").
 		Preload("Console").Preload("Discs").
 		Find(&incomplete).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch incomplete games"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to fetch incomplete games"})
 		return
 	}
 

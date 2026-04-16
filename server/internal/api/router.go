@@ -244,7 +244,7 @@ func NewRouter(cfg Config) (*gin.Engine, func()) {
 	r.GET("/api/branding/logo", func(c *gin.Context) {
 		data, err := brandingAssets.ReadFile("static/branding/spela-logo.png")
 		if err != nil {
-			c.JSON(404, gin.H{"error": "logo not found"})
+			c.JSON(404, ErrorResponse{Error: "logo not found"})
 			return
 		}
 		c.Data(200, "image/png", data)
@@ -663,7 +663,7 @@ func serveFrontend(frontendDir string) gin.HandlerFunc {
 
 		// Never intercept API or WebSocket routes
 		if strings.HasPrefix(reqPath, "/api/") {
-			c.JSON(http.StatusNotFound, gin.H{"error": "not found"})
+			c.JSON(http.StatusNotFound, ErrorResponse{Error: "not found"})
 			return
 		}
 
@@ -716,13 +716,13 @@ func (h *ImageHandler) ServeImage(c *gin.Context) {
 	if _, statErr := os.Stat(absPath); statErr == nil {
 		realPath, err := filepath.EvalSymlinks(absPath)
 		if err != nil {
-			c.JSON(http.StatusForbidden, gin.H{"error": "access denied"})
+			c.JSON(http.StatusForbidden, ErrorResponse{Error: "access denied"})
 			return
 		}
 		absPath = realPath
 	}
 	if !strings.HasPrefix(absPath, absImageDir+string(filepath.Separator)) && absPath != absImageDir {
-		c.JSON(http.StatusForbidden, gin.H{"error": "access denied"})
+		c.JSON(http.StatusForbidden, ErrorResponse{Error: "access denied"})
 		return
 	}
 
@@ -741,32 +741,32 @@ func (h *ImageHandler) ServeImage(c *gin.Context) {
 			token = c.Query("token")
 		}
 		if token == "" {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "authentication required"})
+			c.JSON(http.StatusUnauthorized, ErrorResponse{Error: "authentication required"})
 			return
 		}
 
 		claims, err := auth.ValidateAccessToken(token, h.JWTSecret)
 		if err != nil {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid or expired token"})
+			c.JSON(http.StatusUnauthorized, ErrorResponse{Error: "invalid or expired token"})
 			return
 		}
 
 		// Reject revoked tokens and disabled/changed users (same checks as AuthMiddleware)
 		if IsTokenBlacklisted(h.DB, token) {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "token has been revoked"})
+			c.JSON(http.StatusUnauthorized, ErrorResponse{Error: "token has been revoked"})
 			return
 		}
 		var user db.User
 		if err := h.DB.Select("id", "disabled", "token_version").First(&user, claims.UserID).Error; err != nil {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "user not found"})
+			c.JSON(http.StatusUnauthorized, ErrorResponse{Error: "user not found"})
 			return
 		}
 		if user.Disabled {
-			c.JSON(http.StatusForbidden, gin.H{"error": "account is disabled"})
+			c.JSON(http.StatusForbidden, ErrorResponse{Error: "account is disabled"})
 			return
 		}
 		if claims.TokenVersion != user.TokenVersion {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "token has been invalidated"})
+			c.JSON(http.StatusUnauthorized, ErrorResponse{Error: "token has been invalidated"})
 			return
 		}
 
@@ -777,11 +777,11 @@ func (h *ImageHandler) ServeImage(c *gin.Context) {
 			pathUserIDStr := strings.TrimPrefix(parts[1], "user_")
 			pathUserID, parseErr := strconv.ParseUint(pathUserIDStr, 10, 64)
 			if parseErr != nil {
-				c.JSON(http.StatusForbidden, gin.H{"error": "access denied"})
+				c.JSON(http.StatusForbidden, ErrorResponse{Error: "access denied"})
 				return
 			}
 			if uint64(claims.UserID) != pathUserID && claims.Role != "admin" && claims.Role != "owner" {
-				c.JSON(http.StatusForbidden, gin.H{"error": "access denied"})
+				c.JSON(http.StatusForbidden, ErrorResponse{Error: "access denied"})
 				return
 			}
 		} else if len(parts) >= 3 && parts[1] == "sessions" && strings.HasPrefix(parts[2], "session_") {
@@ -789,20 +789,20 @@ func (h *ImageHandler) ServeImage(c *gin.Context) {
 			sessionIDStr := strings.TrimPrefix(parts[2], "session_")
 			sessionID, parseErr := strconv.ParseUint(sessionIDStr, 10, 64)
 			if parseErr != nil {
-				c.JSON(http.StatusForbidden, gin.H{"error": "access denied"})
+				c.JSON(http.StatusForbidden, ErrorResponse{Error: "access denied"})
 				return
 			}
 			var session db.GameSession
 			if err := h.DB.Select("id", "owner_id").First(&session, sessionID).Error; err != nil {
-				c.JSON(http.StatusNotFound, gin.H{"error": "session not found"})
+				c.JSON(http.StatusNotFound, ErrorResponse{Error: "session not found"})
 				return
 			}
 			if uint64(claims.UserID) != uint64(session.OwnerID) && claims.Role != "admin" && claims.Role != "owner" {
-				c.JSON(http.StatusForbidden, gin.H{"error": "access denied"})
+				c.JSON(http.StatusForbidden, ErrorResponse{Error: "access denied"})
 				return
 			}
 		} else {
-			c.JSON(http.StatusForbidden, gin.H{"error": "access denied"})
+			c.JSON(http.StatusForbidden, ErrorResponse{Error: "access denied"})
 			return
 		}
 	}

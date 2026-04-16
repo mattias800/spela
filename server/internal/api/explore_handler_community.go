@@ -96,7 +96,7 @@ func (h *ExploreHandler) GetTrending(c *gin.Context) {
 		Limit(20).
 		Scan(&rows).Error; err != nil {
 		slog.Error("failed to fetch trending games", "error", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch trending games"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to fetch trending games"})
 		return
 	}
 
@@ -114,7 +114,7 @@ func (h *ExploreHandler) GetTrending(c *gin.Context) {
 	var games []db.Game
 	if err := h.DB.Preload("Console").Where("id IN ?", gameIDs).Find(&games).Error; err != nil {
 		slog.Error("failed to load trending games", "error", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to load trending games"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to load trending games"})
 		return
 	}
 
@@ -171,7 +171,7 @@ func (h *ExploreHandler) GetCommunityTop(c *gin.Context) {
 		Limit(20).
 		Scan(&rows).Error; err != nil {
 		slog.Error("failed to fetch community top", "error", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch community top games"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to fetch community top games"})
 		return
 	}
 
@@ -189,7 +189,7 @@ func (h *ExploreHandler) GetCommunityTop(c *gin.Context) {
 	var games []db.Game
 	if err := h.DB.Preload("Console").Where("id IN ?", gameIDs).Find(&games).Error; err != nil {
 		slog.Error("failed to load community top games", "error", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to load community top games"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to load community top games"})
 		return
 	}
 
@@ -247,7 +247,7 @@ func (h *ExploreHandler) GetCultClassics(c *gin.Context) {
 		Limit(20).
 		Scan(&rows).Error; err != nil {
 		slog.Error("failed to fetch cult classics", "error", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch cult classics"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to fetch cult classics"})
 		return
 	}
 
@@ -265,7 +265,7 @@ func (h *ExploreHandler) GetCultClassics(c *gin.Context) {
 	var games []db.Game
 	if err := h.DB.Preload("Console").Where("id IN ?", gameIDs).Find(&games).Error; err != nil {
 		slog.Error("failed to load cult classic games", "error", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to load cult classic games"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to load cult classic games"})
 		return
 	}
 
@@ -316,7 +316,7 @@ func (h *ExploreHandler) GetRecentlyReviewed(c *gin.Context) {
 		Limit(20).
 		Scan(&rows).Error; err != nil {
 		slog.Error("failed to fetch recently reviewed", "error", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch recently reviewed"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to fetch recently reviewed"})
 		return
 	}
 
@@ -339,7 +339,7 @@ func (h *ExploreHandler) GetRecentlyReviewed(c *gin.Context) {
 	var games []db.Game
 	if err := h.DB.Preload("Console").Where("id IN ?", gameIDs).Find(&games).Error; err != nil {
 		slog.Error("failed to load reviewed games", "error", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to load reviewed games"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to load reviewed games"})
 		return
 	}
 
@@ -387,7 +387,7 @@ func (h *ExploreHandler) GetActiveNow(c *gin.Context) {
 		Group("game_id").
 		Scan(&sessionRows).Error; err != nil {
 		slog.Error("failed to fetch active sessions", "error", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch active games"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to fetch active games"})
 		return
 	}
 
@@ -404,7 +404,7 @@ func (h *ExploreHandler) GetActiveNow(c *gin.Context) {
 		Group("game_id").
 		Scan(&challengeRows).Error; err != nil {
 		slog.Error("failed to fetch active challenges", "error", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch active games"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to fetch active games"})
 		return
 	}
 
@@ -439,7 +439,7 @@ func (h *ExploreHandler) GetActiveNow(c *gin.Context) {
 	var games []db.Game
 	if err := h.DB.Preload("Console").Where("id IN ?", gameIDs).Find(&games).Error; err != nil {
 		slog.Error("failed to load active games", "error", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to load active games"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to load active games"})
 		return
 	}
 
