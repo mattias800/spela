@@ -50,6 +50,7 @@ fun SecondaryArtPage(
     gameTitle: String,
     sessionElapsedSeconds: Long,
     consoleId: String,
+    consoleName: String,
     consoleColorTheme: String?,
     gameDescription: String? = null,
     gameDeveloper: String? = null,
@@ -125,7 +126,9 @@ fun SecondaryArtPage(
                 contentAlignment = Alignment.Center,
             ) {
                 Text(
-                    text = consoleId.uppercase(),
+                    text = consoleName.ifEmpty { consoleId.uppercase() },
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
                     style = SpTypography.LabelSmall,
                     color = SpColor.OnBackgroundTertiary,
                 )

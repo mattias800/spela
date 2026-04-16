@@ -352,6 +352,7 @@ class EmulationViewModel(
                         it.copy(
                             gameTitle = detail.game.title,
                             consoleId = detail.game.consoleId,
+                            consoleName = detail.game.consoleName,
                             heroUrl = detail.game.heroUrl,
                             gameDescription = detail.game.description,
                             gameDeveloper = detail.game.developer,

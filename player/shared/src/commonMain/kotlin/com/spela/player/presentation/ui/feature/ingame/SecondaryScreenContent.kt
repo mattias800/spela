@@ -177,6 +177,7 @@ fun SecondaryScreenContent(
                     gameTitle = state.gameTitle,
                     sessionElapsedSeconds = state.sessionElapsedSeconds,
                     consoleId = state.consoleId,
+                    consoleName = state.consoleName,
                     consoleColorTheme = state.consoleColorTheme,
                 )
 
@@ -194,6 +195,7 @@ fun SecondaryScreenContent(
                                 gameTitle = state.gameTitle,
                                 sessionElapsedSeconds = state.sessionElapsedSeconds,
                                 consoleId = state.consoleId,
+                                consoleName = state.consoleName,
                                 consoleColorTheme = state.consoleColorTheme,
                                 gameDescription = state.gameDescription,
                                 gameDeveloper = state.gameDeveloper,
@@ -376,6 +378,7 @@ private fun CompanionHeader(
     gameTitle: String,
     sessionElapsedSeconds: Long,
     consoleId: String,
+    consoleName: String,
     consoleColorTheme: String?,
 ) {
     val timeText = formatSessionDuration(sessionElapsedSeconds)
@@ -420,12 +423,14 @@ private fun CompanionHeader(
                 style = SpTypography.LabelLarge,
                 color = SpColor.OnBackgroundTertiary,
             )
-            if (consoleId.isNotEmpty()) {
+            if (consoleName.isNotEmpty()) {
                 Spacer(Modifier.width(SpSpacing.Small))
                 Text(
-                    text = consoleId.uppercase(),
+                    text = consoleName,
                     style = SpTypography.LabelSmall,
                     color = SpColor.OnBackgroundTertiary,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
                 )
             }
         }
