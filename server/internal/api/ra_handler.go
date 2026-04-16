@@ -432,13 +432,6 @@ func (h *RAHandler) GetAchievementProgress(c *gin.Context) {
 	}
 
 	// Build enriched progress response with per-achievement playTimeAtUnlock from DB
-	type progressEntry struct {
-		AchievementID    uint   `json:"achievementId"`
-		UnlockedAt       string `json:"unlockedAt"`
-		IsHardcore       bool   `json:"isHardcore"`
-		PlayTimeAtUnlock int64  `json:"playTimeAtUnlock"`
-	}
-
 	// Read back stored values to get per-achievement PlayTimeAtUnlock
 	achIDs := make([]uint, 0, len(userProgress))
 	for _, p := range userProgress {
@@ -451,13 +444,13 @@ func (h *RAHandler) GetAchievementProgress(c *gin.Context) {
 		storedMap[sp.AchievementRAID] = sp
 	}
 
-	enrichedProgress := make([]progressEntry, 0, len(userProgress))
+	enrichedProgress := make([]RAProgressEntry, 0, len(userProgress))
 	for _, p := range userProgress {
 		var ptau int64
 		if sp, ok := storedMap[p.AchievementID]; ok {
 			ptau = sp.PlayTimeAtUnlock
 		}
-		enrichedProgress = append(enrichedProgress, progressEntry{
+		enrichedProgress = append(enrichedProgress, RAProgressEntry{
 			AchievementID:    p.AchievementID,
 			UnlockedAt:       p.UnlockedAt,
 			IsHardcore:       p.IsHardcore,
@@ -534,24 +527,9 @@ func (h *RAHandler) GetRecentAchievements(c *gin.Context) {
 	}
 
 	// Build response
-	type recentAchievement struct {
-		AchievementRAID  uint      `json:"achievementRaId"`
-		Title            string    `json:"title"`
-		Description      string    `json:"description"`
-		Points           int       `json:"points"`
-		BadgeURL         string    `json:"badgeUrl"`
-		UnlockedAt       time.Time `json:"unlockedAt"`
-		IsHardcore       bool      `json:"isHardcore"`
-		PlayTimeAtUnlock int64     `json:"playTimeAtUnlock"`
-		GameID           string    `json:"gameId"`
-		GameTitle        string    `json:"gameTitle"`
-		ConsoleName      string    `json:"consoleName"`
-		CoverURL         string    `json:"coverUrl"`
-	}
-
-	results := make([]recentAchievement, 0, len(progressRows))
+	results := make([]RARecentAchievementResponse, 0, len(progressRows))
 	for _, p := range progressRows {
-		entry := recentAchievement{
+		entry := RARecentAchievementResponse{
 			AchievementRAID:  p.AchievementRAID,
 			UnlockedAt:       p.UnlockedAt,
 			IsHardcore:       p.IsHardcore,
@@ -644,21 +622,9 @@ func (h *RAHandler) GetUnlockedAchievements(c *gin.Context) {
 		gameMap[g.ID] = g
 	}
 
-	type unlockedAchievement struct {
-		AchievementRAID uint    `json:"achievementRaId"`
-		RAGameID        uint    `json:"raGameId"`
-		Title           string  `json:"title"`
-		Description     string  `json:"description"`
-		Points          int     `json:"points"`
-		BadgeURL        string  `json:"badgeUrl"`
-		RarityPercent   float64 `json:"rarityPercent"`
-		GameTitle       string  `json:"gameTitle"`
-		ConsoleName     string  `json:"consoleName"`
-	}
-
-	results := make([]unlockedAchievement, 0, len(progressRows))
+	results := make([]RAUnlockedAchievementResponse, 0, len(progressRows))
 	for _, p := range progressRows {
-		entry := unlockedAchievement{
+		entry := RAUnlockedAchievementResponse{
 			AchievementRAID: p.AchievementRAID,
 			RAGameID:        p.RAGameID,
 		}
@@ -743,21 +709,10 @@ func (h *RAHandler) GetAchievementTimeline(c *gin.Context) {
 	}
 
 	// Build timeline
-	type timelineEntry struct {
-		AchievementRAID  uint      `json:"achievementRaId"`
-		Title            string    `json:"title"`
-		Description      string    `json:"description"`
-		Points           int       `json:"points"`
-		BadgeURL         string    `json:"badgeUrl"`
-		UnlockedAt       time.Time `json:"unlockedAt"`
-		IsHardcore       bool      `json:"isHardcore"`
-		PlayTimeAtUnlock int64     `json:"playTimeAtUnlock"`
-	}
-
-	timeline := make([]timelineEntry, 0, len(progressRows))
+	timeline := make([]RATimelineEntryResponse, 0, len(progressRows))
 	earnedPoints := 0
 	for _, p := range progressRows {
-		entry := timelineEntry{
+		entry := RATimelineEntryResponse{
 			AchievementRAID:  p.AchievementRAID,
 			UnlockedAt:       p.UnlockedAt,
 			IsHardcore:       p.IsHardcore,
@@ -886,21 +841,10 @@ func (h *RAHandler) GetAchievementLeaderboard(c *gin.Context) {
 	}
 
 	// Build response sorted by unlocked count descending
-	type leaderboardEntry struct {
-		UserID          string    `json:"userId"`
-		Username        string    `json:"username"`
-		AvatarURL       string    `json:"avatarUrl"`
-		UnlockedCount   int       `json:"unlockedCount"`
-		EarnedPoints    int       `json:"earnedPoints"`
-		LastUnlockedAt  time.Time `json:"lastUnlockedAt"`
-		FirstUnlockedAt time.Time `json:"firstUnlockedAt"`
-		IsComplete      bool      `json:"isComplete"`
-	}
-
-	entries := make([]leaderboardEntry, 0, len(userStatsMap))
+	entries := make([]RALeaderboardEntryResponse, 0, len(userStatsMap))
 	for uid, stats := range userStatsMap {
 		user := userMap[uid]
-		entries = append(entries, leaderboardEntry{
+		entries = append(entries, RALeaderboardEntryResponse{
 			UserID:          strconv.FormatUint(uint64(uid), 10),
 			Username:        user.Username,
 			AvatarURL:       user.AvatarURL,

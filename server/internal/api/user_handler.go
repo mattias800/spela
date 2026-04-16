@@ -164,29 +164,6 @@ func (h *UserHandler) ChangePassword(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "password changed"})
 }
 
-// preferencesResponse is the JSON shape for the preferences endpoints.
-type preferencesResponse struct {
-	ShowPerformanceOverlay  bool                           `json:"showPerformanceOverlay"`
-	AutoSaveEnabled         bool                           `json:"autoSaveEnabled"`
-	AutoLoadSaveEnabled     bool                           `json:"autoLoadSaveEnabled"`
-	SelectedShader          string                         `json:"selectedShader"`
-	SelectedTheme           string                         `json:"selectedTheme"`
-	DefaultSecondScreenPage string                         `json:"defaultSecondScreenPage"`
-	ConsoleShaders          map[string]string              `json:"consoleShaders"`
-	SelectedKeyMapping      string                         `json:"selectedKeyMapping"`
-	CustomKeyMapping        map[string]string              `json:"customKeyMapping"`
-	ConsoleKeyMappings      map[string]consoleKeyMappingDTO `json:"consoleKeyMappings"`
-	PreferredRegions        []string                       `json:"preferredRegions"`
-	RALinked                bool                           `json:"raLinked"`
-	RAUsername              string                         `json:"raUsername"`
-	RAHardcoreEnabled       bool                           `json:"raHardcoreEnabled"`
-}
-
-type consoleKeyMappingDTO struct {
-	SelectedMapping string            `json:"selectedMapping"`
-	CustomMapping   map[string]string `json:"customMapping,omitempty"`
-}
-
 // GetPreferences returns the current user's emulation preferences.
 func (h *UserHandler) GetPreferences(c *gin.Context) {
 	userID, _ := c.Get("userId")
@@ -221,7 +198,7 @@ func (h *UserHandler) GetPreferences(c *gin.Context) {
 	var raCred db.RetroAchievementCredential
 	raLinked := h.DB.Where("user_id = ?", uid).First(&raCred).Error == nil
 
-	c.JSON(http.StatusOK, preferencesResponse{
+	c.JSON(http.StatusOK, UserPreferencesResponse{
 		ShowPerformanceOverlay:  user.ShowPerfOverlay,
 		AutoSaveEnabled:         user.AutoSaveEnabled,
 		AutoLoadSaveEnabled:     user.AutoLoadSaveEnabled,
@@ -402,7 +379,7 @@ func (h *UserHandler) UpdatePreferences(c *gin.Context) {
 	var raCred db.RetroAchievementCredential
 	raLinked := h.DB.Where("user_id = ?", uid).First(&raCred).Error == nil
 
-	c.JSON(http.StatusOK, preferencesResponse{
+	c.JSON(http.StatusOK, UserPreferencesResponse{
 		ShowPerformanceOverlay:  user.ShowPerfOverlay,
 		AutoSaveEnabled:         user.AutoSaveEnabled,
 		AutoLoadSaveEnabled:     user.AutoLoadSaveEnabled,
@@ -444,7 +421,7 @@ func (h *UserHandler) buildConsoleShaderMap(userID uint) map[string]string {
 
 // buildConsoleKeyMappingMap queries all ConsoleKeyMappingPreference rows for the user
 // and returns a map keyed by console abbreviation (lowercase).
-func (h *UserHandler) buildConsoleKeyMappingMap(userID uint) map[string]consoleKeyMappingDTO {
+func (h *UserHandler) buildConsoleKeyMappingMap(userID uint) map[string]ConsoleKeyMappingDTO {
 	var prefs []db.ConsoleKeyMappingPreference
 	h.DB.Where("user_id = ?", userID).Find(&prefs)
 
@@ -455,10 +432,10 @@ func (h *UserHandler) buildConsoleKeyMappingMap(userID uint) map[string]consoleK
 	}
 	abbrMap := resolveConsoleAbbrs(h.DB, consoleIDs)
 
-	m := make(map[string]consoleKeyMappingDTO, len(prefs))
+	m := make(map[string]ConsoleKeyMappingDTO, len(prefs))
 	for _, p := range prefs {
 		if abbr, ok := abbrMap[p.ConsoleID]; ok {
-			m[abbr] = consoleKeyMappingDTO{
+			m[abbr] = ConsoleKeyMappingDTO{
 				SelectedMapping: p.SelectedMapping,
 				CustomMapping:   parseJSONMap(p.CustomMapping),
 			}
@@ -647,17 +624,6 @@ func (h *UserHandler) RemoveFavorite(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "favorite removed"})
 }
 
-// userStatsResponse is the response for GET /api/user/stats.
-type userStatsResponse struct {
-	TotalPlayTime    int64         `json:"totalPlayTime"`
-	GamesPlayed      int64         `json:"gamesPlayed"`
-	CurrentStreak    int           `json:"currentStreak"`
-	LongestStreak    int           `json:"longestStreak"`
-	MostPlayedGame   *GameResponse `json:"mostPlayedGame"`
-	MostPlayedGameTime int64       `json:"mostPlayedGameTime"`
-	LastPlayedAt     *time.Time    `json:"lastPlayedAt"`
-}
-
 // GetUserStats returns the current user's personal gameplay statistics.
 func (h *UserHandler) GetUserStats(c *gin.Context) {
 	uid := getUserID(c)
@@ -677,7 +643,7 @@ func (h *UserHandler) GetUserStats(c *gin.Context) {
 	}
 
 	if agg.GamesPlayed == 0 {
-		c.JSON(http.StatusOK, userStatsResponse{
+		c.JSON(http.StatusOK, UserStatsResponse{
 			TotalPlayTime:    0,
 			GamesPlayed:      0,
 			CurrentStreak:    0,
@@ -730,7 +696,7 @@ func (h *UserHandler) GetUserStats(c *gin.Context) {
 		}
 	}
 
-	c.JSON(http.StatusOK, userStatsResponse{
+	c.JSON(http.StatusOK, UserStatsResponse{
 		TotalPlayTime:      agg.TotalPlayTime,
 		GamesPlayed:        agg.GamesPlayed,
 		CurrentStreak:      currentStreak,
@@ -801,13 +767,6 @@ func calculateStreaks(playDates []time.Time, today time.Time) (currentStreak, lo
 	}
 
 	return currentStreak, longestStreak
-}
-
-// PlayStatsEntry represents play stats for a single game.
-type PlayStatsEntry struct {
-	GameID       uint   `json:"gameId"`
-	PlayTime     int64  `json:"playTime"`
-	LastPlayedAt string `json:"lastPlayedAt"`
 }
 
 // GetPlayStats returns the current user's play history for all games they've played.

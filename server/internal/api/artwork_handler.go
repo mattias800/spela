@@ -13,14 +13,6 @@ type ArtworkHandler struct {
 	DB *gorm.DB
 }
 
-// GameArtworkResponse is the API response for a game's artwork URLs.
-type GameArtworkResponse struct {
-	HeroURL string `json:"heroUrl,omitempty"`
-	GridURL string `json:"gridUrl,omitempty"`
-	LogoURL string `json:"logoUrl,omitempty"`
-	IconURL string `json:"iconUrl,omitempty"`
-}
-
 // GetGameArtwork returns the SteamGridDB artwork for a game.
 // If artwork exists in the DB, return it. If not, return empty (no scrape triggered).
 func (h *ArtworkHandler) GetGameArtwork(c *gin.Context) {

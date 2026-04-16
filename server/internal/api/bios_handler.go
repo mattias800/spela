@@ -31,49 +31,6 @@ type BiosHandler struct {
 	downloading bool
 }
 
-// BiosFileResponse represents an individual BIOS file in the response.
-type BiosFileResponse struct {
-	Name        string  `json:"name"`
-	Size        int64   `json:"size"`
-	MD5         string  `json:"md5"`
-	ExpectedMD5 string  `json:"expectedMd5,omitempty"`
-	SubDir      string  `json:"subDir,omitempty"`
-	ConsoleID   *string `json:"consoleId"`
-	ConsoleName *string `json:"consoleName,omitempty"`
-	Description *string `json:"description,omitempty"`
-	Required    bool    `json:"required"`
-	Status      string  `json:"status"` // "valid", "present", "invalid", "missing"
-}
-
-// ConsoleFileStatus represents a single BIOS file within a console summary.
-type ConsoleFileStatus struct {
-	FileName    string `json:"fileName"`
-	Description string `json:"description"`
-	Required    bool   `json:"required"`
-	MD5         string `json:"md5"`
-	Status      string `json:"status"`            // "valid", "present", "invalid", "missing"
-	SubDir      string `json:"subDir,omitempty"`   // subdirectory within system_dir
-}
-
-// ConsoleBiosStatus represents the BIOS status summary for one console.
-type ConsoleBiosStatus struct {
-	ConsoleID       string              `json:"consoleId"`
-	ConsoleName     string              `json:"consoleName"`
-	BiosRequired    bool                `json:"biosRequired"`
-	Status          string              `json:"status"` // "ready", "missing", "invalid", "not_required"
-	RequiredPresent int                 `json:"requiredPresent"`
-	RequiredTotal   int                 `json:"requiredTotal"`
-	OptionalPresent int                 `json:"optionalPresent"`
-	OptionalTotal   int                 `json:"optionalTotal"`
-	Files           []ConsoleFileStatus `json:"files"`
-}
-
-// BiosListResponse is the top-level response for GET /api/bios.
-type BiosListResponse struct {
-	Files    []BiosFileResponse  `json:"files"`
-	Consoles []ConsoleBiosStatus `json:"consoles"`
-}
-
 // consoleNameMap builds a map from lowercase abbreviation to console name.
 func consoleNameMap(database *gorm.DB) map[string]string {
 	names := make(map[string]string)

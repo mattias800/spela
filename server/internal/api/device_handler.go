@@ -16,12 +16,6 @@ type DeviceHandler struct {
 	DB *gorm.DB
 }
 
-// deviceResponse is the JSON shape returned for a device.
-type deviceResponse struct {
-	db.Device
-	ConsoleShaders map[string]string `json:"consoleShaders"`
-}
-
 // RegisterDevice handles POST /api/user/devices.
 // Upserts a device by (user_id, device_uuid) and returns it with shader preferences.
 func (h *DeviceHandler) RegisterDevice(c *gin.Context) {
@@ -67,7 +61,7 @@ func (h *DeviceHandler) RegisterDevice(c *gin.Context) {
 		}
 	}
 
-	c.JSON(http.StatusOK, deviceResponse{
+	c.JSON(http.StatusOK, DeviceResponse{
 		Device:         device,
 		ConsoleShaders: h.buildDeviceShaderMap(device.ID),
 	})
@@ -83,9 +77,9 @@ func (h *DeviceHandler) GetDevices(c *gin.Context) {
 		return
 	}
 
-	resp := make([]deviceResponse, 0, len(devices))
+	resp := make([]DeviceResponse, 0, len(devices))
 	for _, d := range devices {
-		resp = append(resp, deviceResponse{
+		resp = append(resp, DeviceResponse{
 			Device:         d,
 			ConsoleShaders: h.buildDeviceShaderMap(d.ID),
 		})
@@ -234,9 +228,9 @@ func (h *DeviceHandler) AdminGetUserDevices(c *gin.Context) {
 		return
 	}
 
-	resp := make([]deviceResponse, 0, len(devices))
+	resp := make([]DeviceResponse, 0, len(devices))
 	for _, d := range devices {
-		resp = append(resp, deviceResponse{
+		resp = append(resp, DeviceResponse{
 			Device:         d,
 			ConsoleShaders: h.buildDeviceShaderMap(d.ID),
 		})

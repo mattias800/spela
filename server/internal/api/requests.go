@@ -29,7 +29,7 @@ type UpdatePreferencesRequest struct {
 	ConsoleShaders          map[string]string               `json:"consoleShaders"`
 	SelectedKeyMapping      *string                         `json:"selectedKeyMapping"`
 	CustomKeyMapping        map[string]string               `json:"customKeyMapping"`
-	ConsoleKeyMappings      map[string]consoleKeyMappingDTO `json:"consoleKeyMappings"`
+	ConsoleKeyMappings      map[string]ConsoleKeyMappingDTO `json:"consoleKeyMappings"`
 	PreferredRegions        *[]string                       `json:"preferredRegions"`
 }
 

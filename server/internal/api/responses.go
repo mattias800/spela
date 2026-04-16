@@ -1011,3 +1011,326 @@ func parseAspectRatio(aspect string) float64 {
 	}
 	return w / h
 }
+
+// --- Auth ---
+
+// AuthLoginResponse is the response payload for login/register/refresh endpoints.
+type AuthLoginResponse struct {
+	AccessToken  string       `json:"accessToken"`
+	RefreshToken string       `json:"refreshToken"`
+	User         UserResponse `json:"user"`
+}
+
+// --- User ---
+
+// UserPreferencesResponse is the JSON shape for the user preferences endpoints.
+type UserPreferencesResponse struct {
+	ShowPerformanceOverlay  bool                            `json:"showPerformanceOverlay"`
+	AutoSaveEnabled         bool                            `json:"autoSaveEnabled"`
+	AutoLoadSaveEnabled     bool                            `json:"autoLoadSaveEnabled"`
+	SelectedShader          string                          `json:"selectedShader"`
+	SelectedTheme           string                          `json:"selectedTheme"`
+	DefaultSecondScreenPage string                          `json:"defaultSecondScreenPage"`
+	ConsoleShaders          map[string]string               `json:"consoleShaders"`
+	SelectedKeyMapping      string                          `json:"selectedKeyMapping"`
+	CustomKeyMapping        map[string]string               `json:"customKeyMapping"`
+	ConsoleKeyMappings      map[string]ConsoleKeyMappingDTO `json:"consoleKeyMappings"`
+	PreferredRegions        []string                        `json:"preferredRegions"`
+	RALinked                bool                            `json:"raLinked"`
+	RAUsername              string                          `json:"raUsername"`
+	RAHardcoreEnabled       bool                            `json:"raHardcoreEnabled"`
+}
+
+// ConsoleKeyMappingDTO is a per-console key mapping entry in the preferences payload.
+type ConsoleKeyMappingDTO struct {
+	SelectedMapping string            `json:"selectedMapping"`
+	CustomMapping   map[string]string `json:"customMapping,omitempty"`
+}
+
+// UserStatsResponse is the response for GET /api/user/stats.
+type UserStatsResponse struct {
+	TotalPlayTime      int64         `json:"totalPlayTime"`
+	GamesPlayed        int64         `json:"gamesPlayed"`
+	CurrentStreak      int           `json:"currentStreak"`
+	LongestStreak      int           `json:"longestStreak"`
+	MostPlayedGame     *GameResponse `json:"mostPlayedGame"`
+	MostPlayedGameTime int64         `json:"mostPlayedGameTime"`
+	LastPlayedAt       *time.Time    `json:"lastPlayedAt"`
+}
+
+// PlayStatsEntry is a single entry in the play stats (per-game history) response.
+type PlayStatsEntry struct {
+	GameID       uint   `json:"gameId"`
+	PlayTime     int64  `json:"playTime"`
+	LastPlayedAt string `json:"lastPlayedAt"`
+}
+
+// --- Device ---
+
+// DeviceResponse is the API response for a registered device. It embeds the
+// db.Device model (for historical compatibility) and augments it with the
+// device's per-console shader preferences.
+type DeviceResponse struct {
+	db.Device
+	ConsoleShaders map[string]string `json:"consoleShaders"`
+}
+
+// --- Achievement Showcase ---
+
+// ShowcaseEntryResponse is the enriched response for a single showcased achievement.
+type ShowcaseEntryResponse struct {
+	AchievementRAID uint    `json:"achievementRaId"`
+	RAGameID        uint    `json:"raGameId"`
+	ShowcaseOrder   int     `json:"showcaseOrder"`
+	Title           string  `json:"title,omitempty"`
+	Description     string  `json:"description,omitempty"`
+	Points          int     `json:"points,omitempty"`
+	BadgeURL        string  `json:"badgeUrl,omitempty"`
+	RarityPercent   float64 `json:"rarityPercent,omitempty"`
+	GameTitle       string  `json:"gameTitle,omitempty"`
+}
+
+// --- RetroAchievements ---
+
+// RAProgressEntry is a single achievement progress entry returned by GetGameProgress.
+type RAProgressEntry struct {
+	AchievementID    uint   `json:"achievementId"`
+	UnlockedAt       string `json:"unlockedAt"`
+	IsHardcore       bool   `json:"isHardcore"`
+	PlayTimeAtUnlock int64  `json:"playTimeAtUnlock"`
+}
+
+// RARecentAchievementResponse is an enriched recent achievement unlock across games.
+type RARecentAchievementResponse struct {
+	AchievementRAID  uint      `json:"achievementRaId"`
+	Title            string    `json:"title"`
+	Description      string    `json:"description"`
+	Points           int       `json:"points"`
+	BadgeURL         string    `json:"badgeUrl"`
+	UnlockedAt       time.Time `json:"unlockedAt"`
+	IsHardcore       bool      `json:"isHardcore"`
+	PlayTimeAtUnlock int64     `json:"playTimeAtUnlock"`
+	GameID           string    `json:"gameId"`
+	GameTitle        string    `json:"gameTitle"`
+	ConsoleName      string    `json:"consoleName"`
+	CoverURL         string    `json:"coverUrl"`
+}
+
+// RAUnlockedAchievementResponse is a single unlocked achievement in the showcase picker.
+type RAUnlockedAchievementResponse struct {
+	AchievementRAID uint    `json:"achievementRaId"`
+	RAGameID        uint    `json:"raGameId"`
+	Title           string  `json:"title"`
+	Description     string  `json:"description"`
+	Points          int     `json:"points"`
+	BadgeURL        string  `json:"badgeUrl"`
+	RarityPercent   float64 `json:"rarityPercent"`
+	GameTitle       string  `json:"gameTitle"`
+	ConsoleName     string  `json:"consoleName"`
+}
+
+// RATimelineEntryResponse is a single entry in a per-game achievement timeline.
+type RATimelineEntryResponse struct {
+	AchievementRAID  uint      `json:"achievementRaId"`
+	Title            string    `json:"title"`
+	Description      string    `json:"description"`
+	Points           int       `json:"points"`
+	BadgeURL         string    `json:"badgeUrl"`
+	UnlockedAt       time.Time `json:"unlockedAt"`
+	IsHardcore       bool      `json:"isHardcore"`
+	PlayTimeAtUnlock int64     `json:"playTimeAtUnlock"`
+}
+
+// RALeaderboardEntryResponse is a single entry in an achievement leaderboard.
+type RALeaderboardEntryResponse struct {
+	UserID          string    `json:"userId"`
+	Username        string    `json:"username"`
+	AvatarURL       string    `json:"avatarUrl"`
+	UnlockedCount   int       `json:"unlockedCount"`
+	EarnedPoints    int       `json:"earnedPoints"`
+	LastUnlockedAt  time.Time `json:"lastUnlockedAt"`
+	FirstUnlockedAt time.Time `json:"firstUnlockedAt"`
+	IsComplete      bool      `json:"isComplete"`
+}
+
+// --- Game ---
+
+// GameCheatResponse is a single cheat entry in the game cheats response.
+type GameCheatResponse struct {
+	ID          uint   `json:"id"`
+	Index       int    `json:"index"`
+	Description string `json:"description"`
+	Code        string `json:"code"`
+}
+
+// GameScanSummary is a lightweight game entry returned in scan results.
+type GameScanSummary struct {
+	ID          string `json:"id"`
+	Title       string `json:"title"`
+	ConsoleName string `json:"consoleName"`
+}
+
+// GameScanResultResponse is the scan result response with new-game summaries and auto-scrape status.
+type GameScanResultResponse struct {
+	NewGames     int               `json:"newGames"`
+	UpdatedGames int               `json:"updatedGames"`
+	RemovedGames int               `json:"removedGames"`
+	TotalGames   int               `json:"totalGames"`
+	NewGamesList []GameScanSummary `json:"newGamesList,omitempty"`
+	AutoScraping bool              `json:"autoScraping"`
+}
+
+// GameStatsTopPlayer is a player entry in the game stats response.
+type GameStatsTopPlayer struct {
+	UserID    string `json:"userId"`
+	Username  string `json:"username"`
+	AvatarURL string `json:"avatarUrl"`
+	PlayTime  int64  `json:"playTime"`
+}
+
+// GameStatsResponse is the response for GET /api/games/:id/stats.
+type GameStatsResponse struct {
+	TotalPlayers    int64                `json:"totalPlayers"`
+	TotalPlayTime   int64                `json:"totalPlayTime"`
+	AveragePlayTime int64                `json:"averagePlayTime"`
+	TopPlayers      []GameStatsTopPlayer `json:"topPlayers"`
+}
+
+// GameKeyMappingResponse is the JSON shape returned by the per-game key mapping endpoints.
+type GameKeyMappingResponse struct {
+	GameID        uint              `json:"gameId"`
+	CustomMapping map[string]string `json:"customMapping"`
+}
+
+// --- Session ---
+
+// SessionStorageConsoleBreakdown is per-console storage usage in the session storage response.
+type SessionStorageConsoleBreakdown struct {
+	ConsoleID   string `json:"consoleId"`
+	ConsoleName string `json:"consoleName"`
+	Bytes       int64  `json:"bytes"`
+	SaveCount   int64  `json:"saveCount"`
+}
+
+// --- System Events ---
+
+// SystemEventCategoryResponse is a single entry in the system event categories response.
+type SystemEventCategoryResponse struct {
+	Code string `json:"code"`
+	Name string `json:"name"`
+}
+
+// --- Stats ---
+
+// MostPlayedEntry is a single entry in the most-played games response.
+type MostPlayedEntry struct {
+	Game          GameResponse `json:"game"`
+	TotalPlayers  int64        `json:"totalPlayers"`
+	TotalPlayTime int64        `json:"totalPlayTime"`
+}
+
+// MostPlayedResponse is the response for GET /api/stats/most-played.
+type MostPlayedResponse struct {
+	Games []MostPlayedEntry `json:"games"`
+}
+
+// ActivePlayerEntry is a single entry in the most-active-players response.
+type ActivePlayerEntry struct {
+	UserID        string    `json:"userId"`
+	Username      string    `json:"username"`
+	AvatarURL     string    `json:"avatarUrl"`
+	TotalPlayTime int64     `json:"totalPlayTime"`
+	GamesPlayed   int64     `json:"gamesPlayed"`
+	LastPlayed    time.Time `json:"lastPlayed"`
+}
+
+// MostActivePlayersResponse is the response for GET /api/stats/most-active-players.
+type MostActivePlayersResponse struct {
+	Players []ActivePlayerEntry `json:"players"`
+}
+
+// HeatmapEntry is a single day's play activity for the heatmap response.
+type HeatmapEntry struct {
+	Date     string `json:"date"`
+	PlayTime int64  `json:"playTime"`
+}
+
+// --- Artwork ---
+
+// GameArtworkResponse is the API response for a game's artwork URLs.
+type GameArtworkResponse struct {
+	HeroURL string `json:"heroUrl,omitempty"`
+	GridURL string `json:"gridUrl,omitempty"`
+	LogoURL string `json:"logoUrl,omitempty"`
+	IconURL string `json:"iconUrl,omitempty"`
+}
+
+// --- BIOS ---
+
+// BiosFileResponse represents an individual BIOS file in the response.
+type BiosFileResponse struct {
+	Name        string  `json:"name"`
+	Size        int64   `json:"size"`
+	MD5         string  `json:"md5"`
+	ExpectedMD5 string  `json:"expectedMd5,omitempty"`
+	SubDir      string  `json:"subDir,omitempty"`
+	ConsoleID   *string `json:"consoleId"`
+	ConsoleName *string `json:"consoleName,omitempty"`
+	Description *string `json:"description,omitempty"`
+	Required    bool    `json:"required"`
+	Status      string  `json:"status"` // "valid", "present", "invalid", "missing"
+}
+
+// ConsoleFileStatus represents a single BIOS file within a console summary.
+type ConsoleFileStatus struct {
+	FileName    string `json:"fileName"`
+	Description string `json:"description"`
+	Required    bool   `json:"required"`
+	MD5         string `json:"md5"`
+	Status      string `json:"status"`           // "valid", "present", "invalid", "missing"
+	SubDir      string `json:"subDir,omitempty"` // subdirectory within system_dir
+}
+
+// ConsoleBiosStatus represents the BIOS status summary for one console.
+type ConsoleBiosStatus struct {
+	ConsoleID       string              `json:"consoleId"`
+	ConsoleName     string              `json:"consoleName"`
+	BiosRequired    bool                `json:"biosRequired"`
+	Status          string              `json:"status"` // "ready", "missing", "invalid", "not_required"
+	RequiredPresent int                 `json:"requiredPresent"`
+	RequiredTotal   int                 `json:"requiredTotal"`
+	OptionalPresent int                 `json:"optionalPresent"`
+	OptionalTotal   int                 `json:"optionalTotal"`
+	Files           []ConsoleFileStatus `json:"files"`
+}
+
+// BiosListResponse is the top-level response for GET /api/bios.
+type BiosListResponse struct {
+	Files    []BiosFileResponse  `json:"files"`
+	Consoles []ConsoleBiosStatus `json:"consoles"`
+}
+
+// --- Admin / Backfill ---
+
+// BackfillImagesResponse is the result of a backfill-images operation.
+type BackfillImagesResponse struct {
+	ArtworkDownloaded  int `json:"artworkDownloaded"`
+	TopRatedDownloaded int `json:"topRatedDownloaded"`
+	SimilarDownloaded  int `json:"similarDownloaded"`
+	GalleryDownloaded  int `json:"galleryDownloaded"`
+	CompanyDownloaded  int `json:"companyDownloaded"`
+	Errors             int `json:"errors"`
+}
+
+// --- Scraper ---
+
+// ScraperSourceResultResponse is a single source's scrape result counts.
+type ScraperSourceResultResponse struct {
+	Source           string `json:"source"`
+	Matched          int64  `json:"matched"`
+	NotFound         int64  `json:"notFound"`
+	NotFoundEligible int64  `json:"notFoundEligible"`
+	Error            int64  `json:"error"`
+	ErrorEligible    int64  `json:"errorEligible"`
+	NotAttempted     int64  `json:"notAttempted"`
+}

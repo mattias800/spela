@@ -269,13 +269,9 @@ func (h *SystemEventHandler) GetSystemEventCategories(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to load categories"})
 		return
 	}
-	type catResponse struct {
-		Code string `json:"code"`
-		Name string `json:"name"`
-	}
-	out := make([]catResponse, 0, len(cats))
+	out := make([]SystemEventCategoryResponse, 0, len(cats))
 	for _, cat := range cats {
-		out = append(out, catResponse{Code: cat.Code, Name: cat.Name})
+		out = append(out, SystemEventCategoryResponse{Code: cat.Code, Name: cat.Name})
 	}
 	c.JSON(http.StatusOK, out)
 }

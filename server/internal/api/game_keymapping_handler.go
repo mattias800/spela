@@ -15,12 +15,6 @@ type GameKeyMappingHandler struct {
 	DB *gorm.DB
 }
 
-// gameKeyMappingResponse is the JSON shape returned by the key mapping endpoints.
-type gameKeyMappingResponse struct {
-	GameID        uint              `json:"gameId"`
-	CustomMapping map[string]string `json:"customMapping"`
-}
-
 // GetGameKeyMapping returns the user's key mapping for a specific game.
 func (h *GameKeyMappingHandler) GetGameKeyMapping(c *gin.Context) {
 	uid := getUserID(c)
@@ -37,7 +31,7 @@ func (h *GameKeyMappingHandler) GetGameKeyMapping(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gameKeyMappingResponse{
+	c.JSON(http.StatusOK, GameKeyMappingResponse{
 		GameID:        pref.GameID,
 		CustomMapping: parseJSONMap(pref.CustomMapping),
 	})
@@ -98,7 +92,7 @@ func (h *GameKeyMappingHandler) UpdateGameKeyMapping(c *gin.Context) {
 		}
 	}
 
-	c.JSON(http.StatusOK, gameKeyMappingResponse{
+	c.JSON(http.StatusOK, GameKeyMappingResponse{
 		GameID:        game.ID,
 		CustomMapping: req.CustomMapping,
 	})

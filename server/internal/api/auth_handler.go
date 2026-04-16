@@ -133,11 +133,6 @@ type refreshRequest struct {
 	RefreshToken string `json:"refreshToken" binding:"required"`
 }
 
-type authResponse struct {
-	AccessToken  string       `json:"accessToken"`
-	RefreshToken string       `json:"refreshToken"`
-	User         UserResponse `json:"user"`
-}
 
 // Login authenticates a user and returns tokens.
 func (h *AuthHandler) Login(c *gin.Context) {
@@ -255,7 +250,7 @@ func (h *AuthHandler) Login(c *gin.Context) {
 	}
 	h.DB.Create(&rt)
 
-	c.JSON(http.StatusOK, authResponse{
+	c.JSON(http.StatusOK, AuthLoginResponse{
 		AccessToken:  accessToken,
 		RefreshToken: refreshToken,
 		User:         ToUserResponse(user),
@@ -361,7 +356,7 @@ func (h *AuthHandler) Register(c *gin.Context) {
 	}
 	h.DB.Create(&rt)
 
-	c.JSON(http.StatusCreated, authResponse{
+	c.JSON(http.StatusCreated, AuthLoginResponse{
 		AccessToken:  accessToken,
 		RefreshToken: refreshToken,
 		User:         ToUserResponse(user),
@@ -463,7 +458,7 @@ func (h *AuthHandler) Refresh(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, authResponse{
+	c.JSON(http.StatusOK, AuthLoginResponse{
 		AccessToken:  accessToken,
 		RefreshToken: newRefreshToken,
 		User:         ToUserResponse(user),
@@ -647,7 +642,7 @@ func (h *AuthHandler) Setup(c *gin.Context) {
 	}
 	h.DB.Create(&rt)
 
-	c.JSON(http.StatusCreated, authResponse{
+	c.JSON(http.StatusCreated, AuthLoginResponse{
 		AccessToken:  accessToken,
 		RefreshToken: refreshToken,
 		User:         ToUserResponse(user),

@@ -319,18 +319,8 @@ func (h *AdminHandler) ScrapeStatusCounts(c *gin.Context) {
 		eligible[r.Source][r.Status] = r.Count
 	}
 
-	type sourceResult struct {
-		Source           string `json:"source"`
-		Matched          int64  `json:"matched"`
-		NotFound         int64  `json:"notFound"`
-		NotFoundEligible int64  `json:"notFoundEligible"`
-		Error            int64  `json:"error"`
-		ErrorEligible    int64  `json:"errorEligible"`
-		NotAttempted     int64  `json:"notAttempted"`
-	}
-
 	sources := []string{"igdb", "libretro", "steamgriddb"}
-	results := make([]sourceResult, 0, len(sources))
+	results := make([]ScraperSourceResultResponse, 0, len(sources))
 
 	for _, src := range sources {
 		sc := counts[src]
@@ -339,7 +329,7 @@ func (h *AdminHandler) ScrapeStatusCounts(c *gin.Context) {
 		var attempted int64
 		h.DB.Raw("SELECT COUNT(DISTINCT game_id) FROM game_scrape_results WHERE source = ?", src).Scan(&attempted)
 
-		results = append(results, sourceResult{
+		results = append(results, ScraperSourceResultResponse{
 			Source:           src,
 			Matched:          sc["matched"],
 			NotFound:         sc["not_found"],
