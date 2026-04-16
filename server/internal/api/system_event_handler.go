@@ -306,11 +306,7 @@ func (h *SystemEventHandler) DismissSystemEvent(c *gin.Context) {
 // WASM compilation errors, missing ROMs) that otherwise only appear in
 // the user's browser console.
 func (h *SystemEventHandler) ReportEmulatorError(c *gin.Context) {
-	var req struct {
-		Error  string `json:"error" binding:"required"`
-		GameID string `json:"gameId"`
-		Core   string `json:"core"`
-	}
+	var req ReportEmulatorErrorRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid request body"})
 		return

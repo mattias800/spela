@@ -120,9 +120,7 @@ func (h *PlayLaterHandler) RemoveFromPlayLater(c *gin.Context) {
 func (h *PlayLaterHandler) ReorderPlayLater(c *gin.Context) {
 	uid := getUserID(c)
 
-	var req struct {
-		GameIDs []string `json:"gameIds"`
-	}
+	var req ReorderPlayLaterRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid request"})
 		return

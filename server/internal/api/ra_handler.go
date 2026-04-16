@@ -39,10 +39,7 @@ func (h *RAHandler) decryptRAToken(cred *db.RetroAchievementCredential) (string,
 func (h *RAHandler) LinkAccount(c *gin.Context) {
 	uid := getUserID(c)
 
-	var req struct {
-		Username string `json:"username" binding:"required"`
-		Password string `json:"password" binding:"required"`
-	}
+	var req LinkRAAccountRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "username and password are required"})
 		return
@@ -126,9 +123,7 @@ func (h *RAHandler) GetStatus(c *gin.Context) {
 func (h *RAHandler) UpdateSettings(c *gin.Context) {
 	uid := getUserID(c)
 
-	var req struct {
-		HardcoreEnabled *bool `json:"hardcoreEnabled"`
-	}
+	var req UpdateRASettingsRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		slog.Debug("request binding failed", "error", err)
 		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid request body"})

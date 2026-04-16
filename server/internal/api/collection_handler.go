@@ -20,11 +20,7 @@ type CollectionHandler struct {
 func (h *CollectionHandler) CreateCollection(c *gin.Context) {
 	uid := getUserID(c)
 
-	var req struct {
-		Name        string `json:"name" binding:"required,max=255"`
-		Description string `json:"description" binding:"max=2048"`
-		IsPublic    bool   `json:"isPublic"`
-	}
+	var req CreateCollectionRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid request: name is required"})
 		return
@@ -220,11 +216,7 @@ func (h *CollectionHandler) UpdateCollection(c *gin.Context) {
 		return
 	}
 
-	var req struct {
-		Name        *string `json:"name"`
-		Description *string `json:"description"`
-		IsPublic    *bool   `json:"isPublic"`
-	}
+	var req UpdateCollectionRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid request"})
 		return
@@ -308,9 +300,7 @@ func (h *CollectionHandler) AddGame(c *gin.Context) {
 		return
 	}
 
-	var req struct {
-		GameID uint `json:"gameId" binding:"required"`
-	}
+	var req AddGameToCollectionRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid request: gameId is required"})
 		return

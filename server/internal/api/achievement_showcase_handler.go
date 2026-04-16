@@ -70,10 +70,7 @@ func (h *AchievementShowcaseHandler) GetPublicShowcase(c *gin.Context) {
 func (h *AchievementShowcaseHandler) UpdateShowcase(c *gin.Context) {
 	uid := getUserID(c)
 
-	var req []struct {
-		AchievementRAID uint `json:"achievementRaId" binding:"required"`
-		RAGameID        uint `json:"raGameId" binding:"required"`
-	}
+	var req []ShowcaseEntryInput
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid request body"})
 		return

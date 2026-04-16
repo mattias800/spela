@@ -27,11 +27,7 @@ type deviceResponse struct {
 func (h *DeviceHandler) RegisterDevice(c *gin.Context) {
 	uid := getUserID(c)
 
-	var req struct {
-		DeviceUUID string `json:"deviceUuid" binding:"required"`
-		Name       string `json:"name" binding:"required"`
-		Platform   string `json:"platform" binding:"required"`
-	}
+	var req RegisterDeviceRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		slog.Debug("request binding failed", "error", err)
 		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid request body"})
@@ -113,9 +109,7 @@ func (h *DeviceHandler) UpdateDevice(c *gin.Context) {
 		return
 	}
 
-	var req struct {
-		Name string `json:"name" binding:"required"`
-	}
+	var req UpdateDeviceRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		slog.Debug("request binding failed", "error", err)
 		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid request body"})
@@ -189,9 +183,7 @@ func (h *DeviceHandler) UpdateDevicePreferences(c *gin.Context) {
 		return
 	}
 
-	var req struct {
-		ConsoleShaders map[string]string `json:"consoleShaders"`
-	}
+	var req UpdateDevicePreferencesRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		slog.Debug("request binding failed", "error", err)
 		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid request body"})

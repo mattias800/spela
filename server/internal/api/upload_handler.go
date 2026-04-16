@@ -518,9 +518,7 @@ func (h *UploadHandler) SetConsole(c *gin.Context) {
 		return
 	}
 
-	var req struct {
-		ConsoleID string `json:"consoleId" binding:"required"`
-	}
+	var req SetUploadConsoleRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "consoleId required"})
 		return

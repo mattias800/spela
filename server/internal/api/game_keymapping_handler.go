@@ -48,9 +48,7 @@ func (h *GameKeyMappingHandler) UpdateGameKeyMapping(c *gin.Context) {
 	uid := getUserID(c)
 	gameID := c.Param("gameId")
 
-	var req struct {
-		CustomMapping map[string]string `json:"customMapping"`
-	}
+	var req UpdateGameKeyMappingRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		slog.Debug("request binding failed", "error", err)
 		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid request body"})

@@ -90,9 +90,7 @@ func (h *AdminHandler) ApplyIGDBMatch(c *gin.Context) {
 		return
 	}
 
-	var req struct {
-		IGDBID int `json:"igdbId" binding:"required,min=1"`
-	}
+	var req ApplyIGDBMatchRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		slog.Debug("request binding failed", "error", err)
 		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "igdbId is required and must be a positive integer"})

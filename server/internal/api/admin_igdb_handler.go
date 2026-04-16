@@ -16,10 +16,7 @@ type IGDBHandler struct {
 
 // TestIGDB validates IGDB credentials by attempting a Twitch OAuth token exchange.
 func (h *IGDBHandler) TestIGDB(c *gin.Context) {
-	var req struct {
-		ClientID     string `json:"clientId"`
-		ClientSecret string `json:"clientSecret"`
-	}
+	var req TestIGDBRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "clientId and clientSecret are required"})
 		return
