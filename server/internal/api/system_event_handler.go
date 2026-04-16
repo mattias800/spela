@@ -299,3 +299,54 @@ func (h *SystemEventHandler) DismissSystemEvent(c *gin.Context) {
 	}
 	c.JSON(http.StatusOK, gin.H{"dismissed": true})
 }
+
+// ReportEmulatorError accepts a client-side emulator error report from
+// authenticated users and records it as an operational system event. This
+// gives admins visibility into player-facing issues (core download failures,
+// WASM compilation errors, missing ROMs) that otherwise only appear in
+// the user's browser console.
+func (h *SystemEventHandler) ReportEmulatorError(c *gin.Context) {
+	var req struct {
+		Error  string `json:"error" binding:"required"`
+		GameID string `json:"gameId"`
+		Core   string `json:"core"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body"})
+		return
+	}
+
+	// Extract user info from the auth context
+	userID, _ := c.Get("userID")
+	username, _ := c.Get("username")
+
+	var uid *uint
+	if id, ok := userID.(uint); ok {
+		uid = &id
+	}
+	var uname string
+	if name, ok := username.(string); ok {
+		uname = name
+	}
+
+	metadata := map[string]any{
+		"error": req.Error,
+	}
+	if req.GameID != "" {
+		metadata["gameId"] = req.GameID
+	}
+	if req.Core != "" {
+		metadata["core"] = req.Core
+	}
+
+	db.RecordOperationalEvent(h.DB, db.SystemEventInput{
+		EventType: db.SystemEventEmulatorJSLoadFailed,
+		Username:  uname,
+		UserID:    uid,
+		IP:        c.ClientIP(),
+		Path:      c.Request.URL.Path,
+		Metadata:  metadata,
+	})
+
+	c.JSON(http.StatusOK, gin.H{"reported": true})
+}

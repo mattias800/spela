@@ -243,6 +243,9 @@ export type ApiPostPath = WithQuery<
   | "/auth/refresh"
   | "/auth/logout"
 
+  // Emulator
+  | "/emulator/error"
+
   // Games
   | `/games/${string}/scrape-if-needed`
   | `/games/${string}/play-time`
