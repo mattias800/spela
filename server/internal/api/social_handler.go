@@ -454,12 +454,23 @@ func (h *SocialHandler) GetActivityFeed(c *gin.Context) {
 }
 
 // CreateActivityEvent creates a new activity event and broadcasts it via WebSocket.
-func CreateActivityEvent(database *gorm.DB, hub *ws.Hub, userID uint, eventType string, gameID uint, metadata map[string]interface{}) {
+// metadata should be one of the typed *Metadata structs defined in
+// activity_event_metadata.go (e.g. StartedPlayingMetadata, RatedGameMetadata)
+// so the call site is compile-checked against the expected shape. Pass nil
+// for events that carry no metadata. The wire format is the JSON-encoded
+// struct — unchanged from the prior map[string]interface{} representation.
+func CreateActivityEvent(database *gorm.DB, hub *ws.Hub, userID uint, eventType string, gameID uint, metadata any) {
 	metadataJSON := ""
+	// metadataMap is the broadcast-response shape (matches the persisted JSON
+	// after round-tripping through the DB). We marshal once for the DB blob,
+	// then unmarshal back into a map so the in-memory WebSocket broadcast
+	// mirrors what subsequent GETs will return.
+	var metadataMap map[string]interface{}
 	if metadata != nil {
 		b, err := json.Marshal(metadata)
 		if err == nil {
 			metadataJSON = string(b)
+			_ = json.Unmarshal(b, &metadataMap)
 		}
 	}
 
@@ -502,7 +513,7 @@ func CreateActivityEvent(database *gorm.DB, hub *ws.Hub, userID uint, eventType 
 		GameTitle:    game.Title,
 		GameCoverURL: coverURL,
 		ConsoleName:  consoleName,
-		Metadata:     metadata,
+		Metadata:     metadataMap,
 	}
 
 	if hub != nil {

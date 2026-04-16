@@ -80,8 +80,8 @@ func (h *SharedSaveHandler) ShareSave(c *gin.Context) {
 		return
 	}
 
-	CreateActivityEvent(h.DB, h.Hub, uid, "shared_save", uint(gid), map[string]interface{}{
-		"saveName": name,
+	CreateActivityEvent(h.DB, h.Hub, uid, "shared_save", uint(gid), SharedSaveMetadata{
+		SaveName: name,
 	})
 
 	c.JSON(http.StatusCreated, h.toResponse(shared, uid))

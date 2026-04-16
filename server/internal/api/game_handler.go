@@ -407,10 +407,10 @@ func (h *GameHandler) DownloadGame(c *gin.Context) {
 	if err != nil {
 		db.RecordOperationalEvent(h.DB, db.SystemEventInput{
 			EventType: db.SystemEventROMFileMissing,
-			Metadata: map[string]any{
-				"gameId":       game.ID,
-				"gameTitle":    game.Title,
-				"expectedPath": game.FilePath,
+			Metadata: db.ROMFileMissingMetadata{
+				GameID:       game.ID,
+				GameTitle:    game.Title,
+				ExpectedPath: game.FilePath,
 			},
 		})
 		c.JSON(http.StatusNotFound, ErrorResponse{Error: "game file not found"})
@@ -785,8 +785,8 @@ func (h *GameHandler) UpdatePlayTime(c *gin.Context) {
 	}
 
 	// Emit activity event for started playing
-	CreateActivityEvent(h.DB, h.Hub, uid, "started_playing", uint(gid), map[string]interface{}{
-		"seconds": req.Seconds,
+	CreateActivityEvent(h.DB, h.Hub, uid, "started_playing", uint(gid), StartedPlayingMetadata{
+		Seconds: req.Seconds,
 	})
 
 	c.JSON(http.StatusOK, gin.H{

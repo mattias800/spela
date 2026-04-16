@@ -181,16 +181,16 @@ func (h *AuthHandler) Login(c *gin.Context) {
 			Reason:    "bad_password",
 			Username:  req.Username,
 			UserID:    &user.ID,
-			Metadata:  map[string]any{"failedCount": attempt.FailedCount},
+			Metadata:  db.LoginFailedMetadata{FailedCount: attempt.FailedCount},
 		})
 		if attempt.FailedCount >= maxLoginAttempts {
 			recordSecurityEventCtx(h.DB, c, db.SystemEventInput{
 				EventType: db.SystemEventAccountLocked,
 				Username:  req.Username,
 				UserID:    &user.ID,
-				Metadata: map[string]any{
-					"failedCount": attempt.FailedCount,
-					"lockedUntil": attempt.LockedUntil,
+				Metadata: db.AccountLockedMetadata{
+					FailedCount: attempt.FailedCount,
+					LockedUntil: attempt.LockedUntil,
 				},
 			})
 		}

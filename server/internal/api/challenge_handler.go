@@ -226,9 +226,9 @@ func (h *ChallengeHandler) CreateChallenge(c *gin.Context) {
 	// Reload with associations
 	h.DB.Preload("Creator").Preload("Game").Preload("Game.Console").First(&challenge, challenge.ID)
 
-	CreateActivityEvent(h.DB, h.Hub, uid, "challenge_created", challenge.GameID, map[string]interface{}{
-		"challengeId":   challenge.ID,
-		"challengeName": challenge.Name,
+	CreateActivityEvent(h.DB, h.Hub, uid, "challenge_created", challenge.GameID, ChallengeCreatedMetadata{
+		ChallengeID:   challenge.ID,
+		ChallengeName: challenge.Name,
 	})
 
 	c.JSON(http.StatusCreated, h.toChallengeResponse(challenge))
@@ -609,10 +609,10 @@ func (h *ChallengeHandler) CompleteAttempt(c *gin.Context) {
 	var challenge db.Challenge
 	h.DB.First(&challenge, attempt.ChallengeID)
 
-	CreateActivityEvent(h.DB, h.Hub, uid, "challenge_completed", challenge.GameID, map[string]interface{}{
-		"challengeId":   challenge.ID,
-		"challengeName": challenge.Name,
-		"durationMs":    durationMs,
+	CreateActivityEvent(h.DB, h.Hub, uid, "challenge_completed", challenge.GameID, ChallengeCompletedMetadata{
+		ChallengeID:   challenge.ID,
+		ChallengeName: challenge.Name,
+		DurationMs:    durationMs,
 	})
 
 	// Check if this is an overall record (rank 1)
@@ -628,10 +628,10 @@ func (h *ChallengeHandler) CompleteAttempt(c *gin.Context) {
 			Count(&betterCount)
 
 		if betterCount == 0 {
-			CreateActivityEvent(h.DB, h.Hub, uid, "challenge_record", challenge.GameID, map[string]interface{}{
-				"challengeId":   challenge.ID,
-				"challengeName": challenge.Name,
-				"durationMs":    durationMs,
+			CreateActivityEvent(h.DB, h.Hub, uid, "challenge_record", challenge.GameID, ChallengeRecordMetadata{
+				ChallengeID:   challenge.ID,
+				ChallengeName: challenge.Name,
+				DurationMs:    durationMs,
 			})
 		}
 	}

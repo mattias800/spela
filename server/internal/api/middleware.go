@@ -112,9 +112,9 @@ func AuthMiddleware(jwtSecret string, database *gorm.DB) gin.HandlerFunc {
 				EventType: db.SystemEventStaleTokenVersion,
 				Username:  claims.Username,
 				UserID:    &userID,
-				Metadata: map[string]any{
-					"tokenVersion":   claims.TokenVersion,
-					"currentVersion": user.TokenVersion,
+				Metadata: db.StaleTokenVersionMetadata{
+					TokenVersion:   claims.TokenVersion,
+					CurrentVersion: user.TokenVersion,
 				},
 			})
 			abortWithError(c, http.StatusUnauthorized, "token has been invalidated", "Your session is no longer valid. Please sign in again.")

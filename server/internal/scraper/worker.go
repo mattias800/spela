@@ -131,10 +131,10 @@ func (w *ScrapeWorker) processItem(ctx context.Context, item *db.ScrapeQueueItem
 				if w.scraperConsecutiveFailures >= 5 {
 					db.RecordOperationalEvent(w.db, db.SystemEventInput{
 						EventType: db.SystemEventScraperRepeatedErrors,
-						Metadata: map[string]any{
-							"consecutiveFailures": w.scraperConsecutiveFailures,
-							"error":               err.Error(),
-							"gameTitle":            game.Title,
+						Metadata: db.ScraperRepeatedErrorsMetadata{
+							ConsecutiveFailures: w.scraperConsecutiveFailures,
+							Error:               err.Error(),
+							GameTitle:           game.Title,
 						},
 					})
 				}

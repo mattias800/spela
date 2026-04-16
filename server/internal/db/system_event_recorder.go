@@ -21,7 +21,14 @@ type SystemEventInput struct {
 	UserID    *uint
 	IP        string
 	Path      string
-	Metadata  map[string]any
+	// Metadata is the typed per-event-type metadata struct. Producers should
+	// pass one of the *Metadata structs defined in system_event_metadata.go
+	// (e.g. LoginFailedMetadata, AccountLockedMetadata) so the call site is
+	// compile-checked against the expected shape. Leave nil for events that
+	// carry no metadata. The recorder serializes this as a flat JSON object
+	// using the struct's json tags — the on-the-wire shape is unchanged from
+	// the prior map[string]any representation.
+	Metadata any
 }
 
 // --- Middleware write amplification guard ----------------------------------
@@ -156,9 +163,14 @@ func recordSystemEvent(database *gorm.DB, in SystemEventInput) {
 	}
 
 	var metaJSON string
-	if len(in.Metadata) > 0 {
+	if in.Metadata != nil {
 		if b, err := json.Marshal(in.Metadata); err == nil {
-			metaJSON = string(b)
+			s := string(b)
+			// Treat empty JSON object / null as "no metadata" to match the
+			// prior len(map) > 0 behavior and keep the column empty.
+			if s != "" && s != "{}" && s != "null" {
+				metaJSON = s
+			}
 		}
 	}
 
@@ -210,8 +222,18 @@ func logSystemEvent(in SystemEventInput) {
 	if in.Path != "" {
 		logArgs = append(logArgs, "path", in.Path)
 	}
-	for k, v := range in.Metadata {
-		logArgs = append(logArgs, k, v)
+	if in.Metadata != nil {
+		// Marshal the typed metadata struct and re-parse into a map so slog
+		// attrs use the exact JSON key names (matches historical behavior
+		// when Metadata was map[string]any).
+		if b, err := json.Marshal(in.Metadata); err == nil {
+			var m map[string]any
+			if json.Unmarshal(b, &m) == nil {
+				for k, v := range m {
+					logArgs = append(logArgs, k, v)
+				}
+			}
+		}
 	}
 	if in.EventType == SystemEventLoginSuccess {
 		slog.Info("system-event: "+in.EventType, logArgs...)

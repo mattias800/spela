@@ -96,8 +96,8 @@ func (h *SharedSessionHandler) CreateSharedSession(c *gin.Context) {
 	// Reload with associations
 	h.DB.Preload("Members").Preload("Members.User").Preload("Game").Preload("Game.Console").Preload("Owner").First(&ss, ss.ID)
 
-	CreateActivityEvent(h.DB, h.Hub, uid, "created_shared_session", uint(gid), map[string]interface{}{
-		"sharedSessionName": req.Name,
+	CreateActivityEvent(h.DB, h.Hub, uid, "created_shared_session", uint(gid), CreatedSharedSessionMetadata{
+		SharedSessionName: req.Name,
 	})
 
 	if h.Hub != nil {
@@ -399,8 +399,8 @@ func (h *SharedSessionHandler) AcceptInvite(c *gin.Context) {
 		return
 	}
 
-	CreateActivityEvent(h.DB, h.Hub, uid, "joined_shared_session", invite.SharedSession.GameID, map[string]interface{}{
-		"sharedSessionName": invite.SharedSession.Name,
+	CreateActivityEvent(h.DB, h.Hub, uid, "joined_shared_session", invite.SharedSession.GameID, JoinedSharedSessionMetadata{
+		SharedSessionName: invite.SharedSession.Name,
 	})
 
 	if h.Hub != nil {
