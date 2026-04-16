@@ -315,6 +315,7 @@ const (
 	SystemEventScraperRepeatedErrors   = "scraper_repeated_errors"
 	SystemEventROMFileMissing          = "rom_file_missing"
 	SystemEventAPICredentialsInvalid   = "api_credentials_invalid"
+	SystemEventEmulatorJSLoadFailed    = "emulatorjs_load_failed"
 )
 
 // AllSystemEventTypes is the canonical catalog of system event type strings.
@@ -334,6 +335,7 @@ var AllSystemEventTypes = []string{
 	SystemEventScraperRepeatedErrors,
 	SystemEventROMFileMissing,
 	SystemEventAPICredentialsInvalid,
+	SystemEventEmulatorJSLoadFailed,
 }
 
 // SystemEventTypeCategory maps each event type to its category code. Used by
@@ -353,6 +355,7 @@ var SystemEventTypeCategory = map[string]string{
 	SystemEventScraperRepeatedErrors:   CategoryOperational,
 	SystemEventROMFileMissing:          CategoryOperational,
 	SystemEventAPICredentialsInvalid:   CategoryOperational,
+	SystemEventEmulatorJSLoadFailed:    CategoryOperational,
 }
 
 // SystemEvent records an admin-only audit entry for an authentication,

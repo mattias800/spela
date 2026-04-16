@@ -543,6 +543,10 @@ func NewRouter(cfg Config) (*gin.Engine, func()) {
 		api.PUT("/user/achievements/showcase", showcaseHandler.UpdateShowcase)
 		api.GET("/users/:id/achievements/showcase", showcaseHandler.GetPublicShowcase)
 
+		// Client error reporting (any authenticated user)
+		emulatorErrorHandler := &SystemEventHandler{DB: cfg.DB}
+		api.POST("/emulator/error", emulatorErrorHandler.ReportEmulatorError)
+
 		// Admin routes
 		admin := api.Group("/admin")
 		admin.Use(AdminMiddleware())

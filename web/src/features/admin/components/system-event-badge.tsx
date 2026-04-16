@@ -102,6 +102,12 @@ export const SYSTEM_EVENT_META: Record<SystemEventType, EventMeta> = {
     icon: KeySquare,
     severity: "alert",
   },
+  emulatorjs_load_failed: {
+    label: "Emulator Load Failed",
+    variant: "danger",
+    icon: AlertTriangle,
+    severity: "alert",
+  },
 };
 
 interface SystemEventBadgeProps {

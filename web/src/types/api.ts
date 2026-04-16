@@ -34,7 +34,8 @@ export type OperationalEventType =
   | "ra_circuit_breaker_tripped"
   | "scraper_repeated_errors"
   | "rom_file_missing"
-  | "api_credentials_invalid";
+  | "api_credentials_invalid"
+  | "emulatorjs_load_failed";
 
 export type SystemEventType = SecurityEventType | OperationalEventType;
 

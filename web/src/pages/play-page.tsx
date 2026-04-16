@@ -150,6 +150,11 @@ export function PlayPage() {
     },
     onError: (err) => {
       toast("error", `Emulator error: ${err}`);
+      api.post("/emulator/error", {
+        error: err,
+        gameId: id ?? "",
+        core: emulatorJsCore ?? "",
+      }).catch(() => {});
     },
     onSramUpdate: (data) => {
       saveManager.enqueueSave(data, true, "sram_autosave");
