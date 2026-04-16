@@ -175,7 +175,7 @@ func (w *ScrapeWorker) broadcastProgress(item *db.ScrapeQueueItem, game *db.Game
 		}
 
 		w.hub.Broadcast(ws.Event{
-			Type: "scrape_progress",
+			Type: ws.EventScrapeProgress,
 			Payload: ScrapeProgress{
 				Current:     job.CompletedItems + job.FailedItems,
 				Total:       job.TotalItems,
@@ -191,10 +191,10 @@ func (w *ScrapeWorker) broadcastProgress(item *db.ScrapeQueueItem, game *db.Game
 
 		if jobDone {
 			w.hub.Broadcast(ws.Event{
-				Type: "scrape_complete",
-				Payload: map[string]interface{}{
-					"scraped": job.CompletedItems,
-					"total":   job.TotalItems,
+				Type: ws.EventScrapeComplete,
+				Payload: ws.ScrapeCompletePayload{
+					Scraped: job.CompletedItems,
+					Total:   job.TotalItems,
 				},
 			})
 			if w.onJobComplete != nil {
@@ -210,10 +210,10 @@ func (w *ScrapeWorker) broadcastScrapeStatus(gameID uint, status string) {
 		return
 	}
 	w.hub.Broadcast(ws.Event{
-		Type: "game_scrape_status",
-		Payload: map[string]interface{}{
-			"gameId": gameID,
-			"status": status,
+		Type: ws.EventGameScrapeStatus,
+		Payload: ws.GameScrapeStatusPayload{
+			GameID: gameID,
+			Status: status,
 		},
 	})
 }

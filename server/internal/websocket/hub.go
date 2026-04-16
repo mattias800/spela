@@ -126,7 +126,7 @@ func (h *Hub) Run() {
 			userID := client.UserID
 			h.mu.Unlock()
 			slog.Info("websocket client connected", "userId", userID)
-			h.Broadcast(Event{Type: "online_status", Payload: map[string]interface{}{"userId": userID, "status": "online"}})
+			h.Broadcast(Event{Type: EventOnlineStatus, Payload: OnlineStatusPayload{UserID: userID, Status: "online"}})
 
 		case client := <-h.unregister:
 			var broadcastOffline bool
@@ -145,7 +145,7 @@ func (h *Hub) Run() {
 			h.mu.Unlock()
 			slog.Info("websocket client disconnected", "userId", userID)
 			if broadcastOffline {
-				h.Broadcast(Event{Type: "online_status", Payload: map[string]interface{}{"userId": userID, "status": "offline"}})
+				h.Broadcast(Event{Type: EventOnlineStatus, Payload: OnlineStatusPayload{UserID: userID, Status: "offline"}})
 			}
 
 		case event := <-h.broadcast:

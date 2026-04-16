@@ -569,7 +569,7 @@ func (h *GameHandler) ScanGames(c *gin.Context) {
 		return
 	}
 
-	h.Hub.Broadcast(ws.Event{Type: "scan_started", Payload: nil})
+	h.Hub.Broadcast(ws.Event{Type: ws.EventScanStarted, Payload: nil})
 	c.JSON(http.StatusAccepted, gin.H{"message": "scan started in background"})
 
 	go func() {
@@ -581,11 +581,11 @@ func (h *GameHandler) ScanGames(c *gin.Context) {
 		}
 		result, err := h.Scanner.Scan(func(p scanner.ScanProgress) {
 			h.Scanner.SetScanProgress(&p)
-			h.Hub.Broadcast(ws.Event{Type: "scan_progress", Payload: p})
+			h.Hub.Broadcast(ws.Event{Type: ws.EventScanProgress, Payload: p})
 		}, scanArgs...)
 		if err != nil {
 			slog.Error("game library scan failed", "error", err)
-			h.Hub.Broadcast(ws.Event{Type: "scan_error", Payload: ErrorResponse{Error: "library scan failed"}})
+			h.Hub.Broadcast(ws.Event{Type: ws.EventScanError, Payload: ErrorResponse{Error: "library scan failed"}})
 			return
 		}
 
@@ -609,7 +609,7 @@ func (h *GameHandler) ScanGames(c *gin.Context) {
 			}
 		}
 
-		h.Hub.Broadcast(ws.Event{Type: "scan_complete", Payload: resp})
+		h.Hub.Broadcast(ws.Event{Type: ws.EventScanComplete, Payload: resp})
 
 		// Configure SteamGridDB if API key is set (best-effort artwork during auto-scrape)
 		if apiKey := steamGridDBAPIKey(h.DB); apiKey != "" {
@@ -642,10 +642,10 @@ func (h *GameHandler) ScanGames(c *gin.Context) {
 							slog.Error("failed to enqueue scan auto-scrape games", "error", enqErr)
 						} else {
 							slog.Info("scan auto-scrape job created", "jobId", job.ID, "total", len(gameIDs))
-							h.Hub.Broadcast(ws.Event{Type: "scrape_started", Payload: gin.H{
-								"jobId": job.ID,
-								"total": len(gameIDs),
-								"mode":  "new",
+							h.Hub.Broadcast(ws.Event{Type: ws.EventScrapeStarted, Payload: ws.ScrapeStartedPayload{
+								JobID: job.ID,
+								Total: len(gameIDs),
+								Mode:  "new",
 							}})
 						}
 					}

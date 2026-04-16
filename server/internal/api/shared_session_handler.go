@@ -101,7 +101,7 @@ func (h *SharedSessionHandler) CreateSharedSession(c *gin.Context) {
 	})
 
 	if h.Hub != nil {
-		h.Hub.Broadcast(ws.Event{Type: "shared_session_created", Payload: h.toSharedSessionResponse(ss)})
+		h.Hub.Broadcast(ws.Event{Type: ws.EventSharedSessionCreated, Payload: h.toSharedSessionResponse(ss)})
 	}
 
 	c.JSON(http.StatusCreated, h.toSharedSessionDetailResponse(ss))
@@ -222,7 +222,7 @@ func (h *SharedSessionHandler) UpdateSharedSession(c *gin.Context) {
 	}
 
 	if h.Hub != nil {
-		h.Hub.Broadcast(ws.Event{Type: "shared_session_updated", Payload: h.toSharedSessionResponse(ss)})
+		h.Hub.Broadcast(ws.Event{Type: ws.EventSharedSessionUpdated, Payload: h.toSharedSessionResponse(ss)})
 	}
 
 	c.JSON(http.StatusOK, h.toSharedSessionResponse(ss))
@@ -252,7 +252,7 @@ func (h *SharedSessionHandler) DeleteSharedSession(c *gin.Context) {
 	h.DB.Delete(&ss)
 
 	if h.Hub != nil {
-		h.Hub.Broadcast(ws.Event{Type: "shared_session_deleted", Payload: gin.H{"sharedSessionId": strconv.FormatUint(uint64(sharedSessionID), 10)}})
+		h.Hub.Broadcast(ws.Event{Type: ws.EventSharedSessionDeleted, Payload: ws.SharedSessionDeletedPayload{SharedSessionID: strconv.FormatUint(uint64(sharedSessionID), 10)}})
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "shared session deleted"})
@@ -318,7 +318,7 @@ func (h *SharedSessionHandler) InviteUser(c *gin.Context) {
 	h.DB.Preload("Inviter").Preload("Invitee").Preload("SharedSession").Preload("SharedSession.Game").First(&invite, invite.ID)
 
 	if h.Hub != nil {
-		h.Hub.Broadcast(ws.Event{Type: "shared_session_invite_sent", Payload: h.toSharedSessionInviteResponse(invite)})
+		h.Hub.Broadcast(ws.Event{Type: ws.EventSharedSessionInviteSent, Payload: h.toSharedSessionInviteResponse(invite)})
 	}
 
 	c.JSON(http.StatusCreated, h.toSharedSessionInviteResponse(invite))
@@ -406,10 +406,10 @@ func (h *SharedSessionHandler) AcceptInvite(c *gin.Context) {
 	if h.Hub != nil {
 		var user db.User
 		h.DB.First(&user, uid)
-		h.Hub.Broadcast(ws.Event{Type: "shared_session_invite_accepted", Payload: gin.H{
-			"sharedSessionId":  strconv.FormatUint(uint64(invite.SharedSessionID), 10),
-			"userId":   strconv.FormatUint(uint64(uid), 10),
-			"username": user.Username,
+		h.Hub.Broadcast(ws.Event{Type: ws.EventSharedSessionInviteAccepted, Payload: ws.SharedSessionInviteAcceptedPayload{
+			SharedSessionID: strconv.FormatUint(uint64(invite.SharedSessionID), 10),
+			UserID:          strconv.FormatUint(uint64(uid), 10),
+			Username:        user.Username,
 		}})
 	}
 
@@ -444,9 +444,9 @@ func (h *SharedSessionHandler) DeclineInvite(c *gin.Context) {
 	}
 
 	if h.Hub != nil {
-		h.Hub.Broadcast(ws.Event{Type: "shared_session_invite_declined", Payload: gin.H{
-			"sharedSessionId":   strconv.FormatUint(uint64(invite.SharedSessionID), 10),
-			"inviteeId": strconv.FormatUint(uint64(uid), 10),
+		h.Hub.Broadcast(ws.Event{Type: ws.EventSharedSessionInviteDeclined, Payload: ws.SharedSessionInviteDeclinedPayload{
+			SharedSessionID: strconv.FormatUint(uint64(invite.SharedSessionID), 10),
+			InviteeID:       strconv.FormatUint(uint64(uid), 10),
 		}})
 	}
 
@@ -482,9 +482,9 @@ func (h *SharedSessionHandler) LeaveSharedSession(c *gin.Context) {
 	}
 
 	if h.Hub != nil {
-		h.Hub.Broadcast(ws.Event{Type: "shared_session_member_left", Payload: gin.H{
-			"sharedSessionId": strconv.FormatUint(uint64(ss.ID), 10),
-			"userId":  strconv.FormatUint(uint64(uid), 10),
+		h.Hub.Broadcast(ws.Event{Type: ws.EventSharedSessionMemberLeft, Payload: ws.SharedSessionMemberLeftPayload{
+			SharedSessionID: strconv.FormatUint(uint64(ss.ID), 10),
+			UserID:          strconv.FormatUint(uint64(uid), 10),
 		}})
 	}
 
@@ -527,9 +527,9 @@ func (h *SharedSessionHandler) RemoveMember(c *gin.Context) {
 	}
 
 	if h.Hub != nil {
-		h.Hub.Broadcast(ws.Event{Type: "shared_session_member_removed", Payload: gin.H{
-			"sharedSessionId": strconv.FormatUint(uint64(ss.ID), 10),
-			"userId":  strconv.FormatUint(uint64(targetUID), 10),
+		h.Hub.Broadcast(ws.Event{Type: ws.EventSharedSessionMemberRemoved, Payload: ws.SharedSessionMemberRemovedPayload{
+			SharedSessionID: strconv.FormatUint(uint64(ss.ID), 10),
+			UserID:          strconv.FormatUint(uint64(targetUID), 10),
 		}})
 	}
 
@@ -601,9 +601,9 @@ func (h *SharedSessionHandler) TakeTurn(c *gin.Context) {
 	}
 
 	if previousUserID != nil && h.Hub != nil {
-		h.Hub.Broadcast(ws.Event{Type: "shared_session_turn_expired", Payload: gin.H{
-			"sharedSessionId":        strconv.FormatUint(uint64(ss.ID), 10),
-			"previousUserId": strconv.FormatUint(uint64(*previousUserID), 10),
+		h.Hub.Broadcast(ws.Event{Type: ws.EventSharedSessionTurnExpired, Payload: ws.SharedSessionTurnExpiredPayload{
+			SharedSessionID: strconv.FormatUint(uint64(ss.ID), 10),
+			PreviousUserID:  strconv.FormatUint(uint64(*previousUserID), 10),
 		}})
 	}
 
@@ -611,10 +611,10 @@ func (h *SharedSessionHandler) TakeTurn(c *gin.Context) {
 	h.DB.First(&user, uid)
 
 	if h.Hub != nil {
-		h.Hub.Broadcast(ws.Event{Type: "shared_session_turn_acquired", Payload: gin.H{
-			"sharedSessionId":  strconv.FormatUint(uint64(ss.ID), 10),
-			"userId":   strconv.FormatUint(uint64(uid), 10),
-			"username": user.Username,
+		h.Hub.Broadcast(ws.Event{Type: ws.EventSharedSessionTurnAcquired, Payload: ws.SharedSessionTurnAcquiredPayload{
+			SharedSessionID: strconv.FormatUint(uint64(ss.ID), 10),
+			UserID:          strconv.FormatUint(uint64(uid), 10),
+			Username:        user.Username,
 		}})
 	}
 
@@ -644,9 +644,9 @@ func (h *SharedSessionHandler) ReleaseTurn(c *gin.Context) {
 	})
 
 	if h.Hub != nil {
-		h.Hub.Broadcast(ws.Event{Type: "shared_session_turn_released", Payload: gin.H{
-			"sharedSessionId": strconv.FormatUint(uint64(ss.ID), 10),
-			"userId":  strconv.FormatUint(uint64(uid), 10),
+		h.Hub.Broadcast(ws.Event{Type: ws.EventSharedSessionTurnReleased, Payload: ws.SharedSessionTurnReleasedPayload{
+			SharedSessionID: strconv.FormatUint(uint64(ss.ID), 10),
+			UserID:          strconv.FormatUint(uint64(uid), 10),
 		}})
 	}
 
@@ -771,11 +771,11 @@ func (h *SharedSessionHandler) UploadSave(c *gin.Context) {
 	h.DB.Preload("User").First(&save, save.ID)
 
 	if h.Hub != nil {
-		h.Hub.Broadcast(ws.Event{Type: "shared_session_save_uploaded", Payload: gin.H{
-			"sharedSessionId": strconv.FormatUint(uint64(ss.ID), 10),
-			"saveId":  strconv.FormatUint(uint64(save.ID), 10),
-			"userId":  strconv.FormatUint(uint64(uid), 10),
-			"isAuto":  false,
+		h.Hub.Broadcast(ws.Event{Type: ws.EventSharedSessionSaveUploaded, Payload: ws.SharedSessionSaveUploadedPayload{
+			SharedSessionID: strconv.FormatUint(uint64(ss.ID), 10),
+			SaveID:          strconv.FormatUint(uint64(save.ID), 10),
+			UserID:          strconv.FormatUint(uint64(uid), 10),
+			IsAuto:          false,
 		}})
 	}
 
@@ -908,11 +908,11 @@ func (h *SharedSessionHandler) UploadAutoSave(c *gin.Context) {
 	h.DB.Preload("User").First(&save, save.ID)
 
 	if h.Hub != nil {
-		h.Hub.Broadcast(ws.Event{Type: "shared_session_save_uploaded", Payload: gin.H{
-			"sharedSessionId": strconv.FormatUint(uint64(ss.ID), 10),
-			"saveId":  strconv.FormatUint(uint64(save.ID), 10),
-			"userId":  strconv.FormatUint(uint64(uid), 10),
-			"isAuto":  true,
+		h.Hub.Broadcast(ws.Event{Type: ws.EventSharedSessionSaveUploaded, Payload: ws.SharedSessionSaveUploadedPayload{
+			SharedSessionID: strconv.FormatUint(uint64(ss.ID), 10),
+			SaveID:          strconv.FormatUint(uint64(save.ID), 10),
+			UserID:          strconv.FormatUint(uint64(uid), 10),
+			IsAuto:          true,
 		}})
 	}
 
