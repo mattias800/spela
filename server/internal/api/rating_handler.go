@@ -55,8 +55,8 @@ func (h *RatingHandler) CreateOrUpdateRating(c *gin.Context) {
 			return
 		}
 
-		CreateActivityEvent(h.DB, h.Hub, uid, "rated_game", uint(gid), map[string]interface{}{
-			"rating": req.Rating,
+		CreateActivityEvent(h.DB, h.Hub, uid, "rated_game", uint(gid), RatedGameMetadata{
+			Rating: req.Rating,
 		})
 
 		c.JSON(http.StatusCreated, h.toRatingResponse(rating, uid))

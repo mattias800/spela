@@ -87,9 +87,9 @@ func (s *Scraper) tryFetchRAAchievements(game *db.Game) {
 		if strings.Contains(errStr, "status 401") || strings.Contains(errStr, "status 403") {
 			db.RecordOperationalEvent(s.DB, db.SystemEventInput{
 				EventType: db.SystemEventAPICredentialsInvalid,
-				Metadata: map[string]any{
-					"service": "retroachievements",
-					"error":   errStr,
+				Metadata: db.APICredentialsInvalidMetadata{
+					Service: "retroachievements",
+					Error:   errStr,
 				},
 			})
 		}
@@ -100,9 +100,9 @@ func (s *Scraper) tryFetchRAAchievements(game *db.Game) {
 				"consecutiveFailures", s.raConsecutiveFailures, "lastError", err)
 			db.RecordOperationalEvent(s.DB, db.SystemEventInput{
 				EventType: db.SystemEventRACircuitBreakerTripped,
-				Metadata: map[string]any{
-					"consecutiveFailures": s.raConsecutiveFailures,
-					"lastError":           errStr,
+				Metadata: db.RACircuitBreakerTrippedMetadata{
+					ConsecutiveFailures: s.raConsecutiveFailures,
+					LastError:           errStr,
 				},
 			})
 		} else {

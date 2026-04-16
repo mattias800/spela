@@ -37,8 +37,8 @@ func (h *CollectionHandler) CreateCollection(c *gin.Context) {
 		return
 	}
 
-	CreateActivityEvent(h.DB, h.Hub, uid, "created_collection", 0, map[string]interface{}{
-		"collectionName": req.Name,
+	CreateActivityEvent(h.DB, h.Hub, uid, "created_collection", 0, CreatedCollectionMetadata{
+		CollectionName: req.Name,
 	})
 
 	c.JSON(http.StatusCreated, h.toCollectionResponse(collection, uid))

@@ -321,14 +321,10 @@ func (h *SystemEventHandler) ReportEmulatorError(c *gin.Context) {
 		uname = name
 	}
 
-	metadata := map[string]any{
-		"error": req.Error,
-	}
-	if req.GameID != "" {
-		metadata["gameId"] = req.GameID
-	}
-	if req.Core != "" {
-		metadata["core"] = req.Core
+	metadata := db.EmulatorJSLoadFailedMetadata{
+		Error:  req.Error,
+		GameID: req.GameID,
+		Core:   req.Core,
 	}
 
 	db.RecordOperationalEvent(h.DB, db.SystemEventInput{
