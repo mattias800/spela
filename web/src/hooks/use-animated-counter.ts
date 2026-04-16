@@ -21,10 +21,18 @@ export function useAnimatedCounter(
       return;
     }
 
-    const startTime = performance.now();
+    let startTime: number | null = null;
     let frameId: number;
 
     function tick(now: number) {
+      // Capture startTime from the rAF callback's own timestamp so we don't
+      // mix it with performance.now() — in jsdom the two can have different
+      // time origins (e.g. when vitest's threads pool runs many tests in the
+      // same process, performance.now() drifts arbitrarily ahead of the
+      // window's animation clock, producing negative elapsed values).
+      if (startTime === null) {
+        startTime = now;
+      }
       const elapsed = now - startTime;
       const progress = Math.min(elapsed / durationMs, 1);
       // Ease-out: 1 - (1 - t)^3
