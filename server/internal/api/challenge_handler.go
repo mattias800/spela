@@ -346,11 +346,7 @@ func (h *ChallengeHandler) UpdateChallenge(c *gin.Context) {
 		return
 	}
 
-	var req struct {
-		Name        *string `json:"name"`
-		Description *string `json:"description"`
-		Status      *string `json:"status"`
-	}
+	var req UpdateChallengeRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid request body"})
 		return

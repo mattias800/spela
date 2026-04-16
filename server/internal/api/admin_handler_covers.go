@@ -101,10 +101,7 @@ func (h *AdminHandler) SetGameCover(c *gin.Context) {
 		return
 	}
 
-	var req struct {
-		Source      string `json:"source" binding:"required"`
-		LibRetroName string `json:"libretroName,omitempty"`
-	}
+	var req SetGameCoverRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		slog.Debug("request binding failed", "error", err)
 		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid request body"})

@@ -39,9 +39,7 @@ func (h *SessionHandler) CreateSession(c *gin.Context) {
 		return
 	}
 
-	var req struct {
-		Name string `json:"name" binding:"required,max=255"`
-	}
+	var req CreateSessionRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "name is required and must be 255 characters or fewer"})
 		return
@@ -272,11 +270,7 @@ func (h *SessionHandler) UpdateSession(c *gin.Context) {
 		return
 	}
 
-	var req struct {
-		Name          *string `json:"name"`
-		CheatsEnabled *bool   `json:"cheatsEnabled"`
-		CoreName      *string `json:"coreName"`
-	}
+	var req UpdateSessionRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid request"})
 		return
@@ -374,9 +368,7 @@ func (h *SessionHandler) DuplicateSession(c *gin.Context) {
 		}
 	}
 
-	var req struct {
-		Name string `json:"name"`
-	}
+	var req DuplicateSessionRequest
 	_ = c.ShouldBindJSON(&req)
 	if strings.TrimSpace(req.Name) == "" {
 		req.Name = session.Name + " (Copy)"
@@ -641,10 +633,7 @@ func (h *SessionHandler) UpdateSessionSave(c *gin.Context) {
 		return
 	}
 
-	var req struct {
-		Name  *string `json:"name"`
-		Notes *string `json:"notes"`
-	}
+	var req UpdateSessionSaveRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid request"})
 		return
@@ -1017,9 +1006,7 @@ func (h *SessionHandler) UpdatePlayTime(c *gin.Context) {
 		return
 	}
 
-	var req struct {
-		Seconds int64 `json:"seconds" binding:"required"`
-	}
+	var req UpdateSessionPlayTimeRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "seconds is required"})
 		return
@@ -1090,10 +1077,7 @@ func (h *SessionHandler) UpdateSessionCheats(c *gin.Context) {
 		return
 	}
 
-	var req struct {
-		CheatsEnabled  bool  `json:"cheatsEnabled"`
-		EnabledIndices []int `json:"enabledIndices"`
-	}
+	var req UpdateSessionCheatsRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid request"})
 		return

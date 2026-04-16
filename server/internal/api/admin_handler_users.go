@@ -27,12 +27,7 @@ func (h *AdminHandler) ListUsers(c *gin.Context) {
 
 // CreateUser creates a new user account (admin only).
 func (h *AdminHandler) CreateUser(c *gin.Context) {
-	var req struct {
-		Username string       `json:"username" binding:"required,min=3,max=64"`
-		Email    string       `json:"email" binding:"required,email"`
-		Password string       `json:"password" binding:"required,min=8,max=72"`
-		Role     db.UserRole  `json:"role"`
-	}
+	var req AdminCreateUserRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		slog.Debug("request binding failed", "error", err)
 		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid request body"})
@@ -91,13 +86,7 @@ func (h *AdminHandler) UpdateUser(c *gin.Context) {
 		return
 	}
 
-	var req struct {
-		Role            db.UserRole `json:"role"`
-		Email           string      `json:"email"`
-		Password        string      `json:"password"`
-		Disabled        *bool       `json:"disabled"`
-		PendingApproval *bool       `json:"pendingApproval"`
-	}
+	var req AdminUpdateUserRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		slog.Debug("request binding failed", "error", err)
 		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid request body"})

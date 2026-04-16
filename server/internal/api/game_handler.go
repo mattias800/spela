@@ -494,20 +494,7 @@ func (h *GameHandler) UpdateMetadata(c *gin.Context) {
 		return
 	}
 
-	var req struct {
-		Title         string  `json:"title"`
-		Description   string  `json:"description"`
-		CoverURL      string  `json:"coverUrl"`
-		ScreenshotURL string  `json:"screenshotUrl"`
-		Developer     string  `json:"developer"`
-		Publisher     string  `json:"publisher"`
-		ReleaseDate   string  `json:"releaseDate"`
-		Genre         string  `json:"genre"`
-		Players       int     `json:"players"`
-		IGDBCriticsRating float64 `json:"igdbCriticsRating"`
-		CoreOverride  string  `json:"coreOverride"`
-		PartyInfo     string  `json:"partyInfo"`
-	}
+	var req UpdateGameMetadataRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		slog.Debug("request binding failed", "error", err)
 		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid request body"})
@@ -774,9 +761,7 @@ func (h *GameHandler) UpdatePlayTime(c *gin.Context) {
 	// maxPlayTimeSeconds caps total play time at ~100 years to prevent overflow.
 	const maxPlayTimeSeconds int64 = 100 * 365 * 24 * 3600
 
-	var req struct {
-		Seconds int64 `json:"seconds" binding:"min=0,max=86400"`
-	}
+	var req UpdateGamePlayTimeRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid request: seconds must be between 0 and 86400"})
 		return
@@ -995,9 +980,7 @@ func (h *GameHandler) UpdateVerificationTag(c *gin.Context) {
 		return
 	}
 
-	var req struct {
-		Tag string `json:"tag"`
-	}
+	var req UpdateVerificationTagRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid request"})
 		return

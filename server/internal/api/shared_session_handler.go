@@ -31,10 +31,7 @@ type SharedSessionHandler struct {
 func (h *SharedSessionHandler) CreateSharedSession(c *gin.Context) {
 	uid := getUserID(c)
 
-	var req struct {
-		GameID string `json:"gameId" binding:"required"`
-		Name   string `json:"name" binding:"required,max=255"`
-	}
+	var req CreateSharedSessionRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid request: gameId and name are required"})
 		return
@@ -197,10 +194,7 @@ func (h *SharedSessionHandler) UpdateSharedSession(c *gin.Context) {
 		return
 	}
 
-	var req struct {
-		Name   *string `json:"name"`
-		Status *string `json:"status"`
-	}
+	var req UpdateSharedSessionRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid request"})
 		return
@@ -272,9 +266,7 @@ func (h *SharedSessionHandler) InviteUser(c *gin.Context) {
 		return
 	}
 
-	var req struct {
-		Username string `json:"username" binding:"required"`
-	}
+	var req InviteToSharedSessionRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid request: username is required"})
 		return

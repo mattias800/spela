@@ -35,10 +35,7 @@ func (h *RatingHandler) CreateOrUpdateRating(c *gin.Context) {
 		return
 	}
 
-	var req struct {
-		Rating int    `json:"rating" binding:"required,min=1,max=5"`
-		Review string `json:"review"`
-	}
+	var req CreateOrUpdateRatingRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid request: rating must be between 1 and 5"})
 		return

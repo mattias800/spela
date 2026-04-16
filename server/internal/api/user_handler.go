@@ -46,11 +46,7 @@ func (h *UserHandler) UpdateProfile(c *gin.Context) {
 		return
 	}
 
-	var req struct {
-		Email           string `json:"email"`
-		AvatarURL       string `json:"avatarUrl"`
-		CurrentPassword string `json:"currentPassword"`
-	}
+	var req UpdateProfileRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		slog.Debug("request binding failed", "error", err)
 		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid request body"})
@@ -271,19 +267,7 @@ func (h *UserHandler) UpdatePreferences(c *gin.Context) {
 		return
 	}
 
-	var req struct {
-		ShowPerformanceOverlay  *bool                            `json:"showPerformanceOverlay"`
-		AutoSaveEnabled         *bool                            `json:"autoSaveEnabled"`
-		AutoLoadSaveEnabled     *bool                            `json:"autoLoadSaveEnabled"`
-		SelectedShader          *string                          `json:"selectedShader"`
-		SelectedTheme           *string                          `json:"selectedTheme"`
-		DefaultSecondScreenPage *string                          `json:"defaultSecondScreenPage"`
-		ConsoleShaders          map[string]string                `json:"consoleShaders"`
-		SelectedKeyMapping      *string                          `json:"selectedKeyMapping"`
-		CustomKeyMapping        map[string]string                `json:"customKeyMapping"`
-		ConsoleKeyMappings      map[string]consoleKeyMappingDTO  `json:"consoleKeyMappings"`
-		PreferredRegions        *[]string                        `json:"preferredRegions"`
-	}
+	var req UpdatePreferencesRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		slog.Debug("request binding failed", "error", err)
 		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid request body"})

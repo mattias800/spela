@@ -31,11 +31,7 @@ type NetplayHandler struct {
 func (h *NetplayHandler) CreateSession(c *gin.Context) {
 	uid := getUserID(c)
 
-	var req struct {
-		GameID     string `json:"gameId" binding:"required"`
-		InputDelay *int   `json:"inputDelay"`
-		CoreName   string `json:"coreName"`
-	}
+	var req CreateNetplaySessionRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid request: gameId is required"})
 		return
@@ -168,9 +164,7 @@ func (h *NetplayHandler) GetSession(c *gin.Context) {
 func (h *NetplayHandler) JoinByInviteCode(c *gin.Context) {
 	uid := getUserID(c)
 
-	var req struct {
-		InviteCode string `json:"inviteCode" binding:"required"`
-	}
+	var req JoinByInviteCodeRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invite code is required"})
 		return
@@ -359,9 +353,7 @@ func (h *NetplayHandler) UpdateSettings(c *gin.Context) {
 		return
 	}
 
-	var req struct {
-		InputDelay *int `json:"inputDelay"`
-	}
+	var req UpdateNetplaySettingsRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid request"})
 		return

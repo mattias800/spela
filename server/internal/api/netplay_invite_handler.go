@@ -32,9 +32,7 @@ func (h *NetplayHandler) SendInvite(c *gin.Context) {
 		return
 	}
 
-	var req struct {
-		Username string `json:"username" binding:"required"`
-	}
+	var req NetplayInviteUserRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid request: username is required"})
 		return

@@ -78,9 +78,7 @@ func (h *AdminHandler) SetGameHero(c *gin.Context) {
 		return
 	}
 
-	var req struct {
-		URL string `json:"url" binding:"required"`
-	}
+	var req SetGameHeroRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid request body"})
 		return
