@@ -253,5 +253,12 @@ export default defineConfig({
     setupFiles: ["./src/test-setup.ts"],
     css: true,
     exclude: ["node_modules/**", "e2e/**"],
+    // Use threads pool instead of the default forks. Forks spawn a fresh
+    // Node.js process per worker which has higher startup overhead and was
+    // observed to occasionally time out under CPU contention (#431). Threads
+    // share the parent process and start much faster. Our tests don't rely
+    // on process isolation (no native modules, no globals to leak across
+    // tests beyond what jsdom already isolates).
+    pool: "threads",
   },
 });
