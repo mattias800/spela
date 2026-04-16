@@ -164,7 +164,7 @@ func (h *SharedSaveHandler) DeleteSharedSave(c *gin.Context) {
 
 	// Check ownership or admin
 	role, _ := c.Get("role")
-	if save.UserID != uid && !db.IsAdminOrOwner(role.(string)) {
+	if save.UserID != uid && !db.IsAdminOrOwner(role.(db.UserRole)) {
 		c.JSON(http.StatusForbidden, ErrorResponse{Error: "not authorized to delete this shared save"})
 		return
 	}

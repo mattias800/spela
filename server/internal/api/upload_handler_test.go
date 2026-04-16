@@ -41,7 +41,7 @@ func setupUploadTestEnv(t *testing.T) *uploadTestEnv {
 		Role:         "owner",
 	}
 	require.NoError(t, database.Create(&user).Error)
-	token, err := auth.GenerateAccessToken(user.ID, user.Username, user.Role, testJWTSecret)
+	token, err := auth.GenerateAccessToken(user.ID, user.Username, string(user.Role), testJWTSecret)
 	require.NoError(t, err)
 
 	return &uploadTestEnv{
@@ -592,7 +592,7 @@ func TestUploadROMs_NonAdmin_Forbidden(t *testing.T) {
 		Role:         "user",
 	}
 	require.NoError(t, env.db.Create(&regularUser).Error)
-	userToken, err := auth.GenerateAccessToken(regularUser.ID, regularUser.Username, regularUser.Role, testJWTSecret)
+	userToken, err := auth.GenerateAccessToken(regularUser.ID, regularUser.Username, string(regularUser.Role), testJWTSecret)
 	require.NoError(t, err)
 
 	files := map[string][]byte{

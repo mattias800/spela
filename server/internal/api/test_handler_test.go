@@ -78,11 +78,11 @@ func TestResetEndpoint_DeletesExtraUsers(t *testing.T) {
 	// Verify admin and player still exist
 	var admin db.User
 	require.NoError(t, database.Where("username = ?", "admin").First(&admin).Error)
-	assert.Equal(t, "owner", admin.Role)
+	assert.Equal(t, db.RoleOwner, admin.Role)
 
 	var player db.User
 	require.NoError(t, database.Where("username = ?", "player").First(&player).Error)
-	assert.Equal(t, "user", player.Role)
+	assert.Equal(t, db.RoleUser, player.Role)
 }
 
 func TestResetEndpoint_ResetsUserPreferences(t *testing.T) {

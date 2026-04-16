@@ -178,7 +178,7 @@ func TestGetUserRateLimit_NonAdmin_Returns403(t *testing.T) {
 		Role:         "user",
 	}
 	require.NoError(t, database.Create(&user).Error)
-	token, err := auth.GenerateAccessToken(user.ID, user.Username, user.Role, testJWTSecret)
+	token, err := auth.GenerateAccessToken(user.ID, user.Username, string(user.Role), testJWTSecret)
 	require.NoError(t, err)
 
 	req := httptest.NewRequest("GET", "/api/admin/users/"+strconv.Itoa(int(user.ID))+"/rate-limit", nil)
@@ -261,7 +261,7 @@ func TestResetUserRateLimit_NonAdmin_Returns403(t *testing.T) {
 		Role:         "user",
 	}
 	require.NoError(t, database.Create(&user).Error)
-	token, err := auth.GenerateAccessToken(user.ID, user.Username, user.Role, testJWTSecret)
+	token, err := auth.GenerateAccessToken(user.ID, user.Username, string(user.Role), testJWTSecret)
 	require.NoError(t, err)
 
 	req := httptest.NewRequest("DELETE", "/api/admin/users/"+strconv.Itoa(int(user.ID))+"/rate-limit", nil)

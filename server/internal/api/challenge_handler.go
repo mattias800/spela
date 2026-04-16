@@ -341,7 +341,7 @@ func (h *ChallengeHandler) UpdateChallenge(c *gin.Context) {
 	}
 
 	role, _ := c.Get("role")
-	if challenge.CreatorID != uid && !db.IsAdminOrOwner(role.(string)) {
+	if challenge.CreatorID != uid && !db.IsAdminOrOwner(role.(db.UserRole)) {
 		c.JSON(http.StatusForbidden, ErrorResponse{Error: "not authorized to update this challenge"})
 		return
 	}
@@ -405,7 +405,7 @@ func (h *ChallengeHandler) DeleteChallenge(c *gin.Context) {
 	}
 
 	role, _ := c.Get("role")
-	if challenge.CreatorID != uid && !db.IsAdminOrOwner(role.(string)) {
+	if challenge.CreatorID != uid && !db.IsAdminOrOwner(role.(db.UserRole)) {
 		c.JSON(http.StatusForbidden, ErrorResponse{Error: "not authorized to delete this challenge"})
 		return
 	}

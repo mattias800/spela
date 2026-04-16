@@ -43,7 +43,7 @@ func setupReplaceROMTestEnv(t *testing.T) *replaceROMTestEnv {
 		Role:         "owner",
 	}
 	require.NoError(t, database.Create(&user).Error)
-	token, err := auth.GenerateAccessToken(user.ID, user.Username, user.Role, testJWTSecret)
+	token, err := auth.GenerateAccessToken(user.ID, user.Username, string(user.Role), testJWTSecret)
 	require.NoError(t, err)
 
 	router, cleanup := NewRouter(*cfg)
@@ -337,7 +337,7 @@ func TestReplaceROM_RequiresAdmin(t *testing.T) {
 		Role:         "user",
 	}
 	require.NoError(t, env.db.Create(&user).Error)
-	userToken, err := auth.GenerateAccessToken(user.ID, user.Username, user.Role, testJWTSecret)
+	userToken, err := auth.GenerateAccessToken(user.ID, user.Username, string(user.Role), testJWTSecret)
 	require.NoError(t, err)
 
 	// Try to replace ROM as non-admin

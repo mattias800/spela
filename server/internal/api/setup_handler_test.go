@@ -13,16 +13,16 @@ import (
 	"gorm.io/gorm"
 )
 
-func createSetupTestUser(t *testing.T, database *gorm.DB, role string) string {
+func createSetupTestUser(t *testing.T, database *gorm.DB, role db.UserRole) string {
 	t.Helper()
 	user := db.User{
-		Username:     "setup-test-" + role,
-		Email:        "setup-test-" + role + "@test.com",
+		Username:     "setup-test-" + string(role),
+		Email:        "setup-test-" + string(role) + "@test.com",
 		PasswordHash: "unused",
 		Role:         role,
 	}
 	require.NoError(t, database.Create(&user).Error)
-	token, err := auth.GenerateAccessToken(user.ID, user.Username, user.Role, testJWTSecret)
+	token, err := auth.GenerateAccessToken(user.ID, user.Username, string(user.Role), testJWTSecret)
 	require.NoError(t, err)
 	return token
 }
@@ -109,7 +109,7 @@ func TestDiagnostics_RegularUserForbidden(t *testing.T) {
 		Role:         "user",
 	}
 	require.NoError(t, database.Create(&regularUser).Error)
-	regularToken, err := auth.GenerateAccessToken(regularUser.ID, regularUser.Username, regularUser.Role, testJWTSecret)
+	regularToken, err := auth.GenerateAccessToken(regularUser.ID, regularUser.Username, string(regularUser.Role), testJWTSecret)
 	require.NoError(t, err)
 
 	w := httptest.NewRecorder()

@@ -606,10 +606,10 @@ func ToGameResponses(games []db.Game, database *gorm.DB, userID uint) []GameResp
 
 // UserResponse is the API response for a user, with string ID for consistency.
 type UserResponse struct {
-	ID              string    `json:"id"`
-	Username        string    `json:"username"`
-	Email           string    `json:"email"`
-	Role            string    `json:"role"`
+	ID              string      `json:"id"`
+	Username        string      `json:"username"`
+	Email           string      `json:"email"`
+	Role            db.UserRole `json:"role"`
 	AvatarURL       string    `json:"avatarUrl,omitempty"`
 	Disabled        bool      `json:"disabled"`
 	PendingApproval bool      `json:"pendingApproval"`
@@ -634,11 +634,11 @@ func ToUserResponse(u db.User) UserResponse {
 
 // DeletedUserResponse is the API response for a soft-deleted user.
 type DeletedUserResponse struct {
-	ID              string    `json:"id"`
-	Username        string    `json:"username"`
-	Email           string    `json:"email"`
-	Role            string    `json:"role"`
-	Disabled        bool      `json:"disabled"`
+	ID              string      `json:"id"`
+	Username        string      `json:"username"`
+	Email           string      `json:"email"`
+	Role            db.UserRole `json:"role"`
+	Disabled        bool        `json:"disabled"`
 	CreatedAt       time.Time `json:"createdAt"`
 	DeletedAt       time.Time `json:"deletedAt"`
 }

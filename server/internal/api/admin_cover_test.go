@@ -24,7 +24,7 @@ func createAdminUser(t *testing.T, database *gorm.DB) (db.User, string) {
 		Role:         "owner",
 	}
 	require.NoError(t, database.Create(&user).Error)
-	token, err := auth.GenerateAccessToken(user.ID, user.Username, user.Role, testJWTSecret)
+	token, err := auth.GenerateAccessToken(user.ID, user.Username, string(user.Role), testJWTSecret)
 	require.NoError(t, err)
 	return user, token
 }
@@ -242,7 +242,7 @@ func TestGetGameCovers_NonAdmin_Returns403(t *testing.T) {
 		Role:         "user",
 	}
 	require.NoError(t, database.Create(&user).Error)
-	token, err := auth.GenerateAccessToken(user.ID, user.Username, user.Role, testJWTSecret)
+	token, err := auth.GenerateAccessToken(user.ID, user.Username, string(user.Role), testJWTSecret)
 	require.NoError(t, err)
 
 	game := createTestGame(t, database)

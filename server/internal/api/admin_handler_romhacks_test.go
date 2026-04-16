@@ -41,7 +41,7 @@ func setupRomHackTestEnv(t *testing.T) *romHackTestEnv {
 		Role:         "owner",
 	}
 	require.NoError(t, database.Create(&user).Error)
-	token, err := auth.GenerateAccessToken(user.ID, user.Username, user.Role, testJWTSecret)
+	token, err := auth.GenerateAccessToken(user.ID, user.Username, string(user.Role), testJWTSecret)
 	require.NoError(t, err)
 
 	// Find a console
@@ -410,7 +410,7 @@ func TestCreateRomHack_NonAdminDenied(t *testing.T) {
 		Role:         "user",
 	}
 	require.NoError(t, env.db.Create(&user).Error)
-	userToken, err := auth.GenerateAccessToken(user.ID, user.Username, user.Role, testJWTSecret)
+	userToken, err := auth.GenerateAccessToken(user.ID, user.Username, string(user.Role), testJWTSecret)
 	require.NoError(t, err)
 
 	patch := buildTestIPSPatch(0, []byte("X"))

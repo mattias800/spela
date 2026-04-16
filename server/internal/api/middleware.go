@@ -123,7 +123,7 @@ func AuthMiddleware(jwtSecret string, database *gorm.DB) gin.HandlerFunc {
 
 		c.Set("userId", claims.UserID)
 		c.Set("username", claims.Username)
-		c.Set("role", claims.Role)
+		c.Set("role", db.UserRole(claims.Role))
 		c.Next()
 	}
 }
@@ -132,7 +132,8 @@ func AuthMiddleware(jwtSecret string, database *gorm.DB) gin.HandlerFunc {
 func AdminMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		role, _ := c.Get("role")
-		if role != "admin" && role != "owner" {
+		userRole, _ := role.(db.UserRole)
+		if !db.IsAdminOrOwner(userRole) {
 			abortWithError(c, http.StatusForbidden, "admin access required", "You don't have permission to access this resource.")
 			return
 		}

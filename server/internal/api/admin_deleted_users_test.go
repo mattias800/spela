@@ -92,7 +92,7 @@ func TestListDeletedUsers_NonAdmin_Returns403(t *testing.T) {
 		Role:         "user",
 	}
 	require.NoError(t, database.Create(&user).Error)
-	token, err := auth.GenerateAccessToken(user.ID, user.Username, user.Role, testJWTSecret)
+	token, err := auth.GenerateAccessToken(user.ID, user.Username, string(user.Role), testJWTSecret)
 	require.NoError(t, err)
 
 	req := httptest.NewRequest("GET", "/api/admin/users/deleted", nil)
@@ -184,7 +184,7 @@ func TestHardDeleteUser_RejectsOwner(t *testing.T) {
 		Role:         "admin",
 	}
 	require.NoError(t, database.Create(&admin).Error)
-	adminToken, err := auth.GenerateAccessToken(admin.ID, admin.Username, admin.Role, testJWTSecret)
+	adminToken, err := auth.GenerateAccessToken(admin.ID, admin.Username, string(admin.Role), testJWTSecret)
 	require.NoError(t, err)
 
 	// Soft-delete the owner (shouldn't happen normally, but test the guard)
@@ -225,7 +225,7 @@ func TestHardDeleteUser_NonAdmin_Returns403(t *testing.T) {
 		Role:         "user",
 	}
 	require.NoError(t, database.Create(&user).Error)
-	token, err := auth.GenerateAccessToken(user.ID, user.Username, user.Role, testJWTSecret)
+	token, err := auth.GenerateAccessToken(user.ID, user.Username, string(user.Role), testJWTSecret)
 	require.NoError(t, err)
 
 	deleted := softDeleteUser(t, database, "deleted-user", "deleted@test.com")

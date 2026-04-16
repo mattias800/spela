@@ -72,7 +72,7 @@ func setupBiosTestEnv(t *testing.T) (*storage.Storage, *gorm.DB, *gin.Engine) {
 }
 
 // createBiosTestUser creates a user and returns a JWT token.
-func createBiosTestUser(t *testing.T, database *gorm.DB, role string) string {
+func createBiosTestUser(t *testing.T, database *gorm.DB, role db.UserRole) string {
 	t.Helper()
 	user := db.User{
 		Username:     fmt.Sprintf("user-%s-%d", role, database.RowsAffected),
@@ -81,7 +81,7 @@ func createBiosTestUser(t *testing.T, database *gorm.DB, role string) string {
 		Role:         role,
 	}
 	require.NoError(t, database.Create(&user).Error)
-	token, err := auth.GenerateAccessToken(user.ID, user.Username, user.Role, biosTestJWTSecret)
+	token, err := auth.GenerateAccessToken(user.ID, user.Username, string(user.Role), biosTestJWTSecret)
 	require.NoError(t, err)
 	return token
 }

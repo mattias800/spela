@@ -295,8 +295,8 @@ func (h *NetplayHandler) LeaveSession(c *gin.Context) {
 func (h *NetplayHandler) DeleteSession(c *gin.Context) {
 	uid := getUserID(c)
 	role, _ := c.Get("role")
-	roleStr, _ := role.(string)
-	isAdmin := db.IsAdminOrOwner(roleStr)
+	userRole, _ := role.(db.UserRole)
+	isAdmin := db.IsAdminOrOwner(userRole)
 
 	session, ok := h.loadSession(c)
 	if !ok {

@@ -79,7 +79,7 @@ func setupChallengeTestWithRateLimit(t *testing.T, rateLimitSec int) *challengeT
 		Role:         "admin",
 	}
 	database.Create(&adminUser)
-	adminToken, _ := auth.GenerateAccessToken(adminUser.ID, adminUser.Username, adminUser.Role, testJWTSecret)
+	adminToken, _ := auth.GenerateAccessToken(adminUser.ID, adminUser.Username, string(adminUser.Role), testJWTSecret)
 
 	// Create a game with a console
 	var console db.Console
