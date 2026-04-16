@@ -3,6 +3,7 @@ import {
   Section,
   Button,
   Skeleton,
+  Divider,
 } from "@/components/ui";
 import {
   useScrapeStatusCounts,
@@ -166,7 +167,7 @@ export function ScrapeStatusCard() {
           data.sources.map((counts, i) => (
             <div key={counts.source}>
               {i > 0 && (
-                <div className="border-t border-surface-800/50 mb-5" />
+                <Divider className="mb-5" />
               )}
               <SourceSection
                 counts={counts}

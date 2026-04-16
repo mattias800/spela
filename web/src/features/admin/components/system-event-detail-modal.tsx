@@ -1,5 +1,5 @@
 import { Filter } from "lucide-react";
-import { Button, Modal } from "@/components/ui";
+import { Button, Divider, Modal } from "@/components/ui";
 import { cn } from "@/lib/cn";
 import { formatDateTime } from "@/lib/format";
 import {
@@ -56,9 +56,11 @@ export function SystemEventDetailModal({
           </DetailGrid>
 
           {(event.username || event.ip) && (
+            <>
+            <Divider />
             <div
               data-testid="system-event-pivot-actions"
-              className="flex flex-wrap gap-2 border-t border-surface-800/50 pt-4"
+              className="flex flex-wrap gap-2"
             >
               {event.username && onPivotToUsername && (
                 <Button
@@ -89,6 +91,7 @@ export function SystemEventDetailModal({
                 </Button>
               )}
             </div>
+            </>
           )}
 
           {event.metadata && Object.keys(event.metadata).length > 0 && (

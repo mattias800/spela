@@ -28,3 +28,4 @@ export { LeaderboardSkeleton } from "./leaderboard-skeleton";
 export { ConfirmDeleteModal } from "./confirm-delete-modal";
 export { LeaderboardRow } from "./leaderboard-row";
 export { FilterChip } from "./filter-chip";
+export { Divider } from "./divider";
