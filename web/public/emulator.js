@@ -394,8 +394,12 @@
             data: uint8ArrayToBase64(saveFile),
           });
         }
-      } catch (_) {
-        // Ignore SRAM capture errors
+      } catch (err) {
+        // SRAM capture failures could indicate save data corruption — log
+        // to console so a user reporting "my saves aren't working" can
+        // share the error from devtools. Don't post to the parent: a
+        // single failed capture is recoverable, the next tick may succeed.
+        console.warn("[emulator] SRAM capture failed:", err);
       }
     };
 
