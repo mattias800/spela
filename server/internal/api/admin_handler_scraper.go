@@ -36,7 +36,7 @@ func (h *AdminHandler) TriggerScrape(c *gin.Context) {
 	if abbr := c.Query("console"); abbr != "" {
 		var console db.Console
 		if err := h.DB.Where("LOWER(abbreviation) = LOWER(?)", abbr).First(&console).Error; err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "unknown console"})
+			c.JSON(http.StatusBadRequest, ErrorResponse{Error: "unknown console"})
 			return
 		}
 		consoleID = console.ID
@@ -49,7 +49,7 @@ func (h *AdminHandler) TriggerScrape(c *gin.Context) {
 	// Check for active job
 	activeJob, err := h.Scraper.Queue.GetActiveJob()
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "checking active job"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "checking active job"})
 		return
 	}
 
@@ -57,19 +57,19 @@ func (h *AdminHandler) TriggerScrape(c *gin.Context) {
 		switch conflict {
 		case "replace":
 			if err := h.Scraper.Queue.CancelJob(activeJob.ID); err != nil {
-				c.JSON(http.StatusInternalServerError, gin.H{"error": "cancelling active job"})
+				c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "cancelling active job"})
 				return
 			}
 			h.Hub.Broadcast(ws.Event{Type: "scrape_cancelled", Payload: gin.H{}})
 		case "merge":
 			gameIDs, err := h.collectGameIDs(mode, consoleID, source, status)
 			if err != nil {
-				c.JSON(http.StatusInternalServerError, gin.H{"error": "collecting games"})
+				c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "collecting games"})
 				return
 			}
 			added, err := h.Scraper.Queue.MergeGames(activeJob.ID, gameIDs)
 			if err != nil {
-				c.JSON(http.StatusInternalServerError, gin.H{"error": "merging games"})
+				c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "merging games"})
 				return
 			}
 			c.JSON(http.StatusOK, gin.H{
@@ -94,7 +94,7 @@ func (h *AdminHandler) TriggerScrape(c *gin.Context) {
 	gameIDs, err := h.collectGameIDs(mode, consoleID, source, status)
 	if err != nil {
 		slog.Error("failed to collect game IDs for scrape", "error", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "collecting games"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "collecting games"})
 		return
 	}
 
@@ -109,7 +109,7 @@ func (h *AdminHandler) TriggerScrape(c *gin.Context) {
 	job, err := h.Scraper.Queue.CreateJob(mode, source, status, consoleFilter, len(gameIDs))
 	if err != nil {
 		slog.Error("failed to create scrape job", "error", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "creating job"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "creating job"})
 		return
 	}
 
@@ -117,13 +117,13 @@ func (h *AdminHandler) TriggerScrape(c *gin.Context) {
 	if mode == "ra" {
 		if err := h.Scraper.Queue.EnqueueGamesWithType(job.ID, gameIDs, 0, "ra_fetch"); err != nil {
 			slog.Error("failed to enqueue RA fetch games", "error", err)
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "enqueuing games"})
+			c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "enqueuing games"})
 			return
 		}
 	} else {
 		if err := h.Scraper.Queue.EnqueueGames(job.ID, gameIDs, 0); err != nil {
 			slog.Error("failed to enqueue games", "error", err)
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "enqueuing games"})
+			c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "enqueuing games"})
 			return
 		}
 	}
@@ -192,16 +192,16 @@ func (h *AdminHandler) collectGameIDs(mode string, consoleID uint, source, statu
 func (h *AdminHandler) CancelScrape(c *gin.Context) {
 	job, err := h.Scraper.Queue.GetActiveJob()
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "checking active job"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "checking active job"})
 		return
 	}
 	if job == nil {
-		c.JSON(http.StatusConflict, gin.H{"error": "no scrape operation is running"})
+		c.JSON(http.StatusConflict, ErrorResponse{Error: "no scrape operation is running"})
 		return
 	}
 
 	if err := h.Scraper.Queue.CancelJob(job.ID); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "cancelling job"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "cancelling job"})
 		return
 	}
 
@@ -233,7 +233,7 @@ func (h *AdminHandler) CancelScrape(c *gin.Context) {
 func (h *AdminHandler) ScrapeStatus(c *gin.Context) {
 	job, err := h.Scraper.Queue.GetActiveJob()
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "checking active job"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "checking active job"})
 		return
 	}
 
@@ -275,13 +275,13 @@ func (h *AdminHandler) ScrapeStatusCounts(c *gin.Context) {
 		Select("source, status, COUNT(*) as count").
 		Group("source, status").
 		Scan(&rows).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to query scrape results"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to query scrape results"})
 		return
 	}
 
 	var totalGames int64
 	if err := h.DB.Model(&db.Game{}).Count(&totalGames).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to count games"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to count games"})
 		return
 	}
 
@@ -298,7 +298,7 @@ func (h *AdminHandler) ScrapeStatusCounts(c *gin.Context) {
 		Where("status IN ? AND (last_attempt_at IS NULL OR last_attempt_at < ?)", []string{"not_found", "error"}, cooldownCutoff).
 		Group("source, status").
 		Scan(&eligibleRows).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to query eligible counts"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to query eligible counts"})
 		return
 	}
 
@@ -358,7 +358,7 @@ func (h *AdminHandler) ScrapeGame(c *gin.Context) {
 	id := c.Param("id")
 	var game db.Game
 	if err := h.DB.First(&game, id).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "game not found"})
+		c.JSON(http.StatusNotFound, ErrorResponse{Error: "game not found"})
 		return
 	}
 
@@ -381,7 +381,7 @@ func (h *AdminHandler) ScrapeGame(c *gin.Context) {
 	}
 
 	if err := h.Scraper.Queue.EnqueueGame(game.ID, jobID, 100); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to enqueue game"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to enqueue game"})
 		return
 	}
 
@@ -397,7 +397,7 @@ func (h *AdminHandler) RefreshAchievements(c *gin.Context) {
 	id := c.Param("id")
 	var game db.Game
 	if err := h.DB.First(&game, id).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "game not found"})
+		c.JSON(http.StatusNotFound, ErrorResponse{Error: "game not found"})
 		return
 	}
 

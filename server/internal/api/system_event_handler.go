@@ -147,13 +147,13 @@ func (h *SystemEventHandler) ListSystemEvents(c *gin.Context) {
 
 	rawIP := strings.TrimSpace(c.Query("ip"))
 	if !validateIPFilter(rawIP) {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid ip filter: expected an IPv4 or IPv6 address or prefix"})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid ip filter: expected an IPv4 or IPv6 address or prefix"})
 		return
 	}
 
 	rawUsername := strings.TrimSpace(c.Query("username"))
 	if len(rawUsername) > maxUsernameFilterLength {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "username filter too long"})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "username filter too long"})
 		return
 	}
 
@@ -195,7 +195,7 @@ func (h *SystemEventHandler) ListSystemEvents(c *gin.Context) {
 
 	var total int64
 	if err := q.Count(&total).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to count system events"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to count system events"})
 		return
 	}
 
@@ -204,7 +204,7 @@ func (h *SystemEventHandler) ListSystemEvents(c *gin.Context) {
 		Limit(pageSize).
 		Offset((page - 1) * pageSize).
 		Find(&rows).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to query system events"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to query system events"})
 		return
 	}
 
@@ -224,16 +224,16 @@ func (h *SystemEventHandler) ListSystemEvents(c *gin.Context) {
 func (h *SystemEventHandler) GetSystemEvent(c *gin.Context) {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid id"})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid id"})
 		return
 	}
 	var e db.SystemEvent
 	if err := h.DB.Preload("Category").First(&e, id).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
-			c.JSON(http.StatusNotFound, gin.H{"error": "system event not found"})
+			c.JSON(http.StatusNotFound, ErrorResponse{Error: "system event not found"})
 			return
 		}
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to load system event"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to load system event"})
 		return
 	}
 	c.JSON(http.StatusOK, toSystemEventResponse(e))
@@ -266,7 +266,7 @@ func (h *SystemEventHandler) GetSystemEventTypes(c *gin.Context) {
 func (h *SystemEventHandler) GetSystemEventCategories(c *gin.Context) {
 	var cats []db.SystemEventCategory
 	if err := h.DB.Find(&cats).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to load categories"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to load categories"})
 		return
 	}
 	type catResponse struct {
@@ -284,17 +284,17 @@ func (h *SystemEventHandler) GetSystemEventCategories(c *gin.Context) {
 func (h *SystemEventHandler) DismissSystemEvent(c *gin.Context) {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid id"})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid id"})
 		return
 	}
 	now := time.Now()
 	result := h.DB.Model(&db.SystemEvent{}).Where("id = ?", id).Update("dismissed_at", now)
 	if result.Error != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to dismiss event"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to dismiss event"})
 		return
 	}
 	if result.RowsAffected == 0 {
-		c.JSON(http.StatusNotFound, gin.H{"error": "event not found"})
+		c.JSON(http.StatusNotFound, ErrorResponse{Error: "event not found"})
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"dismissed": true})
@@ -312,7 +312,7 @@ func (h *SystemEventHandler) ReportEmulatorError(c *gin.Context) {
 		Core   string `json:"core"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body"})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid request body"})
 		return
 	}
 

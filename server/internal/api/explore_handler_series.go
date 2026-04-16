@@ -34,7 +34,7 @@ func (h *ExploreHandler) GetExploreFeaturedSeries(c *gin.Context) {
 		Order("library_games DESC").
 		Limit(20).
 		Scan(&rows).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch featured series"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to fetch featured series"})
 		return
 	}
 

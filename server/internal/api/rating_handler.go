@@ -24,14 +24,14 @@ func (h *RatingHandler) CreateOrUpdateRating(c *gin.Context) {
 
 	gid, err := strconv.ParseUint(gameID, 10, 64)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid game ID"})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid game ID"})
 		return
 	}
 
 	// Verify game exists
 	var game db.Game
 	if err := h.DB.First(&game, gid).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "game not found"})
+		c.JSON(http.StatusNotFound, ErrorResponse{Error: "game not found"})
 		return
 	}
 
@@ -40,7 +40,7 @@ func (h *RatingHandler) CreateOrUpdateRating(c *gin.Context) {
 		Review string `json:"review"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request: rating must be between 1 and 5"})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid request: rating must be between 1 and 5"})
 		return
 	}
 
@@ -54,7 +54,7 @@ func (h *RatingHandler) CreateOrUpdateRating(c *gin.Context) {
 			Review: req.Review,
 		}
 		if err := h.DB.Create(&rating).Error; err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create rating"})
+			c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to create rating"})
 			return
 		}
 
@@ -67,7 +67,7 @@ func (h *RatingHandler) CreateOrUpdateRating(c *gin.Context) {
 		existing.Rating = req.Rating
 		existing.Review = req.Review
 		if err := h.DB.Save(&existing).Error; err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to update rating"})
+			c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to update rating"})
 			return
 		}
 		c.JSON(http.StatusOK, h.toRatingResponse(existing, uid))
@@ -97,7 +97,7 @@ func (h *RatingHandler) GetRatings(c *gin.Context) {
 		Offset((page - 1) * pageSize).
 		Limit(pageSize).
 		Find(&ratings).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch ratings"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to fetch ratings"})
 		return
 	}
 
@@ -127,7 +127,7 @@ func (h *RatingHandler) GetRatingSummary(c *gin.Context) {
 		Where("game_id = ?", gameID).
 		Select("COALESCE(AVG(rating), 0) as average_rating, COUNT(*) as total_ratings").
 		Scan(&agg).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch rating summary"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to fetch rating summary"})
 		return
 	}
 
@@ -166,7 +166,7 @@ func (h *RatingHandler) GetMyRating(c *gin.Context) {
 	if err := h.DB.Where("user_id = ? AND game_id = ?", uid, gameID).
 		Preload("User").
 		First(&rating).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "no rating found"})
+		c.JSON(http.StatusNotFound, ErrorResponse{Error: "no rating found"})
 		return
 	}
 
@@ -180,7 +180,7 @@ func (h *RatingHandler) DeleteRating(c *gin.Context) {
 
 	result := h.DB.Where("user_id = ? AND game_id = ?", uid, gameID).Delete(&db.GameRating{})
 	if result.RowsAffected == 0 {
-		c.JSON(http.StatusNotFound, gin.H{"error": "no rating found"})
+		c.JSON(http.StatusNotFound, ErrorResponse{Error: "no rating found"})
 		return
 	}
 

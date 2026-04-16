@@ -14,7 +14,7 @@ func (h *AdminHandler) TriggerCheatImport(c *gin.Context) {
 	result, err := cheats.ImportAllCheats(h.DB, cheats.DefaultBaseURL)
 	if err != nil {
 		slog.Error("cheat import failed", "error", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "cheat import failed"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "cheat import failed"})
 		return
 	}
 	slog.Info("cheat import completed", "cheatsImported", result.CheatsImported, "gamesImported", result.GamesImported)

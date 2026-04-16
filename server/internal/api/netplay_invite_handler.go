@@ -22,13 +22,13 @@ func (h *NetplayHandler) SendInvite(c *gin.Context) {
 
 	// Only the host can send invites (AC-1.7)
 	if session.HostUserID != uid {
-		c.JSON(http.StatusForbidden, gin.H{"error": "only the host can send invites"})
+		c.JSON(http.StatusForbidden, ErrorResponse{Error: "only the host can send invites"})
 		return
 	}
 
 	// Session must be waiting (AC-1.1)
 	if session.Status != "waiting" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "can only invite players to a waiting session"})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "can only invite players to a waiting session"})
 		return
 	}
 
@@ -36,27 +36,27 @@ func (h *NetplayHandler) SendInvite(c *gin.Context) {
 		Username string `json:"username" binding:"required"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request: username is required"})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid request: username is required"})
 		return
 	}
 
 	// Find invitee
 	var invitee db.User
 	if err := h.DB.Where("username = ?", req.Username).First(&invitee).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "user not found"})
+		c.JSON(http.StatusNotFound, ErrorResponse{Error: "user not found"})
 		return
 	}
 
 	// Cannot invite yourself (AC-1.3 — exclude myself)
 	if invitee.ID == uid {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "cannot invite yourself"})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "cannot invite yourself"})
 		return
 	}
 
 	// Check if already has a pending invite (AC-1.8)
 	var existingInvite db.NetplayInvite
 	if err := h.DB.Where("netplay_session_id = ? AND invitee_id = ? AND status = ?", session.ID, invitee.ID, "pending").First(&existingInvite).Error; err == nil {
-		c.JSON(http.StatusConflict, gin.H{"error": "user already has a pending invite for this session"})
+		c.JSON(http.StatusConflict, ErrorResponse{Error: "user already has a pending invite for this session"})
 		return
 	}
 
@@ -75,7 +75,7 @@ func (h *NetplayHandler) SendInvite(c *gin.Context) {
 		return tx.Create(&invite).Error
 	})
 	if txErr != nil {
-		c.JSON(http.StatusConflict, gin.H{"error": "failed to create invite"})
+		c.JSON(http.StatusConflict, ErrorResponse{Error: "failed to create invite"})
 		return
 	}
 
@@ -105,7 +105,7 @@ func (h *NetplayHandler) ListSessionInvites(c *gin.Context) {
 
 	// Only the host can view session invites
 	if session.HostUserID != uid {
-		c.JSON(http.StatusForbidden, gin.H{"error": "only the host can view session invites"})
+		c.JSON(http.StatusForbidden, ErrorResponse{Error: "only the host can view session invites"})
 		return
 	}
 
@@ -116,7 +116,7 @@ func (h *NetplayHandler) ListSessionInvites(c *gin.Context) {
 		Preload("NetplaySession.Game").Preload("NetplaySession.Game.Console").
 		Order("created_at DESC").
 		Find(&invites).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch invites"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to fetch invites"})
 		return
 	}
 
@@ -139,7 +139,7 @@ func (h *NetplayHandler) ListMyNetplayInvites(c *gin.Context) {
 		Preload("NetplaySession.Game").Preload("NetplaySession.Game.Console").
 		Order("created_at DESC").
 		Find(&invites).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch invites"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to fetch invites"})
 		return
 	}
 
@@ -157,7 +157,7 @@ func (h *NetplayHandler) GetPendingNetplayInviteCount(c *gin.Context) {
 
 	var count int64
 	if err := h.DB.Model(&db.NetplayInvite{}).Where("invitee_id = ? AND status = ?", uid, "pending").Count(&count).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to count invites"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to count invites"})
 		return
 	}
 
@@ -171,30 +171,30 @@ func (h *NetplayHandler) AcceptNetplayInvite(c *gin.Context) {
 
 	var invite db.NetplayInvite
 	if err := h.DB.Preload("NetplaySession").First(&invite, inviteID).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "invite not found"})
+		c.JSON(http.StatusNotFound, ErrorResponse{Error: "invite not found"})
 		return
 	}
 
 	if invite.InviteeID != uid {
-		c.JSON(http.StatusForbidden, gin.H{"error": "not authorized"})
+		c.JSON(http.StatusForbidden, ErrorResponse{Error: "not authorized"})
 		return
 	}
 
 	if invite.Status != "pending" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invite is no longer pending"})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invite is no longer pending"})
 		return
 	}
 
 	// Check session is still waiting
 	if invite.NetplaySession.Status != "waiting" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "session is no longer accepting players"})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "session is no longer accepting players"})
 		return
 	}
 
 	// Update invite status
 	invite.Status = "accepted"
 	if err := h.DB.Save(&invite).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to accept invite"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to accept invite"})
 		return
 	}
 
@@ -225,23 +225,23 @@ func (h *NetplayHandler) DeclineNetplayInvite(c *gin.Context) {
 
 	var invite db.NetplayInvite
 	if err := h.DB.First(&invite, inviteID).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "invite not found"})
+		c.JSON(http.StatusNotFound, ErrorResponse{Error: "invite not found"})
 		return
 	}
 
 	if invite.InviteeID != uid {
-		c.JSON(http.StatusForbidden, gin.H{"error": "not authorized"})
+		c.JSON(http.StatusForbidden, ErrorResponse{Error: "not authorized"})
 		return
 	}
 
 	if invite.Status != "pending" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invite is no longer pending"})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invite is no longer pending"})
 		return
 	}
 
 	invite.Status = "declined"
 	if err := h.DB.Save(&invite).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to decline invite"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to decline invite"})
 		return
 	}
 

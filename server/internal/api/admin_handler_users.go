@@ -14,7 +14,7 @@ import (
 func (h *AdminHandler) ListUsers(c *gin.Context) {
 	var users []db.User
 	if err := h.DB.Find(&users).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch users"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to fetch users"})
 		return
 	}
 
@@ -35,7 +35,7 @@ func (h *AdminHandler) CreateUser(c *gin.Context) {
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
 		slog.Debug("request binding failed", "error", err)
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body"})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid request body"})
 		return
 	}
 
@@ -43,13 +43,13 @@ func (h *AdminHandler) CreateUser(c *gin.Context) {
 		req.Role = "user"
 	}
 	if req.Role != "admin" && req.Role != "user" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "role must be 'admin' or 'user'"})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "role must be 'admin' or 'user'"})
 		return
 	}
 
 	hash, err := auth.HashPassword(req.Password)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to hash password"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to hash password"})
 		return
 	}
 
@@ -59,7 +59,7 @@ func (h *AdminHandler) CreateUser(c *gin.Context) {
 		var count int64
 		tx.Model(&db.User{}).Where("username = ? OR email = ?", req.Username, req.Email).Count(&count)
 		if count > 0 {
-			c.JSON(http.StatusConflict, gin.H{"error": "username or email already exists"})
+			c.JSON(http.StatusConflict, ErrorResponse{Error: "username or email already exists"})
 			return fmt.Errorf("duplicate")
 		}
 
@@ -74,7 +74,7 @@ func (h *AdminHandler) CreateUser(c *gin.Context) {
 		if c.Writer.Written() {
 			return
 		}
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create user"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to create user"})
 		return
 	}
 
@@ -87,7 +87,7 @@ func (h *AdminHandler) UpdateUser(c *gin.Context) {
 	id := c.Param("id")
 	var user db.User
 	if err := h.DB.First(&user, id).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "user not found"})
+		c.JSON(http.StatusNotFound, ErrorResponse{Error: "user not found"})
 		return
 	}
 
@@ -100,7 +100,7 @@ func (h *AdminHandler) UpdateUser(c *gin.Context) {
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
 		slog.Debug("request binding failed", "error", err)
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body"})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid request body"})
 		return
 	}
 
@@ -108,21 +108,21 @@ func (h *AdminHandler) UpdateUser(c *gin.Context) {
 
 	// Owner protection
 	if user.Role == db.RoleOwner && req.Role != "" {
-		c.JSON(http.StatusForbidden, gin.H{"error": "cannot change the owner's role"})
+		c.JSON(http.StatusForbidden, ErrorResponse{Error: "cannot change the owner's role"})
 		return
 	}
 	if req.Role == db.RoleOwner {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "cannot assign owner role"})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "cannot assign owner role"})
 		return
 	}
 	if currentUserID == user.ID && req.Role != "" && req.Role != user.Role {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "cannot change your own role"})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "cannot change your own role"})
 		return
 	}
 
 	if req.Role != "" {
 		if req.Role != db.RoleAdmin && req.Role != db.RoleUser {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "role must be 'admin' or 'user'"})
+			c.JSON(http.StatusBadRequest, ErrorResponse{Error: "role must be 'admin' or 'user'"})
 			return
 		}
 		user.Role = req.Role
@@ -132,23 +132,23 @@ func (h *AdminHandler) UpdateUser(c *gin.Context) {
 	}
 	if req.Password != "" {
 		if user.Role == db.RoleOwner {
-			c.JSON(http.StatusForbidden, gin.H{"error": "cannot change the owner's password"})
+			c.JSON(http.StatusForbidden, ErrorResponse{Error: "cannot change the owner's password"})
 			return
 		}
 		if len(req.Password) < 8 {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "password must be at least 8 characters"})
+			c.JSON(http.StatusBadRequest, ErrorResponse{Error: "password must be at least 8 characters"})
 			return
 		}
 		hash, err := auth.HashPassword(req.Password)
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to hash password"})
+			c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to hash password"})
 			return
 		}
 		user.PasswordHash = hash
 	}
 	if req.Disabled != nil {
 		if user.Role == db.RoleOwner {
-			c.JSON(http.StatusForbidden, gin.H{"error": "cannot disable the owner"})
+			c.JSON(http.StatusForbidden, ErrorResponse{Error: "cannot disable the owner"})
 			return
 		}
 		user.Disabled = *req.Disabled
@@ -163,7 +163,7 @@ func (h *AdminHandler) UpdateUser(c *gin.Context) {
 	}
 
 	if err := h.DB.Save(&user).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to update user"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to update user"})
 		return
 	}
 
@@ -178,18 +178,18 @@ func (h *AdminHandler) DeleteUser(c *gin.Context) {
 	id := c.Param("id")
 	var user db.User
 	if err := h.DB.First(&user, id).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "user not found"})
+		c.JSON(http.StatusNotFound, ErrorResponse{Error: "user not found"})
 		return
 	}
 
 	if user.Role == db.RoleOwner {
-		c.JSON(http.StatusForbidden, gin.H{"error": "cannot delete the owner"})
+		c.JSON(http.StatusForbidden, ErrorResponse{Error: "cannot delete the owner"})
 		return
 	}
 
 	currentUserID, _ := c.Get("userId")
 	if currentUserID == user.ID {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "cannot delete yourself"})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "cannot delete yourself"})
 		return
 	}
 
@@ -255,7 +255,7 @@ func (h *AdminHandler) DeleteUser(c *gin.Context) {
 		return nil
 	})
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to delete user"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to delete user"})
 		return
 	}
 
@@ -267,7 +267,7 @@ func (h *AdminHandler) DeleteUser(c *gin.Context) {
 func (h *AdminHandler) ListDeletedUsers(c *gin.Context) {
 	var users []db.User
 	if err := h.DB.Unscoped().Where("deleted_at IS NOT NULL").Find(&users).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch deleted users"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to fetch deleted users"})
 		return
 	}
 
@@ -283,17 +283,17 @@ func (h *AdminHandler) HardDeleteUser(c *gin.Context) {
 	id := c.Param("id")
 	var user db.User
 	if err := h.DB.Unscoped().First(&user, id).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "user not found"})
+		c.JSON(http.StatusNotFound, ErrorResponse{Error: "user not found"})
 		return
 	}
 
 	if !user.DeletedAt.Valid {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "user is not soft-deleted; use the regular delete endpoint first"})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "user is not soft-deleted; use the regular delete endpoint first"})
 		return
 	}
 
 	if user.Role == db.RoleOwner {
-		c.JSON(http.StatusForbidden, gin.H{"error": "cannot permanently delete the owner"})
+		c.JSON(http.StatusForbidden, ErrorResponse{Error: "cannot permanently delete the owner"})
 		return
 	}
 
@@ -359,7 +359,7 @@ func (h *AdminHandler) HardDeleteUser(c *gin.Context) {
 		return tx.Unscoped().Delete(&user).Error
 	})
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to permanently delete user"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to permanently delete user"})
 		return
 	}
 

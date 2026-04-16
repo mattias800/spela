@@ -25,7 +25,7 @@ func (h *PlayLaterHandler) ListPlayLater(c *gin.Context) {
 		Preload("Game").Preload("Game.Console").
 		Order("position ASC").
 		Find(&items).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch play later queue"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to fetch play later queue"})
 		return
 	}
 
@@ -49,14 +49,14 @@ func (h *PlayLaterHandler) AddToPlayLater(c *gin.Context) {
 
 	gameID, err := strconv.ParseUint(gameIDStr, 10, 64)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid game ID"})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid game ID"})
 		return
 	}
 
 	// Verify game exists
 	var game db.Game
 	if err := h.DB.First(&game, gameID).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "game not found"})
+		c.JSON(http.StatusNotFound, ErrorResponse{Error: "game not found"})
 		return
 	}
 
@@ -103,13 +103,13 @@ func (h *PlayLaterHandler) RemoveFromPlayLater(c *gin.Context) {
 
 	gameID, err := strconv.ParseUint(gameIDStr, 10, 64)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid game ID"})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid game ID"})
 		return
 	}
 
 	result := h.DB.Unscoped().Where("user_id = ? AND game_id = ?", uid, gameID).Delete(&db.PlayLaterItem{})
 	if result.RowsAffected == 0 {
-		c.JSON(http.StatusNotFound, gin.H{"error": "game not in play later queue"})
+		c.JSON(http.StatusNotFound, ErrorResponse{Error: "game not in play later queue"})
 		return
 	}
 
@@ -124,12 +124,12 @@ func (h *PlayLaterHandler) ReorderPlayLater(c *gin.Context) {
 		GameIDs []string `json:"gameIds"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request"})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid request"})
 		return
 	}
 
 	if len(req.GameIDs) == 0 {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "gameIds required"})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "gameIds required"})
 		return
 	}
 
@@ -138,7 +138,7 @@ func (h *PlayLaterHandler) ReorderPlayLater(c *gin.Context) {
 	for _, idStr := range req.GameIDs {
 		id, err := strconv.ParseUint(idStr, 10, 64)
 		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid game IDs"})
+			c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid game IDs"})
 			return
 		}
 		parsedIDs = append(parsedIDs, uint(id))
@@ -157,14 +157,14 @@ func (h *PlayLaterHandler) ReorderPlayLater(c *gin.Context) {
 	// Validate all provided game IDs are in the queue
 	for _, gid := range parsedIDs {
 		if _, ok := itemByGameID[gid]; !ok {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid game IDs"})
+			c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid game IDs"})
 			return
 		}
 	}
 
 	// Validate completeness: all queue items must be included
 	if len(parsedIDs) != len(items) {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "gameIds must include all games in queue"})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "gameIds must include all games in queue"})
 		return
 	}
 
@@ -178,7 +178,7 @@ func (h *PlayLaterHandler) ReorderPlayLater(c *gin.Context) {
 		}
 		return nil
 	}); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to reorder queue"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to reorder queue"})
 		return
 	}
 

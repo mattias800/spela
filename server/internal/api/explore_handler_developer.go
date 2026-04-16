@@ -33,7 +33,7 @@ func (h *ExploreHandler) GetDevelopers(c *gin.Context) {
 		Limit(50).
 		Scan(&rows).Error; err != nil {
 		slog.Error("failed to fetch developers", "error", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch developers"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to fetch developers"})
 		return
 	}
 
@@ -62,7 +62,7 @@ func (h *ExploreHandler) GetDevelopers(c *gin.Context) {
 		Where("games.deleted_at IS NULL AND games.is_primary = true AND games.developer IN ?", devNames).
 		Scan(&consoleRows).Error; err != nil {
 		slog.Error("failed to fetch developer consoles", "error", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch developers"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to fetch developers"})
 		return
 	}
 
@@ -106,7 +106,7 @@ func (h *ExploreHandler) GetDeveloperDetail(c *gin.Context) {
 		Order("games.rating DESC, games.title ASC").
 		Find(&games).Error; err != nil {
 		slog.Error("failed to fetch developer games", "developer", name, "error", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch developer games"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to fetch developer games"})
 		return
 	}
 
@@ -188,7 +188,7 @@ func (h *ExploreHandler) GetPublisherDetail(c *gin.Context) {
 		Order("games.rating DESC, games.title ASC").
 		Find(&games).Error; err != nil {
 		slog.Error("failed to fetch publisher games", "publisher", name, "error", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch publisher games"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to fetch publisher games"})
 		return
 	}
 
@@ -701,12 +701,12 @@ func (h *ExploreHandler) GetDeveloperSpotlight(c *gin.Context) {
 		Limit(5).
 		Scan(&rows).Error; err != nil {
 		slog.Error("failed to fetch developer spotlight candidates", "error", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch developer spotlight"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to fetch developer spotlight"})
 		return
 	}
 
 	if len(rows) == 0 {
-		c.JSON(http.StatusNotFound, gin.H{"error": "no developers with hero art found"})
+		c.JSON(http.StatusNotFound, ErrorResponse{Error: "no developers with hero art found"})
 		return
 	}
 
@@ -721,7 +721,7 @@ func (h *ExploreHandler) GetDeveloperSpotlight(c *gin.Context) {
 		Order("games.rating DESC, games.title ASC").
 		Find(&games).Error; err != nil {
 		slog.Error("failed to fetch spotlight developer games", "developer", selectedDev.Developer, "error", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch developer spotlight"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to fetch developer spotlight"})
 		return
 	}
 

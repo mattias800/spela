@@ -136,7 +136,7 @@ func (h *TestHandler) Reset(c *gin.Context) {
 
 	if err != nil {
 		slog.Error("test reset failed", "error", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "reset failed"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "reset failed"})
 		return
 	}
 

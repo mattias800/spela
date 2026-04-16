@@ -36,20 +36,20 @@ func (h *SharedSessionHandler) CreateSharedSession(c *gin.Context) {
 		Name   string `json:"name" binding:"required,max=255"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request: gameId and name are required"})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid request: gameId and name are required"})
 		return
 	}
 
 	gid, err := strconv.ParseUint(req.GameID, 10, 64)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid game ID"})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid game ID"})
 		return
 	}
 
 	// Verify game exists and load console for core resolution
 	var game db.Game
 	if err := h.DB.Preload("Console").First(&game, gid).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "game not found"})
+		c.JSON(http.StatusNotFound, ErrorResponse{Error: "game not found"})
 		return
 	}
 
@@ -67,7 +67,7 @@ func (h *SharedSessionHandler) CreateSharedSession(c *gin.Context) {
 		CoreName: coreName,
 	}
 	if err := h.DB.Create(&session).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create session for shared session"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to create session for shared session"})
 		return
 	}
 
@@ -80,7 +80,7 @@ func (h *SharedSessionHandler) CreateSharedSession(c *gin.Context) {
 		SessionID: &session.ID,
 	}
 	if err := h.DB.Create(&ss).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create shared session"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to create shared session"})
 		return
 	}
 
@@ -92,7 +92,7 @@ func (h *SharedSessionHandler) CreateSharedSession(c *gin.Context) {
 		JoinedAt: time.Now(),
 	}
 	if err := h.DB.Create(&member).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to add owner as member"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to add owner as member"})
 		return
 	}
 
@@ -115,7 +115,7 @@ func (h *SharedSessionHandler) ListGameSharedSessions(c *gin.Context) {
 	gameID := c.Param("id")
 	gid, err := strconv.ParseUint(gameID, 10, 64)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid game ID"})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid game ID"})
 		return
 	}
 
@@ -126,7 +126,7 @@ func (h *SharedSessionHandler) ListGameSharedSessions(c *gin.Context) {
 		Preload("Owner").
 		Order("updated_at DESC").
 		Find(&sharedSessions).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch shared sessions"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to fetch shared sessions"})
 		return
 	}
 
@@ -145,7 +145,7 @@ func (h *SharedSessionHandler) ListSharedSessions(c *gin.Context) {
 	// Find shared session IDs where user is a member
 	var memberRows []db.SharedSessionMember
 	if err := h.DB.Where("user_id = ?", uid).Find(&memberRows).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch shared sessions"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to fetch shared sessions"})
 		return
 	}
 
@@ -166,7 +166,7 @@ func (h *SharedSessionHandler) ListSharedSessions(c *gin.Context) {
 		Preload("Owner").
 		Order("updated_at DESC").
 		Find(&sharedSessions).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch shared sessions"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to fetch shared sessions"})
 		return
 	}
 
@@ -202,13 +202,13 @@ func (h *SharedSessionHandler) UpdateSharedSession(c *gin.Context) {
 		Status *string `json:"status"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request"})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid request"})
 		return
 	}
 
 	if req.Name != nil {
 		if len(*req.Name) > 255 {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "name must be 255 characters or fewer"})
+			c.JSON(http.StatusBadRequest, ErrorResponse{Error: "name must be 255 characters or fewer"})
 			return
 		}
 		ss.Name = *req.Name
@@ -216,14 +216,14 @@ func (h *SharedSessionHandler) UpdateSharedSession(c *gin.Context) {
 	if req.Status != nil {
 		allowed := map[string]bool{"active": true, "completed": true, "archived": true}
 		if !allowed[*req.Status] {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid status: must be active, completed, or archived"})
+			c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid status: must be active, completed, or archived"})
 			return
 		}
 		ss.Status = *req.Status
 	}
 
 	if err := h.DB.Save(&ss).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to update shared session"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to update shared session"})
 		return
 	}
 
@@ -276,34 +276,34 @@ func (h *SharedSessionHandler) InviteUser(c *gin.Context) {
 		Username string `json:"username" binding:"required"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request: username is required"})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid request: username is required"})
 		return
 	}
 
 	// Find invitee
 	var invitee db.User
 	if err := h.DB.Where("username = ?", req.Username).First(&invitee).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "user not found"})
+		c.JSON(http.StatusNotFound, ErrorResponse{Error: "user not found"})
 		return
 	}
 
 	// Cannot invite yourself
 	if invitee.ID == uid {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "cannot invite yourself"})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "cannot invite yourself"})
 		return
 	}
 
 	// Check if already a member
 	var existingMember db.SharedSessionMember
 	if err := h.DB.Where("shared_session_id = ? AND user_id = ?", ss.ID, invitee.ID).First(&existingMember).Error; err == nil {
-		c.JSON(http.StatusConflict, gin.H{"error": "user is already a member"})
+		c.JSON(http.StatusConflict, ErrorResponse{Error: "user is already a member"})
 		return
 	}
 
 	// Check if already invited (pending)
 	var existingInvite db.SharedSessionInvite
 	if err := h.DB.Where("shared_session_id = ? AND invitee_id = ? AND status = ?", ss.ID, invitee.ID, "pending").First(&existingInvite).Error; err == nil {
-		c.JSON(http.StatusConflict, gin.H{"error": "user already has a pending invite"})
+		c.JSON(http.StatusConflict, ErrorResponse{Error: "user already has a pending invite"})
 		return
 	}
 
@@ -318,7 +318,7 @@ func (h *SharedSessionHandler) InviteUser(c *gin.Context) {
 		Status:    "pending",
 	}
 	if err := h.DB.Create(&invite).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create invite"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to create invite"})
 		return
 	}
 
@@ -342,7 +342,7 @@ func (h *SharedSessionHandler) ListMyInvites(c *gin.Context) {
 		Preload("SharedSession").Preload("SharedSession.Game").Preload("SharedSession.Game.Console").Preload("SharedSession.Owner").
 		Order("created_at DESC").
 		Find(&invites).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch invites"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to fetch invites"})
 		return
 	}
 
@@ -360,7 +360,7 @@ func (h *SharedSessionHandler) GetPendingInviteCount(c *gin.Context) {
 
 	var count int64
 	if err := h.DB.Model(&db.SharedSessionInvite{}).Where("invitee_id = ? AND status = ?", uid, "pending").Count(&count).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to count invites"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to count invites"})
 		return
 	}
 
@@ -374,24 +374,24 @@ func (h *SharedSessionHandler) AcceptInvite(c *gin.Context) {
 
 	var invite db.SharedSessionInvite
 	if err := h.DB.Preload("SharedSession").Preload("SharedSession.Game").First(&invite, inviteID).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "invite not found"})
+		c.JSON(http.StatusNotFound, ErrorResponse{Error: "invite not found"})
 		return
 	}
 
 	if invite.InviteeID != uid {
-		c.JSON(http.StatusForbidden, gin.H{"error": "not authorized"})
+		c.JSON(http.StatusForbidden, ErrorResponse{Error: "not authorized"})
 		return
 	}
 
 	if invite.Status != "pending" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invite is no longer pending"})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invite is no longer pending"})
 		return
 	}
 
 	// Update invite status
 	invite.Status = "accepted"
 	if err := h.DB.Save(&invite).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to accept invite"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to accept invite"})
 		return
 	}
 
@@ -403,7 +403,7 @@ func (h *SharedSessionHandler) AcceptInvite(c *gin.Context) {
 		JoinedAt: time.Now(),
 	}
 	if err := h.DB.Create(&member).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to join shared session"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to join shared session"})
 		return
 	}
 
@@ -431,23 +431,23 @@ func (h *SharedSessionHandler) DeclineInvite(c *gin.Context) {
 
 	var invite db.SharedSessionInvite
 	if err := h.DB.First(&invite, inviteID).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "invite not found"})
+		c.JSON(http.StatusNotFound, ErrorResponse{Error: "invite not found"})
 		return
 	}
 
 	if invite.InviteeID != uid {
-		c.JSON(http.StatusForbidden, gin.H{"error": "not authorized"})
+		c.JSON(http.StatusForbidden, ErrorResponse{Error: "not authorized"})
 		return
 	}
 
 	if invite.Status != "pending" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invite is no longer pending"})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invite is no longer pending"})
 		return
 	}
 
 	invite.Status = "declined"
 	if err := h.DB.Save(&invite).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to decline invite"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to decline invite"})
 		return
 	}
 
@@ -470,13 +470,13 @@ func (h *SharedSessionHandler) LeaveSharedSession(c *gin.Context) {
 	}
 
 	if ss.OwnerID == uid {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "owner cannot leave the shared session; transfer ownership or delete it"})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "owner cannot leave the shared session; transfer ownership or delete it"})
 		return
 	}
 
 	result := h.DB.Where("shared_session_id = ? AND user_id = ?", ss.ID, uid).Delete(&db.SharedSessionMember{})
 	if result.RowsAffected == 0 {
-		c.JSON(http.StatusNotFound, gin.H{"error": "membership not found"})
+		c.JSON(http.StatusNotFound, ErrorResponse{Error: "membership not found"})
 		return
 	}
 
@@ -510,18 +510,18 @@ func (h *SharedSessionHandler) RemoveMember(c *gin.Context) {
 	userIDStr := c.Param("userId")
 	targetUID, err := strconv.ParseUint(userIDStr, 10, 64)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid user ID"})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid user ID"})
 		return
 	}
 
 	if uint(targetUID) == uid {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "cannot remove yourself; use leave or delete the shared session"})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "cannot remove yourself; use leave or delete the shared session"})
 		return
 	}
 
 	result := h.DB.Where("shared_session_id = ? AND user_id = ?", ss.ID, targetUID).Delete(&db.SharedSessionMember{})
 	if result.RowsAffected == 0 {
-		c.JSON(http.StatusNotFound, gin.H{"error": "member not found"})
+		c.JSON(http.StatusNotFound, ErrorResponse{Error: "member not found"})
 		return
 	}
 
@@ -555,7 +555,7 @@ func (h *SharedSessionHandler) TakeTurn(c *gin.Context) {
 	}
 
 	if ss.Status != "active" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "shared session is not active"})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "shared session is not active"})
 		return
 	}
 
@@ -597,14 +597,14 @@ func (h *SharedSessionHandler) TakeTurn(c *gin.Context) {
 	})
 	if err != nil {
 		if err.Error() == "turn_held" {
-			c.JSON(http.StatusConflict, gin.H{"error": "turn is currently held by another user"})
+			c.JSON(http.StatusConflict, ErrorResponse{Error: "turn is currently held by another user"})
 			return
 		}
 		if err.Error() == "turn_conflict" {
-			c.JSON(http.StatusConflict, gin.H{"error": "turn was acquired by another user, please retry"})
+			c.JSON(http.StatusConflict, ErrorResponse{Error: "turn was acquired by another user, please retry"})
 			return
 		}
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to acquire turn"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to acquire turn"})
 		return
 	}
 
@@ -641,7 +641,7 @@ func (h *SharedSessionHandler) ReleaseTurn(c *gin.Context) {
 	}
 
 	if ss.ActiveUserID == nil || *ss.ActiveUserID != uid {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "you do not hold the turn"})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "you do not hold the turn"})
 		return
 	}
 
@@ -670,7 +670,7 @@ func (h *SharedSessionHandler) Heartbeat(c *gin.Context) {
 	}
 
 	if ss.ActiveUserID == nil || *ss.ActiveUserID != uid {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "you do not hold the turn"})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "you do not hold the turn"})
 		return
 	}
 
@@ -698,7 +698,7 @@ func (h *SharedSessionHandler) ListSaves(c *gin.Context) {
 		Preload("User").
 		Order("created_at DESC").
 		Find(&saves).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch saves"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to fetch saves"})
 		return
 	}
 
@@ -720,21 +720,21 @@ func (h *SharedSessionHandler) UploadSave(c *gin.Context) {
 
 	// Verify the caller holds the turn
 	if ss.ActiveUserID == nil || *ss.ActiveUserID != uid {
-		c.JSON(http.StatusForbidden, gin.H{"error": "you must hold the turn to upload saves"})
+		c.JSON(http.StatusForbidden, ErrorResponse{Error: "you must hold the turn to upload saves"})
 		return
 	}
 
 	// Verify turn token (constant-time comparison to prevent timing attacks)
 	turnToken := c.GetHeader("X-Turn-Token")
 	if turnToken == "" || subtle.ConstantTimeCompare([]byte(turnToken), []byte(ss.TurnToken)) != 1 {
-		c.JSON(http.StatusForbidden, gin.H{"error": "invalid turn token"})
+		c.JSON(http.StatusForbidden, ErrorResponse{Error: "invalid turn token"})
 		return
 	}
 
 	c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, maxSaveUploadSize)
 	file, header, err := c.Request.FormFile("save")
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "save file required"})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "save file required"})
 		return
 	}
 	defer file.Close()
@@ -744,7 +744,7 @@ func (h *SharedSessionHandler) UploadSave(c *gin.Context) {
 
 	filePath, size, err := h.Storage.WriteSharedSessionSave(ss.ID, header.Filename, file)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to save file"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to save file"})
 		return
 	}
 
@@ -758,7 +758,7 @@ func (h *SharedSessionHandler) UploadSave(c *gin.Context) {
 		IsAuto:        false,
 	}
 	if err := h.DB.Create(&save).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create save record"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to create save record"})
 		return
 	}
 
@@ -801,13 +801,13 @@ func (h *SharedSessionHandler) DownloadSave(c *gin.Context) {
 	saveID := c.Param("saveId")
 	var save db.SharedSessionSave
 	if err := h.DB.Where("id = ? AND shared_session_id = ?", saveID, ss.ID).First(&save).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "save not found"})
+		c.JSON(http.StatusNotFound, ErrorResponse{Error: "save not found"})
 		return
 	}
 
 	// Validate the file path is within the save directory
 	if !storage.ValidateROMPath(save.FilePath, []string{h.Storage.SaveDir}) {
-		c.JSON(http.StatusForbidden, gin.H{"error": "access denied"})
+		c.JSON(http.StatusForbidden, ErrorResponse{Error: "access denied"})
 		return
 	}
 
@@ -826,12 +826,12 @@ func (h *SharedSessionHandler) DeleteSave(c *gin.Context) {
 	saveID := c.Param("saveId")
 	var save db.SharedSessionSave
 	if err := h.DB.Where("id = ? AND shared_session_id = ?", saveID, ss.ID).First(&save).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "save not found"})
+		c.JSON(http.StatusNotFound, ErrorResponse{Error: "save not found"})
 		return
 	}
 
 	if err := h.Storage.DeleteSharedSessionSave(save.FilePath); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to delete save file"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to delete save file"})
 		return
 	}
 
@@ -849,21 +849,21 @@ func (h *SharedSessionHandler) UploadAutoSave(c *gin.Context) {
 
 	// Verify the caller holds the turn
 	if ss.ActiveUserID == nil || *ss.ActiveUserID != uid {
-		c.JSON(http.StatusForbidden, gin.H{"error": "you must hold the turn to upload saves"})
+		c.JSON(http.StatusForbidden, ErrorResponse{Error: "you must hold the turn to upload saves"})
 		return
 	}
 
 	// Verify turn token (constant-time comparison to prevent timing attacks)
 	turnToken := c.GetHeader("X-Turn-Token")
 	if turnToken == "" || subtle.ConstantTimeCompare([]byte(turnToken), []byte(ss.TurnToken)) != 1 {
-		c.JSON(http.StatusForbidden, gin.H{"error": "invalid turn token"})
+		c.JSON(http.StatusForbidden, ErrorResponse{Error: "invalid turn token"})
 		return
 	}
 
 	c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, maxSaveUploadSize)
 	file, _, err := c.Request.FormFile("save")
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "save file required"})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "save file required"})
 		return
 	}
 	defer file.Close()
@@ -873,7 +873,7 @@ func (h *SharedSessionHandler) UploadAutoSave(c *gin.Context) {
 
 	filePath, size, err := h.Storage.WriteSharedSessionSave(ss.ID, filename, file)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to save file"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to save file"})
 		return
 	}
 
@@ -937,13 +937,13 @@ func (h *SharedSessionHandler) GetAutoSave(c *gin.Context) {
 
 	var save db.SharedSessionSave
 	if err := h.DB.Where("shared_session_id = ? AND is_auto = ?", ss.ID, true).First(&save).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "no auto-save found"})
+		c.JSON(http.StatusNotFound, ErrorResponse{Error: "no auto-save found"})
 		return
 	}
 
 	// Validate the file path is within the save directory
 	if !storage.ValidateROMPath(save.FilePath, []string{h.Storage.SaveDir}) {
-		c.JSON(http.StatusForbidden, gin.H{"error": "access denied"})
+		c.JSON(http.StatusForbidden, ErrorResponse{Error: "access denied"})
 		return
 	}
 
@@ -959,20 +959,20 @@ func (h *SharedSessionHandler) RenameSharedSessionSave(c *gin.Context) {
 
 	rid, err := strconv.ParseUint(sharedSessionID, 10, 64)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid shared session ID"})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid shared session ID"})
 		return
 	}
 
 	// Check membership
 	var member db.SharedSessionMember
 	if err := h.DB.Where("shared_session_id = ? AND user_id = ?", rid, uid).First(&member).Error; err != nil {
-		c.JSON(http.StatusForbidden, gin.H{"error": "not a member of this shared session"})
+		c.JSON(http.StatusForbidden, ErrorResponse{Error: "not a member of this shared session"})
 		return
 	}
 
 	var save db.SharedSessionSave
 	if err := h.DB.Where("id = ? AND shared_session_id = ?", saveID, rid).First(&save).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "save not found"})
+		c.JSON(http.StatusNotFound, ErrorResponse{Error: "save not found"})
 		return
 	}
 
@@ -980,18 +980,18 @@ func (h *SharedSessionHandler) RenameSharedSessionSave(c *gin.Context) {
 		Name string `json:"name" binding:"required,max=255"`
 	}
 	if err := c.ShouldBindJSON(&body); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "name is required and must be 255 characters or fewer"})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "name is required and must be 255 characters or fewer"})
 		return
 	}
 
 	if strings.TrimSpace(body.Name) == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "name cannot be empty"})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "name cannot be empty"})
 		return
 	}
 
 	save.Name = body.Name
 	if err := h.DB.Save(&save).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to rename save"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to rename save"})
 		return
 	}
 
@@ -1005,7 +1005,7 @@ func (h *SharedSessionHandler) loadSharedSessionWithMemberCheck(c *gin.Context, 
 	id := c.Param("id")
 	rid, err := strconv.ParseUint(id, 10, 64)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid shared session ID"})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid shared session ID"})
 		return db.SharedSession{}, false
 	}
 
@@ -1013,7 +1013,7 @@ func (h *SharedSessionHandler) loadSharedSessionWithMemberCheck(c *gin.Context, 
 	if err := h.DB.Preload("Members").Preload("Members.User").
 		Preload("Game").Preload("Game.Console").Preload("Owner").
 		First(&ss, rid).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "shared session not found"})
+		c.JSON(http.StatusNotFound, ErrorResponse{Error: "shared session not found"})
 		return db.SharedSession{}, false
 	}
 
@@ -1026,7 +1026,7 @@ func (h *SharedSessionHandler) loadSharedSessionWithMemberCheck(c *gin.Context, 
 		}
 	}
 	if !isMember {
-		c.JSON(http.StatusForbidden, gin.H{"error": "not a member of this shared session"})
+		c.JSON(http.StatusForbidden, ErrorResponse{Error: "not a member of this shared session"})
 		return db.SharedSession{}, false
 	}
 
@@ -1041,7 +1041,7 @@ func (h *SharedSessionHandler) loadSharedSessionWithOwnerCheck(c *gin.Context, u
 	}
 
 	if ss.OwnerID != uid {
-		c.JSON(http.StatusForbidden, gin.H{"error": "only the shared session owner can perform this action"})
+		c.JSON(http.StatusForbidden, ErrorResponse{Error: "only the shared session owner can perform this action"})
 		return db.SharedSession{}, false
 	}
 

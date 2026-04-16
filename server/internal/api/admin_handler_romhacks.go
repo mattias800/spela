@@ -35,17 +35,17 @@ func (h *RomHackHandler) CreateRomHack(c *gin.Context) {
 	// Parse form data
 	baseGameID := c.PostForm("base_game_id")
 	if baseGameID == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "base_game_id is required"})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "base_game_id is required"})
 		return
 	}
 	if _, err := strconv.ParseUint(baseGameID, 10, 64); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "base_game_id must be a valid numeric ID"})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "base_game_id must be a valid numeric ID"})
 		return
 	}
 
 	mode := c.PostForm("mode")
 	if mode != "variant" && mode != "standalone" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "mode must be 'variant' or 'standalone'"})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "mode must be 'variant' or 'standalone'"})
 		return
 	}
 
@@ -53,18 +53,18 @@ func (h *RomHackHandler) CreateRomHack(c *gin.Context) {
 	title := c.PostForm("title")
 
 	if mode == "variant" && label == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "label is required for variant mode"})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "label is required for variant mode"})
 		return
 	}
 	if mode == "standalone" && title == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "title is required for standalone mode"})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "title is required for standalone mode"})
 		return
 	}
 
 	// Read patch file
 	patchFile, patchHeader, err := c.Request.FormFile("patch_file")
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "patch_file is required"})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "patch_file is required"})
 		return
 	}
 	defer patchFile.Close()
@@ -73,34 +73,34 @@ func (h *RomHackHandler) CreateRomHack(c *gin.Context) {
 	patchExt := strings.ToLower(filepath.Ext(patchHeader.Filename))
 	supportedExts := map[string]bool{".ips": true, ".bps": true, ".ups": true, ".xdelta": true, ".vcdiff": true}
 	if !supportedExts[patchExt] {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "unsupported patch format: " + patchExt + "; supported: .ips, .bps, .ups, .xdelta"})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "unsupported patch format: " + patchExt + "; supported: .ips, .bps, .ups, .xdelta"})
 		return
 	}
 
 	patchData, err := io.ReadAll(patchFile)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "failed to read patch file"})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "failed to read patch file"})
 		return
 	}
 
 	// Load base game
 	var baseGame db.Game
 	if err := h.DB.Preload("Console").First(&baseGame, baseGameID).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "base game not found"})
+		c.JSON(http.StatusNotFound, ErrorResponse{Error: "base game not found"})
 		return
 	}
 
 	// Read the base game's ROM file
 	romAbsPath, err := storage.ResolveGamePath(baseGame.FilePath, h.GameDirs)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "base game ROM file not found on disk"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "base game ROM file not found on disk"})
 		return
 	}
 
 	romData, err := os.ReadFile(romAbsPath)
 	if err != nil {
 		slog.Warn("failed to read base ROM", "path", romAbsPath, "error", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to read base game ROM"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to read base game ROM"})
 		return
 	}
 
@@ -108,7 +108,7 @@ func (h *RomHackHandler) CreateRomHack(c *gin.Context) {
 	patchedData, err := patcher.Apply(romData, patchData, patchHeader.Filename)
 	if err != nil {
 		slog.Info("patch application failed", "baseGame", baseGame.Title, "patchFile", patchHeader.Filename, "error", err)
-		c.JSON(http.StatusBadRequest, gin.H{"error": fmt.Sprintf("patch failed: %s", err)})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: fmt.Sprintf("patch failed: %s", err)})
 		return
 	}
 
@@ -127,7 +127,7 @@ func (h *RomHackHandler) CreateRomHack(c *gin.Context) {
 	// Write the patched ROM to the games directory
 	targetDir := filepath.Join(h.GameDirs[0], baseGame.Console.FolderName)
 	if err := os.MkdirAll(targetDir, 0755); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create target directory"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to create target directory"})
 		return
 	}
 
@@ -135,13 +135,13 @@ func (h *RomHackHandler) CreateRomHack(c *gin.Context) {
 
 	// Avoid overwriting existing files
 	if _, err := os.Stat(targetPath); err == nil {
-		c.JSON(http.StatusConflict, gin.H{"error": "a ROM file with this name already exists: " + patchedFileName})
+		c.JSON(http.StatusConflict, ErrorResponse{Error: "a ROM file with this name already exists: " + patchedFileName})
 		return
 	}
 
 	if err := os.WriteFile(targetPath, patchedData, 0644); err != nil {
 		slog.Warn("failed to write patched ROM", "path", targetPath, "error", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to write patched ROM file"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to write patched ROM file"})
 		return
 	}
 
@@ -208,7 +208,7 @@ func (h *RomHackHandler) CreateRomHack(c *gin.Context) {
 		// Clean up the file we wrote
 		os.Remove(targetPath)
 		slog.Warn("failed to create game record for ROM hack", "error", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create game record"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to create game record"})
 		return
 	}
 

@@ -71,7 +71,7 @@ type PlayersLikeYouResponse struct {
 func (h *ExploreHandler) GetForYou(c *gin.Context) {
 	userID := getUserID(c)
 	if userID == 0 {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "authentication required"})
+		c.JSON(http.StatusUnauthorized, ErrorResponse{Error: "authentication required"})
 		return
 	}
 
@@ -81,7 +81,7 @@ func (h *ExploreHandler) GetForYou(c *gin.Context) {
 	becauseRows, err := h.buildBecauseYouPlayedRows(userID)
 	if err != nil {
 		slog.Error("failed to build because-you-played rows", "error", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to build recommendations"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to build recommendations"})
 		return
 	}
 	rows = append(rows, becauseRows...)
@@ -90,7 +90,7 @@ func (h *ExploreHandler) GetForYou(c *gin.Context) {
 	moreGenreRow, err := h.buildMoreGenreRow(userID)
 	if err != nil {
 		slog.Error("failed to build more-genre row", "error", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to build recommendations"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to build recommendations"})
 		return
 	}
 	if moreGenreRow != nil {
@@ -101,7 +101,7 @@ func (h *ExploreHandler) GetForYou(c *gin.Context) {
 	unfinishedRow, err := h.buildUnfinishedRow(userID)
 	if err != nil {
 		slog.Error("failed to build unfinished row", "error", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to build recommendations"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to build recommendations"})
 		return
 	}
 	if unfinishedRow != nil {
@@ -112,7 +112,7 @@ func (h *ExploreHandler) GetForYou(c *gin.Context) {
 	expandRow, err := h.buildExpandHorizonsRow(userID)
 	if err != nil {
 		slog.Error("failed to build expand-horizons row", "error", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to build recommendations"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to build recommendations"})
 		return
 	}
 	if expandRow != nil {
@@ -403,7 +403,7 @@ func (h *ExploreHandler) buildExpandHorizonsRow(userID uint) (*ForYouRowResponse
 func (h *ExploreHandler) GetTasteProfile(c *gin.Context) {
 	userID := getUserID(c)
 	if userID == 0 {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "authentication required"})
+		c.JSON(http.StatusUnauthorized, ErrorResponse{Error: "authentication required"})
 		return
 	}
 
@@ -414,7 +414,7 @@ func (h *ExploreHandler) GetTasteProfile(c *gin.Context) {
 		Where("user_id = ? AND play_time > 0", userID).
 		Scan(&totalPlayTime).Error; err != nil {
 		slog.Error("failed to calculate total play time", "error", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to build taste profile"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to build taste profile"})
 		return
 	}
 
@@ -434,7 +434,7 @@ func (h *ExploreHandler) GetTasteProfile(c *gin.Context) {
 		Order("play_time DESC").
 		Scan(&genreRows).Error; err != nil {
 		slog.Error("failed to get genre breakdown", "error", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to build taste profile"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to build taste profile"})
 		return
 	}
 
@@ -468,7 +468,7 @@ func (h *ExploreHandler) GetTasteProfile(c *gin.Context) {
 		Order("play_time DESC").
 		Scan(&themeRows).Error; err != nil {
 		slog.Error("failed to get theme breakdown", "error", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to build taste profile"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to build taste profile"})
 		return
 	}
 
@@ -504,7 +504,7 @@ func (h *ExploreHandler) GetTasteProfile(c *gin.Context) {
 		Order("play_time DESC").
 		Scan(&consoleRows).Error; err != nil {
 		slog.Error("failed to get console breakdown", "error", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to build taste profile"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to build taste profile"})
 		return
 	}
 
@@ -532,7 +532,7 @@ func (h *ExploreHandler) GetTasteProfile(c *gin.Context) {
 func (h *ExploreHandler) GetPlayersLikeYou(c *gin.Context) {
 	userID := getUserID(c)
 	if userID == 0 {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "authentication required"})
+		c.JSON(http.StatusUnauthorized, ErrorResponse{Error: "authentication required"})
 		return
 	}
 
@@ -543,7 +543,7 @@ func (h *ExploreHandler) GetPlayersLikeYou(c *gin.Context) {
 		Where("user_id = ?", userID).
 		Pluck("game_id", &myFavIDs).Error; err != nil {
 		slog.Error("failed to get user favorites", "error", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to get recommendations"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to get recommendations"})
 		return
 	}
 
@@ -574,7 +574,7 @@ func (h *ExploreHandler) GetPlayersLikeYou(c *gin.Context) {
 		Order("overlap_count DESC").
 		Scan(&overlaps).Error; err != nil {
 		slog.Error("failed to find similar users", "error", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to get recommendations"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to get recommendations"})
 		return
 	}
 
@@ -614,7 +614,7 @@ func (h *ExploreHandler) GetPlayersLikeYou(c *gin.Context) {
 		Group("user_id").
 		Scan(&favCounts).Error; err != nil {
 		slog.Error("failed to get candidate favorite counts", "error", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to get recommendations"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to get recommendations"})
 		return
 	}
 
@@ -666,7 +666,7 @@ func (h *ExploreHandler) GetPlayersLikeYou(c *gin.Context) {
 		Limit(20).
 		Scan(&recGameRows).Error; err != nil {
 		slog.Error("failed to get recommended games from similar users", "error", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to get recommendations"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to get recommendations"})
 		return
 	}
 
@@ -688,7 +688,7 @@ func (h *ExploreHandler) GetPlayersLikeYou(c *gin.Context) {
 	var games []db.Game
 	if err := h.DB.Preload("Console").Where("id IN ? AND is_primary = true", gameIDs).Find(&games).Error; err != nil {
 		slog.Error("failed to load recommended games", "error", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to get recommendations"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to get recommendations"})
 		return
 	}
 

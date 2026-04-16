@@ -34,7 +34,7 @@ func (h *DeviceHandler) RegisterDevice(c *gin.Context) {
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
 		slog.Debug("request binding failed", "error", err)
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body"})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid request body"})
 		return
 	}
 
@@ -46,7 +46,7 @@ func (h *DeviceHandler) RegisterDevice(c *gin.Context) {
 		device.Platform = req.Platform
 		device.LastSeenAt = time.Now()
 		if err := h.DB.Save(&device).Error; err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to update device"})
+			c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to update device"})
 			return
 		}
 	} else {
@@ -54,7 +54,7 @@ func (h *DeviceHandler) RegisterDevice(c *gin.Context) {
 		var count int64
 		h.DB.Model(&db.Device{}).Where("user_id = ?", uid).Count(&count)
 		if count >= 50 {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "device limit reached (max 50)"})
+			c.JSON(http.StatusBadRequest, ErrorResponse{Error: "device limit reached (max 50)"})
 			return
 		}
 		// New device — create
@@ -66,7 +66,7 @@ func (h *DeviceHandler) RegisterDevice(c *gin.Context) {
 			LastSeenAt: time.Now(),
 		}
 		if err := h.DB.Create(&device).Error; err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to register device"})
+			c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to register device"})
 			return
 		}
 	}
@@ -83,7 +83,7 @@ func (h *DeviceHandler) GetDevices(c *gin.Context) {
 
 	var devices []db.Device
 	if err := h.DB.Where("user_id = ?", uid).Order("last_seen_at desc").Find(&devices).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch devices"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to fetch devices"})
 		return
 	}
 
@@ -105,11 +105,11 @@ func (h *DeviceHandler) UpdateDevice(c *gin.Context) {
 
 	var device db.Device
 	if err := h.DB.First(&device, id).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "device not found"})
+		c.JSON(http.StatusNotFound, ErrorResponse{Error: "device not found"})
 		return
 	}
 	if device.UserID != uid {
-		c.JSON(http.StatusForbidden, gin.H{"error": "access denied"})
+		c.JSON(http.StatusForbidden, ErrorResponse{Error: "access denied"})
 		return
 	}
 
@@ -118,13 +118,13 @@ func (h *DeviceHandler) UpdateDevice(c *gin.Context) {
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
 		slog.Debug("request binding failed", "error", err)
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body"})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid request body"})
 		return
 	}
 
 	device.Name = req.Name
 	if err := h.DB.Save(&device).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to update device"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to update device"})
 		return
 	}
 
@@ -138,18 +138,18 @@ func (h *DeviceHandler) DeleteDevice(c *gin.Context) {
 
 	var device db.Device
 	if err := h.DB.First(&device, id).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "device not found"})
+		c.JSON(http.StatusNotFound, ErrorResponse{Error: "device not found"})
 		return
 	}
 	if device.UserID != uid {
-		c.JSON(http.StatusForbidden, gin.H{"error": "access denied"})
+		c.JSON(http.StatusForbidden, ErrorResponse{Error: "access denied"})
 		return
 	}
 
 	// Delete shader preferences first, then the device
 	h.DB.Where("device_id = ?", device.ID).Delete(&db.DeviceShaderPreference{})
 	if err := h.DB.Delete(&device).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to delete device"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to delete device"})
 		return
 	}
 
@@ -163,11 +163,11 @@ func (h *DeviceHandler) GetDevicePreferences(c *gin.Context) {
 
 	var device db.Device
 	if err := h.DB.First(&device, id).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "device not found"})
+		c.JSON(http.StatusNotFound, ErrorResponse{Error: "device not found"})
 		return
 	}
 	if device.UserID != uid {
-		c.JSON(http.StatusForbidden, gin.H{"error": "access denied"})
+		c.JSON(http.StatusForbidden, ErrorResponse{Error: "access denied"})
 		return
 	}
 
@@ -181,11 +181,11 @@ func (h *DeviceHandler) UpdateDevicePreferences(c *gin.Context) {
 
 	var device db.Device
 	if err := h.DB.First(&device, id).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "device not found"})
+		c.JSON(http.StatusNotFound, ErrorResponse{Error: "device not found"})
 		return
 	}
 	if device.UserID != uid {
-		c.JSON(http.StatusForbidden, gin.H{"error": "access denied"})
+		c.JSON(http.StatusForbidden, ErrorResponse{Error: "access denied"})
 		return
 	}
 
@@ -194,7 +194,7 @@ func (h *DeviceHandler) UpdateDevicePreferences(c *gin.Context) {
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
 		slog.Debug("request binding failed", "error", err)
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body"})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid request body"})
 		return
 	}
 
@@ -232,13 +232,13 @@ func (h *DeviceHandler) AdminGetUserDevices(c *gin.Context) {
 
 	var user db.User
 	if err := h.DB.First(&user, userID).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "user not found"})
+		c.JSON(http.StatusNotFound, ErrorResponse{Error: "user not found"})
 		return
 	}
 
 	var devices []db.Device
 	if err := h.DB.Where("user_id = ?", user.ID).Order("last_seen_at desc").Find(&devices).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch devices"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to fetch devices"})
 		return
 	}
 

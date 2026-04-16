@@ -38,25 +38,25 @@ const maxSavedSearchesPerUser = 50
 func (h *SavedSearchHandler) CreateSavedSearch(c *gin.Context) {
 	userID := getUserID(c)
 	if userID == 0 {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		c.JSON(http.StatusUnauthorized, ErrorResponse{Error: "unauthorized"})
 		return
 	}
 
 	var req SavedSearchRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "name and filters are required"})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "name and filters are required"})
 		return
 	}
 
 	// Validate name length
 	if len(req.Name) > 255 {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "name must be 255 characters or fewer"})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "name must be 255 characters or fewer"})
 		return
 	}
 
 	// Validate filters is valid JSON
 	if !json.Valid(req.Filters) {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "filters must be valid JSON"})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "filters must be valid JSON"})
 		return
 	}
 
@@ -64,7 +64,7 @@ func (h *SavedSearchHandler) CreateSavedSearch(c *gin.Context) {
 	var count int64
 	h.DB.Model(&db.SavedSearch{}).Where("user_id = ?", userID).Count(&count)
 	if count >= maxSavedSearchesPerUser {
-		c.JSON(http.StatusConflict, gin.H{"error": "maximum of 50 saved searches reached"})
+		c.JSON(http.StatusConflict, ErrorResponse{Error: "maximum of 50 saved searches reached"})
 		return
 	}
 
@@ -74,7 +74,7 @@ func (h *SavedSearchHandler) CreateSavedSearch(c *gin.Context) {
 		Filters: string(req.Filters),
 	}
 	if err := h.DB.Create(&savedSearch).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create saved search"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to create saved search"})
 		return
 	}
 
@@ -91,13 +91,13 @@ func (h *SavedSearchHandler) CreateSavedSearch(c *gin.Context) {
 func (h *SavedSearchHandler) ListSavedSearches(c *gin.Context) {
 	userID := getUserID(c)
 	if userID == 0 {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		c.JSON(http.StatusUnauthorized, ErrorResponse{Error: "unauthorized"})
 		return
 	}
 
 	var searches []db.SavedSearch
 	if err := h.DB.Where("user_id = ?", userID).Order("created_at DESC").Find(&searches).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch saved searches"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to fetch saved searches"})
 		return
 	}
 
@@ -119,30 +119,30 @@ func (h *SavedSearchHandler) ListSavedSearches(c *gin.Context) {
 func (h *SavedSearchHandler) DeleteSavedSearch(c *gin.Context) {
 	userID := getUserID(c)
 	if userID == 0 {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		c.JSON(http.StatusUnauthorized, ErrorResponse{Error: "unauthorized"})
 		return
 	}
 
 	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid ID"})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid ID"})
 		return
 	}
 
 	var savedSearch db.SavedSearch
 	if err := h.DB.First(&savedSearch, id).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "saved search not found"})
+		c.JSON(http.StatusNotFound, ErrorResponse{Error: "saved search not found"})
 		return
 	}
 
 	// Verify ownership
 	if savedSearch.UserID != userID {
-		c.JSON(http.StatusForbidden, gin.H{"error": "access denied"})
+		c.JSON(http.StatusForbidden, ErrorResponse{Error: "access denied"})
 		return
 	}
 
 	if err := h.DB.Delete(&savedSearch).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to delete saved search"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to delete saved search"})
 		return
 	}
 

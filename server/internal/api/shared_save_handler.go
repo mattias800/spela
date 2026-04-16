@@ -27,21 +27,21 @@ func (h *SharedSaveHandler) ShareSave(c *gin.Context) {
 
 	gid, err := strconv.ParseUint(gameID, 10, 64)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid game ID"})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid game ID"})
 		return
 	}
 
 	// Verify game exists
 	var game db.Game
 	if err := h.DB.First(&game, gid).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "game not found"})
+		c.JSON(http.StatusNotFound, ErrorResponse{Error: "game not found"})
 		return
 	}
 
 	c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, maxSaveUploadSize)
 	file, header, err := c.Request.FormFile("save")
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "save file required"})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "save file required"})
 		return
 	}
 	defer file.Close()
@@ -59,7 +59,7 @@ func (h *SharedSaveHandler) ShareSave(c *gin.Context) {
 		ScreenshotURL: screenshotURL,
 	}
 	if err := h.DB.Create(&shared).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create shared save record"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to create shared save record"})
 		return
 	}
 
@@ -68,7 +68,7 @@ func (h *SharedSaveHandler) ShareSave(c *gin.Context) {
 	if err != nil {
 		// Cleanup the DB record if file write fails
 		h.DB.Unscoped().Delete(&shared)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to save file"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to save file"})
 		return
 	}
 
@@ -76,7 +76,7 @@ func (h *SharedSaveHandler) ShareSave(c *gin.Context) {
 	shared.FilePath = filePath
 	shared.FileSize = fileSize
 	if err := h.DB.Save(&shared).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to update shared save record"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to update shared save record"})
 		return
 	}
 
@@ -110,7 +110,7 @@ func (h *SharedSaveHandler) ListSharedSaves(c *gin.Context) {
 		Offset((page - 1) * pageSize).
 		Limit(pageSize).
 		Find(&saves).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch shared saves"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to fetch shared saves"})
 		return
 	}
 
@@ -134,13 +134,13 @@ func (h *SharedSaveHandler) DownloadSharedSave(c *gin.Context) {
 
 	var save db.SharedSaveState
 	if err := h.DB.First(&save, saveID).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "shared save not found"})
+		c.JSON(http.StatusNotFound, ErrorResponse{Error: "shared save not found"})
 		return
 	}
 
 	// Validate the file path is within the save directory
 	if !storage.ValidateROMPath(save.FilePath, []string{h.Storage.SaveDir}) {
-		c.JSON(http.StatusForbidden, gin.H{"error": "access denied"})
+		c.JSON(http.StatusForbidden, ErrorResponse{Error: "access denied"})
 		return
 	}
 
@@ -158,20 +158,20 @@ func (h *SharedSaveHandler) DeleteSharedSave(c *gin.Context) {
 
 	var save db.SharedSaveState
 	if err := h.DB.First(&save, saveID).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "shared save not found"})
+		c.JSON(http.StatusNotFound, ErrorResponse{Error: "shared save not found"})
 		return
 	}
 
 	// Check ownership or admin
 	role, _ := c.Get("role")
 	if save.UserID != uid && !db.IsAdminOrOwner(role.(string)) {
-		c.JSON(http.StatusForbidden, gin.H{"error": "not authorized to delete this shared save"})
+		c.JSON(http.StatusForbidden, ErrorResponse{Error: "not authorized to delete this shared save"})
 		return
 	}
 
 	// Delete file
 	if err := h.Storage.DeleteSave(save.FilePath); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to delete save file"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to delete save file"})
 		return
 	}
 

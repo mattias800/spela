@@ -42,7 +42,7 @@ func (h *StatsHandler) MostPlayedGames(c *gin.Context) {
 		Order("total_play_time DESC").
 		Limit(25).
 		Scan(&rows).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch most played games"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to fetch most played games"})
 		return
 	}
 
@@ -116,7 +116,7 @@ func (h *StatsHandler) MostActivePlayers(c *gin.Context) {
 		Order("total_play_time DESC").
 		Limit(25).
 		Scan(&rows).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch most active players"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to fetch most active players"})
 		return
 	}
 
@@ -191,13 +191,13 @@ func (h *StatsHandler) GetPublicPlayHeatmap(c *gin.Context) {
 	idParam := c.Param("id")
 	id, err := strconv.ParseUint(idParam, 10, 64)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid user id"})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid user id"})
 		return
 	}
 
 	var user db.User
 	if err := h.DB.First(&user, uint(id)).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "user not found"})
+		c.JSON(http.StatusNotFound, ErrorResponse{Error: "user not found"})
 		return
 	}
 

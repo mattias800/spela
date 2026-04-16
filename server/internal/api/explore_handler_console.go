@@ -67,7 +67,7 @@ func (h *ExploreHandler) GetConsoleShowcase(c *gin.Context) {
 	// Look up the console by abbreviation
 	var console db.Console
 	if err := h.DB.Where("LOWER(abbreviation) = ?", abbr).First(&console).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "console not found"})
+		c.JSON(http.StatusNotFound, ErrorResponse{Error: "console not found"})
 		return
 	}
 
@@ -88,7 +88,7 @@ func (h *ExploreHandler) GetConsoleShowcase(c *gin.Context) {
 		Limit(10).
 		Find(&essentials).Error; err != nil {
 		slog.Error("failed to fetch console essentials", "console", abbr, "error", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch console data"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to fetch console data"})
 		return
 	}
 
@@ -315,7 +315,7 @@ func (h *ExploreHandler) GetConsoleHighlights(c *gin.Context) {
 	var consoles []db.Console
 	if err := h.DB.Order("name ASC").Find(&consoles).Error; err != nil {
 		slog.Error("failed to fetch consoles for highlights", "error", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch consoles"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to fetch consoles"})
 		return
 	}
 
@@ -332,7 +332,7 @@ func (h *ExploreHandler) GetConsoleHighlights(c *gin.Context) {
 		Group("console_id").
 		Scan(&counts).Error; err != nil {
 		slog.Error("failed to count games per console", "error", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch console data"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to fetch console data"})
 		return
 	}
 

@@ -23,7 +23,7 @@ type CoreHandler struct {
 func (h *CoreHandler) ListCores(c *gin.Context) {
 	var cores []db.Core
 	if err := h.DB.Find(&cores).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch cores"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to fetch cores"})
 		return
 	}
 	c.JSON(http.StatusOK, cores)
@@ -78,19 +78,19 @@ func (h *CoreHandler) DownloadCore(c *gin.Context) {
 
 	var core db.Core
 	if err := h.DB.First(&core, id).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "core not found"})
+		c.JSON(http.StatusNotFound, ErrorResponse{Error: "core not found"})
 		return
 	}
 
 	corePath := h.resolveCorePath(core, platform)
 	if corePath == "" {
-		c.JSON(http.StatusNotFound, gin.H{"error": "core binary not available"})
+		c.JSON(http.StatusNotFound, ErrorResponse{Error: "core binary not available"})
 		return
 	}
 
 	// Security: validate the file path is within the allowed core directory
 	if h.CoreDir == "" || !storage.ValidateROMPath(corePath, []string{h.CoreDir}) {
-		c.JSON(http.StatusForbidden, gin.H{"error": "core file access denied"})
+		c.JSON(http.StatusForbidden, ErrorResponse{Error: "core file access denied"})
 		return
 	}
 

@@ -39,7 +39,7 @@ func (h *AchievementShowcaseHandler) GetShowcase(c *gin.Context) {
 	var entries []db.UserAchievementShowcase
 	if err := h.DB.Where("user_id = ?", uid).Order("showcase_order ASC").Find(&entries).Error; err != nil {
 		slog.Error("failed to load achievement showcase", "user_id", uid, "error", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to load showcase"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to load showcase"})
 		return
 	}
 
@@ -51,14 +51,14 @@ func (h *AchievementShowcaseHandler) GetShowcase(c *gin.Context) {
 func (h *AchievementShowcaseHandler) GetPublicShowcase(c *gin.Context) {
 	userID, err := strconv.ParseUint(c.Param("id"), 10, 64)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid user ID"})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid user ID"})
 		return
 	}
 
 	var entries []db.UserAchievementShowcase
 	if err := h.DB.Where("user_id = ?", userID).Order("showcase_order ASC").Find(&entries).Error; err != nil {
 		slog.Error("failed to load public achievement showcase", "user_id", userID, "error", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to load showcase"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to load showcase"})
 		return
 	}
 
@@ -75,12 +75,12 @@ func (h *AchievementShowcaseHandler) UpdateShowcase(c *gin.Context) {
 		RAGameID        uint `json:"raGameId" binding:"required"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body"})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid request body"})
 		return
 	}
 
 	if len(req) > maxShowcaseEntries {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "maximum 5 showcase entries allowed"})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "maximum 5 showcase entries allowed"})
 		return
 	}
 
@@ -106,7 +106,7 @@ func (h *AchievementShowcaseHandler) UpdateShowcase(c *gin.Context) {
 		return nil
 	}); err != nil {
 		slog.Error("failed to update achievement showcase", "user_id", uid, "error", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to update showcase"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to update showcase"})
 		return
 	}
 

@@ -50,38 +50,38 @@ func (h *SetupHandler) Diagnostics(c *gin.Context) {
 			}
 		}
 		if token == "" {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "authentication required"})
+			c.JSON(http.StatusUnauthorized, ErrorResponse{Error: "authentication required"})
 			return
 		}
 
 		claims, err := auth.ValidateAccessToken(token, h.JWTSecret)
 		if err != nil {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid token"})
+			c.JSON(http.StatusUnauthorized, ErrorResponse{Error: "invalid token"})
 			return
 		}
 
 		// Check blacklist
 		if IsTokenBlacklisted(h.DB, token) {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "token revoked"})
+			c.JSON(http.StatusUnauthorized, ErrorResponse{Error: "token revoked"})
 			return
 		}
 
 		// Check user is admin/owner
 		var user db.User
 		if err := h.DB.Select("id", "role", "disabled", "token_version").First(&user, claims.UserID).Error; err != nil {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "user not found"})
+			c.JSON(http.StatusUnauthorized, ErrorResponse{Error: "user not found"})
 			return
 		}
 		if user.Disabled {
-			c.JSON(http.StatusForbidden, gin.H{"error": "account disabled"})
+			c.JSON(http.StatusForbidden, ErrorResponse{Error: "account disabled"})
 			return
 		}
 		if claims.TokenVersion != user.TokenVersion {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "token invalidated"})
+			c.JSON(http.StatusUnauthorized, ErrorResponse{Error: "token invalidated"})
 			return
 		}
 		if user.Role != "admin" && user.Role != "owner" {
-			c.JSON(http.StatusForbidden, gin.H{"error": "admin access required"})
+			c.JSON(http.StatusForbidden, ErrorResponse{Error: "admin access required"})
 			return
 		}
 	}

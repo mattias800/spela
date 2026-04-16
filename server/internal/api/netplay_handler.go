@@ -37,30 +37,30 @@ func (h *NetplayHandler) CreateSession(c *gin.Context) {
 		CoreName   string `json:"coreName"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request: gameId is required"})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid request: gameId is required"})
 		return
 	}
 
 	gid, err := strconv.ParseUint(req.GameID, 10, 64)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid game ID"})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid game ID"})
 		return
 	}
 
 	var game db.Game
 	if err := h.DB.Preload("Console").First(&game, gid).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "game not found"})
+		c.JSON(http.StatusNotFound, ErrorResponse{Error: "game not found"})
 		return
 	}
 
 	if !game.Console.Playable {
-		c.JSON(http.StatusBadRequest, gin.H{"error": errNonPlayableConsole.Error()})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: errNonPlayableConsole.Error()})
 		return
 	}
 
 	// Validate console is supported for netplay
 	if !netplaySupportedConsoles[game.Console.Abbreviation] {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "netplay is not supported for " + game.Console.Name + " yet"})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "netplay is not supported for " + game.Console.Name + " yet"})
 		return
 	}
 
@@ -87,7 +87,7 @@ func (h *NetplayHandler) CreateSession(c *gin.Context) {
 		slog.Warn("invite code collision, retrying", "attempt", attempt+1, "error", createErr)
 	}
 	if createErr != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create session"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to create session"})
 		return
 	}
 
@@ -137,7 +137,7 @@ func (h *NetplayHandler) ListSessions(c *gin.Context) {
 		Offset((page - 1) * pageSize).
 		Limit(pageSize).
 		Find(&sessions).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch sessions"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to fetch sessions"})
 		return
 	}
 
@@ -172,7 +172,7 @@ func (h *NetplayHandler) JoinByInviteCode(c *gin.Context) {
 		InviteCode string `json:"inviteCode" binding:"required"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invite code is required"})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invite code is required"})
 		return
 	}
 
@@ -184,28 +184,28 @@ func (h *NetplayHandler) JoinByInviteCode(c *gin.Context) {
 		Preload("HostUser").Preload("ClientUser").
 		Preload("Game").Preload("Game.Console").
 		Where("invite_code = ?", code).First(&session).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "session not found. The code may have expired or the host may have cancelled."})
+		c.JSON(http.StatusNotFound, ErrorResponse{Error: "session not found. The code may have expired or the host may have cancelled."})
 		return
 	}
 
 	// Can't join your own session
 	if session.HostUserID == uid {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "you can't join your own session"})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "you can't join your own session"})
 		return
 	}
 
 	if session.Status == "ended" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "this session has already ended"})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "this session has already ended"})
 		return
 	}
 
 	if session.Status != "waiting" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "this session is no longer accepting players"})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "this session is no longer accepting players"})
 		return
 	}
 
 	if session.ClientUserID != nil {
-		c.JSON(http.StatusConflict, gin.H{"error": "this session already has two players"})
+		c.JSON(http.StatusConflict, ErrorResponse{Error: "this session already has two players"})
 		return
 	}
 
@@ -220,7 +220,7 @@ func (h *NetplayHandler) JoinByInviteCode(c *gin.Context) {
 			"started_at":     now,
 		})
 	if result.RowsAffected == 0 {
-		c.JSON(http.StatusConflict, gin.H{"error": "this session already has two players"})
+		c.JSON(http.StatusConflict, ErrorResponse{Error: "this session already has two players"})
 		return
 	}
 	session.ClientUserID = &uid
@@ -253,12 +253,12 @@ func (h *NetplayHandler) LeaveSession(c *gin.Context) {
 	isClient := session.ClientUserID != nil && *session.ClientUserID == uid
 
 	if !isHost && !isClient {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "not in this session"})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "not in this session"})
 		return
 	}
 
 	if session.Status == "ended" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "session has already ended"})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "session has already ended"})
 		return
 	}
 
@@ -304,7 +304,7 @@ func (h *NetplayHandler) DeleteSession(c *gin.Context) {
 	}
 
 	if session.HostUserID != uid && !isAdmin {
-		c.JSON(http.StatusForbidden, gin.H{"error": "only the host or an admin can delete the session"})
+		c.JSON(http.StatusForbidden, ErrorResponse{Error: "only the host or an admin can delete the session"})
 		return
 	}
 
@@ -350,12 +350,12 @@ func (h *NetplayHandler) UpdateSettings(c *gin.Context) {
 	}
 
 	if session.HostUserID != uid {
-		c.JSON(http.StatusForbidden, gin.H{"error": "only the host can change settings"})
+		c.JSON(http.StatusForbidden, ErrorResponse{Error: "only the host can change settings"})
 		return
 	}
 
 	if session.Status == "ended" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "cannot change settings of an ended session"})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "cannot change settings of an ended session"})
 		return
 	}
 
@@ -363,13 +363,13 @@ func (h *NetplayHandler) UpdateSettings(c *gin.Context) {
 		InputDelay *int `json:"inputDelay"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request"})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid request"})
 		return
 	}
 
 	if req.InputDelay != nil {
 		if *req.InputDelay < 1 || *req.InputDelay > 10 {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "input delay must be between 1 and 10 frames"})
+			c.JSON(http.StatusBadRequest, ErrorResponse{Error: "input delay must be between 1 and 10 frames"})
 			return
 		}
 		h.DB.Model(&session).Update("input_delay", *req.InputDelay)
@@ -392,13 +392,13 @@ func (h *NetplayHandler) HandleWebSocket(c *gin.Context) {
 	idStr := c.Param("id")
 	sessionID, err := strconv.ParseUint(idStr, 10, 64)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid session ID"})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid session ID"})
 		return
 	}
 
 	var session db.NetplaySession
 	if err := h.DB.First(&session, sessionID).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "session not found"})
+		c.JSON(http.StatusNotFound, ErrorResponse{Error: "session not found"})
 		return
 	}
 
@@ -406,12 +406,12 @@ func (h *NetplayHandler) HandleWebSocket(c *gin.Context) {
 	isHost := session.HostUserID == uid
 	isClient := session.ClientUserID != nil && *session.ClientUserID == uid
 	if !isHost && !isClient {
-		c.JSON(http.StatusForbidden, gin.H{"error": "not a player in this session"})
+		c.JSON(http.StatusForbidden, ErrorResponse{Error: "not a player in this session"})
 		return
 	}
 
 	if session.Status == "ended" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "session has ended"})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "session has ended"})
 		return
 	}
 
@@ -425,7 +425,7 @@ func (h *NetplayHandler) loadSession(c *gin.Context) (db.NetplaySession, bool) {
 	id := c.Param("id")
 	sid, err := strconv.ParseUint(id, 10, 64)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid session ID"})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid session ID"})
 		return db.NetplaySession{}, false
 	}
 
@@ -433,7 +433,7 @@ func (h *NetplayHandler) loadSession(c *gin.Context) (db.NetplaySession, bool) {
 	if err := h.DB.Preload("HostUser").Preload("ClientUser").
 		Preload("Game").Preload("Game.Console").
 		First(&session, sid).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "session not found"})
+		c.JSON(http.StatusNotFound, ErrorResponse{Error: "session not found"})
 		return db.NetplaySession{}, false
 	}
 

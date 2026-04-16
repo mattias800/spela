@@ -99,54 +99,54 @@ func (h *ChallengeHandler) CreateChallenge(c *gin.Context) {
 
 	// Parse multipart form with size limit
 	if err := c.Request.ParseMultipartForm(maxChallengeSaveSize + 1<<20); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "request too large or invalid multipart form"})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "request too large or invalid multipart form"})
 		return
 	}
 
 	name := strings.TrimSpace(c.PostForm("name"))
 	if name == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "name is required"})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "name is required"})
 		return
 	}
 	if len(name) > maxChallengeNameLength {
-		c.JSON(http.StatusBadRequest, gin.H{"error": fmt.Sprintf("name must be %d characters or fewer", maxChallengeNameLength)})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: fmt.Sprintf("name must be %d characters or fewer", maxChallengeNameLength)})
 		return
 	}
 
 	gameIDStr := c.PostForm("gameId")
 	gid, err := strconv.ParseUint(gameIDStr, 10, 64)
 	if err != nil || gid == 0 {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "valid gameId is required"})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "valid gameId is required"})
 		return
 	}
 
 	// Verify game exists
 	var game db.Game
 	if err := h.DB.First(&game, gid).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "game not found"})
+		c.JSON(http.StatusNotFound, ErrorResponse{Error: "game not found"})
 		return
 	}
 
 	if err := requirePlayableConsole(h.DB, uint(gid)); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": errNonPlayableConsole.Error()})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: errNonPlayableConsole.Error()})
 		return
 	}
 
 	challengeType := c.DefaultPostForm("type", "completion")
 	if !validChallengeTypes[challengeType] {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "type must be completion, speedrun, or survival"})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "type must be completion, speedrun, or survival"})
 		return
 	}
 
 	difficulty := c.DefaultPostForm("difficulty", "medium")
 	if !validDifficulties[difficulty] {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "difficulty must be easy, medium, or hard"})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "difficulty must be easy, medium, or hard"})
 		return
 	}
 
 	description := c.PostForm("description")
 	if len(description) > 2048 {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "description must be 2048 characters or fewer"})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "description must be 2048 characters or fewer"})
 		return
 	}
 	coreName := c.PostForm("coreName")
@@ -155,11 +155,11 @@ func (h *ChallengeHandler) CreateChallenge(c *gin.Context) {
 	if expStr := c.PostForm("expiresAt"); expStr != "" {
 		t, err := time.Parse(time.RFC3339, expStr)
 		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "expiresAt must be RFC3339 format"})
+			c.JSON(http.StatusBadRequest, ErrorResponse{Error: "expiresAt must be RFC3339 format"})
 			return
 		}
 		if t.Before(time.Now()) {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "expiresAt must be in the future"})
+			c.JSON(http.StatusBadRequest, ErrorResponse{Error: "expiresAt must be in the future"})
 			return
 		}
 		expiresAt = &t
@@ -168,13 +168,13 @@ func (h *ChallengeHandler) CreateChallenge(c *gin.Context) {
 	// Save file (required)
 	saveFile, saveHeader, err := c.Request.FormFile("save")
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "save file is required"})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "save file is required"})
 		return
 	}
 	defer saveFile.Close()
 
 	if saveHeader.Size > maxChallengeSaveSize {
-		c.JSON(http.StatusBadRequest, gin.H{"error": fmt.Sprintf("save file too large (max %d MB)", maxChallengeSaveSize>>20)})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: fmt.Sprintf("save file too large (max %d MB)", maxChallengeSaveSize>>20)})
 		return
 	}
 
@@ -191,7 +191,7 @@ func (h *ChallengeHandler) CreateChallenge(c *gin.Context) {
 		ExpiresAt:   expiresAt,
 	}
 	if err := h.DB.Create(&challenge).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create challenge"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to create challenge"})
 		return
 	}
 
@@ -199,7 +199,7 @@ func (h *ChallengeHandler) CreateChallenge(c *gin.Context) {
 	savePath, saveSize, err := h.Storage.WriteChallengeSave(challenge.ID, saveFile)
 	if err != nil {
 		h.DB.Unscoped().Delete(&challenge)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to save challenge file"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to save challenge file"})
 		return
 	}
 
@@ -219,7 +219,7 @@ func (h *ChallengeHandler) CreateChallenge(c *gin.Context) {
 	if err := h.DB.Save(&challenge).Error; err != nil {
 		h.Storage.DeleteChallengeSave(challenge.ID)
 		h.DB.Unscoped().Delete(&challenge)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to update challenge record"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to update challenge record"})
 		return
 	}
 
@@ -290,7 +290,7 @@ func (h *ChallengeHandler) ListChallenges(c *gin.Context) {
 		Offset((page - 1) * pageSize).
 		Limit(pageSize).
 		Find(&challenges).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch challenges"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to fetch challenges"})
 		return
 	}
 
@@ -320,7 +320,7 @@ func (h *ChallengeHandler) GetChallenge(c *gin.Context) {
 	var challenge db.Challenge
 	if err := h.DB.Preload("Creator").Preload("Game").Preload("Game.Console").
 		First(&challenge, id).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "challenge not found"})
+		c.JSON(http.StatusNotFound, ErrorResponse{Error: "challenge not found"})
 		return
 	}
 
@@ -336,13 +336,13 @@ func (h *ChallengeHandler) UpdateChallenge(c *gin.Context) {
 
 	var challenge db.Challenge
 	if err := h.DB.First(&challenge, id).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "challenge not found"})
+		c.JSON(http.StatusNotFound, ErrorResponse{Error: "challenge not found"})
 		return
 	}
 
 	role, _ := c.Get("role")
 	if challenge.CreatorID != uid && !db.IsAdminOrOwner(role.(string)) {
-		c.JSON(http.StatusForbidden, gin.H{"error": "not authorized to update this challenge"})
+		c.JSON(http.StatusForbidden, ErrorResponse{Error: "not authorized to update this challenge"})
 		return
 	}
 
@@ -352,25 +352,25 @@ func (h *ChallengeHandler) UpdateChallenge(c *gin.Context) {
 		Status      *string `json:"status"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body"})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid request body"})
 		return
 	}
 
 	if req.Name != nil {
 		name := strings.TrimSpace(*req.Name)
 		if name == "" {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "name cannot be empty"})
+			c.JSON(http.StatusBadRequest, ErrorResponse{Error: "name cannot be empty"})
 			return
 		}
 		if len(name) > maxChallengeNameLength {
-			c.JSON(http.StatusBadRequest, gin.H{"error": fmt.Sprintf("name must be %d characters or fewer", maxChallengeNameLength)})
+			c.JSON(http.StatusBadRequest, ErrorResponse{Error: fmt.Sprintf("name must be %d characters or fewer", maxChallengeNameLength)})
 			return
 		}
 		challenge.Name = name
 	}
 	if req.Description != nil {
 		if len(*req.Description) > 2048 {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "description must be 2048 characters or fewer"})
+			c.JSON(http.StatusBadRequest, ErrorResponse{Error: "description must be 2048 characters or fewer"})
 			return
 		}
 		challenge.Description = *req.Description
@@ -378,14 +378,14 @@ func (h *ChallengeHandler) UpdateChallenge(c *gin.Context) {
 	if req.Status != nil {
 		s := *req.Status
 		if s != ChallengeStatusActive && s != ChallengeStatusClosed {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "status must be active or closed"})
+			c.JSON(http.StatusBadRequest, ErrorResponse{Error: "status must be active or closed"})
 			return
 		}
 		challenge.Status = s
 	}
 
 	if err := h.DB.Save(&challenge).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to update challenge"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to update challenge"})
 		return
 	}
 
@@ -400,13 +400,13 @@ func (h *ChallengeHandler) DeleteChallenge(c *gin.Context) {
 
 	var challenge db.Challenge
 	if err := h.DB.First(&challenge, id).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "challenge not found"})
+		c.JSON(http.StatusNotFound, ErrorResponse{Error: "challenge not found"})
 		return
 	}
 
 	role, _ := c.Get("role")
 	if challenge.CreatorID != uid && !db.IsAdminOrOwner(role.(string)) {
-		c.JSON(http.StatusForbidden, gin.H{"error": "not authorized to delete this challenge"})
+		c.JSON(http.StatusForbidden, ErrorResponse{Error: "not authorized to delete this challenge"})
 		return
 	}
 
@@ -432,13 +432,13 @@ func (h *ChallengeHandler) DownloadChallengeSave(c *gin.Context) {
 
 	var challenge db.Challenge
 	if err := h.DB.First(&challenge, id).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "challenge not found"})
+		c.JSON(http.StatusNotFound, ErrorResponse{Error: "challenge not found"})
 		return
 	}
 
 	path := h.Storage.ChallengeSavePath(challenge.ID)
 	if !storage.ValidateROMPath(path, []string{h.Storage.SaveDir}) {
-		c.JSON(http.StatusForbidden, gin.H{"error": "access denied"})
+		c.JSON(http.StatusForbidden, ErrorResponse{Error: "access denied"})
 		return
 	}
 	c.Header("Content-Disposition", "attachment; filename=\"challenge_save\"")
@@ -451,18 +451,18 @@ func (h *ChallengeHandler) GetChallengeScreenshot(c *gin.Context) {
 
 	var challenge db.Challenge
 	if err := h.DB.First(&challenge, id).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "challenge not found"})
+		c.JSON(http.StatusNotFound, ErrorResponse{Error: "challenge not found"})
 		return
 	}
 
 	if challenge.ScreenshotPath == "" {
-		c.JSON(http.StatusNotFound, gin.H{"error": "no screenshot available"})
+		c.JSON(http.StatusNotFound, ErrorResponse{Error: "no screenshot available"})
 		return
 	}
 
 	path := h.Storage.ChallengeScreenshotPath(challenge.ID)
 	if !storage.ValidateROMPath(path, []string{h.Storage.SaveDir}) {
-		c.JSON(http.StatusForbidden, gin.H{"error": "access denied"})
+		c.JSON(http.StatusForbidden, ErrorResponse{Error: "access denied"})
 		return
 	}
 	c.File(path)
@@ -475,20 +475,20 @@ func (h *ChallengeHandler) StartAttempt(c *gin.Context) {
 
 	cid, err := strconv.ParseUint(challengeID, 10, 64)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid challenge ID"})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid challenge ID"})
 		return
 	}
 
 	var challenge db.Challenge
 	if err := h.DB.First(&challenge, cid).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "challenge not found"})
+		c.JSON(http.StatusNotFound, ErrorResponse{Error: "challenge not found"})
 		return
 	}
 
 	// Check if challenge is active (with lazy expiration)
 	h.lazyExpire(&challenge, time.Now())
 	if challenge.Status != ChallengeStatusActive {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "challenge is not active"})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "challenge is not active"})
 		return
 	}
 
@@ -499,7 +499,7 @@ func (h *ChallengeHandler) StartAttempt(c *gin.Context) {
 		if lastStart, ok := h.attemptLastStart[rateLimitKey]; ok {
 			if time.Since(lastStart) < time.Duration(h.AttemptRateLimitSeconds)*time.Second {
 				h.attemptMu.Unlock()
-				c.JSON(http.StatusTooManyRequests, gin.H{"error": "please wait before starting another attempt"})
+				c.JSON(http.StatusTooManyRequests, ErrorResponse{Error: "please wait before starting another attempt"})
 				return
 			}
 		}
@@ -530,7 +530,7 @@ func (h *ChallengeHandler) StartAttempt(c *gin.Context) {
 		StartedAt:   now,
 	}
 	if err := h.DB.Create(&attempt).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to start attempt"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to start attempt"})
 		return
 	}
 
@@ -549,21 +549,21 @@ func (h *ChallengeHandler) CompleteAttempt(c *gin.Context) {
 
 	var attempt db.ChallengeAttempt
 	if err := h.DB.Preload("Challenge").First(&attempt, attemptID).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "attempt not found"})
+		c.JSON(http.StatusNotFound, ErrorResponse{Error: "attempt not found"})
 		return
 	}
 
 	// Verify ownership and challenge match
 	if attempt.UserID != uid {
-		c.JSON(http.StatusForbidden, gin.H{"error": "not your attempt"})
+		c.JSON(http.StatusForbidden, ErrorResponse{Error: "not your attempt"})
 		return
 	}
 	if strconv.FormatUint(uint64(attempt.ChallengeID), 10) != challengeID {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "attempt does not belong to this challenge"})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "attempt does not belong to this challenge"})
 		return
 	}
 	if attempt.Status != AttemptStatusInProgress {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "attempt is not in progress"})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "attempt is not in progress"})
 		return
 	}
 
@@ -598,7 +598,7 @@ func (h *ChallengeHandler) CompleteAttempt(c *gin.Context) {
 	}
 
 	if err := h.DB.Save(&attempt).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to complete attempt"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to complete attempt"})
 		return
 	}
 
@@ -661,26 +661,26 @@ func (h *ChallengeHandler) AbandonAttempt(c *gin.Context) {
 
 	var attempt db.ChallengeAttempt
 	if err := h.DB.First(&attempt, attemptID).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "attempt not found"})
+		c.JSON(http.StatusNotFound, ErrorResponse{Error: "attempt not found"})
 		return
 	}
 
 	if attempt.UserID != uid {
-		c.JSON(http.StatusForbidden, gin.H{"error": "not your attempt"})
+		c.JSON(http.StatusForbidden, ErrorResponse{Error: "not your attempt"})
 		return
 	}
 	if strconv.FormatUint(uint64(attempt.ChallengeID), 10) != challengeID {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "attempt does not belong to this challenge"})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "attempt does not belong to this challenge"})
 		return
 	}
 	if attempt.Status != AttemptStatusInProgress {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "attempt is not in progress"})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "attempt is not in progress"})
 		return
 	}
 
 	attempt.Status = AttemptStatusAbandoned
 	if err := h.DB.Save(&attempt).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to abandon attempt"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to abandon attempt"})
 		return
 	}
 
@@ -698,7 +698,7 @@ func (h *ChallengeHandler) GetMyAttempts(c *gin.Context) {
 		Preload("User").
 		Order("created_at DESC").
 		Find(&attempts).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch attempts"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to fetch attempts"})
 		return
 	}
 
@@ -726,7 +726,7 @@ func (h *ChallengeHandler) GetLeaderboard(c *gin.Context) {
 	// Verify challenge exists
 	var challenge db.Challenge
 	if err := h.DB.First(&challenge, challengeID).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "challenge not found"})
+		c.JSON(http.StatusNotFound, ErrorResponse{Error: "challenge not found"})
 		return
 	}
 
@@ -748,7 +748,7 @@ func (h *ChallengeHandler) GetLeaderboard(c *gin.Context) {
 		Offset((page - 1) * pageSize).
 		Limit(pageSize).
 		Find(&attempts).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch leaderboard"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to fetch leaderboard"})
 		return
 	}
 
@@ -801,7 +801,7 @@ func (h *ChallengeHandler) ListGameChallenges(c *gin.Context) {
 		Offset((page - 1) * pageSize).
 		Limit(pageSize).
 		Find(&challenges).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch challenges"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to fetch challenges"})
 		return
 	}
 
@@ -846,7 +846,7 @@ func (h *ChallengeHandler) ListMyChallenges(c *gin.Context) {
 		Offset((page - 1) * pageSize).
 		Limit(pageSize).
 		Find(&challenges).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch challenges"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to fetch challenges"})
 		return
 	}
 

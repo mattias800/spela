@@ -31,7 +31,7 @@ func (h *UserHandler) GetProfile(c *gin.Context) {
 	userID, _ := c.Get("userId")
 	var user db.User
 	if err := h.DB.First(&user, userID).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "user not found"})
+		c.JSON(http.StatusNotFound, ErrorResponse{Error: "user not found"})
 		return
 	}
 	c.JSON(http.StatusOK, ToUserResponse(user))
@@ -42,7 +42,7 @@ func (h *UserHandler) UpdateProfile(c *gin.Context) {
 	userID, _ := c.Get("userId")
 	var user db.User
 	if err := h.DB.First(&user, userID).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "user not found"})
+		c.JSON(http.StatusNotFound, ErrorResponse{Error: "user not found"})
 		return
 	}
 
@@ -53,24 +53,24 @@ func (h *UserHandler) UpdateProfile(c *gin.Context) {
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
 		slog.Debug("request binding failed", "error", err)
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body"})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid request body"})
 		return
 	}
 
 	if req.Email != "" {
 		// Require password confirmation to change email
 		if req.CurrentPassword == "" {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "current password is required to change email"})
+			c.JSON(http.StatusBadRequest, ErrorResponse{Error: "current password is required to change email"})
 			return
 		}
 		if !auth.CheckPassword(req.CurrentPassword, user.PasswordHash) {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "incorrect password"})
+			c.JSON(http.StatusUnauthorized, ErrorResponse{Error: "incorrect password"})
 			return
 		}
 		// Check uniqueness before updating
 		var existing db.User
 		if err := h.DB.Where("email = ? AND id != ?", req.Email, user.ID).First(&existing).Error; err == nil {
-			c.JSON(http.StatusConflict, gin.H{"error": "email already in use"})
+			c.JSON(http.StatusConflict, ErrorResponse{Error: "email already in use"})
 			return
 		}
 		user.Email = req.Email
@@ -78,22 +78,22 @@ func (h *UserHandler) UpdateProfile(c *gin.Context) {
 	if req.AvatarURL != "" {
 		parsed, err := url.Parse(req.AvatarURL)
 		if err != nil || (parsed.Scheme != "https" && parsed.Scheme != "http") {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "avatar URL must be a valid HTTP(S) URL"})
+			c.JSON(http.StatusBadRequest, ErrorResponse{Error: "avatar URL must be a valid HTTP(S) URL"})
 			return
 		}
 		if len(req.AvatarURL) > 512 {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "avatar URL too long"})
+			c.JSON(http.StatusBadRequest, ErrorResponse{Error: "avatar URL too long"})
 			return
 		}
 		if isPrivateURL(req.AvatarURL) {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "avatar URL must not point to internal networks"})
+			c.JSON(http.StatusBadRequest, ErrorResponse{Error: "avatar URL must not point to internal networks"})
 			return
 		}
 		user.AvatarURL = req.AvatarURL
 	}
 
 	if err := h.DB.Save(&user).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to update profile"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to update profile"})
 		return
 	}
 
@@ -111,25 +111,25 @@ func (h *UserHandler) ChangePassword(c *gin.Context) {
 	userID, _ := c.Get("userId")
 	var user db.User
 	if err := h.DB.First(&user, userID).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "user not found"})
+		c.JSON(http.StatusNotFound, ErrorResponse{Error: "user not found"})
 		return
 	}
 
 	var req changePasswordRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		slog.Debug("request binding failed", "error", err)
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body"})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid request body"})
 		return
 	}
 
 	if !auth.CheckPassword(req.CurrentPassword, user.PasswordHash) {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "incorrect current password"})
+		c.JSON(http.StatusUnauthorized, ErrorResponse{Error: "incorrect current password"})
 		return
 	}
 
 	hash, err := auth.HashPassword(req.NewPassword)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to hash password"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to hash password"})
 		return
 	}
 
@@ -137,7 +137,7 @@ func (h *UserHandler) ChangePassword(c *gin.Context) {
 	user.TokenVersion++
 
 	if err := h.DB.Save(&user).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to update password"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to update password"})
 		return
 	}
 
@@ -196,7 +196,7 @@ func (h *UserHandler) GetPreferences(c *gin.Context) {
 	userID, _ := c.Get("userId")
 	var user db.User
 	if err := h.DB.First(&user, userID).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "user not found"})
+		c.JSON(http.StatusNotFound, ErrorResponse{Error: "user not found"})
 		return
 	}
 
@@ -267,7 +267,7 @@ func (h *UserHandler) UpdatePreferences(c *gin.Context) {
 	uid := userID.(uint)
 	var user db.User
 	if err := h.DB.First(&user, uid).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "user not found"})
+		c.JSON(http.StatusNotFound, ErrorResponse{Error: "user not found"})
 		return
 	}
 
@@ -286,7 +286,7 @@ func (h *UserHandler) UpdatePreferences(c *gin.Context) {
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
 		slog.Debug("request binding failed", "error", err)
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body"})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid request body"})
 		return
 	}
 
@@ -308,7 +308,7 @@ func (h *UserHandler) UpdatePreferences(c *gin.Context) {
 	if req.DefaultSecondScreenPage != nil {
 		valid := map[string]bool{"art": true, "controls": true, "dashboard": true, "save_slots": true}
 		if !valid[*req.DefaultSecondScreenPage] {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid defaultSecondScreenPage value; must be one of: art, controls, dashboard, save_slots"})
+			c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid defaultSecondScreenPage value; must be one of: art, controls, dashboard, save_slots"})
 			return
 		}
 		user.DefaultSecondScreenPage = *req.DefaultSecondScreenPage
@@ -325,7 +325,7 @@ func (h *UserHandler) UpdatePreferences(c *gin.Context) {
 	}
 
 	if err := h.DB.Save(&user).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to update preferences"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to update preferences"})
 		return
 	}
 
@@ -559,7 +559,7 @@ func (h *UserHandler) GetRecentGames(c *gin.Context) {
 		Order("last_played desc").
 		Limit(20).
 		Find(&history).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch recent games"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to fetch recent games"})
 		return
 	}
 
@@ -595,7 +595,7 @@ func (h *UserHandler) GetFavorites(c *gin.Context) {
 	if err := h.DB.Where("user_id = ?", uid).
 		Preload("Game").Preload("Game.Console").
 		Find(&favorites).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch favorites"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to fetch favorites"})
 		return
 	}
 
@@ -630,7 +630,7 @@ func (h *UserHandler) AddFavorite(c *gin.Context) {
 	// Verify game exists
 	var game db.Game
 	if err := h.DB.First(&game, gameID).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "game not found"})
+		c.JSON(http.StatusNotFound, ErrorResponse{Error: "game not found"})
 		return
 	}
 
@@ -640,7 +640,7 @@ func (h *UserHandler) AddFavorite(c *gin.Context) {
 	}
 
 	if err := h.DB.Create(&fav).Error; err != nil {
-		c.JSON(http.StatusConflict, gin.H{"error": "already favorited"})
+		c.JSON(http.StatusConflict, ErrorResponse{Error: "already favorited"})
 		return
 	}
 
@@ -656,7 +656,7 @@ func (h *UserHandler) RemoveFavorite(c *gin.Context) {
 
 	result := h.DB.Where("user_id = ? AND game_id = ?", uid, gameID).Delete(&db.Favorite{})
 	if result.RowsAffected == 0 {
-		c.JSON(http.StatusNotFound, gin.H{"error": "favorite not found"})
+		c.JSON(http.StatusNotFound, ErrorResponse{Error: "favorite not found"})
 		return
 	}
 
@@ -688,7 +688,7 @@ func (h *UserHandler) GetUserStats(c *gin.Context) {
 		Where("user_id = ?", uid).
 		Select("COALESCE(SUM(play_time), 0) as total_play_time, COUNT(*) as games_played, MAX(last_played) as last_played").
 		Scan(&agg).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch user stats"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to fetch user stats"})
 		return
 	}
 
@@ -834,7 +834,7 @@ func (h *UserHandler) GetPlayStats(c *gin.Context) {
 	var histories []db.PlayHistory
 	if err := h.DB.Where("user_id = ?", userID).Find(&histories).Error; err != nil {
 		slog.Error("failed to fetch play stats", "error", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch play stats"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to fetch play stats"})
 		return
 	}
 

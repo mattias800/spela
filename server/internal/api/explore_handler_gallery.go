@@ -120,7 +120,7 @@ func (h *ExploreHandler) GetScreenshotGallery(c *gin.Context) {
 	var count int64
 	if err := baseQuery.Count(&count).Error; err != nil {
 		slog.Error("failed to count screenshots for gallery", "error", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to load screenshot gallery"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to load screenshot gallery"})
 		return
 	}
 
@@ -142,7 +142,7 @@ func (h *ExploreHandler) GetScreenshotGallery(c *gin.Context) {
 		Limit(limit).
 		Scan(&rows).Error; err != nil {
 		slog.Error("failed to load screenshot gallery", "error", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to load screenshot gallery"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to load screenshot gallery"})
 		return
 	}
 
@@ -178,7 +178,7 @@ func (h *ExploreHandler) GetArtworkGallery(c *gin.Context) {
 		Joins("JOIN consoles ON consoles.id = games.console_id AND consoles.deleted_at IS NULL").
 		Count(&count).Error; err != nil {
 		slog.Error("failed to count artwork for gallery", "error", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to load artwork gallery"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to load artwork gallery"})
 		return
 	}
 
@@ -205,7 +205,7 @@ func (h *ExploreHandler) GetArtworkGallery(c *gin.Context) {
 		Limit(limit).
 		Scan(&rows).Error; err != nil {
 		slog.Error("failed to load artwork gallery", "error", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to load artwork gallery"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to load artwork gallery"})
 		return
 	}
 
@@ -255,7 +255,7 @@ func (h *ExploreHandler) GetCoverGallery(c *gin.Context) {
 	var count int64
 	if err := baseQuery.Count(&count).Error; err != nil {
 		slog.Error("failed to count covers for gallery", "error", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to load cover gallery"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to load cover gallery"})
 		return
 	}
 
@@ -278,7 +278,7 @@ func (h *ExploreHandler) GetCoverGallery(c *gin.Context) {
 		Limit(limit).
 		Scan(&rows).Error; err != nil {
 		slog.Error("failed to load cover gallery", "error", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to load cover gallery"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to load cover gallery"})
 		return
 	}
 

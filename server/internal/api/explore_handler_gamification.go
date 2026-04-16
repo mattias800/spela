@@ -141,7 +141,7 @@ func (h *ExploreHandler) GetWizardResults(c *gin.Context) {
 		Limit(5).
 		Find(&games).Error; err != nil {
 		slog.Error("failed to fetch wizard results", "error", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch wizard results"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to fetch wizard results"})
 		return
 	}
 
@@ -201,7 +201,7 @@ type ExplorerBadgesResponse struct {
 func (h *ExploreHandler) GetExplorerBadges(c *gin.Context) {
 	userID := getUserID(c)
 	if userID == 0 {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "authentication required"})
+		c.JSON(http.StatusUnauthorized, ErrorResponse{Error: "authentication required"})
 		return
 	}
 
@@ -214,7 +214,7 @@ func (h *ExploreHandler) GetExplorerBadges(c *gin.Context) {
 		WHERE ph.user_id = ? AND ph.deleted_at IS NULL AND g.deleted_at IS NULL
 	`, userID).Scan(&consolesPlayed).Error; err != nil {
 		slog.Error("failed to query consoles played", "error", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to compute badges"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to compute badges"})
 		return
 	}
 
@@ -222,7 +222,7 @@ func (h *ExploreHandler) GetExplorerBadges(c *gin.Context) {
 	var totalConsoles int64
 	if err := h.DB.Raw(`SELECT COUNT(DISTINCT console_id) FROM games WHERE deleted_at IS NULL`).Scan(&totalConsoles).Error; err != nil {
 		slog.Error("failed to query total consoles", "error", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to compute badges"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to compute badges"})
 		return
 	}
 
@@ -235,7 +235,7 @@ func (h *ExploreHandler) GetExplorerBadges(c *gin.Context) {
 		WHERE ph.user_id = ? AND ph.deleted_at IS NULL AND g.deleted_at IS NULL AND g.genre != ''
 	`, userID).Scan(&genresPlayed).Error; err != nil {
 		slog.Error("failed to query genres played", "error", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to compute badges"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to compute badges"})
 		return
 	}
 
@@ -249,7 +249,7 @@ func (h *ExploreHandler) GetExplorerBadges(c *gin.Context) {
 		AND g.release_date != '' AND LENGTH(g.release_date) >= 4
 	`, userID).Scan(&decadesPlayed).Error; err != nil {
 		slog.Error("failed to query decades played", "error", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to compute badges"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to compute badges"})
 		return
 	}
 
@@ -261,7 +261,7 @@ func (h *ExploreHandler) GetExplorerBadges(c *gin.Context) {
 		WHERE ph.user_id = ? AND ph.deleted_at IS NULL
 	`, userID).Scan(&gamesPlayed).Error; err != nil {
 		slog.Error("failed to query games played", "error", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to compute badges"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to compute badges"})
 		return
 	}
 
@@ -273,7 +273,7 @@ func (h *ExploreHandler) GetExplorerBadges(c *gin.Context) {
 		WHERE ph.user_id = ? AND ph.deleted_at IS NULL
 	`, userID).Scan(&totalPlayTime).Error; err != nil {
 		slog.Error("failed to query total play time", "error", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to compute badges"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to compute badges"})
 		return
 	}
 	totalHours := totalPlayTime / 3600
@@ -361,7 +361,7 @@ type CompletionistMapResponse struct {
 func (h *ExploreHandler) GetCompletionistMap(c *gin.Context) {
 	userID := getUserID(c)
 	if userID == 0 {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "authentication required"})
+		c.JSON(http.StatusUnauthorized, ErrorResponse{Error: "authentication required"})
 		return
 	}
 
@@ -383,7 +383,7 @@ func (h *ExploreHandler) GetCompletionistMap(c *gin.Context) {
 		ORDER BY c.name
 	`).Scan(&consoleRows).Error; err != nil {
 		slog.Error("failed to query console counts", "error", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to compute completionist map"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to compute completionist map"})
 		return
 	}
 
@@ -401,7 +401,7 @@ func (h *ExploreHandler) GetCompletionistMap(c *gin.Context) {
 		GROUP BY g.console_id
 	`, userID).Scan(&playedRows).Error; err != nil {
 		slog.Error("failed to query played counts", "error", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to compute completionist map"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to compute completionist map"})
 		return
 	}
 

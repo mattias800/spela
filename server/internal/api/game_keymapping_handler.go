@@ -29,11 +29,11 @@ func (h *GameKeyMappingHandler) GetGameKeyMapping(c *gin.Context) {
 	var pref db.GameKeyMappingPreference
 	if err := h.DB.Where("user_id = ? AND game_id = ?", uid, gameID).First(&pref).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
-			c.JSON(http.StatusNotFound, gin.H{"error": "no key mapping found for this game"})
+			c.JSON(http.StatusNotFound, ErrorResponse{Error: "no key mapping found for this game"})
 			return
 		}
 		slog.Error("fetching key mapping", "error", err, "userId", uid, "gameId", gameID)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch key mapping"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to fetch key mapping"})
 		return
 	}
 
@@ -53,26 +53,26 @@ func (h *GameKeyMappingHandler) UpdateGameKeyMapping(c *gin.Context) {
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
 		slog.Debug("request binding failed", "error", err)
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body"})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid request body"})
 		return
 	}
 
 	if req.CustomMapping == nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "customMapping is required"})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "customMapping is required"})
 		return
 	}
 
 	// Verify game exists
 	var game db.Game
 	if err := h.DB.First(&game, gameID).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "game not found"})
+		c.JSON(http.StatusNotFound, ErrorResponse{Error: "game not found"})
 		return
 	}
 
 	customJSON, err := json.Marshal(req.CustomMapping)
 	if err != nil {
 		slog.Error("marshalling custom mapping", "error", err, "userId", uid)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to process key mapping"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to process key mapping"})
 		return
 	}
 
@@ -84,7 +84,7 @@ func (h *GameKeyMappingHandler) UpdateGameKeyMapping(c *gin.Context) {
 		existing.DeletedAt = gorm.DeletedAt{}
 		if err := h.DB.Unscoped().Save(&existing).Error; err != nil {
 			slog.Error("updating key mapping", "error", err, "userId", uid, "gameId", game.ID)
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to update key mapping"})
+			c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to update key mapping"})
 			return
 		}
 	} else {
@@ -95,7 +95,7 @@ func (h *GameKeyMappingHandler) UpdateGameKeyMapping(c *gin.Context) {
 		}
 		if err := h.DB.Create(&pref).Error; err != nil {
 			slog.Error("creating key mapping", "error", err, "userId", uid, "gameId", game.ID)
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create key mapping"})
+			c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to create key mapping"})
 			return
 		}
 	}
@@ -113,7 +113,7 @@ func (h *GameKeyMappingHandler) DeleteGameKeyMapping(c *gin.Context) {
 
 	result := h.DB.Unscoped().Where("user_id = ? AND game_id = ?", uid, gameID).Delete(&db.GameKeyMappingPreference{})
 	if result.RowsAffected == 0 {
-		c.JSON(http.StatusNotFound, gin.H{"error": "no key mapping found for this game"})
+		c.JSON(http.StatusNotFound, ErrorResponse{Error: "no key mapping found for this game"})
 		return
 	}
 

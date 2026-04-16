@@ -67,7 +67,7 @@ func coresCompatible(a, b string) bool {
 func (h *AdminHandler) GetCoreCompatibility(c *gin.Context) {
 	var consoles []db.Console
 	if err := h.DB.Order("name ASC").Find(&consoles).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch consoles"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to fetch consoles"})
 		return
 	}
 

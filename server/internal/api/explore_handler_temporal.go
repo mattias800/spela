@@ -140,7 +140,7 @@ func (h *ExploreHandler) GetOnThisDay(c *gin.Context) {
 		Where("release_date != '' AND release_date IS NOT NULL AND is_primary = true AND deleted_at IS NULL").
 		Find(&allGames).Error; err != nil {
 		slog.Error("failed to fetch games for on-this-day", "error", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch games"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to fetch games"})
 		return
 	}
 
@@ -202,7 +202,7 @@ func (h *ExploreHandler) GetBestOfYear(c *gin.Context) {
 	yearStr := c.Param("year")
 	year, err := strconv.Atoi(yearStr)
 	if err != nil || year < 1970 || year > 2100 {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid year"})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid year"})
 		return
 	}
 
@@ -217,7 +217,7 @@ func (h *ExploreHandler) GetBestOfYear(c *gin.Context) {
 		Limit(30).
 		Find(&games).Error; err != nil {
 		slog.Error("failed to fetch best-of-year games", "error", err, "year", year)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch games"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to fetch games"})
 		return
 	}
 
@@ -309,7 +309,7 @@ func (h *ExploreHandler) GetYourAnniversaries(c *gin.Context) {
 	var games []db.Game
 	if err := h.DB.Preload("Console").Where("id IN ?", gameIDs).Find(&games).Error; err != nil {
 		slog.Error("failed to load anniversary games", "error", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to load games"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to load games"})
 		return
 	}
 
@@ -368,7 +368,7 @@ func (h *ExploreHandler) GetDecades(c *gin.Context) {
 	decade := c.Param("decade")
 	yearRange, ok := decadeRange[decade]
 	if !ok {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid decade; valid values: 80s, 90s, 00s"})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid decade; valid values: 80s, 90s, 00s"})
 		return
 	}
 	label := decadeLabel[decade]
@@ -390,7 +390,7 @@ func (h *ExploreHandler) GetDecades(c *gin.Context) {
 		Limit(30).
 		Find(&games).Error; err != nil {
 		slog.Error("failed to fetch decade games", "error", err, "decade", decade)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch games"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to fetch games"})
 		return
 	}
 
