@@ -58,6 +58,7 @@ data class EmulationState(
     val gameId: String = "",
     val gameTitle: String = "",
     val consoleId: String = "",
+    val consoleName: String = "",
     val consoleColorTheme: String? = null,
     val heroUrl: String? = null,
     val gameDescription: String? = null,
