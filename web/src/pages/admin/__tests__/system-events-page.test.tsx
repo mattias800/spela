@@ -3,37 +3,41 @@ import userEvent from "@testing-library/user-event";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter } from "react-router-dom";
-import { AdminSecurityEventsPage } from "../security-events-page";
-import type { SecurityEventsListResponse } from "@/types/api";
+import { AdminSystemEventsPage } from "../system-events-page";
+import type { SystemEventsListResponse } from "@/types/api";
 
-vi.mock("@/hooks/use-security-events", () => ({
-  useSecurityEvents: vi.fn(),
-  useSecurityEvent: vi.fn(),
-  useSecurityEventTypes: vi.fn(() => ({ data: undefined })),
+vi.mock("@/hooks/use-system-events", () => ({
+  useSystemEvents: vi.fn(),
+  useSystemEvent: vi.fn(),
+  useSystemEventTypes: vi.fn(() => ({ data: undefined })),
+  useSystemEventCategories: vi.fn(() => ({ data: undefined })),
+  useDismissSystemEvent: vi.fn(() => ({ mutate: vi.fn() })),
 }));
 
-import { useSecurityEvents } from "@/hooks/use-security-events";
+import { useSystemEvents } from "@/hooks/use-system-events";
 
-const mockUseSecurityEvents = useSecurityEvents as ReturnType<typeof vi.fn>;
+const mockUseSystemEvents = useSystemEvents as ReturnType<typeof vi.fn>;
 
-function renderPage(initialPath = "/admin/security-events") {
+function renderPage(initialPath = "/admin/system-events") {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false } },
   });
   return render(
     <QueryClientProvider client={queryClient}>
       <MemoryRouter initialEntries={[initialPath]}>
-        <AdminSecurityEventsPage />
+        <AdminSystemEventsPage />
       </MemoryRouter>
     </QueryClientProvider>,
   );
 }
 
-const sampleResponse: SecurityEventsListResponse = {
+const sampleResponse: SystemEventsListResponse = {
   data: [
     {
       id: 1,
       createdAt: "2026-04-10T09:00:00Z",
+      categoryCode: "security",
+      categoryName: "Security",
       eventType: "login_failed",
       reason: "bad_password",
       username: "alice",
@@ -43,6 +47,8 @@ const sampleResponse: SecurityEventsListResponse = {
     {
       id: 2,
       createdAt: "2026-04-10T08:55:00Z",
+      categoryCode: "security",
+      categoryName: "Security",
       eventType: "account_locked",
       username: "alice",
       ip: "10.0.0.1",
@@ -56,20 +62,20 @@ const sampleResponse: SecurityEventsListResponse = {
 
 beforeEach(() => {
   vi.clearAllMocks();
-  mockUseSecurityEvents.mockReturnValue({
+  mockUseSystemEvents.mockReturnValue({
     data: sampleResponse,
     isLoading: false,
   });
 });
 
-describe("AdminSecurityEventsPage", () => {
+describe("AdminSystemEventsPage", () => {
   it("renders heading and description", () => {
     renderPage();
     expect(
-      screen.getByRole("heading", { name: /Security Events/ }),
+      screen.getByRole("heading", { name: /System Events/ }),
     ).toBeInTheDocument();
     expect(
-      screen.getByText(/Audit log of authentication events/),
+      screen.getByText(/Audit log of system events/),
     ).toBeInTheDocument();
   });
 
@@ -77,8 +83,6 @@ describe("AdminSecurityEventsPage", () => {
     renderPage();
     expect(screen.getAllByText("alice")).toHaveLength(2);
     expect(screen.getAllByText("10.0.0.1")).toHaveLength(2);
-    // "Login failed" and "Account locked" each appear twice: once as a filter
-    // chip and once as a row badge. Assert the badge count.
     expect(screen.getAllByText("Login failed").length).toBeGreaterThanOrEqual(1);
     expect(screen.getAllByText("Account locked").length).toBeGreaterThanOrEqual(1);
   });
@@ -89,36 +93,35 @@ describe("AdminSecurityEventsPage", () => {
   });
 
   it("shows loading state when isLoading is true", () => {
-    mockUseSecurityEvents.mockReturnValue({
+    mockUseSystemEvents.mockReturnValue({
       data: undefined,
       isLoading: true,
     });
     renderPage();
-    // Skeletons rendered — there is no empty-state icon when loading.
-    expect(screen.queryByText("No security events")).not.toBeInTheDocument();
+    expect(screen.queryByText("No system events")).not.toBeInTheDocument();
   });
 
   it("shows empty state when no events match", () => {
-    mockUseSecurityEvents.mockReturnValue({
+    mockUseSystemEvents.mockReturnValue({
       data: { data: [], total: 0, page: 1, pageSize: 50 },
       isLoading: false,
     });
     renderPage();
-    expect(screen.getByText("No security events")).toBeInTheDocument();
+    expect(screen.getByText("No system events")).toBeInTheDocument();
   });
 
   it("uses 24h as default time range", () => {
     renderPage();
-    expect(mockUseSecurityEvents).toHaveBeenCalledWith(
+    expect(mockUseSystemEvents).toHaveBeenCalledWith(
       expect.objectContaining({ since: "24h" }),
     );
   });
 
   it("reads filters from URL query params", () => {
     renderPage(
-      "/admin/security-events?eventType=login_failed&username=alice&ip=10&since=7d",
+      "/admin/system-events?eventType=login_failed&username=alice&ip=10&since=7d",
     );
-    expect(mockUseSecurityEvents).toHaveBeenCalledWith(
+    expect(mockUseSystemEvents).toHaveBeenCalledWith(
       expect.objectContaining({
         eventType: ["login_failed"],
         username: "alice",
@@ -131,14 +134,11 @@ describe("AdminSecurityEventsPage", () => {
   it("toggling an event type chip updates the query", async () => {
     const user = userEvent.setup();
     renderPage();
-    // Click the "Login failed" filter chip (there are two matching elements:
-    // the chip in the filter row and the badge in the table — use getAllByText
-    // and pick the button).
     const chips = screen.getAllByRole("button", { name: /Login failed/ });
     await user.click(chips[0]);
 
     await waitFor(() => {
-      expect(mockUseSecurityEvents).toHaveBeenLastCalledWith(
+      expect(mockUseSystemEvents).toHaveBeenLastCalledWith(
         expect.objectContaining({
           eventType: ["login_failed"],
         }),
@@ -150,10 +150,7 @@ describe("AdminSecurityEventsPage", () => {
     const user = userEvent.setup();
     renderPage();
 
-    // There are multiple "alice" matches — click the username cell in the first
-    // row, which triggers the row click handler.
     const rows = screen.getAllByRole("row");
-    // rows[0] = header, rows[1] = first data row
     await user.click(rows[1]);
 
     await waitFor(() => {
@@ -163,7 +160,7 @@ describe("AdminSecurityEventsPage", () => {
   });
 
   it("renders a Clear button when filters are active", () => {
-    renderPage("/admin/security-events?username=alice");
+    renderPage("/admin/system-events?username=alice");
     expect(
       screen.getByRole("button", { name: /Clear/ }),
     ).toBeInTheDocument();
@@ -175,7 +172,7 @@ describe("AdminSecurityEventsPage", () => {
   });
 
   it("renders a distinct error state on API failure", () => {
-    mockUseSecurityEvents.mockReturnValue({
+    mockUseSystemEvents.mockReturnValue({
       data: undefined,
       isLoading: false,
       isError: true,
@@ -183,14 +180,14 @@ describe("AdminSecurityEventsPage", () => {
       refetch: vi.fn(),
     });
     renderPage();
-    expect(screen.getByTestId("security-events-error")).toBeInTheDocument();
-    expect(screen.getByText(/Failed to load security events/)).toBeInTheDocument();
+    expect(screen.getByTestId("system-events-error")).toBeInTheDocument();
+    expect(screen.getByText(/Failed to load system events/)).toBeInTheDocument();
     expect(screen.getByText(/boom/)).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /Try again/ })).toBeInTheDocument();
   });
 
   it("hides the event count row when empty", () => {
-    mockUseSecurityEvents.mockReturnValue({
+    mockUseSystemEvents.mockReturnValue({
       data: { data: [], total: 0, page: 1, pageSize: 50 },
       isLoading: false,
     });
@@ -202,7 +199,6 @@ describe("AdminSecurityEventsPage", () => {
     const user = userEvent.setup();
     renderPage();
 
-    // Simulate an active text selection at click time.
     const originalGetSelection = window.getSelection.bind(window);
     window.getSelection = () =>
       ({ toString: () => "10.0.0.1" }) as unknown as Selection;
@@ -223,7 +219,7 @@ describe("AdminSecurityEventsPage", () => {
     await user.click(rows[1]);
 
     await waitFor(() => {
-      expect(screen.getByTestId("security-event-pivot-actions")).toBeInTheDocument();
+      expect(screen.getByTestId("system-event-pivot-actions")).toBeInTheDocument();
     });
     expect(
       screen.getByRole("button", { name: /View all events from user alice/ }),
@@ -247,13 +243,11 @@ describe("AdminSecurityEventsPage", () => {
       screen.getByRole("button", { name: /View all events from user alice/ }),
     );
 
-    // Modal should close.
     await waitFor(() => {
       expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
     });
-    // The hook should be called with the username filter and since=all.
     await waitFor(() => {
-      expect(mockUseSecurityEvents).toHaveBeenLastCalledWith(
+      expect(mockUseSystemEvents).toHaveBeenLastCalledWith(
         expect.objectContaining({
           username: "alice",
           since: "all",
@@ -281,7 +275,7 @@ describe("AdminSecurityEventsPage", () => {
       expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
     });
     await waitFor(() => {
-      expect(mockUseSecurityEvents).toHaveBeenLastCalledWith(
+      expect(mockUseSystemEvents).toHaveBeenLastCalledWith(
         expect.objectContaining({
           ip: "10.0.0.1",
           since: "all",

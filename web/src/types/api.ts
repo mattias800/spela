@@ -16,9 +16,9 @@ export interface RateLimitStatus {
   isLockedOut: boolean;
 }
 
-// Security event audit log (admin-only). Mirrors the SecurityEvent model on
+// System event audit log (admin-only). Mirrors the SystemEvent model on
 // the server. The metadata blob is per-event-type and may include things like
-// failedCount, lockedUntil, tokenVersion, etc.
+// failedCount, lockedUntil, consecutiveFailures, etc.
 export type SecurityEventType =
   | "login_success"
   | "login_failed"
@@ -30,48 +30,60 @@ export type SecurityEventType =
   | "token_user_missing"
   | "stale_token_version";
 
-// SecurityEventTypeLike preserves autocomplete for the known union while
-// still accepting arbitrary strings at runtime. The `(string & {})` trick
-// prevents TypeScript from eagerly collapsing the union down to `string`
-// and losing the literal suggestions. Used on wire types where the
-// backend may ship a new event type before the UI catalog is updated.
-export type SecurityEventTypeLike = SecurityEventType | (string & {});
+export type OperationalEventType =
+  | "ra_circuit_breaker_tripped"
+  | "scraper_repeated_errors"
+  | "rom_file_missing"
+  | "api_credentials_invalid";
 
-export interface SecurityEvent {
+export type SystemEventType = SecurityEventType | OperationalEventType;
+
+export type SystemEventTypeLike = SystemEventType | (string & {});
+
+export type SystemEventCategoryCode = "security" | "operational";
+
+export interface SystemEvent {
   id: number;
   createdAt: string;
-  // Widened at the runtime boundary: the JSON from the server is a string,
-  // and the badge has a forward-compatible fallback for unknown types.
-  eventType: SecurityEventTypeLike;
+  categoryCode: SystemEventCategoryCode;
+  categoryName: string;
+  eventType: SystemEventTypeLike;
   reason?: string;
   username?: string;
   userId?: number;
   ip?: string;
   path?: string;
   metadata?: Record<string, unknown>;
-  /**
-   * Populated only when the server failed to parse a stored metadata blob
-   * (legacy rows, manual DB edits). The UI should fall back to showing this
-   * raw string so investigators don't lose the data silently.
-   */
   metadataRaw?: string;
+  dismissedAt?: string | null;
 }
 
-export interface SecurityEventsListResponse {
-  data: SecurityEvent[];
+export interface SystemEventsListResponse {
+  data: SystemEvent[];
   total: number;
   page: number;
   pageSize: number;
 }
 
-export interface SecurityEventsListFilters {
+export interface SystemEventsListFilters {
   page?: number;
   pageSize?: number;
-  eventType?: SecurityEventType[];
+  eventType?: SystemEventType[];
+  category?: SystemEventCategoryCode;
   username?: string;
   ip?: string;
-  /** Preset (1h, 24h, 7d, 30d, all) or RFC3339 timestamp. */
   since?: string;
+  dismissed?: boolean;
+}
+
+export interface SystemEventCategory {
+  code: SystemEventCategoryCode;
+  name: string;
+}
+
+export interface SystemEventTypeInfo {
+  type: string;
+  category: SystemEventCategoryCode;
 }
 
 export interface DeletedUser {

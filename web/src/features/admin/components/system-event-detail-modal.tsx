@@ -3,38 +3,34 @@ import { Button, Modal } from "@/components/ui";
 import { cn } from "@/lib/cn";
 import { formatDateTime } from "@/lib/format";
 import {
-  SecurityEventBadge,
-  getSecurityEventLabel,
-} from "./security-event-badge";
-import type { SecurityEvent } from "@/types/api";
+  SystemEventBadge,
+  getSystemEventLabel,
+} from "./system-event-badge";
+import type { SystemEvent } from "@/types/api";
 
-interface SecurityEventDetailModalProps {
-  event: SecurityEvent | null;
+interface SystemEventDetailModalProps {
+  event: SystemEvent | null;
   onClose: () => void;
-  /** Called when the admin clicks "View all events from this IP". */
   onPivotToIp?: (ip: string) => void;
-  /** Called when the admin clicks "View all events from this user". */
   onPivotToUsername?: (username: string) => void;
 }
 
-export function SecurityEventDetailModal({
+export function SystemEventDetailModal({
   event,
   onClose,
   onPivotToIp,
   onPivotToUsername,
-}: SecurityEventDetailModalProps) {
-  // Modal title mirrors the badge's fallback so an unknown event type
-  // displays the raw string in both places instead of diverging.
+}: SystemEventDetailModalProps) {
   const title = event
-    ? getSecurityEventLabel(event.eventType)
-    : "Security event";
+    ? getSystemEventLabel(event.eventType)
+    : "System event";
 
   return (
     <Modal open={event !== null} onClose={onClose} title={title} size="lg">
       {event && (
         <div className="space-y-4">
           <div className="flex items-center gap-3">
-            <SecurityEventBadge type={event.eventType} />
+            <SystemEventBadge type={event.eventType} />
             {event.reason && (
               <span className="text-xs text-surface-400">
                 reason: <span className="text-surface-300">{event.reason}</span>
@@ -49,6 +45,7 @@ export function SecurityEventDetailModal({
               secondary={event.createdAt}
             />
             <DetailRow label="Event type" value={event.eventType} mono />
+            <DetailRow label="Category" value={event.categoryName} />
             <DetailRow label="Username" value={event.username ?? "—"} />
             <DetailRow
               label="User ID"
@@ -58,15 +55,9 @@ export function SecurityEventDetailModal({
             <DetailRow label="Request path" value={event.path ?? "—"} mono />
           </DetailGrid>
 
-          {/* Pivot actions — the single most useful operation during an
-              incident investigation is jumping from "this event" to "every
-              other event tied to the same actor". Only render the button
-              when the field is populated. Long usernames/IPs are truncated
-              in the label via a nested span with max-width + truncate so
-              the button never blows out the modal width. */}
           {(event.username || event.ip) && (
             <div
-              data-testid="security-event-pivot-actions"
+              data-testid="system-event-pivot-actions"
               className="flex flex-wrap gap-2 border-t border-surface-800/50 pt-4"
             >
               {event.username && onPivotToUsername && (

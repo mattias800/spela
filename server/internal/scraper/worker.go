@@ -13,11 +13,12 @@ import (
 
 // ScrapeWorker processes items from the scrape queue in the background.
 type ScrapeWorker struct {
-	db            *gorm.DB
-	queue         *ScrapeQueue
-	scraper       *Scraper
-	hub           *ws.Hub
-	onJobComplete func()
+	db                         *gorm.DB
+	queue                      *ScrapeQueue
+	scraper                    *Scraper
+	hub                        *ws.Hub
+	onJobComplete              func()
+	scraperConsecutiveFailures int
 }
 
 // NewScrapeWorker creates a new worker.
@@ -126,11 +127,23 @@ func (w *ScrapeWorker) processItem(ctx context.Context, item *db.ScrapeQueueItem
 		if !propagated {
 			if err := w.scraper.ScrapeGame(&game); err != nil {
 				slog.Warn("scrape worker: scrape failed", "game", game.Title, "error", err)
+				w.scraperConsecutiveFailures++
+				if w.scraperConsecutiveFailures >= 5 {
+					db.RecordOperationalEvent(w.db, db.SystemEventInput{
+						EventType: db.SystemEventScraperRepeatedErrors,
+						Metadata: map[string]any{
+							"consecutiveFailures": w.scraperConsecutiveFailures,
+							"error":               err.Error(),
+							"gameTitle":            game.Title,
+						},
+					})
+				}
 				jobDone, _ := w.queue.MarkFailed(item, err.Error())
 				w.broadcastProgress(item, &game, false, jobDone)
 				w.broadcastScrapeStatus(game.ID, "idle")
 				return
 			}
+			w.scraperConsecutiveFailures = 0
 
 			// Propagate metadata to unscraped siblings in the same variant group
 			if game.GroupKey != "" {

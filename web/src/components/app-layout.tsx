@@ -154,9 +154,9 @@ export function AppLayout() {
                 label: "Core Compatibility",
               },
               {
-                to: "/admin/security-events",
+                to: "/admin/system-events",
                 icon: ShieldAlert,
-                label: "Security Events",
+                label: "System Events",
               },
             ],
           },

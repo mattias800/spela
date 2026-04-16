@@ -579,11 +579,13 @@ func NewRouter(cfg Config) (*gin.Engine, func()) {
 			admin.GET("/users/:id/rate-limit", adminHandler.GetUserRateLimit)
 			admin.DELETE("/users/:id/rate-limit", adminHandler.ResetUserRateLimit)
 
-			// Security event audit log (admin-only)
-			securityHandler := &SecurityEventHandler{DB: cfg.DB}
-			admin.GET("/security-events", securityHandler.ListSecurityEvents)
-			admin.GET("/security-events/types", securityHandler.GetSecurityEventTypes)
-			admin.GET("/security-events/:id", securityHandler.GetSecurityEvent)
+			// System event audit log (admin-only)
+			systemEventHandler := &SystemEventHandler{DB: cfg.DB}
+			admin.GET("/system-events", systemEventHandler.ListSystemEvents)
+			admin.GET("/system-events/types", systemEventHandler.GetSystemEventTypes)
+			admin.GET("/system-events/categories", systemEventHandler.GetSystemEventCategories)
+			admin.GET("/system-events/:id", systemEventHandler.GetSystemEvent)
+			admin.PUT("/system-events/:id/dismiss", systemEventHandler.DismissSystemEvent)
 			admin.GET("/users/:id/devices", deviceHandler.AdminGetUserDevices)
 			admin.POST("/bios", biosHandler.UploadBiosFile)
 			admin.POST("/bios/download", biosHandler.TriggerDownload)

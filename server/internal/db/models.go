@@ -281,44 +281,89 @@ type TokenBlacklist struct {
 	ExpiresAt time.Time `gorm:"not null;index"`
 }
 
-// Security event types. Keep in sync with the slog event= discriminators
-// emitted by auth_handler.go and middleware.go.
-const (
-	SecurityEventLoginSuccess         = "login_success"
-	SecurityEventLoginFailed          = "login_failed"
-	SecurityEventLoginLocked          = "login_locked"
-	SecurityEventLoginBlocked         = "login_blocked"
-	SecurityEventAccountLocked        = "account_locked"
-	SecurityEventRevokedTokenUsed     = "revoked_token_used"
-	SecurityEventDisabledAccountToken = "disabled_account_token"
-	SecurityEventTokenUserMissing     = "token_user_missing"
-	SecurityEventStaleTokenVersion    = "stale_token_version"
-)
-
-// AllSecurityEventTypes is the canonical catalog of security event type
-// strings. Every type above must appear here so API responses and UI filters
-// stay in sync with the emitted events. Adding a new type is a one-line
-// change: add the const above, add it to this slice, done.
-var AllSecurityEventTypes = []string{
-	SecurityEventLoginSuccess,
-	SecurityEventLoginFailed,
-	SecurityEventLoginLocked,
-	SecurityEventLoginBlocked,
-	SecurityEventAccountLocked,
-	SecurityEventRevokedTokenUsed,
-	SecurityEventDisabledAccountToken,
-	SecurityEventTokenUserMissing,
-	SecurityEventStaleTokenVersion,
+// SystemEventCategory groups system events into logical categories (security,
+// operational, etc.). Rows are code-seeded on startup — admins cannot create or
+// delete categories because no code path emits events into custom categories.
+type SystemEventCategory struct {
+	ID   uint   `gorm:"primarykey"`
+	Code string `gorm:"size:32;uniqueIndex;not null"`
+	Name string `gorm:"size:64;not null"`
 }
 
-// SecurityEvent records an admin-only audit entry for an authentication or
-// session-related event. These rows back the /admin/security-events page so
-// admins can investigate suspicious activity without tailing container logs.
+const (
+	CategorySecurity    = "security"
+	CategoryOperational = "operational"
+)
+
+// System event types. Keep in sync with the slog event= discriminators
+// emitted by auth_handler.go and middleware.go.
+const (
+	SystemEventLoginSuccess         = "login_success"
+	SystemEventLoginFailed          = "login_failed"
+	SystemEventLoginLocked          = "login_locked"
+	SystemEventLoginBlocked         = "login_blocked"
+	SystemEventAccountLocked        = "account_locked"
+	SystemEventRevokedTokenUsed     = "revoked_token_used"
+	SystemEventDisabledAccountToken = "disabled_account_token"
+	SystemEventTokenUserMissing     = "token_user_missing"
+	SystemEventStaleTokenVersion    = "stale_token_version"
+)
+
+// Operational event types.
+const (
+	SystemEventRACircuitBreakerTripped = "ra_circuit_breaker_tripped"
+	SystemEventScraperRepeatedErrors   = "scraper_repeated_errors"
+	SystemEventROMFileMissing          = "rom_file_missing"
+	SystemEventAPICredentialsInvalid   = "api_credentials_invalid"
+)
+
+// AllSystemEventTypes is the canonical catalog of system event type strings.
+// Every type above must appear here so API responses and UI filters stay in
+// sync with the emitted events.
+var AllSystemEventTypes = []string{
+	SystemEventLoginSuccess,
+	SystemEventLoginFailed,
+	SystemEventLoginLocked,
+	SystemEventLoginBlocked,
+	SystemEventAccountLocked,
+	SystemEventRevokedTokenUsed,
+	SystemEventDisabledAccountToken,
+	SystemEventTokenUserMissing,
+	SystemEventStaleTokenVersion,
+	SystemEventRACircuitBreakerTripped,
+	SystemEventScraperRepeatedErrors,
+	SystemEventROMFileMissing,
+	SystemEventAPICredentialsInvalid,
+}
+
+// SystemEventTypeCategory maps each event type to its category code. Used by
+// the recorder to auto-resolve CategoryID and by the types endpoint to tell
+// the frontend which types belong to which category.
+var SystemEventTypeCategory = map[string]string{
+	SystemEventLoginSuccess:            CategorySecurity,
+	SystemEventLoginFailed:             CategorySecurity,
+	SystemEventLoginLocked:             CategorySecurity,
+	SystemEventLoginBlocked:            CategorySecurity,
+	SystemEventAccountLocked:           CategorySecurity,
+	SystemEventRevokedTokenUsed:        CategorySecurity,
+	SystemEventDisabledAccountToken:    CategorySecurity,
+	SystemEventTokenUserMissing:        CategorySecurity,
+	SystemEventStaleTokenVersion:       CategorySecurity,
+	SystemEventRACircuitBreakerTripped: CategoryOperational,
+	SystemEventScraperRepeatedErrors:   CategoryOperational,
+	SystemEventROMFileMissing:          CategoryOperational,
+	SystemEventAPICredentialsInvalid:   CategoryOperational,
+}
+
+// SystemEvent records an admin-only audit entry for an authentication,
+// session, or operational event. These rows back the /admin/system-events
+// page so admins can investigate suspicious activity and operational issues
+// without tailing container logs.
 //
 // Unlike LoginAttempt (which stores a SHA-256 hash of the username for lockout
-// counters), SecurityEvent deliberately stores the raw username — admins need
+// counters), SystemEvent deliberately stores the raw username — admins need
 // to read it to investigate incidents, and the table has a short retention
-// window (see securityEventRetention in auth_handler.go) to limit exposure.
+// window (see systemEventRetention in auth_handler.go) to limit exposure.
 //
 // Username is stored as a free-form string (not a foreign key) so events
 // referencing deleted or never-existed accounts are still useful. UserID is
@@ -329,17 +374,20 @@ var AllSecurityEventTypes = []string{
 // case-insensitive filter query so an index lookup can be used instead of a
 // `LOWER(username) LIKE ?` table scan (SQLite has no functional indexes).
 // It is populated automatically by the recorder on every write.
-type SecurityEvent struct {
-	ID            uint      `gorm:"primarykey"`
-	CreatedAt     time.Time `gorm:"index;not null"`
-	EventType     string    `gorm:"size:64;not null;index"`
-	Reason        string    `gorm:"size:64;index"`
-	Username      string    `gorm:"size:128;index"`
-	UsernameLower string    `gorm:"size:128;index"`
-	UserID        *uint     `gorm:"index"`
-	IP            string    `gorm:"size:64;index"`
-	Path          string    `gorm:"size:256"`
-	Metadata      string    `gorm:"type:text"`
+type SystemEvent struct {
+	ID            uint                `gorm:"primarykey"`
+	CreatedAt     time.Time           `gorm:"index;not null"`
+	CategoryID    uint                `gorm:"not null;index"`
+	Category      SystemEventCategory `gorm:"foreignKey:CategoryID"`
+	EventType     string              `gorm:"size:64;not null;index"`
+	Reason        string              `gorm:"size:64;index"`
+	Username      string              `gorm:"size:128;index"`
+	UsernameLower string              `gorm:"size:128;index"`
+	UserID        *uint               `gorm:"index"`
+	IP            string              `gorm:"size:64;index"`
+	Path          string              `gorm:"size:256"`
+	Metadata      string              `gorm:"type:text"`
+	DismissedAt   *time.Time          `gorm:"index"`
 }
 
 // ServerSetting stores key-value server configuration.
