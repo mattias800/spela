@@ -881,7 +881,7 @@ func (h *EnrichmentHandler) TriggerEnrichMetadata(c *gin.Context) {
 	}
 
 	if h.Hub != nil {
-		h.Hub.Broadcast(ws.Event{Type: "enrich_started", Payload: gin.H{"total": total}})
+		h.Hub.Broadcast(ws.Event{Type: ws.EventEnrichStarted, Payload: ws.EnrichStartedPayload{Total: total}})
 	}
 
 	go func() {
@@ -890,19 +890,19 @@ func (h *EnrichmentHandler) TriggerEnrichMetadata(c *gin.Context) {
 		count, enrichTotal, err := h.Scraper.EnrichAll(mode, func(p scraper.EnrichProgress) {
 			h.Scraper.SetEnrichProgress(&p)
 			if h.Hub != nil {
-				h.Hub.Broadcast(ws.Event{Type: "enrich_progress", Payload: p})
+				h.Hub.Broadcast(ws.Event{Type: ws.EventEnrichProgress, Payload: p})
 			}
 		})
 		if err != nil {
 			slog.Error("metadata enrichment failed", "error", err)
 			if h.Hub != nil {
-				h.Hub.Broadcast(ws.Event{Type: "enrich_error", Payload: ErrorResponse{Error: "enrichment failed"}})
+				h.Hub.Broadcast(ws.Event{Type: ws.EventEnrichError, Payload: ErrorResponse{Error: "enrichment failed"}})
 			}
 			return
 		}
 		slog.Info("metadata enrichment complete", "enriched", count, "total", enrichTotal)
 		if h.Hub != nil {
-			h.Hub.Broadcast(ws.Event{Type: "enrich_complete", Payload: gin.H{"enriched": count, "total": enrichTotal}})
+			h.Hub.Broadcast(ws.Event{Type: ws.EventEnrichComplete, Payload: ws.EnrichCompletePayload{Enriched: count, Total: enrichTotal}})
 		}
 	}()
 

@@ -517,6 +517,6 @@ func CreateActivityEvent(database *gorm.DB, hub *ws.Hub, userID uint, eventType 
 	}
 
 	if hub != nil {
-		hub.Broadcast(ws.Event{Type: "activity_new", Payload: resp})
+		hub.Broadcast(ws.Event{Type: ws.EventActivityNew, Payload: resp})
 	}
 }

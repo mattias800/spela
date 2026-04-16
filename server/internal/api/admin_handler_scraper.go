@@ -60,7 +60,7 @@ func (h *AdminHandler) TriggerScrape(c *gin.Context) {
 				c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "cancelling active job"})
 				return
 			}
-			h.Hub.Broadcast(ws.Event{Type: "scrape_cancelled", Payload: gin.H{}})
+			h.Hub.Broadcast(ws.Event{Type: ws.EventScrapeCancelled, Payload: ws.ScrapeCancelledPayload{}})
 		case "merge":
 			gameIDs, err := h.collectGameIDs(mode, consoleID, source, status)
 			if err != nil {
@@ -128,10 +128,10 @@ func (h *AdminHandler) TriggerScrape(c *gin.Context) {
 		}
 	}
 
-	h.Hub.Broadcast(ws.Event{Type: "scrape_started", Payload: gin.H{
-		"jobId": job.ID,
-		"total": len(gameIDs),
-		"mode":  mode,
+	h.Hub.Broadcast(ws.Event{Type: ws.EventScrapeStarted, Payload: ws.ScrapeStartedPayload{
+		JobID: job.ID,
+		Total: len(gameIDs),
+		Mode:  mode,
 	}})
 
 	adminID, _ := c.Get("userId")
@@ -205,8 +205,8 @@ func (h *AdminHandler) CancelScrape(c *gin.Context) {
 		return
 	}
 
-	h.Hub.Broadcast(ws.Event{Type: "scrape_cancelled", Payload: gin.H{
-		"jobId": job.ID,
+	h.Hub.Broadcast(ws.Event{Type: ws.EventScrapeCancelled, Payload: ws.ScrapeCancelledPayload{
+		JobID: job.ID,
 	}})
 
 	// Rebuild variant groups after cancellation

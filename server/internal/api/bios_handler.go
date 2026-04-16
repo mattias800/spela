@@ -488,7 +488,7 @@ func (h *BiosHandler) TriggerDownload(c *gin.Context) {
 	}
 
 	if h.Hub != nil {
-		h.Hub.Broadcast(ws.Event{Type: "bios_download_started", Payload: gin.H{"total": missing}})
+		h.Hub.Broadcast(ws.Event{Type: ws.EventBiosDownloadStarted, Payload: ws.BiosDownloadStartedPayload{Total: missing}})
 	}
 
 	go func() {
@@ -500,7 +500,7 @@ func (h *BiosHandler) TriggerDownload(c *gin.Context) {
 
 		result := bios.DownloadMissing(h.Storage.BiosDir, bios.DefaultRepoBaseURL, func(p bios.DownloadProgress) {
 			if h.Hub != nil {
-				h.Hub.Broadcast(ws.Event{Type: "bios_download_progress", Payload: p})
+				h.Hub.Broadcast(ws.Event{Type: ws.EventBiosDownloadProgress, Payload: p})
 			}
 		})
 
@@ -511,10 +511,10 @@ func (h *BiosHandler) TriggerDownload(c *gin.Context) {
 		)
 
 		if h.Hub != nil {
-			h.Hub.Broadcast(ws.Event{Type: "bios_download_complete", Payload: gin.H{
-				"downloaded": result.Downloaded,
-				"skipped":    result.Skipped,
-				"failed":     result.Failed,
+			h.Hub.Broadcast(ws.Event{Type: ws.EventBiosDownloadComplete, Payload: ws.BiosDownloadCompletePayload{
+				Downloaded: result.Downloaded,
+				Skipped:    result.Skipped,
+				Failed:     result.Failed,
 			}})
 		}
 	}()

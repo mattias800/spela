@@ -86,7 +86,7 @@ func (h *NetplayHandler) SendInvite(c *gin.Context) {
 	resp := h.toNetplayInviteResponse(invite)
 
 	if h.Hub != nil {
-		h.Hub.Broadcast(ws.Event{Type: "netplay_invite_sent", Payload: resp})
+		h.Hub.Broadcast(ws.Event{Type: ws.EventNetplayInviteSent, Payload: resp})
 	}
 
 	c.JSON(http.StatusCreated, resp)
@@ -210,7 +210,7 @@ func (h *NetplayHandler) AcceptNetplayInvite(c *gin.Context) {
 	resp := h.toNetplayInviteResponse(invite)
 
 	if h.Hub != nil {
-		h.Hub.Broadcast(ws.Event{Type: "netplay_invite_accepted", Payload: resp})
+		h.Hub.Broadcast(ws.Event{Type: ws.EventNetplayInviteAccepted, Payload: resp})
 	}
 
 	c.JSON(http.StatusOK, resp)
@@ -244,9 +244,9 @@ func (h *NetplayHandler) DeclineNetplayInvite(c *gin.Context) {
 	}
 
 	if h.Hub != nil {
-		h.Hub.Broadcast(ws.Event{Type: "netplay_invite_declined", Payload: gin.H{
-			"netplaySessionId": strconv.FormatUint(uint64(invite.NetplaySessionID), 10),
-			"inviteeId":        strconv.FormatUint(uint64(uid), 10),
+		h.Hub.Broadcast(ws.Event{Type: ws.EventNetplayInviteDeclined, Payload: ws.NetplayInviteDeclinedPayload{
+			NetplaySessionID: strconv.FormatUint(uint64(invite.NetplaySessionID), 10),
+			InviteeID:        strconv.FormatUint(uint64(uid), 10),
 		}})
 	}
 

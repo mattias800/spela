@@ -639,9 +639,9 @@ func (h *ChallengeHandler) CompleteAttempt(c *gin.Context) {
 	// Broadcast leaderboard update
 	if h.Hub != nil {
 		h.Hub.Broadcast(ws.Event{
-			Type: "challenge_leaderboard_updated",
-			Payload: gin.H{
-				"challengeId": strconv.FormatUint(uint64(attempt.ChallengeID), 10),
+			Type: ws.EventChallengeLeaderboardUpdated,
+			Payload: ws.ChallengeLeaderboardUpdatedPayload{
+				ChallengeID: strconv.FormatUint(uint64(attempt.ChallengeID), 10),
 			},
 		})
 	}

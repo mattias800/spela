@@ -90,7 +90,7 @@ func (h *NetplayHandler) CreateSession(c *gin.Context) {
 	h.DB.Preload("HostUser").Preload("Game").Preload("Game.Console").First(&session, session.ID)
 
 	if h.Hub != nil {
-		h.Hub.Broadcast(ws.Event{Type: "netplay_session_created", Payload: h.toSessionResponse(session)})
+		h.Hub.Broadcast(ws.Event{Type: ws.EventNetplaySessionCreated, Payload: h.toSessionResponse(session)})
 	}
 
 	c.JSON(http.StatusCreated, h.toSessionResponse(session))
@@ -228,7 +228,7 @@ func (h *NetplayHandler) JoinByInviteCode(c *gin.Context) {
 	h.expireNetplayInvites(session.ID)
 
 	if h.Hub != nil {
-		h.Hub.Broadcast(ws.Event{Type: "netplay_player_joined", Payload: h.toSessionResponse(session)})
+		h.Hub.Broadcast(ws.Event{Type: ws.EventNetplayPlayerJoined, Payload: h.toSessionResponse(session)})
 	}
 
 	c.JSON(http.StatusOK, h.toSessionResponse(session))
@@ -272,9 +272,9 @@ func (h *NetplayHandler) LeaveSession(c *gin.Context) {
 	h.expireNetplayInvites(session.ID)
 
 	if h.Hub != nil {
-		h.Hub.Broadcast(ws.Event{Type: "netplay_session_ended", Payload: gin.H{
-			"sessionId": strconv.FormatUint(uint64(session.ID), 10),
-			"endReason": endReason,
+		h.Hub.Broadcast(ws.Event{Type: ws.EventNetplaySessionEnded, Payload: ws.NetplaySessionEndedPayload{
+			SessionID: strconv.FormatUint(uint64(session.ID), 10),
+			EndReason: endReason,
 		}})
 	}
 
@@ -326,8 +326,8 @@ func (h *NetplayHandler) DeleteSession(c *gin.Context) {
 	h.DB.Delete(&session)
 
 	if h.Hub != nil {
-		h.Hub.Broadcast(ws.Event{Type: "netplay_session_deleted", Payload: gin.H{
-			"sessionId": strconv.FormatUint(uint64(session.ID), 10),
+		h.Hub.Broadcast(ws.Event{Type: ws.EventNetplaySessionDeleted, Payload: ws.NetplaySessionDeletedPayload{
+			SessionID: strconv.FormatUint(uint64(session.ID), 10),
 		}})
 	}
 
@@ -371,7 +371,7 @@ func (h *NetplayHandler) UpdateSettings(c *gin.Context) {
 	h.DB.Preload("HostUser").Preload("ClientUser").Preload("Game").Preload("Game.Console").First(&session, session.ID)
 
 	if h.Hub != nil {
-		h.Hub.Broadcast(ws.Event{Type: "netplay_settings_updated", Payload: h.toSessionResponse(session)})
+		h.Hub.Broadcast(ws.Event{Type: ws.EventNetplaySettingsUpdated, Payload: h.toSessionResponse(session)})
 	}
 
 	c.JSON(http.StatusOK, h.toSessionResponse(session))
