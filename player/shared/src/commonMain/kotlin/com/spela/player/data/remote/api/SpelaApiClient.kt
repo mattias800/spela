@@ -155,7 +155,7 @@ class SpelaApiClient(
 
     // Consoles & Games
 
-    suspend fun getConsoles(): List<ConsoleDto> {
+    suspend fun getConsoles(): List<com.spela.client.models.ConsoleResponse> {
         return client.get("$baseUrl/api/consoles").body()
     }
 

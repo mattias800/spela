@@ -47,7 +47,12 @@ class GameRepositoryOfflineTest {
                     val path = request.url.encodedPath
                     when {
                         path.endsWith("/api/consoles") -> respond(
-                            """[{"id":"1","name":"NES","abbreviation":"nes","gameCount":5,"colorTheme":"#e74c3c","coverAspectRatio":0.72,"defaultCore":"fceumm","iconUrl":"/images/nes.png","saveStateSupport":true}]""",
+                            // Full ConsoleResponse shape — the generated
+                            // @Required fields are all present; kotlinx-
+                            // serialization's strict mode otherwise rejects
+                            // the payload (unlike the old hand-written
+                            // ConsoleDto, which had defaults everywhere).
+                            """[{"id":"1","name":"NES","abbreviation":"nes","code":"nes","gameCount":5,"colorTheme":"#e74c3c","coverAspectRatio":0.72,"defaultCore":"fceumm","emulatorJsCore":"fceumm","extensions":["nes"],"generation":3,"iconUrl":"/images/nes.png","logoUrl":"/images/nes.svg","logoPngUrl":"/images/nes.png","saveStateSupport":true,"browserPlayable":true,"playable":true,"maker":{"code":"nintendo","name":"Nintendo"},"mediaType":{"code":"cart","name":"Cartridge","category":{"code":"physical","name":"Physical"}},"releaseYear":1983,"summary":"8-bit classic","unitsSold":61900000,"createdAt":"2024-01-01T00:00:00Z","updatedAt":"2024-01-01T00:00:00Z"}]""",
                             HttpStatusCode.OK,
                             headersOf(HttpHeaders.ContentType, "application/json"),
                         )

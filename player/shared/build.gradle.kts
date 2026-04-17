@@ -49,6 +49,11 @@ kotlin {
                 implementation(libs.ktor.client.logging)
                 implementation(libs.ktor.client.websockets)
 
+                // Generated Kotlin OpenAPI client — models + *Api classes
+                // produced by openapi-generator from the huma spec. See
+                // ../shared-api and scripts/regen-kotlin-api.sh.
+                implementation(project(":shared-api"))
+
                 implementation(libs.sqldelight.coroutines)
 
                 implementation(libs.koin.core)
