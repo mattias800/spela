@@ -264,6 +264,7 @@ func NewRouter(cfg Config) (*gin.Engine, func()) {
 	RegisterExploreConsoleRoutes(humaAPI, exploreHandler, cfg.JWTSecret, cfg.DB, userLimiter)
 	RegisterExploreGalleryRoutes(humaAPI, exploreHandler, cfg.JWTSecret, cfg.DB, userLimiter)
 	RegisterExploreCommunityRoutes(humaAPI, exploreHandler, cfg.JWTSecret, cfg.DB, userLimiter)
+	RegisterExploreTemporalRoutes(humaAPI, exploreHandler, cfg.JWTSecret, cfg.DB, userLimiter)
 
 	// Public auth routes — rate limit login/register/setup to prevent brute force,
 	// but leave refresh and setup-status unrestricted (called frequently during normal use).
@@ -335,10 +336,8 @@ func NewRouter(cfg Config) (*gin.Engine, func()) {
 			// trending / community-top / cult-classics / recently-reviewed /
 			// active-now — migrated to huma (see RegisterExploreCommunityRoutes
 			// above).
-			explore.GET("/on-this-day", exploreHandler.GetOnThisDay)
-			explore.GET("/best-of-year/:year", exploreHandler.GetBestOfYear)
-			explore.GET("/your-anniversaries", exploreHandler.GetYourAnniversaries)
-			explore.GET("/decades/:decade", exploreHandler.GetDecades)
+			// on-this-day / best-of-year / your-anniversaries / decades —
+			// migrated to huma (see RegisterExploreTemporalRoutes above).
 			explore.GET("/easy-to-complete", exploreHandler.GetEasyToComplete)
 			explore.GET("/hardest-games", exploreHandler.GetHardestGames)
 			explore.GET("/almost-done", exploreHandler.GetAlmostDone)
