@@ -267,17 +267,12 @@ func NewRouter(cfg Config) (*gin.Engine, func()) {
 	RegisterExploreTemporalRoutes(humaAPI, exploreHandler, cfg.JWTSecret, cfg.DB, userLimiter)
 	RegisterExploreChallengeRoutes(humaAPI, exploreHandler, cfg.JWTSecret, cfg.DB, userLimiter)
 	RegisterExploreWizardRoutes(humaAPI, exploreHandler, cfg.JWTSecret, cfg.DB, userLimiter)
+	RegisterAuthRoutes(humaAPI, authHandler, authLimiter, refreshLimiter)
 
-	// Public auth routes — rate limit login/register/setup to prevent brute force,
-	// but leave refresh and setup-status unrestricted (called frequently during normal use).
-	authGroup := r.Group("/api/auth")
-	{
-		authGroup.POST("/login", authLimiter.RateLimit(), authHandler.Login)
-		authGroup.POST("/register", authLimiter.RateLimit(), authHandler.Register)
-		authGroup.POST("/setup", authLimiter.RateLimit(), authHandler.Setup)
-		authGroup.POST("/refresh", refreshLimiter.RateLimit(), authHandler.Refresh)
-		authGroup.GET("/setup-status", authHandler.SetupStatus)
-	}
+	// Public auth routes — login/register/setup/refresh/setup-status have been
+	// migrated to huma (see RegisterAuthRoutes above). Rate limiting (per-IP
+	// auth/refresh limiters) is applied via IPRateLimitMiddleware inside the
+	// huma registration.
 
 	// Setup diagnostics (public during first-time setup, admin-only after)
 	r.GET("/api/setup/diagnostics", setupHandler.Diagnostics)
