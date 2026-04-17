@@ -2,12 +2,32 @@ package com.spela.player.data.remote.dto
 
 import com.spela.player.domain.model.*
 
-fun AuthResponse.toDomain(): AuthTokens = AuthTokens(
+fun com.spela.client.models.AuthLoginResponse.toDomain(): AuthTokens = AuthTokens(
     accessToken = accessToken,
     refreshToken = refreshToken,
 )
 
-fun AuthResponse.extractUser(): User = user.toDomain()
+fun com.spela.client.models.AuthLoginResponse.extractUser(): User = user.toDomain()
+
+/**
+ * Maps a register response to tokens. When the server returns the pending
+ * branch (account awaits admin approval) the access + refresh tokens are
+ * omitted — this throws an [IllegalStateException] so the repository can
+ * surface the condition to the caller; the domain-layer [AuthRepository]
+ * signature only returns [AuthTokens]. Callers should catch and translate
+ * to a "pending approval" UX state if/when the domain model grows a variant.
+ */
+fun com.spela.client.models.AuthRegisterResponse.toDomain(): AuthTokens {
+    val access = accessToken
+    val refresh = refreshToken
+    if (pending == true || access == null || refresh == null) {
+        error(message ?: "Registration pending admin approval")
+    }
+    return AuthTokens(
+        accessToken = access,
+        refreshToken = refresh,
+    )
+}
 
 fun UserDto.toDomain(): User = User(
     id = id,

@@ -1,10 +1,10 @@
 package com.spela.player.data.repository
 
+import com.spela.client.models.AuthLoginRequest
+import com.spela.client.models.AuthRefreshRequest
+import com.spela.client.models.AuthRegisterRequest
 import com.spela.player.data.local.SpelaDatabase
 import com.spela.player.data.remote.api.SpelaApiClient
-import com.spela.player.data.remote.dto.LoginRequest
-import com.spela.player.data.remote.dto.RefreshRequest
-import com.spela.player.data.remote.dto.RegisterRequest
 import com.spela.player.data.remote.dto.toDomain
 import com.spela.player.data.remote.interceptor.TokenManager
 import com.spela.player.domain.model.AuthTokens
@@ -23,7 +23,7 @@ class AuthRepositoryImpl(
     override suspend fun login(serverUrl: String, username: String, password: String): Result<AuthTokens> {
         return runCatching {
             apiClient.setBaseUrl(serverUrl)
-            val response = apiClient.login(LoginRequest(username, password))
+            val response = apiClient.login(AuthLoginRequest(username = username, password = password))
             val tokens = response.toDomain()
             persistTokens(tokens)
             tokens
@@ -33,7 +33,9 @@ class AuthRepositoryImpl(
     override suspend fun register(serverUrl: String, username: String, email: String, password: String): Result<AuthTokens> {
         return runCatching {
             apiClient.setBaseUrl(serverUrl)
-            val response = apiClient.register(RegisterRequest(username, email, password))
+            val response = apiClient.register(
+                AuthRegisterRequest(username = username, email = email, password = password),
+            )
             val tokens = response.toDomain()
             persistTokens(tokens)
             tokens
@@ -43,7 +45,7 @@ class AuthRepositoryImpl(
     override suspend fun refreshToken(serverUrl: String, refreshToken: String): Result<AuthTokens> {
         return runCatching {
             apiClient.setBaseUrl(serverUrl)
-            val response = apiClient.refreshToken(RefreshRequest(refreshToken))
+            val response = apiClient.refreshToken(AuthRefreshRequest(refreshToken = refreshToken))
             val tokens = response.toDomain()
             persistTokens(tokens)
             tokens

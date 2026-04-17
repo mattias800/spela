@@ -61,11 +61,12 @@ class SpelaApiClient(
                     }
 
                     try {
-                        val response: AuthResponse = client.post("$baseUrl/api/auth/refresh") {
-                            markAsRefreshTokenRequest()
-                            contentType(ContentType.Application.Json)
-                            setBody(RefreshRequest(refreshToken))
-                        }.body()
+                        val response: com.spela.client.models.AuthLoginResponse =
+                            client.post("$baseUrl/api/auth/refresh") {
+                                markAsRefreshTokenRequest()
+                                contentType(ContentType.Application.Json)
+                                setBody(com.spela.client.models.AuthRefreshRequest(refreshToken = refreshToken))
+                            }.body()
 
                         tokenManager.setTokens(response.accessToken, response.refreshToken)
                         onTokenRefreshed?.invoke(response.accessToken, response.refreshToken)
@@ -131,19 +132,19 @@ class SpelaApiClient(
 
     // Auth
 
-    suspend fun login(request: LoginRequest): AuthResponse {
+    suspend fun login(request: com.spela.client.models.AuthLoginRequest): com.spela.client.models.AuthLoginResponse {
         return client.post("$baseUrl/api/auth/login") {
             setBody(request)
         }.body()
     }
 
-    suspend fun register(request: RegisterRequest): AuthResponse {
+    suspend fun register(request: com.spela.client.models.AuthRegisterRequest): com.spela.client.models.AuthRegisterResponse {
         return client.post("$baseUrl/api/auth/register") {
             setBody(request)
         }.body()
     }
 
-    suspend fun refreshToken(request: RefreshRequest): AuthResponse {
+    suspend fun refreshToken(request: com.spela.client.models.AuthRefreshRequest): com.spela.client.models.AuthLoginResponse {
         return client.post("$baseUrl/api/auth/refresh") {
             setBody(request)
         }.body()

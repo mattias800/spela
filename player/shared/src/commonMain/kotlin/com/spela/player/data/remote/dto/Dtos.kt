@@ -2,37 +2,19 @@ package com.spela.player.data.remote.dto
 
 import kotlinx.serialization.Serializable
 
-@Serializable
-data class LoginRequest(
-    val username: String,
-    val password: String,
-)
+// Auth — LoginRequest / RegisterRequest / RefreshRequest / AuthResponse
+// replaced by generated counterparts in com.spela.client.models:
+//   LoginRequest    -> AuthLoginRequest
+//   RegisterRequest -> AuthRegisterRequest
+//   RefreshRequest  -> AuthRefreshRequest
+//   AuthResponse    -> AuthLoginResponse (login + refresh + setup)
+//                      AuthRegisterResponse (register; has `pending` branch
+//                      when the account awaits admin approval — tokens are
+//                      nullable in that case; repository throws when pending)
+//
+// UserDto replaced by com.spela.client.models.UserResponse — aliased
+// below because presentation-layer code still references the name.
 
-@Serializable
-data class RegisterRequest(
-    val username: String,
-    val email: String,
-    val password: String,
-)
-
-@Serializable
-data class AuthResponse(
-    val accessToken: String,
-    val refreshToken: String,
-    val user: UserDto,
-)
-
-@Serializable
-data class RefreshRequest(
-    val refreshToken: String,
-)
-
-// UserDto replaced by com.spela.client.models.UserResponse (see
-// player/shared-api/). Aliased here so AuthResponse.user — which lives
-// in the hand-written auth DTO block — keeps compiling unchanged. The
-// generated UserResponse adds @Required createdAt/updatedAt Instants
-// and @Required disabled/pendingApproval booleans the domain model
-// ignores.
 typealias UserDto = com.spela.client.models.UserResponse
 
 @Serializable

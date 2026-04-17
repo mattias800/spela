@@ -447,7 +447,7 @@ class GameRepositoryImplTest {
     @Test
     fun authResponseMapsCorrectly() {
         val now = kotlin.time.Instant.fromEpochSeconds(0)
-        val dto = AuthResponse(
+        val dto = com.spela.client.models.AuthLoginResponse(
             accessToken = "access123",
             refreshToken = "refresh456",
             user = UserDto(
