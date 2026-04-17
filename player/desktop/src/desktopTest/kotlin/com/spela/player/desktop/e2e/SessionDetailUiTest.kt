@@ -78,12 +78,12 @@ class SessionDetailUiTest {
         )
         harness.sessionRepo.preAddSessionSave(
             sessionId = "s1",
-            saveId = 1,
+            saveId = "1",
             name = "Boss Fight Save",
         )
         harness.sessionRepo.preAddSessionSave(
             sessionId = "s1",
-            saveId = 2,
+            saveId = "2",
             name = "After Tutorial",
         )
 

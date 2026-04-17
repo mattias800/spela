@@ -1553,11 +1553,11 @@ class SpelaApiClient(
         }.body()
     }
 
-    suspend fun getSessionSaves(sessionId: String): List<SaveStateDto> {
+    suspend fun getSessionSaves(sessionId: String): List<com.spela.client.models.SessionSaveResponse> {
         return client.get("$baseUrl/api/sessions/$sessionId/saves").body()
     }
 
-    suspend fun uploadSessionSave(sessionId: String, name: String, data: ByteArray, screenshot: ByteArray?, coreName: String = ""): SaveStateDto {
+    suspend fun uploadSessionSave(sessionId: String, name: String, data: ByteArray, screenshot: ByteArray?, coreName: String = ""): com.spela.client.models.SessionSaveResponse {
         return client.submitFormWithBinaryData(
             url = "$baseUrl/api/sessions/$sessionId/saves",
             formData = formData {
@@ -1616,7 +1616,7 @@ class SpelaApiClient(
         return response.body()
     }
 
-    suspend fun uploadSlotSave(sessionId: String, slot: Int, data: ByteArray, screenshot: ByteArray?, coreName: String = ""): SaveStateDto {
+    suspend fun uploadSlotSave(sessionId: String, slot: Int, data: ByteArray, screenshot: ByteArray?, coreName: String = ""): com.spela.client.models.SessionSaveResponse {
         return client.submitFormWithBinaryData(
             url = "$baseUrl/api/sessions/$sessionId/saves/slot/$slot",
             formData = formData {

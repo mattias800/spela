@@ -1,7 +1,6 @@
 package com.spela.player.data.remote.dto
 
 import com.spela.player.domain.model.*
-import kotlin.time.Instant
 
 fun AuthResponse.toDomain(): AuthTokens = AuthTokens(
     accessToken = accessToken,
@@ -155,17 +154,16 @@ fun GameDto.toGameDetail(): GameDetail = GameDetail(
     romHacks = romHacks.orEmpty().map { it.toDomain() },
 )
 
-fun SaveStateDto.toDomain(): SaveState = SaveState(
+fun com.spela.client.models.SessionSaveResponse.toDomain(): SaveState = SaveState(
     id = id,
-    gameId = gameId,
     name = name,
-    createdAt = createdAt?.let { runCatching { Instant.parse(it) }.getOrNull() },
+    createdAt = createdAt,
     fileSize = fileSize,
     isAuto = isAuto,
     coreName = coreName,
     notes = notes,
     screenshotUrl = screenshotUrl,
-    slot = slot,
+    slot = slot?.toInt(),
     isSynced = true,
 )
 

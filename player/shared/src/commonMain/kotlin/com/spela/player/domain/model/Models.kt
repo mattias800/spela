@@ -146,8 +146,7 @@ data class GameDetail(
 
 @Serializable
 data class SaveState(
-    val id: Long,
-    val gameId: Long,
+    val id: String,
     val name: String,
     val createdAt: Instant? = null,
     val fileSize: Long = 0,

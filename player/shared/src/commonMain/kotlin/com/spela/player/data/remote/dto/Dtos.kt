@@ -99,21 +99,10 @@ typealias ParentGameDto = com.spela.client.models.ParentGameResponse
 typealias RomHackGameDto = com.spela.client.models.RomHackGameResponse
 typealias GameListResponse = com.spela.client.models.PaginatedResponseGameResponse
 
-@Serializable
-data class SaveStateDto(
-    val id: Long,
-    val userId: Long = 0,
-    val gameId: Long = 0,
-    val name: String,
-    val fileSize: Long = 0,
-    val isAuto: Boolean = false,
-    val coreName: String? = null,
-    val notes: String? = null,
-    val screenshotUrl: String? = null,
-    val slot: Int? = null,
-    val createdAt: String? = null,
-    val updatedAt: String? = null,
-)
+// SaveStateDto replaced by com.spela.client.models.SessionSaveResponse
+// (see player/shared-api/). The generated type has `id: String`, no
+// `gameId` field (derivable from session context), `createdAt: Instant`
+// (no String parsing needed), and `slot: Long?` (mapper converts to Int?).
 
 // LibretroCoreDto replaced by com.spela.client.models.Core (see
 // player/shared-api/). Generated Core has @Required createdAt/updatedAt

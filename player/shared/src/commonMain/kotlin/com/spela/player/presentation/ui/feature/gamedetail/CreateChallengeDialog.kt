@@ -222,7 +222,7 @@ internal fun CreateChallengeDialog(
                         val save = selectedSaveState
                         if (name.isNotBlank() && save != null) {
                             onSubmit(
-                                save.id.toString(),
+                                save.id,
                                 name,
                                 description,
                                 selectedType.apiId,
