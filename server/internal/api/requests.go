@@ -38,8 +38,10 @@ type UpdatePreferencesRequest struct {
 }
 
 // UpdateGameKeyMappingRequest is the body for PUT /api/user/games/:gameId/keymapping.
+// CustomMapping is marked optional in the huma schema so handler-side validation
+// owns the 400 response (the raw gin handler used a manual presence check).
 type UpdateGameKeyMappingRequest struct {
-	CustomMapping map[string]string `json:"customMapping"`
+	CustomMapping map[string]string `json:"customMapping,omitempty" required:"false"`
 }
 
 // --- Admin user management ---
@@ -248,15 +250,17 @@ type UpdateChallengeRequest struct {
 // --- Devices ---
 
 // RegisterDeviceRequest is the body for POST /api/user/devices.
+// Fields are marked optional in the huma schema so handler-side validation
+// owns the 400 response (the raw gin handler used binding:"required" tags).
 type RegisterDeviceRequest struct {
-	DeviceUUID string `json:"deviceUuid" binding:"required"`
-	Name       string `json:"name" binding:"required"`
-	Platform   string `json:"platform" binding:"required"`
+	DeviceUUID string `json:"deviceUuid,omitempty" required:"false" binding:"required"`
+	Name       string `json:"name,omitempty" required:"false" binding:"required"`
+	Platform   string `json:"platform,omitempty" required:"false" binding:"required"`
 }
 
 // UpdateDeviceRequest is the body for PUT /api/user/devices/:id.
 type UpdateDeviceRequest struct {
-	Name string `json:"name" binding:"required"`
+	Name string `json:"name,omitempty" required:"false" binding:"required"`
 }
 
 // UpdateDevicePreferencesRequest is the body for PUT /api/user/devices/:id/preferences.
@@ -290,9 +294,11 @@ type SetUploadConsoleRequest struct {
 // --- RetroAchievements ---
 
 // LinkRAAccountRequest is the body for POST /api/user/ra/link.
+// Fields are marked optional in the huma schema so handler-side validation
+// owns the 400 response (the raw gin handler used binding:"required" tags).
 type LinkRAAccountRequest struct {
-	Username string `json:"username" binding:"required"`
-	Password string `json:"password" binding:"required"`
+	Username string `json:"username,omitempty" required:"false" binding:"required"`
+	Password string `json:"password,omitempty" required:"false" binding:"required"`
 }
 
 // UpdateRASettingsRequest is the body for PUT /api/user/ra/settings.
