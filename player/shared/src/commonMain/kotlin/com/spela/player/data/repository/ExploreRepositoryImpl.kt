@@ -74,7 +74,7 @@ class ExploreRepositoryImpl(
     }
 
     override suspend fun getThemeGames(themeId: String, page: Int, pageSize: Int): Result<List<Game>> = runCatching {
-        apiClient.getThemeGames(themeId, page, pageSize).data.map { gameDto ->
+        apiClient.getThemeGames(themeId, page, pageSize).data.orEmpty().map { gameDto ->
             gameDto.toDomain().copy(
                 coverUrl = apiClient.resolveUrl(gameDto.coverUrl),
                 heroUrl = apiClient.resolveUrl(gameDto.heroUrl),
@@ -88,7 +88,7 @@ class ExploreRepositoryImpl(
     }
 
     override suspend fun getKeywordGames(keywordId: String, page: Int, pageSize: Int): Result<List<Game>> = runCatching {
-        apiClient.getKeywordGames(keywordId, page, pageSize).data.map { gameDto ->
+        apiClient.getKeywordGames(keywordId, page, pageSize).data.orEmpty().map { gameDto ->
             gameDto.toDomain().copy(
                 coverUrl = apiClient.resolveUrl(gameDto.coverUrl),
                 heroUrl = apiClient.resolveUrl(gameDto.heroUrl),
@@ -389,7 +389,7 @@ class ExploreRepositoryImpl(
     }
 
     override suspend fun getFilteredGames(filters: Map<String, String>, page: Int, pageSize: Int): Result<List<Game>> = runCatching {
-        apiClient.getFilteredGames(filters, page, pageSize).data.map { gameDto ->
+        apiClient.getFilteredGames(filters, page, pageSize).data.orEmpty().map { gameDto ->
             gameDto.toDomain().copy(
                 coverUrl = apiClient.resolveUrl(gameDto.coverUrl),
                 heroUrl = apiClient.resolveUrl(gameDto.heroUrl),

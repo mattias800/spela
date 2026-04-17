@@ -28,6 +28,32 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
+/**
+ * Canonical GameResponse JSON for mock HTTP responses. Includes every
+ * @Required field — kotlinx-serialization's strict mode rejects payloads
+ * missing any of them.
+ */
+private fun gameJson(
+    id: String = "10",
+    title: String = "Super Mario Bros",
+    isFavorite: Boolean = false,
+    lastPlayedAt: String? = null,
+    totalPlayTime: Long = 0,
+    screenshotUrls: List<String>? = null,
+): String {
+    val screenshots = screenshotUrls?.joinToString(",", "[", "]") { "\"$it\"" } ?: "null"
+    val lastPlayed = lastPlayedAt?.let { "\"$it\"" } ?: "null"
+    return """{"id":"$id","title":"$title","consoleId":"1","consoleName":"NES",""" +
+        """"averageRating":0,"coverAspectRatio":0.75,"coverUrl":"/covers/smb.png",""" +
+        """"createdAt":"2024-01-01T00:00:00Z","updatedAt":"2024-01-01T00:00:00Z",""" +
+        """"description":"A classic platformer","developer":"Nintendo",""" +
+        """"discCount":0,"fileName":"smb.nes","fileSize":40960,"genre":"Platformer",""" +
+        """"igdbCriticsRating":0,"isFavorite":$isFavorite,"isInPlayLater":false,"isPreRelease":false,""" +
+        """"lastPlayedAt":$lastPlayed,"playable":true,"players":1,"publisher":"Nintendo",""" +
+        """"ratingCount":0,"releaseDate":"1985-09-13","scrapeAttempts":0,""" +
+        """"screenshotUrls":$screenshots,"totalPlayTime":$totalPlayTime}"""
+}
+
 @OptIn(ExperimentalCoroutinesApi::class)
 class GameRepositoryOfflineTest {
 
@@ -57,27 +83,27 @@ class GameRepositoryOfflineTest {
                             headersOf(HttpHeaders.ContentType, "application/json"),
                         )
                         path.contains("/api/consoles/") && path.endsWith("/games") -> respond(
-                            """[{"id":"10","title":"Super Mario Bros","consoleId":"1","consoleName":"NES","coverUrl":"/covers/smb.png","description":"A classic platformer","developer":"Nintendo","publisher":"Nintendo","releaseDate":"1985-09-13","genre":"Platformer","fileSize":40960,"fileName":"smb.nes","isFavorite":false,"lastPlayedAt":null,"totalPlayTime":0}]""",
+                            "[${gameJson()}]",
                             HttpStatusCode.OK,
                             headersOf(HttpHeaders.ContentType, "application/json"),
                         )
                         path.endsWith("/api/games") -> respond(
-                            """{"data":[{"id":"10","title":"Super Mario Bros","consoleId":"1","consoleName":"NES","coverUrl":"/covers/smb.png","description":"A classic platformer","developer":"Nintendo","publisher":"Nintendo","releaseDate":"1985-09-13","genre":"Platformer","fileSize":40960,"fileName":"smb.nes"}],"total":1,"page":1,"pageSize":20}""",
+                            """{"data":[${gameJson()}],"total":1,"page":1,"pageSize":20}""",
                             HttpStatusCode.OK,
                             headersOf(HttpHeaders.ContentType, "application/json"),
                         )
                         path.matches(Regex(".*/api/games/\\d+$")) -> respond(
-                            """{"id":"10","title":"Super Mario Bros","consoleId":"1","consoleName":"NES","coverUrl":"/covers/smb.png","screenshotUrls":["/screenshots/smb1.png"],"description":"A classic platformer","developer":"Nintendo","publisher":"Nintendo","releaseDate":"1985-09-13","genre":"Platformer","fileSize":40960,"fileName":"smb.nes"}""",
+                            gameJson(screenshotUrls = listOf("/screenshots/smb1.png")),
                             HttpStatusCode.OK,
                             headersOf(HttpHeaders.ContentType, "application/json"),
                         )
                         path.endsWith("/api/user/recent") -> respond(
-                            """[{"id":"10","title":"Super Mario Bros","consoleId":"1","consoleName":"NES","lastPlayedAt":"2026-02-20T10:00:00Z","totalPlayTime":3600}]""",
+                            "[${gameJson(lastPlayedAt = "2026-02-20T10:00:00Z", totalPlayTime = 3600L)}]",
                             HttpStatusCode.OK,
                             headersOf(HttpHeaders.ContentType, "application/json"),
                         )
                         path.endsWith("/api/user/favorites") -> respond(
-                            """[{"id":"10","title":"Super Mario Bros","consoleId":"1","consoleName":"NES","isFavorite":true}]""",
+                            "[${gameJson(isFavorite = true)}]",
                             HttpStatusCode.OK,
                             headersOf(HttpHeaders.ContentType, "application/json"),
                         )

@@ -86,104 +86,22 @@ data class ConsoleDto(
     val updatedAt: String? = null,
 )
 
-@Serializable
-data class GameDiscDto(
-    val discNumber: Int,
-    val fileName: String,
-    val fileSize: Long,
-)
-
-/** Matches GameResponse in responses.go - enriched with consoleName, isFavorite, etc. */
-@Serializable
-data class GameDto(
-    val id: String,
-    val title: String,
-    val consoleId: String,
-    val consoleName: String = "",
-    val coverAspectRatio: Double = 0.75,
-    val fileName: String = "",
-    val fileSize: Long = 0,
-    val coverUrl: String? = null,
-    val screenshotUrls: List<String> = emptyList(),
-    val description: String? = null,
-    val developer: String? = null,
-    val publisher: String? = null,
-    val releaseDate: String? = null,
-    val genre: String? = null,
-    val players: Int = 0,
-    val igdbCriticsRating: Double = 0.0,
-    val averageRating: Double = 0.0,
-    val ratingCount: Long = 0,
-    val userRating: Int? = null,
-    val coreOverride: String? = null,
-    val scraperId: String? = null,
-    val scrapeAttempts: Int = 0,
-    val isFavorite: Boolean = false,
-    val isInPlayLater: Boolean = false,
-    val lastPlayedAt: String? = null,
-    val totalPlayTime: Long = 0,
-    val discCount: Int = 0,
-    val discs: List<GameDiscDto> = emptyList(),
-    val achievementsWarning: String? = null,
-    val verificationStatus: String? = null,
-    val verificationTag: String? = null,
-    val region: String? = null,
-    val playable: Boolean = true,
-    val heroUrl: String? = null,
-    val logoUrl: String? = null,
-    val revision: String? = null,
-    val tags: String? = null,
-    val isPreRelease: Boolean = false,
-    val variantCount: Int = 0,
-    val groupKey: String? = null,
-    val variants: List<GameVariantDto> = emptyList(),
-    val parentGame: ParentGameDto? = null,
-    val romHacks: List<RomHackGameDto> = emptyList(),
-    val timeToBeatHastily: Int = 0,
-    val timeToBeatNormally: Int = 0,
-    val timeToBeatCompletely: Int = 0,
-    val partyInfo: String = "",
-    val createdAt: String? = null,
-    val updatedAt: String? = null,
-)
-
-@Serializable
-data class GameVariantDto(
-    val id: String,
-    val title: String,
-    val fileName: String = "",
-    val region: String? = null,
-    val revision: String? = null,
-    val tags: String? = null,
-    val isPreRelease: Boolean = false,
-    val fileSize: Long = 0,
-    val verificationStatus: String? = null,
-)
-
-/** Minimal reference to a parent game for standalone ROM hacks. */
-@Serializable
-data class ParentGameDto(
-    val id: String,
-    val title: String,
-    val coverUrl: String? = null,
-)
-
-/** Minimal reference to a standalone ROM hack based on a game. */
-@Serializable
-data class RomHackGameDto(
-    val id: String,
-    val title: String,
-    val coverUrl: String? = null,
-)
-
-/** Wrapper for GET /api/games which returns {data, total, page, pageSize} */
-@Serializable
-data class GameListResponse(
-    val data: List<GameDto>,
-    val total: Long,
-    val page: Int,
-    val pageSize: Int,
-)
+// GameDto / GameDiscDto / GameVariantDto / ParentGameDto / RomHackGameDto
+// replaced by generated counterparts in com.spela.client.models — see
+// player/shared-api/. Aliased here so the 39 places that nest these types
+// (other DTOs, paginated wrappers, etc.) keep compiling unchanged.
+//
+// Consumers that read raw fields on the DTO will see the generated types'
+// primary shape (Long / Instant / non-null strings where the server sends
+// empty). Domain translation in DtoMappers.kt handles the conversions
+// (Long->Int, Instant->String, empty-string -> null). New code should
+// prefer the generated names directly.
+typealias GameDto = com.spela.client.models.GameResponse
+typealias GameDiscDto = com.spela.client.models.DiscResponse
+typealias GameVariantDto = com.spela.client.models.VariantResponse
+typealias ParentGameDto = com.spela.client.models.ParentGameResponse
+typealias RomHackGameDto = com.spela.client.models.RomHackGameResponse
+typealias GameListResponse = com.spela.client.models.PaginatedResponseGameResponse
 
 @Serializable
 data class SaveStateDto(
