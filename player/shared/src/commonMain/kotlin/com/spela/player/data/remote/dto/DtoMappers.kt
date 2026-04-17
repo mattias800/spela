@@ -215,31 +215,31 @@ fun com.spela.client.models.RatingSummaryResponse.toDomain(): RatingSummary = Ra
     },
 )
 
-fun OnlineUserGameDto.toDomain(): OnlineUserGame = OnlineUserGame(
+fun com.spela.client.models.OnlineUserGameResponse.toDomain(): OnlineUserGame = OnlineUserGame(
     id = id,
     title = title,
     coverUrl = coverUrl,
     consoleName = consoleName,
 )
 
-fun OnlineUserDto.toDomain(): OnlineUser = OnlineUser(
+fun com.spela.client.models.OnlineUserResponse.toDomain(): OnlineUser = OnlineUser(
     id = id,
     username = username,
     avatarUrl = avatarUrl,
     currentGame = currentGame?.toDomain(),
 )
 
-fun ActivityEventDto.toDomain(): ActivityEvent = ActivityEvent(
+fun com.spela.client.models.ActivityEventResponse.toDomain(): ActivityEvent = ActivityEvent(
     id = id,
     userId = userId,
     username = username,
-    userAvatarUrl = userAvatarUrl,
+    userAvatarUrl = avatarUrl, // server sends `avatarUrl`
     eventType = eventType,
     gameId = gameId,
     gameTitle = gameTitle,
     gameCoverUrl = gameCoverUrl,
-    gameConsoleName = gameConsoleName,
-    createdAt = createdAt,
+    gameConsoleName = consoleName, // server sends `consoleName`
+    createdAt = createdAt.toString(),
 )
 
 fun LibretroCoreDto.toDomain(): LibretroCore = LibretroCore(
@@ -251,31 +251,31 @@ fun LibretroCoreDto.toDomain(): LibretroCore = LibretroCore(
     downloadUrl = downloadUrl,
 )
 
-fun HeatmapEntryDto.toDomain(): HeatmapEntry = HeatmapEntry(
+fun com.spela.client.models.HeatmapEntry.toDomain(): HeatmapEntry = HeatmapEntry(
     date = date,
     playTime = playTime,
 )
 
-fun PublicProfileGameDto.toDomain(): PublicProfileGame = PublicProfileGame(
+fun com.spela.client.models.PublicProfileGame.toDomain(): PublicProfileGame = PublicProfileGame(
     id = id,
     title = title,
     coverUrl = coverUrl,
     consoleName = consoleName,
-    playTime = playTime,
+    playTime = playTime ?: 0L,
 )
 
-fun PublicProfileDto.toDomain(): PublicProfile = PublicProfile(
+fun com.spela.client.models.PublicProfileResponse.toDomain(): PublicProfile = PublicProfile(
     id = id,
     username = username,
     avatarUrl = avatarUrl,
-    memberSince = memberSince,
+    memberSince = memberSince.toString(),
     isOnline = isOnline,
     currentGame = currentGame?.toDomain(),
     totalPlayTime = totalPlayTime,
     gamesPlayed = gamesPlayed,
-    favoriteGames = favoriteGames.map { it.toDomain() },
-    recentGames = recentGames.map { it.toDomain() },
-    topGames = topGames.map { it.toDomain() },
+    favoriteGames = favoriteGames.orEmpty().map { it.toDomain() },
+    recentGames = recentGames.orEmpty().map { it.toDomain() },
+    topGames = topGames.orEmpty().map { it.toDomain() },
 )
 
 // Shared Session mappers

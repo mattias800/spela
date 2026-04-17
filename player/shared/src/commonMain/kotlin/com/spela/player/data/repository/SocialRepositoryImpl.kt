@@ -16,7 +16,7 @@ class SocialRepositoryImpl(
 ) : SocialRepository {
 
     override suspend fun getOnlineUsers(): Result<List<OnlineUser>> = runCatching {
-        apiClient.getOnlineUsers().users.map { dto ->
+        apiClient.getOnlineUsers().users.orEmpty().map { dto ->
             val user = dto.toDomain()
             user.copy(
                 avatarUrl = apiClient.resolveUrl(user.avatarUrl),
@@ -28,7 +28,7 @@ class SocialRepositoryImpl(
     }
 
     override suspend fun getActivityFeed(page: Int, pageSize: Int): Result<List<ActivityEvent>> = runCatching {
-        apiClient.getActivityFeed(page = page, pageSize = pageSize).data.map { dto ->
+        apiClient.getActivityFeed(page = page, pageSize = pageSize).data.orEmpty().map { dto ->
             val event = dto.toDomain()
             event.copy(
                 userAvatarUrl = apiClient.resolveUrl(event.userAvatarUrl),
