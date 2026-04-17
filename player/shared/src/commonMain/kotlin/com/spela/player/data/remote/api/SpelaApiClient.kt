@@ -883,11 +883,13 @@ class SpelaApiClient(
 
     // RetroAchievements
 
-    suspend fun getRAStatus(): RAStatusDto {
+    suspend fun getRAStatus(): com.spela.client.models.RAStatusResponse {
         return client.get("$baseUrl/api/user/ra/status").body()
     }
 
-    suspend fun linkRA(request: RALinkRequestDto): RAStatusDto {
+    suspend fun linkRA(
+        request: com.spela.client.models.LinkRAAccountRequest,
+    ): com.spela.client.models.RAStatusResponse {
         return client.post("$baseUrl/api/user/ra/link") {
             setBody(request)
         }.body()
@@ -897,11 +899,13 @@ class SpelaApiClient(
         client.delete("$baseUrl/api/user/ra/link")
     }
 
-    suspend fun getRAToken(): RATokenResponseDto {
+    suspend fun getRAToken(): com.spela.client.models.RATokenResponse {
         return client.get("$baseUrl/api/user/ra/token").body()
     }
 
-    suspend fun updateRASettings(request: RASettingsRequestDto): RAStatusDto {
+    suspend fun updateRASettings(
+        request: com.spela.client.models.UpdateRASettingsRequest,
+    ): com.spela.client.models.RAStatusResponse {
         return client.put("$baseUrl/api/user/ra/settings") {
             setBody(request)
         }.body()

@@ -371,29 +371,12 @@ data class CoreNameResponse(
 
 // RetroAchievements
 
-@Serializable
-data class RAStatusDto(
-    val linked: Boolean = false,
-    val username: String = "",
-    val hardcoreEnabled: Boolean = false,
-)
-
-@Serializable
-data class RALinkRequestDto(
-    val username: String,
-    val password: String,
-)
-
-@Serializable
-data class RATokenResponseDto(
-    val username: String,
-    val token: String,
-)
-
-@Serializable
-data class RASettingsRequestDto(
-    val hardcoreEnabled: Boolean,
-)
+// RA DTOs replaced by generated counterparts in
+// com.spela.client.models — see player/shared-api/:
+//   RAStatusDto           -> RAStatusResponse
+//   RALinkRequestDto      -> LinkRAAccountRequest
+//   RATokenResponseDto    -> RATokenResponse
+//   RASettingsRequestDto  -> UpdateRASettingsRequest
 
 // Public Profile
 
