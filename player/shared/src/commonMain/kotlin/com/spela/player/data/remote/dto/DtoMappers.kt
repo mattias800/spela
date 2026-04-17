@@ -300,75 +300,82 @@ fun com.spela.client.models.PublicProfileResponse.toDomain(): PublicProfile = Pu
 )
 
 // Shared Session mappers
+//
+// The generated types use kotlinx.datetime.Instant for timestamps and
+// kotlin.Long for counts; the domain models keep String timestamps and Int
+// counts to stay consistent with the rest of the player. The mappers handle
+// the conversion.
+//
+// Fields not present on the server (description, lastActivityAt,
+// gameConsoleName on invites, lastPlayedAt, isOnline, inviterAvatarUrl) get
+// their Kotlin defaults from the domain model constructors.
 
-fun SharedSessionDto.toDomain(): SharedSession = SharedSession(
+fun com.spela.client.models.SharedSessionResponse.toDomain(): SharedSession = SharedSession(
     id = id,
     name = name,
-    ownerId = ownerId,
-    ownerUsername = ownerUsername,
     gameId = gameId,
     gameTitle = gameTitle,
     gameCoverUrl = gameCoverUrl,
-    gameConsoleName = gameConsoleName,
-    status = status,
-    memberCount = memberCount,
-    activeUserId = activeUserId,
-    lastActivityAt = lastActivityAt,
-    createdAt = createdAt,
-    updatedAt = updatedAt,
-)
-
-fun SharedSessionDetailDto.toDomain(): SharedSessionDetail = SharedSessionDetail(
-    id = id,
-    name = name,
+    gameConsoleName = consoleName.orEmpty(),
     ownerId = ownerId,
     ownerUsername = ownerUsername,
+    status = status,
+    memberCount = memberCount.toInt(),
+    activeUserId = activeUserId,
+    lastActivityAt = updatedAt.toString(),
+    createdAt = createdAt.toString(),
+    updatedAt = updatedAt.toString(),
+)
+
+fun com.spela.client.models.SharedSessionDetailResponse.toDomain(): SharedSessionDetail = SharedSessionDetail(
+    id = id,
+    name = name,
     gameId = gameId,
     gameTitle = gameTitle,
     gameCoverUrl = gameCoverUrl,
-    gameConsoleName = gameConsoleName,
+    gameConsoleName = consoleName.orEmpty(),
+    ownerId = ownerId,
+    ownerUsername = ownerUsername,
     status = status,
-    memberCount = memberCount,
+    memberCount = memberCount.toInt(),
     activeUserId = activeUserId,
-    members = members.map { it.toDomain() },
-    lastActivityAt = lastActivityAt,
-    createdAt = createdAt,
-    updatedAt = updatedAt,
+    members = members.orEmpty().map { it.toDomain() },
+    lastActivityAt = updatedAt.toString(),
+    createdAt = createdAt.toString(),
+    updatedAt = updatedAt.toString(),
 )
 
-fun SharedSessionMemberDto.toDomain(): SharedSessionMember = SharedSessionMember(
+fun com.spela.client.models.SharedSessionMemberResponse.toDomain(): SharedSessionMember = SharedSessionMember(
     userId = userId,
     username = username,
     avatarUrl = avatarUrl,
     role = role,
-    joinedAt = joinedAt,
-    lastPlayedAt = lastPlayedAt,
-    isOnline = isOnline,
+    joinedAt = joinedAt.toString(),
+    // lastPlayedAt / isOnline are not sent by the server — domain defaults apply.
 )
 
-fun SharedSessionInvitationDto.toDomain(): SharedSessionInvitation = SharedSessionInvitation(
+fun com.spela.client.models.SharedSessionInviteResponse.toDomain(): SharedSessionInvitation = SharedSessionInvitation(
     id = id,
     sharedSessionId = sharedSessionId,
     sharedSessionName = sharedSessionName,
-    gameId = gameId,
     gameTitle = gameTitle,
-    gameCoverUrl = gameCoverUrl,
-    gameConsoleName = gameConsoleName,
+    // gameId / gameCoverUrl / gameConsoleName / inviterAvatarUrl are not sent —
+    // domain defaults apply.
     inviterUsername = inviterUsername,
-    inviterAvatarUrl = inviterAvatarUrl,
-    createdAt = createdAt,
+    createdAt = createdAt.toString(),
 )
 
-fun SharedSessionSaveDto.toDomain(): SharedSessionSave = SharedSessionSave(
-    id = id,
+fun com.spela.client.models.SharedSessionSaveResponse.toDomain(): SharedSessionSave = SharedSessionSave(
+    // Server sends id as String; domain keeps Long. The backing column is a
+    // 64-bit integer so toLong() is safe.
+    id = id.toLong(),
     sharedSessionId = sharedSessionId,
     username = username,
-    avatarUrl = avatarUrl,
     name = name,
     fileSize = fileSize,
     isAuto = isAuto,
-    createdAt = createdAt,
-    updatedAt = updatedAt,
+    createdAt = createdAt.toString(),
+    updatedAt = updatedAt.toString(),
 )
 
 // Collection mappers

@@ -1,8 +1,8 @@
 package com.spela.player.data.repository
 
+import com.spela.client.models.CreateSharedSessionRequest
+import com.spela.client.models.InviteToSharedSessionRequest
 import com.spela.player.data.remote.api.SpelaApiClient
-import com.spela.player.data.remote.dto.CreateSharedSessionRequest
-import com.spela.player.data.remote.dto.InviteToSharedSessionRequest
 import com.spela.player.data.remote.dto.toDomain
 import com.spela.player.domain.model.SharedSession
 import com.spela.player.domain.model.SharedSessionDetail
@@ -27,12 +27,15 @@ class SharedSessionRepositoryImpl(
     }
 
     override suspend fun getPendingInvitationCount(): Result<Int> = runCatching {
-        apiClient.getPendingInvitationCount().count
+        apiClient.getPendingInvitationCount().count.toInt()
     }
 
     override suspend fun createSharedSession(name: String, gameId: String, description: String): Result<SharedSessionDetail> =
         runCatching {
-            apiClient.createSharedSession(CreateSharedSessionRequest(name, gameId, description)).toDomain()
+            // description is retained on the repository API for backwards
+            // compatibility but is not sent — the server's
+            // CreateSharedSessionRequest only accepts name + gameId.
+            apiClient.createSharedSession(CreateSharedSessionRequest(name = name, gameId = gameId)).toDomain()
         }
 
     override suspend fun deleteSharedSession(sharedSessionId: String): Result<Unit> = runCatching {
@@ -40,7 +43,7 @@ class SharedSessionRepositoryImpl(
     }
 
     override suspend fun inviteUser(sharedSessionId: String, username: String): Result<Unit> = runCatching {
-        apiClient.inviteToSharedSession(sharedSessionId, InviteToSharedSessionRequest(username))
+        apiClient.inviteToSharedSession(sharedSessionId, InviteToSharedSessionRequest(username = username))
     }
 
     override suspend fun acceptInvitation(invitationId: String): Result<Unit> = runCatching {

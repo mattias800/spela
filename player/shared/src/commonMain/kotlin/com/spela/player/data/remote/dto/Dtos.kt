@@ -165,112 +165,37 @@ data class CoreNameResponse(
 //   HeatmapEntryDto       -> HeatmapEntry
 // (all in com.spela.client.models)
 
-// Shared Session
+// Shared Session — hand-written DTOs replaced by generated counterparts in
+// com.spela.client.models. Aliased below so existing call sites keep working.
+//
+// Silent-bug field renames vs. the old hand-written DTOs (these were never
+// actually delivered by the server, so the DTO fields were always their
+// Kotlin defaults — empty string / null / false):
+//   SharedSessionDto.description             -> not sent (always "")
+//   SharedSessionDto.gameConsoleName         -> server sends `consoleName`
+//   SharedSessionDto.lastActivityAt          -> not sent; mapper uses updatedAt
+//   SharedSessionDetailDto.description       -> not sent
+//   SharedSessionDetailDto.gameConsoleName   -> server sends `consoleName`
+//   SharedSessionDetailDto.lastActivityAt    -> not sent; mapper uses updatedAt
+//   SharedSessionMemberDto.lastPlayedAt      -> not sent
+//   SharedSessionMemberDto.isOnline          -> not sent; mapper defaults false
+//   SharedSessionInvitationDto.gameId        -> not sent
+//   SharedSessionInvitationDto.gameCoverUrl  -> not sent
+//   SharedSessionInvitationDto.gameConsoleName -> not sent
+//   SharedSessionInvitationDto.inviterAvatarUrl -> not sent
+//   SharedSessionSaveDto.gameId / .userId / .avatarUrl -> not sent
+//
+// CreateSharedSessionRequest.description was also never read by the server.
 
-@Serializable
-data class SharedSessionDto(
-    val id: String,
-    val name: String,
-    val description: String = "",
-    val gameId: String,
-    val gameTitle: String = "",
-    val gameCoverUrl: String? = null,
-    val gameConsoleName: String = "",
-    val ownerId: String,
-    val ownerUsername: String = "",
-    val status: String = "active",
-    val memberCount: Int = 0,
-    val activeUserId: String? = null,
-    val lastActivityAt: String = "",
-    val createdAt: String = "",
-    val updatedAt: String = "",
-)
-
-@Serializable
-data class SharedSessionDetailDto(
-    val id: String,
-    val name: String,
-    val description: String = "",
-    val gameId: String,
-    val gameTitle: String = "",
-    val gameCoverUrl: String? = null,
-    val gameConsoleName: String = "",
-    val ownerId: String,
-    val ownerUsername: String = "",
-    val status: String = "active",
-    val memberCount: Int = 0,
-    val activeUserId: String? = null,
-    val lastActivityAt: String = "",
-    val createdAt: String = "",
-    val updatedAt: String = "",
-    val members: List<SharedSessionMemberDto> = emptyList(),
-)
-
-@Serializable
-data class SharedSessionMemberDto(
-    val userId: String,
-    val username: String,
-    val avatarUrl: String? = null,
-    val role: String = "member",
-    val joinedAt: String = "",
-    val lastPlayedAt: String? = null,
-    val isOnline: Boolean = false,
-)
-
-@Serializable
-data class SharedSessionInvitationDto(
-    val id: String,
-    val sharedSessionId: String,
-    val sharedSessionName: String = "",
-    val gameId: String = "",
-    val gameTitle: String = "",
-    val gameCoverUrl: String? = null,
-    val gameConsoleName: String = "",
-    val inviterUsername: String = "",
-    val inviterAvatarUrl: String? = null,
-    val createdAt: String = "",
-)
-
-@Serializable
-data class SharedSessionSaveDto(
-    val id: Long,
-    val sharedSessionId: String = "",
-    val gameId: Long = 0,
-    val userId: Long = 0,
-    val username: String = "",
-    val avatarUrl: String? = null,
-    val name: String,
-    val fileSize: Long = 0,
-    val isAuto: Boolean = false,
-    val createdAt: String = "",
-    val updatedAt: String = "",
-)
-
-// SharedSessionsResponse / SharedSessionInvitationsResponse removed — server
-// returns bare arrays for GET /api/shared-sessions and
-// GET /api/user/shared-session-invites. See SpelaApiClient.
-
-@Serializable
-data class CreateSharedSessionRequest(
-    val name: String,
-    val gameId: String,
-    val description: String = "",
-)
-
-@Serializable
-data class InviteToSharedSessionRequest(
-    val username: String,
-)
-
-@Serializable
-data class TakeTurnResponse(
-    val turnToken: String,
-)
-
-@Serializable
-data class SharedSessionInvitationCountResponse(
-    val count: Int = 0,
-)
+typealias SharedSessionDto = com.spela.client.models.SharedSessionResponse
+typealias SharedSessionDetailDto = com.spela.client.models.SharedSessionDetailResponse
+typealias SharedSessionMemberDto = com.spela.client.models.SharedSessionMemberResponse
+typealias SharedSessionInvitationDto = com.spela.client.models.SharedSessionInviteResponse
+typealias SharedSessionSaveDto = com.spela.client.models.SharedSessionSaveResponse
+typealias CreateSharedSessionRequest = com.spela.client.models.CreateSharedSessionRequest
+typealias InviteToSharedSessionRequest = com.spela.client.models.InviteToSharedSessionRequest
+typealias TakeTurnResponse = com.spela.client.models.SharedSessionTakeTurnResponse
+typealias SharedSessionInvitationCountResponse = com.spela.client.models.SharedSessionInviteCountResponse
 
 // BIOS — BiosFileDto / BiosConsoleDto / BiosConsoleFileDto /
 // BiosStatusResponse replaced by:
