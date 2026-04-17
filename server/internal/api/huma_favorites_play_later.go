@@ -73,6 +73,16 @@ type RemoveFromPlayLaterOutput struct {
 	Body MessageResponse
 }
 
+// ReorderPlayLaterInput is the input for PUT /api/user/play-later/reorder.
+type ReorderPlayLaterInput struct {
+	Body ReorderPlayLaterRequest
+}
+
+// ReorderPlayLaterOutput wraps the reorder success message.
+type ReorderPlayLaterOutput struct {
+	Body MessageResponse
+}
+
 // RegisterFavoriteRoutes wires the favorites endpoints into the huma API.
 func RegisterFavoriteRoutes(api huma.API, h *UserHandler, jwtSecret string, database *gorm.DB, userLimiter *RateLimiter) {
 	requireAuth := RequireAuth(jwtSecret, database)
@@ -154,6 +164,17 @@ func RegisterPlayLaterRoutes(api huma.API, h *PlayLaterHandler, jwtSecret string
 		Middlewares: mw,
 		Security:    sec,
 	}, h.HumaRemoveFromPlayLater)
+
+	huma.Register(api, huma.Operation{
+		OperationID: "reorderPlayLater",
+		Method:      http.MethodPut,
+		Path:        "/api/user/play-later/reorder",
+		Summary:     "Reorder the caller's Play Later queue",
+		Description: "Replaces the user-defined order of the caller's Play Later queue. The supplied gameIds list must include every game currently in the queue.",
+		Tags:        []string{"play-later"},
+		Middlewares: mw,
+		Security:    sec,
+	}, h.HumaReorderPlayLater)
 }
 
 // --- Favorite handlers ---
@@ -318,4 +339,54 @@ func (h *PlayLaterHandler) HumaRemoveFromPlayLater(ctx context.Context, in *Remo
 	}
 
 	return &RemoveFromPlayLaterOutput{Body: MessageResponse{Message: "removed from play later"}}, nil
+}
+
+// HumaReorderPlayLater is the huma handler for PUT /api/user/play-later/reorder.
+func (h *PlayLaterHandler) HumaReorderPlayLater(ctx context.Context, in *ReorderPlayLaterInput) (*ReorderPlayLaterOutput, error) {
+	uid := UserIDFromContext(ctx)
+
+	if len(in.Body.GameIDs) == 0 {
+		return nil, huma.Error400BadRequest("gameIds required")
+	}
+
+	parsedIDs := make([]uint, 0, len(in.Body.GameIDs))
+	for _, idStr := range in.Body.GameIDs {
+		id, err := strconv.ParseUint(idStr, 10, 64)
+		if err != nil {
+			return nil, huma.Error400BadRequest("invalid game IDs")
+		}
+		parsedIDs = append(parsedIDs, uint(id))
+	}
+
+	var items []db.PlayLaterItem
+	h.DB.Where("user_id = ?", uid).Find(&items)
+
+	itemByGameID := make(map[uint]*db.PlayLaterItem, len(items))
+	for i := range items {
+		itemByGameID[items[i].GameID] = &items[i]
+	}
+
+	for _, gid := range parsedIDs {
+		if _, ok := itemByGameID[gid]; !ok {
+			return nil, huma.Error400BadRequest("invalid game IDs")
+		}
+	}
+
+	if len(parsedIDs) != len(items) {
+		return nil, huma.Error400BadRequest("gameIds must include all games in queue")
+	}
+
+	if err := h.DB.Transaction(func(tx *gorm.DB) error {
+		for i, gid := range parsedIDs {
+			item := itemByGameID[gid]
+			if err := tx.Model(item).Update("position", i).Error; err != nil {
+				return err
+			}
+		}
+		return nil
+	}); err != nil {
+		return nil, huma.Error500InternalServerError("failed to reorder queue")
+	}
+
+	return &ReorderPlayLaterOutput{Body: MessageResponse{Message: "queue reordered"}}, nil
 }

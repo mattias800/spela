@@ -127,6 +127,44 @@ type DeclineNetplayInviteByCodeOutput struct {
 	Body MessageResponse
 }
 
+// ListNetplaySessionInvitesInput is the input for GET /api/netplay/sessions/{id}/invites.
+type ListNetplaySessionInvitesInput struct {
+	ID string `path:"id" doc:"Netplay session ID."`
+}
+
+// ListNetplaySessionInvitesOutput wraps the session invites list.
+type ListNetplaySessionInvitesOutput struct {
+	Body []NetplayInviteResponse
+}
+
+// ListMyNetplayInvitesInput is the input for GET /api/netplay/invites.
+type ListMyNetplayInvitesInput struct{}
+
+// ListMyNetplayInvitesResponse mirrors the raw gin wire format which wraps
+// the invite list with a total counter.
+type ListMyNetplayInvitesResponse struct {
+	Data  []NetplayInviteResponse `json:"data"`
+	Total int                     `json:"total"`
+}
+
+// ListMyNetplayInvitesOutput wraps the invites-with-total response.
+type ListMyNetplayInvitesOutput struct {
+	Body ListMyNetplayInvitesResponse
+}
+
+// PendingNetplayInviteCountInput is the input for GET /api/netplay/invites/count.
+type PendingNetplayInviteCountInput struct{}
+
+// PendingNetplayInviteCountResponse is the wire format for the count endpoint.
+type PendingNetplayInviteCountResponse struct {
+	Count int64 `json:"count"`
+}
+
+// PendingNetplayInviteCountOutput wraps the pending-count response.
+type PendingNetplayInviteCountOutput struct {
+	Body PendingNetplayInviteCountResponse
+}
+
 // RegisterNetplayRoutes wires the netplay session + invite endpoints into the
 // huma API. The websocket handler stays on raw gin.
 func RegisterNetplayRoutes(api huma.API, h *NetplayHandler, jwtSecret string, database *gorm.DB, userLimiter *RateLimiter) {
@@ -246,6 +284,39 @@ func RegisterNetplayRoutes(api huma.API, h *NetplayHandler, jwtSecret string, da
 		Middlewares: mw,
 		Security:    sec,
 	}, h.HumaDeclineNetplayInviteByCode)
+
+	huma.Register(api, huma.Operation{
+		OperationID: "listNetplaySessionInvites",
+		Method:      http.MethodGet,
+		Path:        "/api/netplay/sessions/{id}/invites",
+		Summary:     "List invites for a netplay session",
+		Description: "Host-only. Returns every invite ever sent for the specified netplay session, newest first.",
+		Tags:        []string{"netplay"},
+		Middlewares: mw,
+		Security:    sec,
+	}, h.HumaListNetplaySessionInvites)
+
+	huma.Register(api, huma.Operation{
+		OperationID: "listMyNetplayInvites",
+		Method:      http.MethodGet,
+		Path:        "/api/netplay/invites",
+		Summary:     "List pending netplay invites for the caller",
+		Description: "Returns the caller's pending netplay invites wrapped in a { data, total } envelope.",
+		Tags:        []string{"netplay"},
+		Middlewares: mw,
+		Security:    sec,
+	}, h.HumaListMyNetplayInvites)
+
+	huma.Register(api, huma.Operation{
+		OperationID: "getPendingNetplayInviteCount",
+		Method:      http.MethodGet,
+		Path:        "/api/netplay/invites/count",
+		Summary:     "Count pending netplay invites for the caller",
+		Description: "Returns the number of pending netplay invites for the authenticated user.",
+		Tags:        []string{"netplay"},
+		Middlewares: mw,
+		Security:    sec,
+	}, h.HumaGetPendingNetplayInviteCount)
 }
 
 // --- Handlers ---
@@ -690,4 +761,72 @@ func (h *NetplayHandler) HumaDeclineNetplayInviteByCode(ctx context.Context, in 
 	}
 
 	return &DeclineNetplayInviteByCodeOutput{Body: MessageResponse{Message: "invite declined"}}, nil
+}
+
+// HumaListNetplaySessionInvites is the huma handler for GET /api/netplay/sessions/{id}/invites.
+func (h *NetplayHandler) HumaListNetplaySessionInvites(ctx context.Context, in *ListNetplaySessionInvitesInput) (*ListNetplaySessionInvitesOutput, error) {
+	uid := UserIDFromContext(ctx)
+
+	session, err := h.humaLoadNetplaySession(in.ID)
+	if err != nil {
+		return nil, err
+	}
+
+	if session.HostUserID != uid {
+		return nil, huma.Error403Forbidden("only the host can view session invites")
+	}
+
+	var invites []db.NetplayInvite
+	if err := h.DB.Where("netplay_session_id = ?", session.ID).
+		Preload("Inviter").Preload("Invitee").
+		Preload("NetplaySession").Preload("NetplaySession.HostUser").
+		Preload("NetplaySession.Game").Preload("NetplaySession.Game.Console").
+		Order("created_at DESC").
+		Find(&invites).Error; err != nil {
+		return nil, huma.Error500InternalServerError("failed to fetch invites")
+	}
+
+	result := make([]NetplayInviteResponse, 0, len(invites))
+	for _, inv := range invites {
+		result = append(result, h.toNetplayInviteResponse(inv))
+	}
+
+	return &ListNetplaySessionInvitesOutput{Body: result}, nil
+}
+
+// HumaListMyNetplayInvites is the huma handler for GET /api/netplay/invites.
+func (h *NetplayHandler) HumaListMyNetplayInvites(ctx context.Context, _ *ListMyNetplayInvitesInput) (*ListMyNetplayInvitesOutput, error) {
+	uid := UserIDFromContext(ctx)
+
+	var invites []db.NetplayInvite
+	if err := h.DB.Where("invitee_id = ? AND status = ?", uid, "pending").
+		Preload("Inviter").Preload("Invitee").
+		Preload("NetplaySession").Preload("NetplaySession.HostUser").
+		Preload("NetplaySession.Game").Preload("NetplaySession.Game.Console").
+		Order("created_at DESC").
+		Find(&invites).Error; err != nil {
+		return nil, huma.Error500InternalServerError("failed to fetch invites")
+	}
+
+	result := make([]NetplayInviteResponse, 0, len(invites))
+	for _, inv := range invites {
+		result = append(result, h.toNetplayInviteResponse(inv))
+	}
+
+	return &ListMyNetplayInvitesOutput{Body: ListMyNetplayInvitesResponse{
+		Data:  result,
+		Total: len(result),
+	}}, nil
+}
+
+// HumaGetPendingNetplayInviteCount is the huma handler for GET /api/netplay/invites/count.
+func (h *NetplayHandler) HumaGetPendingNetplayInviteCount(ctx context.Context, _ *PendingNetplayInviteCountInput) (*PendingNetplayInviteCountOutput, error) {
+	uid := UserIDFromContext(ctx)
+
+	var count int64
+	if err := h.DB.Model(&db.NetplayInvite{}).Where("invitee_id = ? AND status = ?", uid, "pending").Count(&count).Error; err != nil {
+		return nil, huma.Error500InternalServerError("failed to count invites")
+	}
+
+	return &PendingNetplayInviteCountOutput{Body: PendingNetplayInviteCountResponse{Count: count}}, nil
 }

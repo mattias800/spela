@@ -253,6 +253,11 @@ func NewRouter(cfg Config) (*gin.Engine, func()) {
 	emulatorErrorHandler := &SystemEventHandler{DB: cfg.DB}
 	RegisterUserExtraRoutes(humaAPI, userHandler, statsHandler, gameKeyMappingHandler, emulatorErrorHandler, cfg.JWTSecret, cfg.DB, userLimiter)
 	RegisterMiscRoutes(humaAPI, sessionHandler, savedSearchHandler, adminHandler, cfg.JWTSecret, cfg.DB, userLimiter)
+	RegisterCollectionRoutes(humaAPI, collectionHandler, cfg.JWTSecret, cfg.DB, userLimiter)
+	RegisterAdminGameRoutes(humaAPI, gameHandler, adminHandler, igdbHandler, cfg.JWTSecret, cfg.DB, userLimiter)
+	RegisterUploadAdminRoutes(humaAPI, uploadHandler, cfg.JWTSecret, cfg.DB, userLimiter)
+	RegisterSocialExtraRoutes(humaAPI, socialHandler, cfg.JWTSecret, cfg.DB, userLimiter)
+	RegisterProfileRoutes(humaAPI, exploreHandler, cfg.JWTSecret, cfg.DB, userLimiter)
 
 	// Public auth routes — rate limit login/register/setup to prevent brute force,
 	// but leave refresh and setup-status unrestricted (called frequently during normal use).
@@ -398,9 +403,8 @@ func NewRouter(cfg Config) (*gin.Engine, func()) {
 		// RegisterUserMutationRoutes above).
 		// /user/stats, /user/play-stats, /user/play-heatmap, /user/recent
 		// migrated to huma (see RegisterUserExtraRoutes above).
-		api.GET("/user/taste-profile", exploreHandler.GetTasteProfile)
-		api.GET("/user/explorer-badges", exploreHandler.GetExplorerBadges)
-		api.GET("/user/completionist-map", exploreHandler.GetCompletionistMap)
+		// /user/taste-profile, /user/explorer-badges, /user/completionist-map —
+		// migrated to huma (see RegisterProfileRoutes above).
 		// /user/favorites (GET + POST + DELETE) — migrated to huma
 		// (see RegisterFavoriteRoutes above).
 
@@ -410,78 +414,41 @@ func NewRouter(cfg Config) (*gin.Engine, func()) {
 
 		// Saved Searches — migrated to huma (see RegisterMiscRoutes above).
 
-		// Play Later — read + add + remove migrated to huma
-		// (see RegisterPlayLaterRoutes above). Reorder stays on gin for now.
-		api.PUT("/user/play-later/reorder", playLaterHandler.ReorderPlayLater)
+		// Play Later — read + add + remove + reorder migrated to huma
+		// (see RegisterPlayLaterRoutes above).
 
 		// Devices — migrated to huma (see RegisterDeviceRoutes above).
 
-		// Collections
-		api.POST("/collections", collectionHandler.CreateCollection)
-		api.GET("/collections", collectionHandler.ListMyCollections)
-		api.GET("/collections/public", collectionHandler.ListPublicCollections)
-		api.GET("/collections/:id", collectionHandler.GetCollection)
-		api.PUT("/collections/:id", collectionHandler.UpdateCollection)
-		api.DELETE("/collections/:id", collectionHandler.DeleteCollection)
-		api.POST("/collections/:id/games", collectionHandler.AddGame)
-		api.DELETE("/collections/:id/games/:gameId", collectionHandler.RemoveGame)
+		// Collections — migrated to huma (see RegisterCollectionRoutes above).
 
-		// Shared Sessions — create/get/update/delete migrated to huma
-		// (see RegisterSharedSessionRoutes above). List views, invite flow,
-		// turn control and file endpoints stay on raw gin.
-		api.GET("/games/:id/shared-sessions", sharedSessionHandler.ListGameSharedSessions)
-		api.GET("/shared-sessions", sharedSessionHandler.ListSharedSessions)
-		api.POST("/shared-sessions/:id/invites", sharedSessionHandler.InviteUser)
-		api.POST("/shared-sessions/:id/leave", sharedSessionHandler.LeaveSharedSession)
-		api.DELETE("/shared-sessions/:id/members/:userId", sharedSessionHandler.RemoveMember)
-		api.POST("/shared-sessions/:id/take-turn", sharedSessionHandler.TakeTurn)
-		api.POST("/shared-sessions/:id/release-turn", sharedSessionHandler.ReleaseTurn)
-		api.POST("/shared-sessions/:id/heartbeat", sharedSessionHandler.Heartbeat)
-		api.GET("/shared-sessions/:id/saves", sharedSessionHandler.ListSaves)
+		// Shared Sessions — most endpoints migrated to huma
+		// (see RegisterSharedSessionRoutes above). File-based endpoints
+		// (save upload + download + auto-save upload/download) stay on raw gin.
 		api.POST("/shared-sessions/:id/saves", uploadLimiter.RateLimit(), sharedSessionHandler.UploadSave)
 		api.GET("/shared-sessions/:id/saves/auto", sharedSessionHandler.GetAutoSave)
 		api.POST("/shared-sessions/:id/saves/auto", uploadLimiter.RateLimit(), sharedSessionHandler.UploadAutoSave)
 		api.GET("/shared-sessions/:id/saves/:saveId", sharedSessionHandler.DownloadSave)
-		api.PUT("/shared-sessions/:id/saves/:saveId/rename", sharedSessionHandler.RenameSharedSessionSave)
-		api.DELETE("/shared-sessions/:id/saves/:saveId", sharedSessionHandler.DeleteSave)
-		api.GET("/user/shared-session-invites", sharedSessionHandler.ListMyInvites)
-		api.GET("/user/shared-session-invites/count", sharedSessionHandler.GetPendingInviteCount)
-		api.POST("/user/shared-session-invites/:id/accept", sharedSessionHandler.AcceptInvite)
-		api.POST("/user/shared-session-invites/:id/decline", sharedSessionHandler.DeclineInvite)
 
 
-		// Netplay — sessions + invite accept/decline/create migrated to huma
-		// (see RegisterNetplayRoutes above). WebSocket upgrade, list-session-
-		// invites, list-my-invites and pending-count stay on raw gin.
+		// Netplay — sessions + invite endpoints migrated to huma
+		// (see RegisterNetplayRoutes above). Only the WebSocket upgrade stays
+		// on raw gin.
 		netplay := api.Group("/netplay")
 		{
 			netplay.GET("/sessions/:id/ws", netplayHandler.HandleWebSocket)
-			netplay.GET("/sessions/:id/invites", netplayHandler.ListSessionInvites)
-			netplay.GET("/invites", netplayHandler.ListMyNetplayInvites)
-			netplay.GET("/invites/count", netplayHandler.GetPendingNetplayInviteCount)
 		}
 
-		// Social
-		// /social/online, /users/search — migrated to huma
-		// (see RegisterSocialRoutes above).
-		api.GET("/social/activity", socialHandler.GetActivityFeed)
-		api.GET("/users/recent-partners", socialHandler.GetRecentPartners)
-		api.GET("/users/:id/profile", socialHandler.GetPublicProfile)
+		// Social — migrated to huma (see RegisterSocialRoutes and
+		// RegisterSocialExtraRoutes above).
 		// /users/:id/play-heatmap — migrated to huma (see RegisterUserExtraRoutes above).
 
-		// Challenges — list/get/update/delete migrated to huma
-		// (see RegisterChallengeRoutes above). CreateChallenge stays on raw gin
-		// (multipart upload). Attempt + download endpoints stay on raw gin too.
+		// Challenges — most endpoints migrated to huma
+		// (see RegisterChallengeRoutes above). CreateChallenge stays on raw
+		// gin (multipart upload) along with the save / screenshot file
+		// downloads.
 		api.POST("/challenges", challengeHandler.CreateChallenge)
 		api.GET("/challenges/:id/save/download", challengeHandler.DownloadChallengeSave)
 		api.GET("/challenges/:id/screenshot", challengeHandler.GetChallengeScreenshot)
-		api.POST("/challenges/:id/attempts/start", challengeHandler.StartAttempt)
-		api.POST("/challenges/:id/attempts/:aid/complete", challengeHandler.CompleteAttempt)
-		api.POST("/challenges/:id/attempts/:aid/abandon", challengeHandler.AbandonAttempt)
-		api.GET("/challenges/:id/attempts/mine", challengeHandler.GetMyAttempts)
-		api.GET("/challenges/:id/leaderboard", challengeHandler.GetLeaderboard)
-		api.GET("/games/:id/challenges", challengeHandler.ListGameChallenges)
-		api.GET("/user/challenges", challengeHandler.ListMyChallenges)
 
 		// Enrichment: Themes, Keywords, Series, Franchises — migrated to huma
 		// (see RegisterEnrichmentRoutes above).
@@ -498,70 +465,19 @@ func NewRouter(cfg Config) (*gin.Engine, func()) {
 		// Client error reporting — migrated to huma
 		// (see RegisterUserExtraRoutes above).
 
-		// Admin routes
+		// Admin routes — most endpoints migrated to huma
+		// (see RegisterAdminRoutes, RegisterAdminGameRoutes,
+		// RegisterUploadAdminRoutes, RegisterScraperAdminRoutes,
+		// RegisterCheatAdminRoutes, RegisterSystemEventRoutes,
+		// RegisterDeviceRoutes, RegisterEnrichmentRoutes and
+		// RegisterMiscRoutes above). File-based endpoints stay on raw gin.
 		admin := api.Group("/admin")
 		admin.Use(AdminMiddleware())
 		{
-			admin.POST("/games/:id/metadata", gameHandler.UpdateMetadata)
-			admin.POST("/games/scan", gameHandler.ScanGames)
-			admin.GET("/games/scan/status", gameHandler.ScanStatus)
-			// /admin/users (list/create/update/delete) — migrated to huma
-			// (see RegisterAdminRoutes above). Deleted-users + hard-delete stay on gin.
-			admin.GET("/users/deleted", adminHandler.ListDeletedUsers)
-			admin.DELETE("/users/:id/permanent", adminHandler.HardDeleteUser)
-			// /admin/settings (get/put) — migrated to huma (see RegisterAdminRoutes above).
-			// /admin/scrape (POST/DELETE), /admin/scrape/status,
-			// /admin/scrape/counts, /admin/games/:id/scrape,
-			// /admin/games/:id/achievements/refresh,
-			// /admin/steamgriddb/status, /admin/ra/status — migrated to huma
-			// (see RegisterScraperAdminRoutes above).
-			admin.GET("/games/:id/covers", adminHandler.GetGameCovers)
-			admin.PUT("/games/:id/covers", adminHandler.SetGameCover)
-			admin.GET("/games/:id/heroes", adminHandler.GetGameHeroes)
-			admin.PUT("/games/:id/heroes", adminHandler.SetGameHero)
-			// /admin/metadata-matches — migrated to huma (see RegisterMiscRoutes above).
-			admin.GET("/games/:id/igdb-search", adminHandler.SearchIGDB)
-			admin.POST("/games/:id/igdb-match", adminHandler.ApplyIGDBMatch)
-			admin.POST("/igdb/test", igdbHandler.TestIGDB)
-			admin.GET("/igdb/status", igdbHandler.GetIGDBStatus)
-			// /admin/stats — migrated to huma (see RegisterAdminRoutes above).
-			// /admin/users/:id/rate-limit (GET/DELETE) — migrated to huma
-			// (see RegisterMiscRoutes above).
-
-			// System event audit log (admin-only) — migrated to huma
-			// (see RegisterSystemEventRoutes above).
-			// /admin/users/:id/devices — migrated to huma (see RegisterDeviceRoutes above).
 			admin.POST("/bios", biosHandler.UploadBiosFile)
-			// /admin/bios/download + /admin/bios/:filename (DELETE) — migrated
-			// to huma (see RegisterBiosRoutes above).
-			admin.PUT("/games/:id/verification-tag", gameHandler.UpdateVerificationTag)
 			admin.PUT("/games/:id/replace-rom", uploadLimiter.RateLimit(), gameHandler.ReplaceROM)
-			// /admin/cheats/import + /admin/cheats/stats — migrated to huma
-			// (see RegisterCheatAdminRoutes above).
-			// /admin/core-compatibility — migrated to huma
-			// (see RegisterMiscRoutes above).
-
-			// ROM hacks
 			admin.POST("/rom-hacks", uploadLimiter.RateLimit(), romHackHandler.CreateRomHack)
-
-			// Image backfill (download external CDN images locally)
-			admin.POST("/backfill-images", adminHandler.BackfillImages)
-
-			// Enrichment backfill — migrated to huma
-			// (see RegisterEnrichmentRoutes above).
-
-			// ROM uploads
-			admin.GET("/uploads/writable", uploadHandler.CheckWritable)
 			admin.POST("/uploads", uploadHandler.UploadROMs)
-			admin.GET("/uploads", uploadHandler.ListUploads)
-			admin.POST("/uploads/:id/console", uploadHandler.SetConsole)
-			admin.POST("/uploads/:id/scrape", uploadHandler.ScrapeUpload)
-			admin.POST("/uploads/scrape", uploadHandler.ScrapeAllUploads)
-			admin.POST("/uploads/:id/accept", uploadHandler.AcceptUpload)
-			admin.POST("/uploads/:id/reject", uploadHandler.RejectUpload)
-			admin.POST("/uploads/accept-all", uploadHandler.AcceptAllUploads)
-			admin.POST("/uploads/reject-all", uploadHandler.RejectAllUploads)
-			admin.DELETE("/uploads", uploadHandler.ClearStaging)
 		}
 
 		// WebSocket

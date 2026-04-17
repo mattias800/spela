@@ -66,19 +66,21 @@ type AdminUpdateUserRequest struct {
 // --- Games (admin metadata + play time) ---
 
 // UpdateGameMetadataRequest is the body for PUT /api/admin/games/:id/metadata.
+// All fields are optional in the huma schema so partial updates succeed with
+// the historical 200 rather than huma's 422 "missing fields" validation.
 type UpdateGameMetadataRequest struct {
-	Title             string  `json:"title"`
-	Description       string  `json:"description"`
-	CoverURL          string  `json:"coverUrl"`
-	ScreenshotURL     string  `json:"screenshotUrl"`
-	Developer         string  `json:"developer"`
-	Publisher         string  `json:"publisher"`
-	ReleaseDate       string  `json:"releaseDate"`
-	Genre             string  `json:"genre"`
-	Players           int     `json:"players"`
-	IGDBCriticsRating float64 `json:"igdbCriticsRating"`
-	CoreOverride      string  `json:"coreOverride"`
-	PartyInfo         string  `json:"partyInfo"`
+	Title             string  `json:"title,omitempty"`
+	Description       string  `json:"description,omitempty"`
+	CoverURL          string  `json:"coverUrl,omitempty"`
+	ScreenshotURL     string  `json:"screenshotUrl,omitempty"`
+	Developer         string  `json:"developer,omitempty"`
+	Publisher         string  `json:"publisher,omitempty"`
+	ReleaseDate       string  `json:"releaseDate,omitempty"`
+	Genre             string  `json:"genre,omitempty"`
+	Players           int     `json:"players,omitempty"`
+	IGDBCriticsRating float64 `json:"igdbCriticsRating,omitempty"`
+	CoreOverride      string  `json:"coreOverride,omitempty"`
+	PartyInfo         string  `json:"partyInfo,omitempty"`
 }
 
 // UpdateGamePlayTimeRequest is the body for POST /api/games/:id/play-time.
@@ -91,24 +93,32 @@ type UpdateGamePlayTimeRequest struct {
 }
 
 // UpdateVerificationTagRequest is the body for PUT /api/admin/games/:id/verification-tag.
+// Tag is optional in the huma schema so empty body requests return the handler's
+// 400 rather than huma's 422 validation shape.
 type UpdateVerificationTagRequest struct {
-	Tag string `json:"tag"`
+	Tag string `json:"tag,omitempty"`
 }
 
 // SetGameCoverRequest is the body for POST /api/admin/games/:id/cover.
+// Source is optional in the huma schema so missing-field requests return the
+// historical 400 from the handler rather than huma's 422 validation shape.
 type SetGameCoverRequest struct {
-	Source       string `json:"source" binding:"required"`
+	Source       string `json:"source,omitempty" required:"false"`
 	LibRetroName string `json:"libretroName,omitempty"`
 }
 
 // SetGameHeroRequest is the body for POST /api/admin/games/:id/hero.
+// URL is optional in the huma schema so missing-field requests return the
+// historical 400 from the handler rather than huma's 422 validation shape.
 type SetGameHeroRequest struct {
-	URL string `json:"url" binding:"required"`
+	URL string `json:"url,omitempty" required:"false"`
 }
 
 // ApplyIGDBMatchRequest is the body for POST /api/admin/games/:id/igdb-match.
+// IGDBID is optional in the huma schema so missing-field requests return the
+// historical 400 from the handler rather than huma's 422 validation shape.
 type ApplyIGDBMatchRequest struct {
-	IGDBID int `json:"igdbId" binding:"required,min=1"`
+	IGDBID int `json:"igdbId,omitempty" required:"false"`
 }
 
 // --- Sessions ---
@@ -170,8 +180,10 @@ type UpdateSharedSessionRequest struct {
 }
 
 // InviteToSharedSessionRequest is the body for POST /api/shared-sessions/:id/invites.
+// Username is optional in the huma schema so missing-field requests return the
+// historical 400 from the handler rather than huma's 422 validation shape.
 type InviteToSharedSessionRequest struct {
-	Username string `json:"username" binding:"required"`
+	Username string `json:"username,omitempty" required:"false"`
 }
 
 // --- Netplay ---
@@ -208,22 +220,26 @@ type NetplayInviteUserRequest struct {
 // --- Collections ---
 
 // CreateCollectionRequest is the body for POST /api/collections.
+// Name is optional in the huma schema so missing-field requests return the
+// historical 400 from the handler rather than huma's 422 validation shape.
 type CreateCollectionRequest struct {
-	Name        string `json:"name" binding:"required,max=255"`
-	Description string `json:"description" binding:"max=2048"`
-	IsPublic    bool   `json:"isPublic"`
+	Name        string `json:"name,omitempty" required:"false"`
+	Description string `json:"description,omitempty"`
+	IsPublic    bool   `json:"isPublic,omitempty"`
 }
 
 // UpdateCollectionRequest is the body for PUT /api/collections/:id.
 type UpdateCollectionRequest struct {
-	Name        *string `json:"name"`
-	Description *string `json:"description"`
-	IsPublic    *bool   `json:"isPublic"`
+	Name        *string `json:"name,omitempty"`
+	Description *string `json:"description,omitempty"`
+	IsPublic    *bool   `json:"isPublic,omitempty"`
 }
 
 // AddGameToCollectionRequest is the body for POST /api/collections/:id/games.
+// GameID is optional in the huma schema so missing-field requests return the
+// historical 400 from the handler rather than huma's 422 validation shape.
 type AddGameToCollectionRequest struct {
-	GameID uint `json:"gameId" binding:"required"`
+	GameID uint `json:"gameId,omitempty" required:"false"`
 }
 
 // --- Ratings ---
@@ -287,8 +303,10 @@ type ReorderPlayLaterRequest struct {
 // --- Upload (admin) ---
 
 // SetUploadConsoleRequest is the body for POST /api/admin/uploads/:id/console.
+// ConsoleID is optional in the huma schema so missing-field requests return the
+// historical 400 from the handler rather than huma's 422 validation shape.
 type SetUploadConsoleRequest struct {
-	ConsoleID string `json:"consoleId" binding:"required"`
+	ConsoleID string `json:"consoleId,omitempty" required:"false"`
 }
 
 // --- RetroAchievements ---
@@ -310,8 +328,8 @@ type UpdateRASettingsRequest struct {
 
 // TestIGDBRequest is the body for POST /api/admin/igdb/test.
 type TestIGDBRequest struct {
-	ClientID     string `json:"clientId"`
-	ClientSecret string `json:"clientSecret"`
+	ClientID     string `json:"clientId,omitempty"`
+	ClientSecret string `json:"clientSecret,omitempty"`
 }
 
 // --- Achievements ---
