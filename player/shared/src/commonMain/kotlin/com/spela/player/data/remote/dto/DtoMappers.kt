@@ -355,7 +355,7 @@ fun SharedSessionSaveDto.toDomain(): SharedSessionSave = SharedSessionSave(
 
 // Collection mappers
 
-fun CollectionDto.toDomain(): GameCollection = GameCollection(
+fun com.spela.client.models.CollectionResponse.toDomain(): GameCollection = GameCollection(
     id = id,
     userId = userId,
     username = username,
@@ -364,10 +364,10 @@ fun CollectionDto.toDomain(): GameCollection = GameCollection(
     description = description,
     isPublic = isPublic,
     coverUrl = coverUrl,
-    gameCount = gameCount,
+    gameCount = gameCount.toInt(),
 )
 
-fun CollectionDetailDto.toDomain(): GameCollectionDetail = GameCollectionDetail(
+fun com.spela.client.models.CollectionDetailResponse.toDomain(): GameCollectionDetail = GameCollectionDetail(
     id = id,
     userId = userId,
     username = username,
@@ -376,8 +376,8 @@ fun CollectionDetailDto.toDomain(): GameCollectionDetail = GameCollectionDetail(
     description = description,
     isPublic = isPublic,
     coverUrl = coverUrl,
-    gameCount = gameCount,
-    games = games.map { it.toDomain() },
+    gameCount = gameCount.toInt(),
+    games = games.orEmpty().map { it.toDomain() },
 )
 
 // Game Stats mappers

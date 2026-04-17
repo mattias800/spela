@@ -1,8 +1,8 @@
 package com.spela.player.data.repository
 
+import com.spela.client.models.CreateCollectionRequest
+import com.spela.client.models.UpdateCollectionRequest
 import com.spela.player.data.remote.api.SpelaApiClient
-import com.spela.player.data.remote.dto.CreateCollectionRequest
-import com.spela.player.data.remote.dto.UpdateCollectionRequest
 import com.spela.player.data.remote.dto.toDomain
 import com.spela.player.domain.model.GameCollection
 import com.spela.player.domain.model.GameCollectionDetail
@@ -13,13 +13,13 @@ class CollectionRepositoryImpl(
 ) : CollectionRepository {
 
     override suspend fun getMyCollections(page: Int, pageSize: Int): Result<List<GameCollection>> = runCatching {
-        apiClient.getMyCollections(page = page, pageSize = pageSize).data.map { dto ->
+        apiClient.getMyCollections(page = page, pageSize = pageSize).data.orEmpty().map { dto ->
             dto.toDomain().resolveImageUrls()
         }
     }
 
     override suspend fun getPublicCollections(page: Int, pageSize: Int): Result<List<GameCollection>> = runCatching {
-        apiClient.getPublicCollections(page = page, pageSize = pageSize).data.map { dto ->
+        apiClient.getPublicCollections(page = page, pageSize = pageSize).data.orEmpty().map { dto ->
             dto.toDomain().resolveImageUrls()
         }
     }

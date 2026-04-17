@@ -1065,31 +1065,42 @@ class SpelaApiClient(
 
     // Collections
 
-    suspend fun getMyCollections(page: Int = 1, pageSize: Int = 20): CollectionsResponse {
+    suspend fun getMyCollections(
+        page: Int = 1,
+        pageSize: Int = 20,
+    ): com.spela.client.models.PaginatedResponseCollectionResponse {
         return client.get("$baseUrl/api/collections") {
             parameter("page", page)
             parameter("pageSize", pageSize)
         }.body()
     }
 
-    suspend fun getPublicCollections(page: Int = 1, pageSize: Int = 20): CollectionsResponse {
+    suspend fun getPublicCollections(
+        page: Int = 1,
+        pageSize: Int = 20,
+    ): com.spela.client.models.PaginatedResponseCollectionResponse {
         return client.get("$baseUrl/api/collections/public") {
             parameter("page", page)
             parameter("pageSize", pageSize)
         }.body()
     }
 
-    suspend fun getCollection(id: String): CollectionDetailDto {
+    suspend fun getCollection(id: String): com.spela.client.models.CollectionDetailResponse {
         return client.get("$baseUrl/api/collections/$id").body()
     }
 
-    suspend fun createCollection(request: CreateCollectionRequest): CollectionDto {
+    suspend fun createCollection(
+        request: com.spela.client.models.CreateCollectionRequest,
+    ): com.spela.client.models.CollectionResponse {
         return client.post("$baseUrl/api/collections") {
             setBody(request)
         }.body()
     }
 
-    suspend fun updateCollection(id: String, request: UpdateCollectionRequest): CollectionDto {
+    suspend fun updateCollection(
+        id: String,
+        request: com.spela.client.models.UpdateCollectionRequest,
+    ): com.spela.client.models.CollectionResponse {
         return client.put("$baseUrl/api/collections/$id") {
             setBody(request)
         }.body()
@@ -1101,7 +1112,7 @@ class SpelaApiClient(
 
     suspend fun addGameToCollection(collectionId: String, gameId: String) {
         client.post("$baseUrl/api/collections/$collectionId/games") {
-            setBody(AddGameToCollectionRequest(gameId = gameId.toInt()))
+            setBody(com.spela.client.models.AddGameToCollectionRequest(gameId = gameId.toLong()))
         }
     }
 
