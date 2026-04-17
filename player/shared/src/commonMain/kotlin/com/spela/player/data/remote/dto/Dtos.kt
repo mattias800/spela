@@ -616,20 +616,9 @@ data class SendNetplayInviteRequest(
     val username: String,
 )
 
-@Serializable
-data class UserSearchResultDto(
-    val id: String,
-    val username: String,
-    val avatarUrl: String? = null,
-)
-
-@Serializable
-data class UserSearchResponse(
-    val data: List<UserSearchResultDto>,
-    val total: Long,
-    val page: Int,
-    val pageSize: Int,
-)
+// UserSearchResultDto / UserSearchResponse replaced by
+// com.spela.client.models.UserSearchResult /
+// PaginatedResponseUserSearchResult (see player/shared-api/).
 
 // Game Stats
 
