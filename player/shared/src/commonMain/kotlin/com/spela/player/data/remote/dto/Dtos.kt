@@ -1137,21 +1137,9 @@ data class ExploreRowsResponseDto(
     val rows: List<ExploreRowDto>,
 )
 
-// Themes & Keywords
-
-@Serializable
-data class ThemeDto(
-    val id: String,
-    val name: String,
-    val gameCount: Int = 0,
-)
-
-@Serializable
-data class KeywordDto(
-    val id: String,
-    val name: String,
-    val gameCount: Int = 0,
-)
+// Themes & Keywords — ThemeDto / KeywordDto replaced by
+// com.spela.client.models.ThemeResponse / KeywordResponse
+// (see player/shared-api/).
 
 // Series & Franchise
 

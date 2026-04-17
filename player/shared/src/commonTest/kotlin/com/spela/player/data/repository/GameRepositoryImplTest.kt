@@ -81,6 +81,32 @@ class GameRepositoryImplTest {
     }
 
     @Test
+    fun themeResponseMapsToDomain() {
+        val response = com.spela.client.models.ThemeResponse(
+            gameCount = 42L,
+            id = "action",
+            name = "Action",
+        )
+        val domain = response.toDomain()
+        assertEquals("action", domain.id)
+        assertEquals("Action", domain.name)
+        assertEquals(42, domain.gameCount) // Long -> Int
+    }
+
+    @Test
+    fun keywordResponseMapsToDomain() {
+        val response = com.spela.client.models.KeywordResponse(
+            gameCount = 7L,
+            id = "time-travel",
+            name = "Time Travel",
+        )
+        val domain = response.toDomain()
+        assertEquals("time-travel", domain.id)
+        assertEquals("Time Travel", domain.name)
+        assertEquals(7, domain.gameCount)
+    }
+
+    @Test
     fun explorerBadgeMapsToDomain() {
         val generated = com.spela.client.models.ExplorerBadge(
             description = "Played 100 games",

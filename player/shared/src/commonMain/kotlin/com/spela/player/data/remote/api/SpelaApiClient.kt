@@ -290,7 +290,7 @@ class SpelaApiClient(
     }
 
     /** Returns all themes with game counts, sorted by count DESC */
-    suspend fun getThemes(): List<ThemeDto> {
+    suspend fun getThemes(): List<com.spela.client.models.ThemeResponse> {
         return client.get("$baseUrl/api/themes").body()
     }
 
@@ -303,7 +303,7 @@ class SpelaApiClient(
     }
 
     /** Returns top keywords by game count */
-    suspend fun getKeywords(limit: Int = 50): List<KeywordDto> {
+    suspend fun getKeywords(limit: Int = 50): List<com.spela.client.models.KeywordResponse> {
         return client.get("$baseUrl/api/keywords") {
             parameter("limit", limit)
         }.body()
