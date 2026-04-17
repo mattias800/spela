@@ -491,30 +491,13 @@ data class SimilarGameDto(
 // sends `igdbCriticsRating` — the hand-written field was always 0.0.
 // The new mapper pulls the real rating.
 
-@Serializable
-data class MoodDefinitionDto(
-    val id: String,
-    val name: String,
-    val description: String,
-    val icon: String,
-    val gradient: List<String>,
-)
+// MoodDefinitionDto replaced by com.spela.client.models.MoodResponse.
 
-// For You (Personalized Recommendations)
-
-@Serializable
-data class ForYouRowDto(
-    val type: String,
-    val title: String,
-    val sourceGame: GameDto? = null,
-    val genre: String? = null,
-    val games: List<GameDto>,
-)
-
-@Serializable
-data class ForYouResponseDto(
-    val rows: List<ForYouRowDto>,
-)
+// ForYouRowDto / ForYouResponseDto replaced by
+// com.spela.client.models.ForYouRowResponse / ForYouResponse.
+// Both `rows` and per-row `games` are typed `List<...>?` on the
+// generated side even though server-marked @Required; the mapper
+// applies .orEmpty().
 
 // TasteProfileDto / TasteBreakdownDto / ConsoleBreakdownDto replaced by
 // com.spela.client.models.TasteProfileResponse / TasteProfileGenre /
@@ -523,11 +506,9 @@ data class ForYouResponseDto(
 // for the domain. Generated lists are nullable (Required but nullable in
 // spec), so the mapper applies .orEmpty() when flattening.
 
-@Serializable
-data class PlayersLikeYouResponseDto(
-    val games: List<GameDto>,
-    val similarUsersCount: Int,
-)
+// PlayersLikeYouResponseDto replaced by
+// com.spela.client.models.PlayersLikeYouResponse (similarUsersCount is
+// Long — mapper converts to Int).
 
 // Developer / Publisher
 

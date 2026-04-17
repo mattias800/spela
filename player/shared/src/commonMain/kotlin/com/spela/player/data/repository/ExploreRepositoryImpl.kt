@@ -164,7 +164,7 @@ class ExploreRepositoryImpl(
     }
 
     override suspend fun getForYou(): Result<List<ForYouRow>> = runCatching {
-        apiClient.getForYou().rows.map { rowDto ->
+        apiClient.getForYou().rows.orEmpty().map { rowDto ->
             rowDto.toDomain().copy(
                 sourceGame = rowDto.sourceGame?.let { sgDto ->
                     sgDto.toDomain().copy(
@@ -173,7 +173,7 @@ class ExploreRepositoryImpl(
                         logoUrl = apiClient.resolveUrl(sgDto.logoUrl),
                     )
                 },
-                games = rowDto.games.map { gameDto ->
+                games = rowDto.games.orEmpty().map { gameDto ->
                     gameDto.toDomain().copy(
                         coverUrl = apiClient.resolveUrl(gameDto.coverUrl),
                         heroUrl = apiClient.resolveUrl(gameDto.heroUrl),
@@ -191,7 +191,7 @@ class ExploreRepositoryImpl(
     override suspend fun getPlayersLikeYou(): Result<PlayersLikeYouResult> = runCatching {
         val dto = apiClient.getPlayersLikeYou()
         dto.toDomain().copy(
-            games = dto.games.map { gameDto ->
+            games = dto.games.orEmpty().map { gameDto ->
                 gameDto.toDomain().copy(
                     coverUrl = apiClient.resolveUrl(gameDto.coverUrl),
                     heroUrl = apiClient.resolveUrl(gameDto.heroUrl),

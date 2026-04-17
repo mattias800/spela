@@ -797,20 +797,20 @@ fun com.spela.client.models.GameFranchiseResponse.toDomain(): GameFranchiseLink 
 )
 
 
-fun MoodDefinitionDto.toDomain(): MoodDefinition = MoodDefinition(
+fun com.spela.client.models.MoodResponse.toDomain(): MoodDefinition = MoodDefinition(
     id = id,
     name = name,
     description = description,
     icon = icon,
-    gradient = gradient,
+    gradient = gradient.orEmpty(),
 )
 
-fun ForYouRowDto.toDomain(): ForYouRow = ForYouRow(
+fun com.spela.client.models.ForYouRowResponse.toDomain(): ForYouRow = ForYouRow(
     type = type,
     title = title,
     sourceGame = sourceGame?.toDomain(),
     genre = genre,
-    games = games.map { it.toDomain() },
+    games = games.orEmpty().map { it.toDomain() },
 )
 
 fun com.spela.client.models.TasteProfileGenre.toDomain(): TasteBreakdown = TasteBreakdown(
@@ -841,9 +841,9 @@ fun com.spela.client.models.TasteProfileResponse.toDomain(): TasteProfile = Tast
     topConsoles = topConsoles.orEmpty().map { it.toDomain() },
 )
 
-fun PlayersLikeYouResponseDto.toDomain(): PlayersLikeYouResult = PlayersLikeYouResult(
-    games = games.map { it.toDomain() },
-    similarUsersCount = similarUsersCount,
+fun com.spela.client.models.PlayersLikeYouResponse.toDomain(): PlayersLikeYouResult = PlayersLikeYouResult(
+    games = games.orEmpty().map { it.toDomain() },
+    similarUsersCount = similarUsersCount.toInt(),
 )
 
 // Developer / Publisher mappers

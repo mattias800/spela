@@ -345,7 +345,7 @@ class SpelaApiClient(
     }
 
     /** Returns available mood definitions for the mood picker */
-    suspend fun getMoods(): List<MoodDefinitionDto> {
+    suspend fun getMoods(): List<com.spela.client.models.MoodResponse> {
         return client.get("$baseUrl/api/explore/moods").body()
     }
 
@@ -360,7 +360,7 @@ class SpelaApiClient(
     }
 
     /** Returns personalized "For You" recommendation rows */
-    suspend fun getForYou(): ForYouResponseDto {
+    suspend fun getForYou(): com.spela.client.models.ForYouResponse {
         return client.get("$baseUrl/api/explore/for-you").body()
     }
 
@@ -370,7 +370,7 @@ class SpelaApiClient(
     }
 
     /** Returns collaborative filtering recommendations */
-    suspend fun getPlayersLikeYou(): PlayersLikeYouResponseDto {
+    suspend fun getPlayersLikeYou(): com.spela.client.models.PlayersLikeYouResponse {
         return client.get("$baseUrl/api/explore/players-like-you").body()
     }
 
