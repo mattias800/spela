@@ -1,7 +1,7 @@
 package com.spela.player.data.repository
 
+import com.spela.client.models.BiosListResponse
 import com.spela.player.data.remote.api.SpelaApiClient
-import com.spela.player.data.remote.dto.BiosStatusResponse
 import com.spela.player.domain.model.BiosConsoleStatus
 import com.spela.player.domain.model.BiosMissingFile
 import com.spela.player.util.FileStorage
@@ -10,11 +10,11 @@ open class BiosRepository(
     private val apiClient: SpelaApiClient,
     private val fileStorage: FileStorage,
 ) {
-    private var cachedBiosStatus: BiosStatusResponse? = null
+    private var cachedBiosStatus: BiosListResponse? = null
 
     open suspend fun syncBiosFiles() {
         val serverFiles = try {
-            apiClient.getBiosStatus().files
+            apiClient.getBiosStatus().files.orEmpty()
         } catch (e: Exception) {
             return // Server may not support BIOS yet
         }
@@ -42,7 +42,7 @@ open class BiosRepository(
     /**
      * Fetches enriched BIOS status from the server. Caches the result.
      */
-    open suspend fun fetchBiosStatus(): BiosStatusResponse? {
+    open suspend fun fetchBiosStatus(): BiosListResponse? {
         return try {
             val status = apiClient.getBiosStatus()
             cachedBiosStatus = status
@@ -53,7 +53,7 @@ open class BiosRepository(
         }
     }
 
-    fun getCachedBiosStatus(): BiosStatusResponse? = cachedBiosStatus
+    fun getCachedBiosStatus(): BiosListResponse? = cachedBiosStatus
 
     /**
      * Returns the BIOS status for a given console. Checks which required files
@@ -61,10 +61,10 @@ open class BiosRepository(
      */
     open suspend fun getConsoleStatus(consoleId: String): BiosConsoleStatus? {
         val status = cachedBiosStatus ?: fetchBiosStatus() ?: return null
-        val console = status.consoles.find { it.consoleId == consoleId } ?: return null
+        val console = status.consoles.orEmpty().find { it.consoleId == consoleId } ?: return null
         val biosDir = fileStorage.getBiosDir()
 
-        val missingFiles = console.files
+        val missingFiles = console.files.orEmpty()
             .filter { it.required && it.status == "missing" }
             .map { BiosMissingFile(it.fileName, it.description, it.required, it.subDir) }
 
@@ -129,10 +129,10 @@ open class BiosRepository(
         val localFiles = getLocalBiosFiles()
         val biosDir = fileStorage.getBiosDir()
 
-        return status.consoles
+        return status.consoles.orEmpty()
             .filter { it.biosRequired && it.status == "missing" }
             .mapNotNull { console ->
-                val missingFiles = console.files
+                val missingFiles = console.files.orEmpty()
                     .filter { it.required && it.status == "missing" }
                     .filter { file ->
                         val localPath = if (!file.subDir.isNullOrEmpty()) {

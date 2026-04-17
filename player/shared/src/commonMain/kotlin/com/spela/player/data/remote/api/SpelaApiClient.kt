@@ -729,7 +729,7 @@ class SpelaApiClient(
 
     // BIOS
 
-    suspend fun getBiosStatus(): BiosStatusResponse {
+    suspend fun getBiosStatus(): com.spela.client.models.BiosListResponse {
         return client.get("$baseUrl/api/bios").body()
     }
 

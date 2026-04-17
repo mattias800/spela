@@ -544,49 +544,13 @@ data class SharedSessionInvitationCountResponse(
     val count: Int = 0,
 )
 
-// BIOS
-
-@Serializable
-data class BiosFileDto(
-    val name: String,
-    val size: Long,
-    val md5: String? = null,
-    val subDir: String? = null,
-    val consoleId: String? = null,
-    val consoleName: String? = null,
-    val description: String? = null,
-    val required: Boolean = false,
-    val status: String = "present",
-)
-
-@Serializable
-data class BiosConsoleDto(
-    val consoleId: String,
-    val consoleName: String,
-    val biosRequired: Boolean = false,
-    val status: String = "not_required",
-    val requiredPresent: Int = 0,
-    val requiredTotal: Int = 0,
-    val optionalPresent: Int = 0,
-    val optionalTotal: Int = 0,
-    val files: List<BiosConsoleFileDto> = emptyList(),
-)
-
-@Serializable
-data class BiosConsoleFileDto(
-    val fileName: String,
-    val description: String = "",
-    val required: Boolean = false,
-    val md5: String? = null,
-    val status: String = "missing",
-    val subDir: String? = null,
-)
-
-@Serializable
-data class BiosStatusResponse(
-    val files: List<BiosFileDto> = emptyList(),
-    val consoles: List<BiosConsoleDto> = emptyList(),
-)
+// BIOS — BiosFileDto / BiosConsoleDto / BiosConsoleFileDto /
+// BiosStatusResponse replaced by:
+//   com.spela.client.models.BiosFileResponse
+//   com.spela.client.models.ConsoleBiosStatus
+//   com.spela.client.models.ConsoleFileStatus
+//   com.spela.client.models.BiosListResponse
+// (see player/shared-api/).
 
 // Collections
 
