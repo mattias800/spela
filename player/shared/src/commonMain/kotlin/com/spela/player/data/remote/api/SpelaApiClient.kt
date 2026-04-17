@@ -954,23 +954,24 @@ class SpelaApiClient(
 
     // Shared Sessions
 
-    suspend fun getMySharedSessions(page: Int = 1, pageSize: Int = 20): SharedSessionsResponse {
-        return client.get("$baseUrl/api/shared-sessions") {
-            parameter("page", page)
-            parameter("pageSize", pageSize)
-        }.body()
+    suspend fun getMySharedSessions(@Suppress("UNUSED_PARAMETER") page: Int = 1, @Suppress("UNUSED_PARAMETER") pageSize: Int = 20): List<SharedSessionDto> {
+        // Server returns a bare array (not a paginated wrapper). page/pageSize
+        // are kept on the signature so the repository caller does not need to
+        // change, but they are ignored because the server does not paginate.
+        return client.get("$baseUrl/api/shared-sessions").body<List<SharedSessionDto>?>() ?: emptyList()
     }
 
     suspend fun getSharedSession(sharedSessionId: String): SharedSessionDetailDto {
         return client.get("$baseUrl/api/shared-sessions/$sharedSessionId").body()
     }
 
-    suspend fun getSharedSessionInvitations(): SharedSessionInvitationsResponse {
-        return client.get("$baseUrl/api/shared-sessions/invitations").body()
+    suspend fun getSharedSessionInvitations(): List<SharedSessionInvitationDto> {
+        // Server returns a bare array (nullable on the wire when empty).
+        return client.get("$baseUrl/api/user/shared-session-invites").body<List<SharedSessionInvitationDto>?>() ?: emptyList()
     }
 
     suspend fun getPendingInvitationCount(): SharedSessionInvitationCountResponse {
-        return client.get("$baseUrl/api/shared-sessions/invitations/count").body()
+        return client.get("$baseUrl/api/user/shared-session-invites/count").body()
     }
 
     suspend fun createSharedSession(request: CreateSharedSessionRequest): SharedSessionDetailDto {
@@ -984,21 +985,23 @@ class SpelaApiClient(
     }
 
     suspend fun inviteToSharedSession(sharedSessionId: String, request: InviteToSharedSessionRequest) {
-        client.post("$baseUrl/api/shared-sessions/$sharedSessionId/invitations") {
+        client.post("$baseUrl/api/shared-sessions/$sharedSessionId/invites") {
             setBody(request)
         }
     }
 
     suspend fun acceptSharedSessionInvitation(invitationId: String) {
-        client.post("$baseUrl/api/shared-sessions/invitations/$invitationId/accept")
+        client.post("$baseUrl/api/user/shared-session-invites/$invitationId/accept")
     }
 
     suspend fun rejectSharedSessionInvitation(invitationId: String) {
-        client.post("$baseUrl/api/shared-sessions/invitations/$invitationId/reject")
+        // Server calls this "decline" — kept as rejectSharedSessionInvitation here
+        // so the repository-level public name is stable.
+        client.post("$baseUrl/api/user/shared-session-invites/$invitationId/decline")
     }
 
     suspend fun leaveSharedSession(sharedSessionId: String) {
-        client.delete("$baseUrl/api/shared-sessions/$sharedSessionId/members/me")
+        client.post("$baseUrl/api/shared-sessions/$sharedSessionId/leave")
     }
 
     suspend fun removeSharedSessionMember(sharedSessionId: String, userId: String) {
@@ -1018,11 +1021,11 @@ class SpelaApiClient(
     }
 
     suspend fun takeTurn(sharedSessionId: String): TakeTurnResponse {
-        return client.post("$baseUrl/api/shared-sessions/$sharedSessionId/turn/take").body()
+        return client.post("$baseUrl/api/shared-sessions/$sharedSessionId/take-turn").body()
     }
 
     suspend fun releaseTurn(sharedSessionId: String) {
-        client.post("$baseUrl/api/shared-sessions/$sharedSessionId/turn/release")
+        client.post("$baseUrl/api/shared-sessions/$sharedSessionId/release-turn")
     }
 
     suspend fun sharedSessionHeartbeat(sharedSessionId: String) {
@@ -1057,6 +1060,11 @@ class SpelaApiClient(
     }
 
     suspend fun copySharedSessionSaveToGame(sharedSessionId: String, saveId: Long) {
+        // NOTE: This endpoint is not currently registered on the server — it is
+        // missing from both the huma handlers and the remaining gin routes
+        // (see server/internal/api/huma_shared.go and server/internal/api/router.go).
+        // The path is kept at its original (pre-huma) location so that if the
+        // server adds it back at the same path, the player will continue to work.
         client.post("$baseUrl/api/shared-sessions/$sharedSessionId/saves/$saveId/copy-to-game")
     }
 
