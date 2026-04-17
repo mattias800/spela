@@ -266,6 +266,7 @@ func NewRouter(cfg Config) (*gin.Engine, func()) {
 	RegisterExploreCommunityRoutes(humaAPI, exploreHandler, cfg.JWTSecret, cfg.DB, userLimiter)
 	RegisterExploreTemporalRoutes(humaAPI, exploreHandler, cfg.JWTSecret, cfg.DB, userLimiter)
 	RegisterExploreChallengeRoutes(humaAPI, exploreHandler, cfg.JWTSecret, cfg.DB, userLimiter)
+	RegisterExploreWizardRoutes(humaAPI, exploreHandler, cfg.JWTSecret, cfg.DB, userLimiter)
 
 	// Public auth routes — rate limit login/register/setup to prevent brute force,
 	// but leave refresh and setup-status unrestricted (called frequently during normal use).
@@ -321,30 +322,16 @@ func NewRouter(cfg Config) (*gin.Engine, func()) {
 
 		// Top Lists — migrated to huma as part of RegisterConsoleRoutes above.
 
-		// Explore
-		explore := api.Group("/explore")
-		{
-			// Featured / rows / series / moods / surprise — migrated to huma
-			// (see RegisterExploreFeaturedRoutes above).
-			// for-you / players-like-you — migrated to huma
-			// (see RegisterExploreForYouRoutes above).
-			// developers + developer/publisher detail — migrated to huma
-			// (see RegisterExploreDeveloperRoutes above).
-			// console showcase + highlights — migrated to huma
-			// (see RegisterExploreConsoleRoutes above).
-			// screenshot / artwork / cover galleries — migrated to huma
-			// (see RegisterExploreGalleryRoutes above).
-			// trending / community-top / cult-classics / recently-reviewed /
-			// active-now — migrated to huma (see RegisterExploreCommunityRoutes
-			// above).
-			// on-this-day / best-of-year / your-anniversaries / decades —
-			// migrated to huma (see RegisterExploreTemporalRoutes above).
-			// easy-to-complete / hardest-games / almost-done /
-			// fresh-challenges / active-challenges — migrated to huma
-			// (see RegisterExploreChallengeRoutes above).
-			explore.GET("/wizard", exploreHandler.GetWizardSteps)
-			explore.GET("/wizard/results", exploreHandler.GetWizardResults)
-		}
+		// Explore — all endpoints migrated to huma. See:
+		//   RegisterExploreFeaturedRoutes   (featured/rows/series/moods/surprise)
+		//   RegisterExploreForYouRoutes     (for-you/players-like-you)
+		//   RegisterExploreDeveloperRoutes  (developers/publishers detail + spotlight)
+		//   RegisterExploreConsoleRoutes    (console showcase + highlights)
+		//   RegisterExploreGalleryRoutes    (screenshots/artwork/covers)
+		//   RegisterExploreCommunityRoutes  (trending/community-top/cult-classics/recently-reviewed/active-now)
+		//   RegisterExploreTemporalRoutes   (on-this-day/best-of-year/your-anniversaries/decades)
+		//   RegisterExploreChallengeRoutes  (easy-to-complete/hardest-games/almost-done/fresh-challenges/active-challenges)
+		//   RegisterExploreWizardRoutes     (wizard + wizard/results)
 
 		// Games — most endpoints migrated to huma (see RegisterGameRoutes above).
 		// Download endpoints stay on gin because they use c.File()/tar+zip streaming
