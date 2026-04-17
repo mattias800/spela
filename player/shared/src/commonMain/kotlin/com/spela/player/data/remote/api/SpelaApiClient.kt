@@ -803,24 +803,33 @@ class SpelaApiClient(
 
     // Ratings
 
-    suspend fun rateGame(gameId: String, request: RateGameRequest): GameRatingDto {
+    suspend fun rateGame(
+        gameId: String,
+        request: com.spela.client.models.CreateOrUpdateRatingRequest,
+    ): com.spela.client.models.GameRatingResponse {
         return client.post("$baseUrl/api/games/$gameId/ratings") {
             setBody(request)
         }.body()
     }
 
-    suspend fun getGameRatings(gameId: String, page: Int = 1, pageSize: Int = 20): GameRatingsResponse {
+    suspend fun getGameRatings(
+        gameId: String,
+        page: Int = 1,
+        pageSize: Int = 20,
+    ): com.spela.client.models.PaginatedResponseGameRatingResponse {
         return client.get("$baseUrl/api/games/$gameId/ratings") {
             parameter("page", page)
             parameter("pageSize", pageSize)
         }.body()
     }
 
-    suspend fun getGameRatingSummary(gameId: String): RatingSummaryDto {
+    suspend fun getGameRatingSummary(
+        gameId: String,
+    ): com.spela.client.models.RatingSummaryResponse {
         return client.get("$baseUrl/api/games/$gameId/ratings/summary").body()
     }
 
-    suspend fun getMyRating(gameId: String): GameRatingDto {
+    suspend fun getMyRating(gameId: String): com.spela.client.models.GameRatingResponse {
         return client.get("$baseUrl/api/games/$gameId/ratings/mine").body()
     }
 

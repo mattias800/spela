@@ -1,7 +1,7 @@
 package com.spela.player.data.repository
 
+import com.spela.client.models.CreateOrUpdateRatingRequest
 import com.spela.player.data.remote.api.SpelaApiClient
-import com.spela.player.data.remote.dto.RateGameRequest
 import com.spela.player.data.remote.dto.toDomain
 import com.spela.player.domain.model.GameRating
 import com.spela.player.domain.model.RatingSummary
@@ -12,13 +12,13 @@ class RatingRepositoryImpl(
 ) : RatingRepository {
 
     override suspend fun rateGame(gameId: String, rating: Int, review: String): Result<GameRating> = runCatching {
-        val request = RateGameRequest(rating = rating, review = review)
+        val request = CreateOrUpdateRatingRequest(rating = rating.toLong(), review = review)
         val dto = apiClient.rateGame(gameId, request)
         dto.toDomain().resolveUrls()
     }
 
     override suspend fun getGameRatings(gameId: String, page: Int, pageSize: Int): Result<List<GameRating>> = runCatching {
-        apiClient.getGameRatings(gameId, page = page, pageSize = pageSize).data.map {
+        apiClient.getGameRatings(gameId, page = page, pageSize = pageSize).data.orEmpty().map {
             it.toDomain().resolveUrls()
         }
     }

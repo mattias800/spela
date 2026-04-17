@@ -81,6 +81,65 @@ class GameRepositoryImplTest {
     }
 
     @Test
+    fun gameRatingResponseMapsToDomain() {
+        val createdAt = kotlin.time.Instant.fromEpochSeconds(1_700_000_000)
+        val response = com.spela.client.models.GameRatingResponse(
+            createdAt = createdAt,
+            gameId = "42",
+            id = "r1",
+            rating = 4L,
+            updatedAt = createdAt,
+            userId = "u1",
+            username = "mattias",
+            avatarUrl = "/avatars/mattias.png",
+            review = "Great game",
+        )
+
+        val domain = response.toDomain()
+
+        assertEquals("r1", domain.id)
+        assertEquals("u1", domain.userId)
+        assertEquals("42", domain.gameId)
+        assertEquals(4, domain.rating) // Long -> Int
+        assertEquals("Great game", domain.review)
+        assertEquals("/avatars/mattias.png", domain.avatarUrl)
+        assertEquals(createdAt.toString(), domain.createdAt)
+    }
+
+    @Test
+    fun gameRatingResponseHandlesNullReview() {
+        val now = kotlin.time.Instant.fromEpochSeconds(0)
+        val response = com.spela.client.models.GameRatingResponse(
+            createdAt = now,
+            gameId = "42",
+            id = "r1",
+            rating = 3L,
+            updatedAt = now,
+            userId = "u1",
+            username = "mattias",
+            review = null,
+        )
+        assertEquals("", response.toDomain().review)
+    }
+
+    @Test
+    fun ratingSummaryResponseMapsToDomain() {
+        val response = com.spela.client.models.RatingSummaryResponse(
+            averageRating = 4.25,
+            distribution = mapOf("1" to 1L, "2" to 2L, "3" to 5L, "4" to 10L, "5" to 20L),
+            totalRatings = 38L,
+        )
+
+        val domain = response.toDomain()
+
+        assertEquals(4.25, domain.averageRating)
+        assertEquals(38L, domain.totalRatings)
+        assertEquals(5, domain.distribution.size)
+        assertEquals(20, domain.distribution[5]) // String "5" -> Int 5 key, Long 20 -> Int 20 value
+        assertEquals(1, domain.distribution[1])
+    }
+
+    @Test
     fun consoleResponseMapsToDomain() {
         val now = kotlin.time.Instant.fromEpochSeconds(0)
         val response = com.spela.client.models.ConsoleResponse(
