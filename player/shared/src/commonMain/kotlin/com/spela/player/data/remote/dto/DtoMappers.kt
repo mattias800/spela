@@ -572,13 +572,13 @@ fun com.spela.client.models.UserSearchResult.toDomain(): UserSearchResult = User
 
 // Netplay mappers
 
-fun NetplaySessionDto.toDomain(): NetplaySession = NetplaySession(
+fun com.spela.client.models.NetplaySessionResponse.toDomain(): NetplaySession = NetplaySession(
     id = id,
     gameId = gameId,
     gameTitle = gameTitle,
     gameCoverUrl = gameCoverUrl,
-    gameConsoleName = consoleName,
-    coverAspectRatio = coverAspectRatio,
+    gameConsoleName = consoleName.orEmpty(),
+    coverAspectRatio = coverAspectRatio.toFloat(),
     hostUserId = hostId,
     hostUsername = hostUsername,
     hostAvatarUrl = hostAvatarUrl,
@@ -587,12 +587,12 @@ fun NetplaySessionDto.toDomain(): NetplaySession = NetplaySession(
     clientAvatarUrl = clientAvatarUrl,
     status = NetplaySessionStatus.entries.find { it.name.equals(status, ignoreCase = true) }
         ?: NetplaySessionStatus.WAITING,
-    inputDelay = inputDelay,
+    inputDelay = inputDelay.toInt(),
     inviteCode = inviteCode,
     endReason = endReason,
-    createdAt = createdAt,
-    startedAt = startedAt,
-    endedAt = endedAt,
+    createdAt = createdAt.toString(),
+    startedAt = startedAt?.toString(),
+    endedAt = endedAt?.toString(),
 )
 
 fun com.spela.client.models.TopListGameResponse.toDomain(): TopListGame = TopListGame(

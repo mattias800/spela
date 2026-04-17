@@ -1106,21 +1106,25 @@ class SpelaApiClient(
 
     // Netplay
 
-    suspend fun createNetplaySession(request: CreateNetplaySessionRequest): NetplaySessionDto {
+    suspend fun createNetplaySession(
+        request: com.spela.client.models.CreateNetplaySessionRequest,
+    ): com.spela.client.models.NetplaySessionResponse {
         return client.post("$baseUrl/api/netplay/sessions") {
             setBody(request)
         }.body()
     }
 
-    suspend fun getNetplaySessions(): NetplaySessionsResponse {
+    suspend fun getNetplaySessions(): com.spela.client.models.PaginatedResponseNetplaySessionResponse {
         return client.get("$baseUrl/api/netplay/sessions").body()
     }
 
-    suspend fun getNetplaySession(sessionId: String): NetplaySessionDto {
+    suspend fun getNetplaySession(sessionId: String): com.spela.client.models.NetplaySessionResponse {
         return client.get("$baseUrl/api/netplay/sessions/$sessionId").body()
     }
 
-    suspend fun joinNetplayByInviteCode(request: JoinByInviteCodeRequest): NetplaySessionDto {
+    suspend fun joinNetplayByInviteCode(
+        request: com.spela.client.models.JoinByInviteCodeRequest,
+    ): com.spela.client.models.NetplaySessionResponse {
         return client.post("$baseUrl/api/netplay/sessions/join") {
             setBody(request)
         }.body()
@@ -1134,13 +1138,19 @@ class SpelaApiClient(
         client.delete("$baseUrl/api/netplay/sessions/$sessionId")
     }
 
-    suspend fun updateNetplaySettings(sessionId: String, request: UpdateNetplaySettingsRequest): NetplaySessionDto {
+    suspend fun updateNetplaySettings(
+        sessionId: String,
+        request: com.spela.client.models.UpdateNetplaySettingsRequest,
+    ): com.spela.client.models.NetplaySessionResponse {
         return client.put("$baseUrl/api/netplay/sessions/$sessionId/settings") {
             setBody(request)
         }.body()
     }
 
-    suspend fun sendNetplayInvite(sessionId: String, request: SendNetplayInviteRequest) {
+    suspend fun sendNetplayInvite(
+        sessionId: String,
+        request: com.spela.client.models.NetplayInviteUserRequest,
+    ) {
         client.post("$baseUrl/api/netplay/sessions/$sessionId/invites") {
             setBody(request)
         }

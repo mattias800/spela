@@ -564,57 +564,14 @@ data class MostActivePlayersResponse(
 
 // Netplay
 
-@Serializable
-data class NetplaySessionDto(
-    val id: String,
-    val gameId: String,
-    val gameTitle: String = "",
-    val gameCoverUrl: String? = null,
-    val consoleName: String = "",
-    val coverAspectRatio: Float = 0.75f,
-    val hostId: String,
-    val hostUsername: String = "",
-    val hostAvatarUrl: String? = null,
-    val clientId: String? = null,
-    val clientUsername: String? = null,
-    val clientAvatarUrl: String? = null,
-    val status: String = "waiting",
-    val inputDelay: Int = 3,
-    val inviteCode: String = "",
-    val endReason: String? = null,
-    val createdAt: String = "",
-    val startedAt: String? = null,
-    val endedAt: String? = null,
-)
-
-@Serializable
-data class NetplaySessionsResponse(
-    val data: List<NetplaySessionDto> = emptyList(),
-    val total: Long = 0,
-    val page: Int = 1,
-    val pageSize: Int = 20,
-)
-
-@Serializable
-data class CreateNetplaySessionRequest(
-    val gameId: String,
-    val inputDelay: Int = 3,
-)
-
-@Serializable
-data class JoinByInviteCodeRequest(
-    val inviteCode: String,
-)
-
-@Serializable
-data class UpdateNetplaySettingsRequest(
-    val inputDelay: Int,
-)
-
-@Serializable
-data class SendNetplayInviteRequest(
-    val username: String,
-)
+// Netplay DTOs replaced by generated counterparts in
+// com.spela.client.models — see player/shared-api/:
+//   NetplaySessionDto             -> NetplaySessionResponse
+//   NetplaySessionsResponse       -> PaginatedResponseNetplaySessionResponse
+//   CreateNetplaySessionRequest   -> CreateNetplaySessionRequest (generated; same name)
+//   JoinByInviteCodeRequest       -> JoinByInviteCodeRequest (generated; same name)
+//   UpdateNetplaySettingsRequest  -> UpdateNetplaySettingsRequest (generated; same name)
+//   SendNetplayInviteRequest      -> NetplayInviteUserRequest
 
 // UserSearchResultDto / UserSearchResponse replaced by
 // com.spela.client.models.UserSearchResult /

@@ -51,8 +51,11 @@ kotlin {
 
                 // Generated Kotlin OpenAPI client — models + *Api classes
                 // produced by openapi-generator from the huma spec. See
-                // ../shared-api and scripts/regen-kotlin-api.sh.
-                implementation(project(":shared-api"))
+                // ../shared-api and scripts/regen-kotlin-api.sh. Exposed
+                // as `api` so downstream consumers (`:desktop`, `:android`)
+                // that call SpelaApiClient can name the generated request/
+                // response types without re-declaring the dep themselves.
+                api(project(":shared-api"))
 
                 implementation(libs.sqldelight.coroutines)
 
