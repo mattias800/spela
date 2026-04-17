@@ -44,3 +44,129 @@ func TestOpenAPISpecGeneration(t *testing.T) {
 	require.True(t, ok, "GET /api/health must be present")
 	assert.Equal(t, "getHealth", getOp["operationId"])
 }
+
+// TestOpenAPISpec_HasNewOperations verifies that every freshly-migrated huma
+// operation shows up in the generated OpenAPI spec with the expected
+// operationId. This is the behavioural guarantee that replaces per-endpoint
+// "is the route registered?" tests — if the spec has it, the route exists.
+func TestOpenAPISpec_HasNewOperations(t *testing.T) {
+	_, cfg := setupTestEnv(t)
+	cfg.Version = "v0.0.1-test"
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodGet, "/api/openapi.json", nil)
+	router.ServeHTTP(w, req)
+	require.Equal(t, http.StatusOK, w.Code)
+
+	var spec map[string]any
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &spec))
+
+	paths, ok := spec["paths"].(map[string]any)
+	require.True(t, ok, "spec must include paths block")
+
+	cases := []struct {
+		path   string
+		method string
+		opID   string
+	}{
+		{"/api/makers", "get", "listMakers"},
+		{"/api/makers/{code}", "get", "getMaker"},
+		{"/api/cores", "get", "listCores"},
+		{"/api/stats/most-played", "get", "getMostPlayed"},
+		{"/api/stats/most-active-players", "get", "getMostActivePlayers"},
+		// Consoles batch
+		{"/api/consoles", "get", "listConsoles"},
+		{"/api/consoles/{id}/games", "get", "listConsoleGames"},
+		{"/api/consoles/{id}/top-rated", "get", "getConsoleTopRated"},
+		{"/api/top-rated", "get", "getTopRatedGlobal"},
+		{"/api/top-lists/top-rated", "get", "getTopListAvailable"},
+		{"/api/top-lists/top-rated-critics", "get", "getTopListCritics"},
+		{"/api/top-lists/longest", "get", "getTopListLongest"},
+		{"/api/consoles/{id}/top-lists/top-rated", "get", "getConsoleTopListAvailable"},
+		{"/api/consoles/{id}/top-lists/top-rated-critics", "get", "getConsoleTopListCritics"},
+		{"/api/consoles/{id}/top-lists/longest", "get", "getConsoleTopListLongest"},
+		// User batch
+		{"/api/user/profile", "get", "getUserProfile"},
+		{"/api/user/preferences", "get", "getUserPreferences"},
+		// Game discovery batch
+		{"/api/games/{id}/artwork", "get", "getGameArtwork"},
+		{"/api/games/{id}/similar", "get", "getSimilarGames"},
+		{"/api/games/{id}/developer-games", "get", "getDeveloperGames"},
+		// User mutations
+		{"/api/user/profile", "put", "updateUserProfile"},
+		{"/api/user/preferences", "put", "updateUserPreferences"},
+		{"/api/user/password", "put", "changeUserPassword"},
+		// Games batch
+		{"/api/games", "get", "listGames"},
+		{"/api/games/{id}", "get", "getGame"},
+		{"/api/games/{id}/stats", "get", "getGameStats"},
+		{"/api/games/{id}/cheats", "get", "getGameCheats"},
+		{"/api/games/{id}/core", "get", "getRecommendedCore"},
+		{"/api/games/{id}/scrape-if-needed", "post", "scrapeGameIfNeeded"},
+		{"/api/games/{id}/play-time", "post", "updateGamePlayTime"},
+		{"/api/games/{id}/play-time", "delete", "stopPlayingGame"},
+		// Ratings batch
+		{"/api/games/{id}/ratings", "post", "createOrUpdateGameRating"},
+		{"/api/games/{id}/ratings", "get", "listGameRatings"},
+		{"/api/games/{id}/ratings/summary", "get", "getGameRatingSummary"},
+		{"/api/games/{id}/ratings/mine", "get", "getMyGameRating"},
+		{"/api/games/{id}/ratings", "delete", "deleteMyGameRating"},
+		// Favorites + play later
+		{"/api/user/favorites", "get", "listFavorites"},
+		{"/api/user/favorites/{gameId}", "post", "addFavorite"},
+		{"/api/user/favorites/{gameId}", "delete", "removeFavorite"},
+		{"/api/user/play-later", "get", "listPlayLater"},
+		{"/api/user/play-later/{gameId}", "post", "addToPlayLater"},
+		{"/api/user/play-later/{gameId}", "delete", "removeFromPlayLater"},
+		// Search + social
+		{"/api/search", "get", "globalSearch"},
+		{"/api/users/search", "get", "searchUsers"},
+		{"/api/social/online", "get", "getOnlineUsers"},
+	}
+
+	for _, c := range cases {
+		t.Run(c.opID, func(t *testing.T) {
+			pathItem, ok := paths[c.path].(map[string]any)
+			require.True(t, ok, "%s must be present in spec", c.path)
+			op, ok := pathItem[c.method].(map[string]any)
+			require.True(t, ok, "%s %s must be present in spec", c.method, c.path)
+			assert.Equal(t, c.opID, op["operationId"])
+			// Every migrated read-only endpoint is bearer-auth protected.
+			sec, ok := op["security"].([]any)
+			require.True(t, ok, "%s should have security requirement", c.opID)
+			assert.NotEmpty(t, sec)
+		})
+	}
+}
+
+// TestHumaError_WireFormatMatchesErrorResponse verifies that huma's typed error
+// helpers (huma.Error404NotFound, etc.) produce the same JSON wire format as
+// the existing ErrorResponse shape used by raw gin handlers — `{"error": ..., "message": ...}`.
+// This is the critical backwards-compatibility guarantee: consumers do not
+// need to change their error-parsing code as endpoints migrate.
+func TestHumaError_WireFormatMatchesErrorResponse(t *testing.T) {
+	_, cfg := setupTestEnv(t)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
+	token := registerAndGetToken(t, router)
+
+	// Hit a migrated endpoint with a path that forces a 404 through huma.
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodGet, "/api/makers/does-not-exist", nil)
+	req.Header.Set("Authorization", "Bearer "+token)
+	router.ServeHTTP(w, req)
+	require.Equal(t, http.StatusNotFound, w.Code)
+
+	var body map[string]any
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &body))
+	assert.Equal(t, "maker not found", body["error"], "error field should carry the message (ErrorResponse shape)")
+	// huma's default RFC 7807 fields must NOT appear — that would be a wire change.
+	_, hasTitle := body["title"]
+	_, hasDetail := body["detail"]
+	_, hasStatus := body["status"]
+	assert.False(t, hasTitle, "should not include RFC 7807 title")
+	assert.False(t, hasDetail, "should not include RFC 7807 detail")
+	assert.False(t, hasStatus, "should not include RFC 7807 status")
+}

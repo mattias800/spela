@@ -112,6 +112,11 @@ func NewRouter(cfg Config) (*gin.Engine, func()) {
 	// Health check (public, no auth required)
 	RegisterSystemRoutes(humaAPI, cfg.DB, cfg.Version)
 
+	// Forward declarations for huma route registration — the concrete
+	// registrations are done below once handler instances and the shared
+	// per-user rate limiter are constructed. We keep the migrated routes
+	// grouped together so it is easy to see what has moved off raw gin.
+
 	// Rate limiter for auth endpoints (login, register, setup)
 	authLimiter := NewRateLimiter(120, time.Minute)
 
@@ -210,6 +215,26 @@ func NewRouter(cfg Config) (*gin.Engine, func()) {
 		StagingDir: stagingDir,
 	}
 
+	// Register huma-migrated operations. These run through the huma adapter
+	// on top of the gin engine — they cohabit with the raw gin routes below
+	// during the incremental migration. Each registration function attaches
+	// the auth + per-user rate-limit middleware equivalent to the gin
+	// protected group below.
+	RegisterMakerRoutes(humaAPI, makerHandler, cfg.JWTSecret, cfg.DB, userLimiter)
+	RegisterCoreRoutes(humaAPI, coreHandler, cfg.JWTSecret, cfg.DB, userLimiter)
+	RegisterStatsRoutes(humaAPI, statsHandler, cfg.JWTSecret, cfg.DB, userLimiter)
+	RegisterConsoleRoutes(humaAPI, consoleHandler, cfg.JWTSecret, cfg.DB, userLimiter)
+	RegisterUserRoutes(humaAPI, userHandler, cfg.JWTSecret, cfg.DB, userLimiter)
+	RegisterUserMutationRoutes(humaAPI, userHandler, cfg.JWTSecret, cfg.DB, userLimiter, authLimiter)
+	RegisterArtworkRoutes(humaAPI, artworkHandler, cfg.JWTSecret, cfg.DB, userLimiter)
+	RegisterDiscoveryRoutes(humaAPI, discoveryHandler, cfg.JWTSecret, cfg.DB, userLimiter)
+	RegisterGameRoutes(humaAPI, gameHandler, cfg.JWTSecret, cfg.DB, userLimiter)
+	RegisterRatingRoutes(humaAPI, ratingHandler, cfg.JWTSecret, cfg.DB, userLimiter)
+	RegisterFavoriteRoutes(humaAPI, userHandler, cfg.JWTSecret, cfg.DB, userLimiter)
+	RegisterPlayLaterRoutes(humaAPI, playLaterHandler, cfg.JWTSecret, cfg.DB, userLimiter)
+	RegisterSearchRoutes(humaAPI, searchHandler, cfg.JWTSecret, cfg.DB, userLimiter)
+	RegisterSocialRoutes(humaAPI, socialHandler, cfg.JWTSecret, cfg.DB, userLimiter)
+
 	// Public auth routes — rate limit login/register/setup to prevent brute force,
 	// but leave refresh and setup-status unrestricted (called frequently during normal use).
 	authGroup := r.Group("/api/auth")
@@ -254,26 +279,15 @@ func NewRouter(cfg Config) (*gin.Engine, func()) {
 	api.Use(AuthMiddleware(cfg.JWTSecret, cfg.DB))
 	api.Use(userLimiter.UserRateLimit())
 	{
-		// Search
-		api.GET("/search", searchHandler.Search)
+		// Search — migrated to huma (see RegisterSearchRoutes above).
 
-		// Makers
-		api.GET("/makers", makerHandler.ListMakers)
-		api.GET("/makers/:code", makerHandler.GetMaker)
+		// Makers — migrated to huma (see RegisterMakerRoutes above).
 
-		// Consoles
-		api.GET("/consoles", consoleHandler.ListConsoles)
-		api.GET("/consoles/:id/games", consoleHandler.ListConsoleGames)
-		api.GET("/consoles/:id/top-rated", consoleHandler.GetTopRated)
-		api.GET("/top-rated", consoleHandler.GetTopRatedGlobal)
+		// Consoles — migrated to huma (see RegisterConsoleRoutes above). Covers
+		// the list, paginated games, top-rated cache, and both global + per-
+		// console top-list paths.
 
-		// Top Lists
-		api.GET("/top-lists/top-rated", consoleHandler.GetTopListAvailable)
-		api.GET("/top-lists/top-rated-critics", consoleHandler.GetTopListCritics)
-		api.GET("/top-lists/longest", consoleHandler.GetTopListLongest)
-		api.GET("/consoles/:id/top-lists/top-rated", consoleHandler.GetTopListAvailable)
-		api.GET("/consoles/:id/top-lists/top-rated-critics", consoleHandler.GetTopListCritics)
-		api.GET("/consoles/:id/top-lists/longest", consoleHandler.GetTopListLongest)
+		// Top Lists — migrated to huma as part of RegisterConsoleRoutes above.
 
 		// Explore
 		explore := api.Group("/explore")
@@ -313,20 +327,15 @@ func NewRouter(cfg Config) (*gin.Engine, func()) {
 			explore.GET("/wizard/results", exploreHandler.GetWizardResults)
 		}
 
-		// Games
-		api.GET("/games", gameHandler.ListGames)
-		api.GET("/games/:id", gameHandler.GetGame)
+		// Games — most endpoints migrated to huma (see RegisterGameRoutes above).
+		// Download endpoints stay on gin because they use c.File()/tar+zip streaming
+		// that doesn't map cleanly to huma typed outputs.
 		api.GET("/games/:id/download", downloadLimiter.RateLimit(), gameHandler.DownloadGame)
 		api.GET("/games/:id/download/:filename", downloadLimiter.RateLimit(), gameHandler.DownloadGame)
 		api.GET("/games/:id/discs/:discNumber/download", downloadLimiter.RateLimit(), gameHandler.DownloadDisc)
-		api.POST("/games/:id/scrape-if-needed", gameHandler.ScrapeIfNeeded)
-		api.POST("/games/:id/play-time", gameHandler.UpdatePlayTime)
-		api.DELETE("/games/:id/play-time", gameHandler.StopPlaying)
-		api.GET("/games/:id/stats", gameHandler.GetGameStats)
-		api.GET("/games/:id/cheats", gameHandler.GetGameCheats)
-		api.GET("/games/:id/artwork", artworkHandler.GetGameArtwork)
-		api.GET("/games/:id/similar", discoveryHandler.GetSimilarGames)
-		api.GET("/games/:id/developer-games", discoveryHandler.GetDeveloperGames)
+		// /games/:id/artwork — migrated to huma (see RegisterArtworkRoutes above).
+		// /games/:id/similar + /games/:id/developer-games — migrated to huma
+		// (see RegisterDiscoveryRoutes above).
 		api.GET("/games/:id/series", enrichmentHandler.GetGameSeries)
 		api.GET("/games/:id/franchises", enrichmentHandler.GetGameFranchises)
 
@@ -356,12 +365,7 @@ func NewRouter(cfg Config) (*gin.Engine, func()) {
 		api.POST("/sessions/:id/duplicate", sessionHandler.DuplicateSession)
 		api.DELETE("/sessions/:id/saves", sessionHandler.BulkDeleteSessionSaves)
 
-		// Ratings
-		api.POST("/games/:id/ratings", ratingHandler.CreateOrUpdateRating)
-		api.GET("/games/:id/ratings", ratingHandler.GetRatings)
-		api.GET("/games/:id/ratings/summary", ratingHandler.GetRatingSummary)
-		api.GET("/games/:id/ratings/mine", ratingHandler.GetMyRating)
-		api.DELETE("/games/:id/ratings", ratingHandler.DeleteRating)
+		// Ratings — migrated to huma (see RegisterRatingRoutes above).
 
 		// Shared saves
 		api.POST("/games/:id/shared-saves", uploadLimiter.RateLimit(), sharedSaveHandler.ShareSave)
@@ -370,24 +374,21 @@ func NewRouter(cfg Config) (*gin.Engine, func()) {
 		api.DELETE("/games/:id/shared-saves/:saveId", sharedSaveHandler.DeleteSharedSave)
 
 		// Cores
-		api.GET("/games/:id/core", gameHandler.GetRecommendedCore)
-		api.GET("/cores", coreHandler.ListCores)
+		// api.GET("/games/:id/core", ...) — migrated to huma (see RegisterGameRoutes above).
+		// api.GET("/cores", ...) — migrated to huma (see RegisterCoreRoutes below).
 		api.GET("/cores/:id/download", coreHandler.DownloadCore)
 
 		// BIOS files
 		api.GET("/bios", biosHandler.ListBiosFiles)
 		api.GET("/bios/:filename", biosHandler.GetBiosFile)
 
-		// Stats
-		api.GET("/stats/most-played", statsHandler.MostPlayedGames)
-		api.GET("/stats/most-active-players", statsHandler.MostActivePlayers)
+		// Stats — most-played + most-active-players migrated to huma
+		// (see RegisterStatsRoutes below). Heatmap endpoints stay on gin.
 
 		// User
-		api.GET("/user/profile", userHandler.GetProfile)
-		api.PUT("/user/profile", userHandler.UpdateProfile)
-		api.PUT("/user/password", authLimiter.RateLimit(), userHandler.ChangePassword)
-		api.GET("/user/preferences", userHandler.GetPreferences)
-		api.PUT("/user/preferences", userHandler.UpdatePreferences)
+		// /user/profile (GET + PUT), /user/preferences (GET + PUT),
+		// /user/password (PUT) — migrated to huma (see RegisterUserRoutes +
+		// RegisterUserMutationRoutes above).
 		api.GET("/user/stats", userHandler.GetUserStats)
 		api.GET("/user/play-stats", userHandler.GetPlayStats)
 		api.GET("/user/play-heatmap", statsHandler.GetPlayHeatmap)
@@ -395,9 +396,8 @@ func NewRouter(cfg Config) (*gin.Engine, func()) {
 		api.GET("/user/explorer-badges", exploreHandler.GetExplorerBadges)
 		api.GET("/user/completionist-map", exploreHandler.GetCompletionistMap)
 		api.GET("/user/recent", userHandler.GetRecentGames)
-		api.GET("/user/favorites", userHandler.GetFavorites)
-		api.POST("/user/favorites/:gameId", userHandler.AddFavorite)
-		api.DELETE("/user/favorites/:gameId", userHandler.RemoveFavorite)
+		// /user/favorites (GET + POST + DELETE) — migrated to huma
+		// (see RegisterFavoriteRoutes above).
 
 		// Storage management
 		api.GET("/user/storage", sessionHandler.GetStorageUsage)
@@ -413,10 +413,8 @@ func NewRouter(cfg Config) (*gin.Engine, func()) {
 		api.GET("/user/saved-searches", savedSearchHandler.ListSavedSearches)
 		api.DELETE("/user/saved-searches/:id", savedSearchHandler.DeleteSavedSearch)
 
-		// Play Later
-		api.GET("/user/play-later", playLaterHandler.ListPlayLater)
-		api.POST("/user/play-later/:gameId", playLaterHandler.AddToPlayLater)
-		api.DELETE("/user/play-later/:gameId", playLaterHandler.RemoveFromPlayLater)
+		// Play Later — read + add + remove migrated to huma
+		// (see RegisterPlayLaterRoutes above). Reorder stays on gin for now.
 		api.PUT("/user/play-later/reorder", playLaterHandler.ReorderPlayLater)
 
 		// Devices
@@ -482,9 +480,9 @@ func NewRouter(cfg Config) (*gin.Engine, func()) {
 		}
 
 		// Social
-		api.GET("/social/online", socialHandler.GetOnlineUsers)
+		// /social/online, /users/search — migrated to huma
+		// (see RegisterSocialRoutes above).
 		api.GET("/social/activity", socialHandler.GetActivityFeed)
-		api.GET("/users/search", socialHandler.SearchUsers)
 		api.GET("/users/recent-partners", socialHandler.GetRecentPartners)
 		api.GET("/users/:id/profile", socialHandler.GetPublicProfile)
 		api.GET("/users/:id/play-heatmap", statsHandler.GetPublicPlayHeatmap)

@@ -11,26 +11,30 @@ import (
 
 // --- User ---
 
-// UpdateProfileRequest is the body for PUT /api/user/profile.
+// UpdateProfileRequest is the body for PUT /api/user/profile. All fields are
+// optional — unset fields are left untouched on the user record. Email
+// changes also require CurrentPassword so the server can re-authenticate.
 type UpdateProfileRequest struct {
-	Email           string `json:"email"`
-	AvatarURL       string `json:"avatarUrl"`
-	CurrentPassword string `json:"currentPassword"`
+	Email           string `json:"email,omitempty"`
+	AvatarURL       string `json:"avatarUrl,omitempty"`
+	CurrentPassword string `json:"currentPassword,omitempty"`
 }
 
-// UpdatePreferencesRequest is the body for PUT /api/user/preferences.
+// UpdatePreferencesRequest is the body for PUT /api/user/preferences. Every
+// field is optional — nil fields are left untouched, matching the partial-update
+// semantics of the raw gin handler.
 type UpdatePreferencesRequest struct {
-	ShowPerformanceOverlay  *bool                           `json:"showPerformanceOverlay"`
-	AutoSaveEnabled         *bool                           `json:"autoSaveEnabled"`
-	AutoLoadSaveEnabled     *bool                           `json:"autoLoadSaveEnabled"`
-	SelectedShader          *string                         `json:"selectedShader"`
-	SelectedTheme           *string                         `json:"selectedTheme"`
-	DefaultSecondScreenPage *string                         `json:"defaultSecondScreenPage"`
-	ConsoleShaders          map[string]string               `json:"consoleShaders"`
-	SelectedKeyMapping      *string                         `json:"selectedKeyMapping"`
-	CustomKeyMapping        map[string]string               `json:"customKeyMapping"`
-	ConsoleKeyMappings      map[string]ConsoleKeyMappingDTO `json:"consoleKeyMappings"`
-	PreferredRegions        *[]string                       `json:"preferredRegions"`
+	ShowPerformanceOverlay  *bool                           `json:"showPerformanceOverlay,omitempty"`
+	AutoSaveEnabled         *bool                           `json:"autoSaveEnabled,omitempty"`
+	AutoLoadSaveEnabled     *bool                           `json:"autoLoadSaveEnabled,omitempty"`
+	SelectedShader          *string                         `json:"selectedShader,omitempty"`
+	SelectedTheme           *string                         `json:"selectedTheme,omitempty"`
+	DefaultSecondScreenPage *string                         `json:"defaultSecondScreenPage,omitempty"`
+	ConsoleShaders          map[string]string               `json:"consoleShaders,omitempty"`
+	SelectedKeyMapping      *string                         `json:"selectedKeyMapping,omitempty"`
+	CustomKeyMapping        map[string]string               `json:"customKeyMapping,omitempty"`
+	ConsoleKeyMappings      map[string]ConsoleKeyMappingDTO `json:"consoleKeyMappings,omitempty"`
+	PreferredRegions        *[]string                       `json:"preferredRegions,omitempty"`
 }
 
 // UpdateGameKeyMappingRequest is the body for PUT /api/user/games/:gameId/keymapping.
@@ -76,8 +80,12 @@ type UpdateGameMetadataRequest struct {
 }
 
 // UpdateGamePlayTimeRequest is the body for POST /api/games/:id/play-time.
+// The seconds field defaults to 0 when omitted, matching the raw gin handler's
+// tolerant binding (gin does not enforce the min/max tag unless the field is
+// supplied — huma replicates that behaviour via omitempty + handler-side range
+// validation).
 type UpdateGamePlayTimeRequest struct {
-	Seconds int64 `json:"seconds" binding:"min=0,max=86400"`
+	Seconds int64 `json:"seconds,omitempty" binding:"min=0,max=86400"`
 }
 
 // UpdateVerificationTagRequest is the body for PUT /api/admin/games/:id/verification-tag.
@@ -204,9 +212,13 @@ type AddGameToCollectionRequest struct {
 // --- Ratings ---
 
 // CreateOrUpdateRatingRequest is the body for PUT /api/games/:id/rating.
+// Validation (rating in [1,5]) happens in the handler so out-of-range values
+// (including a missing field that deserialises as 0) report 400 Bad Request
+// with the historical error message rather than huma's 422 "validation
+// failed" shape.
 type CreateOrUpdateRatingRequest struct {
-	Rating int    `json:"rating" binding:"required,min=1,max=5"`
-	Review string `json:"review"`
+	Rating int    `json:"rating,omitempty" binding:"required,min=1,max=5"`
+	Review string `json:"review,omitempty"`
 }
 
 // --- Challenges ---
