@@ -1166,7 +1166,7 @@ class SpelaApiClient(
         sort: String? = null,
         page: Int = 1,
         pageSize: Int = 20,
-    ): ChallengesResponse {
+    ): com.spela.client.models.PaginatedResponseChallengeResponse {
         return client.get("$baseUrl/api/challenges") {
             gameId?.let { parameter("gameId", it) }
             consoleId?.let { parameter("consoleId", it) }
@@ -1177,21 +1177,28 @@ class SpelaApiClient(
         }.body()
     }
 
-    suspend fun getGameChallenges(gameId: String, page: Int = 1, pageSize: Int = 20): ChallengesResponse {
+    suspend fun getGameChallenges(
+        gameId: String,
+        page: Int = 1,
+        pageSize: Int = 20,
+    ): com.spela.client.models.PaginatedResponseChallengeResponse {
         return client.get("$baseUrl/api/games/$gameId/challenges") {
             parameter("page", page)
             parameter("pageSize", pageSize)
         }.body()
     }
 
-    suspend fun getMyChallenges(page: Int = 1, pageSize: Int = 20): ChallengesResponse {
+    suspend fun getMyChallenges(
+        page: Int = 1,
+        pageSize: Int = 20,
+    ): com.spela.client.models.PaginatedResponseChallengeResponse {
         return client.get("$baseUrl/api/user/challenges") {
             parameter("page", page)
             parameter("pageSize", pageSize)
         }.body()
     }
 
-    suspend fun getChallenge(id: String): ChallengeDto {
+    suspend fun getChallenge(id: String): com.spela.client.models.ChallengeResponse {
         return client.get("$baseUrl/api/challenges/$id").body()
     }
 
@@ -1204,7 +1211,7 @@ class SpelaApiClient(
         coreName: String,
         saveData: ByteArray,
         screenshotData: ByteArray?,
-    ): ChallengeDto {
+    ): com.spela.client.models.ChallengeResponse {
         return client.submitFormWithBinaryData(
             url = "$baseUrl/api/challenges",
             formData = formData {
@@ -1236,11 +1243,16 @@ class SpelaApiClient(
         return client.get("$baseUrl/api/challenges/$challengeId/save/download").body()
     }
 
-    suspend fun startChallengeAttempt(challengeId: String): ChallengeAttemptDto {
+    suspend fun startChallengeAttempt(
+        challengeId: String,
+    ): com.spela.client.models.ChallengeAttemptResponse {
         return client.post("$baseUrl/api/challenges/$challengeId/attempts/start").body()
     }
 
-    suspend fun completeChallengeAttempt(challengeId: String, attemptId: String): ChallengeAttemptDto {
+    suspend fun completeChallengeAttempt(
+        challengeId: String,
+        attemptId: String,
+    ): com.spela.client.models.ChallengeAttemptResponse {
         return client.post("$baseUrl/api/challenges/$challengeId/attempts/$attemptId/complete").body()
     }
 
@@ -1248,7 +1260,9 @@ class SpelaApiClient(
         client.post("$baseUrl/api/challenges/$challengeId/attempts/$attemptId/abandon")
     }
 
-    suspend fun getMyChallengeAttempts(challengeId: String): List<ChallengeAttemptDto> {
+    suspend fun getMyChallengeAttempts(
+        challengeId: String,
+    ): List<com.spela.client.models.ChallengeAttemptResponse> {
         return client.get("$baseUrl/api/challenges/$challengeId/attempts/mine").body()
     }
 
@@ -1256,7 +1270,7 @@ class SpelaApiClient(
         challengeId: String,
         page: Int = 1,
         pageSize: Int = 50,
-    ): ChallengeLeaderboardResponse {
+    ): com.spela.client.models.PaginatedResponseChallengeLeaderboardEntry {
         return client.get("$baseUrl/api/challenges/$challengeId/leaderboard") {
             parameter("page", page)
             parameter("pageSize", pageSize)

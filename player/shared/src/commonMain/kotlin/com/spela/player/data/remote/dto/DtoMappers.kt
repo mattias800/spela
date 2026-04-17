@@ -511,51 +511,55 @@ fun ActivePlayerDto.toDomain(): ActivePlayer = ActivePlayer(
 
 // Challenge mappers
 
-fun ChallengeDto.toDomain(): Challenge = Challenge(
+fun com.spela.client.models.ChallengeResponse.toDomain(): Challenge = Challenge(
     id = id,
     creatorId = creatorId,
     creatorUsername = creatorUsername,
-    creatorAvatarUrl = creatorAvatarUrl,
+    creatorAvatarUrl = creatorAvatar,
     gameId = gameId,
     gameTitle = gameTitle,
     gameCoverUrl = gameCoverUrl,
-    gameConsoleName = gameConsoleName,
+    gameConsoleName = consoleName.orEmpty(),
     name = name,
-    description = description,
+    description = description.orEmpty(),
     type = ChallengeType.fromApiId(type),
     difficulty = ChallengeDifficulty.fromApiId(difficulty),
     status = status,
     screenshotUrl = screenshotUrl,
-    coreName = coreName,
+    coreName = coreName.orEmpty(),
     saveFileSize = saveFileSize,
-    attemptCount = attemptCount,
-    completionCount = completionCount,
-    bestTimeMs = bestTimeMs,
-    expiresAt = expiresAt,
-    createdAt = createdAt,
+    attemptCount = attemptCount.toInt(),
+    completionCount = completionCount.toInt(),
+    // bestTimeMs not exposed by the server spec — domain keeps the field
+    // so UI can compute it from the user's best attempt if needed.
+    bestTimeMs = null,
+    expiresAt = expiresAt?.toString(),
+    createdAt = createdAt.toString(),
 )
 
-fun ChallengeAttemptDto.toDomain(): ChallengeAttempt = ChallengeAttempt(
+fun com.spela.client.models.ChallengeAttemptResponse.toDomain(): ChallengeAttempt = ChallengeAttempt(
     id = id,
     challengeId = challengeId,
     userId = userId,
     username = username,
     avatarUrl = avatarUrl,
     status = status,
-    startedAt = startedAt,
-    completedAt = completedAt,
+    startedAt = startedAt.toString(),
+    completedAt = completedAt?.toString(),
     durationMs = durationMs,
     isBest = isBest,
 )
 
-fun ChallengeLeaderboardEntryDto.toDomain(): ChallengeLeaderboardEntry = ChallengeLeaderboardEntry(
-    rank = rank,
+fun com.spela.client.models.ChallengeLeaderboardEntry.toDomain(): ChallengeLeaderboardEntry = ChallengeLeaderboardEntry(
+    rank = rank.toInt(),
     userId = userId,
     username = username,
     avatarUrl = avatarUrl,
     durationMs = durationMs,
-    completedAt = completedAt,
-    isCurrentUser = isCurrentUser,
+    completedAt = completedAt.toString(),
+    // isCurrentUser is derived from the auth'd user at the presentation
+    // layer — server spec doesn't ship it.
+    isCurrentUser = false,
 )
 
 // User Search mappers
