@@ -418,16 +418,12 @@ data class AchievementProgressResponse(
 // hand-written field was always 0.0. The new mapper pulls the real
 // rating.
 
-// Similar Games
-
-@Serializable
-data class SimilarGameDto(
-    val igdbGameId: Int = 0,
-    val name: String,
-    val coverUrl: String? = null,
-    val rating: Double = 0.0,
-    val localGameId: String? = null,
-)
+// Similar Games — SimilarGameDto replaced by
+// com.spela.client.models.SimilarGameResponse.
+//
+// Noteworthy: hand-written DTO used `rating` but the server emits
+// `igdbCriticsRating` — silent 0.0 in the similar-games card rating.
+// The new mapper pulls the real field.
 
 // Developer Games — DeveloperGameDto replaced by
 // com.spela.client.models.DeveloperGameResponse (see player/shared-api/).
@@ -540,213 +536,54 @@ data class SimilarGameDto(
 // type but the underlying server field is *GameResponse (nullable); if
 // the spec is corrected, we'll handle null at runtime in the mapper.
 
-// Artwork Gallery
-
-@Serializable
-data class ArtworkItemDto(
-    val url: String,
-    val width: Int,
-    val height: Int,
-    val gameId: String,
-    val gameTitle: String,
-    val consoleName: String,
-    val consoleAbbreviation: String,
-    val consoleColor: String,
-)
-
-@Serializable
-data class ArtworkGalleryResponseDto(
-    val artworks: List<ArtworkItemDto>,
-    val page: Int,
-    val totalPages: Int,
-    val totalCount: Int,
-)
-
-// Screenshot Gallery
-
-@Serializable
-data class ScreenshotItemDto(
-    val url: String,
-    val gameId: String,
-    val gameTitle: String,
-    val consoleName: String,
-    val consoleAbbreviation: String,
-    val consoleColor: String,
-)
-
-@Serializable
-data class ScreenshotGalleryResponseDto(
-    val screenshots: List<ScreenshotItemDto>,
-    val page: Int,
-    val totalPages: Int,
-    val totalCount: Int,
-)
+// Artwork / Screenshot Gallery — ArtworkItemDto /
+// ArtworkGalleryResponseDto / ScreenshotItemDto /
+// ScreenshotGalleryResponseDto replaced by
+// com.spela.client.models.ArtworkItem / ArtworkGalleryResponse /
+// ScreenshotItem / ScreenshotGalleryResponse. Width/height are Long
+// on the wire — mapper converts to Int.
 
 // --- Phase 10: Social & Community Discovery ---
-
-@Serializable
-data class TrendingGameDto(
-    val game: GameDto,
-    val playersThisWeek: Int,
-)
-
-@Serializable
-data class TrendingResponseDto(
-    val games: List<TrendingGameDto>,
-)
-
-@Serializable
-data class CommunityTopGameDto(
-    val game: GameDto,
-    val avgRating: Double,
-    val ratingCount: Int,
-)
-
-@Serializable
-data class CommunityTopResponseDto(
-    val games: List<CommunityTopGameDto>,
-)
-
-@Serializable
-data class CultClassicGameDto(
-    val game: GameDto,
-    val communityRating: Double,
-    val igdbCriticsRating: Double,
-    val ratingCount: Int,
-)
-
-@Serializable
-data class CultClassicsResponseDto(
-    val games: List<CultClassicGameDto>,
-)
-
-@Serializable
-data class RecentReviewItemDto(
-    val game: GameDto,
-    val rating: Int,
-    val review: String,
-    val reviewerName: String,
-    val reviewedAt: String,
-)
-
-@Serializable
-data class RecentlyReviewedResponseDto(
-    val reviews: List<RecentReviewItemDto>,
-)
-
-@Serializable
-data class ActiveNowItemDto(
-    val game: GameDto,
-    val activeSessions: Int,
-    val activeChallenges: Int,
-)
-
-@Serializable
-data class ActiveNowResponseDto(
-    val games: List<ActiveNowItemDto>,
-)
+//
+// TrendingGameDto / TrendingResponseDto / CommunityTopGameDto /
+// CommunityTopResponseDto / CultClassicGameDto / CultClassicsResponseDto /
+// RecentReviewItemDto / RecentlyReviewedResponseDto / ActiveNowItemDto /
+// ActiveNowResponseDto replaced by generated counterparts in
+// com.spela.client.models:
+//   TrendingGameResponse / TrendingResponse / CommunityTopGame /
+//   CommunityTopResponse / CultClassicGame / CultClassicsResponse /
+//   RecentReviewItem / RecentlyReviewedResponse / ActiveNowItem /
+//   ActiveNowResponse
+//
+// Most numeric fields are Long on the wire — mappers convert to Int.
+// RecentReviewItem.reviewedAt is kotlinx.datetime.Instant — mapper
+// stringifies via .toString().
 
 // --- Phase 11: Temporal Discovery ---
-
-@Serializable
-data class OnThisDayResponseDto(
-    val date: String,
-    val games: List<GameDto>,
-)
-
-@Serializable
-data class BestOfYearResponseDto(
-    val year: Int,
-    val games: List<GameDto>,
-)
-
-@Serializable
-data class AnniversaryItemDto(
-    val game: GameDto,
-    val yearsAgo: Int,
-    val playedAt: String,
-)
-
-@Serializable
-data class YourAnniversariesResponseDto(
-    val anniversaries: List<AnniversaryItemDto>,
-)
-
-@Serializable
-data class DecadeResponseDto(
-    val decade: String,
-    val label: String,
-    val games: List<GameDto>,
-)
+//
+// OnThisDayResponseDto / BestOfYearResponseDto / AnniversaryItemDto /
+// YourAnniversariesResponseDto / DecadeResponseDto replaced by
+// com.spela.client.models.OnThisDayResponse / BestOfYearResponse /
+// AnniversaryItem / AnniversariesResponse / DecadesResponse. playedAt is
+// a kotlinx.datetime.Instant — mapper stringifies via .toString().
 
 // --- Phase 12: Achievement & Challenge-Driven Discovery ---
-
-@Serializable
-data class AchievementGameItemDto(
-    val game: GameDto,
-    val totalAchievements: Int,
-    val avgCompletion: Float,
-    val playersAttempted: Int,
-    val playersCompleted: Int,
-)
-
-@Serializable
-data class EasyToCompleteResponseDto(
-    val games: List<AchievementGameItemDto>,
-)
-
-@Serializable
-data class HardestGamesResponseDto(
-    val games: List<AchievementGameItemDto>,
-)
-
-@Serializable
-data class AlmostDoneGameDto(
-    val game: GameDto,
-    val unlockedCount: Int,
-    val totalCount: Int,
-    val completionPercent: Float,
-)
-
-@Serializable
-data class AlmostDoneResponseDto(
-    val games: List<AlmostDoneGameDto>,
-)
-
-@Serializable
-data class FreshChallengeGameDto(
-    val game: GameDto,
-    val totalAchievements: Int,
-    val totalPoints: Int,
-)
-
-@Serializable
-data class FreshChallengesResponseDto(
-    val games: List<FreshChallengeGameDto>,
-)
-
-@Serializable
-data class ExploreChallengeDto(
-    val id: String,
-    val creatorUsername: String,
-    val gameId: String,
-    val gameTitle: String,
-    val gameCoverUrl: String? = null,
-    val consoleName: String? = null,
-    val name: String,
-    val description: String? = null,
-    val type: String,
-    val difficulty: String,
-    val attemptCount: Int,
-    val completionCount: Int,
-    val expiresAt: String? = null,
-    val createdAt: String,
-)
-
-@Serializable
-data class ActiveChallengesResponseDto(
-    val challenges: List<ExploreChallengeDto>,
-)
+//
+// AchievementGameItemDto / EasyToCompleteResponseDto /
+// HardestGamesResponseDto / AlmostDoneGameDto / AlmostDoneResponseDto /
+// FreshChallengeGameDto / FreshChallengesResponseDto / ExploreChallengeDto /
+// ActiveChallengesResponseDto replaced by generated counterparts in
+// com.spela.client.models:
+//   AchievementGameResponse / EasyToCompleteResponse /
+//   HardestGamesResponse / AlmostDoneGame / AlmostDoneResponse /
+//   FreshChallengeGame / FreshChallengesResponse / ExploreChallengeResponse /
+//   ActiveChallengesResponse
+//
+// Generated numeric fields are Long — mappers convert to Int. Float
+// fields (avgCompletion, completionPercent) are kotlin.Double in the
+// generated type — the hand-written DTO and domain both used Float, the
+// mapper keeps the existing Float precision via .toFloat(). ExploreChallenge
+// createdAt / expiresAt are Instants — stringified.
 
 // --- Phase 13: Advanced Search & Saved Searches ---
 
@@ -754,33 +591,11 @@ data class ActiveChallengesResponseDto(
 // com.spela.client.models.SavedSearchResponse / SavedSearchRequest.
 
 // --- Phase 14: Wild Features — Wizard, Badges, Completionist Map ---
-
-@Serializable
-data class WizardOptionDto(
-    val id: String,
-    val label: String,
-    val description: String = "",
-    val imageUrl: String = "",
-)
-
-@Serializable
-data class WizardStepDto(
-    val step: Int,
-    val title: String,
-    val type: String,
-    val options: List<WizardOptionDto>,
-)
-
-@Serializable
-data class WizardResponseDto(
-    val steps: List<WizardStepDto>,
-)
-
-@Serializable
-data class WizardResultsResponseDto(
-    val games: List<GameDto>,
-    val title: String,
-)
+//
+// WizardOptionDto / WizardStepDto / WizardResponseDto /
+// WizardResultsResponseDto replaced by com.spela.client.models.WizardOption
+// / WizardStep / WizardResponse / WizardResultsResponse. Step is Long —
+// mapper converts to Int. Description / imageUrl are nullable.
 
 // ExplorerBadgeDto and ExplorerBadgesResponseDto replaced by
 // com.spela.client.models.ExplorerBadge and

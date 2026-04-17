@@ -649,11 +649,15 @@ fun com.spela.client.models.LongestGameResponse.toDomain(): LongestGame = Longes
     timeToBeatCompletely = timeToBeatCompletely.toInt(),
 )
 
-fun SimilarGameDto.toDomain(): SimilarGame = SimilarGame(
-    igdbGameId = igdbGameId,
+// Server emits `igdbCriticsRating`; the hand-written SimilarGameDto
+// used `rating` which was always 0.0 — the new mapper pulls the real
+// field. coverUrl is @Required non-nullable (empty string = no cover);
+// convert back to null via takeIf.
+fun com.spela.client.models.SimilarGameResponse.toDomain(): SimilarGame = SimilarGame(
+    igdbGameId = igdbGameId.toInt(),
     name = name,
-    coverUrl = coverUrl,
-    rating = rating,
+    coverUrl = coverUrl.takeIf { it.isNotEmpty() },
+    rating = igdbCriticsRating,
     localGameId = localGameId,
 )
 
@@ -1001,10 +1005,10 @@ fun com.spela.client.models.ConsoleHighlight.toDomain(): ConsoleHighlight = Cons
     topGame = topGame.toDomain(),
 )
 
-fun ArtworkItemDto.toDomain(): ArtworkItem = ArtworkItem(
+fun com.spela.client.models.ArtworkItem.toDomain(): ArtworkItem = ArtworkItem(
     url = url,
-    width = width,
-    height = height,
+    width = width.toInt(),
+    height = height.toInt(),
     gameId = gameId,
     gameTitle = gameTitle,
     consoleName = consoleName,
@@ -1012,7 +1016,7 @@ fun ArtworkItemDto.toDomain(): ArtworkItem = ArtworkItem(
     consoleColor = consoleColor,
 )
 
-fun ScreenshotItemDto.toDomain(): ScreenshotItem = ScreenshotItem(
+fun com.spela.client.models.ScreenshotItem.toDomain(): ScreenshotItem = ScreenshotItem(
     url = url,
     gameId = gameId,
     gameTitle = gameTitle,
@@ -1023,70 +1027,70 @@ fun ScreenshotItemDto.toDomain(): ScreenshotItem = ScreenshotItem(
 
 // --- Phase 10: Social & Community Discovery ---
 
-fun TrendingGameDto.toDomain(): TrendingGame = TrendingGame(
+fun com.spela.client.models.TrendingGameResponse.toDomain(): TrendingGame = TrendingGame(
     game = game.toDomain(),
-    playersThisWeek = playersThisWeek,
+    playersThisWeek = playersThisWeek.toInt(),
 )
 
-fun CommunityTopGameDto.toDomain(): CommunityTopGame = CommunityTopGame(
+fun com.spela.client.models.CommunityTopGame.toDomain(): CommunityTopGame = CommunityTopGame(
     game = game.toDomain(),
     avgRating = avgRating,
-    ratingCount = ratingCount,
+    ratingCount = ratingCount.toInt(),
 )
 
-fun CultClassicGameDto.toDomain(): CultClassicGame = CultClassicGame(
+fun com.spela.client.models.CultClassicGame.toDomain(): CultClassicGame = CultClassicGame(
     game = game.toDomain(),
     communityRating = communityRating,
     igdbCriticsRating = igdbCriticsRating,
-    ratingCount = ratingCount,
+    ratingCount = ratingCount.toInt(),
 )
 
-fun RecentReviewItemDto.toDomain(): RecentReviewItem = RecentReviewItem(
+fun com.spela.client.models.RecentReviewItem.toDomain(): RecentReviewItem = RecentReviewItem(
     game = game.toDomain(),
-    rating = rating,
+    rating = rating.toInt(),
     review = review,
     reviewerName = reviewerName,
-    reviewedAt = reviewedAt,
+    reviewedAt = reviewedAt.toString(),
 )
 
-fun ActiveNowItemDto.toDomain(): ActiveNowItem = ActiveNowItem(
+fun com.spela.client.models.ActiveNowItem.toDomain(): ActiveNowItem = ActiveNowItem(
     game = game.toDomain(),
-    activeSessions = activeSessions,
-    activeChallenges = activeChallenges,
+    activeSessions = activeSessions.toInt(),
+    activeChallenges = activeChallenges.toInt(),
 )
 
 // --- Phase 11: Temporal Discovery ---
 
-fun AnniversaryItemDto.toDomain(): AnniversaryItem = AnniversaryItem(
+fun com.spela.client.models.AnniversaryItem.toDomain(): AnniversaryItem = AnniversaryItem(
     game = game.toDomain(),
-    yearsAgo = yearsAgo,
-    playedAt = playedAt,
+    yearsAgo = yearsAgo.toInt(),
+    playedAt = playedAt.toString(),
 )
 
 // --- Phase 12: Achievement & Challenge-Driven Discovery ---
 
-fun AchievementGameItemDto.toDomain() = AchievementGameItem(
+fun com.spela.client.models.AchievementGameResponse.toDomain() = AchievementGameItem(
     game = game.toDomain(),
-    totalAchievements = totalAchievements,
-    avgCompletion = avgCompletion,
-    playersAttempted = playersAttempted,
-    playersCompleted = playersCompleted,
+    totalAchievements = totalAchievements.toInt(),
+    avgCompletion = avgCompletion.toFloat(),
+    playersAttempted = playersAttempted.toInt(),
+    playersCompleted = playersCompleted.toInt(),
 )
 
-fun AlmostDoneGameDto.toDomain() = AlmostDoneGame(
+fun com.spela.client.models.AlmostDoneGame.toDomain() = AlmostDoneGame(
     game = game.toDomain(),
-    unlockedCount = unlockedCount,
-    totalCount = totalCount,
-    completionPercent = completionPercent,
+    unlockedCount = unlockedCount.toInt(),
+    totalCount = totalCount.toInt(),
+    completionPercent = completionPercent.toFloat(),
 )
 
-fun FreshChallengeGameDto.toDomain() = FreshChallengeGame(
+fun com.spela.client.models.FreshChallengeGame.toDomain() = FreshChallengeGame(
     game = game.toDomain(),
-    totalAchievements = totalAchievements,
-    totalPoints = totalPoints,
+    totalAchievements = totalAchievements.toInt(),
+    totalPoints = totalPoints.toInt(),
 )
 
-fun ExploreChallengeDto.toDomain() = ExploreChallenge(
+fun com.spela.client.models.ExploreChallengeResponse.toDomain() = ExploreChallenge(
     id = id,
     creatorUsername = creatorUsername,
     gameId = gameId,
@@ -1097,10 +1101,10 @@ fun ExploreChallengeDto.toDomain() = ExploreChallenge(
     description = description,
     type = type,
     difficulty = difficulty,
-    attemptCount = attemptCount,
-    completionCount = completionCount,
-    expiresAt = expiresAt,
-    createdAt = createdAt,
+    attemptCount = attemptCount.toInt(),
+    completionCount = completionCount.toInt(),
+    expiresAt = expiresAt?.toString(),
+    createdAt = createdAt.toString(),
 )
 
 // --- Phase 13: Advanced Search & Saved Searches ---
@@ -1119,21 +1123,21 @@ fun com.spela.client.models.SavedSearchResponse.toDomain() = SavedSearch(
 
 // --- Phase 14: Wild Features ---
 
-fun WizardOptionDto.toDomain() = WizardOption(
+fun com.spela.client.models.WizardOption.toDomain() = WizardOption(
     id = id,
     label = label,
-    description = description,
+    description = description.orEmpty(),
 )
 
-fun WizardStepDto.toDomain() = WizardStep(
-    step = step,
+fun com.spela.client.models.WizardStep.toDomain() = WizardStep(
+    step = step.toInt(),
     title = title,
     type = type,
-    options = options.map { it.toDomain() },
+    options = options.orEmpty().map { it.toDomain() },
 )
 
-fun WizardResultsResponseDto.toDomain() = WizardResults(
-    games = games.map { it.toDomain() },
+fun com.spela.client.models.WizardResultsResponse.toDomain() = WizardResults(
+    games = games.orEmpty().map { it.toDomain() },
     title = title,
 )
 

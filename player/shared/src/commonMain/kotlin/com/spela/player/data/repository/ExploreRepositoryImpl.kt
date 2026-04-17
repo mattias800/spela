@@ -265,7 +265,7 @@ class ExploreRepositoryImpl(
     }
 
     override suspend fun getArtworkGallery(page: Int): Result<List<ArtworkItem>> = runCatching {
-        apiClient.getArtworkGallery(page).artworks.map { dto ->
+        apiClient.getArtworkGallery(page).artworks.orEmpty().map { dto ->
             dto.toDomain().copy(
                 url = apiClient.resolveUrl(dto.url) ?: dto.url,
             )
@@ -273,7 +273,7 @@ class ExploreRepositoryImpl(
     }
 
     override suspend fun getScreenshotGallery(page: Int): Result<List<ScreenshotItem>> = runCatching {
-        apiClient.getScreenshotGallery(page).screenshots.map { dto ->
+        apiClient.getScreenshotGallery(page).screenshots.orEmpty().map { dto ->
             dto.toDomain().copy(
                 url = apiClient.resolveUrl(dto.url) ?: dto.url,
             )
@@ -281,7 +281,7 @@ class ExploreRepositoryImpl(
     }
 
     override suspend fun getTrending(): Result<List<TrendingGame>> = runCatching {
-        apiClient.getTrending().games.map { dto ->
+        apiClient.getTrending().games.orEmpty().map { dto ->
             dto.toDomain().copy(
                 game = resolveGameCovers(dto.game.toDomain(), dto.game),
             )
@@ -289,7 +289,7 @@ class ExploreRepositoryImpl(
     }
 
     override suspend fun getCommunityTop(): Result<List<CommunityTopGame>> = runCatching {
-        apiClient.getCommunityTop().games.map { dto ->
+        apiClient.getCommunityTop().games.orEmpty().map { dto ->
             dto.toDomain().copy(
                 game = resolveGameCovers(dto.game.toDomain(), dto.game),
             )
@@ -297,7 +297,7 @@ class ExploreRepositoryImpl(
     }
 
     override suspend fun getCultClassics(): Result<List<CultClassicGame>> = runCatching {
-        apiClient.getCultClassics().games.map { dto ->
+        apiClient.getCultClassics().games.orEmpty().map { dto ->
             dto.toDomain().copy(
                 game = resolveGameCovers(dto.game.toDomain(), dto.game),
             )
@@ -305,7 +305,7 @@ class ExploreRepositoryImpl(
     }
 
     override suspend fun getRecentlyReviewed(): Result<List<RecentReviewItem>> = runCatching {
-        apiClient.getRecentlyReviewed().reviews.map { dto ->
+        apiClient.getRecentlyReviewed().reviews.orEmpty().map { dto ->
             dto.toDomain().copy(
                 game = resolveGameCovers(dto.game.toDomain(), dto.game),
             )
@@ -313,7 +313,7 @@ class ExploreRepositoryImpl(
     }
 
     override suspend fun getActiveNow(): Result<List<ActiveNowItem>> = runCatching {
-        apiClient.getActiveNow().games.map { dto ->
+        apiClient.getActiveNow().games.orEmpty().map { dto ->
             dto.toDomain().copy(
                 game = resolveGameCovers(dto.game.toDomain(), dto.game),
             )
@@ -322,20 +322,20 @@ class ExploreRepositoryImpl(
 
     override suspend fun getOnThisDay(): Result<Pair<String, List<Game>>> = runCatching {
         val dto = apiClient.getOnThisDay()
-        val games = dto.games.map { gameDto ->
+        val games = dto.games.orEmpty().map { gameDto ->
             resolveGameCovers(gameDto.toDomain(), gameDto)
         }
         Pair(dto.date, games)
     }
 
     override suspend fun getBestOfYear(year: Int): Result<List<Game>> = runCatching {
-        apiClient.getBestOfYear(year).games.map { gameDto ->
+        apiClient.getBestOfYear(year).games.orEmpty().map { gameDto ->
             resolveGameCovers(gameDto.toDomain(), gameDto)
         }
     }
 
     override suspend fun getYourAnniversaries(): Result<List<AnniversaryItem>> = runCatching {
-        apiClient.getYourAnniversaries().anniversaries.map { dto ->
+        apiClient.getYourAnniversaries().anniversaries.orEmpty().map { dto ->
             dto.toDomain().copy(
                 game = resolveGameCovers(dto.game.toDomain(), dto.game),
             )
@@ -344,14 +344,14 @@ class ExploreRepositoryImpl(
 
     override suspend fun getDecade(decade: String): Result<Pair<String, List<Game>>> = runCatching {
         val dto = apiClient.getDecade(decade)
-        val games = dto.games.map { gameDto ->
+        val games = dto.games.orEmpty().map { gameDto ->
             resolveGameCovers(gameDto.toDomain(), gameDto)
         }
         Pair(dto.label, games)
     }
 
     override suspend fun getEasyToComplete(): Result<List<AchievementGameItem>> = runCatching {
-        apiClient.getEasyToComplete().games.map { dto ->
+        apiClient.getEasyToComplete().games.orEmpty().map { dto ->
             dto.toDomain().copy(
                 game = resolveGameCovers(dto.game.toDomain(), dto.game),
             )
@@ -359,7 +359,7 @@ class ExploreRepositoryImpl(
     }
 
     override suspend fun getHardestGames(): Result<List<AchievementGameItem>> = runCatching {
-        apiClient.getHardestGames().games.map { dto ->
+        apiClient.getHardestGames().games.orEmpty().map { dto ->
             dto.toDomain().copy(
                 game = resolveGameCovers(dto.game.toDomain(), dto.game),
             )
@@ -367,7 +367,7 @@ class ExploreRepositoryImpl(
     }
 
     override suspend fun getAlmostDone(): Result<List<AlmostDoneGame>> = runCatching {
-        apiClient.getAlmostDone().games.map { dto ->
+        apiClient.getAlmostDone().games.orEmpty().map { dto ->
             dto.toDomain().copy(
                 game = resolveGameCovers(dto.game.toDomain(), dto.game),
             )
@@ -375,7 +375,7 @@ class ExploreRepositoryImpl(
     }
 
     override suspend fun getFreshChallenges(): Result<List<FreshChallengeGame>> = runCatching {
-        apiClient.getFreshChallenges().games.map { dto ->
+        apiClient.getFreshChallenges().games.orEmpty().map { dto ->
             dto.toDomain().copy(
                 game = resolveGameCovers(dto.game.toDomain(), dto.game),
             )
@@ -383,7 +383,7 @@ class ExploreRepositoryImpl(
     }
 
     override suspend fun getActiveChallenges(): Result<List<ExploreChallenge>> = runCatching {
-        apiClient.getActiveChallenges().challenges.map { it.toDomain() }
+        apiClient.getActiveChallenges().challenges.orEmpty().map { it.toDomain() }
     }
 
     override suspend fun getFilteredGames(filters: Map<String, String>, page: Int, pageSize: Int): Result<List<Game>> = runCatching {
@@ -409,13 +409,13 @@ class ExploreRepositoryImpl(
     }
 
     override suspend fun getWizardSteps(): Result<List<WizardStep>> = runCatching {
-        apiClient.getWizardSteps().steps.map { it.toDomain() }
+        apiClient.getWizardSteps().steps.orEmpty().map { it.toDomain() }
     }
 
     override suspend fun getWizardResults(mood: String, era: String, vibe: String): Result<WizardResults> = runCatching {
         val response = apiClient.getWizardResults(mood, era, vibe)
         WizardResults(
-            games = response.games.map { dto ->
+            games = response.games.orEmpty().map { dto ->
                 val game = dto.toDomain()
                 resolveGameCovers(game, dto)
             },

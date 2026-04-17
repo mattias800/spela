@@ -271,7 +271,7 @@ class SpelaApiClient(
         return client.get("$baseUrl/api/top-lists/longest").body()
     }
 
-    suspend fun getSimilarGames(gameId: String): List<SimilarGameDto> {
+    suspend fun getSimilarGames(gameId: String): List<com.spela.client.models.SimilarGameResponse> {
         return client.get("$baseUrl/api/games/$gameId/similar").body()
     }
 
@@ -408,86 +408,86 @@ class SpelaApiClient(
     }
 
     /** Returns a paginated list of IGDB artwork for the gallery */
-    suspend fun getArtworkGallery(page: Int = 1): ArtworkGalleryResponseDto {
+    suspend fun getArtworkGallery(page: Int = 1): com.spela.client.models.ArtworkGalleryResponse {
         return client.get("$baseUrl/api/explore/artwork") {
             parameter("page", page)
         }.body()
     }
 
     /** Returns a paginated list of screenshots for the gallery */
-    suspend fun getScreenshotGallery(page: Int = 1): ScreenshotGalleryResponseDto {
+    suspend fun getScreenshotGallery(page: Int = 1): com.spela.client.models.ScreenshotGalleryResponse {
         return client.get("$baseUrl/api/explore/screenshots") {
             parameter("page", page)
         }.body()
     }
 
     /** Returns trending games (most played this week) */
-    suspend fun getTrending(): TrendingResponseDto {
+    suspend fun getTrending(): com.spela.client.models.TrendingResponse {
         return client.get("$baseUrl/api/explore/trending").body()
     }
 
     /** Returns community top-rated games */
-    suspend fun getCommunityTop(): CommunityTopResponseDto {
+    suspend fun getCommunityTop(): com.spela.client.models.CommunityTopResponse {
         return client.get("$baseUrl/api/explore/community-top").body()
     }
 
     /** Returns cult classics (high community, low IGDB) */
-    suspend fun getCultClassics(): CultClassicsResponseDto {
+    suspend fun getCultClassics(): com.spela.client.models.CultClassicsResponse {
         return client.get("$baseUrl/api/explore/cult-classics").body()
     }
 
     /** Returns recently reviewed games */
-    suspend fun getRecentlyReviewed(): RecentlyReviewedResponseDto {
+    suspend fun getRecentlyReviewed(): com.spela.client.models.RecentlyReviewedResponse {
         return client.get("$baseUrl/api/explore/recently-reviewed").body()
     }
 
     /** Returns games with active shared sessions or challenges */
-    suspend fun getActiveNow(): ActiveNowResponseDto {
+    suspend fun getActiveNow(): com.spela.client.models.ActiveNowResponse {
         return client.get("$baseUrl/api/explore/active-now").body()
     }
 
     /** Returns games released on this day in history */
-    suspend fun getOnThisDay(): OnThisDayResponseDto {
+    suspend fun getOnThisDay(): com.spela.client.models.OnThisDayResponse {
         return client.get("$baseUrl/api/explore/on-this-day").body()
     }
 
     /** Returns best games from a given year */
-    suspend fun getBestOfYear(year: Int): BestOfYearResponseDto {
+    suspend fun getBestOfYear(year: Int): com.spela.client.models.BestOfYearResponse {
         return client.get("$baseUrl/api/explore/best-of-year/$year").body()
     }
 
     /** Returns personal play anniversaries */
-    suspend fun getYourAnniversaries(): YourAnniversariesResponseDto {
+    suspend fun getYourAnniversaries(): com.spela.client.models.AnniversariesResponse {
         return client.get("$baseUrl/api/explore/your-anniversaries").body()
     }
 
     /** Returns games from a specific decade */
-    suspend fun getDecade(decade: String): DecadeResponseDto {
+    suspend fun getDecade(decade: String): com.spela.client.models.DecadesResponse {
         return client.get("$baseUrl/api/explore/decades/$decade").body()
     }
 
     /** Returns games that are easy to 100% complete */
-    suspend fun getEasyToComplete(): EasyToCompleteResponseDto {
+    suspend fun getEasyToComplete(): com.spela.client.models.EasyToCompleteResponse {
         return client.get("$baseUrl/api/explore/easy-to-complete").body()
     }
 
     /** Returns the hardest games to complete */
-    suspend fun getHardestGames(): HardestGamesResponseDto {
+    suspend fun getHardestGames(): com.spela.client.models.HardestGamesResponse {
         return client.get("$baseUrl/api/explore/hardest-games").body()
     }
 
     /** Returns games the user is almost done completing */
-    suspend fun getAlmostDone(): AlmostDoneResponseDto {
+    suspend fun getAlmostDone(): com.spela.client.models.AlmostDoneResponse {
         return client.get("$baseUrl/api/explore/almost-done").body()
     }
 
     /** Returns games with fresh achievement content */
-    suspend fun getFreshChallenges(): FreshChallengesResponseDto {
+    suspend fun getFreshChallenges(): com.spela.client.models.FreshChallengesResponse {
         return client.get("$baseUrl/api/explore/fresh-challenges").body()
     }
 
     /** Returns active community challenges */
-    suspend fun getActiveChallenges(): ActiveChallengesResponseDto {
+    suspend fun getActiveChallenges(): com.spela.client.models.ActiveChallengesResponse {
         return client.get("$baseUrl/api/explore/active-challenges").body()
     }
 
@@ -545,12 +545,12 @@ class SpelaApiClient(
     // --- Phase 14: Wild Features ---
 
     /** Returns the decision wizard step configuration */
-    suspend fun getWizardSteps(): WizardResponseDto {
+    suspend fun getWizardSteps(): com.spela.client.models.WizardResponse {
         return client.get("$baseUrl/api/explore/wizard").body()
     }
 
     /** Returns wizard recommendations based on mood/era/vibe choices */
-    suspend fun getWizardResults(mood: String, era: String, vibe: String): WizardResultsResponseDto {
+    suspend fun getWizardResults(mood: String, era: String, vibe: String): com.spela.client.models.WizardResultsResponse {
         return client.get("$baseUrl/api/explore/wizard/results") {
             parameter("mood", mood)
             parameter("era", era)
