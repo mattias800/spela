@@ -3,7 +3,22 @@
  *
  * Every path used with api.get/post/put/delete/upload must match one of these
  * patterns. The compiler will reject typos and references to removed endpoints.
+ *
+ * The unions below are hand-written (they use TypeScript template-literal
+ * `${string}` placeholders, which `api-client.ts` passes verbatim as the URL
+ * path). The generated OpenAPI spec uses `{id}`-style placeholders, so we
+ * don't re-export its path keys directly. Instead, a drift-detection check
+ * lives in `src/generated/__tests__/paths-match-hand-written.test.ts` — it
+ * loads `generated/openapi.json` at runtime and asserts every hand-written
+ * path has a matching `{...}`-templated path in the spec.
  */
+import type { paths } from "@/generated/api";
+
+// Compile-time hook: referencing the generated `paths` type forces the file
+// import so stale re-exports from `@/generated/api` surface as type errors.
+// Tests in paths-match-hand-written.test.ts cover the semantic drift check
+// (string-equivalence under `:id` ↔ `{id}` mapping).
+export type GeneratedPaths = keyof paths;
 
 // Allow optional ?query suffix on any route
 type WithQuery<T extends string> = T | `${T}?${string}`;
