@@ -610,51 +610,12 @@ data class AchievementProgressResponse(
     val progress: List<AchievementProgressEntryDto> = emptyList(),
 )
 
-// Achievement Timeline
-
-@Serializable
-data class AchievementTimelineEntryDto(
-    val achievementRaId: Long = 0,
-    val title: String = "",
-    val description: String = "",
-    val points: Int = 0,
-    val badgeUrl: String? = null,
-    val unlockedAt: String = "",
-    val isHardcore: Boolean = false,
-    val playTimeAtUnlock: Long? = null,
-)
-
-@Serializable
-data class AchievementTimelineResponse(
-    val raGameId: Long? = null,
-    val gameTitle: String = "",
-    val totalPlayTime: Long = 0,
-    val timeline: List<AchievementTimelineEntryDto> = emptyList(),
-    val totalAchievements: Int = 0,
-    val unlockedCount: Int = 0,
-    val totalPoints: Int = 0,
-    val earnedPoints: Int = 0,
-)
-
-// Achievement Leaderboard
-
-@Serializable
-data class AchievementLeaderboardEntryDto(
-    val userId: String = "",
-    val username: String = "",
-    val avatarUrl: String? = null,
-    val unlockedCount: Int = 0,
-    val earnedPoints: Int = 0,
-    val firstUnlockedAt: String? = null,
-    val lastUnlockedAt: String? = null,
-)
-
-@Serializable
-data class AchievementLeaderboardResponse(
-    val raGameId: Long? = null,
-    val totalAchievements: Int = 0,
-    val leaderboard: List<AchievementLeaderboardEntryDto> = emptyList(),
-)
+// Achievement Timeline + Leaderboard DTOs replaced by generated
+// counterparts in com.spela.client.models:
+//   AchievementTimelineEntryDto      -> RATimelineEntryResponse
+//   AchievementTimelineResponse      -> AchievementTimelineResponse (same name)
+//   AchievementLeaderboardEntryDto   -> RALeaderboardEntryResponse
+//   AchievementLeaderboardResponse   -> AchievementLeaderboardResponse (same name)
 
 // User Stats
 
@@ -669,67 +630,15 @@ data class UserStatsDto(
     val lastPlayedAt: String? = null,
 )
 
-// Recent Achievements
+// Recent + Showcase + Unlocked achievement DTOs replaced by generated
+// counterparts in com.spela.client.models:
+//   RecentAchievementDto           -> RARecentAchievementResponse
+//   RecentAchievementsResponse     -> RecentAchievementsResponse (same name)
+//   ShowcaseAchievementDto         -> ShowcaseEntryResponse
+//   UnlockedAchievementDto         -> RAUnlockedAchievementResponse
+//   UnlockedAchievementsResponse   -> UnlockedAchievementsResponse (same name)
 
-@Serializable
-data class RecentAchievementDto(
-    val achievementRaId: Long = 0,
-    val title: String = "",
-    val description: String = "",
-    val points: Int = 0,
-    val badgeUrl: String? = null,
-    val unlockedAt: String = "",
-    val isHardcore: Boolean = false,
-    val playTimeAtUnlock: Long? = null,
-    val gameId: String = "",
-    val gameTitle: String = "",
-    val consoleName: String = "",
-    val coverUrl: String? = null,
-)
-
-@Serializable
-data class RecentAchievementsResponse(
-    val achievements: List<RecentAchievementDto> = emptyList(),
-)
-
-// Achievement Showcase
-
-@Serializable
-data class ShowcaseAchievementDto(
-    val achievementRaId: Long,
-    val raGameId: Long,
-    val showcaseOrder: Int = 0,
-    val title: String? = null,
-    val description: String? = null,
-    val points: Int? = null,
-    val badgeUrl: String? = null,
-    val rarityPercent: Double? = null,
-    val gameTitle: String? = null,
-)
-
-@Serializable
-data class UnlockedAchievementDto(
-    val achievementRaId: Long,
-    val raGameId: Long,
-    val title: String = "",
-    val description: String = "",
-    val points: Int = 0,
-    val badgeUrl: String? = null,
-    val rarityPercent: Double = 0.0,
-    val gameTitle: String = "",
-    val consoleName: String = "",
-)
-
-@Serializable
-data class UnlockedAchievementsResponse(
-    val achievements: List<UnlockedAchievementDto> = emptyList(),
-)
-
-@Serializable
-data class ShowcaseUpdateEntry(
-    val achievementRaId: Long,
-    val raGameId: Long,
-)
+// ShowcaseUpdateEntry replaced by com.spela.client.models.ShowcaseEntryInput.
 
 // Top Rated
 

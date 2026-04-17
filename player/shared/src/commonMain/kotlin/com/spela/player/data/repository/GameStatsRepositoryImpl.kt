@@ -35,7 +35,7 @@ class GameStatsRepositoryImpl(
     }
 
     override suspend fun getAchievementLeaderboard(gameId: String): Result<List<AchievementPlayerRanking>> = runCatching {
-        apiClient.getAchievementLeaderboard(gameId).leaderboard.map { dto ->
+        apiClient.getAchievementLeaderboard(gameId).leaderboard.orEmpty().map { dto ->
             val ranking = dto.toDomain()
             ranking.copy(avatarUrl = apiClient.resolveUrl(ranking.avatarUrl))
         }
@@ -51,7 +51,7 @@ class GameStatsRepositoryImpl(
     }
 
     override suspend fun getRecentAchievements(): Result<List<RecentAchievement>> = runCatching {
-        apiClient.getRecentAchievements().achievements.map { dto ->
+        apiClient.getRecentAchievements().achievements.orEmpty().map { dto ->
             val achievement = dto.toDomain()
             achievement.copy(
                 badgeUrl = apiClient.resolveUrl(achievement.badgeUrl),

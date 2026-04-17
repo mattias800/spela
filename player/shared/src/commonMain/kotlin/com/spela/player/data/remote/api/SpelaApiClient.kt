@@ -640,11 +640,15 @@ class SpelaApiClient(
         return client.get("$baseUrl/api/games/$gameId/achievements/progress").body()
     }
 
-    suspend fun getAchievementTimeline(gameId: String): AchievementTimelineResponse {
+    suspend fun getAchievementTimeline(
+        gameId: String,
+    ): com.spela.client.models.AchievementTimelineResponse {
         return client.get("$baseUrl/api/games/$gameId/achievements/timeline").body()
     }
 
-    suspend fun getAchievementLeaderboard(gameId: String): AchievementLeaderboardResponse {
+    suspend fun getAchievementLeaderboard(
+        gameId: String,
+    ): com.spela.client.models.AchievementLeaderboardResponse {
         return client.get("$baseUrl/api/games/$gameId/achievements/leaderboard").body()
     }
 
@@ -654,23 +658,27 @@ class SpelaApiClient(
         return client.get("$baseUrl/api/user/stats").body()
     }
 
-    suspend fun getRecentAchievements(): RecentAchievementsResponse {
+    suspend fun getRecentAchievements(): com.spela.client.models.RecentAchievementsResponse {
         return client.get("$baseUrl/api/user/achievements/recent").body()
     }
 
-    suspend fun getShowcase(): List<ShowcaseAchievementDto> {
+    suspend fun getShowcase(): List<com.spela.client.models.ShowcaseEntryResponse> {
         return client.get("$baseUrl/api/user/achievements/showcase").body()
     }
 
-    suspend fun getPublicShowcase(userId: String): List<ShowcaseAchievementDto> {
+    suspend fun getPublicShowcase(
+        userId: String,
+    ): List<com.spela.client.models.ShowcaseEntryResponse> {
         return client.get("$baseUrl/api/users/$userId/achievements/showcase").body()
     }
 
-    suspend fun getUnlockedAchievements(): UnlockedAchievementsResponse {
+    suspend fun getUnlockedAchievements(): com.spela.client.models.UnlockedAchievementsResponse {
         return client.get("$baseUrl/api/user/achievements/unlocked").body()
     }
 
-    suspend fun updateShowcase(entries: List<ShowcaseUpdateEntry>): List<ShowcaseAchievementDto> {
+    suspend fun updateShowcase(
+        entries: List<com.spela.client.models.ShowcaseEntryInput>,
+    ): List<com.spela.client.models.ShowcaseEntryResponse> {
         return client.put("$baseUrl/api/user/achievements/showcase") {
             contentType(io.ktor.http.ContentType.Application.Json)
             setBody(entries)
