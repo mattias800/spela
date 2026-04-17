@@ -96,6 +96,10 @@ func (h *AdminHandler) ApplyIGDBMatch(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "igdbId is required and must be a positive integer"})
 		return
 	}
+	if req.IGDBID <= 0 {
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "igdbId is required and must be a positive integer"})
+		return
+	}
 
 	h.tryConfigureIGDB()
 	h.tryConfigureSteamGridDB()
