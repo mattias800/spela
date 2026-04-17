@@ -8,17 +8,9 @@
 
 @file:Suppress(
     "ArrayInDataClass",
-    "DuplicatedCode",
     "EnumEntryName",
     "RemoveRedundantQualifierName",
-    "RemoveRedundantCallsOfConversionMethods",
-    "REDUNDANT_CALL_OF_CONVERSION_METHOD",
-    "RedundantUnitReturnType",
-    "RemoveEmptyClassBody",
-    "UnnecessaryVariable",
-    "UnusedImport",
-    "UnnecessaryVariable",
-    "unused"
+    "UnusedImport"
 )
 
 package com.spela.client.models
@@ -59,7 +51,7 @@ data class GameSessionResponse (
 
     @SerialName(value = "cheatsEnabled") @Required val cheatsEnabled: kotlin.Boolean,
 
-    @SerialName(value = "createdAt") @Required val createdAt: kotlin.time.Instant,
+    @SerialName(value = "createdAt") @Required val createdAt: kotlinx.datetime.Instant,
 
     @SerialName(value = "gameId") @Required val gameId: kotlin.String,
 
@@ -83,14 +75,14 @@ data class GameSessionResponse (
 
     @SerialName(value = "totalPlayTime") @Required val totalPlayTime: kotlin.Long,
 
-    @SerialName(value = "updatedAt") @Required val updatedAt: kotlin.time.Instant,
+    @SerialName(value = "updatedAt") @Required val updatedAt: kotlinx.datetime.Instant,
 
     /* A URL to the JSON Schema for this object. */
     @SerialName(value = "\$schema") val dollarSchema: kotlin.String? = null,
 
     @SerialName(value = "coreName") val coreName: kotlin.String? = null,
 
-    @SerialName(value = "lastPlayedAt") val lastPlayedAt: kotlin.time.Instant? = null,
+    @SerialName(value = "lastPlayedAt") val lastPlayedAt: kotlinx.datetime.Instant? = null,
 
     @SerialName(value = "lastPlayedBy") val lastPlayedBy: kotlin.String? = null,
 

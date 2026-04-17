@@ -61,11 +61,12 @@ class SpelaApiClient(
                     }
 
                     try {
-                        val response: AuthResponse = client.post("$baseUrl/api/auth/refresh") {
-                            markAsRefreshTokenRequest()
-                            contentType(ContentType.Application.Json)
-                            setBody(RefreshRequest(refreshToken))
-                        }.body()
+                        val response: com.spela.client.models.AuthLoginResponse =
+                            client.post("$baseUrl/api/auth/refresh") {
+                                markAsRefreshTokenRequest()
+                                contentType(ContentType.Application.Json)
+                                setBody(com.spela.client.models.AuthRefreshRequest(refreshToken = refreshToken))
+                            }.body()
 
                         tokenManager.setTokens(response.accessToken, response.refreshToken)
                         onTokenRefreshed?.invoke(response.accessToken, response.refreshToken)
@@ -131,19 +132,19 @@ class SpelaApiClient(
 
     // Auth
 
-    suspend fun login(request: LoginRequest): AuthResponse {
+    suspend fun login(request: com.spela.client.models.AuthLoginRequest): com.spela.client.models.AuthLoginResponse {
         return client.post("$baseUrl/api/auth/login") {
             setBody(request)
         }.body()
     }
 
-    suspend fun register(request: RegisterRequest): AuthResponse {
+    suspend fun register(request: com.spela.client.models.AuthRegisterRequest): com.spela.client.models.AuthRegisterResponse {
         return client.post("$baseUrl/api/auth/register") {
             setBody(request)
         }.body()
     }
 
-    suspend fun refreshToken(request: RefreshRequest): AuthResponse {
+    suspend fun refreshToken(request: com.spela.client.models.AuthRefreshRequest): com.spela.client.models.AuthLoginResponse {
         return client.post("$baseUrl/api/auth/refresh") {
             setBody(request)
         }.body()
@@ -270,7 +271,7 @@ class SpelaApiClient(
         return client.get("$baseUrl/api/top-lists/longest").body()
     }
 
-    suspend fun getSimilarGames(gameId: String): List<SimilarGameDto> {
+    suspend fun getSimilarGames(gameId: String): List<com.spela.client.models.SimilarGameResponse> {
         return client.get("$baseUrl/api/games/$gameId/similar").body()
     }
 
@@ -279,14 +280,15 @@ class SpelaApiClient(
     }
 
     /** Returns featured games for the Explore page hero carousel */
-    suspend fun getExploreFeatured(): List<FeaturedGameDto> {
+    suspend fun getExploreFeatured(): List<com.spela.client.models.FeaturedGameResponse> {
         return client.get("$baseUrl/api/explore/featured").body()
     }
 
     /** Returns curated rows for the Explore page (Top Rated, Recently Added, etc.) */
-    suspend fun getExploreRows(): List<ExploreRowDto> {
-        val response: ExploreRowsResponseDto = client.get("$baseUrl/api/explore/rows").body()
-        return response.rows
+    suspend fun getExploreRows(): List<com.spela.client.models.ExploreRowResponse> {
+        val response: com.spela.client.models.ExploreRowsResponse =
+            client.get("$baseUrl/api/explore/rows").body()
+        return response.rows.orEmpty()
     }
 
     /** Returns all themes with game counts, sorted by count DESC */
@@ -318,7 +320,7 @@ class SpelaApiClient(
     }
 
     /** Returns featured series for the Explore page */
-    suspend fun getFeaturedSeries(): List<FeaturedSeriesDto> {
+    suspend fun getFeaturedSeries(): List<com.spela.client.models.FeaturedSeriesResponse> {
         return client.get("$baseUrl/api/explore/series/featured").body()
     }
 
@@ -343,7 +345,7 @@ class SpelaApiClient(
     }
 
     /** Returns available mood definitions for the mood picker */
-    suspend fun getMoods(): List<MoodDefinitionDto> {
+    suspend fun getMoods(): List<com.spela.client.models.MoodResponse> {
         return client.get("$baseUrl/api/explore/moods").body()
     }
 
@@ -358,7 +360,7 @@ class SpelaApiClient(
     }
 
     /** Returns personalized "For You" recommendation rows */
-    suspend fun getForYou(): ForYouResponseDto {
+    suspend fun getForYou(): com.spela.client.models.ForYouResponse {
         return client.get("$baseUrl/api/explore/for-you").body()
     }
 
@@ -368,124 +370,124 @@ class SpelaApiClient(
     }
 
     /** Returns collaborative filtering recommendations */
-    suspend fun getPlayersLikeYou(): PlayersLikeYouResponseDto {
+    suspend fun getPlayersLikeYou(): com.spela.client.models.PlayersLikeYouResponse {
         return client.get("$baseUrl/api/explore/players-like-you").body()
     }
 
     /** Returns list of developer summaries */
-    suspend fun getDevelopers(): DeveloperListResponseDto {
+    suspend fun getDevelopers(): com.spela.client.models.DeveloperListResponse {
         return client.get("$baseUrl/api/explore/developers").body()
     }
 
     /** Returns detail for a specific developer */
-    suspend fun getDeveloperDetail(name: String): DeveloperDetailResponseDto {
+    suspend fun getDeveloperDetail(name: String): com.spela.client.models.DeveloperDetailResponse {
         val encoded = name.encodeURLParameter()
         return client.get("$baseUrl/api/explore/developers/$encoded").body()
     }
 
     /** Returns detail for a specific publisher (same response type as developer) */
-    suspend fun getPublisherDetail(name: String): DeveloperDetailResponseDto {
+    suspend fun getPublisherDetail(name: String): com.spela.client.models.DeveloperDetailResponse {
         val encoded = name.encodeURLParameter()
         return client.get("$baseUrl/api/explore/publishers/$encoded").body()
     }
 
     /** Returns developer spotlight for the Explore page */
-    suspend fun getDeveloperSpotlight(): DeveloperSpotlightResponseDto {
+    suspend fun getDeveloperSpotlight(): com.spela.client.models.DeveloperSpotlightResponse {
         return client.get("$baseUrl/api/explore/developers/spotlight").body()
     }
 
     /** Returns console showcase data for a specific console */
-    suspend fun getConsoleShowcase(consoleId: String): ConsoleShowcaseDto {
+    suspend fun getConsoleShowcase(consoleId: String): com.spela.client.models.ConsoleShowcaseResponse {
         val encoded = consoleId.encodeURLParameter()
         return client.get("$baseUrl/api/explore/consoles/$encoded/showcase").body()
     }
 
     /** Returns console highlights for the Explore page quick-jump section */
-    suspend fun getConsoleHighlights(): ConsoleHighlightsResponseDto {
+    suspend fun getConsoleHighlights(): com.spela.client.models.ConsoleHighlightsResponse {
         return client.get("$baseUrl/api/explore/console-highlights").body()
     }
 
     /** Returns a paginated list of IGDB artwork for the gallery */
-    suspend fun getArtworkGallery(page: Int = 1): ArtworkGalleryResponseDto {
+    suspend fun getArtworkGallery(page: Int = 1): com.spela.client.models.ArtworkGalleryResponse {
         return client.get("$baseUrl/api/explore/artwork") {
             parameter("page", page)
         }.body()
     }
 
     /** Returns a paginated list of screenshots for the gallery */
-    suspend fun getScreenshotGallery(page: Int = 1): ScreenshotGalleryResponseDto {
+    suspend fun getScreenshotGallery(page: Int = 1): com.spela.client.models.ScreenshotGalleryResponse {
         return client.get("$baseUrl/api/explore/screenshots") {
             parameter("page", page)
         }.body()
     }
 
     /** Returns trending games (most played this week) */
-    suspend fun getTrending(): TrendingResponseDto {
+    suspend fun getTrending(): com.spela.client.models.TrendingResponse {
         return client.get("$baseUrl/api/explore/trending").body()
     }
 
     /** Returns community top-rated games */
-    suspend fun getCommunityTop(): CommunityTopResponseDto {
+    suspend fun getCommunityTop(): com.spela.client.models.CommunityTopResponse {
         return client.get("$baseUrl/api/explore/community-top").body()
     }
 
     /** Returns cult classics (high community, low IGDB) */
-    suspend fun getCultClassics(): CultClassicsResponseDto {
+    suspend fun getCultClassics(): com.spela.client.models.CultClassicsResponse {
         return client.get("$baseUrl/api/explore/cult-classics").body()
     }
 
     /** Returns recently reviewed games */
-    suspend fun getRecentlyReviewed(): RecentlyReviewedResponseDto {
+    suspend fun getRecentlyReviewed(): com.spela.client.models.RecentlyReviewedResponse {
         return client.get("$baseUrl/api/explore/recently-reviewed").body()
     }
 
     /** Returns games with active shared sessions or challenges */
-    suspend fun getActiveNow(): ActiveNowResponseDto {
+    suspend fun getActiveNow(): com.spela.client.models.ActiveNowResponse {
         return client.get("$baseUrl/api/explore/active-now").body()
     }
 
     /** Returns games released on this day in history */
-    suspend fun getOnThisDay(): OnThisDayResponseDto {
+    suspend fun getOnThisDay(): com.spela.client.models.OnThisDayResponse {
         return client.get("$baseUrl/api/explore/on-this-day").body()
     }
 
     /** Returns best games from a given year */
-    suspend fun getBestOfYear(year: Int): BestOfYearResponseDto {
+    suspend fun getBestOfYear(year: Int): com.spela.client.models.BestOfYearResponse {
         return client.get("$baseUrl/api/explore/best-of-year/$year").body()
     }
 
     /** Returns personal play anniversaries */
-    suspend fun getYourAnniversaries(): YourAnniversariesResponseDto {
+    suspend fun getYourAnniversaries(): com.spela.client.models.AnniversariesResponse {
         return client.get("$baseUrl/api/explore/your-anniversaries").body()
     }
 
     /** Returns games from a specific decade */
-    suspend fun getDecade(decade: String): DecadeResponseDto {
+    suspend fun getDecade(decade: String): com.spela.client.models.DecadesResponse {
         return client.get("$baseUrl/api/explore/decades/$decade").body()
     }
 
     /** Returns games that are easy to 100% complete */
-    suspend fun getEasyToComplete(): EasyToCompleteResponseDto {
+    suspend fun getEasyToComplete(): com.spela.client.models.EasyToCompleteResponse {
         return client.get("$baseUrl/api/explore/easy-to-complete").body()
     }
 
     /** Returns the hardest games to complete */
-    suspend fun getHardestGames(): HardestGamesResponseDto {
+    suspend fun getHardestGames(): com.spela.client.models.HardestGamesResponse {
         return client.get("$baseUrl/api/explore/hardest-games").body()
     }
 
     /** Returns games the user is almost done completing */
-    suspend fun getAlmostDone(): AlmostDoneResponseDto {
+    suspend fun getAlmostDone(): com.spela.client.models.AlmostDoneResponse {
         return client.get("$baseUrl/api/explore/almost-done").body()
     }
 
     /** Returns games with fresh achievement content */
-    suspend fun getFreshChallenges(): FreshChallengesResponseDto {
+    suspend fun getFreshChallenges(): com.spela.client.models.FreshChallengesResponse {
         return client.get("$baseUrl/api/explore/fresh-challenges").body()
     }
 
     /** Returns active community challenges */
-    suspend fun getActiveChallenges(): ActiveChallengesResponseDto {
+    suspend fun getActiveChallenges(): com.spela.client.models.ActiveChallengesResponse {
         return client.get("$baseUrl/api/explore/active-challenges").body()
     }
 
@@ -543,12 +545,12 @@ class SpelaApiClient(
     // --- Phase 14: Wild Features ---
 
     /** Returns the decision wizard step configuration */
-    suspend fun getWizardSteps(): WizardResponseDto {
+    suspend fun getWizardSteps(): com.spela.client.models.WizardResponse {
         return client.get("$baseUrl/api/explore/wizard").body()
     }
 
     /** Returns wizard recommendations based on mood/era/vibe choices */
-    suspend fun getWizardResults(mood: String, era: String, vibe: String): WizardResultsResponseDto {
+    suspend fun getWizardResults(mood: String, era: String, vibe: String): com.spela.client.models.WizardResultsResponse {
         return client.get("$baseUrl/api/explore/wizard/results") {
             parameter("mood", mood)
             parameter("era", era)

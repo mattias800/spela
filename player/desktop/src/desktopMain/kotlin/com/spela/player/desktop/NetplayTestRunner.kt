@@ -1,9 +1,9 @@
 package com.spela.player.desktop
 
 import com.spela.player.data.remote.api.SpelaApiClient
+import com.spela.client.models.AuthLoginRequest
 import com.spela.client.models.CreateNetplaySessionRequest
 import com.spela.client.models.JoinByInviteCodeRequest
-import com.spela.player.data.remote.dto.LoginRequest
 import com.spela.player.data.remote.interceptor.TokenManager
 import com.spela.player.libretro.DesktopLibretroController
 import com.spela.player.libretro.LibretroJni
@@ -122,7 +122,9 @@ private class NetplayTestRunnerImpl(private val config: Config) {
 
         // 2. Login
         log("Logging in as ${config.username}...")
-        val authResponse = apiClient.login(LoginRequest(config.username, config.password))
+        val authResponse = apiClient.login(
+            AuthLoginRequest(username = config.username, password = config.password),
+        )
         tokenManager.setTokens(authResponse.accessToken, authResponse.refreshToken)
         log("Logged in successfully")
 

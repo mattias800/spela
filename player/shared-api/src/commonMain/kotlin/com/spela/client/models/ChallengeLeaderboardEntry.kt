@@ -8,17 +8,9 @@
 
 @file:Suppress(
     "ArrayInDataClass",
-    "DuplicatedCode",
     "EnumEntryName",
     "RemoveRedundantQualifierName",
-    "RemoveRedundantCallsOfConversionMethods",
-    "REDUNDANT_CALL_OF_CONVERSION_METHOD",
-    "RedundantUnitReturnType",
-    "RemoveEmptyClassBody",
-    "UnnecessaryVariable",
-    "UnusedImport",
-    "UnnecessaryVariable",
-    "unused"
+    "UnusedImport"
 )
 
 package com.spela.client.models
@@ -45,7 +37,7 @@ data class ChallengeLeaderboardEntry (
 
     @SerialName(value = "attemptId") @Required val attemptId: kotlin.String,
 
-    @SerialName(value = "completedAt") @Required val completedAt: kotlin.time.Instant,
+    @SerialName(value = "completedAt") @Required val completedAt: kotlinx.datetime.Instant,
 
     @SerialName(value = "durationMs") @Required val durationMs: kotlin.Long,
 
