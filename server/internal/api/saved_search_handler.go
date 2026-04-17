@@ -17,9 +17,11 @@ type SavedSearchHandler struct {
 }
 
 // SavedSearchRequest is the request body for creating a saved search.
+// Fields are marked optional in the huma schema so handler-side validation
+// owns the 400 response (the raw gin handler used binding:"required" tags).
 type SavedSearchRequest struct {
-	Name    string          `json:"name" binding:"required"`
-	Filters json.RawMessage `json:"filters" binding:"required"`
+	Name    string          `json:"name,omitempty" required:"false" binding:"required"`
+	Filters json.RawMessage `json:"filters,omitempty" required:"false" binding:"required"`
 }
 
 // SavedSearchResponse is the API response for a saved search.
