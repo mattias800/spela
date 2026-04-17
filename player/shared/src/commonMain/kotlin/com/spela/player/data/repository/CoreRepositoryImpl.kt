@@ -27,7 +27,7 @@ class CoreRepositoryImpl(
     }
 
     override suspend fun getRecommendedCore(gameId: String): Result<LibretroCore> = runCatching {
-        apiClient.getRecommendedCore(gameId).toDomain()
+        apiClient.getRecommendedCore(gameId)
     }
 
     override suspend fun downloadCore(coreName: String, downloadUrl: String?, onProgress: (Float) -> Unit): Result<String> = runCatching {

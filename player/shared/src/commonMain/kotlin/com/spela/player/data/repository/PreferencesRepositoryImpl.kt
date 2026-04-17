@@ -3,10 +3,10 @@ package com.spela.player.data.repository
 import com.spela.player.data.local.SpelaDatabase
 import com.spela.player.data.device.DeviceManager
 import com.spela.player.data.remote.api.SpelaApiClient
-import com.spela.player.data.remote.dto.ConsoleKeyMappingDto
-import com.spela.player.data.remote.dto.UpdateDevicePreferencesRequest
-import com.spela.player.data.remote.dto.UpdatePreferencesRequest
-import com.spela.player.data.remote.dto.UserPreferencesDto
+import com.spela.client.models.ConsoleKeyMappingDTO
+import com.spela.client.models.UpdateDevicePreferencesRequest
+import com.spela.client.models.UpdatePreferencesRequest
+import com.spela.client.models.UserPreferencesResponse
 import com.spela.player.data.remote.dto.toDomain
 import com.spela.player.domain.model.DEFAULT_CONSOLE_ID
 import com.spela.player.domain.model.ShaderPreset
@@ -37,7 +37,7 @@ class PreferencesRepositoryImpl(
         }
     }
 
-    private fun cachePreferences(dto: UserPreferencesDto) {
+    private fun cachePreferences(dto: UserPreferencesResponse) {
         val jsonString = json.encodeToString(dto)
         database.spelaDatabaseQueries.upsertCachedPreferences(
             json_data = jsonString,
@@ -49,7 +49,7 @@ class PreferencesRepositoryImpl(
         val cached = database.spelaDatabaseQueries.getCachedPreferences().executeAsOneOrNull()
             ?: return null
         return runCatching {
-            json.decodeFromString<UserPreferencesDto>(cached.json_data).toDomain()
+            json.decodeFromString<UserPreferencesResponse>(cached.json_data).toDomain()
         }.getOrNull()
     }
 
@@ -177,7 +177,7 @@ class PreferencesRepositoryImpl(
 
             // Import per-console mappings from server
             for ((consoleId, mapping) in prefs.consoleKeyMappings) {
-                for ((retroButtonStr, keyCodeStr) in mapping.customMapping) {
+                for ((retroButtonStr, keyCodeStr) in mapping.customMapping.orEmpty()) {
                     val retroButton = retroButtonStr.toIntOrNull() ?: continue
                     val keyCode = keyCodeStr.toIntOrNull() ?: continue
                     database.spelaDatabaseQueries.insertKeyMapping(
@@ -226,7 +226,7 @@ class PreferencesRepositoryImpl(
                 .groupBy { it.console_id }
 
             val consoleMappings = consoleGroups.mapValues { (_, entities) ->
-                ConsoleKeyMappingDto(
+                ConsoleKeyMappingDTO(
                     selectedMapping = "",
                     customMapping = entities.associate {
                         it.libretro_button_id.toString() to it.platform_key_code.toString()

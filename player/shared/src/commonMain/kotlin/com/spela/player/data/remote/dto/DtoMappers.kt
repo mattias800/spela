@@ -169,7 +169,7 @@ fun SaveStateDto.toDomain(): SaveState = SaveState(
     isSynced = true,
 )
 
-fun UserPreferencesDto.toDomain(): UserPreferences = UserPreferences(
+fun com.spela.client.models.UserPreferencesResponse.toDomain(): UserPreferences = UserPreferences(
     showPerformanceOverlay = showPerformanceOverlay,
     autoSaveEnabled = autoSaveEnabled,
     autoLoadSaveEnabled = autoLoadSaveEnabled,
@@ -180,7 +180,7 @@ fun UserPreferencesDto.toDomain(): UserPreferences = UserPreferences(
     consoleKeyMappings = consoleKeyMappings.mapValues {
         ConsoleKeyMappingPref(
             selectedMapping = it.value.selectedMapping,
-            customMapping = it.value.customMapping,
+            customMapping = it.value.customMapping.orEmpty(),
         )
     },
     defaultSecondScreenPage = defaultSecondScreenPage,
@@ -245,7 +245,7 @@ fun com.spela.client.models.ActivityEventResponse.toDomain(): ActivityEvent = Ac
     createdAt = createdAt.toString(),
 )
 
-fun LibretroCoreDto.toDomain(): LibretroCore = LibretroCore(
+fun com.spela.client.models.Core.toDomain(): LibretroCore = LibretroCore(
     id = id,
     name = name,
     displayName = displayName,
@@ -646,11 +646,11 @@ fun DeveloperGameDto.toDomain(): DeveloperGame = DeveloperGame(
     consoleName = consoleName,
 )
 
-fun GameSessionDto.toDomain(): GameSession = GameSession(
+fun com.spela.client.models.GameSessionResponse.toDomain(): GameSession = GameSession(
     id = id,
     gameId = gameId,
     name = name,
-    lastPlayedAt = lastPlayedAt,
+    lastPlayedAt = lastPlayedAt?.toString(),
     lastPlayedByUsername = lastPlayedByUsername,
     totalPlayTime = totalPlayTime,
     screenshotUrl = screenshotUrl,
@@ -658,14 +658,14 @@ fun GameSessionDto.toDomain(): GameSession = GameSession(
     cheatsEnabled = cheatsEnabled,
     isSharedSession = isSharedSession,
     sharedSessionId = sharedSessionId,
-    memberCount = memberCount,
-    memberUsernames = memberUsernames,
-    memberAvatars = memberAvatars,
+    memberCount = memberCount.toInt(),
+    memberUsernames = memberUsernames.orEmpty(),
+    memberAvatars = memberAvatars.orEmpty(),
 )
 
-fun SessionCheatConfigDto.toDomain() = SessionCheatConfig(
+fun com.spela.client.models.SessionCheatsResponse.toDomain() = SessionCheatConfig(
     cheatsEnabled = cheatsEnabled,
-    enabledIndices = enabledIndices,
+    enabledIndices = enabledIndices.orEmpty().map { it.toInt() },
 )
 
 // Explore mappers
