@@ -1,8 +1,8 @@
 package com.spela.player.desktop
 
 import com.spela.player.data.remote.api.SpelaApiClient
-import com.spela.player.data.remote.dto.CreateNetplaySessionRequest
-import com.spela.player.data.remote.dto.JoinByInviteCodeRequest
+import com.spela.client.models.CreateNetplaySessionRequest
+import com.spela.client.models.JoinByInviteCodeRequest
 import com.spela.player.data.remote.dto.LoginRequest
 import com.spela.player.data.remote.interceptor.TokenManager
 import com.spela.player.libretro.DesktopLibretroController
@@ -140,7 +140,7 @@ private class NetplayTestRunnerImpl(private val config: Config) {
 
             log("Creating netplay session for '${game.title}' (ID: ${game.id})...")
             val session = apiClient.createNetplaySession(
-                CreateNetplaySessionRequest(gameId = game.id, inputDelay = config.inputDelay)
+                CreateNetplaySessionRequest(gameId = game.id, inputDelay = config.inputDelay.toLong())
             )
             sessionId = session.id
             localPort = 0 // Host is always port 0
@@ -152,7 +152,7 @@ private class NetplayTestRunnerImpl(private val config: Config) {
         } else {
             val code = config.inviteCode ?: error("--invite-code required for client role")
             log("Joining session with invite code: $code...")
-            val session = apiClient.joinNetplayByInviteCode(JoinByInviteCodeRequest(code))
+            val session = apiClient.joinNetplayByInviteCode(JoinByInviteCodeRequest(inviteCode = code))
             sessionId = session.id
             localPort = 1 // Client is always port 1
             log("Joined session: ${session.id}")
