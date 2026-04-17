@@ -378,61 +378,14 @@ data class SharedSessionInvitationCountResponse(
 
 // Collections
 
-@Serializable
-data class CollectionDto(
-    val id: String,
-    val userId: String,
-    val username: String,
-    val avatarUrl: String? = null,
-    val name: String,
-    val description: String? = null,
-    val isPublic: Boolean = false,
-    val coverUrl: String? = null,
-    val gameCount: Int = 0,
-    val createdAt: String? = null,
-    val updatedAt: String? = null,
-)
-
-@Serializable
-data class CollectionDetailDto(
-    val id: String,
-    val userId: String,
-    val username: String,
-    val avatarUrl: String? = null,
-    val name: String,
-    val description: String? = null,
-    val isPublic: Boolean = false,
-    val coverUrl: String? = null,
-    val gameCount: Int = 0,
-    val games: List<GameDto> = emptyList(),
-    val createdAt: String? = null,
-    val updatedAt: String? = null,
-)
-
-@Serializable
-data class CollectionsResponse(
-    val data: List<CollectionDto> = emptyList(),
-    val total: Int = 0,
-    val page: Int = 1,
-    val pageSize: Int = 20,
-)
-
-@Serializable
-data class CreateCollectionRequest(
-    val name: String,
-    val description: String? = null,
-    val isPublic: Boolean = false,
-)
-
-@Serializable
-data class UpdateCollectionRequest(
-    val name: String? = null,
-    val description: String? = null,
-    val isPublic: Boolean? = null,
-)
-
-@Serializable
-data class AddGameToCollectionRequest(val gameId: Int)
+// Collection DTOs replaced by generated counterparts:
+//   CollectionDto                  -> CollectionResponse
+//   CollectionDetailDto            -> CollectionDetailResponse
+//   CollectionsResponse            -> PaginatedResponseCollectionResponse
+//   CreateCollectionRequest        -> CreateCollectionRequest (same name, generated)
+//   UpdateCollectionRequest        -> UpdateCollectionRequest (same name, generated)
+//   AddGameToCollectionRequest     -> AddGameToCollectionRequest (same name, generated; gameId is Long? in spec)
+// (all in com.spela.client.models)
 
 // Stats
 
