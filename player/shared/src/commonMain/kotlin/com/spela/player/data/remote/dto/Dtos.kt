@@ -246,19 +246,9 @@ data class SharedSessionSaveDto(
     val updatedAt: String = "",
 )
 
-@Serializable
-data class SharedSessionsResponse(
-    val data: List<SharedSessionDto> = emptyList(),
-    val total: Long = 0,
-    val page: Int = 1,
-    val pageSize: Int = 20,
-)
-
-@Serializable
-data class SharedSessionInvitationsResponse(
-    val data: List<SharedSessionInvitationDto> = emptyList(),
-    val total: Long = 0,
-)
+// SharedSessionsResponse / SharedSessionInvitationsResponse removed — server
+// returns bare arrays for GET /api/shared-sessions and
+// GET /api/user/shared-session-invites. See SpelaApiClient.
 
 @Serializable
 data class CreateSharedSessionRequest(

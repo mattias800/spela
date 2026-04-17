@@ -15,7 +15,7 @@ class SharedSessionRepositoryImpl(
 ) : SharedSessionRepository {
 
     override suspend fun getMySharedSessions(page: Int, pageSize: Int): Result<List<SharedSession>> = runCatching {
-        apiClient.getMySharedSessions(page, pageSize).data.map { it.toDomain() }
+        apiClient.getMySharedSessions(page, pageSize).map { it.toDomain() }
     }
 
     override suspend fun getSharedSession(sharedSessionId: String): Result<SharedSessionDetail> = runCatching {
@@ -23,7 +23,7 @@ class SharedSessionRepositoryImpl(
     }
 
     override suspend fun getSharedSessionInvitations(): Result<List<SharedSessionInvitation>> = runCatching {
-        apiClient.getSharedSessionInvitations().data.map { it.toDomain() }
+        apiClient.getSharedSessionInvitations().map { it.toDomain() }
     }
 
     override suspend fun getPendingInvitationCount(): Result<Int> = runCatching {

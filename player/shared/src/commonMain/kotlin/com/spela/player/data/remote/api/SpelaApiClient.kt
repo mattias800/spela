@@ -954,19 +954,20 @@ class SpelaApiClient(
 
     // Shared Sessions
 
-    suspend fun getMySharedSessions(page: Int = 1, pageSize: Int = 20): SharedSessionsResponse {
-        return client.get("$baseUrl/api/shared-sessions") {
-            parameter("page", page)
-            parameter("pageSize", pageSize)
-        }.body()
+    suspend fun getMySharedSessions(@Suppress("UNUSED_PARAMETER") page: Int = 1, @Suppress("UNUSED_PARAMETER") pageSize: Int = 20): List<SharedSessionDto> {
+        // Server returns a bare array (not a paginated wrapper). page/pageSize
+        // are kept on the signature so the repository caller does not need to
+        // change, but they are ignored because the server does not paginate.
+        return client.get("$baseUrl/api/shared-sessions").body<List<SharedSessionDto>?>() ?: emptyList()
     }
 
     suspend fun getSharedSession(sharedSessionId: String): SharedSessionDetailDto {
         return client.get("$baseUrl/api/shared-sessions/$sharedSessionId").body()
     }
 
-    suspend fun getSharedSessionInvitations(): SharedSessionInvitationsResponse {
-        return client.get("$baseUrl/api/user/shared-session-invites").body()
+    suspend fun getSharedSessionInvitations(): List<SharedSessionInvitationDto> {
+        // Server returns a bare array (nullable on the wire when empty).
+        return client.get("$baseUrl/api/user/shared-session-invites").body<List<SharedSessionInvitationDto>?>() ?: emptyList()
     }
 
     suspend fun getPendingInvitationCount(): SharedSessionInvitationCountResponse {
