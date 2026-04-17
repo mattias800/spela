@@ -22,7 +22,7 @@ class StatsRepositoryImpl(
     }
 
     override suspend fun getMostActivePlayers(): Result<List<ActivePlayer>> = runCatching {
-        apiClient.getMostActivePlayers().players.map { dto ->
+        apiClient.getMostActivePlayers().players.orEmpty().map { dto ->
             val player = dto.toDomain()
             player.copy(
                 avatarUrl = apiClient.resolveUrl(player.avatarUrl),

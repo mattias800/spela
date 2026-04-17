@@ -620,7 +620,7 @@ class SpelaApiClient(
 
     // Game Stats
 
-    suspend fun getGameStats(gameId: String): GameStatsDto {
+    suspend fun getGameStats(gameId: String): com.spela.client.models.GameStatsResponse {
         return client.get("$baseUrl/api/games/$gameId/stats").body()
     }
 
@@ -1100,7 +1100,7 @@ class SpelaApiClient(
         return client.get("$baseUrl/api/stats/most-played").body()
     }
 
-    suspend fun getMostActivePlayers(): MostActivePlayersResponse {
+    suspend fun getMostActivePlayers(): com.spela.client.models.MostActivePlayersResponse {
         return client.get("$baseUrl/api/stats/most-active-players").body()
     }
 

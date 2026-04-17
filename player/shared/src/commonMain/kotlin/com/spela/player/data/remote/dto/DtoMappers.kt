@@ -379,18 +379,18 @@ fun CollectionDetailDto.toDomain(): GameCollectionDetail = GameCollectionDetail(
 
 // Game Stats mappers
 
-fun TopPlayerDto.toDomain(): TopPlayer = TopPlayer(
+fun com.spela.client.models.GameStatsTopPlayer.toDomain(): TopPlayer = TopPlayer(
     userId = userId,
     username = username,
-    avatarUrl = avatarUrl,
+    avatarUrl = avatarUrl.takeIf { it.isNotEmpty() },
     playTime = playTime,
 )
 
-fun GameStatsDto.toDomain(): GameStats = GameStats(
-    totalPlayers = totalPlayers,
+fun com.spela.client.models.GameStatsResponse.toDomain(): GameStats = GameStats(
+    totalPlayers = totalPlayers.toInt(),
     totalPlayTime = totalPlayTime,
     averagePlayTime = averagePlayTime,
-    topPlayers = topPlayers.map { it.toDomain() },
+    topPlayers = topPlayers.orEmpty().map { it.toDomain() },
 )
 
 fun GameAchievementDto.toDomain(): GameAchievement = GameAchievement(
@@ -500,13 +500,13 @@ fun MostPlayedGameDto.toDomain(): MostPlayedGame = MostPlayedGame(
     totalPlayTime = totalPlayTime,
 )
 
-fun ActivePlayerDto.toDomain(): ActivePlayer = ActivePlayer(
+fun com.spela.client.models.ActivePlayerEntry.toDomain(): ActivePlayer = ActivePlayer(
     userId = userId,
     username = username,
-    avatarUrl = avatarUrl,
+    avatarUrl = avatarUrl.takeIf { it.isNotEmpty() },
     totalPlayTime = totalPlayTime,
-    gamesPlayed = gamesPlayed,
-    lastPlayed = lastPlayed,
+    gamesPlayed = gamesPlayed.toInt(),
+    lastPlayed = lastPlayed.toString(),
 )
 
 // Challenge mappers
