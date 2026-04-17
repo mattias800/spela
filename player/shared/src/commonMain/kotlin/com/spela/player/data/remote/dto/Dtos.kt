@@ -1,7 +1,6 @@
 package com.spela.player.data.remote.dto
 
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.json.JsonPrimitive
 
 @Serializable
 data class LoginRequest(
