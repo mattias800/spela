@@ -11,7 +11,7 @@ class StatsRepositoryImpl(
 ) : StatsRepository {
 
     override suspend fun getMostPlayedGames(): Result<List<MostPlayedGame>> = runCatching {
-        apiClient.getMostPlayedGames().games.map { dto ->
+        apiClient.getMostPlayedGames().games.orEmpty().map { dto ->
             val mostPlayed = dto.toDomain()
             mostPlayed.copy(
                 game = mostPlayed.game.copy(

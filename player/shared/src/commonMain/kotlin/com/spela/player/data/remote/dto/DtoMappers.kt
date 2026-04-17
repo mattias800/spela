@@ -446,14 +446,16 @@ fun com.spela.client.models.RALeaderboardEntryResponse.toDomain(): AchievementPl
     lastUnlockedAt = lastUnlockedAt.toString(),
 )
 
-fun UserStatsDto.toDomain(): UserStats = UserStats(
+fun com.spela.client.models.UserStatsResponse.toDomain(): UserStats = UserStats(
     totalPlayTime = totalPlayTime,
     gamesPlayed = gamesPlayed,
-    currentStreak = currentStreak,
-    longestStreak = longestStreak,
-    mostPlayedGame = mostPlayedGame?.toDomain(),
+    currentStreak = currentStreak.toInt(),
+    longestStreak = longestStreak.toInt(),
+    // Server emits an empty Game placeholder when the user has never
+    // played anything — detect via empty id and pass null through.
+    mostPlayedGame = mostPlayedGame.takeIf { it.id.isNotEmpty() }?.toDomain(),
     mostPlayedGameTime = mostPlayedGameTime,
-    lastPlayedAt = lastPlayedAt,
+    lastPlayedAt = lastPlayedAt?.toString(),
 )
 
 fun com.spela.client.models.RARecentAchievementResponse.toDomain(): RecentAchievement = RecentAchievement(
@@ -497,9 +499,9 @@ fun com.spela.client.models.RAUnlockedAchievementResponse.toDomain(): UnlockedAc
 
 // Stats mappers
 
-fun MostPlayedGameDto.toDomain(): MostPlayedGame = MostPlayedGame(
+fun com.spela.client.models.MostPlayedEntry.toDomain(): MostPlayedGame = MostPlayedGame(
     game = game.toDomain(),
-    totalPlayers = totalPlayers,
+    totalPlayers = totalPlayers.toInt(),
     totalPlayTime = totalPlayTime,
 )
 
@@ -1027,11 +1029,16 @@ fun ExploreChallengeDto.toDomain() = ExploreChallenge(
 
 // --- Phase 13: Advanced Search & Saved Searches ---
 
-fun SavedSearchDto.toDomain() = SavedSearch(
+fun com.spela.client.models.SavedSearchResponse.toDomain() = SavedSearch(
     id = id,
     name = name,
-    filters = filters.mapValues { (_, v) -> v.content },
-    createdAt = createdAt,
+    // The generated filters field is a JsonElement? (JsonObject at runtime).
+    // Flatten to the domain Map<String, String>. Non-object / null gives
+    // an empty map.
+    filters = (filters as? kotlinx.serialization.json.JsonObject)
+        ?.mapValues { (_, v) -> (v as? kotlinx.serialization.json.JsonPrimitive)?.content.orEmpty() }
+        ?: emptyMap(),
+    createdAt = createdAt.toString(),
 )
 
 // --- Phase 14: Wild Features ---
