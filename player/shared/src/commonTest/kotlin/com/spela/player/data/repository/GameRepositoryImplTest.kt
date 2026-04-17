@@ -81,6 +81,28 @@ class GameRepositoryImplTest {
     }
 
     @Test
+    fun explorerBadgeMapsToDomain() {
+        val generated = com.spela.client.models.ExplorerBadge(
+            description = "Played 100 games",
+            earned = true,
+            icon = "trophy",
+            id = "centurion",
+            name = "Centurion",
+            progress = 100L,
+            target = 100L,
+        )
+
+        val domain = generated.toDomain()
+
+        assertEquals("centurion", domain.id)
+        assertEquals("Centurion", domain.name)
+        assertEquals("Played 100 games", domain.description)
+        assertTrue(domain.earned)
+        assertEquals(100, domain.progress) // Long -> Int
+        assertEquals(100, domain.target)
+    }
+
+    @Test
     fun gameRatingResponseMapsToDomain() {
         val createdAt = kotlin.time.Instant.fromEpochSeconds(1_700_000_000)
         val response = com.spela.client.models.GameRatingResponse(

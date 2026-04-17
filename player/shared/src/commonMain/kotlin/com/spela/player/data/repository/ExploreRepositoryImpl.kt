@@ -426,7 +426,7 @@ class ExploreRepositoryImpl(
     }
 
     override suspend fun getExplorerBadges(): Result<List<ExplorerBadge>> = runCatching {
-        apiClient.getExplorerBadges().badges.map { it.toDomain() }
+        apiClient.getExplorerBadges().badges.orEmpty().map { it.toDomain() }
     }
 
     override suspend fun getCompletionistMap(): Result<CompletionistMap> = runCatching {
