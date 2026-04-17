@@ -61,7 +61,7 @@ class DownloadRepositoryImpl(
         val gameDetail = apiClient.getGameDetail(gameId)
         println("[Download] Game detail: fileName=${gameDetail.fileName} fileSize=${gameDetail.fileSize} discCount=${gameDetail.discCount}")
 
-        val discs = gameDetail.discs
+        val discs = gameDetail.discs.orEmpty()
         if (gameDetail.discCount >= 2) {
             downloadMultiDiscGame(gameId, gameTitle, gameDetail)
         } else if (discs.isNotEmpty() && discs.size == 1) {
@@ -140,7 +140,7 @@ class DownloadRepositoryImpl(
         gameTitle: String,
         game: GameDto,
     ): String {
-        val disc = game.discs.first()
+        val disc = game.discs.orEmpty().first()
         val gameDir = fileStorage.getGamesDir() + "/$gameId"
         if (fileStorage.fileExists(gameDir) && !fileStorage.isDirectory(gameDir)) {
             fileStorage.deleteFile(gameDir)
@@ -150,7 +150,7 @@ class DownloadRepositoryImpl(
         if (disc.fileName.endsWith(".cue", ignoreCase = true) ||
             disc.fileName.endsWith(".gdi", ignoreCase = true)) {
             // Tar archive (cue+bin or gdi+tracks) — stream-extract directly to disk
-            apiClient.downloadDiscAndExtract(gameId, disc.discNumber, fileStorage, gameDir) { downloaded, total ->
+            apiClient.downloadDiscAndExtract(gameId, disc.discNumber.toInt(), fileStorage, gameDir) { downloaded, total ->
                 val reportedTotal = if (disc.fileSize > 0) disc.fileSize else (total ?: -1)
                 downloads.update {
                     it + (gameId to DownloadProgress(gameId, gameTitle, DownloadState.DOWNLOADING, downloaded, reportedTotal))
@@ -159,7 +159,7 @@ class DownloadRepositoryImpl(
         } else {
             // Single file — stream to disk
             val discPath = "$gameDir/${disc.fileName}"
-            apiClient.downloadDiscToFile(gameId, disc.discNumber, fileStorage, discPath) { downloaded, total ->
+            apiClient.downloadDiscToFile(gameId, disc.discNumber.toInt(), fileStorage, discPath) { downloaded, total ->
                 val reportedTotal = if (disc.fileSize > 0) disc.fileSize else (total ?: -1)
                 downloads.update {
                     it + (gameId to DownloadProgress(gameId, gameTitle, DownloadState.DOWNLOADING, downloaded, reportedTotal))
@@ -207,45 +207,45 @@ class DownloadRepositoryImpl(
         fileStorage.createDirectory(gameDir)
 
         val m3uPath = "$gameDir/game.m3u"
-        val totalDiscs = game.discs.size
+        val totalDiscs = game.discs.orEmpty().size
         val totalSize = game.fileSize
         var completedBytes = 0L
 
         // Download each disc FIRST — write M3U only after all discs succeed.
         // Writing M3U early would make getLocalGamePath treat the game as cached
         // even if disc downloads fail or are still in progress.
-        for ((index, disc) in game.discs.sortedBy { it.discNumber }.withIndex()) {
+        for ((index, disc) in game.discs.orEmpty().sortedBy { it.discNumber }.withIndex()) {
             val discOffset = completedBytes
 
             downloads.update {
                 it + (gameId to DownloadProgress(
                     gameId, gameTitle, DownloadState.DOWNLOADING,
                     bytesDownloaded = discOffset, totalBytes = totalSize,
-                    currentDisc = disc.discNumber, totalDiscs = totalDiscs,
+                    currentDisc = disc.discNumber.toInt(), totalDiscs = totalDiscs,
                 ))
             }
 
             if (disc.fileName.endsWith(".cue", ignoreCase = true) ||
                 disc.fileName.endsWith(".gdi", ignoreCase = true)) {
                 // Tar archive (cue+bin or gdi+tracks) - stream-extract directly to disk
-                apiClient.downloadDiscAndExtract(gameId, disc.discNumber, fileStorage, gameDir) { downloaded, total ->
+                apiClient.downloadDiscAndExtract(gameId, disc.discNumber.toInt(), fileStorage, gameDir) { downloaded, total ->
                     downloads.update {
                         it + (gameId to DownloadProgress(
                             gameId, gameTitle, DownloadState.DOWNLOADING,
                             bytesDownloaded = discOffset + downloaded, totalBytes = totalSize,
-                            currentDisc = disc.discNumber, totalDiscs = totalDiscs,
+                            currentDisc = disc.discNumber.toInt(), totalDiscs = totalDiscs,
                         ))
                     }
                 }
             } else {
                 // Single file (ISO/CHD/CSO) - stream to disk
                 val discPath = "$gameDir/${disc.fileName}"
-                apiClient.downloadDiscToFile(gameId, disc.discNumber, fileStorage, discPath) { downloaded, total ->
+                apiClient.downloadDiscToFile(gameId, disc.discNumber.toInt(), fileStorage, discPath) { downloaded, total ->
                     downloads.update {
                         it + (gameId to DownloadProgress(
                             gameId, gameTitle, DownloadState.DOWNLOADING,
                             bytesDownloaded = discOffset + downloaded, totalBytes = totalSize,
-                            currentDisc = disc.discNumber, totalDiscs = totalDiscs,
+                            currentDisc = disc.discNumber.toInt(), totalDiscs = totalDiscs,
                         ))
                     }
                 }
@@ -255,7 +255,7 @@ class DownloadRepositoryImpl(
         }
 
         // Write .m3u with local filenames — only after all discs downloaded
-        val m3uContent = game.discs.sortedBy { it.discNumber }
+        val m3uContent = game.discs.orEmpty().sortedBy { it.discNumber }
             .joinToString("\n") { it.fileName } + "\n"
         fileStorage.writeFile(m3uPath, m3uContent.encodeToByteArray())
 

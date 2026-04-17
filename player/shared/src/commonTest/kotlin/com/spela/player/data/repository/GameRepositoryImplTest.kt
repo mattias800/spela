@@ -3,6 +3,59 @@ package com.spela.player.data.repository
 import com.spela.player.data.remote.dto.*
 import kotlin.test.*
 
+private fun testGameResponse(
+    id: String,
+    title: String,
+    consoleId: String,
+    consoleName: String = "",
+    fileName: String = "",
+    fileSize: Long = 0,
+    coverAspectRatio: Double = 0.75,
+    coverUrl: String = "",
+    screenshotUrls: List<String>? = null,
+    description: String = "",
+    developer: String = "",
+    publisher: String = "",
+    releaseDate: String = "",
+    genre: String = "",
+    isFavorite: Boolean = false,
+    isInPlayLater: Boolean = false,
+    lastPlayedAt: kotlin.time.Instant? = null,
+    totalPlayTime: Long = 0,
+): com.spela.client.models.GameResponse {
+    val now = kotlin.time.Instant.fromEpochSeconds(0)
+    return com.spela.client.models.GameResponse(
+        averageRating = 0.0,
+        consoleId = consoleId,
+        consoleName = consoleName,
+        coverAspectRatio = coverAspectRatio,
+        coverUrl = coverUrl,
+        createdAt = now,
+        description = description,
+        developer = developer,
+        discCount = 0L,
+        fileName = fileName,
+        fileSize = fileSize,
+        genre = genre,
+        id = id,
+        igdbCriticsRating = 0.0,
+        isFavorite = isFavorite,
+        isInPlayLater = isInPlayLater,
+        isPreRelease = false,
+        lastPlayedAt = lastPlayedAt,
+        playable = true,
+        players = 0L,
+        publisher = publisher,
+        ratingCount = 0L,
+        releaseDate = releaseDate,
+        scrapeAttempts = 0L,
+        screenshotUrls = screenshotUrls,
+        title = title,
+        totalPlayTime = totalPlayTime,
+        updatedAt = now,
+    )
+}
+
 class GameRepositoryImplTest {
 
     private val sampleConsoles = listOf(
@@ -11,8 +64,8 @@ class GameRepositoryImplTest {
     )
 
     private val sampleGames = listOf(
-        GameDto("1", "Super Mario Bros.", "1", consoleName = "NES", fileName = "smb.nes", fileSize = 40960, releaseDate = "1985-09-13"),
-        GameDto("2", "Zelda", "1", consoleName = "NES", fileName = "zelda.nes", fileSize = 131072, releaseDate = "1986-02-21"),
+        testGameResponse("1", "Super Mario Bros.", "1", consoleName = "NES", fileName = "smb.nes", fileSize = 40960, releaseDate = "1985-09-13"),
+        testGameResponse("2", "Zelda", "1", consoleName = "NES", fileName = "zelda.nes", fileSize = 131072, releaseDate = "1986-02-21"),
     )
 
     @Test
@@ -335,22 +388,23 @@ class GameRepositoryImplTest {
 
     @Test
     fun gameDtoMapsEnrichedFields() {
-        val dto = GameDto(
+        val lastPlayed = kotlin.time.Instant.parse("2024-01-15T10:30:00Z")
+        val dto = testGameResponse(
             "1", "Test", "1",
             isFavorite = true,
-            lastPlayedAt = "2024-01-15T10:30:00Z",
+            lastPlayedAt = lastPlayed,
             totalPlayTime = 3600,
         )
         val domain = dto.toDomain()
 
         assertTrue(domain.isFavorite)
-        assertEquals("2024-01-15T10:30:00Z", domain.lastPlayedAt)
+        assertEquals(lastPlayed.toString(), domain.lastPlayedAt)
         assertEquals(3600, domain.totalPlayTime)
     }
 
     @Test
     fun gameDtoToGameDetailIncludesScreenshots() {
-        val dto = GameDto("1", "Test", "1", screenshotUrls = listOf("https://example.com/ss1.jpg", "https://example.com/ss2.jpg"))
+        val dto = testGameResponse("1", "Test", "1", screenshotUrls = listOf("https://example.com/ss1.jpg", "https://example.com/ss2.jpg"))
         val detail = dto.toGameDetail()
 
         assertEquals("Test", detail.game.title)
@@ -360,7 +414,7 @@ class GameRepositoryImplTest {
 
     @Test
     fun gameDtoToGameDetailWithoutScreenshots() {
-        val dto = GameDto("1", "Test", "1")
+        val dto = testGameResponse("1", "Test", "1")
         val detail = dto.toGameDetail()
 
         assertTrue(detail.screenshots.isEmpty())
@@ -406,23 +460,24 @@ class GameRepositoryImplTest {
 
     @Test
     fun recentGamesAreEnrichedGameResponses() {
-        val dto = GameDto(
+        val lastPlayed = kotlin.time.Instant.parse("2024-01-15T10:30:00Z")
+        val dto = testGameResponse(
             "1", "Super Mario Bros.", "1",
             consoleName = "NES",
             fileName = "smb.nes",
-            lastPlayedAt = "2024-01-15T10:30:00Z",
+            lastPlayedAt = lastPlayed,
             totalPlayTime = 7200,
         )
         val game = dto.toDomain()
 
         assertEquals("Super Mario Bros.", game.title)
-        assertEquals("2024-01-15T10:30:00Z", game.lastPlayedAt)
+        assertEquals(lastPlayed.toString(), game.lastPlayedAt)
         assertEquals(7200, game.totalPlayTime)
     }
 
     @Test
     fun favoriteGamesHaveIsFavoriteTrue() {
-        val dto = GameDto("1", "Zelda", "1", consoleName = "NES", fileName = "zelda.nes", isFavorite = true)
+        val dto = testGameResponse("1", "Zelda", "1", consoleName = "NES", fileName = "zelda.nes", isFavorite = true)
         val game = dto.toDomain()
 
         assertEquals("Zelda", game.title)
@@ -450,14 +505,14 @@ class GameRepositoryImplTest {
     @Test
     fun paginatedResponseUsesDataField() {
         val response = GameListResponse(
-            data = listOf(GameDto("1", "Test", "1")),
-            total = 1,
-            page = 1,
-            pageSize = 50,
+            data = listOf(testGameResponse("1", "Test", "1")),
+            total = 1L,
+            page = 1L,
+            pageSize = 50L,
         )
 
-        assertEquals(1, response.data.size)
-        assertEquals("Test", response.data[0].title)
+        assertEquals(1, response.data.orEmpty().size)
+        assertEquals("Test", response.data.orEmpty()[0].title)
         assertEquals(50, response.pageSize)
     }
 }

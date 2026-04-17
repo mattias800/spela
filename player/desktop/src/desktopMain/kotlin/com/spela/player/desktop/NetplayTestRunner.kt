@@ -134,9 +134,10 @@ private class NetplayTestRunnerImpl(private val config: Config) {
             // Find the game ID for Chip 'n Dale by listing NES games
             log("Finding game on server...")
             val gamesResponse = apiClient.getGamesForConsole("nes", page = 1, pageSize = 100)
-            val game = gamesResponse.data.firstOrNull { it.title.contains("Chip", ignoreCase = true) }
-                ?: gamesResponse.data.firstOrNull { it.title.contains("Rescue", ignoreCase = true) }
-                ?: error("Could not find Chip 'n Dale game on server. Available: ${gamesResponse.data.map { it.title }}")
+            val games = gamesResponse.data.orEmpty()
+            val game = games.firstOrNull { it.title.contains("Chip", ignoreCase = true) }
+                ?: games.firstOrNull { it.title.contains("Rescue", ignoreCase = true) }
+                ?: error("Could not find Chip 'n Dale game on server. Available: ${games.map { it.title }}")
 
             log("Creating netplay session for '${game.title}' (ID: ${game.id})...")
             val session = apiClient.createNetplaySession(

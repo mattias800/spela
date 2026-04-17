@@ -36,7 +36,7 @@ class GameRepositoryImpl(
 
     override suspend fun getGamesForConsole(consoleId: String): Result<List<Game>> {
         return runCatching {
-            val games = apiClient.getGamesForConsole(consoleId, pageSize = 200).data
+            val games = apiClient.getGamesForConsole(consoleId, pageSize = 200).data.orEmpty()
                 .map { it.toDomain().resolveImageUrls() }
             cacheGames(games)
             games
@@ -61,20 +61,20 @@ class GameRepositoryImpl(
                 hidePreRelease = hidePreRelease,
                 grouped = grouped,
             )
-            val games = response.data.map { it.toDomain().resolveImageUrls() }
+            val games = response.data.orEmpty().map { it.toDomain().resolveImageUrls() }
             if (page == 1) cacheGames(games)
             PaginatedResult(
                 data = games,
                 total = response.total,
-                page = response.page,
-                pageSize = response.pageSize,
+                page = response.page.toInt(),
+                pageSize = response.pageSize.toInt(),
             )
         }
     }
 
     override suspend fun getAllGames(): Result<List<Game>> {
         return runCatching {
-            val games = apiClient.getAllGames().data.map { it.toDomain().resolveImageUrls() }
+            val games = apiClient.getAllGames().data.orEmpty().map { it.toDomain().resolveImageUrls() }
             cacheGames(games)
             games
         }.recoverCatching {
@@ -96,13 +96,13 @@ class GameRepositoryImpl(
                 hidePreRelease = hidePreRelease,
                 grouped = grouped,
             )
-            val games = response.data.map { it.toDomain().resolveImageUrls() }
+            val games = response.data.orEmpty().map { it.toDomain().resolveImageUrls() }
             if (page == 1) cacheGames(games)
             PaginatedResult(
                 data = games,
                 total = response.total,
-                page = response.page,
-                pageSize = response.pageSize,
+                page = response.page.toInt(),
+                pageSize = response.pageSize.toInt(),
             )
         }
     }
@@ -114,7 +114,7 @@ class GameRepositoryImpl(
         sortOrder: String?,
     ): Result<List<Game>> {
         return runCatching {
-            apiClient.searchGames(query, consoleId, sortBy, sortOrder).data.map { it.toDomain().resolveImageUrls() }
+            apiClient.searchGames(query, consoleId, sortBy, sortOrder).data.orEmpty().map { it.toDomain().resolveImageUrls() }
         }.recoverCatching {
             val cached = searchCachedGames(query)
             if (cached.isNotEmpty()) cached else throw it
@@ -142,12 +142,12 @@ class GameRepositoryImpl(
                 page = page,
                 pageSize = pageSize,
             )
-            val games = response.data.map { it.toDomain().resolveImageUrls() }
+            val games = response.data.orEmpty().map { it.toDomain().resolveImageUrls() }
             PaginatedResult(
                 data = games,
                 total = response.total,
-                page = response.page,
-                pageSize = response.pageSize,
+                page = response.page.toInt(),
+                pageSize = response.pageSize.toInt(),
             )
         }
     }
@@ -215,7 +215,7 @@ class GameRepositoryImpl(
     }
 
     override suspend fun getRecentlyAddedGames(): Result<List<Game>> = runCatching {
-        apiClient.getRecentlyAddedGames().data.map { it.toDomain().resolveImageUrls() }
+        apiClient.getRecentlyAddedGames().data.orEmpty().map { it.toDomain().resolveImageUrls() }
     }
 
     override suspend fun getTopRatedGames(consoleId: String): Result<List<TopRatedGame>> {

@@ -65,39 +65,45 @@ fun com.spela.client.models.ConsoleResponse.toDomain(): Console = Console(
 )
 
 fun GameDiscDto.toDomain(): GameDisc = GameDisc(
-    discNumber = discNumber,
+    discNumber = discNumber.toInt(),
     fileName = fileName,
     fileSize = fileSize,
 )
 
-/** Maps the enriched GameResponse DTO to domain Game. */
+/** Maps the enriched GameResponse DTO to domain Game.
+ *
+ * The generated GameResponse has several fields server-marked @Required
+ * with `String` type where the hand-written DTO had `String?` — the server
+ * emits empty strings when a field is absent. We convert `""` back to
+ * `null` so the domain layer keeps its existing "missing data" semantics.
+ */
 fun GameDto.toDomain(): Game = Game(
     id = id,
     title = title,
     consoleId = consoleId,
     consoleName = consoleName,
     coverAspectRatio = coverAspectRatio.toFloat(),
-    coverUrl = coverUrl,
-    description = description,
-    developer = developer,
-    publisher = publisher,
-    releaseDate = releaseDate,
-    genre = genre,
+    coverUrl = coverUrl.takeIf { it.isNotEmpty() },
+    description = description.takeIf { it.isNotEmpty() },
+    developer = developer.takeIf { it.isNotEmpty() },
+    publisher = publisher.takeIf { it.isNotEmpty() },
+    releaseDate = releaseDate.takeIf { it.isNotEmpty() },
+    genre = genre.takeIf { it.isNotEmpty() },
     fileSize = fileSize,
     fileName = fileName,
     coreOverride = coreOverride,
-    scrapeAttempts = scrapeAttempts,
-    players = players,
+    scrapeAttempts = scrapeAttempts.toInt(),
+    players = players.toInt(),
     igdbCriticsRating = igdbCriticsRating,
     communityRating = averageRating,
     communityRatingCount = ratingCount,
-    userRating = userRating,
+    userRating = userRating?.toInt(),
     isFavorite = isFavorite,
     isInPlayLater = isInPlayLater,
-    lastPlayedAt = lastPlayedAt,
+    lastPlayedAt = lastPlayedAt?.toString(),
     totalPlayTime = totalPlayTime,
-    discCount = discCount,
-    discs = discs.map { it.toDomain() },
+    discCount = discCount.toInt(),
+    discs = discs.orEmpty().map { it.toDomain() },
     achievementsWarning = achievementsWarning,
     verificationStatus = verificationStatus,
     verificationTag = verificationTag,
@@ -108,18 +114,14 @@ fun GameDto.toDomain(): Game = Game(
     revision = revision,
     tags = tags,
     isPreRelease = isPreRelease,
-    variantCount = variantCount,
+    variantCount = variantCount?.toInt() ?: 0,
     groupKey = groupKey,
-    timeToBeatHastily = timeToBeatHastily,
-    timeToBeatNormally = timeToBeatNormally,
-    timeToBeatCompletely = timeToBeatCompletely,
-    partyInfo = partyInfo,
+    timeToBeatHastily = timeToBeatHastily?.toInt() ?: 0,
+    timeToBeatNormally = timeToBeatNormally?.toInt() ?: 0,
+    timeToBeatCompletely = timeToBeatCompletely?.toInt() ?: 0,
+    partyInfo = partyInfo.orEmpty(),
 )
 
-/**
- * Constructs GameDetail from the enriched GameResponse.
- * screenshotUrls comes directly from the response.
- */
 fun GameVariantDto.toDomain(): GameVariant = GameVariant(
     id = id,
     title = title,
@@ -144,12 +146,13 @@ fun RomHackGameDto.toDomain(): RomHackGame = RomHackGame(
     coverUrl = coverUrl,
 )
 
+/** Constructs GameDetail from the enriched GameResponse. */
 fun GameDto.toGameDetail(): GameDetail = GameDetail(
     game = toDomain(),
-    screenshots = screenshotUrls,
-    variants = variants.map { it.toDomain() },
+    screenshots = screenshotUrls.orEmpty(),
+    variants = variants.orEmpty().map { it.toDomain() },
     parentGame = parentGame?.toDomain(),
-    romHacks = romHacks.map { it.toDomain() },
+    romHacks = romHacks.orEmpty().map { it.toDomain() },
 )
 
 fun SaveStateDto.toDomain(): SaveState = SaveState(
