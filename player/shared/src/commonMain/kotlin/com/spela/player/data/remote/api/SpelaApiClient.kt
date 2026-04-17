@@ -149,7 +149,7 @@ class SpelaApiClient(
         }.body()
     }
 
-    suspend fun getCurrentUser(): UserDto {
+    suspend fun getCurrentUser(): com.spela.client.models.UserResponse {
         return client.get("$baseUrl/api/user/profile").body()
     }
 
@@ -599,11 +599,13 @@ class SpelaApiClient(
 
     // User Preferences
 
-    suspend fun getPreferences(): UserPreferencesDto {
+    suspend fun getPreferences(): com.spela.client.models.UserPreferencesResponse {
         return client.get("$baseUrl/api/user/preferences").body()
     }
 
-    suspend fun updatePreferences(request: UpdatePreferencesRequest): UserPreferencesDto {
+    suspend fun updatePreferences(
+        request: com.spela.client.models.UpdatePreferencesRequest,
+    ): com.spela.client.models.UserPreferencesResponse {
         return client.put("$baseUrl/api/user/preferences") {
             setBody(request)
         }.body()
@@ -611,11 +613,14 @@ class SpelaApiClient(
 
     // Game Key Mapping
 
-    suspend fun getGameKeyMapping(gameId: String): GameKeyMappingDto {
+    suspend fun getGameKeyMapping(gameId: String): com.spela.client.models.GameKeyMappingResponse {
         return client.get("$baseUrl/api/user/games/$gameId/keymapping").body()
     }
 
-    suspend fun updateGameKeyMapping(gameId: String, request: UpdateGameKeyMappingRequest): GameKeyMappingDto {
+    suspend fun updateGameKeyMapping(
+        gameId: String,
+        request: com.spela.client.models.UpdateGameKeyMappingRequest,
+    ): com.spela.client.models.GameKeyMappingResponse {
         return client.put("$baseUrl/api/user/games/$gameId/keymapping") {
             setBody(request)
         }.body()
@@ -633,7 +638,7 @@ class SpelaApiClient(
 
     // Game Cheats
 
-    suspend fun getGameCheats(gameId: String): List<CheatDto> {
+    suspend fun getGameCheats(gameId: String): List<com.spela.client.models.GameCheatResponse> {
         return client.get("$baseUrl/api/games/$gameId/cheats").body()
     }
 
@@ -698,23 +703,28 @@ class SpelaApiClient(
         client.delete("$baseUrl/api/user/devices/$deviceId")
     }
 
-    suspend fun registerDevice(request: RegisterDeviceRequest): DeviceDto {
+    suspend fun registerDevice(
+        request: com.spela.client.models.RegisterDeviceRequest,
+    ): com.spela.client.models.DeviceResponse {
         return client.post("$baseUrl/api/user/devices") {
             setBody(request)
         }.body()
     }
 
-    suspend fun getDevices(): List<DeviceDto> {
+    suspend fun getDevices(): List<com.spela.client.models.DeviceResponse> {
         return client.get("$baseUrl/api/user/devices").body()
     }
 
-    suspend fun updateDevice(deviceId: Long, name: String): DeviceDto {
+    suspend fun updateDevice(deviceId: Long, name: String): com.spela.client.models.DeviceResponse {
         return client.put("$baseUrl/api/user/devices/$deviceId") {
             setBody(mapOf("name" to name))
         }.body()
     }
 
-    suspend fun updateDevicePreferences(deviceId: Long, request: UpdateDevicePreferencesRequest): DeviceDto {
+    suspend fun updateDevicePreferences(
+        deviceId: Long,
+        request: com.spela.client.models.UpdateDevicePreferencesRequest,
+    ): com.spela.client.models.DeviceResponse {
         return client.put("$baseUrl/api/user/devices/$deviceId/preferences") {
             setBody(request)
         }.body()
@@ -754,21 +764,23 @@ class SpelaApiClient(
 
     // Cores
 
-    suspend fun getAvailableCores(): List<LibretroCoreDto> {
+    suspend fun getAvailableCores(): List<com.spela.client.models.Core> {
         return client.get("$baseUrl/api/cores").body()
     }
 
-    /** May return either a full Core object or just {coreName: "..."} */
-    suspend fun getRecommendedCore(gameId: String): LibretroCoreDto {
+    /** May return either a full Core object or just {coreName: "..."}. The
+     *  lightweight fallback shape can't satisfy [com.spela.client.models.Core]'s
+     *  @Required timestamps, so this method returns the domain type directly. */
+    suspend fun getRecommendedCore(gameId: String): com.spela.player.domain.model.LibretroCore {
         val text: String = client.get("$baseUrl/api/games/$gameId/core").body()
         return try {
-            json.decodeFromString<LibretroCoreDto>(text)
+            json.decodeFromString<com.spela.client.models.Core>(text).toDomain()
         } catch (_: Exception) {
             // Server returns just {coreName: "..."} when core isn't in DB
             val obj = json.parseToJsonElement(text).jsonObject
             val coreName = obj["coreName"]?.jsonPrimitive?.content
                 ?: throw IllegalStateException("No core name in response: $text")
-            LibretroCoreDto(id = 0, name = coreName)
+            com.spela.player.domain.model.LibretroCore(id = 0, name = coreName)
         }
     }
 
@@ -1495,27 +1507,34 @@ class SpelaApiClient(
 
     // ── Game Sessions ──
 
-    suspend fun getSessionsForGame(gameId: String): List<GameSessionDto> {
+    suspend fun getSessionsForGame(gameId: String): List<com.spela.client.models.GameSessionResponse> {
         return client.get("$baseUrl/api/games/$gameId/sessions").body()
     }
 
-    suspend fun createSessionFromSharedSave(gameId: String, saveId: String): GameSessionDto {
+    suspend fun createSessionFromSharedSave(
+        gameId: String,
+        saveId: String,
+    ): com.spela.client.models.GameSessionResponse {
         return client.post("$baseUrl/api/games/$gameId/sessions/from-shared-save/$saveId").body()
     }
 
-    suspend fun createSession(gameId: String, name: String): GameSessionDto {
+    suspend fun createSession(gameId: String, name: String): com.spela.client.models.GameSessionResponse {
         return client.post("$baseUrl/api/games/$gameId/sessions") {
-            setBody(CreateSessionRequest(name = name))
+            setBody(com.spela.client.models.CreateSessionRequest(name = name))
         }.body()
     }
 
-    suspend fun getSession(sessionId: String): GameSessionDto {
+    suspend fun getSession(sessionId: String): com.spela.client.models.GameSessionResponse {
         return client.get("$baseUrl/api/sessions/$sessionId").body()
     }
 
-    suspend fun updateSession(sessionId: String, name: String? = null, coreName: String? = null): GameSessionDto {
+    suspend fun updateSession(
+        sessionId: String,
+        name: String? = null,
+        coreName: String? = null,
+    ): com.spela.client.models.GameSessionResponse {
         return client.put("$baseUrl/api/sessions/$sessionId") {
-            setBody(UpdateSessionRequest(name = name, coreName = coreName))
+            setBody(com.spela.client.models.UpdateSessionRequest(name = name, coreName = coreName))
         }.body()
     }
 
@@ -1523,10 +1542,13 @@ class SpelaApiClient(
         client.delete("$baseUrl/api/sessions/$sessionId")
     }
 
-    suspend fun duplicateSession(sessionId: String, name: String? = null): GameSessionDto {
+    suspend fun duplicateSession(
+        sessionId: String,
+        name: String? = null,
+    ): com.spela.client.models.GameSessionResponse {
         return client.post("$baseUrl/api/sessions/$sessionId/duplicate") {
             if (name != null) {
-                setBody(mapOf("name" to name))
+                setBody(com.spela.client.models.DuplicateSessionRequest(name = name))
             }
         }.body()
     }
@@ -1648,13 +1670,22 @@ class SpelaApiClient(
         return response.body()
     }
 
-    suspend fun getSessionCheats(sessionId: String): SessionCheatConfigDto {
+    suspend fun getSessionCheats(sessionId: String): com.spela.client.models.SessionCheatsResponse {
         return client.get("$baseUrl/api/sessions/$sessionId/cheats").body()
     }
 
-    suspend fun updateSessionCheats(sessionId: String, cheatsEnabled: Boolean, enabledIndices: List<Int>): SessionCheatConfigDto {
+    suspend fun updateSessionCheats(
+        sessionId: String,
+        cheatsEnabled: Boolean,
+        enabledIndices: List<Int>,
+    ): com.spela.client.models.SessionCheatsResponse {
         return client.put("$baseUrl/api/sessions/$sessionId/cheats") {
-            setBody(UpdateSessionCheatsRequest(cheatsEnabled = cheatsEnabled, enabledIndices = enabledIndices))
+            setBody(
+                com.spela.client.models.UpdateSessionCheatsRequest(
+                    cheatsEnabled = cheatsEnabled,
+                    enabledIndices = enabledIndices.map { it.toLong() },
+                )
+            )
         }.body()
     }
 

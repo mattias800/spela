@@ -31,7 +31,7 @@ class CheatRepositoryImpl(
                 queries.upsertCheat(
                     id = cheatId,
                     game_id = gameId,
-                    cheat_index = dto.index.toLong(),
+                    cheat_index = dto.index,
                     description = dto.description,
                     code = dto.code,
                     enabled = if (wasEnabled) 1L else 0L,

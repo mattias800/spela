@@ -442,10 +442,20 @@ class GameRepositoryImplTest {
 
     @Test
     fun authResponseMapsCorrectly() {
+        val now = kotlin.time.Instant.fromEpochSeconds(0)
         val dto = AuthResponse(
             accessToken = "access123",
             refreshToken = "refresh456",
-            user = UserDto("1", "testuser", "test@example.com", "user"),
+            user = UserDto(
+                createdAt = now,
+                disabled = false,
+                email = "test@example.com",
+                id = "1",
+                pendingApproval = false,
+                role = "user",
+                updatedAt = now,
+                username = "testuser",
+            ),
         )
         val tokens = dto.toDomain()
 
@@ -486,12 +496,15 @@ class GameRepositoryImplTest {
 
     @Test
     fun coreResponseMapsCorrectly() {
-        val dto = LibretroCoreDto(
+        val now = kotlin.time.Instant.fromEpochSeconds(0)
+        val dto = com.spela.client.models.Core(
+            createdAt = now,
+            displayName = "Nestopia UE",
             id = 1,
             name = "nestopia",
-            displayName = "Nestopia UE",
-            version = "1.52.0",
             platforms = "windows,linux,macos,android",
+            updatedAt = now,
+            version = "1.52.0",
         )
         val domain = dto.toDomain()
 

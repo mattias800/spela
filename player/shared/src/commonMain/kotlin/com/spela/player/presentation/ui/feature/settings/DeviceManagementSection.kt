@@ -120,13 +120,11 @@ private fun DeviceRow(
                 style = SpTypography.BodySmall,
                 color = SpColor.OnBackgroundTertiary,
             )
-            if (device.lastSeenAt.isNotEmpty()) {
-                Text(
-                    text = "Last seen: ${device.lastSeenAt}",
-                    style = SpTypography.BodySmall,
-                    color = SpColor.OnBackgroundTertiary,
-                )
-            }
+            Text(
+                text = "Last seen: ${device.lastSeenAt}",
+                style = SpTypography.BodySmall,
+                color = SpColor.OnBackgroundTertiary,
+            )
         }
         Spacer(Modifier.width(SpSpacing.Small))
         SpIconButton(

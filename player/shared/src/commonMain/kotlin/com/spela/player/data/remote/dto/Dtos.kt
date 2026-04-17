@@ -27,16 +27,13 @@ data class RefreshRequest(
     val refreshToken: String,
 )
 
-@Serializable
-data class UserDto(
-    val id: String,
-    val username: String,
-    val email: String = "",
-    val role: String,
-    val avatarUrl: String? = null,
-    val createdAt: String? = null,
-    val updatedAt: String? = null,
-)
+// UserDto replaced by com.spela.client.models.UserResponse (see
+// player/shared-api/). Aliased here so AuthResponse.user — which lives
+// in the hand-written auth DTO block — keeps compiling unchanged. The
+// generated UserResponse adds @Required createdAt/updatedAt Instants
+// and @Required disabled/pendingApproval booleans the domain model
+// ignores.
+typealias UserDto = com.spela.client.models.UserResponse
 
 @Serializable
 data class HardwareMakerDto(
@@ -118,89 +115,35 @@ data class SaveStateDto(
     val updatedAt: String? = null,
 )
 
-@Serializable
-data class LibretroCoreDto(
-    val id: Long,
-    val name: String,
-    val displayName: String = "",
-    val description: String? = null,
-    val version: String? = null,
-    val platforms: String = "",
-    val downloadUrl: String? = null,
-    val createdAt: String? = null,
-    val updatedAt: String? = null,
-)
+// LibretroCoreDto replaced by com.spela.client.models.Core (see
+// player/shared-api/). Generated Core has @Required createdAt/updatedAt
+// Instants that the {coreName: "..."} fallback in getRecommendedCore
+// can't satisfy — that method returns the domain type directly.
 
-@Serializable
-data class ConsoleKeyMappingDto(
-    val selectedMapping: String = "",
-    val customMapping: Map<String, String> = emptyMap(),
-)
+// ConsoleKeyMappingDto replaced by com.spela.client.models.ConsoleKeyMappingDTO
+// (generator uses "DTO" uppercase). The generated type has
+// customMapping: Map<String,String>? — the mapper applies .orEmpty() when
+// converting to the domain ConsoleKeyMappingPref.
 
-@Serializable
-data class GameKeyMappingDto(
-    val customMapping: Map<String, String> = emptyMap(),
-)
+// GameKeyMappingDto / UpdateGameKeyMappingRequest replaced by
+// com.spela.client.models.GameKeyMappingResponse and
+// com.spela.client.models.UpdateGameKeyMappingRequest
+// (see player/shared-api/).
 
-@Serializable
-data class UpdateGameKeyMappingRequest(
-    val customMapping: Map<String, String>,
-)
+// UserPreferencesDto / UpdatePreferencesRequest replaced by
+// com.spela.client.models.UserPreferencesResponse and
+// com.spela.client.models.UpdatePreferencesRequest (see player/shared-api/).
+// Repository builds the update payload with named args since every field on
+// the generated request is nullable.
 
-@Serializable
-data class UserPreferencesDto(
-    val showPerformanceOverlay: Boolean = false,
-    val autoSaveEnabled: Boolean = true,
-    val autoLoadSaveEnabled: Boolean = true,
-    val selectedShader: String = "none",
-    val selectedTheme: String = "default-dark",
-    val consoleShaders: Map<String, String> = emptyMap(),
-    val raLinked: Boolean = false,
-    val raUsername: String = "",
-    val raHardcoreEnabled: Boolean = false,
-    val selectedKeyMapping: String = "default",
-    val customKeyMapping: Map<String, String> = emptyMap(),
-    val consoleKeyMappings: Map<String, ConsoleKeyMappingDto> = emptyMap(),
-    val defaultSecondScreenPage: String = "art",
-)
-
-@Serializable
-data class UpdatePreferencesRequest(
-    val showPerformanceOverlay: Boolean? = null,
-    val autoSaveEnabled: Boolean? = null,
-    val autoLoadSaveEnabled: Boolean? = null,
-    val selectedShader: String? = null,
-    val selectedTheme: String? = null,
-    val consoleShaders: Map<String, String>? = null,
-    val selectedKeyMapping: String? = null,
-    val customKeyMapping: Map<String, String>? = null,
-    val consoleKeyMappings: Map<String, ConsoleKeyMappingDto>? = null,
-    val defaultSecondScreenPage: String? = null,
-)
-
-// Devices
-
-@Serializable
-data class RegisterDeviceRequest(
-    val deviceUuid: String,
-    val name: String,
-    val platform: String,
-)
-
-@Serializable
-data class DeviceDto(
-    val id: Long,
-    val deviceUuid: String,
-    val name: String,
-    val platform: String,
-    val lastSeenAt: String = "",
-    val consoleShaders: Map<String, String> = emptyMap(),
-)
-
-@Serializable
-data class UpdateDevicePreferencesRequest(
-    val consoleShaders: Map<String, String>,
-)
+// Devices — DeviceDto / RegisterDeviceRequest / UpdateDevicePreferencesRequest
+// replaced by com.spela.client.models.DeviceResponse /
+// RegisterDeviceRequest / UpdateDevicePreferencesRequest (see
+// player/shared-api/). DeviceDto is typealiased because the settings UI
+// references it directly; the generated DeviceResponse has `lastSeenAt`
+// typed as Instant rather than the hand-written String, so consumers
+// must format via `.toString()`.
+typealias DeviceDto = com.spela.client.models.DeviceResponse
 
 // Shared Saves
 
@@ -527,60 +470,24 @@ data class DeveloperGameDto(
 
 // Save Data (SRAM)
 
-// Game Sessions
+// Game Sessions — GameSessionDto / CreateSessionRequest / UpdateSessionRequest
+// replaced by com.spela.client.models.GameSessionResponse /
+// CreateSessionRequest / UpdateSessionRequest (see player/shared-api/).
+// The generated response models memberCount as Long (mapper converts to
+// Int), lastPlayedAt as Instant? (mapper converts to String via
+// .toString()), and memberUsernames / memberAvatars as List<String>?
+// (mapper applies .orEmpty()). DuplicateSessionRequest is used in-place
+// for the duplicate-session call.
 
-@Serializable
-data class GameSessionDto(
-    val id: String,
-    val gameId: String,
-    val name: String,
-    val lastPlayedAt: String? = null,
-    val lastPlayedByUsername: String? = null,
-    val totalPlayTime: Long = 0,
-    val screenshotUrl: String? = null,
-    val coreName: String? = null,
-    val cheatsEnabled: Boolean = false,
-    val isSharedSession: Boolean = false,
-    val sharedSessionId: String? = null,
-    val memberCount: Int = 1,
-    val memberUsernames: List<String> = emptyList(),
-    val memberAvatars: List<String> = emptyList(),
-)
+// Session Cheats — SessionCheatConfigDto / UpdateSessionCheatsRequest
+// replaced by com.spela.client.models.SessionCheatsResponse /
+// UpdateSessionCheatsRequest. The server spec models enabledIndices as
+// List<Long>? — the API client converts Int⇄Long at the boundary and
+// the mapper converts to List<Int> for the domain.
 
-@Serializable
-data class CreateSessionRequest(
-    val name: String,
-)
-
-@Serializable
-data class UpdateSessionRequest(
-    val name: String? = null,
-    val coreName: String? = null,
-)
-
-// Session Cheats
-
-@Serializable
-data class SessionCheatConfigDto(
-    val cheatsEnabled: Boolean = false,
-    val enabledIndices: List<Int> = emptyList(),
-)
-
-@Serializable
-data class UpdateSessionCheatsRequest(
-    val cheatsEnabled: Boolean,
-    val enabledIndices: List<Int>,
-)
-
-// Cheats
-
-@Serializable
-data class CheatDto(
-    val id: Int = 0,
-    val index: Int = 0,
-    val description: String = "",
-    val code: String = "",
-)
+// Cheats — CheatDto replaced by com.spela.client.models.GameCheatResponse
+// (see player/shared-api/). Server sends id/index as Long; the repository
+// stores them directly without domain conversion.
 
 // Explore
 
