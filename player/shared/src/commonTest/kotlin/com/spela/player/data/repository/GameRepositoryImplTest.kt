@@ -34,6 +34,55 @@ class GameRepositoryImplTest {
     }
 
     @Test
+    fun consoleResponseMapsToDomain() {
+        val now = kotlin.time.Instant.fromEpochSeconds(0)
+        val response = com.spela.client.models.ConsoleResponse(
+            abbreviation = "NES",
+            browserPlayable = false,
+            code = "nintendo-nes",
+            colorTheme = "#e60012",
+            coverAspectRatio = 0.75,
+            createdAt = now,
+            defaultCore = "nestopia",
+            emulatorJsCore = "nes",
+            extensions = listOf("nes"),
+            gameCount = 42L,
+            generation = 3L,
+            iconUrl = "icon",
+            id = "1",
+            logoPngUrl = "logo.png",
+            logoUrl = "logo.svg",
+            maker = com.spela.client.models.HardwareMakerResponse(code = "nintendo", name = "Nintendo"),
+            mediaType = com.spela.client.models.MediaTypeResponse(
+                category = com.spela.client.models.MediaTypeCategoryResponse(code = "cart", name = "Cartridge"),
+                code = "nes-cart",
+                name = "NES Cartridge",
+            ),
+            name = "Nintendo Entertainment System",
+            playable = true,
+            releaseYear = 1983L,
+            saveStateSupport = true,
+            summary = "8-bit classic",
+            unitsSold = 61_900_000L,
+            updatedAt = now,
+        )
+
+        val domain = response.toDomain()
+
+        assertEquals("1", domain.id)
+        assertEquals("Nintendo Entertainment System", domain.name)
+        assertEquals("NES", domain.abbreviation)
+        assertEquals(42, domain.gameCount) // Long -> Int conversion
+        assertEquals(3, domain.generation)
+        assertEquals(1983, domain.releaseYear)
+        assertEquals("Nintendo", domain.makerName)
+        assertEquals("nintendo", domain.makerCode)
+        assertEquals("NES Cartridge", domain.mediaTypeName)
+        assertEquals("logo.png", domain.logoUrl) // logoPngUrl preferred when non-empty
+        assertEquals(61_900_000L, domain.unitsSold)
+    }
+
+    @Test
     fun gameDtoMapsCorrectly() {
         val dto = sampleGames[0]
         val domain = dto.toDomain()

@@ -41,6 +41,29 @@ fun ConsoleDto.toDomain(): Console = Console(
     summary = summary,
 )
 
+fun com.spela.client.models.ConsoleResponse.toDomain(): Console = Console(
+    id = id,
+    name = name,
+    abbreviation = abbreviation,
+    gameCount = gameCount.toInt(),
+    code = code,
+    colorTheme = colorTheme,
+    coverAspectRatio = coverAspectRatio,
+    defaultCore = defaultCore,
+    iconUrl = iconUrl,
+    logoUrl = logoPngUrl.ifEmpty { logoUrl },
+    saveStateSupport = saveStateSupport,
+    browserPlayable = browserPlayable,
+    playable = playable,
+    generation = generation.toInt(),
+    makerName = maker.name,
+    makerCode = maker.code,
+    mediaTypeName = mediaType.name,
+    releaseYear = releaseYear?.toInt(),
+    unitsSold = unitsSold,
+    summary = summary,
+)
+
 fun GameDiscDto.toDomain(): GameDisc = GameDisc(
     discNumber = discNumber,
     fileName = fileName,
