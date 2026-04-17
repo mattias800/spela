@@ -20,6 +20,7 @@ dependencyResolutionManagement {
 rootProject.name = "spela-player"
 
 include(":shared")
+include(":shared-api")
 include(":android")
 include(":desktop")
 include(":detekt-rules")
