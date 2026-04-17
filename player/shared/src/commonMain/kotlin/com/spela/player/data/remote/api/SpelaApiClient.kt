@@ -514,17 +514,24 @@ class SpelaApiClient(
     }
 
     /** Returns user's saved searches */
-    suspend fun getSavedSearches(): List<SavedSearchDto> {
+    suspend fun getSavedSearches(): List<com.spela.client.models.SavedSearchResponse> {
         return client.get("$baseUrl/api/user/saved-searches").body()
     }
 
     /** Creates a new saved search */
-    suspend fun createSavedSearch(name: String, filters: Map<String, String>): SavedSearchDto {
+    suspend fun createSavedSearch(
+        name: String,
+        filters: Map<String, String>,
+    ): com.spela.client.models.SavedSearchResponse {
         return client.post("$baseUrl/api/user/saved-searches") {
-            setBody(CreateSavedSearchRequest(
-                name = name,
-                filters = filters.mapValues { (_, v) -> kotlinx.serialization.json.JsonPrimitive(v) },
-            ))
+            setBody(
+                com.spela.client.models.SavedSearchRequest(
+                    name = name,
+                    filters = kotlinx.serialization.json.JsonObject(
+                        filters.mapValues { (_, v) -> kotlinx.serialization.json.JsonPrimitive(v) },
+                    ),
+                ),
+            )
         }.body()
     }
 
@@ -654,7 +661,7 @@ class SpelaApiClient(
 
     // User Stats & Achievements
 
-    suspend fun getUserStats(): UserStatsDto {
+    suspend fun getUserStats(): com.spela.client.models.UserStatsResponse {
         return client.get("$baseUrl/api/user/stats").body()
     }
 
@@ -1104,7 +1111,7 @@ class SpelaApiClient(
 
     // Stats
 
-    suspend fun getMostPlayedGames(): MostPlayedResponse {
+    suspend fun getMostPlayedGames(): com.spela.client.models.MostPlayedResponse {
         return client.get("$baseUrl/api/stats/most-played").body()
     }
 

@@ -437,17 +437,9 @@ data class AddGameToCollectionRequest(val gameId: Int)
 
 // Stats
 
-@Serializable
-data class MostPlayedGameDto(
-    val game: GameDto,
-    val totalPlayers: Int = 0,
-    val totalPlayTime: Long = 0,
-)
-
-@Serializable
-data class MostPlayedResponse(
-    val games: List<MostPlayedGameDto> = emptyList(),
-)
+// MostPlayedGameDto / MostPlayedResponse replaced by
+// com.spela.client.models.MostPlayedEntry and MostPlayedResponse
+// (generated; same name).
 
 // ActivePlayerDto / MostActivePlayersResponse replaced by
 // com.spela.client.models.ActivePlayerEntry and MostActivePlayersResponse
@@ -537,16 +529,7 @@ data class AchievementProgressResponse(
 
 // User Stats
 
-@Serializable
-data class UserStatsDto(
-    val totalPlayTime: Long = 0,
-    val gamesPlayed: Long = 0,
-    val currentStreak: Int = 0,
-    val longestStreak: Int = 0,
-    val mostPlayedGame: GameDto? = null,
-    val mostPlayedGameTime: Long = 0,
-    val lastPlayedAt: String? = null,
-)
+// UserStatsDto replaced by com.spela.client.models.UserStatsResponse.
 
 // Recent + Showcase + Unlocked achievement DTOs replaced by generated
 // counterparts in com.spela.client.models:
@@ -1154,19 +1137,8 @@ data class ActiveChallengesResponseDto(
 
 // --- Phase 13: Advanced Search & Saved Searches ---
 
-@Serializable
-data class SavedSearchDto(
-    val id: String,
-    val name: String,
-    val filters: Map<String, JsonPrimitive> = emptyMap(),
-    val createdAt: String = "",
-)
-
-@Serializable
-data class CreateSavedSearchRequest(
-    val name: String,
-    val filters: Map<String, JsonPrimitive>,
-)
+// SavedSearchDto / CreateSavedSearchRequest replaced by
+// com.spela.client.models.SavedSearchResponse / SavedSearchRequest.
 
 // --- Phase 14: Wild Features — Wizard, Badges, Completionist Map ---
 
