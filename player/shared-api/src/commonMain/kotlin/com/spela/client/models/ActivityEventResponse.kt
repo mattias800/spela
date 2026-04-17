@@ -8,17 +8,9 @@
 
 @file:Suppress(
     "ArrayInDataClass",
-    "DuplicatedCode",
     "EnumEntryName",
     "RemoveRedundantQualifierName",
-    "RemoveRedundantCallsOfConversionMethods",
-    "REDUNDANT_CALL_OF_CONVERSION_METHOD",
-    "RedundantUnitReturnType",
-    "RemoveEmptyClassBody",
-    "UnnecessaryVariable",
-    "UnusedImport",
-    "UnnecessaryVariable",
-    "unused"
+    "UnusedImport"
 )
 
 package com.spela.client.models
@@ -47,7 +39,7 @@ import kotlinx.serialization.encoding.*
 
 data class ActivityEventResponse (
 
-    @SerialName(value = "createdAt") @Required val createdAt: kotlin.time.Instant,
+    @SerialName(value = "createdAt") @Required val createdAt: kotlinx.datetime.Instant,
 
     @SerialName(value = "eventType") @Required val eventType: kotlin.String,
 
@@ -67,9 +59,9 @@ data class ActivityEventResponse (
 
     @SerialName(value = "gameCoverUrl") val gameCoverUrl: kotlin.String? = null,
 
-    @SerialName(value = "metadata") val metadata: kotlinx.serialization.json.JsonObject? = null
+    @SerialName(value = "metadata") val metadata: kotlin.String? = null
 
-) {
+) : kotlin.collections.HashMap<String, kotlinx.serialization.json.JsonElement>() {
 
 
 }

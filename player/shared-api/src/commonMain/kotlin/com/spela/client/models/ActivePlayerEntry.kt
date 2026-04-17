@@ -8,17 +8,9 @@
 
 @file:Suppress(
     "ArrayInDataClass",
-    "DuplicatedCode",
     "EnumEntryName",
     "RemoveRedundantQualifierName",
-    "RemoveRedundantCallsOfConversionMethods",
-    "REDUNDANT_CALL_OF_CONVERSION_METHOD",
-    "RedundantUnitReturnType",
-    "RemoveEmptyClassBody",
-    "UnnecessaryVariable",
-    "UnusedImport",
-    "UnnecessaryVariable",
-    "unused"
+    "UnusedImport"
 )
 
 package com.spela.client.models
@@ -46,7 +38,7 @@ data class ActivePlayerEntry (
 
     @SerialName(value = "gamesPlayed") @Required val gamesPlayed: kotlin.Long,
 
-    @SerialName(value = "lastPlayed") @Required val lastPlayed: kotlin.time.Instant,
+    @SerialName(value = "lastPlayed") @Required val lastPlayed: kotlinx.datetime.Instant,
 
     @SerialName(value = "totalPlayTime") @Required val totalPlayTime: kotlin.Long,
 

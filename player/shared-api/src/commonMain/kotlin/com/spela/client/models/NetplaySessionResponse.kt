@@ -8,17 +8,9 @@
 
 @file:Suppress(
     "ArrayInDataClass",
-    "DuplicatedCode",
     "EnumEntryName",
     "RemoveRedundantQualifierName",
-    "RemoveRedundantCallsOfConversionMethods",
-    "REDUNDANT_CALL_OF_CONVERSION_METHOD",
-    "RedundantUnitReturnType",
-    "RemoveEmptyClassBody",
-    "UnnecessaryVariable",
-    "UnusedImport",
-    "UnnecessaryVariable",
-    "unused"
+    "UnusedImport"
 )
 
 package com.spela.client.models
@@ -62,7 +54,7 @@ data class NetplaySessionResponse (
 
     @SerialName(value = "coverAspectRatio") @Required val coverAspectRatio: kotlin.Double,
 
-    @SerialName(value = "createdAt") @Required val createdAt: kotlin.time.Instant,
+    @SerialName(value = "createdAt") @Required val createdAt: kotlinx.datetime.Instant,
 
     @SerialName(value = "gameId") @Required val gameId: kotlin.String,
 
@@ -95,13 +87,13 @@ data class NetplaySessionResponse (
 
     @SerialName(value = "endReason") val endReason: kotlin.String? = null,
 
-    @SerialName(value = "endedAt") val endedAt: kotlin.time.Instant? = null,
+    @SerialName(value = "endedAt") val endedAt: kotlinx.datetime.Instant? = null,
 
     @SerialName(value = "gameCoverUrl") val gameCoverUrl: kotlin.String? = null,
 
     @SerialName(value = "hostAvatarUrl") val hostAvatarUrl: kotlin.String? = null,
 
-    @SerialName(value = "startedAt") val startedAt: kotlin.time.Instant? = null
+    @SerialName(value = "startedAt") val startedAt: kotlinx.datetime.Instant? = null
 
 ) {
 

@@ -8,17 +8,9 @@
 
 @file:Suppress(
     "ArrayInDataClass",
-    "DuplicatedCode",
     "EnumEntryName",
     "RemoveRedundantQualifierName",
-    "RemoveRedundantCallsOfConversionMethods",
-    "REDUNDANT_CALL_OF_CONVERSION_METHOD",
-    "RedundantUnitReturnType",
-    "RemoveEmptyClassBody",
-    "UnnecessaryVariable",
-    "UnusedImport",
-    "UnnecessaryVariable",
-    "unused"
+    "UnusedImport"
 )
 
 package com.spela.client.models
@@ -55,7 +47,7 @@ data class ChallengeAttemptResponse (
 
     @SerialName(value = "isBest") @Required val isBest: kotlin.Boolean,
 
-    @SerialName(value = "startedAt") @Required val startedAt: kotlin.time.Instant,
+    @SerialName(value = "startedAt") @Required val startedAt: kotlinx.datetime.Instant,
 
     @SerialName(value = "status") @Required val status: kotlin.String,
 
@@ -68,7 +60,7 @@ data class ChallengeAttemptResponse (
 
     @SerialName(value = "avatarUrl") val avatarUrl: kotlin.String? = null,
 
-    @SerialName(value = "completedAt") val completedAt: kotlin.time.Instant? = null
+    @SerialName(value = "completedAt") val completedAt: kotlinx.datetime.Instant? = null
 
 ) {
 
