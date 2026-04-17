@@ -550,7 +550,7 @@ class SpelaApiClient(
     }
 
     /** Returns the user's explorer badges */
-    suspend fun getExplorerBadges(): ExplorerBadgesResponseDto {
+    suspend fun getExplorerBadges(): com.spela.client.models.ExplorerBadgesResponse {
         return client.get("$baseUrl/api/user/explorer-badges").body()
     }
 

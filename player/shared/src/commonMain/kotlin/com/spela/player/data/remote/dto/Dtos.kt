@@ -1670,21 +1670,10 @@ data class WizardResultsResponseDto(
     val title: String,
 )
 
-@Serializable
-data class ExplorerBadgeDto(
-    val id: String,
-    val name: String,
-    val description: String,
-    val icon: String,
-    val earned: Boolean,
-    val progress: Int,
-    val target: Int,
-)
-
-@Serializable
-data class ExplorerBadgesResponseDto(
-    val badges: List<ExplorerBadgeDto>,
-)
+// ExplorerBadgeDto and ExplorerBadgesResponseDto replaced by
+// com.spela.client.models.ExplorerBadge and
+// com.spela.client.models.ExplorerBadgesResponse
+// (see player/shared-api/).
 
 // CompletionistConsoleDto and CompletionistMapResponseDto moved to
 // com.spela.client.models.CompletionistConsole and

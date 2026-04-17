@@ -1047,14 +1047,14 @@ fun WizardResultsResponseDto.toDomain() = WizardResults(
     title = title,
 )
 
-fun ExplorerBadgeDto.toDomain() = ExplorerBadge(
+fun com.spela.client.models.ExplorerBadge.toDomain() = ExplorerBadge(
     id = id,
     name = name,
     description = description,
     icon = icon,
     earned = earned,
-    progress = progress,
-    target = target,
+    progress = progress.toInt(),
+    target = target.toInt(),
 )
 
 fun com.spela.client.models.CompletionistConsole.toDomain() = CompletionistConsole(
