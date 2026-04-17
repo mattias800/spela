@@ -531,20 +531,9 @@ data class MostPlayedResponse(
     val games: List<MostPlayedGameDto> = emptyList(),
 )
 
-@Serializable
-data class ActivePlayerDto(
-    val userId: String,
-    val username: String,
-    val avatarUrl: String? = null,
-    val totalPlayTime: Long = 0,
-    val gamesPlayed: Int = 0,
-    val lastPlayed: String? = null,
-)
-
-@Serializable
-data class MostActivePlayersResponse(
-    val players: List<ActivePlayerDto> = emptyList(),
-)
+// ActivePlayerDto / MostActivePlayersResponse replaced by
+// com.spela.client.models.ActivePlayerEntry and MostActivePlayersResponse
+// (generated; same name).
 
 // Challenges
 
@@ -579,21 +568,8 @@ data class MostActivePlayersResponse(
 
 // Game Stats
 
-@Serializable
-data class TopPlayerDto(
-    val userId: String,
-    val username: String,
-    val avatarUrl: String? = null,
-    val playTime: Long = 0,
-)
-
-@Serializable
-data class GameStatsDto(
-    val totalPlayers: Int = 0,
-    val totalPlayTime: Long = 0,
-    val averagePlayTime: Long = 0,
-    val topPlayers: List<TopPlayerDto> = emptyList(),
-)
+// TopPlayerDto / GameStatsDto replaced by
+// com.spela.client.models.GameStatsTopPlayer and GameStatsResponse.
 
 // Game Achievements (RetroAchievements)
 
