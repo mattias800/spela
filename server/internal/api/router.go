@@ -263,6 +263,7 @@ func NewRouter(cfg Config) (*gin.Engine, func()) {
 	RegisterExploreDeveloperRoutes(humaAPI, exploreHandler, cfg.JWTSecret, cfg.DB, userLimiter)
 	RegisterExploreConsoleRoutes(humaAPI, exploreHandler, cfg.JWTSecret, cfg.DB, userLimiter)
 	RegisterExploreGalleryRoutes(humaAPI, exploreHandler, cfg.JWTSecret, cfg.DB, userLimiter)
+	RegisterExploreCommunityRoutes(humaAPI, exploreHandler, cfg.JWTSecret, cfg.DB, userLimiter)
 
 	// Public auth routes — rate limit login/register/setup to prevent brute force,
 	// but leave refresh and setup-status unrestricted (called frequently during normal use).
@@ -331,11 +332,9 @@ func NewRouter(cfg Config) (*gin.Engine, func()) {
 			// (see RegisterExploreConsoleRoutes above).
 			// screenshot / artwork / cover galleries — migrated to huma
 			// (see RegisterExploreGalleryRoutes above).
-			explore.GET("/trending", exploreHandler.GetTrending)
-			explore.GET("/community-top", exploreHandler.GetCommunityTop)
-			explore.GET("/cult-classics", exploreHandler.GetCultClassics)
-			explore.GET("/recently-reviewed", exploreHandler.GetRecentlyReviewed)
-			explore.GET("/active-now", exploreHandler.GetActiveNow)
+			// trending / community-top / cult-classics / recently-reviewed /
+			// active-now — migrated to huma (see RegisterExploreCommunityRoutes
+			// above).
 			explore.GET("/on-this-day", exploreHandler.GetOnThisDay)
 			explore.GET("/best-of-year/:year", exploreHandler.GetBestOfYear)
 			explore.GET("/your-anniversaries", exploreHandler.GetYourAnniversaries)
