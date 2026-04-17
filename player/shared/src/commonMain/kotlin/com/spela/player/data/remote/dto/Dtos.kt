@@ -458,15 +458,11 @@ data class SimilarGameDto(
     val localGameId: String? = null,
 )
 
-// Developer Games
-
-@Serializable
-data class DeveloperGameDto(
-    val id: String,
-    val title: String,
-    val coverUrl: String? = null,
-    val consoleName: String = "",
-)
+// Developer Games — DeveloperGameDto replaced by
+// com.spela.client.models.DeveloperGameResponse (see player/shared-api/).
+// Noteworthy: hand-written DTO used `id`/`title`/`consoleName` but the
+// server actually emits `localGameId`/`name` (and never emits consoleName
+// on this endpoint). The mapper renames accordingly.
 
 // Save Data (SRAM)
 
@@ -534,55 +530,21 @@ data class FeaturedSeriesDto(
     val heroUrl: String? = null,
 )
 
-@Serializable
-data class SeriesDetailDto(
-    val id: String,
-    val name: String,
-    val heroUrl: String? = null,
-    val logoUrl: String? = null,
-    val consoles: List<SeriesConsoleDto> = emptyList(),
-    val libraryGames: Int = 0,
-    val totalGames: Int = 0,
-    val games: List<SeriesGameDto> = emptyList(),
-)
-
-@Serializable
-data class SeriesConsoleDto(
-    val abbreviation: String,
-    val name: String,
-    val color: String = "#6366f1",
-    val gameCount: Int = 0,
-)
-
-@Serializable
-data class SeriesGameDto(
-    val igdbGameId: Int,
-    val name: String,
-    val inLibrary: Boolean = false,
-    val localGameId: String? = null,
-    val coverUrl: String? = null,
-    val releaseDate: String? = null,
-    val rating: Double = 0.0,
-    val consoleAbbreviation: String? = null,
-    val consoleName: String? = null,
-    val consoleColor: String? = null,
-)
-
-@Serializable
-data class GameSeriesLinkDto(
-    val id: String,
-    val name: String,
-    val totalGames: Int = 0,
-    val libraryGames: Int = 0,
-)
-
-@Serializable
-data class GameFranchiseLinkDto(
-    val id: String,
-    val name: String,
-    val gameCount: Int = 0,
-)
-
+// SeriesDetailDto / SeriesConsoleDto / SeriesGameDto / GameSeriesLinkDto /
+// GameFranchiseLinkDto replaced by generated counterparts:
+//   SeriesDetailDto       -> SeriesDetailResponse (also FranchiseDetailResponse
+//                            for /api/franchises/:id — same shape aside from
+//                            igdbCollectionId vs igdbFranchiseId)
+//   SeriesConsoleDto      -> SeriesConsoleInfo
+//   SeriesGameDto         -> SeriesGameResponse
+//   GameSeriesLinkDto     -> GameSeriesResponse
+//   GameFranchiseLinkDto  -> GameFranchiseResponse (server sends
+//                            totalGames + libraryGames; hand-written DTO
+//                            only had gameCount — mapper picks totalGames)
+//
+// Noteworthy: hand-written SeriesGameDto used `rating` but the server
+// sends `igdbCriticsRating` — the hand-written field was always 0.0.
+// The new mapper pulls the real rating.
 
 @Serializable
 data class MoodDefinitionDto(
@@ -609,29 +571,12 @@ data class ForYouResponseDto(
     val rows: List<ForYouRowDto>,
 )
 
-@Serializable
-data class TasteBreakdownDto(
-    val name: String,
-    val percentage: Double,
-    val playTime: Long,
-    val gameCount: Int,
-)
-
-@Serializable
-data class ConsoleBreakdownDto(
-    val name: String,
-    val abbreviation: String,
-    val playTime: Long,
-    val gameCount: Int,
-)
-
-@Serializable
-data class TasteProfileDto(
-    val totalPlayTime: Long,
-    val genres: List<TasteBreakdownDto>,
-    val themes: List<TasteBreakdownDto>,
-    val topConsoles: List<ConsoleBreakdownDto>,
-)
+// TasteProfileDto / TasteBreakdownDto / ConsoleBreakdownDto replaced by
+// com.spela.client.models.TasteProfileResponse / TasteProfileGenre /
+// TasteProfileTheme / TasteProfileConsole (see player/shared-api/).
+// The generated types use Long for gameCount — the mapper converts to Int
+// for the domain. Generated lists are nullable (Required but nullable in
+// spec), so the mapper applies .orEmpty() when flattening.
 
 @Serializable
 data class PlayersLikeYouResponseDto(

@@ -639,11 +639,14 @@ fun SimilarGameDto.toDomain(): SimilarGame = SimilarGame(
     localGameId = localGameId,
 )
 
-fun DeveloperGameDto.toDomain(): DeveloperGame = DeveloperGame(
-    id = id,
-    title = title,
-    coverUrl = coverUrl,
-    consoleName = consoleName,
+fun com.spela.client.models.DeveloperGameResponse.toDomain(): DeveloperGame = DeveloperGame(
+    // Server sends `localGameId` / `name` / `coverUrl`; the hand-written
+    // DTO used `id` / `title` / `consoleName` which never matched the
+    // server payload. The server never ships `consoleName` for this
+    // endpoint — domain defaults it to "".
+    id = localGameId,
+    title = name,
+    coverUrl = coverUrl.takeIf { it.isNotEmpty() },
 )
 
 fun com.spela.client.models.GameSessionResponse.toDomain(): GameSession = GameSession(
@@ -711,48 +714,64 @@ fun FeaturedSeriesDto.toDomain(): FeaturedSeries = FeaturedSeries(
     heroUrl = heroUrl,
 )
 
-fun SeriesDetailDto.toDomain(): SeriesDetail = SeriesDetail(
+fun com.spela.client.models.SeriesDetailResponse.toDomain(): SeriesDetail = SeriesDetail(
     id = id,
     name = name,
     heroUrl = heroUrl,
     logoUrl = logoUrl,
-    consoles = consoles.map { it.toDomain() },
-    libraryGames = libraryGames,
-    totalGames = totalGames,
-    games = games.map { it.toDomain() },
+    consoles = consoles.orEmpty().map { it.toDomain() },
+    libraryGames = libraryGames.toInt(),
+    totalGames = totalGames.toInt(),
+    games = games.orEmpty().map { it.toDomain() },
 )
 
-fun SeriesConsoleDto.toDomain(): SeriesConsole = SeriesConsole(
+fun com.spela.client.models.FranchiseDetailResponse.toDomain(): SeriesDetail = SeriesDetail(
+    id = id,
+    name = name,
+    heroUrl = heroUrl,
+    logoUrl = logoUrl,
+    consoles = consoles.orEmpty().map { it.toDomain() },
+    libraryGames = libraryGames.toInt(),
+    totalGames = totalGames.toInt(),
+    games = games.orEmpty().map { it.toDomain() },
+)
+
+fun com.spela.client.models.SeriesConsoleInfo.toDomain(): SeriesConsole = SeriesConsole(
     abbreviation = abbreviation,
     name = name,
     color = color,
-    gameCount = gameCount,
+    gameCount = gameCount.toInt(),
 )
 
-fun SeriesGameDto.toDomain(): SeriesGame = SeriesGame(
-    igdbGameId = igdbGameId,
+fun com.spela.client.models.SeriesGameResponse.toDomain(): SeriesGame = SeriesGame(
+    igdbGameId = igdbGameId.toInt(),
     name = name,
     inLibrary = inLibrary,
     localGameId = localGameId,
     coverUrl = coverUrl,
     releaseDate = releaseDate,
-    rating = rating,
+    // Server emits `igdbCriticsRating`; the hand-written DTO used `rating`
+    // which was always 0.0 — the new mapper pulls the real field.
+    rating = igdbCriticsRating,
     consoleAbbreviation = consoleAbbreviation,
     consoleName = consoleName,
     consoleColor = consoleColor,
 )
 
-fun GameSeriesLinkDto.toDomain(): GameSeriesLink = GameSeriesLink(
+fun com.spela.client.models.GameSeriesResponse.toDomain(): GameSeriesLink = GameSeriesLink(
     id = id,
     name = name,
-    totalGames = totalGames,
-    libraryGames = libraryGames,
+    totalGames = totalGames.toInt(),
+    libraryGames = libraryGames.toInt(),
 )
 
-fun GameFranchiseLinkDto.toDomain(): GameFranchiseLink = GameFranchiseLink(
+fun com.spela.client.models.GameFranchiseResponse.toDomain(): GameFranchiseLink = GameFranchiseLink(
     id = id,
     name = name,
-    gameCount = gameCount,
+    // Server sends both totalGames and libraryGames; the hand-written DTO
+    // only had gameCount — we pick totalGames to preserve the UX
+    // ("Part of Foo (N games)"). Domain does not yet split the two.
+    gameCount = totalGames.toInt(),
 )
 
 
@@ -772,25 +791,32 @@ fun ForYouRowDto.toDomain(): ForYouRow = ForYouRow(
     games = games.map { it.toDomain() },
 )
 
-fun TasteBreakdownDto.toDomain(): TasteBreakdown = TasteBreakdown(
+fun com.spela.client.models.TasteProfileGenre.toDomain(): TasteBreakdown = TasteBreakdown(
     name = name,
     percentage = percentage,
     playTime = playTime,
-    gameCount = gameCount,
+    gameCount = gameCount.toInt(),
 )
 
-fun ConsoleBreakdownDto.toDomain(): ConsoleBreakdown = ConsoleBreakdown(
+fun com.spela.client.models.TasteProfileTheme.toDomain(): TasteBreakdown = TasteBreakdown(
+    name = name,
+    percentage = percentage,
+    playTime = playTime,
+    gameCount = gameCount.toInt(),
+)
+
+fun com.spela.client.models.TasteProfileConsole.toDomain(): ConsoleBreakdown = ConsoleBreakdown(
     name = name,
     abbreviation = abbreviation,
     playTime = playTime,
-    gameCount = gameCount,
+    gameCount = gameCount.toInt(),
 )
 
-fun TasteProfileDto.toDomain(): TasteProfile = TasteProfile(
+fun com.spela.client.models.TasteProfileResponse.toDomain(): TasteProfile = TasteProfile(
     totalPlayTime = totalPlayTime,
-    genres = genres.map { it.toDomain() },
-    themes = themes.map { it.toDomain() },
-    topConsoles = topConsoles.map { it.toDomain() },
+    genres = genres.orEmpty().map { it.toDomain() },
+    themes = themes.orEmpty().map { it.toDomain() },
+    topConsoles = topConsoles.orEmpty().map { it.toDomain() },
 )
 
 fun PlayersLikeYouResponseDto.toDomain(): PlayersLikeYouResult = PlayersLikeYouResult(
