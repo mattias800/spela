@@ -800,43 +800,14 @@ data class ShowcaseUpdateEntry(
 
 // Top Rated
 
-@Serializable
-data class TopRatedGameDto(
-    val rank: Int,
-    val name: String,
-    val coverUrl: String? = null,
-    val rating: Double = 0.0,
-    val localGameId: String? = null,
-    val consoleName: String = "",
-)
-
-// Top Lists
-
-@Serializable
-data class TopListGameDto(
-    val rank: Int,
-    val gameId: String,
-    val name: String,
-    val coverUrl: String? = null,
-    val consoleName: String = "",
-    val consoleId: String = "",
-    val rating: Double = 0.0,
-)
-
-// Longest Games
-
-@Serializable
-data class LongestGameDto(
-    val rank: Int,
-    val gameId: String,
-    val name: String,
-    val coverUrl: String? = null,
-    val consoleName: String = "",
-    val consoleId: String = "",
-    val timeToBeatNormally: Int = 0,
-    val timeToBeatHastily: Int = 0,
-    val timeToBeatCompletely: Int = 0,
-)
+// TopRatedGameDto / TopListGameDto / LongestGameDto replaced by
+// com.spela.client.models.TopRatedGameResponse / TopListGameResponse /
+// LongestGameResponse (see player/shared-api/).
+//
+// Noteworthy: the hand-written TopRatedGameDto and TopListGameDto used
+// `rating` but the server actually sends `igdbCriticsRating` — the
+// hand-written field was always 0.0. The new mapper pulls the real
+// rating.
 
 // Similar Games
 

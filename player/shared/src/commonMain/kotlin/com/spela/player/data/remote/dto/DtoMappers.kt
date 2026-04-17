@@ -595,35 +595,35 @@ fun NetplaySessionDto.toDomain(): NetplaySession = NetplaySession(
     endedAt = endedAt,
 )
 
-fun TopListGameDto.toDomain(): TopListGame = TopListGame(
-    rank = rank,
+fun com.spela.client.models.TopListGameResponse.toDomain(): TopListGame = TopListGame(
+    rank = rank.toInt(),
     gameId = gameId,
     name = name,
     coverUrl = coverUrl,
     consoleName = consoleName,
     consoleId = consoleId,
-    rating = rating,
+    rating = igdbCriticsRating, // server sends igdbCriticsRating, not rating
 )
 
-fun TopRatedGameDto.toDomain(): TopRatedGame = TopRatedGame(
-    rank = rank,
+fun com.spela.client.models.TopRatedGameResponse.toDomain(): TopRatedGame = TopRatedGame(
+    rank = rank.toInt(),
     name = name,
     coverUrl = coverUrl,
-    rating = rating,
+    rating = igdbCriticsRating, // server sends igdbCriticsRating, not rating
     localGameId = localGameId,
     consoleName = consoleName,
 )
 
-fun LongestGameDto.toDomain(): LongestGame = LongestGame(
-    rank = rank,
+fun com.spela.client.models.LongestGameResponse.toDomain(): LongestGame = LongestGame(
+    rank = rank.toInt(),
     gameId = gameId,
     name = name,
     coverUrl = coverUrl,
     consoleName = consoleName,
     consoleId = consoleId,
-    timeToBeatNormally = timeToBeatNormally,
-    timeToBeatHastily = timeToBeatHastily,
-    timeToBeatCompletely = timeToBeatCompletely,
+    timeToBeatNormally = timeToBeatNormally.toInt(),
+    timeToBeatHastily = timeToBeatHastily.toInt(),
+    timeToBeatCompletely = timeToBeatCompletely.toInt(),
 )
 
 fun SimilarGameDto.toDomain(): SimilarGame = SimilarGame(
