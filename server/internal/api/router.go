@@ -234,6 +234,14 @@ func NewRouter(cfg Config) (*gin.Engine, func()) {
 	RegisterPlayLaterRoutes(humaAPI, playLaterHandler, cfg.JWTSecret, cfg.DB, userLimiter)
 	RegisterSearchRoutes(humaAPI, searchHandler, cfg.JWTSecret, cfg.DB, userLimiter)
 	RegisterSocialRoutes(humaAPI, socialHandler, cfg.JWTSecret, cfg.DB, userLimiter)
+	RegisterSessionRoutes(humaAPI, sessionHandler, cfg.JWTSecret, cfg.DB, userLimiter)
+	RegisterSharedSaveRoutes(humaAPI, sharedSaveHandler, cfg.JWTSecret, cfg.DB, userLimiter)
+	RegisterSharedSessionRoutes(humaAPI, sharedSessionHandler, cfg.JWTSecret, cfg.DB, userLimiter)
+	RegisterNetplayRoutes(humaAPI, netplayHandler, cfg.JWTSecret, cfg.DB, userLimiter)
+	RegisterChallengeRoutes(humaAPI, challengeHandler, cfg.JWTSecret, cfg.DB, userLimiter)
+	RegisterAdminRoutes(humaAPI, adminHandler, cfg.JWTSecret, cfg.DB, userLimiter)
+	adminSystemEventHandler := &SystemEventHandler{DB: cfg.DB}
+	RegisterSystemEventRoutes(humaAPI, adminSystemEventHandler, cfg.JWTSecret, cfg.DB, userLimiter)
 
 	// Public auth routes — rate limit login/register/setup to prevent brute force,
 	// but leave refresh and setup-status unrestricted (called frequently during normal use).
@@ -339,39 +347,25 @@ func NewRouter(cfg Config) (*gin.Engine, func()) {
 		api.GET("/games/:id/series", enrichmentHandler.GetGameSeries)
 		api.GET("/games/:id/franchises", enrichmentHandler.GetGameFranchises)
 
-		// Game Sessions
-		api.POST("/games/:id/sessions", sessionHandler.CreateSession)
+		// Game Sessions — most endpoints migrated to huma (see RegisterSessionRoutes above).
+		// File-based endpoints (save/SRAM upload + download, auto-save download, from-shared-save)
+		// stay on raw gin because they rely on multipart/c.File() that huma doesn't map cleanly.
 		api.POST("/games/:id/sessions/from-shared-save/:saveId", sessionHandler.CreateFromSharedSave)
-		api.GET("/games/:id/sessions", sessionHandler.ListSessions)
-		api.GET("/sessions/:id", sessionHandler.GetSession)
-		api.PUT("/sessions/:id", sessionHandler.UpdateSession)
-		api.DELETE("/sessions/:id", sessionHandler.DeleteSession)
-		api.GET("/sessions/:id/saves", sessionHandler.ListSessionSaves)
 		api.POST("/sessions/:id/saves", uploadLimiter.RateLimit(), sessionHandler.UploadSessionSave)
 		api.POST("/sessions/:id/saves/auto", uploadLimiter.RateLimit(), sessionHandler.UploadAutoSave)
 		api.GET("/sessions/:id/saves/auto", sessionHandler.GetAutoSave)
-		api.GET("/sessions/:id/saves/slots", sessionHandler.ListSlotSaves)
 		api.PUT("/sessions/:id/saves/slot/:slot", uploadLimiter.RateLimit(), sessionHandler.UpsertSlotSave)
 		api.GET("/sessions/:id/saves/slot/:slot", sessionHandler.DownloadSlotSave)
 		api.GET("/sessions/:id/saves/:saveId", sessionHandler.DownloadSessionSave)
-		api.DELETE("/sessions/:id/saves/:saveId", sessionHandler.DeleteSessionSave)
-		api.PUT("/sessions/:id/saves/:saveId", sessionHandler.UpdateSessionSave)
 		api.POST("/sessions/:id/sram", uploadLimiter.RateLimit(), sessionHandler.UploadSRAM)
 		api.GET("/sessions/:id/sram", sessionHandler.DownloadSRAM)
-		api.POST("/sessions/:id/play-time", sessionHandler.UpdatePlayTime)
-		api.DELETE("/sessions/:id/play-time", sessionHandler.StopPlaying)
-		api.GET("/sessions/:id/cheats", sessionHandler.GetSessionCheats)
-		api.PUT("/sessions/:id/cheats", sessionHandler.UpdateSessionCheats)
-		api.POST("/sessions/:id/duplicate", sessionHandler.DuplicateSession)
-		api.DELETE("/sessions/:id/saves", sessionHandler.BulkDeleteSessionSaves)
 
 		// Ratings — migrated to huma (see RegisterRatingRoutes above).
 
-		// Shared saves
+		// Shared saves — list + delete migrated to huma (see RegisterSharedSaveRoutes above).
+		// Upload + download stay on raw gin (multipart / c.File()).
 		api.POST("/games/:id/shared-saves", uploadLimiter.RateLimit(), sharedSaveHandler.ShareSave)
-		api.GET("/games/:id/shared-saves", sharedSaveHandler.ListSharedSaves)
 		api.GET("/games/:id/shared-saves/:saveId/download", sharedSaveHandler.DownloadSharedSave)
-		api.DELETE("/games/:id/shared-saves/:saveId", sharedSaveHandler.DeleteSharedSave)
 
 		// Cores
 		// api.GET("/games/:id/core", ...) — migrated to huma (see RegisterGameRoutes above).
@@ -435,13 +429,11 @@ func NewRouter(cfg Config) (*gin.Engine, func()) {
 		api.POST("/collections/:id/games", collectionHandler.AddGame)
 		api.DELETE("/collections/:id/games/:gameId", collectionHandler.RemoveGame)
 
-		// Shared Sessions
+		// Shared Sessions — create/get/update/delete migrated to huma
+		// (see RegisterSharedSessionRoutes above). List views, invite flow,
+		// turn control and file endpoints stay on raw gin.
 		api.GET("/games/:id/shared-sessions", sharedSessionHandler.ListGameSharedSessions)
-		api.POST("/shared-sessions", sharedSessionHandler.CreateSharedSession)
 		api.GET("/shared-sessions", sharedSessionHandler.ListSharedSessions)
-		api.GET("/shared-sessions/:id", sharedSessionHandler.GetSharedSession)
-		api.PUT("/shared-sessions/:id", sharedSessionHandler.UpdateSharedSession)
-		api.DELETE("/shared-sessions/:id", sharedSessionHandler.DeleteSharedSession)
 		api.POST("/shared-sessions/:id/invites", sharedSessionHandler.InviteUser)
 		api.POST("/shared-sessions/:id/leave", sharedSessionHandler.LeaveSharedSession)
 		api.DELETE("/shared-sessions/:id/members/:userId", sharedSessionHandler.RemoveMember)
@@ -460,23 +452,15 @@ func NewRouter(cfg Config) (*gin.Engine, func()) {
 		api.POST("/user/shared-session-invites/:id/accept", sharedSessionHandler.AcceptInvite)
 		api.POST("/user/shared-session-invites/:id/decline", sharedSessionHandler.DeclineInvite)
 
-		// Netplay
+		// Netplay — sessions + invite accept/decline/create migrated to huma
+		// (see RegisterNetplayRoutes above). WebSocket upgrade, list-session-
+		// invites, list-my-invites and pending-count stay on raw gin.
 		netplay := api.Group("/netplay")
 		{
-			netplay.POST("/sessions", netplayHandler.CreateSession)
-			netplay.GET("/sessions", netplayHandler.ListSessions)
-			netplay.GET("/sessions/:id", netplayHandler.GetSession)
-			netplay.POST("/sessions/join", netplayHandler.JoinByInviteCode)
-			netplay.POST("/sessions/:id/leave", netplayHandler.LeaveSession)
-			netplay.DELETE("/sessions/:id", netplayHandler.DeleteSession)
-			netplay.PUT("/sessions/:id/settings", netplayHandler.UpdateSettings)
 			netplay.GET("/sessions/:id/ws", netplayHandler.HandleWebSocket)
-			netplay.POST("/sessions/:id/invites", netplayHandler.SendInvite)
 			netplay.GET("/sessions/:id/invites", netplayHandler.ListSessionInvites)
 			netplay.GET("/invites", netplayHandler.ListMyNetplayInvites)
 			netplay.GET("/invites/count", netplayHandler.GetPendingNetplayInviteCount)
-			netplay.POST("/invites/:inviteId/accept", netplayHandler.AcceptNetplayInvite)
-			netplay.POST("/invites/:inviteId/decline", netplayHandler.DeclineNetplayInvite)
 		}
 
 		// Social
@@ -487,12 +471,10 @@ func NewRouter(cfg Config) (*gin.Engine, func()) {
 		api.GET("/users/:id/profile", socialHandler.GetPublicProfile)
 		api.GET("/users/:id/play-heatmap", statsHandler.GetPublicPlayHeatmap)
 
-		// Challenges
+		// Challenges — list/get/update/delete migrated to huma
+		// (see RegisterChallengeRoutes above). CreateChallenge stays on raw gin
+		// (multipart upload). Attempt + download endpoints stay on raw gin too.
 		api.POST("/challenges", challengeHandler.CreateChallenge)
-		api.GET("/challenges", challengeHandler.ListChallenges)
-		api.GET("/challenges/:id", challengeHandler.GetChallenge)
-		api.PUT("/challenges/:id", challengeHandler.UpdateChallenge)
-		api.DELETE("/challenges/:id", challengeHandler.DeleteChallenge)
 		api.GET("/challenges/:id/save/download", challengeHandler.DownloadChallengeSave)
 		api.GET("/challenges/:id/screenshot", challengeHandler.GetChallengeScreenshot)
 		api.POST("/challenges/:id/attempts/start", challengeHandler.StartAttempt)
@@ -544,14 +526,11 @@ func NewRouter(cfg Config) (*gin.Engine, func()) {
 			admin.POST("/games/:id/metadata", gameHandler.UpdateMetadata)
 			admin.POST("/games/scan", gameHandler.ScanGames)
 			admin.GET("/games/scan/status", gameHandler.ScanStatus)
-			admin.GET("/users", adminHandler.ListUsers)
-			admin.POST("/users", adminHandler.CreateUser)
-			admin.PUT("/users/:id", adminHandler.UpdateUser)
-			admin.DELETE("/users/:id", adminHandler.DeleteUser)
+			// /admin/users (list/create/update/delete) — migrated to huma
+			// (see RegisterAdminRoutes above). Deleted-users + hard-delete stay on gin.
 			admin.GET("/users/deleted", adminHandler.ListDeletedUsers)
 			admin.DELETE("/users/:id/permanent", adminHandler.HardDeleteUser)
-			admin.GET("/settings", adminHandler.GetSettings)
-			admin.PUT("/settings", adminHandler.UpdateSettings)
+			// /admin/settings (get/put) — migrated to huma (see RegisterAdminRoutes above).
 			admin.POST("/scrape", adminHandler.TriggerScrape)
 			admin.DELETE("/scrape", adminHandler.CancelScrape)
 			admin.GET("/scrape/status", adminHandler.ScrapeStatus)
@@ -569,17 +548,12 @@ func NewRouter(cfg Config) (*gin.Engine, func()) {
 			admin.GET("/igdb/status", igdbHandler.GetIGDBStatus)
 			admin.GET("/steamgriddb/status", adminHandler.GetSteamGridDBStatus)
 			admin.GET("/ra/status", adminHandler.GetRAStatus)
-			admin.GET("/stats", adminHandler.GetStats)
+			// /admin/stats — migrated to huma (see RegisterAdminRoutes above).
 			admin.GET("/users/:id/rate-limit", adminHandler.GetUserRateLimit)
 			admin.DELETE("/users/:id/rate-limit", adminHandler.ResetUserRateLimit)
 
-			// System event audit log (admin-only)
-			systemEventHandler := &SystemEventHandler{DB: cfg.DB}
-			admin.GET("/system-events", systemEventHandler.ListSystemEvents)
-			admin.GET("/system-events/types", systemEventHandler.GetSystemEventTypes)
-			admin.GET("/system-events/categories", systemEventHandler.GetSystemEventCategories)
-			admin.GET("/system-events/:id", systemEventHandler.GetSystemEvent)
-			admin.PUT("/system-events/:id/dismiss", systemEventHandler.DismissSystemEvent)
+			// System event audit log (admin-only) — migrated to huma
+			// (see RegisterSystemEventRoutes above).
 			admin.GET("/users/:id/devices", deviceHandler.AdminGetUserDevices)
 			admin.POST("/bios", biosHandler.UploadBiosFile)
 			admin.POST("/bios/download", biosHandler.TriggerDownload)

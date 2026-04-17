@@ -49,16 +49,16 @@ type AdminCreateUserRequest struct {
 	Username string      `json:"username" binding:"required,min=3,max=64"`
 	Email    string      `json:"email" binding:"required,email"`
 	Password string      `json:"password" binding:"required,min=8,max=72"`
-	Role     db.UserRole `json:"role"`
+	Role     db.UserRole `json:"role,omitempty"`
 }
 
 // AdminUpdateUserRequest is the body for PUT /api/admin/users/:id.
 type AdminUpdateUserRequest struct {
-	Role            db.UserRole `json:"role"`
-	Email           string      `json:"email"`
-	Password        string      `json:"password"`
-	Disabled        *bool       `json:"disabled"`
-	PendingApproval *bool       `json:"pendingApproval"`
+	Role            db.UserRole `json:"role,omitempty"`
+	Email           string      `json:"email,omitempty"`
+	Password        string      `json:"password,omitempty"`
+	Disabled        *bool       `json:"disabled,omitempty"`
+	PendingApproval *bool       `json:"pendingApproval,omitempty"`
 }
 
 // --- Games (admin metadata + play time) ---
@@ -112,31 +112,36 @@ type ApplyIGDBMatchRequest struct {
 // --- Sessions ---
 
 // CreateSessionRequest is the body for POST /api/games/:id/sessions.
+// Name is marked optional in the huma schema so missing-name requests return
+// the historical 400 from the handler rather than huma's 422 validation shape.
 type CreateSessionRequest struct {
-	Name string `json:"name" binding:"required,max=255"`
+	Name string `json:"name,omitempty" required:"false"`
 }
 
 // UpdateSessionRequest is the body for PUT /api/sessions/:id.
 type UpdateSessionRequest struct {
-	Name          *string `json:"name"`
-	CheatsEnabled *bool   `json:"cheatsEnabled"`
-	CoreName      *string `json:"coreName"`
+	Name          *string `json:"name,omitempty"`
+	CheatsEnabled *bool   `json:"cheatsEnabled,omitempty"`
+	CoreName      *string `json:"coreName,omitempty"`
 }
 
 // DuplicateSessionRequest is the body for POST /api/sessions/:id/duplicate.
 type DuplicateSessionRequest struct {
-	Name string `json:"name"`
+	Name string `json:"name,omitempty"`
 }
 
 // UpdateSessionSaveRequest is the body for PUT /api/sessions/:id/saves/:saveId.
 type UpdateSessionSaveRequest struct {
-	Name  *string `json:"name"`
-	Notes *string `json:"notes"`
+	Name  *string `json:"name,omitempty"`
+	Notes *string `json:"notes,omitempty"`
 }
 
 // UpdateSessionPlayTimeRequest is the body for POST /api/sessions/:id/play-time.
+// Seconds is marked optional in the huma schema so handler-side range
+// validation owns the 400 response (the raw gin handler used the same
+// tolerant binding).
 type UpdateSessionPlayTimeRequest struct {
-	Seconds int64 `json:"seconds" binding:"required"`
+	Seconds int64 `json:"seconds,omitempty" required:"false"`
 }
 
 // UpdateSessionCheatsRequest is the body for PUT /api/sessions/:id/cheats.
@@ -148,15 +153,18 @@ type UpdateSessionCheatsRequest struct {
 // --- Shared sessions ---
 
 // CreateSharedSessionRequest is the body for POST /api/shared-sessions.
+// Both fields are optional in the huma schema so missing-field requests
+// return the historical 400 from the handler rather than huma's 422
+// validation shape.
 type CreateSharedSessionRequest struct {
-	GameID string `json:"gameId" binding:"required"`
-	Name   string `json:"name" binding:"required,max=255"`
+	GameID string `json:"gameId,omitempty" required:"false"`
+	Name   string `json:"name,omitempty" required:"false"`
 }
 
 // UpdateSharedSessionRequest is the body for PUT /api/shared-sessions/:id.
 type UpdateSharedSessionRequest struct {
-	Name   *string `json:"name"`
-	Status *string `json:"status"`
+	Name   *string `json:"name,omitempty"`
+	Status *string `json:"status,omitempty"`
 }
 
 // InviteToSharedSessionRequest is the body for POST /api/shared-sessions/:id/invites.
@@ -167,25 +175,32 @@ type InviteToSharedSessionRequest struct {
 // --- Netplay ---
 
 // CreateNetplaySessionRequest is the body for POST /api/netplay/sessions.
+// GameID is marked optional in the huma schema (via `required:"false"`) so
+// missing-field requests return the historical 400 from the handler rather
+// than huma's 422 "validation failed" shape.
 type CreateNetplaySessionRequest struct {
-	GameID     string `json:"gameId" binding:"required"`
-	InputDelay *int   `json:"inputDelay"`
-	CoreName   string `json:"coreName"`
+	GameID     string `json:"gameId,omitempty" required:"false"`
+	InputDelay *int   `json:"inputDelay,omitempty"`
+	CoreName   string `json:"coreName,omitempty"`
 }
 
 // JoinByInviteCodeRequest is the body for POST /api/netplay/sessions/join.
+// InviteCode is optional in the huma schema so missing-field requests return
+// the historical 400 from the handler rather than huma's 422 validation shape.
 type JoinByInviteCodeRequest struct {
-	InviteCode string `json:"inviteCode" binding:"required"`
+	InviteCode string `json:"inviteCode,omitempty" required:"false"`
 }
 
 // UpdateNetplaySettingsRequest is the body for PUT /api/netplay/sessions/:id/settings.
 type UpdateNetplaySettingsRequest struct {
-	InputDelay *int `json:"inputDelay"`
+	InputDelay *int `json:"inputDelay,omitempty"`
 }
 
 // NetplayInviteUserRequest is the body for POST /api/netplay/sessions/:id/invites.
+// Username is optional in the huma schema so missing-field requests return
+// the historical 400 from the handler rather than huma's 422 validation shape.
 type NetplayInviteUserRequest struct {
-	Username string `json:"username" binding:"required"`
+	Username string `json:"username,omitempty" required:"false"`
 }
 
 // --- Collections ---
@@ -225,9 +240,9 @@ type CreateOrUpdateRatingRequest struct {
 
 // UpdateChallengeRequest is the body for PUT /api/challenges/:id.
 type UpdateChallengeRequest struct {
-	Name        *string `json:"name"`
-	Description *string `json:"description"`
-	Status      *string `json:"status"`
+	Name        *string `json:"name,omitempty"`
+	Description *string `json:"description,omitempty"`
+	Status      *string `json:"status,omitempty"`
 }
 
 // --- Devices ---
