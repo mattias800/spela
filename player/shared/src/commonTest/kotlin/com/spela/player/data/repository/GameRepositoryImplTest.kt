@@ -81,6 +81,47 @@ class GameRepositoryImplTest {
     }
 
     @Test
+    fun challengeResponseMapsToDomain() {
+        val now = kotlin.time.Instant.fromEpochSeconds(1_700_000_000)
+        val response = com.spela.client.models.ChallengeResponse(
+            attemptCount = 25L,
+            completionCount = 4L,
+            createdAt = now,
+            creatorId = "u1",
+            creatorUsername = "mattias",
+            difficulty = "hard",
+            gameId = "g1",
+            gameTitle = "Super Metroid",
+            id = "c1",
+            name = "100% Run",
+            saveFileSize = 65_536L,
+            status = "active",
+            type = "completion",
+            updatedAt = now,
+            consoleName = "SNES", // server sends consoleName, not gameConsoleName
+            coreName = "snes9x",
+            creatorAvatar = "/avatars/mattias.png", // server sends creatorAvatar, not creatorAvatarUrl
+            description = "Collect everything",
+            expiresAt = null,
+            gameCoverUrl = "/covers/smetroid.png",
+            screenshotUrl = "/screenshots/smetroid.png",
+        )
+
+        val domain = response.toDomain()
+
+        assertEquals("c1", domain.id)
+        assertEquals("100% Run", domain.name)
+        assertEquals("SNES", domain.gameConsoleName) // mapped from consoleName
+        assertEquals("/avatars/mattias.png", domain.creatorAvatarUrl) // mapped from creatorAvatar
+        assertEquals(25, domain.attemptCount) // Long -> Int
+        assertEquals(4, domain.completionCount)
+        assertEquals(com.spela.player.domain.model.ChallengeDifficulty.HARD, domain.difficulty)
+        assertEquals(com.spela.player.domain.model.ChallengeType.COMPLETION, domain.type)
+        assertEquals(now.toString(), domain.createdAt)
+        assertEquals(null, domain.bestTimeMs) // not in spec
+    }
+
+    @Test
     fun sharedSaveResponseMapsToDomain() {
         val now = kotlin.time.Instant.fromEpochSeconds(1_700_000_000)
         val response = com.spela.client.models.SharedSaveResponse(
