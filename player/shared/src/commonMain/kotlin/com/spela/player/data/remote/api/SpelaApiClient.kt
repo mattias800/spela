@@ -1148,7 +1148,11 @@ class SpelaApiClient(
 
     // User Search
 
-    suspend fun searchUsers(query: String = "", page: Int = 1, pageSize: Int = 20): UserSearchResponse {
+    suspend fun searchUsers(
+        query: String = "",
+        page: Int = 1,
+        pageSize: Int = 20,
+    ): com.spela.client.models.PaginatedResponseUserSearchResult {
         return client.get("$baseUrl/api/users/search") {
             parameter("q", query)
             parameter("page", page)
@@ -1156,7 +1160,7 @@ class SpelaApiClient(
         }.body()
     }
 
-    suspend fun getRecentPartners(): List<UserSearchResultDto> {
+    suspend fun getRecentPartners(): List<com.spela.client.models.UserSearchResult> {
         return client.get("$baseUrl/api/users/recent-partners").body()
     }
 

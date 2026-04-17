@@ -564,7 +564,7 @@ fun com.spela.client.models.ChallengeLeaderboardEntry.toDomain(): ChallengeLeade
 
 // User Search mappers
 
-fun UserSearchResultDto.toDomain(): UserSearchResult = UserSearchResult(
+fun com.spela.client.models.UserSearchResult.toDomain(): UserSearchResult = UserSearchResult(
     id = id,
     username = username,
     avatarUrl = avatarUrl,
