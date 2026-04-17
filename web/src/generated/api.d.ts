@@ -1436,6 +1436,666 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/explore/active-challenges": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get active community challenges
+         * @description Returns the 10 most recent active Challenge entities that have not yet expired.
+         */
+        get: operations["getActiveChallenges"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/explore/active-now": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get games with active shared sessions or challenges
+         * @description Returns up to 20 games currently with active shared sessions and/or active challenges, sorted by combined activity.
+         */
+        get: operations["getActiveNow"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/explore/almost-done": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get games the caller has nearly completed
+         * @description Returns games where the caller has completed between 80 and 99 percent of achievements.
+         */
+        get: operations["getAlmostDone"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/explore/artwork": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get paginated IGDB artwork gallery
+         * @description Returns a paginated stream of IGDB promotional artwork with game metadata.
+         */
+        get: operations["getArtworkGallery"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/explore/best-of-year/{year}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get top-rated games from a specific release year
+         * @description Returns up to 30 highest-rated games released in the given year.
+         */
+        get: operations["getBestOfYear"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/explore/community-top": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get top-rated games by the community
+         * @description Returns games with the highest average user ratings on this server (at least 2 ratings).
+         */
+        get: operations["getCommunityTop"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/explore/console-highlights": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get console highlights
+         * @description Returns a compact list of consoles with game counts and top game for the explore page quick-jump row.
+         */
+        get: operations["getConsoleHighlights"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/explore/consoles/{id}/showcase": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get console showcase
+         * @description Returns aggregated showcase data for a specific console: essentials, hidden gems, genre breakdown, top developers, recently played, recently added.
+         */
+        get: operations["getConsoleShowcase"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/explore/covers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get paginated cover gallery
+         * @description Returns a paginated dense cover art feed with minimal metadata. Supports console filter.
+         */
+        get: operations["getCoverGallery"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/explore/cult-classics": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get community cult classics
+         * @description Returns games where the community rates higher than critics — avg community rating >= 4.0 with IGDB rating < 75.
+         */
+        get: operations["getCultClassics"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/explore/decades/{decade}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get best games of a decade
+         * @description Returns up to 30 highest-rated games for the given decade (80s, 90s, or 00s).
+         */
+        get: operations["getDecades"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/explore/developers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List top developers
+         * @description Returns the top 50 developers by game count with average rating and console coverage.
+         */
+        get: operations["getDevelopers"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/explore/developers/spotlight": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get the weekly featured developer
+         * @description Returns a rotating spotlight of a top developer with games that have hero art. Rotates weekly.
+         */
+        get: operations["getDeveloperSpotlight"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/explore/developers/{name}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get developer detail
+         * @description Returns all games by a specific developer along with statistics (rating distribution, genre/platform breakdown, user stats, timeline, related developers).
+         */
+        get: operations["getDeveloperDetail"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/explore/easy-to-complete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get games with highest avg achievement completion
+         * @description Returns up to 20 games with the highest average achievement completion rate across players.
+         */
+        get: operations["getEasyToComplete"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/explore/featured": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get featured games for the explore hero carousel
+         * @description Returns up to 10 featured games selected via weighted random sampling, stable per-day.
+         */
+        get: operations["getExploreFeatured"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/explore/for-you": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get personalized recommendation rows
+         * @description Returns personalized recommendation shelves derived from the caller's play history.
+         */
+        get: operations["getForYou"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/explore/fresh-challenges": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get games with cached achievements the caller hasn't started
+         * @description Returns up to 20 games with cached achievements where the caller has zero unlocks yet.
+         */
+        get: operations["getFreshChallenges"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/explore/hardest-games": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get games with lowest avg achievement completion
+         * @description Returns up to 20 games with the lowest average achievement completion rate. Requires at least 2 players attempting.
+         */
+        get: operations["getHardestGames"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/explore/mood/{mood}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get games matching a specific mood
+         * @description Returns up to 20 games matching the chosen mood (chill, challenge, nostalgia, something-new, quick, together).
+         */
+        get: operations["getMoodGames"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/explore/moods": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List explore mood options
+         * @description Returns the static list of moods available in the mood picker.
+         */
+        get: operations["getExploreMoods"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/explore/on-this-day": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get games released on today's month/day
+         * @description Returns up to 20 games released on today's month/day across all years, sorted oldest first.
+         */
+        get: operations["getOnThisDay"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/explore/players-like-you": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get collaborative-filter game recommendations
+         * @description Returns games favourited by users whose favourites overlap with the caller's. Uses Jaccard similarity.
+         */
+        get: operations["getPlayersLikeYou"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/explore/publishers/{name}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get publisher detail
+         * @description Returns all games by a specific publisher along with statistics (rating distribution, genre/platform breakdown, user stats, timeline, related publishers).
+         */
+        get: operations["getPublisherDetail"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/explore/recently-reviewed": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get games with recent user reviews
+         * @description Returns the 20 most recent user reviews (non-empty review text) with game + reviewer metadata.
+         */
+        get: operations["getRecentlyReviewed"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/explore/rows": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get curated explore-page shelf rows
+         * @description Returns curated shelves (top-rated, recently-added, hidden gems, most-played). Empty rows are omitted.
+         */
+        get: operations["getExploreRows"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/explore/screenshots": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get paginated screenshot gallery
+         * @description Returns a paginated stream of screenshots with minimal game metadata. Supports console/genre filters.
+         */
+        get: operations["getScreenshotGallery"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/explore/series/featured": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get featured game series
+         * @description Returns up to 20 top series with at least 2 library games, sorted by library game count DESC.
+         */
+        get: operations["getExploreFeaturedSeries"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/explore/surprise": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get a random surprise game
+         * @description Returns a single random game matching optional console/genre/min-rating filters.
+         */
+        get: operations["getSurpriseGame"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/explore/trending": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get trending games
+         * @description Returns up to 20 games with the most distinct players in the last 7 days.
+         */
+        get: operations["getTrending"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/explore/wizard": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get decision wizard steps
+         * @description Returns the static decision wizard configuration (steps + options).
+         */
+        get: operations["getWizardSteps"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/explore/wizard/results": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get wizard recommendations
+         * @description Returns 5 game recommendations based on the wizard's mood/era/vibe selections.
+         */
+        get: operations["getWizardResults"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/explore/your-anniversaries": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get personal gameplay anniversaries
+         * @description Returns games the caller played roughly 1..10 years ago (within a 3-day window of today's date).
+         */
+        get: operations["getYourAnniversaries"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/franchises": {
         parameters: {
             query?: never;
@@ -3792,6 +4452,17 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        AchievementGameResponse: {
+            /** Format: double */
+            avgCompletion: number;
+            game: components["schemas"]["GameResponse"];
+            /** Format: int64 */
+            playersAttempted: number;
+            /** Format: int64 */
+            playersCompleted: number;
+            /** Format: int64 */
+            totalAchievements: number;
+        };
         AchievementLeaderboardResponse: {
             /**
              * Format: uri
@@ -3827,6 +4498,31 @@ export interface components {
             /** Format: int64 */
             unlockedCount: number;
         };
+        ActiveChallengesResponse: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/api/schemas/ActiveChallengesResponse.json
+             */
+            readonly $schema?: string;
+            challenges: components["schemas"]["ExploreChallengeResponse"][] | null;
+        };
+        ActiveNowItem: {
+            /** Format: int64 */
+            activeChallenges: number;
+            /** Format: int64 */
+            activeSessions: number;
+            game: components["schemas"]["GameResponse"];
+        };
+        ActiveNowResponse: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/api/schemas/ActiveNowResponse.json
+             */
+            readonly $schema?: string;
+            games: components["schemas"]["ActiveNowItem"][] | null;
+        };
         ActivePlayerEntry: {
             avatarUrl: string;
             /** Format: int64 */
@@ -3837,6 +4533,12 @@ export interface components {
             totalPlayTime: number;
             userId: string;
             username: string;
+        };
+        ActiveYears: {
+            /** Format: int64 */
+            first: number;
+            /** Format: int64 */
+            last: number;
         };
         ActivityEventResponse: {
             avatarUrl?: string;
@@ -3919,6 +4621,40 @@ export interface components {
             category: string;
             rating: string;
         };
+        AlmostDoneGame: {
+            /** Format: double */
+            completionPercent: number;
+            game: components["schemas"]["GameResponse"];
+            /** Format: int64 */
+            totalCount: number;
+            /** Format: int64 */
+            unlockedCount: number;
+        };
+        AlmostDoneResponse: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/api/schemas/AlmostDoneResponse.json
+             */
+            readonly $schema?: string;
+            games: components["schemas"]["AlmostDoneGame"][] | null;
+        };
+        AnniversariesResponse: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/api/schemas/AnniversariesResponse.json
+             */
+            readonly $schema?: string;
+            anniversaries: components["schemas"]["AnniversaryItem"][] | null;
+        };
+        AnniversaryItem: {
+            game: components["schemas"]["GameResponse"];
+            /** Format: date-time */
+            playedAt: string;
+            /** Format: int64 */
+            yearsAgo: number;
+        };
         ApplyIGDBMatchRequest: {
             /**
              * Format: uri
@@ -3928,6 +4664,33 @@ export interface components {
             readonly $schema?: string;
             /** Format: int64 */
             igdbId?: number;
+        };
+        ArtworkGalleryResponse: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/api/schemas/ArtworkGalleryResponse.json
+             */
+            readonly $schema?: string;
+            artworks: components["schemas"]["ArtworkItem"][] | null;
+            /** Format: int64 */
+            page: number;
+            /** Format: int64 */
+            totalCount: number;
+            /** Format: int64 */
+            totalPages: number;
+        };
+        ArtworkItem: {
+            consoleAbbreviation: string;
+            consoleColor: string;
+            consoleName: string;
+            gameId: string;
+            gameTitle: string;
+            /** Format: int64 */
+            height: number;
+            url: string;
+            /** Format: int64 */
+            width: number;
         };
         BackfillImagesResponse: {
             /**
@@ -3948,6 +4711,17 @@ export interface components {
             similarDownloaded: number;
             /** Format: int64 */
             topRatedDownloaded: number;
+        };
+        BestOfYearResponse: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/api/schemas/BestOfYearResponse.json
+             */
+            readonly $schema?: string;
+            games: components["schemas"]["GameResponse"][] | null;
+            /** Format: int64 */
+            year: number;
         };
         BiosDownloadStartedResponse: {
             /**
@@ -4146,6 +4920,22 @@ export interface components {
             userId: string;
             username: string;
         };
+        CommunityTopGame: {
+            /** Format: double */
+            avgRating: number;
+            game: components["schemas"]["GameResponse"];
+            /** Format: int64 */
+            ratingCount: number;
+        };
+        CommunityTopResponse: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/api/schemas/CommunityTopResponse.json
+             */
+            readonly $schema?: string;
+            games: components["schemas"]["CommunityTopGame"][] | null;
+        };
         CompactSavesResponse: {
             /**
              * Format: uri
@@ -4157,6 +4947,15 @@ export interface components {
             deletedCount: number;
             /** Format: int64 */
             freedBytes: number;
+        };
+        CompanyInfo: {
+            country?: string;
+            description?: string;
+            /** Format: int64 */
+            foundedYear?: number;
+            logoUrl?: string;
+            websiteUrl?: string;
+            wikipediaUrl?: string;
         };
         CompletionistConsole: {
             id: string;
@@ -4206,6 +5005,25 @@ export interface components {
             status: string;
             subDir?: string;
         };
+        ConsoleHighlight: {
+            colorTheme: string;
+            /** Format: int64 */
+            gameCount: number;
+            iconUrl: string;
+            id: string;
+            logoUrl: string;
+            name: string;
+            topGame: components["schemas"]["GameResponse"];
+        };
+        ConsoleHighlightsResponse: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/api/schemas/ConsoleHighlightsResponse.json
+             */
+            readonly $schema?: string;
+            consoles: components["schemas"]["ConsoleHighlight"][] | null;
+        };
         ConsoleKeyMappingDTO: {
             customMapping?: {
                 [key: string]: string;
@@ -4245,6 +5063,21 @@ export interface components {
             /** Format: date-time */
             updatedAt: string;
         };
+        ConsoleShowcaseResponse: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/api/schemas/ConsoleShowcaseResponse.json
+             */
+            readonly $schema?: string;
+            console: components["schemas"]["ConsoleResponse"];
+            essentials: components["schemas"]["GameResponse"][] | null;
+            genreBreakdown: components["schemas"]["GenreCount"][] | null;
+            hiddenGems: components["schemas"]["GameResponse"][] | null;
+            recentlyAdded: components["schemas"]["GameResponse"][] | null;
+            recentlyPlayed: components["schemas"]["GameResponse"][] | null;
+            topDevelopers: components["schemas"]["DeveloperSummary"][] | null;
+        };
         Core: {
             /** Format: date-time */
             createdAt: string;
@@ -4274,6 +5107,33 @@ export interface components {
              */
             readonly $schema?: string;
             consoles: components["schemas"]["CoreCompatibilityEntry"][] | null;
+        };
+        CoverGalleryResponse: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/api/schemas/CoverGalleryResponse.json
+             */
+            readonly $schema?: string;
+            covers: components["schemas"]["CoverItem"][] | null;
+            /** Format: int64 */
+            page: number;
+            /** Format: int64 */
+            totalCount: number;
+            /** Format: int64 */
+            totalPages: number;
+        };
+        CoverItem: {
+            consoleAbbreviation: string;
+            consoleColor: string;
+            consoleName: string;
+            /** Format: double */
+            coverAspectRatio: number;
+            coverUrl: string;
+            gameId: string;
+            gameTitle: string;
+            /** Format: double */
+            igdbCriticsRating: number;
         };
         CoverOption: {
             label?: string;
@@ -4334,6 +5194,35 @@ export interface components {
             gameId?: string;
             name?: string;
         };
+        CultClassicGame: {
+            /** Format: double */
+            communityRating: number;
+            game: components["schemas"]["GameResponse"];
+            /** Format: double */
+            igdbCriticsRating: number;
+            /** Format: int64 */
+            ratingCount: number;
+        };
+        CultClassicsResponse: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/api/schemas/CultClassicsResponse.json
+             */
+            readonly $schema?: string;
+            games: components["schemas"]["CultClassicGame"][] | null;
+        };
+        DecadesResponse: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/api/schemas/DecadesResponse.json
+             */
+            readonly $schema?: string;
+            decade: string;
+            games: components["schemas"]["GameResponse"][] | null;
+            label: string;
+        };
         DeletedStatusResponse: {
             /**
              * Format: uri
@@ -4354,9 +5243,69 @@ export interface components {
             role: string;
             username: string;
         };
+        DeveloperDetailResponse: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/api/schemas/DeveloperDetailResponse.json
+             */
+            readonly $schema?: string;
+            activeYears?: components["schemas"]["ActiveYears"];
+            /** Format: double */
+            avgRating: number;
+            companyInfo?: components["schemas"]["CompanyInfo"];
+            consoles: string[] | null;
+            /** Format: int64 */
+            gameCount: number;
+            games: components["schemas"]["GameResponse"][] | null;
+            genreBreakdown: components["schemas"]["GenreCount"][] | null;
+            heroUrl?: string;
+            name: string;
+            platformBreakdown: components["schemas"]["PlatformCount"][] | null;
+            primaryGenre?: string;
+            publishers: components["schemas"]["NameCount"][] | null;
+            ratingDistribution: components["schemas"]["RatingDistribution"];
+            relatedDevelopers?: components["schemas"]["RelatedDeveloper"][] | null;
+            timeline?: components["schemas"]["TimelineEntry"][] | null;
+            topGames: components["schemas"]["GameResponse"][] | null;
+            userStats?: components["schemas"]["EntityUserStats"];
+        };
         DeveloperGameResponse: {
             coverUrl: string;
             localGameId: string;
+            name: string;
+        };
+        DeveloperListResponse: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/api/schemas/DeveloperListResponse.json
+             */
+            readonly $schema?: string;
+            developers: components["schemas"]["DeveloperSummary"][] | null;
+        };
+        DeveloperSpotlightResponse: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/api/schemas/DeveloperSpotlightResponse.json
+             */
+            readonly $schema?: string;
+            /** Format: double */
+            avgRating: number;
+            consoles: string[] | null;
+            /** Format: int64 */
+            gameCount: number;
+            heroUrl: string;
+            name: string;
+            topGames: components["schemas"]["GameResponse"][] | null;
+        };
+        DeveloperSummary: {
+            /** Format: double */
+            avgRating: number;
+            consoles: string[] | null;
+            /** Format: int64 */
+            gameCount: number;
             name: string;
         };
         Device: {
@@ -4440,6 +5389,15 @@ export interface components {
             readonly $schema?: string;
             name?: string;
         };
+        EasyToCompleteResponse: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/api/schemas/EasyToCompleteResponse.json
+             */
+            readonly $schema?: string;
+            games: components["schemas"]["AchievementGameResponse"][] | null;
+        };
         EnrichmentStartedResponse: {
             /**
              * Format: uri
@@ -4469,6 +5427,49 @@ export interface components {
             /** Format: int64 */
             total?: number;
         };
+        EntityUserStats: {
+            /** Format: int64 */
+            favoriteCount: number;
+            /** Format: int64 */
+            gamesPlayed: number;
+            mostPlayedGame: components["schemas"]["GameResponse"];
+            /** Format: int64 */
+            totalPlayTime: number;
+        };
+        ExploreChallengeResponse: {
+            /** Format: int64 */
+            attemptCount: number;
+            /** Format: int64 */
+            completionCount: number;
+            consoleName?: string;
+            /** Format: date-time */
+            createdAt: string;
+            creatorUsername: string;
+            description?: string;
+            difficulty: string;
+            /** Format: date-time */
+            expiresAt?: string;
+            gameCoverUrl?: string;
+            gameId: string;
+            gameTitle: string;
+            id: string;
+            name: string;
+            type: string;
+        };
+        ExploreRowResponse: {
+            games: components["schemas"]["GameResponse"][] | null;
+            id: string;
+            title: string;
+        };
+        ExploreRowsResponse: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/api/schemas/ExploreRowsResponse.json
+             */
+            readonly $schema?: string;
+            rows: components["schemas"]["ExploreRowResponse"][] | null;
+        };
         ExplorerBadge: {
             description: string;
             earned: boolean;
@@ -4488,6 +5489,48 @@ export interface components {
              */
             readonly $schema?: string;
             badges: components["schemas"]["ExplorerBadge"][] | null;
+        };
+        FeaturedGameResponse: {
+            consoleAbbreviation: string;
+            consoleColor: string;
+            consoleId: string;
+            consoleName: string;
+            gameId: string;
+            genre: string;
+            heroUrl: string;
+            /** Format: double */
+            igdbCriticsRating: number;
+            isFavorite: boolean;
+            isPlayLater: boolean;
+            logoUrl: string;
+            title: string;
+        };
+        FeaturedSeriesResponse: {
+            /** Format: int64 */
+            consoleCount: number;
+            heroUrl?: string;
+            id: string;
+            /** Format: int64 */
+            libraryGames: number;
+            name: string;
+            /** Format: int64 */
+            totalGames: number;
+        };
+        ForYouResponse: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/api/schemas/ForYouResponse.json
+             */
+            readonly $schema?: string;
+            rows: components["schemas"]["ForYouRowResponse"][] | null;
+        };
+        ForYouRowResponse: {
+            games: components["schemas"]["GameResponse"][] | null;
+            genre?: string;
+            sourceGame?: components["schemas"]["GameResponse"];
+            title: string;
+            type: string;
         };
         FranchiseDetailResponse: {
             /**
@@ -4514,6 +5557,22 @@ export interface components {
             gameCount: number;
             id: string;
             name: string;
+        };
+        FreshChallengeGame: {
+            game: components["schemas"]["GameResponse"];
+            /** Format: int64 */
+            totalAchievements: number;
+            /** Format: int64 */
+            totalPoints: number;
+        };
+        FreshChallengesResponse: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/api/schemas/FreshChallengesResponse.json
+             */
+            readonly $schema?: string;
+            games: components["schemas"]["FreshChallengeGame"][] | null;
         };
         GameArtworkResponse: {
             /**
@@ -4749,6 +5808,20 @@ export interface components {
             userId: string;
             username: string;
         };
+        GenreCount: {
+            /** Format: int64 */
+            gameCount: number;
+            name: string;
+        };
+        HardestGamesResponse: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/api/schemas/HardestGamesResponse.json
+             */
+            readonly $schema?: string;
+            games: components["schemas"]["AchievementGameResponse"][] | null;
+        };
         HardwareMakerResponse: {
             code: string;
             name: string;
@@ -4949,6 +6022,13 @@ export interface components {
             unscraped: components["schemas"]["GameResponse"][] | null;
             unverified: components["schemas"]["GameResponse"][] | null;
         };
+        MoodResponse: {
+            description: string;
+            gradient: string[] | null;
+            icon: string;
+            id: string;
+            name: string;
+        };
         MostActivePlayersResponse: {
             /**
              * Format: uri
@@ -4973,6 +6053,11 @@ export interface components {
              */
             readonly $schema?: string;
             games: components["schemas"]["MostPlayedEntry"][] | null;
+        };
+        NameCount: {
+            /** Format: int64 */
+            count: number;
+            name: string;
         };
         NetplayInviteResponse: {
             /**
@@ -5042,6 +6127,16 @@ export interface components {
             /** Format: date-time */
             startedAt?: string;
             status: string;
+        };
+        OnThisDayResponse: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/api/schemas/OnThisDayResponse.json
+             */
+            readonly $schema?: string;
+            date: string;
+            games: components["schemas"]["GameResponse"][] | null;
         };
         OnlineUserGameResponse: {
             consoleName: string;
@@ -5214,12 +6309,29 @@ export interface components {
             /** Format: int64 */
             count: number;
         };
+        PlatformCount: {
+            consoleId: string;
+            consoleName: string;
+            /** Format: int64 */
+            count: number;
+        };
         PlayStatsEntry: {
             /** Format: int64 */
             gameId: number;
             lastPlayedAt: string;
             /** Format: int64 */
             playTime: number;
+        };
+        PlayersLikeYouResponse: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/api/schemas/PlayersLikeYouResponse.json
+             */
+            readonly $schema?: string;
+            games: components["schemas"]["GameResponse"][] | null;
+            /** Format: int64 */
+            similarUsersCount: number;
         };
         PossibleConsoleResponse: {
             id: string;
@@ -5254,6 +6366,33 @@ export interface components {
             /** Format: int64 */
             totalPlayTime: number;
             username: string;
+        };
+        PublisherDetailResponse: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/api/schemas/PublisherDetailResponse.json
+             */
+            readonly $schema?: string;
+            activeYears?: components["schemas"]["ActiveYears"];
+            /** Format: double */
+            avgRating: number;
+            companyInfo?: components["schemas"]["CompanyInfo"];
+            consoles: string[] | null;
+            developers: components["schemas"]["NameCount"][] | null;
+            /** Format: int64 */
+            gameCount: number;
+            games: components["schemas"]["GameResponse"][] | null;
+            genreBreakdown: components["schemas"]["GenreCount"][] | null;
+            heroUrl?: string;
+            name: string;
+            platformBreakdown: components["schemas"]["PlatformCount"][] | null;
+            primaryGenre?: string;
+            ratingDistribution: components["schemas"]["RatingDistribution"];
+            relatedPublishers?: components["schemas"]["RelatedPublisher"][] | null;
+            timeline?: components["schemas"]["TimelineEntry"][] | null;
+            topGames: components["schemas"]["GameResponse"][] | null;
+            userStats?: components["schemas"]["EntityUserStats"];
         };
         RALeaderboardEntryResponse: {
             avatarUrl: string;
@@ -5369,6 +6508,18 @@ export interface components {
             /** Format: date-time */
             lockedUntil: string | null;
         };
+        RatingDistribution: {
+            /** Format: int64 */
+            average: number;
+            /** Format: int64 */
+            excellent: number;
+            /** Format: int64 */
+            good: number;
+            /** Format: int64 */
+            poor: number;
+            /** Format: int64 */
+            unrated: number;
+        };
         RatingSummaryResponse: {
             /**
              * Format: uri
@@ -5393,6 +6544,24 @@ export interface components {
             readonly $schema?: string;
             achievements: components["schemas"]["RARecentAchievementResponse"][] | null;
         };
+        RecentReviewItem: {
+            game: components["schemas"]["GameResponse"];
+            /** Format: int64 */
+            rating: number;
+            review: string;
+            /** Format: date-time */
+            reviewedAt: string;
+            reviewerName: string;
+        };
+        RecentlyReviewedResponse: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/api/schemas/RecentlyReviewedResponse.json
+             */
+            readonly $schema?: string;
+            reviews: components["schemas"]["RecentReviewItem"][] | null;
+        };
         RefreshAchievementsResponse: {
             /**
              * Format: uri
@@ -5413,6 +6582,18 @@ export interface components {
             deviceUuid?: string;
             name?: string;
             platform?: string;
+        };
+        RelatedDeveloper: {
+            /** Format: int64 */
+            gameCount: number;
+            name: string;
+            sharedPublishers: string[] | null;
+        };
+        RelatedPublisher: {
+            /** Format: int64 */
+            gameCount: number;
+            name: string;
+            sharedDevelopers: string[] | null;
         };
         ReleaseDateResponse: {
             date: string;
@@ -5584,6 +6765,29 @@ export interface components {
             /** Format: int64 */
             notFoundEligible: number;
             source: string;
+        };
+        ScreenshotGalleryResponse: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/api/schemas/ScreenshotGalleryResponse.json
+             */
+            readonly $schema?: string;
+            /** Format: int64 */
+            page: number;
+            screenshots: components["schemas"]["ScreenshotItem"][] | null;
+            /** Format: int64 */
+            totalCount: number;
+            /** Format: int64 */
+            totalPages: number;
+        };
+        ScreenshotItem: {
+            consoleAbbreviation: string;
+            consoleColor: string;
+            consoleName: string;
+            gameId: string;
+            gameTitle: string;
+            url: string;
         };
         SearchCategoryResultSearchCollectionResult: {
             results: components["schemas"]["SearchCollectionResult"][] | null;
@@ -6180,6 +7384,18 @@ export interface components {
             id: string;
             name: string;
         };
+        TimelineEntry: {
+            games: components["schemas"]["TimelineGame"][] | null;
+            /** Format: int64 */
+            year: number;
+        };
+        TimelineGame: {
+            coverUrl: string;
+            id: string;
+            /** Format: double */
+            igdbCriticsRating: number;
+            title: string;
+        };
         TopListGameResponse: {
             consoleId: string;
             consoleName: string;
@@ -6200,6 +7416,20 @@ export interface components {
             name: string;
             /** Format: int64 */
             rank: number;
+        };
+        TrendingGameResponse: {
+            game: components["schemas"]["GameResponse"];
+            /** Format: int64 */
+            playersThisWeek: number;
+        };
+        TrendingResponse: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/api/schemas/TrendingResponse.json
+             */
+            readonly $schema?: string;
+            games: components["schemas"]["TrendingGameResponse"][] | null;
         };
         UnlockedAchievementsResponse: {
             /**
@@ -6519,6 +7749,38 @@ export interface components {
         VideoResponse: {
             name?: string;
             videoId: string;
+        };
+        WizardOption: {
+            description?: string;
+            id: string;
+            imageUrl?: string;
+            label: string;
+        };
+        WizardResponse: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/api/schemas/WizardResponse.json
+             */
+            readonly $schema?: string;
+            steps: components["schemas"]["WizardStep"][] | null;
+        };
+        WizardResultsResponse: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/api/schemas/WizardResultsResponse.json
+             */
+            readonly $schema?: string;
+            games: components["schemas"]["GameResponse"][] | null;
+            title: string;
+        };
+        WizardStep: {
+            options: components["schemas"]["WizardOption"][] | null;
+            /** Format: int64 */
+            step: number;
+            title: string;
+            type: string;
         };
     };
     responses: never;
@@ -9189,6 +10451,1049 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ReportedResponse"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HumaError"];
+                };
+            };
+        };
+    };
+    getActiveChallenges: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    "Cache-Control"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ActiveChallengesResponse"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HumaError"];
+                };
+            };
+        };
+    };
+    getActiveNow: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    "Cache-Control"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ActiveNowResponse"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HumaError"];
+                };
+            };
+        };
+    };
+    getAlmostDone: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    "Cache-Control"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AlmostDoneResponse"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HumaError"];
+                };
+            };
+        };
+    };
+    getArtworkGallery: {
+        parameters: {
+            query?: {
+                /** @description 1-based page number (defaults to 1). */
+                page?: number;
+                /** @description Page size (defaults to 40, max 100). */
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    "Cache-Control"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ArtworkGalleryResponse"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HumaError"];
+                };
+            };
+        };
+    };
+    getBestOfYear: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Release year (1970-2100). */
+                year: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    "Cache-Control"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BestOfYearResponse"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HumaError"];
+                };
+            };
+        };
+    };
+    getCommunityTop: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    "Cache-Control"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CommunityTopResponse"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HumaError"];
+                };
+            };
+        };
+    };
+    getConsoleHighlights: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    "Cache-Control"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConsoleHighlightsResponse"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HumaError"];
+                };
+            };
+        };
+    };
+    getConsoleShowcase: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Console abbreviation (e.g. 'snes'). */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    "Cache-Control"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConsoleShowcaseResponse"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HumaError"];
+                };
+            };
+        };
+    };
+    getCoverGallery: {
+        parameters: {
+            query?: {
+                /** @description 1-based page number (defaults to 1). */
+                page?: number;
+                /** @description Page size (defaults to 60, max 200). */
+                limit?: number;
+                /** @description Console abbreviation filter. */
+                console?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    "Cache-Control"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CoverGalleryResponse"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HumaError"];
+                };
+            };
+        };
+    };
+    getCultClassics: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    "Cache-Control"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CultClassicsResponse"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HumaError"];
+                };
+            };
+        };
+    };
+    getDecades: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Decade identifier: '80s', '90s', or '00s'. */
+                decade: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    "Cache-Control"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DecadesResponse"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HumaError"];
+                };
+            };
+        };
+    };
+    getDevelopers: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    "Cache-Control"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DeveloperListResponse"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HumaError"];
+                };
+            };
+        };
+    };
+    getDeveloperSpotlight: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    "Cache-Control"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DeveloperSpotlightResponse"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HumaError"];
+                };
+            };
+        };
+    };
+    getDeveloperDetail: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Developer name (URL-decoded). */
+                name: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    "Cache-Control"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DeveloperDetailResponse"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HumaError"];
+                };
+            };
+        };
+    };
+    getEasyToComplete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    "Cache-Control"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EasyToCompleteResponse"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HumaError"];
+                };
+            };
+        };
+    };
+    getExploreFeatured: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    "Cache-Control"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FeaturedGameResponse"][] | null;
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HumaError"];
+                };
+            };
+        };
+    };
+    getForYou: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    "Cache-Control"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ForYouResponse"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HumaError"];
+                };
+            };
+        };
+    };
+    getFreshChallenges: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    "Cache-Control"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FreshChallengesResponse"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HumaError"];
+                };
+            };
+        };
+    };
+    getHardestGames: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    "Cache-Control"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HardestGamesResponse"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HumaError"];
+                };
+            };
+        };
+    };
+    getMoodGames: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Mood identifier, e.g. 'chill', 'challenge'. */
+                mood: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    "Cache-Control"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GameResponse"][] | null;
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HumaError"];
+                };
+            };
+        };
+    };
+    getExploreMoods: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    "Cache-Control"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MoodResponse"][] | null;
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HumaError"];
+                };
+            };
+        };
+    };
+    getOnThisDay: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    "Cache-Control"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OnThisDayResponse"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HumaError"];
+                };
+            };
+        };
+    };
+    getPlayersLikeYou: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    "Cache-Control"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlayersLikeYouResponse"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HumaError"];
+                };
+            };
+        };
+    };
+    getPublisherDetail: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Publisher name (URL-decoded). */
+                name: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    "Cache-Control"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PublisherDetailResponse"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HumaError"];
+                };
+            };
+        };
+    };
+    getRecentlyReviewed: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    "Cache-Control"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecentlyReviewedResponse"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HumaError"];
+                };
+            };
+        };
+    };
+    getExploreRows: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    "Cache-Control"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExploreRowsResponse"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HumaError"];
+                };
+            };
+        };
+    };
+    getScreenshotGallery: {
+        parameters: {
+            query?: {
+                /** @description 1-based page number (defaults to 1). */
+                page?: number;
+                /** @description Page size (defaults to 40, max 100). */
+                limit?: number;
+                /** @description Console abbreviation filter. */
+                console?: string;
+                /** @description Genre filter. */
+                genre?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    "Cache-Control"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScreenshotGalleryResponse"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HumaError"];
+                };
+            };
+        };
+    };
+    getExploreFeaturedSeries: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    "Cache-Control"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FeaturedSeriesResponse"][] | null;
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HumaError"];
+                };
+            };
+        };
+    };
+    getSurpriseGame: {
+        parameters: {
+            query?: {
+                /** @description Console abbreviation filter. */
+                console?: string;
+                /** @description Genre filter. */
+                genre?: string;
+                /** @description Minimum IGDB rating (0-100); defaults to 70. */
+                minRating?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    "Cache-Control"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GameResponse"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HumaError"];
+                };
+            };
+        };
+    };
+    getTrending: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    "Cache-Control"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TrendingResponse"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HumaError"];
+                };
+            };
+        };
+    };
+    getWizardSteps: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    "Cache-Control"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WizardResponse"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HumaError"];
+                };
+            };
+        };
+    };
+    getWizardResults: {
+        parameters: {
+            query?: {
+                /** @description Chosen mood (action|chill|story|challenge|fun). */
+                mood?: string;
+                /** @description Chosen era (80s|early90s|late90s|2000s|any). */
+                era?: string;
+                /** @description Chosen vibe (solo|multiplayer|short|long|any). */
+                vibe?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    "Cache-Control"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WizardResultsResponse"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HumaError"];
+                };
+            };
+        };
+    };
+    getYourAnniversaries: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    "Cache-Control"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AnniversariesResponse"];
                 };
             };
             /** @description Error */
