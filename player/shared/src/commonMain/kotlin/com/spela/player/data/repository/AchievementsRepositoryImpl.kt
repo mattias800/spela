@@ -1,8 +1,8 @@
 package com.spela.player.data.repository
 
+import com.spela.client.models.LinkRAAccountRequest
+import com.spela.client.models.UpdateRASettingsRequest
 import com.spela.player.data.remote.api.SpelaApiClient
-import com.spela.player.data.remote.dto.RALinkRequestDto
-import com.spela.player.data.remote.dto.RASettingsRequestDto
 import com.spela.player.domain.model.RACredentials
 import com.spela.player.domain.model.RAStatus
 import com.spela.player.domain.repository.AchievementsRepository
@@ -16,7 +16,7 @@ class AchievementsRepositoryImpl(
     }
 
     override suspend fun linkRA(username: String, password: String): Result<RAStatus> = runCatching {
-        val dto = apiClient.linkRA(RALinkRequestDto(username, password))
+        val dto = apiClient.linkRA(LinkRAAccountRequest(username = username, password = password))
         RAStatus(linked = dto.linked, username = dto.username, hardcoreEnabled = dto.hardcoreEnabled)
     }
 
@@ -30,7 +30,7 @@ class AchievementsRepositoryImpl(
     }
 
     override suspend fun updateRASettings(hardcoreEnabled: Boolean): Result<RAStatus> = runCatching {
-        val dto = apiClient.updateRASettings(RASettingsRequestDto(hardcoreEnabled))
+        val dto = apiClient.updateRASettings(UpdateRASettingsRequest(hardcoreEnabled = hardcoreEnabled))
         RAStatus(linked = dto.linked, username = dto.username, hardcoreEnabled = dto.hardcoreEnabled)
     }
 }
