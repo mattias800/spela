@@ -1113,87 +1113,91 @@ fun com.spela.client.models.CompletionistMapResponse.toDomain() = CompletionistM
 )
 
 // --- Global Search mappers ---
+//
+// Fully qualified on the generated-type side because every one of these
+// clashes name-for-name with a domain model (SearchGameResult etc.).
 
-fun GlobalSearchGameResultDto.toDomain() = SearchGameResult(
+fun com.spela.client.models.SearchGameResult.toDomain() = SearchGameResult(
     id = id,
     title = title,
-    coverUrl = coverUrl,
+    coverUrl = coverUrl.takeIf { it.isNotEmpty() },
     consoleName = consoleName,
     consoleId = consoleId,
-    developer = developer,
-    genre = genre,
+    developer = developer.takeIf { it.isNotEmpty() },
+    genre = genre.takeIf { it.isNotEmpty() },
     coverAspectRatio = coverAspectRatio.toFloat(),
 )
 
-fun GlobalSearchConsoleResultDto.toDomain() = SearchConsoleResult(
+fun com.spela.client.models.SearchConsoleResult.toDomain() = SearchConsoleResult(
     id = id,
     name = name,
     iconUrl = iconUrl,
-    gameCount = gameCount,
+    gameCount = gameCount.toInt(),
     colorTheme = colorTheme,
 )
 
-fun GlobalSearchDeveloperResultDto.toDomain() = SearchDeveloperResult(
+/** The spec uses SearchCompanyResult for both developers and publishers. */
+private fun com.spela.client.models.SearchCompanyResult.toDeveloper() = SearchDeveloperResult(
     name = name,
-    gameCount = gameCount,
+    gameCount = gameCount.toInt(),
     avgRating = avgRating,
 )
 
-fun GlobalSearchPublisherResultDto.toDomain() = SearchPublisherResult(
+private fun com.spela.client.models.SearchCompanyResult.toPublisher() = SearchPublisherResult(
     name = name,
-    gameCount = gameCount,
+    gameCount = gameCount.toInt(),
     avgRating = avgRating,
 )
 
-fun GlobalSearchCollectionResultDto.toDomain() = SearchCollectionResult(
+fun com.spela.client.models.SearchCollectionResult.toDomain() = SearchCollectionResult(
     id = id,
     name = name,
-    gameCount = gameCount,
-    coverUrl = coverUrl,
+    gameCount = gameCount.toInt(),
+    coverUrl = coverUrl.takeIf { it.isNotEmpty() },
     username = username,
 )
 
-fun GlobalSearchSeriesResultDto.toDomain() = SearchSeriesResult(
+fun com.spela.client.models.SearchSeriesResult.toDomain() = SearchSeriesResult(
     id = id,
     name = name,
-    totalGames = totalGames,
-    libraryGames = libraryGames,
+    totalGames = totalGames.toInt(),
+    libraryGames = libraryGames.toInt(),
 )
 
-fun GlobalSearchFranchiseResultDto.toDomain() = SearchFranchiseResult(
+fun com.spela.client.models.SearchFranchiseResult.toDomain() = SearchFranchiseResult(
     id = id,
     name = name,
-    totalGames = totalGames,
-    libraryGames = libraryGames,
+    totalGames = totalGames.toInt(),
+    libraryGames = libraryGames.toInt(),
 )
 
-fun GlobalSearchResponseDto.toDomain() = GlobalSearchResult(
+fun com.spela.client.models.SearchResponse.toDomain() = GlobalSearchResult(
     games = SearchCategory(
-        results = games.results.map { it.toDomain() },
-        total = games.total,
+        results = games.results.orEmpty().map { it.toDomain() },
+        total = games.total.toInt(),
     ),
     consoles = SearchCategory(
-        results = consoles.results.map { it.toDomain() },
-        total = consoles.total,
+        results = consoles.results.orEmpty().map { it.toDomain() },
+        total = consoles.total.toInt(),
     ),
     developers = SearchCategory(
-        results = developers.results.map { it.toDomain() },
-        total = developers.total,
+        results = developers.results.orEmpty().map { it.toDeveloper() },
+        total = developers.total.toInt(),
     ),
     publishers = SearchCategory(
-        results = publishers.results.map { it.toDomain() },
-        total = publishers.total,
+        results = publishers.results.orEmpty().map { it.toPublisher() },
+        total = publishers.total.toInt(),
     ),
     collections = SearchCategory(
-        results = collections.results.map { it.toDomain() },
-        total = collections.total,
+        results = collections.results.orEmpty().map { it.toDomain() },
+        total = collections.total.toInt(),
     ),
     series = SearchCategory(
-        results = series.results.map { it.toDomain() },
-        total = series.total,
+        results = series.results.orEmpty().map { it.toDomain() },
+        total = series.total.toInt(),
     ),
     franchises = SearchCategory(
-        results = franchises.results.map { it.toDomain() },
-        total = franchises.total,
+        results = franchises.results.orEmpty().map { it.toDomain() },
+        total = franchises.total.toInt(),
     ),
 )
