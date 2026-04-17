@@ -265,6 +265,7 @@ func NewRouter(cfg Config) (*gin.Engine, func()) {
 	RegisterExploreGalleryRoutes(humaAPI, exploreHandler, cfg.JWTSecret, cfg.DB, userLimiter)
 	RegisterExploreCommunityRoutes(humaAPI, exploreHandler, cfg.JWTSecret, cfg.DB, userLimiter)
 	RegisterExploreTemporalRoutes(humaAPI, exploreHandler, cfg.JWTSecret, cfg.DB, userLimiter)
+	RegisterExploreChallengeRoutes(humaAPI, exploreHandler, cfg.JWTSecret, cfg.DB, userLimiter)
 
 	// Public auth routes — rate limit login/register/setup to prevent brute force,
 	// but leave refresh and setup-status unrestricted (called frequently during normal use).
@@ -338,11 +339,9 @@ func NewRouter(cfg Config) (*gin.Engine, func()) {
 			// above).
 			// on-this-day / best-of-year / your-anniversaries / decades —
 			// migrated to huma (see RegisterExploreTemporalRoutes above).
-			explore.GET("/easy-to-complete", exploreHandler.GetEasyToComplete)
-			explore.GET("/hardest-games", exploreHandler.GetHardestGames)
-			explore.GET("/almost-done", exploreHandler.GetAlmostDone)
-			explore.GET("/fresh-challenges", exploreHandler.GetFreshChallenges)
-			explore.GET("/active-challenges", exploreHandler.GetActiveChallenges)
+			// easy-to-complete / hardest-games / almost-done /
+			// fresh-challenges / active-challenges — migrated to huma
+			// (see RegisterExploreChallengeRoutes above).
 			explore.GET("/wizard", exploreHandler.GetWizardSteps)
 			explore.GET("/wizard/results", exploreHandler.GetWizardResults)
 		}
