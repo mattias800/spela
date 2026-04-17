@@ -196,21 +196,23 @@ fun SharedSaveStateDto.toDomain(): SharedSaveState = SharedSaveState(
     createdAt = createdAt,
 )
 
-fun GameRatingDto.toDomain(): GameRating = GameRating(
+fun com.spela.client.models.GameRatingResponse.toDomain(): GameRating = GameRating(
     id = id,
     userId = userId,
     username = username,
     avatarUrl = avatarUrl,
     gameId = gameId,
-    rating = rating,
-    review = review,
-    createdAt = createdAt,
+    rating = rating.toInt(),
+    review = review.orEmpty(),
+    createdAt = createdAt.toString(),
 )
 
-fun RatingSummaryDto.toDomain(): RatingSummary = RatingSummary(
+fun com.spela.client.models.RatingSummaryResponse.toDomain(): RatingSummary = RatingSummary(
     averageRating = averageRating,
     totalRatings = totalRatings,
-    distribution = distribution.mapKeys { it.key.toIntOrNull() ?: 0 },
+    distribution = distribution.entries.associate {
+        (it.key.toIntOrNull() ?: 0) to it.value.toInt()
+    },
 )
 
 fun OnlineUserGameDto.toDomain(): OnlineUserGame = OnlineUserGame(

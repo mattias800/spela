@@ -312,39 +312,10 @@ data class SharedSavesResponse(
 
 // Ratings
 
-@Serializable
-data class RateGameRequest(
-    val rating: Int,
-    val review: String = "",
-)
-
-@Serializable
-data class GameRatingDto(
-    val id: String,
-    val userId: String,
-    val username: String,
-    val avatarUrl: String? = null,
-    val gameId: String,
-    val rating: Int,
-    val review: String = "",
-    val createdAt: String = "",
-    val updatedAt: String = "",
-)
-
-@Serializable
-data class GameRatingsResponse(
-    val data: List<GameRatingDto> = emptyList(),
-    val total: Long = 0,
-    val page: Int = 1,
-    val pageSize: Int = 20,
-)
-
-@Serializable
-data class RatingSummaryDto(
-    val averageRating: Double = 0.0,
-    val totalRatings: Long = 0,
-    val distribution: Map<String, Int> = emptyMap(),
-)
+// RateGameRequest / GameRatingDto / GameRatingsResponse / RatingSummaryDto
+// replaced by CreateOrUpdateRatingRequest / GameRatingResponse /
+// PaginatedResponseGameRatingResponse / RatingSummaryResponse in
+// com.spela.client.models (see player/shared-api/).
 
 // Social
 
