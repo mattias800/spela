@@ -254,19 +254,19 @@ class SpelaApiClient(
         }.body()
     }
 
-    suspend fun getTopRatedGames(consoleId: String): List<TopRatedGameDto> {
+    suspend fun getTopRatedGames(consoleId: String): List<com.spela.client.models.TopRatedGameResponse> {
         return client.get("$baseUrl/api/consoles/$consoleId/top-rated").body()
     }
 
-    suspend fun getTopRatedGamesGlobal(): List<TopRatedGameDto> {
+    suspend fun getTopRatedGamesGlobal(): List<com.spela.client.models.TopRatedGameResponse> {
         return client.get("$baseUrl/api/top-rated").body()
     }
 
-    suspend fun getTopRatedAvailable(): List<TopListGameDto> {
+    suspend fun getTopRatedAvailable(): List<com.spela.client.models.TopListGameResponse> {
         return client.get("$baseUrl/api/top-lists/top-rated").body()
     }
 
-    suspend fun getLongestGames(): List<LongestGameDto> {
+    suspend fun getLongestGames(): List<com.spela.client.models.LongestGameResponse> {
         return client.get("$baseUrl/api/top-lists/longest").body()
     }
 
