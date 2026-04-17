@@ -1284,8 +1284,7 @@ class FakeSessionRepository : SessionRepository {
 
     override suspend fun uploadSessionSave(sessionId: String, name: String, data: ByteArray, screenshot: ByteArray?, coreName: String): Result<SaveState> {
         val save = SaveState(
-            id = (sessionSaves[sessionId]?.size?.toLong() ?: 0L) + 1,
-            gameId = 0,
+            id = ((sessionSaves[sessionId]?.size ?: 0) + 1).toString(),
             name = name,
             isAuto = false,
         )
@@ -1309,8 +1308,7 @@ class FakeSessionRepository : SessionRepository {
         val key = "$sessionId:$slot"
         slotSaves[key] = data
         val save = SaveState(
-            id = (sessionSaves[sessionId]?.size?.toLong() ?: 0L) + 1,
-            gameId = 0,
+            id = ((sessionSaves[sessionId]?.size ?: 0) + 1).toString(),
             name = "Slot $slot",
             isAuto = false,
             slot = slot,
@@ -1393,13 +1391,12 @@ class FakeSessionRepository : SessionRepository {
 
     fun preAddSessionSave(
         sessionId: String,
-        saveId: Long = 1,
+        saveId: String = "1",
         name: String = "Save 1",
         isAuto: Boolean = false,
     ) {
         val save = SaveState(
             id = saveId,
-            gameId = 0,
             name = name,
             isAuto = isAuto,
         )

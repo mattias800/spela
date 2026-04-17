@@ -368,7 +368,7 @@ class StubSessionRepository : SessionRepository {
     override suspend fun getSessionSaves(sessionId: String) = Result.success(emptyList<SaveState>())
     override suspend fun uploadSessionSave(sessionId: String, name: String, data: ByteArray, screenshot: ByteArray?, coreName: String): Result<SaveState> {
         uploadSessionSaveCallCount++
-        return Result.success(SaveState(id = 1, gameId = 1, name = name))
+        return Result.success(SaveState(id = "1", name = name))
     }
     override suspend fun downloadSessionSave(sessionId: String, saveId: String) = Result.success(byteArrayOf())
     override suspend fun uploadSessionAutoSave(sessionId: String, data: ByteArray, screenshot: ByteArray?, coreName: String): Result<Unit> {
@@ -388,7 +388,7 @@ class StubSessionRepository : SessionRepository {
         return downloadSessionSramResult
     }
     override suspend fun uploadSlotSave(sessionId: String, slot: Int, data: ByteArray, screenshot: ByteArray?, coreName: String) =
-        Result.success(SaveState(id = 1, gameId = 1, name = "Slot $slot"))
+        Result.success(SaveState(id = "1", name = "Slot $slot"))
     override suspend fun downloadSlotSave(sessionId: String, slot: Int) = Result.failure<ByteArray>(Exception("stub"))
     override suspend fun createSessionFromSharedSave(gameId: String, saveId: String) =
         Result.success(GameSession(id = "shared-session-1", gameId = gameId, name = "From shared save $saveId"))

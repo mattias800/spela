@@ -422,18 +422,22 @@ class GameRepositoryImplTest {
 
     @Test
     fun saveStateDtoMapsCorrectly() {
-        val dto = SaveStateDto(
-            id = 1,
-            gameId = 1,
+        val now = kotlin.time.Instant.parse("2024-01-15T10:30:00Z")
+        val dto = com.spela.client.models.SessionSaveResponse(
+            id = "save-1",
+            sessionId = "session-1",
+            userId = "user-1",
+            username = "alice",
             name = "Slot 1",
             fileSize = 65536,
             isAuto = false,
-            createdAt = "2024-01-15T10:30:00Z",
+            isCurrent = false,
+            createdAt = now,
+            updatedAt = now,
         )
         val domain = dto.toDomain()
 
-        assertEquals(1L, domain.id)
-        assertEquals(1L, domain.gameId)
+        assertEquals("save-1", domain.id)
         assertEquals("Slot 1", domain.name)
         assertEquals(65536, domain.fileSize)
         assertFalse(domain.isAuto)
