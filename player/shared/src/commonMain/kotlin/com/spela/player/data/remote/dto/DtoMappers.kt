@@ -681,16 +681,16 @@ fun ExploreRowDto.toDomain(): ExploreRow = ExploreRow(
     games = games.map { it.toDomain() },
 )
 
-fun ThemeDto.toDomain(): Theme = Theme(
+fun com.spela.client.models.ThemeResponse.toDomain(): Theme = Theme(
     id = id,
     name = name,
-    gameCount = gameCount,
+    gameCount = gameCount.toInt(),
 )
 
-fun KeywordDto.toDomain(): Keyword = Keyword(
+fun com.spela.client.models.KeywordResponse.toDomain(): Keyword = Keyword(
     id = id,
     name = name,
-    gameCount = gameCount,
+    gameCount = gameCount.toInt(),
 )
 
 fun FeaturedSeriesDto.toDomain(): FeaturedSeries = FeaturedSeries(
