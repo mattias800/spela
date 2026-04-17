@@ -492,7 +492,7 @@ class SpelaApiClient(
     /** Returns games filtered by multi-faceted criteria */
     // Global Search
 
-    suspend fun globalSearch(query: String, limit: Int = 5): GlobalSearchResponseDto {
+    suspend fun globalSearch(query: String, limit: Int = 5): com.spela.client.models.SearchResponse {
         return client.get("$baseUrl/api/search") {
             parameter("q", query)
             parameter("limit", limit)
