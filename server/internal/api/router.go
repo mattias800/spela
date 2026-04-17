@@ -268,14 +268,15 @@ func NewRouter(cfg Config) (*gin.Engine, func()) {
 	RegisterExploreChallengeRoutes(humaAPI, exploreHandler, cfg.JWTSecret, cfg.DB, userLimiter)
 	RegisterExploreWizardRoutes(humaAPI, exploreHandler, cfg.JWTSecret, cfg.DB, userLimiter)
 	RegisterAuthRoutes(humaAPI, authHandler, authLimiter, refreshLimiter)
+	RegisterSetupDiagnosticsRoutes(humaAPI, setupHandler)
 
 	// Public auth routes — login/register/setup/refresh/setup-status have been
 	// migrated to huma (see RegisterAuthRoutes above). Rate limiting (per-IP
 	// auth/refresh limiters) is applied via IPRateLimitMiddleware inside the
 	// huma registration.
 
-	// Setup diagnostics (public during first-time setup, admin-only after)
-	r.GET("/api/setup/diagnostics", setupHandler.Diagnostics)
+	// Setup diagnostics — migrated to huma (see RegisterSetupDiagnosticsRoutes above).
+	// Public during first-time setup (no users exist), admin-only afterwards.
 
 	// Logout (requires auth, placed before main protected group for clarity)
 	logoutGroup := r.Group("/api/auth")
