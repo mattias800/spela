@@ -691,24 +691,28 @@ fun com.spela.client.models.SessionCheatsResponse.toDomain() = SessionCheatConfi
 
 // Explore mappers
 
-fun FeaturedGameDto.toDomain(): FeaturedGame = FeaturedGame(
+// Explore Featured / Rows — server ships heroUrl/logoUrl as empty strings
+// when absent, and the rating field is named `igdbCriticsRating` (the
+// hand-written DTO used `rating` which silently stayed 0.0). The mapper
+// picks the real field and converts empty strings back to null.
+fun com.spela.client.models.FeaturedGameResponse.toDomain(): FeaturedGame = FeaturedGame(
     gameId = gameId,
     title = title,
-    heroUrl = heroUrl,
-    logoUrl = logoUrl,
+    heroUrl = heroUrl.takeIf { it.isNotEmpty() },
+    logoUrl = logoUrl.takeIf { it.isNotEmpty() },
     consoleName = consoleName,
     consoleAbbreviation = consoleAbbreviation,
     consoleColor = consoleColor,
-    rating = rating,
+    rating = igdbCriticsRating,
     genre = genre,
     isFavorite = isFavorite,
     isPlayLater = isPlayLater,
 )
 
-fun ExploreRowDto.toDomain(): ExploreRow = ExploreRow(
+fun com.spela.client.models.ExploreRowResponse.toDomain(): ExploreRow = ExploreRow(
     id = id,
     title = title,
-    games = games.map { it.toDomain() },
+    games = games.orEmpty().map { it.toDomain() },
 )
 
 fun com.spela.client.models.ThemeResponse.toDomain(): Theme = Theme(
@@ -723,12 +727,12 @@ fun com.spela.client.models.KeywordResponse.toDomain(): Keyword = Keyword(
     gameCount = gameCount.toInt(),
 )
 
-fun FeaturedSeriesDto.toDomain(): FeaturedSeries = FeaturedSeries(
+fun com.spela.client.models.FeaturedSeriesResponse.toDomain(): FeaturedSeries = FeaturedSeries(
     id = id,
     name = name,
-    libraryGames = libraryGames,
-    totalGames = totalGames,
-    consoleCount = consoleCount,
+    libraryGames = libraryGames.toInt(),
+    totalGames = totalGames.toInt(),
+    consoleCount = consoleCount.toInt(),
     heroUrl = heroUrl,
 )
 

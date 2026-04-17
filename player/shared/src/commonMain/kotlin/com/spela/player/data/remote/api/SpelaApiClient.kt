@@ -280,14 +280,15 @@ class SpelaApiClient(
     }
 
     /** Returns featured games for the Explore page hero carousel */
-    suspend fun getExploreFeatured(): List<FeaturedGameDto> {
+    suspend fun getExploreFeatured(): List<com.spela.client.models.FeaturedGameResponse> {
         return client.get("$baseUrl/api/explore/featured").body()
     }
 
     /** Returns curated rows for the Explore page (Top Rated, Recently Added, etc.) */
-    suspend fun getExploreRows(): List<ExploreRowDto> {
-        val response: ExploreRowsResponseDto = client.get("$baseUrl/api/explore/rows").body()
-        return response.rows
+    suspend fun getExploreRows(): List<com.spela.client.models.ExploreRowResponse> {
+        val response: com.spela.client.models.ExploreRowsResponse =
+            client.get("$baseUrl/api/explore/rows").body()
+        return response.rows.orEmpty()
     }
 
     /** Returns all themes with game counts, sorted by count DESC */
@@ -319,7 +320,7 @@ class SpelaApiClient(
     }
 
     /** Returns featured series for the Explore page */
-    suspend fun getFeaturedSeries(): List<FeaturedSeriesDto> {
+    suspend fun getFeaturedSeries(): List<com.spela.client.models.FeaturedSeriesResponse> {
         return client.get("$baseUrl/api/explore/series/featured").body()
     }
 

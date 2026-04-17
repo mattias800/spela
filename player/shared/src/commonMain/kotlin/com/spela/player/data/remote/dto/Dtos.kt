@@ -456,34 +456,16 @@ data class SimilarGameDto(
 // (see player/shared-api/). Server sends id/index as Long; the repository
 // stores them directly without domain conversion.
 
-// Explore
-
-@Serializable
-data class FeaturedGameDto(
-    val gameId: String,
-    val title: String,
-    val heroUrl: String? = null,
-    val logoUrl: String? = null,
-    val consoleName: String = "",
-    val consoleAbbreviation: String = "",
-    val consoleColor: String = "",
-    val rating: Double = 0.0,
-    val genre: String = "",
-    val isFavorite: Boolean = false,
-    val isPlayLater: Boolean = false,
-)
-
-@Serializable
-data class ExploreRowDto(
-    val id: String,
-    val title: String,
-    val games: List<GameDto>,
-)
-
-@Serializable
-data class ExploreRowsResponseDto(
-    val rows: List<ExploreRowDto>,
-)
+// Explore — FeaturedGameDto / ExploreRowDto / ExploreRowsResponseDto
+// replaced by com.spela.client.models.FeaturedGameResponse /
+// ExploreRowResponse / ExploreRowsResponse.
+//
+// Noteworthy: hand-written FeaturedGameDto used `rating` but the server
+// sends `igdbCriticsRating` — the hand-written field was always 0.0 and
+// the Explore hero's rating badge was silently dead. The new mapper
+// pulls the real field. heroUrl/logoUrl are @Required non-nullable in
+// the generated type (server sends empty strings); the mapper converts
+// "" back to null so the existing "no hero art" UX still works.
 
 // Themes & Keywords — ThemeDto / KeywordDto replaced by
 // com.spela.client.models.ThemeResponse / KeywordResponse
@@ -491,15 +473,7 @@ data class ExploreRowsResponseDto(
 
 // Series & Franchise
 
-@Serializable
-data class FeaturedSeriesDto(
-    val id: String,
-    val name: String,
-    val libraryGames: Int = 0,
-    val totalGames: Int = 0,
-    val consoleCount: Int = 0,
-    val heroUrl: String? = null,
-)
+// FeaturedSeriesDto replaced by com.spela.client.models.FeaturedSeriesResponse.
 
 // SeriesDetailDto / SeriesConsoleDto / SeriesGameDto / GameSeriesLinkDto /
 // GameFranchiseLinkDto replaced by generated counterparts:

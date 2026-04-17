@@ -58,7 +58,7 @@ class ExploreRepositoryImpl(
     override suspend fun getExploreRows(): Result<List<ExploreRow>> = runCatching {
         apiClient.getExploreRows().map { dto ->
             dto.toDomain().copy(
-                games = dto.games.map { gameDto ->
+                games = dto.games.orEmpty().map { gameDto ->
                     gameDto.toDomain().copy(
                         coverUrl = apiClient.resolveUrl(gameDto.coverUrl),
                         heroUrl = apiClient.resolveUrl(gameDto.heroUrl),
