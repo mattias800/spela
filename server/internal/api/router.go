@@ -260,6 +260,7 @@ func NewRouter(cfg Config) (*gin.Engine, func()) {
 	RegisterProfileRoutes(humaAPI, exploreHandler, cfg.JWTSecret, cfg.DB, userLimiter)
 	RegisterExploreFeaturedRoutes(humaAPI, exploreHandler, cfg.JWTSecret, cfg.DB, userLimiter)
 	RegisterExploreForYouRoutes(humaAPI, exploreHandler, cfg.JWTSecret, cfg.DB, userLimiter)
+	RegisterExploreDeveloperRoutes(humaAPI, exploreHandler, cfg.JWTSecret, cfg.DB, userLimiter)
 
 	// Public auth routes — rate limit login/register/setup to prevent brute force,
 	// but leave refresh and setup-status unrestricted (called frequently during normal use).
@@ -322,10 +323,8 @@ func NewRouter(cfg Config) (*gin.Engine, func()) {
 			// (see RegisterExploreFeaturedRoutes above).
 			// for-you / players-like-you — migrated to huma
 			// (see RegisterExploreForYouRoutes above).
-			explore.GET("/developers", exploreHandler.GetDevelopers)
-			explore.GET("/developers/spotlight", exploreHandler.GetDeveloperSpotlight)
-			explore.GET("/developers/:name", exploreHandler.GetDeveloperDetail)
-			explore.GET("/publishers/:name", exploreHandler.GetPublisherDetail)
+			// developers + developer/publisher detail — migrated to huma
+			// (see RegisterExploreDeveloperRoutes above).
 			explore.GET("/consoles/:id/showcase", exploreHandler.GetConsoleShowcase)
 			explore.GET("/console-highlights", exploreHandler.GetConsoleHighlights)
 			explore.GET("/screenshots", exploreHandler.GetScreenshotGallery)
