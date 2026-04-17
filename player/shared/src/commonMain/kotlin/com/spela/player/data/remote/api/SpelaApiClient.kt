@@ -848,22 +848,25 @@ class SpelaApiClient(
 
     // Social
 
-    suspend fun getOnlineUsers(): OnlineUsersResponse {
+    suspend fun getOnlineUsers(): com.spela.client.models.OnlineUsersResponse {
         return client.get("$baseUrl/api/social/online").body()
     }
 
-    suspend fun getActivityFeed(page: Int = 1, pageSize: Int = 20): ActivityFeedResponse {
+    suspend fun getActivityFeed(
+        page: Int = 1,
+        pageSize: Int = 20,
+    ): com.spela.client.models.PaginatedResponseActivityEventResponse {
         return client.get("$baseUrl/api/social/activity") {
             parameter("page", page)
             parameter("pageSize", pageSize)
         }.body()
     }
 
-    suspend fun getPublicProfile(userId: String): PublicProfileDto {
+    suspend fun getPublicProfile(userId: String): com.spela.client.models.PublicProfileResponse {
         return client.get("$baseUrl/api/users/$userId/profile").body()
     }
 
-    suspend fun getPublicPlayHeatmap(userId: String): List<HeatmapEntryDto> {
+    suspend fun getPublicPlayHeatmap(userId: String): List<com.spela.client.models.HeatmapEntry> {
         return client.get("$baseUrl/api/users/$userId/play-heatmap").body()
     }
 

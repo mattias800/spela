@@ -300,49 +300,16 @@ data class UpdateDevicePreferencesRequest(
 
 // Social
 
-@Serializable
-data class OnlineUserGameDto(
-    val id: String,
-    val title: String,
-    val coverUrl: String? = null,
-    val consoleName: String = "",
-)
-
-@Serializable
-data class OnlineUserDto(
-    val id: String,
-    val username: String,
-    val avatarUrl: String? = null,
-    val currentGame: OnlineUserGameDto? = null,
-)
-
-@Serializable
-data class OnlineUsersResponse(
-    val users: List<OnlineUserDto> = emptyList(),
-)
-
-@Serializable
-data class ActivityEventDto(
-    val id: String,
-    val userId: String,
-    val username: String,
-    val userAvatarUrl: String? = null,
-    val eventType: String,
-    val gameId: String? = null,
-    val gameTitle: String? = null,
-    val gameCoverUrl: String? = null,
-    val gameConsoleName: String? = null,
-    val metadata: String? = null,
-    val createdAt: String = "",
-)
-
-@Serializable
-data class ActivityFeedResponse(
-    val data: List<ActivityEventDto> = emptyList(),
-    val total: Long = 0,
-    val page: Int = 1,
-    val pageSize: Int = 20,
-)
+// Social DTOs replaced by generated counterparts:
+//   OnlineUserGameDto     -> OnlineUserGameResponse
+//   OnlineUserDto         -> OnlineUserResponse
+//   OnlineUsersResponse   -> OnlineUsersResponse (generated; same name)
+//   ActivityEventDto      -> ActivityEventResponse
+//   ActivityFeedResponse  -> PaginatedResponseActivityEventResponse
+// Noteworthy: hand-written ActivityEventDto used `userAvatarUrl` and
+// `gameConsoleName` where the server sends `avatarUrl` and
+// `consoleName`. The hand-written names were dead; new mapper reads
+// the real fields.
 
 /** Wrapper for GET /api/games/:id/core when core is not in DB */
 @Serializable
@@ -361,35 +328,11 @@ data class CoreNameResponse(
 
 // Public Profile
 
-@Serializable
-data class PublicProfileGameDto(
-    val id: String,
-    val title: String,
-    val coverUrl: String? = null,
-    val consoleName: String = "",
-    val playTime: Long = 0,
-)
-
-@Serializable
-data class PublicProfileDto(
-    val id: String,
-    val username: String,
-    val avatarUrl: String? = null,
-    val memberSince: String = "",
-    val isOnline: Boolean = false,
-    val currentGame: OnlineUserGameDto? = null,
-    val totalPlayTime: Long = 0,
-    val gamesPlayed: Long = 0,
-    val favoriteGames: List<PublicProfileGameDto> = emptyList(),
-    val recentGames: List<PublicProfileGameDto> = emptyList(),
-    val topGames: List<PublicProfileGameDto> = emptyList(),
-)
-
-@Serializable
-data class HeatmapEntryDto(
-    val date: String,
-    val playTime: Long = 0,
-)
+// Public profile + heatmap DTOs replaced:
+//   PublicProfileGameDto  -> PublicProfileGame
+//   PublicProfileDto      -> PublicProfileResponse
+//   HeatmapEntryDto       -> HeatmapEntry
+// (all in com.spela.client.models)
 
 // Shared Session
 
