@@ -342,9 +342,8 @@ func NewRouter(cfg Config) (*gin.Engine, func()) {
 		// (see RegisterEnrichmentRoutes above).
 
 		// Game Sessions — most endpoints migrated to huma (see RegisterSessionRoutes above).
-		// File-based endpoints (save/SRAM upload + download, auto-save download, from-shared-save)
+		// File-based endpoints (save/SRAM upload + download, auto-save download)
 		// stay on raw gin because they rely on multipart/c.File() that huma doesn't map cleanly.
-		api.POST("/games/:id/sessions/from-shared-save/:saveId", sessionHandler.CreateFromSharedSave)
 		api.POST("/sessions/:id/saves", uploadLimiter.RateLimit(), sessionHandler.UploadSessionSave)
 		api.POST("/sessions/:id/saves/auto", uploadLimiter.RateLimit(), sessionHandler.UploadAutoSave)
 		api.GET("/sessions/:id/saves/auto", sessionHandler.GetAutoSave)
