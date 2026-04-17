@@ -247,6 +247,7 @@ func NewRouter(cfg Config) (*gin.Engine, func()) {
 	RegisterBiosRoutes(humaAPI, biosHandler, cfg.JWTSecret, cfg.DB, userLimiter)
 	showcaseHandler := &AchievementShowcaseHandler{DB: cfg.DB}
 	RegisterAchievementShowcaseRoutes(humaAPI, showcaseHandler, cfg.JWTSecret, cfg.DB, userLimiter)
+	RegisterGameAchievementsRoute(humaAPI, raHandler, cfg.JWTSecret, cfg.DB, userLimiter)
 	RegisterDeviceRoutes(humaAPI, deviceHandler, cfg.JWTSecret, cfg.DB, userLimiter)
 	RegisterScraperAdminRoutes(humaAPI, adminHandler, cfg.JWTSecret, cfg.DB, userLimiter)
 	RegisterCheatAdminRoutes(humaAPI, adminHandler, cfg.JWTSecret, cfg.DB, userLimiter)
@@ -432,9 +433,10 @@ func NewRouter(cfg Config) (*gin.Engine, func()) {
 
 		// RetroAchievements — link/unlink/status/settings/token + per-game
 		// progress/timeline/leaderboard + user recent/unlocked migrated to
-		// huma (see RegisterRARoutes above). GetGameAchievements stays on
-		// gin because it conditionally returns 200 vs 202.
-		api.GET("/games/:id/achievements", raHandler.GetGameAchievements)
+		// huma (see RegisterRARoutes above). GetGameAchievements is
+		// registered via RegisterGameAchievementsRoute above and uses huma's
+		// dynamic-status pattern to return 200 for resolved data or 202 when
+		// a fetch is queued.
 
 		// Achievement Showcase — migrated to huma
 		// (see RegisterAchievementShowcaseRoutes above).
