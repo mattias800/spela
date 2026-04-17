@@ -411,36 +411,36 @@ fun AchievementProgressEntryDto.toDomain(): AchievementProgress = AchievementPro
     playTimeAtUnlock = playTimeAtUnlock,
 )
 
-fun AchievementTimelineEntryDto.toDomain(): AchievementTimelineEntry = AchievementTimelineEntry(
+fun com.spela.client.models.RATimelineEntryResponse.toDomain(): AchievementTimelineEntry = AchievementTimelineEntry(
     achievementRaId = achievementRaId,
     title = title,
     description = description,
-    points = points,
+    points = points.toInt(),
     badgeUrl = badgeUrl,
-    unlockedAt = unlockedAt,
+    unlockedAt = unlockedAt.toString(),
     isHardcore = isHardcore,
     playTimeAtUnlock = playTimeAtUnlock,
 )
 
-fun AchievementTimelineResponse.toDomain(): AchievementTimelineData = AchievementTimelineData(
+fun com.spela.client.models.AchievementTimelineResponse.toDomain(): AchievementTimelineData = AchievementTimelineData(
     raGameId = raGameId,
     gameTitle = gameTitle,
     totalPlayTime = totalPlayTime,
-    timeline = timeline.map { it.toDomain() },
-    totalAchievements = totalAchievements,
-    unlockedCount = unlockedCount,
-    totalPoints = totalPoints,
-    earnedPoints = earnedPoints,
+    timeline = timeline.orEmpty().map { it.toDomain() },
+    totalAchievements = totalAchievements.toInt(),
+    unlockedCount = unlockedCount.toInt(),
+    totalPoints = totalPoints.toInt(),
+    earnedPoints = earnedPoints.toInt(),
 )
 
-fun AchievementLeaderboardEntryDto.toDomain(): AchievementPlayerRanking = AchievementPlayerRanking(
+fun com.spela.client.models.RALeaderboardEntryResponse.toDomain(): AchievementPlayerRanking = AchievementPlayerRanking(
     userId = userId,
     username = username,
-    avatarUrl = avatarUrl,
-    unlockedCount = unlockedCount,
-    earnedPoints = earnedPoints,
-    firstUnlockedAt = firstUnlockedAt,
-    lastUnlockedAt = lastUnlockedAt,
+    avatarUrl = avatarUrl.takeIf { it.isNotEmpty() },
+    unlockedCount = unlockedCount.toInt(),
+    earnedPoints = earnedPoints.toInt(),
+    firstUnlockedAt = firstUnlockedAt.toString(),
+    lastUnlockedAt = lastUnlockedAt.toString(),
 )
 
 fun UserStatsDto.toDomain(): UserStats = UserStats(
@@ -453,13 +453,13 @@ fun UserStatsDto.toDomain(): UserStats = UserStats(
     lastPlayedAt = lastPlayedAt,
 )
 
-fun RecentAchievementDto.toDomain(): RecentAchievement = RecentAchievement(
+fun com.spela.client.models.RARecentAchievementResponse.toDomain(): RecentAchievement = RecentAchievement(
     achievementRaId = achievementRaId,
     title = title,
     description = description,
-    points = points,
+    points = points.toInt(),
     badgeUrl = badgeUrl,
-    unlockedAt = unlockedAt,
+    unlockedAt = unlockedAt.toString(),
     isHardcore = isHardcore,
     playTimeAtUnlock = playTimeAtUnlock,
     gameId = gameId,
@@ -468,24 +468,24 @@ fun RecentAchievementDto.toDomain(): RecentAchievement = RecentAchievement(
     coverUrl = coverUrl,
 )
 
-fun ShowcaseAchievementDto.toDomain(): ShowcaseAchievement = ShowcaseAchievement(
+fun com.spela.client.models.ShowcaseEntryResponse.toDomain(): ShowcaseAchievement = ShowcaseAchievement(
     achievementRaId = achievementRaId,
     raGameId = raGameId,
-    showcaseOrder = showcaseOrder,
-    title = title ?: "",
-    description = description ?: "",
-    points = points ?: 0,
+    showcaseOrder = showcaseOrder.toInt(),
+    title = title.orEmpty(),
+    description = description.orEmpty(),
+    points = points?.toInt() ?: 0,
     badgeUrl = badgeUrl,
     rarityPercent = rarityPercent ?: 0.0,
-    gameTitle = gameTitle ?: "",
+    gameTitle = gameTitle.orEmpty(),
 )
 
-fun UnlockedAchievementDto.toDomain(): UnlockedAchievement = UnlockedAchievement(
+fun com.spela.client.models.RAUnlockedAchievementResponse.toDomain(): UnlockedAchievement = UnlockedAchievement(
     achievementRaId = achievementRaId,
     raGameId = raGameId,
     title = title,
     description = description,
-    points = points,
+    points = points.toInt(),
     badgeUrl = badgeUrl,
     rarityPercent = rarityPercent,
     gameTitle = gameTitle,

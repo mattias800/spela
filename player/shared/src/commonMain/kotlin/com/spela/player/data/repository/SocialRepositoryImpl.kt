@@ -1,7 +1,7 @@
 package com.spela.player.data.repository
 
 import com.spela.player.data.remote.api.SpelaApiClient
-import com.spela.player.data.remote.dto.ShowcaseUpdateEntry
+import com.spela.client.models.ShowcaseEntryInput
 import com.spela.player.data.remote.dto.toDomain
 import com.spela.player.domain.model.ActivityEvent
 import com.spela.player.domain.model.HeatmapEntry
@@ -63,14 +63,16 @@ class SocialRepositoryImpl(
     }
 
     override suspend fun getUnlockedAchievements(): Result<List<UnlockedAchievement>> = runCatching {
-        apiClient.getUnlockedAchievements().achievements.map { dto ->
+        apiClient.getUnlockedAchievements().achievements.orEmpty().map { dto ->
             val achievement = dto.toDomain()
             achievement.copy(badgeUrl = apiClient.resolveUrl(achievement.badgeUrl))
         }
     }
 
     override suspend fun updateShowcase(achievements: List<ShowcaseAchievement>): Result<List<ShowcaseAchievement>> = runCatching {
-        val entries = achievements.map { ShowcaseUpdateEntry(it.achievementRaId, it.raGameId) }
+        val entries = achievements.map {
+            ShowcaseEntryInput(achievementRaId = it.achievementRaId, raGameId = it.raGameId)
+        }
         apiClient.updateShowcase(entries).map { dto ->
             val achievement = dto.toDomain()
             achievement.copy(badgeUrl = apiClient.resolveUrl(achievement.badgeUrl))
