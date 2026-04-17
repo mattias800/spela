@@ -375,35 +375,35 @@ class SpelaApiClient(
     }
 
     /** Returns list of developer summaries */
-    suspend fun getDevelopers(): DeveloperListResponseDto {
+    suspend fun getDevelopers(): com.spela.client.models.DeveloperListResponse {
         return client.get("$baseUrl/api/explore/developers").body()
     }
 
     /** Returns detail for a specific developer */
-    suspend fun getDeveloperDetail(name: String): DeveloperDetailResponseDto {
+    suspend fun getDeveloperDetail(name: String): com.spela.client.models.DeveloperDetailResponse {
         val encoded = name.encodeURLParameter()
         return client.get("$baseUrl/api/explore/developers/$encoded").body()
     }
 
     /** Returns detail for a specific publisher (same response type as developer) */
-    suspend fun getPublisherDetail(name: String): DeveloperDetailResponseDto {
+    suspend fun getPublisherDetail(name: String): com.spela.client.models.DeveloperDetailResponse {
         val encoded = name.encodeURLParameter()
         return client.get("$baseUrl/api/explore/publishers/$encoded").body()
     }
 
     /** Returns developer spotlight for the Explore page */
-    suspend fun getDeveloperSpotlight(): DeveloperSpotlightResponseDto {
+    suspend fun getDeveloperSpotlight(): com.spela.client.models.DeveloperSpotlightResponse {
         return client.get("$baseUrl/api/explore/developers/spotlight").body()
     }
 
     /** Returns console showcase data for a specific console */
-    suspend fun getConsoleShowcase(consoleId: String): ConsoleShowcaseDto {
+    suspend fun getConsoleShowcase(consoleId: String): com.spela.client.models.ConsoleShowcaseResponse {
         val encoded = consoleId.encodeURLParameter()
         return client.get("$baseUrl/api/explore/consoles/$encoded/showcase").body()
     }
 
     /** Returns console highlights for the Explore page quick-jump section */
-    suspend fun getConsoleHighlights(): ConsoleHighlightsResponseDto {
+    suspend fun getConsoleHighlights(): com.spela.client.models.ConsoleHighlightsResponse {
         return client.get("$baseUrl/api/explore/console-highlights").body()
     }
 

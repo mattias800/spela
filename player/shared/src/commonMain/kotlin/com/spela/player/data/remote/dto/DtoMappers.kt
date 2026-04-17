@@ -847,130 +847,158 @@ fun com.spela.client.models.PlayersLikeYouResponse.toDomain(): PlayersLikeYouRes
 )
 
 // Developer / Publisher mappers
+//
+// Generated notes:
+// - DeveloperDetailResponse + DeveloperSpotlightResponse use Long for
+//   numeric counts — mappers call .toInt().
+// - EntityUserStats replaces the hand-written DeveloperDetailUserStatsDto.
+//   Its mostPlayedGame is @Required non-nullable: the server emits an
+//   empty Game placeholder (empty id) when the user has never played
+//   any of the dev's games; the mapper converts back to null via
+//   `takeIf { it.id.isNotEmpty() }`.
+// - NameCount replaces the hand-written DeveloperDetailPublisherDto.
+// - PlatformCount replaces the hand-written platform breakdown DTO.
+// - TimelineGame uses `igdbCriticsRating` (hand-written used `rating` —
+//   another silent zero). coverUrl is @Required non-nullable (empty
+//   string means no cover); mapper restores null via takeIf.
 
-fun DeveloperSummaryDto.toDomain(): DeveloperSummary = DeveloperSummary(
+fun com.spela.client.models.DeveloperSummary.toDomain(): DeveloperSummary = DeveloperSummary(
     name = name,
-    gameCount = gameCount,
+    gameCount = gameCount.toInt(),
     avgRating = avgRating,
-    consoles = consoles,
+    consoles = consoles.orEmpty(),
 )
 
-fun GenreCountDto.toDeveloperGenreBreakdown(): DeveloperDetailGenreBreakdown = DeveloperDetailGenreBreakdown(
-    name = name,
-    gameCount = gameCount,
-)
+fun com.spela.client.models.GenreCount.toDeveloperGenreBreakdown(): DeveloperDetailGenreBreakdown =
+    DeveloperDetailGenreBreakdown(
+        name = name,
+        gameCount = gameCount.toInt(),
+    )
 
-fun DeveloperDetailPlatformBreakdownDto.toDomain(): DeveloperDetailPlatformBreakdown = DeveloperDetailPlatformBreakdown(
-    consoleName = consoleName,
-    consoleId = consoleId,
-    count = count,
-)
+fun com.spela.client.models.PlatformCount.toDeveloperPlatformBreakdown(): DeveloperDetailPlatformBreakdown =
+    DeveloperDetailPlatformBreakdown(
+        consoleName = consoleName,
+        consoleId = consoleId,
+        count = count.toInt(),
+    )
 
-fun DeveloperDetailUserStatsDto.toDomain(): DeveloperDetailUserStats = DeveloperDetailUserStats(
-    totalPlayTime = totalPlayTime,
-    gamesPlayed = gamesPlayed,
-    favoriteCount = favoriteCount,
-    mostPlayedGame = mostPlayedGame?.toDomain(),
-)
+fun com.spela.client.models.EntityUserStats.toDeveloperUserStats(): DeveloperDetailUserStats =
+    DeveloperDetailUserStats(
+        totalPlayTime = totalPlayTime,
+        gamesPlayed = gamesPlayed.toInt(),
+        favoriteCount = favoriteCount.toInt(),
+        // Server emits an empty Game placeholder when the user has never
+        // played anything — detect via empty id and pass null through.
+        mostPlayedGame = mostPlayedGame.takeIf { it.id.isNotEmpty() }?.toDomain(),
+    )
 
-fun DeveloperDetailPublisherDto.toDomain(): DeveloperDetailPublisher = DeveloperDetailPublisher(
-    name = name,
-    count = count,
-)
+fun com.spela.client.models.NameCount.toDeveloperPublisher(): DeveloperDetailPublisher =
+    DeveloperDetailPublisher(
+        name = name,
+        count = count.toInt(),
+    )
 
-fun CompanyInfoDto.toDomain(): CompanyInfo = CompanyInfo(
+fun com.spela.client.models.CompanyInfo.toDomain(): CompanyInfo = CompanyInfo(
     logoUrl = logoUrl,
     description = description,
-    foundedYear = foundedYear,
+    foundedYear = foundedYear?.toInt(),
     country = country,
     websiteUrl = websiteUrl,
     wikipediaUrl = wikipediaUrl,
 )
 
-fun ActiveYearsDto.toDomain(): ActiveYears = ActiveYears(
-    first = first,
-    last = last,
+fun com.spela.client.models.ActiveYears.toDomain(): ActiveYears = ActiveYears(
+    first = first.toInt(),
+    last = last.toInt(),
 )
 
-fun RatingDistributionDto.toDomain(): RatingDistribution = RatingDistribution(
-    excellent = excellent,
-    good = good,
-    average = average,
-    poor = poor,
-    unrated = unrated,
+fun com.spela.client.models.RatingDistribution.toDomain(): RatingDistribution = RatingDistribution(
+    excellent = excellent.toInt(),
+    good = good.toInt(),
+    average = average.toInt(),
+    poor = poor.toInt(),
+    unrated = unrated.toInt(),
 )
 
-fun TimelineGameDto.toDomain(): TimelineGame = TimelineGame(
+fun com.spela.client.models.TimelineGame.toDomain(): TimelineGame = TimelineGame(
     id = id,
     title = title,
-    coverUrl = coverUrl,
-    rating = rating,
+    coverUrl = coverUrl.takeIf { it.isNotEmpty() },
+    // Server sends `igdbCriticsRating`; hand-written DTO used `rating`
+    // which was always 0.0.
+    rating = igdbCriticsRating,
 )
 
-fun TimelineEntryDto.toDomain(): TimelineEntry = TimelineEntry(
-    year = year,
-    games = games.map { it.toDomain() },
+fun com.spela.client.models.TimelineEntry.toDomain(): TimelineEntry = TimelineEntry(
+    year = year.toInt(),
+    games = games.orEmpty().map { it.toDomain() },
 )
 
-fun RelatedDeveloperDto.toDomain(): RelatedDeveloper = RelatedDeveloper(
+fun com.spela.client.models.RelatedDeveloper.toDomain(): RelatedDeveloper = RelatedDeveloper(
     name = name,
-    gameCount = gameCount,
-    sharedPublishers = sharedPublishers,
+    gameCount = gameCount.toInt(),
+    sharedPublishers = sharedPublishers.orEmpty(),
 )
 
-fun DeveloperDetailResponseDto.toDomain(): DeveloperDetail = DeveloperDetail(
+fun com.spela.client.models.DeveloperDetailResponse.toDomain(): DeveloperDetail = DeveloperDetail(
     name = name,
-    gameCount = gameCount,
+    gameCount = gameCount.toInt(),
     avgRating = avgRating,
-    consoles = consoles,
+    consoles = consoles.orEmpty(),
     heroUrl = heroUrl,
     companyInfo = companyInfo?.toDomain(),
-    topGames = topGames.map { it.toDomain() },
-    genreBreakdown = genreBreakdown.map { it.toDeveloperGenreBreakdown() },
-    platformBreakdown = platformBreakdown.map { it.toDomain() },
-    userStats = userStats?.toDomain(),
-    publishers = publishers.map { it.toDomain() },
-    games = games.map { it.toDomain() },
+    topGames = topGames.orEmpty().map { it.toDomain() },
+    genreBreakdown = genreBreakdown.orEmpty().map { it.toDeveloperGenreBreakdown() },
+    platformBreakdown = platformBreakdown.orEmpty().map { it.toDeveloperPlatformBreakdown() },
+    userStats = userStats?.toDeveloperUserStats(),
+    publishers = publishers.orEmpty().map { it.toDeveloperPublisher() },
+    games = games.orEmpty().map { it.toDomain() },
     activeYears = activeYears?.toDomain(),
-    ratingDistribution = ratingDistribution?.toDomain(),
+    // Generated RatingDistribution is @Required non-null.
+    ratingDistribution = ratingDistribution.toDomain(),
     primaryGenre = primaryGenre,
-    timeline = timeline.map { it.toDomain() },
-    relatedDevelopers = relatedDevelopers.map { it.toDomain() },
+    timeline = timeline.orEmpty().map { it.toDomain() },
+    relatedDevelopers = relatedDevelopers.orEmpty().map { it.toDomain() },
 )
 
-fun DeveloperSpotlightResponseDto.toDomain(): DeveloperSpotlight = DeveloperSpotlight(
+fun com.spela.client.models.DeveloperSpotlightResponse.toDomain(): DeveloperSpotlight = DeveloperSpotlight(
     name = name,
-    gameCount = gameCount,
+    gameCount = gameCount.toInt(),
     avgRating = avgRating,
-    consoles = consoles,
-    topGames = topGames.map { it.toDomain() },
+    consoles = consoles.orEmpty(),
+    topGames = topGames.orEmpty().map { it.toDomain() },
     heroUrl = heroUrl.ifBlank { null },
 )
 
 // Console Showcase mappers
 
-fun GenreCountDto.toDomain(): GenreCount = GenreCount(
+fun com.spela.client.models.GenreCount.toDomain(): GenreCount = GenreCount(
     name = name,
-    gameCount = gameCount,
+    gameCount = gameCount.toInt(),
 )
 
-fun ConsoleShowcaseDto.toDomain(): ConsoleShowcase = ConsoleShowcase(
+fun com.spela.client.models.ConsoleShowcaseResponse.toDomain(): ConsoleShowcase = ConsoleShowcase(
     console = console.toDomain(),
-    essentials = essentials.map { it.toDomain() },
-    hiddenGems = hiddenGems.map { it.toDomain() },
-    genreBreakdown = genreBreakdown.map { it.toDomain() },
-    topDevelopers = topDevelopers.map { it.toDomain() },
-    recentlyPlayed = recentlyPlayed.map { it.toDomain() },
+    essentials = essentials.orEmpty().map { it.toDomain() },
+    hiddenGems = hiddenGems.orEmpty().map { it.toDomain() },
+    genreBreakdown = genreBreakdown.orEmpty().map { it.toDomain() },
+    topDevelopers = topDevelopers.orEmpty().map { it.toDomain() },
+    recentlyPlayed = recentlyPlayed.orEmpty().map { it.toDomain() },
 )
 
-fun ConsoleHighlightDto.toDomain(): ConsoleHighlight = ConsoleHighlight(
+// Generated ConsoleHighlight has @Required non-nullable topGame, but the
+// underlying JSON is `*GameResponse` (nullable) on the server. The mapper
+// passes the whole value to toDomain() — if the spec is ever corrected
+// to nullable, the server field can be treated as optional without
+// further changes. gameCount is Long — convert to Int.
+fun com.spela.client.models.ConsoleHighlight.toDomain(): ConsoleHighlight = ConsoleHighlight(
     id = id,
     name = name,
     colorTheme = colorTheme,
     iconUrl = iconUrl,
     logoUrl = logoUrl,
-    gameCount = gameCount,
-    topGame = topGame?.toDomain(),
+    gameCount = gameCount.toInt(),
+    topGame = topGame.toDomain(),
 )
 
 fun ArtworkItemDto.toDomain(): ArtworkItem = ArtworkItem(

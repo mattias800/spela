@@ -1,8 +1,8 @@
 package com.spela.player.data.repository
 
 import com.spela.player.data.remote.api.SpelaApiClient
-import com.spela.player.data.remote.dto.DeveloperDetailResponseDto
 import com.spela.player.data.remote.dto.GameDto
+import com.spela.player.data.remote.dto.toDeveloperUserStats
 import com.spela.player.data.remote.dto.toDomain
 import com.spela.player.domain.model.AchievementGameItem
 import com.spela.player.domain.model.ActiveNowItem
@@ -202,7 +202,7 @@ class ExploreRepositoryImpl(
     }
 
     override suspend fun getDevelopers(): Result<List<DeveloperSummary>> = runCatching {
-        apiClient.getDevelopers().developers.map { it.toDomain() }
+        apiClient.getDevelopers().developers.orEmpty().map { it.toDomain() }
     }
 
     override suspend fun getDeveloperDetail(name: String): Result<DeveloperDetail> = runCatching {
@@ -217,7 +217,7 @@ class ExploreRepositoryImpl(
         val dto = apiClient.getDeveloperSpotlight()
         dto.toDomain().copy(
             heroUrl = apiClient.resolveUrl(dto.heroUrl),
-            topGames = dto.topGames.map { gameDto ->
+            topGames = dto.topGames.orEmpty().map { gameDto ->
                 gameDto.toDomain().copy(
                     coverUrl = apiClient.resolveUrl(gameDto.coverUrl),
                 )
@@ -228,21 +228,21 @@ class ExploreRepositoryImpl(
     override suspend fun getConsoleShowcase(consoleId: String): Result<ConsoleShowcase> = runCatching {
         val dto = apiClient.getConsoleShowcase(consoleId)
         dto.toDomain().copy(
-            essentials = dto.essentials.map { gameDto ->
+            essentials = dto.essentials.orEmpty().map { gameDto ->
                 gameDto.toDomain().copy(
                     coverUrl = apiClient.resolveUrl(gameDto.coverUrl),
                     heroUrl = apiClient.resolveUrl(gameDto.heroUrl),
                     logoUrl = apiClient.resolveUrl(gameDto.logoUrl),
                 )
             },
-            hiddenGems = dto.hiddenGems.map { gameDto ->
+            hiddenGems = dto.hiddenGems.orEmpty().map { gameDto ->
                 gameDto.toDomain().copy(
                     coverUrl = apiClient.resolveUrl(gameDto.coverUrl),
                     heroUrl = apiClient.resolveUrl(gameDto.heroUrl),
                     logoUrl = apiClient.resolveUrl(gameDto.logoUrl),
                 )
             },
-            recentlyPlayed = dto.recentlyPlayed.map { gameDto ->
+            recentlyPlayed = dto.recentlyPlayed.orEmpty().map { gameDto ->
                 gameDto.toDomain().copy(
                     coverUrl = apiClient.resolveUrl(gameDto.coverUrl),
                     heroUrl = apiClient.resolveUrl(gameDto.heroUrl),
@@ -253,15 +253,13 @@ class ExploreRepositoryImpl(
     }
 
     override suspend fun getConsoleHighlights(): Result<List<ConsoleHighlight>> = runCatching {
-        apiClient.getConsoleHighlights().consoles.map { dto ->
+        apiClient.getConsoleHighlights().consoles.orEmpty().map { dto ->
             dto.toDomain().copy(
                 iconUrl = apiClient.resolveUrl(dto.iconUrl) ?: "",
                 logoUrl = apiClient.resolveUrl(dto.logoUrl) ?: "",
-                topGame = dto.topGame?.let { gameDto ->
-                    gameDto.toDomain().copy(
-                        coverUrl = apiClient.resolveUrl(gameDto.coverUrl),
-                    )
-                },
+                topGame = dto.topGame.toDomain().copy(
+                    coverUrl = apiClient.resolveUrl(dto.topGame.coverUrl),
+                ),
             )
         }
     }
@@ -433,7 +431,7 @@ class ExploreRepositoryImpl(
         apiClient.getCompletionistMap().toDomain()
     }
 
-    private fun resolveEntityDetail(dto: DeveloperDetailResponseDto): DeveloperDetail =
+    private fun resolveEntityDetail(dto: com.spela.client.models.DeveloperDetailResponse): DeveloperDetail =
         dto.toDomain().copy(
             heroUrl = apiClient.resolveUrl(dto.heroUrl),
             companyInfo = dto.companyInfo?.let { info ->
@@ -441,21 +439,23 @@ class ExploreRepositoryImpl(
                     logoUrl = apiClient.resolveUrl(info.logoUrl),
                 )
             },
-            topGames = dto.topGames.map { gameDto ->
+            topGames = dto.topGames.orEmpty().map { gameDto ->
                 gameDto.toDomain().copy(
                     coverUrl = apiClient.resolveUrl(gameDto.coverUrl),
                 )
             },
             userStats = dto.userStats?.let { stats ->
-                stats.toDomain().copy(
-                    mostPlayedGame = stats.mostPlayedGame?.let { gameDto ->
-                        gameDto.toDomain().copy(
-                            coverUrl = apiClient.resolveUrl(gameDto.coverUrl),
-                        )
-                    },
+                stats.toDeveloperUserStats().copy(
+                    mostPlayedGame = stats.mostPlayedGame
+                        .takeIf { it.id.isNotEmpty() }
+                        ?.let { gameDto ->
+                            gameDto.toDomain().copy(
+                                coverUrl = apiClient.resolveUrl(gameDto.coverUrl),
+                            )
+                        },
                 )
             },
-            games = dto.games.map { gameDto ->
+            games = dto.games.orEmpty().map { gameDto ->
                 gameDto.toDomain().copy(
                     coverUrl = apiClient.resolveUrl(gameDto.coverUrl),
                 )

@@ -511,151 +511,34 @@ data class SimilarGameDto(
 // Long — mapper converts to Int).
 
 // Developer / Publisher
+//
+// CompanyInfoDto / DeveloperSummaryDto / DeveloperListResponseDto /
+// DeveloperDetailPlatformBreakdownDto / DeveloperDetailUserStatsDto /
+// DeveloperDetailPublisherDto / ActiveYearsDto / RatingDistributionDto /
+// TimelineGameDto / TimelineEntryDto / RelatedDeveloperDto /
+// DeveloperDetailResponseDto / DeveloperSpotlightResponseDto replaced by
+// generated counterparts in com.spela.client.models:
+//   CompanyInfo / DeveloperSummary / DeveloperListResponse /
+//   PlatformCount / EntityUserStats / NameCount / ActiveYears /
+//   RatingDistribution / TimelineGame / TimelineEntry /
+//   RelatedDeveloper / DeveloperDetailResponse / DeveloperSpotlightResponse
+//
+// Noteworthy: hand-written TimelineGameDto used `rating` but the server
+// emits `igdbCriticsRating` — another silent 0.0 field. EntityUserStats
+// has mostPlayedGame as @Required non-nullable (server ships an empty
+// Game placeholder when the user has no play history on the dev); the
+// mapper converts the empty id back to null.
 
-@Serializable
-data class CompanyInfoDto(
-    val logoUrl: String? = null,
-    val description: String? = null,
-    val foundedYear: Int? = null,
-    val country: String? = null,
-    val websiteUrl: String? = null,
-    val wikipediaUrl: String? = null,
-)
-
-@Serializable
-data class DeveloperSummaryDto(
-    val name: String,
-    val gameCount: Int,
-    val avgRating: Double,
-    val consoles: List<String>,
-)
-
-@Serializable
-data class DeveloperListResponseDto(
-    val developers: List<DeveloperSummaryDto>,
-)
-
-@Serializable
-data class DeveloperDetailPlatformBreakdownDto(
-    val consoleName: String = "",
-    val consoleId: String = "",
-    val count: Int = 0,
-)
-
-@Serializable
-data class DeveloperDetailUserStatsDto(
-    val totalPlayTime: Long = 0,
-    val gamesPlayed: Int = 0,
-    val favoriteCount: Int = 0,
-    val mostPlayedGame: GameDto? = null,
-)
-
-@Serializable
-data class DeveloperDetailPublisherDto(
-    val name: String = "",
-    val count: Int = 0,
-)
-
-@Serializable
-data class ActiveYearsDto(
-    val first: Int = 0,
-    val last: Int = 0,
-)
-
-@Serializable
-data class RatingDistributionDto(
-    val excellent: Int = 0,
-    val good: Int = 0,
-    val average: Int = 0,
-    val poor: Int = 0,
-    val unrated: Int = 0,
-)
-
-@Serializable
-data class TimelineGameDto(
-    val id: String = "",
-    val title: String = "",
-    val coverUrl: String? = null,
-    val rating: Double = 0.0,
-)
-
-@Serializable
-data class TimelineEntryDto(
-    val year: Int = 0,
-    val games: List<TimelineGameDto> = emptyList(),
-)
-
-@Serializable
-data class RelatedDeveloperDto(
-    val name: String = "",
-    val gameCount: Int = 0,
-    val sharedPublishers: List<String> = emptyList(),
-)
-
-@Serializable
-data class DeveloperDetailResponseDto(
-    val name: String,
-    val gameCount: Int,
-    val avgRating: Double,
-    val consoles: List<String>,
-    val heroUrl: String? = null,
-    val companyInfo: CompanyInfoDto? = null,
-    val topGames: List<GameDto> = emptyList(),
-    val genreBreakdown: List<GenreCountDto> = emptyList(),
-    val platformBreakdown: List<DeveloperDetailPlatformBreakdownDto> = emptyList(),
-    val userStats: DeveloperDetailUserStatsDto? = null,
-    val publishers: List<DeveloperDetailPublisherDto> = emptyList(),
-    val games: List<GameDto>,
-    val activeYears: ActiveYearsDto? = null,
-    val ratingDistribution: RatingDistributionDto? = null,
-    val primaryGenre: String? = null,
-    val timeline: List<TimelineEntryDto> = emptyList(),
-    val relatedDevelopers: List<RelatedDeveloperDto> = emptyList(),
-)
-
-@Serializable
-data class DeveloperSpotlightResponseDto(
-    val name: String,
-    val gameCount: Int,
-    val avgRating: Double,
-    val consoles: List<String>,
-    val topGames: List<GameDto>,
-    val heroUrl: String = "",
-)
-
-// Console Showcase
-
-@Serializable
-data class GenreCountDto(
-    val name: String,
-    val gameCount: Int,
-)
-
-@Serializable
-data class ConsoleShowcaseDto(
-    val console: ConsoleDto,
-    val essentials: List<GameDto>,
-    val hiddenGems: List<GameDto>,
-    val genreBreakdown: List<GenreCountDto>,
-    val topDevelopers: List<DeveloperSummaryDto>,
-    val recentlyPlayed: List<GameDto>,
-)
-
-@Serializable
-data class ConsoleHighlightDto(
-    val id: String,
-    val name: String,
-    val colorTheme: String,
-    val iconUrl: String,
-    val logoUrl: String,
-    val gameCount: Int,
-    val topGame: GameDto? = null,
-)
-
-@Serializable
-data class ConsoleHighlightsResponseDto(
-    val consoles: List<ConsoleHighlightDto>,
-)
+// Console Showcase — GenreCountDto / ConsoleShowcaseDto /
+// ConsoleHighlightDto / ConsoleHighlightsResponseDto replaced by
+// com.spela.client.models.GenreCount / ConsoleShowcaseResponse /
+// ConsoleHighlight / ConsoleHighlightsResponse.
+//
+// Noteworthy: generated ConsoleShowcaseResponse adds a `recentlyAdded`
+// field that the hand-written DTO ignored — the domain model does not
+// consume it yet. ConsoleHighlight.topGame is @Required on the generated
+// type but the underlying server field is *GameResponse (nullable); if
+// the spec is corrected, we'll handle null at runtime in the mapper.
 
 // Artwork Gallery
 
