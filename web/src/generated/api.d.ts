@@ -996,6 +996,106 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/auth/login": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Sign in
+         * @description Authenticates a user and returns access + refresh tokens. Enforces lockout after repeated failures and performs a dummy bcrypt comparison on unknown usernames to prevent timing-based username enumeration.
+         */
+        post: operations["authLogin"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/auth/refresh": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Rotate refresh token
+         * @description Exchanges a refresh token for new access + refresh tokens. Uses token families for replay detection: presenting a consumed token revokes the entire family.
+         */
+        post: operations["authRefresh"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/auth/register": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Register a new account
+         * @description Creates a new user account. The very first user becomes the server owner and is signed in immediately. Subsequent registrations are pending admin approval (HTTP 202) unless registration has been disabled.
+         */
+        post: operations["authRegister"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/auth/setup": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Perform first-time server setup
+         * @description Creates the initial owner account. Fails with 403 after a user already exists.
+         */
+        post: operations["authSetup"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/auth/setup-status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get server setup status
+         * @description Returns whether the server needs first-time setup, whether new-account registration is enabled, and how many games are indexed.
+         */
+        get: operations["authSetupStatus"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/bios": {
         parameters: {
             query?: never;
@@ -4692,6 +4792,74 @@ export interface components {
             /** Format: int64 */
             width: number;
         };
+        AuthLoginRequest: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/api/schemas/AuthLoginRequest.json
+             */
+            readonly $schema?: string;
+            /** @description Plain-text password (max 72 bytes — bcrypt limit). */
+            password: string;
+            /** @description Username to sign in as. */
+            username: string;
+        };
+        AuthLoginResponse: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/api/schemas/AuthLoginResponse.json
+             */
+            readonly $schema?: string;
+            accessToken: string;
+            refreshToken: string;
+            user: components["schemas"]["UserResponse"];
+        };
+        AuthRefreshRequest: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/api/schemas/AuthRefreshRequest.json
+             */
+            readonly $schema?: string;
+            /** @description Raw refresh token previously issued by login/register/refresh. */
+            refreshToken: string;
+        };
+        AuthRegisterRequest: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/api/schemas/AuthRegisterRequest.json
+             */
+            readonly $schema?: string;
+            /**
+             * Format: email
+             * @description New account email.
+             */
+            email: string;
+            /** @description New account password (8-72 characters). */
+            password: string;
+            /** @description New account username (3-64 alphanumeric characters). */
+            username: string;
+        };
+        AuthRegisterResponse: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/api/schemas/AuthRegisterResponse.json
+             */
+            readonly $schema?: string;
+            /** @description Bearer access token. */
+            accessToken?: string;
+            /** @description Human-readable status message (only set when pending). */
+            message?: string;
+            /** @description True when the new account is awaiting admin approval. When true, no tokens are returned. */
+            pending?: boolean;
+            /** @description Refresh token (rotate via /api/auth/refresh). */
+            refreshToken?: string;
+            /** @description Registered user profile. */
+            user?: components["schemas"]["UserResponse"];
+        };
         BackfillImagesResponse: {
             /**
              * Format: uri
@@ -7008,6 +7176,23 @@ export interface components {
              */
             readonly $schema?: string;
             consoleId?: string;
+        };
+        SetupStatusResponse: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/api/schemas/SetupStatusResponse.json
+             */
+            readonly $schema?: string;
+            /**
+             * Format: int64
+             * @description Total number of games indexed on the server.
+             */
+            gameCount: number;
+            /** @description True when no user accounts exist and the server requires first-time setup. */
+            needsSetup: boolean;
+            /** @description True when new-account registration is currently allowed. */
+            registrationEnabled: boolean;
         };
         SharedSaveResponse: {
             avatarUrl?: string;
@@ -9560,6 +9745,167 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["MessageResponse"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HumaError"];
+                };
+            };
+        };
+    };
+    authLogin: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AuthLoginRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuthLoginResponse"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HumaError"];
+                };
+            };
+        };
+    };
+    authRefresh: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AuthRefreshRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuthLoginResponse"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HumaError"];
+                };
+            };
+        };
+    };
+    authRegister: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AuthRegisterRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuthRegisterResponse"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HumaError"];
+                };
+            };
+        };
+    };
+    authSetup: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AuthRegisterRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuthLoginResponse"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HumaError"];
+                };
+            };
+        };
+    };
+    authSetupStatus: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SetupStatusResponse"];
                 };
             };
             /** @description Error */

@@ -678,6 +678,161 @@
         ],
         "type": "object"
       },
+      "AuthLoginRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "https://example.com/api/schemas/AuthLoginRequest.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "password": {
+            "description": "Plain-text password (max 72 bytes — bcrypt limit).",
+            "maxLength": 72,
+            "minLength": 1,
+            "type": "string"
+          },
+          "username": {
+            "description": "Username to sign in as.",
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "username",
+          "password"
+        ],
+        "type": "object"
+      },
+      "AuthLoginResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "https://example.com/api/schemas/AuthLoginResponse.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "accessToken": {
+            "type": "string"
+          },
+          "refreshToken": {
+            "type": "string"
+          },
+          "user": {
+            "$ref": "#/components/schemas/UserResponse"
+          }
+        },
+        "required": [
+          "accessToken",
+          "refreshToken",
+          "user"
+        ],
+        "type": "object"
+      },
+      "AuthRefreshRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "https://example.com/api/schemas/AuthRefreshRequest.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "refreshToken": {
+            "description": "Raw refresh token previously issued by login/register/refresh.",
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "refreshToken"
+        ],
+        "type": "object"
+      },
+      "AuthRegisterRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "https://example.com/api/schemas/AuthRegisterRequest.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "email": {
+            "description": "New account email.",
+            "format": "email",
+            "type": "string"
+          },
+          "password": {
+            "description": "New account password (8-72 characters).",
+            "maxLength": 72,
+            "minLength": 8,
+            "type": "string"
+          },
+          "username": {
+            "description": "New account username (3-64 alphanumeric characters).",
+            "maxLength": 64,
+            "minLength": 3,
+            "pattern": "^[a-zA-Z0-9]+$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "username",
+          "email",
+          "password"
+        ],
+        "type": "object"
+      },
+      "AuthRegisterResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "https://example.com/api/schemas/AuthRegisterResponse.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "accessToken": {
+            "description": "Bearer access token.",
+            "type": "string"
+          },
+          "message": {
+            "description": "Human-readable status message (only set when pending).",
+            "type": "string"
+          },
+          "pending": {
+            "description": "True when the new account is awaiting admin approval. When true, no tokens are returned.",
+            "type": "boolean"
+          },
+          "refreshToken": {
+            "description": "Refresh token (rotate via /api/auth/refresh).",
+            "type": "string"
+          },
+          "user": {
+            "$ref": "#/components/schemas/UserResponse",
+            "description": "Registered user profile."
+          }
+        },
+        "type": "object"
+      },
       "BackfillImagesResponse": {
         "additionalProperties": false,
         "properties": {
@@ -7693,6 +7848,39 @@
         },
         "type": "object"
       },
+      "SetupStatusResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "https://example.com/api/schemas/SetupStatusResponse.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "gameCount": {
+            "description": "Total number of games indexed on the server.",
+            "format": "int64",
+            "type": "integer"
+          },
+          "needsSetup": {
+            "description": "True when no user accounts exist and the server requires first-time setup.",
+            "type": "boolean"
+          },
+          "registrationEnabled": {
+            "description": "True when new-account registration is currently allowed.",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "needsSetup",
+          "registrationEnabled",
+          "gameCount"
+        ],
+        "type": "object"
+      },
       "SharedSaveResponse": {
         "additionalProperties": false,
         "properties": {
@@ -12568,6 +12756,206 @@
         "summary": "Get a user's login rate-limit status",
         "tags": [
           "admin"
+        ]
+      }
+    },
+    "/api/auth/login": {
+      "post": {
+        "description": "Authenticates a user and returns access + refresh tokens. Enforces lockout after repeated failures and performs a dummy bcrypt comparison on unknown usernames to prevent timing-based username enumeration.",
+        "operationId": "authLogin",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AuthLoginRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthLoginResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HumaError"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Sign in",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/api/auth/refresh": {
+      "post": {
+        "description": "Exchanges a refresh token for new access + refresh tokens. Uses token families for replay detection: presenting a consumed token revokes the entire family.",
+        "operationId": "authRefresh",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AuthRefreshRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthLoginResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HumaError"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Rotate refresh token",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/api/auth/register": {
+      "post": {
+        "description": "Creates a new user account. The very first user becomes the server owner and is signed in immediately. Subsequent registrations are pending admin approval (HTTP 202) unless registration has been disabled.",
+        "operationId": "authRegister",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AuthRegisterRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthRegisterResponse"
+                }
+              }
+            },
+            "description": "Created"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HumaError"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Register a new account",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/api/auth/setup": {
+      "post": {
+        "description": "Creates the initial owner account. Fails with 403 after a user already exists.",
+        "operationId": "authSetup",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AuthRegisterRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthLoginResponse"
+                }
+              }
+            },
+            "description": "Created"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HumaError"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Perform first-time server setup",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/api/auth/setup-status": {
+      "get": {
+        "description": "Returns whether the server needs first-time setup, whether new-account registration is enabled, and how many games are indexed.",
+        "operationId": "authSetupStatus",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SetupStatusResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HumaError"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Get server setup status",
+        "tags": [
+          "auth"
         ]
       }
     },
