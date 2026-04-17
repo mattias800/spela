@@ -19,16 +19,6 @@ type CoreHandler struct {
 	CoreDir string
 }
 
-// ListCores returns all available libretro cores.
-func (h *CoreHandler) ListCores(c *gin.Context) {
-	var cores []db.Core
-	if err := h.DB.Find(&cores).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to fetch cores"})
-		return
-	}
-	c.JSON(http.StatusOK, cores)
-}
-
 // platformExtension returns the shared library extension for the given platform.
 func platformExtension(platform string) string {
 	switch platform {
