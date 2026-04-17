@@ -110,7 +110,7 @@ class ExploreRepositoryImpl(
         dto.toDomain().copy(
             heroUrl = apiClient.resolveUrl(dto.heroUrl),
             logoUrl = apiClient.resolveUrl(dto.logoUrl),
-            games = dto.games.map { gameDto ->
+            games = dto.games.orEmpty().map { gameDto ->
                 gameDto.toDomain().copy(
                     coverUrl = apiClient.resolveUrl(gameDto.coverUrl),
                 )
@@ -123,7 +123,7 @@ class ExploreRepositoryImpl(
         dto.toDomain().copy(
             heroUrl = apiClient.resolveUrl(dto.heroUrl),
             logoUrl = apiClient.resolveUrl(dto.logoUrl),
-            games = dto.games.map { gameDto ->
+            games = dto.games.orEmpty().map { gameDto ->
                 gameDto.toDomain().copy(
                     coverUrl = apiClient.resolveUrl(gameDto.coverUrl),
                 )

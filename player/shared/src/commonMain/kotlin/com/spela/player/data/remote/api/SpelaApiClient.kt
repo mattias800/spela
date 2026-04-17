@@ -167,7 +167,7 @@ class SpelaApiClient(
         hidePreRelease: Boolean = true,
         grouped: Boolean = true,
         region: String? = null,
-    ): GameListResponse {
+    ): com.spela.client.models.PaginatedResponseGameResponse {
         return client.get("$baseUrl/api/games") {
             parameter("consoleId", consoleId)
             page?.let { parameter("page", it) }
@@ -188,7 +188,7 @@ class SpelaApiClient(
         hidePreRelease: Boolean = true,
         grouped: Boolean = true,
         region: String? = null,
-    ): GameListResponse {
+    ): com.spela.client.models.PaginatedResponseGameResponse {
         return client.get("$baseUrl/api/games") {
             consoleId?.let { parameter("consoleId", it) }
             sortBy?.let { parameter("sortBy", it) }
@@ -212,7 +212,7 @@ class SpelaApiClient(
         region: String? = null,
         page: Int? = null,
         pageSize: Int? = null,
-    ): GameListResponse {
+    ): com.spela.client.models.PaginatedResponseGameResponse {
         return client.get("$baseUrl/api/games") {
             parameter("search", query)
             consoleId?.let { parameter("consoleId", it) }
@@ -227,7 +227,7 @@ class SpelaApiClient(
     }
 
     /** Returns a single enriched GameResponse */
-    suspend fun getGameDetail(gameId: String): GameDto {
+    suspend fun getGameDetail(gameId: String): com.spela.client.models.GameResponse {
         return client.get("$baseUrl/api/games/$gameId").body()
     }
 
@@ -246,7 +246,7 @@ class SpelaApiClient(
         client.post("$baseUrl/api/admin/games/$gameId/achievements/refresh")
     }
 
-    suspend fun getRecentlyAddedGames(pageSize: Int = 12): GameListResponse {
+    suspend fun getRecentlyAddedGames(pageSize: Int = 12): com.spela.client.models.PaginatedResponseGameResponse {
         return client.get("$baseUrl/api/games") {
             parameter("sortBy", "created_at")
             parameter("sortOrder", "desc")
@@ -274,7 +274,7 @@ class SpelaApiClient(
         return client.get("$baseUrl/api/games/$gameId/similar").body()
     }
 
-    suspend fun getDeveloperGames(gameId: String): List<DeveloperGameDto> {
+    suspend fun getDeveloperGames(gameId: String): List<com.spela.client.models.DeveloperGameResponse> {
         return client.get("$baseUrl/api/games/$gameId/developer-games").body()
     }
 
@@ -295,7 +295,7 @@ class SpelaApiClient(
     }
 
     /** Returns paginated games for a theme */
-    suspend fun getThemeGames(themeId: String, page: Int = 1, pageSize: Int = 20): GameListResponse {
+    suspend fun getThemeGames(themeId: String, page: Int = 1, pageSize: Int = 20): com.spela.client.models.PaginatedResponseGameResponse {
         return client.get("$baseUrl/api/themes/$themeId/games") {
             parameter("page", page)
             parameter("pageSize", pageSize)
@@ -310,7 +310,7 @@ class SpelaApiClient(
     }
 
     /** Returns paginated games for a keyword */
-    suspend fun getKeywordGames(keywordId: String, page: Int = 1, pageSize: Int = 20): GameListResponse {
+    suspend fun getKeywordGames(keywordId: String, page: Int = 1, pageSize: Int = 20): com.spela.client.models.PaginatedResponseGameResponse {
         return client.get("$baseUrl/api/keywords/$keywordId/games") {
             parameter("page", page)
             parameter("pageSize", pageSize)
@@ -323,22 +323,22 @@ class SpelaApiClient(
     }
 
     /** Returns detail for a specific series */
-    suspend fun getSeriesDetail(id: String): SeriesDetailDto {
+    suspend fun getSeriesDetail(id: String): com.spela.client.models.SeriesDetailResponse {
         return client.get("$baseUrl/api/series/$id").body()
     }
 
     /** Returns detail for a specific franchise */
-    suspend fun getFranchiseDetail(id: String): SeriesDetailDto {
+    suspend fun getFranchiseDetail(id: String): com.spela.client.models.FranchiseDetailResponse {
         return client.get("$baseUrl/api/franchises/$id").body()
     }
 
     /** Returns series links for a game */
-    suspend fun getGameSeries(gameId: String): List<GameSeriesLinkDto> {
+    suspend fun getGameSeries(gameId: String): List<com.spela.client.models.GameSeriesResponse> {
         return client.get("$baseUrl/api/games/$gameId/series").body()
     }
 
     /** Returns franchise links for a game */
-    suspend fun getGameFranchises(gameId: String): List<GameFranchiseLinkDto> {
+    suspend fun getGameFranchises(gameId: String): List<com.spela.client.models.GameFranchiseResponse> {
         return client.get("$baseUrl/api/games/$gameId/franchises").body()
     }
 
@@ -348,12 +348,12 @@ class SpelaApiClient(
     }
 
     /** Returns games matching a mood */
-    suspend fun getMoodGames(mood: String): List<GameDto> {
+    suspend fun getMoodGames(mood: String): List<com.spela.client.models.GameResponse> {
         return client.get("$baseUrl/api/explore/mood/$mood").body()
     }
 
     /** Returns a single random surprise game */
-    suspend fun getSurpriseGame(): GameDto {
+    suspend fun getSurpriseGame(): com.spela.client.models.GameResponse {
         return client.get("$baseUrl/api/explore/surprise").body()
     }
 
@@ -363,7 +363,7 @@ class SpelaApiClient(
     }
 
     /** Returns the user's taste profile (genre/theme/console breakdown) */
-    suspend fun getTasteProfile(): TasteProfileDto {
+    suspend fun getTasteProfile(): com.spela.client.models.TasteProfileResponse {
         return client.get("$baseUrl/api/user/taste-profile").body()
     }
 
@@ -503,7 +503,7 @@ class SpelaApiClient(
         filters: Map<String, String>,
         page: Int? = null,
         pageSize: Int? = null,
-    ): GameListResponse {
+    ): com.spela.client.models.PaginatedResponseGameResponse {
         return client.get("$baseUrl/api/games") {
             filters.forEach { (key, value) ->
                 parameter(key, value)
@@ -567,12 +567,12 @@ class SpelaApiClient(
     }
 
     /** Returns flat GameResponse[] with lastPlayedAt/totalPlayTime enriched */
-    suspend fun getRecentGames(): List<GameDto> {
+    suspend fun getRecentGames(): List<com.spela.client.models.GameResponse> {
         return client.get("$baseUrl/api/user/recent").body()
     }
 
     /** Returns flat GameResponse[] with isFavorite=true */
-    suspend fun getFavoriteGames(): List<GameDto> {
+    suspend fun getFavoriteGames(): List<com.spela.client.models.GameResponse> {
         return client.get("$baseUrl/api/user/favorites").body()
     }
 
@@ -585,7 +585,7 @@ class SpelaApiClient(
     }
 
     /** Returns flat GameResponse[] for user's Play Later queue */
-    suspend fun getPlayLaterGames(): List<GameDto> {
+    suspend fun getPlayLaterGames(): List<com.spela.client.models.GameResponse> {
         return client.get("$baseUrl/api/user/play-later").body()
     }
 
