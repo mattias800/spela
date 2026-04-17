@@ -555,7 +555,7 @@ class SpelaApiClient(
     }
 
     /** Returns the user's completionist map (per-console progress) */
-    suspend fun getCompletionistMap(): CompletionistMapResponseDto {
+    suspend fun getCompletionistMap(): com.spela.client.models.CompletionistMapResponse {
         return client.get("$baseUrl/api/user/completionist-map").body()
     }
 

@@ -1055,19 +1055,19 @@ fun ExplorerBadgeDto.toDomain() = ExplorerBadge(
     target = target,
 )
 
-fun CompletionistConsoleDto.toDomain() = CompletionistConsole(
+fun com.spela.client.models.CompletionistConsole.toDomain() = CompletionistConsole(
     id = id,
     name = name,
-    totalGames = totalGames,
-    playedGames = playedGames,
-    percentage = percentage,
+    totalGames = totalGames.toInt(),
+    playedGames = playedGames.toInt(),
+    percentage = percentage.toInt(),
 )
 
-fun CompletionistMapResponseDto.toDomain() = CompletionistMap(
-    consoles = consoles.map { it.toDomain() },
-    totalGames = totalGames,
-    totalPlayed = totalPlayed,
-    overallPct = overallPct,
+fun com.spela.client.models.CompletionistMapResponse.toDomain() = CompletionistMap(
+    consoles = consoles.orEmpty().map { it.toDomain() },
+    totalGames = totalGames.toInt(),
+    totalPlayed = totalPlayed.toInt(),
+    overallPct = overallPct.toInt(),
 )
 
 // --- Global Search mappers ---

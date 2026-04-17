@@ -1715,22 +1715,10 @@ data class ExplorerBadgesResponseDto(
     val badges: List<ExplorerBadgeDto>,
 )
 
-@Serializable
-data class CompletionistConsoleDto(
-    val id: String,
-    val name: String,
-    val totalGames: Int,
-    val playedGames: Int,
-    val percentage: Int,
-)
-
-@Serializable
-data class CompletionistMapResponseDto(
-    val consoles: List<CompletionistConsoleDto>,
-    val totalGames: Int,
-    val totalPlayed: Int,
-    val overallPct: Int,
-)
+// CompletionistConsoleDto and CompletionistMapResponseDto moved to
+// com.spela.client.models.CompletionistConsole and
+// com.spela.client.models.CompletionistMapResponse — see
+// player/shared-api/ (generated from the OpenAPI spec).
 
 // --- Global Search ---
 
