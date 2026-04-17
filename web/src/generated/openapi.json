@@ -1,6 +1,38 @@
 {
   "components": {
     "schemas": {
+      "AchievementGameResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "avgCompletion": {
+            "format": "double",
+            "type": "number"
+          },
+          "game": {
+            "$ref": "#/components/schemas/GameResponse"
+          },
+          "playersAttempted": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "playersCompleted": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "totalAchievements": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "game",
+          "totalAchievements",
+          "avgCompletion",
+          "playersAttempted",
+          "playersCompleted"
+        ],
+        "type": "object"
+      },
       "AchievementLeaderboardResponse": {
         "additionalProperties": false,
         "properties": {
@@ -101,6 +133,82 @@
         ],
         "type": "object"
       },
+      "ActiveChallengesResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "https://example.com/api/schemas/ActiveChallengesResponse.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "challenges": {
+            "items": {
+              "$ref": "#/components/schemas/ExploreChallengeResponse"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "challenges"
+        ],
+        "type": "object"
+      },
+      "ActiveNowItem": {
+        "additionalProperties": false,
+        "properties": {
+          "activeChallenges": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "activeSessions": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "game": {
+            "$ref": "#/components/schemas/GameResponse"
+          }
+        },
+        "required": [
+          "game",
+          "activeSessions",
+          "activeChallenges"
+        ],
+        "type": "object"
+      },
+      "ActiveNowResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "https://example.com/api/schemas/ActiveNowResponse.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "games": {
+            "items": {
+              "$ref": "#/components/schemas/ActiveNowItem"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "games"
+        ],
+        "type": "object"
+      },
       "ActivePlayerEntry": {
         "additionalProperties": false,
         "properties": {
@@ -133,6 +241,24 @@
           "totalPlayTime",
           "gamesPlayed",
           "lastPlayed"
+        ],
+        "type": "object"
+      },
+      "ActiveYears": {
+        "additionalProperties": false,
+        "properties": {
+          "first": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "last": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "first",
+          "last"
         ],
         "type": "object"
       },
@@ -346,6 +472,109 @@
         ],
         "type": "object"
       },
+      "AlmostDoneGame": {
+        "additionalProperties": false,
+        "properties": {
+          "completionPercent": {
+            "format": "double",
+            "type": "number"
+          },
+          "game": {
+            "$ref": "#/components/schemas/GameResponse"
+          },
+          "totalCount": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "unlockedCount": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "game",
+          "unlockedCount",
+          "totalCount",
+          "completionPercent"
+        ],
+        "type": "object"
+      },
+      "AlmostDoneResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "https://example.com/api/schemas/AlmostDoneResponse.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "games": {
+            "items": {
+              "$ref": "#/components/schemas/AlmostDoneGame"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "games"
+        ],
+        "type": "object"
+      },
+      "AnniversariesResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "https://example.com/api/schemas/AnniversariesResponse.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "anniversaries": {
+            "items": {
+              "$ref": "#/components/schemas/AnniversaryItem"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "anniversaries"
+        ],
+        "type": "object"
+      },
+      "AnniversaryItem": {
+        "additionalProperties": false,
+        "properties": {
+          "game": {
+            "$ref": "#/components/schemas/GameResponse"
+          },
+          "playedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "yearsAgo": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "game",
+          "yearsAgo",
+          "playedAt"
+        ],
+        "type": "object"
+      },
       "ApplyIGDBMatchRequest": {
         "additionalProperties": false,
         "properties": {
@@ -361,6 +590,245 @@
           "igdbId": {
             "format": "int64",
             "type": "integer"
+          }
+        },
+        "type": "object"
+      },
+      "ArtworkGalleryResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "https://example.com/api/schemas/ArtworkGalleryResponse.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "artworks": {
+            "items": {
+              "$ref": "#/components/schemas/ArtworkItem"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "page": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "totalCount": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "totalPages": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "artworks",
+          "page",
+          "totalPages",
+          "totalCount"
+        ],
+        "type": "object"
+      },
+      "ArtworkItem": {
+        "additionalProperties": false,
+        "properties": {
+          "consoleAbbreviation": {
+            "type": "string"
+          },
+          "consoleColor": {
+            "type": "string"
+          },
+          "consoleName": {
+            "type": "string"
+          },
+          "gameId": {
+            "type": "string"
+          },
+          "gameTitle": {
+            "type": "string"
+          },
+          "height": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "url": {
+            "type": "string"
+          },
+          "width": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "url",
+          "width",
+          "height",
+          "gameId",
+          "gameTitle",
+          "consoleName",
+          "consoleAbbreviation",
+          "consoleColor"
+        ],
+        "type": "object"
+      },
+      "AuthLoginRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "https://example.com/api/schemas/AuthLoginRequest.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "password": {
+            "description": "Plain-text password (max 72 bytes — bcrypt limit).",
+            "maxLength": 72,
+            "minLength": 1,
+            "type": "string"
+          },
+          "username": {
+            "description": "Username to sign in as.",
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "username",
+          "password"
+        ],
+        "type": "object"
+      },
+      "AuthLoginResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "https://example.com/api/schemas/AuthLoginResponse.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "accessToken": {
+            "type": "string"
+          },
+          "refreshToken": {
+            "type": "string"
+          },
+          "user": {
+            "$ref": "#/components/schemas/UserResponse"
+          }
+        },
+        "required": [
+          "accessToken",
+          "refreshToken",
+          "user"
+        ],
+        "type": "object"
+      },
+      "AuthRefreshRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "https://example.com/api/schemas/AuthRefreshRequest.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "refreshToken": {
+            "description": "Raw refresh token previously issued by login/register/refresh.",
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "refreshToken"
+        ],
+        "type": "object"
+      },
+      "AuthRegisterRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "https://example.com/api/schemas/AuthRegisterRequest.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "email": {
+            "description": "New account email.",
+            "format": "email",
+            "type": "string"
+          },
+          "password": {
+            "description": "New account password (8-72 characters).",
+            "maxLength": 72,
+            "minLength": 8,
+            "type": "string"
+          },
+          "username": {
+            "description": "New account username (3-64 alphanumeric characters).",
+            "maxLength": 64,
+            "minLength": 3,
+            "pattern": "^[a-zA-Z0-9]+$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "username",
+          "email",
+          "password"
+        ],
+        "type": "object"
+      },
+      "AuthRegisterResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "https://example.com/api/schemas/AuthRegisterResponse.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "accessToken": {
+            "description": "Bearer access token.",
+            "type": "string"
+          },
+          "message": {
+            "description": "Human-readable status message (only set when pending).",
+            "type": "string"
+          },
+          "pending": {
+            "description": "True when the new account is awaiting admin approval. When true, no tokens are returned.",
+            "type": "boolean"
+          },
+          "refreshToken": {
+            "description": "Refresh token (rotate via /api/auth/refresh).",
+            "type": "string"
+          },
+          "user": {
+            "$ref": "#/components/schemas/UserResponse",
+            "description": "Registered user profile."
           }
         },
         "type": "object"
@@ -409,6 +877,38 @@
           "galleryDownloaded",
           "companyDownloaded",
           "errors"
+        ],
+        "type": "object"
+      },
+      "BestOfYearResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "https://example.com/api/schemas/BestOfYearResponse.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "games": {
+            "items": {
+              "$ref": "#/components/schemas/GameResponse"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "year": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "year",
+          "games"
         ],
         "type": "object"
       },
@@ -968,6 +1468,55 @@
         ],
         "type": "object"
       },
+      "CommunityTopGame": {
+        "additionalProperties": false,
+        "properties": {
+          "avgRating": {
+            "format": "double",
+            "type": "number"
+          },
+          "game": {
+            "$ref": "#/components/schemas/GameResponse"
+          },
+          "ratingCount": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "game",
+          "avgRating",
+          "ratingCount"
+        ],
+        "type": "object"
+      },
+      "CommunityTopResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "https://example.com/api/schemas/CommunityTopResponse.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "games": {
+            "items": {
+              "$ref": "#/components/schemas/CommunityTopGame"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "games"
+        ],
+        "type": "object"
+      },
       "CompactSavesResponse": {
         "additionalProperties": false,
         "properties": {
@@ -993,6 +1542,31 @@
           "deletedCount",
           "freedBytes"
         ],
+        "type": "object"
+      },
+      "CompanyInfo": {
+        "additionalProperties": false,
+        "properties": {
+          "country": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "foundedYear": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "logoUrl": {
+            "type": "string"
+          },
+          "websiteUrl": {
+            "type": "string"
+          },
+          "wikipediaUrl": {
+            "type": "string"
+          }
+        },
         "type": "object"
       },
       "CompletionistConsole": {
@@ -1153,6 +1727,70 @@
         ],
         "type": "object"
       },
+      "ConsoleHighlight": {
+        "additionalProperties": false,
+        "properties": {
+          "colorTheme": {
+            "type": "string"
+          },
+          "gameCount": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "iconUrl": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "logoUrl": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "topGame": {
+            "$ref": "#/components/schemas/GameResponse"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "colorTheme",
+          "iconUrl",
+          "logoUrl",
+          "gameCount",
+          "topGame"
+        ],
+        "type": "object"
+      },
+      "ConsoleHighlightsResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "https://example.com/api/schemas/ConsoleHighlightsResponse.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "consoles": {
+            "items": {
+              "$ref": "#/components/schemas/ConsoleHighlight"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "consoles"
+        ],
+        "type": "object"
+      },
       "ConsoleKeyMappingDTO": {
         "additionalProperties": false,
         "properties": {
@@ -1297,6 +1935,87 @@
         ],
         "type": "object"
       },
+      "ConsoleShowcaseResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "https://example.com/api/schemas/ConsoleShowcaseResponse.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "console": {
+            "$ref": "#/components/schemas/ConsoleResponse"
+          },
+          "essentials": {
+            "items": {
+              "$ref": "#/components/schemas/GameResponse"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "genreBreakdown": {
+            "items": {
+              "$ref": "#/components/schemas/GenreCount"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "hiddenGems": {
+            "items": {
+              "$ref": "#/components/schemas/GameResponse"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "recentlyAdded": {
+            "items": {
+              "$ref": "#/components/schemas/GameResponse"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "recentlyPlayed": {
+            "items": {
+              "$ref": "#/components/schemas/GameResponse"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "topDevelopers": {
+            "items": {
+              "$ref": "#/components/schemas/DeveloperSummary"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "console",
+          "essentials",
+          "hiddenGems",
+          "genreBreakdown",
+          "topDevelopers",
+          "recentlyPlayed",
+          "recentlyAdded"
+        ],
+        "type": "object"
+      },
       "Core": {
         "additionalProperties": false,
         "properties": {
@@ -1394,6 +2113,90 @@
         },
         "required": [
           "consoles"
+        ],
+        "type": "object"
+      },
+      "CoverGalleryResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "https://example.com/api/schemas/CoverGalleryResponse.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "covers": {
+            "items": {
+              "$ref": "#/components/schemas/CoverItem"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "page": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "totalCount": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "totalPages": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "covers",
+          "page",
+          "totalPages",
+          "totalCount"
+        ],
+        "type": "object"
+      },
+      "CoverItem": {
+        "additionalProperties": false,
+        "properties": {
+          "consoleAbbreviation": {
+            "type": "string"
+          },
+          "consoleColor": {
+            "type": "string"
+          },
+          "consoleName": {
+            "type": "string"
+          },
+          "coverAspectRatio": {
+            "format": "double",
+            "type": "number"
+          },
+          "coverUrl": {
+            "type": "string"
+          },
+          "gameId": {
+            "type": "string"
+          },
+          "gameTitle": {
+            "type": "string"
+          },
+          "igdbCriticsRating": {
+            "format": "double",
+            "type": "number"
+          }
+        },
+        "required": [
+          "coverUrl",
+          "gameId",
+          "gameTitle",
+          "consoleName",
+          "consoleAbbreviation",
+          "consoleColor",
+          "igdbCriticsRating",
+          "coverAspectRatio"
         ],
         "type": "object"
       },
@@ -1529,6 +2332,95 @@
         },
         "type": "object"
       },
+      "CultClassicGame": {
+        "additionalProperties": false,
+        "properties": {
+          "communityRating": {
+            "format": "double",
+            "type": "number"
+          },
+          "game": {
+            "$ref": "#/components/schemas/GameResponse"
+          },
+          "igdbCriticsRating": {
+            "format": "double",
+            "type": "number"
+          },
+          "ratingCount": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "game",
+          "communityRating",
+          "igdbCriticsRating",
+          "ratingCount"
+        ],
+        "type": "object"
+      },
+      "CultClassicsResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "https://example.com/api/schemas/CultClassicsResponse.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "games": {
+            "items": {
+              "$ref": "#/components/schemas/CultClassicGame"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "games"
+        ],
+        "type": "object"
+      },
+      "DecadesResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "https://example.com/api/schemas/DecadesResponse.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "decade": {
+            "type": "string"
+          },
+          "games": {
+            "items": {
+              "$ref": "#/components/schemas/GameResponse"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "label": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "decade",
+          "label",
+          "games"
+        ],
+        "type": "object"
+      },
       "DeletedStatusResponse": {
         "additionalProperties": false,
         "properties": {
@@ -1588,6 +2480,134 @@
         ],
         "type": "object"
       },
+      "DeveloperDetailResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "https://example.com/api/schemas/DeveloperDetailResponse.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "activeYears": {
+            "$ref": "#/components/schemas/ActiveYears"
+          },
+          "avgRating": {
+            "format": "double",
+            "type": "number"
+          },
+          "companyInfo": {
+            "$ref": "#/components/schemas/CompanyInfo"
+          },
+          "consoles": {
+            "items": {
+              "type": "string"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "gameCount": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "games": {
+            "items": {
+              "$ref": "#/components/schemas/GameResponse"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "genreBreakdown": {
+            "items": {
+              "$ref": "#/components/schemas/GenreCount"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "heroUrl": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "platformBreakdown": {
+            "items": {
+              "$ref": "#/components/schemas/PlatformCount"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "primaryGenre": {
+            "type": "string"
+          },
+          "publishers": {
+            "items": {
+              "$ref": "#/components/schemas/NameCount"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "ratingDistribution": {
+            "$ref": "#/components/schemas/RatingDistribution"
+          },
+          "relatedDevelopers": {
+            "items": {
+              "$ref": "#/components/schemas/RelatedDeveloper"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "timeline": {
+            "items": {
+              "$ref": "#/components/schemas/TimelineEntry"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "topGames": {
+            "items": {
+              "$ref": "#/components/schemas/GameResponse"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "userStats": {
+            "$ref": "#/components/schemas/EntityUserStats"
+          }
+        },
+        "required": [
+          "name",
+          "gameCount",
+          "avgRating",
+          "consoles",
+          "games",
+          "topGames",
+          "genreBreakdown",
+          "platformBreakdown",
+          "publishers",
+          "ratingDistribution"
+        ],
+        "type": "object"
+      },
       "DeveloperGameResponse": {
         "additionalProperties": false,
         "properties": {
@@ -1605,6 +2625,120 @@
           "name",
           "coverUrl",
           "localGameId"
+        ],
+        "type": "object"
+      },
+      "DeveloperListResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "https://example.com/api/schemas/DeveloperListResponse.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "developers": {
+            "items": {
+              "$ref": "#/components/schemas/DeveloperSummary"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "developers"
+        ],
+        "type": "object"
+      },
+      "DeveloperSpotlightResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "https://example.com/api/schemas/DeveloperSpotlightResponse.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "avgRating": {
+            "format": "double",
+            "type": "number"
+          },
+          "consoles": {
+            "items": {
+              "type": "string"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "gameCount": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "heroUrl": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "topGames": {
+            "items": {
+              "$ref": "#/components/schemas/GameResponse"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "name",
+          "gameCount",
+          "avgRating",
+          "consoles",
+          "topGames",
+          "heroUrl"
+        ],
+        "type": "object"
+      },
+      "DeveloperSummary": {
+        "additionalProperties": false,
+        "properties": {
+          "avgRating": {
+            "format": "double",
+            "type": "number"
+          },
+          "consoles": {
+            "items": {
+              "type": "string"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "gameCount": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "gameCount",
+          "avgRating",
+          "consoles"
         ],
         "type": "object"
       },
@@ -1812,6 +2946,33 @@
         },
         "type": "object"
       },
+      "EasyToCompleteResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "https://example.com/api/schemas/EasyToCompleteResponse.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "games": {
+            "items": {
+              "$ref": "#/components/schemas/AchievementGameResponse"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "games"
+        ],
+        "type": "object"
+      },
       "EnrichmentStartedResponse": {
         "additionalProperties": false,
         "properties": {
@@ -1878,6 +3039,150 @@
         ],
         "type": "object"
       },
+      "EntityUserStats": {
+        "additionalProperties": false,
+        "properties": {
+          "favoriteCount": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "gamesPlayed": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "mostPlayedGame": {
+            "$ref": "#/components/schemas/GameResponse"
+          },
+          "totalPlayTime": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "totalPlayTime",
+          "gamesPlayed",
+          "favoriteCount",
+          "mostPlayedGame"
+        ],
+        "type": "object"
+      },
+      "ExploreChallengeResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "attemptCount": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "completionCount": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "consoleName": {
+            "type": "string"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "creatorUsername": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "difficulty": {
+            "type": "string"
+          },
+          "expiresAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "gameCoverUrl": {
+            "type": "string"
+          },
+          "gameId": {
+            "type": "string"
+          },
+          "gameTitle": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "creatorUsername",
+          "gameId",
+          "gameTitle",
+          "name",
+          "type",
+          "difficulty",
+          "attemptCount",
+          "completionCount",
+          "createdAt"
+        ],
+        "type": "object"
+      },
+      "ExploreRowResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "games": {
+            "items": {
+              "$ref": "#/components/schemas/GameResponse"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "games"
+        ],
+        "type": "object"
+      },
+      "ExploreRowsResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "https://example.com/api/schemas/ExploreRowsResponse.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "rows": {
+            "items": {
+              "$ref": "#/components/schemas/ExploreRowResponse"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "rows"
+        ],
+        "type": "object"
+      },
       "ExplorerBadge": {
         "additionalProperties": false,
         "properties": {
@@ -1940,6 +3245,156 @@
         },
         "required": [
           "badges"
+        ],
+        "type": "object"
+      },
+      "FeaturedGameResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "consoleAbbreviation": {
+            "type": "string"
+          },
+          "consoleColor": {
+            "type": "string"
+          },
+          "consoleId": {
+            "type": "string"
+          },
+          "consoleName": {
+            "type": "string"
+          },
+          "gameId": {
+            "type": "string"
+          },
+          "genre": {
+            "type": "string"
+          },
+          "heroUrl": {
+            "type": "string"
+          },
+          "igdbCriticsRating": {
+            "format": "double",
+            "type": "number"
+          },
+          "isFavorite": {
+            "type": "boolean"
+          },
+          "isPlayLater": {
+            "type": "boolean"
+          },
+          "logoUrl": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "gameId",
+          "title",
+          "heroUrl",
+          "logoUrl",
+          "consoleId",
+          "consoleName",
+          "consoleAbbreviation",
+          "consoleColor",
+          "igdbCriticsRating",
+          "genre",
+          "isFavorite",
+          "isPlayLater"
+        ],
+        "type": "object"
+      },
+      "FeaturedSeriesResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "consoleCount": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "heroUrl": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "libraryGames": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "name": {
+            "type": "string"
+          },
+          "totalGames": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "libraryGames",
+          "totalGames",
+          "consoleCount"
+        ],
+        "type": "object"
+      },
+      "ForYouResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "https://example.com/api/schemas/ForYouResponse.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "rows": {
+            "items": {
+              "$ref": "#/components/schemas/ForYouRowResponse"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "rows"
+        ],
+        "type": "object"
+      },
+      "ForYouRowResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "games": {
+            "items": {
+              "$ref": "#/components/schemas/GameResponse"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "genre": {
+            "type": "string"
+          },
+          "sourceGame": {
+            "$ref": "#/components/schemas/GameResponse"
+          },
+          "title": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "title",
+          "games"
         ],
         "type": "object"
       },
@@ -2027,6 +3482,55 @@
           "id",
           "name",
           "gameCount"
+        ],
+        "type": "object"
+      },
+      "FreshChallengeGame": {
+        "additionalProperties": false,
+        "properties": {
+          "game": {
+            "$ref": "#/components/schemas/GameResponse"
+          },
+          "totalAchievements": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "totalPoints": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "game",
+          "totalAchievements",
+          "totalPoints"
+        ],
+        "type": "object"
+      },
+      "FreshChallengesResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "https://example.com/api/schemas/FreshChallengesResponse.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "games": {
+            "items": {
+              "$ref": "#/components/schemas/FreshChallengeGame"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "games"
         ],
         "type": "object"
       },
@@ -2755,6 +4259,50 @@
         ],
         "type": "object"
       },
+      "GenreCount": {
+        "additionalProperties": false,
+        "properties": {
+          "gameCount": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "gameCount"
+        ],
+        "type": "object"
+      },
+      "HardestGamesResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "https://example.com/api/schemas/HardestGamesResponse.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "games": {
+            "items": {
+              "$ref": "#/components/schemas/AchievementGameResponse"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "games"
+        ],
+        "type": "object"
+      },
       "HardwareMakerResponse": {
         "additionalProperties": false,
         "properties": {
@@ -3314,6 +4862,40 @@
         ],
         "type": "object"
       },
+      "MoodResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "description": {
+            "type": "string"
+          },
+          "gradient": {
+            "items": {
+              "type": "string"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "icon": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "description",
+          "icon",
+          "gradient"
+        ],
+        "type": "object"
+      },
       "MostActivePlayersResponse": {
         "additionalProperties": false,
         "properties": {
@@ -3387,6 +4969,23 @@
         },
         "required": [
           "games"
+        ],
+        "type": "object"
+      },
+      "NameCount": {
+        "additionalProperties": false,
+        "properties": {
+          "count": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "count"
         ],
         "type": "object"
       },
@@ -3583,6 +5182,37 @@
           "inputDelay",
           "inviteCode",
           "createdAt"
+        ],
+        "type": "object"
+      },
+      "OnThisDayResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "https://example.com/api/schemas/OnThisDayResponse.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "date": {
+            "type": "string"
+          },
+          "games": {
+            "items": {
+              "$ref": "#/components/schemas/GameResponse"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "date",
+          "games"
         ],
         "type": "object"
       },
@@ -4077,6 +5707,27 @@
         ],
         "type": "object"
       },
+      "PlatformCount": {
+        "additionalProperties": false,
+        "properties": {
+          "consoleId": {
+            "type": "string"
+          },
+          "consoleName": {
+            "type": "string"
+          },
+          "count": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "consoleName",
+          "consoleId",
+          "count"
+        ],
+        "type": "object"
+      },
       "PlayStatsEntry": {
         "additionalProperties": false,
         "properties": {
@@ -4097,6 +5748,38 @@
           "gameId",
           "playTime",
           "lastPlayedAt"
+        ],
+        "type": "object"
+      },
+      "PlayersLikeYouResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "https://example.com/api/schemas/PlayersLikeYouResponse.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "games": {
+            "items": {
+              "$ref": "#/components/schemas/GameResponse"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "similarUsersCount": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "games",
+          "similarUsersCount"
         ],
         "type": "object"
       },
@@ -4220,6 +5903,134 @@
           "favoriteGames",
           "recentGames",
           "topGames"
+        ],
+        "type": "object"
+      },
+      "PublisherDetailResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "https://example.com/api/schemas/PublisherDetailResponse.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "activeYears": {
+            "$ref": "#/components/schemas/ActiveYears"
+          },
+          "avgRating": {
+            "format": "double",
+            "type": "number"
+          },
+          "companyInfo": {
+            "$ref": "#/components/schemas/CompanyInfo"
+          },
+          "consoles": {
+            "items": {
+              "type": "string"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "developers": {
+            "items": {
+              "$ref": "#/components/schemas/NameCount"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "gameCount": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "games": {
+            "items": {
+              "$ref": "#/components/schemas/GameResponse"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "genreBreakdown": {
+            "items": {
+              "$ref": "#/components/schemas/GenreCount"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "heroUrl": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "platformBreakdown": {
+            "items": {
+              "$ref": "#/components/schemas/PlatformCount"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "primaryGenre": {
+            "type": "string"
+          },
+          "ratingDistribution": {
+            "$ref": "#/components/schemas/RatingDistribution"
+          },
+          "relatedPublishers": {
+            "items": {
+              "$ref": "#/components/schemas/RelatedPublisher"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "timeline": {
+            "items": {
+              "$ref": "#/components/schemas/TimelineEntry"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "topGames": {
+            "items": {
+              "$ref": "#/components/schemas/GameResponse"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "userStats": {
+            "$ref": "#/components/schemas/EntityUserStats"
+          }
+        },
+        "required": [
+          "name",
+          "gameCount",
+          "avgRating",
+          "consoles",
+          "games",
+          "topGames",
+          "genreBreakdown",
+          "platformBreakdown",
+          "developers",
+          "ratingDistribution"
         ],
         "type": "object"
       },
@@ -4557,6 +6368,39 @@
         ],
         "type": "object"
       },
+      "RatingDistribution": {
+        "additionalProperties": false,
+        "properties": {
+          "average": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "excellent": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "good": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "poor": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "unrated": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "excellent",
+          "good",
+          "average",
+          "poor",
+          "unrated"
+        ],
+        "type": "object"
+      },
       "RatingSummaryResponse": {
         "additionalProperties": false,
         "properties": {
@@ -4619,6 +6463,63 @@
         ],
         "type": "object"
       },
+      "RecentReviewItem": {
+        "additionalProperties": false,
+        "properties": {
+          "game": {
+            "$ref": "#/components/schemas/GameResponse"
+          },
+          "rating": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "review": {
+            "type": "string"
+          },
+          "reviewedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "reviewerName": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "game",
+          "rating",
+          "review",
+          "reviewerName",
+          "reviewedAt"
+        ],
+        "type": "object"
+      },
+      "RecentlyReviewedResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "https://example.com/api/schemas/RecentlyReviewedResponse.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "reviews": {
+            "items": {
+              "$ref": "#/components/schemas/RecentReviewItem"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "reviews"
+        ],
+        "type": "object"
+      },
       "RefreshAchievementsResponse": {
         "additionalProperties": false,
         "properties": {
@@ -4666,6 +6567,60 @@
             "type": "string"
           }
         },
+        "type": "object"
+      },
+      "RelatedDeveloper": {
+        "additionalProperties": false,
+        "properties": {
+          "gameCount": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "name": {
+            "type": "string"
+          },
+          "sharedPublishers": {
+            "items": {
+              "type": "string"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "name",
+          "gameCount",
+          "sharedPublishers"
+        ],
+        "type": "object"
+      },
+      "RelatedPublisher": {
+        "additionalProperties": false,
+        "properties": {
+          "gameCount": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "name": {
+            "type": "string"
+          },
+          "sharedDevelopers": {
+            "items": {
+              "type": "string"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "name",
+          "gameCount",
+          "sharedDevelopers"
+        ],
         "type": "object"
       },
       "ReleaseDateResponse": {
@@ -5092,6 +7047,80 @@
           "error",
           "errorEligible",
           "notAttempted"
+        ],
+        "type": "object"
+      },
+      "ScreenshotGalleryResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "https://example.com/api/schemas/ScreenshotGalleryResponse.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "page": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "screenshots": {
+            "items": {
+              "$ref": "#/components/schemas/ScreenshotItem"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "totalCount": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "totalPages": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "screenshots",
+          "page",
+          "totalPages",
+          "totalCount"
+        ],
+        "type": "object"
+      },
+      "ScreenshotItem": {
+        "additionalProperties": false,
+        "properties": {
+          "consoleAbbreviation": {
+            "type": "string"
+          },
+          "consoleColor": {
+            "type": "string"
+          },
+          "consoleName": {
+            "type": "string"
+          },
+          "gameId": {
+            "type": "string"
+          },
+          "gameTitle": {
+            "type": "string"
+          },
+          "url": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "url",
+          "gameId",
+          "gameTitle",
+          "consoleName",
+          "consoleAbbreviation",
+          "consoleColor"
         ],
         "type": "object"
       },
@@ -5817,6 +7846,39 @@
             "type": "string"
           }
         },
+        "type": "object"
+      },
+      "SetupStatusResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "https://example.com/api/schemas/SetupStatusResponse.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "gameCount": {
+            "description": "Total number of games indexed on the server.",
+            "format": "int64",
+            "type": "integer"
+          },
+          "needsSetup": {
+            "description": "True when no user accounts exist and the server requires first-time setup.",
+            "type": "boolean"
+          },
+          "registrationEnabled": {
+            "description": "True when new-account registration is currently allowed.",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "needsSetup",
+          "registrationEnabled",
+          "gameCount"
+        ],
         "type": "object"
       },
       "SharedSaveResponse": {
@@ -6926,6 +8988,54 @@
         ],
         "type": "object"
       },
+      "TimelineEntry": {
+        "additionalProperties": false,
+        "properties": {
+          "games": {
+            "items": {
+              "$ref": "#/components/schemas/TimelineGame"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "year": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "year",
+          "games"
+        ],
+        "type": "object"
+      },
+      "TimelineGame": {
+        "additionalProperties": false,
+        "properties": {
+          "coverUrl": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "igdbCriticsRating": {
+            "format": "double",
+            "type": "number"
+          },
+          "title": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "coverUrl",
+          "igdbCriticsRating"
+        ],
+        "type": "object"
+      },
       "TopListGameResponse": {
         "additionalProperties": false,
         "properties": {
@@ -6998,6 +9108,50 @@
           "igdbCriticsRating",
           "localGameId",
           "consoleName"
+        ],
+        "type": "object"
+      },
+      "TrendingGameResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "game": {
+            "$ref": "#/components/schemas/GameResponse"
+          },
+          "playersThisWeek": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "game",
+          "playersThisWeek"
+        ],
+        "type": "object"
+      },
+      "TrendingResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "https://example.com/api/schemas/TrendingResponse.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "games": {
+            "items": {
+              "$ref": "#/components/schemas/TrendingGameResponse"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "games"
         ],
         "type": "object"
       },
@@ -7789,6 +9943,117 @@
         },
         "required": [
           "videoId"
+        ],
+        "type": "object"
+      },
+      "WizardOption": {
+        "additionalProperties": false,
+        "properties": {
+          "description": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "imageUrl": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "label"
+        ],
+        "type": "object"
+      },
+      "WizardResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "https://example.com/api/schemas/WizardResponse.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "steps": {
+            "items": {
+              "$ref": "#/components/schemas/WizardStep"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "steps"
+        ],
+        "type": "object"
+      },
+      "WizardResultsResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "https://example.com/api/schemas/WizardResultsResponse.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "games": {
+            "items": {
+              "$ref": "#/components/schemas/GameResponse"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "title": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "games",
+          "title"
+        ],
+        "type": "object"
+      },
+      "WizardStep": {
+        "additionalProperties": false,
+        "properties": {
+          "options": {
+            "items": {
+              "$ref": "#/components/schemas/WizardOption"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "step": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "title": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "step",
+          "title",
+          "type",
+          "options"
         ],
         "type": "object"
       }
@@ -10494,6 +12759,206 @@
         ]
       }
     },
+    "/api/auth/login": {
+      "post": {
+        "description": "Authenticates a user and returns access + refresh tokens. Enforces lockout after repeated failures and performs a dummy bcrypt comparison on unknown usernames to prevent timing-based username enumeration.",
+        "operationId": "authLogin",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AuthLoginRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthLoginResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HumaError"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Sign in",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/api/auth/refresh": {
+      "post": {
+        "description": "Exchanges a refresh token for new access + refresh tokens. Uses token families for replay detection: presenting a consumed token revokes the entire family.",
+        "operationId": "authRefresh",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AuthRefreshRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthLoginResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HumaError"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Rotate refresh token",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/api/auth/register": {
+      "post": {
+        "description": "Creates a new user account. The very first user becomes the server owner and is signed in immediately. Subsequent registrations are pending admin approval (HTTP 202) unless registration has been disabled.",
+        "operationId": "authRegister",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AuthRegisterRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthRegisterResponse"
+                }
+              }
+            },
+            "description": "Created"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HumaError"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Register a new account",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/api/auth/setup": {
+      "post": {
+        "description": "Creates the initial owner account. Fails with 403 after a user already exists.",
+        "operationId": "authSetup",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AuthRegisterRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthLoginResponse"
+                }
+              }
+            },
+            "description": "Created"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HumaError"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Perform first-time server setup",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/api/auth/setup-status": {
+      "get": {
+        "description": "Returns whether the server needs first-time setup, whether new-account registration is enabled, and how many games are indexed.",
+        "operationId": "authSetupStatus",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SetupStatusResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HumaError"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Get server setup status",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
     "/api/bios": {
       "get": {
         "description": "Returns registry-driven BIOS file status plus per-console summaries.",
@@ -12084,6 +14549,1720 @@
         "summary": "Report a client-side emulator error",
         "tags": [
           "system"
+        ]
+      }
+    },
+    "/api/explore/active-challenges": {
+      "get": {
+        "description": "Returns the 10 most recent active Challenge entities that have not yet expired.",
+        "operationId": "getActiveChallenges",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ActiveChallengesResponse"
+                }
+              }
+            },
+            "description": "OK",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HumaError"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get active community challenges",
+        "tags": [
+          "explore"
+        ]
+      }
+    },
+    "/api/explore/active-now": {
+      "get": {
+        "description": "Returns up to 20 games currently with active shared sessions and/or active challenges, sorted by combined activity.",
+        "operationId": "getActiveNow",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ActiveNowResponse"
+                }
+              }
+            },
+            "description": "OK",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HumaError"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get games with active shared sessions or challenges",
+        "tags": [
+          "explore"
+        ]
+      }
+    },
+    "/api/explore/almost-done": {
+      "get": {
+        "description": "Returns games where the caller has completed between 80 and 99 percent of achievements.",
+        "operationId": "getAlmostDone",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AlmostDoneResponse"
+                }
+              }
+            },
+            "description": "OK",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HumaError"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get games the caller has nearly completed",
+        "tags": [
+          "explore"
+        ]
+      }
+    },
+    "/api/explore/artwork": {
+      "get": {
+        "description": "Returns a paginated stream of IGDB promotional artwork with game metadata.",
+        "operationId": "getArtworkGallery",
+        "parameters": [
+          {
+            "description": "1-based page number (defaults to 1).",
+            "explode": false,
+            "in": "query",
+            "name": "page",
+            "schema": {
+              "description": "1-based page number (defaults to 1).",
+              "format": "int64",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Page size (defaults to 40, max 100).",
+            "explode": false,
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "description": "Page size (defaults to 40, max 100).",
+              "format": "int64",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ArtworkGalleryResponse"
+                }
+              }
+            },
+            "description": "OK",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HumaError"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get paginated IGDB artwork gallery",
+        "tags": [
+          "explore"
+        ]
+      }
+    },
+    "/api/explore/best-of-year/{year}": {
+      "get": {
+        "description": "Returns up to 30 highest-rated games released in the given year.",
+        "operationId": "getBestOfYear",
+        "parameters": [
+          {
+            "description": "Release year (1970-2100).",
+            "in": "path",
+            "name": "year",
+            "required": true,
+            "schema": {
+              "description": "Release year (1970-2100).",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BestOfYearResponse"
+                }
+              }
+            },
+            "description": "OK",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HumaError"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get top-rated games from a specific release year",
+        "tags": [
+          "explore"
+        ]
+      }
+    },
+    "/api/explore/community-top": {
+      "get": {
+        "description": "Returns games with the highest average user ratings on this server (at least 2 ratings).",
+        "operationId": "getCommunityTop",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommunityTopResponse"
+                }
+              }
+            },
+            "description": "OK",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HumaError"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get top-rated games by the community",
+        "tags": [
+          "explore"
+        ]
+      }
+    },
+    "/api/explore/console-highlights": {
+      "get": {
+        "description": "Returns a compact list of consoles with game counts and top game for the explore page quick-jump row.",
+        "operationId": "getConsoleHighlights",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConsoleHighlightsResponse"
+                }
+              }
+            },
+            "description": "OK",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HumaError"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get console highlights",
+        "tags": [
+          "explore"
+        ]
+      }
+    },
+    "/api/explore/consoles/{id}/showcase": {
+      "get": {
+        "description": "Returns aggregated showcase data for a specific console: essentials, hidden gems, genre breakdown, top developers, recently played, recently added.",
+        "operationId": "getConsoleShowcase",
+        "parameters": [
+          {
+            "description": "Console abbreviation (e.g. 'snes').",
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "description": "Console abbreviation (e.g. 'snes').",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConsoleShowcaseResponse"
+                }
+              }
+            },
+            "description": "OK",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HumaError"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get console showcase",
+        "tags": [
+          "explore"
+        ]
+      }
+    },
+    "/api/explore/covers": {
+      "get": {
+        "description": "Returns a paginated dense cover art feed with minimal metadata. Supports console filter.",
+        "operationId": "getCoverGallery",
+        "parameters": [
+          {
+            "description": "1-based page number (defaults to 1).",
+            "explode": false,
+            "in": "query",
+            "name": "page",
+            "schema": {
+              "description": "1-based page number (defaults to 1).",
+              "format": "int64",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Page size (defaults to 60, max 200).",
+            "explode": false,
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "description": "Page size (defaults to 60, max 200).",
+              "format": "int64",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Console abbreviation filter.",
+            "explode": false,
+            "in": "query",
+            "name": "console",
+            "schema": {
+              "description": "Console abbreviation filter.",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CoverGalleryResponse"
+                }
+              }
+            },
+            "description": "OK",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HumaError"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get paginated cover gallery",
+        "tags": [
+          "explore"
+        ]
+      }
+    },
+    "/api/explore/cult-classics": {
+      "get": {
+        "description": "Returns games where the community rates higher than critics — avg community rating \u003e= 4.0 with IGDB rating \u003c 75.",
+        "operationId": "getCultClassics",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CultClassicsResponse"
+                }
+              }
+            },
+            "description": "OK",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HumaError"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get community cult classics",
+        "tags": [
+          "explore"
+        ]
+      }
+    },
+    "/api/explore/decades/{decade}": {
+      "get": {
+        "description": "Returns up to 30 highest-rated games for the given decade (80s, 90s, or 00s).",
+        "operationId": "getDecades",
+        "parameters": [
+          {
+            "description": "Decade identifier: '80s', '90s', or '00s'.",
+            "in": "path",
+            "name": "decade",
+            "required": true,
+            "schema": {
+              "description": "Decade identifier: '80s', '90s', or '00s'.",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DecadesResponse"
+                }
+              }
+            },
+            "description": "OK",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HumaError"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get best games of a decade",
+        "tags": [
+          "explore"
+        ]
+      }
+    },
+    "/api/explore/developers": {
+      "get": {
+        "description": "Returns the top 50 developers by game count with average rating and console coverage.",
+        "operationId": "getDevelopers",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeveloperListResponse"
+                }
+              }
+            },
+            "description": "OK",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HumaError"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "List top developers",
+        "tags": [
+          "explore"
+        ]
+      }
+    },
+    "/api/explore/developers/spotlight": {
+      "get": {
+        "description": "Returns a rotating spotlight of a top developer with games that have hero art. Rotates weekly.",
+        "operationId": "getDeveloperSpotlight",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeveloperSpotlightResponse"
+                }
+              }
+            },
+            "description": "OK",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HumaError"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get the weekly featured developer",
+        "tags": [
+          "explore"
+        ]
+      }
+    },
+    "/api/explore/developers/{name}": {
+      "get": {
+        "description": "Returns all games by a specific developer along with statistics (rating distribution, genre/platform breakdown, user stats, timeline, related developers).",
+        "operationId": "getDeveloperDetail",
+        "parameters": [
+          {
+            "description": "Developer name (URL-decoded).",
+            "in": "path",
+            "name": "name",
+            "required": true,
+            "schema": {
+              "description": "Developer name (URL-decoded).",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeveloperDetailResponse"
+                }
+              }
+            },
+            "description": "OK",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HumaError"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get developer detail",
+        "tags": [
+          "explore"
+        ]
+      }
+    },
+    "/api/explore/easy-to-complete": {
+      "get": {
+        "description": "Returns up to 20 games with the highest average achievement completion rate across players.",
+        "operationId": "getEasyToComplete",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EasyToCompleteResponse"
+                }
+              }
+            },
+            "description": "OK",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HumaError"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get games with highest avg achievement completion",
+        "tags": [
+          "explore"
+        ]
+      }
+    },
+    "/api/explore/featured": {
+      "get": {
+        "description": "Returns up to 10 featured games selected via weighted random sampling, stable per-day.",
+        "operationId": "getExploreFeatured",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/FeaturedGameResponse"
+                  },
+                  "type": [
+                    "array",
+                    "null"
+                  ]
+                }
+              }
+            },
+            "description": "OK",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HumaError"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get featured games for the explore hero carousel",
+        "tags": [
+          "explore"
+        ]
+      }
+    },
+    "/api/explore/for-you": {
+      "get": {
+        "description": "Returns personalized recommendation shelves derived from the caller's play history.",
+        "operationId": "getForYou",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ForYouResponse"
+                }
+              }
+            },
+            "description": "OK",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HumaError"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get personalized recommendation rows",
+        "tags": [
+          "explore"
+        ]
+      }
+    },
+    "/api/explore/fresh-challenges": {
+      "get": {
+        "description": "Returns up to 20 games with cached achievements where the caller has zero unlocks yet.",
+        "operationId": "getFreshChallenges",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FreshChallengesResponse"
+                }
+              }
+            },
+            "description": "OK",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HumaError"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get games with cached achievements the caller hasn't started",
+        "tags": [
+          "explore"
+        ]
+      }
+    },
+    "/api/explore/hardest-games": {
+      "get": {
+        "description": "Returns up to 20 games with the lowest average achievement completion rate. Requires at least 2 players attempting.",
+        "operationId": "getHardestGames",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HardestGamesResponse"
+                }
+              }
+            },
+            "description": "OK",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HumaError"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get games with lowest avg achievement completion",
+        "tags": [
+          "explore"
+        ]
+      }
+    },
+    "/api/explore/mood/{mood}": {
+      "get": {
+        "description": "Returns up to 20 games matching the chosen mood (chill, challenge, nostalgia, something-new, quick, together).",
+        "operationId": "getMoodGames",
+        "parameters": [
+          {
+            "description": "Mood identifier, e.g. 'chill', 'challenge'.",
+            "in": "path",
+            "name": "mood",
+            "required": true,
+            "schema": {
+              "description": "Mood identifier, e.g. 'chill', 'challenge'.",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/GameResponse"
+                  },
+                  "type": [
+                    "array",
+                    "null"
+                  ]
+                }
+              }
+            },
+            "description": "OK",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HumaError"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get games matching a specific mood",
+        "tags": [
+          "explore"
+        ]
+      }
+    },
+    "/api/explore/moods": {
+      "get": {
+        "description": "Returns the static list of moods available in the mood picker.",
+        "operationId": "getExploreMoods",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/MoodResponse"
+                  },
+                  "type": [
+                    "array",
+                    "null"
+                  ]
+                }
+              }
+            },
+            "description": "OK",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HumaError"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "List explore mood options",
+        "tags": [
+          "explore"
+        ]
+      }
+    },
+    "/api/explore/on-this-day": {
+      "get": {
+        "description": "Returns up to 20 games released on today's month/day across all years, sorted oldest first.",
+        "operationId": "getOnThisDay",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OnThisDayResponse"
+                }
+              }
+            },
+            "description": "OK",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HumaError"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get games released on today's month/day",
+        "tags": [
+          "explore"
+        ]
+      }
+    },
+    "/api/explore/players-like-you": {
+      "get": {
+        "description": "Returns games favourited by users whose favourites overlap with the caller's. Uses Jaccard similarity.",
+        "operationId": "getPlayersLikeYou",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlayersLikeYouResponse"
+                }
+              }
+            },
+            "description": "OK",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HumaError"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get collaborative-filter game recommendations",
+        "tags": [
+          "explore"
+        ]
+      }
+    },
+    "/api/explore/publishers/{name}": {
+      "get": {
+        "description": "Returns all games by a specific publisher along with statistics (rating distribution, genre/platform breakdown, user stats, timeline, related publishers).",
+        "operationId": "getPublisherDetail",
+        "parameters": [
+          {
+            "description": "Publisher name (URL-decoded).",
+            "in": "path",
+            "name": "name",
+            "required": true,
+            "schema": {
+              "description": "Publisher name (URL-decoded).",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublisherDetailResponse"
+                }
+              }
+            },
+            "description": "OK",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HumaError"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get publisher detail",
+        "tags": [
+          "explore"
+        ]
+      }
+    },
+    "/api/explore/recently-reviewed": {
+      "get": {
+        "description": "Returns the 20 most recent user reviews (non-empty review text) with game + reviewer metadata.",
+        "operationId": "getRecentlyReviewed",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecentlyReviewedResponse"
+                }
+              }
+            },
+            "description": "OK",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HumaError"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get games with recent user reviews",
+        "tags": [
+          "explore"
+        ]
+      }
+    },
+    "/api/explore/rows": {
+      "get": {
+        "description": "Returns curated shelves (top-rated, recently-added, hidden gems, most-played). Empty rows are omitted.",
+        "operationId": "getExploreRows",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExploreRowsResponse"
+                }
+              }
+            },
+            "description": "OK",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HumaError"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get curated explore-page shelf rows",
+        "tags": [
+          "explore"
+        ]
+      }
+    },
+    "/api/explore/screenshots": {
+      "get": {
+        "description": "Returns a paginated stream of screenshots with minimal game metadata. Supports console/genre filters.",
+        "operationId": "getScreenshotGallery",
+        "parameters": [
+          {
+            "description": "1-based page number (defaults to 1).",
+            "explode": false,
+            "in": "query",
+            "name": "page",
+            "schema": {
+              "description": "1-based page number (defaults to 1).",
+              "format": "int64",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Page size (defaults to 40, max 100).",
+            "explode": false,
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "description": "Page size (defaults to 40, max 100).",
+              "format": "int64",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Console abbreviation filter.",
+            "explode": false,
+            "in": "query",
+            "name": "console",
+            "schema": {
+              "description": "Console abbreviation filter.",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Genre filter.",
+            "explode": false,
+            "in": "query",
+            "name": "genre",
+            "schema": {
+              "description": "Genre filter.",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScreenshotGalleryResponse"
+                }
+              }
+            },
+            "description": "OK",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HumaError"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get paginated screenshot gallery",
+        "tags": [
+          "explore"
+        ]
+      }
+    },
+    "/api/explore/series/featured": {
+      "get": {
+        "description": "Returns up to 20 top series with at least 2 library games, sorted by library game count DESC.",
+        "operationId": "getExploreFeaturedSeries",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/FeaturedSeriesResponse"
+                  },
+                  "type": [
+                    "array",
+                    "null"
+                  ]
+                }
+              }
+            },
+            "description": "OK",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HumaError"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get featured game series",
+        "tags": [
+          "explore"
+        ]
+      }
+    },
+    "/api/explore/surprise": {
+      "get": {
+        "description": "Returns a single random game matching optional console/genre/min-rating filters.",
+        "operationId": "getSurpriseGame",
+        "parameters": [
+          {
+            "description": "Console abbreviation filter.",
+            "explode": false,
+            "in": "query",
+            "name": "console",
+            "schema": {
+              "description": "Console abbreviation filter.",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Genre filter.",
+            "explode": false,
+            "in": "query",
+            "name": "genre",
+            "schema": {
+              "description": "Genre filter.",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Minimum IGDB rating (0-100); defaults to 70.",
+            "explode": false,
+            "in": "query",
+            "name": "minRating",
+            "schema": {
+              "description": "Minimum IGDB rating (0-100); defaults to 70.",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GameResponse"
+                }
+              }
+            },
+            "description": "OK",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HumaError"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get a random surprise game",
+        "tags": [
+          "explore"
+        ]
+      }
+    },
+    "/api/explore/trending": {
+      "get": {
+        "description": "Returns up to 20 games with the most distinct players in the last 7 days.",
+        "operationId": "getTrending",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TrendingResponse"
+                }
+              }
+            },
+            "description": "OK",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HumaError"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get trending games",
+        "tags": [
+          "explore"
+        ]
+      }
+    },
+    "/api/explore/wizard": {
+      "get": {
+        "description": "Returns the static decision wizard configuration (steps + options).",
+        "operationId": "getWizardSteps",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WizardResponse"
+                }
+              }
+            },
+            "description": "OK",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HumaError"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get decision wizard steps",
+        "tags": [
+          "explore"
+        ]
+      }
+    },
+    "/api/explore/wizard/results": {
+      "get": {
+        "description": "Returns 5 game recommendations based on the wizard's mood/era/vibe selections.",
+        "operationId": "getWizardResults",
+        "parameters": [
+          {
+            "description": "Chosen mood (action|chill|story|challenge|fun).",
+            "explode": false,
+            "in": "query",
+            "name": "mood",
+            "schema": {
+              "description": "Chosen mood (action|chill|story|challenge|fun).",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Chosen era (80s|early90s|late90s|2000s|any).",
+            "explode": false,
+            "in": "query",
+            "name": "era",
+            "schema": {
+              "description": "Chosen era (80s|early90s|late90s|2000s|any).",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Chosen vibe (solo|multiplayer|short|long|any).",
+            "explode": false,
+            "in": "query",
+            "name": "vibe",
+            "schema": {
+              "description": "Chosen vibe (solo|multiplayer|short|long|any).",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WizardResultsResponse"
+                }
+              }
+            },
+            "description": "OK",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HumaError"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get wizard recommendations",
+        "tags": [
+          "explore"
+        ]
+      }
+    },
+    "/api/explore/your-anniversaries": {
+      "get": {
+        "description": "Returns games the caller played roughly 1..10 years ago (within a 3-day window of today's date).",
+        "operationId": "getYourAnniversaries",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AnniversariesResponse"
+                }
+              }
+            },
+            "description": "OK",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HumaError"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get personal gameplay anniversaries",
+        "tags": [
+          "explore"
         ]
       }
     },

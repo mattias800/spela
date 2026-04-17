@@ -258,17 +258,21 @@ func NewRouter(cfg Config) (*gin.Engine, func()) {
 	RegisterUploadAdminRoutes(humaAPI, uploadHandler, cfg.JWTSecret, cfg.DB, userLimiter)
 	RegisterSocialExtraRoutes(humaAPI, socialHandler, cfg.JWTSecret, cfg.DB, userLimiter)
 	RegisterProfileRoutes(humaAPI, exploreHandler, cfg.JWTSecret, cfg.DB, userLimiter)
+	RegisterExploreFeaturedRoutes(humaAPI, exploreHandler, cfg.JWTSecret, cfg.DB, userLimiter)
+	RegisterExploreForYouRoutes(humaAPI, exploreHandler, cfg.JWTSecret, cfg.DB, userLimiter)
+	RegisterExploreDeveloperRoutes(humaAPI, exploreHandler, cfg.JWTSecret, cfg.DB, userLimiter)
+	RegisterExploreConsoleRoutes(humaAPI, exploreHandler, cfg.JWTSecret, cfg.DB, userLimiter)
+	RegisterExploreGalleryRoutes(humaAPI, exploreHandler, cfg.JWTSecret, cfg.DB, userLimiter)
+	RegisterExploreCommunityRoutes(humaAPI, exploreHandler, cfg.JWTSecret, cfg.DB, userLimiter)
+	RegisterExploreTemporalRoutes(humaAPI, exploreHandler, cfg.JWTSecret, cfg.DB, userLimiter)
+	RegisterExploreChallengeRoutes(humaAPI, exploreHandler, cfg.JWTSecret, cfg.DB, userLimiter)
+	RegisterExploreWizardRoutes(humaAPI, exploreHandler, cfg.JWTSecret, cfg.DB, userLimiter)
+	RegisterAuthRoutes(humaAPI, authHandler, authLimiter, refreshLimiter)
 
-	// Public auth routes — rate limit login/register/setup to prevent brute force,
-	// but leave refresh and setup-status unrestricted (called frequently during normal use).
-	authGroup := r.Group("/api/auth")
-	{
-		authGroup.POST("/login", authLimiter.RateLimit(), authHandler.Login)
-		authGroup.POST("/register", authLimiter.RateLimit(), authHandler.Register)
-		authGroup.POST("/setup", authLimiter.RateLimit(), authHandler.Setup)
-		authGroup.POST("/refresh", refreshLimiter.RateLimit(), authHandler.Refresh)
-		authGroup.GET("/setup-status", authHandler.SetupStatus)
-	}
+	// Public auth routes — login/register/setup/refresh/setup-status have been
+	// migrated to huma (see RegisterAuthRoutes above). Rate limiting (per-IP
+	// auth/refresh limiters) is applied via IPRateLimitMiddleware inside the
+	// huma registration.
 
 	// Setup diagnostics (public during first-time setup, admin-only after)
 	r.GET("/api/setup/diagnostics", setupHandler.Diagnostics)
@@ -313,43 +317,16 @@ func NewRouter(cfg Config) (*gin.Engine, func()) {
 
 		// Top Lists — migrated to huma as part of RegisterConsoleRoutes above.
 
-		// Explore
-		explore := api.Group("/explore")
-		{
-			explore.GET("/featured", exploreHandler.GetExploreFeatured)
-			explore.GET("/rows", exploreHandler.GetExploreRows)
-			explore.GET("/series/featured", exploreHandler.GetExploreFeaturedSeries)
-			explore.GET("/moods", exploreHandler.GetExploreMoods)
-			explore.GET("/mood/:mood", exploreHandler.GetMoodGames)
-			explore.GET("/surprise", exploreHandler.GetSurpriseGame)
-			explore.GET("/for-you", exploreHandler.GetForYou)
-			explore.GET("/players-like-you", exploreHandler.GetPlayersLikeYou)
-			explore.GET("/developers", exploreHandler.GetDevelopers)
-			explore.GET("/developers/spotlight", exploreHandler.GetDeveloperSpotlight)
-			explore.GET("/developers/:name", exploreHandler.GetDeveloperDetail)
-			explore.GET("/publishers/:name", exploreHandler.GetPublisherDetail)
-			explore.GET("/consoles/:id/showcase", exploreHandler.GetConsoleShowcase)
-			explore.GET("/console-highlights", exploreHandler.GetConsoleHighlights)
-			explore.GET("/screenshots", exploreHandler.GetScreenshotGallery)
-			explore.GET("/artwork", exploreHandler.GetArtworkGallery)
-			explore.GET("/covers", exploreHandler.GetCoverGallery)
-			explore.GET("/trending", exploreHandler.GetTrending)
-			explore.GET("/community-top", exploreHandler.GetCommunityTop)
-			explore.GET("/cult-classics", exploreHandler.GetCultClassics)
-			explore.GET("/recently-reviewed", exploreHandler.GetRecentlyReviewed)
-			explore.GET("/active-now", exploreHandler.GetActiveNow)
-			explore.GET("/on-this-day", exploreHandler.GetOnThisDay)
-			explore.GET("/best-of-year/:year", exploreHandler.GetBestOfYear)
-			explore.GET("/your-anniversaries", exploreHandler.GetYourAnniversaries)
-			explore.GET("/decades/:decade", exploreHandler.GetDecades)
-			explore.GET("/easy-to-complete", exploreHandler.GetEasyToComplete)
-			explore.GET("/hardest-games", exploreHandler.GetHardestGames)
-			explore.GET("/almost-done", exploreHandler.GetAlmostDone)
-			explore.GET("/fresh-challenges", exploreHandler.GetFreshChallenges)
-			explore.GET("/active-challenges", exploreHandler.GetActiveChallenges)
-			explore.GET("/wizard", exploreHandler.GetWizardSteps)
-			explore.GET("/wizard/results", exploreHandler.GetWizardResults)
-		}
+		// Explore — all endpoints migrated to huma. See:
+		//   RegisterExploreFeaturedRoutes   (featured/rows/series/moods/surprise)
+		//   RegisterExploreForYouRoutes     (for-you/players-like-you)
+		//   RegisterExploreDeveloperRoutes  (developers/publishers detail + spotlight)
+		//   RegisterExploreConsoleRoutes    (console showcase + highlights)
+		//   RegisterExploreGalleryRoutes    (screenshots/artwork/covers)
+		//   RegisterExploreCommunityRoutes  (trending/community-top/cult-classics/recently-reviewed/active-now)
+		//   RegisterExploreTemporalRoutes   (on-this-day/best-of-year/your-anniversaries/decades)
+		//   RegisterExploreChallengeRoutes  (easy-to-complete/hardest-games/almost-done/fresh-challenges/active-challenges)
+		//   RegisterExploreWizardRoutes     (wizard + wizard/results)
 
 		// Games — most endpoints migrated to huma (see RegisterGameRoutes above).
 		// Download endpoints stay on gin because they use c.File()/tar+zip streaming
