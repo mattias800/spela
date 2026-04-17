@@ -287,28 +287,9 @@ data class UpdateDevicePreferencesRequest(
 
 // Shared Saves
 
-@Serializable
-data class SharedSaveStateDto(
-    val id: String,
-    val userId: String,
-    val username: String,
-    val avatarUrl: String? = null,
-    val gameId: String,
-    val name: String,
-    val description: String = "",
-    val fileSize: Long = 0,
-    val screenshotUrl: String? = null,
-    val downloadCount: Int = 0,
-    val createdAt: String = "",
-)
-
-@Serializable
-data class SharedSavesResponse(
-    val data: List<SharedSaveStateDto> = emptyList(),
-    val total: Long = 0,
-    val page: Int = 1,
-    val pageSize: Int = 20,
-)
+// SharedSaveStateDto / SharedSavesResponse replaced by
+// com.spela.client.models.SharedSaveResponse /
+// PaginatedResponseSharedSaveResponse (see player/shared-api/).
 
 // Ratings
 

@@ -81,6 +81,48 @@ class GameRepositoryImplTest {
     }
 
     @Test
+    fun sharedSaveResponseMapsToDomain() {
+        val now = kotlin.time.Instant.fromEpochSeconds(1_700_000_000)
+        val response = com.spela.client.models.SharedSaveResponse(
+            createdAt = now,
+            downloadCount = 12L,
+            fileSize = 65_536L,
+            gameId = "42",
+            id = "ss1",
+            name = "Boss Fight",
+            userId = "u1",
+            username = "Alice",
+            avatarUrl = "/avatars/alice.png",
+            description = "Before final boss",
+        )
+        val domain = response.toDomain()
+        assertEquals("ss1", domain.id)
+        assertEquals("Alice", domain.username)
+        assertEquals("/avatars/alice.png", domain.userAvatarUrl)
+        assertEquals("Before final boss", domain.description)
+        assertEquals(12, domain.downloadCount) // Long -> Int
+        assertEquals(65_536L, domain.fileSize)
+        assertEquals(now.toString(), domain.createdAt)
+    }
+
+    @Test
+    fun sharedSaveResponseHandlesNullDescription() {
+        val now = kotlin.time.Instant.fromEpochSeconds(0)
+        val response = com.spela.client.models.SharedSaveResponse(
+            createdAt = now,
+            downloadCount = 0L,
+            fileSize = 0L,
+            gameId = "g",
+            id = "s",
+            name = "Untitled",
+            userId = "u",
+            username = "bob",
+            description = null,
+        )
+        assertEquals("", response.toDomain().description)
+    }
+
+    @Test
     fun themeResponseMapsToDomain() {
         val response = com.spela.client.models.ThemeResponse(
             gameCount = 42L,

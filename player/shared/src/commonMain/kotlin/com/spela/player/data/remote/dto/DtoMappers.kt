@@ -183,17 +183,17 @@ fun UserPreferencesDto.toDomain(): UserPreferences = UserPreferences(
     defaultSecondScreenPage = defaultSecondScreenPage,
 )
 
-fun SharedSaveStateDto.toDomain(): SharedSaveState = SharedSaveState(
+fun com.spela.client.models.SharedSaveResponse.toDomain(): SharedSaveState = SharedSaveState(
     id = id,
     userId = userId,
     username = username,
     userAvatarUrl = avatarUrl,
     gameId = gameId,
     name = name,
-    description = description,
+    description = description.orEmpty(),
     fileSize = fileSize,
-    downloadCount = downloadCount,
-    createdAt = createdAt,
+    downloadCount = downloadCount.toInt(),
+    createdAt = createdAt.toString(),
 )
 
 fun com.spela.client.models.GameRatingResponse.toDomain(): GameRating = GameRating(
