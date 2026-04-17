@@ -772,14 +772,23 @@ class SpelaApiClient(
 
     // Shared Saves
 
-    suspend fun getSharedSaves(gameId: String, page: Int = 1, pageSize: Int = 20): SharedSavesResponse {
+    suspend fun getSharedSaves(
+        gameId: String,
+        page: Int = 1,
+        pageSize: Int = 20,
+    ): com.spela.client.models.PaginatedResponseSharedSaveResponse {
         return client.get("$baseUrl/api/games/$gameId/shared-saves") {
             parameter("page", page)
             parameter("pageSize", pageSize)
         }.body()
     }
 
-    suspend fun shareSave(gameId: String, name: String, description: String, data: ByteArray): SharedSaveStateDto {
+    suspend fun shareSave(
+        gameId: String,
+        name: String,
+        description: String,
+        data: ByteArray,
+    ): com.spela.client.models.SharedSaveResponse {
         return client.submitFormWithBinaryData(
             url = "$baseUrl/api/games/$gameId/shared-saves",
             formData = formData {

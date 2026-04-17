@@ -10,7 +10,7 @@ class SharedSaveRepositoryImpl(
 ) : SharedSaveRepository {
 
     override suspend fun getSharedSaves(gameId: String, page: Int, pageSize: Int): Result<List<SharedSaveState>> = runCatching {
-        apiClient.getSharedSaves(gameId, page = page, pageSize = pageSize).data.map { dto ->
+        apiClient.getSharedSaves(gameId, page = page, pageSize = pageSize).data.orEmpty().map { dto ->
             val save = dto.toDomain()
             save.copy(userAvatarUrl = apiClient.resolveUrl(save.userAvatarUrl))
         }
