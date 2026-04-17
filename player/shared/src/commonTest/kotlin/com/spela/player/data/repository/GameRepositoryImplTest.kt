@@ -34,6 +34,53 @@ class GameRepositoryImplTest {
     }
 
     @Test
+    fun completionistMapResponseMapsToDomain() {
+        val response = com.spela.client.models.CompletionistMapResponse(
+            consoles = listOf(
+                com.spela.client.models.CompletionistConsole(
+                    id = "nes",
+                    name = "NES",
+                    percentage = 75L,
+                    playedGames = 15L,
+                    totalGames = 20L,
+                ),
+                com.spela.client.models.CompletionistConsole(
+                    id = "snes",
+                    name = "SNES",
+                    percentage = 50L,
+                    playedGames = 10L,
+                    totalGames = 20L,
+                ),
+            ),
+            overallPct = 62L,
+            totalGames = 40L,
+            totalPlayed = 25L,
+        )
+
+        val domain = response.toDomain()
+
+        assertEquals(2, domain.consoles.size)
+        assertEquals("nes", domain.consoles[0].id)
+        assertEquals(75, domain.consoles[0].percentage) // Long -> Int
+        assertEquals(15, domain.consoles[0].playedGames)
+        assertEquals(40, domain.totalGames)
+        assertEquals(25, domain.totalPlayed)
+        assertEquals(62, domain.overallPct)
+    }
+
+    @Test
+    fun completionistMapResponseHandlesNullConsolesList() {
+        val response = com.spela.client.models.CompletionistMapResponse(
+            consoles = null,
+            overallPct = 0L,
+            totalGames = 0L,
+            totalPlayed = 0L,
+        )
+        val domain = response.toDomain()
+        assertTrue(domain.consoles.isEmpty())
+    }
+
+    @Test
     fun consoleResponseMapsToDomain() {
         val now = kotlin.time.Instant.fromEpochSeconds(0)
         val response = com.spela.client.models.ConsoleResponse(
