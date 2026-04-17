@@ -43,6 +43,12 @@ type ConsoleShowcaseResponse struct {
 }
 
 // ConsoleHighlight is a compact summary of a console for the explore page quick-jump row.
+//
+// TopGame is optional: a console may have games without any one of them being
+// chosen as a "top" pick (e.g. no game has hero art yet). The pointer plus
+// `omitempty` tag make huma emit the field as an optional, nullable reference
+// in the OpenAPI spec rather than marking it required (which would crash the
+// Kotlin client whenever the server returned null).
 type ConsoleHighlight struct {
 	ID         string        `json:"id"`
 	Name       string        `json:"name"`
@@ -50,7 +56,7 @@ type ConsoleHighlight struct {
 	IconURL    string        `json:"iconUrl"`
 	LogoURL    string        `json:"logoUrl"`
 	GameCount  int           `json:"gameCount"`
-	TopGame    *GameResponse `json:"topGame"`
+	TopGame    *GameResponse `json:"topGame,omitempty"`
 }
 
 // ConsoleHighlightsResponse is the API response for the console highlights endpoint.
