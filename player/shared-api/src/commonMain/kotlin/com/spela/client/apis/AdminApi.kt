@@ -182,10 +182,10 @@ open class AdminApi : ApiClient {
 
         val localVariableBody = 
             formData {
-                baseGameId?.apply { append("base_game_id", baseGameId) }
+                baseGameId?.apply { append("baseGameId", baseGameId) }
                 label?.apply { append("label", label) }
                 mode?.apply { append("mode", mode) }
-                patchFile?.apply { append(patch_file) }
+                patchFile?.apply { append(patchFile) }
                 title?.apply { append("title", title) }
             }
 

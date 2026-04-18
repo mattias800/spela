@@ -146,7 +146,7 @@ func createRomHackRequest(t *testing.T, token string, fields map[string]string, 
 		require.NoError(t, writer.WriteField(key, value))
 	}
 
-	part, err := writer.CreateFormFile("patch_file", patchFilename)
+	part, err := writer.CreateFormFile("patchFile", patchFilename)
 	require.NoError(t, err)
 	_, err = part.Write(patchData)
 	require.NoError(t, err)
@@ -168,7 +168,7 @@ func TestCreateRomHack_VariantMode(t *testing.T) {
 	patch := buildTestIPSPatch(0, []byte("Patched"))
 
 	req := createRomHackRequest(t, env.adminToken, map[string]string{
-		"base_game_id": strconv.FormatUint(uint64(env.baseGame.ID), 10),
+		"baseGameId": strconv.FormatUint(uint64(env.baseGame.ID), 10),
 		"mode":         "variant",
 		"label":        "English Translation",
 	}, "translation.ips", patch)
@@ -217,7 +217,7 @@ func TestCreateRomHack_StandaloneMode(t *testing.T) {
 	patch := buildTestIPSPatch(0, []byte("Patched"))
 
 	req := createRomHackRequest(t, env.adminToken, map[string]string{
-		"base_game_id": strconv.FormatUint(uint64(env.baseGame.ID), 10),
+		"baseGameId": strconv.FormatUint(uint64(env.baseGame.ID), 10),
 		"mode":         "standalone",
 		"title":        "My Cool ROM Hack",
 	}, "hack.ips", patch)
@@ -267,7 +267,7 @@ func TestCreateRomHack_BPSPatch(t *testing.T) {
 	patch := buildTestBPSPatch(romData, target)
 
 	req := createRomHackRequest(t, env.adminToken, map[string]string{
-		"base_game_id": strconv.FormatUint(uint64(env.baseGame.ID), 10),
+		"baseGameId": strconv.FormatUint(uint64(env.baseGame.ID), 10),
 		"mode":         "standalone",
 		"title":        "BPS Hack",
 	}, "hack.bps", patch)
@@ -305,7 +305,7 @@ func TestCreateRomHack_MissingBaseGameID(t *testing.T) {
 	w := httptest.NewRecorder()
 	router.ServeHTTP(w, req)
 	assert.Equal(t, http.StatusBadRequest, w.Code)
-	assert.Contains(t, w.Body.String(), "base_game_id")
+	assert.Contains(t, w.Body.String(), "baseGameId")
 }
 
 func TestCreateRomHack_InvalidMode(t *testing.T) {
@@ -316,7 +316,7 @@ func TestCreateRomHack_InvalidMode(t *testing.T) {
 	patch := buildTestIPSPatch(0, []byte("X"))
 
 	req := createRomHackRequest(t, env.adminToken, map[string]string{
-		"base_game_id": strconv.FormatUint(uint64(env.baseGame.ID), 10),
+		"baseGameId": strconv.FormatUint(uint64(env.baseGame.ID), 10),
 		"mode":         "invalid",
 	}, "patch.ips", patch)
 
@@ -334,7 +334,7 @@ func TestCreateRomHack_MissingLabel(t *testing.T) {
 	patch := buildTestIPSPatch(0, []byte("X"))
 
 	req := createRomHackRequest(t, env.adminToken, map[string]string{
-		"base_game_id": strconv.FormatUint(uint64(env.baseGame.ID), 10),
+		"baseGameId": strconv.FormatUint(uint64(env.baseGame.ID), 10),
 		"mode":         "variant",
 	}, "patch.ips", patch)
 
@@ -352,7 +352,7 @@ func TestCreateRomHack_MissingTitle(t *testing.T) {
 	patch := buildTestIPSPatch(0, []byte("X"))
 
 	req := createRomHackRequest(t, env.adminToken, map[string]string{
-		"base_game_id": strconv.FormatUint(uint64(env.baseGame.ID), 10),
+		"baseGameId": strconv.FormatUint(uint64(env.baseGame.ID), 10),
 		"mode":         "standalone",
 	}, "patch.ips", patch)
 
@@ -368,7 +368,7 @@ func TestCreateRomHack_UnsupportedFormat(t *testing.T) {
 	defer cleanup()
 
 	req := createRomHackRequest(t, env.adminToken, map[string]string{
-		"base_game_id": strconv.FormatUint(uint64(env.baseGame.ID), 10),
+		"baseGameId": strconv.FormatUint(uint64(env.baseGame.ID), 10),
 		"mode":         "standalone",
 		"title":        "Test",
 	}, "patch.xyz", []byte("data"))
@@ -387,7 +387,7 @@ func TestCreateRomHack_BaseGameNotFound(t *testing.T) {
 	patch := buildTestIPSPatch(0, []byte("X"))
 
 	req := createRomHackRequest(t, env.adminToken, map[string]string{
-		"base_game_id": "99999",
+		"baseGameId": "99999",
 		"mode":         "standalone",
 		"title":        "Test",
 	}, "patch.ips", patch)
@@ -416,7 +416,7 @@ func TestCreateRomHack_NonAdminDenied(t *testing.T) {
 	patch := buildTestIPSPatch(0, []byte("X"))
 
 	req := createRomHackRequest(t, userToken, map[string]string{
-		"base_game_id": strconv.FormatUint(uint64(env.baseGame.ID), 10),
+		"baseGameId": strconv.FormatUint(uint64(env.baseGame.ID), 10),
 		"mode":         "standalone",
 		"title":        "Test",
 	}, "patch.ips", patch)

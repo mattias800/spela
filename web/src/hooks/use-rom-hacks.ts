@@ -20,8 +20,8 @@ export function useCreateRomHack() {
   return useMutation({
     mutationFn: async (params: CreateRomHackParams) => {
       const formData = new FormData();
-      formData.append("base_game_id", params.baseGameId);
-      formData.append("patch_file", params.patchFile);
+      formData.append("baseGameId", params.baseGameId);
+      formData.append("patchFile", params.patchFile);
       formData.append("mode", params.mode);
       if (params.mode === "variant" && params.label) {
         formData.append("label", params.label);

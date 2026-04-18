@@ -60,15 +60,20 @@ type AdminReplaceROMOutput struct {
 
 // AdminCreateRomHackBody is the multipart body for POST /api/admin/rom-hacks.
 // All fields are marked optional in the schema so the handler can return the
-// existing 1:1 gin error messages (e.g. "base_game_id is required",
-// "mode must be 'variant' or 'standalone'") instead of huma's generic
-// "required form parameter is missing" 422 response.
+// existing conditional-validation error messages (e.g. "baseGameId is
+// required", "mode must be 'variant' or 'standalone'") instead of huma's
+// generic "required form parameter is missing" 422 response.
+//
+// Form-field names are camelCase to keep the API consistent with the rest of
+// the surface and to work around an openapi-generator-kotlin bug that emits
+// snake_case identifier references inside the generated formData{} block,
+// breaking compilation when a FormFile field name contains underscores.
 type AdminCreateRomHackBody struct {
-	BaseGameID string        `form:"base_game_id" required:"false" doc:"Numeric ID of the base game whose ROM the patch applies to."`
+	BaseGameID string        `form:"baseGameId" required:"false" doc:"Numeric ID of the base game whose ROM the patch applies to."`
 	Mode       string        `form:"mode" required:"false" doc:"'variant' (groups with the base game) or 'standalone' (creates an independent game)."`
 	Label      string        `form:"label" required:"false" doc:"Variant label (required when mode='variant'). Appears in brackets after the base title."`
 	Title      string        `form:"title" required:"false" doc:"Standalone title (required when mode='standalone')."`
-	PatchFile  huma.FormFile `form:"patch_file" required:"false" contentType:"application/octet-stream" doc:"Patch file (.ips, .bps, .ups, .xdelta, .vcdiff). Max 100 MB."`
+	PatchFile  huma.FormFile `form:"patchFile" required:"false" contentType:"application/octet-stream" doc:"Patch file (.ips, .bps, .ups, .xdelta, .vcdiff). Max 100 MB."`
 }
 
 // AdminCreateRomHackInput wraps the multipart body.
@@ -434,10 +439,10 @@ func (h *RomHackHandler) HumaCreateRomHack(_ context.Context, in *AdminCreateRom
 	body := in.RawBody.Data()
 
 	if body.BaseGameID == "" {
-		return nil, huma.NewError(http.StatusBadRequest, "base_game_id is required")
+		return nil, huma.NewError(http.StatusBadRequest, "baseGameId is required")
 	}
 	if _, err := strconv.ParseUint(body.BaseGameID, 10, 64); err != nil {
-		return nil, huma.NewError(http.StatusBadRequest, "base_game_id must be a valid numeric ID")
+		return nil, huma.NewError(http.StatusBadRequest, "baseGameId must be a valid numeric ID")
 	}
 
 	mode := body.Mode
@@ -454,7 +459,7 @@ func (h *RomHackHandler) HumaCreateRomHack(_ context.Context, in *AdminCreateRom
 
 	patchFile := body.PatchFile
 	if !patchFile.IsSet {
-		return nil, huma.NewError(http.StatusBadRequest, "patch_file is required")
+		return nil, huma.NewError(http.StatusBadRequest, "patchFile is required")
 	}
 	defer patchFile.Close()
 

@@ -11617,7 +11617,7 @@
           "content": {
             "multipart/form-data": {
               "encoding": {
-                "base_game_id": {
+                "baseGameId": {
                   "contentType": "text/plain"
                 },
                 "label": {
@@ -11626,7 +11626,7 @@
                 "mode": {
                   "contentType": "text/plain"
                 },
-                "patch_file": {
+                "patchFile": {
                   "contentType": "application/octet-stream"
                 },
                 "title": {
@@ -11635,7 +11635,7 @@
               },
               "schema": {
                 "properties": {
-                  "base_game_id": {
+                  "baseGameId": {
                     "description": "Numeric ID of the base game whose ROM the patch applies to.",
                     "type": "string"
                   },
@@ -11647,7 +11647,7 @@
                     "description": "'variant' (groups with the base game) or 'standalone' (creates an independent game).",
                     "type": "string"
                   },
-                  "patch_file": {
+                  "patchFile": {
                     "contentEncoding": "binary",
                     "contentMediaType": "application/octet-stream",
                     "description": "Patch file (.ips, .bps, .ups, .xdelta, .vcdiff). Max 100 MB.",

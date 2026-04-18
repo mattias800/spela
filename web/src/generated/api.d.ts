@@ -9087,7 +9087,7 @@ export interface operations {
             content: {
                 "multipart/form-data": {
                     /** @description Numeric ID of the base game whose ROM the patch applies to. */
-                    base_game_id?: string;
+                    baseGameId?: string;
                     /** @description Variant label (required when mode='variant'). Appears in brackets after the base title. */
                     label?: string;
                     /** @description 'variant' (groups with the base game) or 'standalone' (creates an independent game). */
@@ -9096,7 +9096,7 @@ export interface operations {
                      * Format: binary
                      * @description Patch file (.ips, .bps, .ups, .xdelta, .vcdiff). Max 100 MB.
                      */
-                    patch_file?: string;
+                    patchFile?: string;
                     /** @description Standalone title (required when mode='standalone'). */
                     title?: string;
                 };
