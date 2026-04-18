@@ -2,7 +2,9 @@ package api
 
 import (
 	"context"
+	"fmt"
 	"net/http"
+	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -49,6 +51,18 @@ type CreateSessionInput struct {
 
 // CreateSessionOutput wraps the created session response (201).
 type CreateSessionOutput struct {
+	Body GameSessionResponse
+}
+
+// CreateSessionFromSharedSaveInput is the input for POST
+// /api/games/{id}/sessions/from-shared-save/{saveId}.
+type CreateSessionFromSharedSaveInput struct {
+	ID     string `path:"id" doc:"Game ID."`
+	SaveID string `path:"saveId" doc:"Shared save ID to seed the new session from."`
+}
+
+// CreateSessionFromSharedSaveOutput wraps the created session response (201).
+type CreateSessionFromSharedSaveOutput struct {
 	Body GameSessionResponse
 }
 
@@ -184,8 +198,9 @@ type UpdateSessionCheatsOutput struct {
 }
 
 // RegisterSessionRoutes wires session endpoints into the huma API. File-based
-// endpoints (save uploads, downloads, SRAM, from-shared-save) stay on raw gin
-// in this batch.
+// endpoints (save uploads + downloads, auto-save upload/download, SRAM
+// upload/download) stay on raw gin in this batch because they rely on
+// multipart form handling or c.File() streaming.
 func RegisterSessionRoutes(api huma.API, h *SessionHandler, jwtSecret string, database *gorm.DB, userLimiter *RateLimiter) {
 	requireAuth := RequireAuth(jwtSecret, database)
 	rateLimit := UserRateLimitMiddleware(userLimiter)
@@ -214,6 +229,18 @@ func RegisterSessionRoutes(api huma.API, h *SessionHandler, jwtSecret string, da
 		Middlewares:   mw,
 		Security:      sec,
 	}, h.HumaCreateSession)
+
+	huma.Register(api, huma.Operation{
+		OperationID:   "createSessionFromSharedSave",
+		Method:        http.MethodPost,
+		Path:          "/api/games/{id}/sessions/from-shared-save/{saveId}",
+		Summary:       "Create a session from a community shared save",
+		Description:   "Creates a new game session for the caller seeded from a community shared save. Copies the shared save file into the new session and increments the shared save's download counter.",
+		DefaultStatus: http.StatusCreated,
+		Tags:          []string{"sessions"},
+		Middlewares:   mw,
+		Security:      sec,
+	}, h.HumaCreateSessionFromSharedSave)
 
 	huma.Register(api, huma.Operation{
 		OperationID: "getSession",
@@ -459,6 +486,76 @@ func (h *SessionHandler) HumaListSessions(ctx context.Context, in *ListGameSessi
 	}
 
 	return &ListGameSessionsOutput{Body: result}, nil
+}
+
+// HumaCreateSessionFromSharedSave is the huma handler for
+// POST /api/games/{id}/sessions/from-shared-save/{saveId}.
+func (h *SessionHandler) HumaCreateSessionFromSharedSave(ctx context.Context, in *CreateSessionFromSharedSaveInput) (*CreateSessionFromSharedSaveOutput, error) {
+	uid := UserIDFromContext(ctx)
+
+	gid, err := strconv.ParseUint(in.ID, 10, 64)
+	if err != nil {
+		return nil, huma.Error400BadRequest("invalid game ID")
+	}
+	sid, err := strconv.ParseUint(in.SaveID, 10, 64)
+	if err != nil {
+		return nil, huma.Error400BadRequest("invalid save ID")
+	}
+
+	var game db.Game
+	if err := h.DB.First(&game, gid).Error; err != nil {
+		return nil, huma.Error404NotFound("game not found")
+	}
+
+	var sharedSave db.SharedSaveState
+	if err := h.DB.First(&sharedSave, sid).Error; err != nil {
+		return nil, huma.Error404NotFound("shared save not found")
+	}
+	if sharedSave.GameID != uint(gid) {
+		return nil, huma.Error400BadRequest("shared save does not belong to this game")
+	}
+
+	// Create the session record.
+	session := db.GameSession{
+		OwnerID: uid,
+		GameID:  uint(gid),
+		Name:    fmt.Sprintf("From: %s", sharedSave.Name),
+	}
+	if err := h.DB.Create(&session).Error; err != nil {
+		return nil, huma.Error500InternalServerError("failed to create session")
+	}
+
+	// Copy the shared save file to the new session.
+	srcFile, err := os.Open(sharedSave.FilePath)
+	if err != nil {
+		return nil, huma.Error500InternalServerError("failed to read shared save file")
+	}
+	defer srcFile.Close()
+
+	filename := filepath.Base(sharedSave.FilePath)
+	path, size, err := h.Storage.WriteSessionSave(session.ID, filename, srcFile)
+	if err != nil {
+		return nil, huma.Error500InternalServerError("failed to copy save file")
+	}
+
+	save := db.SessionSaveState{
+		SessionID:     session.ID,
+		UserID:        uid,
+		Name:          sharedSave.Name,
+		FilePath:      path,
+		FileSize:      size,
+		ScreenshotURL: sharedSave.ScreenshotURL,
+		IsAuto:        false,
+	}
+	if err := h.DB.Create(&save).Error; err != nil {
+		return nil, huma.Error500InternalServerError("failed to create save record")
+	}
+
+	// Bump the shared save's download counter.
+	h.DB.Model(&sharedSave).UpdateColumn("download_count", gorm.Expr("download_count + ?", 1))
+
+	h.DB.Preload("Owner").First(&session, session.ID)
+	return &CreateSessionFromSharedSaveOutput{Body: h.toSessionResponse(session, 1)}, nil
 }
 
 // HumaCreateSession is the huma handler for POST /api/games/{id}/sessions.

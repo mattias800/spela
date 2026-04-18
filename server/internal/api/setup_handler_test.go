@@ -38,16 +38,17 @@ func TestDiagnostics_PublicWhenNoUsers(t *testing.T) {
 
 	assert.Equal(t, http.StatusOK, w.Code)
 
-	var resp map[string][]DiagnosticCheck
+	var resp struct {
+		Checks []DiagnosticCheck `json:"checks"`
+	}
 	err := json.Unmarshal(w.Body.Bytes(), &resp)
 	require.NoError(t, err)
 
-	checks := resp["checks"]
-	assert.NotEmpty(t, checks)
+	assert.NotEmpty(t, resp.Checks)
 
 	// Verify expected check IDs are present
 	ids := make(map[string]bool)
-	for _, c := range checks {
+	for _, c := range resp.Checks {
 		ids[c.ID] = true
 	}
 	assert.True(t, ids["database"])
@@ -88,10 +89,12 @@ func TestDiagnostics_AdminCanAccess(t *testing.T) {
 
 	assert.Equal(t, http.StatusOK, w.Code)
 
-	var resp map[string][]DiagnosticCheck
+	var resp struct {
+		Checks []DiagnosticCheck `json:"checks"`
+	}
 	err := json.Unmarshal(w.Body.Bytes(), &resp)
 	require.NoError(t, err)
-	assert.NotEmpty(t, resp["checks"])
+	assert.NotEmpty(t, resp.Checks)
 }
 
 func TestDiagnostics_RegularUserForbidden(t *testing.T) {

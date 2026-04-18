@@ -121,6 +121,40 @@ open class SessionsApi : ApiClient {
 
 
     /**
+     * Create a session from a community shared save
+     * Creates a new game session for the caller seeded from a community shared save. Copies the shared save file into the new session and increments the shared save&#39;s download counter.
+     * @param id Game ID.
+     * @param saveId Shared save ID to seed the new session from.
+     * @return GameSessionResponse
+     */
+    @Suppress("UNCHECKED_CAST")
+    open suspend fun createSessionFromSharedSave(id: kotlin.String, saveId: kotlin.String): HttpResponse<GameSessionResponse> {
+
+        val localVariableAuthNames = listOf<String>()
+
+        val localVariableBody = 
+            io.ktor.client.utils.EmptyContent
+
+        val localVariableQuery = mutableMapOf<String, List<String>>()
+        val localVariableHeaders = mutableMapOf<String, String>()
+
+        val localVariableConfig = RequestConfig<kotlin.Any?>(
+            RequestMethod.POST,
+            "/api/games/{id}/sessions/from-shared-save/{saveId}".replace("{" + "id" + "}", "$id").replace("{" + "saveId" + "}", "$saveId"),
+            query = localVariableQuery,
+            headers = localVariableHeaders,
+            requiresAuthentication = false,
+        )
+
+        return request(
+            localVariableConfig,
+            localVariableBody,
+            localVariableAuthNames
+        ).wrap()
+    }
+
+
+    /**
      * Delete a session and its saves
      * Owner-only. Deletes all save state files and records, SRAM data, and the session directory.
      * @param id Session ID.

@@ -1009,7 +1009,7 @@ fun com.spela.client.models.ConsoleHighlight.toDomain(): ConsoleHighlight = Cons
     iconUrl = iconUrl,
     logoUrl = logoUrl,
     gameCount = gameCount.toInt(),
-    topGame = topGame.toDomain(),
+    topGame = topGame?.toDomain(),
 )
 
 fun com.spela.client.models.ArtworkItem.toDomain(): ArtworkItem = ArtworkItem(

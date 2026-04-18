@@ -247,6 +247,7 @@ func NewRouter(cfg Config) (*gin.Engine, func()) {
 	RegisterBiosRoutes(humaAPI, biosHandler, cfg.JWTSecret, cfg.DB, userLimiter)
 	showcaseHandler := &AchievementShowcaseHandler{DB: cfg.DB}
 	RegisterAchievementShowcaseRoutes(humaAPI, showcaseHandler, cfg.JWTSecret, cfg.DB, userLimiter)
+	RegisterGameAchievementsRoute(humaAPI, raHandler, cfg.JWTSecret, cfg.DB, userLimiter)
 	RegisterDeviceRoutes(humaAPI, deviceHandler, cfg.JWTSecret, cfg.DB, userLimiter)
 	RegisterScraperAdminRoutes(humaAPI, adminHandler, cfg.JWTSecret, cfg.DB, userLimiter)
 	RegisterCheatAdminRoutes(humaAPI, adminHandler, cfg.JWTSecret, cfg.DB, userLimiter)
@@ -268,14 +269,15 @@ func NewRouter(cfg Config) (*gin.Engine, func()) {
 	RegisterExploreChallengeRoutes(humaAPI, exploreHandler, cfg.JWTSecret, cfg.DB, userLimiter)
 	RegisterExploreWizardRoutes(humaAPI, exploreHandler, cfg.JWTSecret, cfg.DB, userLimiter)
 	RegisterAuthRoutes(humaAPI, authHandler, authLimiter, refreshLimiter)
+	RegisterSetupDiagnosticsRoutes(humaAPI, setupHandler)
 
 	// Public auth routes — login/register/setup/refresh/setup-status have been
 	// migrated to huma (see RegisterAuthRoutes above). Rate limiting (per-IP
 	// auth/refresh limiters) is applied via IPRateLimitMiddleware inside the
 	// huma registration.
 
-	// Setup diagnostics (public during first-time setup, admin-only after)
-	r.GET("/api/setup/diagnostics", setupHandler.Diagnostics)
+	// Setup diagnostics — migrated to huma (see RegisterSetupDiagnosticsRoutes above).
+	// Public during first-time setup (no users exist), admin-only afterwards.
 
 	// Logout (requires auth, placed before main protected group for clarity)
 	logoutGroup := r.Group("/api/auth")
@@ -341,9 +343,8 @@ func NewRouter(cfg Config) (*gin.Engine, func()) {
 		// (see RegisterEnrichmentRoutes above).
 
 		// Game Sessions — most endpoints migrated to huma (see RegisterSessionRoutes above).
-		// File-based endpoints (save/SRAM upload + download, auto-save download, from-shared-save)
+		// File-based endpoints (save/SRAM upload + download, auto-save download)
 		// stay on raw gin because they rely on multipart/c.File() that huma doesn't map cleanly.
-		api.POST("/games/:id/sessions/from-shared-save/:saveId", sessionHandler.CreateFromSharedSave)
 		api.POST("/sessions/:id/saves", uploadLimiter.RateLimit(), sessionHandler.UploadSessionSave)
 		api.POST("/sessions/:id/saves/auto", uploadLimiter.RateLimit(), sessionHandler.UploadAutoSave)
 		api.GET("/sessions/:id/saves/auto", sessionHandler.GetAutoSave)
@@ -432,9 +433,10 @@ func NewRouter(cfg Config) (*gin.Engine, func()) {
 
 		// RetroAchievements — link/unlink/status/settings/token + per-game
 		// progress/timeline/leaderboard + user recent/unlocked migrated to
-		// huma (see RegisterRARoutes above). GetGameAchievements stays on
-		// gin because it conditionally returns 200 vs 202.
-		api.GET("/games/:id/achievements", raHandler.GetGameAchievements)
+		// huma (see RegisterRARoutes above). GetGameAchievements is
+		// registered via RegisterGameAchievementsRoute above and uses huma's
+		// dynamic-status pattern to return 200 for resolved data or 202 when
+		// a fetch is queued.
 
 		// Achievement Showcase — migrated to huma
 		// (see RegisterAchievementShowcaseRoutes above).

@@ -18,6 +18,7 @@ package com.spela.client.apis
 import com.spela.client.models.AchievementLeaderboardResponse
 import com.spela.client.models.AchievementTimelineResponse
 import com.spela.client.models.AdminRAStatusResponse
+import com.spela.client.models.GameAchievementsResponse
 import com.spela.client.models.HumaError
 import com.spela.client.models.LinkRAAccountRequest
 import com.spela.client.models.RALinkResponse
@@ -215,6 +216,39 @@ open class RetroachievementsApi : ApiClient {
         val localVariableConfig = RequestConfig<kotlin.Any?>(
             RequestMethod.GET,
             "/api/admin/ra/status",
+            query = localVariableQuery,
+            headers = localVariableHeaders,
+            requiresAuthentication = false,
+        )
+
+        return request(
+            localVariableConfig,
+            localVariableBody,
+            localVariableAuthNames
+        ).wrap()
+    }
+
+
+    /**
+     * Get achievements for a game
+     * Returns cached achievement metadata for a game. The server may serve stale cache, a freshly fetched set, or — when the data must be re-fetched asynchronously — HTTP 202 with {\&quot;status\&quot;: \&quot;pending\&quot;}; clients should retry shortly afterwards.
+     * @param id Game ID.
+     * @return GameAchievementsResponse
+     */
+    @Suppress("UNCHECKED_CAST")
+    open suspend fun getGameAchievements(id: kotlin.String): HttpResponse<GameAchievementsResponse> {
+
+        val localVariableAuthNames = listOf<String>()
+
+        val localVariableBody = 
+            io.ktor.client.utils.EmptyContent
+
+        val localVariableQuery = mutableMapOf<String, List<String>>()
+        val localVariableHeaders = mutableMapOf<String, String>()
+
+        val localVariableConfig = RequestConfig<kotlin.Any?>(
+            RequestMethod.GET,
+            "/api/games/{id}/achievements".replace("{" + "id" + "}", "$id"),
             query = localVariableQuery,
             headers = localVariableHeaders,
             requiresAuthentication = false,

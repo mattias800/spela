@@ -254,11 +254,12 @@ class ExploreRepositoryImpl(
 
     override suspend fun getConsoleHighlights(): Result<List<ConsoleHighlight>> = runCatching {
         apiClient.getConsoleHighlights().consoles.orEmpty().map { dto ->
+            val topGameDto = dto.topGame
             dto.toDomain().copy(
                 iconUrl = apiClient.resolveUrl(dto.iconUrl) ?: "",
                 logoUrl = apiClient.resolveUrl(dto.logoUrl) ?: "",
-                topGame = dto.topGame.toDomain().copy(
-                    coverUrl = apiClient.resolveUrl(dto.topGame.coverUrl),
+                topGame = topGameDto?.toDomain()?.copy(
+                    coverUrl = apiClient.resolveUrl(topGameDto.coverUrl),
                 ),
             )
         }

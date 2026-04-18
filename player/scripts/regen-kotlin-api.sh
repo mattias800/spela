@@ -67,6 +67,15 @@ echo "Post-processing: decode HTML-entity backticks in apis/*.kt..."
 find "$OUT_DIR/src/commonMain/kotlin/com/spela/client/apis" -name "*.kt" \
   -exec perl -i -pe 's/&#x60;/`/g' {} +
 
+echo "Staging new + modified files in git..."
+# Stage everything under the generated tree, including newly-created
+# files. Manual `git add` after a regen is easy to forget — and CI
+# only catches it when a missing model is referenced (which it always
+# is, since the apis/*.kt always imports the new models).
+if command -v git >/dev/null 2>&1 && git -C "$REPO_ROOT" rev-parse --git-dir >/dev/null 2>&1; then
+  git -C "$REPO_ROOT" add "$OUT_DIR/src/commonMain/" >/dev/null 2>&1 || true
+fi
+
 echo ""
-echo "Done. Review and commit the changes under $OUT_DIR/src/commonMain/."
+echo "Done. Review with 'git diff --cached -- $OUT_DIR/src/commonMain/'."
 echo "Verify with: ./gradlew :shared-api:compileKotlinDesktop :shared-api:compileDebugKotlinAndroid"

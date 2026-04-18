@@ -1,6 +1,46 @@
 {
   "components": {
     "schemas": {
+      "Achievement": {
+        "additionalProperties": false,
+        "properties": {
+          "badgeUrl": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "id": {
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "points": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "rarityPercent": {
+            "format": "double",
+            "type": "number"
+          },
+          "title": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "description",
+          "points",
+          "badgeUrl",
+          "type",
+          "rarityPercent"
+        ],
+        "type": "object"
+      },
       "AchievementGameResponse": {
         "additionalProperties": false,
         "properties": {
@@ -1759,8 +1799,7 @@
           "colorTheme",
           "iconUrl",
           "logoUrl",
-          "gameCount",
-          "topGame"
+          "gameCount"
         ],
         "type": "object"
       },
@@ -2885,6 +2924,32 @@
         ],
         "type": "object"
       },
+      "DiagnosticCheck": {
+        "additionalProperties": false,
+        "properties": {
+          "detail": {
+            "type": "string"
+          },
+          "fix": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "label",
+          "status"
+        ],
+        "type": "object"
+      },
       "DiscResponse": {
         "additionalProperties": false,
         "properties": {
@@ -3531,6 +3596,64 @@
         },
         "required": [
           "games"
+        ],
+        "type": "object"
+      },
+      "GameAchievementsResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "https://example.com/api/schemas/GameAchievementsResponse.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "achievements": {
+            "description": "Achievement definitions for this game (empty when unknown).",
+            "items": {
+              "$ref": "#/components/schemas/Achievement"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "raGameId": {
+            "description": "RetroAchievements game ID (0 when unknown).",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "status": {
+            "description": "Only set to 'pending' when the data is being fetched asynchronously; clients should retry.",
+            "enum": [
+              "pending"
+            ],
+            "type": "string"
+          },
+          "title": {
+            "description": "RetroAchievements game title; present when achievement data is available.",
+            "type": "string"
+          },
+          "totalCount": {
+            "description": "Total number of achievements for this game.",
+            "format": "int64",
+            "type": "integer"
+          },
+          "totalPoints": {
+            "description": "Total number of points available across all achievements.",
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "raGameId",
+          "achievements",
+          "totalCount",
+          "totalPoints"
         ],
         "type": "object"
       },
@@ -7846,6 +7969,34 @@
             "type": "string"
           }
         },
+        "type": "object"
+      },
+      "SetupDiagnosticsResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "https://example.com/api/schemas/SetupDiagnosticsResponse.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "checks": {
+            "description": "Ordered list of server health checks.",
+            "items": {
+              "$ref": "#/components/schemas/DiagnosticCheck"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "checks"
+        ],
         "type": "object"
       },
       "SetupStatusResponse": {
@@ -16820,6 +16971,55 @@
         ]
       }
     },
+    "/api/games/{id}/achievements": {
+      "get": {
+        "description": "Returns cached achievement metadata for a game. The server may serve stale cache, a freshly fetched set, or — when the data must be re-fetched asynchronously — HTTP 202 with {\"status\": \"pending\"}; clients should retry shortly afterwards.",
+        "operationId": "getGameAchievements",
+        "parameters": [
+          {
+            "description": "Game ID.",
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "description": "Game ID.",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GameAchievementsResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HumaError"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get achievements for a game",
+        "tags": [
+          "retroachievements"
+        ]
+      }
+    },
     "/api/games/{id}/achievements/leaderboard": {
       "get": {
         "description": "Returns per-user achievement counts and points for a specific game, sorted by unlocked count.",
@@ -17887,6 +18087,65 @@
           }
         ],
         "summary": "Create a session for a game",
+        "tags": [
+          "sessions"
+        ]
+      }
+    },
+    "/api/games/{id}/sessions/from-shared-save/{saveId}": {
+      "post": {
+        "description": "Creates a new game session for the caller seeded from a community shared save. Copies the shared save file into the new session and increments the shared save's download counter.",
+        "operationId": "createSessionFromSharedSave",
+        "parameters": [
+          {
+            "description": "Game ID.",
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "description": "Game ID.",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Shared save ID to seed the new session from.",
+            "in": "path",
+            "name": "saveId",
+            "required": true,
+            "schema": {
+              "description": "Shared save ID to seed the new session from.",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GameSessionResponse"
+                }
+              }
+            },
+            "description": "Created"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HumaError"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Create a session from a community shared save",
         "tags": [
           "sessions"
         ]
@@ -19931,6 +20190,38 @@
         "summary": "Update a save state's name or notes",
         "tags": [
           "sessions"
+        ]
+      }
+    },
+    "/api/setup/diagnostics": {
+      "get": {
+        "description": "Returns ordered server health checks (database, JWT secret, encryption key, game dirs, storage, IGDB, SteamGridDB). Public during first-time setup when no users exist; requires admin/owner auth afterwards.",
+        "operationId": "getSetupDiagnostics",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SetupDiagnosticsResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HumaError"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Run server configuration health checks",
+        "tags": [
+          "setup"
         ]
       }
     },
