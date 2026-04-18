@@ -67,6 +67,26 @@ echo "Post-processing: decode HTML-entity backticks in apis/*.kt..."
 find "$OUT_DIR/src/commonMain/kotlin/com/spela/client/apis" -name "*.kt" \
   -exec perl -i -pe 's/&#x60;/`/g' {} +
 
+echo "Post-processing: fix snake_case FormFile references in apis/*.kt..."
+# openapi-generator 7.21 emits broken snake_case identifier references
+# inside the formData{} block when a FormFile field name contains
+# underscores: the parameter is camelCased to 'patchFile' but the body
+# reads `append(patch_file)` — a non-existent identifier. This breaks
+# compilation. The spec treats all current form fields as camelCase, but
+# we guard against regressions by rewriting any `append(snake_case_name)`
+# inside an `?.apply { ... }` block to the matching camelCase identifier.
+find "$OUT_DIR/src/commonMain/kotlin/com/spela/client/apis" -name "*.kt" \
+  -exec perl -i -pe '
+    # Match `<name>?.apply { append(<snake>) }` where <snake> contains underscores.
+    # Convert <snake> to camelCase (strip underscores, upper the next char).
+    s{(\w+)\?\.apply \{ append\(([a-z][a-z0-9]*(?:_[a-z0-9]+)+)\) \}}{
+      my ($param, $snake) = ($1, $2);
+      my $camel = $snake;
+      $camel =~ s/_([a-z0-9])/uc($1)/ge;
+      "$param?.apply { append($camel) }";
+    }ge;
+  ' {} +
+
 echo "Staging new + modified files in git..."
 # Stage everything under the generated tree, including newly-created
 # files. Manual `git add` after a regen is easy to forget — and CI
