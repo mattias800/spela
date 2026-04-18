@@ -235,6 +235,7 @@ func NewRouter(cfg Config) (*gin.Engine, func()) {
 	RegisterSearchRoutes(humaAPI, searchHandler, cfg.JWTSecret, cfg.DB, userLimiter)
 	RegisterSocialRoutes(humaAPI, socialHandler, cfg.JWTSecret, cfg.DB, userLimiter)
 	RegisterSessionRoutes(humaAPI, sessionHandler, cfg.JWTSecret, cfg.DB, userLimiter)
+	RegisterSessionSaveUploadRoutes(humaAPI, sessionHandler, cfg.JWTSecret, cfg.DB, userLimiter, uploadLimiter)
 	RegisterSharedSaveRoutes(humaAPI, sharedSaveHandler, cfg.JWTSecret, cfg.DB, userLimiter)
 	RegisterSharedSessionRoutes(humaAPI, sharedSessionHandler, cfg.JWTSecret, cfg.DB, userLimiter)
 	RegisterNetplayRoutes(humaAPI, netplayHandler, cfg.JWTSecret, cfg.DB, userLimiter)
@@ -341,16 +342,13 @@ func NewRouter(cfg Config) (*gin.Engine, func()) {
 		// /games/:id/series + /games/:id/franchises — migrated to huma
 		// (see RegisterEnrichmentRoutes above).
 
-		// Game Sessions — most endpoints migrated to huma (see RegisterSessionRoutes above).
-		// File-based endpoints (save/SRAM upload + download, auto-save download)
-		// stay on raw gin because they rely on multipart/c.File() that huma doesn't map cleanly.
-		api.POST("/sessions/:id/saves", uploadLimiter.RateLimit(), sessionHandler.UploadSessionSave)
-		api.POST("/sessions/:id/saves/auto", uploadLimiter.RateLimit(), sessionHandler.UploadAutoSave)
+		// Game Sessions — JSON endpoints migrated to huma (see RegisterSessionRoutes above);
+		// multipart upload endpoints migrated to huma (see RegisterSessionSaveUploadRoutes above).
+		// Only the binary download endpoints remain on raw gin because they
+		// stream files via c.File() rather than serializing JSON.
 		api.GET("/sessions/:id/saves/auto", sessionHandler.GetAutoSave)
-		api.PUT("/sessions/:id/saves/slot/:slot", uploadLimiter.RateLimit(), sessionHandler.UpsertSlotSave)
 		api.GET("/sessions/:id/saves/slot/:slot", sessionHandler.DownloadSlotSave)
 		api.GET("/sessions/:id/saves/:saveId", sessionHandler.DownloadSessionSave)
-		api.POST("/sessions/:id/sram", uploadLimiter.RateLimit(), sessionHandler.UploadSRAM)
 		api.GET("/sessions/:id/sram", sessionHandler.DownloadSRAM)
 
 		// Ratings — migrated to huma (see RegisterRatingRoutes above).

@@ -3337,12 +3337,56 @@ export interface paths {
          */
         get: operations["listSessionSaves"];
         put?: never;
-        post?: never;
+        /**
+         * Upload a save state to a session
+         * @description Stores a manual save state for the session and returns the resulting save record. Optionally attaches a screenshot.
+         */
+        post: operations["uploadSessionSave"];
         /**
          * Delete all saves for a session
          * @description Owner-only. Removes every save state (auto, manual, slot) from disk and DB. The session itself is kept.
          */
         delete: operations["bulkDeleteSessionSaves"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/sessions/{id}/saves/auto": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Upload an auto-save to a session
+         * @description Stores an auto-save for the session and returns the resulting save record. Older auto-saves beyond the retention limit are pruned. Optionally attaches a screenshot.
+         */
+        post: operations["uploadAutoSave"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/sessions/{id}/saves/slot/{slot}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Upload or overwrite a slot save
+         * @description Stores a save state in the specified slot (1-10). If the slot already has a save, it is replaced.
+         */
+        put: operations["upsertSlotSave"];
+        post?: never;
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -3387,6 +3431,26 @@ export interface paths {
          * @description Owner-only. Removes the specified save state's file and record.
          */
         delete: operations["deleteSessionSave"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/sessions/{id}/sram": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Upload SRAM data for a session
+         * @description Stores or replaces the SRAM/battery save data for a session. Returns 201 on first upload, 200 on overwrite.
+         */
+        post: operations["uploadSRAM"];
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -7359,6 +7423,24 @@ export interface components {
             readonly $schema?: string;
             cheatsEnabled: boolean;
             enabledIndices: number[] | null;
+        };
+        SessionSaveData: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/api/schemas/SessionSaveData.json
+             */
+            readonly $schema?: string;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: int64 */
+            fileSize: number;
+            /** Format: int64 */
+            id: number;
+            /** Format: int64 */
+            sessionId: number;
+            /** Format: date-time */
+            updatedAt: string;
         };
         SessionSaveResponse: {
             /**
@@ -14401,6 +14483,57 @@ export interface operations {
             };
         };
     };
+    uploadSessionSave: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Session ID. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "multipart/form-data": {
+                    /** @description Identifier of the libretro core that produced the save. */
+                    coreName?: string;
+                    /** @description Display name for the save (defaults to the uploaded filename). */
+                    name?: string;
+                    /**
+                     * Format: binary
+                     * @description Save state file. Required.
+                     */
+                    save?: string;
+                    /**
+                     * Format: binary
+                     * @description Optional screenshot to attach to the save (typically PNG/JPEG).
+                     */
+                    screenshot?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SessionSaveResponse"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HumaError"];
+                };
+            };
+        };
+    };
     bulkDeleteSessionSaves: {
         parameters: {
             query?: never;
@@ -14420,6 +14553,110 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["BulkDeleteSessionSavesResponse"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HumaError"];
+                };
+            };
+        };
+    };
+    uploadAutoSave: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Session ID. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "multipart/form-data": {
+                    /** @description Identifier of the libretro core that produced the save. */
+                    coreName?: string;
+                    /** @description Display name for the save (defaults to the uploaded filename). */
+                    name?: string;
+                    /**
+                     * Format: binary
+                     * @description Save state file. Required.
+                     */
+                    save?: string;
+                    /**
+                     * Format: binary
+                     * @description Optional screenshot to attach to the save (typically PNG/JPEG).
+                     */
+                    screenshot?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SessionSaveResponse"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HumaError"];
+                };
+            };
+        };
+    };
+    upsertSlotSave: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Session ID. */
+                id: string;
+                /** @description Slot number 1-10. */
+                slot: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "multipart/form-data": {
+                    /** @description Identifier of the libretro core that produced the save. */
+                    coreName?: string;
+                    /** @description Display name for the save (defaults to the uploaded filename). */
+                    name?: string;
+                    /**
+                     * Format: binary
+                     * @description Save state file. Required.
+                     */
+                    save?: string;
+                    /**
+                     * Format: binary
+                     * @description Optional screenshot to attach to the save (typically PNG/JPEG).
+                     */
+                    screenshot?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SessionSaveResponse"];
                 };
             };
             /** @description Error */
@@ -14524,6 +14761,48 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["MessageResponse"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HumaError"];
+                };
+            };
+        };
+    };
+    uploadSRAM: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Session ID. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "multipart/form-data": {
+                    /**
+                     * Format: binary
+                     * @description SRAM/battery save file.
+                     */
+                    file?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SessionSaveData"];
                 };
             };
             /** @description Error */
