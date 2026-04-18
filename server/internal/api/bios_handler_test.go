@@ -20,58 +20,22 @@ import (
 	"github.com/spela/server/internal/storage"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
-	"gorm.io/gorm/logger"
 )
 
-const biosTestJWTSecret = "bios-test-secret"
-
-// setupBiosTestEnv creates a storage + DB + router with enriched BIOS endpoints
-// and admin upload/delete routes behind auth + admin middleware.
+// setupBiosTestEnv builds a router from the production NewRouter so the BIOS
+// endpoints — including the multipart admin upload — are exercised through the
+// huma operations rather than a custom in-test gin registration.
 func setupBiosTestEnv(t *testing.T) (*storage.Storage, *gorm.DB, *gin.Engine) {
 	t.Helper()
-
-	tmpDir := t.TempDir()
-	store, err := storage.NewStorage(
-		filepath.Join(tmpDir, "saves"),
-		filepath.Join(tmpDir, "cores"),
-		filepath.Join(tmpDir, "images"),
-		filepath.Join(tmpDir, "bios"),
-	)
-	require.NoError(t, err)
-
-	database, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{
-		Logger: logger.Default.LogMode(logger.Silent),
-	})
-	require.NoError(t, err)
-	require.NoError(t, database.AutoMigrate(&db.User{}, &db.Console{}, &db.Game{}, &db.GameReleaseDate{}, &db.GameVideo{}, &db.GameLanguageSupport{}, &db.GameAgeRating{}))
-	require.NoError(t, db.SeedConsoles(database))
-
-	gin.SetMode(gin.TestMode)
-	router := gin.New()
-
-	handler := &BiosHandler{Storage: store, DB: database}
-
-	// Authenticated routes
-	api := router.Group("/api")
-	api.Use(AuthMiddleware(biosTestJWTSecret, database))
-	{
-		api.GET("/bios", handler.ListBiosFiles)
-		api.GET("/bios/:filename", handler.GetBiosFile)
-
-		admin := api.Group("/admin")
-		admin.Use(AdminMiddleware())
-		{
-			admin.POST("/bios", handler.UploadBiosFile)
-			admin.DELETE("/bios/:filename", handler.DeleteBiosFile)
-		}
-	}
-
-	return store, database, router
+	database, cfg := setupTestEnv(t)
+	router, cleanup := NewRouter(*cfg)
+	t.Cleanup(cleanup)
+	return cfg.Storage, database, router
 }
 
-// createBiosTestUser creates a user and returns a JWT token.
+// createBiosTestUser creates a user and returns a JWT token signed with the
+// test JWT secret used by setupTestEnv.
 func createBiosTestUser(t *testing.T, database *gorm.DB, role db.UserRole) string {
 	t.Helper()
 	user := db.User{
@@ -81,7 +45,7 @@ func createBiosTestUser(t *testing.T, database *gorm.DB, role db.UserRole) strin
 		Role:         role,
 	}
 	require.NoError(t, database.Create(&user).Error)
-	token, err := auth.GenerateAccessToken(user.ID, user.Username, string(user.Role), biosTestJWTSecret)
+	token, err := auth.GenerateAccessToken(user.ID, user.Username, string(user.Role), testJWTSecret)
 	require.NoError(t, err)
 	return token
 }
@@ -434,7 +398,11 @@ func TestUploadBiosFile_NoFile_BadRequest(t *testing.T) {
 	req.Header.Set("Authorization", "Bearer "+adminToken)
 	router.ServeHTTP(w, req)
 
-	assert.Equal(t, http.StatusBadRequest, w.Code)
+	// 422 (Unprocessable Entity) from huma's multipart-body validation when no
+	// Content-Type/body is sent — previously 400 from the gin handler's manual
+	// FormFile check. Semantically equivalent (both indicate an invalid
+	// request); huma surfaces the more specific RFC status code.
+	assert.Equal(t, http.StatusUnprocessableEntity, w.Code)
 }
 
 // -- DELETE /api/admin/bios/:filename --
