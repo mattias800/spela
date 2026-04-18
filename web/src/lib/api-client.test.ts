@@ -59,7 +59,7 @@ describe("api token refresh deduplication", () => {
 
     let refreshCallCount = 0;
 
-    globalThis.fetch = vi.fn(async (input: RequestInfo | URL) => {
+    globalThis.fetch = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = typeof input === "string" ? input : input.toString();
 
       if (url.includes("/auth/refresh")) {
@@ -75,20 +75,10 @@ describe("api token refresh deduplication", () => {
         );
       }
 
-      // First call with expired token returns 401, retries succeed
-      const authHeader =
-        input instanceof Request
-          ? input.headers.get("Authorization")
-          : undefined;
-      const initHeaders = (
-        (globalThis.fetch as ReturnType<typeof vi.fn>).mock
-          .calls as unknown[][]
-      )
-        .find((c) => c[0] === input)?.[1] as RequestInit | undefined;
-      const headerRecord = initHeaders?.headers as
-        | Record<string, string>
-        | undefined;
-      const bearer = headerRecord?.["Authorization"] ?? authHeader;
+      // First call with expired token returns 401, retries succeed.
+      const bearer = (init?.headers as Record<string, string> | undefined)?.[
+        "Authorization"
+      ];
 
       if (bearer === "Bearer expired-token") {
         return new Response("Unauthorized", { status: 401 });
@@ -118,7 +108,7 @@ describe("api token refresh deduplication", () => {
 
     let refreshCallCount = 0;
 
-    globalThis.fetch = vi.fn(async (input: RequestInfo | URL) => {
+    globalThis.fetch = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = typeof input === "string" ? input : input.toString();
 
       if (url.includes("/auth/refresh")) {
@@ -126,15 +116,9 @@ describe("api token refresh deduplication", () => {
         return new Response("Forbidden", { status: 403 });
       }
 
-      const initHeaders = (
-        (globalThis.fetch as ReturnType<typeof vi.fn>).mock
-          .calls as unknown[][]
-      )
-        .find((c) => c[0] === input)?.[1] as RequestInit | undefined;
-      const headerRecord = initHeaders?.headers as
-        | Record<string, string>
-        | undefined;
-      const bearer = headerRecord?.["Authorization"];
+      const bearer = (init?.headers as Record<string, string> | undefined)?.[
+        "Authorization"
+      ];
 
       if (bearer === "Bearer expired-token") {
         return new Response("Unauthorized", { status: 401 });
@@ -155,7 +139,7 @@ describe("api token refresh deduplication", () => {
     storage.setItem("refreshToken", "new-refresh-token");
 
     // Reconfigure fetch so second refresh succeeds
-    globalThis.fetch = vi.fn(async (input: RequestInfo | URL) => {
+    globalThis.fetch = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = typeof input === "string" ? input : input.toString();
 
       if (url.includes("/auth/refresh")) {
@@ -169,15 +153,9 @@ describe("api token refresh deduplication", () => {
         );
       }
 
-      const initHeaders = (
-        (globalThis.fetch as ReturnType<typeof vi.fn>).mock
-          .calls as unknown[][]
-      )
-        .find((c) => c[0] === input)?.[1] as RequestInit | undefined;
-      const headerRecord = initHeaders?.headers as
-        | Record<string, string>
-        | undefined;
-      const bearer = headerRecord?.["Authorization"];
+      const bearer = (init?.headers as Record<string, string> | undefined)?.[
+        "Authorization"
+      ];
 
       if (bearer === "Bearer expired-token-2") {
         return new Response("Unauthorized", { status: 401 });
