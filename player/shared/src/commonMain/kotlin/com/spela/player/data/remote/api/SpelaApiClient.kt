@@ -1,5 +1,29 @@
 package com.spela.player.data.remote.api
 
+import com.spela.client.apis.AuthApi
+import com.spela.client.apis.BiosApi
+import com.spela.client.apis.ChallengesApi
+import com.spela.client.apis.CollectionsApi
+import com.spela.client.apis.ConsolesApi
+import com.spela.client.apis.CoresApi
+import com.spela.client.apis.DevicesApi
+import com.spela.client.apis.EnrichmentApi
+import com.spela.client.apis.ExploreApi
+import com.spela.client.apis.FavoritesApi
+import com.spela.client.apis.GamesApi
+import com.spela.client.apis.NetplayApi
+import com.spela.client.apis.PlayLaterApi
+import com.spela.client.apis.ProfilesApi
+import com.spela.client.apis.RatingsApi
+import com.spela.client.apis.RetroachievementsApi
+import com.spela.client.apis.SearchApi
+import com.spela.client.apis.SessionsApi
+import com.spela.client.apis.SharedSavesApi
+import com.spela.client.apis.SharedSessionsApi
+import com.spela.client.apis.SocialApi
+import com.spela.client.apis.StatsApi
+import com.spela.client.apis.TopListsApi
+import com.spela.client.apis.UserApi
 import com.spela.player.data.remote.AuthFailureReason
 import com.spela.player.data.remote.dto.*
 import com.spela.player.data.remote.interceptor.TokenManager
@@ -92,8 +116,69 @@ class SpelaApiClient(
         }
     }
 
+    // Generated API delegates. Recreated whenever the base URL changes so that
+    // every business method routes through the same shared HttpClient (and
+    // therefore the same auth / refresh / logging plugins) while letting the
+    // generated *Api classes own the URL paths.
+    private lateinit var authApi: AuthApi
+    private lateinit var biosApi: BiosApi
+    private lateinit var challengesApi: ChallengesApi
+    private lateinit var collectionsApi: CollectionsApi
+    private lateinit var consolesApi: ConsolesApi
+    private lateinit var coresApi: CoresApi
+    private lateinit var devicesApi: DevicesApi
+    private lateinit var enrichmentApi: EnrichmentApi
+    private lateinit var exploreApi: ExploreApi
+    private lateinit var favoritesApi: FavoritesApi
+    private lateinit var gamesApi: GamesApi
+    private lateinit var netplayApi: NetplayApi
+    private lateinit var playLaterApi: PlayLaterApi
+    private lateinit var profilesApi: ProfilesApi
+    private lateinit var ratingsApi: RatingsApi
+    private lateinit var retroachievementsApi: RetroachievementsApi
+    private lateinit var searchApi: SearchApi
+    private lateinit var sessionsApi: SessionsApi
+    private lateinit var sharedSavesApi: SharedSavesApi
+    private lateinit var sharedSessionsApi: SharedSessionsApi
+    private lateinit var socialApi: SocialApi
+    private lateinit var statsApi: StatsApi
+    private lateinit var topListsApi: TopListsApi
+    private lateinit var userApi: UserApi
+
+    init {
+        rebuildApis()
+    }
+
+    private fun rebuildApis() {
+        authApi = AuthApi(baseUrl, client)
+        biosApi = BiosApi(baseUrl, client)
+        challengesApi = ChallengesApi(baseUrl, client)
+        collectionsApi = CollectionsApi(baseUrl, client)
+        consolesApi = ConsolesApi(baseUrl, client)
+        coresApi = CoresApi(baseUrl, client)
+        devicesApi = DevicesApi(baseUrl, client)
+        enrichmentApi = EnrichmentApi(baseUrl, client)
+        exploreApi = ExploreApi(baseUrl, client)
+        favoritesApi = FavoritesApi(baseUrl, client)
+        gamesApi = GamesApi(baseUrl, client)
+        netplayApi = NetplayApi(baseUrl, client)
+        playLaterApi = PlayLaterApi(baseUrl, client)
+        profilesApi = ProfilesApi(baseUrl, client)
+        ratingsApi = RatingsApi(baseUrl, client)
+        retroachievementsApi = RetroachievementsApi(baseUrl, client)
+        searchApi = SearchApi(baseUrl, client)
+        sessionsApi = SessionsApi(baseUrl, client)
+        sharedSavesApi = SharedSavesApi(baseUrl, client)
+        sharedSessionsApi = SharedSessionsApi(baseUrl, client)
+        socialApi = SocialApi(baseUrl, client)
+        statsApi = StatsApi(baseUrl, client)
+        topListsApi = TopListsApi(baseUrl, client)
+        userApi = UserApi(baseUrl, client)
+    }
+
     fun setBaseUrl(url: String) {
         baseUrl = url.trimEnd('/')
+        rebuildApis()
     }
 
     /**
@@ -133,31 +218,25 @@ class SpelaApiClient(
     // Auth
 
     suspend fun login(request: com.spela.client.models.AuthLoginRequest): com.spela.client.models.AuthLoginResponse {
-        return client.post("$baseUrl/api/auth/login") {
-            setBody(request)
-        }.body()
+        return authApi.authLogin(request).body()
     }
 
     suspend fun register(request: com.spela.client.models.AuthRegisterRequest): com.spela.client.models.AuthRegisterResponse {
-        return client.post("$baseUrl/api/auth/register") {
-            setBody(request)
-        }.body()
+        return authApi.authRegister(request).body()
     }
 
     suspend fun refreshToken(request: com.spela.client.models.AuthRefreshRequest): com.spela.client.models.AuthLoginResponse {
-        return client.post("$baseUrl/api/auth/refresh") {
-            setBody(request)
-        }.body()
+        return authApi.authRefresh(request).body()
     }
 
     suspend fun getCurrentUser(): com.spela.client.models.UserResponse {
-        return client.get("$baseUrl/api/user/profile").body()
+        return userApi.getUserProfile().body()
     }
 
     // Consoles & Games
 
     suspend fun getConsoles(): List<com.spela.client.models.ConsoleResponse> {
-        return client.get("$baseUrl/api/consoles").body()
+        return consolesApi.listConsoles().body()
     }
 
     /** Returns paginated games for a console via the /api/games endpoint */
@@ -169,14 +248,14 @@ class SpelaApiClient(
         grouped: Boolean = true,
         region: String? = null,
     ): com.spela.client.models.PaginatedResponseGameResponse {
-        return client.get("$baseUrl/api/games") {
-            parameter("consoleId", consoleId)
-            page?.let { parameter("page", it) }
-            pageSize?.let { parameter("pageSize", it) }
-            parameter("hidePreRelease", hidePreRelease)
-            parameter("grouped", grouped)
-            region?.let { parameter("region", it) }
-        }.body()
+        return gamesApi.listGames(
+            consoleId = consoleId,
+            page = page?.toLong(),
+            pageSize = pageSize?.toLong(),
+            grouped = grouped.toGroupedListGames(),
+            hidePreRelease = hidePreRelease.toHidePreReleaseListGames(),
+            region = region,
+        ).body()
     }
 
     /** Returns {data, total, page, pageSize} paginated wrapper */
@@ -190,16 +269,16 @@ class SpelaApiClient(
         grouped: Boolean = true,
         region: String? = null,
     ): com.spela.client.models.PaginatedResponseGameResponse {
-        return client.get("$baseUrl/api/games") {
-            consoleId?.let { parameter("consoleId", it) }
-            sortBy?.let { parameter("sortBy", it) }
-            sortOrder?.let { parameter("sortOrder", it) }
-            page?.let { parameter("page", it) }
-            pageSize?.let { parameter("pageSize", it) }
-            parameter("hidePreRelease", hidePreRelease)
-            parameter("grouped", grouped)
-            region?.let { parameter("region", it) }
-        }.body()
+        return gamesApi.listGames(
+            consoleId = consoleId,
+            sortBy = sortBy,
+            sortOrder = sortOrder,
+            page = page?.toLong(),
+            pageSize = pageSize?.toLong(),
+            grouped = grouped.toGroupedListGames(),
+            hidePreRelease = hidePreRelease.toHidePreReleaseListGames(),
+            region = region,
+        ).body()
     }
 
     /** Returns {data, total, page, pageSize} paginated wrapper with search filter */
@@ -214,27 +293,27 @@ class SpelaApiClient(
         page: Int? = null,
         pageSize: Int? = null,
     ): com.spela.client.models.PaginatedResponseGameResponse {
-        return client.get("$baseUrl/api/games") {
-            parameter("search", query)
-            consoleId?.let { parameter("consoleId", it) }
-            sortBy?.let { parameter("sortBy", it) }
-            sortOrder?.let { parameter("sortOrder", it) }
-            parameter("hidePreRelease", hidePreRelease)
-            parameter("grouped", grouped)
-            region?.let { parameter("region", it) }
-            page?.let { parameter("page", it) }
-            pageSize?.let { parameter("pageSize", it) }
-        }.body()
+        return gamesApi.listGames(
+            search = query,
+            consoleId = consoleId,
+            sortBy = sortBy,
+            sortOrder = sortOrder,
+            grouped = grouped.toGroupedListGames(),
+            hidePreRelease = hidePreRelease.toHidePreReleaseListGames(),
+            region = region,
+            page = page?.toLong(),
+            pageSize = pageSize?.toLong(),
+        ).body()
     }
 
     /** Returns a single enriched GameResponse */
     suspend fun getGameDetail(gameId: String): com.spela.client.models.GameResponse {
-        return client.get("$baseUrl/api/games/$gameId").body()
+        return gamesApi.getGame(gameId).body()
     }
 
     /** Triggers a scrape if the game has never been scraped. Returns immediately. */
     suspend fun scrapeIfNeeded(gameId: String) {
-        client.post("$baseUrl/api/games/$gameId/scrape-if-needed")
+        gamesApi.scrapeGameIfNeeded(gameId)
     }
 
     /** Admin: scrape metadata for a single game. */
@@ -248,257 +327,241 @@ class SpelaApiClient(
     }
 
     suspend fun getRecentlyAddedGames(pageSize: Int = 12): com.spela.client.models.PaginatedResponseGameResponse {
-        return client.get("$baseUrl/api/games") {
-            parameter("sortBy", "created_at")
-            parameter("sortOrder", "desc")
-            parameter("pageSize", pageSize)
-        }.body()
+        return gamesApi.listGames(
+            sortBy = "created_at",
+            sortOrder = "desc",
+            pageSize = pageSize.toLong(),
+        ).body()
     }
 
     suspend fun getTopRatedGames(consoleId: String): List<com.spela.client.models.TopRatedGameResponse> {
-        return client.get("$baseUrl/api/consoles/$consoleId/top-rated").body()
+        return consolesApi.getConsoleTopRated(consoleId).body()
     }
 
     suspend fun getTopRatedGamesGlobal(): List<com.spela.client.models.TopRatedGameResponse> {
-        return client.get("$baseUrl/api/top-rated").body()
+        return consolesApi.getTopRatedGlobal().body()
     }
 
     suspend fun getTopRatedAvailable(): List<com.spela.client.models.TopListGameResponse> {
-        return client.get("$baseUrl/api/top-lists/top-rated").body()
+        return topListsApi.getTopListAvailable().body()
     }
 
     suspend fun getLongestGames(): List<com.spela.client.models.LongestGameResponse> {
-        return client.get("$baseUrl/api/top-lists/longest").body()
+        return topListsApi.getTopListLongest().body()
     }
 
     suspend fun getSimilarGames(gameId: String): List<com.spela.client.models.SimilarGameResponse> {
-        return client.get("$baseUrl/api/games/$gameId/similar").body()
+        return gamesApi.getSimilarGames(gameId).body()
     }
 
     suspend fun getDeveloperGames(gameId: String): List<com.spela.client.models.DeveloperGameResponse> {
-        return client.get("$baseUrl/api/games/$gameId/developer-games").body()
+        return gamesApi.getDeveloperGames(gameId).body()
     }
 
     /** Returns featured games for the Explore page hero carousel */
     suspend fun getExploreFeatured(): List<com.spela.client.models.FeaturedGameResponse> {
-        return client.get("$baseUrl/api/explore/featured").body()
+        return exploreApi.getExploreFeatured().body()
     }
 
     /** Returns curated rows for the Explore page (Top Rated, Recently Added, etc.) */
     suspend fun getExploreRows(): List<com.spela.client.models.ExploreRowResponse> {
-        val response: com.spela.client.models.ExploreRowsResponse =
-            client.get("$baseUrl/api/explore/rows").body()
-        return response.rows.orEmpty()
+        return exploreApi.getExploreRows().body().rows.orEmpty()
     }
 
     /** Returns all themes with game counts, sorted by count DESC */
     suspend fun getThemes(): List<com.spela.client.models.ThemeResponse> {
-        return client.get("$baseUrl/api/themes").body()
+        return enrichmentApi.listThemes().body()
     }
 
     /** Returns paginated games for a theme */
     suspend fun getThemeGames(themeId: String, page: Int = 1, pageSize: Int = 20): com.spela.client.models.PaginatedResponseGameResponse {
-        return client.get("$baseUrl/api/themes/$themeId/games") {
-            parameter("page", page)
-            parameter("pageSize", pageSize)
-        }.body()
+        return enrichmentApi.listThemeGames(themeId, page = page.toLong(), pageSize = pageSize.toLong()).body()
     }
 
     /** Returns top keywords by game count */
     suspend fun getKeywords(limit: Int = 50): List<com.spela.client.models.KeywordResponse> {
-        return client.get("$baseUrl/api/keywords") {
-            parameter("limit", limit)
-        }.body()
+        return enrichmentApi.listKeywords(limit = limit.toLong()).body()
     }
 
     /** Returns paginated games for a keyword */
     suspend fun getKeywordGames(keywordId: String, page: Int = 1, pageSize: Int = 20): com.spela.client.models.PaginatedResponseGameResponse {
-        return client.get("$baseUrl/api/keywords/$keywordId/games") {
-            parameter("page", page)
-            parameter("pageSize", pageSize)
-        }.body()
+        return enrichmentApi.listKeywordGames(keywordId, page = page.toLong(), pageSize = pageSize.toLong()).body()
     }
 
     /** Returns featured series for the Explore page */
     suspend fun getFeaturedSeries(): List<com.spela.client.models.FeaturedSeriesResponse> {
-        return client.get("$baseUrl/api/explore/series/featured").body()
+        return exploreApi.getExploreFeaturedSeries().body()
     }
 
     /** Returns detail for a specific series */
     suspend fun getSeriesDetail(id: String): com.spela.client.models.SeriesDetailResponse {
-        return client.get("$baseUrl/api/series/$id").body()
+        return enrichmentApi.getSeriesDetail(id).body()
     }
 
     /** Returns detail for a specific franchise */
     suspend fun getFranchiseDetail(id: String): com.spela.client.models.FranchiseDetailResponse {
-        return client.get("$baseUrl/api/franchises/$id").body()
+        return enrichmentApi.getFranchiseDetail(id).body()
     }
 
     /** Returns series links for a game */
     suspend fun getGameSeries(gameId: String): List<com.spela.client.models.GameSeriesResponse> {
-        return client.get("$baseUrl/api/games/$gameId/series").body()
+        return enrichmentApi.getGameSeries(gameId).body()
     }
 
     /** Returns franchise links for a game */
     suspend fun getGameFranchises(gameId: String): List<com.spela.client.models.GameFranchiseResponse> {
-        return client.get("$baseUrl/api/games/$gameId/franchises").body()
+        return enrichmentApi.getGameFranchises(gameId).body()
     }
 
     /** Returns available mood definitions for the mood picker */
     suspend fun getMoods(): List<com.spela.client.models.MoodResponse> {
-        return client.get("$baseUrl/api/explore/moods").body()
+        return exploreApi.getExploreMoods().body()
     }
 
     /** Returns games matching a mood */
     suspend fun getMoodGames(mood: String): List<com.spela.client.models.GameResponse> {
-        return client.get("$baseUrl/api/explore/mood/$mood").body()
+        return exploreApi.getMoodGames(mood).body()
     }
 
     /** Returns a single random surprise game */
     suspend fun getSurpriseGame(): com.spela.client.models.GameResponse {
-        return client.get("$baseUrl/api/explore/surprise").body()
+        return exploreApi.getSurpriseGame().body()
     }
 
     /** Returns personalized "For You" recommendation rows */
     suspend fun getForYou(): com.spela.client.models.ForYouResponse {
-        return client.get("$baseUrl/api/explore/for-you").body()
+        return exploreApi.getForYou().body()
     }
 
     /** Returns the user's taste profile (genre/theme/console breakdown) */
     suspend fun getTasteProfile(): com.spela.client.models.TasteProfileResponse {
-        return client.get("$baseUrl/api/user/taste-profile").body()
+        return profilesApi.getTasteProfile().body()
     }
 
     /** Returns collaborative filtering recommendations */
     suspend fun getPlayersLikeYou(): com.spela.client.models.PlayersLikeYouResponse {
-        return client.get("$baseUrl/api/explore/players-like-you").body()
+        return exploreApi.getPlayersLikeYou().body()
     }
 
     /** Returns list of developer summaries */
     suspend fun getDevelopers(): com.spela.client.models.DeveloperListResponse {
-        return client.get("$baseUrl/api/explore/developers").body()
+        return exploreApi.getDevelopers().body()
     }
 
     /** Returns detail for a specific developer */
     suspend fun getDeveloperDetail(name: String): com.spela.client.models.DeveloperDetailResponse {
-        val encoded = name.encodeURLParameter()
-        return client.get("$baseUrl/api/explore/developers/$encoded").body()
+        return exploreApi.getDeveloperDetail(name).body()
     }
 
     /** Returns detail for a specific publisher (same response type as developer) */
     suspend fun getPublisherDetail(name: String): com.spela.client.models.DeveloperDetailResponse {
+        // PublisherDetailResponse is structurally identical to DeveloperDetailResponse;
+        // re-issue the request to coerce the response into the developer shape so
+        // callers don't need to know about the duplicated DTO.
         val encoded = name.encodeURLParameter()
         return client.get("$baseUrl/api/explore/publishers/$encoded").body()
     }
 
     /** Returns developer spotlight for the Explore page */
     suspend fun getDeveloperSpotlight(): com.spela.client.models.DeveloperSpotlightResponse {
-        return client.get("$baseUrl/api/explore/developers/spotlight").body()
+        return exploreApi.getDeveloperSpotlight().body()
     }
 
     /** Returns console showcase data for a specific console */
     suspend fun getConsoleShowcase(consoleId: String): com.spela.client.models.ConsoleShowcaseResponse {
-        val encoded = consoleId.encodeURLParameter()
-        return client.get("$baseUrl/api/explore/consoles/$encoded/showcase").body()
+        return exploreApi.getConsoleShowcase(consoleId).body()
     }
 
     /** Returns console highlights for the Explore page quick-jump section */
     suspend fun getConsoleHighlights(): com.spela.client.models.ConsoleHighlightsResponse {
-        return client.get("$baseUrl/api/explore/console-highlights").body()
+        return exploreApi.getConsoleHighlights().body()
     }
 
     /** Returns a paginated list of IGDB artwork for the gallery */
     suspend fun getArtworkGallery(page: Int = 1): com.spela.client.models.ArtworkGalleryResponse {
-        return client.get("$baseUrl/api/explore/artwork") {
-            parameter("page", page)
-        }.body()
+        return exploreApi.getArtworkGallery(page = page.toLong()).body()
     }
 
     /** Returns a paginated list of screenshots for the gallery */
     suspend fun getScreenshotGallery(page: Int = 1): com.spela.client.models.ScreenshotGalleryResponse {
-        return client.get("$baseUrl/api/explore/screenshots") {
-            parameter("page", page)
-        }.body()
+        return exploreApi.getScreenshotGallery(page = page.toLong()).body()
     }
 
     /** Returns trending games (most played this week) */
     suspend fun getTrending(): com.spela.client.models.TrendingResponse {
-        return client.get("$baseUrl/api/explore/trending").body()
+        return exploreApi.getTrending().body()
     }
 
     /** Returns community top-rated games */
     suspend fun getCommunityTop(): com.spela.client.models.CommunityTopResponse {
-        return client.get("$baseUrl/api/explore/community-top").body()
+        return exploreApi.getCommunityTop().body()
     }
 
     /** Returns cult classics (high community, low IGDB) */
     suspend fun getCultClassics(): com.spela.client.models.CultClassicsResponse {
-        return client.get("$baseUrl/api/explore/cult-classics").body()
+        return exploreApi.getCultClassics().body()
     }
 
     /** Returns recently reviewed games */
     suspend fun getRecentlyReviewed(): com.spela.client.models.RecentlyReviewedResponse {
-        return client.get("$baseUrl/api/explore/recently-reviewed").body()
+        return exploreApi.getRecentlyReviewed().body()
     }
 
     /** Returns games with active shared sessions or challenges */
     suspend fun getActiveNow(): com.spela.client.models.ActiveNowResponse {
-        return client.get("$baseUrl/api/explore/active-now").body()
+        return exploreApi.getActiveNow().body()
     }
 
     /** Returns games released on this day in history */
     suspend fun getOnThisDay(): com.spela.client.models.OnThisDayResponse {
-        return client.get("$baseUrl/api/explore/on-this-day").body()
+        return exploreApi.getOnThisDay().body()
     }
 
     /** Returns best games from a given year */
     suspend fun getBestOfYear(year: Int): com.spela.client.models.BestOfYearResponse {
-        return client.get("$baseUrl/api/explore/best-of-year/$year").body()
+        return exploreApi.getBestOfYear(year.toString()).body()
     }
 
     /** Returns personal play anniversaries */
     suspend fun getYourAnniversaries(): com.spela.client.models.AnniversariesResponse {
-        return client.get("$baseUrl/api/explore/your-anniversaries").body()
+        return exploreApi.getYourAnniversaries().body()
     }
 
     /** Returns games from a specific decade */
     suspend fun getDecade(decade: String): com.spela.client.models.DecadesResponse {
-        return client.get("$baseUrl/api/explore/decades/$decade").body()
+        return exploreApi.getDecades(decade).body()
     }
 
     /** Returns games that are easy to 100% complete */
     suspend fun getEasyToComplete(): com.spela.client.models.EasyToCompleteResponse {
-        return client.get("$baseUrl/api/explore/easy-to-complete").body()
+        return exploreApi.getEasyToComplete().body()
     }
 
     /** Returns the hardest games to complete */
     suspend fun getHardestGames(): com.spela.client.models.HardestGamesResponse {
-        return client.get("$baseUrl/api/explore/hardest-games").body()
+        return exploreApi.getHardestGames().body()
     }
 
     /** Returns games the user is almost done completing */
     suspend fun getAlmostDone(): com.spela.client.models.AlmostDoneResponse {
-        return client.get("$baseUrl/api/explore/almost-done").body()
+        return exploreApi.getAlmostDone().body()
     }
 
     /** Returns games with fresh achievement content */
     suspend fun getFreshChallenges(): com.spela.client.models.FreshChallengesResponse {
-        return client.get("$baseUrl/api/explore/fresh-challenges").body()
+        return exploreApi.getFreshChallenges().body()
     }
 
     /** Returns active community challenges */
     suspend fun getActiveChallenges(): com.spela.client.models.ActiveChallengesResponse {
-        return client.get("$baseUrl/api/explore/active-challenges").body()
+        return exploreApi.getActiveChallenges().body()
     }
 
     /** Returns games filtered by multi-faceted criteria */
     // Global Search
 
     suspend fun globalSearch(query: String, limit: Int = 5): com.spela.client.models.SearchResponse {
-        return client.get("$baseUrl/api/search") {
-            parameter("q", query)
-            parameter("limit", limit)
-        }.body()
+        return searchApi.globalSearch(q = query, limit = limit.toLong()).body()
     }
 
     suspend fun getFilteredGames(
@@ -506,6 +569,10 @@ class SpelaApiClient(
         page: Int? = null,
         pageSize: Int? = null,
     ): com.spela.client.models.PaginatedResponseGameResponse {
+        // The filter set is open-ended (`getFilteredGames` is invoked with arbitrary
+        // saved-search keys). Stay on the raw HttpClient so the full filter map is
+        // forwarded as-is; the generated listGames signature lists only the known
+        // filters and would silently drop anything else.
         return client.get("$baseUrl/api/games") {
             filters.forEach { (key, value) ->
                 parameter(key, value)
@@ -517,7 +584,7 @@ class SpelaApiClient(
 
     /** Returns user's saved searches */
     suspend fun getSavedSearches(): List<com.spela.client.models.SavedSearchResponse> {
-        return client.get("$baseUrl/api/user/saved-searches").body()
+        return userApi.listSavedSearches().body()
     }
 
     /** Creates a new saved search */
@@ -525,126 +592,121 @@ class SpelaApiClient(
         name: String,
         filters: Map<String, String>,
     ): com.spela.client.models.SavedSearchResponse {
-        return client.post("$baseUrl/api/user/saved-searches") {
-            setBody(
-                com.spela.client.models.SavedSearchRequest(
-                    name = name,
-                    filters = kotlinx.serialization.json.JsonObject(
-                        filters.mapValues { (_, v) -> kotlinx.serialization.json.JsonPrimitive(v) },
-                    ),
+        return userApi.createSavedSearch(
+            com.spela.client.models.SavedSearchRequest(
+                name = name,
+                filters = kotlinx.serialization.json.JsonObject(
+                    filters.mapValues { (_, v) -> kotlinx.serialization.json.JsonPrimitive(v) },
                 ),
-            )
-        }.body()
+            ),
+        ).body()
     }
 
     /** Deletes a saved search */
     suspend fun deleteSavedSearch(id: String) {
-        client.delete("$baseUrl/api/user/saved-searches/$id")
+        userApi.deleteSavedSearch(id)
     }
 
     // --- Phase 14: Wild Features ---
 
     /** Returns the decision wizard step configuration */
     suspend fun getWizardSteps(): com.spela.client.models.WizardResponse {
-        return client.get("$baseUrl/api/explore/wizard").body()
+        return exploreApi.getWizardSteps().body()
     }
 
     /** Returns wizard recommendations based on mood/era/vibe choices */
     suspend fun getWizardResults(mood: String, era: String, vibe: String): com.spela.client.models.WizardResultsResponse {
-        return client.get("$baseUrl/api/explore/wizard/results") {
-            parameter("mood", mood)
-            parameter("era", era)
-            parameter("vibe", vibe)
-        }.body()
+        return exploreApi.getWizardResults(mood = mood, era = era, vibe = vibe).body()
     }
 
     /** Returns the user's explorer badges */
     suspend fun getExplorerBadges(): com.spela.client.models.ExplorerBadgesResponse {
-        return client.get("$baseUrl/api/user/explorer-badges").body()
+        return profilesApi.getExplorerBadges().body()
     }
 
     /** Returns the user's completionist map (per-console progress) */
     suspend fun getCompletionistMap(): com.spela.client.models.CompletionistMapResponse {
-        return client.get("$baseUrl/api/user/completionist-map").body()
+        return profilesApi.getCompletionistMap().body()
     }
 
     /** Returns flat GameResponse[] with lastPlayedAt/totalPlayTime enriched */
     suspend fun getRecentGames(): List<com.spela.client.models.GameResponse> {
-        return client.get("$baseUrl/api/user/recent").body()
+        return userApi.getRecentGames().body()
     }
 
     /** Returns flat GameResponse[] with isFavorite=true */
     suspend fun getFavoriteGames(): List<com.spela.client.models.GameResponse> {
-        return client.get("$baseUrl/api/user/favorites").body()
+        return favoritesApi.listFavorites().body()
     }
 
     suspend fun addFavorite(gameId: String) {
-        client.post("$baseUrl/api/user/favorites/$gameId")
+        favoritesApi.addFavorite(gameId)
     }
 
     suspend fun removeFavorite(gameId: String) {
-        client.delete("$baseUrl/api/user/favorites/$gameId")
+        favoritesApi.removeFavorite(gameId)
     }
 
     /** Returns flat GameResponse[] for user's Play Later queue */
     suspend fun getPlayLaterGames(): List<com.spela.client.models.GameResponse> {
-        return client.get("$baseUrl/api/user/play-later").body()
+        return playLaterApi.listPlayLater().body()
     }
 
     suspend fun addToPlayLater(gameId: String) {
-        client.post("$baseUrl/api/user/play-later/$gameId")
+        playLaterApi.addToPlayLater(gameId)
     }
 
     suspend fun removeFromPlayLater(gameId: String) {
-        client.delete("$baseUrl/api/user/play-later/$gameId")
+        playLaterApi.removeFromPlayLater(gameId)
     }
 
     // User Preferences
 
     suspend fun getPreferences(): com.spela.client.models.UserPreferencesResponse {
-        return client.get("$baseUrl/api/user/preferences").body()
+        return userApi.getUserPreferences().body()
     }
 
     suspend fun updatePreferences(
         request: com.spela.client.models.UpdatePreferencesRequest,
     ): com.spela.client.models.UserPreferencesResponse {
-        return client.put("$baseUrl/api/user/preferences") {
-            setBody(request)
-        }.body()
+        return userApi.updateUserPreferences(request).body()
     }
 
     // Game Key Mapping
 
     suspend fun getGameKeyMapping(gameId: String): com.spela.client.models.GameKeyMappingResponse {
-        return client.get("$baseUrl/api/user/games/$gameId/keymapping").body()
+        return userApi.getGameKeyMapping(gameId).body()
     }
 
     suspend fun updateGameKeyMapping(
         gameId: String,
         request: com.spela.client.models.UpdateGameKeyMappingRequest,
     ): com.spela.client.models.GameKeyMappingResponse {
-        return client.put("$baseUrl/api/user/games/$gameId/keymapping") {
-            setBody(request)
-        }.body()
+        return userApi.updateGameKeyMapping(gameId, request).body()
     }
 
     suspend fun deleteGameKeyMapping(gameId: String) {
-        client.delete("$baseUrl/api/user/games/$gameId/keymapping")
+        userApi.deleteGameKeyMapping(gameId)
     }
 
     // Game Stats
 
     suspend fun getGameStats(gameId: String): com.spela.client.models.GameStatsResponse {
-        return client.get("$baseUrl/api/games/$gameId/stats").body()
+        return gamesApi.getGameStats(gameId).body()
     }
 
     // Game Cheats
 
     suspend fun getGameCheats(gameId: String): List<com.spela.client.models.GameCheatResponse> {
-        return client.get("$baseUrl/api/games/$gameId/cheats").body()
+        return gamesApi.getGameCheats(gameId).body()
     }
 
     // Game Achievements
+    //
+    // Kept hand-written: the local DTO shapes (Int rather than the generated
+    // Long timestamps) drive the AchievementsRepository mapper, and the
+    // generated `Achievement` model lacks a couple of fields the player
+    // already deserializes locally.
 
     suspend fun getGameAchievements(gameId: String): GameAchievementsResponse {
         return client.get("$baseUrl/api/games/$gameId/achievements").body()
@@ -657,79 +719,73 @@ class SpelaApiClient(
     suspend fun getAchievementTimeline(
         gameId: String,
     ): com.spela.client.models.AchievementTimelineResponse {
-        return client.get("$baseUrl/api/games/$gameId/achievements/timeline").body()
+        return retroachievementsApi.getAchievementTimeline(gameId).body()
     }
 
     suspend fun getAchievementLeaderboard(
         gameId: String,
     ): com.spela.client.models.AchievementLeaderboardResponse {
-        return client.get("$baseUrl/api/games/$gameId/achievements/leaderboard").body()
+        return retroachievementsApi.getAchievementLeaderboard(gameId).body()
     }
 
     // User Stats & Achievements
 
     suspend fun getUserStats(): com.spela.client.models.UserStatsResponse {
-        return client.get("$baseUrl/api/user/stats").body()
+        return userApi.getUserStats().body()
     }
 
     suspend fun getRecentAchievements(): com.spela.client.models.RecentAchievementsResponse {
-        return client.get("$baseUrl/api/user/achievements/recent").body()
+        return retroachievementsApi.getRecentAchievements().body()
     }
 
     suspend fun getShowcase(): List<com.spela.client.models.ShowcaseEntryResponse> {
-        return client.get("$baseUrl/api/user/achievements/showcase").body()
+        return retroachievementsApi.getAchievementShowcase().body()
     }
 
     suspend fun getPublicShowcase(
         userId: String,
     ): List<com.spela.client.models.ShowcaseEntryResponse> {
-        return client.get("$baseUrl/api/users/$userId/achievements/showcase").body()
+        return retroachievementsApi.getPublicAchievementShowcase(userId).body()
     }
 
     suspend fun getUnlockedAchievements(): com.spela.client.models.UnlockedAchievementsResponse {
-        return client.get("$baseUrl/api/user/achievements/unlocked").body()
+        return retroachievementsApi.getUnlockedAchievements().body()
     }
 
     suspend fun updateShowcase(
         entries: List<com.spela.client.models.ShowcaseEntryInput>,
     ): List<com.spela.client.models.ShowcaseEntryResponse> {
-        return client.put("$baseUrl/api/user/achievements/showcase") {
-            contentType(io.ktor.http.ContentType.Application.Json)
-            setBody(entries)
-        }.body()
+        return retroachievementsApi.updateAchievementShowcase(entries).body()
     }
 
     // Devices
 
     suspend fun deleteDevice(deviceId: Long) {
-        client.delete("$baseUrl/api/user/devices/$deviceId")
+        devicesApi.deleteDevice(deviceId.toString())
     }
 
     suspend fun registerDevice(
         request: com.spela.client.models.RegisterDeviceRequest,
     ): com.spela.client.models.DeviceResponse {
-        return client.post("$baseUrl/api/user/devices") {
-            setBody(request)
-        }.body()
+        return devicesApi.registerDevice(request).body()
     }
 
     suspend fun getDevices(): List<com.spela.client.models.DeviceResponse> {
-        return client.get("$baseUrl/api/user/devices").body()
+        return devicesApi.listDevices().body()
     }
 
-    suspend fun updateDevice(deviceId: Long, name: String): com.spela.client.models.DeviceResponse {
-        return client.put("$baseUrl/api/user/devices/$deviceId") {
-            setBody(mapOf("name" to name))
-        }.body()
+    suspend fun updateDevice(deviceId: Long, name: String): com.spela.client.models.Device {
+        return devicesApi.updateDevice(
+            deviceId.toString(),
+            com.spela.client.models.UpdateDeviceRequest(name = name),
+        ).body()
     }
 
     suspend fun updateDevicePreferences(
         deviceId: Long,
         request: com.spela.client.models.UpdateDevicePreferencesRequest,
-    ): com.spela.client.models.DeviceResponse {
-        return client.put("$baseUrl/api/user/devices/$deviceId/preferences") {
-            setBody(request)
-        }.body()
+    ): com.spela.client.models.DevicePreferencesResponse {
+        return devicesApi.updateDevicePreferences(deviceId.toString(), request).body()
     }
 
     // Game Download
@@ -757,7 +813,7 @@ class SpelaApiClient(
     // BIOS
 
     suspend fun getBiosStatus(): com.spela.client.models.BiosListResponse {
-        return client.get("$baseUrl/api/bios").body()
+        return biosApi.listBiosFiles().body()
     }
 
     suspend fun downloadBiosFile(filename: String): ByteArray {
@@ -767,13 +823,17 @@ class SpelaApiClient(
     // Cores
 
     suspend fun getAvailableCores(): List<com.spela.client.models.Core> {
-        return client.get("$baseUrl/api/cores").body()
+        return coresApi.listCores().body()
     }
 
     /** May return either a full Core object or just {coreName: "..."}. The
      *  lightweight fallback shape can't satisfy [com.spela.client.models.Core]'s
      *  @Required timestamps, so this method returns the domain type directly. */
     suspend fun getRecommendedCore(gameId: String): com.spela.player.domain.model.LibretroCore {
+        // Server returns the response as either a full Core object or a lightweight
+        // {coreName} fallback. The generated client typed the response as `kotlin.Any`
+        // which would deserialize to a JsonElement; instead read it as a string and
+        // use the existing parsing logic to produce the domain object.
         val text: String = client.get("$baseUrl/api/games/$gameId/core").body()
         return try {
             json.decodeFromString<com.spela.client.models.Core>(text).toDomain()
@@ -806,10 +866,7 @@ class SpelaApiClient(
         page: Int = 1,
         pageSize: Int = 20,
     ): com.spela.client.models.PaginatedResponseSharedSaveResponse {
-        return client.get("$baseUrl/api/games/$gameId/shared-saves") {
-            parameter("page", page)
-            parameter("pageSize", pageSize)
-        }.body()
+        return sharedSavesApi.listSharedSaves(gameId, page = page.toLong(), pageSize = pageSize.toLong()).body()
     }
 
     suspend fun shareSave(
@@ -836,7 +893,7 @@ class SpelaApiClient(
     }
 
     suspend fun deleteSharedSave(gameId: String, saveId: String) {
-        client.delete("$baseUrl/api/games/$gameId/shared-saves/$saveId")
+        sharedSavesApi.deleteSharedSave(gameId, saveId)
     }
 
     // Ratings
@@ -845,9 +902,7 @@ class SpelaApiClient(
         gameId: String,
         request: com.spela.client.models.CreateOrUpdateRatingRequest,
     ): com.spela.client.models.GameRatingResponse {
-        return client.post("$baseUrl/api/games/$gameId/ratings") {
-            setBody(request)
-        }.body()
+        return ratingsApi.createOrUpdateGameRating(gameId, request).body()
     }
 
     suspend fun getGameRatings(
@@ -855,58 +910,53 @@ class SpelaApiClient(
         page: Int = 1,
         pageSize: Int = 20,
     ): com.spela.client.models.PaginatedResponseGameRatingResponse {
-        return client.get("$baseUrl/api/games/$gameId/ratings") {
-            parameter("page", page)
-            parameter("pageSize", pageSize)
-        }.body()
+        return ratingsApi.listGameRatings(gameId, page = page.toLong(), pageSize = pageSize.toLong()).body()
     }
 
     suspend fun getGameRatingSummary(
         gameId: String,
     ): com.spela.client.models.RatingSummaryResponse {
-        return client.get("$baseUrl/api/games/$gameId/ratings/summary").body()
+        return ratingsApi.getGameRatingSummary(gameId).body()
     }
 
     suspend fun getMyRating(gameId: String): com.spela.client.models.GameRatingResponse {
-        return client.get("$baseUrl/api/games/$gameId/ratings/mine").body()
+        return ratingsApi.getMyGameRating(gameId).body()
     }
 
     suspend fun deleteRating(gameId: String) {
-        client.delete("$baseUrl/api/games/$gameId/ratings")
+        ratingsApi.deleteMyGameRating(gameId)
     }
 
     // Social
 
     suspend fun getOnlineUsers(): com.spela.client.models.OnlineUsersResponse {
-        return client.get("$baseUrl/api/social/online").body()
+        return socialApi.getOnlineUsers().body()
     }
 
     suspend fun getActivityFeed(
         page: Int = 1,
         pageSize: Int = 20,
     ): com.spela.client.models.PaginatedResponseActivityEventResponse {
-        return client.get("$baseUrl/api/social/activity") {
-            parameter("page", page)
-            parameter("pageSize", pageSize)
-        }.body()
+        return socialApi.getActivityFeed(page = page.toLong(), pageSize = pageSize.toLong()).body()
     }
 
     suspend fun getPublicProfile(userId: String): com.spela.client.models.PublicProfileResponse {
-        return client.get("$baseUrl/api/users/$userId/profile").body()
+        return socialApi.getPublicProfile(userId).body()
     }
 
     suspend fun getPublicPlayHeatmap(userId: String): List<com.spela.client.models.HeatmapEntry> {
-        return client.get("$baseUrl/api/users/$userId/play-heatmap").body()
+        return statsApi.getPublicPlayHeatmap(userId).body()
     }
 
     suspend fun updatePlayTime(gameId: String, seconds: Long) {
-        client.post("$baseUrl/api/games/$gameId/play-time") {
-            setBody(mapOf("seconds" to seconds))
-        }
+        gamesApi.updateGamePlayTime(
+            gameId,
+            com.spela.client.models.UpdateGamePlayTimeRequest(seconds = seconds),
+        )
     }
 
     suspend fun clearCurrentGame(gameId: String) {
-        client.delete("$baseUrl/api/games/$gameId/play-time")
+        gamesApi.stopPlayingGame(gameId)
     }
 
     /**
@@ -925,31 +975,32 @@ class SpelaApiClient(
     // RetroAchievements
 
     suspend fun getRAStatus(): com.spela.client.models.RAStatusResponse {
-        return client.get("$baseUrl/api/user/ra/status").body()
+        return retroachievementsApi.getRAAccountStatus().body()
     }
 
     suspend fun linkRA(
         request: com.spela.client.models.LinkRAAccountRequest,
     ): com.spela.client.models.RAStatusResponse {
+        // Generated linkRAAccount returns RALinkResponse which lacks
+        // hardcoreEnabled; the AchievementsRepository expects RAStatusResponse,
+        // so issue the request directly to preserve the existing shape.
         return client.post("$baseUrl/api/user/ra/link") {
             setBody(request)
         }.body()
     }
 
     suspend fun unlinkRA() {
-        client.delete("$baseUrl/api/user/ra/link")
+        retroachievementsApi.unlinkRAAccount()
     }
 
     suspend fun getRAToken(): com.spela.client.models.RATokenResponse {
-        return client.get("$baseUrl/api/user/ra/token").body()
+        return retroachievementsApi.getRAToken().body()
     }
 
     suspend fun updateRASettings(
         request: com.spela.client.models.UpdateRASettingsRequest,
     ): com.spela.client.models.RAStatusResponse {
-        return client.put("$baseUrl/api/user/ra/settings") {
-            setBody(request)
-        }.body()
+        return retroachievementsApi.updateRASettings(request).body()
     }
 
     // Shared Sessions
@@ -958,78 +1009,73 @@ class SpelaApiClient(
         // Server returns a bare array (not a paginated wrapper). page/pageSize
         // are kept on the signature so the repository caller does not need to
         // change, but they are ignored because the server does not paginate.
-        return client.get("$baseUrl/api/shared-sessions").body<List<SharedSessionDto>?>() ?: emptyList()
+        return sharedSessionsApi.listMySharedSessions().body()
     }
 
     suspend fun getSharedSession(sharedSessionId: String): SharedSessionDetailDto {
-        return client.get("$baseUrl/api/shared-sessions/$sharedSessionId").body()
+        return sharedSessionsApi.getSharedSession(sharedSessionId).body()
     }
 
     suspend fun getSharedSessionInvitations(): List<SharedSessionInvitationDto> {
-        // Server returns a bare array (nullable on the wire when empty).
-        return client.get("$baseUrl/api/user/shared-session-invites").body<List<SharedSessionInvitationDto>?>() ?: emptyList()
+        return sharedSessionsApi.listSharedSessionInvites().body()
     }
 
     suspend fun getPendingInvitationCount(): SharedSessionInvitationCountResponse {
-        return client.get("$baseUrl/api/user/shared-session-invites/count").body()
+        return sharedSessionsApi.getPendingSharedSessionInviteCount().body()
     }
 
     suspend fun createSharedSession(request: CreateSharedSessionRequest): SharedSessionDetailDto {
-        return client.post("$baseUrl/api/shared-sessions") {
-            setBody(request)
-        }.body()
+        return sharedSessionsApi.createSharedSession(request).body()
     }
 
     suspend fun deleteSharedSession(sharedSessionId: String) {
-        client.delete("$baseUrl/api/shared-sessions/$sharedSessionId")
+        sharedSessionsApi.deleteSharedSession(sharedSessionId)
     }
 
     suspend fun inviteToSharedSession(sharedSessionId: String, request: InviteToSharedSessionRequest) {
-        client.post("$baseUrl/api/shared-sessions/$sharedSessionId/invites") {
-            setBody(request)
-        }
+        sharedSessionsApi.inviteToSharedSession(sharedSessionId, request)
     }
 
     suspend fun acceptSharedSessionInvitation(invitationId: String) {
-        client.post("$baseUrl/api/user/shared-session-invites/$invitationId/accept")
+        sharedSessionsApi.acceptSharedSessionInvite(invitationId)
     }
 
     suspend fun rejectSharedSessionInvitation(invitationId: String) {
         // Server calls this "decline" — kept as rejectSharedSessionInvitation here
         // so the repository-level public name is stable.
-        client.post("$baseUrl/api/user/shared-session-invites/$invitationId/decline")
+        sharedSessionsApi.declineSharedSessionInvite(invitationId)
     }
 
     suspend fun leaveSharedSession(sharedSessionId: String) {
-        client.post("$baseUrl/api/shared-sessions/$sharedSessionId/leave")
+        sharedSessionsApi.leaveSharedSession(sharedSessionId)
     }
 
     suspend fun removeSharedSessionMember(sharedSessionId: String, userId: String) {
-        client.delete("$baseUrl/api/shared-sessions/$sharedSessionId/members/$userId")
+        sharedSessionsApi.removeSharedSessionMember(sharedSessionId, userId)
     }
 
     suspend fun getGameSharedSessions(gameId: String): List<SharedSessionDto> {
-        return client.get("$baseUrl/api/games/$gameId/shared-sessions").body()
+        return sharedSessionsApi.listGameSharedSessions(gameId).body()
     }
 
     suspend fun getSharedSessionSaves(sharedSessionId: String): List<SharedSessionSaveDto> {
-        return client.get("$baseUrl/api/shared-sessions/$sharedSessionId/saves").body()
+        return sharedSessionsApi.listSharedSessionSaves(sharedSessionId).body()
     }
 
     suspend fun deleteSharedSessionSave(sharedSessionId: String, saveId: Long) {
-        client.delete("$baseUrl/api/shared-sessions/$sharedSessionId/saves/$saveId")
+        sharedSessionsApi.deleteSharedSessionSave(sharedSessionId, saveId.toString())
     }
 
     suspend fun takeTurn(sharedSessionId: String): TakeTurnResponse {
-        return client.post("$baseUrl/api/shared-sessions/$sharedSessionId/take-turn").body()
+        return sharedSessionsApi.sharedSessionTakeTurn(sharedSessionId).body()
     }
 
     suspend fun releaseTurn(sharedSessionId: String) {
-        client.post("$baseUrl/api/shared-sessions/$sharedSessionId/release-turn")
+        sharedSessionsApi.sharedSessionReleaseTurn(sharedSessionId)
     }
 
     suspend fun sharedSessionHeartbeat(sharedSessionId: String) {
-        client.post("$baseUrl/api/shared-sessions/$sharedSessionId/heartbeat")
+        sharedSessionsApi.sharedSessionHeartbeat(sharedSessionId)
     }
 
     suspend fun uploadSharedSessionSave(
@@ -1091,65 +1137,56 @@ class SpelaApiClient(
         page: Int = 1,
         pageSize: Int = 20,
     ): com.spela.client.models.PaginatedResponseCollectionResponse {
-        return client.get("$baseUrl/api/collections") {
-            parameter("page", page)
-            parameter("pageSize", pageSize)
-        }.body()
+        return collectionsApi.listMyCollections(page = page.toLong(), pageSize = pageSize.toLong()).body()
     }
 
     suspend fun getPublicCollections(
         page: Int = 1,
         pageSize: Int = 20,
     ): com.spela.client.models.PaginatedResponseCollectionResponse {
-        return client.get("$baseUrl/api/collections/public") {
-            parameter("page", page)
-            parameter("pageSize", pageSize)
-        }.body()
+        return collectionsApi.listPublicCollections(page = page.toLong(), pageSize = pageSize.toLong()).body()
     }
 
     suspend fun getCollection(id: String): com.spela.client.models.CollectionDetailResponse {
-        return client.get("$baseUrl/api/collections/$id").body()
+        return collectionsApi.getCollection(id).body()
     }
 
     suspend fun createCollection(
         request: com.spela.client.models.CreateCollectionRequest,
     ): com.spela.client.models.CollectionResponse {
-        return client.post("$baseUrl/api/collections") {
-            setBody(request)
-        }.body()
+        return collectionsApi.createCollection(request).body()
     }
 
     suspend fun updateCollection(
         id: String,
         request: com.spela.client.models.UpdateCollectionRequest,
     ): com.spela.client.models.CollectionResponse {
-        return client.put("$baseUrl/api/collections/$id") {
-            setBody(request)
-        }.body()
+        return collectionsApi.updateCollection(id, request).body()
     }
 
     suspend fun deleteCollection(id: String) {
-        client.delete("$baseUrl/api/collections/$id")
+        collectionsApi.deleteCollection(id)
     }
 
     suspend fun addGameToCollection(collectionId: String, gameId: String) {
-        client.post("$baseUrl/api/collections/$collectionId/games") {
-            setBody(com.spela.client.models.AddGameToCollectionRequest(gameId = gameId.toLong()))
-        }
+        collectionsApi.addGameToCollection(
+            collectionId,
+            com.spela.client.models.AddGameToCollectionRequest(gameId = gameId.toLong()),
+        )
     }
 
     suspend fun removeGameFromCollection(collectionId: String, gameId: String) {
-        client.delete("$baseUrl/api/collections/$collectionId/games/$gameId")
+        collectionsApi.removeGameFromCollection(collectionId, gameId)
     }
 
     // Stats
 
     suspend fun getMostPlayedGames(): com.spela.client.models.MostPlayedResponse {
-        return client.get("$baseUrl/api/stats/most-played").body()
+        return statsApi.getMostPlayed().body()
     }
 
     suspend fun getMostActivePlayers(): com.spela.client.models.MostActivePlayersResponse {
-        return client.get("$baseUrl/api/stats/most-active-players").body()
+        return statsApi.getMostActivePlayers().body()
     }
 
     // Netplay
@@ -1157,51 +1194,43 @@ class SpelaApiClient(
     suspend fun createNetplaySession(
         request: com.spela.client.models.CreateNetplaySessionRequest,
     ): com.spela.client.models.NetplaySessionResponse {
-        return client.post("$baseUrl/api/netplay/sessions") {
-            setBody(request)
-        }.body()
+        return netplayApi.createNetplaySession(request).body()
     }
 
     suspend fun getNetplaySessions(): com.spela.client.models.PaginatedResponseNetplaySessionResponse {
-        return client.get("$baseUrl/api/netplay/sessions").body()
+        return netplayApi.listNetplaySessions().body()
     }
 
     suspend fun getNetplaySession(sessionId: String): com.spela.client.models.NetplaySessionResponse {
-        return client.get("$baseUrl/api/netplay/sessions/$sessionId").body()
+        return netplayApi.getNetplaySession(sessionId).body()
     }
 
     suspend fun joinNetplayByInviteCode(
         request: com.spela.client.models.JoinByInviteCodeRequest,
     ): com.spela.client.models.NetplaySessionResponse {
-        return client.post("$baseUrl/api/netplay/sessions/join") {
-            setBody(request)
-        }.body()
+        return netplayApi.joinNetplayByInviteCode(request).body()
     }
 
     suspend fun leaveNetplaySession(sessionId: String) {
-        client.post("$baseUrl/api/netplay/sessions/$sessionId/leave")
+        netplayApi.leaveNetplaySession(sessionId)
     }
 
     suspend fun deleteNetplaySession(sessionId: String) {
-        client.delete("$baseUrl/api/netplay/sessions/$sessionId")
+        netplayApi.deleteNetplaySession(sessionId)
     }
 
     suspend fun updateNetplaySettings(
         sessionId: String,
         request: com.spela.client.models.UpdateNetplaySettingsRequest,
     ): com.spela.client.models.NetplaySessionResponse {
-        return client.put("$baseUrl/api/netplay/sessions/$sessionId/settings") {
-            setBody(request)
-        }.body()
+        return netplayApi.updateNetplaySettings(sessionId, request).body()
     }
 
     suspend fun sendNetplayInvite(
         sessionId: String,
         request: com.spela.client.models.NetplayInviteUserRequest,
     ) {
-        client.post("$baseUrl/api/netplay/sessions/$sessionId/invites") {
-            setBody(request)
-        }
+        netplayApi.netplayInviteUser(sessionId, request)
     }
 
     // User Search
@@ -1211,15 +1240,11 @@ class SpelaApiClient(
         page: Int = 1,
         pageSize: Int = 20,
     ): com.spela.client.models.PaginatedResponseUserSearchResult {
-        return client.get("$baseUrl/api/users/search") {
-            parameter("q", query)
-            parameter("page", page)
-            parameter("pageSize", pageSize)
-        }.body()
+        return socialApi.searchUsers(q = query, page = page.toLong(), pageSize = pageSize.toLong()).body()
     }
 
     suspend fun getRecentPartners(): List<com.spela.client.models.UserSearchResult> {
-        return client.get("$baseUrl/api/users/recent-partners").body()
+        return socialApi.getRecentPartners().body()
     }
 
     // Challenges
@@ -1232,14 +1257,14 @@ class SpelaApiClient(
         page: Int = 1,
         pageSize: Int = 20,
     ): com.spela.client.models.PaginatedResponseChallengeResponse {
-        return client.get("$baseUrl/api/challenges") {
-            gameId?.let { parameter("gameId", it) }
-            consoleId?.let { parameter("consoleId", it) }
-            difficulty?.let { parameter("difficulty", it) }
-            sort?.let { parameter("sort", it) }
-            parameter("page", page)
-            parameter("pageSize", pageSize)
-        }.body()
+        return challengesApi.listChallenges(
+            gameId = gameId,
+            consoleId = consoleId,
+            difficulty = difficulty,
+            sort = sort,
+            page = page.toLong(),
+            pageSize = pageSize.toLong(),
+        ).body()
     }
 
     suspend fun getGameChallenges(
@@ -1247,24 +1272,18 @@ class SpelaApiClient(
         page: Int = 1,
         pageSize: Int = 20,
     ): com.spela.client.models.PaginatedResponseChallengeResponse {
-        return client.get("$baseUrl/api/games/$gameId/challenges") {
-            parameter("page", page)
-            parameter("pageSize", pageSize)
-        }.body()
+        return challengesApi.listGameChallenges(gameId, page = page.toLong(), pageSize = pageSize.toLong()).body()
     }
 
     suspend fun getMyChallenges(
         page: Int = 1,
         pageSize: Int = 20,
     ): com.spela.client.models.PaginatedResponseChallengeResponse {
-        return client.get("$baseUrl/api/user/challenges") {
-            parameter("page", page)
-            parameter("pageSize", pageSize)
-        }.body()
+        return challengesApi.listMyChallenges(page = page.toLong(), pageSize = pageSize.toLong()).body()
     }
 
     suspend fun getChallenge(id: String): com.spela.client.models.ChallengeResponse {
-        return client.get("$baseUrl/api/challenges/$id").body()
+        return challengesApi.getChallenge(id).body()
     }
 
     suspend fun createChallenge(
@@ -1301,7 +1320,7 @@ class SpelaApiClient(
     }
 
     suspend fun deleteChallenge(id: String) {
-        client.delete("$baseUrl/api/challenges/$id")
+        challengesApi.deleteChallenge(id)
     }
 
     suspend fun downloadChallengeSave(challengeId: String): ByteArray {
@@ -1311,24 +1330,24 @@ class SpelaApiClient(
     suspend fun startChallengeAttempt(
         challengeId: String,
     ): com.spela.client.models.ChallengeAttemptResponse {
-        return client.post("$baseUrl/api/challenges/$challengeId/attempts/start").body()
+        return challengesApi.startChallengeAttempt(challengeId).body()
     }
 
     suspend fun completeChallengeAttempt(
         challengeId: String,
         attemptId: String,
     ): com.spela.client.models.ChallengeAttemptResponse {
-        return client.post("$baseUrl/api/challenges/$challengeId/attempts/$attemptId/complete").body()
+        return challengesApi.completeChallengeAttempt(challengeId, attemptId).body()
     }
 
     suspend fun abandonChallengeAttempt(challengeId: String, attemptId: String) {
-        client.post("$baseUrl/api/challenges/$challengeId/attempts/$attemptId/abandon")
+        challengesApi.abandonChallengeAttempt(challengeId, attemptId)
     }
 
     suspend fun getMyChallengeAttempts(
         challengeId: String,
     ): List<com.spela.client.models.ChallengeAttemptResponse> {
-        return client.get("$baseUrl/api/challenges/$challengeId/attempts/mine").body()
+        return challengesApi.listMyChallengeAttempts(challengeId).body()
     }
 
     suspend fun getChallengeLeaderboard(
@@ -1336,10 +1355,7 @@ class SpelaApiClient(
         page: Int = 1,
         pageSize: Int = 50,
     ): com.spela.client.models.PaginatedResponseChallengeLeaderboardEntry {
-        return client.get("$baseUrl/api/challenges/$challengeId/leaderboard") {
-            parameter("page", page)
-            parameter("pageSize", pageSize)
-        }.body()
+        return challengesApi.getChallengeLeaderboard(challengeId, page = page.toLong(), pageSize = pageSize.toLong()).body()
     }
 
     // Streaming Game Download
@@ -1518,24 +1534,26 @@ class SpelaApiClient(
     // ── Game Sessions ──
 
     suspend fun getSessionsForGame(gameId: String): List<com.spela.client.models.GameSessionResponse> {
-        return client.get("$baseUrl/api/games/$gameId/sessions").body()
+        return sessionsApi.listGameSessions(gameId).body()
     }
 
     suspend fun createSessionFromSharedSave(
         gameId: String,
         saveId: String,
     ): com.spela.client.models.GameSessionResponse {
+        // Not currently exposed in the generated SessionsApi, so post directly.
         return client.post("$baseUrl/api/games/$gameId/sessions/from-shared-save/$saveId").body()
     }
 
     suspend fun createSession(gameId: String, name: String): com.spela.client.models.GameSessionResponse {
-        return client.post("$baseUrl/api/games/$gameId/sessions") {
-            setBody(com.spela.client.models.CreateSessionRequest(name = name))
-        }.body()
+        return sessionsApi.createSession(
+            gameId,
+            com.spela.client.models.CreateSessionRequest(name = name),
+        ).body()
     }
 
     suspend fun getSession(sessionId: String): com.spela.client.models.GameSessionResponse {
-        return client.get("$baseUrl/api/sessions/$sessionId").body()
+        return sessionsApi.getSession(sessionId).body()
     }
 
     suspend fun updateSession(
@@ -1543,28 +1561,30 @@ class SpelaApiClient(
         name: String? = null,
         coreName: String? = null,
     ): com.spela.client.models.GameSessionResponse {
-        return client.put("$baseUrl/api/sessions/$sessionId") {
-            setBody(com.spela.client.models.UpdateSessionRequest(name = name, coreName = coreName))
-        }.body()
+        return sessionsApi.updateSession(
+            sessionId,
+            com.spela.client.models.UpdateSessionRequest(name = name, coreName = coreName),
+        ).body()
     }
 
     suspend fun deleteSession(sessionId: String) {
-        client.delete("$baseUrl/api/sessions/$sessionId")
+        sessionsApi.deleteSession(sessionId)
     }
 
     suspend fun duplicateSession(
         sessionId: String,
         name: String? = null,
     ): com.spela.client.models.GameSessionResponse {
-        return client.post("$baseUrl/api/sessions/$sessionId/duplicate") {
-            if (name != null) {
-                setBody(com.spela.client.models.DuplicateSessionRequest(name = name))
-            }
-        }.body()
+        val request = if (name != null) {
+            com.spela.client.models.DuplicateSessionRequest(name = name)
+        } else {
+            null
+        }
+        return sessionsApi.duplicateSession(sessionId, request).body()
     }
 
     suspend fun getSessionSaves(sessionId: String): List<com.spela.client.models.SessionSaveResponse> {
-        return client.get("$baseUrl/api/sessions/$sessionId/saves").body()
+        return sessionsApi.listSessionSaves(sessionId).body()
     }
 
     suspend fun uploadSessionSave(sessionId: String, name: String, data: ByteArray, screenshot: ByteArray?, coreName: String = ""): com.spela.client.models.SessionSaveResponse {
@@ -1681,7 +1701,7 @@ class SpelaApiClient(
     }
 
     suspend fun getSessionCheats(sessionId: String): com.spela.client.models.SessionCheatsResponse {
-        return client.get("$baseUrl/api/sessions/$sessionId/cheats").body()
+        return sessionsApi.getSessionCheats(sessionId).body()
     }
 
     suspend fun updateSessionCheats(
@@ -1689,17 +1709,24 @@ class SpelaApiClient(
         cheatsEnabled: Boolean,
         enabledIndices: List<Int>,
     ): com.spela.client.models.SessionCheatsResponse {
-        return client.put("$baseUrl/api/sessions/$sessionId/cheats") {
-            setBody(
-                com.spela.client.models.UpdateSessionCheatsRequest(
-                    cheatsEnabled = cheatsEnabled,
-                    enabledIndices = enabledIndices.map { it.toLong() },
-                )
-            )
-        }.body()
+        return sessionsApi.updateSessionCheats(
+            sessionId,
+            com.spela.client.models.UpdateSessionCheatsRequest(
+                cheatsEnabled = cheatsEnabled,
+                enabledIndices = enabledIndices.map { it.toLong() },
+            ),
+        ).body()
     }
 
     fun close() {
         client.close()
     }
 }
+
+private fun Boolean.toGroupedListGames(): com.spela.client.apis.GamesApi.GroupedListGames =
+    if (this) com.spela.client.apis.GamesApi.GroupedListGames.`true`
+    else com.spela.client.apis.GamesApi.GroupedListGames.`false`
+
+private fun Boolean.toHidePreReleaseListGames(): com.spela.client.apis.GamesApi.HidePreReleaseListGames =
+    if (this) com.spela.client.apis.GamesApi.HidePreReleaseListGames.`true`
+    else com.spela.client.apis.GamesApi.HidePreReleaseListGames.`false`
