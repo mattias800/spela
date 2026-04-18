@@ -269,6 +269,7 @@ func NewRouter(cfg Config) (*gin.Engine, func()) {
 	RegisterExploreChallengeRoutes(humaAPI, exploreHandler, cfg.JWTSecret, cfg.DB, userLimiter)
 	RegisterExploreWizardRoutes(humaAPI, exploreHandler, cfg.JWTSecret, cfg.DB, userLimiter)
 	RegisterAuthRoutes(humaAPI, authHandler, authLimiter, refreshLimiter)
+	RegisterAuthProtectedRoutes(humaAPI, authHandler, cfg.JWTSecret, cfg.DB)
 	RegisterSetupDiagnosticsRoutes(humaAPI, setupHandler)
 
 	// Public auth routes — login/register/setup/refresh/setup-status have been
@@ -279,10 +280,7 @@ func NewRouter(cfg Config) (*gin.Engine, func()) {
 	// Setup diagnostics — migrated to huma (see RegisterSetupDiagnosticsRoutes above).
 	// Public during first-time setup (no users exist), admin-only afterwards.
 
-	// Logout (requires auth, placed before main protected group for clarity)
-	logoutGroup := r.Group("/api/auth")
-	logoutGroup.Use(AuthMiddleware(cfg.JWTSecret, cfg.DB))
-	logoutGroup.POST("/logout", authHandler.Logout)
+	// Logout — migrated to huma (see RegisterAuthProtectedRoutes above).
 
 	// Console preview screenshots (public — cached libretro thumbnails, loaded by <img> tags)
 	r.GET("/api/consoles/:id/preview-screenshot", consoleHandler.GetPreviewScreenshot)

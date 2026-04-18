@@ -1016,6 +1016,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/auth/logout": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Sign out
+         * @description Blacklists the bearer access token (preventing reuse for its remaining lifetime) and revokes every refresh token belonging to the authenticated user, signing them out across all devices.
+         */
+        post: operations["authLogout"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/auth/refresh": {
         parameters: {
             query?: never;
@@ -4886,6 +4906,16 @@ export interface components {
             accessToken: string;
             refreshToken: string;
             user: components["schemas"]["UserResponse"];
+        };
+        AuthLogoutResponse: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/api/schemas/AuthLogoutResponse.json
+             */
+            readonly $schema?: string;
+            /** @description Confirmation message. */
+            message: string;
         };
         AuthRefreshRequest: {
             /**
@@ -9899,6 +9929,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AuthLoginResponse"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HumaError"];
+                };
+            };
+        };
+    };
+    authLogout: {
+        parameters: {
+            query?: {
+                /** @description Fallback access token to blacklist when no Authorization header is sent. */
+                token?: string;
+            };
+            header?: {
+                /** @description Bearer access token to blacklist. */
+                Authorization?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuthLogoutResponse"];
                 };
             };
             /** @description Error */

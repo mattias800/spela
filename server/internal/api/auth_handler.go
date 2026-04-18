@@ -5,12 +5,8 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"log/slog"
-	"net/http"
-	"strings"
 	"time"
 
-	"github.com/gin-gonic/gin"
-	"github.com/spela/server/internal/auth"
 	"github.com/spela/server/internal/db"
 	"gorm.io/gorm"
 )
@@ -163,43 +159,6 @@ func StartTokenCleanup(database *gorm.DB, interval time.Duration) {
 			}
 		}
 	}()
-}
-
-// Logout revokes the current access token and deletes the user's refresh tokens.
-func (h *AuthHandler) Logout(c *gin.Context) {
-	// Extract the raw access token to blacklist it
-	var token string
-	header := c.GetHeader("Authorization")
-	if header != "" {
-		parts := strings.SplitN(header, " ", 2)
-		if len(parts) == 2 && parts[0] == "Bearer" {
-			token = parts[1]
-		}
-	}
-	if token == "" {
-		token = c.Query("token")
-	}
-
-	userID, _ := c.Get("userId")
-	uid, _ := userID.(uint)
-
-	// Blacklist the access token so it cannot be reused for its remaining lifetime
-	if token != "" {
-		claims, err := auth.ValidateAccessToken(token, h.JWTSecret)
-		if err == nil && claims.ExpiresAt != nil {
-			hash := sha256.Sum256([]byte(token))
-			bl := db.TokenBlacklist{
-				TokenHash: hex.EncodeToString(hash[:]),
-				ExpiresAt: claims.ExpiresAt.Time,
-			}
-			h.DB.Create(&bl)
-		}
-	}
-
-	// Delete all refresh tokens for this user (log out everywhere)
-	h.DB.Where("user_id = ?", uid).Delete(&db.RefreshToken{})
-
-	c.JSON(http.StatusOK, gin.H{"message": "logged out"})
 }
 
 // IsTokenBlacklisted checks if a JWT access token has been revoked.

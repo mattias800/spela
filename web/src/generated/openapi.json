@@ -777,6 +777,28 @@
         ],
         "type": "object"
       },
+      "AuthLogoutResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "https://example.com/api/schemas/AuthLogoutResponse.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "message": {
+            "description": "Confirmation message.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "message"
+        ],
+        "type": "object"
+      },
       "AuthRefreshRequest": {
         "additionalProperties": false,
         "properties": {
@@ -12947,6 +12969,64 @@
           }
         },
         "summary": "Sign in",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/api/auth/logout": {
+      "post": {
+        "description": "Blacklists the bearer access token (preventing reuse for its remaining lifetime) and revokes every refresh token belonging to the authenticated user, signing them out across all devices.",
+        "operationId": "authLogout",
+        "parameters": [
+          {
+            "description": "Bearer access token to blacklist.",
+            "in": "header",
+            "name": "Authorization",
+            "schema": {
+              "description": "Bearer access token to blacklist.",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Fallback access token to blacklist when no Authorization header is sent.",
+            "explode": false,
+            "in": "query",
+            "name": "token",
+            "schema": {
+              "description": "Fallback access token to blacklist when no Authorization header is sent.",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthLogoutResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HumaError"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Sign out",
         "tags": [
           "auth"
         ]
