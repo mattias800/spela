@@ -22,6 +22,7 @@ import com.spela.client.models.GameSessionResponse
 import com.spela.client.models.HumaError
 import com.spela.client.models.MessageResponse
 import com.spela.client.models.SessionCheatsResponse
+import com.spela.client.models.SessionSaveData
 import com.spela.client.models.SessionSaveResponse
 import com.spela.client.models.UpdateSessionCheatsRequest
 import com.spela.client.models.UpdateSessionPlayTimeRequest
@@ -615,6 +616,169 @@ open class SessionsApi : ApiClient {
         ).wrap()
     }
 
+
+
+    /**
+     * Upload an auto-save to a session
+     * Stores an auto-save for the session and returns the resulting save record. Older auto-saves beyond the retention limit are pruned. Optionally attaches a screenshot.
+     * @param id Session ID.
+     * @param coreName Identifier of the libretro core that produced the save. (optional)
+     * @param name Display name for the save (defaults to the uploaded filename). (optional)
+     * @param save Save state file. Required. (optional)
+     * @param screenshot Optional screenshot to attach to the save (typically PNG/JPEG). (optional)
+     * @return SessionSaveResponse
+     */
+    @Suppress("UNCHECKED_CAST")
+    open suspend fun uploadAutoSave(id: kotlin.String, coreName: kotlin.String? = null, name: kotlin.String? = null, save: io.ktor.client.request.forms.FormPart<io.ktor.client.request.forms.InputProvider>? = null, screenshot: io.ktor.client.request.forms.FormPart<io.ktor.client.request.forms.InputProvider>? = null): HttpResponse<SessionSaveResponse> {
+
+        val localVariableAuthNames = listOf<String>()
+
+        val localVariableBody = 
+            formData {
+                coreName?.apply { append("coreName", coreName) }
+                name?.apply { append("name", name) }
+                save?.apply { append(save) }
+                screenshot?.apply { append(screenshot) }
+            }
+
+        val localVariableQuery = mutableMapOf<String, List<String>>()
+        val localVariableHeaders = mutableMapOf<String, String>()
+
+        val localVariableConfig = RequestConfig<kotlin.Any?>(
+            RequestMethod.POST,
+            "/api/sessions/{id}/saves/auto".replace("{" + "id" + "}", "$id"),
+            query = localVariableQuery,
+            headers = localVariableHeaders,
+            requiresAuthentication = false,
+        )
+
+        return multipartFormRequest(
+            localVariableConfig,
+            localVariableBody,
+            localVariableAuthNames
+        ).wrap()
+    }
+
+
+    /**
+     * Upload SRAM data for a session
+     * Stores or replaces the SRAM/battery save data for a session. Returns 201 on first upload, 200 on overwrite.
+     * @param id Session ID.
+     * @param file SRAM/battery save file. (optional)
+     * @return SessionSaveData
+     */
+    @Suppress("UNCHECKED_CAST")
+    open suspend fun uploadSRAM(id: kotlin.String, file: io.ktor.client.request.forms.FormPart<io.ktor.client.request.forms.InputProvider>? = null): HttpResponse<SessionSaveData> {
+
+        val localVariableAuthNames = listOf<String>()
+
+        val localVariableBody = 
+            formData {
+                file?.apply { append(file) }
+            }
+
+        val localVariableQuery = mutableMapOf<String, List<String>>()
+        val localVariableHeaders = mutableMapOf<String, String>()
+
+        val localVariableConfig = RequestConfig<kotlin.Any?>(
+            RequestMethod.POST,
+            "/api/sessions/{id}/sram".replace("{" + "id" + "}", "$id"),
+            query = localVariableQuery,
+            headers = localVariableHeaders,
+            requiresAuthentication = false,
+        )
+
+        return multipartFormRequest(
+            localVariableConfig,
+            localVariableBody,
+            localVariableAuthNames
+        ).wrap()
+    }
+
+
+    /**
+     * Upload a save state to a session
+     * Stores a manual save state for the session and returns the resulting save record. Optionally attaches a screenshot.
+     * @param id Session ID.
+     * @param coreName Identifier of the libretro core that produced the save. (optional)
+     * @param name Display name for the save (defaults to the uploaded filename). (optional)
+     * @param save Save state file. Required. (optional)
+     * @param screenshot Optional screenshot to attach to the save (typically PNG/JPEG). (optional)
+     * @return SessionSaveResponse
+     */
+    @Suppress("UNCHECKED_CAST")
+    open suspend fun uploadSessionSave(id: kotlin.String, coreName: kotlin.String? = null, name: kotlin.String? = null, save: io.ktor.client.request.forms.FormPart<io.ktor.client.request.forms.InputProvider>? = null, screenshot: io.ktor.client.request.forms.FormPart<io.ktor.client.request.forms.InputProvider>? = null): HttpResponse<SessionSaveResponse> {
+
+        val localVariableAuthNames = listOf<String>()
+
+        val localVariableBody = 
+            formData {
+                coreName?.apply { append("coreName", coreName) }
+                name?.apply { append("name", name) }
+                save?.apply { append(save) }
+                screenshot?.apply { append(screenshot) }
+            }
+
+        val localVariableQuery = mutableMapOf<String, List<String>>()
+        val localVariableHeaders = mutableMapOf<String, String>()
+
+        val localVariableConfig = RequestConfig<kotlin.Any?>(
+            RequestMethod.POST,
+            "/api/sessions/{id}/saves".replace("{" + "id" + "}", "$id"),
+            query = localVariableQuery,
+            headers = localVariableHeaders,
+            requiresAuthentication = false,
+        )
+
+        return multipartFormRequest(
+            localVariableConfig,
+            localVariableBody,
+            localVariableAuthNames
+        ).wrap()
+    }
+
+
+    /**
+     * Upload or overwrite a slot save
+     * Stores a save state in the specified slot (1-10). If the slot already has a save, it is replaced.
+     * @param id Session ID.
+     * @param slot Slot number 1-10.
+     * @param coreName Identifier of the libretro core that produced the save. (optional)
+     * @param name Display name for the save (defaults to the uploaded filename). (optional)
+     * @param save Save state file. Required. (optional)
+     * @param screenshot Optional screenshot to attach to the save (typically PNG/JPEG). (optional)
+     * @return SessionSaveResponse
+     */
+    @Suppress("UNCHECKED_CAST")
+    open suspend fun upsertSlotSave(id: kotlin.String, slot: kotlin.String, coreName: kotlin.String? = null, name: kotlin.String? = null, save: io.ktor.client.request.forms.FormPart<io.ktor.client.request.forms.InputProvider>? = null, screenshot: io.ktor.client.request.forms.FormPart<io.ktor.client.request.forms.InputProvider>? = null): HttpResponse<SessionSaveResponse> {
+
+        val localVariableAuthNames = listOf<String>()
+
+        val localVariableBody = 
+            formData {
+                coreName?.apply { append("coreName", coreName) }
+                name?.apply { append("name", name) }
+                save?.apply { append(save) }
+                screenshot?.apply { append(screenshot) }
+            }
+
+        val localVariableQuery = mutableMapOf<String, List<String>>()
+        val localVariableHeaders = mutableMapOf<String, String>()
+
+        val localVariableConfig = RequestConfig<kotlin.Any?>(
+            RequestMethod.PUT,
+            "/api/sessions/{id}/saves/slot/{slot}".replace("{" + "id" + "}", "$id").replace("{" + "slot" + "}", "$slot"),
+            query = localVariableQuery,
+            headers = localVariableHeaders,
+            requiresAuthentication = false,
+        )
+
+        return multipartFormRequest(
+            localVariableConfig,
+            localVariableBody,
+            localVariableAuthNames
+        ).wrap()
+    }
 
 
 }

@@ -7944,6 +7944,50 @@
         ],
         "type": "object"
       },
+      "SessionSaveData": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "https://example.com/api/schemas/SessionSaveData.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "fileSize": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "id": {
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "sessionId": {
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "createdAt",
+          "updatedAt",
+          "sessionId",
+          "fileSize"
+        ],
+        "type": "object"
+      },
       "SessionSaveResponse": {
         "additionalProperties": false,
         "properties": {
@@ -20490,6 +20534,302 @@
         "tags": [
           "sessions"
         ]
+      },
+      "post": {
+        "description": "Stores a manual save state for the session and returns the resulting save record. Optionally attaches a screenshot.",
+        "operationId": "uploadSessionSave",
+        "parameters": [
+          {
+            "description": "Session ID.",
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "description": "Session ID.",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "encoding": {
+                "coreName": {
+                  "contentType": "text/plain"
+                },
+                "name": {
+                  "contentType": "text/plain"
+                },
+                "save": {
+                  "contentType": "application/octet-stream"
+                },
+                "screenshot": {
+                  "contentType": "application/octet-stream"
+                }
+              },
+              "schema": {
+                "properties": {
+                  "coreName": {
+                    "description": "Identifier of the libretro core that produced the save.",
+                    "type": "string"
+                  },
+                  "name": {
+                    "description": "Display name for the save (defaults to the uploaded filename).",
+                    "type": "string"
+                  },
+                  "save": {
+                    "contentEncoding": "binary",
+                    "contentMediaType": "application/octet-stream",
+                    "description": "Save state file. Required.",
+                    "format": "binary",
+                    "type": "string"
+                  },
+                  "screenshot": {
+                    "contentEncoding": "binary",
+                    "contentMediaType": "application/octet-stream",
+                    "description": "Optional screenshot to attach to the save (typically PNG/JPEG).",
+                    "format": "binary",
+                    "type": "string"
+                  }
+                },
+                "type": "object"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionSaveResponse"
+                }
+              }
+            },
+            "description": "Created"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HumaError"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Upload a save state to a session",
+        "tags": [
+          "sessions"
+        ]
+      }
+    },
+    "/api/sessions/{id}/saves/auto": {
+      "post": {
+        "description": "Stores an auto-save for the session and returns the resulting save record. Older auto-saves beyond the retention limit are pruned. Optionally attaches a screenshot.",
+        "operationId": "uploadAutoSave",
+        "parameters": [
+          {
+            "description": "Session ID.",
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "description": "Session ID.",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "encoding": {
+                "coreName": {
+                  "contentType": "text/plain"
+                },
+                "name": {
+                  "contentType": "text/plain"
+                },
+                "save": {
+                  "contentType": "application/octet-stream"
+                },
+                "screenshot": {
+                  "contentType": "application/octet-stream"
+                }
+              },
+              "schema": {
+                "properties": {
+                  "coreName": {
+                    "description": "Identifier of the libretro core that produced the save.",
+                    "type": "string"
+                  },
+                  "name": {
+                    "description": "Display name for the save (defaults to the uploaded filename).",
+                    "type": "string"
+                  },
+                  "save": {
+                    "contentEncoding": "binary",
+                    "contentMediaType": "application/octet-stream",
+                    "description": "Save state file. Required.",
+                    "format": "binary",
+                    "type": "string"
+                  },
+                  "screenshot": {
+                    "contentEncoding": "binary",
+                    "contentMediaType": "application/octet-stream",
+                    "description": "Optional screenshot to attach to the save (typically PNG/JPEG).",
+                    "format": "binary",
+                    "type": "string"
+                  }
+                },
+                "type": "object"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionSaveResponse"
+                }
+              }
+            },
+            "description": "Created"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HumaError"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Upload an auto-save to a session",
+        "tags": [
+          "sessions"
+        ]
+      }
+    },
+    "/api/sessions/{id}/saves/slot/{slot}": {
+      "put": {
+        "description": "Stores a save state in the specified slot (1-10). If the slot already has a save, it is replaced.",
+        "operationId": "upsertSlotSave",
+        "parameters": [
+          {
+            "description": "Session ID.",
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "description": "Session ID.",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Slot number 1-10.",
+            "in": "path",
+            "name": "slot",
+            "required": true,
+            "schema": {
+              "description": "Slot number 1-10.",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "encoding": {
+                "coreName": {
+                  "contentType": "text/plain"
+                },
+                "name": {
+                  "contentType": "text/plain"
+                },
+                "save": {
+                  "contentType": "application/octet-stream"
+                },
+                "screenshot": {
+                  "contentType": "application/octet-stream"
+                }
+              },
+              "schema": {
+                "properties": {
+                  "coreName": {
+                    "description": "Identifier of the libretro core that produced the save.",
+                    "type": "string"
+                  },
+                  "name": {
+                    "description": "Display name for the save (defaults to the uploaded filename).",
+                    "type": "string"
+                  },
+                  "save": {
+                    "contentEncoding": "binary",
+                    "contentMediaType": "application/octet-stream",
+                    "description": "Save state file. Required.",
+                    "format": "binary",
+                    "type": "string"
+                  },
+                  "screenshot": {
+                    "contentEncoding": "binary",
+                    "contentMediaType": "application/octet-stream",
+                    "description": "Optional screenshot to attach to the save (typically PNG/JPEG).",
+                    "format": "binary",
+                    "type": "string"
+                  }
+                },
+                "type": "object"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionSaveResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HumaError"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Upload or overwrite a slot save",
+        "tags": [
+          "sessions"
+        ]
       }
     },
     "/api/sessions/{id}/saves/slots": {
@@ -20668,6 +21008,78 @@
           }
         ],
         "summary": "Update a save state's name or notes",
+        "tags": [
+          "sessions"
+        ]
+      }
+    },
+    "/api/sessions/{id}/sram": {
+      "post": {
+        "description": "Stores or replaces the SRAM/battery save data for a session. Returns 201 on first upload, 200 on overwrite.",
+        "operationId": "uploadSRAM",
+        "parameters": [
+          {
+            "description": "Session ID.",
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "description": "Session ID.",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "encoding": {
+                "file": {
+                  "contentType": "application/octet-stream"
+                }
+              },
+              "schema": {
+                "properties": {
+                  "file": {
+                    "contentEncoding": "binary",
+                    "contentMediaType": "application/octet-stream",
+                    "description": "SRAM/battery save file.",
+                    "format": "binary",
+                    "type": "string"
+                  }
+                },
+                "type": "object"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionSaveData"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HumaError"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Upload SRAM data for a session",
         "tags": [
           "sessions"
         ]
