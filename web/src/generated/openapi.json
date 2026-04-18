@@ -372,6 +372,33 @@
         },
         "type": "object"
       },
+      "AdminCreateRomHackResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "https://example.com/api/schemas/AdminCreateRomHackResponse.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "id": {
+            "description": "Newly-created game ID (numeric, encoded as string).",
+            "type": "string"
+          },
+          "title": {
+            "description": "Newly-created game title.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "title"
+        ],
+        "type": "object"
+      },
       "AdminCreateUserRequest": {
         "additionalProperties": false,
         "properties": {
@@ -777,6 +804,28 @@
         ],
         "type": "object"
       },
+      "AuthLogoutResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "https://example.com/api/schemas/AuthLogoutResponse.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "message": {
+            "description": "Confirmation message.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "message"
+        ],
+        "type": "object"
+      },
       "AuthRefreshRequest": {
         "additionalProperties": false,
         "properties": {
@@ -981,6 +1030,15 @@
       "BiosFileResponse": {
         "additionalProperties": false,
         "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "https://example.com/api/schemas/BiosFileResponse.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
           "consoleId": {
             "type": [
               "string",
@@ -3460,6 +3518,31 @@
           "type",
           "title",
           "games"
+        ],
+        "type": "object"
+      },
+      "FormFile": {
+        "additionalProperties": false,
+        "properties": {
+          "ContentType": {
+            "type": "string"
+          },
+          "Filename": {
+            "type": "string"
+          },
+          "IsSet": {
+            "type": "boolean"
+          },
+          "Size": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "ContentType",
+          "IsSet",
+          "Size",
+          "Filename"
         ],
         "type": "object"
       },
@@ -6807,6 +6890,58 @@
         },
         "required": [
           "gameIds"
+        ],
+        "type": "object"
+      },
+      "ReplaceROMResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "https://example.com/api/schemas/ReplaceROMResponse.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "game": {
+            "$ref": "#/components/schemas/GameResponse"
+          },
+          "replacementResult": {
+            "$ref": "#/components/schemas/ReplaceROMResult"
+          }
+        },
+        "required": [
+          "game",
+          "replacementResult"
+        ],
+        "type": "object"
+      },
+      "ReplaceROMResult": {
+        "additionalProperties": false,
+        "properties": {
+          "canonicalName": {
+            "type": "string"
+          },
+          "crc32": {
+            "type": "string"
+          },
+          "previousCrc32": {
+            "type": "string"
+          },
+          "previousStatus": {
+            "type": "string"
+          },
+          "verified": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "verified",
+          "crc32",
+          "previousStatus",
+          "previousCrc32"
         ],
         "type": "object"
       },
@@ -10254,6 +10389,66 @@
         ]
       }
     },
+    "/api/admin/bios": {
+      "post": {
+        "description": "Admin-only. Stores the uploaded file in the BIOS directory and matches it against the registry by filename, falling back to MD5 lookup. Returns the resulting BIOS file metadata. Max 16 MB.",
+        "operationId": "adminUploadBios",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "encoding": {
+                "file": {
+                  "contentType": "application/octet-stream"
+                }
+              },
+              "schema": {
+                "properties": {
+                  "file": {
+                    "contentEncoding": "binary",
+                    "contentMediaType": "application/octet-stream",
+                    "description": "BIOS file to upload (max 16 MB).",
+                    "format": "binary",
+                    "type": "string"
+                  }
+                },
+                "type": "object"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BiosFileResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HumaError"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Upload a BIOS file",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
     "/api/admin/bios/download": {
       "post": {
         "description": "Admin-only. Starts a background download of missing registry-registered BIOS files.",
@@ -11074,6 +11269,78 @@
         ]
       }
     },
+    "/api/admin/games/{id}/replace-rom": {
+      "put": {
+        "description": "Admin-only. Replaces the existing ROM file for the given game and re-verifies it against the DAT registry. Accepts a raw ROM file or a .zip containing one.",
+        "operationId": "adminReplaceROM",
+        "parameters": [
+          {
+            "description": "Numeric game ID.",
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "description": "Numeric game ID.",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "encoding": {
+                "file": {
+                  "contentType": "application/octet-stream"
+                }
+              },
+              "schema": {
+                "properties": {
+                  "file": {
+                    "contentEncoding": "binary",
+                    "contentMediaType": "application/octet-stream",
+                    "description": "Replacement ROM file (or .zip containing one). Max 50 GB.",
+                    "format": "binary",
+                    "type": "string"
+                  }
+                },
+                "type": "object"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReplaceROMResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HumaError"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Replace a game's ROM",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
     "/api/admin/games/{id}/scrape": {
       "post": {
         "description": "Admin-only. Enqueues a single game for scraping, attaching to the active job if any.",
@@ -11339,6 +11606,94 @@
         "tags": [
           "admin",
           "retroachievements"
+        ]
+      }
+    },
+    "/api/admin/rom-hacks": {
+      "post": {
+        "description": "Admin-only. Applies the supplied patch file to a base game's ROM and creates a new game record. In 'variant' mode the new game shares the base game's group and inherits its metadata; in 'standalone' mode it gets its own group with the base game as parent.",
+        "operationId": "adminCreateRomHack",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "encoding": {
+                "baseGameId": {
+                  "contentType": "text/plain"
+                },
+                "label": {
+                  "contentType": "text/plain"
+                },
+                "mode": {
+                  "contentType": "text/plain"
+                },
+                "patchFile": {
+                  "contentType": "application/octet-stream"
+                },
+                "title": {
+                  "contentType": "text/plain"
+                }
+              },
+              "schema": {
+                "properties": {
+                  "baseGameId": {
+                    "description": "Numeric ID of the base game whose ROM the patch applies to.",
+                    "type": "string"
+                  },
+                  "label": {
+                    "description": "Variant label (required when mode='variant'). Appears in brackets after the base title.",
+                    "type": "string"
+                  },
+                  "mode": {
+                    "description": "'variant' (groups with the base game) or 'standalone' (creates an independent game).",
+                    "type": "string"
+                  },
+                  "patchFile": {
+                    "contentEncoding": "binary",
+                    "contentMediaType": "application/octet-stream",
+                    "description": "Patch file (.ips, .bps, .ups, .xdelta, .vcdiff). Max 100 MB.",
+                    "format": "binary",
+                    "type": "string"
+                  },
+                  "title": {
+                    "description": "Standalone title (required when mode='standalone').",
+                    "type": "string"
+                  }
+                },
+                "type": "object"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminCreateRomHackResponse"
+                }
+              }
+            },
+            "description": "Created"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HumaError"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Create a ROM hack from a patch file",
+        "tags": [
+          "admin"
         ]
       }
     },
@@ -12099,6 +12454,73 @@
           }
         ],
         "summary": "List staged uploads",
+        "tags": [
+          "admin"
+        ]
+      },
+      "post": {
+        "description": "Admin-only. Accepts one or more ROM files (or .zip archives containing ROMs) and stages them for review. Each archive is extracted and its individual ROMs are staged separately. Returns one StagedUploadResponse per resulting file.",
+        "operationId": "adminUploadROMs",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "encoding": {
+                "files": {
+                  "contentType": "application/octet-stream"
+                }
+              },
+              "schema": {
+                "properties": {
+                  "files": {
+                    "items": {
+                      "contentEncoding": "binary",
+                      "contentMediaType": "application/octet-stream",
+                      "description": "One or more ROM files (or .zip archives containing ROMs). Each archive is extracted and its ROMs are staged individually.",
+                      "format": "binary",
+                      "type": "string"
+                    },
+                    "type": "array"
+                  }
+                },
+                "type": "object"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/StagedUploadResponse"
+                  },
+                  "type": [
+                    "array",
+                    "null"
+                  ]
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HumaError"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Stage ROM file uploads",
         "tags": [
           "admin"
         ]
@@ -12947,6 +13369,64 @@
           }
         },
         "summary": "Sign in",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/api/auth/logout": {
+      "post": {
+        "description": "Blacklists the bearer access token (preventing reuse for its remaining lifetime) and revokes every refresh token belonging to the authenticated user, signing them out across all devices.",
+        "operationId": "authLogout",
+        "parameters": [
+          {
+            "description": "Bearer access token to blacklist.",
+            "in": "header",
+            "name": "Authorization",
+            "schema": {
+              "description": "Bearer access token to blacklist.",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Fallback access token to blacklist when no Authorization header is sent.",
+            "explode": false,
+            "in": "query",
+            "name": "token",
+            "schema": {
+              "description": "Fallback access token to blacklist when no Authorization header is sent.",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthLogoutResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HumaError"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Sign out",
         "tags": [
           "auth"
         ]

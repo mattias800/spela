@@ -2,9 +2,12 @@ package api
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
 	"log/slog"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/danielgtaylor/huma/v2"
@@ -113,6 +116,24 @@ type SetupStatusOutput struct {
 	Body SetupStatusResponse
 }
 
+// AuthLogoutInput captures the Authorization header so the handler can
+// blacklist the bearer access token. The header is optional — clients can
+// also pass the token via ?token= as a fallback (matches the gin handler).
+type AuthLogoutInput struct {
+	Authorization string `header:"Authorization" doc:"Bearer access token to blacklist."`
+	TokenQuery    string `query:"token" doc:"Fallback access token to blacklist when no Authorization header is sent."`
+}
+
+// AuthLogoutResponse mirrors the historical gin response body.
+type AuthLogoutResponse struct {
+	Message string `json:"message" doc:"Confirmation message."`
+}
+
+// AuthLogoutOutput wraps the logout response body.
+type AuthLogoutOutput struct {
+	Body AuthLogoutResponse
+}
+
 // --- Request-context bridging ------------------------------------------------
 
 // authReqCtxKey is the private context key under which we stash the underlying
@@ -182,7 +203,8 @@ func IPRateLimitMiddleware(rl *RateLimiter) func(huma.Context, func(huma.Context
 // RegisterAuthRoutes wires the public authentication endpoints (login, register,
 // refresh, setup, setup-status) into the huma API. Rate limiters mirror the raw
 // gin routes: authLimiter protects login/register/setup, refreshLimiter guards
-// /refresh, and setup-status is unrestricted.
+// /refresh, and setup-status is unrestricted. Logout is registered separately
+// in RegisterAuthProtectedRoutes since it requires an authenticated user.
 func RegisterAuthRoutes(api huma.API, h *AuthHandler, authLimiter *RateLimiter, refreshLimiter *RateLimiter) {
 	authRL := IPRateLimitMiddleware(authLimiter)
 	refreshRL := IPRateLimitMiddleware(refreshLimiter)
@@ -620,4 +642,61 @@ func (h *AuthHandler) HumaSetupStatus(_ context.Context, _ *SetupStatusInput) (*
 		RegistrationEnabled: registrationEnabled,
 		GameCount:           gameCount,
 	}}, nil
+}
+
+// RegisterAuthProtectedRoutes wires authentication endpoints that require an
+// already-authenticated user — currently just /api/auth/logout. Kept in a
+// separate registration func so the public RegisterAuthRoutes doesn't depend
+// on the JWT secret + DB it needs for RequireAuth middleware composition.
+func RegisterAuthProtectedRoutes(api huma.API, h *AuthHandler, jwtSecret string, database *gorm.DB) {
+	huma.Register(api, huma.Operation{
+		OperationID: "authLogout",
+		Method:      http.MethodPost,
+		Path:        "/api/auth/logout",
+		Summary:     "Sign out",
+		Description: "Blacklists the bearer access token (preventing reuse for its remaining lifetime) and revokes every refresh token belonging to the authenticated user, signing them out across all devices.",
+		Tags:        []string{"auth"},
+		Security:    []map[string][]string{{"bearer": {}}},
+		Middlewares: huma.Middlewares{RequireAuth(jwtSecret, database)},
+	}, h.HumaLogout)
+}
+
+// HumaLogout is the huma implementation of POST /api/auth/logout. Mirrors the
+// gin Logout handler 1:1: blacklists the bearer access token (so it can't be
+// reused for its remaining lifetime) and deletes every refresh token belonging
+// to the user (signs them out everywhere). The response body matches the
+// historical gin shape so existing clients aren't affected.
+func (h *AuthHandler) HumaLogout(ctx context.Context, in *AuthLogoutInput) (*AuthLogoutOutput, error) {
+	token := ""
+	if in.Authorization != "" {
+		parts := splitAuthHeader(in.Authorization)
+		if len(parts) == 2 && parts[0] == "Bearer" {
+			token = parts[1]
+		}
+	}
+	if token == "" {
+		token = in.TokenQuery
+	}
+
+	if token != "" {
+		if claims, err := auth.ValidateAccessToken(token, h.JWTSecret); err == nil && claims.ExpiresAt != nil {
+			hash := sha256.Sum256([]byte(token))
+			h.DB.Create(&db.TokenBlacklist{
+				TokenHash: hex.EncodeToString(hash[:]),
+				ExpiresAt: claims.ExpiresAt.Time,
+			})
+		}
+	}
+
+	uid := UserIDFromContext(ctx)
+	h.DB.Where("user_id = ?", uid).Delete(&db.RefreshToken{})
+
+	return &AuthLogoutOutput{Body: AuthLogoutResponse{Message: "logged out"}}, nil
+}
+
+// splitAuthHeader splits an Authorization header into at most 2 parts on
+// whitespace. Pulled out as a helper so both the huma handler above and the
+// existing gin handler can share parsing semantics if needed in the future.
+func splitAuthHeader(h string) []string {
+	return strings.SplitN(h, " ", 2)
 }

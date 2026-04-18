@@ -257,6 +257,7 @@ func NewRouter(cfg Config) (*gin.Engine, func()) {
 	RegisterCollectionRoutes(humaAPI, collectionHandler, cfg.JWTSecret, cfg.DB, userLimiter)
 	RegisterAdminGameRoutes(humaAPI, gameHandler, adminHandler, igdbHandler, cfg.JWTSecret, cfg.DB, userLimiter)
 	RegisterUploadAdminRoutes(humaAPI, uploadHandler, cfg.JWTSecret, cfg.DB, userLimiter)
+	RegisterAdminMultipartRoutes(humaAPI, biosHandler, gameHandler, romHackHandler, uploadHandler, cfg.JWTSecret, cfg.DB, userLimiter, uploadLimiter)
 	RegisterSocialExtraRoutes(humaAPI, socialHandler, cfg.JWTSecret, cfg.DB, userLimiter)
 	RegisterProfileRoutes(humaAPI, exploreHandler, cfg.JWTSecret, cfg.DB, userLimiter)
 	RegisterExploreFeaturedRoutes(humaAPI, exploreHandler, cfg.JWTSecret, cfg.DB, userLimiter)
@@ -269,6 +270,7 @@ func NewRouter(cfg Config) (*gin.Engine, func()) {
 	RegisterExploreChallengeRoutes(humaAPI, exploreHandler, cfg.JWTSecret, cfg.DB, userLimiter)
 	RegisterExploreWizardRoutes(humaAPI, exploreHandler, cfg.JWTSecret, cfg.DB, userLimiter)
 	RegisterAuthRoutes(humaAPI, authHandler, authLimiter, refreshLimiter)
+	RegisterAuthProtectedRoutes(humaAPI, authHandler, cfg.JWTSecret, cfg.DB)
 	RegisterSetupDiagnosticsRoutes(humaAPI, setupHandler)
 
 	// Public auth routes — login/register/setup/refresh/setup-status have been
@@ -279,10 +281,7 @@ func NewRouter(cfg Config) (*gin.Engine, func()) {
 	// Setup diagnostics — migrated to huma (see RegisterSetupDiagnosticsRoutes above).
 	// Public during first-time setup (no users exist), admin-only afterwards.
 
-	// Logout (requires auth, placed before main protected group for clarity)
-	logoutGroup := r.Group("/api/auth")
-	logoutGroup.Use(AuthMiddleware(cfg.JWTSecret, cfg.DB))
-	logoutGroup.POST("/logout", authHandler.Logout)
+	// Logout — migrated to huma (see RegisterAuthProtectedRoutes above).
 
 	// Console preview screenshots (public — cached libretro thumbnails, loaded by <img> tags)
 	r.GET("/api/consoles/:id/preview-screenshot", consoleHandler.GetPreviewScreenshot)
@@ -444,20 +443,14 @@ func NewRouter(cfg Config) (*gin.Engine, func()) {
 		// Client error reporting — migrated to huma
 		// (see RegisterUserExtraRoutes above).
 
-		// Admin routes — most endpoints migrated to huma
-		// (see RegisterAdminRoutes, RegisterAdminGameRoutes,
-		// RegisterUploadAdminRoutes, RegisterScraperAdminRoutes,
-		// RegisterCheatAdminRoutes, RegisterSystemEventRoutes,
-		// RegisterDeviceRoutes, RegisterEnrichmentRoutes and
-		// RegisterMiscRoutes above). File-based endpoints stay on raw gin.
-		admin := api.Group("/admin")
-		admin.Use(AdminMiddleware())
-		{
-			admin.POST("/bios", biosHandler.UploadBiosFile)
-			admin.PUT("/games/:id/replace-rom", uploadLimiter.RateLimit(), gameHandler.ReplaceROM)
-			admin.POST("/rom-hacks", uploadLimiter.RateLimit(), romHackHandler.CreateRomHack)
-			admin.POST("/uploads", uploadHandler.UploadROMs)
-		}
+		// Admin routes — all endpoints migrated to huma. The four multipart
+		// uploads (bios, replace-rom, rom-hacks, uploads) live in
+		// RegisterAdminMultipartRoutes; the JSON-only admin endpoints live in
+		// RegisterAdminRoutes / RegisterAdminGameRoutes /
+		// RegisterUploadAdminRoutes / RegisterScraperAdminRoutes /
+		// RegisterCheatAdminRoutes / RegisterSystemEventRoutes /
+		// RegisterDeviceRoutes / RegisterEnrichmentRoutes /
+		// RegisterMiscRoutes above.
 
 		// WebSocket
 		api.GET("/ws", cfg.Hub.HandleWebSocket)
