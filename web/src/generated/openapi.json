@@ -8214,6 +8214,15 @@
       "SharedSaveResponse": {
         "additionalProperties": false,
         "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "https://example.com/api/schemas/SharedSaveResponse.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
           "avatarUrl": {
             "type": "string"
           },
@@ -18744,6 +18753,97 @@
         "tags": [
           "shared-saves"
         ]
+      },
+      "post": {
+        "description": "Uploads a save state for the specified game and publishes it as a community shared save. Other users can browse/download it from the game page.",
+        "operationId": "shareSave",
+        "parameters": [
+          {
+            "description": "Game ID.",
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "description": "Game ID.",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "encoding": {
+                "description": {
+                  "contentType": "text/plain"
+                },
+                "name": {
+                  "contentType": "text/plain"
+                },
+                "save": {
+                  "contentType": "application/octet-stream"
+                },
+                "screenshotUrl": {
+                  "contentType": "text/plain"
+                }
+              },
+              "schema": {
+                "properties": {
+                  "description": {
+                    "description": "Optional description shown alongside the save.",
+                    "type": "string"
+                  },
+                  "name": {
+                    "description": "Display name for the shared save (defaults to the uploaded filename).",
+                    "type": "string"
+                  },
+                  "save": {
+                    "contentEncoding": "binary",
+                    "contentMediaType": "application/octet-stream",
+                    "description": "Save state file. Required.",
+                    "format": "binary",
+                    "type": "string"
+                  },
+                  "screenshotUrl": {
+                    "description": "Optional pre-existing screenshot URL to attach.",
+                    "type": "string"
+                  }
+                },
+                "type": "object"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SharedSaveResponse"
+                }
+              }
+            },
+            "description": "Created"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HumaError"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Share a save state with the community",
+        "tags": [
+          "shared-saves"
+        ]
       }
     },
     "/api/games/{id}/shared-saves/{saveId}": {
@@ -21673,6 +21773,194 @@
           }
         ],
         "summary": "List save states for a shared session",
+        "tags": [
+          "shared-sessions"
+        ]
+      },
+      "post": {
+        "description": "Stores a manual save state in the shared session. Requires the caller to currently hold the turn and to present a matching X-Turn-Token header. If the shared session has a backing GameSession, a parallel SessionSaveState row is created so the host can resume locally.",
+        "operationId": "uploadSharedSessionSave",
+        "parameters": [
+          {
+            "description": "Shared session ID.",
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "description": "Shared session ID.",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Token proving the caller currently holds the turn (returned by joinSharedSession / takeTurn).",
+            "in": "header",
+            "name": "X-Turn-Token",
+            "schema": {
+              "description": "Token proving the caller currently holds the turn (returned by joinSharedSession / takeTurn).",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "encoding": {
+                "name": {
+                  "contentType": "text/plain"
+                },
+                "save": {
+                  "contentType": "application/octet-stream"
+                },
+                "screenshotUrl": {
+                  "contentType": "text/plain"
+                }
+              },
+              "schema": {
+                "properties": {
+                  "name": {
+                    "description": "Display name for the save (defaults to the uploaded filename). Manual saves only.",
+                    "type": "string"
+                  },
+                  "save": {
+                    "contentEncoding": "binary",
+                    "contentMediaType": "application/octet-stream",
+                    "description": "Save state file. Required.",
+                    "format": "binary",
+                    "type": "string"
+                  },
+                  "screenshotUrl": {
+                    "description": "Optional pre-existing screenshot URL to attach.",
+                    "type": "string"
+                  }
+                },
+                "type": "object"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SharedSessionSaveResponse"
+                }
+              }
+            },
+            "description": "Created"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HumaError"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Upload a manual save to a shared session",
+        "tags": [
+          "shared-sessions"
+        ]
+      }
+    },
+    "/api/shared-sessions/{id}/saves/auto": {
+      "post": {
+        "description": "Replaces the shared session's auto-save (one auto-save is kept per shared session). Same turn + X-Turn-Token rules as the manual upload.",
+        "operationId": "uploadSharedSessionAutoSave",
+        "parameters": [
+          {
+            "description": "Shared session ID.",
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "description": "Shared session ID.",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Token proving the caller currently holds the turn (returned by joinSharedSession / takeTurn).",
+            "in": "header",
+            "name": "X-Turn-Token",
+            "schema": {
+              "description": "Token proving the caller currently holds the turn (returned by joinSharedSession / takeTurn).",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "encoding": {
+                "name": {
+                  "contentType": "text/plain"
+                },
+                "save": {
+                  "contentType": "application/octet-stream"
+                },
+                "screenshotUrl": {
+                  "contentType": "text/plain"
+                }
+              },
+              "schema": {
+                "properties": {
+                  "name": {
+                    "description": "Display name for the save (defaults to the uploaded filename). Manual saves only.",
+                    "type": "string"
+                  },
+                  "save": {
+                    "contentEncoding": "binary",
+                    "contentMediaType": "application/octet-stream",
+                    "description": "Save state file. Required.",
+                    "format": "binary",
+                    "type": "string"
+                  },
+                  "screenshotUrl": {
+                    "description": "Optional pre-existing screenshot URL to attach.",
+                    "type": "string"
+                  }
+                },
+                "type": "object"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SharedSessionSaveResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HumaError"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Upload an auto-save to a shared session",
         "tags": [
           "shared-sessions"
         ]

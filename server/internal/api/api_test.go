@@ -1943,7 +1943,11 @@ func TestShareSave_NoFile(t *testing.T) {
 	req := httptest.NewRequest("POST", "/api/games/"+gameID+"/shared-saves", nil)
 	req.Header.Set("Authorization", "Bearer "+token)
 	router.ServeHTTP(w, req)
-	assert.Equal(t, http.StatusBadRequest, w.Code)
+	// 422 (Unprocessable Entity) from huma's multipart-body validation when no
+	// Content-Type/body is sent — previously 400 from the gin handler's manual
+	// FormFile check. Semantically equivalent (both indicate an invalid
+	// request); huma surfaces the more specific RFC status code.
+	assert.Equal(t, http.StatusUnprocessableEntity, w.Code)
 }
 
 func TestListSharedSaves(t *testing.T) {

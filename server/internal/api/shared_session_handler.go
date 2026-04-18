@@ -2,7 +2,6 @@ package api
 
 import (
 	"crypto/rand"
-	"crypto/subtle"
 	"encoding/hex"
 	"fmt"
 	"net/http"
@@ -702,85 +701,8 @@ func (h *SharedSessionHandler) ListSaves(c *gin.Context) {
 	c.JSON(http.StatusOK, result)
 }
 
-// UploadSave uploads a manual save to a shared session. Requires active turn.
-func (h *SharedSessionHandler) UploadSave(c *gin.Context) {
-	uid := getUserID(c)
-	ss, ok := h.loadSharedSessionWithMemberCheck(c, uid)
-	if !ok {
-		return
-	}
-
-	// Verify the caller holds the turn
-	if ss.ActiveUserID == nil || *ss.ActiveUserID != uid {
-		c.JSON(http.StatusForbidden, ErrorResponse{Error: "you must hold the turn to upload saves"})
-		return
-	}
-
-	// Verify turn token (constant-time comparison to prevent timing attacks)
-	turnToken := c.GetHeader("X-Turn-Token")
-	if turnToken == "" || subtle.ConstantTimeCompare([]byte(turnToken), []byte(ss.TurnToken)) != 1 {
-		c.JSON(http.StatusForbidden, ErrorResponse{Error: "invalid turn token"})
-		return
-	}
-
-	c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, maxSaveUploadSize)
-	file, header, err := c.Request.FormFile("save")
-	if err != nil {
-		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "save file required"})
-		return
-	}
-	defer file.Close()
-
-	name := c.DefaultPostForm("name", header.Filename)
-	screenshotURL := c.PostForm("screenshotUrl")
-
-	filePath, size, err := h.Storage.WriteSharedSessionSave(ss.ID, header.Filename, file)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to save file"})
-		return
-	}
-
-	save := db.SharedSessionSave{
-		SharedSessionID:       ss.ID,
-		UserID:        uid,
-		Name:          name,
-		FilePath:      filePath,
-		FileSize:      size,
-		ScreenshotURL: screenshotURL,
-		IsAuto:        false,
-	}
-	if err := h.DB.Create(&save).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to create save record"})
-		return
-	}
-
-	// Also create a SessionSaveState if the shared session has an associated session
-	if ss.SessionID != nil {
-		sessionSave := db.SessionSaveState{
-			SessionID:     *ss.SessionID,
-			UserID:        uid,
-			Name:          name,
-			FilePath:      filePath,
-			FileSize:      size,
-			ScreenshotURL: screenshotURL,
-			IsAuto:        false,
-		}
-		h.DB.Create(&sessionSave)
-	}
-
-	h.DB.Preload("User").First(&save, save.ID)
-
-	if h.Hub != nil {
-		h.Hub.Broadcast(ws.Event{Type: ws.EventSharedSessionSaveUploaded, Payload: ws.SharedSessionSaveUploadedPayload{
-			SharedSessionID: strconv.FormatUint(uint64(ss.ID), 10),
-			SaveID:          strconv.FormatUint(uint64(save.ID), 10),
-			UserID:          strconv.FormatUint(uint64(uid), 10),
-			IsAuto:          false,
-		}})
-	}
-
-	c.JSON(http.StatusCreated, h.toSharedSessionSaveResponse(save))
-}
+// UploadSave has been migrated to huma — see
+// HumaUploadSharedSessionSave in huma_shared_uploads.go.
 
 // DownloadSave serves a shared session save file.
 func (h *SharedSessionHandler) DownloadSave(c *gin.Context) {
@@ -831,93 +753,8 @@ func (h *SharedSessionHandler) DeleteSave(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "save deleted"})
 }
 
-// UploadAutoSave uploads or updates the shared session's auto-save. Requires active turn.
-func (h *SharedSessionHandler) UploadAutoSave(c *gin.Context) {
-	uid := getUserID(c)
-	ss, ok := h.loadSharedSessionWithMemberCheck(c, uid)
-	if !ok {
-		return
-	}
-
-	// Verify the caller holds the turn
-	if ss.ActiveUserID == nil || *ss.ActiveUserID != uid {
-		c.JSON(http.StatusForbidden, ErrorResponse{Error: "you must hold the turn to upload saves"})
-		return
-	}
-
-	// Verify turn token (constant-time comparison to prevent timing attacks)
-	turnToken := c.GetHeader("X-Turn-Token")
-	if turnToken == "" || subtle.ConstantTimeCompare([]byte(turnToken), []byte(ss.TurnToken)) != 1 {
-		c.JSON(http.StatusForbidden, ErrorResponse{Error: "invalid turn token"})
-		return
-	}
-
-	c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, maxSaveUploadSize)
-	file, _, err := c.Request.FormFile("save")
-	if err != nil {
-		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "save file required"})
-		return
-	}
-	defer file.Close()
-
-	filename := "autosave.sav"
-	screenshotURL := c.PostForm("screenshotUrl")
-
-	filePath, size, err := h.Storage.WriteSharedSessionSave(ss.ID, filename, file)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to save file"})
-		return
-	}
-
-	// Upsert: update existing auto-save or create new
-	var save db.SharedSessionSave
-	result := h.DB.Where("shared_session_id = ? AND is_auto = ?", ss.ID, true).First(&save)
-	if result.Error == gorm.ErrRecordNotFound {
-		save = db.SharedSessionSave{
-			SharedSessionID:       ss.ID,
-			UserID:        uid,
-			Name:          "Auto Save",
-			FilePath:      filePath,
-			FileSize:      size,
-			ScreenshotURL: screenshotURL,
-			IsAuto:        true,
-		}
-		h.DB.Create(&save)
-	} else {
-		save.UserID = uid
-		save.FilePath = filePath
-		save.FileSize = size
-		save.ScreenshotURL = screenshotURL
-		h.DB.Save(&save)
-	}
-
-	// Also create a SessionSaveState if the shared session has an associated session
-	if ss.SessionID != nil {
-		sessionSave := db.SessionSaveState{
-			SessionID:     *ss.SessionID,
-			UserID:        uid,
-			Name:          "Auto Save",
-			FilePath:      filePath,
-			FileSize:      size,
-			ScreenshotURL: screenshotURL,
-			IsAuto:        true,
-		}
-		h.DB.Create(&sessionSave)
-	}
-
-	h.DB.Preload("User").First(&save, save.ID)
-
-	if h.Hub != nil {
-		h.Hub.Broadcast(ws.Event{Type: ws.EventSharedSessionSaveUploaded, Payload: ws.SharedSessionSaveUploadedPayload{
-			SharedSessionID: strconv.FormatUint(uint64(ss.ID), 10),
-			SaveID:          strconv.FormatUint(uint64(save.ID), 10),
-			UserID:          strconv.FormatUint(uint64(uid), 10),
-			IsAuto:          true,
-		}})
-	}
-
-	c.JSON(http.StatusOK, h.toSharedSessionSaveResponse(save))
-}
+// UploadAutoSave has been migrated to huma — see
+// HumaUploadSharedSessionAutoSave in huma_shared_uploads.go.
 
 // GetAutoSave serves the shared session's latest auto-save.
 func (h *SharedSessionHandler) GetAutoSave(c *gin.Context) {

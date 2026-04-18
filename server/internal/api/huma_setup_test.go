@@ -324,6 +324,22 @@ func TestOpenAPISpec_HasNewOperations(t *testing.T) {
 		{"/api/user/taste-profile", "get", "getTasteProfile"},
 		{"/api/user/explorer-badges", "get", "getExplorerBadges"},
 		{"/api/user/completionist-map", "get", "getCompletionistMap"},
+		// Auth — logout (post-multipart batch)
+		{"/api/auth/logout", "post", "authLogout"},
+		// Admin multipart uploads
+		{"/api/admin/bios", "post", "adminUploadBios"},
+		{"/api/admin/games/{id}/replace-rom", "put", "adminReplaceROM"},
+		{"/api/admin/rom-hacks", "post", "adminCreateRomHack"},
+		{"/api/admin/uploads", "post", "adminUploadROMs"},
+		// Session save uploads
+		{"/api/sessions/{id}/saves", "post", "uploadSessionSave"},
+		{"/api/sessions/{id}/saves/auto", "post", "uploadAutoSave"},
+		{"/api/sessions/{id}/saves/slot/{slot}", "put", "upsertSlotSave"},
+		{"/api/sessions/{id}/sram", "post", "uploadSRAM"},
+		// Shared save + shared session uploads
+		{"/api/games/{id}/shared-saves", "post", "shareSave"},
+		{"/api/shared-sessions/{id}/saves", "post", "uploadSharedSessionSave"},
+		{"/api/shared-sessions/{id}/saves/auto", "post", "uploadSharedSessionAutoSave"},
 	}
 
 	for _, c := range cases {

@@ -720,4 +720,88 @@ open class SharedSessionsApi : ApiClient {
 
 
 
+    /**
+     * Upload an auto-save to a shared session
+     * Replaces the shared session&#39;s auto-save (one auto-save is kept per shared session). Same turn + X-Turn-Token rules as the manual upload.
+     * @param id Shared session ID.
+     * @param xTurnToken Token proving the caller currently holds the turn (returned by joinSharedSession / takeTurn). (optional)
+     * @param name Display name for the save (defaults to the uploaded filename). Manual saves only. (optional)
+     * @param save Save state file. Required. (optional)
+     * @param screenshotUrl Optional pre-existing screenshot URL to attach. (optional)
+     * @return SharedSessionSaveResponse
+     */
+    @Suppress("UNCHECKED_CAST")
+    open suspend fun uploadSharedSessionAutoSave(id: kotlin.String, xTurnToken: kotlin.String? = null, name: kotlin.String? = null, save: io.ktor.client.request.forms.FormPart<io.ktor.client.request.forms.InputProvider>? = null, screenshotUrl: kotlin.String? = null): HttpResponse<SharedSessionSaveResponse> {
+
+        val localVariableAuthNames = listOf<String>()
+
+        val localVariableBody = 
+            formData {
+                name?.apply { append("name", name) }
+                save?.apply { append(save) }
+                screenshotUrl?.apply { append("screenshotUrl", screenshotUrl) }
+            }
+
+        val localVariableQuery = mutableMapOf<String, List<String>>()
+        val localVariableHeaders = mutableMapOf<String, String>()
+        xTurnToken?.apply { localVariableHeaders["X-Turn-Token"] = this.toString() }
+
+        val localVariableConfig = RequestConfig<kotlin.Any?>(
+            RequestMethod.POST,
+            "/api/shared-sessions/{id}/saves/auto".replace("{" + "id" + "}", "$id"),
+            query = localVariableQuery,
+            headers = localVariableHeaders,
+            requiresAuthentication = false,
+        )
+
+        return multipartFormRequest(
+            localVariableConfig,
+            localVariableBody,
+            localVariableAuthNames
+        ).wrap()
+    }
+
+
+    /**
+     * Upload a manual save to a shared session
+     * Stores a manual save state in the shared session. Requires the caller to currently hold the turn and to present a matching X-Turn-Token header. If the shared session has a backing GameSession, a parallel SessionSaveState row is created so the host can resume locally.
+     * @param id Shared session ID.
+     * @param xTurnToken Token proving the caller currently holds the turn (returned by joinSharedSession / takeTurn). (optional)
+     * @param name Display name for the save (defaults to the uploaded filename). Manual saves only. (optional)
+     * @param save Save state file. Required. (optional)
+     * @param screenshotUrl Optional pre-existing screenshot URL to attach. (optional)
+     * @return SharedSessionSaveResponse
+     */
+    @Suppress("UNCHECKED_CAST")
+    open suspend fun uploadSharedSessionSave(id: kotlin.String, xTurnToken: kotlin.String? = null, name: kotlin.String? = null, save: io.ktor.client.request.forms.FormPart<io.ktor.client.request.forms.InputProvider>? = null, screenshotUrl: kotlin.String? = null): HttpResponse<SharedSessionSaveResponse> {
+
+        val localVariableAuthNames = listOf<String>()
+
+        val localVariableBody = 
+            formData {
+                name?.apply { append("name", name) }
+                save?.apply { append(save) }
+                screenshotUrl?.apply { append("screenshotUrl", screenshotUrl) }
+            }
+
+        val localVariableQuery = mutableMapOf<String, List<String>>()
+        val localVariableHeaders = mutableMapOf<String, String>()
+        xTurnToken?.apply { localVariableHeaders["X-Turn-Token"] = this.toString() }
+
+        val localVariableConfig = RequestConfig<kotlin.Any?>(
+            RequestMethod.POST,
+            "/api/shared-sessions/{id}/saves".replace("{" + "id" + "}", "$id"),
+            query = localVariableQuery,
+            headers = localVariableHeaders,
+            requiresAuthentication = false,
+        )
+
+        return multipartFormRequest(
+            localVariableConfig,
+            localVariableBody,
+            localVariableAuthNames
+        ).wrap()
+    }
+
+
 }

@@ -2769,7 +2769,11 @@ export interface paths {
          */
         get: operations["listSharedSaves"];
         put?: never;
-        post?: never;
+        /**
+         * Share a save state with the community
+         * @description Uploads a save state for the specified game and publishes it as a community shared save. Other users can browse/download it from the game page.
+         */
+        post: operations["shareSave"];
         delete?: never;
         options?: never;
         head?: never;
@@ -3641,7 +3645,31 @@ export interface paths {
          */
         get: operations["listSharedSessionSaves"];
         put?: never;
-        post?: never;
+        /**
+         * Upload a manual save to a shared session
+         * @description Stores a manual save state in the shared session. Requires the caller to currently hold the turn and to present a matching X-Turn-Token header. If the shared session has a backing GameSession, a parallel SessionSaveState row is created so the host can resume locally.
+         */
+        post: operations["uploadSharedSessionSave"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/shared-sessions/{id}/saves/auto": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Upload an auto-save to a shared session
+         * @description Replaces the shared session's auto-save (one auto-save is kept per shared session). Same turn + X-Turn-Token rules as the manual upload.
+         */
+        post: operations["uploadSharedSessionAutoSave"];
         delete?: never;
         options?: never;
         head?: never;
@@ -7534,6 +7562,12 @@ export interface components {
             registrationEnabled: boolean;
         };
         SharedSaveResponse: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/api/schemas/SharedSaveResponse.json
+             */
+            readonly $schema?: string;
             avatarUrl?: string;
             /** Format: date-time */
             createdAt: string;
@@ -13373,6 +13407,54 @@ export interface operations {
             };
         };
     };
+    shareSave: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Game ID. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "multipart/form-data": {
+                    /** @description Optional description shown alongside the save. */
+                    description?: string;
+                    /** @description Display name for the shared save (defaults to the uploaded filename). */
+                    name?: string;
+                    /**
+                     * Format: binary
+                     * @description Save state file. Required.
+                     */
+                    save?: string;
+                    /** @description Optional pre-existing screenshot URL to attach. */
+                    screenshotUrl?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SharedSaveResponse"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HumaError"];
+                };
+            };
+        };
+    };
     deleteSharedSave: {
         parameters: {
             query?: never;
@@ -15192,6 +15274,104 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SharedSessionSaveResponse"][] | null;
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HumaError"];
+                };
+            };
+        };
+    };
+    uploadSharedSessionSave: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Token proving the caller currently holds the turn (returned by joinSharedSession / takeTurn). */
+                "X-Turn-Token"?: string;
+            };
+            path: {
+                /** @description Shared session ID. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "multipart/form-data": {
+                    /** @description Display name for the save (defaults to the uploaded filename). Manual saves only. */
+                    name?: string;
+                    /**
+                     * Format: binary
+                     * @description Save state file. Required.
+                     */
+                    save?: string;
+                    /** @description Optional pre-existing screenshot URL to attach. */
+                    screenshotUrl?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SharedSessionSaveResponse"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HumaError"];
+                };
+            };
+        };
+    };
+    uploadSharedSessionAutoSave: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Token proving the caller currently holds the turn (returned by joinSharedSession / takeTurn). */
+                "X-Turn-Token"?: string;
+            };
+            path: {
+                /** @description Shared session ID. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "multipart/form-data": {
+                    /** @description Display name for the save (defaults to the uploaded filename). Manual saves only. */
+                    name?: string;
+                    /**
+                     * Format: binary
+                     * @description Save state file. Required.
+                     */
+                    save?: string;
+                    /** @description Optional pre-existing screenshot URL to attach. */
+                    screenshotUrl?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SharedSessionSaveResponse"];
                 };
             };
             /** @description Error */

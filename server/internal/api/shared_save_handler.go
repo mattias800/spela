@@ -20,72 +20,8 @@ type SharedSaveHandler struct {
 	Hub     *ws.Hub
 }
 
-// ShareSave uploads a shared save state.
-func (h *SharedSaveHandler) ShareSave(c *gin.Context) {
-	uid := getUserID(c)
-	gameID := c.Param("id")
-
-	gid, err := strconv.ParseUint(gameID, 10, 64)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid game ID"})
-		return
-	}
-
-	// Verify game exists
-	var game db.Game
-	if err := h.DB.First(&game, gid).Error; err != nil {
-		c.JSON(http.StatusNotFound, ErrorResponse{Error: "game not found"})
-		return
-	}
-
-	c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, maxSaveUploadSize)
-	file, header, err := c.Request.FormFile("save")
-	if err != nil {
-		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "save file required"})
-		return
-	}
-	defer file.Close()
-
-	name := c.DefaultPostForm("name", header.Filename)
-	description := c.PostForm("description")
-	screenshotURL := c.PostForm("screenshotUrl")
-
-	// Create DB record first to get the ID for the filename
-	shared := db.SharedSaveState{
-		UserID:        uid,
-		GameID:        uint(gid),
-		Name:          name,
-		Description:   description,
-		ScreenshotURL: screenshotURL,
-	}
-	if err := h.DB.Create(&shared).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to create shared save record"})
-		return
-	}
-
-	// Write file
-	filePath, fileSize, err := h.Storage.WriteSharedSave(uint(gid), shared.ID, header.Filename, file)
-	if err != nil {
-		// Cleanup the DB record if file write fails
-		h.DB.Unscoped().Delete(&shared)
-		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to save file"})
-		return
-	}
-
-	// Update record with file path and size
-	shared.FilePath = filePath
-	shared.FileSize = fileSize
-	if err := h.DB.Save(&shared).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to update shared save record"})
-		return
-	}
-
-	CreateActivityEvent(h.DB, h.Hub, uid, "shared_save", uint(gid), SharedSaveMetadata{
-		SaveName: name,
-	})
-
-	c.JSON(http.StatusCreated, h.toResponse(shared, uid))
-}
+// ShareSave has been migrated to huma — see HumaShareSave in
+// huma_shared_uploads.go.
 
 // ListSharedSaves returns paginated shared saves for a game.
 func (h *SharedSaveHandler) ListSharedSaves(c *gin.Context) {

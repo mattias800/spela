@@ -238,6 +238,7 @@ func NewRouter(cfg Config) (*gin.Engine, func()) {
 	RegisterSessionSaveUploadRoutes(humaAPI, sessionHandler, cfg.JWTSecret, cfg.DB, userLimiter, uploadLimiter)
 	RegisterSharedSaveRoutes(humaAPI, sharedSaveHandler, cfg.JWTSecret, cfg.DB, userLimiter)
 	RegisterSharedSessionRoutes(humaAPI, sharedSessionHandler, cfg.JWTSecret, cfg.DB, userLimiter)
+	RegisterSharedUploadRoutes(humaAPI, sharedSaveHandler, sharedSessionHandler, cfg.JWTSecret, cfg.DB, userLimiter, uploadLimiter)
 	RegisterNetplayRoutes(humaAPI, netplayHandler, cfg.JWTSecret, cfg.DB, userLimiter)
 	RegisterChallengeRoutes(humaAPI, challengeHandler, cfg.JWTSecret, cfg.DB, userLimiter)
 	RegisterAdminRoutes(humaAPI, adminHandler, cfg.JWTSecret, cfg.DB, userLimiter)
@@ -353,9 +354,9 @@ func NewRouter(cfg Config) (*gin.Engine, func()) {
 
 		// Ratings — migrated to huma (see RegisterRatingRoutes above).
 
-		// Shared saves — list + delete migrated to huma (see RegisterSharedSaveRoutes above).
-		// Upload + download stay on raw gin (multipart / c.File()).
-		api.POST("/games/:id/shared-saves", uploadLimiter.RateLimit(), sharedSaveHandler.ShareSave)
+		// Shared saves — list + delete + upload migrated to huma (see
+		// RegisterSharedSaveRoutes / RegisterSharedUploadRoutes above).
+		// Only the binary download stays on raw gin (uses c.File() streaming).
 		api.GET("/games/:id/shared-saves/:saveId/download", sharedSaveHandler.DownloadSharedSave)
 
 		// Cores
@@ -396,12 +397,10 @@ func NewRouter(cfg Config) (*gin.Engine, func()) {
 
 		// Collections — migrated to huma (see RegisterCollectionRoutes above).
 
-		// Shared Sessions — most endpoints migrated to huma
-		// (see RegisterSharedSessionRoutes above). File-based endpoints
-		// (save upload + download + auto-save upload/download) stay on raw gin.
-		api.POST("/shared-sessions/:id/saves", uploadLimiter.RateLimit(), sharedSessionHandler.UploadSave)
+		// Shared Sessions — JSON + multipart upload endpoints migrated to huma
+		// (see RegisterSharedSessionRoutes / RegisterSharedUploadRoutes above).
+		// Only binary download endpoints remain on raw gin.
 		api.GET("/shared-sessions/:id/saves/auto", sharedSessionHandler.GetAutoSave)
-		api.POST("/shared-sessions/:id/saves/auto", uploadLimiter.RateLimit(), sharedSessionHandler.UploadAutoSave)
 		api.GET("/shared-sessions/:id/saves/:saveId", sharedSessionHandler.DownloadSave)
 
 
