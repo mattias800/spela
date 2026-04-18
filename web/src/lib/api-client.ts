@@ -1,3 +1,13 @@
+import createClient from "openapi-fetch";
+
+import type { paths } from "@/generated/api";
+import type {
+  ApiGetPath,
+  ApiPostPath,
+  ApiPutPath,
+  ApiDeletePath,
+} from "./api-routes";
+
 const API_BASE = "/api";
 
 export class ApiError extends Error {
@@ -65,34 +75,85 @@ async function doRefresh(): Promise<string> {
   return data.accessToken;
 }
 
-async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
-  const url = `${API_BASE}${path}`;
-  const headers: Record<string, string> = {
-    ...(options.headers as Record<string, string>),
+// sendWithAuth is the shared transport used by both the legacy `api` object
+// and the typed openapi-fetch `typedApi` client below. It handles:
+//   - injecting the bearer access token
+//   - transparent 401 → /auth/refresh → retry-with-new-token
+//   - hard redirect to /login on refresh failure
+//
+// Operates on a plain `Record<string,string>` headers object (rather than a
+// `Headers` instance) so the existing refresh-deduplication tests — which
+// introspect header values via indexing on the fetch mock's call args — keep
+// working without modification.
+async function sendWithAuth(
+  url: string,
+  options: RequestInit,
+): Promise<Response> {
+  const baseHeaders: Record<string, string> = {
+    ...(options.headers as Record<string, string> | undefined),
   };
 
-  const token = getAccessToken();
-  if (token) {
-    headers["Authorization"] = `Bearer ${token}`;
-  }
+  const doRequest = (token: string | null) => {
+    const headers = { ...baseHeaders };
+    if (token) {
+      headers["Authorization"] = `Bearer ${token}`;
+    }
+    return fetch(url, { ...options, headers });
+  };
 
-  if (options.body && typeof options.body === "string") {
-    headers["Content-Type"] = "application/json";
-  }
+  const initialToken = getAccessToken();
+  let res = await doRequest(initialToken);
 
-  let res = await fetch(url, { ...options, headers });
-
-  if (res.status === 401 && token) {
+  if (res.status === 401 && initialToken) {
     try {
       const newToken = await refreshAccessToken();
-      headers["Authorization"] = `Bearer ${newToken}`;
-      res = await fetch(url, { ...options, headers });
+      res = await doRequest(newToken);
     } catch {
       clearTokens();
       window.location.href = "/login";
       throw new ApiError(401, "Session expired");
     }
   }
+
+  return res;
+}
+
+// authedFetch is the openapi-fetch-compatible wrapper around sendWithAuth.
+// openapi-fetch calls its `fetch` option with a Request object; we extract
+// the url + init, delegate to sendWithAuth, and return the Response.
+async function authedFetch(input: Request): Promise<Response> {
+  const body = input.body ? await input.arrayBuffer() : undefined;
+  const headers: Record<string, string> = {};
+  input.headers.forEach((v, k) => {
+    headers[k] = v;
+  });
+  return sendWithAuth(input.url, {
+    method: input.method,
+    headers,
+    body,
+    signal: input.signal,
+    credentials: input.credentials,
+    cache: input.cache,
+    mode: input.mode,
+    redirect: input.redirect,
+    referrer: input.referrer,
+    referrerPolicy: input.referrerPolicy,
+    integrity: input.integrity,
+    keepalive: input.keepalive,
+  });
+}
+
+async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
+  const url = `${API_BASE}${path}`;
+  const headers: Record<string, string> = {
+    ...(options.headers as Record<string, string> | undefined),
+  };
+
+  if (options.body && typeof options.body === "string" && !("Content-Type" in headers)) {
+    headers["Content-Type"] = "application/json";
+  }
+
+  const res = await sendWithAuth(url, { ...options, headers });
 
   if (!res.ok) {
     const body = await res.text();
@@ -112,13 +173,6 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
 
   return res.json();
 }
-
-import type {
-  ApiGetPath,
-  ApiPostPath,
-  ApiPutPath,
-  ApiDeletePath,
-} from "./api-routes";
 
 export const api = {
   get: <T>(path: ApiGetPath) => request<T>(path),
@@ -147,3 +201,49 @@ export const api = {
   clearTokens,
   getAccessToken,
 };
+
+// typedApi is the generated-spec-aware client. Unlike `api` above (which takes
+// already-interpolated paths and an explicit `<T>` return generic), typedApi
+// takes the original OpenAPI path template + a `params.path` object and
+// infers the response type from the spec. Example:
+//
+//   const { data } = await typedApi.GET("/api/games/{id}", {
+//     params: { path: { id: gameId } },
+//   });
+//   // data has type components["schemas"]["GameResponse"] | undefined
+//
+// Call sites can migrate to typedApi incrementally; both clients share the
+// same underlying transport (authedFetch) so 401-refresh and Authorization
+// injection behave identically.
+//
+// openapi-fetch returns `{ data, error, response }` on every call; the
+// `unwrap()` helper below converts that into the throwing ApiError shape
+// call sites already expect, so migrations can be mechanical.
+export const typedApi = createClient<paths>({
+  baseUrl: "",
+  fetch: authedFetch,
+});
+
+// unwrap resolves a { data, error, response } FetchResponse into the success
+// value, throwing ApiError on failure. Matches the throw-on-error behavior
+// of the legacy `api` object so migrated call sites don't need to reshape
+// their error handling (react-query onError, try/catch, etc. all keep working).
+export async function unwrap<D, E>(
+  promise: Promise<
+    | { data: D; error?: never; response: Response }
+    | { data?: never; error: E; response: Response }
+  >,
+): Promise<D> {
+  const { data, error, response } = await promise;
+  if (error !== undefined) {
+    const message =
+      (error as { message?: string; error?: string } | undefined)?.message ??
+      (error as { message?: string; error?: string } | undefined)?.error ??
+      `Request failed (${response.status})`;
+    throw new ApiError(response.status, message);
+  }
+  if (response.status === 204) {
+    return undefined as D;
+  }
+  return data as D;
+}
