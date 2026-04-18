@@ -410,80 +410,8 @@ func (h *SessionHandler) ListSessionSaves(c *gin.Context) {
 	c.JSON(http.StatusOK, result)
 }
 
-// UploadSessionSave uploads a save state to a session.
-// POST /api/sessions/:id/saves
-func (h *SessionHandler) UploadSessionSave(c *gin.Context) {
-	uid := getUserID(c)
-	session, ok := h.loadSessionWithOwnerCheck(c, uid)
-	if !ok {
-		return
-	}
-
-	// If this session backs a shared session, enforce turn ownership
-	if ok := h.checkSharedSessionTurn(c, session.ID, uid); !ok {
-		return
-	}
-
-	c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, maxSaveUploadSize)
-	file, header, err := c.Request.FormFile("save")
-	if err != nil {
-		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "save file required"})
-		return
-	}
-	defer file.Close()
-
-	if err := checkStorageQuota(h.DB, uid, header.Size); err != nil {
-		c.JSON(http.StatusRequestEntityTooLarge, ErrorResponse{Error: "storage quota exceeded"})
-		return
-	}
-
-	name := c.DefaultPostForm("name", header.Filename)
-	coreName := c.PostForm("coreName")
-
-	// Handle optional screenshot upload
-	var screenshotURL string
-	if ssFile, ssHeader, ssErr := c.Request.FormFile("screenshot"); ssErr == nil {
-		defer ssFile.Close()
-		if stored, writeErr := h.Storage.WriteSessionScreenshot(session.ID, ssHeader.Filename, ssFile); writeErr == nil {
-			screenshotURL = stored
-		}
-	}
-
-	path, size, err := h.Storage.WriteSessionSave(session.ID, header.Filename, file)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to save file"})
-		return
-	}
-
-	save := db.SessionSaveState{
-		SessionID:     session.ID,
-		UserID:        uid,
-		Name:          name,
-		FilePath:      path,
-		FileSize:      size,
-		ScreenshotURL: screenshotURL,
-		CoreName:      coreName,
-		IsAuto:        false,
-	}
-	if err := h.DB.Create(&save).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to create save record"})
-		return
-	}
-
-	// Update session screenshot and last played
-	now := time.Now()
-	updates := map[string]interface{}{"last_played_at": now, "last_played_by": uid}
-	if screenshotURL != "" {
-		updates["screenshot_url"] = screenshotURL
-	}
-	if coreName != "" {
-		updates["core_name"] = coreName
-	}
-	h.DB.Model(&session).Updates(updates)
-
-	h.DB.Preload("User").First(&save, save.ID)
-	c.JSON(http.StatusCreated, h.toSaveResponse(save, h.getRecommendedCoreName(session.GameID)))
-}
+// UploadSessionSave has been migrated to huma — see HumaUploadSessionSave in
+// huma_session_uploads.go. The OpenAPI spec is now the single source of truth.
 
 // DownloadSessionSave serves a session save state file.
 // GET /api/sessions/:id/saves/:saveId
@@ -581,94 +509,8 @@ func (h *SessionHandler) UpdateSessionSave(c *gin.Context) {
 	c.JSON(http.StatusOK, h.toSaveResponse(save, h.getRecommendedCoreName(session.GameID)))
 }
 
-// UploadAutoSave uploads an auto-save to a session.
-// POST /api/sessions/:id/saves/auto
-func (h *SessionHandler) UploadAutoSave(c *gin.Context) {
-	uid := getUserID(c)
-	session, ok := h.loadSessionWithOwnerCheck(c, uid)
-	if !ok {
-		return
-	}
-
-	// If this session backs a shared session, enforce turn ownership
-	if ok := h.checkSharedSessionTurn(c, session.ID, uid); !ok {
-		return
-	}
-
-	c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, maxSaveUploadSize)
-	file, header, err := c.Request.FormFile("save")
-	if err != nil {
-		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "save file required"})
-		return
-	}
-	defer file.Close()
-
-	if err := checkStorageQuota(h.DB, uid, header.Size); err != nil {
-		c.JSON(http.StatusRequestEntityTooLarge, ErrorResponse{Error: "storage quota exceeded"})
-		return
-	}
-
-	filename := fmt.Sprintf("autosave_%d.sav", time.Now().UnixNano())
-	coreName := c.PostForm("coreName")
-
-	// Handle optional screenshot upload
-	var screenshotURL string
-	if ssFile, ssHeader, ssErr := c.Request.FormFile("screenshot"); ssErr == nil {
-		defer ssFile.Close()
-		if stored, writeErr := h.Storage.WriteSessionScreenshot(session.ID, ssHeader.Filename, ssFile); writeErr == nil {
-			screenshotURL = stored
-		}
-	}
-
-	path, size, err := h.Storage.WriteSessionSave(session.ID, filename, file)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to save file"})
-		return
-	}
-
-	save := db.SessionSaveState{
-		SessionID:     session.ID,
-		UserID:        uid,
-		Name:          "Auto Save",
-		FilePath:      path,
-		FileSize:      size,
-		ScreenshotURL: screenshotURL,
-		CoreName:      coreName,
-		IsAuto:        true,
-		IsCurrent:     true,
-	}
-	if err := h.DB.Create(&save).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to create save record"})
-		return
-	}
-
-	// Prune old auto-saves — retention count depends on save size
-	maxAutoSaves := autoSaveRetentionLimit(size)
-	var oldSaves []db.SessionSaveState
-	h.DB.Where("session_id = ? AND is_auto = ? AND id != ?", session.ID, true, save.ID).
-		Order("created_at DESC").Offset(maxAutoSaves - 1).Find(&oldSaves)
-	for _, old := range oldSaves {
-		h.Storage.DeleteSave(old.FilePath)
-		if old.ScreenshotURL != "" {
-			h.Storage.DeleteSave(h.Storage.ImagePath(old.ScreenshotURL))
-		}
-		h.DB.Delete(&old)
-	}
-
-	// Update session screenshot and last played
-	now := time.Now()
-	updates := map[string]interface{}{"last_played_at": now, "last_played_by": uid}
-	if screenshotURL != "" {
-		updates["screenshot_url"] = screenshotURL
-	}
-	if coreName != "" {
-		updates["core_name"] = coreName
-	}
-	h.DB.Model(&session).Updates(updates)
-
-	h.DB.Preload("User").First(&save, save.ID)
-	c.JSON(http.StatusCreated, h.toSaveResponse(save, h.getRecommendedCoreName(session.GameID)))
-}
+// UploadAutoSave has been migrated to huma — see HumaUploadAutoSave in
+// huma_session_uploads.go.
 
 // GetAutoSave returns the latest auto-save for a session.
 // GET /api/sessions/:id/saves/auto
@@ -698,88 +540,8 @@ func (h *SessionHandler) GetAutoSave(c *gin.Context) {
 	c.File(save.FilePath)
 }
 
-// UpsertSlotSave saves or overwrites a save to a specific slot (1-10).
-// PUT /api/sessions/:id/saves/slot/:slot
-func (h *SessionHandler) UpsertSlotSave(c *gin.Context) {
-	uid := getUserID(c)
-	session, ok := h.loadSessionWithOwnerCheck(c, uid)
-	if !ok {
-		return
-	}
-
-	slotStr := c.Param("slot")
-	slotNum, err := strconv.Atoi(slotStr)
-	if err != nil || slotNum < 1 || slotNum > 10 {
-		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "slot must be between 1 and 10"})
-		return
-	}
-
-	c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, maxSaveUploadSize)
-	file, fileHeader, err := c.Request.FormFile("save")
-	if err != nil {
-		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "save file required"})
-		return
-	}
-	defer file.Close()
-
-	if err := checkStorageQuota(h.DB, uid, fileHeader.Size); err != nil {
-		c.JSON(http.StatusRequestEntityTooLarge, ErrorResponse{Error: "storage quota exceeded"})
-		return
-	}
-
-	filename := fmt.Sprintf("slot_%d.sav", slotNum)
-	coreName := c.PostForm("coreName")
-
-	// Handle optional screenshot upload
-	var screenshotURL string
-	if ssFile, ssHeader, ssErr := c.Request.FormFile("screenshot"); ssErr == nil {
-		defer ssFile.Close()
-		if stored, writeErr := h.Storage.WriteSessionScreenshot(session.ID, ssHeader.Filename, ssFile); writeErr == nil {
-			screenshotURL = stored
-		}
-	}
-
-	path, size, err := h.Storage.WriteSessionSave(session.ID, filename, file)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to save file"})
-		return
-	}
-
-	// Upsert: update existing slot save or create new
-	var save db.SessionSaveState
-	result := h.DB.Where("session_id = ? AND slot = ?", session.ID, slotNum).First(&save)
-	if result.Error == gorm.ErrRecordNotFound {
-		save = db.SessionSaveState{
-			SessionID:     session.ID,
-			UserID:        uid,
-			Name:          fmt.Sprintf("Slot %d", slotNum),
-			FilePath:      path,
-			FileSize:      size,
-			ScreenshotURL: screenshotURL,
-			CoreName:      coreName,
-			IsAuto:        false,
-			Slot:          &slotNum,
-		}
-		h.DB.Create(&save)
-	} else {
-		save.FilePath = path
-		save.FileSize = size
-		save.ScreenshotURL = screenshotURL
-		save.CoreName = coreName
-		h.DB.Save(&save)
-	}
-
-	// Update session last played
-	now := time.Now()
-	updates := map[string]interface{}{"last_played_at": now, "last_played_by": uid}
-	if screenshotURL != "" {
-		updates["screenshot_url"] = screenshotURL
-	}
-	h.DB.Model(&session).Updates(updates)
-
-	h.DB.Preload("User").First(&save, save.ID)
-	c.JSON(http.StatusOK, h.toSaveResponse(save, h.getRecommendedCoreName(session.GameID)))
-}
+// UpsertSlotSave has been migrated to huma — see HumaUpsertSlotSave in
+// huma_session_uploads.go.
 
 // DownloadSlotSave downloads the save from a specific slot.
 // GET /api/sessions/:id/saves/slot/:slot
@@ -840,56 +602,8 @@ func (h *SessionHandler) ListSlotSaves(c *gin.Context) {
 	c.JSON(http.StatusOK, result)
 }
 
-// UploadSRAM uploads SRAM/battery save data to a session.
-// POST /api/sessions/:id/sram
-func (h *SessionHandler) UploadSRAM(c *gin.Context) {
-	uid := getUserID(c)
-	session, ok := h.loadSessionWithOwnerCheck(c, uid)
-	if !ok {
-		return
-	}
-
-	c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, maxSaveUploadSize)
-	file, header, err := c.Request.FormFile("file")
-	if err != nil {
-		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "file required"})
-		return
-	}
-	defer file.Close()
-
-	if err := checkStorageQuota(h.DB, uid, header.Size); err != nil {
-		c.JSON(http.StatusRequestEntityTooLarge, ErrorResponse{Error: "storage quota exceeded"})
-		return
-	}
-
-	path, size, err := h.Storage.WriteSessionSRAM(session.ID, header.Filename, file)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to save SRAM file"})
-		return
-	}
-
-	// Upsert: only keep one SRAM file per session
-	var existing db.SessionSaveData
-	result := h.DB.Where("session_id = ?", session.ID).First(&existing)
-	if result.Error == gorm.ErrRecordNotFound {
-		sd := db.SessionSaveData{
-			SessionID: session.ID,
-			FilePath:  path,
-			FileSize:  size,
-		}
-		h.DB.Create(&sd)
-		c.JSON(http.StatusCreated, sd)
-	} else {
-		// Delete old file only if the path changed (same filename overwrites in place)
-		if existing.FilePath != path {
-			h.Storage.DeleteSave(existing.FilePath)
-		}
-		existing.FilePath = path
-		existing.FileSize = size
-		h.DB.Save(&existing)
-		c.JSON(http.StatusOK, existing)
-	}
-}
+// UploadSRAM has been migrated to huma — see HumaUploadSRAM in
+// huma_session_uploads.go.
 
 // DownloadSRAM serves the SRAM/battery save data for a session.
 // GET /api/sessions/:id/sram
