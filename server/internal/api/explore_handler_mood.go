@@ -1,13 +1,12 @@
 package api
 
 import (
-	"log/slog"
-	"net/http"
-	"strconv"
-
-	"github.com/gin-gonic/gin"
 	"github.com/spela/server/internal/db"
 )
+
+// The gin handlers GetExploreMoods, GetMoodGames, and GetSurpriseGame have been
+// migrated to huma — see huma_explore_featured.go. The shared types and helper
+// functions used by the huma handlers are kept here.
 
 // MoodResponse is the API response for a single mood option.
 type MoodResponse struct {
@@ -26,50 +25,6 @@ var moodDefinitions = []MoodResponse{
 	{ID: "something-new", Name: "Something New", Description: "Try a game you haven't played yet", Icon: "\U0001F195", Gradient: []string{"#0D47A1", "#2196F3"}},
 	{ID: "quick", Name: "Quick Session", Description: "Pick up and play in under 15 minutes", Icon: "\u26A1", Gradient: []string{"#E65100", "#FF9800"}},
 	{ID: "together", Name: "Play Together", Description: "Games built for multiplayer fun", Icon: "\U0001F3AE", Gradient: []string{"#006064", "#00BCD4"}},
-}
-
-// GetExploreMoods returns the list of available moods for the mood picker.
-// GET /api/explore/moods
-func (h *ExploreHandler) GetExploreMoods(c *gin.Context) {
-	c.Header("Cache-Control", "private, max-age=300")
-	c.JSON(http.StatusOK, moodDefinitions)
-}
-
-// GetMoodGames returns games matching the specified mood criteria.
-// GET /api/explore/mood/:mood
-func (h *ExploreHandler) GetMoodGames(c *gin.Context) {
-	userID := getUserID(c)
-	mood := c.Param("mood")
-
-	var games []db.Game
-	var err error
-
-	switch mood {
-	case "chill":
-		games, err = h.getMoodChillGames()
-	case "challenge":
-		games, err = h.getMoodChallengeGames()
-	case "nostalgia":
-		games, err = h.getMoodNostalgiaGames(userID)
-	case "something-new":
-		games, err = h.getMoodSomethingNewGames(userID)
-	case "quick":
-		games, err = h.getMoodQuickGames()
-	case "together":
-		games, err = h.getMoodTogetherGames()
-	default:
-		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid mood"})
-		return
-	}
-
-	if err != nil {
-		slog.Error("failed to fetch mood games", "mood", mood, "error", err)
-		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to fetch mood games"})
-		return
-	}
-
-	c.Header("Cache-Control", "private, max-age=120")
-	c.JSON(http.StatusOK, ToGameResponses(games, h.DB, userID))
 }
 
 // getMoodChillGames returns games suitable for chill/relaxed play.
@@ -287,50 +242,4 @@ func (h *ExploreHandler) loadGamesByIDs(idSet map[uint]bool, order string, limit
 	}
 
 	return games, nil
-}
-
-// GetSurpriseGame returns a single random game with optional filters.
-// GET /api/explore/surprise?console=&genre=&minRating=
-func (h *ExploreHandler) GetSurpriseGame(c *gin.Context) {
-	userID := getUserID(c)
-
-	query := h.DB.Preload("Console").Where("cover_url != '' AND is_primary = true")
-
-	// Optional console filter
-	if consoleAbbr := c.Query("console"); consoleAbbr != "" {
-		var console db.Console
-		if err := h.DB.Where("LOWER(abbreviation) = LOWER(?)", consoleAbbr).First(&console).Error; err == nil {
-			query = query.Where("console_id = ?", console.ID)
-		}
-	}
-
-	// Optional genre filter
-	if genre := c.Query("genre"); genre != "" {
-		query = query.Where("genre = ?", genre)
-	}
-
-	// Optional minimum rating (default 70 for quality threshold)
-	minRating := 70.0
-	if mr := c.Query("minRating"); mr != "" {
-		if r, err := strconv.ParseFloat(mr, 64); err == nil && r >= 0 && r <= 100 {
-			minRating = r
-		}
-	}
-	if minRating > 0 {
-		query = query.Where("rating >= ?", minRating)
-	}
-
-	var game db.Game
-	if err := query.Order("RANDOM()").Limit(1).First(&game).Error; err != nil {
-		if err.Error() == "record not found" {
-			c.JSON(http.StatusNotFound, ErrorResponse{Error: "no eligible games found"})
-			return
-		}
-		slog.Error("failed to fetch surprise game", "error", err)
-		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to fetch surprise game"})
-		return
-	}
-
-	c.Header("Cache-Control", "no-store")
-	c.JSON(http.StatusOK, ToGameResponse(game, h.DB, userID))
 }

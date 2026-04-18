@@ -3,7 +3,6 @@ package api
 import (
 	"fmt"
 	"net/http"
-	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -64,89 +63,8 @@ func (h *SessionHandler) CreateSession(c *gin.Context) {
 	c.JSON(http.StatusCreated, h.toSessionResponse(session, 0))
 }
 
-// CreateFromSharedSave creates a new game session from a community shared save.
-// POST /api/games/:id/sessions/from-shared-save/:saveId
-func (h *SessionHandler) CreateFromSharedSave(c *gin.Context) {
-	uid := getUserID(c)
-	gameID := c.Param("id")
-	saveID := c.Param("saveId")
-
-	gid, err := strconv.ParseUint(gameID, 10, 64)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid game ID"})
-		return
-	}
-
-	sid, err := strconv.ParseUint(saveID, 10, 64)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid save ID"})
-		return
-	}
-
-	var game db.Game
-	if err := h.DB.First(&game, gid).Error; err != nil {
-		c.JSON(http.StatusNotFound, ErrorResponse{Error: "game not found"})
-		return
-	}
-
-	var sharedSave db.SharedSaveState
-	if err := h.DB.First(&sharedSave, sid).Error; err != nil {
-		c.JSON(http.StatusNotFound, ErrorResponse{Error: "shared save not found"})
-		return
-	}
-
-	if sharedSave.GameID != uint(gid) {
-		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "shared save does not belong to this game"})
-		return
-	}
-
-	// Create session
-	session := db.GameSession{
-		OwnerID: uid,
-		GameID:  uint(gid),
-		Name:    fmt.Sprintf("From: %s", sharedSave.Name),
-	}
-	if err := h.DB.Create(&session).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to create session"})
-		return
-	}
-
-	// Copy the shared save file to the new session
-	srcFile, err := os.Open(sharedSave.FilePath)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to read shared save file"})
-		return
-	}
-	defer srcFile.Close()
-
-	filename := filepath.Base(sharedSave.FilePath)
-	path, size, err := h.Storage.WriteSessionSave(session.ID, filename, srcFile)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to copy save file"})
-		return
-	}
-
-	// Create session save state record
-	save := db.SessionSaveState{
-		SessionID:     session.ID,
-		UserID:        uid,
-		Name:          sharedSave.Name,
-		FilePath:      path,
-		FileSize:      size,
-		ScreenshotURL: sharedSave.ScreenshotURL,
-		IsAuto:        false,
-	}
-	if err := h.DB.Create(&save).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to create save record"})
-		return
-	}
-
-	// Increment download count on the shared save
-	h.DB.Model(&sharedSave).UpdateColumn("download_count", gorm.Expr("download_count + ?", 1))
-
-	h.DB.Preload("Owner").First(&session, session.ID)
-	c.JSON(http.StatusCreated, h.toSessionResponse(session, 1))
-}
+// CreateFromSharedSave has been migrated to huma — see
+// HumaCreateSessionFromSharedSave in huma_sessions.go.
 
 // ListSessions lists all sessions for a game belonging to the current user,
 // including backing sessions from shared sessions where the user is a member.

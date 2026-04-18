@@ -3,11 +3,7 @@ package api
 import (
 	"log/slog"
 	"math"
-	"net/http"
-	"strconv"
-	"strings"
 
-	"github.com/gin-gonic/gin"
 	"github.com/spela/server/internal/db"
 )
 
@@ -24,6 +20,11 @@ const effectiveRating = "COALESCE(NULLIF(rating, 0), NULLIF(total_rating, 0), NU
 const effectiveRatingPrefixed = "COALESCE(NULLIF(games.rating, 0), NULLIF(games.total_rating, 0), NULLIF(games.igdb_user_rating, 0), 0)"
 
 // --- Phase 8: Console Showcase Pages ---
+//
+// The gin handlers GetConsoleShowcase and GetConsoleHighlights have been
+// migrated to huma — see huma_explore_console.go. Only the wire-format types
+// and the shared helper functions remain here because the huma handlers still
+// depend on them.
 
 // GenreCount holds a genre name and the number of games in that genre.
 type GenreCount struct {
@@ -62,134 +63,6 @@ type ConsoleHighlight struct {
 // ConsoleHighlightsResponse is the API response for the console highlights endpoint.
 type ConsoleHighlightsResponse struct {
 	Consoles []ConsoleHighlight `json:"consoles"`
-}
-
-// GetConsoleShowcase returns aggregated showcase data for a specific console.
-// GET /api/explore/consoles/:id/showcase
-func (h *ExploreHandler) GetConsoleShowcase(c *gin.Context) {
-	userID := getUserID(c)
-	abbr := strings.ToLower(c.Param("id"))
-
-	// Look up the console by abbreviation
-	var console db.Console
-	if err := h.DB.Where("LOWER(abbreviation) = ?", abbr).First(&console).Error; err != nil {
-		c.JSON(http.StatusNotFound, ErrorResponse{Error: "console not found"})
-		return
-	}
-
-	// Count games for the console response
-	var gameCount int64
-	h.DB.Model(&db.Game{}).Where("console_id = ? AND is_primary = true AND deleted_at IS NULL", console.ID).Count(&gameCount)
-	console.GameCount = int(gameCount)
-
-	// --- Essentials: top 10 by best available IGDB rating ---
-	// Use COALESCE to fall back through rating sources: aggregated_rating (critics)
-	// → total_rating (combined) → igdb_user_rating (user-only). Many retro games
-	// lack critic reviews so aggregated_rating is 0; total_rating is populated
-	// far more often.
-	var essentials []db.Game
-	if err := h.DB.Preload("Console").
-		Where("console_id = ? AND is_primary = true AND "+effectiveRating+" > 0 AND deleted_at IS NULL", console.ID).
-		Order(effectiveRating + " DESC").
-		Limit(10).
-		Find(&essentials).Error; err != nil {
-		slog.Error("failed to fetch console essentials", "console", abbr, "error", err)
-		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to fetch console data"})
-		return
-	}
-
-	// --- Hidden Gems: high rating + low play time for this console ---
-	// Exclude essentials to avoid showing the same games in both shelves
-	essentialIDs := make([]uint, len(essentials))
-	for i, g := range essentials {
-		essentialIDs[i] = g.ID
-	}
-	hiddenGems := h.buildConsoleHiddenGems(console.ID, essentialIDs)
-
-	// --- Genre Breakdown: count games per genre for this console ---
-	genreBreakdown := h.buildGenreBreakdown(console.ID)
-
-	// --- Top Developers: top 5 developers by game count for this console ---
-	topDevelopers := h.buildConsoleTopDevelopers(console.ID, console.Name)
-
-	// --- Recently Played: user's recently played on this console ---
-	var recentlyPlayed []db.Game
-	if userID > 0 {
-		var playHistories []db.PlayHistory
-		if err := h.DB.
-			Joins("JOIN games ON games.id = play_histories.game_id").
-			Where("play_histories.user_id = ? AND games.console_id = ? AND games.is_primary = true AND games.deleted_at IS NULL", userID, console.ID).
-			Order("play_histories.last_played DESC").
-			Limit(10).
-			Find(&playHistories).Error; err != nil {
-			slog.Error("failed to fetch recently played", "console", abbr, "error", err)
-		} else {
-			gameIDs := make([]uint, 0, len(playHistories))
-			for _, ph := range playHistories {
-				gameIDs = append(gameIDs, ph.GameID)
-			}
-			if len(gameIDs) > 0 {
-				if err := h.DB.Preload("Console").
-					Where("id IN ? AND is_primary = true AND deleted_at IS NULL", gameIDs).
-					Find(&recentlyPlayed).Error; err != nil {
-					slog.Error("failed to fetch recently played games", "console", abbr, "error", err)
-				}
-				// Re-order to match play history order
-				gameMap := make(map[uint]db.Game, len(recentlyPlayed))
-				for _, g := range recentlyPlayed {
-					gameMap[g.ID] = g
-				}
-				ordered := make([]db.Game, 0, len(gameIDs))
-				for _, id := range gameIDs {
-					if g, ok := gameMap[id]; ok {
-						ordered = append(ordered, g)
-					}
-				}
-				recentlyPlayed = ordered
-			}
-		}
-	}
-
-	// --- Recently Added: most recently added games for this console ---
-	var recentlyAdded []db.Game
-	if err := h.DB.Preload("Console").
-		Where("console_id = ? AND is_primary = true AND deleted_at IS NULL", console.ID).
-		Order("created_at DESC").
-		Limit(10).
-		Find(&recentlyAdded).Error; err != nil {
-		slog.Error("failed to fetch recently added games", "console", abbr, "error", err)
-	}
-
-	// Batch-load user game data for all games at once (essentials + hidden gems + recently played + recently added)
-	allGames := make([]db.Game, 0, len(essentials)+len(hiddenGems)+len(recentlyPlayed)+len(recentlyAdded))
-	allGames = append(allGames, essentials...)
-	allGames = append(allGames, hiddenGems...)
-	allGames = append(allGames, recentlyPlayed...)
-	allGames = append(allGames, recentlyAdded...)
-	allGameIDs := make([]uint, len(allGames))
-	for i, g := range allGames {
-		allGameIDs[i] = g.ID
-	}
-	userData := loadUserGameData(h.DB, userID, allGameIDs)
-
-	toResponses := func(games []db.Game) []GameResponse {
-		result := make([]GameResponse, len(games))
-		for i, g := range games {
-			result[i] = toGameResponseWithData(g, &userData)
-		}
-		return result
-	}
-
-	c.Header("Cache-Control", "private, max-age=300")
-	c.JSON(http.StatusOK, ConsoleShowcaseResponse{
-		Console:        ToConsoleResponse(console),
-		Essentials:     toResponses(essentials),
-		HiddenGems:     toResponses(hiddenGems),
-		GenreBreakdown: genreBreakdown,
-		TopDevelopers:  topDevelopers,
-		RecentlyPlayed: toResponses(recentlyPlayed),
-		RecentlyAdded:  toResponses(recentlyAdded),
-	})
 }
 
 // buildConsoleHiddenGems returns games with high rating but low play time for a console.
@@ -311,118 +184,3 @@ func (h *ExploreHandler) buildConsoleTopDevelopers(consoleID uint, consoleName s
 	}
 	return developers
 }
-
-// GetConsoleHighlights returns a compact list of consoles with their top game for the explore page.
-// GET /api/explore/console-highlights
-func (h *ExploreHandler) GetConsoleHighlights(c *gin.Context) {
-	userID := getUserID(c)
-
-	// Get all consoles with game counts
-	var consoles []db.Console
-	if err := h.DB.Order("name ASC").Find(&consoles).Error; err != nil {
-		slog.Error("failed to fetch consoles for highlights", "error", err)
-		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to fetch consoles"})
-		return
-	}
-
-	// Count games per console
-	type consoleCount struct {
-		ConsoleID uint
-		GameCount int
-	}
-	var counts []consoleCount
-	if err := h.DB.
-		Table("games").
-		Select("console_id, COUNT(*) as game_count").
-		Where("deleted_at IS NULL AND is_primary = true").
-		Group("console_id").
-		Scan(&counts).Error; err != nil {
-		slog.Error("failed to count games per console", "error", err)
-		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to fetch console data"})
-		return
-	}
-
-	countMap := make(map[uint]int, len(counts))
-	for _, cc := range counts {
-		countMap[cc.ConsoleID] = cc.GameCount
-	}
-
-	// Find the top game per console (highest rated game with hero art)
-	type topGameRow struct {
-		ConsoleID uint
-		GameID    uint
-	}
-	// For each console, find the highest-rated game that has hero art.
-	// Use GROUP BY to get the max-rated game per console efficiently.
-	var topGameRows []topGameRow
-	if err := h.DB.Raw(`
-		SELECT console_id, game_id FROM (
-			SELECT games.console_id, games.id as game_id,
-				`+effectiveRatingPrefixed+` as eff_rating,
-				ROW_NUMBER() OVER (PARTITION BY games.console_id ORDER BY `+effectiveRatingPrefixed+` DESC) as rn
-			FROM games
-			JOIN game_artworks ON game_artworks.game_id = games.id AND game_artworks.hero_url != ''
-			WHERE games.deleted_at IS NULL AND games.is_primary = true AND `+effectiveRatingPrefixed+` > 0
-		) ranked WHERE rn = 1
-	`).Scan(&topGameRows).Error; err != nil {
-		slog.Error("failed to fetch top games for console highlights", "error", err)
-		// Continue without top games
-	}
-
-	// Map top game per console (query already returns exactly one per console)
-	topGameByConsole := make(map[uint]uint, len(topGameRows))
-	for _, row := range topGameRows {
-		topGameByConsole[row.ConsoleID] = row.GameID
-	}
-
-	// Batch-load all top games
-	topGameIDs := make([]uint, 0, len(topGameByConsole))
-	for _, gid := range topGameByConsole {
-		topGameIDs = append(topGameIDs, gid)
-	}
-
-	var topGames []db.Game
-	if len(topGameIDs) > 0 {
-		if err := h.DB.Preload("Console").Where("id IN ?", topGameIDs).Find(&topGames).Error; err != nil {
-			slog.Error("failed to load top games for console highlights", "error", err)
-		}
-	}
-
-	topGameResponses := ToGameResponses(topGames, h.DB, userID)
-	topGameResponseMap := make(map[string]*GameResponse, len(topGameResponses))
-	for i := range topGameResponses {
-		topGameResponseMap[topGameResponses[i].ID] = &topGameResponses[i]
-	}
-
-	highlights := make([]ConsoleHighlight, 0, len(consoles))
-	for _, con := range consoles {
-		gc := countMap[con.ID]
-		if gc == 0 {
-			continue // Skip consoles with no games
-		}
-
-		abbr := strings.ToLower(con.Abbreviation)
-		highlight := ConsoleHighlight{
-			ID:         abbr,
-			Name:       con.Name,
-			ColorTheme: con.ColorTheme,
-			IconURL:    "/api/consoles/" + abbr + "/icon",
-			LogoURL:    "/api/consoles/" + abbr + "/logo",
-			GameCount:  gc,
-		}
-
-		// Attach top game if found
-		if topGameID, ok := topGameByConsole[con.ID]; ok {
-			idStr := strconv.FormatUint(uint64(topGameID), 10)
-			if gr, ok := topGameResponseMap[idStr]; ok {
-				highlight.TopGame = gr
-			}
-		}
-
-		highlights = append(highlights, highlight)
-	}
-
-	c.Header("Cache-Control", "private, max-age=300")
-	c.JSON(http.StatusOK, ConsoleHighlightsResponse{Consoles: highlights})
-}
-
