@@ -1,429 +1,66 @@
 /**
- * Typed API route definitions derived from server/internal/api/router.go.
+ * Typed API route definitions, derived directly from the generated
+ * OpenAPI spec. No hand-maintenance required — adding/renaming an
+ * endpoint server-side flows through `npm run openapi:gen` into the
+ * `paths` map and into these unions automatically.
  *
- * Every path used with api.get/post/put/delete/upload must match one of these
- * patterns. The compiler will reject typos and references to removed endpoints.
+ * The spec uses `{id}`-style placeholders. Callers in `api-client.ts`
+ * pass URLs already interpolated as `${variable}` template literals
+ * (e.g. `` `/games/${id}` ``). The `ToTemplate<P>` mapper below rewrites
+ * each `{name}` placeholder in a spec path to a TS `${string}` template
+ * fragment so the call site shape is preserved.
  *
- * The unions below are hand-written (they use TypeScript template-literal
- * `${string}` placeholders, which `api-client.ts` passes verbatim as the URL
- * path). The generated OpenAPI spec uses `{id}`-style placeholders, so we
- * don't re-export its path keys directly. Instead, a drift-detection check
- * lives in `src/generated/__tests__/paths-match-hand-written.test.ts` — it
- * loads `generated/openapi.json` at runtime and asserts every hand-written
- * path has a matching `{...}`-templated path in the spec.
+ * The spec paths include the `/api/` prefix; `api-client.ts` prepends
+ * `API_BASE = "/api"` to every call, so we strip that prefix here.
  */
 import type { paths } from "@/generated/api";
 
-// Compile-time hook: referencing the generated `paths` type forces the file
-// import so stale re-exports from `@/generated/api` surface as type errors.
-// Tests in paths-match-hand-written.test.ts cover the semantic drift check
-// (string-equivalence under `:id` ↔ `{id}` mapping).
+// Compile-time hook so this file always pulls in `@/generated/api`.
 export type GeneratedPaths = keyof paths;
 
-// Allow optional ?query suffix on any route
+// Strip the leading "/api" from a spec path so the type matches the
+// (stripped) URL strings callers pass to api.get/post/etc.
+type StripApiPrefix<P extends string> = P extends `/api${infer Rest}` ? Rest : P;
+
+// Convert spec-style "{name}" placeholders into TS template-literal
+// `${string}` fragments. Recurses through any number of placeholders.
+type ToTemplate<P extends string> =
+  P extends `${infer Pre}{${string}}${infer Post}`
+    ? `${Pre}${string}${ToTemplate<Post>}`
+    : P;
+
+// Convenience: full transformation from a spec path key to the runtime
+// pattern `api-client.ts` accepts.
+type Route<P extends string> = ToTemplate<StripApiPrefix<P>>;
+
+// Allow an optional `?query=...` suffix on any route. The spec doesn't
+// model query strings as part of the path key, so this lets callers
+// freely append them.
 type WithQuery<T extends string> = T | `${T}?${string}`;
 
-// ── GET ──────────────────────────────────────────────────────────────────────
+// Per-method path filters: pick path keys whose entry in `paths`
+// declares the matching HTTP verb.
+type PathsByMethod<M extends string> = {
+  [K in keyof paths]: paths[K] extends { [m in M]: unknown } ? K : never;
+}[keyof paths];
 
-export type ApiGetPath = WithQuery<
-  // Health
-  | "/health"
-
-  // Search
-  | "/search"
-
-  // Auth
-  | "/auth/setup-status"
-
-  // Explore
-  | "/explore/featured"
-  | "/explore/rows"
-  | "/explore/series/featured"
-  | "/explore/moods"
-  | `/explore/mood/${string}`
-  | "/explore/surprise"
-  | "/explore/for-you"
-  | "/explore/players-like-you"
-  | "/explore/screenshots"
-  | "/explore/artwork"
-  | "/explore/covers"
-
-  // Console Showcase
-  | `/explore/consoles/${string}/showcase`
-  | "/explore/console-highlights"
-
-  // Temporal Discovery
-  | "/explore/on-this-day"
-  | `/explore/best-of-year/${string}`
-  | `/explore/decades/${string}`
-  | "/explore/your-anniversaries"
-
-  // Social & Community Discovery
-  | "/explore/trending"
-  | "/explore/community-top"
-  | "/explore/cult-classics"
-  | "/explore/recently-reviewed"
-  | "/explore/active-now"
-
-  // Achievement & Challenge Discovery
-  | "/explore/easy-to-complete"
-  | "/explore/hardest-games"
-  | "/explore/almost-done"
-  | "/explore/fresh-challenges"
-  | "/explore/active-challenges"
-
-  // Wild Features (Wizard)
-  | "/explore/wizard"
-  | "/explore/wizard/results"
-
-  // Developers & Publishers
-  | "/explore/developers"
-  | "/explore/developers/spotlight"
-  | `/explore/developers/${string}`
-  | `/explore/publishers/${string}`
-
-  // Series
-  | `/series/${string}`
-
-  // Franchises
-  | `/franchises/${string}`
-
-  // Themes & Keywords
-  | "/themes"
-  | `/themes/${string}/games`
-  | "/keywords"
-  | `/keywords/${string}/games`
-
-  // Consoles
-  | "/consoles"
-  | `/consoles/${string}/games`
-  | `/consoles/${string}/top-rated`
-  | "/top-rated"
-
-  // Games
-  | "/games"
-  | `/games/${string}`
-  | `/games/${string}/download`
-  | `/games/${string}/discs/${string}/download`
-  | `/games/${string}/stats`
-  | `/games/${string}/cheats`
-  | `/games/${string}/similar`
-  | `/games/${string}/developer-games`
-  | `/games/${string}/core`
-  | `/games/${string}/shared-sessions`
-  | `/games/${string}/challenges`
-  | `/games/${string}/series`
-  | `/games/${string}/franchises`
-
-  // Game sessions
-  | `/games/${string}/sessions`
-  | `/sessions/${string}`
-  | `/sessions/${string}/saves`
-  | `/sessions/${string}/saves/auto`
-  | `/sessions/${string}/saves/slots`
-  | `/sessions/${string}/saves/slot/${string}`
-  | `/sessions/${string}/saves/${string}`
-  | `/sessions/${string}/sram`
-  | `/sessions/${string}/cheats`
-
-  // Ratings
-  | `/games/${string}/ratings`
-  | `/games/${string}/ratings/summary`
-  | `/games/${string}/ratings/mine`
-
-  // Shared saves
-  | `/games/${string}/shared-saves`
-  | `/games/${string}/shared-saves/${string}/download`
-
-  // Cores & BIOS
-  | "/cores"
-  | `/cores/${string}/download`
-  | "/bios"
-  | `/bios/${string}`
-
-  // Stats
-  | "/stats/most-played"
-  | "/stats/most-active-players"
-
-  // User
-  | "/user/profile"
-  | "/user/preferences"
-  | "/user/stats"
-  | "/user/recent"
-  | "/user/favorites"
-  | "/user/play-stats"
-  | "/user/play-heatmap"
-  | "/user/play-later"
-  | "/user/devices"
-  | `/user/devices/${string}/preferences`
-  | `/user/games/${string}/keymapping`
-  | "/user/challenges"
-  | "/user/shared-session-invites"
-  | "/user/shared-session-invites/count"
-  | "/user/ra/status"
-  | "/user/ra/token"
-  | "/user/taste-profile"
-  | "/user/achievements/recent"
-  | "/user/achievements/showcase"
-  | "/user/achievements/unlocked"
-  | `/users/${string}/achievements/showcase`
-  | "/user/saved-searches"
-  | "/user/explorer-badges"
-  | "/user/completionist-map"
-  | "/user/storage"
-
-  // Shared Sessions
-  | "/shared-sessions"
-  | `/shared-sessions/${string}`
-  | `/shared-sessions/${string}/saves`
-  | `/shared-sessions/${string}/saves/auto`
-  | `/shared-sessions/${string}/saves/${string}`
-
-  // Netplay
-  | "/netplay/sessions"
-  | `/netplay/sessions/${string}`
-  | `/netplay/sessions/${string}/invites`
-  | "/netplay/invites"
-  | "/netplay/invites/count"
-
-  // Social
-  | "/social/online"
-  | "/social/activity"
-  | `/users/search`
-  | `/users/recent-partners`
-  | `/users/${string}/profile`
-  | `/users/${string}/play-heatmap`
-
-  // Collections
-  | "/collections"
-  | "/collections/public"
-  | `/collections/${string}`
-
-  // Top Lists
-  | "/top-lists/top-rated"
-  | "/top-lists/top-rated-critics"
-  | "/top-lists/longest"
-
-  // Challenges
-  | "/challenges"
-  | `/challenges/${string}`
-  | `/challenges/${string}/save/download`
-  | `/challenges/${string}/screenshot`
-  | `/challenges/${string}/attempts/mine`
-  | `/challenges/${string}/leaderboard`
-
-  // RetroAchievements
-  | `/games/${string}/achievements`
-  | `/games/${string}/achievements/progress`
-  | `/games/${string}/achievements/timeline`
-  | `/games/${string}/achievements/leaderboard`
-
-  // Admin
-  | "/admin/users"
-  | "/admin/users/deleted"
-  | `/admin/users/${string}/rate-limit`
-  | `/admin/users/${string}/devices`
-  | "/admin/settings"
-  | "/admin/stats"
-  | "/admin/scrape/status"
-  | "/admin/scrape/counts"
-  | "/admin/games/scan/status"
-  | `/admin/games/${string}/covers`
-  | `/admin/games/${string}/heroes`
-  | `/admin/games/${string}/igdb-search`
-  | "/admin/metadata-matches"
-  | "/admin/igdb/status"
-  | "/admin/steamgriddb/status"
-  | "/admin/ra/status"
-  | "/admin/cheats/stats"
-  | "/admin/uploads"
-  | "/admin/uploads/writable"
-  | "/admin/core-compatibility"
-  | "/admin/system-events"
-  | "/admin/system-events/types"
-  | "/admin/system-events/categories"
-  | `/admin/system-events/${string}`
-
-  // WebSocket
-  | "/ws"
->;
-
-// ── POST ─────────────────────────────────────────────────────────────────────
-
-export type ApiPostPath = WithQuery<
-  // Auth
-  | "/auth/login"
-  | "/auth/register"
-  | "/auth/setup"
-  | "/auth/refresh"
-  | "/auth/logout"
-
-  // Emulator
-  | "/emulator/error"
-
-  // Games
-  | `/games/${string}/scrape-if-needed`
-  | `/games/${string}/play-time`
-  | `/games/${string}/sessions`
-  | `/games/${string}/sessions/from-shared-save/${string}`
-  | `/games/${string}/shared-saves`
-  | `/games/${string}/ratings`
-
-  // Sessions
-  | `/sessions/${string}/saves`
-  | `/sessions/${string}/saves/auto`
-  | `/sessions/${string}/sram`
-  | `/sessions/${string}/play-time`
-  | `/sessions/${string}/duplicate`
-
-  // User
-  | `/user/favorites/${string}`
-  | `/user/play-later/${string}`
-  | "/user/devices"
-  | "/user/ra/link"
-  | `/user/shared-session-invites/${string}/accept`
-  | `/user/shared-session-invites/${string}/decline`
-  | "/user/saved-searches"
-  | "/user/saves/compact"
-
-  // Collections
-  | "/collections"
-  | `/collections/${string}/games`
-
-  // Shared Sessions
-  | "/shared-sessions"
-  | `/shared-sessions/${string}/invites`
-  | `/shared-sessions/${string}/leave`
-  | `/shared-sessions/${string}/take-turn`
-  | `/shared-sessions/${string}/release-turn`
-  | `/shared-sessions/${string}/heartbeat`
-  | `/shared-sessions/${string}/saves`
-  | `/shared-sessions/${string}/saves/auto`
-
-  // Netplay
-  | "/netplay/sessions"
-  | "/netplay/sessions/join"
-  | `/netplay/sessions/${string}/invites`
-  | `/netplay/sessions/${string}/leave`
-  | `/netplay/invites/${string}/accept`
-  | `/netplay/invites/${string}/decline`
-
-  // Challenges
-  | "/challenges"
-  | `/challenges/${string}/attempts/start`
-  | `/challenges/${string}/attempts/${string}/complete`
-  | `/challenges/${string}/attempts/${string}/abandon`
-
-  // Admin
-  | "/admin/users"
-  | `/admin/games/${string}/scrape`
-  | `/admin/games/${string}/achievements/refresh`
-  | `/admin/games/${string}/metadata`
-  | `/admin/games/${string}/igdb-match`
-  | "/admin/games/scan"
-  | "/admin/scrape"
+export type ApiGetPath = WithQuery<Route<PathsByMethod<"get"> & string>>;
+// Gin-only POST endpoints (multipart uploads + binary save uploads).
+// These don't appear in the OpenAPI spec because huma doesn't model
+// multipart bodies / opaque binary streams cleanly. Curated by hand.
+type GinOnlyPostPath =
   | "/admin/bios"
-  | "/admin/bios/download"
-  | "/admin/igdb/test"
-  | "/admin/cheats/import"
-  | "/admin/uploads"
-  | `/admin/uploads/${string}/console`
-  | `/admin/uploads/${string}/scrape`
-  | "/admin/uploads/scrape"
-  | `/admin/uploads/${string}/accept`
-  | `/admin/uploads/${string}/reject`
-  | "/admin/uploads/accept-all"
-  | "/admin/uploads/reject-all"
   | "/admin/rom-hacks"
->;
-
-// ── PUT ──────────────────────────────────────────────────────────────────────
-
-export type ApiPutPath = WithQuery<
-  // User
-  | "/user/profile"
-  | "/user/password"
-  | "/user/preferences"
-  | `/user/devices/${string}`
-  | `/user/devices/${string}/preferences`
-  | "/user/play-later/reorder"
-  | "/user/ra/settings"
-  | `/user/games/${string}/keymapping`
-
-  // Sessions
-  | `/sessions/${string}`
-  | `/sessions/${string}/saves/${string}`
-  | `/sessions/${string}/saves/slot/${string}`
-  | `/sessions/${string}/cheats`
-
-  // Collections
-  | `/collections/${string}`
-
-  // Shared Sessions
-  | `/shared-sessions/${string}`
-  | `/shared-sessions/${string}/saves/${string}/rename`
-
-  // Netplay
-  | `/netplay/sessions/${string}/settings`
-
-  // Achievement Showcase
-  | "/user/achievements/showcase"
-
-  // Challenges
-  | `/challenges/${string}`
-
-  // Admin
-  | `/admin/users/${string}`
-  | "/admin/settings"
-  | `/admin/games/${string}/covers`
-  | `/admin/games/${string}/heroes`
-  | `/admin/games/${string}/verification-tag`
-  | `/admin/games/${string}/replace-rom`
-  | `/admin/system-events/${string}/dismiss`
->;
-
-// ── DELETE ────────────────────────────────────────────────────────────────────
-
-export type ApiDeletePath = WithQuery<
-  // Games
-  | `/games/${string}/play-time`
-  | `/games/${string}/ratings`
-  | `/games/${string}/shared-saves/${string}`
-
-  // Sessions
-  | `/sessions/${string}`
-  | `/sessions/${string}/saves`
-  | `/sessions/${string}/saves/${string}`
-  | `/sessions/${string}/play-time`
-
-  // User
-  | `/user/favorites/${string}`
-  | `/user/play-later/${string}`
-  | `/user/devices/${string}`
-  | "/user/ra/link"
-  | `/user/games/${string}/keymapping`
-  | `/user/saved-searches/${string}`
-
-  // Collections
-  | `/collections/${string}`
-  | `/collections/${string}/games/${string}`
-
-  // Shared Sessions
-  | `/shared-sessions/${string}`
-  | `/shared-sessions/${string}/members/${string}`
-  | `/shared-sessions/${string}/saves/${string}`
-
-  // Netplay
-  | `/netplay/sessions/${string}`
-
-  // Challenges
-  | `/challenges/${string}`
-
-  // Admin
-  | `/admin/users/${string}`
-  | `/admin/users/${string}/permanent`
-  | `/admin/users/${string}/rate-limit`
-  | `/admin/bios/${string}`
   | "/admin/uploads"
-  | "/admin/scrape"
+  | `/sessions/${string}/saves`
+  | `/sessions/${string}/saves/auto`
+  | `/games/${string}/sessions/from-shared-save/${string}`;
+export type ApiPostPath = WithQuery<
+  Route<PathsByMethod<"post"> & string> | GinOnlyPostPath
 >;
+type GinOnlyPutPath = `/admin/games/${string}/replace-rom`;
+export type ApiPutPath = WithQuery<
+  Route<PathsByMethod<"put"> & string> | GinOnlyPutPath
+>;
+export type ApiDeletePath = WithQuery<Route<PathsByMethod<"delete"> & string>>;
+export type ApiPatchPath = WithQuery<Route<PathsByMethod<"patch"> & string>>;
