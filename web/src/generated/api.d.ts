@@ -2296,6 +2296,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/games/{id}/achievements": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get achievements for a game
+         * @description Returns cached achievement metadata for a game. The server may serve stale cache, a freshly fetched set, or — when the data must be re-fetched asynchronously — HTTP 202 with {"status": "pending"}; clients should retry shortly afterwards.
+         */
+        get: operations["getGameAchievements"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/games/{id}/achievements/leaderboard": {
         parameters: {
             query?: never;
@@ -2626,6 +2646,26 @@ export interface paths {
          * @description Creates a new game session owned by the authenticated user.
          */
         post: operations["createSession"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/games/{id}/sessions/from-shared-save/{saveId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Create a session from a community shared save
+         * @description Creates a new game session for the caller seeded from a community shared save. Copies the shared save file into the new session and increments the shared save's download counter.
+         */
+        post: operations["createSessionFromSharedSave"];
         delete?: never;
         options?: never;
         head?: never;
@@ -3263,6 +3303,26 @@ export interface paths {
          * @description Owner-only. Removes the specified save state's file and record.
          */
         delete: operations["deleteSessionSave"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/setup/diagnostics": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Run server configuration health checks
+         * @description Returns ordered server health checks (database, JWT secret, encryption key, game dirs, storage, IGDB, SteamGridDB). Public during first-time setup when no users exist; requires admin/owner auth afterwards.
+         */
+        get: operations["getSetupDiagnostics"];
+        put?: never;
+        post?: never;
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -4552,6 +4612,18 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        Achievement: {
+            badgeUrl: string;
+            description: string;
+            /** Format: int64 */
+            id: number;
+            /** Format: int64 */
+            points: number;
+            /** Format: double */
+            rarityPercent: number;
+            title: string;
+            type: string;
+        };
         AchievementGameResponse: {
             /** Format: double */
             avgCompletion: number;
@@ -5181,7 +5253,7 @@ export interface components {
             id: string;
             logoUrl: string;
             name: string;
-            topGame: components["schemas"]["GameResponse"];
+            topGame?: components["schemas"]["GameResponse"];
         };
         ConsoleHighlightsResponse: {
             /**
@@ -5532,6 +5604,13 @@ export interface components {
             /** Format: int64 */
             userId: number;
         };
+        DiagnosticCheck: {
+            detail?: string;
+            fix?: string;
+            id: string;
+            label: string;
+            status: string;
+        };
         DiscResponse: {
             /** Format: int64 */
             discNumber: number;
@@ -5741,6 +5820,38 @@ export interface components {
              */
             readonly $schema?: string;
             games: components["schemas"]["FreshChallengeGame"][] | null;
+        };
+        GameAchievementsResponse: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/api/schemas/GameAchievementsResponse.json
+             */
+            readonly $schema?: string;
+            /** @description Achievement definitions for this game (empty when unknown). */
+            achievements: components["schemas"]["Achievement"][] | null;
+            /**
+             * Format: int64
+             * @description RetroAchievements game ID (0 when unknown).
+             */
+            raGameId: number;
+            /**
+             * @description Only set to 'pending' when the data is being fetched asynchronously; clients should retry.
+             * @enum {string}
+             */
+            status?: "pending";
+            /** @description RetroAchievements game title; present when achievement data is available. */
+            title?: string;
+            /**
+             * Format: int64
+             * @description Total number of achievements for this game.
+             */
+            totalCount: number;
+            /**
+             * Format: int64
+             * @description Total number of points available across all achievements.
+             */
+            totalPoints: number;
         };
         GameArtworkResponse: {
             /**
@@ -7176,6 +7287,16 @@ export interface components {
              */
             readonly $schema?: string;
             consoleId?: string;
+        };
+        SetupDiagnosticsResponse: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/api/schemas/SetupDiagnosticsResponse.json
+             */
+            readonly $schema?: string;
+            /** @description Ordered list of server health checks. */
+            checks: components["schemas"]["DiagnosticCheck"][] | null;
         };
         SetupStatusResponse: {
             /**
@@ -12071,6 +12192,38 @@ export interface operations {
             };
         };
     };
+    getGameAchievements: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Game ID. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GameAchievementsResponse"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HumaError"];
+                };
+            };
+        };
+    };
     getAchievementLeaderboard: {
         parameters: {
             query?: never;
@@ -12712,6 +12865,40 @@ export interface operations {
                 "application/json": components["schemas"]["CreateSessionRequest"];
             };
         };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GameSessionResponse"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HumaError"];
+                };
+            };
+        };
+    };
+    createSessionFromSharedSave: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Game ID. */
+                id: string;
+                /** @description Shared save ID to seed the new session from. */
+                saveId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
         responses: {
             /** @description Created */
             201: {
@@ -14003,6 +14190,35 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["MessageResponse"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HumaError"];
+                };
+            };
+        };
+    };
+    getSetupDiagnostics: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SetupDiagnosticsResponse"];
                 };
             };
             /** @description Error */
