@@ -18,6 +18,7 @@ package com.spela.client.apis
 import com.spela.client.models.HumaError
 import com.spela.client.models.MessageResponse
 import com.spela.client.models.PaginatedResponseSharedSaveResponse
+import com.spela.client.models.SharedSaveResponse
 
 import com.spela.client.infrastructure.*
 import io.ktor.client.HttpClient
@@ -108,6 +109,48 @@ open class SharedSavesApi : ApiClient {
         )
 
         return request(
+            localVariableConfig,
+            localVariableBody,
+            localVariableAuthNames
+        ).wrap()
+    }
+
+
+    /**
+     * Share a save state with the community
+     * Uploads a save state for the specified game and publishes it as a community shared save. Other users can browse/download it from the game page.
+     * @param id Game ID.
+     * @param description Optional description shown alongside the save. (optional)
+     * @param name Display name for the shared save (defaults to the uploaded filename). (optional)
+     * @param save Save state file. Required. (optional)
+     * @param screenshotUrl Optional pre-existing screenshot URL to attach. (optional)
+     * @return SharedSaveResponse
+     */
+    @Suppress("UNCHECKED_CAST")
+    open suspend fun shareSave(id: kotlin.String, description: kotlin.String? = null, name: kotlin.String? = null, save: io.ktor.client.request.forms.FormPart<io.ktor.client.request.forms.InputProvider>? = null, screenshotUrl: kotlin.String? = null): HttpResponse<SharedSaveResponse> {
+
+        val localVariableAuthNames = listOf<String>()
+
+        val localVariableBody = 
+            formData {
+                description?.apply { append("description", description) }
+                name?.apply { append("name", name) }
+                save?.apply { append(save) }
+                screenshotUrl?.apply { append("screenshotUrl", screenshotUrl) }
+            }
+
+        val localVariableQuery = mutableMapOf<String, List<String>>()
+        val localVariableHeaders = mutableMapOf<String, String>()
+
+        val localVariableConfig = RequestConfig<kotlin.Any?>(
+            RequestMethod.POST,
+            "/api/games/{id}/shared-saves".replace("{" + "id" + "}", "$id"),
+            query = localVariableQuery,
+            headers = localVariableHeaders,
+            requiresAuthentication = false,
+        )
+
+        return multipartFormRequest(
             localVariableConfig,
             localVariableBody,
             localVariableAuthNames

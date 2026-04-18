@@ -31,6 +31,7 @@ import kotlinx.serialization.encoding.*
  * @param name 
  * @param userId 
  * @param username 
+ * @param dollarSchema A URL to the JSON Schema for this object.
  * @param avatarUrl 
  * @param description 
  * @param screenshotUrl 
@@ -54,6 +55,9 @@ data class SharedSaveResponse (
     @SerialName(value = "userId") @Required val userId: kotlin.String,
 
     @SerialName(value = "username") @Required val username: kotlin.String,
+
+    /* A URL to the JSON Schema for this object. */
+    @SerialName(value = "\$schema") val dollarSchema: kotlin.String? = null,
 
     @SerialName(value = "avatarUrl") val avatarUrl: kotlin.String? = null,
 
