@@ -15,6 +15,7 @@
 
 package com.spela.client.apis
 
+import com.spela.client.models.AdminCreateRomHackResponse
 import com.spela.client.models.AdminCreateUserRequest
 import com.spela.client.models.AdminRAStatusResponse
 import com.spela.client.models.AdminStatsResponse
@@ -22,6 +23,7 @@ import com.spela.client.models.AdminUpdateUserRequest
 import com.spela.client.models.ApplyIGDBMatchRequest
 import com.spela.client.models.BackfillImagesResponse
 import com.spela.client.models.BiosDownloadStartedResponse
+import com.spela.client.models.BiosFileResponse
 import com.spela.client.models.CheatStatsResponse
 import com.spela.client.models.CheckUploadsWritableResponse
 import com.spela.client.models.CoreCompatibilityResponse
@@ -41,6 +43,7 @@ import com.spela.client.models.MessageResponse
 import com.spela.client.models.MetadataMatchesResponse
 import com.spela.client.models.RateLimitResponse
 import com.spela.client.models.RefreshAchievementsResponse
+import com.spela.client.models.ReplaceROMResponse
 import com.spela.client.models.ScanStartedResponse
 import com.spela.client.models.ScanStatusResponse
 import com.spela.client.models.ScrapeGameResponse
@@ -163,6 +166,49 @@ open class AdminApi : ApiClient {
 
 
     /**
+     * Create a ROM hack from a patch file
+     * Admin-only. Applies the supplied patch file to a base game&#39;s ROM and creates a new game record. In &#39;variant&#39; mode the new game shares the base game&#39;s group and inherits its metadata; in &#39;standalone&#39; mode it gets its own group with the base game as parent.
+     * @param baseGameId Numeric ID of the base game whose ROM the patch applies to. (optional)
+     * @param label Variant label (required when mode&#x3D;&#39;variant&#39;). Appears in brackets after the base title. (optional)
+     * @param mode &#39;variant&#39; (groups with the base game) or &#39;standalone&#39; (creates an independent game). (optional)
+     * @param patchFile Patch file (.ips, .bps, .ups, .xdelta, .vcdiff). Max 100 MB. (optional)
+     * @param title Standalone title (required when mode&#x3D;&#39;standalone&#39;). (optional)
+     * @return AdminCreateRomHackResponse
+     */
+    @Suppress("UNCHECKED_CAST")
+    open suspend fun adminCreateRomHack(baseGameId: kotlin.String? = null, label: kotlin.String? = null, mode: kotlin.String? = null, patchFile: io.ktor.client.request.forms.FormPart<io.ktor.client.request.forms.InputProvider>? = null, title: kotlin.String? = null): HttpResponse<AdminCreateRomHackResponse> {
+
+        val localVariableAuthNames = listOf<String>()
+
+        val localVariableBody = 
+            formData {
+                baseGameId?.apply { append("base_game_id", baseGameId) }
+                label?.apply { append("label", label) }
+                mode?.apply { append("mode", mode) }
+                patchFile?.apply { append(patch_file) }
+                title?.apply { append("title", title) }
+            }
+
+        val localVariableQuery = mutableMapOf<String, List<String>>()
+        val localVariableHeaders = mutableMapOf<String, String>()
+
+        val localVariableConfig = RequestConfig<kotlin.Any?>(
+            RequestMethod.POST,
+            "/api/admin/rom-hacks",
+            query = localVariableQuery,
+            headers = localVariableHeaders,
+            requiresAuthentication = false,
+        )
+
+        return multipartFormRequest(
+            localVariableConfig,
+            localVariableBody,
+            localVariableAuthNames
+        ).wrap()
+    }
+
+
+    /**
      * Create a user
      * Admin-only. Creates a new user account with a hashed password. Role defaults to &#39;user&#39; if not specified; &#39;owner&#39; is rejected.
      * @param adminCreateUserRequest 
@@ -271,6 +317,42 @@ open class AdminApi : ApiClient {
     }
 
     /**
+     * Replace a game&#39;s ROM
+     * Admin-only. Replaces the existing ROM file for the given game and re-verifies it against the DAT registry. Accepts a raw ROM file or a .zip containing one.
+     * @param id Numeric game ID.
+     * @param file Replacement ROM file (or .zip containing one). Max 50 GB. (optional)
+     * @return ReplaceROMResponse
+     */
+    @Suppress("UNCHECKED_CAST")
+    open suspend fun adminReplaceROM(id: kotlin.String, file: io.ktor.client.request.forms.FormPart<io.ktor.client.request.forms.InputProvider>? = null): HttpResponse<ReplaceROMResponse> {
+
+        val localVariableAuthNames = listOf<String>()
+
+        val localVariableBody = 
+            formData {
+                file?.apply { append(file) }
+            }
+
+        val localVariableQuery = mutableMapOf<String, List<String>>()
+        val localVariableHeaders = mutableMapOf<String, String>()
+
+        val localVariableConfig = RequestConfig<kotlin.Any?>(
+            RequestMethod.PUT,
+            "/api/admin/games/{id}/replace-rom".replace("{" + "id" + "}", "$id"),
+            query = localVariableQuery,
+            headers = localVariableHeaders,
+            requiresAuthentication = false,
+        )
+
+        return multipartFormRequest(
+            localVariableConfig,
+            localVariableBody,
+            localVariableAuthNames
+        ).wrap()
+    }
+
+
+    /**
      * Update a user
      * Admin-only. Updates role, email, password, disabled or pendingApproval fields. Owner role is protected from changes.
      * @param id User ID.
@@ -303,6 +385,87 @@ open class AdminApi : ApiClient {
     }
 
 
+
+    /**
+     * Upload a BIOS file
+     * Admin-only. Stores the uploaded file in the BIOS directory and matches it against the registry by filename, falling back to MD5 lookup. Returns the resulting BIOS file metadata. Max 16 MB.
+     * @param file BIOS file to upload (max 16 MB). (optional)
+     * @return BiosFileResponse
+     */
+    @Suppress("UNCHECKED_CAST")
+    open suspend fun adminUploadBios(file: io.ktor.client.request.forms.FormPart<io.ktor.client.request.forms.InputProvider>? = null): HttpResponse<BiosFileResponse> {
+
+        val localVariableAuthNames = listOf<String>()
+
+        val localVariableBody = 
+            formData {
+                file?.apply { append(file) }
+            }
+
+        val localVariableQuery = mutableMapOf<String, List<String>>()
+        val localVariableHeaders = mutableMapOf<String, String>()
+
+        val localVariableConfig = RequestConfig<kotlin.Any?>(
+            RequestMethod.POST,
+            "/api/admin/bios",
+            query = localVariableQuery,
+            headers = localVariableHeaders,
+            requiresAuthentication = false,
+        )
+
+        return multipartFormRequest(
+            localVariableConfig,
+            localVariableBody,
+            localVariableAuthNames
+        ).wrap()
+    }
+
+
+    /**
+     * Stage ROM file uploads
+     * Admin-only. Accepts one or more ROM files (or .zip archives containing ROMs) and stages them for review. Each archive is extracted and its individual ROMs are staged separately. Returns one StagedUploadResponse per resulting file.
+     * @param files  (optional)
+     * @return kotlin.collections.List<StagedUploadResponse>
+     */
+    @Suppress("UNCHECKED_CAST")
+    open suspend fun adminUploadROMs(files: kotlin.collections.List<io.ktor.client.request.forms.FormPart<io.ktor.client.request.forms.InputProvider>>? = null): HttpResponse<kotlin.collections.List<StagedUploadResponse>> {
+
+        val localVariableAuthNames = listOf<String>()
+
+        val localVariableBody = 
+            formData {
+                files?.onEach {
+                    append(it)
+                }
+            }
+
+        val localVariableQuery = mutableMapOf<String, List<String>>()
+        val localVariableHeaders = mutableMapOf<String, String>()
+
+        val localVariableConfig = RequestConfig<kotlin.Any?>(
+            RequestMethod.POST,
+            "/api/admin/uploads",
+            query = localVariableQuery,
+            headers = localVariableHeaders,
+            requiresAuthentication = false,
+        )
+
+        return multipartFormRequest(
+            localVariableConfig,
+            localVariableBody,
+            localVariableAuthNames
+        ).wrap<AdminUploadROMsResponse>().map { value }
+    }
+
+    @Serializable(AdminUploadROMsResponse.Companion::class)
+    private class AdminUploadROMsResponse(val value: List<StagedUploadResponse>) {
+        companion object : KSerializer<AdminUploadROMsResponse> {
+            private val serializer: KSerializer<List<StagedUploadResponse>> = serializer<List<StagedUploadResponse>>()
+            override val descriptor = serializer.descriptor
+            override fun serialize(encoder: Encoder, value: AdminUploadROMsResponse) = serializer.serialize(encoder, value.value)
+            override fun deserialize(decoder: Decoder) = AdminUploadROMsResponse(serializer.deserialize(decoder))
+        }
+    }
 
     /**
      * Re-scrape a game with a chosen IGDB match

@@ -29,6 +29,7 @@ import kotlinx.serialization.encoding.*
  * @param required 
  * @param propertySize 
  * @param status 
+ * @param dollarSchema A URL to the JSON Schema for this object.
  * @param consoleName 
  * @param description 
  * @param expectedMd5 
@@ -49,6 +50,9 @@ data class BiosFileResponse (
     @SerialName(value = "size") @Required val propertySize: kotlin.Long,
 
     @SerialName(value = "status") @Required val status: kotlin.String,
+
+    /* A URL to the JSON Schema for this object. */
+    @SerialName(value = "\$schema") val dollarSchema: kotlin.String? = null,
 
     @SerialName(value = "consoleName") val consoleName: kotlin.String? = null,
 

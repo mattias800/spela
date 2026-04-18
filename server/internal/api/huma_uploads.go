@@ -115,8 +115,8 @@ type ClearStagingOutput struct {
 }
 
 // RegisterUploadAdminRoutes wires the JSON-only admin upload staging endpoints
-// into the huma API. The multipart POST /api/admin/uploads (UploadROMs) stays
-// on raw gin because huma does not yet model file uploads in this codebase.
+// into the huma API. The multipart POST /api/admin/uploads (HumaUploadROMs)
+// is registered separately by RegisterAdminMultipartRoutes.
 func RegisterUploadAdminRoutes(api huma.API, h *UploadHandler, jwtSecret string, database *gorm.DB, userLimiter *RateLimiter) {
 	requireAuth := RequireAuth(jwtSecret, database)
 	rateLimit := UserRateLimitMiddleware(userLimiter)

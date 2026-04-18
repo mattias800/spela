@@ -24,6 +24,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/admin/bios": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Upload a BIOS file
+         * @description Admin-only. Stores the uploaded file in the BIOS directory and matches it against the registry by filename, falling back to MD5 lookup. Returns the resulting BIOS file metadata. Max 16 MB.
+         */
+        post: operations["adminUploadBios"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/admin/bios/download": {
         parameters: {
             query?: never;
@@ -332,6 +352,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/admin/games/{id}/replace-rom": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Replace a game's ROM
+         * @description Admin-only. Replaces the existing ROM file for the given game and re-verifies it against the DAT registry. Accepts a raw ROM file or a .zip containing one.
+         */
+        put: operations["adminReplaceROM"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/admin/games/{id}/scrape": {
         parameters: {
             query?: never;
@@ -446,6 +486,26 @@ export interface paths {
         get: operations["getAdminRAStatus"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/rom-hacks": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Create a ROM hack from a patch file
+         * @description Admin-only. Applies the supplied patch file to a base game's ROM and creates a new game record. In 'variant' mode the new game shares the base game's group and inherits its metadata; in 'standalone' mode it gets its own group with the base game as parent.
+         */
+        post: operations["adminCreateRomHack"];
         delete?: never;
         options?: never;
         head?: never;
@@ -693,7 +753,11 @@ export interface paths {
          */
         get: operations["listUploads"];
         put?: never;
-        post?: never;
+        /**
+         * Stage ROM file uploads
+         * @description Admin-only. Accepts one or more ROM files (or .zip archives containing ROMs) and stages them for review. Each archive is extracted and its individual ROMs are staged separately. Returns one StagedUploadResponse per resulting file.
+         */
+        post: operations["adminUploadROMs"];
         /**
          * Clear the staging directory
          * @description Admin-only. Deletes every staged ROM from disk and drops all staging records. Alias for reject-all.
@@ -4758,6 +4822,18 @@ export interface components {
             /** Format: int64 */
             gameId?: number;
         };
+        AdminCreateRomHackResponse: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/api/schemas/AdminCreateRomHackResponse.json
+             */
+            readonly $schema?: string;
+            /** @description Newly-created game ID (numeric, encoded as string). */
+            id: string;
+            /** @description Newly-created game title. */
+            title: string;
+        };
         AdminCreateUserRequest: {
             /**
              * Format: uri
@@ -5005,6 +5081,12 @@ export interface components {
             missing: number;
         };
         BiosFileResponse: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/api/schemas/BiosFileResponse.json
+             */
+            readonly $schema?: string;
             consoleId: string | null;
             consoleName?: string;
             description?: string;
@@ -5808,6 +5890,13 @@ export interface components {
             sourceGame?: components["schemas"]["GameResponse"];
             title: string;
             type: string;
+        };
+        FormFile: {
+            ContentType: string;
+            Filename: string;
+            IsSet: boolean;
+            /** Format: int64 */
+            Size: number;
         };
         FranchiseDetailResponse: {
             /**
@@ -6926,6 +7015,23 @@ export interface components {
              */
             readonly $schema?: string;
             gameIds: string[] | null;
+        };
+        ReplaceROMResponse: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/api/schemas/ReplaceROMResponse.json
+             */
+            readonly $schema?: string;
+            game: components["schemas"]["GameResponse"];
+            replacementResult: components["schemas"]["ReplaceROMResult"];
+        };
+        ReplaceROMResult: {
+            canonicalName?: string;
+            crc32: string;
+            previousCrc32: string;
+            previousStatus: string;
+            verified: boolean;
         };
         ReportEmulatorErrorRequest: {
             /**
@@ -8156,6 +8262,45 @@ export interface operations {
             };
         };
     };
+    adminUploadBios: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "multipart/form-data": {
+                    /**
+                     * Format: binary
+                     * @description BIOS file to upload (max 16 MB).
+                     */
+                    file?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BiosFileResponse"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HumaError"];
+                };
+            };
+        };
+    };
     triggerBiosDownload: {
         parameters: {
             query?: never;
@@ -8701,6 +8846,48 @@ export interface operations {
             };
         };
     };
+    adminReplaceROM: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Numeric game ID. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "multipart/form-data": {
+                    /**
+                     * Format: binary
+                     * @description Replacement ROM file (or .zip containing one). Max 50 GB.
+                     */
+                    file?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReplaceROMResponse"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HumaError"];
+                };
+            };
+        };
+    };
     scrapeGame: {
         parameters: {
             query?: never;
@@ -8876,6 +9063,53 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AdminRAStatusResponse"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HumaError"];
+                };
+            };
+        };
+    };
+    adminCreateRomHack: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "multipart/form-data": {
+                    /** @description Numeric ID of the base game whose ROM the patch applies to. */
+                    base_game_id?: string;
+                    /** @description Variant label (required when mode='variant'). Appears in brackets after the base title. */
+                    label?: string;
+                    /** @description 'variant' (groups with the base game) or 'standalone' (creates an independent game). */
+                    mode?: string;
+                    /**
+                     * Format: binary
+                     * @description Patch file (.ips, .bps, .ups, .xdelta, .vcdiff). Max 100 MB.
+                     */
+                    patch_file?: string;
+                    /** @description Standalone title (required when mode='standalone'). */
+                    title?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminCreateRomHackResponse"];
                 };
             };
             /** @description Error */
@@ -9318,6 +9552,41 @@ export interface operations {
             cookie?: never;
         };
         requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StagedUploadResponse"][] | null;
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HumaError"];
+                };
+            };
+        };
+    };
+    adminUploadROMs: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "multipart/form-data": {
+                    files?: string[];
+                };
+            };
+        };
         responses: {
             /** @description OK */
             200: {

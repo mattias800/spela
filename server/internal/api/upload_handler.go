@@ -6,13 +6,13 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
-	"mime/multipart"
 	"net/http"
 	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
 
+	"github.com/danielgtaylor/huma/v2"
 	"github.com/gin-gonic/gin"
 	"github.com/spela/server/internal/db"
 	"github.com/spela/server/internal/scanner"
@@ -189,74 +189,9 @@ func (h *UploadHandler) CheckWritable(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"writable": true})
 }
 
-// UploadROMs handles multipart file uploads of ROM files to the staging area.
-// Zip files are automatically extracted and individual ROMs inside are staged.
-// POST /api/admin/uploads
-func (h *UploadHandler) UploadROMs(c *gin.Context) {
-	if err := os.MkdirAll(h.StagingDir, 0700); err != nil {
-		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to create staging directory"})
-		return
-	}
-
-	c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, maxROMUploadSize)
-	form, err := c.MultipartForm()
-	if err != nil {
-		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "multipart form required"})
-		return
-	}
-
-	files := form.File["files"]
-	if len(files) == 0 {
-		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "at least one file required"})
-		return
-	}
-
-	var results []StagedUploadResponse
-
-	for _, header := range files {
-		ext := strings.ToLower(filepath.Ext(header.Filename))
-
-		// Handle zip files: extract and process contained ROMs individually
-		if ext == ".zip" {
-			zipResults := h.processZipUpload(header)
-			results = append(results, zipResults...)
-			continue
-		}
-
-		// Validate extension is a recognized ROM type
-		if !scanner.RomExtensions[ext] {
-			results = append(results, StagedUploadResponse{
-				OriginalFileName: header.Filename,
-				Status:           "rejected",
-			})
-			continue
-		}
-
-		result := h.stageROMFile(header.Filename, ext, func(destPath string) (int64, error) {
-			file, err := header.Open()
-			if err != nil {
-				return 0, err
-			}
-			defer file.Close()
-
-			dst, err := os.OpenFile(destPath, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0644)
-			if err != nil {
-				return 0, err
-			}
-
-			written, err := io.Copy(dst, file)
-			dst.Close()
-			if err != nil {
-				os.Remove(destPath)
-				return 0, err
-			}
-			return written, nil
-		})
-		results = append(results, result)
-	}
-
-	c.JSON(http.StatusOK, results)
-}
+// UploadROMs has been migrated to huma — see (*UploadHandler).HumaUploadROMs in
+// huma_admin_multipart.go. The gin handler was removed once nothing referenced
+// it; the OpenAPI spec is now the single source of truth for this endpoint.
 
 // stageROMFile handles the common logic for staging a single ROM file.
 // The writeFn callback writes the file content to the given destPath and returns
@@ -351,44 +286,36 @@ func (h *UploadHandler) stageROMFile(originalFilename string, ext string, writeF
 	return toStagedUploadResponse(staged, h.DB)
 }
 
-// processZipUpload extracts a zip file upload and stages each ROM file found inside.
-// Non-ROM files inside the zip are silently skipped. Inner .zip files are treated
-// as ROM files (libretro cores can load zipped ROMs).
-func (h *UploadHandler) processZipUpload(header *multipart.FileHeader) []StagedUploadResponse {
-	// Save the zip to a temp file in the staging dir
+// processZipUploadFormFile is the huma equivalent of processZipUpload — it
+// accepts a huma.FormFile (which already exposes an io.Reader) instead of a
+// raw multipart.FileHeader. The uploaded zip is copied to a temp file in the
+// staging directory before extraction so extractAndStageZip can re-open it
+// from disk.
+func (h *UploadHandler) processZipUploadFormFile(f huma.FormFile) []StagedUploadResponse {
+	defer f.Close()
+
 	tmpZipFile, err := os.CreateTemp(h.StagingDir, "upload-*.zip")
 	if err != nil {
 		slog.Warn("failed to create temp zip file", "error", err)
 		return []StagedUploadResponse{{
-			OriginalFileName: header.Filename,
+			OriginalFileName: f.Filename,
 			Status:           "rejected",
 		}}
 	}
 	tmpZipPath := tmpZipFile.Name()
-	defer os.Remove(tmpZipPath) // Always clean up the temp zip
+	defer os.Remove(tmpZipPath)
 
-	src, err := header.Open()
-	if err != nil {
+	if _, err := io.Copy(tmpZipFile, f); err != nil {
 		tmpZipFile.Close()
-		slog.Warn("failed to open uploaded zip", "file", header.Filename, "error", err)
+		slog.Warn("failed to write uploaded zip to temp file", "file", f.Filename, "error", err)
 		return []StagedUploadResponse{{
-			OriginalFileName: header.Filename,
+			OriginalFileName: f.Filename,
 			Status:           "rejected",
 		}}
 	}
-
-	_, err = io.Copy(tmpZipFile, src)
-	src.Close()
 	tmpZipFile.Close()
-	if err != nil {
-		slog.Warn("failed to write uploaded zip to temp file", "file", header.Filename, "error", err)
-		return []StagedUploadResponse{{
-			OriginalFileName: header.Filename,
-			Status:           "rejected",
-		}}
-	}
 
-	return h.extractAndStageZip(tmpZipPath, header.Filename)
+	return h.extractAndStageZip(tmpZipPath, f.Filename)
 }
 
 // extractAndStageZip opens a zip file, validates it, extracts ROM files, and
