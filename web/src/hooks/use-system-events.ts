@@ -1,38 +1,30 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { api } from "@/lib/api-client";
-import type {
-  SystemEvent,
-  SystemEventCategory,
-  SystemEventTypeInfo,
-  SystemEventsListFilters,
-  SystemEventsListResponse,
-} from "@/types/api";
-
-function buildSystemEventsQuery(filters: SystemEventsListFilters): string {
-  const params = new URLSearchParams();
-  if (filters.page) params.set("page", String(filters.page));
-  if (filters.pageSize) params.set("pageSize", String(filters.pageSize));
-  if (filters.username) params.set("username", filters.username);
-  if (filters.ip) params.set("ip", filters.ip);
-  if (filters.category) params.set("category", filters.category);
-  if (filters.dismissed) params.set("dismissed", "true");
-  if (filters.since && filters.since !== "all") {
-    params.set("since", filters.since);
-  }
-  if (filters.eventType?.length) {
-    for (const t of filters.eventType) params.append("eventType", t);
-  }
-  return params.toString();
-}
+import { typedApi, unwrap } from "@/lib/api-client";
+import type { SystemEventsListFilters } from "@/types/api";
 
 export function useSystemEvents(filters: SystemEventsListFilters) {
-  const qs = buildSystemEventsQuery(filters);
-  const path = qs
-    ? (`/admin/system-events?${qs}` as const)
-    : ("/admin/system-events" as const);
   return useQuery({
     queryKey: ["admin", "system-events", filters],
-    queryFn: () => api.get<SystemEventsListResponse>(path),
+    queryFn: () =>
+      unwrap(
+        typedApi.GET("/api/admin/system-events", {
+          params: {
+            query: {
+              page: filters.page,
+              pageSize: filters.pageSize,
+              username: filters.username,
+              ip: filters.ip,
+              category: filters.category,
+              dismissed: filters.dismissed ? "true" : undefined,
+              since:
+                filters.since && filters.since !== "all"
+                  ? filters.since
+                  : undefined,
+              eventType: filters.eventType,
+            },
+          },
+        }),
+      ),
     refetchInterval: 60_000,
     refetchOnWindowFocus: true,
   });
@@ -41,10 +33,12 @@ export function useSystemEvents(filters: SystemEventsListFilters) {
 export function useSystemEvent(id: number | null) {
   return useQuery({
     queryKey: ["admin", "system-events", id],
-    queryFn: () => {
-      const path = `/admin/system-events/${id}` as const;
-      return api.get<SystemEvent>(path);
-    },
+    queryFn: () =>
+      unwrap(
+        typedApi.GET("/api/admin/system-events/{id}", {
+          params: { path: { id: String(id) } },
+        }),
+      ),
     enabled: id !== null,
   });
 }
@@ -52,10 +46,7 @@ export function useSystemEvent(id: number | null) {
 export function useSystemEventTypes() {
   return useQuery({
     queryKey: ["admin", "system-events", "types"],
-    queryFn: () =>
-      api.get<{ types: SystemEventTypeInfo[] }>(
-        "/admin/system-events/types",
-      ),
+    queryFn: () => unwrap(typedApi.GET("/api/admin/system-events/types")),
     staleTime: Infinity,
   });
 }
@@ -63,10 +54,7 @@ export function useSystemEventTypes() {
 export function useSystemEventCategories() {
   return useQuery({
     queryKey: ["admin", "system-events", "categories"],
-    queryFn: () =>
-      api.get<SystemEventCategory[]>(
-        "/admin/system-events/categories",
-      ),
+    queryFn: () => unwrap(typedApi.GET("/api/admin/system-events/categories")),
     staleTime: Infinity,
   });
 }
@@ -75,7 +63,11 @@ export function useDismissSystemEvent() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (id: number) =>
-      api.put(`/admin/system-events/${id}/dismiss` as const, {}),
+      unwrap(
+        typedApi.PUT("/api/admin/system-events/{id}/dismiss", {
+          params: { path: { id: String(id) } },
+        }),
+      ),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin", "system-events"] });
     },
