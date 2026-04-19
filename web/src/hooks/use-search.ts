@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { api } from "@/lib/api-client";
+import { typedApi, unwrap } from "@/lib/api-client";
 
 export interface GameSearchResult {
   id: string;
@@ -65,9 +65,11 @@ export function useSearch(query: string) {
   return useQuery({
     queryKey: ["search", query],
     queryFn: () =>
-      api.get<SearchResults>(
-        `/search?q=${encodeURIComponent(query)}&limit=5`,
-      ),
+      unwrap(
+        typedApi.GET("/api/search", {
+          params: { query: { q: query, limit: 5 } },
+        }),
+      ) as Promise<SearchResults>,
     enabled: query.length >= 2,
     staleTime: 30 * 1000,
   });
