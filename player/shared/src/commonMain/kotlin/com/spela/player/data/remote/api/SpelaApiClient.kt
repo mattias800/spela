@@ -23,6 +23,7 @@ import com.spela.client.apis.SharedSavesApi
 import com.spela.client.apis.SharedSessionsApi
 import com.spela.client.apis.SocialApi
 import com.spela.client.apis.StatsApi
+import com.spela.client.apis.SystemApi
 import com.spela.client.apis.TopListsApi
 import com.spela.client.apis.UserApi
 import com.spela.player.data.remote.AuthFailureReason
@@ -142,6 +143,7 @@ class SpelaApiClient(
     private lateinit var sharedSessionsApi: SharedSessionsApi
     private lateinit var socialApi: SocialApi
     private lateinit var statsApi: StatsApi
+    private lateinit var systemApi: SystemApi
     private lateinit var topListsApi: TopListsApi
     private lateinit var userApi: UserApi
 
@@ -173,6 +175,7 @@ class SpelaApiClient(
         sharedSessionsApi = SharedSessionsApi(baseUrl, client)
         socialApi = SocialApi(baseUrl, client)
         statsApi = StatsApi(baseUrl, client)
+        systemApi = SystemApi(baseUrl, client)
         topListsApi = TopListsApi(baseUrl, client)
         userApi = UserApi(baseUrl, client)
     }
@@ -209,7 +212,7 @@ class SpelaApiClient(
 
     suspend fun healthCheck(): Boolean {
         return try {
-            client.get("$baseUrl/api/health")
+            systemApi.getHealth()
             true
         } catch (_: Exception) {
             false
@@ -810,11 +813,10 @@ class SpelaApiClient(
     }
 
     suspend fun downloadM3U(gameId: String): ByteArray {
-        val response = client.get("$baseUrl/api/games/$gameId/download")
-        if (!response.status.isSuccess()) {
-            throw RuntimeException("M3U download failed: HTTP ${response.status.value}")
-        }
-        return response.body()
+        // Same /api/games/{id}/download endpoint as downloadGame(); server
+        // returns the M3U playlist for multi-disc titles when no disc is
+        // specified. No progress callback needed here.
+        return gamesApi.downloadGame(gameId).response.body<ByteArray>()
     }
 
     // BIOS
@@ -824,7 +826,7 @@ class SpelaApiClient(
     }
 
     suspend fun downloadBiosFile(filename: String): ByteArray {
-        return client.get("$baseUrl/api/bios/${filename.encodeURLPath()}").body()
+        return biosApi.downloadBios(filename).response.body<ByteArray>()
     }
 
     // Cores
@@ -880,7 +882,7 @@ class SpelaApiClient(
     }
 
     suspend fun downloadSharedSave(gameId: String, saveId: String): ByteArray {
-        return client.get("$baseUrl/api/games/$gameId/shared-saves/$saveId/download").body()
+        return sharedSavesApi.downloadSharedSave(gameId, saveId).response.body<ByteArray>()
     }
 
     suspend fun deleteSharedSave(gameId: String, saveId: String) {
@@ -1084,11 +1086,11 @@ class SpelaApiClient(
     }
 
     suspend fun downloadSharedSessionSave(sharedSessionId: String, saveId: Long): ByteArray {
-        return client.get("$baseUrl/api/shared-sessions/$sharedSessionId/saves/$saveId/download").body()
+        return sharedSessionsApi.downloadSharedSessionSave(sharedSessionId, saveId.toString()).response.body<ByteArray>()
     }
 
     suspend fun downloadSharedSessionAutoSave(sharedSessionId: String): ByteArray {
-        return client.get("$baseUrl/api/shared-sessions/$sharedSessionId/saves/auto").body()
+        return sharedSessionsApi.downloadSharedSessionAutoSave(sharedSessionId).response.body<ByteArray>()
     }
 
     suspend fun copySharedSessionSaveToGame(sharedSessionId: String, saveId: Long) {
@@ -1310,7 +1312,7 @@ class SpelaApiClient(
     }
 
     suspend fun downloadChallengeSave(challengeId: String): ByteArray {
-        return client.get("$baseUrl/api/challenges/$challengeId/save/download").body()
+        return challengesApi.downloadChallengeSave(challengeId).response.body<ByteArray>()
     }
 
     suspend fun startChallengeAttempt(
@@ -1595,11 +1597,7 @@ class SpelaApiClient(
     }
 
     suspend fun downloadSessionSave(sessionId: String, saveId: String): ByteArray {
-        val response = client.get("$baseUrl/api/sessions/$sessionId/saves/$saveId")
-        if (!response.status.isSuccess()) {
-            throw RuntimeException("Session save download failed: HTTP ${response.status.value}")
-        }
-        return response.body()
+        return sessionsApi.downloadSessionSave(sessionId, saveId).response.body<ByteArray>()
     }
 
     suspend fun uploadSessionAutoSave(sessionId: String, data: ByteArray, screenshot: ByteArray?, coreName: String = "") {
@@ -1624,11 +1622,7 @@ class SpelaApiClient(
     }
 
     suspend fun downloadSessionAutoSave(sessionId: String): ByteArray {
-        val response = client.get("$baseUrl/api/sessions/$sessionId/saves/auto")
-        if (!response.status.isSuccess()) {
-            throw RuntimeException("Session auto-save download failed: HTTP ${response.status.value}")
-        }
-        return response.body()
+        return sessionsApi.downloadSessionAutoSave(sessionId).response.body<ByteArray>()
     }
 
     suspend fun uploadSlotSave(sessionId: String, slot: Int, data: ByteArray, screenshot: ByteArray?, coreName: String = ""): com.spela.client.models.SessionSaveResponse {
@@ -1655,11 +1649,7 @@ class SpelaApiClient(
     }
 
     suspend fun downloadSlotSave(sessionId: String, slot: Int): ByteArray {
-        val response = client.get("$baseUrl/api/sessions/$sessionId/saves/slot/$slot")
-        if (!response.status.isSuccess()) {
-            throw RuntimeException("Slot save download failed: HTTP ${response.status.value}")
-        }
-        return response.body()
+        return sessionsApi.downloadSessionSlotSave(sessionId, slot.toString()).response.body<ByteArray>()
     }
 
     suspend fun uploadSessionSram(sessionId: String, data: ByteArray, coreName: String = "") {
@@ -1678,11 +1668,7 @@ class SpelaApiClient(
     }
 
     suspend fun downloadSessionSram(sessionId: String): ByteArray {
-        val response = client.get("$baseUrl/api/sessions/$sessionId/sram")
-        if (!response.status.isSuccess()) {
-            throw RuntimeException("Session SRAM download failed: HTTP ${response.status.value}")
-        }
-        return response.body()
+        return sessionsApi.downloadSessionSRAM(sessionId).response.body<ByteArray>()
     }
 
     suspend fun getSessionCheats(sessionId: String): com.spela.client.models.SessionCheatsResponse {
