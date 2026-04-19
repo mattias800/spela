@@ -172,7 +172,7 @@ export function StatsPage() {
             <MostPlayedSkeleton />
           ) : (
             <div className="space-y-2">
-              {mostPlayed?.games.slice(0, 25).map((entry, index) => {
+              {mostPlayed?.games?.slice(0, 25).map((entry, index) => {
                 const rank = index + 1;
                 return (
                   <Link
