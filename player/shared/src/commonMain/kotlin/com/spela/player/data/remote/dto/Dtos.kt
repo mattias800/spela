@@ -142,12 +142,6 @@ typealias DeviceDto = com.spela.client.models.DeviceResponse
 // `consoleName`. The hand-written names were dead; new mapper reads
 // the real fields.
 
-/** Wrapper for GET /api/games/:id/core when core is not in DB */
-@Serializable
-data class CoreNameResponse(
-    val coreName: String,
-)
-
 // RetroAchievements
 
 // RA DTOs replaced by generated counterparts in
