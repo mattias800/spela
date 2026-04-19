@@ -1,18 +1,16 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { api } from "@/lib/api-client";
+import { typedApi, unwrap } from "@/lib/api-client";
 import { useWebSocketEvent } from "@/hooks/use-websocket";
 import type {
-  OnlineUsersResponse,
-  ActivityFeedResponse,
   ActivityEvent,
-  UserSearchResult,
+  ActivityFeedResponse,
   UserSearchResponse,
 } from "@/types/api";
 
 export function useOnlineUsers() {
   return useQuery({
     queryKey: ["social", "online"],
-    queryFn: () => api.get<OnlineUsersResponse>("/social/online"),
+    queryFn: () => unwrap(typedApi.GET("/api/social/online")),
     refetchInterval: 30000,
   });
 }
@@ -20,10 +18,14 @@ export function useOnlineUsers() {
 export function useActivityFeed(page: number = 1, pageSize: number = 20) {
   return useQuery({
     queryKey: ["social", "activity", page, pageSize],
-    queryFn: () =>
-      api.get<ActivityFeedResponse>(
-        `/social/activity?page=${page}&pageSize=${pageSize}`,
-      ),
+    queryFn: async () => {
+      const data = await unwrap(
+        typedApi.GET("/api/social/activity", {
+          params: { query: { page, pageSize } },
+        }),
+      );
+      return data as ActivityFeedResponse | undefined;
+    },
   });
 }
 
@@ -34,17 +36,21 @@ export function useSearchUsers(
 ) {
   return useQuery({
     queryKey: ["users", "search", query, page, pageSize],
-    queryFn: () =>
-      api.get<UserSearchResponse>(
-        `/users/search?q=${encodeURIComponent(query)}&page=${page}&pageSize=${pageSize}`,
-      ),
+    queryFn: async () => {
+      const data = await unwrap(
+        typedApi.GET("/api/users/search", {
+          params: { query: { q: query, page, pageSize } },
+        }),
+      );
+      return data as UserSearchResponse | undefined;
+    },
   });
 }
 
 export function useRecentPartners() {
   return useQuery({
     queryKey: ["users", "recent-partners"],
-    queryFn: () => api.get<UserSearchResult[]>("/users/recent-partners"),
+    queryFn: () => unwrap(typedApi.GET("/api/users/recent-partners")),
   });
 }
 
@@ -58,7 +64,7 @@ export function useActivityRealtime() {
         if (!old) return old;
         return {
           ...old,
-          data: [payload, ...old.data],
+          data: [payload, ...(old.data ?? [])],
           total: old.total + 1,
         };
       },

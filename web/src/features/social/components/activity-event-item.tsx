@@ -136,7 +136,7 @@ export function ActivityEventItem({ event, compact }: ActivityEventItemProps) {
       <div className="relative flex-shrink-0 mt-0.5">
         <PlayerAvatar
           username={event.username}
-          avatarUrl={event.userAvatarUrl}
+          avatarUrl={event.avatarUrl}
         />
         <span className="absolute -bottom-1 -right-1 h-5 w-5 rounded-full bg-surface-900 flex items-center justify-center">
           {eventIcon(event.eventType)}
@@ -157,9 +157,9 @@ export function ActivityEventItem({ event, compact }: ActivityEventItemProps) {
           <span className="text-xs text-surface-500">
             {formatRelativeTime(event.createdAt)}
           </span>
-          {event.gameConsoleName && (
+          {event.consoleName && (
             <Badge variant="brand" className="text-[10px] px-1.5 py-0">
-              {event.gameConsoleName}
+              {event.consoleName}
             </Badge>
           )}
         </div>
