@@ -11,22 +11,35 @@ import {
 } from "../use-play-later";
 
 vi.mock("@/lib/api-client", () => ({
-  api: {
-    get: vi.fn(),
-    post: vi.fn(),
-    put: vi.fn(),
-    delete: vi.fn(),
+  typedApi: {
+    GET: vi.fn(),
+    POST: vi.fn(),
+    PUT: vi.fn(),
+    DELETE: vi.fn(),
   },
+  unwrap: vi.fn(<T,>(p: Promise<{ data?: T; error?: unknown; response: Response }>) =>
+    p.then((r) => {
+      if (r.error !== undefined) throw r.error;
+      return r.data;
+    }),
+  ),
 }));
 
-import { api } from "@/lib/api-client";
+import { typedApi } from "@/lib/api-client";
 
-const mockApi = api as unknown as {
-  get: ReturnType<typeof vi.fn>;
-  post: ReturnType<typeof vi.fn>;
-  put: ReturnType<typeof vi.fn>;
-  delete: ReturnType<typeof vi.fn>;
+const mockTypedApi = typedApi as unknown as {
+  GET: ReturnType<typeof vi.fn>;
+  POST: ReturnType<typeof vi.fn>;
+  PUT: ReturnType<typeof vi.fn>;
+  DELETE: ReturnType<typeof vi.fn>;
 };
+
+function ok(data: unknown) {
+  return Promise.resolve({
+    data,
+    response: new Response(null, { status: 200 }),
+  });
+}
 
 function createWrapper() {
   const queryClient = new QueryClient({
@@ -90,7 +103,7 @@ const mockPlayLaterGames = [
 
 describe("usePlayLaterGames", () => {
   it("fetches play later games list", async () => {
-    mockApi.get.mockResolvedValue(mockPlayLaterGames);
+    mockTypedApi.GET.mockReturnValue(ok(mockPlayLaterGames));
 
     const { result } = renderHook(() => usePlayLaterGames(), {
       wrapper: createWrapper(),
@@ -98,14 +111,14 @@ describe("usePlayLaterGames", () => {
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
-    expect(mockApi.get).toHaveBeenCalledWith("/user/play-later");
+    expect(mockTypedApi.GET).toHaveBeenCalledWith("/api/user/play-later");
     expect(result.current.data).toHaveLength(2);
     expect(result.current.data![0].title).toBe("Super Mario Bros.");
     expect(result.current.data![1].title).toBe("Zelda");
   });
 
   it("handles fetch error", async () => {
-    mockApi.get.mockRejectedValue(new Error("Network error"));
+    mockTypedApi.GET.mockReturnValue(Promise.reject(new Error("Network error")));
 
     const { result } = renderHook(() => usePlayLaterGames(), {
       wrapper: createWrapper(),
@@ -115,7 +128,7 @@ describe("usePlayLaterGames", () => {
   });
 
   it("returns empty array when queue is empty", async () => {
-    mockApi.get.mockResolvedValue([]);
+    mockTypedApi.GET.mockReturnValue(ok([]));
 
     const { result } = renderHook(() => usePlayLaterGames(), {
       wrapper: createWrapper(),
@@ -128,7 +141,7 @@ describe("usePlayLaterGames", () => {
 
 describe("useAddToPlayLater", () => {
   it("posts to add a game to the play later queue", async () => {
-    mockApi.post.mockResolvedValue(undefined);
+    mockTypedApi.POST.mockReturnValue(ok(undefined));
 
     const { result } = renderHook(() => useAddToPlayLater(), {
       wrapper: createWrapper(),
@@ -139,13 +152,16 @@ describe("useAddToPlayLater", () => {
     });
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(mockApi.post).toHaveBeenCalledWith("/user/play-later/g1");
+    expect(mockTypedApi.POST).toHaveBeenCalledWith(
+      "/api/user/play-later/{gameId}",
+      { params: { path: { gameId: "g1" } } },
+    );
   });
 });
 
 describe("useRemoveFromPlayLater", () => {
   it("deletes a game from the play later queue", async () => {
-    mockApi.delete.mockResolvedValue(undefined);
+    mockTypedApi.DELETE.mockReturnValue(ok(undefined));
 
     const { result } = renderHook(() => useRemoveFromPlayLater(), {
       wrapper: createWrapper(),
@@ -156,13 +172,16 @@ describe("useRemoveFromPlayLater", () => {
     });
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(mockApi.delete).toHaveBeenCalledWith("/user/play-later/g1");
+    expect(mockTypedApi.DELETE).toHaveBeenCalledWith(
+      "/api/user/play-later/{gameId}",
+      { params: { path: { gameId: "g1" } } },
+    );
   });
 });
 
 describe("useReorderPlayLater", () => {
   it("puts new game order to the server", async () => {
-    mockApi.put.mockResolvedValue(undefined);
+    mockTypedApi.PUT.mockReturnValue(ok(undefined));
 
     const { result } = renderHook(() => useReorderPlayLater(), {
       wrapper: createWrapper(),
@@ -173,15 +192,16 @@ describe("useReorderPlayLater", () => {
     });
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(mockApi.put).toHaveBeenCalledWith("/user/play-later/reorder", {
-      gameIds: ["g2", "g1"],
-    });
+    expect(mockTypedApi.PUT).toHaveBeenCalledWith(
+      "/api/user/play-later/reorder",
+      { body: { gameIds: ["g2", "g1"] } },
+    );
   });
 });
 
 describe("useTogglePlayLater", () => {
   it("adds game to play later when not in queue", async () => {
-    mockApi.post.mockResolvedValue(undefined);
+    mockTypedApi.POST.mockReturnValue(ok(undefined));
 
     const { result } = renderHook(() => useTogglePlayLater(), {
       wrapper: createWrapper(),
@@ -192,11 +212,14 @@ describe("useTogglePlayLater", () => {
     });
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(mockApi.post).toHaveBeenCalledWith("/user/play-later/g1");
+    expect(mockTypedApi.POST).toHaveBeenCalledWith(
+      "/api/user/play-later/{gameId}",
+      { params: { path: { gameId: "g1" } } },
+    );
   });
 
   it("removes game from play later when already in queue", async () => {
-    mockApi.delete.mockResolvedValue(undefined);
+    mockTypedApi.DELETE.mockReturnValue(ok(undefined));
 
     const { result } = renderHook(() => useTogglePlayLater(), {
       wrapper: createWrapper(),
@@ -207,11 +230,14 @@ describe("useTogglePlayLater", () => {
     });
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(mockApi.delete).toHaveBeenCalledWith("/user/play-later/g1");
+    expect(mockTypedApi.DELETE).toHaveBeenCalledWith(
+      "/api/user/play-later/{gameId}",
+      { params: { path: { gameId: "g1" } } },
+    );
   });
 
   it("provides a toggle helper that reads isInPlayLater from game", async () => {
-    mockApi.post.mockResolvedValue(undefined);
+    mockTypedApi.POST.mockReturnValue(ok(undefined));
 
     const { result } = renderHook(() => useTogglePlayLater(), {
       wrapper: createWrapper(),
@@ -229,6 +255,9 @@ describe("useTogglePlayLater", () => {
     });
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(mockApi.post).toHaveBeenCalledWith("/user/play-later/g1");
+    expect(mockTypedApi.POST).toHaveBeenCalledWith(
+      "/api/user/play-later/{gameId}",
+      { params: { path: { gameId: "g1" } } },
+    );
   });
 });
