@@ -5,7 +5,6 @@ import (
 	"archive/zip"
 	"fmt"
 	"io"
-	"io/fs"
 	"log/slog"
 	"net/http"
 	"os"
@@ -393,97 +392,8 @@ func (h *GameHandler) GetGame(c *gin.Context) {
 	c.JSON(http.StatusOK, resp)
 }
 
-// DownloadGame serves the ROM file for a game.
-func (h *GameHandler) DownloadGame(c *gin.Context) {
-	id := c.Param("id")
-	var game db.Game
-	if err := h.DB.First(&game, id).Error; err != nil {
-		c.JSON(http.StatusNotFound, ErrorResponse{Error: "game not found"})
-		return
-	}
-
-	// Resolve relative path to absolute for filesystem access
-	absPath, err := storage.ResolveGamePath(game.FilePath, h.GameDirs)
-	if err != nil {
-		db.RecordOperationalEvent(h.DB, db.SystemEventInput{
-			EventType: db.SystemEventROMFileMissing,
-			Metadata: db.ROMFileMissingMetadata{
-				GameID:       game.ID,
-				GameTitle:    game.Title,
-				ExpectedPath: game.FilePath,
-			},
-		})
-		c.JSON(http.StatusNotFound, ErrorResponse{Error: "game file not found"})
-		return
-	}
-
-	// Security: validate the file path is within allowed directories
-	if !storage.ValidateROMPath(absPath, h.GameDirs) {
-		c.JSON(http.StatusForbidden, ErrorResponse{Error: "file access denied"})
-		return
-	}
-
-	// For .cue/.gdi files, serve a tar/zip bundle with companion track files.
-	// This handles both new games (with disc records) and old DB entries
-	// (without disc records) that were created before the scanner change.
-	lower := strings.ToLower(game.FileName)
-
-	// For .scummvm files, serve the entire game directory as a tar archive.
-	// The .scummvm file lives inside a directory of game data files.
-	// absPath resolves to the game directory (FilePath stores the directory, not the .scummvm file).
-	if strings.HasSuffix(lower, ".scummvm") {
-		var files []string
-		filepath.WalkDir(absPath, func(p string, d fs.DirEntry, err error) error {
-			if err != nil || d.IsDir() {
-				return nil
-			}
-			files = append(files, p)
-			return nil
-		})
-
-		if len(files) > 0 {
-			c.Header("Content-Type", "application/x-tar")
-			c.Header("Content-Disposition", fmt.Sprintf("attachment; filename=%q", game.FileName+".tar"))
-			c.Status(http.StatusOK)
-			if err := serveTar(c.Writer, files); err != nil {
-				slog.Warn("error streaming tar for ScummVM game", "game", game.Title, "error", err)
-			}
-			return
-		}
-	}
-
-	if strings.HasSuffix(lower, ".cue") || strings.HasSuffix(lower, ".gdi") {
-		companions, _, err := scanner.DiscCompanionFiles(absPath)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to read disc files"})
-			return
-		}
-
-		format := c.Query("format")
-		if format == "zip" {
-			c.Header("Content-Type", "application/zip")
-			c.Header("Content-Disposition", fmt.Sprintf("attachment; filename=%q", game.FileName+".zip"))
-			c.Status(http.StatusOK)
-			if err := serveZip(c.Writer, companions); err != nil {
-				slog.Warn("error streaming zip for .cue game", "game", game.Title, "error", err)
-			}
-			return
-		}
-
-		if len(companions) > 1 {
-			c.Header("Content-Type", "application/x-tar")
-			c.Header("Content-Disposition", fmt.Sprintf("attachment; filename=%q", game.FileName+".tar"))
-			c.Status(http.StatusOK)
-			if err := serveTar(c.Writer, companions); err != nil {
-				slog.Warn("error streaming tar for .cue game", "game", game.Title, "error", err)
-			}
-			return
-		}
-	}
-
-	c.Header("Content-Disposition", fmt.Sprintf("inline; filename=%q", game.FileName))
-	c.File(absPath)
-}
+// DownloadGame has been migrated to huma — see HumaDownloadGame in
+// huma_downloads.go.
 
 // UpdateMetadata manually updates game metadata.
 func (h *GameHandler) UpdateMetadata(c *gin.Context) {
@@ -812,75 +722,8 @@ func (h *GameHandler) StopPlaying(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"status": "cleared"})
 }
 
-// DownloadDisc serves files for a specific disc in a multi-disc game.
-// For single-file disc formats (.iso, .chd), serves the file directly.
-// For multi-file disc formats (.cue+.bin), streams an uncompressed tar.
-func (h *GameHandler) DownloadDisc(c *gin.Context) {
-	gameID := c.Param("id")
-	discNumberStr := c.Param("discNumber")
-	discNumber, err := strconv.Atoi(discNumberStr)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid disc number"})
-		return
-	}
-
-	var disc db.GameDisc
-	if err := h.DB.Where("game_id = ? AND disc_number = ?", gameID, discNumber).First(&disc).Error; err != nil {
-		c.JSON(http.StatusNotFound, ErrorResponse{Error: "disc not found"})
-		return
-	}
-
-	// Resolve relative path to absolute for filesystem access
-	absDiscPath, err := storage.ResolveGamePath(disc.FilePath, h.GameDirs)
-	if err != nil {
-		c.JSON(http.StatusNotFound, ErrorResponse{Error: "disc file not found"})
-		return
-	}
-
-	// Security: validate the disc file path is within allowed directories
-	if !storage.ValidateROMPath(absDiscPath, h.GameDirs) {
-		c.JSON(http.StatusForbidden, ErrorResponse{Error: "file access denied"})
-		return
-	}
-
-	// Get companion files for this disc
-	companions, _, err := scanner.DiscCompanionFiles(absDiscPath)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to read disc files"})
-		return
-	}
-
-	// EmulatorJS (browser emulation) supports zip but not tar, so the web
-	// frontend requests format=zip. This must be checked before the single-file
-	// early return so that even single-file discs (.iso, .chd) get zipped.
-	format := c.Query("format")
-	if format == "zip" {
-		c.Header("Content-Type", "application/zip")
-		c.Header("Content-Disposition", fmt.Sprintf("attachment; filename=%q", disc.FileName+".zip"))
-		c.Status(http.StatusOK)
-
-		if err := serveZip(c.Writer, companions); err != nil {
-			slog.Warn("error streaming zip for disc", "disc", discNumber, "error", err)
-		}
-		return
-	}
-
-	if len(companions) == 1 {
-		// Single file (.iso, .chd, etc.) — serve directly
-		c.Header("Content-Disposition", fmt.Sprintf("inline; filename=%q", disc.FileName))
-		c.File(companions[0])
-		return
-	}
-
-	// Default: tar stream (used by native player app)
-	c.Header("Content-Type", "application/x-tar")
-	c.Header("Content-Disposition", fmt.Sprintf("attachment; filename=%q", disc.FileName+".tar"))
-	c.Status(http.StatusOK)
-
-	if err := serveTar(c.Writer, companions); err != nil {
-		slog.Warn("error streaming tar for disc", "disc", discNumber, "error", err)
-	}
-}
+// DownloadDisc has been migrated to huma — see HumaDownloadDisc in
+// huma_downloads.go.
 
 // serveTar streams files as an uncompressed tar archive.
 func serveTar(w io.Writer, filePaths []string) error {

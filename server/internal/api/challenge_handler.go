@@ -422,47 +422,11 @@ func (h *ChallengeHandler) DeleteChallenge(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "challenge deleted"})
 }
 
-// DownloadChallengeSave serves the challenge's starting save state.
-func (h *ChallengeHandler) DownloadChallengeSave(c *gin.Context) {
-	id := c.Param("id")
+// DownloadChallengeSave has been migrated to huma — see
+// HumaDownloadChallengeSave in huma_downloads.go.
 
-	var challenge db.Challenge
-	if err := h.DB.First(&challenge, id).Error; err != nil {
-		c.JSON(http.StatusNotFound, ErrorResponse{Error: "challenge not found"})
-		return
-	}
-
-	path := h.Storage.ChallengeSavePath(challenge.ID)
-	if !storage.ValidateROMPath(path, []string{h.Storage.SaveDir}) {
-		c.JSON(http.StatusForbidden, ErrorResponse{Error: "access denied"})
-		return
-	}
-	c.Header("Content-Disposition", "attachment; filename=\"challenge_save\"")
-	c.File(path)
-}
-
-// GetChallengeScreenshot serves the challenge's screenshot.
-func (h *ChallengeHandler) GetChallengeScreenshot(c *gin.Context) {
-	id := c.Param("id")
-
-	var challenge db.Challenge
-	if err := h.DB.First(&challenge, id).Error; err != nil {
-		c.JSON(http.StatusNotFound, ErrorResponse{Error: "challenge not found"})
-		return
-	}
-
-	if challenge.ScreenshotPath == "" {
-		c.JSON(http.StatusNotFound, ErrorResponse{Error: "no screenshot available"})
-		return
-	}
-
-	path := h.Storage.ChallengeScreenshotPath(challenge.ID)
-	if !storage.ValidateROMPath(path, []string{h.Storage.SaveDir}) {
-		c.JSON(http.StatusForbidden, ErrorResponse{Error: "access denied"})
-		return
-	}
-	c.File(path)
-}
+// GetChallengeScreenshot has been migrated to huma — see
+// HumaGetChallengeScreenshot in huma_downloads.go.
 
 // StartAttempt begins a new challenge attempt (server records StartedAt).
 func (h *ChallengeHandler) StartAttempt(c *gin.Context) {

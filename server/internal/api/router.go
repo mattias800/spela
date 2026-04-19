@@ -241,7 +241,7 @@ func NewRouter(cfg Config) (*gin.Engine, func()) {
 	RegisterSharedUploadRoutes(humaAPI, sharedSaveHandler, sharedSessionHandler, cfg.JWTSecret, cfg.DB, userLimiter, uploadLimiter)
 	RegisterNetplayRoutes(humaAPI, netplayHandler, cfg.JWTSecret, cfg.DB, userLimiter)
 	RegisterChallengeRoutes(humaAPI, challengeHandler, cfg.JWTSecret, cfg.DB, userLimiter)
-	RegisterDownloadRoutes(humaAPI, coreHandler, biosHandler, sessionHandler, sharedSaveHandler, sharedSessionHandler, consoleHandler, cfg.JWTSecret, cfg.DB, userLimiter, downloadLimiter)
+	RegisterDownloadRoutes(humaAPI, coreHandler, biosHandler, sessionHandler, sharedSaveHandler, sharedSessionHandler, consoleHandler, gameHandler, challengeHandler, cfg.JWTSecret, cfg.DB, userLimiter, downloadLimiter)
 	RegisterAdminRoutes(humaAPI, adminHandler, cfg.JWTSecret, cfg.DB, userLimiter)
 	adminSystemEventHandler := &SystemEventHandler{DB: cfg.DB}
 	RegisterSystemEventRoutes(humaAPI, adminSystemEventHandler, cfg.JWTSecret, cfg.DB, userLimiter)
@@ -315,12 +315,9 @@ func NewRouter(cfg Config) (*gin.Engine, func()) {
 		//   RegisterExploreChallengeRoutes  (easy-to-complete/hardest-games/almost-done/fresh-challenges/active-challenges)
 		//   RegisterExploreWizardRoutes     (wizard + wizard/results)
 
-		// Games — most endpoints migrated to huma (see RegisterGameRoutes above).
-		// Download endpoints stay on gin because they use c.File()/tar+zip streaming
-		// that doesn't map cleanly to huma typed outputs.
-		api.GET("/games/:id/download", downloadLimiter.RateLimit(), gameHandler.DownloadGame)
-		api.GET("/games/:id/download/:filename", downloadLimiter.RateLimit(), gameHandler.DownloadGame)
-		api.GET("/games/:id/discs/:discNumber/download", downloadLimiter.RateLimit(), gameHandler.DownloadDisc)
+		// Games — fully migrated to huma. JSON endpoints in RegisterGameRoutes
+		// above; download + tar/zip streaming endpoints in RegisterDownloadRoutes
+		// above (downloadGame / downloadGameWithFilename / downloadGameDisc).
 		// /games/:id/artwork — migrated to huma (see RegisterArtworkRoutes above).
 		// /games/:id/similar + /games/:id/developer-games — migrated to huma
 		// (see RegisterDiscoveryRoutes above).
@@ -388,12 +385,10 @@ func NewRouter(cfg Config) (*gin.Engine, func()) {
 		// /users/:id/play-heatmap — migrated to huma (see RegisterUserExtraRoutes above).
 
 		// Challenges — most endpoints migrated to huma
-		// (see RegisterChallengeRoutes above). CreateChallenge stays on raw
-		// gin (multipart upload) along with the save / screenshot file
-		// downloads.
+		// (see RegisterChallengeRoutes above). Save + screenshot downloads
+		// migrated to huma (see RegisterDownloadRoutes). CreateChallenge
+		// stays on raw gin (multipart upload).
 		api.POST("/challenges", challengeHandler.CreateChallenge)
-		api.GET("/challenges/:id/save/download", challengeHandler.DownloadChallengeSave)
-		api.GET("/challenges/:id/screenshot", challengeHandler.GetChallengeScreenshot)
 
 		// Enrichment: Themes, Keywords, Series, Franchises — migrated to huma
 		// (see RegisterEnrichmentRoutes above).

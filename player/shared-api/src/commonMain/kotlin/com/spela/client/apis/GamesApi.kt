@@ -53,6 +53,111 @@ open class GamesApi : ApiClient {
     ): super(baseUrl = baseUrl, httpClient = httpClient)
 
     /**
+     * Download a game&#39;s ROM file
+     * Serves the game&#39;s ROM file. For .scummvm games, packages the entire game directory as tar. For .cue/.gdi multi-file disc games, serves a tar (default) or zip (?format&#x3D;zip) bundle of all companion files.
+     * @param id Game ID.
+     * @param filename Optional download filename — server ignores it; lets clients control the saved filename. (optional)
+     * @param format &#39;zip&#39; to force ZIP packaging for multi-file disc games. Default is .tar (or single-file passthrough). (optional)
+     * @return void
+     */
+    open suspend fun downloadGame(id: kotlin.String, filename: kotlin.String? = null, format: kotlin.String? = null): HttpResponse<Unit> {
+
+        val localVariableAuthNames = listOf<String>()
+
+        val localVariableBody = 
+            io.ktor.client.utils.EmptyContent
+
+        val localVariableQuery = mutableMapOf<String, List<String>>()
+        format?.apply { localVariableQuery["format"] = listOf("$format") }
+        val localVariableHeaders = mutableMapOf<String, String>()
+
+        val localVariableConfig = RequestConfig<kotlin.Any?>(
+            RequestMethod.GET,
+            "/api/games/{id}/download".replace("{" + "id" + "}", "$id").replace("{" + "filename" + "}", "$filename"),
+            query = localVariableQuery,
+            headers = localVariableHeaders,
+            requiresAuthentication = false,
+        )
+
+        return request(
+            localVariableConfig,
+            localVariableBody,
+            localVariableAuthNames
+        ).wrap()
+    }
+
+
+    /**
+     * Download a specific disc of a multi-disc game
+     * For single-file disc formats (.iso, .chd) serves the file directly; for multi-file (.cue+.bin) serves an uncompressed tar (or zip when ?format&#x3D;zip).
+     * @param id Game ID.
+     * @param discNumber Disc number (1-based).
+     * @param format &#39;zip&#39; for ZIP packaging (used by EmulatorJS), default is .tar. (optional)
+     * @return void
+     */
+    open suspend fun downloadGameDisc(id: kotlin.String, discNumber: kotlin.String, format: kotlin.String? = null): HttpResponse<Unit> {
+
+        val localVariableAuthNames = listOf<String>()
+
+        val localVariableBody = 
+            io.ktor.client.utils.EmptyContent
+
+        val localVariableQuery = mutableMapOf<String, List<String>>()
+        format?.apply { localVariableQuery["format"] = listOf("$format") }
+        val localVariableHeaders = mutableMapOf<String, String>()
+
+        val localVariableConfig = RequestConfig<kotlin.Any?>(
+            RequestMethod.GET,
+            "/api/games/{id}/discs/{discNumber}/download".replace("{" + "id" + "}", "$id").replace("{" + "discNumber" + "}", "$discNumber"),
+            query = localVariableQuery,
+            headers = localVariableHeaders,
+            requiresAuthentication = false,
+        )
+
+        return request(
+            localVariableConfig,
+            localVariableBody,
+            localVariableAuthNames
+        ).wrap()
+    }
+
+
+    /**
+     * Download a game&#39;s ROM file (with explicit filename)
+     * Same as downloadGame; the filename path segment is captured but ignored server-side and lets clients control the saved filename.
+     * @param id Game ID.
+     * @param filename Optional download filename — server ignores it; lets clients control the saved filename. (optional)
+     * @param format &#39;zip&#39; to force ZIP packaging for multi-file disc games. Default is .tar (or single-file passthrough). (optional)
+     * @return void
+     */
+    open suspend fun downloadGameWithFilename(id: kotlin.String, filename: kotlin.String? = null, format: kotlin.String? = null): HttpResponse<Unit> {
+
+        val localVariableAuthNames = listOf<String>()
+
+        val localVariableBody = 
+            io.ktor.client.utils.EmptyContent
+
+        val localVariableQuery = mutableMapOf<String, List<String>>()
+        format?.apply { localVariableQuery["format"] = listOf("$format") }
+        val localVariableHeaders = mutableMapOf<String, String>()
+
+        val localVariableConfig = RequestConfig<kotlin.Any?>(
+            RequestMethod.GET,
+            "/api/games/{id}/download/{filename}".replace("{" + "id" + "}", "$id").replace("{" + "filename" + "}", "$filename"),
+            query = localVariableQuery,
+            headers = localVariableHeaders,
+            requiresAuthentication = false,
+        )
+
+        return request(
+            localVariableConfig,
+            localVariableBody,
+            localVariableAuthNames
+        ).wrap()
+    }
+
+
+    /**
      * Get other games by the same developer
      * Returns up to 20 other games by the same developer that are in the local library.
      * @param id Game ID.
