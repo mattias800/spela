@@ -1,11 +1,14 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { api } from "@/lib/api-client";
+import { typedApi, unwrap } from "@/lib/api-client";
 import type { Game } from "@/types/api";
 
 export function usePlayLaterGames() {
   return useQuery({
     queryKey: ["games", "play-later"],
-    queryFn: () => api.get<Game[]>("/user/play-later"),
+    queryFn: async () => {
+      const data = await unwrap(typedApi.GET("/api/user/play-later"));
+      return data as Game[] | undefined;
+    },
   });
 }
 
@@ -13,7 +16,12 @@ export function useAddToPlayLater() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (gameId: string) => api.post(`/user/play-later/${gameId}`),
+    mutationFn: (gameId: string) =>
+      unwrap(
+        typedApi.POST("/api/user/play-later/{gameId}", {
+          params: { path: { gameId } },
+        }),
+      ),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["games"] });
       queryClient.invalidateQueries({ queryKey: ["game"] });
@@ -25,7 +33,12 @@ export function useRemoveFromPlayLater() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (gameId: string) => api.delete(`/user/play-later/${gameId}`),
+    mutationFn: (gameId: string) =>
+      unwrap(
+        typedApi.DELETE("/api/user/play-later/{gameId}", {
+          params: { path: { gameId } },
+        }),
+      ),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["games"] });
       queryClient.invalidateQueries({ queryKey: ["game"] });
@@ -38,7 +51,11 @@ export function useReorderPlayLater() {
 
   return useMutation({
     mutationFn: (gameIds: string[]) =>
-      api.put("/user/play-later/reorder", { gameIds }),
+      unwrap(
+        typedApi.PUT("/api/user/play-later/reorder", {
+          body: { gameIds },
+        }),
+      ),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["games", "play-later"] });
     },
@@ -57,9 +74,17 @@ export function useTogglePlayLater() {
       isInPlayLater: boolean;
     }) => {
       if (isInPlayLater) {
-        await api.delete(`/user/play-later/${gameId}`);
+        await unwrap(
+          typedApi.DELETE("/api/user/play-later/{gameId}", {
+            params: { path: { gameId } },
+          }),
+        );
       } else {
-        await api.post(`/user/play-later/${gameId}`);
+        await unwrap(
+          typedApi.POST("/api/user/play-later/{gameId}", {
+            params: { path: { gameId } },
+          }),
+        );
       }
     },
     onSuccess: () => {
