@@ -91,7 +91,7 @@ export function GameReviews({ gameId }: GameReviewsProps) {
         </div>
       )}
 
-      {data && data.data.length > 0 && (
+      {data && (data.data?.length ?? 0) > 0 && (
         <div className="flex items-center justify-center gap-3 mt-6">
           <Button
             variant="secondary"
