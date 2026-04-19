@@ -10,20 +10,33 @@ import {
 } from "../use-devices";
 
 vi.mock("@/lib/api-client", () => ({
-  api: {
-    get: vi.fn(),
-    put: vi.fn(),
-    delete: vi.fn(),
+  typedApi: {
+    GET: vi.fn(),
+    PUT: vi.fn(),
+    DELETE: vi.fn(),
   },
+  unwrap: vi.fn(<T,>(p: Promise<{ data?: T; error?: unknown; response: Response }>) =>
+    p.then((r) => {
+      if (r.error !== undefined) throw r.error;
+      return r.data;
+    }),
+  ),
 }));
 
-import { api } from "@/lib/api-client";
+import { typedApi } from "@/lib/api-client";
 
-const mockApi = api as unknown as {
-  get: ReturnType<typeof vi.fn>;
-  put: ReturnType<typeof vi.fn>;
-  delete: ReturnType<typeof vi.fn>;
+const mockTypedApi = typedApi as unknown as {
+  GET: ReturnType<typeof vi.fn>;
+  PUT: ReturnType<typeof vi.fn>;
+  DELETE: ReturnType<typeof vi.fn>;
 };
+
+function ok(data: unknown) {
+  return Promise.resolve({
+    data,
+    response: new Response(null, { status: 200 }),
+  });
+}
 
 function createWrapper() {
   const queryClient = new QueryClient({
@@ -69,7 +82,7 @@ const mockDevices = [
 
 describe("useDevices", () => {
   it("fetches the user's devices", async () => {
-    mockApi.get.mockResolvedValue(mockDevices);
+    mockTypedApi.GET.mockReturnValue(ok(mockDevices));
 
     const { result } = renderHook(() => useDevices(), {
       wrapper: createWrapper(),
@@ -77,13 +90,13 @@ describe("useDevices", () => {
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
-    expect(mockApi.get).toHaveBeenCalledWith("/user/devices");
+    expect(mockTypedApi.GET).toHaveBeenCalledWith("/api/user/devices");
     expect(result.current.data).toHaveLength(2);
     expect(result.current.data?.[0].name).toBe("My Phone");
   });
 
   it("handles fetch error", async () => {
-    mockApi.get.mockRejectedValue(new Error("Server error"));
+    mockTypedApi.GET.mockReturnValue(Promise.reject(new Error("Server error")));
 
     const { result } = renderHook(() => useDevices(), {
       wrapper: createWrapper(),
@@ -95,7 +108,7 @@ describe("useDevices", () => {
 
 describe("useUpdateDevice", () => {
   it("sends rename request", async () => {
-    mockApi.put.mockResolvedValue({ id: 1, name: "New Name" });
+    mockTypedApi.PUT.mockReturnValue(ok({ id: 1, name: "New Name" }));
 
     const { result } = renderHook(() => useUpdateDevice(), {
       wrapper: createWrapper(),
@@ -104,13 +117,14 @@ describe("useUpdateDevice", () => {
     result.current.mutate({ id: 1, name: "New Name" });
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(mockApi.put).toHaveBeenCalledWith("/user/devices/1", {
-      name: "New Name",
+    expect(mockTypedApi.PUT).toHaveBeenCalledWith("/api/user/devices/{id}", {
+      params: { path: { id: "1" } },
+      body: { name: "New Name" },
     });
   });
 
   it("handles rename error", async () => {
-    mockApi.put.mockRejectedValue(new Error("Not found"));
+    mockTypedApi.PUT.mockReturnValue(Promise.reject(new Error("Not found")));
 
     const { result } = renderHook(() => useUpdateDevice(), {
       wrapper: createWrapper(),
@@ -124,7 +138,7 @@ describe("useUpdateDevice", () => {
 
 describe("useDeleteDevice", () => {
   it("sends delete request", async () => {
-    mockApi.delete.mockResolvedValue(undefined);
+    mockTypedApi.DELETE.mockReturnValue(ok(undefined));
 
     const { result } = renderHook(() => useDeleteDevice(), {
       wrapper: createWrapper(),
@@ -133,11 +147,14 @@ describe("useDeleteDevice", () => {
     result.current.mutate(1);
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(mockApi.delete).toHaveBeenCalledWith("/user/devices/1");
+    expect(mockTypedApi.DELETE).toHaveBeenCalledWith(
+      "/api/user/devices/{id}",
+      { params: { path: { id: "1" } } },
+    );
   });
 
   it("handles delete error", async () => {
-    mockApi.delete.mockRejectedValue(new Error("Forbidden"));
+    mockTypedApi.DELETE.mockReturnValue(Promise.reject(new Error("Forbidden")));
 
     const { result } = renderHook(() => useDeleteDevice(), {
       wrapper: createWrapper(),
@@ -151,7 +168,9 @@ describe("useDeleteDevice", () => {
 
 describe("useUpdateDevicePreferences", () => {
   it("sends shader preferences update", async () => {
-    mockApi.put.mockResolvedValue({ consoleShaders: { "1": "scanlines" } });
+    mockTypedApi.PUT.mockReturnValue(
+      ok({ consoleShaders: { "1": "scanlines" } }),
+    );
 
     const { result } = renderHook(() => useUpdateDevicePreferences(), {
       wrapper: createWrapper(),
@@ -160,13 +179,17 @@ describe("useUpdateDevicePreferences", () => {
     result.current.mutate({ id: 1, consoleShaders: { "1": "scanlines" } });
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(mockApi.put).toHaveBeenCalledWith("/user/devices/1/preferences", {
-      consoleShaders: { "1": "scanlines" },
-    });
+    expect(mockTypedApi.PUT).toHaveBeenCalledWith(
+      "/api/user/devices/{id}/preferences",
+      {
+        params: { path: { id: "1" } },
+        body: { consoleShaders: { "1": "scanlines" } },
+      },
+    );
   });
 
   it("handles preferences update error", async () => {
-    mockApi.put.mockRejectedValue(new Error("Bad request"));
+    mockTypedApi.PUT.mockReturnValue(Promise.reject(new Error("Bad request")));
 
     const { result } = renderHook(() => useUpdateDevicePreferences(), {
       wrapper: createWrapper(),
