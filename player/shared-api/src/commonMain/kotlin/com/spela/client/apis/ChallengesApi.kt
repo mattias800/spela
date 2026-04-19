@@ -150,6 +150,38 @@ open class ChallengesApi : ApiClient {
 
 
     /**
+     * Download a challenge&#39;s starting save state
+     * Returns the save file that seeds the challenge run. Responds with application/octet-stream.
+     * @param id Challenge ID.
+     * @return void
+     */
+    open suspend fun downloadChallengeSave(id: kotlin.String): HttpResponse<Unit> {
+
+        val localVariableAuthNames = listOf<String>()
+
+        val localVariableBody = 
+            io.ktor.client.utils.EmptyContent
+
+        val localVariableQuery = mutableMapOf<String, List<String>>()
+        val localVariableHeaders = mutableMapOf<String, String>()
+
+        val localVariableConfig = RequestConfig<kotlin.Any?>(
+            RequestMethod.GET,
+            "/api/challenges/{id}/save/download".replace("{" + "id" + "}", "$id"),
+            query = localVariableQuery,
+            headers = localVariableHeaders,
+            requiresAuthentication = false,
+        )
+
+        return request(
+            localVariableConfig,
+            localVariableBody,
+            localVariableAuthNames
+        ).wrap()
+    }
+
+
+    /**
      * Get a challenge by ID
      * Returns a single challenge including creator, game and console metadata. Expired challenges are lazily closed on read.
      * @param id Challenge ID.
@@ -206,6 +238,38 @@ open class ChallengesApi : ApiClient {
         val localVariableConfig = RequestConfig<kotlin.Any?>(
             RequestMethod.GET,
             "/api/challenges/{id}/leaderboard".replace("{" + "id" + "}", "$id"),
+            query = localVariableQuery,
+            headers = localVariableHeaders,
+            requiresAuthentication = false,
+        )
+
+        return request(
+            localVariableConfig,
+            localVariableBody,
+            localVariableAuthNames
+        ).wrap()
+    }
+
+
+    /**
+     * Get a challenge&#39;s screenshot
+     * Returns the screenshot image that illustrates the challenge state.
+     * @param id Challenge ID.
+     * @return void
+     */
+    open suspend fun getChallengeScreenshot(id: kotlin.String): HttpResponse<Unit> {
+
+        val localVariableAuthNames = listOf<String>()
+
+        val localVariableBody = 
+            io.ktor.client.utils.EmptyContent
+
+        val localVariableQuery = mutableMapOf<String, List<String>>()
+        val localVariableHeaders = mutableMapOf<String, String>()
+
+        val localVariableConfig = RequestConfig<kotlin.Any?>(
+            RequestMethod.GET,
+            "/api/challenges/{id}/screenshot".replace("{" + "id" + "}", "$id"),
             query = localVariableQuery,
             headers = localVariableHeaders,
             requiresAuthentication = false,

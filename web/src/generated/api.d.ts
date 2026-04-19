@@ -1388,6 +1388,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/challenges/{id}/save/download": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Download a challenge's starting save state
+         * @description Returns the save file that seeds the challenge run. Responds with application/octet-stream.
+         */
+        get: operations["downloadChallengeSave"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/challenges/{id}/screenshot": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get a challenge's screenshot
+         * @description Returns the screenshot image that illustrates the challenge state.
+         */
+        get: operations["getChallengeScreenshot"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/collections": {
         parameters: {
             query?: never;
@@ -2692,6 +2732,66 @@ export interface paths {
          * @description Returns up to 20 other games by the same developer that are in the local library.
          */
         get: operations["getDeveloperGames"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/games/{id}/discs/{discNumber}/download": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Download a specific disc of a multi-disc game
+         * @description For single-file disc formats (.iso, .chd) serves the file directly; for multi-file (.cue+.bin) serves an uncompressed tar (or zip when ?format=zip).
+         */
+        get: operations["downloadGameDisc"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/games/{id}/download": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Download a game's ROM file
+         * @description Serves the game's ROM file. For .scummvm games, packages the entire game directory as tar. For .cue/.gdi multi-file disc games, serves a tar (default) or zip (?format=zip) bundle of all companion files.
+         */
+        get: operations["downloadGame"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/games/{id}/download/{filename}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Download a game's ROM file (with explicit filename)
+         * @description Same as downloadGame; the filename path segment is captured but ignored server-side and lets clients control the saved filename.
+         */
+        get: operations["downloadGameWithFilename"];
         put?: never;
         post?: never;
         delete?: never;
@@ -11077,6 +11177,66 @@ export interface operations {
             };
         };
     };
+    downloadChallengeSave: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Challenge ID. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HumaError"];
+                };
+            };
+        };
+    };
+    getChallengeScreenshot: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Challenge ID. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HumaError"];
+                };
+            };
+        };
+    };
     listMyCollections: {
         parameters: {
             query?: {
@@ -13317,6 +13477,111 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["DeveloperGameResponse"][] | null;
                 };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HumaError"];
+                };
+            };
+        };
+    };
+    downloadGameDisc: {
+        parameters: {
+            query?: {
+                /** @description 'zip' for ZIP packaging (used by EmulatorJS), default is .tar. */
+                format?: string;
+            };
+            header?: never;
+            path: {
+                /** @description Game ID. */
+                id: string;
+                /** @description Disc number (1-based). */
+                discNumber: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HumaError"];
+                };
+            };
+        };
+    };
+    downloadGame: {
+        parameters: {
+            query?: {
+                /** @description 'zip' to force ZIP packaging for multi-file disc games. Default is .tar (or single-file passthrough). */
+                format?: string;
+            };
+            header?: never;
+            path: {
+                /** @description Game ID. */
+                id: string;
+                /** @description Optional download filename — server ignores it; lets clients control the saved filename. */
+                filename: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HumaError"];
+                };
+            };
+        };
+    };
+    downloadGameWithFilename: {
+        parameters: {
+            query?: {
+                /** @description 'zip' to force ZIP packaging for multi-file disc games. Default is .tar (or single-file passthrough). */
+                format?: string;
+            };
+            header?: never;
+            path: {
+                /** @description Game ID. */
+                id: string;
+                /** @description Optional download filename — server ignores it; lets clients control the saved filename. */
+                filename: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Error */
             default: {

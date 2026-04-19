@@ -14324,6 +14324,90 @@
         ]
       }
     },
+    "/api/challenges/{id}/save/download": {
+      "get": {
+        "description": "Returns the save file that seeds the challenge run. Responds with application/octet-stream.",
+        "operationId": "downloadChallengeSave",
+        "parameters": [
+          {
+            "description": "Challenge ID.",
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "description": "Challenge ID.",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HumaError"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Download a challenge's starting save state",
+        "tags": [
+          "challenges"
+        ]
+      }
+    },
+    "/api/challenges/{id}/screenshot": {
+      "get": {
+        "description": "Returns the screenshot image that illustrates the challenge state.",
+        "operationId": "getChallengeScreenshot",
+        "parameters": [
+          {
+            "description": "Challenge ID.",
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "description": "Challenge ID.",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HumaError"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get a challenge's screenshot",
+        "tags": [
+          "challenges"
+        ]
+      }
+    },
     "/api/collections": {
       "get": {
         "description": "Paginated list of the caller's collections, newest first. Supports optional name substring search.",
@@ -18238,6 +18322,190 @@
           }
         ],
         "summary": "Get other games by the same developer",
+        "tags": [
+          "games"
+        ]
+      }
+    },
+    "/api/games/{id}/discs/{discNumber}/download": {
+      "get": {
+        "description": "For single-file disc formats (.iso, .chd) serves the file directly; for multi-file (.cue+.bin) serves an uncompressed tar (or zip when ?format=zip).",
+        "operationId": "downloadGameDisc",
+        "parameters": [
+          {
+            "description": "Game ID.",
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "description": "Game ID.",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Disc number (1-based).",
+            "in": "path",
+            "name": "discNumber",
+            "required": true,
+            "schema": {
+              "description": "Disc number (1-based).",
+              "type": "string"
+            }
+          },
+          {
+            "description": "'zip' for ZIP packaging (used by EmulatorJS), default is .tar.",
+            "explode": false,
+            "in": "query",
+            "name": "format",
+            "schema": {
+              "description": "'zip' for ZIP packaging (used by EmulatorJS), default is .tar.",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HumaError"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Download a specific disc of a multi-disc game",
+        "tags": [
+          "games"
+        ]
+      }
+    },
+    "/api/games/{id}/download": {
+      "get": {
+        "description": "Serves the game's ROM file. For .scummvm games, packages the entire game directory as tar. For .cue/.gdi multi-file disc games, serves a tar (default) or zip (?format=zip) bundle of all companion files.",
+        "operationId": "downloadGame",
+        "parameters": [
+          {
+            "description": "Game ID.",
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "description": "Game ID.",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Optional download filename — server ignores it; lets clients control the saved filename.",
+            "in": "path",
+            "name": "filename",
+            "schema": {
+              "description": "Optional download filename — server ignores it; lets clients control the saved filename.",
+              "type": "string"
+            }
+          },
+          {
+            "description": "'zip' to force ZIP packaging for multi-file disc games. Default is .tar (or single-file passthrough).",
+            "explode": false,
+            "in": "query",
+            "name": "format",
+            "schema": {
+              "description": "'zip' to force ZIP packaging for multi-file disc games. Default is .tar (or single-file passthrough).",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HumaError"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Download a game's ROM file",
+        "tags": [
+          "games"
+        ]
+      }
+    },
+    "/api/games/{id}/download/{filename}": {
+      "get": {
+        "description": "Same as downloadGame; the filename path segment is captured but ignored server-side and lets clients control the saved filename.",
+        "operationId": "downloadGameWithFilename",
+        "parameters": [
+          {
+            "description": "Game ID.",
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "description": "Game ID.",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Optional download filename — server ignores it; lets clients control the saved filename.",
+            "in": "path",
+            "name": "filename",
+            "schema": {
+              "description": "Optional download filename — server ignores it; lets clients control the saved filename.",
+              "type": "string"
+            }
+          },
+          {
+            "description": "'zip' to force ZIP packaging for multi-file disc games. Default is .tar (or single-file passthrough).",
+            "explode": false,
+            "in": "query",
+            "name": "format",
+            "schema": {
+              "description": "'zip' to force ZIP packaging for multi-file disc games. Default is .tar (or single-file passthrough).",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HumaError"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Download a game's ROM file (with explicit filename)",
         "tags": [
           "games"
         ]

@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"io/fs"
+	"log/slog"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -13,6 +15,7 @@ import (
 	"github.com/danielgtaylor/huma/v2"
 	"github.com/spela/server/internal/bios"
 	"github.com/spela/server/internal/db"
+	"github.com/spela/server/internal/scanner"
 	"github.com/spela/server/internal/storage"
 	"gorm.io/gorm"
 )
@@ -120,6 +123,28 @@ type ConsoleAssetInput struct {
 // BrandingLogoInput is the empty input for GET /api/branding/logo.
 type BrandingLogoInput struct{}
 
+// GameDownloadInput is the input for GET /api/games/{id}/download(/{filename}).
+// The filename is captured but unused — it lets the client request the file
+// under a download-friendly name without changing the served bytes.
+type GameDownloadInput struct {
+	ID       string `path:"id" doc:"Game ID."`
+	Filename string `path:"filename" required:"false" doc:"Optional download filename — server ignores it; lets clients control the saved filename."`
+	Format   string `query:"format" required:"false" doc:"'zip' to force ZIP packaging for multi-file disc games. Default is .tar (or single-file passthrough)."`
+}
+
+// GameDiscDownloadInput is the input for GET
+// /api/games/{id}/discs/{discNumber}/download.
+type GameDiscDownloadInput struct {
+	ID         string `path:"id" doc:"Game ID."`
+	DiscNumber string `path:"discNumber" doc:"Disc number (1-based)."`
+	Format     string `query:"format" required:"false" doc:"'zip' for ZIP packaging (used by EmulatorJS), default is .tar."`
+}
+
+// ChallengeAssetInput is the input for the two challenge download endpoints.
+type ChallengeAssetInput struct {
+	ID string `path:"id" doc:"Challenge ID."`
+}
+
 // --- Registration ------------------------------------------------------------
 
 // RegisterDownloadRoutes wires the non-wildcard binary download endpoints
@@ -141,6 +166,8 @@ func RegisterDownloadRoutes(
 	sharedSaveH *SharedSaveHandler,
 	sharedSessionH *SharedSessionHandler,
 	consoleH *ConsoleHandler,
+	gameH *GameHandler,
+	challengeH *ChallengeHandler,
 	jwtSecret string,
 	database *gorm.DB,
 	userLimiter *RateLimiter,
@@ -298,6 +325,61 @@ func RegisterDownloadRoutes(
 		Description: "Serves the embedded spela-logo.png branding asset.",
 		Tags:        []string{"branding"},
 	}, humaGetBrandingLogo)
+
+	huma.Register(api, huma.Operation{
+		OperationID: "downloadGame",
+		Method:      http.MethodGet,
+		Path:        "/api/games/{id}/download",
+		Summary:     "Download a game's ROM file",
+		Description: "Serves the game's ROM file. For .scummvm games, packages the entire game directory as tar. For .cue/.gdi multi-file disc games, serves a tar (default) or zip (?format=zip) bundle of all companion files.",
+		Tags:        []string{"games"},
+		Middlewares: authedDownloadMW,
+		Security:    sec,
+	}, gameH.HumaDownloadGame)
+
+	huma.Register(api, huma.Operation{
+		OperationID: "downloadGameWithFilename",
+		Method:      http.MethodGet,
+		Path:        "/api/games/{id}/download/{filename}",
+		Summary:     "Download a game's ROM file (with explicit filename)",
+		Description: "Same as downloadGame; the filename path segment is captured but ignored server-side and lets clients control the saved filename.",
+		Tags:        []string{"games"},
+		Middlewares: authedDownloadMW,
+		Security:    sec,
+	}, gameH.HumaDownloadGame)
+
+	huma.Register(api, huma.Operation{
+		OperationID: "downloadGameDisc",
+		Method:      http.MethodGet,
+		Path:        "/api/games/{id}/discs/{discNumber}/download",
+		Summary:     "Download a specific disc of a multi-disc game",
+		Description: "For single-file disc formats (.iso, .chd) serves the file directly; for multi-file (.cue+.bin) serves an uncompressed tar (or zip when ?format=zip).",
+		Tags:        []string{"games"},
+		Middlewares: authedDownloadMW,
+		Security:    sec,
+	}, gameH.HumaDownloadDisc)
+
+	huma.Register(api, huma.Operation{
+		OperationID: "downloadChallengeSave",
+		Method:      http.MethodGet,
+		Path:        "/api/challenges/{id}/save/download",
+		Summary:     "Download a challenge's starting save state",
+		Description: "Returns the save file that seeds the challenge run. Responds with application/octet-stream.",
+		Tags:        []string{"challenges"},
+		Middlewares: authedMW,
+		Security:    sec,
+	}, challengeH.HumaDownloadChallengeSave)
+
+	huma.Register(api, huma.Operation{
+		OperationID: "getChallengeScreenshot",
+		Method:      http.MethodGet,
+		Path:        "/api/challenges/{id}/screenshot",
+		Summary:     "Get a challenge's screenshot",
+		Description: "Returns the screenshot image that illustrates the challenge state.",
+		Tags:        []string{"challenges"},
+		Middlewares: authedMW,
+		Security:    sec,
+	}, challengeH.HumaGetChallengeScreenshot)
 }
 
 // --- Handlers ----------------------------------------------------------------
@@ -579,4 +661,201 @@ func humaGetBrandingLogo(_ context.Context, _ *BrandingLogoInput) (*huma.StreamR
 		return nil, huma.Error404NotFound("logo not found")
 	}
 	return streamBytesInline(data, "image/png"), nil
+}
+
+// HumaDownloadGame is the huma implementation of GET /api/games/{id}/download
+// (and the {filename}-suffixed variant). Handles three packaging modes:
+//   - .scummvm games: tar of the entire game directory.
+//   - .cue/.gdi multi-file disc games: tar (default) or zip (?format=zip).
+//   - everything else: served inline.
+func (h *GameHandler) HumaDownloadGame(_ context.Context, in *GameDownloadInput) (*huma.StreamResponse, error) {
+	var game db.Game
+	if err := h.DB.First(&game, in.ID).Error; err != nil {
+		return nil, huma.Error404NotFound("game not found")
+	}
+
+	absPath, err := storage.ResolveGamePath(game.FilePath, h.GameDirs)
+	if err != nil {
+		db.RecordOperationalEvent(h.DB, db.SystemEventInput{
+			EventType: db.SystemEventROMFileMissing,
+			Metadata: db.ROMFileMissingMetadata{
+				GameID:       game.ID,
+				GameTitle:    game.Title,
+				ExpectedPath: game.FilePath,
+			},
+		})
+		return nil, huma.Error404NotFound("game file not found")
+	}
+
+	if !storage.ValidateROMPath(absPath, h.GameDirs) {
+		return nil, huma.Error403Forbidden("file access denied")
+	}
+
+	lower := strings.ToLower(game.FileName)
+
+	// .scummvm — tar of the directory
+	if strings.HasSuffix(lower, ".scummvm") {
+		var files []string
+		filepath.WalkDir(absPath, func(p string, d fs.DirEntry, err error) error {
+			if err != nil || d.IsDir() {
+				return nil
+			}
+			files = append(files, p)
+			return nil
+		})
+		if len(files) > 0 {
+			downloadName := game.FileName + ".tar"
+			return streamArchiveTar(files, downloadName, game.Title), nil
+		}
+	}
+
+	// .cue/.gdi — multi-file disc; tar or zip
+	if strings.HasSuffix(lower, ".cue") || strings.HasSuffix(lower, ".gdi") {
+		companions, _, err := scanner.DiscCompanionFiles(absPath)
+		if err != nil {
+			return nil, huma.Error500InternalServerError("failed to read disc files")
+		}
+		if in.Format == "zip" {
+			return streamArchiveZip(companions, game.FileName+".zip", game.Title), nil
+		}
+		if len(companions) > 1 {
+			return streamArchiveTar(companions, game.FileName+".tar", game.Title), nil
+		}
+	}
+
+	// Fallback: inline single file. Match the gin "inline" Content-Disposition
+	// (the file may be a ROM that the client renders inline rather than saves).
+	return &huma.StreamResponse{
+		Body: func(hctx huma.Context) {
+			f, err := os.Open(absPath)
+			if err != nil {
+				hctx.SetStatus(http.StatusInternalServerError)
+				return
+			}
+			defer f.Close()
+			hctx.SetHeader("Content-Type", "application/octet-stream")
+			hctx.SetHeader("Content-Disposition", fmt.Sprintf("inline; filename=%q", game.FileName))
+			_, _ = io.Copy(hctx.BodyWriter(), f)
+		},
+	}, nil
+}
+
+// HumaDownloadDisc is the huma implementation of GET
+// /api/games/{id}/discs/{discNumber}/download.
+func (h *GameHandler) HumaDownloadDisc(_ context.Context, in *GameDiscDownloadInput) (*huma.StreamResponse, error) {
+	discNumber, err := strconv.Atoi(in.DiscNumber)
+	if err != nil {
+		return nil, huma.Error400BadRequest("invalid disc number")
+	}
+
+	var disc db.GameDisc
+	if err := h.DB.Where("game_id = ? AND disc_number = ?", in.ID, discNumber).First(&disc).Error; err != nil {
+		return nil, huma.Error404NotFound("disc not found")
+	}
+
+	absDiscPath, err := storage.ResolveGamePath(disc.FilePath, h.GameDirs)
+	if err != nil {
+		return nil, huma.Error404NotFound("disc file not found")
+	}
+	if !storage.ValidateROMPath(absDiscPath, h.GameDirs) {
+		return nil, huma.Error403Forbidden("file access denied")
+	}
+
+	companions, _, err := scanner.DiscCompanionFiles(absDiscPath)
+	if err != nil {
+		return nil, huma.Error500InternalServerError("failed to read disc files")
+	}
+
+	if in.Format == "zip" {
+		return streamArchiveZip(companions, disc.FileName+".zip", "disc "+in.DiscNumber), nil
+	}
+	if len(companions) == 1 {
+		// Single file (.iso, .chd) — serve inline
+		return &huma.StreamResponse{
+			Body: func(hctx huma.Context) {
+				f, err := os.Open(companions[0])
+				if err != nil {
+					hctx.SetStatus(http.StatusInternalServerError)
+					return
+				}
+				defer f.Close()
+				hctx.SetHeader("Content-Type", "application/octet-stream")
+				hctx.SetHeader("Content-Disposition", fmt.Sprintf("inline; filename=%q", disc.FileName))
+				_, _ = io.Copy(hctx.BodyWriter(), f)
+			},
+		}, nil
+	}
+
+	return streamArchiveTar(companions, disc.FileName+".tar", "disc "+in.DiscNumber), nil
+}
+
+// streamArchiveTar returns a StreamResponse that writes an uncompressed tar
+// of the given files. Errors during streaming are logged but not surfaced —
+// once headers are sent the response body is one-way.
+func streamArchiveTar(files []string, downloadName, contextName string) *huma.StreamResponse {
+	return &huma.StreamResponse{
+		Body: func(hctx huma.Context) {
+			hctx.SetHeader("Content-Type", "application/x-tar")
+			hctx.SetHeader("Content-Disposition", fmt.Sprintf("attachment; filename=%q", downloadName))
+			if err := serveTar(hctx.BodyWriter(), files); err != nil {
+				slog.Warn("error streaming tar", "context", contextName, "error", err)
+			}
+		},
+	}
+}
+
+// streamArchiveZip returns a StreamResponse that writes a zip archive.
+func streamArchiveZip(files []string, downloadName, contextName string) *huma.StreamResponse {
+	return &huma.StreamResponse{
+		Body: func(hctx huma.Context) {
+			hctx.SetHeader("Content-Type", "application/zip")
+			hctx.SetHeader("Content-Disposition", fmt.Sprintf("attachment; filename=%q", downloadName))
+			if err := serveZip(hctx.BodyWriter(), files); err != nil {
+				slog.Warn("error streaming zip", "context", contextName, "error", err)
+			}
+		},
+	}
+}
+
+// HumaDownloadChallengeSave is the huma implementation of GET
+// /api/challenges/{id}/save/download.
+func (h *ChallengeHandler) HumaDownloadChallengeSave(_ context.Context, in *ChallengeAssetInput) (*huma.StreamResponse, error) {
+	var challenge db.Challenge
+	if err := h.DB.First(&challenge, in.ID).Error; err != nil {
+		return nil, huma.Error404NotFound("challenge not found")
+	}
+	path := h.Storage.ChallengeSavePath(challenge.ID)
+	if !storage.ValidateROMPath(path, []string{h.Storage.SaveDir}) {
+		return nil, huma.Error403Forbidden("access denied")
+	}
+	return streamFileFromDisk(path, "challenge_save", "application/octet-stream"), nil
+}
+
+// HumaGetChallengeScreenshot is the huma implementation of GET
+// /api/challenges/{id}/screenshot. Mirrors the gin handler — no
+// Content-Disposition (rendered inline by <img>).
+func (h *ChallengeHandler) HumaGetChallengeScreenshot(_ context.Context, in *ChallengeAssetInput) (*huma.StreamResponse, error) {
+	var challenge db.Challenge
+	if err := h.DB.First(&challenge, in.ID).Error; err != nil {
+		return nil, huma.Error404NotFound("challenge not found")
+	}
+	if challenge.ScreenshotPath == "" {
+		return nil, huma.Error404NotFound("no screenshot available")
+	}
+	path := h.Storage.ChallengeScreenshotPath(challenge.ID)
+	if !storage.ValidateROMPath(path, []string{h.Storage.SaveDir}) {
+		return nil, huma.Error403Forbidden("access denied")
+	}
+	return &huma.StreamResponse{
+		Body: func(hctx huma.Context) {
+			f, err := os.Open(path)
+			if err != nil {
+				hctx.SetStatus(http.StatusInternalServerError)
+				return
+			}
+			defer f.Close()
+			hctx.SetHeader("Content-Type", "image/png")
+			_, _ = io.Copy(hctx.BodyWriter(), f)
+		},
+	}, nil
 }

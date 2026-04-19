@@ -356,6 +356,12 @@ func TestOpenAPISpec_HasNewOperations(t *testing.T) {
 		{"/api/consoles/{id}/logo.png", "get", "getConsoleLogoPng"},
 		{"/api/consoles/{id}/preview-screenshot", "get", "getConsolePreviewScreenshot"},
 		{"/api/branding/logo", "get", "getBrandingLogo"},
+		// ROM + challenge downloads
+		{"/api/games/{id}/download", "get", "downloadGame"},
+		{"/api/games/{id}/download/{filename}", "get", "downloadGameWithFilename"},
+		{"/api/games/{id}/discs/{discNumber}/download", "get", "downloadGameDisc"},
+		{"/api/challenges/{id}/save/download", "get", "downloadChallengeSave"},
+		{"/api/challenges/{id}/screenshot", "get", "getChallengeScreenshot"},
 	}
 
 	// Operations that are intentionally public (no auth) — typically images
