@@ -52,9 +52,9 @@ fun com.spela.client.models.ConsoleResponse.toDomain(): Console = Console(
     browserPlayable = browserPlayable,
     playable = playable,
     generation = generation.toInt(),
-    makerName = maker.name,
-    makerCode = maker.code,
-    mediaTypeName = mediaType.name,
+    makerName = maker?.name,
+    makerCode = maker?.code,
+    mediaTypeName = mediaType?.name,
     releaseYear = releaseYear?.toInt(),
     unitsSold = unitsSold,
     summary = summary,
@@ -455,7 +455,7 @@ fun com.spela.client.models.UserStatsResponse.toDomain(): UserStats = UserStats(
     longestStreak = longestStreak.toInt(),
     // Server emits an empty Game placeholder when the user has never
     // played anything — detect via empty id and pass null through.
-    mostPlayedGame = mostPlayedGame.takeIf { it.id.isNotEmpty() }?.toDomain(),
+    mostPlayedGame = mostPlayedGame?.takeIf { it.id.isNotEmpty() }?.toDomain(),
     mostPlayedGameTime = mostPlayedGameTime,
     lastPlayedAt = lastPlayedAt?.toString(),
 )
@@ -877,7 +877,7 @@ fun com.spela.client.models.EntityUserStats.toDeveloperUserStats(): DeveloperDet
         favoriteCount = favoriteCount.toInt(),
         // Server emits an empty Game placeholder when the user has never
         // played anything — detect via empty id and pass null through.
-        mostPlayedGame = mostPlayedGame.takeIf { it.id.isNotEmpty() }?.toDomain(),
+        mostPlayedGame = mostPlayedGame?.takeIf { it.id.isNotEmpty() }?.toDomain(),
     )
 
 fun com.spela.client.models.NameCount.toDeveloperPublisher(): DeveloperDetailPublisher =
@@ -967,7 +967,7 @@ fun com.spela.client.models.EntityUserStats.toPublisherUserStats(): PublisherDet
         totalPlayTime = totalPlayTime,
         gamesPlayed = gamesPlayed.toInt(),
         favoriteCount = favoriteCount.toInt(),
-        mostPlayedGame = mostPlayedGame.takeIf { it.id.isNotEmpty() }?.toDomain(),
+        mostPlayedGame = mostPlayedGame?.takeIf { it.id.isNotEmpty() }?.toDomain(),
     )
 
 fun com.spela.client.models.NameCount.toPublisherDeveloper(): PublisherDetailDeveloper =
