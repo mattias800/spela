@@ -1,68 +1,64 @@
 package api
 
 import (
+	"bytes"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"strconv"
 	"testing"
 
-	"github.com/gin-gonic/gin"
 	"github.com/spela/server/internal/db"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"gorm.io/driver/sqlite"
-	"gorm.io/gorm"
-	"gorm.io/gorm/logger"
 )
 
-func setupDiscoveryTestEnv(t *testing.T) (*gorm.DB, *gin.Engine) {
+// discoveryAuthToken registers a user and returns the access token for use
+// with authenticated discovery routes.
+func discoveryAuthToken(t *testing.T, router http.Handler) string {
 	t.Helper()
-
-	database, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{
-		Logger: logger.Default.LogMode(logger.Silent),
+	body, _ := json.Marshal(map[string]string{
+		"username": "discoverytest",
+		"email":    "discoverytest@example.com",
+		"password": "password123",
 	})
-	require.NoError(t, err)
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("POST", "/api/auth/register", bytes.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	router.ServeHTTP(w, req)
+	require.Equal(t, http.StatusCreated, w.Code)
 
-	err = database.AutoMigrate(
-		&db.Console{}, &db.Game{}, &db.SimilarGame{}, &db.GameReleaseDate{},
-		&db.GameVideo{}, &db.GameLanguageSupport{}, &db.GameAgeRating{},
-	)
-	require.NoError(t, err)
-
-	err = db.SeedConsoles(database)
-	require.NoError(t, err)
-
-	gin.SetMode(gin.TestMode)
-	router := gin.New()
-
-	handler := &GameDiscoveryHandler{DB: database}
-	router.GET("/api/games/:id/similar", handler.GetSimilarGames)
-	router.GET("/api/games/:id/developer-games", handler.GetDeveloperGames)
-
-	return database, router
+	var resp map[string]interface{}
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+	return resp["accessToken"].(string)
 }
 
 func TestGetSimilarGames_GameNotFound(t *testing.T) {
-	_, router := setupDiscoveryTestEnv(t)
+	_, cfg := setupTestEnv(t)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
+	token := discoveryAuthToken(t, router)
 
 	w := httptest.NewRecorder()
 	req := httptest.NewRequest("GET", "/api/games/999/similar", nil)
+	req.Header.Set("Authorization", "Bearer "+token)
 	router.ServeHTTP(w, req)
 
 	assert.Equal(t, http.StatusNotFound, w.Code)
 
 	var resp map[string]interface{}
-	err := json.Unmarshal(w.Body.Bytes(), &resp)
-	require.NoError(t, err)
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
 	assert.Equal(t, "game not found", resp["error"])
 }
 
 func TestGetSimilarGames_NoScraperID(t *testing.T) {
-	database, router := setupDiscoveryTestEnv(t)
+	database, cfg := setupTestEnv(t)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
+	token := discoveryAuthToken(t, router)
 
 	var console db.Console
-	err := database.Where("abbreviation = ?", "NES").First(&console).Error
-	require.NoError(t, err)
+	require.NoError(t, database.Where("abbreviation = ?", "NES").First(&console).Error)
 
 	game := db.Game{
 		ConsoleID: console.ID,
@@ -72,27 +68,28 @@ func TestGetSimilarGames_NoScraperID(t *testing.T) {
 		FileSize:  1024,
 		ScraperID: "", // no IGDB scraper ID
 	}
-	err = database.Create(&game).Error
-	require.NoError(t, err)
+	require.NoError(t, database.Create(&game).Error)
 
 	w := httptest.NewRecorder()
-	req := httptest.NewRequest("GET", "/api/games/1/similar", nil)
+	req := httptest.NewRequest("GET", "/api/games/"+strconv.Itoa(int(game.ID))+"/similar", nil)
+	req.Header.Set("Authorization", "Bearer "+token)
 	router.ServeHTTP(w, req)
 
 	assert.Equal(t, http.StatusOK, w.Code)
 
 	var result []SimilarGameResponse
-	err = json.Unmarshal(w.Body.Bytes(), &result)
-	require.NoError(t, err)
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &result))
 	assert.Empty(t, result)
 }
 
 func TestGetSimilarGames_ReturnsCachedData(t *testing.T) {
-	database, router := setupDiscoveryTestEnv(t)
+	database, cfg := setupTestEnv(t)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
+	token := discoveryAuthToken(t, router)
 
 	var console db.Console
-	err := database.Where("abbreviation = ?", "NES").First(&console).Error
-	require.NoError(t, err)
+	require.NoError(t, database.Where("abbreviation = ?", "NES").First(&console).Error)
 
 	game := db.Game{
 		ConsoleID: console.ID,
@@ -102,40 +99,37 @@ func TestGetSimilarGames_ReturnsCachedData(t *testing.T) {
 		FileSize:  1024,
 		ScraperID: "igdb:1234",
 	}
-	err = database.Create(&game).Error
-	require.NoError(t, err)
+	require.NoError(t, database.Create(&game).Error)
 
 	// Pre-populate cache
 	similar1 := db.SimilarGame{
-		GameID:         game.ID,
-		IGDBGameID:     5678,
-		Name:           "Super Mario Bros. 2",
-		CoverImageID:   "co9999",
-		CoverLocalPath: "NES/5678/cover.jpg",
+		GameID:            game.ID,
+		IGDBGameID:        5678,
+		Name:              "Super Mario Bros. 2",
+		CoverImageID:      "co9999",
+		CoverLocalPath:    "NES/5678/cover.jpg",
 		IGDBCriticsRating: 85.5,
 	}
 	similar2 := db.SimilarGame{
-		GameID:         game.ID,
-		IGDBGameID:     9012,
-		Name:           "Kirby's Adventure",
-		CoverImageID:   "co8888",
-		CoverLocalPath: "NES/9012/cover.jpg",
+		GameID:            game.ID,
+		IGDBGameID:        9012,
+		Name:              "Kirby's Adventure",
+		CoverImageID:      "co8888",
+		CoverLocalPath:    "NES/9012/cover.jpg",
 		IGDBCriticsRating: 82.0,
 	}
-	err = database.Create(&similar1).Error
-	require.NoError(t, err)
-	err = database.Create(&similar2).Error
-	require.NoError(t, err)
+	require.NoError(t, database.Create(&similar1).Error)
+	require.NoError(t, database.Create(&similar2).Error)
 
 	w := httptest.NewRecorder()
-	req := httptest.NewRequest("GET", "/api/games/1/similar", nil)
+	req := httptest.NewRequest("GET", "/api/games/"+strconv.Itoa(int(game.ID))+"/similar", nil)
+	req.Header.Set("Authorization", "Bearer "+token)
 	router.ServeHTTP(w, req)
 
 	assert.Equal(t, http.StatusOK, w.Code)
 
 	var result []SimilarGameResponse
-	err = json.Unmarshal(w.Body.Bytes(), &result)
-	require.NoError(t, err)
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &result))
 	assert.Len(t, result, 2)
 	assert.Equal(t, "Super Mario Bros. 2", result[0].Name)
 	assert.Equal(t, 85.5, result[0].IGDBCriticsRating)
@@ -144,11 +138,13 @@ func TestGetSimilarGames_ReturnsCachedData(t *testing.T) {
 }
 
 func TestGetSimilarGames_CrossReferencesLocalLibrary(t *testing.T) {
-	database, router := setupDiscoveryTestEnv(t)
+	database, cfg := setupTestEnv(t)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
+	token := discoveryAuthToken(t, router)
 
 	var console db.Console
-	err := database.Where("abbreviation = ?", "NES").First(&console).Error
-	require.NoError(t, err)
+	require.NoError(t, database.Where("abbreviation = ?", "NES").First(&console).Error)
 
 	game := db.Game{
 		ConsoleID: console.ID,
@@ -158,8 +154,7 @@ func TestGetSimilarGames_CrossReferencesLocalLibrary(t *testing.T) {
 		FileSize:  1024,
 		ScraperID: "igdb:1234",
 	}
-	err = database.Create(&game).Error
-	require.NoError(t, err)
+	require.NoError(t, database.Create(&game).Error)
 
 	// Create a local game that matches one of the similar games
 	localMatch := db.Game{
@@ -169,55 +164,58 @@ func TestGetSimilarGames_CrossReferencesLocalLibrary(t *testing.T) {
 		FilePath:  "/tmp/kirby.nes",
 		FileSize:  2048,
 	}
-	err = database.Create(&localMatch).Error
-	require.NoError(t, err)
+	require.NoError(t, database.Create(&localMatch).Error)
 
 	// Pre-populate cache
 	similar := db.SimilarGame{
-		GameID:       game.ID,
-		IGDBGameID:   9012,
-		Name:         "Kirby's Adventure",
-		CoverImageID: "co8888",
+		GameID:            game.ID,
+		IGDBGameID:        9012,
+		Name:              "Kirby's Adventure",
+		CoverImageID:      "co8888",
 		IGDBCriticsRating: 82.0,
 	}
-	err = database.Create(&similar).Error
-	require.NoError(t, err)
+	require.NoError(t, database.Create(&similar).Error)
 
 	w := httptest.NewRecorder()
-	req := httptest.NewRequest("GET", "/api/games/1/similar", nil)
+	req := httptest.NewRequest("GET", "/api/games/"+strconv.Itoa(int(game.ID))+"/similar", nil)
+	req.Header.Set("Authorization", "Bearer "+token)
 	router.ServeHTTP(w, req)
 
 	assert.Equal(t, http.StatusOK, w.Code)
 
 	var result []SimilarGameResponse
-	err = json.Unmarshal(w.Body.Bytes(), &result)
-	require.NoError(t, err)
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &result))
 	assert.Len(t, result, 1)
-	assert.NotNil(t, result[0].LocalGameId, "should have localGameId when local game matches")
-	assert.Equal(t, "2", *result[0].LocalGameId)
+	require.NotNil(t, result[0].LocalGameId, "should have localGameId when local game matches")
+	assert.Equal(t, strconv.Itoa(int(localMatch.ID)), *result[0].LocalGameId)
 }
 
 func TestGetDeveloperGames_GameNotFound(t *testing.T) {
-	_, router := setupDiscoveryTestEnv(t)
+	_, cfg := setupTestEnv(t)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
+	token := discoveryAuthToken(t, router)
 
 	w := httptest.NewRecorder()
 	req := httptest.NewRequest("GET", "/api/games/999/developer-games", nil)
+	req.Header.Set("Authorization", "Bearer "+token)
 	router.ServeHTTP(w, req)
 
 	assert.Equal(t, http.StatusNotFound, w.Code)
 
 	var resp map[string]interface{}
-	err := json.Unmarshal(w.Body.Bytes(), &resp)
-	require.NoError(t, err)
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
 	assert.Equal(t, "game not found", resp["error"])
 }
 
 func TestGetDeveloperGames_NoDeveloper(t *testing.T) {
-	database, router := setupDiscoveryTestEnv(t)
+	database, cfg := setupTestEnv(t)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
+	token := discoveryAuthToken(t, router)
 
 	var console db.Console
-	err := database.Where("abbreviation = ?", "NES").First(&console).Error
-	require.NoError(t, err)
+	require.NoError(t, database.Where("abbreviation = ?", "NES").First(&console).Error)
 
 	game := db.Game{
 		ConsoleID: console.ID,
@@ -227,27 +225,28 @@ func TestGetDeveloperGames_NoDeveloper(t *testing.T) {
 		FileSize:  1024,
 		Developer: "", // no developer
 	}
-	err = database.Create(&game).Error
-	require.NoError(t, err)
+	require.NoError(t, database.Create(&game).Error)
 
 	w := httptest.NewRecorder()
-	req := httptest.NewRequest("GET", "/api/games/1/developer-games", nil)
+	req := httptest.NewRequest("GET", "/api/games/"+strconv.Itoa(int(game.ID))+"/developer-games", nil)
+	req.Header.Set("Authorization", "Bearer "+token)
 	router.ServeHTTP(w, req)
 
 	assert.Equal(t, http.StatusOK, w.Code)
 
 	var result []DeveloperGameResponse
-	err = json.Unmarshal(w.Body.Bytes(), &result)
-	require.NoError(t, err)
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &result))
 	assert.Empty(t, result)
 }
 
 func TestGetDeveloperGames_ReturnsOtherGames(t *testing.T) {
-	database, router := setupDiscoveryTestEnv(t)
+	database, cfg := setupTestEnv(t)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
+	token := discoveryAuthToken(t, router)
 
 	var console db.Console
-	err := database.Where("abbreviation = ?", "NES").First(&console).Error
-	require.NoError(t, err)
+	require.NoError(t, database.Where("abbreviation = ?", "NES").First(&console).Error)
 
 	game1 := db.Game{
 		ConsoleID: console.ID,
@@ -289,24 +288,20 @@ func TestGetDeveloperGames_ReturnsOtherGames(t *testing.T) {
 		Developer: "Sega",
 	}
 
-	err = database.Create(&game1).Error
-	require.NoError(t, err)
-	err = database.Create(&game2).Error
-	require.NoError(t, err)
-	err = database.Create(&game3).Error
-	require.NoError(t, err)
-	err = database.Create(&game4).Error
-	require.NoError(t, err)
+	require.NoError(t, database.Create(&game1).Error)
+	require.NoError(t, database.Create(&game2).Error)
+	require.NoError(t, database.Create(&game3).Error)
+	require.NoError(t, database.Create(&game4).Error)
 
 	w := httptest.NewRecorder()
-	req := httptest.NewRequest("GET", "/api/games/1/developer-games", nil)
+	req := httptest.NewRequest("GET", "/api/games/"+strconv.Itoa(int(game1.ID))+"/developer-games", nil)
+	req.Header.Set("Authorization", "Bearer "+token)
 	router.ServeHTTP(w, req)
 
 	assert.Equal(t, http.StatusOK, w.Code)
 
 	var result []DeveloperGameResponse
-	err = json.Unmarshal(w.Body.Bytes(), &result)
-	require.NoError(t, err)
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &result))
 	assert.Len(t, result, 2, "should return 2 other Nintendo games, excluding the queried game and Sega game")
 
 	// Should be sorted alphabetically
@@ -314,8 +309,8 @@ func TestGetDeveloperGames_ReturnsOtherGames(t *testing.T) {
 	assert.Equal(t, "Super Mario Bros. 2", result[1].Name)
 
 	// Should include local game IDs
-	assert.Equal(t, "3", result[0].LocalGameId)
-	assert.Equal(t, "2", result[1].LocalGameId)
+	assert.Equal(t, strconv.Itoa(int(game3.ID)), result[0].LocalGameId)
+	assert.Equal(t, strconv.Itoa(int(game2.ID)), result[1].LocalGameId)
 
 	// Should resolve cover URLs
 	assert.Equal(t, "/api/images/NES/3/boxart.jpg", result[0].CoverUrl)
@@ -323,11 +318,13 @@ func TestGetDeveloperGames_ReturnsOtherGames(t *testing.T) {
 }
 
 func TestGetDeveloperGames_ExcludesQueriedGame(t *testing.T) {
-	database, router := setupDiscoveryTestEnv(t)
+	database, cfg := setupTestEnv(t)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
+	token := discoveryAuthToken(t, router)
 
 	var console db.Console
-	err := database.Where("abbreviation = ?", "NES").First(&console).Error
-	require.NoError(t, err)
+	require.NoError(t, database.Where("abbreviation = ?", "NES").First(&console).Error)
 
 	game := db.Game{
 		ConsoleID: console.ID,
@@ -337,21 +334,22 @@ func TestGetDeveloperGames_ExcludesQueriedGame(t *testing.T) {
 		FileSize:  1024,
 		Developer: "SoloDev",
 	}
-	err = database.Create(&game).Error
-	require.NoError(t, err)
+	require.NoError(t, database.Create(&game).Error)
 
 	w := httptest.NewRecorder()
-	req := httptest.NewRequest("GET", "/api/games/1/developer-games", nil)
+	req := httptest.NewRequest("GET", "/api/games/"+strconv.Itoa(int(game.ID))+"/developer-games", nil)
+	req.Header.Set("Authorization", "Bearer "+token)
 	router.ServeHTTP(w, req)
 
 	assert.Equal(t, http.StatusOK, w.Code)
 
 	var result []DeveloperGameResponse
-	err = json.Unmarshal(w.Body.Bytes(), &result)
-	require.NoError(t, err)
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &result))
 	assert.Empty(t, result, "should not return the queried game itself")
 }
 
+// TestParseIGDBGameID exercises the package-private parseIGDBGameID helper.
+// This is a pure unit test — not wired to any HTTP route.
 func TestParseIGDBGameID(t *testing.T) {
 	tests := []struct {
 		name      string
