@@ -16,7 +16,7 @@ import { useToast } from "@/components/ui";
 import { useGamepadConnected } from "@/hooks/use-gamepad";
 import { useAutoSaveInfo } from "@/hooks/use-sessions";
 import { useQueryClient } from "@tanstack/react-query";
-import { api } from "@/lib/api-client";
+import { api, typedApi, unwrap } from "@/lib/api-client";
 import { toEmulatorJsShader } from "@/lib/shader-mapping";
 import { PlayToolbar } from "@/features/play/components/play-toolbar";
 import { EmulatorOverlay } from "@/features/play/components/emulator-overlay";
@@ -150,11 +150,15 @@ export function PlayPage() {
     },
     onError: (err) => {
       toast("error", `Emulator error: ${err}`);
-      api.post("/emulator/error", {
-        error: err,
-        gameId: id ?? "",
-        core: emulatorJsCore ?? "",
-      }).catch(() => {});
+      unwrap(
+        typedApi.POST("/api/emulator/error", {
+          body: {
+            error: err,
+            gameId: id ?? "",
+            core: emulatorJsCore ?? "",
+          },
+        }),
+      ).catch(() => {});
     },
     onSramUpdate: (data) => {
       saveManager.enqueueSave(data, true, "sram_autosave");
