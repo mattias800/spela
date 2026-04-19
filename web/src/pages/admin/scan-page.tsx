@@ -367,7 +367,7 @@ function ScrapeCard() {
                 { mode: "new", console: consoleParam },
                 {
                   onSuccess: (data) => {
-                    const n = data.total;
+                    const n = data?.total ?? 0;
                     toast(
                       n === 0 ? "info" : "success",
                       n === 0
@@ -397,7 +397,7 @@ function ScrapeCard() {
                 { mode: "fallback", console: consoleParam },
                 {
                   onSuccess: (data) => {
-                    const n = data.total;
+                    const n = data?.total ?? 0;
                     toast(
                       n === 0 ? "info" : "success",
                       n === 0
@@ -427,7 +427,7 @@ function ScrapeCard() {
                 { mode: "all", console: consoleParam },
                 {
                   onSuccess: (data) => {
-                    const n = data.total;
+                    const n = data?.total ?? 0;
                     toast(
                       n === 0 ? "info" : "success",
                       n === 0
@@ -457,7 +457,7 @@ function ScrapeCard() {
                 { mode: "ra", console: consoleParam },
                 {
                   onSuccess: (data) => {
-                    const n = data.total;
+                    const n = data?.total ?? 0;
                     toast(
                       n === 0 ? "info" : "success",
                       n === 0

@@ -64,11 +64,11 @@ export function IgdbStep({ onSkip, onSave }: IgdbStepProps) {
       { clientId, clientSecret },
       {
         onSuccess: (data) => {
-          if (data.success) {
+          if (data?.success) {
             setTestStatus("success");
           } else {
             setTestStatus("error");
-            setTestError(data.error ?? "Authentication failed");
+            setTestError(data?.error ?? "Authentication failed");
           }
         },
         onError: () => {
