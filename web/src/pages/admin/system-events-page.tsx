@@ -20,6 +20,7 @@ import type {
   SystemEvent,
   SystemEventType,
   SystemEventCategoryCode,
+  SystemEventTypeInfo,
 } from "@/types/api";
 
 const PAGE_SIZE = 50;
@@ -89,7 +90,7 @@ export function AdminSystemEventsPage() {
         ip={ip}
         since={since}
         showDismissed={showDismissed}
-        typeInfos={typesData?.types}
+        typeInfos={(typesData?.types ?? undefined) as SystemEventTypeInfo[] | undefined}
         onEventTypesChange={(t) => updateParams({ eventType: t })}
         onCategoryChange={(c) => updateParams({ category: c })}
         onUsernameChange={(v) => updateParams({ username: v })}
@@ -152,7 +153,7 @@ export function AdminSystemEventsPage() {
           )}
 
           <SystemEventsTable
-            events={data?.data}
+            events={(data?.data ?? undefined) as SystemEvent[] | undefined}
             isLoading={isLoading}
             onRowClick={setDetailEvent}
             onDismiss={(id) => dismissMutation.mutate(id)}
