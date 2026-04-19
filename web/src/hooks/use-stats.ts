@@ -1,29 +1,23 @@
 import { useQuery } from "@tanstack/react-query";
-import { api } from "@/lib/api-client";
-import type {
-  MostPlayedGamesResponse,
-  MostActivePlayersResponse,
-  UserStats,
-} from "@/types/api";
+import { typedApi, unwrap } from "@/lib/api-client";
 
 export function useMostPlayedGames() {
   return useQuery({
     queryKey: ["stats", "most-played"],
-    queryFn: () => api.get<MostPlayedGamesResponse>("/stats/most-played"),
+    queryFn: () => unwrap(typedApi.GET("/api/stats/most-played")),
   });
 }
 
 export function useMostActivePlayers() {
   return useQuery({
     queryKey: ["stats", "most-active-players"],
-    queryFn: () =>
-      api.get<MostActivePlayersResponse>("/stats/most-active-players"),
+    queryFn: () => unwrap(typedApi.GET("/api/stats/most-active-players")),
   });
 }
 
 export function useUserStats() {
   return useQuery({
     queryKey: ["user-stats"],
-    queryFn: () => api.get<UserStats>("/user/stats"),
+    queryFn: () => unwrap(typedApi.GET("/api/user/stats")),
   });
 }
