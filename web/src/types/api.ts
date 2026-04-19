@@ -779,20 +779,12 @@ export interface ActivityEvent {
   id: string;
   userId: string;
   username: string;
-  userAvatarUrl?: string;
-  eventType:
-    | "started_playing"
-    | "favorited_game"
-    | "rated_game"
-    | "shared_save"
-    | "queued_play_later"
-    | "challenge_created"
-    | "challenge_completed"
-    | "challenge_record";
+  avatarUrl?: string;
+  eventType: string;
   gameId: string;
   gameTitle: string;
   gameCoverUrl?: string;
-  gameConsoleName: string;
+  consoleName?: string;
   metadata?: Record<string, unknown>;
   createdAt: string;
 }

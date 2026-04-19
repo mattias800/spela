@@ -5,20 +5,33 @@ import { createElement, type ReactNode } from "react";
 import { useOnlineUsers, useActivityFeed } from "../use-social";
 
 vi.mock("@/lib/api-client", () => ({
-  api: {
-    get: vi.fn(),
+  typedApi: {
+    GET: vi.fn(),
   },
+  unwrap: vi.fn(<T,>(p: Promise<{ data?: T; error?: unknown; response: Response }>) =>
+    p.then((r) => {
+      if (r.error !== undefined) throw r.error;
+      return r.data;
+    }),
+  ),
 }));
 
 vi.mock("@/hooks/use-websocket", () => ({
   useWebSocketEvent: vi.fn(),
 }));
 
-import { api } from "@/lib/api-client";
+import { typedApi } from "@/lib/api-client";
 
-const mockApi = api as unknown as {
-  get: ReturnType<typeof vi.fn>;
+const mockTypedApi = typedApi as unknown as {
+  GET: ReturnType<typeof vi.fn>;
 };
+
+function ok(data: unknown) {
+  return Promise.resolve({
+    data,
+    response: new Response(null, { status: 200 }),
+  });
+}
 
 function createWrapper() {
   const queryClient = new QueryClient({
@@ -63,12 +76,12 @@ const mockActivityFeed = {
       id: "evt-1",
       userId: "user-1",
       username: "alice",
-      userAvatarUrl: "https://example.com/avatar1.png",
+      avatarUrl: "https://example.com/avatar1.png",
       eventType: "started_playing",
       gameId: "game-1",
       gameTitle: "Super Mario Bros",
       gameCoverUrl: "https://example.com/cover.png",
-      gameConsoleName: "NES",
+      consoleName: "NES",
       metadata: {},
       createdAt: "2026-02-13T10:00:00Z",
     },
@@ -79,7 +92,7 @@ const mockActivityFeed = {
       eventType: "favorited_game",
       gameId: "game-2",
       gameTitle: "Zelda",
-      gameConsoleName: "NES",
+      consoleName: "NES",
       metadata: {},
       createdAt: "2026-02-13T09:00:00Z",
     },
@@ -91,7 +104,7 @@ const mockActivityFeed = {
 
 describe("useOnlineUsers", () => {
   it("fetches online users", async () => {
-    mockApi.get.mockResolvedValue(mockOnlineUsers);
+    mockTypedApi.GET.mockReturnValue(ok(mockOnlineUsers));
 
     const { result } = renderHook(() => useOnlineUsers(), {
       wrapper: createWrapper(),
@@ -99,16 +112,16 @@ describe("useOnlineUsers", () => {
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
-    expect(mockApi.get).toHaveBeenCalledWith("/social/online");
+    expect(mockTypedApi.GET).toHaveBeenCalledWith("/api/social/online");
     expect(result.current.data?.users).toHaveLength(2);
-    expect(result.current.data?.users[0].username).toBe("alice");
-    expect(result.current.data?.users[0].currentGame?.title).toBe(
+    expect(result.current.data?.users?.[0].username).toBe("alice");
+    expect(result.current.data?.users?.[0].currentGame?.title).toBe(
       "Super Mario Bros",
     );
   });
 
   it("handles fetch error", async () => {
-    mockApi.get.mockRejectedValue(new Error("Network error"));
+    mockTypedApi.GET.mockReturnValue(Promise.reject(new Error("Network error")));
 
     const { result } = renderHook(() => useOnlineUsers(), {
       wrapper: createWrapper(),
@@ -120,7 +133,7 @@ describe("useOnlineUsers", () => {
 
 describe("useActivityFeed", () => {
   it("fetches activity feed with default pagination", async () => {
-    mockApi.get.mockResolvedValue(mockActivityFeed);
+    mockTypedApi.GET.mockReturnValue(ok(mockActivityFeed));
 
     const { result } = renderHook(() => useActivityFeed(), {
       wrapper: createWrapper(),
@@ -128,15 +141,15 @@ describe("useActivityFeed", () => {
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
-    expect(mockApi.get).toHaveBeenCalledWith(
-      "/social/activity?page=1&pageSize=20",
-    );
+    expect(mockTypedApi.GET).toHaveBeenCalledWith("/api/social/activity", {
+      params: { query: { page: 1, pageSize: 20 } },
+    });
     expect(result.current.data?.data).toHaveLength(2);
     expect(result.current.data?.total).toBe(2);
   });
 
   it("fetches activity feed with custom pagination", async () => {
-    mockApi.get.mockResolvedValue({ ...mockActivityFeed, page: 2 });
+    mockTypedApi.GET.mockReturnValue(ok({ ...mockActivityFeed, page: 2 }));
 
     const { result } = renderHook(() => useActivityFeed(2, 10), {
       wrapper: createWrapper(),
@@ -144,13 +157,13 @@ describe("useActivityFeed", () => {
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
-    expect(mockApi.get).toHaveBeenCalledWith(
-      "/social/activity?page=2&pageSize=10",
-    );
+    expect(mockTypedApi.GET).toHaveBeenCalledWith("/api/social/activity", {
+      params: { query: { page: 2, pageSize: 10 } },
+    });
   });
 
   it("handles fetch error", async () => {
-    mockApi.get.mockRejectedValue(new Error("Server error"));
+    mockTypedApi.GET.mockReturnValue(Promise.reject(new Error("Server error")));
 
     const { result } = renderHook(() => useActivityFeed(), {
       wrapper: createWrapper(),
