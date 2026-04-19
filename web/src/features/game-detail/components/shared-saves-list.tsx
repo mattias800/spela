@@ -115,9 +115,9 @@ export function SharedSavesList({ gameId }: SharedSavesListProps) {
                         { gameId, saveId: save.id },
                         {
                           onSuccess: (session) => {
-                            navigate(
-                              `/games/${gameId}/play/${session.id}`,
-                            );
+                            if (session) {
+                              navigate(`/games/${gameId}/play/${session.id}`);
+                            }
                           },
                           onError: () => {
                             toast(
@@ -165,7 +165,7 @@ export function SharedSavesList({ gameId }: SharedSavesListProps) {
         </div>
       )}
 
-      {data && data.data.length > 0 && data.total > pageSize && (
+      {data && (data.data?.length ?? 0) > 0 && data.total > pageSize && (
         <div className="flex items-center justify-center gap-3 mt-6">
           <Button
             variant="secondary"

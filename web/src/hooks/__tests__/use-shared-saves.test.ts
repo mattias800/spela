@@ -8,25 +8,53 @@ import {
   useCreateSessionFromSharedSave,
 } from "../use-shared-saves";
 
-vi.mock("@/lib/api-client", () => ({
-  api: {
-    get: vi.fn(),
-    post: vi.fn(),
-    upload: vi.fn(),
-    delete: vi.fn(),
-    getAccessToken: vi.fn(() => "test-token"),
-  },
-}));
+// Mock the typedApi client + unwrap helper. typedApi methods return
+// { data, error, response } in production; unwrap throws on error and returns
+// data on success. The mocks below let tests resolve/reject mutation/query
+// calls directly, mimicking the previous api.get/post/delete pattern.
+vi.mock("@/lib/api-client", () => {
+  const respond = (data: unknown) =>
+    Promise.resolve({ data, response: new Response(null, { status: 200 }) });
+  const reject = (err: Error) => Promise.reject(err);
+  return {
+    typedApi: {
+      GET: vi.fn(),
+      POST: vi.fn(),
+      PUT: vi.fn(),
+      DELETE: vi.fn(),
+    },
+    unwrap: vi.fn(<T>(p: Promise<{ data?: T; error?: unknown; response: Response }>) =>
+      p.then((r) => {
+        if (r.error !== undefined) throw r.error;
+        return r.data;
+      }),
+    ),
+    api: {
+      get: vi.fn(),
+      post: vi.fn(),
+      upload: vi.fn(),
+      delete: vi.fn(),
+      getAccessToken: vi.fn(() => "test-token"),
+    },
+    __helpers: { respond, reject },
+  };
+});
 
-import { api } from "@/lib/api-client";
+import { typedApi } from "@/lib/api-client";
 
-const mockApi = api as unknown as {
-  get: ReturnType<typeof vi.fn>;
-  post: ReturnType<typeof vi.fn>;
-  upload: ReturnType<typeof vi.fn>;
-  delete: ReturnType<typeof vi.fn>;
-  getAccessToken: ReturnType<typeof vi.fn>;
+const mockTypedApi = typedApi as unknown as {
+  GET: ReturnType<typeof vi.fn>;
+  POST: ReturnType<typeof vi.fn>;
+  PUT: ReturnType<typeof vi.fn>;
+  DELETE: ReturnType<typeof vi.fn>;
 };
+
+function ok(data: unknown) {
+  return Promise.resolve({
+    data,
+    response: new Response(null, { status: 200 }),
+  });
+}
 
 function createWrapper() {
   const queryClient = new QueryClient({
@@ -76,7 +104,7 @@ const mockSharedSaves = {
 
 describe("useSharedSaves", () => {
   it("fetches shared saves for a game", async () => {
-    mockApi.get.mockResolvedValue(mockSharedSaves);
+    mockTypedApi.GET.mockReturnValue(ok(mockSharedSaves));
 
     const { result } = renderHook(() => useSharedSaves("g1"), {
       wrapper: createWrapper(),
@@ -84,15 +112,16 @@ describe("useSharedSaves", () => {
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
-    expect(mockApi.get).toHaveBeenCalledWith(
-      "/games/g1/shared-saves?page=1&pageSize=20",
+    expect(mockTypedApi.GET).toHaveBeenCalledWith(
+      "/api/games/{id}/shared-saves",
+      { params: { path: { id: "g1" }, query: { page: 1, pageSize: 20 } } },
     );
     expect(result.current.data?.data).toHaveLength(2);
-    expect(result.current.data?.data[0].name).toBe("Final Boss");
+    expect(result.current.data?.data?.[0].name).toBe("Final Boss");
   });
 
   it("fetches with custom pagination", async () => {
-    mockApi.get.mockResolvedValue({ ...mockSharedSaves, page: 2 });
+    mockTypedApi.GET.mockReturnValue(ok({ ...mockSharedSaves, page: 2 }));
 
     const { result } = renderHook(() => useSharedSaves("g1", 2, 10), {
       wrapper: createWrapper(),
@@ -100,13 +129,14 @@ describe("useSharedSaves", () => {
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
-    expect(mockApi.get).toHaveBeenCalledWith(
-      "/games/g1/shared-saves?page=2&pageSize=10",
+    expect(mockTypedApi.GET).toHaveBeenCalledWith(
+      "/api/games/{id}/shared-saves",
+      { params: { path: { id: "g1" }, query: { page: 2, pageSize: 10 } } },
     );
   });
 
   it("handles fetch error", async () => {
-    mockApi.get.mockRejectedValue(new Error("Server error"));
+    mockTypedApi.GET.mockReturnValue(Promise.reject(new Error("Server error")));
 
     const { result } = renderHook(() => useSharedSaves("g1"), {
       wrapper: createWrapper(),
@@ -118,7 +148,7 @@ describe("useSharedSaves", () => {
 
 describe("useDeleteSharedSave", () => {
   it("deletes a shared save", async () => {
-    mockApi.delete.mockResolvedValue(undefined);
+    mockTypedApi.DELETE.mockReturnValue(ok(undefined));
 
     const { result } = renderHook(() => useDeleteSharedSave(), {
       wrapper: createWrapper(),
@@ -127,11 +157,14 @@ describe("useDeleteSharedSave", () => {
     result.current.mutate({ gameId: "g1", saveId: "ss1" });
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(mockApi.delete).toHaveBeenCalledWith("/games/g1/shared-saves/ss1");
+    expect(mockTypedApi.DELETE).toHaveBeenCalledWith(
+      "/api/games/{id}/shared-saves/{saveId}",
+      { params: { path: { id: "g1", saveId: "ss1" } } },
+    );
   });
 
   it("handles delete error", async () => {
-    mockApi.delete.mockRejectedValue(new Error("Forbidden"));
+    mockTypedApi.DELETE.mockReturnValue(Promise.reject(new Error("Forbidden")));
 
     const { result } = renderHook(() => useDeleteSharedSave(), {
       wrapper: createWrapper(),
@@ -162,7 +195,7 @@ describe("useCreateSessionFromSharedSave", () => {
   };
 
   it("creates a session from a shared save", async () => {
-    mockApi.post.mockResolvedValue(mockSession);
+    mockTypedApi.POST.mockReturnValue(ok(mockSession));
 
     const { result } = renderHook(() => useCreateSessionFromSharedSave(), {
       wrapper: createWrapper(),
@@ -171,14 +204,15 @@ describe("useCreateSessionFromSharedSave", () => {
     result.current.mutate({ gameId: "g1", saveId: "ss1" });
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(mockApi.post).toHaveBeenCalledWith(
-      "/games/g1/sessions/from-shared-save/ss1",
+    expect(mockTypedApi.POST).toHaveBeenCalledWith(
+      "/api/games/{id}/sessions/from-shared-save/{saveId}",
+      { params: { path: { id: "g1", saveId: "ss1" } } },
     );
     expect(result.current.data).toEqual(mockSession);
   });
 
   it("handles error when creating session from shared save", async () => {
-    mockApi.post.mockRejectedValue(new Error("Save not found"));
+    mockTypedApi.POST.mockReturnValue(Promise.reject(new Error("Save not found")));
 
     const { result } = renderHook(() => useCreateSessionFromSharedSave(), {
       wrapper: createWrapper(),
