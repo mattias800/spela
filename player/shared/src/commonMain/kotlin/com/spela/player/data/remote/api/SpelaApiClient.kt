@@ -966,12 +966,7 @@ class SpelaApiClient(
     suspend fun linkRA(
         request: com.spela.client.models.LinkRAAccountRequest,
     ): com.spela.client.models.RAStatusResponse {
-        // Generated linkRAAccount returns RALinkResponse which lacks
-        // hardcoreEnabled; the AchievementsRepository expects RAStatusResponse,
-        // so issue the request directly to preserve the existing shape.
-        return client.post("$baseUrl/api/user/ra/link") {
-            setBody(request)
-        }.body()
+        return retroachievementsApi.linkRAAccount(request).body()
     }
 
     suspend fun unlinkRA() {
