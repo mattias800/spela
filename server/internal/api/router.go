@@ -241,6 +241,7 @@ func NewRouter(cfg Config) (*gin.Engine, func()) {
 	RegisterSharedUploadRoutes(humaAPI, sharedSaveHandler, sharedSessionHandler, cfg.JWTSecret, cfg.DB, userLimiter, uploadLimiter)
 	RegisterNetplayRoutes(humaAPI, netplayHandler, cfg.JWTSecret, cfg.DB, userLimiter)
 	RegisterChallengeRoutes(humaAPI, challengeHandler, cfg.JWTSecret, cfg.DB, userLimiter)
+	RegisterChallengeCreateRoute(humaAPI, challengeHandler, cfg.JWTSecret, cfg.DB, userLimiter)
 	RegisterDownloadRoutes(humaAPI, coreHandler, biosHandler, sessionHandler, sharedSaveHandler, sharedSessionHandler, consoleHandler, gameHandler, challengeHandler, cfg.JWTSecret, cfg.DB, userLimiter, downloadLimiter)
 	RegisterAdminRoutes(humaAPI, adminHandler, cfg.JWTSecret, cfg.DB, userLimiter)
 	adminSystemEventHandler := &SystemEventHandler{DB: cfg.DB}
@@ -384,11 +385,10 @@ func NewRouter(cfg Config) (*gin.Engine, func()) {
 		// RegisterSocialExtraRoutes above).
 		// /users/:id/play-heatmap — migrated to huma (see RegisterUserExtraRoutes above).
 
-		// Challenges — most endpoints migrated to huma
-		// (see RegisterChallengeRoutes above). Save + screenshot downloads
-		// migrated to huma (see RegisterDownloadRoutes). CreateChallenge
-		// stays on raw gin (multipart upload).
-		api.POST("/challenges", challengeHandler.CreateChallenge)
+		// Challenges — fully migrated to huma. JSON endpoints in
+		// RegisterChallengeRoutes above; the multipart create upload in
+		// RegisterChallengeCreateRoute above; save + screenshot downloads in
+		// RegisterDownloadRoutes above.
 
 		// Enrichment: Themes, Keywords, Series, Franchises — migrated to huma
 		// (see RegisterEnrichmentRoutes above).
@@ -420,10 +420,11 @@ func NewRouter(cfg Config) (*gin.Engine, func()) {
 	}
 
 	// Test-only endpoint for E2E test isolation (only registered when SPELA_TEST_MODE=true).
-	// Registered outside the auth group so it can be called without a token.
+	// No auth required — the route is intentionally unauthenticated so E2E tests
+	// can call it without first logging in.
 	if cfg.TestMode {
 		testHandler := &TestHandler{DB: cfg.DB}
-		r.POST("/api/test/reset", testHandler.Reset)
+		RegisterTestRoute(humaAPI, testHandler)
 	}
 
 	// Serve frontend static files when configured (unified single-container deployment)
