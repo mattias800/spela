@@ -115,7 +115,7 @@ export function ScrapeStatusCard() {
       { source, status },
       {
         onSuccess: (data) => {
-          const n = data.total;
+          const n = data?.total ?? 0;
           toast(
             n === 0 ? "info" : "success",
             n === 0

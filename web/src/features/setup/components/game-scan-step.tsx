@@ -23,7 +23,7 @@ export function GameScanStep({ onSkip, onComplete }: GameScanStepProps) {
     setScanError("");
     scanMutation.mutate(undefined, {
       onSuccess: (data) => {
-        setScanResult(data);
+        setScanResult(data ?? null);
       },
       onError: (err) => {
         setScanError(err instanceof Error ? err.message : "Scan failed");

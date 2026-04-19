@@ -5,18 +5,31 @@ import { createElement, type ReactNode } from "react";
 import { useIgdbSearch, useApplyIgdbMatch } from "../use-admin";
 
 vi.mock("@/lib/api-client", () => ({
-  api: {
-    get: vi.fn(),
-    post: vi.fn(),
+  typedApi: {
+    GET: vi.fn(),
+    POST: vi.fn(),
   },
+  unwrap: vi.fn(<T,>(p: Promise<{ data?: T; error?: unknown; response: Response }>) =>
+    p.then((r) => {
+      if (r.error !== undefined) throw r.error;
+      return r.data;
+    }),
+  ),
 }));
 
-import { api } from "@/lib/api-client";
+import { typedApi } from "@/lib/api-client";
 
-const mockApi = api as unknown as {
-  get: ReturnType<typeof vi.fn>;
-  post: ReturnType<typeof vi.fn>;
+const mockTypedApi = typedApi as unknown as {
+  GET: ReturnType<typeof vi.fn>;
+  POST: ReturnType<typeof vi.fn>;
 };
+
+function ok(data: unknown) {
+  return Promise.resolve({
+    data,
+    response: new Response(null, { status: 200 }),
+  });
+}
 
 function createWrapper() {
   const queryClient = new QueryClient({
@@ -56,7 +69,7 @@ const mockSearchResults = [
 
 describe("useIgdbSearch", () => {
   it("fetches IGDB search results for a game", async () => {
-    mockApi.get.mockResolvedValue(mockSearchResults);
+    mockTypedApi.GET.mockReturnValue(ok(mockSearchResults));
 
     const { result } = renderHook(
       () => useIgdbSearch("game-1", "Super Mario"),
@@ -65,8 +78,9 @@ describe("useIgdbSearch", () => {
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
-    expect(mockApi.get).toHaveBeenCalledWith(
-      "/admin/games/game-1/igdb-search?q=Super%20Mario",
+    expect(mockTypedApi.GET).toHaveBeenCalledWith(
+      "/api/admin/games/{id}/igdb-search",
+      { params: { path: { id: "game-1" }, query: { q: "Super Mario" } } },
     );
     expect(result.current.data).toHaveLength(2);
     expect(result.current.data?.[0].igdbId).toBe(1234);
@@ -79,11 +93,11 @@ describe("useIgdbSearch", () => {
     });
 
     expect(result.current.isFetching).toBe(false);
-    expect(mockApi.get).not.toHaveBeenCalled();
+    expect(mockTypedApi.GET).not.toHaveBeenCalled();
   });
 
   it("fetches when query is exactly 2 characters", async () => {
-    mockApi.get.mockResolvedValue([]);
+    mockTypedApi.GET.mockReturnValue(ok([]));
 
     const { result } = renderHook(() => useIgdbSearch("game-1", "SM"), {
       wrapper: createWrapper(),
@@ -91,13 +105,14 @@ describe("useIgdbSearch", () => {
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
-    expect(mockApi.get).toHaveBeenCalledWith(
-      "/admin/games/game-1/igdb-search?q=SM",
+    expect(mockTypedApi.GET).toHaveBeenCalledWith(
+      "/api/admin/games/{id}/igdb-search",
+      { params: { path: { id: "game-1" }, query: { q: "SM" } } },
     );
   });
 
-  it("encodes special characters in query", async () => {
-    mockApi.get.mockResolvedValue([]);
+  it("passes special characters through (openapi-fetch handles encoding)", async () => {
+    mockTypedApi.GET.mockReturnValue(ok([]));
 
     const { result } = renderHook(
       () => useIgdbSearch("game-1", "Crash & Burn"),
@@ -106,13 +121,14 @@ describe("useIgdbSearch", () => {
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
-    expect(mockApi.get).toHaveBeenCalledWith(
-      "/admin/games/game-1/igdb-search?q=Crash%20%26%20Burn",
+    expect(mockTypedApi.GET).toHaveBeenCalledWith(
+      "/api/admin/games/{id}/igdb-search",
+      { params: { path: { id: "game-1" }, query: { q: "Crash & Burn" } } },
     );
   });
 
   it("handles fetch error", async () => {
-    mockApi.get.mockRejectedValue(new Error("Network error"));
+    mockTypedApi.GET.mockReturnValue(Promise.reject(new Error("Network error")));
 
     const { result } = renderHook(
       () => useIgdbSearch("game-1", "Super Mario"),
@@ -125,7 +141,9 @@ describe("useIgdbSearch", () => {
 
 describe("useApplyIgdbMatch", () => {
   it("posts IGDB match and succeeds", async () => {
-    mockApi.post.mockResolvedValue({ id: "game-1", title: "Super Mario Bros." });
+    mockTypedApi.POST.mockReturnValue(
+      ok({ id: "game-1", title: "Super Mario Bros." }),
+    );
 
     const { result } = renderHook(() => useApplyIgdbMatch(), {
       wrapper: createWrapper(),
@@ -134,14 +152,14 @@ describe("useApplyIgdbMatch", () => {
     result.current.mutate({ gameId: "game-1", igdbId: 1234 });
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(mockApi.post).toHaveBeenCalledWith(
-      "/admin/games/game-1/igdb-match",
-      { igdbId: 1234 },
+    expect(mockTypedApi.POST).toHaveBeenCalledWith(
+      "/api/admin/games/{id}/igdb-match",
+      { params: { path: { id: "game-1" } }, body: { igdbId: 1234 } },
     );
   });
 
   it("handles mutation error", async () => {
-    mockApi.post.mockRejectedValue(new Error("Server error"));
+    mockTypedApi.POST.mockReturnValue(Promise.reject(new Error("Server error")));
 
     const { result } = renderHook(() => useApplyIgdbMatch(), {
       wrapper: createWrapper(),

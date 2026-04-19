@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { api } from "@/lib/api-client";
+import { typedApi, unwrap } from "@/lib/api-client";
 import type {
   User,
   DeletedUser,
@@ -13,7 +13,10 @@ import type {
 export function useAdminUsers() {
   return useQuery({
     queryKey: ["admin", "users"],
-    queryFn: () => api.get<User[]>("/admin/users"),
+    queryFn: async () => {
+      const data = await unwrap(typedApi.GET("/api/admin/users"));
+      return data as User[] | undefined;
+    },
   });
 }
 
@@ -34,7 +37,12 @@ export function useUpdateUser() {
         pendingApproval?: boolean;
       };
     }) => {
-      await api.put(`/admin/users/${id}`, data);
+      await unwrap(
+        typedApi.PUT("/api/admin/users/{id}", {
+          params: { path: { id } },
+          body: data as Record<string, unknown>,
+        }),
+      );
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin", "users"] });
@@ -52,7 +60,9 @@ export function useCreateUser() {
       password: string;
       role: string;
     }) => {
-      await api.post("/admin/users", data);
+      await unwrap(
+        typedApi.POST("/api/admin/users", { body: data }),
+      );
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin", "users"] });
@@ -63,7 +73,10 @@ export function useCreateUser() {
 export function useServerSettings() {
   return useQuery({
     queryKey: ["admin", "settings"],
-    queryFn: () => api.get<ServerSettingsMap>("/admin/settings"),
+    queryFn: async () => {
+      const data = await unwrap(typedApi.GET("/api/admin/settings"));
+      return data as ServerSettingsMap | undefined;
+    },
   });
 }
 
@@ -72,7 +85,11 @@ export function useUpdateSettings() {
 
   return useMutation({
     mutationFn: async (settings: Record<string, string>) => {
-      await api.put("/admin/settings", settings);
+      await unwrap(
+        typedApi.PUT("/api/admin/settings", {
+          body: settings,
+        }),
+      );
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin", "settings"] });
@@ -84,12 +101,14 @@ export function useScanLibrary() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (opts?: { console?: string }) => {
-      const path = opts?.console
-        ? (`/admin/games/scan?console=${encodeURIComponent(opts.console)}` as const)
-        : "/admin/games/scan";
-      return api.post<Record<string, unknown>>(path);
-    },
+    mutationFn: (opts?: { console?: string }) =>
+      unwrap(
+        typedApi.POST("/api/admin/games/scan", {
+          params: {
+            query: opts?.console ? { console: opts.console } : undefined,
+          },
+        }),
+      ),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["games"] });
       queryClient.invalidateQueries({ queryKey: ["consoles"] });
@@ -109,7 +128,7 @@ export function useScrapeMetadata() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({
+    mutationFn: async ({
       mode = "new",
       console,
       source,
@@ -120,18 +139,18 @@ export function useScrapeMetadata() {
       source?: string;
       status?: string;
     }) => {
-      const params = new URLSearchParams();
+      const query: Record<string, string | undefined> = {};
       if (source && status) {
-        params.set("source", source);
-        params.set("status", status);
+        query.source = source;
+        query.status = status;
       } else if (mode !== "new") {
-        params.set("mode", mode);
+        query.mode = mode;
       }
-      if (console) params.set("console", console);
-      const qs = params.toString();
-      return api.post<ScrapeStartResponse>(
-        qs ? `/admin/scrape?${qs}` : "/admin/scrape",
+      if (console) query.console = console;
+      const data = await unwrap(
+        typedApi.POST("/api/admin/scrape", { params: { query } }),
       );
+      return data as ScrapeStartResponse | undefined;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["games"] });
@@ -158,28 +177,40 @@ export interface ScrapeStatusCountsResponse {
 export function useScrapeStatusCounts() {
   return useQuery({
     queryKey: ["admin", "scrape-counts"],
-    queryFn: () =>
-      api.get<ScrapeStatusCountsResponse>("/admin/scrape/counts"),
+    queryFn: async () => {
+      const data = await unwrap(typedApi.GET("/api/admin/scrape/counts"));
+      return data as ScrapeStatusCountsResponse | undefined;
+    },
   });
 }
 
 export function useCancelScrape() {
   return useMutation({
-    mutationFn: () => api.delete("/admin/scrape"),
+    mutationFn: () => unwrap(typedApi.DELETE("/api/admin/scrape")),
   });
 }
 
 export function useMetadataMatches() {
   return useQuery({
     queryKey: ["admin", "metadata-matches"],
-    queryFn: () => api.get<MetadataMatchesResponse>("/admin/metadata-matches"),
+    queryFn: async () => {
+      const data = await unwrap(
+        typedApi.GET("/api/admin/metadata-matches"),
+      );
+      return data as MetadataMatchesResponse | undefined;
+    },
   });
 }
 
 export function useDeletedUsers() {
   return useQuery({
     queryKey: ["admin", "users", "deleted"],
-    queryFn: () => api.get<DeletedUser[]>("/admin/users/deleted"),
+    queryFn: async () => {
+      const data = await unwrap(
+        typedApi.GET("/api/admin/users/deleted"),
+      );
+      return data as DeletedUser[] | undefined;
+    },
   });
 }
 
@@ -188,7 +219,11 @@ export function useHardDeleteUser() {
 
   return useMutation({
     mutationFn: async (id: string) => {
-      await api.delete(`/admin/users/${id}/permanent`);
+      await unwrap(
+        typedApi.DELETE("/api/admin/users/{id}/permanent", {
+          params: { path: { id } },
+        }),
+      );
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin", "users"] });
@@ -201,7 +236,11 @@ export function useDeleteUser() {
 
   return useMutation({
     mutationFn: async (id: string) => {
-      await api.delete(`/admin/users/${id}`);
+      await unwrap(
+        typedApi.DELETE("/api/admin/users/{id}", {
+          params: { path: { id } },
+        }),
+      );
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin", "users"] });
@@ -214,7 +253,11 @@ export function useScrapeGame() {
 
   return useMutation({
     mutationFn: async (gameId: string) => {
-      await api.post(`/admin/games/${gameId}/scrape`);
+      await unwrap(
+        typedApi.POST("/api/admin/games/{id}/scrape", {
+          params: { path: { id: gameId } },
+        }),
+      );
     },
     onSuccess: (_data, gameId) => {
       queryClient.invalidateQueries({ queryKey: ["game", gameId] });
@@ -229,7 +272,11 @@ export function useRefreshAchievements() {
 
   return useMutation({
     mutationFn: async (gameId: string) => {
-      await api.post(`/admin/games/${gameId}/achievements/refresh`);
+      await unwrap(
+        typedApi.POST("/api/admin/games/{id}/achievements/refresh", {
+          params: { path: { id: gameId } },
+        }),
+      );
     },
     onSuccess: (_data, gameId) => {
       queryClient.invalidateQueries({ queryKey: ["game", gameId] });
@@ -241,24 +288,14 @@ export function useRefreshAchievements() {
 export function useAdminStats() {
   return useQuery({
     queryKey: ["admin", "stats"],
-    queryFn: () =>
-      api.get<{
-        users: number;
-        games: number;
-        consoles: number;
-        saves: number;
-      }>("/admin/stats"),
+    queryFn: () => unwrap(typedApi.GET("/api/admin/stats")),
   });
 }
 
 export function useTestIgdbCredentials() {
   return useMutation({
-    mutationFn: async (data: { clientId: string; clientSecret: string }) => {
-      return api.post<{ success: boolean; error?: string }>(
-        "/admin/igdb/test",
-        data,
-      );
-    },
+    mutationFn: (data: { clientId: string; clientSecret: string }) =>
+      unwrap(typedApi.POST("/api/admin/igdb/test", { body: data })),
   });
 }
 
@@ -278,7 +315,10 @@ export interface ScrapeStatus {
 export function useScrapeStatus() {
   return useQuery({
     queryKey: ["admin", "scrape-status"],
-    queryFn: () => api.get<ScrapeStatus>("/admin/scrape/status"),
+    queryFn: async () => {
+      const data = await unwrap(typedApi.GET("/api/admin/scrape/status"));
+      return data as ScrapeStatus | undefined;
+    },
     refetchInterval: 3000, // Poll every 3s to catch status changes
   });
 }
@@ -294,8 +334,13 @@ export interface ScanStatus {
 export function useScanStatus() {
   return useQuery({
     queryKey: ["admin", "scan-status"],
-    queryFn: () => api.get<ScanStatus>("/admin/games/scan/status"),
-    refetchInterval: 3000, // Poll every 3s to catch status changes
+    queryFn: async () => {
+      const data = await unwrap(
+        typedApi.GET("/api/admin/games/scan/status"),
+      );
+      return data as ScanStatus | undefined;
+    },
+    refetchInterval: 3000,
   });
 }
 
@@ -314,7 +359,14 @@ export interface GameCoversResponse {
 export function useGameCovers(gameId: string) {
   return useQuery({
     queryKey: ["admin", "game-covers", gameId],
-    queryFn: () => api.get<GameCoversResponse>(`/admin/games/${gameId}/covers`),
+    queryFn: async () => {
+      const data = await unwrap(
+        typedApi.GET("/api/admin/games/{id}/covers", {
+          params: { path: { id: gameId } },
+        }),
+      );
+      return data as GameCoversResponse | undefined;
+    },
     enabled: !!gameId,
   });
 }
@@ -332,7 +384,12 @@ export function useSetGameCover() {
       source: CoverOption["source"];
       libretroName?: string;
     }) => {
-      await api.put(`/admin/games/${gameId}/covers`, { source, libretroName });
+      await unwrap(
+        typedApi.PUT("/api/admin/games/{id}/covers", {
+          params: { path: { id: gameId } },
+          body: { source, libretroName },
+        }),
+      );
     },
     onSuccess: (_data, { gameId }) => {
       queryClient.invalidateQueries({ queryKey: ["game", gameId] });
@@ -358,8 +415,14 @@ export interface GameHeroesResponse {
 export function useGameHeroes(gameId: string) {
   return useQuery({
     queryKey: ["admin", "game-heroes", gameId],
-    queryFn: () =>
-      api.get<GameHeroesResponse>(`/admin/games/${gameId}/heroes`),
+    queryFn: async () => {
+      const data = await unwrap(
+        typedApi.GET("/api/admin/games/{id}/heroes", {
+          params: { path: { id: gameId } },
+        }),
+      );
+      return data as GameHeroesResponse | undefined;
+    },
     enabled: !!gameId,
   });
 }
@@ -369,7 +432,12 @@ export function useSetGameHero() {
 
   return useMutation({
     mutationFn: async ({ gameId, url }: { gameId: string; url: string }) => {
-      await api.put(`/admin/games/${gameId}/heroes`, { url });
+      await unwrap(
+        typedApi.PUT("/api/admin/games/{id}/heroes", {
+          params: { path: { id: gameId } },
+          body: { url },
+        }),
+      );
     },
     onSuccess: (_data, { gameId }) => {
       queryClient.invalidateQueries({ queryKey: ["game", gameId] });
@@ -384,35 +452,21 @@ export function useSetGameHero() {
 export function useIgdbStatus() {
   return useQuery({
     queryKey: ["admin", "igdb-status"],
-    queryFn: () =>
-      api.get<{
-        configured: boolean;
-        status: "connected" | "not_configured" | "error";
-        source: "env" | "database" | "none";
-        error?: string;
-      }>("/admin/igdb/status"),
+    queryFn: () => unwrap(typedApi.GET("/api/admin/igdb/status")),
   });
 }
 
 export function useSteamGridDBStatus() {
   return useQuery({
     queryKey: ["admin", "steamgriddb-status"],
-    queryFn: () =>
-      api.get<{
-        configured: boolean;
-        source: "env" | "database" | "none";
-      }>("/admin/steamgriddb/status"),
+    queryFn: () => unwrap(typedApi.GET("/api/admin/steamgriddb/status")),
   });
 }
 
 export function useRAStatus() {
   return useQuery({
     queryKey: ["admin", "ra-status"],
-    queryFn: () =>
-      api.get<{
-        configured: boolean;
-        source: "env" | "database" | "none";
-      }>("/admin/ra/status"),
+    queryFn: () => unwrap(typedApi.GET("/api/admin/ra/status")),
   });
 }
 
@@ -427,7 +481,12 @@ export function useUpdateGameMetadata() {
       gameId: string;
       metadata: Record<string, unknown>;
     }) => {
-      await api.post(`/admin/games/${gameId}/metadata`, metadata);
+      await unwrap(
+        typedApi.POST("/api/admin/games/{id}/metadata", {
+          params: { path: { id: gameId } },
+          body: metadata,
+        }),
+      );
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["games"] });
@@ -442,10 +501,14 @@ export function useUpdateGameMetadata() {
 export function useIgdbSearch(gameId: string, query: string) {
   return useQuery({
     queryKey: ["admin", "igdb-search", gameId, query],
-    queryFn: () =>
-      api.get<IgdbSearchResult[]>(
-        `/admin/games/${gameId}/igdb-search?q=${encodeURIComponent(query)}`,
-      ),
+    queryFn: async () => {
+      const data = await unwrap(
+        typedApi.GET("/api/admin/games/{id}/igdb-search", {
+          params: { path: { id: gameId }, query: { q: query } },
+        }),
+      );
+      return data as IgdbSearchResult[] | undefined;
+    },
     enabled: query.length >= 2,
   });
 }
@@ -461,7 +524,12 @@ export function useApplyIgdbMatch() {
       gameId: string;
       igdbId: number;
     }) => {
-      await api.post(`/admin/games/${gameId}/igdb-match`, { igdbId });
+      await unwrap(
+        typedApi.POST("/api/admin/games/{id}/igdb-match", {
+          params: { path: { id: gameId } },
+          body: { igdbId },
+        }),
+      );
     },
     onSuccess: (_data, { gameId }) => {
       queryClient.invalidateQueries({ queryKey: ["game", gameId] });
@@ -476,8 +544,14 @@ export function useApplyIgdbMatch() {
 export function useUserRateLimit(userId: string) {
   return useQuery({
     queryKey: ["admin", "users", userId, "rate-limit"],
-    queryFn: () =>
-      api.get<RateLimitStatus>(`/admin/users/${userId}/rate-limit`),
+    queryFn: async () => {
+      const data = await unwrap(
+        typedApi.GET("/api/admin/users/{id}/rate-limit", {
+          params: { path: { id: userId } },
+        }),
+      );
+      return data as RateLimitStatus | undefined;
+    },
     enabled: !!userId,
   });
 }
@@ -487,7 +561,11 @@ export function useResetRateLimit() {
 
   return useMutation({
     mutationFn: async (userId: string) => {
-      await api.delete(`/admin/users/${userId}/rate-limit`);
+      await unwrap(
+        typedApi.DELETE("/api/admin/users/{id}/rate-limit", {
+          params: { path: { id: userId } },
+        }),
+      );
     },
     onSuccess: (_data, userId) => {
       queryClient.invalidateQueries({
@@ -500,7 +578,11 @@ export function useResetRateLimit() {
 export function useCoreCompatibility() {
   return useQuery({
     queryKey: ["admin", "core-compatibility"],
-    queryFn: () =>
-      api.get<CoreCompatibilityResponse>("/admin/core-compatibility"),
+    queryFn: async () => {
+      const data = await unwrap(
+        typedApi.GET("/api/admin/core-compatibility"),
+      );
+      return data as CoreCompatibilityResponse | undefined;
+    },
   });
 }
