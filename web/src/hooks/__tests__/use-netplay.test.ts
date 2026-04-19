@@ -13,22 +13,39 @@ import {
 } from "../use-netplay";
 
 vi.mock("@/lib/api-client", () => ({
-  api: {
-    get: vi.fn(),
-    post: vi.fn(),
-    put: vi.fn(),
-    delete: vi.fn(),
+  typedApi: {
+    GET: vi.fn(),
+    POST: vi.fn(),
+    PUT: vi.fn(),
+    DELETE: vi.fn(),
   },
+  unwrap: vi.fn(<T,>(p: Promise<{ data?: T; error?: unknown; response: Response }>) =>
+    p.then((r) => {
+      if (r.error !== undefined) throw r.error;
+      return r.data;
+    }),
+  ),
 }));
 
-import { api } from "@/lib/api-client";
+vi.mock("@/hooks/use-websocket", () => ({
+  useWebSocketEvent: vi.fn(),
+}));
 
-const mockApi = api as unknown as {
-  get: ReturnType<typeof vi.fn>;
-  post: ReturnType<typeof vi.fn>;
-  put: ReturnType<typeof vi.fn>;
-  delete: ReturnType<typeof vi.fn>;
+import { typedApi } from "@/lib/api-client";
+
+const mockTypedApi = typedApi as unknown as {
+  GET: ReturnType<typeof vi.fn>;
+  POST: ReturnType<typeof vi.fn>;
+  PUT: ReturnType<typeof vi.fn>;
+  DELETE: ReturnType<typeof vi.fn>;
 };
+
+function ok(data: unknown) {
+  return Promise.resolve({
+    data,
+    response: new Response(null, { status: 200 }),
+  });
+}
 
 function createWrapper() {
   const queryClient = new QueryClient({
@@ -79,7 +96,7 @@ const mockSession = mockSessionsResponse.data[0];
 
 describe("useNetplaySessions", () => {
   it("fetches sessions with default pagination", async () => {
-    mockApi.get.mockResolvedValue(mockSessionsResponse);
+    mockTypedApi.GET.mockReturnValue(ok(mockSessionsResponse));
 
     const { result } = renderHook(() => useNetplaySessions(), {
       wrapper: createWrapper(),
@@ -87,15 +104,15 @@ describe("useNetplaySessions", () => {
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
-    expect(mockApi.get).toHaveBeenCalledWith(
-      "/netplay/sessions?page=1&pageSize=20",
-    );
+    expect(mockTypedApi.GET).toHaveBeenCalledWith("/api/netplay/sessions", {
+      params: { query: { page: 1, pageSize: 20 } },
+    });
     expect(result.current.data?.data).toHaveLength(1);
     expect(result.current.data?.data[0].gameTitle).toBe("Super Mario World");
   });
 
   it("fetches sessions with custom pagination", async () => {
-    mockApi.get.mockResolvedValue({ ...mockSessionsResponse, page: 2 });
+    mockTypedApi.GET.mockReturnValue(ok({ ...mockSessionsResponse, page: 2 }));
 
     const { result } = renderHook(() => useNetplaySessions(2, 10), {
       wrapper: createWrapper(),
@@ -103,13 +120,13 @@ describe("useNetplaySessions", () => {
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
-    expect(mockApi.get).toHaveBeenCalledWith(
-      "/netplay/sessions?page=2&pageSize=10",
-    );
+    expect(mockTypedApi.GET).toHaveBeenCalledWith("/api/netplay/sessions", {
+      params: { query: { page: 2, pageSize: 10 } },
+    });
   });
 
   it("handles fetch error", async () => {
-    mockApi.get.mockRejectedValue(new Error("Server error"));
+    mockTypedApi.GET.mockReturnValue(Promise.reject(new Error("Server error")));
 
     const { result } = renderHook(() => useNetplaySessions(), {
       wrapper: createWrapper(),
@@ -121,7 +138,7 @@ describe("useNetplaySessions", () => {
 
 describe("useNetplaySession", () => {
   it("fetches session detail", async () => {
-    mockApi.get.mockResolvedValue(mockSession);
+    mockTypedApi.GET.mockReturnValue(ok(mockSession));
 
     const { result } = renderHook(() => useNetplaySession("s1"), {
       wrapper: createWrapper(),
@@ -129,60 +146,57 @@ describe("useNetplaySession", () => {
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
-    expect(mockApi.get).toHaveBeenCalledWith("/netplay/sessions/s1");
+    expect(mockTypedApi.GET).toHaveBeenCalledWith(
+      "/api/netplay/sessions/{id}",
+      { params: { path: { id: "s1" } } },
+    );
     expect(result.current.data?.hostUsername).toBe("alice");
   });
 
   it("does not fetch when id is empty", () => {
-    mockApi.get.mockResolvedValue(mockSession);
+    mockTypedApi.GET.mockReturnValue(ok(mockSession));
 
     renderHook(() => useNetplaySession(""), {
       wrapper: createWrapper(),
     });
 
-    expect(mockApi.get).not.toHaveBeenCalled();
+    expect(mockTypedApi.GET).not.toHaveBeenCalled();
   });
 });
 
 describe("useCreateNetplaySession", () => {
   it("creates a session", async () => {
-    mockApi.post.mockResolvedValue(mockSession);
+    mockTypedApi.POST.mockReturnValue(ok(mockSession));
 
     const { result } = renderHook(() => useCreateNetplaySession(), {
       wrapper: createWrapper(),
     });
 
-    result.current.mutate({
-      gameId: "g1",
-    });
+    result.current.mutate({ gameId: "g1" });
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(mockApi.post).toHaveBeenCalledWith("/netplay/sessions", {
-      gameId: "g1",
+    expect(mockTypedApi.POST).toHaveBeenCalledWith("/api/netplay/sessions", {
+      body: { gameId: "g1" },
     });
   });
 
   it("creates a session with custom input delay", async () => {
-    mockApi.post.mockResolvedValue(mockSession);
+    mockTypedApi.POST.mockReturnValue(ok(mockSession));
 
     const { result } = renderHook(() => useCreateNetplaySession(), {
       wrapper: createWrapper(),
     });
 
-    result.current.mutate({
-      gameId: "g1",
-      inputDelay: 5,
-    });
+    result.current.mutate({ gameId: "g1", inputDelay: 5 });
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(mockApi.post).toHaveBeenCalledWith("/netplay/sessions", {
-      gameId: "g1",
-      inputDelay: 5,
+    expect(mockTypedApi.POST).toHaveBeenCalledWith("/api/netplay/sessions", {
+      body: { gameId: "g1", inputDelay: 5 },
     });
   });
 
   it("handles create error", async () => {
-    mockApi.post.mockRejectedValue(new Error("Failed"));
+    mockTypedApi.POST.mockReturnValue(Promise.reject(new Error("Failed")));
 
     const { result } = renderHook(() => useCreateNetplaySession(), {
       wrapper: createWrapper(),
@@ -196,7 +210,7 @@ describe("useCreateNetplaySession", () => {
 
 describe("useJoinNetplaySession", () => {
   it("joins a session by invite code", async () => {
-    mockApi.post.mockResolvedValue(mockSession);
+    mockTypedApi.POST.mockReturnValue(ok(mockSession));
 
     const { result } = renderHook(() => useJoinNetplaySession(), {
       wrapper: createWrapper(),
@@ -205,13 +219,16 @@ describe("useJoinNetplaySession", () => {
     result.current.mutate("ABC123");
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(mockApi.post).toHaveBeenCalledWith("/netplay/sessions/join", {
-      inviteCode: "ABC123",
-    });
+    expect(mockTypedApi.POST).toHaveBeenCalledWith(
+      "/api/netplay/sessions/join",
+      { body: { inviteCode: "ABC123" } },
+    );
   });
 
   it("handles join error for invalid code", async () => {
-    mockApi.post.mockRejectedValue(new Error("Session not found"));
+    mockTypedApi.POST.mockReturnValue(
+      Promise.reject(new Error("Session not found")),
+    );
 
     const { result } = renderHook(() => useJoinNetplaySession(), {
       wrapper: createWrapper(),
@@ -225,7 +242,7 @@ describe("useJoinNetplaySession", () => {
 
 describe("useLeaveNetplaySession", () => {
   it("leaves a session", async () => {
-    mockApi.post.mockResolvedValue(undefined);
+    mockTypedApi.POST.mockReturnValue(ok(undefined));
 
     const { result } = renderHook(() => useLeaveNetplaySession(), {
       wrapper: createWrapper(),
@@ -234,13 +251,16 @@ describe("useLeaveNetplaySession", () => {
     result.current.mutate("s1");
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(mockApi.post).toHaveBeenCalledWith("/netplay/sessions/s1/leave");
+    expect(mockTypedApi.POST).toHaveBeenCalledWith(
+      "/api/netplay/sessions/{id}/leave",
+      { params: { path: { id: "s1" } } },
+    );
   });
 });
 
 describe("useUpdateNetplaySettings", () => {
   it("updates session settings", async () => {
-    mockApi.put.mockResolvedValue({ ...mockSession, inputDelay: 5 });
+    mockTypedApi.PUT.mockReturnValue(ok({ ...mockSession, inputDelay: 5 }));
 
     const { result } = renderHook(() => useUpdateNetplaySettings(), {
       wrapper: createWrapper(),
@@ -249,16 +269,16 @@ describe("useUpdateNetplaySettings", () => {
     result.current.mutate({ id: "s1", inputDelay: 5 });
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(mockApi.put).toHaveBeenCalledWith(
-      "/netplay/sessions/s1/settings",
-      { inputDelay: 5 },
+    expect(mockTypedApi.PUT).toHaveBeenCalledWith(
+      "/api/netplay/sessions/{id}/settings",
+      { params: { path: { id: "s1" } }, body: { inputDelay: 5 } },
     );
   });
 });
 
 describe("useDeleteNetplaySession", () => {
   it("deletes a session", async () => {
-    mockApi.delete.mockResolvedValue(undefined);
+    mockTypedApi.DELETE.mockReturnValue(ok(undefined));
 
     const { result } = renderHook(() => useDeleteNetplaySession(), {
       wrapper: createWrapper(),
@@ -267,6 +287,9 @@ describe("useDeleteNetplaySession", () => {
     result.current.mutate("s1");
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(mockApi.delete).toHaveBeenCalledWith("/netplay/sessions/s1");
+    expect(mockTypedApi.DELETE).toHaveBeenCalledWith(
+      "/api/netplay/sessions/{id}",
+      { params: { path: { id: "s1" } } },
+    );
   });
 });

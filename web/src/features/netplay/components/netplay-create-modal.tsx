@@ -35,7 +35,7 @@ export function NetplayCreateModal({
         onSuccess: (session) => {
           toast("success", "Netplay session created");
           resetForm();
-          onCreated(session.id);
+          if (session) onCreated(session.id);
         },
         onError: () => {
           toast("error", "Failed to create netplay session");
