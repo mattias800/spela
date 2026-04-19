@@ -3,11 +3,9 @@ package api
 import (
 	"log/slog"
 	"math"
-	"net/http"
 	"strconv"
 	"strings"
 
-	"github.com/gin-gonic/gin"
 	"github.com/spela/server/internal/db"
 	"gorm.io/gorm"
 )
@@ -22,12 +20,12 @@ type SearchHandler struct {
 // SearchResponse is the top-level response for the global search endpoint.
 type SearchResponse struct {
 	Games       SearchCategoryResult[SearchGameResult]       `json:"games"`
-	Consoles    SearchCategoryResult[SearchConsoleResult]     `json:"consoles"`
-	Developers  SearchCategoryResult[SearchCompanyResult]     `json:"developers"`
-	Publishers  SearchCategoryResult[SearchCompanyResult]     `json:"publishers"`
-	Collections SearchCategoryResult[SearchCollectionResult]  `json:"collections"`
-	Series      SearchCategoryResult[SearchSeriesResult]      `json:"series"`
-	Franchises  SearchCategoryResult[SearchFranchiseResult]   `json:"franchises"`
+	Consoles    SearchCategoryResult[SearchConsoleResult]    `json:"consoles"`
+	Developers  SearchCategoryResult[SearchCompanyResult]    `json:"developers"`
+	Publishers  SearchCategoryResult[SearchCompanyResult]    `json:"publishers"`
+	Collections SearchCategoryResult[SearchCollectionResult] `json:"collections"`
+	Series      SearchCategoryResult[SearchSeriesResult]     `json:"series"`
+	Franchises  SearchCategoryResult[SearchFranchiseResult]  `json:"franchises"`
 }
 
 // SearchCategoryResult wraps a slice of results with a total count for a single entity type.
@@ -87,48 +85,6 @@ type SearchFranchiseResult struct {
 	Name         string `json:"name"`
 	TotalGames   int    `json:"totalGames"`
 	LibraryGames int    `json:"libraryGames"`
-}
-
-// Search performs a global search across games, consoles, developers, publishers,
-// collections, series, and franchises.
-// GET /api/search?q=<query>&limit=<n>
-func (h *SearchHandler) Search(c *gin.Context) {
-	userID := getUserID(c)
-	query := strings.TrimSpace(c.Query("q"))
-
-	if len(query) < 2 {
-		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "query must be at least 2 characters"})
-		return
-	}
-
-	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "5"))
-	if limit < 1 || limit > 50 {
-		limit = 5
-	}
-
-	escapedQuery := escapeLikePattern(query)
-	likePattern := "%" + escapedQuery + "%"
-
-	// Run all entity queries. SQLite does not benefit from parallel queries
-	// (single-writer, in-memory DBs are connection-scoped), so we run
-	// sequentially to avoid connection-pool issues.
-	games := h.searchGames(likePattern, limit)
-	consoles := h.searchConsoles(likePattern, limit)
-	developers := h.searchDevelopers(likePattern, limit)
-	publishers := h.searchPublishers(likePattern, limit)
-	collections := h.searchCollections(likePattern, limit, userID)
-	series := h.searchSeries(likePattern, limit)
-	franchises := h.searchFranchises(likePattern, limit)
-
-	c.JSON(http.StatusOK, SearchResponse{
-		Games:       games,
-		Consoles:    consoles,
-		Developers:  developers,
-		Publishers:  publishers,
-		Collections: collections,
-		Series:      series,
-		Franchises:  franchises,
-	})
 }
 
 // likeEscape is the ESCAPE clause fragment used in all LIKE queries.
@@ -212,9 +168,6 @@ func (h *SearchHandler) searchConsoles(likePattern string, limit int) SearchCate
 	}
 
 	// Count total matching consoles
-	type countResult struct {
-		Total int64
-	}
 	var total int64
 	row := baseQuery().Select("COUNT(*) as total").Row()
 	if err := row.Scan(&total); err != nil {
