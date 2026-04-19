@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { api } from "@/lib/api-client";
+import { typedApi, unwrap } from "@/lib/api-client";
 import type {
   FeaturedGame,
   FeaturedSeries,
@@ -56,7 +56,10 @@ const STALE_SHORT = 30 * 1000; // 30s — live data (trending, active-now)
 export function useExploreFeatured() {
   return useQuery({
     queryKey: ["explore", "featured"],
-    queryFn: () => api.get<FeaturedGame[]>("/explore/featured"),
+    queryFn: async () => {
+      const data = await unwrap(typedApi.GET("/api/explore/featured"));
+      return data as FeaturedGame[] | undefined;
+    },
     staleTime: STALE_LONG,
   });
 }
@@ -64,7 +67,10 @@ export function useExploreFeatured() {
 export function useExploreRows() {
   return useQuery({
     queryKey: ["explore", "rows"],
-    queryFn: () => api.get<ExploreRowsResponse>("/explore/rows"),
+    queryFn: async () => {
+      const data = await unwrap(typedApi.GET("/api/explore/rows"));
+      return data as ExploreRowsResponse | undefined;
+    },
     staleTime: STALE_LONG,
   });
 }
@@ -72,8 +78,12 @@ export function useExploreRows() {
 export function useConsoleHighlights() {
   return useQuery({
     queryKey: ["console-highlights"],
-    queryFn: () =>
-      api.get<ConsoleHighlightsResponse>("/explore/console-highlights"),
+    queryFn: async () => {
+      const data = await unwrap(
+        typedApi.GET("/api/explore/console-highlights"),
+      );
+      return data as ConsoleHighlightsResponse | undefined;
+    },
     staleTime: STALE_LONG,
   });
 }
@@ -81,7 +91,10 @@ export function useConsoleHighlights() {
 export function useMoods() {
   return useQuery({
     queryKey: ["explore", "moods"],
-    queryFn: () => api.get<MoodDefinition[]>("/explore/moods"),
+    queryFn: async () => {
+      const data = await unwrap(typedApi.GET("/api/explore/moods"));
+      return data as MoodDefinition[] | undefined;
+    },
     staleTime: STALE_LONG,
   });
 }
@@ -91,7 +104,10 @@ export function useMoods() {
 export function useForYou(enabled = true) {
   return useQuery({
     queryKey: ["explore", "for-you"],
-    queryFn: () => api.get<ForYouResponse>("/explore/for-you"),
+    queryFn: async () => {
+      const data = await unwrap(typedApi.GET("/api/explore/for-you"));
+      return data as ForYouResponse | undefined;
+    },
     staleTime: STALE_MEDIUM,
     enabled,
   });
@@ -100,8 +116,12 @@ export function useForYou(enabled = true) {
 export function usePlayersLikeYou(enabled = true) {
   return useQuery({
     queryKey: ["explore", "players-like-you"],
-    queryFn: () =>
-      api.get<PlayersLikeYouResponse>("/explore/players-like-you"),
+    queryFn: async () => {
+      const data = await unwrap(
+        typedApi.GET("/api/explore/players-like-you"),
+      );
+      return data as PlayersLikeYouResponse | undefined;
+    },
     staleTime: STALE_MEDIUM,
     enabled,
   });
@@ -110,7 +130,10 @@ export function usePlayersLikeYou(enabled = true) {
 export function useTrending(enabled = true) {
   return useQuery({
     queryKey: ["explore", "trending"],
-    queryFn: () => api.get<TrendingResponse>("/explore/trending"),
+    queryFn: async () => {
+      const data = await unwrap(typedApi.GET("/api/explore/trending"));
+      return data as TrendingResponse | undefined;
+    },
     staleTime: STALE_SHORT,
     enabled,
   });
@@ -119,7 +142,10 @@ export function useTrending(enabled = true) {
 export function useCommunityTop(enabled = true) {
   return useQuery({
     queryKey: ["explore", "community-top"],
-    queryFn: () => api.get<CommunityTopResponse>("/explore/community-top"),
+    queryFn: async () => {
+      const data = await unwrap(typedApi.GET("/api/explore/community-top"));
+      return data as CommunityTopResponse | undefined;
+    },
     staleTime: STALE_MEDIUM,
     enabled,
   });
@@ -128,7 +154,10 @@ export function useCommunityTop(enabled = true) {
 export function useCultClassics(enabled = true) {
   return useQuery({
     queryKey: ["explore", "cult-classics"],
-    queryFn: () => api.get<CultClassicsResponse>("/explore/cult-classics"),
+    queryFn: async () => {
+      const data = await unwrap(typedApi.GET("/api/explore/cult-classics"));
+      return data as CultClassicsResponse | undefined;
+    },
     staleTime: STALE_LONG,
     enabled,
   });
@@ -137,7 +166,10 @@ export function useCultClassics(enabled = true) {
 export function useActiveNow(enabled = true) {
   return useQuery({
     queryKey: ["explore", "active-now"],
-    queryFn: () => api.get<ActiveNowResponse>("/explore/active-now"),
+    queryFn: async () => {
+      const data = await unwrap(typedApi.GET("/api/explore/active-now"));
+      return data as ActiveNowResponse | undefined;
+    },
     staleTime: STALE_SHORT,
     enabled,
   });
@@ -146,8 +178,12 @@ export function useActiveNow(enabled = true) {
 export function useRecentlyReviewed(enabled = true) {
   return useQuery({
     queryKey: ["explore", "recently-reviewed"],
-    queryFn: () =>
-      api.get<RecentlyReviewedResponse>("/explore/recently-reviewed"),
+    queryFn: async () => {
+      const data = await unwrap(
+        typedApi.GET("/api/explore/recently-reviewed"),
+      );
+      return data as RecentlyReviewedResponse | undefined;
+    },
     staleTime: STALE_SHORT,
     enabled,
   });
@@ -156,7 +192,10 @@ export function useRecentlyReviewed(enabled = true) {
 export function useOnThisDay(enabled = true) {
   return useQuery({
     queryKey: ["explore", "on-this-day"],
-    queryFn: () => api.get<OnThisDayResponse>("/explore/on-this-day"),
+    queryFn: async () => {
+      const data = await unwrap(typedApi.GET("/api/explore/on-this-day"));
+      return data as OnThisDayResponse | undefined;
+    },
     staleTime: STALE_LONG,
     enabled,
   });
@@ -165,7 +204,14 @@ export function useOnThisDay(enabled = true) {
 export function useBestOfYear(year: number, enabled = true) {
   return useQuery({
     queryKey: ["explore", "best-of-year", year],
-    queryFn: () => api.get<BestOfYearResponse>(`/explore/best-of-year/${year}`),
+    queryFn: async () => {
+      const data = await unwrap(
+        typedApi.GET("/api/explore/best-of-year/{year}", {
+          params: { path: { year: String(year) } },
+        }),
+      );
+      return data as BestOfYearResponse | undefined;
+    },
     staleTime: STALE_LONG,
     enabled,
   });
@@ -174,8 +220,12 @@ export function useBestOfYear(year: number, enabled = true) {
 export function useYourAnniversaries(enabled = true) {
   return useQuery({
     queryKey: ["explore", "your-anniversaries"],
-    queryFn: () =>
-      api.get<YourAnniversariesResponse>("/explore/your-anniversaries"),
+    queryFn: async () => {
+      const data = await unwrap(
+        typedApi.GET("/api/explore/your-anniversaries"),
+      );
+      return data as YourAnniversariesResponse | undefined;
+    },
     staleTime: STALE_MEDIUM,
     enabled,
   });
@@ -184,7 +234,14 @@ export function useYourAnniversaries(enabled = true) {
 export function useDecade(decade: string, enabled = true) {
   return useQuery({
     queryKey: ["explore", "decades", decade],
-    queryFn: () => api.get<DecadeResponse>(`/explore/decades/${decade}`),
+    queryFn: async () => {
+      const data = await unwrap(
+        typedApi.GET("/api/explore/decades/{decade}", {
+          params: { path: { decade } },
+        }),
+      );
+      return data as DecadeResponse | undefined;
+    },
     staleTime: STALE_LONG,
     enabled: !!decade && enabled,
   });
@@ -193,7 +250,12 @@ export function useDecade(decade: string, enabled = true) {
 export function useEasyToComplete(enabled = true) {
   return useQuery({
     queryKey: ["explore", "easy-to-complete"],
-    queryFn: () => api.get<EasyToCompleteResponse>("/explore/easy-to-complete"),
+    queryFn: async () => {
+      const data = await unwrap(
+        typedApi.GET("/api/explore/easy-to-complete"),
+      );
+      return data as EasyToCompleteResponse | undefined;
+    },
     staleTime: STALE_MEDIUM,
     enabled,
   });
@@ -202,7 +264,10 @@ export function useEasyToComplete(enabled = true) {
 export function useHardestGames(enabled = true) {
   return useQuery({
     queryKey: ["explore", "hardest-games"],
-    queryFn: () => api.get<HardestGamesResponse>("/explore/hardest-games"),
+    queryFn: async () => {
+      const data = await unwrap(typedApi.GET("/api/explore/hardest-games"));
+      return data as HardestGamesResponse | undefined;
+    },
     staleTime: STALE_LONG,
     enabled,
   });
@@ -211,7 +276,10 @@ export function useHardestGames(enabled = true) {
 export function useAlmostDone(enabled = true) {
   return useQuery({
     queryKey: ["explore", "almost-done"],
-    queryFn: () => api.get<AlmostDoneResponse>("/explore/almost-done"),
+    queryFn: async () => {
+      const data = await unwrap(typedApi.GET("/api/explore/almost-done"));
+      return data as AlmostDoneResponse | undefined;
+    },
     staleTime: STALE_MEDIUM,
     enabled,
   });
@@ -220,7 +288,12 @@ export function useAlmostDone(enabled = true) {
 export function useFreshChallenges(enabled = true) {
   return useQuery({
     queryKey: ["explore", "fresh-challenges"],
-    queryFn: () => api.get<FreshChallengesResponse>("/explore/fresh-challenges"),
+    queryFn: async () => {
+      const data = await unwrap(
+        typedApi.GET("/api/explore/fresh-challenges"),
+      );
+      return data as FreshChallengesResponse | undefined;
+    },
     staleTime: STALE_MEDIUM,
     enabled,
   });
@@ -229,7 +302,12 @@ export function useFreshChallenges(enabled = true) {
 export function useActiveChallenges(enabled = true) {
   return useQuery({
     queryKey: ["explore", "active-challenges"],
-    queryFn: () => api.get<ActiveChallengesResponse>("/explore/active-challenges"),
+    queryFn: async () => {
+      const data = await unwrap(
+        typedApi.GET("/api/explore/active-challenges"),
+      );
+      return data as ActiveChallengesResponse | undefined;
+    },
     staleTime: STALE_MEDIUM,
     enabled,
   });
@@ -238,7 +316,10 @@ export function useActiveChallenges(enabled = true) {
 export function useThemes(enabled = true) {
   return useQuery({
     queryKey: ["themes"],
-    queryFn: () => api.get<Theme[]>("/themes"),
+    queryFn: async () => {
+      const data = await unwrap(typedApi.GET("/api/themes"));
+      return data as Theme[] | undefined;
+    },
     staleTime: STALE_LONG,
     enabled,
   });
@@ -247,7 +328,12 @@ export function useThemes(enabled = true) {
 export function useKeywords(limit = 30, enabled = true) {
   return useQuery({
     queryKey: ["keywords", limit],
-    queryFn: () => api.get<Keyword[]>(`/keywords?limit=${limit}`),
+    queryFn: async () => {
+      const data = await unwrap(
+        typedApi.GET("/api/keywords", { params: { query: { limit } } }),
+      );
+      return data as Keyword[] | undefined;
+    },
     staleTime: STALE_LONG,
     enabled,
   });
@@ -256,7 +342,10 @@ export function useKeywords(limit = 30, enabled = true) {
 export function useFeaturedSeries(enabled = true) {
   return useQuery({
     queryKey: ["explore", "series", "featured"],
-    queryFn: () => api.get<FeaturedSeries[]>("/explore/series/featured"),
+    queryFn: async () => {
+      const data = await unwrap(typedApi.GET("/api/explore/series/featured"));
+      return data as FeaturedSeries[] | undefined;
+    },
     staleTime: STALE_LONG,
     enabled,
   });
@@ -265,8 +354,12 @@ export function useFeaturedSeries(enabled = true) {
 export function useDeveloperSpotlight(enabled = true) {
   return useQuery({
     queryKey: ["explore", "developers", "spotlight"],
-    queryFn: () =>
-      api.get<DeveloperSpotlightResponse>("/explore/developers/spotlight"),
+    queryFn: async () => {
+      const data = await unwrap(
+        typedApi.GET("/api/explore/developers/spotlight"),
+      );
+      return data as DeveloperSpotlightResponse | undefined;
+    },
     staleTime: STALE_LONG,
     enabled,
   });
@@ -275,8 +368,14 @@ export function useDeveloperSpotlight(enabled = true) {
 export function useArtworkGallery(page: number, enabled = true) {
   return useQuery({
     queryKey: ["artwork-gallery", page],
-    queryFn: () =>
-      api.get<ArtworkGalleryResponse>(`/explore/artwork?page=${page}`),
+    queryFn: async () => {
+      const data = await unwrap(
+        typedApi.GET("/api/explore/artwork", {
+          params: { query: { page } },
+        }),
+      );
+      return data as ArtworkGalleryResponse | undefined;
+    },
     staleTime: STALE_LONG,
     enabled,
   });
@@ -291,10 +390,17 @@ export function useThemeGames(
 ) {
   return useQuery({
     queryKey: ["themes", themeId, "games", page, pageSize],
-    queryFn: () =>
-      api.get<GamesResponse>(
-        `/themes/${themeId}/games?page=${page}&pageSize=${pageSize}`,
-      ),
+    queryFn: async () => {
+      const data = await unwrap(
+        typedApi.GET("/api/themes/{id}/games", {
+          params: {
+            path: { id: themeId as string },
+            query: { page, pageSize },
+          },
+        }),
+      );
+      return data as GamesResponse | undefined;
+    },
     enabled: !!themeId,
     staleTime: STALE_LONG,
   });
@@ -307,10 +413,17 @@ export function useKeywordGames(
 ) {
   return useQuery({
     queryKey: ["keywords", keywordId, "games", page, pageSize],
-    queryFn: () =>
-      api.get<GamesResponse>(
-        `/keywords/${keywordId}/games?page=${page}&pageSize=${pageSize}`,
-      ),
+    queryFn: async () => {
+      const data = await unwrap(
+        typedApi.GET("/api/keywords/{id}/games", {
+          params: {
+            path: { id: keywordId as string },
+            query: { page, pageSize },
+          },
+        }),
+      );
+      return data as GamesResponse | undefined;
+    },
     enabled: !!keywordId,
     staleTime: STALE_LONG,
   });
@@ -319,7 +432,14 @@ export function useKeywordGames(
 export function useSeriesDetail(id: string | undefined) {
   return useQuery({
     queryKey: ["series", id],
-    queryFn: () => api.get<SeriesDetail>(`/series/${id}`),
+    queryFn: async () => {
+      const data = await unwrap(
+        typedApi.GET("/api/series/{id}", {
+          params: { path: { id: id as string } },
+        }),
+      );
+      return data as SeriesDetail | undefined;
+    },
     enabled: !!id,
     staleTime: STALE_LONG,
   });
@@ -328,7 +448,14 @@ export function useSeriesDetail(id: string | undefined) {
 export function useFranchiseDetail(id: string | undefined) {
   return useQuery({
     queryKey: ["franchises", id],
-    queryFn: () => api.get<FranchiseDetail>(`/franchises/${id}`),
+    queryFn: async () => {
+      const data = await unwrap(
+        typedApi.GET("/api/franchises/{id}", {
+          params: { path: { id: id as string } },
+        }),
+      );
+      return data as FranchiseDetail | undefined;
+    },
     enabled: !!id,
     staleTime: STALE_LONG,
   });
@@ -337,7 +464,14 @@ export function useFranchiseDetail(id: string | undefined) {
 export function useGameSeries(gameId: string | undefined) {
   return useQuery({
     queryKey: ["games", gameId, "series"],
-    queryFn: () => api.get<GameSeriesLink[]>(`/games/${gameId}/series`),
+    queryFn: async () => {
+      const data = await unwrap(
+        typedApi.GET("/api/games/{id}/series", {
+          params: { path: { id: gameId as string } },
+        }),
+      );
+      return data as GameSeriesLink[] | undefined;
+    },
     enabled: !!gameId,
     staleTime: STALE_LONG,
   });
@@ -346,8 +480,14 @@ export function useGameSeries(gameId: string | undefined) {
 export function useGameFranchises(gameId: string | undefined) {
   return useQuery({
     queryKey: ["games", gameId, "franchises"],
-    queryFn: () =>
-      api.get<GameFranchiseLink[]>(`/games/${gameId}/franchises`),
+    queryFn: async () => {
+      const data = await unwrap(
+        typedApi.GET("/api/games/{id}/franchises", {
+          params: { path: { id: gameId as string } },
+        }),
+      );
+      return data as GameFranchiseLink[] | undefined;
+    },
     enabled: !!gameId,
     staleTime: STALE_LONG,
   });
@@ -356,7 +496,14 @@ export function useGameFranchises(gameId: string | undefined) {
 export function useMoodGames(mood: string | undefined) {
   return useQuery({
     queryKey: ["explore", "mood", mood],
-    queryFn: () => api.get<Game[]>(`/explore/mood/${mood}`),
+    queryFn: async () => {
+      const data = await unwrap(
+        typedApi.GET("/api/explore/mood/{mood}", {
+          params: { path: { mood: mood as string } },
+        }),
+      );
+      return data as Game[] | undefined;
+    },
     enabled: !!mood,
     staleTime: STALE_MEDIUM,
   });
@@ -365,7 +512,10 @@ export function useMoodGames(mood: string | undefined) {
 export function useSurpriseGame() {
   return useQuery({
     queryKey: ["explore", "surprise"],
-    queryFn: () => api.get<Game>("/explore/surprise"),
+    queryFn: async () => {
+      const data = await unwrap(typedApi.GET("/api/explore/surprise"));
+      return data as Game | undefined;
+    },
     enabled: false,
   });
 }
@@ -373,7 +523,10 @@ export function useSurpriseGame() {
 export function useTasteProfile() {
   return useQuery({
     queryKey: ["user", "taste-profile"],
-    queryFn: () => api.get<TasteProfile>("/user/taste-profile"),
+    queryFn: async () => {
+      const data = await unwrap(typedApi.GET("/api/user/taste-profile"));
+      return data as TasteProfile | undefined;
+    },
     staleTime: STALE_MEDIUM,
   });
 }
@@ -381,7 +534,10 @@ export function useTasteProfile() {
 export function useDevelopers() {
   return useQuery({
     queryKey: ["explore", "developers"],
-    queryFn: () => api.get<DeveloperListResponse>("/explore/developers"),
+    queryFn: async () => {
+      const data = await unwrap(typedApi.GET("/api/explore/developers"));
+      return data as DeveloperListResponse | undefined;
+    },
     staleTime: STALE_LONG,
   });
 }
@@ -389,10 +545,14 @@ export function useDevelopers() {
 export function useDeveloperDetail(name: string) {
   return useQuery({
     queryKey: ["explore", "developers", name],
-    queryFn: () =>
-      api.get<DeveloperDetailResponse>(
-        `/explore/developers/${encodeURIComponent(name)}`,
-      ),
+    queryFn: async () => {
+      const data = await unwrap(
+        typedApi.GET("/api/explore/developers/{name}", {
+          params: { path: { name } },
+        }),
+      );
+      return data as DeveloperDetailResponse | undefined;
+    },
     enabled: !!name,
     staleTime: STALE_LONG,
   });
@@ -401,10 +561,14 @@ export function useDeveloperDetail(name: string) {
 export function usePublisherDetail(name: string) {
   return useQuery({
     queryKey: ["explore", "publishers", name],
-    queryFn: () =>
-      api.get<PublisherDetailResponse>(
-        `/explore/publishers/${encodeURIComponent(name)}`,
-      ),
+    queryFn: async () => {
+      const data = await unwrap(
+        typedApi.GET("/api/explore/publishers/{name}", {
+          params: { path: { name } },
+        }),
+      );
+      return data as PublisherDetailResponse | undefined;
+    },
     enabled: !!name,
     staleTime: STALE_LONG,
   });
@@ -413,10 +577,14 @@ export function usePublisherDetail(name: string) {
 export function useConsoleShowcase(consoleId: string) {
   return useQuery({
     queryKey: ["console-showcase", consoleId],
-    queryFn: () =>
-      api.get<ConsoleShowcase>(
-        `/explore/consoles/${encodeURIComponent(consoleId)}/showcase`,
-      ),
+    queryFn: async () => {
+      const data = await unwrap(
+        typedApi.GET("/api/explore/consoles/{id}/showcase", {
+          params: { path: { id: consoleId } },
+        }),
+      );
+      return data as ConsoleShowcase | undefined;
+    },
     enabled: !!consoleId,
     staleTime: STALE_LONG,
   });
@@ -426,26 +594,42 @@ export function useScreenshotGallery(
   page: number,
   filters?: { console?: string; genre?: string },
 ) {
-  const params = new URLSearchParams({ page: String(page) });
-  if (filters?.console) params.set("console", filters.console);
-  if (filters?.genre) params.set("genre", filters.genre);
   return useQuery({
     queryKey: ["screenshot-gallery", page, filters],
-    queryFn: () =>
-      api.get<ScreenshotGalleryResponse>(
-        `/explore/screenshots?${params}`,
-      ),
+    queryFn: async () => {
+      const data = await unwrap(
+        typedApi.GET("/api/explore/screenshots", {
+          params: {
+            query: {
+              page,
+              ...(filters?.console ? { console: filters.console } : {}),
+              ...(filters?.genre ? { genre: filters.genre } : {}),
+            },
+          },
+        }),
+      );
+      return data as ScreenshotGalleryResponse | undefined;
+    },
     staleTime: STALE_LONG,
   });
 }
 
 export function useCoverGallery(page: number, consoleFilter?: string) {
-  const params = new URLSearchParams({ page: String(page) });
-  if (consoleFilter) params.set("console", consoleFilter);
   return useQuery({
     queryKey: ["cover-gallery", page, consoleFilter],
-    queryFn: () =>
-      api.get<CoverGalleryResponse>(`/explore/covers?${params}`),
+    queryFn: async () => {
+      const data = await unwrap(
+        typedApi.GET("/api/explore/covers", {
+          params: {
+            query: {
+              page,
+              ...(consoleFilter ? { console: consoleFilter } : {}),
+            },
+          },
+        }),
+      );
+      return data as CoverGalleryResponse | undefined;
+    },
     staleTime: STALE_LONG,
   });
 }
@@ -455,7 +639,10 @@ export function useCoverGallery(page: number, consoleFilter?: string) {
 export function useWizardSteps() {
   return useQuery({
     queryKey: ["explore", "wizard"],
-    queryFn: () => api.get<WizardResponse>("/explore/wizard"),
+    queryFn: async () => {
+      const data = await unwrap(typedApi.GET("/api/explore/wizard"));
+      return data as WizardResponse | undefined;
+    },
     staleTime: STALE_LONG,
   });
 }
@@ -468,10 +655,14 @@ export function useWizardResults(
 ) {
   return useQuery({
     queryKey: ["explore", "wizard", "results", mood, era, vibe],
-    queryFn: () =>
-      api.get<WizardResultsResponse>(
-        `/explore/wizard/results?mood=${mood}&era=${era}&vibe=${vibe}`,
-      ),
+    queryFn: async () => {
+      const data = await unwrap(
+        typedApi.GET("/api/explore/wizard/results", {
+          params: { query: { mood, era, vibe } },
+        }),
+      );
+      return data as WizardResultsResponse | undefined;
+    },
     enabled,
   });
 }
@@ -479,7 +670,10 @@ export function useWizardResults(
 export function useExplorerBadges() {
   return useQuery({
     queryKey: ["user", "explorer-badges"],
-    queryFn: () => api.get<ExplorerBadgesResponse>("/user/explorer-badges"),
+    queryFn: async () => {
+      const data = await unwrap(typedApi.GET("/api/user/explorer-badges"));
+      return data as ExplorerBadgesResponse | undefined;
+    },
     staleTime: STALE_MEDIUM,
   });
 }
@@ -487,8 +681,10 @@ export function useExplorerBadges() {
 export function useCompletionistMap() {
   return useQuery({
     queryKey: ["user", "completionist-map"],
-    queryFn: () => api.get<CompletionistMapResponse>("/user/completionist-map"),
+    queryFn: async () => {
+      const data = await unwrap(typedApi.GET("/api/user/completionist-map"));
+      return data as CompletionistMapResponse | undefined;
+    },
     staleTime: STALE_MEDIUM,
   });
 }
-
