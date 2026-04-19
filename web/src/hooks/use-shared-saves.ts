@@ -1,6 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { api } from "@/lib/api-client";
-import type { SharedSavesResponse, GameSession } from "@/types/api";
+import { typedApi, unwrap } from "@/lib/api-client";
 
 export function useSharedSaves(
   gameId: string,
@@ -10,8 +9,10 @@ export function useSharedSaves(
   return useQuery({
     queryKey: ["shared-saves", gameId, page, pageSize],
     queryFn: () =>
-      api.get<SharedSavesResponse>(
-        `/games/${gameId}/shared-saves?page=${page}&pageSize=${pageSize}`,
+      unwrap(
+        typedApi.GET("/api/games/{id}/shared-saves", {
+          params: { path: { id: gameId }, query: { page, pageSize } },
+        }),
       ),
     enabled: !!gameId,
   });
@@ -22,8 +23,10 @@ export function useCreateSessionFromSharedSave() {
 
   return useMutation({
     mutationFn: ({ gameId, saveId }: { gameId: string; saveId: string }) =>
-      api.post<GameSession>(
-        `/games/${gameId}/sessions/from-shared-save/${saveId}`,
+      unwrap(
+        typedApi.POST("/api/games/{id}/sessions/from-shared-save/{saveId}", {
+          params: { path: { id: gameId, saveId } },
+        }),
       ),
     onSuccess: (_, { gameId }) => {
       queryClient.invalidateQueries({ queryKey: ["game-sessions", gameId] });
@@ -43,7 +46,11 @@ export function useDeleteSharedSave() {
       gameId: string;
       saveId: string;
     }) => {
-      await api.delete(`/games/${gameId}/shared-saves/${saveId}`);
+      await unwrap(
+        typedApi.DELETE("/api/games/{id}/shared-saves/{saveId}", {
+          params: { path: { id: gameId, saveId } },
+        }),
+      );
     },
     onSuccess: (_, { gameId }) => {
       queryClient.invalidateQueries({ queryKey: ["shared-saves", gameId] });
