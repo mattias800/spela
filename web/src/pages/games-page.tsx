@@ -26,7 +26,7 @@ import {
   useDeleteSavedSearch,
 } from "@/hooks/use-saved-searches";
 import { useDefaultRegionFilters } from "@/hooks/use-default-region-filters";
-import type { GameFilters } from "@/types/api";
+import type { GameFilters, SavedSearch } from "@/types/api";
 
 type ViewMode = "grid" | "list";
 
@@ -171,7 +171,7 @@ export function GamesPage() {
           consoles={consoles}
           themes={themes}
           keywords={keywords}
-          savedSearches={savedSearches}
+          savedSearches={savedSearches as SavedSearch[] | undefined}
           onSaveSearch={handleSaveSearch}
           onDeleteSearch={(id) => deleteSearch.mutate(id)}
           onApplySearch={handleApplySearch}
