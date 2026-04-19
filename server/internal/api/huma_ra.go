@@ -93,9 +93,7 @@ type GameAchievementProgressResponse struct {
 
 // GetAchievementProgressOutput wraps the progress response.
 type GetAchievementProgressOutput struct {
-	// Body is declared as any because this endpoint historically returns
-	// either a wrapped object or an empty array depending on state.
-	Body any
+	Body GameAchievementProgressResponse
 }
 
 // GetAchievementTimelineInput is the input for GET /api/games/{id}/achievements/timeline.
@@ -413,23 +411,23 @@ func (h *RAHandler) HumaGetAchievementProgress(ctx context.Context, in *GetAchie
 
 	var cred db.RetroAchievementCredential
 	if err := h.DB.Where("user_id = ?", uid).First(&cred).Error; err != nil {
-		return &GetAchievementProgressOutput{Body: []any{}}, nil
+		return &GetAchievementProgressOutput{Body: GameAchievementProgressResponse{RAGameID: 0, Progress: []RAProgressEntry{}}}, nil
 	}
 
 	raGameID := game.RAGameID
 	if raGameID == 0 {
 		romPath := filepath.Join(h.GameDir, game.FilePath)
 		if !storage.ValidateROMPath(romPath, []string{h.GameDir}) {
-			return &GetAchievementProgressOutput{Body: []any{}}, nil
+			return &GetAchievementProgressOutput{Body: GameAchievementProgressResponse{RAGameID: 0, Progress: []RAProgressEntry{}}}, nil
 		}
 		hash, err := computeMD5(romPath)
 		if err != nil {
-			return &GetAchievementProgressOutput{Body: []any{}}, nil
+			return &GetAchievementProgressOutput{Body: GameAchievementProgressResponse{RAGameID: 0, Progress: []RAProgressEntry{}}}, nil
 		}
 		var lookupErr error
 		raGameID, lookupErr = h.RAClient.GetGameIDFromHash(hash)
 		if lookupErr != nil {
-			return &GetAchievementProgressOutput{Body: []any{}}, nil
+			return &GetAchievementProgressOutput{Body: GameAchievementProgressResponse{RAGameID: 0, Progress: []RAProgressEntry{}}}, nil
 		}
 		h.DB.Model(&db.Game{}).Where("id = ?", game.ID).Update("ra_game_id", raGameID)
 	}

@@ -17,14 +17,14 @@ class GameStatsRepositoryImpl(
     }
 
     override suspend fun getGameAchievements(gameId: String): Result<List<GameAchievement>> = runCatching {
-        apiClient.getGameAchievements(gameId).achievements.map { dto ->
+        apiClient.getGameAchievements(gameId).achievements.orEmpty().map { dto ->
             val achievement = dto.toDomain()
             achievement.copy(badgeUrl = apiClient.resolveUrl(achievement.badgeUrl))
         }
     }
 
     override suspend fun getAchievementProgress(gameId: String): Result<List<AchievementProgress>> = runCatching {
-        apiClient.getAchievementProgress(gameId).progress.map { it.toDomain() }
+        apiClient.getAchievementProgress(gameId).progress.orEmpty().map { it.toDomain() }
     }
 
     override suspend fun getAchievementTimeline(gameId: String): Result<AchievementTimelineData> = runCatching {

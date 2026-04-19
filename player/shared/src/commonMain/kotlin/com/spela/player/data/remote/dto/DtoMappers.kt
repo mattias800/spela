@@ -421,18 +421,18 @@ fun com.spela.client.models.GameStatsResponse.toDomain(): GameStats = GameStats(
     topPlayers = topPlayers.orEmpty().map { it.toDomain() },
 )
 
-fun GameAchievementDto.toDomain(): GameAchievement = GameAchievement(
+fun com.spela.client.models.Achievement.toDomain(): GameAchievement = GameAchievement(
     id = id,
     title = title,
     description = description,
-    points = points,
-    badgeUrl = badgeUrl,
-    type = type,
-    displayOrder = displayOrder,
+    points = points.toInt(),
+    badgeUrl = badgeUrl.ifEmpty { null },
+    type = type.ifEmpty { null },
+    displayOrder = null,
     rarityPercent = rarityPercent,
 )
 
-fun AchievementProgressEntryDto.toDomain(): AchievementProgress = AchievementProgress(
+fun com.spela.client.models.RAProgressEntry.toDomain(): AchievementProgress = AchievementProgress(
     achievementId = achievementId,
     unlockedAt = unlockedAt,
     isHardcore = isHardcore,
