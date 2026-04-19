@@ -17,52 +17,14 @@ import kotlinx.serialization.Serializable
 
 typealias UserDto = com.spela.client.models.UserResponse
 
-@Serializable
-data class HardwareMakerDto(
-    val code: String,
-    val name: String,
-)
-
-@Serializable
-data class MediaTypeCategoryDto(
-    val code: String,
-    val name: String,
-)
-
-@Serializable
-data class MediaTypeDto(
-    val code: String,
-    val name: String,
-    val category: MediaTypeCategoryDto,
-)
-
-/** Matches ConsoleResponse in responses.go */
-@Serializable
-data class ConsoleDto(
-    val id: String,
-    val name: String,
-    val abbreviation: String,
-    val code: String = "",
-    val extensions: List<String> = emptyList(),
-    val defaultCore: String = "",
-    val coverAspectRatio: Double = 0.75,
-    val colorTheme: String = "#6366f1",
-    val iconUrl: String = "",
-    val logoUrl: String = "",
-    val logoPngUrl: String = "",
-    val gameCount: Int = 0,
-    val saveStateSupport: Boolean = true,
-    val browserPlayable: Boolean = false,
-    val playable: Boolean = true,
-    val generation: Int = 0,
-    val maker: HardwareMakerDto? = null,
-    val mediaType: MediaTypeDto? = null,
-    val releaseYear: Int? = null,
-    val unitsSold: Long? = null,
-    val summary: String? = null,
-    val createdAt: String? = null,
-    val updatedAt: String? = null,
-)
+// ConsoleDto / HardwareMakerDto / MediaTypeDto / MediaTypeCategoryDto
+// replaced by generated counterparts in com.spela.client.models:
+//   ConsoleDto            -> ConsoleResponse
+//   HardwareMakerDto      -> HardwareMakerResponse
+//   MediaTypeDto          -> MediaTypeResponse
+//   MediaTypeCategoryDto  -> MediaTypeCategoryResponse
+// Generated ConsoleResponse has @Required timestamps (Instant) and
+// non-null maker / mediaType; mapping lives in DtoMappers.kt.
 
 // GameDto / GameDiscDto / GameVariantDto / ParentGameDto / RomHackGameDto
 // replaced by generated counterparts in com.spela.client.models — see

@@ -37,29 +37,6 @@ fun UserDto.toDomain(): User = User(
     avatarUrl = avatarUrl,
 )
 
-fun ConsoleDto.toDomain(): Console = Console(
-    id = id,
-    name = name,
-    abbreviation = abbreviation,
-    gameCount = gameCount,
-    code = code,
-    colorTheme = colorTheme,
-    coverAspectRatio = coverAspectRatio,
-    defaultCore = defaultCore,
-    iconUrl = iconUrl,
-    logoUrl = logoPngUrl.ifEmpty { logoUrl },
-    saveStateSupport = saveStateSupport,
-    browserPlayable = browserPlayable,
-    playable = playable,
-    generation = generation,
-    makerName = maker?.name,
-    makerCode = maker?.code,
-    mediaTypeName = mediaType?.name,
-    releaseYear = releaseYear,
-    unitsSold = unitsSold,
-    summary = summary,
-)
-
 fun com.spela.client.models.ConsoleResponse.toDomain(): Console = Console(
     id = id,
     name = name,

@@ -56,12 +56,47 @@ private fun testGameResponse(
     )
 }
 
-class GameRepositoryImplTest {
-
-    private val sampleConsoles = listOf(
-        ConsoleDto("1", "NES", "NES", gameCount = 10),
-        ConsoleDto("2", "SNES", "SNES", gameCount = 5),
+private fun testConsoleResponse(
+    id: String,
+    name: String,
+    abbreviation: String,
+    gameCount: Long = 0L,
+    coverAspectRatio: Double = 0.75,
+): com.spela.client.models.ConsoleResponse {
+    val now = kotlin.time.Instant.fromEpochSeconds(0)
+    return com.spela.client.models.ConsoleResponse(
+        abbreviation = abbreviation,
+        browserPlayable = false,
+        code = "",
+        colorTheme = "#6366f1",
+        coverAspectRatio = coverAspectRatio,
+        createdAt = now,
+        defaultCore = "",
+        emulatorJsCore = "",
+        extensions = emptyList(),
+        gameCount = gameCount,
+        generation = 0L,
+        iconUrl = "",
+        id = id,
+        logoPngUrl = "",
+        logoUrl = "",
+        maker = com.spela.client.models.HardwareMakerResponse(code = "", name = ""),
+        mediaType = com.spela.client.models.MediaTypeResponse(
+            code = "",
+            name = "",
+            category = com.spela.client.models.MediaTypeCategoryResponse(code = "", name = ""),
+        ),
+        name = name,
+        playable = true,
+        releaseYear = null,
+        saveStateSupport = true,
+        summary = null,
+        unitsSold = null,
+        updatedAt = now,
     )
+}
+
+class GameRepositoryImplTest {
 
     private val sampleGames = listOf(
         testGameResponse("1", "Super Mario Bros.", "1", consoleName = "NES", fileName = "smb.nes", fileSize = 40960, releaseDate = "1985-09-13"),
@@ -69,8 +104,11 @@ class GameRepositoryImplTest {
     )
 
     @Test
-    fun consoleDtoMapsCorrectly() {
-        val mapped = sampleConsoles.map { it.toDomain() }
+    fun consoleResponseMapsCorrectly() {
+        val mapped = listOf(
+            testConsoleResponse("1", "NES", "NES", gameCount = 10L),
+            testConsoleResponse("2", "SNES", "SNES", gameCount = 5L),
+        ).map { it.toDomain() }
 
         assertEquals(2, mapped.size)
         assertEquals("NES", mapped[0].name)
@@ -80,8 +118,8 @@ class GameRepositoryImplTest {
     }
 
     @Test
-    fun consoleDtoMapsCoverAspectRatio() {
-        val dto = ConsoleDto("1", "NES", "NES", coverAspectRatio = 0.75)
+    fun consoleResponseMapsCoverAspectRatio() {
+        val dto = testConsoleResponse("1", "NES", "NES", coverAspectRatio = 0.75)
         val domain = dto.toDomain()
         assertEquals(0.75, domain.coverAspectRatio)
     }
