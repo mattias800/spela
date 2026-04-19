@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { api } from "@/lib/api-client";
+import { typedApi, unwrap } from "@/lib/api-client";
 import type {
   GameSession,
   SessionSave,
@@ -9,7 +9,14 @@ import type {
 export function useGameSessions(gameId: string) {
   return useQuery({
     queryKey: ["game-sessions", gameId],
-    queryFn: () => api.get<GameSession[]>(`/games/${gameId}/sessions`),
+    queryFn: async () => {
+      const data = await unwrap(
+        typedApi.GET("/api/games/{id}/sessions", {
+          params: { path: { id: gameId } },
+        }),
+      );
+      return data as GameSession[] | undefined;
+    },
     enabled: !!gameId,
   });
 }
@@ -19,9 +26,12 @@ export function useCreateSession() {
 
   return useMutation({
     mutationFn: (data: { gameId: string; name: string }) =>
-      api.post<GameSession>(`/games/${data.gameId}/sessions`, {
-        name: data.name,
-      }),
+      unwrap(
+        typedApi.POST("/api/games/{id}/sessions", {
+          params: { path: { id: data.gameId } },
+          body: { name: data.name },
+        }),
+      ),
     onSuccess: (_, { gameId }) => {
       queryClient.invalidateQueries({ queryKey: ["game-sessions", gameId] });
     },
@@ -33,7 +43,12 @@ export function useRenameSession() {
 
   return useMutation({
     mutationFn: ({ id, name }: { id: string; gameId: string; name: string }) =>
-      api.put<GameSession>(`/sessions/${id}`, { name }),
+      unwrap(
+        typedApi.PUT("/api/sessions/{id}", {
+          params: { path: { id } },
+          body: { name },
+        }),
+      ),
     onSuccess: (_, { gameId }) => {
       queryClient.invalidateQueries({ queryKey: ["game-sessions", gameId] });
     },
@@ -45,7 +60,11 @@ export function useDeleteSession() {
 
   return useMutation({
     mutationFn: ({ id }: { id: string; gameId: string }) =>
-      api.delete(`/sessions/${id}`),
+      unwrap(
+        typedApi.DELETE("/api/sessions/{id}", {
+          params: { path: { id } },
+        }),
+      ),
     onSuccess: (_, { gameId }) => {
       queryClient.invalidateQueries({ queryKey: ["game-sessions", gameId] });
     },
@@ -55,7 +74,12 @@ export function useDeleteSession() {
 export function useSession(sessionId: string) {
   return useQuery({
     queryKey: ["session", sessionId],
-    queryFn: () => api.get<GameSession>(`/sessions/${sessionId}`),
+    queryFn: () =>
+      unwrap(
+        typedApi.GET("/api/sessions/{id}", {
+          params: { path: { id: sessionId } },
+        }),
+      ),
     enabled: !!sessionId,
   });
 }
@@ -63,7 +87,14 @@ export function useSession(sessionId: string) {
 export function useSessionSaves(sessionId: string) {
   return useQuery({
     queryKey: ["session-saves", sessionId],
-    queryFn: () => api.get<SessionSave[]>(`/sessions/${sessionId}/saves`),
+    queryFn: async () => {
+      const data = await unwrap(
+        typedApi.GET("/api/sessions/{id}/saves", {
+          params: { path: { id: sessionId } },
+        }),
+      );
+      return data as SessionSave[] | undefined;
+    },
     enabled: !!sessionId,
   });
 }
@@ -71,8 +102,14 @@ export function useSessionSaves(sessionId: string) {
 export function useSessionCheats(sessionId: string) {
   return useQuery({
     queryKey: ["session-cheats", sessionId],
-    queryFn: () =>
-      api.get<SessionCheatConfig>(`/sessions/${sessionId}/cheats`),
+    queryFn: async () => {
+      const data = await unwrap(
+        typedApi.GET("/api/sessions/{id}/cheats", {
+          params: { path: { id: sessionId } },
+        }),
+      );
+      return data as SessionCheatConfig | undefined;
+    },
     enabled: !!sessionId,
   });
 }
@@ -89,10 +126,12 @@ export function useUpdateSessionCheats() {
       cheatsEnabled: boolean;
       enabledIndices: number[];
     }) =>
-      api.put<SessionCheatConfig>(`/sessions/${sessionId}/cheats`, {
-        cheatsEnabled,
-        enabledIndices,
-      }),
+      unwrap(
+        typedApi.PUT("/api/sessions/{id}/cheats", {
+          params: { path: { id: sessionId } },
+          body: { cheatsEnabled, enabledIndices },
+        }),
+      ),
     onSuccess: (_, { sessionId }) => {
       queryClient.invalidateQueries({
         queryKey: ["session-cheats", sessionId],
@@ -114,7 +153,12 @@ export function useDuplicateSession() {
       gameId: string;
       name?: string;
     }) =>
-      api.post<GameSession>(`/sessions/${id}/duplicate`, name ? { name } : {}),
+      unwrap(
+        typedApi.POST("/api/sessions/{id}/duplicate", {
+          params: { path: { id } },
+          body: name ? { name } : {},
+        }),
+      ),
     onSuccess: (_, { gameId }) => {
       queryClient.invalidateQueries({ queryKey: ["game-sessions", gameId] });
     },
@@ -130,7 +174,12 @@ export function useDeleteSessionSave() {
     }: {
       sessionId: string;
       saveId: string;
-    }) => api.delete(`/sessions/${sessionId}/saves/${saveId}`),
+    }) =>
+      unwrap(
+        typedApi.DELETE("/api/sessions/{id}/saves/{saveId}", {
+          params: { path: { id: sessionId, saveId } },
+        }),
+      ),
     onSuccess: (_, { sessionId }) => {
       queryClient.invalidateQueries({
         queryKey: ["session-saves", sessionId],
@@ -143,9 +192,15 @@ export function useDeleteSessionSave() {
 export function useAutoSaveInfo(sessionId: string | undefined) {
   return useQuery({
     queryKey: ["session-saves", sessionId],
-    queryFn: () => api.get<SessionSave[]>(`/sessions/${sessionId}/saves`),
+    queryFn: async () => {
+      const data = await unwrap(
+        typedApi.GET("/api/sessions/{id}/saves", {
+          params: { path: { id: sessionId as string } },
+        }),
+      );
+      return data as SessionSave[] | undefined;
+    },
     enabled: !!sessionId,
-    select: (saves) => saves.find((s) => s.isAuto) ?? null,
+    select: (saves) => saves?.find((s) => s.isAuto) ?? null,
   });
 }
-
