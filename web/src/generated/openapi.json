@@ -2011,8 +2011,6 @@
           "updatedAt",
           "name",
           "abbreviation",
-          "maker",
-          "mediaType",
           "releaseYear",
           "unitsSold",
           "summary",
@@ -3193,8 +3191,7 @@
         "required": [
           "totalPlayTime",
           "gamesPlayed",
-          "favoriteCount",
-          "mostPlayedGame"
+          "favoriteCount"
         ],
         "type": "object"
       },
@@ -10246,7 +10243,6 @@
           "gamesPlayed",
           "currentStreak",
           "longestStreak",
-          "mostPlayedGame",
           "mostPlayedGameTime",
           "lastPlayedAt"
         ],

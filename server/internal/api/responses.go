@@ -60,8 +60,8 @@ type ConsoleResponse struct {
 	UpdatedAt        time.Time              `json:"updatedAt"`
 	Name             string                 `json:"name"`
 	Abbreviation     string                 `json:"abbreviation"`
-	Maker            *HardwareMakerResponse `json:"maker"`
-	MediaType        *MediaTypeResponse     `json:"mediaType"`
+	Maker            *HardwareMakerResponse `json:"maker,omitempty"`
+	MediaType        *MediaTypeResponse     `json:"mediaType,omitempty"`
 	ReleaseYear      *int                   `json:"releaseYear"`
 	UnitsSold        *int64                 `json:"unitsSold"`
 	Summary          *string                `json:"summary"`
@@ -1053,7 +1053,7 @@ type UserStatsResponse struct {
 	GamesPlayed        int64         `json:"gamesPlayed"`
 	CurrentStreak      int           `json:"currentStreak"`
 	LongestStreak      int           `json:"longestStreak"`
-	MostPlayedGame     *GameResponse `json:"mostPlayedGame"`
+	MostPlayedGame     *GameResponse `json:"mostPlayedGame,omitempty"`
 	MostPlayedGameTime int64         `json:"mostPlayedGameTime"`
 	LastPlayedAt       *time.Time    `json:"lastPlayedAt"`
 }

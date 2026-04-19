@@ -1,7 +1,5 @@
 package com.spela.player.data.remote.dto
 
-import kotlinx.serialization.Serializable
-
 // Auth — LoginRequest / RegisterRequest / RefreshRequest / AuthResponse
 // replaced by generated counterparts in com.spela.client.models:
 //   LoginRequest    -> AuthLoginRequest

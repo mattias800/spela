@@ -459,7 +459,7 @@ class ExploreRepositoryImpl(
             userStats = dto.userStats?.let { stats ->
                 stats.toPublisherUserStats().copy(
                     mostPlayedGame = stats.mostPlayedGame
-                        .takeIf { it.id.isNotEmpty() }
+                        ?.takeIf { it.id.isNotEmpty() }
                         ?.let { gameDto ->
                             gameDto.toDomain().copy(
                                 coverUrl = apiClient.resolveUrl(gameDto.coverUrl),
@@ -495,7 +495,7 @@ class ExploreRepositoryImpl(
         userStats = userStats?.let { stats ->
             stats.toDeveloperUserStats().copy(
                 mostPlayedGame = stats.mostPlayedGame
-                    .takeIf { it.id.isNotEmpty() }
+                    ?.takeIf { it.id.isNotEmpty() }
                     ?.let { gameDto ->
                         gameDto.toDomain().copy(
                             coverUrl = apiClient.resolveUrl(gameDto.coverUrl),

@@ -5782,8 +5782,8 @@ export interface components {
             id: string;
             logoPngUrl: string;
             logoUrl: string;
-            maker: components["schemas"]["HardwareMakerResponse"];
-            mediaType: components["schemas"]["MediaTypeResponse"];
+            maker?: components["schemas"]["HardwareMakerResponse"];
+            mediaType?: components["schemas"]["MediaTypeResponse"];
             name: string;
             playable: boolean;
             /** Format: int64 */
@@ -6177,7 +6177,7 @@ export interface components {
             favoriteCount: number;
             /** Format: int64 */
             gamesPlayed: number;
-            mostPlayedGame: components["schemas"]["GameResponse"];
+            mostPlayedGame?: components["schemas"]["GameResponse"];
             /** Format: int64 */
             totalPlayTime: number;
         };
@@ -8580,7 +8580,7 @@ export interface components {
             lastPlayedAt: string | null;
             /** Format: int64 */
             longestStreak: number;
-            mostPlayedGame: components["schemas"]["GameResponse"];
+            mostPlayedGame?: components["schemas"]["GameResponse"];
             /** Format: int64 */
             mostPlayedGameTime: number;
             /** Format: int64 */
