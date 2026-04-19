@@ -1,5 +1,9 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { api, typedApi, unwrap } from "@/lib/api-client";
+import {
+  multipartBodySerializer,
+  typedApi,
+  unwrap,
+} from "@/lib/api-client";
 import type { BiosFile } from "@/types/api";
 
 export function useBiosStatus() {
@@ -18,8 +22,6 @@ export function useBiosFiles() {
   };
 }
 
-// Multipart upload still goes through api.upload — typedApi multipart needs
-// a custom bodySerializer; tracked in #518.
 export function useUploadBiosFile() {
   const queryClient = useQueryClient();
 
@@ -27,7 +29,13 @@ export function useUploadBiosFile() {
     mutationFn: async (file: File) => {
       const formData = new FormData();
       formData.append("file", file);
-      return api.upload<BiosFile>("/admin/bios", formData);
+      const data = await unwrap(
+        typedApi.POST("/api/admin/bios", {
+          body: formData as unknown as never,
+          bodySerializer: multipartBodySerializer,
+        }),
+      );
+      return data as BiosFile | undefined;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["bios"] });

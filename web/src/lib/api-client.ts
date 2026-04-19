@@ -224,6 +224,27 @@ export const typedApi = createClient<paths>({
   fetch: authedFetch,
 });
 
+// Multipart bodySerializer for openapi-fetch. The generated path spec types
+// file fields as `string` (from `format: binary` in OpenAPI), so multipart
+// call sites need to pass a FormData-compatible body via an `unknown` cast.
+// Use like:
+//
+//   const formData = new FormData();
+//   formData.append("file", file);
+//   await typedApi.POST("/api/admin/bios", {
+//     body: formData as unknown as never,
+//     bodySerializer: multipartBodySerializer,
+//   });
+//
+// The serializer returns the FormData as-is so the browser sets the correct
+// multipart/form-data Content-Type + boundary.
+export function multipartBodySerializer(body: unknown): FormData {
+  if (body instanceof FormData) return body;
+  throw new Error(
+    "multipartBodySerializer expects a FormData body; got " + typeof body,
+  );
+}
+
 // unwrap resolves a { data, error, response } FetchResponse into the success
 // value, throwing ApiError on failure. Matches the throw-on-error behavior
 // of the legacy `api` object so migrated call sites don't need to reshape

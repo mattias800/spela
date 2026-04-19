@@ -10,9 +10,6 @@ import {
 } from "../use-bios";
 
 vi.mock("@/lib/api-client", () => ({
-  api: {
-    upload: vi.fn(),
-  },
   typedApi: {
     GET: vi.fn(),
     DELETE: vi.fn(),
@@ -24,13 +21,10 @@ vi.mock("@/lib/api-client", () => ({
       return r.data;
     }),
   ),
+  multipartBodySerializer: (body: unknown) => body as FormData,
 }));
 
-import { api, typedApi } from "@/lib/api-client";
-
-const mockApi = api as unknown as {
-  upload: ReturnType<typeof vi.fn>;
-};
+import { typedApi } from "@/lib/api-client";
 
 const mockTypedApi = typedApi as unknown as {
   GET: ReturnType<typeof vi.fn>;
@@ -154,7 +148,7 @@ describe("useUploadBiosFile", () => {
       required: true,
       status: "valid" as const,
     };
-    mockApi.upload.mockResolvedValue(uploadResult);
+    mockTypedApi.POST.mockReturnValue(ok(uploadResult));
 
     const { result } = renderHook(() => useUploadBiosFile(), {
       wrapper: createWrapper(),
@@ -167,15 +161,20 @@ describe("useUploadBiosFile", () => {
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
-    expect(mockApi.upload).toHaveBeenCalledWith(
-      "/admin/bios",
-      expect.any(FormData),
+    expect(mockTypedApi.POST).toHaveBeenCalledWith(
+      "/api/admin/bios",
+      expect.objectContaining({
+        body: expect.any(FormData),
+        bodySerializer: expect.any(Function),
+      }),
     );
     expect(result.current.data).toEqual(uploadResult);
   });
 
   it("handles upload error", async () => {
-    mockApi.upload.mockRejectedValue(new Error("413 Payload Too Large"));
+    mockTypedApi.POST.mockReturnValue(
+      Promise.reject(new Error("413 Payload Too Large")),
+    );
 
     const { result } = renderHook(() => useUploadBiosFile(), {
       wrapper: createWrapper(),
