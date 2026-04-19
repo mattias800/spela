@@ -1,5 +1,9 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { api, typedApi, unwrap } from "@/lib/api-client";
+import {
+  multipartBodySerializer,
+  typedApi,
+  unwrap,
+} from "@/lib/api-client";
 import type { StagedUpload } from "@/types/api";
 
 export function useUploadWritable() {
@@ -16,11 +20,6 @@ export function useStagedUploads() {
   });
 }
 
-// useUploadRoms still goes through api.upload — multipart file uploads need
-// a custom bodySerializer to pass FormData through openapi-fetch, tracked in
-// #489. Migrating this one hook while the spec types files as 'string'
-// (format: binary) would require an unsafe cast on every File upload; cleaner
-// to wait until openapi-fetch grows a formData helper or we add one ourselves.
 export function useUploadRoms() {
   const queryClient = useQueryClient();
 
@@ -30,7 +29,13 @@ export function useUploadRoms() {
       for (const file of files) {
         formData.append("files", file);
       }
-      return api.upload<StagedUpload[]>("/admin/uploads", formData);
+      const data = await unwrap(
+        typedApi.POST("/api/admin/uploads", {
+          body: formData as unknown as never,
+          bodySerializer: multipartBodySerializer,
+        }),
+      );
+      return data as StagedUpload[] | undefined;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin", "uploads"] });
