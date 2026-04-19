@@ -6293,31 +6293,6 @@
         ],
         "type": "object"
       },
-      "RALinkResponse": {
-        "additionalProperties": false,
-        "properties": {
-          "$schema": {
-            "description": "A URL to the JSON Schema for this object.",
-            "examples": [
-              "https://example.com/api/schemas/RALinkResponse.json"
-            ],
-            "format": "uri",
-            "readOnly": true,
-            "type": "string"
-          },
-          "linked": {
-            "type": "boolean"
-          },
-          "username": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "linked",
-          "username"
-        ],
-        "type": "object"
-      },
       "RARecentAchievementResponse": {
         "additionalProperties": false,
         "properties": {
@@ -6475,27 +6450,6 @@
         "required": [
           "username",
           "token"
-        ],
-        "type": "object"
-      },
-      "RAUnlinkResponse": {
-        "additionalProperties": false,
-        "properties": {
-          "$schema": {
-            "description": "A URL to the JSON Schema for this object.",
-            "examples": [
-              "https://example.com/api/schemas/RAUnlinkResponse.json"
-            ],
-            "format": "uri",
-            "readOnly": true,
-            "type": "string"
-          },
-          "linked": {
-            "type": "boolean"
-          }
-        },
-        "required": [
-          "linked"
         ],
         "type": "object"
       },
@@ -24992,7 +24946,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/RAUnlinkResponse"
+                  "$ref": "#/components/schemas/RAStatusResponse"
                 }
               }
             },
@@ -25037,7 +24991,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/RALinkResponse"
+                  "$ref": "#/components/schemas/RAStatusResponse"
                 }
               }
             },

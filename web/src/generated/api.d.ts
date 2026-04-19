@@ -7192,16 +7192,6 @@ export interface components {
             userId: string;
             username: string;
         };
-        RALinkResponse: {
-            /**
-             * Format: uri
-             * @description A URL to the JSON Schema for this object.
-             * @example https://example.com/api/schemas/RALinkResponse.json
-             */
-            readonly $schema?: string;
-            linked: boolean;
-            username: string;
-        };
         RARecentAchievementResponse: {
             /** Format: int64 */
             achievementRaId: number;
@@ -7254,15 +7244,6 @@ export interface components {
             readonly $schema?: string;
             token: string;
             username: string;
-        };
-        RAUnlinkResponse: {
-            /**
-             * Format: uri
-             * @description A URL to the JSON Schema for this object.
-             * @example https://example.com/api/schemas/RAUnlinkResponse.json
-             */
-            readonly $schema?: string;
-            linked: boolean;
         };
         RAUnlockedAchievementResponse: {
             /** Format: int64 */
@@ -17703,7 +17684,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["RALinkResponse"];
+                    "application/json": components["schemas"]["RAStatusResponse"];
                 };
             };
             /** @description Error */
@@ -17732,7 +17713,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["RAUnlinkResponse"];
+                    "application/json": components["schemas"]["RAStatusResponse"];
                 };
             };
             /** @description Error */

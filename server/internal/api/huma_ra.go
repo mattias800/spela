@@ -26,28 +26,17 @@ type LinkRAAccountInput struct {
 	Body LinkRAAccountRequest
 }
 
-// RALinkResponse is the wire format for RA link/status responses (simple variant).
-type RALinkResponse struct {
-	Linked   bool   `json:"linked"`
-	Username string `json:"username"`
-}
-
 // LinkRAAccountOutput wraps the linked response.
 type LinkRAAccountOutput struct {
-	Body RALinkResponse
+	Body RAStatusResponse
 }
 
 // UnlinkRAAccountInput is the input for DELETE /api/user/ra/link.
 type UnlinkRAAccountInput struct{}
 
-// RAUnlinkResponse is the wire format for the unlink response.
-type RAUnlinkResponse struct {
-	Linked bool `json:"linked"`
-}
-
 // UnlinkRAAccountOutput wraps the unlink response.
 type UnlinkRAAccountOutput struct {
-	Body RAUnlinkResponse
+	Body RAStatusResponse
 }
 
 // GetRAAccountStatusInput is the input for GET /api/user/ra/status.
@@ -336,7 +325,11 @@ func (h *RAHandler) HumaLinkRAAccount(ctx context.Context, in *LinkRAAccountInpu
 		}
 	}
 
-	return &LinkRAAccountOutput{Body: RALinkResponse{Linked: true, Username: req.Username}}, nil
+	return &LinkRAAccountOutput{Body: RAStatusResponse{
+		Linked:          true,
+		Username:        cred.RAUsername,
+		HardcoreEnabled: cred.HardcoreEnabled,
+	}}, nil
 }
 
 // HumaUnlinkRAAccount is the huma handler for DELETE /api/user/ra/link.
@@ -346,7 +339,7 @@ func (h *RAHandler) HumaUnlinkRAAccount(ctx context.Context, _ *UnlinkRAAccountI
 	if result.RowsAffected == 0 {
 		return nil, huma.Error404NotFound("no RA account linked")
 	}
-	return &UnlinkRAAccountOutput{Body: RAUnlinkResponse{Linked: false}}, nil
+	return &UnlinkRAAccountOutput{Body: RAStatusResponse{Linked: false}}, nil
 }
 
 // HumaGetRAStatus is the huma handler for GET /api/user/ra/status.

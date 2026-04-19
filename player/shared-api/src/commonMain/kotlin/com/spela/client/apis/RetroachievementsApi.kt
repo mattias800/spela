@@ -29,10 +29,8 @@ import com.spela.client.models.AdminRAStatusResponse
 import com.spela.client.models.GameAchievementsResponse
 import com.spela.client.models.HumaError
 import com.spela.client.models.LinkRAAccountRequest
-import com.spela.client.models.RALinkResponse
 import com.spela.client.models.RAStatusResponse
 import com.spela.client.models.RATokenResponse
-import com.spela.client.models.RAUnlinkResponse
 import com.spela.client.models.RecentAchievementsResponse
 import com.spela.client.models.RefreshAchievementsResponse
 import com.spela.client.models.ShowcaseEntryInput
@@ -448,10 +446,10 @@ open class RetroachievementsApi : ApiClient {
      * Link a RetroAchievements account
      * Exchanges username + password for a RetroAchievements token and stores it encrypted for the caller.
      * @param linkRAAccountRequest 
-     * @return RALinkResponse
+     * @return RAStatusResponse
      */
     @Suppress("UNCHECKED_CAST")
-    open suspend fun linkRAAccount(linkRAAccountRequest: LinkRAAccountRequest): HttpResponse<RALinkResponse> {
+    open suspend fun linkRAAccount(linkRAAccountRequest: LinkRAAccountRequest): HttpResponse<RAStatusResponse> {
 
         val localVariableAuthNames = listOf<String>()
 
@@ -513,10 +511,10 @@ open class RetroachievementsApi : ApiClient {
     /**
      * Unlink the RetroAchievements account
      * Removes the caller&#39;s stored RA credentials.
-     * @return RAUnlinkResponse
+     * @return RAStatusResponse
      */
     @Suppress("UNCHECKED_CAST")
-    open suspend fun unlinkRAAccount(): HttpResponse<RAUnlinkResponse> {
+    open suspend fun unlinkRAAccount(): HttpResponse<RAStatusResponse> {
 
         val localVariableAuthNames = listOf<String>()
 
