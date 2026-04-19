@@ -1093,15 +1093,6 @@ class SpelaApiClient(
         return sharedSessionsApi.downloadSharedSessionAutoSave(sharedSessionId).response.body<ByteArray>()
     }
 
-    suspend fun copySharedSessionSaveToGame(sharedSessionId: String, saveId: Long) {
-        // NOTE: This endpoint is not currently registered on the server — it is
-        // missing from both the huma handlers and the remaining gin routes
-        // (see server/internal/api/huma_shared.go and server/internal/api/router.go).
-        // The path is kept at its original (pre-huma) location so that if the
-        // server adds it back at the same path, the player will continue to work.
-        client.post("$baseUrl/api/shared-sessions/$sharedSessionId/saves/$saveId/copy-to-game")
-    }
-
     suspend fun uploadSharedSessionAutoSave(
         sharedSessionId: String,
         turnToken: String,

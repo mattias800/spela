@@ -303,7 +303,6 @@ private class PlayFromSharedSaveTestSharedSessionRepository : SharedSessionRepos
     override suspend fun downloadSharedSessionAutoSave(sharedSessionId: String) = Result.success(byteArrayOf())
     override suspend fun uploadSharedSessionAutoSave(sharedSessionId: String, turnToken: String, data: ByteArray) =
         Result.success(SharedSessionSave(id = 1, sharedSessionId = sharedSessionId, name = "Auto Save", isAuto = true))
-    override suspend fun copySharedSessionSaveToGame(sharedSessionId: String, saveId: Long) = Result.success(Unit)
 }
 
 private class PlayFromSharedSaveTestChallengeRepository : ChallengeRepository {

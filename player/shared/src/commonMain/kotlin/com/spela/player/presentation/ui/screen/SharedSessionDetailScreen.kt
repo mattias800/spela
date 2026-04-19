@@ -171,12 +171,6 @@ fun SharedSessionDetailScreen(
                             ) { save ->
                                 SharedSessionSaveItem(
                                     save = save,
-                                    isCopying = state.copyingSaveId == save.id,
-                                    onCopyToGame = {
-                                        viewModel.onIntent(
-                                            SharedSessionDetailIntent.CopySaveToGame(sharedSessionId, save.id)
-                                        )
-                                    },
                                     modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal, vertical = SpSpacing.XSmall),
                                 )
                             }

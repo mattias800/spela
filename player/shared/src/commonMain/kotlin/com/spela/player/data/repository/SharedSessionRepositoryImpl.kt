@@ -103,10 +103,6 @@ class SharedSessionRepositoryImpl(
         apiClient.downloadSharedSessionAutoSave(sharedSessionId)
     }
 
-    override suspend fun copySharedSessionSaveToGame(sharedSessionId: String, saveId: Long): Result<Unit> = runCatching {
-        apiClient.copySharedSessionSaveToGame(sharedSessionId, saveId)
-    }
-
     override suspend fun uploadSharedSessionAutoSave(
         sharedSessionId: String,
         turnToken: String,
