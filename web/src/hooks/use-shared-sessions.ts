@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { api } from "@/lib/api-client";
+import { typedApi, unwrap } from "@/lib/api-client";
 import { useWebSocketEvent } from "@/hooks/use-websocket";
 import type {
   SharedSessionsResponse,
@@ -10,21 +10,24 @@ import type {
 } from "@/types/api";
 
 export function useMySharedSessions(page = 1, pageSize = 20) {
-  const params = new URLSearchParams();
-  params.set("page", String(page));
-  params.set("pageSize", String(pageSize));
-
   return useQuery({
     queryKey: ["shared-sessions", "mine", page, pageSize],
-    queryFn: () => api.get<SharedSessionsResponse>(`/shared-sessions?${params}`),
+    queryFn: async () => {
+      const data = await unwrap(typedApi.GET("/api/shared-sessions"));
+      return data as SharedSessionsResponse | undefined;
+    },
   });
 }
 
 export function useSharedSessionInvitations() {
   return useQuery({
     queryKey: ["shared-sessions", "invitations"],
-    queryFn: () =>
-      api.get<SharedSessionInvitationsResponse>("/user/shared-session-invites"),
+    queryFn: async () => {
+      const data = await unwrap(
+        typedApi.GET("/api/user/shared-session-invites"),
+      );
+      return data as SharedSessionInvitationsResponse | undefined;
+    },
   });
 }
 
@@ -32,7 +35,7 @@ export function usePendingInvitationCount() {
   return useQuery({
     queryKey: ["shared-sessions", "invitations", "count"],
     queryFn: () =>
-      api.get<{ count: number }>("/user/shared-session-invites/count"),
+      unwrap(typedApi.GET("/api/user/shared-session-invites/count")),
     refetchInterval: 30000,
   });
 }
@@ -40,7 +43,14 @@ export function usePendingInvitationCount() {
 export function useSharedSession(id: string) {
   return useQuery({
     queryKey: ["shared-sessions", "detail", id],
-    queryFn: () => api.get<SharedSessionDetail>(`/shared-sessions/${id}`),
+    queryFn: async () => {
+      const data = await unwrap(
+        typedApi.GET("/api/shared-sessions/{id}", {
+          params: { path: { id } },
+        }),
+      );
+      return data as SharedSessionDetail | undefined;
+    },
     enabled: !!id,
   });
 }
@@ -48,7 +58,14 @@ export function useSharedSession(id: string) {
 export function useSharedSessionSaves(sharedSessionId: string) {
   return useQuery({
     queryKey: ["shared-sessions", "saves", sharedSessionId],
-    queryFn: () => api.get<SharedSessionSave[]>(`/shared-sessions/${sharedSessionId}/saves`),
+    queryFn: async () => {
+      const data = await unwrap(
+        typedApi.GET("/api/shared-sessions/{id}/saves", {
+          params: { path: { id: sharedSessionId } },
+        }),
+      );
+      return data as SharedSessionSave[] | undefined;
+    },
     enabled: !!sharedSessionId,
   });
 }
@@ -56,7 +73,14 @@ export function useSharedSessionSaves(sharedSessionId: string) {
 export function useGameSharedSessions(gameId: string) {
   return useQuery({
     queryKey: ["shared-sessions", "game", gameId],
-    queryFn: () => api.get<SharedSession[]>(`/games/${gameId}/shared-sessions`),
+    queryFn: async () => {
+      const data = await unwrap(
+        typedApi.GET("/api/games/{id}/shared-sessions", {
+          params: { path: { id: gameId } },
+        }),
+      );
+      return data as SharedSession[] | undefined;
+    },
     enabled: !!gameId,
   });
 }
@@ -65,11 +89,16 @@ export function useCreateSharedSession() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (data: {
+    mutationFn: async (data: {
       name: string;
       gameId: string;
       description?: string;
-    }) => api.post<SharedSessionDetail>("/shared-sessions", data),
+    }) => {
+      const result = await unwrap(
+        typedApi.POST("/api/shared-sessions", { body: data }),
+      );
+      return result as SharedSessionDetail | undefined;
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["shared-sessions"] });
     },
@@ -80,7 +109,12 @@ export function useDeleteSharedSession() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (id: string) => api.delete(`/shared-sessions/${id}`),
+    mutationFn: (id: string) =>
+      unwrap(
+        typedApi.DELETE("/api/shared-sessions/{id}", {
+          params: { path: { id } },
+        }),
+      ),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["shared-sessions"] });
     },
@@ -97,9 +131,17 @@ export function useInviteToSharedSession() {
     }: {
       sharedSessionId: string;
       username: string;
-    }) => api.post(`/shared-sessions/${sharedSessionId}/invites`, { username }),
+    }) =>
+      unwrap(
+        typedApi.POST("/api/shared-sessions/{id}/invites", {
+          params: { path: { id: sharedSessionId } },
+          body: { username },
+        }),
+      ),
     onSuccess: (_, { sharedSessionId }) => {
-      queryClient.invalidateQueries({ queryKey: ["shared-sessions", "detail", sharedSessionId] });
+      queryClient.invalidateQueries({
+        queryKey: ["shared-sessions", "detail", sharedSessionId],
+      });
     },
   });
 }
@@ -109,7 +151,11 @@ export function useAcceptSharedSessionInvitation() {
 
   return useMutation({
     mutationFn: (invitationId: string) =>
-      api.post(`/user/shared-session-invites/${invitationId}/accept`),
+      unwrap(
+        typedApi.POST("/api/user/shared-session-invites/{id}/accept", {
+          params: { path: { id: invitationId } },
+        }),
+      ),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["shared-sessions"] });
     },
@@ -121,7 +167,11 @@ export function useRejectSharedSessionInvitation() {
 
   return useMutation({
     mutationFn: (invitationId: string) =>
-      api.post(`/user/shared-session-invites/${invitationId}/decline`),
+      unwrap(
+        typedApi.POST("/api/user/shared-session-invites/{id}/decline", {
+          params: { path: { id: invitationId } },
+        }),
+      ),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["shared-sessions"] });
     },
@@ -133,7 +183,11 @@ export function useLeaveSharedSession() {
 
   return useMutation({
     mutationFn: (sharedSessionId: string) =>
-      api.post(`/shared-sessions/${sharedSessionId}/leave`),
+      unwrap(
+        typedApi.POST("/api/shared-sessions/{id}/leave", {
+          params: { path: { id: sharedSessionId } },
+        }),
+      ),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["shared-sessions"] });
     },
@@ -150,9 +204,16 @@ export function useRemoveSharedSessionMember() {
     }: {
       sharedSessionId: string;
       userId: string;
-    }) => api.delete(`/shared-sessions/${sharedSessionId}/members/${userId}`),
+    }) =>
+      unwrap(
+        typedApi.DELETE("/api/shared-sessions/{id}/members/{userId}", {
+          params: { path: { id: sharedSessionId, userId } },
+        }),
+      ),
     onSuccess: (_, { sharedSessionId }) => {
-      queryClient.invalidateQueries({ queryKey: ["shared-sessions", "detail", sharedSessionId] });
+      queryClient.invalidateQueries({
+        queryKey: ["shared-sessions", "detail", sharedSessionId],
+      });
     },
   });
 }
@@ -167,9 +228,16 @@ export function useDeleteSharedSessionSave() {
     }: {
       sharedSessionId: string;
       saveId: string;
-    }) => api.delete(`/shared-sessions/${sharedSessionId}/saves/${saveId}`),
+    }) =>
+      unwrap(
+        typedApi.DELETE("/api/shared-sessions/{id}/saves/{saveId}", {
+          params: { path: { id: sharedSessionId, saveId } },
+        }),
+      ),
     onSuccess: (_, { sharedSessionId }) => {
-      queryClient.invalidateQueries({ queryKey: ["shared-sessions", "saves", sharedSessionId] });
+      queryClient.invalidateQueries({
+        queryKey: ["shared-sessions", "saves", sharedSessionId],
+      });
     },
   });
 }

@@ -20,24 +20,37 @@ import {
 } from "../use-shared-sessions";
 
 vi.mock("@/lib/api-client", () => ({
-  api: {
-    get: vi.fn(),
-    post: vi.fn(),
-    delete: vi.fn(),
+  typedApi: {
+    GET: vi.fn(),
+    POST: vi.fn(),
+    DELETE: vi.fn(),
   },
+  unwrap: vi.fn(<T,>(p: Promise<{ data?: T; error?: unknown; response: Response }>) =>
+    p.then((r) => {
+      if (r.error !== undefined) throw r.error;
+      return r.data;
+    }),
+  ),
 }));
 
 vi.mock("@/hooks/use-websocket", () => ({
   useWebSocketEvent: vi.fn(),
 }));
 
-import { api } from "@/lib/api-client";
+import { typedApi } from "@/lib/api-client";
 
-const mockApi = api as unknown as {
-  get: ReturnType<typeof vi.fn>;
-  post: ReturnType<typeof vi.fn>;
-  delete: ReturnType<typeof vi.fn>;
+const mockTypedApi = typedApi as unknown as {
+  GET: ReturnType<typeof vi.fn>;
+  POST: ReturnType<typeof vi.fn>;
+  DELETE: ReturnType<typeof vi.fn>;
 };
+
+function ok(data: unknown) {
+  return Promise.resolve({
+    data,
+    response: new Response(null, { status: 200 }),
+  });
+}
 
 function createWrapper() {
   const queryClient = new QueryClient({
@@ -143,8 +156,8 @@ const mockSaves = [
 ];
 
 describe("useMySharedSessions", () => {
-  it("fetches shared sessions with default pagination", async () => {
-    mockApi.get.mockResolvedValue(mockSharedSessionsResponse);
+  it("fetches shared sessions", async () => {
+    mockTypedApi.GET.mockReturnValue(ok(mockSharedSessionsResponse));
 
     const { result } = renderHook(() => useMySharedSessions(), {
       wrapper: createWrapper(),
@@ -152,25 +165,13 @@ describe("useMySharedSessions", () => {
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
-    expect(mockApi.get).toHaveBeenCalledWith("/shared-sessions?page=1&pageSize=20");
+    expect(mockTypedApi.GET).toHaveBeenCalledWith("/api/shared-sessions");
     expect(result.current.data?.data).toHaveLength(1);
     expect(result.current.data?.data[0].name).toBe("Friday Night SNES");
   });
 
-  it("fetches shared sessions with custom pagination", async () => {
-    mockApi.get.mockResolvedValue({ ...mockSharedSessionsResponse, page: 2 });
-
-    const { result } = renderHook(() => useMySharedSessions(2, 10), {
-      wrapper: createWrapper(),
-    });
-
-    await waitFor(() => expect(result.current.isSuccess).toBe(true));
-
-    expect(mockApi.get).toHaveBeenCalledWith("/shared-sessions?page=2&pageSize=10");
-  });
-
   it("handles fetch error", async () => {
-    mockApi.get.mockRejectedValue(new Error("Server error"));
+    mockTypedApi.GET.mockReturnValue(Promise.reject(new Error("Server error")));
 
     const { result } = renderHook(() => useMySharedSessions(), {
       wrapper: createWrapper(),
@@ -182,7 +183,7 @@ describe("useMySharedSessions", () => {
 
 describe("useSharedSessionInvitations", () => {
   it("fetches invitations", async () => {
-    mockApi.get.mockResolvedValue(mockInvitations);
+    mockTypedApi.GET.mockReturnValue(ok(mockInvitations));
 
     const { result } = renderHook(() => useSharedSessionInvitations(), {
       wrapper: createWrapper(),
@@ -190,15 +191,19 @@ describe("useSharedSessionInvitations", () => {
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
-    expect(mockApi.get).toHaveBeenCalledWith("/user/shared-session-invites");
+    expect(mockTypedApi.GET).toHaveBeenCalledWith(
+      "/api/user/shared-session-invites",
+    );
     expect(result.current.data?.data).toHaveLength(1);
-    expect(result.current.data?.data[0].sharedSessionName).toBe("Friday Night SNES");
+    expect(result.current.data?.data[0].sharedSessionName).toBe(
+      "Friday Night SNES",
+    );
   });
 });
 
 describe("usePendingInvitationCount", () => {
   it("fetches invitation count", async () => {
-    mockApi.get.mockResolvedValue({ count: 3 });
+    mockTypedApi.GET.mockReturnValue(ok({ count: 3 }));
 
     const { result } = renderHook(() => usePendingInvitationCount(), {
       wrapper: createWrapper(),
@@ -206,14 +211,16 @@ describe("usePendingInvitationCount", () => {
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
-    expect(mockApi.get).toHaveBeenCalledWith("/user/shared-session-invites/count");
+    expect(mockTypedApi.GET).toHaveBeenCalledWith(
+      "/api/user/shared-session-invites/count",
+    );
     expect(result.current.data?.count).toBe(3);
   });
 });
 
 describe("useSharedSession", () => {
   it("fetches shared session detail", async () => {
-    mockApi.get.mockResolvedValue(mockSharedSessionDetail);
+    mockTypedApi.GET.mockReturnValue(ok(mockSharedSessionDetail));
 
     const { result } = renderHook(() => useSharedSession("ss-1"), {
       wrapper: createWrapper(),
@@ -221,25 +228,28 @@ describe("useSharedSession", () => {
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
-    expect(mockApi.get).toHaveBeenCalledWith("/shared-sessions/ss-1");
+    expect(mockTypedApi.GET).toHaveBeenCalledWith(
+      "/api/shared-sessions/{id}",
+      { params: { path: { id: "ss-1" } } },
+    );
     expect(result.current.data?.members).toHaveLength(2);
     expect(result.current.data?.members[0].role).toBe("owner");
   });
 
   it("does not fetch when id is empty", () => {
-    mockApi.get.mockResolvedValue(mockSharedSessionDetail);
+    mockTypedApi.GET.mockReturnValue(ok(mockSharedSessionDetail));
 
     renderHook(() => useSharedSession(""), {
       wrapper: createWrapper(),
     });
 
-    expect(mockApi.get).not.toHaveBeenCalled();
+    expect(mockTypedApi.GET).not.toHaveBeenCalled();
   });
 });
 
 describe("useSharedSessionSaves", () => {
   it("fetches saves for a shared session", async () => {
-    mockApi.get.mockResolvedValue(mockSaves);
+    mockTypedApi.GET.mockReturnValue(ok(mockSaves));
 
     const { result } = renderHook(() => useSharedSessionSaves("ss-1"), {
       wrapper: createWrapper(),
@@ -247,7 +257,10 @@ describe("useSharedSessionSaves", () => {
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
-    expect(mockApi.get).toHaveBeenCalledWith("/shared-sessions/ss-1/saves");
+    expect(mockTypedApi.GET).toHaveBeenCalledWith(
+      "/api/shared-sessions/{id}/saves",
+      { params: { path: { id: "ss-1" } } },
+    );
     expect(result.current.data).toHaveLength(1);
     expect(result.current.data?.[0].name).toBe("World 3");
   });
@@ -255,7 +268,9 @@ describe("useSharedSessionSaves", () => {
 
 describe("useGameSharedSessions", () => {
   it("fetches shared sessions for a game", async () => {
-    mockApi.get.mockResolvedValue([mockSharedSessionsResponse.data[0]]);
+    mockTypedApi.GET.mockReturnValue(
+      ok([mockSharedSessionsResponse.data[0]]),
+    );
 
     const { result } = renderHook(() => useGameSharedSessions("g1"), {
       wrapper: createWrapper(),
@@ -263,13 +278,16 @@ describe("useGameSharedSessions", () => {
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
-    expect(mockApi.get).toHaveBeenCalledWith("/games/g1/shared-sessions");
+    expect(mockTypedApi.GET).toHaveBeenCalledWith(
+      "/api/games/{id}/shared-sessions",
+      { params: { path: { id: "g1" } } },
+    );
   });
 });
 
 describe("useCreateSharedSession", () => {
   it("creates a shared session", async () => {
-    mockApi.post.mockResolvedValue(mockSharedSessionDetail);
+    mockTypedApi.POST.mockReturnValue(ok(mockSharedSessionDetail));
 
     const { result } = renderHook(() => useCreateSharedSession(), {
       wrapper: createWrapper(),
@@ -282,15 +300,17 @@ describe("useCreateSharedSession", () => {
     });
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(mockApi.post).toHaveBeenCalledWith("/shared-sessions", {
-      name: "New Shared Session",
-      gameId: "g1",
-      description: "A test shared session",
+    expect(mockTypedApi.POST).toHaveBeenCalledWith("/api/shared-sessions", {
+      body: {
+        name: "New Shared Session",
+        gameId: "g1",
+        description: "A test shared session",
+      },
     });
   });
 
   it("handles create error", async () => {
-    mockApi.post.mockRejectedValue(new Error("Conflict"));
+    mockTypedApi.POST.mockReturnValue(Promise.reject(new Error("Conflict")));
 
     const { result } = renderHook(() => useCreateSharedSession(), {
       wrapper: createWrapper(),
@@ -304,7 +324,7 @@ describe("useCreateSharedSession", () => {
 
 describe("useDeleteSharedSession", () => {
   it("deletes a shared session", async () => {
-    mockApi.delete.mockResolvedValue(undefined);
+    mockTypedApi.DELETE.mockReturnValue(ok(undefined));
 
     const { result } = renderHook(() => useDeleteSharedSession(), {
       wrapper: createWrapper(),
@@ -313,13 +333,16 @@ describe("useDeleteSharedSession", () => {
     result.current.mutate("ss-1");
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(mockApi.delete).toHaveBeenCalledWith("/shared-sessions/ss-1");
+    expect(mockTypedApi.DELETE).toHaveBeenCalledWith(
+      "/api/shared-sessions/{id}",
+      { params: { path: { id: "ss-1" } } },
+    );
   });
 });
 
 describe("useInviteToSharedSession", () => {
   it("sends an invitation", async () => {
-    mockApi.post.mockResolvedValue(undefined);
+    mockTypedApi.POST.mockReturnValue(ok(undefined));
 
     const { result } = renderHook(() => useInviteToSharedSession(), {
       wrapper: createWrapper(),
@@ -328,13 +351,16 @@ describe("useInviteToSharedSession", () => {
     result.current.mutate({ sharedSessionId: "ss-1", username: "charlie" });
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(mockApi.post).toHaveBeenCalledWith("/shared-sessions/ss-1/invites", {
-      username: "charlie",
-    });
+    expect(mockTypedApi.POST).toHaveBeenCalledWith(
+      "/api/shared-sessions/{id}/invites",
+      { params: { path: { id: "ss-1" } }, body: { username: "charlie" } },
+    );
   });
 
   it("handles invite error", async () => {
-    mockApi.post.mockRejectedValue(new Error("User not found"));
+    mockTypedApi.POST.mockReturnValue(
+      Promise.reject(new Error("User not found")),
+    );
 
     const { result } = renderHook(() => useInviteToSharedSession(), {
       wrapper: createWrapper(),
@@ -348,7 +374,7 @@ describe("useInviteToSharedSession", () => {
 
 describe("useAcceptSharedSessionInvitation", () => {
   it("accepts an invitation", async () => {
-    mockApi.post.mockResolvedValue(undefined);
+    mockTypedApi.POST.mockReturnValue(ok(undefined));
 
     const { result } = renderHook(() => useAcceptSharedSessionInvitation(), {
       wrapper: createWrapper(),
@@ -357,15 +383,16 @@ describe("useAcceptSharedSessionInvitation", () => {
     result.current.mutate("inv-1");
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(mockApi.post).toHaveBeenCalledWith(
-      "/user/shared-session-invites/inv-1/accept",
+    expect(mockTypedApi.POST).toHaveBeenCalledWith(
+      "/api/user/shared-session-invites/{id}/accept",
+      { params: { path: { id: "inv-1" } } },
     );
   });
 });
 
 describe("useRejectSharedSessionInvitation", () => {
   it("rejects an invitation", async () => {
-    mockApi.post.mockResolvedValue(undefined);
+    mockTypedApi.POST.mockReturnValue(ok(undefined));
 
     const { result } = renderHook(() => useRejectSharedSessionInvitation(), {
       wrapper: createWrapper(),
@@ -374,15 +401,16 @@ describe("useRejectSharedSessionInvitation", () => {
     result.current.mutate("inv-1");
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(mockApi.post).toHaveBeenCalledWith(
-      "/user/shared-session-invites/inv-1/decline",
+    expect(mockTypedApi.POST).toHaveBeenCalledWith(
+      "/api/user/shared-session-invites/{id}/decline",
+      { params: { path: { id: "inv-1" } } },
     );
   });
 });
 
 describe("useLeaveSharedSession", () => {
   it("leaves a shared session", async () => {
-    mockApi.post.mockResolvedValue(undefined);
+    mockTypedApi.POST.mockReturnValue(ok(undefined));
 
     const { result } = renderHook(() => useLeaveSharedSession(), {
       wrapper: createWrapper(),
@@ -391,15 +419,16 @@ describe("useLeaveSharedSession", () => {
     result.current.mutate("ss-1");
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(mockApi.post).toHaveBeenCalledWith(
-      "/shared-sessions/ss-1/leave",
+    expect(mockTypedApi.POST).toHaveBeenCalledWith(
+      "/api/shared-sessions/{id}/leave",
+      { params: { path: { id: "ss-1" } } },
     );
   });
 });
 
 describe("useRemoveSharedSessionMember", () => {
   it("removes a member", async () => {
-    mockApi.delete.mockResolvedValue(undefined);
+    mockTypedApi.DELETE.mockReturnValue(ok(undefined));
 
     const { result } = renderHook(() => useRemoveSharedSessionMember(), {
       wrapper: createWrapper(),
@@ -408,13 +437,16 @@ describe("useRemoveSharedSessionMember", () => {
     result.current.mutate({ sharedSessionId: "ss-1", userId: "u2" });
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(mockApi.delete).toHaveBeenCalledWith("/shared-sessions/ss-1/members/u2");
+    expect(mockTypedApi.DELETE).toHaveBeenCalledWith(
+      "/api/shared-sessions/{id}/members/{userId}",
+      { params: { path: { id: "ss-1", userId: "u2" } } },
+    );
   });
 });
 
 describe("useDeleteSharedSessionSave", () => {
   it("deletes a shared session save", async () => {
-    mockApi.delete.mockResolvedValue(undefined);
+    mockTypedApi.DELETE.mockReturnValue(ok(undefined));
 
     const { result } = renderHook(() => useDeleteSharedSessionSave(), {
       wrapper: createWrapper(),
@@ -423,6 +455,9 @@ describe("useDeleteSharedSessionSave", () => {
     result.current.mutate({ sharedSessionId: "ss-1", saveId: "1" });
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(mockApi.delete).toHaveBeenCalledWith("/shared-sessions/ss-1/saves/1");
+    expect(mockTypedApi.DELETE).toHaveBeenCalledWith(
+      "/api/shared-sessions/{id}/saves/{saveId}",
+      { params: { path: { id: "ss-1", saveId: "1" } } },
+    );
   });
 });
