@@ -221,6 +221,71 @@ open class SharedSessionsApi : ApiClient {
 
 
     /**
+     * Download the current auto-save of a shared session
+     * Member-only. Responds with application/octet-stream.
+     * @param id Shared session ID.
+     * @return void
+     */
+    open suspend fun downloadSharedSessionAutoSave(id: kotlin.String): HttpResponse<Unit> {
+
+        val localVariableAuthNames = listOf<String>()
+
+        val localVariableBody = 
+            io.ktor.client.utils.EmptyContent
+
+        val localVariableQuery = mutableMapOf<String, List<String>>()
+        val localVariableHeaders = mutableMapOf<String, String>()
+
+        val localVariableConfig = RequestConfig<kotlin.Any?>(
+            RequestMethod.GET,
+            "/api/shared-sessions/{id}/saves/auto".replace("{" + "id" + "}", "$id"),
+            query = localVariableQuery,
+            headers = localVariableHeaders,
+            requiresAuthentication = false,
+        )
+
+        return request(
+            localVariableConfig,
+            localVariableBody,
+            localVariableAuthNames
+        ).wrap()
+    }
+
+
+    /**
+     * Download a save from a shared session
+     * Member-only. Responds with application/octet-stream.
+     * @param id Shared session ID.
+     * @param saveId Shared session save ID.
+     * @return void
+     */
+    open suspend fun downloadSharedSessionSave(id: kotlin.String, saveId: kotlin.String): HttpResponse<Unit> {
+
+        val localVariableAuthNames = listOf<String>()
+
+        val localVariableBody = 
+            io.ktor.client.utils.EmptyContent
+
+        val localVariableQuery = mutableMapOf<String, List<String>>()
+        val localVariableHeaders = mutableMapOf<String, String>()
+
+        val localVariableConfig = RequestConfig<kotlin.Any?>(
+            RequestMethod.GET,
+            "/api/shared-sessions/{id}/saves/{saveId}".replace("{" + "id" + "}", "$id").replace("{" + "saveId" + "}", "$saveId"),
+            query = localVariableQuery,
+            headers = localVariableHeaders,
+            requiresAuthentication = false,
+        )
+
+        return request(
+            localVariableConfig,
+            localVariableBody,
+            localVariableAuthNames
+        ).wrap()
+    }
+
+
+    /**
      * Count pending shared session invites for the caller
      * Returns the number of pending shared session invites for the authenticated user.
      * @return SharedSessionInviteCountResponse

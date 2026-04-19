@@ -79,6 +79,38 @@ open class BiosApi : ApiClient {
 
 
     /**
+     * Download a BIOS file
+     * Serves the BIOS file with the given name, resolving registry-declared subdirectories when needed. Responds with application/octet-stream.
+     * @param filename BIOS file name.
+     * @return void
+     */
+    open suspend fun downloadBios(filename: kotlin.String): HttpResponse<Unit> {
+
+        val localVariableAuthNames = listOf<String>()
+
+        val localVariableBody = 
+            io.ktor.client.utils.EmptyContent
+
+        val localVariableQuery = mutableMapOf<String, List<String>>()
+        val localVariableHeaders = mutableMapOf<String, String>()
+
+        val localVariableConfig = RequestConfig<kotlin.Any?>(
+            RequestMethod.GET,
+            "/api/bios/{filename}".replace("{" + "filename" + "}", "$filename"),
+            query = localVariableQuery,
+            headers = localVariableHeaders,
+            requiresAuthentication = false,
+        )
+
+        return request(
+            localVariableConfig,
+            localVariableBody,
+            localVariableAuthNames
+        ).wrap()
+    }
+
+
+    /**
      * List BIOS files
      * Returns registry-driven BIOS file status plus per-console summaries.
      * @return BiosListResponse

@@ -1,15 +1,11 @@
 package api
 
 import (
-	"fmt"
 	"log/slog"
-	"net/http"
 	"os"
 	"path/filepath"
 
-	"github.com/gin-gonic/gin"
 	"github.com/spela/server/internal/db"
-	"github.com/spela/server/internal/storage"
 	"gorm.io/gorm"
 )
 
@@ -61,30 +57,5 @@ func (h *CoreHandler) resolveCorePath(core db.Core, platform string) string {
 	return ""
 }
 
-// DownloadCore serves a core binary for the requested platform.
-func (h *CoreHandler) DownloadCore(c *gin.Context) {
-	id := c.Param("id")
-	platform := c.DefaultQuery("platform", "linux")
-
-	var core db.Core
-	if err := h.DB.First(&core, id).Error; err != nil {
-		c.JSON(http.StatusNotFound, ErrorResponse{Error: "core not found"})
-		return
-	}
-
-	corePath := h.resolveCorePath(core, platform)
-	if corePath == "" {
-		c.JSON(http.StatusNotFound, ErrorResponse{Error: "core binary not available"})
-		return
-	}
-
-	// Security: validate the file path is within the allowed core directory
-	if h.CoreDir == "" || !storage.ValidateROMPath(corePath, []string{h.CoreDir}) {
-		c.JSON(http.StatusForbidden, ErrorResponse{Error: "core file access denied"})
-		return
-	}
-
-	ext := platformExtension(platform)
-	c.Header("Content-Disposition", fmt.Sprintf("attachment; filename=%q", core.Name+"_libretro"+ext))
-	c.File(corePath)
-}
+// DownloadCore has been migrated to huma — see HumaDownloadCore in
+// huma_downloads.go.

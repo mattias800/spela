@@ -1,6 +1,7 @@
 package api
 
 import (
+	"context"
 	"fmt"
 	"log/slog"
 	"math"
@@ -14,6 +15,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/danielgtaylor/huma/v2"
 	"github.com/gin-gonic/gin"
 	"github.com/spela/server/internal/db"
 	"github.com/spela/server/internal/igdb"
@@ -214,121 +216,65 @@ func (h *ConsoleHandler) ListConsoleGames(c *gin.Context) {
 	})
 }
 
-// GetPreviewScreenshot returns a representative screenshot for a console.
-// It serves a canonical screenshot from the LibRetro thumbnails CDN,
-// cached locally after the first download.
-func (h *ConsoleHandler) GetPreviewScreenshot(c *gin.Context) {
-	consoleID := c.Param("id")
-
+// resolvePreviewScreenshotPath returns the /api/images/... redirect path for
+// a console's canonical LibRetro screenshot, downloading + caching it from
+// the LibRetro thumbnails CDN the first time. Used by the huma download
+// handler in huma_downloads.go; the gin handler has been removed.
+func (h *ConsoleHandler) resolvePreviewScreenshotPath(_ context.Context, consoleID string) (string, error) {
 	var console db.Console
 	if err := h.DB.Where("LOWER(abbreviation) = LOWER(?) OR code = ?", consoleID, consoleID).First(&console).Error; err != nil {
-		c.JSON(http.StatusNotFound, ErrorResponse{Error: "console not found"})
-		return
+		return "", huma.Error404NotFound("console not found")
 	}
 
-	// Check for cached preview
 	cachedPath := filepath.Join("previews", console.Abbreviation, "preview.png")
 	fullCachedPath := h.Storage.ImagePath(cachedPath)
 	if _, err := os.Stat(fullCachedPath); err == nil {
-		c.Header("Cache-Control", "public, max-age=86400")
-		c.Redirect(http.StatusFound, "/api/images/"+cachedPath)
-		return
+		return "/api/images/" + cachedPath, nil
 	}
 
-	// Download from LibRetro CDN
 	libRetroSystem, ok := scraper.AbbreviationToLibRetro[console.Abbreviation]
 	if !ok {
-		c.JSON(http.StatusNotFound, ErrorResponse{Error: "no preview available for this console"})
-		return
+		return "", huma.Error404NotFound("no preview available for this console")
 	}
-
 	fallbackGame, ok := previewFallbackGames[console.Abbreviation]
 	if !ok {
-		c.JSON(http.StatusNotFound, ErrorResponse{Error: "no preview available for this console"})
-		return
+		return "", huma.Error404NotFound("no preview available for this console")
 	}
 
-	imageURL := fmt.Sprintf("https://thumbnails.libretro.com/%s/Named_Snaps/%s.png",
+	imageURL := fmt.Sprintf(
+		"https://thumbnails.libretro.com/%s/Named_Snaps/%s.png",
 		url.PathEscape(libRetroSystem),
 		url.PathEscape(fallbackGame),
 	)
-
 	slog.Info("downloading preview screenshot from CDN", "console", console.Abbreviation, "url", imageURL)
 
 	httpClient := &http.Client{Timeout: 15 * time.Second}
 	resp, err := httpClient.Get(imageURL)
 	if err != nil {
 		slog.Warn("failed to download preview screenshot", "console", console.Abbreviation, "error", err)
-		c.JSON(http.StatusNotFound, ErrorResponse{Error: "failed to download preview"})
-		return
+		return "", huma.Error404NotFound("failed to download preview")
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
 		slog.Warn("CDN returned non-200 for preview", "console", console.Abbreviation, "status", resp.StatusCode)
-		c.JSON(http.StatusNotFound, ErrorResponse{Error: "preview not available from CDN"})
-		return
+		return "", huma.Error404NotFound("preview not available from CDN")
 	}
 
-	// Cache the downloaded image
 	savedPath, err := h.Storage.WriteImage(cachedPath, resp.Body)
 	if err != nil {
 		slog.Warn("failed to cache preview screenshot", "console", console.Abbreviation, "error", err)
-		// Serve directly from CDN body if caching fails - but body is already consumed.
-		// Re-download is expensive; return error.
-		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to cache preview"})
-		return
+		return "", huma.Error500InternalServerError("failed to cache preview")
 	}
-
-	c.Header("Cache-Control", "public, max-age=86400")
-	c.Redirect(http.StatusFound, "/api/images/"+savedPath)
+	return "/api/images/" + savedPath, nil
 }
 
 
-// GetConsoleIcon serves the embedded PNG icon for a console.
-func (h *ConsoleHandler) GetConsoleIcon(c *gin.Context) {
-	consoleID := c.Param("id")
+// GetConsoleIcon has been migrated to huma — see HumaGetConsoleIcon in
+// huma_downloads.go.
 
-	var console db.Console
-	if err := h.DB.Where("LOWER(abbreviation) = LOWER(?) OR code = ?", consoleID, consoleID).First(&console).Error; err != nil {
-		c.JSON(http.StatusNotFound, ErrorResponse{Error: "console not found"})
-		return
-	}
-
-	filename := strings.ToLower(console.Abbreviation) + ".png"
-	data, err := consoleIcons.ReadFile("static/console-icons/" + filename)
-	if err != nil {
-		c.JSON(http.StatusNotFound, ErrorResponse{Error: "icon not available for this console"})
-		return
-	}
-
-	c.Header("Cache-Control", "public, max-age=604800")
-	c.Data(http.StatusOK, "image/png", data)
-}
-
-// GetConsoleLogo serves the embedded SVG logo for a console.
-func (h *ConsoleHandler) GetConsoleLogo(c *gin.Context) {
-	consoleID := c.Param("id")
-
-	var console db.Console
-	if err := h.DB.Where("LOWER(abbreviation) = LOWER(?) OR code = ?", consoleID, consoleID).First(&console).Error; err != nil {
-		c.JSON(http.StatusNotFound, ErrorResponse{Error: "console not found"})
-		return
-	}
-
-	filename := strings.ToLower(console.Abbreviation) + ".svg"
-	data, err := consoleLogos.ReadFile("static/console-logos/" + filename)
-	if err != nil {
-		c.JSON(http.StatusNotFound, ErrorResponse{Error: "logo not available for this console"})
-		return
-	}
-
-	// Inline CSS styles so SVG renderers without CSS support (e.g. Coil on JVM) show colors.
-	processed := inlineSvgStyles(string(data))
-
-	c.Header("Cache-Control", "public, max-age=604800")
-	c.Data(http.StatusOK, "image/svg+xml", []byte(processed))
-}
+// GetConsoleLogo has been migrated to huma — see HumaGetConsoleLogo in
+// huma_downloads.go.
 
 // inlineSvgStyles parses CSS <style> blocks in SVGs and replaces class="stN"
 // with direct SVG presentation attributes (fill="...", fill-rule="...", etc).
@@ -378,27 +324,8 @@ func inlineSvgStyles(svg string) string {
 	return result
 }
 
-// GetConsoleLogoPng serves a pre-rendered PNG version of the console logo.
-// Generated from SVGs via scripts/generate-logo-pngs.sh.
-func (h *ConsoleHandler) GetConsoleLogoPng(c *gin.Context) {
-	consoleID := c.Param("id")
-
-	var console db.Console
-	if err := h.DB.Where("LOWER(abbreviation) = LOWER(?) OR code = ?", consoleID, consoleID).First(&console).Error; err != nil {
-		c.JSON(http.StatusNotFound, ErrorResponse{Error: "console not found"})
-		return
-	}
-
-	filename := strings.ToLower(console.Abbreviation) + ".png"
-	data, err := consoleLogosPng.ReadFile("static/console-logos-png/" + filename)
-	if err != nil {
-		c.JSON(http.StatusNotFound, ErrorResponse{Error: "logo not available for this console"})
-		return
-	}
-
-	c.Header("Cache-Control", "public, max-age=604800")
-	c.Data(http.StatusOK, "image/png", data)
-}
+// GetConsoleLogoPng has been migrated to huma — see HumaGetConsoleLogoPng in
+// huma_downloads.go.
 
 // TopRatedGameResponse is the API response for a top-rated IGDB game.
 type TopRatedGameResponse struct {

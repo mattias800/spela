@@ -1,9 +1,7 @@
 package api
 
 import (
-	"fmt"
 	"net/http"
-	"path/filepath"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
@@ -64,28 +62,8 @@ func (h *SharedSaveHandler) ListSharedSaves(c *gin.Context) {
 	})
 }
 
-// DownloadSharedSave serves a shared save state file.
-func (h *SharedSaveHandler) DownloadSharedSave(c *gin.Context) {
-	saveID := c.Param("saveId")
-
-	var save db.SharedSaveState
-	if err := h.DB.First(&save, saveID).Error; err != nil {
-		c.JSON(http.StatusNotFound, ErrorResponse{Error: "shared save not found"})
-		return
-	}
-
-	// Validate the file path is within the save directory
-	if !storage.ValidateROMPath(save.FilePath, []string{h.Storage.SaveDir}) {
-		c.JSON(http.StatusForbidden, ErrorResponse{Error: "access denied"})
-		return
-	}
-
-	// Increment download count
-	h.DB.Model(&save).UpdateColumn("download_count", gorm.Expr("download_count + ?", 1))
-
-	c.Header("Content-Disposition", fmt.Sprintf("attachment; filename=%q", filepath.Base(save.FilePath)))
-	c.File(save.FilePath)
-}
+// DownloadSharedSave has been migrated to huma — see HumaDownloadSharedSave
+// in huma_downloads.go.
 
 // DeleteSharedSave removes a shared save state (owner or admin only).
 func (h *SharedSaveHandler) DeleteSharedSave(c *gin.Context) {

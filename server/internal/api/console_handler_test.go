@@ -20,10 +20,10 @@ import (
 	"gorm.io/gorm/logger"
 )
 
-// setupConsoleTestEnv creates an in-memory DB with auto-migrated tables and seeded
-// consoles, a temp-dir-backed Storage, and a gin router with just the
-// preview-screenshot route. The route does not require auth middleware so the
-// tests stay focused on the handler logic.
+// setupConsoleTestEnv creates an in-memory DB with auto-migrated tables and
+// seeded consoles, a temp-dir-backed Storage, and a fresh gin router. Tests
+// that exercise gin-only handlers register them on the returned router;
+// tests that exercise a now-huma endpoint use newConsoleHttpEnv instead.
 func setupConsoleTestEnv(t *testing.T) (*gorm.DB, *storage.Storage, *gin.Engine) {
 	t.Helper()
 
@@ -38,7 +38,6 @@ func setupConsoleTestEnv(t *testing.T) (*gorm.DB, *storage.Storage, *gin.Engine)
 	err = db.SeedConsoles(database)
 	require.NoError(t, err)
 
-	// Seed reference tables and console metadata so tests can verify metadata fields.
 	require.NoError(t, db.SeedMediaTypeCategories(database))
 	require.NoError(t, db.SeedMediaTypes(database))
 	require.NoError(t, db.SeedHardwareMakers(database))
@@ -55,11 +54,18 @@ func setupConsoleTestEnv(t *testing.T) (*gorm.DB, *storage.Storage, *gin.Engine)
 
 	gin.SetMode(gin.TestMode)
 	router := gin.New()
-
-	handler := &ConsoleHandler{DB: database, Storage: store}
-	router.GET("/api/consoles/:id/preview-screenshot", handler.GetPreviewScreenshot)
-
 	return database, store, router
+}
+
+// setupConsolePreviewEnv builds the production router (NewRouter +
+// setupTestEnv) so the now-huma preview-screenshot endpoint is exercised
+// through the production stack. Returns the DB, Storage, and wired router.
+func setupConsolePreviewEnv(t *testing.T) (*gorm.DB, *storage.Storage, *gin.Engine) {
+	t.Helper()
+	database, cfg := setupTestEnv(t)
+	router, cleanup := NewRouter(*cfg)
+	t.Cleanup(cleanup)
+	return database, cfg.Storage, router
 }
 
 func TestListConsoles_OmitsConsolesWithNoGames(t *testing.T) {
@@ -176,7 +182,7 @@ func TestListConsoles_IncludesMetadata(t *testing.T) {
 }
 
 func TestGetPreviewScreenshot_ConsoleNotFound(t *testing.T) {
-	_, _, router := setupConsoleTestEnv(t)
+	_, _, router := setupConsolePreviewEnv(t)
 
 	w := httptest.NewRecorder()
 	req := httptest.NewRequest("GET", "/api/consoles/nonexistent/preview-screenshot", nil)
@@ -191,7 +197,7 @@ func TestGetPreviewScreenshot_ConsoleNotFound(t *testing.T) {
 }
 
 func TestGetPreviewScreenshot_CachedPreview(t *testing.T) {
-	database, store, router := setupConsoleTestEnv(t)
+	database, store, router := setupConsolePreviewEnv(t)
 
 	var console db.Console
 	err := database.Where("abbreviation = ?", "NES").First(&console).Error
@@ -217,7 +223,7 @@ func TestGetPreviewScreenshot_CachedPreview(t *testing.T) {
 }
 
 func TestGetPreviewScreenshot_NoPreviewAvailable(t *testing.T) {
-	database, _, router := setupConsoleTestEnv(t)
+	database, _, router := setupConsolePreviewEnv(t)
 
 	// Create a console with an abbreviation that is NOT in either
 	// scraper.AbbreviationToLibRetro or previewFallbackGames.
@@ -242,7 +248,7 @@ func TestGetPreviewScreenshot_NoPreviewAvailable(t *testing.T) {
 }
 
 func TestGetPreviewScreenshot_IgnoresLocalGames(t *testing.T) {
-	database, store, router := setupConsoleTestEnv(t)
+	database, store, router := setupConsolePreviewEnv(t)
 
 	var console db.Console
 	err := database.Where("abbreviation = ?", "NES").First(&console).Error
@@ -278,7 +284,7 @@ func TestGetPreviewScreenshot_IgnoresLocalGames(t *testing.T) {
 }
 
 func TestGetPreviewScreenshot_WorksWithNoLocalGames(t *testing.T) {
-	database, store, router := setupConsoleTestEnv(t)
+	database, store, router := setupConsolePreviewEnv(t)
 
 	var console db.Console
 	err := database.Where("abbreviation = ?", "NES").First(&console).Error

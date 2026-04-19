@@ -1,7 +1,6 @@
 package api
 
 import (
-	"fmt"
 	"net/http"
 	"path/filepath"
 	"strconv"
@@ -413,30 +412,8 @@ func (h *SessionHandler) ListSessionSaves(c *gin.Context) {
 // UploadSessionSave has been migrated to huma — see HumaUploadSessionSave in
 // huma_session_uploads.go. The OpenAPI spec is now the single source of truth.
 
-// DownloadSessionSave serves a session save state file.
-// GET /api/sessions/:id/saves/:saveId
-func (h *SessionHandler) DownloadSessionSave(c *gin.Context) {
-	uid := getUserID(c)
-	session, ok := h.loadSessionWithOwnerCheck(c, uid)
-	if !ok {
-		return
-	}
-
-	saveID := c.Param("saveId")
-	var save db.SessionSaveState
-	if err := h.DB.Where("id = ? AND session_id = ?", saveID, session.ID).First(&save).Error; err != nil {
-		c.JSON(http.StatusNotFound, ErrorResponse{Error: "save not found"})
-		return
-	}
-
-	if !storage.ValidateROMPath(save.FilePath, []string{h.Storage.SaveDir}) {
-		c.JSON(http.StatusForbidden, ErrorResponse{Error: "file access denied"})
-		return
-	}
-
-	c.Header("Content-Disposition", fmt.Sprintf("attachment; filename=%q", filepath.Base(save.FilePath)))
-	c.File(save.FilePath)
-}
+// DownloadSessionSave has been migrated to huma — see HumaDownloadSessionSave
+// in huma_downloads.go.
 
 // DeleteSessionSave removes a session save state.
 // DELETE /api/sessions/:id/saves/:saveId
@@ -512,67 +489,14 @@ func (h *SessionHandler) UpdateSessionSave(c *gin.Context) {
 // UploadAutoSave has been migrated to huma — see HumaUploadAutoSave in
 // huma_session_uploads.go.
 
-// GetAutoSave returns the latest auto-save for a session.
-// GET /api/sessions/:id/saves/auto
-func (h *SessionHandler) GetAutoSave(c *gin.Context) {
-	uid := getUserID(c)
-	session, ok := h.loadSessionWithOwnerCheck(c, uid)
-	if !ok {
-		return
-	}
-
-	var save db.SessionSaveState
-	if err := h.DB.Where("session_id = ? AND is_auto = ?", session.ID, true).
-		Preload("User").
-		Order("created_at DESC").
-		First(&save).Error; err != nil {
-		c.JSON(http.StatusNotFound, ErrorResponse{Error: "no auto-save found"})
-		return
-	}
-
-	// Serve the file directly
-	if !storage.ValidateROMPath(save.FilePath, []string{h.Storage.SaveDir}) {
-		c.JSON(http.StatusForbidden, ErrorResponse{Error: "file access denied"})
-		return
-	}
-
-	c.Header("Content-Disposition", fmt.Sprintf("attachment; filename=%q", filepath.Base(save.FilePath)))
-	c.File(save.FilePath)
-}
+// GetAutoSave has been migrated to huma — see HumaDownloadAutoSave in
+// huma_downloads.go.
 
 // UpsertSlotSave has been migrated to huma — see HumaUpsertSlotSave in
 // huma_session_uploads.go.
 
-// DownloadSlotSave downloads the save from a specific slot.
-// GET /api/sessions/:id/saves/slot/:slot
-func (h *SessionHandler) DownloadSlotSave(c *gin.Context) {
-	uid := getUserID(c)
-	session, ok := h.loadSessionWithOwnerCheck(c, uid)
-	if !ok {
-		return
-	}
-
-	slotStr := c.Param("slot")
-	slotNum, err := strconv.Atoi(slotStr)
-	if err != nil || slotNum < 1 || slotNum > 10 {
-		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "slot must be between 1 and 10"})
-		return
-	}
-
-	var save db.SessionSaveState
-	if err := h.DB.Where("session_id = ? AND slot = ?", session.ID, slotNum).First(&save).Error; err != nil {
-		c.JSON(http.StatusNotFound, ErrorResponse{Error: "no save in this slot"})
-		return
-	}
-
-	if !storage.ValidateROMPath(save.FilePath, []string{h.Storage.SaveDir}) {
-		c.JSON(http.StatusForbidden, ErrorResponse{Error: "file access denied"})
-		return
-	}
-
-	c.Header("Content-Disposition", fmt.Sprintf("attachment; filename=%q", filepath.Base(save.FilePath)))
-	c.File(save.FilePath)
-}
+// DownloadSlotSave has been migrated to huma — see HumaDownloadSlotSave in
+// huma_downloads.go.
 
 // ListSlotSaves returns all slot saves for a session.
 // GET /api/sessions/:id/saves/slots
@@ -605,29 +529,8 @@ func (h *SessionHandler) ListSlotSaves(c *gin.Context) {
 // UploadSRAM has been migrated to huma — see HumaUploadSRAM in
 // huma_session_uploads.go.
 
-// DownloadSRAM serves the SRAM/battery save data for a session.
-// GET /api/sessions/:id/sram
-func (h *SessionHandler) DownloadSRAM(c *gin.Context) {
-	uid := getUserID(c)
-	session, ok := h.loadSessionWithOwnerCheck(c, uid)
-	if !ok {
-		return
-	}
-
-	var sd db.SessionSaveData
-	if err := h.DB.Where("session_id = ?", session.ID).First(&sd).Error; err != nil {
-		c.JSON(http.StatusNotFound, ErrorResponse{Error: "no SRAM data found"})
-		return
-	}
-
-	if !storage.ValidateROMPath(sd.FilePath, []string{h.Storage.SaveDir}) {
-		c.JSON(http.StatusForbidden, ErrorResponse{Error: "file access denied"})
-		return
-	}
-
-	c.Header("Content-Disposition", fmt.Sprintf("attachment; filename=%q", filepath.Base(sd.FilePath)))
-	c.File(sd.FilePath)
-}
+// DownloadSRAM has been migrated to huma — see HumaDownloadSRAM in
+// huma_downloads.go.
 
 // UpdatePlayTime records play time for a session.
 // POST /api/sessions/:id/play-time

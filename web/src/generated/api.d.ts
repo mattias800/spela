@@ -1200,6 +1200,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/bios/{filename}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Download a BIOS file
+         * @description Serves the BIOS file with the given name, resolving registry-declared subdirectories when needed. Responds with application/octet-stream.
+         */
+        get: operations["downloadBios"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/branding/logo": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get the Spela branding logo
+         * @description Serves the embedded spela-logo.png branding asset.
+         */
+        get: operations["getBrandingLogo"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/challenges": {
         parameters: {
             query?: never;
@@ -1500,6 +1540,86 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/consoles/{id}/icon": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get a console icon (PNG)
+         * @description Serves an embedded PNG icon for the console. Public endpoint; cached aggressively.
+         */
+        get: operations["getConsoleIcon"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/consoles/{id}/logo": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get a console logo (SVG)
+         * @description Serves an embedded SVG logo for the console with inlined class→attribute styling so renderers without CSS support (e.g. Coil on JVM) display colors correctly.
+         */
+        get: operations["getConsoleLogo"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/consoles/{id}/logo.png": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get a console logo (pre-rendered PNG)
+         * @description Serves a pre-rendered PNG version of the console logo, for clients that can't or don't want to rasterize SVG at runtime.
+         */
+        get: operations["getConsoleLogoPng"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/consoles/{id}/preview-screenshot": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get a representative screenshot for a console
+         * @description Returns a canonical screenshot from the LibRetro thumbnails CDN, cached locally after the first download. Redirects to /api/images/previews/{abbr}/preview.png when cached.
+         */
+        get: operations["getConsolePreviewScreenshot"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/consoles/{id}/top-lists/longest": {
         parameters: {
             query?: never;
@@ -1592,6 +1712,26 @@ export interface paths {
          * @description Returns all libretro cores known to the server, including display name, supported platforms, and download URL (where applicable).
          */
         get: operations["listCores"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/cores/{id}/download": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Download a core binary
+         * @description Serves the core binary for the requested platform (defaults to linux). Responds with application/octet-stream.
+         */
+        get: operations["downloadCore"];
         put?: never;
         post?: never;
         delete?: never;
@@ -2800,6 +2940,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/games/{id}/shared-saves/{saveId}/download": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Download a community shared save
+         * @description Any authenticated user can download. Responds with application/octet-stream.
+         */
+        get: operations["downloadSharedSave"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/games/{id}/shared-sessions": {
         parameters: {
             query?: never;
@@ -3363,7 +3523,11 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        /**
+         * Download the latest auto-save of a session
+         * @description Owner-only. Responds with application/octet-stream; 404 when no auto-save has been recorded yet.
+         */
+        get: operations["downloadSessionAutoSave"];
         put?: never;
         /**
          * Upload an auto-save to a session
@@ -3383,7 +3547,11 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        /**
+         * Download a session slot save
+         * @description Owner-only. Slot is 1-10. Responds with application/octet-stream.
+         */
+        get: operations["downloadSessionSlotSave"];
         /**
          * Upload or overwrite a slot save
          * @description Stores a save state in the specified slot (1-10). If the slot already has a save, it is replaced.
@@ -3423,7 +3591,11 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        /**
+         * Download a session save state
+         * @description Owner-only. Responds with application/octet-stream.
+         */
+        get: operations["downloadSessionSave"];
         /**
          * Update a save state's name or notes
          * @description Owner-only. Partial update — nil fields are left unchanged.
@@ -3447,7 +3619,11 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        /**
+         * Download SRAM data for a session
+         * @description Owner-only. Responds with application/octet-stream.
+         */
+        get: operations["downloadSessionSRAM"];
         put?: never;
         /**
          * Upload SRAM data for a session
@@ -3663,7 +3839,11 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        /**
+         * Download the current auto-save of a shared session
+         * @description Member-only. Responds with application/octet-stream.
+         */
+        get: operations["downloadSharedSessionAutoSave"];
         put?: never;
         /**
          * Upload an auto-save to a shared session
@@ -3683,7 +3863,11 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        /**
+         * Download a save from a shared session
+         * @description Member-only. Responds with application/octet-stream.
+         */
+        get: operations["downloadSharedSessionSave"];
         put?: never;
         post?: never;
         /**
@@ -10519,6 +10703,63 @@ export interface operations {
             };
         };
     };
+    downloadBios: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description BIOS file name. */
+                filename: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HumaError"];
+                };
+            };
+        };
+    };
+    getBrandingLogo: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HumaError"];
+                };
+            };
+        };
+    };
     listChallenges: {
         parameters: {
             query?: {
@@ -11191,6 +11432,126 @@ export interface operations {
             };
         };
     };
+    getConsoleIcon: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Console abbreviation or code. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HumaError"];
+                };
+            };
+        };
+    };
+    getConsoleLogo: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Console abbreviation or code. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HumaError"];
+                };
+            };
+        };
+    };
+    getConsoleLogoPng: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Console abbreviation or code. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HumaError"];
+                };
+            };
+        };
+    };
+    getConsolePreviewScreenshot: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Console abbreviation or code. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HumaError"];
+                };
+            };
+        };
+    };
     getConsoleTopListLongest: {
         parameters: {
             query?: never;
@@ -11336,6 +11697,39 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["Core"][] | null;
                 };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HumaError"];
+                };
+            };
+        };
+    };
+    downloadCore: {
+        parameters: {
+            query?: {
+                /** @description Target platform: linux, macos, windows, android. */
+                platform?: string;
+            };
+            header?: never;
+            path: {
+                /** @description Core ID. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Error */
             default: {
@@ -13489,6 +13883,38 @@ export interface operations {
             };
         };
     };
+    downloadSharedSave: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Game ID. */
+                id: string;
+                /** @description Shared save state ID. */
+                saveId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HumaError"];
+                };
+            };
+        };
+    };
     listGameSharedSessions: {
         parameters: {
             query?: never;
@@ -14648,6 +15074,36 @@ export interface operations {
             };
         };
     };
+    downloadSessionAutoSave: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Session ID. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HumaError"];
+                };
+            };
+        };
+    };
     uploadAutoSave: {
         parameters: {
             query?: never;
@@ -14687,6 +15143,38 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["SessionSaveResponse"];
                 };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HumaError"];
+                };
+            };
+        };
+    };
+    downloadSessionSlotSave: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Session ID. */
+                id: string;
+                /** @description Save slot number 1-10. */
+                slot: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Error */
             default: {
@@ -14784,6 +15272,38 @@ export interface operations {
             };
         };
     };
+    downloadSessionSave: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Session ID. */
+                id: string;
+                /** @description Save state ID. */
+                saveId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HumaError"];
+                };
+            };
+        };
+    };
     updateSessionSave: {
         parameters: {
             query?: never;
@@ -14844,6 +15364,36 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["MessageResponse"];
                 };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HumaError"];
+                };
+            };
+        };
+    };
+    downloadSessionSRAM: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Session ID. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Error */
             default: {
@@ -15336,6 +15886,36 @@ export interface operations {
             };
         };
     };
+    downloadSharedSessionAutoSave: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Shared session ID. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HumaError"];
+                };
+            };
+        };
+    };
     uploadSharedSessionAutoSave: {
         parameters: {
             query?: never;
@@ -15373,6 +15953,38 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["SharedSessionSaveResponse"];
                 };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HumaError"];
+                };
+            };
+        };
+    };
+    downloadSharedSessionSave: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Shared session ID. */
+                id: string;
+                /** @description Shared session save ID. */
+                saveId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Error */
             default: {

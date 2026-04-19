@@ -340,6 +340,33 @@ func TestOpenAPISpec_HasNewOperations(t *testing.T) {
 		{"/api/games/{id}/shared-saves", "post", "shareSave"},
 		{"/api/shared-sessions/{id}/saves", "post", "uploadSharedSessionSave"},
 		{"/api/shared-sessions/{id}/saves/auto", "post", "uploadSharedSessionAutoSave"},
+		// Binary downloads (StreamResponse)
+		{"/api/cores/{id}/download", "get", "downloadCore"},
+		{"/api/bios/{filename}", "get", "downloadBios"},
+		{"/api/sessions/{id}/saves/{saveId}", "get", "downloadSessionSave"},
+		{"/api/sessions/{id}/saves/auto", "get", "downloadSessionAutoSave"},
+		{"/api/sessions/{id}/saves/slot/{slot}", "get", "downloadSessionSlotSave"},
+		{"/api/sessions/{id}/sram", "get", "downloadSessionSRAM"},
+		{"/api/games/{id}/shared-saves/{saveId}/download", "get", "downloadSharedSave"},
+		{"/api/shared-sessions/{id}/saves/{saveId}", "get", "downloadSharedSessionSave"},
+		{"/api/shared-sessions/{id}/saves/auto", "get", "downloadSharedSessionAutoSave"},
+		// Public assets
+		{"/api/consoles/{id}/icon", "get", "getConsoleIcon"},
+		{"/api/consoles/{id}/logo", "get", "getConsoleLogo"},
+		{"/api/consoles/{id}/logo.png", "get", "getConsoleLogoPng"},
+		{"/api/consoles/{id}/preview-screenshot", "get", "getConsolePreviewScreenshot"},
+		{"/api/branding/logo", "get", "getBrandingLogo"},
+	}
+
+	// Operations that are intentionally public (no auth) — typically images
+	// loaded by <img> tags or pre-render assets. Every other migrated
+	// operation should carry a bearer-auth security requirement.
+	publicOps := map[string]bool{
+		"getConsoleIcon":              true,
+		"getConsoleLogo":              true,
+		"getConsoleLogoPng":           true,
+		"getConsolePreviewScreenshot": true,
+		"getBrandingLogo":             true,
 	}
 
 	for _, c := range cases {
@@ -349,7 +376,13 @@ func TestOpenAPISpec_HasNewOperations(t *testing.T) {
 			op, ok := pathItem[c.method].(map[string]any)
 			require.True(t, ok, "%s %s must be present in spec", c.method, c.path)
 			assert.Equal(t, c.opID, op["operationId"])
-			// Every migrated read-only endpoint is bearer-auth protected.
+			if publicOps[c.opID] {
+				// Public endpoints should NOT have a security requirement.
+				if _, hasSec := op["security"]; hasSec {
+					t.Errorf("%s should be public but has a security requirement", c.opID)
+				}
+				return
+			}
 			sec, ok := op["security"].([]any)
 			require.True(t, ok, "%s should have security requirement", c.opID)
 			assert.NotEmpty(t, sec)

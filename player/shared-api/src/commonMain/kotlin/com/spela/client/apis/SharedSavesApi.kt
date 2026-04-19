@@ -80,6 +80,39 @@ open class SharedSavesApi : ApiClient {
 
 
     /**
+     * Download a community shared save
+     * Any authenticated user can download. Responds with application/octet-stream.
+     * @param id Game ID.
+     * @param saveId Shared save state ID.
+     * @return void
+     */
+    open suspend fun downloadSharedSave(id: kotlin.String, saveId: kotlin.String): HttpResponse<Unit> {
+
+        val localVariableAuthNames = listOf<String>()
+
+        val localVariableBody = 
+            io.ktor.client.utils.EmptyContent
+
+        val localVariableQuery = mutableMapOf<String, List<String>>()
+        val localVariableHeaders = mutableMapOf<String, String>()
+
+        val localVariableConfig = RequestConfig<kotlin.Any?>(
+            RequestMethod.GET,
+            "/api/games/{id}/shared-saves/{saveId}/download".replace("{" + "id" + "}", "$id").replace("{" + "saveId" + "}", "$saveId"),
+            query = localVariableQuery,
+            headers = localVariableHeaders,
+            requiresAuthentication = false,
+        )
+
+        return request(
+            localVariableConfig,
+            localVariableBody,
+            localVariableAuthNames
+        ).wrap()
+    }
+
+
+    /**
      * List community shared saves for a game
      * Returns a paginated list of community-shared save states for the specified game, newest first.
      * @param id Game ID.

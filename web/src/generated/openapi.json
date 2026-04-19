@@ -13680,6 +13680,73 @@
         ]
       }
     },
+    "/api/bios/{filename}": {
+      "get": {
+        "description": "Serves the BIOS file with the given name, resolving registry-declared subdirectories when needed. Responds with application/octet-stream.",
+        "operationId": "downloadBios",
+        "parameters": [
+          {
+            "description": "BIOS file name.",
+            "in": "path",
+            "name": "filename",
+            "required": true,
+            "schema": {
+              "description": "BIOS file name.",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HumaError"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Download a BIOS file",
+        "tags": [
+          "bios"
+        ]
+      }
+    },
+    "/api/branding/logo": {
+      "get": {
+        "description": "Serves the embedded spela-logo.png branding asset.",
+        "operationId": "getBrandingLogo",
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HumaError"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Get the Spela branding logo",
+        "tags": [
+          "branding"
+        ]
+      }
+    },
     "/api/challenges": {
       "get": {
         "description": "Paginated list of challenges with gameId/consoleId/difficulty/type/status/creatorId filters and newest/popular/oldest sort.",
@@ -14926,6 +14993,154 @@
         ]
       }
     },
+    "/api/consoles/{id}/icon": {
+      "get": {
+        "description": "Serves an embedded PNG icon for the console. Public endpoint; cached aggressively.",
+        "operationId": "getConsoleIcon",
+        "parameters": [
+          {
+            "description": "Console abbreviation or code.",
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "description": "Console abbreviation or code.",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HumaError"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Get a console icon (PNG)",
+        "tags": [
+          "consoles"
+        ]
+      }
+    },
+    "/api/consoles/{id}/logo": {
+      "get": {
+        "description": "Serves an embedded SVG logo for the console with inlined class→attribute styling so renderers without CSS support (e.g. Coil on JVM) display colors correctly.",
+        "operationId": "getConsoleLogo",
+        "parameters": [
+          {
+            "description": "Console abbreviation or code.",
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "description": "Console abbreviation or code.",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HumaError"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Get a console logo (SVG)",
+        "tags": [
+          "consoles"
+        ]
+      }
+    },
+    "/api/consoles/{id}/logo.png": {
+      "get": {
+        "description": "Serves a pre-rendered PNG version of the console logo, for clients that can't or don't want to rasterize SVG at runtime.",
+        "operationId": "getConsoleLogoPng",
+        "parameters": [
+          {
+            "description": "Console abbreviation or code.",
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "description": "Console abbreviation or code.",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HumaError"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Get a console logo (pre-rendered PNG)",
+        "tags": [
+          "consoles"
+        ]
+      }
+    },
+    "/api/consoles/{id}/preview-screenshot": {
+      "get": {
+        "description": "Returns a canonical screenshot from the LibRetro thumbnails CDN, cached locally after the first download. Redirects to /api/images/previews/{abbr}/preview.png when cached.",
+        "operationId": "getConsolePreviewScreenshot",
+        "parameters": [
+          {
+            "description": "Console abbreviation or code.",
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "description": "Console abbreviation or code.",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HumaError"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Get a representative screenshot for a console",
+        "tags": [
+          "consoles"
+        ]
+      }
+    },
     "/api/consoles/{id}/top-lists/longest": {
       "get": {
         "description": "Per-console variant of the longest-games list, scoped to the supplied console abbreviation.",
@@ -15184,6 +15399,59 @@
           }
         ],
         "summary": "List libretro cores",
+        "tags": [
+          "cores"
+        ]
+      }
+    },
+    "/api/cores/{id}/download": {
+      "get": {
+        "description": "Serves the core binary for the requested platform (defaults to linux). Responds with application/octet-stream.",
+        "operationId": "downloadCore",
+        "parameters": [
+          {
+            "description": "Core ID.",
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "description": "Core ID.",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Target platform: linux, macos, windows, android.",
+            "explode": false,
+            "in": "query",
+            "name": "platform",
+            "schema": {
+              "default": "linux",
+              "description": "Target platform: linux, macos, windows, android.",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HumaError"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Download a core binary",
         "tags": [
           "cores"
         ]
@@ -18905,6 +19173,58 @@
         ]
       }
     },
+    "/api/games/{id}/shared-saves/{saveId}/download": {
+      "get": {
+        "description": "Any authenticated user can download. Responds with application/octet-stream.",
+        "operationId": "downloadSharedSave",
+        "parameters": [
+          {
+            "description": "Game ID.",
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "description": "Game ID.",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Shared save state ID.",
+            "in": "path",
+            "name": "saveId",
+            "required": true,
+            "schema": {
+              "description": "Shared save state ID.",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HumaError"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Download a community shared save",
+        "tags": [
+          "shared-saves"
+        ]
+      }
+    },
     "/api/games/{id}/shared-sessions": {
       "get": {
         "description": "Returns active shared sessions for the specified game, newest updated first.",
@@ -20731,6 +21051,46 @@
       }
     },
     "/api/sessions/{id}/saves/auto": {
+      "get": {
+        "description": "Owner-only. Responds with application/octet-stream; 404 when no auto-save has been recorded yet.",
+        "operationId": "downloadSessionAutoSave",
+        "parameters": [
+          {
+            "description": "Session ID.",
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "description": "Session ID.",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HumaError"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Download the latest auto-save of a session",
+        "tags": [
+          "sessions"
+        ]
+      },
       "post": {
         "description": "Stores an auto-save for the session and returns the resulting save record. Older auto-saves beyond the retention limit are pruned. Optionally attaches a screenshot.",
         "operationId": "uploadAutoSave",
@@ -20827,6 +21187,56 @@
       }
     },
     "/api/sessions/{id}/saves/slot/{slot}": {
+      "get": {
+        "description": "Owner-only. Slot is 1-10. Responds with application/octet-stream.",
+        "operationId": "downloadSessionSlotSave",
+        "parameters": [
+          {
+            "description": "Session ID.",
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "description": "Session ID.",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Save slot number 1-10.",
+            "in": "path",
+            "name": "slot",
+            "required": true,
+            "schema": {
+              "description": "Save slot number 1-10.",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HumaError"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Download a session slot save",
+        "tags": [
+          "sessions"
+        ]
+      },
       "put": {
         "description": "Stores a save state in the specified slot (1-10). If the slot already has a save, it is replaced.",
         "operationId": "upsertSlotSave",
@@ -21045,6 +21455,56 @@
           "sessions"
         ]
       },
+      "get": {
+        "description": "Owner-only. Responds with application/octet-stream.",
+        "operationId": "downloadSessionSave",
+        "parameters": [
+          {
+            "description": "Session ID.",
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "description": "Session ID.",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Save state ID.",
+            "in": "path",
+            "name": "saveId",
+            "required": true,
+            "schema": {
+              "description": "Save state ID.",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HumaError"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Download a session save state",
+        "tags": [
+          "sessions"
+        ]
+      },
       "put": {
         "description": "Owner-only. Partial update — nil fields are left unchanged.",
         "operationId": "updateSessionSave",
@@ -21114,6 +21574,46 @@
       }
     },
     "/api/sessions/{id}/sram": {
+      "get": {
+        "description": "Owner-only. Responds with application/octet-stream.",
+        "operationId": "downloadSessionSRAM",
+        "parameters": [
+          {
+            "description": "Session ID.",
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "description": "Session ID.",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HumaError"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Download SRAM data for a session",
+        "tags": [
+          "sessions"
+        ]
+      },
       "post": {
         "description": "Stores or replaces the SRAM/battery save data for a session. Returns 201 on first upload, 200 on overwrite.",
         "operationId": "uploadSRAM",
@@ -21872,6 +22372,46 @@
       }
     },
     "/api/shared-sessions/{id}/saves/auto": {
+      "get": {
+        "description": "Member-only. Responds with application/octet-stream.",
+        "operationId": "downloadSharedSessionAutoSave",
+        "parameters": [
+          {
+            "description": "Shared session ID.",
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "description": "Shared session ID.",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HumaError"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Download the current auto-save of a shared session",
+        "tags": [
+          "shared-sessions"
+        ]
+      },
       "post": {
         "description": "Replaces the shared session's auto-save (one auto-save is kept per shared session). Same turn + X-Turn-Token rules as the manual upload.",
         "operationId": "uploadSharedSessionAutoSave",
@@ -22020,6 +22560,56 @@
           }
         ],
         "summary": "Delete a shared session save",
+        "tags": [
+          "shared-sessions"
+        ]
+      },
+      "get": {
+        "description": "Member-only. Responds with application/octet-stream.",
+        "operationId": "downloadSharedSessionSave",
+        "parameters": [
+          {
+            "description": "Shared session ID.",
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "description": "Shared session ID.",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Shared session save ID.",
+            "in": "path",
+            "name": "saveId",
+            "required": true,
+            "schema": {
+              "description": "Shared session save ID.",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HumaError"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Download a save from a shared session",
         "tags": [
           "shared-sessions"
         ]
