@@ -1,49 +1,49 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { api } from "@/lib/api-client";
-import type { CollectionsResponse, CollectionDetail } from "@/types/api";
+import { typedApi, unwrap } from "@/lib/api-client";
 
 export function useMyCollections(page = 1, pageSize = 20, search = "") {
-  const params = new URLSearchParams();
-  params.set("page", String(page));
-  params.set("pageSize", String(pageSize));
-  if (search) params.set("search", search);
-
   return useQuery({
     queryKey: ["collections", "mine", page, pageSize, search],
-    queryFn: () => api.get<CollectionsResponse>(`/collections?${params}`),
+    queryFn: () =>
+      unwrap(
+        typedApi.GET("/api/collections", {
+          params: { query: { page, pageSize, search: search || undefined } },
+        }),
+      ),
   });
 }
 
 export function usePublicCollections(page = 1, pageSize = 20, search = "") {
-  const params = new URLSearchParams();
-  params.set("page", String(page));
-  params.set("pageSize", String(pageSize));
-  if (search) params.set("search", search);
-
   return useQuery({
     queryKey: ["collections", "public", page, pageSize, search],
     queryFn: () =>
-      api.get<CollectionsResponse>(`/collections/public?${params}`),
+      unwrap(
+        typedApi.GET("/api/collections/public", {
+          params: { query: { page, pageSize, search: search || undefined } },
+        }),
+      ),
   });
 }
 
 export function useCollection(id: string) {
   return useQuery({
     queryKey: ["collection", id],
-    queryFn: () => api.get<CollectionDetail>(`/collections/${id}`),
+    queryFn: () =>
+      unwrap(
+        typedApi.GET("/api/collections/{id}", { params: { path: { id } } }),
+      ),
     enabled: !!id,
   });
 }
 
 export function useCreateCollection() {
   const queryClient = useQueryClient();
-
   return useMutation({
     mutationFn: (data: {
       name: string;
       description?: string;
       isPublic: boolean;
-    }) => api.post<CollectionDetail>("/collections", data),
+    }) => unwrap(typedApi.POST("/api/collections", { body: data })),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["collections"] });
     },
@@ -52,7 +52,6 @@ export function useCreateCollection() {
 
 export function useUpdateCollection() {
   const queryClient = useQueryClient();
-
   return useMutation({
     mutationFn: ({
       id,
@@ -62,7 +61,13 @@ export function useUpdateCollection() {
       name: string;
       description?: string;
       isPublic: boolean;
-    }) => api.put<CollectionDetail>(`/collections/${id}`, data),
+    }) =>
+      unwrap(
+        typedApi.PUT("/api/collections/{id}", {
+          params: { path: { id } },
+          body: data,
+        }),
+      ),
     onSuccess: (_, { id }) => {
       queryClient.invalidateQueries({ queryKey: ["collections"] });
       queryClient.invalidateQueries({ queryKey: ["collection", id] });
@@ -72,9 +77,11 @@ export function useUpdateCollection() {
 
 export function useDeleteCollection() {
   const queryClient = useQueryClient();
-
   return useMutation({
-    mutationFn: (id: string) => api.delete(`/collections/${id}`),
+    mutationFn: (id: string) =>
+      unwrap(
+        typedApi.DELETE("/api/collections/{id}", { params: { path: { id } } }),
+      ),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["collections"] });
     },
@@ -83,7 +90,6 @@ export function useDeleteCollection() {
 
 export function useAddGameToCollection() {
   const queryClient = useQueryClient();
-
   return useMutation({
     mutationFn: ({
       collectionId,
@@ -91,7 +97,13 @@ export function useAddGameToCollection() {
     }: {
       collectionId: string;
       gameId: string;
-    }) => api.post(`/collections/${collectionId}/games`, { gameId }),
+    }) =>
+      unwrap(
+        typedApi.POST("/api/collections/{id}/games", {
+          params: { path: { id: collectionId } },
+          body: { gameId: Number(gameId) },
+        }),
+      ),
     onSuccess: (_, { collectionId }) => {
       queryClient.invalidateQueries({ queryKey: ["collection", collectionId] });
       queryClient.invalidateQueries({ queryKey: ["collections"] });
@@ -101,7 +113,6 @@ export function useAddGameToCollection() {
 
 export function useRemoveGameFromCollection() {
   const queryClient = useQueryClient();
-
   return useMutation({
     mutationFn: ({
       collectionId,
@@ -109,7 +120,12 @@ export function useRemoveGameFromCollection() {
     }: {
       collectionId: string;
       gameId: string;
-    }) => api.delete(`/collections/${collectionId}/games/${gameId}`),
+    }) =>
+      unwrap(
+        typedApi.DELETE("/api/collections/{id}/games/{gameId}", {
+          params: { path: { id: collectionId, gameId } },
+        }),
+      ),
     onSuccess: (_, { collectionId }) => {
       queryClient.invalidateQueries({ queryKey: ["collection", collectionId] });
       queryClient.invalidateQueries({ queryKey: ["collections"] });
