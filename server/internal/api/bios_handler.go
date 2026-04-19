@@ -263,57 +263,8 @@ func (h *BiosHandler) ListBiosFiles(c *gin.Context) {
 	})
 }
 
-// GetBiosFile serves a BIOS file by filename.
-func (h *BiosHandler) GetBiosFile(c *gin.Context) {
-	filename := c.Param("filename")
-	path := h.Storage.BiosFilePath(filename)
-
-	if _, err := os.Stat(path); os.IsNotExist(err) {
-		// Check if the file exists in a registry-defined subdirectory
-		for _, e := range bios.ByFileName(filename) {
-			if e.SubDir != "" {
-				subPath := e.FilePath(h.Storage.BiosDir)
-				if _, serr := os.Stat(subPath); serr == nil {
-					path = subPath
-					break
-				}
-			}
-		}
-		if _, err := os.Stat(path); os.IsNotExist(err) {
-			c.JSON(http.StatusNotFound, ErrorResponse{Error: "bios file not found"})
-			return
-		}
-	}
-
-	// Validate the resolved path stays within BiosDir
-	absPath, err := filepath.Abs(path)
-	if err != nil {
-		c.JSON(http.StatusForbidden, ErrorResponse{Error: "access denied"})
-		return
-	}
-	absBiosDir, err := filepath.Abs(h.Storage.BiosDir)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "internal error"})
-		return
-	}
-	if _, statErr := os.Stat(absPath); statErr == nil {
-		realPath, evalErr := filepath.EvalSymlinks(absPath)
-		if evalErr != nil {
-			c.JSON(http.StatusForbidden, ErrorResponse{Error: "access denied"})
-			return
-		}
-		absPath = realPath
-	}
-	if realDir, e := filepath.EvalSymlinks(absBiosDir); e == nil {
-		absBiosDir = realDir
-	}
-	if !strings.HasPrefix(absPath, absBiosDir+string(filepath.Separator)) {
-		c.JSON(http.StatusForbidden, ErrorResponse{Error: "access denied"})
-		return
-	}
-
-	c.File(absPath)
-}
+// GetBiosFile has been migrated to huma — see HumaDownloadBios in
+// huma_downloads.go.
 
 // UploadBiosFile has been migrated to huma — see HumaUploadBiosFile in
 // huma_admin_multipart.go.

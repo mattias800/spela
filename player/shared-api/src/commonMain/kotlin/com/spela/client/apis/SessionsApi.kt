@@ -223,6 +223,136 @@ open class SessionsApi : ApiClient {
 
 
     /**
+     * Download the latest auto-save of a session
+     * Owner-only. Responds with application/octet-stream; 404 when no auto-save has been recorded yet.
+     * @param id Session ID.
+     * @return void
+     */
+    open suspend fun downloadSessionAutoSave(id: kotlin.String): HttpResponse<Unit> {
+
+        val localVariableAuthNames = listOf<String>()
+
+        val localVariableBody = 
+            io.ktor.client.utils.EmptyContent
+
+        val localVariableQuery = mutableMapOf<String, List<String>>()
+        val localVariableHeaders = mutableMapOf<String, String>()
+
+        val localVariableConfig = RequestConfig<kotlin.Any?>(
+            RequestMethod.GET,
+            "/api/sessions/{id}/saves/auto".replace("{" + "id" + "}", "$id"),
+            query = localVariableQuery,
+            headers = localVariableHeaders,
+            requiresAuthentication = false,
+        )
+
+        return request(
+            localVariableConfig,
+            localVariableBody,
+            localVariableAuthNames
+        ).wrap()
+    }
+
+
+    /**
+     * Download SRAM data for a session
+     * Owner-only. Responds with application/octet-stream.
+     * @param id Session ID.
+     * @return void
+     */
+    open suspend fun downloadSessionSRAM(id: kotlin.String): HttpResponse<Unit> {
+
+        val localVariableAuthNames = listOf<String>()
+
+        val localVariableBody = 
+            io.ktor.client.utils.EmptyContent
+
+        val localVariableQuery = mutableMapOf<String, List<String>>()
+        val localVariableHeaders = mutableMapOf<String, String>()
+
+        val localVariableConfig = RequestConfig<kotlin.Any?>(
+            RequestMethod.GET,
+            "/api/sessions/{id}/sram".replace("{" + "id" + "}", "$id"),
+            query = localVariableQuery,
+            headers = localVariableHeaders,
+            requiresAuthentication = false,
+        )
+
+        return request(
+            localVariableConfig,
+            localVariableBody,
+            localVariableAuthNames
+        ).wrap()
+    }
+
+
+    /**
+     * Download a session save state
+     * Owner-only. Responds with application/octet-stream.
+     * @param id Session ID.
+     * @param saveId Save state ID.
+     * @return void
+     */
+    open suspend fun downloadSessionSave(id: kotlin.String, saveId: kotlin.String): HttpResponse<Unit> {
+
+        val localVariableAuthNames = listOf<String>()
+
+        val localVariableBody = 
+            io.ktor.client.utils.EmptyContent
+
+        val localVariableQuery = mutableMapOf<String, List<String>>()
+        val localVariableHeaders = mutableMapOf<String, String>()
+
+        val localVariableConfig = RequestConfig<kotlin.Any?>(
+            RequestMethod.GET,
+            "/api/sessions/{id}/saves/{saveId}".replace("{" + "id" + "}", "$id").replace("{" + "saveId" + "}", "$saveId"),
+            query = localVariableQuery,
+            headers = localVariableHeaders,
+            requiresAuthentication = false,
+        )
+
+        return request(
+            localVariableConfig,
+            localVariableBody,
+            localVariableAuthNames
+        ).wrap()
+    }
+
+
+    /**
+     * Download a session slot save
+     * Owner-only. Slot is 1-10. Responds with application/octet-stream.
+     * @param id Session ID.
+     * @param slot Save slot number 1-10.
+     * @return void
+     */
+    open suspend fun downloadSessionSlotSave(id: kotlin.String, slot: kotlin.String): HttpResponse<Unit> {
+
+        val localVariableAuthNames = listOf<String>()
+
+        val localVariableBody = 
+            io.ktor.client.utils.EmptyContent
+
+        val localVariableQuery = mutableMapOf<String, List<String>>()
+        val localVariableHeaders = mutableMapOf<String, String>()
+
+        val localVariableConfig = RequestConfig<kotlin.Any?>(
+            RequestMethod.GET,
+            "/api/sessions/{id}/saves/slot/{slot}".replace("{" + "id" + "}", "$id").replace("{" + "slot" + "}", "$slot"),
+            query = localVariableQuery,
+            headers = localVariableHeaders,
+            requiresAuthentication = false,
+        )
+
+        return request(
+            localVariableConfig,
+            localVariableBody,
+            localVariableAuthNames
+        ).wrap()
+    }
+
+
+    /**
      * Duplicate a session
      * Creates a copy of the session (owned by the caller) including saves, SRAM, cheats and screenshot.
      * @param id Session ID to duplicate.

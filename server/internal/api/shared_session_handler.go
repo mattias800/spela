@@ -704,30 +704,8 @@ func (h *SharedSessionHandler) ListSaves(c *gin.Context) {
 // UploadSave has been migrated to huma — see
 // HumaUploadSharedSessionSave in huma_shared_uploads.go.
 
-// DownloadSave serves a shared session save file.
-func (h *SharedSessionHandler) DownloadSave(c *gin.Context) {
-	uid := getUserID(c)
-	ss, ok := h.loadSharedSessionWithMemberCheck(c, uid)
-	if !ok {
-		return
-	}
-
-	saveID := c.Param("saveId")
-	var save db.SharedSessionSave
-	if err := h.DB.Where("id = ? AND shared_session_id = ?", saveID, ss.ID).First(&save).Error; err != nil {
-		c.JSON(http.StatusNotFound, ErrorResponse{Error: "save not found"})
-		return
-	}
-
-	// Validate the file path is within the save directory
-	if !storage.ValidateROMPath(save.FilePath, []string{h.Storage.SaveDir}) {
-		c.JSON(http.StatusForbidden, ErrorResponse{Error: "access denied"})
-		return
-	}
-
-	c.Header("Content-Disposition", fmt.Sprintf("attachment; filename=%q", save.Name))
-	c.File(save.FilePath)
-}
+// DownloadSave has been migrated to huma — see HumaDownloadSharedSessionSave
+// in huma_downloads.go.
 
 // DeleteSave removes a shared session save. Owner only.
 func (h *SharedSessionHandler) DeleteSave(c *gin.Context) {
@@ -756,29 +734,8 @@ func (h *SharedSessionHandler) DeleteSave(c *gin.Context) {
 // UploadAutoSave has been migrated to huma — see
 // HumaUploadSharedSessionAutoSave in huma_shared_uploads.go.
 
-// GetAutoSave serves the shared session's latest auto-save.
-func (h *SharedSessionHandler) GetAutoSave(c *gin.Context) {
-	uid := getUserID(c)
-	ss, ok := h.loadSharedSessionWithMemberCheck(c, uid)
-	if !ok {
-		return
-	}
-
-	var save db.SharedSessionSave
-	if err := h.DB.Where("shared_session_id = ? AND is_auto = ?", ss.ID, true).First(&save).Error; err != nil {
-		c.JSON(http.StatusNotFound, ErrorResponse{Error: "no auto-save found"})
-		return
-	}
-
-	// Validate the file path is within the save directory
-	if !storage.ValidateROMPath(save.FilePath, []string{h.Storage.SaveDir}) {
-		c.JSON(http.StatusForbidden, ErrorResponse{Error: "access denied"})
-		return
-	}
-
-	c.Header("Content-Disposition", "attachment; filename=\"autosave.sav\"")
-	c.File(save.FilePath)
-}
+// GetAutoSave has been migrated to huma — see
+// HumaDownloadSharedSessionAutoSave in huma_downloads.go.
 
 // RenameSharedSessionSave renames a shared session save state.
 func (h *SharedSessionHandler) RenameSharedSessionSave(c *gin.Context) {

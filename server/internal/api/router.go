@@ -241,6 +241,7 @@ func NewRouter(cfg Config) (*gin.Engine, func()) {
 	RegisterSharedUploadRoutes(humaAPI, sharedSaveHandler, sharedSessionHandler, cfg.JWTSecret, cfg.DB, userLimiter, uploadLimiter)
 	RegisterNetplayRoutes(humaAPI, netplayHandler, cfg.JWTSecret, cfg.DB, userLimiter)
 	RegisterChallengeRoutes(humaAPI, challengeHandler, cfg.JWTSecret, cfg.DB, userLimiter)
+	RegisterDownloadRoutes(humaAPI, coreHandler, biosHandler, sessionHandler, sharedSaveHandler, sharedSessionHandler, consoleHandler, cfg.JWTSecret, cfg.DB, userLimiter, downloadLimiter)
 	RegisterAdminRoutes(humaAPI, adminHandler, cfg.JWTSecret, cfg.DB, userLimiter)
 	adminSystemEventHandler := &SystemEventHandler{DB: cfg.DB}
 	RegisterSystemEventRoutes(humaAPI, adminSystemEventHandler, cfg.JWTSecret, cfg.DB, userLimiter)
@@ -285,25 +286,8 @@ func NewRouter(cfg Config) (*gin.Engine, func()) {
 
 	// Logout — migrated to huma (see RegisterAuthProtectedRoutes above).
 
-	// Console preview screenshots (public — cached libretro thumbnails, loaded by <img> tags)
-	r.GET("/api/consoles/:id/preview-screenshot", consoleHandler.GetPreviewScreenshot)
-
-	// Branding assets (public — embedded PNGs)
-	r.GET("/api/branding/logo", func(c *gin.Context) {
-		data, err := brandingAssets.ReadFile("static/branding/spela-logo.png")
-		if err != nil {
-			c.JSON(404, ErrorResponse{Error: "logo not found"})
-			return
-		}
-		c.Data(200, "image/png", data)
-	})
-
-	// Console icons (public — embedded PNGs, loaded by <img> tags)
-	r.GET("/api/consoles/:id/icon", consoleHandler.GetConsoleIcon)
-
-	// Console logos (public — embedded SVGs/PNGs, loaded by <img> tags)
-	r.GET("/api/consoles/:id/logo", consoleHandler.GetConsoleLogo)
-	r.GET("/api/consoles/:id/logo.png", consoleHandler.GetConsoleLogoPng)
+	// Console images (icon/logo/logo.png/preview-screenshot) and the branding
+	// logo have been migrated to huma — see RegisterDownloadRoutes above.
 
 	// Protected routes
 	api := r.Group("/api")
@@ -343,31 +327,21 @@ func NewRouter(cfg Config) (*gin.Engine, func()) {
 		// /games/:id/series + /games/:id/franchises — migrated to huma
 		// (see RegisterEnrichmentRoutes above).
 
-		// Game Sessions — JSON endpoints migrated to huma (see RegisterSessionRoutes above);
-		// multipart upload endpoints migrated to huma (see RegisterSessionSaveUploadRoutes above).
-		// Only the binary download endpoints remain on raw gin because they
-		// stream files via c.File() rather than serializing JSON.
-		api.GET("/sessions/:id/saves/auto", sessionHandler.GetAutoSave)
-		api.GET("/sessions/:id/saves/slot/:slot", sessionHandler.DownloadSlotSave)
-		api.GET("/sessions/:id/saves/:saveId", sessionHandler.DownloadSessionSave)
-		api.GET("/sessions/:id/sram", sessionHandler.DownloadSRAM)
+		// Game Sessions — fully migrated to huma. JSON + multipart uploads in
+		// RegisterSessionRoutes / RegisterSessionSaveUploadRoutes above;
+		// binary downloads in RegisterDownloadRoutes above.
 
 		// Ratings — migrated to huma (see RegisterRatingRoutes above).
 
-		// Shared saves — list + delete + upload migrated to huma (see
-		// RegisterSharedSaveRoutes / RegisterSharedUploadRoutes above).
-		// Only the binary download stays on raw gin (uses c.File() streaming).
-		api.GET("/games/:id/shared-saves/:saveId/download", sharedSaveHandler.DownloadSharedSave)
+		// Shared saves — fully migrated to huma (see RegisterSharedSaveRoutes
+		// / RegisterSharedUploadRoutes / RegisterDownloadRoutes above).
 
-		// Cores
-		// api.GET("/games/:id/core", ...) — migrated to huma (see RegisterGameRoutes above).
-		// api.GET("/cores", ...) — migrated to huma (see RegisterCoreRoutes below).
-		api.GET("/cores/:id/download", coreHandler.DownloadCore)
+		// Cores — fully migrated to huma (listCores, getRecommendedCore,
+		// downloadCore in RegisterCoreRoutes / RegisterGameRoutes /
+		// RegisterDownloadRoutes above).
 
-		// BIOS files
-		// /bios — migrated to huma (see RegisterBiosRoutes above).
-		// /bios/:filename stays on gin because it streams a binary file.
-		api.GET("/bios/:filename", biosHandler.GetBiosFile)
+		// BIOS files — fully migrated to huma (RegisterBiosRoutes for
+		// metadata + RegisterDownloadRoutes for the binary serve).
 
 		// Stats — most-played + most-active-players migrated to huma
 		// (see RegisterStatsRoutes above). Heatmap endpoints migrated to
@@ -397,12 +371,9 @@ func NewRouter(cfg Config) (*gin.Engine, func()) {
 
 		// Collections — migrated to huma (see RegisterCollectionRoutes above).
 
-		// Shared Sessions — JSON + multipart upload endpoints migrated to huma
-		// (see RegisterSharedSessionRoutes / RegisterSharedUploadRoutes above).
-		// Only binary download endpoints remain on raw gin.
-		api.GET("/shared-sessions/:id/saves/auto", sharedSessionHandler.GetAutoSave)
-		api.GET("/shared-sessions/:id/saves/:saveId", sharedSessionHandler.DownloadSave)
-
+		// Shared Sessions — fully migrated to huma
+		// (RegisterSharedSessionRoutes / RegisterSharedUploadRoutes /
+		// RegisterDownloadRoutes above).
 
 		// Netplay — sessions + invite endpoints migrated to huma
 		// (see RegisterNetplayRoutes above). Only the WebSocket upgrade stays

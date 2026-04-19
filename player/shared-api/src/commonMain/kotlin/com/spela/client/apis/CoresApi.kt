@@ -44,6 +44,40 @@ open class CoresApi : ApiClient {
     ): super(baseUrl = baseUrl, httpClient = httpClient)
 
     /**
+     * Download a core binary
+     * Serves the core binary for the requested platform (defaults to linux). Responds with application/octet-stream.
+     * @param id Core ID.
+     * @param platform Target platform: linux, macos, windows, android. (optional, default to "linux")
+     * @return void
+     */
+    open suspend fun downloadCore(id: kotlin.String, platform: kotlin.String? = "linux"): HttpResponse<Unit> {
+
+        val localVariableAuthNames = listOf<String>()
+
+        val localVariableBody = 
+            io.ktor.client.utils.EmptyContent
+
+        val localVariableQuery = mutableMapOf<String, List<String>>()
+        platform?.apply { localVariableQuery["platform"] = listOf("$platform") }
+        val localVariableHeaders = mutableMapOf<String, String>()
+
+        val localVariableConfig = RequestConfig<kotlin.Any?>(
+            RequestMethod.GET,
+            "/api/cores/{id}/download".replace("{" + "id" + "}", "$id"),
+            query = localVariableQuery,
+            headers = localVariableHeaders,
+            requiresAuthentication = false,
+        )
+
+        return request(
+            localVariableConfig,
+            localVariableBody,
+            localVariableAuthNames
+        ).wrap()
+    }
+
+
+    /**
      * List libretro cores
      * Returns all libretro cores known to the server, including display name, supported platforms, and download URL (where applicable).
      * @return kotlin.collections.List<Core>
