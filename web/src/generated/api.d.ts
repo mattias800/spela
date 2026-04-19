@@ -6326,6 +6326,17 @@ export interface components {
             readonly $schema?: string;
             games: components["schemas"]["FreshChallengeGame"][] | null;
         };
+        GameAchievementProgressResponse: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/api/schemas/GameAchievementProgressResponse.json
+             */
+            readonly $schema?: string;
+            progress: components["schemas"]["RAProgressEntry"][] | null;
+            /** Format: int64 */
+            raGameId: number;
+        };
         GameAchievementsResponse: {
             /**
              * Format: uri
@@ -7191,6 +7202,14 @@ export interface components {
             unlockedCount: number;
             userId: string;
             username: string;
+        };
+        RAProgressEntry: {
+            /** Format: int64 */
+            achievementId: number;
+            isHardcore: boolean;
+            /** Format: int64 */
+            playTimeAtUnlock: number;
+            unlockedAt: string;
         };
         RARecentAchievementResponse: {
             /** Format: int64 */
@@ -13327,7 +13346,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["GameAchievementProgressResponse"];
                 };
             };
             /** @description Error */

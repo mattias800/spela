@@ -599,10 +599,11 @@ func TestGetAchievementProgress_NotLinked(t *testing.T) {
 	router.ServeHTTP(w, req)
 	assert.Equal(t, http.StatusOK, w.Code)
 
-	// Should return empty array when not linked
-	var resp []interface{}
+	// Should return an empty-progress object when not linked (not a bare array).
+	var resp map[string]interface{}
 	json.Unmarshal(w.Body.Bytes(), &resp)
-	assert.Empty(t, resp)
+	assert.Equal(t, float64(0), resp["raGameId"])
+	assert.Empty(t, resp["progress"].([]interface{}))
 }
 
 func TestGetAchievementProgress_IncludesPlayTime(t *testing.T) {

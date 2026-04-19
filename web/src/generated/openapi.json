@@ -3691,6 +3691,39 @@
         ],
         "type": "object"
       },
+      "GameAchievementProgressResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "https://example.com/api/schemas/GameAchievementProgressResponse.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "progress": {
+            "items": {
+              "$ref": "#/components/schemas/RAProgressEntry"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "raGameId": {
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "raGameId",
+          "progress"
+        ],
+        "type": "object"
+      },
       "GameAchievementsResponse": {
         "additionalProperties": false,
         "properties": {
@@ -6290,6 +6323,33 @@
           "lastUnlockedAt",
           "firstUnlockedAt",
           "isComplete"
+        ],
+        "type": "object"
+      },
+      "RAProgressEntry": {
+        "additionalProperties": false,
+        "properties": {
+          "achievementId": {
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "isHardcore": {
+            "type": "boolean"
+          },
+          "playTimeAtUnlock": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "unlockedAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "achievementId",
+          "unlockedAt",
+          "isHardcore",
+          "playTimeAtUnlock"
         ],
         "type": "object"
       },
@@ -18054,7 +18114,9 @@
           "200": {
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/GameAchievementProgressResponse"
+                }
               }
             },
             "description": "OK"

@@ -262,44 +262,12 @@ typealias SharedSessionInvitationCountResponse = com.spela.client.models.SharedS
 // TopPlayerDto / GameStatsDto replaced by
 // com.spela.client.models.GameStatsTopPlayer and GameStatsResponse.
 
-// Game Achievements (RetroAchievements)
-
-@Serializable
-data class GameAchievementDto(
-    val id: Long = 0,
-    val title: String = "",
-    val description: String = "",
-    val points: Int = 0,
-    val badgeUrl: String? = null,
-    val type: String? = null,
-    val displayOrder: Int? = null,
-    val rarityPercent: Double = 0.0,
-)
-
-@Serializable
-data class GameAchievementsResponse(
-    val raGameId: Long? = null,
-    val title: String = "",
-    val achievements: List<GameAchievementDto> = emptyList(),
-    val totalCount: Int = 0,
-    val totalPoints: Int = 0,
-)
-
-// Achievement Progress
-
-@Serializable
-data class AchievementProgressEntryDto(
-    val achievementId: Long = 0,
-    val unlockedAt: String? = null,
-    val isHardcore: Boolean = false,
-    val playTimeAtUnlock: Long? = null,
-)
-
-@Serializable
-data class AchievementProgressResponse(
-    val raGameId: Long? = null,
-    val progress: List<AchievementProgressEntryDto> = emptyList(),
-)
+// Game Achievements (RetroAchievements) DTOs replaced by generated
+// counterparts in com.spela.client.models:
+//   GameAchievementDto              -> Achievement
+//   GameAchievementsResponse        -> GameAchievementsResponse (same name)
+//   AchievementProgressEntryDto     -> RAProgressEntry
+//   AchievementProgressResponse     -> GameAchievementProgressResponse
 
 // Achievement Timeline + Leaderboard DTOs replaced by generated
 // counterparts in com.spela.client.models:

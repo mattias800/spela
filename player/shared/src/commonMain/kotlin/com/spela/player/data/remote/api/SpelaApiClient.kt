@@ -709,18 +709,13 @@ class SpelaApiClient(
     }
 
     // Game Achievements
-    //
-    // Kept hand-written: the local DTO shapes (Int rather than the generated
-    // Long timestamps) drive the AchievementsRepository mapper, and the
-    // generated `Achievement` model lacks a couple of fields the player
-    // already deserializes locally.
 
-    suspend fun getGameAchievements(gameId: String): GameAchievementsResponse {
-        return client.get("$baseUrl/api/games/$gameId/achievements").body()
+    suspend fun getGameAchievements(gameId: String): com.spela.client.models.GameAchievementsResponse {
+        return retroachievementsApi.getGameAchievements(gameId).body()
     }
 
-    suspend fun getAchievementProgress(gameId: String): AchievementProgressResponse {
-        return client.get("$baseUrl/api/games/$gameId/achievements/progress").body()
+    suspend fun getAchievementProgress(gameId: String): com.spela.client.models.GameAchievementProgressResponse {
+        return retroachievementsApi.getAchievementProgress(gameId).body()
     }
 
     suspend fun getAchievementTimeline(

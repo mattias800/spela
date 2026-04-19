@@ -26,6 +26,7 @@ package com.spela.client.apis
 import com.spela.client.models.AchievementLeaderboardResponse
 import com.spela.client.models.AchievementTimelineResponse
 import com.spela.client.models.AdminRAStatusResponse
+import com.spela.client.models.GameAchievementProgressResponse
 import com.spela.client.models.GameAchievementsResponse
 import com.spela.client.models.HumaError
 import com.spela.client.models.LinkRAAccountRequest
@@ -104,10 +105,10 @@ open class RetroachievementsApi : ApiClient {
      * Get achievement progress
      * Returns the caller&#39;s achievement progress for a specific game, enriched with playTimeAtUnlock. Returns an empty array if no RA account is linked.
      * @param id Game ID.
-     * @return kotlin.Any
+     * @return GameAchievementProgressResponse
      */
     @Suppress("UNCHECKED_CAST")
-    open suspend fun getAchievementProgress(id: kotlin.String): HttpResponse<kotlin.Any> {
+    open suspend fun getAchievementProgress(id: kotlin.String): HttpResponse<GameAchievementProgressResponse> {
 
         val localVariableAuthNames = listOf<String>()
 
