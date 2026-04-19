@@ -2,12 +2,9 @@ package api
 
 import (
 	"fmt"
-	"log/slog"
-	"net/http"
 	"os"
 	"time"
 
-	"github.com/gin-gonic/gin"
 	"github.com/spela/server/internal/db"
 	"github.com/spela/server/internal/igdb"
 	"gorm.io/gorm"
@@ -142,24 +139,6 @@ func SteamGridDBSource(database *gorm.DB) string {
 	return "none"
 }
 
-// GetSteamGridDBStatus returns the current SteamGridDB configuration status.
-func (h *AdminHandler) GetSteamGridDBStatus(c *gin.Context) {
-	source := SteamGridDBSource(h.DB)
-
-	if source == "none" {
-		c.JSON(http.StatusOK, gin.H{
-			"configured": false,
-			"source":     "none",
-		})
-		return
-	}
-
-	c.JSON(http.StatusOK, gin.H{
-		"configured": true,
-		"source":     source,
-	})
-}
-
 // RASource returns "env" if RA API key is set via environment variables,
 // "database" if set via admin settings, or "none" if not configured.
 func RASource(database *gorm.DB) string {
@@ -193,35 +172,3 @@ func IGDBSource(database *gorm.DB) string {
 	return "none"
 }
 
-// refreshTopRatedForAllConsoles fetches IGDB top-rated games for every console
-// that has an IGDB platform mapping and upserts them into the cache.
-// Called after a scrape completes so the top lists are always fresh.
-func (h *AdminHandler) refreshTopRatedForAllConsoles() {
-	slog.Info("refreshing top-rated games for all consoles")
-
-	var consoles []db.Console
-	h.DB.Find(&consoles)
-
-	consoleHandler := &ConsoleHandler{DB: h.DB, Scraper: h.Scraper}
-	refreshed := 0
-
-	for _, console := range consoles {
-		abbr := console.Abbreviation
-		platformIDs, ok := igdb.AbbreviationToIGDBPlatform[abbr]
-		if !ok {
-			continue
-		}
-
-		topGames, err := h.Scraper.IGDBClient.GetTopGames(platformIDs, 100)
-		if err != nil {
-			slog.Warn("failed to fetch top-rated games", "console", abbr, "error", err)
-			continue
-		}
-
-		ranked := bayesianRank(topGames, 25)
-		consoleHandler.upsertTopRatedGames(console.ID, ranked)
-		refreshed++
-	}
-
-	slog.Info("top-rated refresh complete", "consoles", refreshed)
-}

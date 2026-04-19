@@ -2,14 +2,11 @@ package api
 
 import (
 	"fmt"
-	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
 
-	"github.com/gin-gonic/gin"
 	"github.com/spela/server/internal/auth"
-	"github.com/spela/server/internal/db"
 	"github.com/spela/server/internal/storage"
 	"gorm.io/gorm"
 )
@@ -30,64 +27,6 @@ type DiagnosticCheck struct {
 	Status string `json:"status"` // "ok", "warning", "error"
 	Detail string `json:"detail,omitempty"`
 	Fix    string `json:"fix,omitempty"`
-}
-
-// Diagnostics returns server configuration health checks.
-// Public when no users exist (fresh install); requires admin auth otherwise.
-func (h *SetupHandler) Diagnostics(c *gin.Context) {
-	// Check if setup is needed (no users = public access)
-	var userCount int64
-	h.DB.Model(&db.User{}).Count(&userCount)
-
-	if userCount > 0 {
-		// Require admin auth
-		token := ""
-		header := c.GetHeader("Authorization")
-		if header != "" {
-			parts := strings.SplitN(header, " ", 2)
-			if len(parts) == 2 && parts[0] == "Bearer" {
-				token = parts[1]
-			}
-		}
-		if token == "" {
-			c.JSON(http.StatusUnauthorized, ErrorResponse{Error: "authentication required"})
-			return
-		}
-
-		claims, err := auth.ValidateAccessToken(token, h.JWTSecret)
-		if err != nil {
-			c.JSON(http.StatusUnauthorized, ErrorResponse{Error: "invalid token"})
-			return
-		}
-
-		// Check blacklist
-		if IsTokenBlacklisted(h.DB, token) {
-			c.JSON(http.StatusUnauthorized, ErrorResponse{Error: "token revoked"})
-			return
-		}
-
-		// Check user is admin/owner
-		var user db.User
-		if err := h.DB.Select("id", "role", "disabled", "token_version").First(&user, claims.UserID).Error; err != nil {
-			c.JSON(http.StatusUnauthorized, ErrorResponse{Error: "user not found"})
-			return
-		}
-		if user.Disabled {
-			c.JSON(http.StatusForbidden, ErrorResponse{Error: "account disabled"})
-			return
-		}
-		if claims.TokenVersion != user.TokenVersion {
-			c.JSON(http.StatusUnauthorized, ErrorResponse{Error: "token invalidated"})
-			return
-		}
-		if user.Role != "admin" && user.Role != "owner" {
-			c.JSON(http.StatusForbidden, ErrorResponse{Error: "admin access required"})
-			return
-		}
-	}
-
-	checks := h.runDiagnostics()
-	c.JSON(http.StatusOK, gin.H{"checks": checks})
 }
 
 func (h *SetupHandler) runDiagnostics() []DiagnosticCheck {

@@ -2,13 +2,10 @@ package api
 
 import (
 	"fmt"
-	"log/slog"
-	"net/http"
 	"strconv"
 	"strings"
 	"time"
 
-	"github.com/gin-gonic/gin"
 	"github.com/spela/server/internal/db"
 	"github.com/spela/server/internal/igdb"
 	"github.com/spela/server/internal/scraper"
@@ -23,86 +20,15 @@ type GameDiscoveryHandler struct {
 
 // SimilarGameResponse is the API response for a similar game.
 type SimilarGameResponse struct {
-	IGDBGameID  int     `json:"igdbGameId"`
-	Name        string  `json:"name"`
-	CoverUrl    string  `json:"coverUrl"`
+	IGDBGameID        int     `json:"igdbGameId"`
+	Name              string  `json:"name"`
+	CoverUrl          string  `json:"coverUrl"`
 	IGDBCriticsRating float64 `json:"igdbCriticsRating"`
-	LocalGameId *string `json:"localGameId"`
+	LocalGameId       *string `json:"localGameId"`
 }
 
 // similarGamesStaleness is how long cached similar games data is considered fresh.
 const similarGamesStaleness = 7 * 24 * time.Hour
-
-// GetSimilarGames returns IGDB similar games for a local game.
-// Results are cached in the local DB and refreshed when stale (>7 days).
-func (h *GameDiscoveryHandler) GetSimilarGames(c *gin.Context) {
-	id := c.Param("id")
-	var game db.Game
-	if err := h.DB.Preload("Console").First(&game, id).Error; err != nil {
-		c.JSON(http.StatusNotFound, ErrorResponse{Error: "game not found"})
-		return
-	}
-
-	igdbGameID := parseIGDBGameID(game.ScraperID)
-	if igdbGameID == 0 {
-		c.JSON(http.StatusOK, []SimilarGameResponse{})
-		return
-	}
-
-	// Check local DB for cached similar games
-	var cached []db.SimilarGame
-	h.DB.Where("game_id = ?", game.ID).Find(&cached)
-
-	fresh := len(cached) > 0 && time.Since(cached[0].UpdatedAt) < similarGamesStaleness
-
-	// Lazily configure IGDB client if credentials are available but client isn't set up yet
-	if h.Scraper != nil && h.Scraper.IGDBClient == nil {
-		clientID, clientSecret := igdbCredentials(h.DB)
-		if clientID != "" && clientSecret != "" {
-			h.Scraper.IGDBClient = igdb.NewClient(clientID, clientSecret)
-		}
-	}
-
-	if !fresh && h.Scraper != nil && h.Scraper.IGDBClient != nil && h.Scraper.IGDBClient.IsConfigured() {
-		similarGames, err := h.Scraper.IGDBClient.GetSimilarGames(igdbGameID)
-		if err != nil {
-			slog.Warn("failed to fetch similar games from IGDB", "game", game.Title, "error", err)
-			// Fall through to serve stale data if available
-		} else {
-			// Upsert in background — image downloads are slow, serve stale data now
-			gameID := game.ID
-			go h.upsertSimilarGames(gameID, similarGames)
-			// Don't re-read — serve existing cached data immediately
-		}
-	}
-
-	// Build response with local library cross-reference
-	result := make([]SimilarGameResponse, 0, len(cached))
-	for _, sg := range cached {
-		resp := SimilarGameResponse{
-			IGDBGameID: sg.IGDBGameID,
-			Name:       sg.Name,
-			IGDBCriticsRating: sg.IGDBCriticsRating,
-		}
-
-		// Check for local game match by case-insensitive title
-		var localGame db.Game
-		if err := h.DB.Where("LOWER(title) = LOWER(?)", sg.Name).First(&localGame).Error; err == nil {
-			localID := fmt.Sprintf("%d", localGame.ID)
-			resp.LocalGameId = &localID
-			if localGame.CoverURL != "" {
-				resp.CoverUrl = resolveImageURL(localGame.CoverURL)
-			}
-		}
-		if resp.CoverUrl == "" && sg.CoverLocalPath != "" {
-			resp.CoverUrl = resolveImageURL(sg.CoverLocalPath)
-		}
-
-		result = append(result, resp)
-	}
-
-	c.JSON(http.StatusOK, result)
-}
 
 // upsertSimilarGames inserts or updates cached similar games for a game.
 func (h *GameDiscoveryHandler) upsertSimilarGames(gameID uint, games []igdb.SimilarGame) {
@@ -121,11 +47,11 @@ func (h *GameDiscoveryHandler) upsertSimilarGames(gameID uint, games []igdb.Simi
 		}
 
 		sg := db.SimilarGame{
-			GameID:         gameID,
-			IGDBGameID:     g.ID,
-			Name:           g.Name,
-			CoverImageID:   coverImageID,
-			CoverLocalPath: coverLocalPath,
+			GameID:            gameID,
+			IGDBGameID:        g.ID,
+			Name:              g.Name,
+			CoverImageID:      coverImageID,
+			CoverLocalPath:    coverLocalPath,
 			IGDBCriticsRating: g.TotalRating,
 		}
 
@@ -164,43 +90,6 @@ type DeveloperGameResponse struct {
 	Name        string `json:"name"`
 	CoverUrl    string `json:"coverUrl"`
 	LocalGameId string `json:"localGameId"`
-}
-
-// GetDeveloperGames returns other games by the same developer that are in the local library.
-func (h *GameDiscoveryHandler) GetDeveloperGames(c *gin.Context) {
-	id := c.Param("id")
-	var game db.Game
-	if err := h.DB.First(&game, id).Error; err != nil {
-		c.JSON(http.StatusNotFound, ErrorResponse{Error: "game not found"})
-		return
-	}
-
-	if game.Developer == "" {
-		c.JSON(http.StatusOK, []DeveloperGameResponse{})
-		return
-	}
-
-	// Find other games by the same developer in the local library
-	var otherGames []db.Game
-	if err := h.DB.Where("developer = ? AND id != ? AND is_primary = true", game.Developer, game.ID).
-		Order("title asc").
-		Limit(20).
-		Find(&otherGames).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to fetch developer games"})
-		return
-	}
-
-	result := make([]DeveloperGameResponse, 0, len(otherGames))
-	for _, g := range otherGames {
-		coverUrl := resolveImageURL(g.CoverURL)
-		result = append(result, DeveloperGameResponse{
-			Name:        g.Title,
-			CoverUrl:    coverUrl,
-			LocalGameId: fmt.Sprintf("%d", g.ID),
-		})
-	}
-
-	c.JSON(http.StatusOK, result)
 }
 
 // parseIGDBGameID extracts the IGDB game ID from a ScraperID like "igdb:1234".
