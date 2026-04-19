@@ -199,7 +199,7 @@ export function PreferencesPage() {
       {activeTab === "devices" && (
         <>
           <DevicesCard
-            devices={devices}
+            devices={devices ?? undefined}
             consoles={consoles}
             isLoading={devicesLoading}
             onDelete={setDeleteTarget}

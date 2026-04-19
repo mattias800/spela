@@ -1,20 +1,23 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { api } from "@/lib/api-client";
-import type { Device } from "@/types/api";
+import { typedApi, unwrap } from "@/lib/api-client";
 
 export function useDevices() {
   return useQuery({
     queryKey: ["user", "devices"],
-    queryFn: () => api.get<Device[]>("/user/devices"),
+    queryFn: () => unwrap(typedApi.GET("/api/user/devices")),
   });
 }
 
 export function useUpdateDevice() {
   const queryClient = useQueryClient();
-
   return useMutation({
     mutationFn: async ({ id, name }: { id: number; name: string }) => {
-      await api.put(`/user/devices/${id}`, { name });
+      await unwrap(
+        typedApi.PUT("/api/user/devices/{id}", {
+          params: { path: { id: String(id) } },
+          body: { name },
+        }),
+      );
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["user", "devices"] });
@@ -24,10 +27,13 @@ export function useUpdateDevice() {
 
 export function useDeleteDevice() {
   const queryClient = useQueryClient();
-
   return useMutation({
     mutationFn: async (id: number) => {
-      await api.delete(`/user/devices/${id}`);
+      await unwrap(
+        typedApi.DELETE("/api/user/devices/{id}", {
+          params: { path: { id: String(id) } },
+        }),
+      );
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["user", "devices"] });
@@ -37,7 +43,6 @@ export function useDeleteDevice() {
 
 export function useUpdateDevicePreferences() {
   const queryClient = useQueryClient();
-
   return useMutation({
     mutationFn: async ({
       id,
@@ -46,7 +51,12 @@ export function useUpdateDevicePreferences() {
       id: number;
       consoleShaders: Record<string, string>;
     }) => {
-      await api.put(`/user/devices/${id}/preferences`, { consoleShaders });
+      await unwrap(
+        typedApi.PUT("/api/user/devices/{id}/preferences", {
+          params: { path: { id: String(id) } },
+          body: { consoleShaders },
+        }),
+      );
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["user", "devices"] });
@@ -57,7 +67,12 @@ export function useUpdateDevicePreferences() {
 export function useAdminUserDevices(userId: string) {
   return useQuery({
     queryKey: ["admin", "users", userId, "devices"],
-    queryFn: () => api.get<Device[]>(`/admin/users/${userId}/devices`),
+    queryFn: () =>
+      unwrap(
+        typedApi.GET("/api/admin/users/{id}/devices", {
+          params: { path: { id: userId } },
+        }),
+      ),
     enabled: !!userId,
   });
 }
