@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { api } from "@/lib/api-client";
+import { multipartBodySerializer, typedApi, unwrap } from "@/lib/api-client";
 
 export interface SaveQueueItem {
   sessionId: string;
@@ -54,9 +54,21 @@ export function useSaveQueue({
       }
 
       if (item.isAuto) {
-        await api.upload(`/sessions/${item.sessionId}/saves/auto`, formData);
+        await unwrap(
+          typedApi.POST("/api/sessions/{id}/saves/auto", {
+            params: { path: { id: item.sessionId } },
+            body: formData as unknown as never,
+            bodySerializer: multipartBodySerializer,
+          }),
+        );
       } else {
-        await api.upload(`/sessions/${item.sessionId}/saves`, formData);
+        await unwrap(
+          typedApi.POST("/api/sessions/{id}/saves", {
+            params: { path: { id: item.sessionId } },
+            body: formData as unknown as never,
+            bodySerializer: multipartBodySerializer,
+          }),
+        );
       }
 
       saveQueueRef.current.shift();
