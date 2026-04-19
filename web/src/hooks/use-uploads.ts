@@ -1,24 +1,26 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { api } from "@/lib/api-client";
-import type { StagedUpload, Game } from "@/types/api";
+import { api, typedApi, unwrap } from "@/lib/api-client";
+import type { StagedUpload } from "@/types/api";
 
 export function useUploadWritable() {
   return useQuery({
     queryKey: ["admin", "uploads", "writable"],
-    queryFn: () =>
-      api.get<{ writable: boolean; reason?: string }>(
-        "/admin/uploads/writable",
-      ),
+    queryFn: () => unwrap(typedApi.GET("/api/admin/uploads/writable")),
   });
 }
 
 export function useStagedUploads() {
   return useQuery({
     queryKey: ["admin", "uploads"],
-    queryFn: () => api.get<StagedUpload[]>("/admin/uploads"),
+    queryFn: () => unwrap(typedApi.GET("/api/admin/uploads")),
   });
 }
 
+// useUploadRoms still goes through api.upload — multipart file uploads need
+// a custom bodySerializer to pass FormData through openapi-fetch, tracked in
+// #489. Migrating this one hook while the spec types files as 'string'
+// (format: binary) would require an unsafe cast on every File upload; cleaner
+// to wait until openapi-fetch grows a formData helper or we add one ourselves.
 export function useUploadRoms() {
   const queryClient = useQueryClient();
 
@@ -40,17 +42,19 @@ export function useSetUploadConsole() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({
+    mutationFn: ({
       id,
       consoleId,
     }: {
       id: string;
       consoleId: string;
-    }) => {
-      return api.post<StagedUpload>(`/admin/uploads/${id}/console`, {
-        consoleId,
-      });
-    },
+    }) =>
+      unwrap(
+        typedApi.POST("/api/admin/uploads/{id}/console", {
+          params: { path: { id } },
+          body: { consoleId },
+        }),
+      ),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin", "uploads"] });
     },
@@ -61,9 +65,12 @@ export function useScrapeUpload() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (id: string) => {
-      return api.post<StagedUpload>(`/admin/uploads/${id}/scrape`);
-    },
+    mutationFn: (id: string) =>
+      unwrap(
+        typedApi.POST("/api/admin/uploads/{id}/scrape", {
+          params: { path: { id } },
+        }),
+      ),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin", "uploads"] });
     },
@@ -74,7 +81,7 @@ export function useScrapeAllUploads() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: () => api.post<StagedUpload[]>("/admin/uploads/scrape"),
+    mutationFn: () => unwrap(typedApi.POST("/api/admin/uploads/scrape")),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin", "uploads"] });
     },
@@ -85,9 +92,12 @@ export function useAcceptUpload() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (id: string) => {
-      return api.post<Game>(`/admin/uploads/${id}/accept`);
-    },
+    mutationFn: (id: string) =>
+      unwrap(
+        typedApi.POST("/api/admin/uploads/{id}/accept", {
+          params: { path: { id } },
+        }),
+      ),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin", "uploads"] });
       queryClient.invalidateQueries({ queryKey: ["games"] });
@@ -99,9 +109,12 @@ export function useRejectUpload() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (id: string) => {
-      return api.post<{ message: string }>(`/admin/uploads/${id}/reject`);
-    },
+    mutationFn: (id: string) =>
+      unwrap(
+        typedApi.POST("/api/admin/uploads/{id}/reject", {
+          params: { path: { id } },
+        }),
+      ),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin", "uploads"] });
     },
@@ -112,8 +125,7 @@ export function useAcceptAllUploads() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: () =>
-      api.post<{ accepted: number }>("/admin/uploads/accept-all"),
+    mutationFn: () => unwrap(typedApi.POST("/api/admin/uploads/accept-all")),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin", "uploads"] });
       queryClient.invalidateQueries({ queryKey: ["games"] });
@@ -125,8 +137,7 @@ export function useRejectAllUploads() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: () =>
-      api.post<{ rejected: number }>("/admin/uploads/reject-all"),
+    mutationFn: () => unwrap(typedApi.POST("/api/admin/uploads/reject-all")),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin", "uploads"] });
     },
@@ -137,7 +148,7 @@ export function useClearStaging() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: () => api.delete<{ cleared: number }>("/admin/uploads"),
+    mutationFn: () => unwrap(typedApi.DELETE("/api/admin/uploads")),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin", "uploads"] });
     },
