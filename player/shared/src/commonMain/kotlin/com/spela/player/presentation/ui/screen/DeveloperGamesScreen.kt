@@ -52,6 +52,7 @@ import com.spela.player.presentation.ui.theme.LocalTitleBarInset
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.ui.theme.SpTypography
+import com.spela.player.domain.model.Game
 import com.spela.player.presentation.viewmodel.ExploreViewModel
 
 private data class DeveloperGamesSortOption(val key: String, val label: String)
@@ -73,7 +74,39 @@ fun DeveloperGamesScreen(
     onGameSelected: (String) -> Unit,
     onBack: () -> Unit,
 ) {
-    val state by viewModel.developerDetailState.collectAsState()
+    val developerState by viewModel.developerDetailState.collectAsState()
+    val publisherState by viewModel.publisherDetailState.collectAsState()
+
+    // Unify the two side-specific states into a small view object for this
+    // screen. The fields consumed here (detail?.let present, sortedFilteredGames,
+    // gamesSearchQuery, gamesSortBy, isLoading) have identical shape on both
+    // sides; only the detail type differs and this screen only needs a
+    // non-null check.
+    data class GamesView(
+        val hasDetail: Boolean,
+        val isLoading: Boolean,
+        val sortedFilteredGames: List<Game>,
+        val gamesSearchQuery: String,
+        val gamesSortBy: String,
+    )
+
+    val state = if (isDeveloper) {
+        GamesView(
+            hasDetail = developerState.detail != null,
+            isLoading = developerState.isLoading,
+            sortedFilteredGames = developerState.sortedFilteredGames,
+            gamesSearchQuery = developerState.gamesSearchQuery,
+            gamesSortBy = developerState.gamesSortBy,
+        )
+    } else {
+        GamesView(
+            hasDetail = publisherState.detail != null,
+            isLoading = publisherState.isLoading,
+            sortedFilteredGames = publisherState.sortedFilteredGames,
+            gamesSearchQuery = publisherState.gamesSearchQuery,
+            gamesSortBy = publisherState.gamesSortBy,
+        )
+    }
 
     var isSearchVisible by rememberSaveable { mutableStateOf(false) }
     var showSortMenu by remember { mutableStateOf(false) }
@@ -81,9 +114,20 @@ fun DeveloperGamesScreen(
 
     val sortedGames = state.sortedFilteredGames
 
+    // Both sides accept the same filter setters (they just write to the
+    // appropriate state flow — see ExploreViewModel.setPublisher* helpers).
+    val setSearch: (String) -> Unit = { query ->
+        if (isDeveloper) viewModel.setDeveloperGamesSearch(query)
+        else viewModel.setPublisherGamesSearchQuery(query)
+    }
+    val setSort: (String) -> Unit = { sortBy ->
+        if (isDeveloper) viewModel.setDeveloperGamesSort(sortBy)
+        else viewModel.setPublisherGamesSortBy(sortBy)
+    }
+
     PlatformBackHandler {
         if (isSearchVisible) {
-            viewModel.setDeveloperGamesSearch("")
+            setSearch("")
             isSearchVisible = false
         } else {
             onBack()
@@ -92,7 +136,7 @@ fun DeveloperGamesScreen(
 
     // Load data if not already loaded
     LaunchedEffect(name, isDeveloper) {
-        if (state.detail == null && !state.isLoading) {
+        if (!state.hasDetail && !state.isLoading) {
             if (isDeveloper) {
                 viewModel.loadDeveloperDetail(name)
             } else {
@@ -125,7 +169,7 @@ fun DeveloperGamesScreen(
                 if (isSearchVisible) {
                     SpSearchField(
                         value = state.gamesSearchQuery,
-                        onValueChange = { viewModel.setDeveloperGamesSearch(it) },
+                        onValueChange = { setSearch(it) },
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(vertical = SpSpacing.Small)
@@ -137,7 +181,7 @@ fun DeveloperGamesScreen(
                                 icon = Icons.Filled.Close,
                                 contentDescription = "Close search",
                                 onClick = {
-                                    viewModel.setDeveloperGamesSearch("")
+                                    setSearch("")
                                     isSearchVisible = false
                                 },
                             )
@@ -176,7 +220,7 @@ fun DeveloperGamesScreen(
                                 DropdownMenuItem(
                                     text = { Text(option.label) },
                                     onClick = {
-                                        viewModel.setDeveloperGamesSort(option.key)
+                                        setSort(option.key)
                                         showSortMenu = false
                                     },
                                     leadingIcon = if (state.gamesSortBy == option.key) {
@@ -190,7 +234,7 @@ fun DeveloperGamesScreen(
             }
 
             // Loading / empty / game grid
-            if (state.isLoading && state.detail == null) {
+            if (state.isLoading && !state.hasDetail) {
                 item(span = { GridItemSpan(maxLineSpan) }) {
                     Box(
                         modifier = Modifier.fillMaxWidth().height(300.dp),
@@ -231,7 +275,7 @@ fun DeveloperGamesScreen(
                 showBack = true,
                 onBack = {
                     if (isSearchVisible) {
-                        viewModel.setDeveloperGamesSearch("")
+                        setSearch("")
                         isSearchVisible = false
                     } else {
                         onBack()

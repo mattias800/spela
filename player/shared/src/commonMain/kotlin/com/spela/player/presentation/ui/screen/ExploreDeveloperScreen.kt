@@ -51,7 +51,6 @@ import com.spela.player.presentation.viewmodel.ExploreViewModel
 @Composable
 fun ExploreDeveloperScreen(
     name: String,
-    isDeveloper: Boolean = true,
     viewModel: ExploreViewModel,
     onGameSelected: (String) -> Unit,
     onPublisherSelected: (String) -> Unit = {},
@@ -63,12 +62,8 @@ fun ExploreDeveloperScreen(
 
     val state by viewModel.developerDetailState.collectAsState()
 
-    LaunchedEffect(name, isDeveloper) {
-        if (isDeveloper) {
-            viewModel.loadDeveloperDetail(name)
-        } else {
-            viewModel.loadPublisherDetail(name)
-        }
+    LaunchedEffect(name) {
+        viewModel.loadDeveloperDetail(name)
     }
 
     val isGamepad = LocalInputMode.current == InputMode.GAMEPAD
@@ -177,7 +172,7 @@ fun ExploreDeveloperScreen(
                                         SpButton(
                                             text = "See all games",
                                             style = SpButtonStyle.Ghost,
-                                            onClick = { onNavigateToGames(name, isDeveloper) },
+                                            onClick = { onNavigateToGames(name, true) },
                                             modifier = Modifier.testTag("developer_see_all_games"),
                                         )
                                     }
@@ -202,7 +197,7 @@ fun ExploreDeveloperScreen(
                                         SpButton(
                                             text = "See all",
                                             style = SpButtonStyle.Ghost,
-                                            onClick = { onNavigateToGames(name, isDeveloper) },
+                                            onClick = { onNavigateToGames(name, true) },
                                         )
                                     }
                                 } else null,
@@ -267,7 +262,7 @@ fun ExploreDeveloperScreen(
                     ) {
                         SpEmptyState(
                             icon = Icons.Filled.Code,
-                            title = if (isDeveloper) "Developer not found" else "Publisher not found",
+                            title = "Developer not found",
                             message = "Could not load details.",
                             modifier = Modifier.testTag("developer_error_state"),
                         )

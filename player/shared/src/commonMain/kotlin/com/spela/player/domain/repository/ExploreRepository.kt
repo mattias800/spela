@@ -12,6 +12,7 @@ import com.spela.player.domain.model.CultClassicGame
 import com.spela.player.domain.model.DeveloperDetail
 import com.spela.player.domain.model.DeveloperSpotlight
 import com.spela.player.domain.model.DeveloperSummary
+import com.spela.player.domain.model.PublisherDetail
 import com.spela.player.domain.model.ExploreChallenge
 import com.spela.player.domain.model.ExploreRow
 import com.spela.player.domain.model.FeaturedGame
@@ -58,7 +59,7 @@ interface ExploreRepository {
     suspend fun getPlayersLikeYou(): Result<PlayersLikeYouResult>
     suspend fun getDevelopers(): Result<List<DeveloperSummary>>
     suspend fun getDeveloperDetail(name: String): Result<DeveloperDetail>
-    suspend fun getPublisherDetail(name: String): Result<DeveloperDetail>
+    suspend fun getPublisherDetail(name: String): Result<PublisherDetail>
     suspend fun getDeveloperSpotlight(): Result<DeveloperSpotlight>
     suspend fun getConsoleShowcase(consoleId: String): Result<ConsoleShowcase>
     suspend fun getConsoleHighlights(): Result<List<ConsoleHighlight>>

@@ -949,13 +949,40 @@ fun com.spela.client.models.DeveloperDetailResponse.toDomain(): DeveloperDetail 
     relatedDevelopers = relatedDevelopers.orEmpty().map { it.toDomain() },
 )
 
-// PublisherDetailResponse is shape-symmetric with DeveloperDetailResponse —
-// the "counterpart" fields are `developers` / `relatedPublishers` instead of
-// `publishers` / `relatedDevelopers`. The DeveloperDetail domain model holds
-// them as `publishers` / `relatedDevelopers` regardless of which side the
-// page is viewing; callers render the chips with the appropriate label based
-// on `isDeveloper`.
-fun com.spela.client.models.PublisherDetailResponse.toDomain(): DeveloperDetail = DeveloperDetail(
+fun com.spela.client.models.GenreCount.toPublisherGenreBreakdown(): PublisherDetailGenreBreakdown =
+    PublisherDetailGenreBreakdown(
+        name = name,
+        gameCount = gameCount.toInt(),
+    )
+
+fun com.spela.client.models.PlatformCount.toPublisherPlatformBreakdown(): PublisherDetailPlatformBreakdown =
+    PublisherDetailPlatformBreakdown(
+        consoleName = consoleName,
+        consoleId = consoleId,
+        count = count.toInt(),
+    )
+
+fun com.spela.client.models.EntityUserStats.toPublisherUserStats(): PublisherDetailUserStats =
+    PublisherDetailUserStats(
+        totalPlayTime = totalPlayTime,
+        gamesPlayed = gamesPlayed.toInt(),
+        favoriteCount = favoriteCount.toInt(),
+        mostPlayedGame = mostPlayedGame.takeIf { it.id.isNotEmpty() }?.toDomain(),
+    )
+
+fun com.spela.client.models.NameCount.toPublisherDeveloper(): PublisherDetailDeveloper =
+    PublisherDetailDeveloper(
+        name = name,
+        count = count.toInt(),
+    )
+
+fun com.spela.client.models.RelatedPublisher.toDomain(): RelatedPublisher = RelatedPublisher(
+    name = name,
+    gameCount = gameCount.toInt(),
+    sharedDevelopers = sharedDevelopers.orEmpty(),
+)
+
+fun com.spela.client.models.PublisherDetailResponse.toDomain(): PublisherDetail = PublisherDetail(
     name = name,
     gameCount = gameCount.toInt(),
     avgRating = avgRating,
@@ -963,22 +990,16 @@ fun com.spela.client.models.PublisherDetailResponse.toDomain(): DeveloperDetail 
     heroUrl = heroUrl,
     companyInfo = companyInfo?.toDomain(),
     topGames = topGames.orEmpty().map { it.toDomain() },
-    genreBreakdown = genreBreakdown.orEmpty().map { it.toDeveloperGenreBreakdown() },
-    platformBreakdown = platformBreakdown.orEmpty().map { it.toDeveloperPlatformBreakdown() },
-    userStats = userStats?.toDeveloperUserStats(),
-    publishers = developers.orEmpty().map { it.toDeveloperPublisher() },
+    genreBreakdown = genreBreakdown.orEmpty().map { it.toPublisherGenreBreakdown() },
+    platformBreakdown = platformBreakdown.orEmpty().map { it.toPublisherPlatformBreakdown() },
+    userStats = userStats?.toPublisherUserStats(),
+    developers = developers.orEmpty().map { it.toPublisherDeveloper() },
     games = games.orEmpty().map { it.toDomain() },
     activeYears = activeYears?.toDomain(),
     ratingDistribution = ratingDistribution.toDomain(),
     primaryGenre = primaryGenre,
     timeline = timeline.orEmpty().map { it.toDomain() },
-    relatedDevelopers = relatedPublishers.orEmpty().map { it.toDomain() },
-)
-
-fun com.spela.client.models.RelatedPublisher.toDomain(): RelatedDeveloper = RelatedDeveloper(
-    name = name,
-    gameCount = gameCount.toInt(),
-    sharedPublishers = sharedDevelopers.orEmpty(),
+    relatedPublishers = relatedPublishers.orEmpty().map { it.toDomain() },
 )
 
 fun com.spela.client.models.DeveloperSpotlightResponse.toDomain(): DeveloperSpotlight = DeveloperSpotlight(
