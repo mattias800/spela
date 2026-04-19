@@ -1,9 +1,10 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { api } from "./api-client";
-import type { ApiGetPath } from "./api-routes";
+import { authedFetch } from "./api-client";
 
-// Test-only helper to bypass typed path checking
-const testPath = (p: string) => p as ApiGetPath;
+// Tests the shared `sendWithAuth` + refresh-deduplication transport. We call
+// `authedFetch` (the openapi-fetch fetch-adapter used by typedApi) directly
+// with Request objects rather than going through typedApi, because
+// openapi-fetch's URL parser rejects relative URLs in jsdom.
 
 function mockLocalStorage() {
   const store: Record<string, string> = {};
@@ -23,6 +24,10 @@ function mockLocalStorage() {
     },
     key: vi.fn(() => null),
   } satisfies Storage;
+}
+
+function makeRequest(path: string): Request {
+  return new Request(`http://localhost${path}`, { method: "GET" });
 }
 
 describe("api token refresh deduplication", () => {
@@ -90,14 +95,17 @@ describe("api token refresh deduplication", () => {
       });
     });
 
-    // Fire 3 concurrent requests — all will get 401 and attempt refresh
-    const results = await Promise.all([
-      api.get(testPath("/test/1")),
-      api.get(testPath("/test/2")),
-      api.get(testPath("/test/3")),
+    // Fire 3 concurrent requests — all will get 401 and attempt refresh.
+    const responses = await Promise.all([
+      authedFetch(makeRequest("/api/test/1")),
+      authedFetch(makeRequest("/api/test/2")),
+      authedFetch(makeRequest("/api/test/3")),
     ]);
 
-    expect(results).toHaveLength(3);
+    expect(responses).toHaveLength(3);
+    for (const res of responses) {
+      expect(res.status).toBe(200);
+    }
     // The key assertion: only ONE refresh call was made despite 3 concurrent 401s
     expect(refreshCallCount).toBe(1);
   });
@@ -130,8 +138,10 @@ describe("api token refresh deduplication", () => {
       });
     });
 
-    // First request fails refresh
-    await expect(api.get(testPath("/test"))).rejects.toThrow("Session expired");
+    // First request fails refresh → sendWithAuth throws ApiError("Session expired")
+    await expect(authedFetch(makeRequest("/api/test"))).rejects.toThrow(
+      "Session expired",
+    );
     expect(refreshCallCount).toBe(1);
 
     // Set up a new token and try again — should attempt a NEW refresh (not reuse old failed promise)
@@ -167,8 +177,10 @@ describe("api token refresh deduplication", () => {
       });
     });
 
-    const result = await api.get(testPath("/test"));
-    expect(result).toEqual({ ok: true });
+    const res = await authedFetch(makeRequest("/api/test"));
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body).toEqual({ ok: true });
     // Second refresh happened (total = 2)
     expect(refreshCallCount).toBe(2);
   });
