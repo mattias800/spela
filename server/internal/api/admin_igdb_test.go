@@ -7,75 +7,11 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/gin-gonic/gin"
-	"github.com/spela/server/internal/auth"
 	"github.com/spela/server/internal/db"
 	"github.com/spela/server/internal/igdb"
-	"github.com/spela/server/internal/scraper"
-	ws "github.com/spela/server/internal/websocket"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"gorm.io/driver/sqlite"
-	"gorm.io/gorm"
-	"gorm.io/gorm/logger"
 )
-
-const igdbTestJWTSecret = "igdb-test-secret"
-
-func setupIGDBTestEnv(t *testing.T, twitchServer *httptest.Server) (*gorm.DB, *gin.Engine) {
-	t.Helper()
-
-	database, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{
-		Logger: logger.Default.LogMode(logger.Silent),
-	})
-	require.NoError(t, err)
-	require.NoError(t, database.AutoMigrate(&db.User{}, &db.ServerSetting{}))
-
-	if twitchServer != nil {
-		origURL := igdb.TwitchTokenURLForTest()
-		igdb.SetTwitchTokenURLForTest(twitchServer.URL)
-		t.Cleanup(func() { igdb.SetTwitchTokenURLForTest(origURL) })
-	}
-
-	hub := ws.NewHub(nil)
-	go hub.Run()
-
-	s := scraper.NewScraper(database, nil, t.TempDir(), nil)
-	adminHandler := &AdminHandler{DB: database, Scraper: s, Hub: hub}
-	igdbHandler := &IGDBHandler{DB: database}
-
-	gin.SetMode(gin.TestMode)
-	router := gin.New()
-	api := router.Group("/api")
-	api.Use(AuthMiddleware(igdbTestJWTSecret, database))
-	{
-		admin := api.Group("/admin")
-		admin.Use(AdminMiddleware())
-		{
-			admin.POST("/igdb/test", igdbHandler.TestIGDB)
-			admin.GET("/igdb/status", igdbHandler.GetIGDBStatus)
-			admin.GET("/steamgriddb/status", adminHandler.GetSteamGridDBStatus)
-			admin.GET("/settings", adminHandler.GetSettings)
-			admin.PUT("/settings", adminHandler.UpdateSettings)
-		}
-	}
-
-	return database, router
-}
-
-func createIGDBTestUser(t *testing.T, database *gorm.DB, role db.UserRole) string {
-	t.Helper()
-	user := db.User{
-		Username:     "igdb-test-" + string(role),
-		Email:        "igdb-test-" + string(role) + "@test.com",
-		PasswordHash: "unused",
-		Role:         role,
-	}
-	require.NoError(t, database.Create(&user).Error)
-	token, err := auth.GenerateAccessToken(user.ID, user.Username, string(user.Role), igdbTestJWTSecret)
-	require.NoError(t, err)
-	return token
-}
 
 func TestIGDBTest_Success(t *testing.T) {
 	twitchServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -89,8 +25,14 @@ func TestIGDBTest_Success(t *testing.T) {
 	}))
 	defer twitchServer.Close()
 
-	database, router := setupIGDBTestEnv(t, twitchServer)
-	token := createIGDBTestUser(t, database, "admin")
+	origURL := igdb.TwitchTokenURLForTest()
+	igdb.SetTwitchTokenURLForTest(twitchServer.URL)
+	t.Cleanup(func() { igdb.SetTwitchTokenURLForTest(origURL) })
+
+	database, cfg := setupTestEnv(t)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
+	_, adminToken := createAdminUser(t, database)
 
 	body, _ := json.Marshal(map[string]string{
 		"clientId":     "goodid",
@@ -99,14 +41,17 @@ func TestIGDBTest_Success(t *testing.T) {
 	w := httptest.NewRecorder()
 	req := httptest.NewRequest("POST", "/api/admin/igdb/test", bytes.NewReader(body))
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", "Bearer "+token)
+	req.Header.Set("Authorization", "Bearer "+adminToken)
 	router.ServeHTTP(w, req)
 
 	assert.Equal(t, http.StatusOK, w.Code)
 	var resp map[string]interface{}
 	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
 	assert.Equal(t, true, resp["success"])
-	assert.Nil(t, resp["error"])
+	// huma handler omits the error field when empty — it should be absent or empty.
+	if v, ok := resp["error"]; ok {
+		assert.Equal(t, "", v)
+	}
 }
 
 func TestIGDBTest_AuthFailure(t *testing.T) {
@@ -116,8 +61,14 @@ func TestIGDBTest_AuthFailure(t *testing.T) {
 	}))
 	defer twitchServer.Close()
 
-	database, router := setupIGDBTestEnv(t, twitchServer)
-	token := createIGDBTestUser(t, database, "admin")
+	origURL := igdb.TwitchTokenURLForTest()
+	igdb.SetTwitchTokenURLForTest(twitchServer.URL)
+	t.Cleanup(func() { igdb.SetTwitchTokenURLForTest(origURL) })
+
+	database, cfg := setupTestEnv(t)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
+	_, adminToken := createAdminUser(t, database)
 
 	body, _ := json.Marshal(map[string]string{
 		"clientId":     "badid",
@@ -126,19 +77,21 @@ func TestIGDBTest_AuthFailure(t *testing.T) {
 	w := httptest.NewRecorder()
 	req := httptest.NewRequest("POST", "/api/admin/igdb/test", bytes.NewReader(body))
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", "Bearer "+token)
+	req.Header.Set("Authorization", "Bearer "+adminToken)
 	router.ServeHTTP(w, req)
 
 	assert.Equal(t, http.StatusOK, w.Code)
 	var resp map[string]interface{}
 	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
 	assert.Equal(t, false, resp["success"])
-	assert.NotNil(t, resp["error"])
+	assert.NotEmpty(t, resp["error"])
 }
 
 func TestIGDBTest_EmptyFields(t *testing.T) {
-	database, router := setupIGDBTestEnv(t, nil)
-	token := createIGDBTestUser(t, database, "admin")
+	database, cfg := setupTestEnv(t)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
+	_, adminToken := createAdminUser(t, database)
 
 	tests := []struct {
 		name string
@@ -156,7 +109,7 @@ func TestIGDBTest_EmptyFields(t *testing.T) {
 			w := httptest.NewRecorder()
 			req := httptest.NewRequest("POST", "/api/admin/igdb/test", bytes.NewReader(body))
 			req.Header.Set("Content-Type", "application/json")
-			req.Header.Set("Authorization", "Bearer "+token)
+			req.Header.Set("Authorization", "Bearer "+adminToken)
 			router.ServeHTTP(w, req)
 
 			assert.Equal(t, http.StatusBadRequest, w.Code)
@@ -168,12 +121,14 @@ func TestIGDBTest_EmptyFields(t *testing.T) {
 }
 
 func TestIGDBStatus_NotConfigured(t *testing.T) {
-	database, router := setupIGDBTestEnv(t, nil)
-	token := createIGDBTestUser(t, database, "admin")
+	database, cfg := setupTestEnv(t)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
+	_, adminToken := createAdminUser(t, database)
 
 	w := httptest.NewRecorder()
 	req := httptest.NewRequest("GET", "/api/admin/igdb/status", nil)
-	req.Header.Set("Authorization", "Bearer "+token)
+	req.Header.Set("Authorization", "Bearer "+adminToken)
 	router.ServeHTTP(w, req)
 
 	assert.Equal(t, http.StatusOK, w.Code)
@@ -185,8 +140,10 @@ func TestIGDBStatus_NotConfigured(t *testing.T) {
 
 func TestIGDBStatus_Connected(t *testing.T) {
 	// No twitch server needed — status only checks DB.
-	database, router := setupIGDBTestEnv(t, nil)
-	token := createIGDBTestUser(t, database, "admin")
+	database, cfg := setupTestEnv(t)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
+	_, adminToken := createAdminUser(t, database)
 
 	// Set up IGDB credentials in DB
 	database.Create(&db.ServerSetting{Key: "igdb_client_id", Value: "configured-id"})
@@ -194,7 +151,7 @@ func TestIGDBStatus_Connected(t *testing.T) {
 
 	w := httptest.NewRecorder()
 	req := httptest.NewRequest("GET", "/api/admin/igdb/status", nil)
-	req.Header.Set("Authorization", "Bearer "+token)
+	req.Header.Set("Authorization", "Bearer "+adminToken)
 	router.ServeHTTP(w, req)
 
 	assert.Equal(t, http.StatusOK, w.Code)
@@ -207,15 +164,17 @@ func TestIGDBStatus_Connected(t *testing.T) {
 func TestIGDBStatus_ConfiguredNoLiveCheck(t *testing.T) {
 	// Status endpoint only checks DB, does not make live API calls.
 	// Even with invalid credentials, it returns "connected" if credentials exist.
-	database, router := setupIGDBTestEnv(t, nil)
-	token := createIGDBTestUser(t, database, "admin")
+	database, cfg := setupTestEnv(t)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
+	_, adminToken := createAdminUser(t, database)
 
 	database.Create(&db.ServerSetting{Key: "igdb_client_id", Value: "any-id"})
 	database.Create(&db.ServerSetting{Key: "igdb_client_secret", Value: "any-secret"})
 
 	w := httptest.NewRecorder()
 	req := httptest.NewRequest("GET", "/api/admin/igdb/status", nil)
-	req.Header.Set("Authorization", "Bearer "+token)
+	req.Header.Set("Authorization", "Bearer "+adminToken)
 	router.ServeHTTP(w, req)
 
 	assert.Equal(t, http.StatusOK, w.Code)
@@ -226,8 +185,10 @@ func TestIGDBStatus_ConfiguredNoLiveCheck(t *testing.T) {
 }
 
 func TestSettingsMasking_IGDBSecret(t *testing.T) {
-	database, router := setupIGDBTestEnv(t, nil)
-	token := createIGDBTestUser(t, database, "admin")
+	database, cfg := setupTestEnv(t)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
+	_, adminToken := createAdminUser(t, database)
 
 	// Store settings including IGDB secret
 	database.Create(&db.ServerSetting{Key: "igdb_client_id", Value: "my-client-id"})
@@ -236,7 +197,7 @@ func TestSettingsMasking_IGDBSecret(t *testing.T) {
 
 	w := httptest.NewRecorder()
 	req := httptest.NewRequest("GET", "/api/admin/settings", nil)
-	req.Header.Set("Authorization", "Bearer "+token)
+	req.Header.Set("Authorization", "Bearer "+adminToken)
 	router.ServeHTTP(w, req)
 
 	assert.Equal(t, http.StatusOK, w.Code)
@@ -253,8 +214,10 @@ func TestSettingsMasking_IGDBSecret(t *testing.T) {
 
 func TestSettingsMasking_RoundTrip(t *testing.T) {
 	// BUG-1 regression: sending "********" back via PUT must NOT overwrite the real secret.
-	database, router := setupIGDBTestEnv(t, nil)
-	token := createIGDBTestUser(t, database, "admin")
+	database, cfg := setupTestEnv(t)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
+	_, adminToken := createAdminUser(t, database)
 
 	// Store the real secret
 	database.Create(&db.ServerSetting{Key: "igdb_client_id", Value: "my-client-id"})
@@ -269,7 +232,7 @@ func TestSettingsMasking_RoundTrip(t *testing.T) {
 	w := httptest.NewRecorder()
 	req := httptest.NewRequest("PUT", "/api/admin/settings", bytes.NewReader(body))
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", "Bearer "+token)
+	req.Header.Set("Authorization", "Bearer "+adminToken)
 	router.ServeHTTP(w, req)
 	assert.Equal(t, http.StatusOK, w.Code)
 
@@ -281,8 +244,10 @@ func TestSettingsMasking_RoundTrip(t *testing.T) {
 
 func TestSettingsMasking_NewSecretOverwrites(t *testing.T) {
 	// When admin provides a real new secret (not the mask), it should be saved.
-	database, router := setupIGDBTestEnv(t, nil)
-	token := createIGDBTestUser(t, database, "admin")
+	database, cfg := setupTestEnv(t)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
+	_, adminToken := createAdminUser(t, database)
 
 	database.Create(&db.ServerSetting{Key: "igdb_client_secret", Value: "old-secret"})
 
@@ -292,7 +257,7 @@ func TestSettingsMasking_NewSecretOverwrites(t *testing.T) {
 	w := httptest.NewRecorder()
 	req := httptest.NewRequest("PUT", "/api/admin/settings", bytes.NewReader(body))
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", "Bearer "+token)
+	req.Header.Set("Authorization", "Bearer "+adminToken)
 	router.ServeHTTP(w, req)
 	assert.Equal(t, http.StatusOK, w.Code)
 
@@ -302,15 +267,17 @@ func TestSettingsMasking_NewSecretOverwrites(t *testing.T) {
 }
 
 func TestSettingsMasking_EmptySecret(t *testing.T) {
-	database, router := setupIGDBTestEnv(t, nil)
-	token := createIGDBTestUser(t, database, "admin")
+	database, cfg := setupTestEnv(t)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
+	_, adminToken := createAdminUser(t, database)
 
 	// Store empty secret
 	database.Create(&db.ServerSetting{Key: "igdb_client_secret", Value: ""})
 
 	w := httptest.NewRecorder()
 	req := httptest.NewRequest("GET", "/api/admin/settings", nil)
-	req.Header.Set("Authorization", "Bearer "+token)
+	req.Header.Set("Authorization", "Bearer "+adminToken)
 	router.ServeHTTP(w, req)
 
 	assert.Equal(t, http.StatusOK, w.Code)
@@ -361,19 +328,24 @@ func TestGetSteamGridDBStatus(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			database, router := setupIGDBTestEnv(t, nil)
-			token := createIGDBTestUser(t, database, "admin")
-
+			// Ensure env key is not leaked across subtests.
+			t.Setenv("SPELA_STEAMGRIDDB_API_KEY", "")
 			if tt.envKey != "" {
 				t.Setenv("SPELA_STEAMGRIDDB_API_KEY", tt.envKey)
 			}
+
+			database, cfg := setupTestEnv(t)
+			router, cleanup := NewRouter(*cfg)
+			defer cleanup()
+			_, adminToken := createAdminUser(t, database)
+
 			if tt.dbKey != "" {
 				database.Create(&db.ServerSetting{Key: "steamgriddb_api_key", Value: tt.dbKey})
 			}
 
 			w := httptest.NewRecorder()
 			req := httptest.NewRequest("GET", "/api/admin/steamgriddb/status", nil)
-			req.Header.Set("Authorization", "Bearer "+token)
+			req.Header.Set("Authorization", "Bearer "+adminToken)
 			router.ServeHTTP(w, req)
 
 			assert.Equal(t, http.StatusOK, w.Code)
