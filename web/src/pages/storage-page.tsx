@@ -50,6 +50,7 @@ export function StoragePage() {
   function handleCompact() {
     compactSaves.mutate(undefined, {
       onSuccess: (result) => {
+        if (!result) return;
         if (result.deletedCount === 0) {
           toast("info", "No saves to compact. Storage is already optimized.");
         } else {
@@ -89,10 +90,8 @@ export function StoragePage() {
     );
   }
 
-  const totalSaves = storage.byConsole.reduce(
-    (acc, c) => acc + c.saveCount,
-    0,
-  );
+  const byConsole = storage.byConsole ?? [];
+  const totalSaves = byConsole.reduce((acc, c) => acc + c.saveCount, 0);
   const hasSaves = totalSaves > 0;
 
   return (
@@ -141,7 +140,7 @@ export function StoragePage() {
         </div>
         <div className="px-5 pb-5">
           {hasSaves ? (
-            <ConsoleBreakdownTable consoles={storage.byConsole} />
+            <ConsoleBreakdownTable consoles={byConsole} />
           ) : (
             <EmptyState
               icon={Archive}
