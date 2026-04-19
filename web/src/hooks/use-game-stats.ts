@@ -1,11 +1,15 @@
 import { useQuery } from "@tanstack/react-query";
-import { api } from "@/lib/api-client";
-import type { GameStats } from "@/types/api";
+import { typedApi, unwrap } from "@/lib/api-client";
 
 export function useGameStats(gameId: string) {
   return useQuery({
     queryKey: ["game-stats", gameId],
-    queryFn: () => api.get<GameStats>(`/games/${gameId}/stats`),
+    queryFn: () =>
+      unwrap(
+        typedApi.GET("/api/games/{id}/stats", {
+          params: { path: { id: gameId } },
+        }),
+      ),
     enabled: !!gameId,
   });
 }

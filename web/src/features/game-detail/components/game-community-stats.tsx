@@ -73,9 +73,10 @@ export function GameCommunityStats({ gameId, game }: GameCommunityStatsProps) {
     );
   }
 
+  const topPlayers = stats.topPlayers ?? [];
   const maxPlayTime =
-    stats.topPlayers.length > 0
-      ? Math.max(...stats.topPlayers.map((p) => p.playTime))
+    topPlayers.length > 0
+      ? Math.max(...topPlayers.map((p) => p.playTime))
       : 1;
 
   return (
@@ -117,13 +118,13 @@ export function GameCommunityStats({ gameId, game }: GameCommunityStatsProps) {
       </div>
 
       {/* Top Players */}
-      {stats.topPlayers.length > 0 && (
+      {topPlayers.length > 0 && (
         <div>
           <h3 className="text-sm font-semibold text-surface-400 uppercase tracking-wider mb-3">
             Top Players
           </h3>
           <div className="space-y-2">
-            {stats.topPlayers.map((player, index) => {
+            {topPlayers.map((player, index) => {
               const rank = index + 1;
               const isCurrentUser = player.userId === user?.id;
               const barWidth =
