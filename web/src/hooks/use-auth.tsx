@@ -6,7 +6,7 @@ import {
   useCallback,
   type ReactNode,
 } from "react";
-import { api } from "@/lib/api-client";
+import { api, typedApi, unwrap, ApiError } from "@/lib/api-client";
 import type { User, AuthTokens } from "@/types/api";
 
 interface AuthContextValue {
@@ -44,17 +44,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Fetch profile with one retry for transient failures (network blip,
     // server busy).  Only clear tokens on definitive auth failures (401/403).
     const fetchProfile = (retriesLeft: number): void => {
-      api
-        .get<User>("/user/profile")
+      unwrap(typedApi.GET("/api/user/profile"))
         .then((u) => {
-          setUser(u);
+          setUser(u as User);
           setIsLoading(false);
         })
         .catch((err: unknown) => {
           const status =
-            err instanceof Error && "status" in err
-              ? (err as Error & { status: number }).status
-              : 0;
+            err instanceof ApiError
+              ? err.status
+              : err instanceof Error && "status" in err
+                ? (err as Error & { status: number }).status
+                : 0;
           if (status === 401 || status === 403) {
             api.clearTokens();
             setIsLoading(false);
@@ -69,13 +70,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
 
     // Check setup status first
-    fetch("/api/auth/setup-status")
-      .then((res) => res.json())
-      .then((data: { needsSetup: boolean; registrationEnabled: boolean }) => {
-        setNeedsSetup(data.needsSetup);
-        setRegistrationEnabled(data.registrationEnabled);
+    unwrap(typedApi.GET("/api/auth/setup-status"))
+      .then((data) => {
+        const d = data as { needsSetup: boolean; registrationEnabled: boolean };
+        setNeedsSetup(d.needsSetup);
+        setRegistrationEnabled(d.registrationEnabled);
 
-        if (data.needsSetup) {
+        if (d.needsSetup) {
           setIsLoading(false);
           return;
         }
@@ -95,10 +96,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const login = useCallback(async (username: string, password: string) => {
-    const data = await api.post<AuthTokens>("/auth/login", {
-      username,
-      password,
-    });
+    const data = (await unwrap(
+      typedApi.POST("/api/auth/login", { body: { username, password } }),
+    )) as AuthTokens;
     api.setTokens(data.accessToken, data.refreshToken);
     setUser(data.user);
   }, []);
@@ -109,9 +109,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       email: string,
       password: string,
     ): Promise<{ pending: boolean }> => {
-      const data = await api.post<
-        AuthTokens | { pending: true; message: string }
-      >("/auth/register", { username, email, password });
+      const data = (await unwrap(
+        typedApi.POST("/api/auth/register", {
+          body: { username, email, password },
+        }),
+      )) as AuthTokens | { pending: true; message: string };
       if ("pending" in data && data.pending) {
         return { pending: true };
       }
@@ -125,11 +127,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const setup = useCallback(
     async (username: string, email: string, password: string) => {
-      const data = await api.post<AuthTokens>("/auth/setup", {
-        username,
-        email,
-        password,
-      });
+      const data = (await unwrap(
+        typedApi.POST("/api/auth/setup", {
+          body: { username, email, password },
+        }),
+      )) as AuthTokens;
       api.setTokens(data.accessToken, data.refreshToken);
       setUser(data.user);
       setNeedsSetup(false);
