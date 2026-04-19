@@ -11,22 +11,35 @@ import {
 } from "../use-sessions";
 
 vi.mock("@/lib/api-client", () => ({
-  api: {
-    get: vi.fn(),
-    post: vi.fn(),
-    put: vi.fn(),
-    delete: vi.fn(),
+  typedApi: {
+    GET: vi.fn(),
+    POST: vi.fn(),
+    PUT: vi.fn(),
+    DELETE: vi.fn(),
   },
+  unwrap: vi.fn(<T,>(p: Promise<{ data?: T; error?: unknown; response: Response }>) =>
+    p.then((r) => {
+      if (r.error !== undefined) throw r.error;
+      return r.data;
+    }),
+  ),
 }));
 
-import { api } from "@/lib/api-client";
+import { typedApi } from "@/lib/api-client";
 
-const mockApi = api as unknown as {
-  get: ReturnType<typeof vi.fn>;
-  post: ReturnType<typeof vi.fn>;
-  put: ReturnType<typeof vi.fn>;
-  delete: ReturnType<typeof vi.fn>;
+const mockTypedApi = typedApi as unknown as {
+  GET: ReturnType<typeof vi.fn>;
+  POST: ReturnType<typeof vi.fn>;
+  PUT: ReturnType<typeof vi.fn>;
+  DELETE: ReturnType<typeof vi.fn>;
 };
+
+function ok(data: unknown) {
+  return Promise.resolve({
+    data,
+    response: new Response(null, { status: 200 }),
+  });
+}
 
 function createWrapper() {
   const queryClient = new QueryClient({
@@ -66,7 +79,7 @@ const mockSessions = [
 
 describe("useGameSessions", () => {
   it("fetches sessions for a game", async () => {
-    mockApi.get.mockResolvedValue(mockSessions);
+    mockTypedApi.GET.mockReturnValue(ok(mockSessions));
 
     const { result } = renderHook(() => useGameSessions("g1"), {
       wrapper: createWrapper(),
@@ -74,23 +87,25 @@ describe("useGameSessions", () => {
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
-    expect(mockApi.get).toHaveBeenCalledWith("/games/g1/sessions");
+    expect(mockTypedApi.GET).toHaveBeenCalledWith("/api/games/{id}/sessions", {
+      params: { path: { id: "g1" } },
+    });
     expect(result.current.data).toHaveLength(1);
     expect(result.current.data?.[0].name).toBe("My Session");
   });
 
   it("does not fetch when gameId is empty", () => {
-    mockApi.get.mockResolvedValue([]);
+    mockTypedApi.GET.mockReturnValue(ok([]));
 
     renderHook(() => useGameSessions(""), {
       wrapper: createWrapper(),
     });
 
-    expect(mockApi.get).not.toHaveBeenCalled();
+    expect(mockTypedApi.GET).not.toHaveBeenCalled();
   });
 
   it("handles fetch error", async () => {
-    mockApi.get.mockRejectedValue(new Error("Server error"));
+    mockTypedApi.GET.mockReturnValue(Promise.reject(new Error("Server error")));
 
     const { result } = renderHook(() => useGameSessions("g1"), {
       wrapper: createWrapper(),
@@ -102,7 +117,7 @@ describe("useGameSessions", () => {
 
 describe("useCreateSession", () => {
   it("creates a session", async () => {
-    mockApi.post.mockResolvedValue(mockSessions[0]);
+    mockTypedApi.POST.mockReturnValue(ok(mockSessions[0]));
 
     const { result } = renderHook(() => useCreateSession(), {
       wrapper: createWrapper(),
@@ -111,13 +126,17 @@ describe("useCreateSession", () => {
     result.current.mutate({ gameId: "g1", name: "New Session" });
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(mockApi.post).toHaveBeenCalledWith("/games/g1/sessions", {
-      name: "New Session",
-    });
+    expect(mockTypedApi.POST).toHaveBeenCalledWith(
+      "/api/games/{id}/sessions",
+      {
+        params: { path: { id: "g1" } },
+        body: { name: "New Session" },
+      },
+    );
   });
 
   it("handles create error", async () => {
-    mockApi.post.mockRejectedValue(new Error("Failed"));
+    mockTypedApi.POST.mockReturnValue(Promise.reject(new Error("Failed")));
 
     const { result } = renderHook(() => useCreateSession(), {
       wrapper: createWrapper(),
@@ -131,7 +150,7 @@ describe("useCreateSession", () => {
 
 describe("useRenameSession", () => {
   it("renames a session", async () => {
-    mockApi.put.mockResolvedValue({ ...mockSessions[0], name: "Renamed" });
+    mockTypedApi.PUT.mockReturnValue(ok({ ...mockSessions[0], name: "Renamed" }));
 
     const { result } = renderHook(() => useRenameSession(), {
       wrapper: createWrapper(),
@@ -140,15 +159,16 @@ describe("useRenameSession", () => {
     result.current.mutate({ id: "ses-1", gameId: "g1", name: "Renamed" });
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(mockApi.put).toHaveBeenCalledWith("/sessions/ses-1", {
-      name: "Renamed",
+    expect(mockTypedApi.PUT).toHaveBeenCalledWith("/api/sessions/{id}", {
+      params: { path: { id: "ses-1" } },
+      body: { name: "Renamed" },
     });
   });
 });
 
 describe("useDeleteSession", () => {
   it("deletes a session", async () => {
-    mockApi.delete.mockResolvedValue(undefined);
+    mockTypedApi.DELETE.mockReturnValue(ok(undefined));
 
     const { result } = renderHook(() => useDeleteSession(), {
       wrapper: createWrapper(),
@@ -157,13 +177,17 @@ describe("useDeleteSession", () => {
     result.current.mutate({ id: "ses-1", gameId: "g1" });
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(mockApi.delete).toHaveBeenCalledWith("/sessions/ses-1");
+    expect(mockTypedApi.DELETE).toHaveBeenCalledWith("/api/sessions/{id}", {
+      params: { path: { id: "ses-1" } },
+    });
   });
 });
 
 describe("useDuplicateSession", () => {
   it("duplicates a session", async () => {
-    mockApi.post.mockResolvedValue({ ...mockSessions[0], id: "ses-2", name: "My Session (Copy)" });
+    mockTypedApi.POST.mockReturnValue(
+      ok({ ...mockSessions[0], id: "ses-2", name: "My Session (Copy)" }),
+    );
 
     const { result } = renderHook(() => useDuplicateSession(), {
       wrapper: createWrapper(),
@@ -172,11 +196,16 @@ describe("useDuplicateSession", () => {
     result.current.mutate({ id: "ses-1", gameId: "g1" });
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(mockApi.post).toHaveBeenCalledWith("/sessions/ses-1/duplicate", {});
+    expect(mockTypedApi.POST).toHaveBeenCalledWith(
+      "/api/sessions/{id}/duplicate",
+      { params: { path: { id: "ses-1" } }, body: {} },
+    );
   });
 
   it("duplicates a session with custom name", async () => {
-    mockApi.post.mockResolvedValue({ ...mockSessions[0], id: "ses-2", name: "Custom" });
+    mockTypedApi.POST.mockReturnValue(
+      ok({ ...mockSessions[0], id: "ses-2", name: "Custom" }),
+    );
 
     const { result } = renderHook(() => useDuplicateSession(), {
       wrapper: createWrapper(),
@@ -185,6 +214,9 @@ describe("useDuplicateSession", () => {
     result.current.mutate({ id: "ses-1", gameId: "g1", name: "Custom" });
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(mockApi.post).toHaveBeenCalledWith("/sessions/ses-1/duplicate", { name: "Custom" });
+    expect(mockTypedApi.POST).toHaveBeenCalledWith(
+      "/api/sessions/{id}/duplicate",
+      { params: { path: { id: "ses-1" } }, body: { name: "Custom" } },
+    );
   });
 });
