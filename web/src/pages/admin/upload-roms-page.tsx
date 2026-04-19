@@ -65,7 +65,7 @@ export function UploadRomsPage() {
         const hasZip = files.some((f) =>
           f.name.toLowerCase().endsWith(".zip"),
         );
-        if (hasZip && result.length > 0 && result.every((r) => r.status === "rejected")) {
+        if (hasZip && (result?.length ?? 0) > 0 && (result ?? []).every((r) => r.status === "rejected")) {
           toast("info", "ZIP archive contained no recognized ROM files");
         } else {
           toast("success", `Uploaded ${files.length} file${files.length === 1 ? "" : "s"}`);
