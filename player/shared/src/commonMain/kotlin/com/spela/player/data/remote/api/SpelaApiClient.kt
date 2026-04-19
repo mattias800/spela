@@ -454,13 +454,9 @@ class SpelaApiClient(
         return exploreApi.getDeveloperDetail(name).body()
     }
 
-    /** Returns detail for a specific publisher (same response type as developer) */
-    suspend fun getPublisherDetail(name: String): com.spela.client.models.DeveloperDetailResponse {
-        // PublisherDetailResponse is structurally identical to DeveloperDetailResponse;
-        // re-issue the request to coerce the response into the developer shape so
-        // callers don't need to know about the duplicated DTO.
-        val encoded = name.encodeURLParameter()
-        return client.get("$baseUrl/api/explore/publishers/$encoded").body()
+    /** Returns detail for a specific publisher. */
+    suspend fun getPublisherDetail(name: String): com.spela.client.models.PublisherDetailResponse {
+        return exploreApi.getPublisherDetail(name).body()
     }
 
     /** Returns developer spotlight for the Explore page */

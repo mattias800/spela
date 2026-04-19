@@ -433,35 +433,58 @@ class ExploreRepositoryImpl(
     }
 
     private fun resolveEntityDetail(dto: com.spela.client.models.DeveloperDetailResponse): DeveloperDetail =
-        dto.toDomain().copy(
-            heroUrl = apiClient.resolveUrl(dto.heroUrl),
-            companyInfo = dto.companyInfo?.let { info ->
-                info.toDomain().copy(
-                    logoUrl = apiClient.resolveUrl(info.logoUrl),
-                )
-            },
-            topGames = dto.topGames.orEmpty().map { gameDto ->
-                gameDto.toDomain().copy(
-                    coverUrl = apiClient.resolveUrl(gameDto.coverUrl),
-                )
-            },
-            userStats = dto.userStats?.let { stats ->
-                stats.toDeveloperUserStats().copy(
-                    mostPlayedGame = stats.mostPlayedGame
-                        .takeIf { it.id.isNotEmpty() }
-                        ?.let { gameDto ->
-                            gameDto.toDomain().copy(
-                                coverUrl = apiClient.resolveUrl(gameDto.coverUrl),
-                            )
-                        },
-                )
-            },
-            games = dto.games.orEmpty().map { gameDto ->
-                gameDto.toDomain().copy(
-                    coverUrl = apiClient.resolveUrl(gameDto.coverUrl),
-                )
-            },
+        dto.toDomain().applyUrlResolution(
+            heroUrl = dto.heroUrl,
+            companyInfo = dto.companyInfo,
+            topGames = dto.topGames,
+            userStats = dto.userStats,
+            games = dto.games,
         )
+
+    private fun resolveEntityDetail(dto: com.spela.client.models.PublisherDetailResponse): DeveloperDetail =
+        dto.toDomain().applyUrlResolution(
+            heroUrl = dto.heroUrl,
+            companyInfo = dto.companyInfo,
+            topGames = dto.topGames,
+            userStats = dto.userStats,
+            games = dto.games,
+        )
+
+    private fun DeveloperDetail.applyUrlResolution(
+        heroUrl: String?,
+        companyInfo: com.spela.client.models.CompanyInfo?,
+        topGames: List<com.spela.client.models.GameResponse>?,
+        userStats: com.spela.client.models.EntityUserStats?,
+        games: List<com.spela.client.models.GameResponse>?,
+    ): DeveloperDetail = copy(
+        heroUrl = apiClient.resolveUrl(heroUrl),
+        companyInfo = companyInfo?.let { info ->
+            info.toDomain().copy(
+                logoUrl = apiClient.resolveUrl(info.logoUrl),
+            )
+        },
+        topGames = topGames.orEmpty().map { gameDto ->
+            gameDto.toDomain().copy(
+                coverUrl = apiClient.resolveUrl(gameDto.coverUrl),
+            )
+        },
+        userStats = userStats?.let { stats ->
+            stats.toDeveloperUserStats().copy(
+                mostPlayedGame = stats.mostPlayedGame
+                    .takeIf { it.id.isNotEmpty() }
+                    ?.let { gameDto ->
+                        gameDto.toDomain().copy(
+                            coverUrl = apiClient.resolveUrl(gameDto.coverUrl),
+                        )
+                    },
+            )
+        },
+        games = games.orEmpty().map { gameDto ->
+            gameDto.toDomain().copy(
+                coverUrl = apiClient.resolveUrl(gameDto.coverUrl),
+            )
+        },
+    )
 
     private fun resolveGameCovers(game: Game, dto: GameDto): Game = game.copy(
         coverUrl = apiClient.resolveUrl(dto.coverUrl),
