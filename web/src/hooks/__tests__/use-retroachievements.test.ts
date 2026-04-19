@@ -13,22 +13,35 @@ import {
 } from "../use-retroachievements";
 
 vi.mock("@/lib/api-client", () => ({
-  api: {
-    get: vi.fn(),
-    post: vi.fn(),
-    put: vi.fn(),
-    delete: vi.fn(),
+  typedApi: {
+    GET: vi.fn(),
+    POST: vi.fn(),
+    PUT: vi.fn(),
+    DELETE: vi.fn(),
   },
+  unwrap: vi.fn(<T,>(p: Promise<{ data?: T; error?: unknown; response: Response }>) =>
+    p.then((r) => {
+      if (r.error !== undefined) throw r.error;
+      return r.data;
+    }),
+  ),
 }));
 
-import { api } from "@/lib/api-client";
+import { typedApi } from "@/lib/api-client";
 
-const mockApi = api as unknown as {
-  get: ReturnType<typeof vi.fn>;
-  post: ReturnType<typeof vi.fn>;
-  put: ReturnType<typeof vi.fn>;
-  delete: ReturnType<typeof vi.fn>;
+const mockTypedApi = typedApi as unknown as {
+  GET: ReturnType<typeof vi.fn>;
+  POST: ReturnType<typeof vi.fn>;
+  PUT: ReturnType<typeof vi.fn>;
+  DELETE: ReturnType<typeof vi.fn>;
 };
+
+function ok(data: unknown) {
+  return Promise.resolve({
+    data,
+    response: new Response(null, { status: 200 }),
+  });
+}
 
 function createWrapper() {
   const queryClient = new QueryClient({
@@ -88,7 +101,7 @@ const mockProgress = [
 
 describe("useRAStatus", () => {
   it("fetches RA status", async () => {
-    mockApi.get.mockResolvedValue(mockStatus);
+    mockTypedApi.GET.mockReturnValue(ok(mockStatus));
 
     const { result } = renderHook(() => useRAStatus(), {
       wrapper: createWrapper(),
@@ -96,12 +109,12 @@ describe("useRAStatus", () => {
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
-    expect(mockApi.get).toHaveBeenCalledWith("/user/ra/status");
+    expect(mockTypedApi.GET).toHaveBeenCalledWith("/api/user/ra/status");
     expect(result.current.data).toEqual(mockStatus);
   });
 
   it("handles fetch error", async () => {
-    mockApi.get.mockRejectedValue(new Error("Network error"));
+    mockTypedApi.GET.mockReturnValue(Promise.reject(new Error("Network error")));
 
     const { result } = renderHook(() => useRAStatus(), {
       wrapper: createWrapper(),
@@ -114,7 +127,7 @@ describe("useRAStatus", () => {
 
 describe("useLinkRA", () => {
   it("sends link request", async () => {
-    mockApi.post.mockResolvedValue(mockStatus);
+    mockTypedApi.POST.mockReturnValue(ok(mockStatus));
 
     const { result } = renderHook(() => useLinkRA(), {
       wrapper: createWrapper(),
@@ -123,14 +136,15 @@ describe("useLinkRA", () => {
     result.current.mutate({ username: "player1", password: "secret" });
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(mockApi.post).toHaveBeenCalledWith("/user/ra/link", {
-      username: "player1",
-      password: "secret",
+    expect(mockTypedApi.POST).toHaveBeenCalledWith("/api/user/ra/link", {
+      body: { username: "player1", password: "secret" },
     });
   });
 
   it("handles link error", async () => {
-    mockApi.post.mockRejectedValue(new Error("Invalid credentials"));
+    mockTypedApi.POST.mockReturnValue(
+      Promise.reject(new Error("Invalid credentials")),
+    );
 
     const { result } = renderHook(() => useLinkRA(), {
       wrapper: createWrapper(),
@@ -145,7 +159,7 @@ describe("useLinkRA", () => {
 
 describe("useUnlinkRA", () => {
   it("sends unlink request", async () => {
-    mockApi.delete.mockResolvedValue(undefined);
+    mockTypedApi.DELETE.mockReturnValue(ok(undefined));
 
     const { result } = renderHook(() => useUnlinkRA(), {
       wrapper: createWrapper(),
@@ -154,11 +168,11 @@ describe("useUnlinkRA", () => {
     result.current.mutate();
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(mockApi.delete).toHaveBeenCalledWith("/user/ra/link");
+    expect(mockTypedApi.DELETE).toHaveBeenCalledWith("/api/user/ra/link");
   });
 
   it("handles unlink error", async () => {
-    mockApi.delete.mockRejectedValue(new Error("Forbidden"));
+    mockTypedApi.DELETE.mockReturnValue(Promise.reject(new Error("Forbidden")));
 
     const { result } = renderHook(() => useUnlinkRA(), {
       wrapper: createWrapper(),
@@ -172,7 +186,7 @@ describe("useUnlinkRA", () => {
 
 describe("useRASettings", () => {
   it("sends settings update", async () => {
-    mockApi.put.mockResolvedValue({ ...mockStatus, hardcoreEnabled: true });
+    mockTypedApi.PUT.mockReturnValue(ok({ ...mockStatus, hardcoreEnabled: true }));
 
     const { result } = renderHook(() => useRASettings(), {
       wrapper: createWrapper(),
@@ -181,13 +195,13 @@ describe("useRASettings", () => {
     result.current.mutate({ hardcoreEnabled: true });
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(mockApi.put).toHaveBeenCalledWith("/user/ra/settings", {
-      hardcoreEnabled: true,
+    expect(mockTypedApi.PUT).toHaveBeenCalledWith("/api/user/ra/settings", {
+      body: { hardcoreEnabled: true },
     });
   });
 
   it("handles settings error", async () => {
-    mockApi.put.mockRejectedValue(new Error("Bad request"));
+    mockTypedApi.PUT.mockReturnValue(Promise.reject(new Error("Bad request")));
 
     const { result } = renderHook(() => useRASettings(), {
       wrapper: createWrapper(),
@@ -201,7 +215,7 @@ describe("useRASettings", () => {
 
 describe("useGameAchievements", () => {
   it("fetches achievements for a game", async () => {
-    mockApi.get.mockResolvedValue(mockAchievements);
+    mockTypedApi.GET.mockReturnValue(ok(mockAchievements));
 
     const { result } = renderHook(() => useGameAchievements("game-1"), {
       wrapper: createWrapper(),
@@ -209,7 +223,10 @@ describe("useGameAchievements", () => {
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
-    expect(mockApi.get).toHaveBeenCalledWith("/games/game-1/achievements");
+    expect(mockTypedApi.GET).toHaveBeenCalledWith(
+      "/api/games/{id}/achievements",
+      { params: { path: { id: "game-1" } } },
+    );
     expect(result.current.data?.totalCount).toBe(2);
   });
 
@@ -218,11 +235,11 @@ describe("useGameAchievements", () => {
       wrapper: createWrapper(),
     });
 
-    expect(mockApi.get).not.toHaveBeenCalled();
+    expect(mockTypedApi.GET).not.toHaveBeenCalled();
   });
 
   it("handles fetch error", async () => {
-    mockApi.get.mockRejectedValue(new Error("Not found"));
+    mockTypedApi.GET.mockReturnValue(Promise.reject(new Error("Not found")));
 
     const { result } = renderHook(() => useGameAchievements("game-bad"), {
       wrapper: createWrapper(),
@@ -233,10 +250,10 @@ describe("useGameAchievements", () => {
 
   it("polls when status is pending and stops when data arrives", async () => {
     const pendingResponse = { status: "pending" as const };
-    mockApi.get
-      .mockResolvedValueOnce(pendingResponse)
-      .mockResolvedValueOnce(pendingResponse)
-      .mockResolvedValueOnce(mockAchievements);
+    mockTypedApi.GET
+      .mockReturnValueOnce(ok(pendingResponse))
+      .mockReturnValueOnce(ok(pendingResponse))
+      .mockReturnValueOnce(ok(mockAchievements));
 
     const { result } = renderHook(() => useGameAchievements("game-1"), {
       wrapper: createWrapper(),
@@ -261,7 +278,9 @@ describe("useGameAchievements", () => {
 
 describe("useGameAchievementProgress", () => {
   it("fetches achievement progress for a game", async () => {
-    mockApi.get.mockResolvedValue({ raGameId: 123, progress: mockProgress });
+    mockTypedApi.GET.mockReturnValue(
+      ok({ raGameId: 123, progress: mockProgress }),
+    );
 
     const { result } = renderHook(() => useGameAchievementProgress("game-1"), {
       wrapper: createWrapper(),
@@ -269,8 +288,9 @@ describe("useGameAchievementProgress", () => {
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
-    expect(mockApi.get).toHaveBeenCalledWith(
-      "/games/game-1/achievements/progress",
+    expect(mockTypedApi.GET).toHaveBeenCalledWith(
+      "/api/games/{id}/achievements/progress",
+      { params: { path: { id: "game-1" } } },
     );
     expect(result.current.data).toHaveLength(1);
     expect(result.current.data?.[0].playTimeAtUnlock).toBe(1200);
@@ -281,11 +301,11 @@ describe("useGameAchievementProgress", () => {
       wrapper: createWrapper(),
     });
 
-    expect(mockApi.get).not.toHaveBeenCalled();
+    expect(mockTypedApi.GET).not.toHaveBeenCalled();
   });
 
   it("handles fetch error", async () => {
-    mockApi.get.mockRejectedValue(new Error("Forbidden"));
+    mockTypedApi.GET.mockReturnValue(Promise.reject(new Error("Forbidden")));
 
     const { result } = renderHook(
       () => useGameAchievementProgress("game-bad"),
@@ -316,7 +336,7 @@ describe("useRecentAchievements", () => {
         coverUrl: "https://example.com/smb.png",
       },
     ];
-    mockApi.get.mockResolvedValue({ achievements: mockRecent });
+    mockTypedApi.GET.mockReturnValue(ok({ achievements: mockRecent }));
 
     const { result } = renderHook(() => useRecentAchievements(), {
       wrapper: createWrapper(),
@@ -324,13 +344,15 @@ describe("useRecentAchievements", () => {
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
-    expect(mockApi.get).toHaveBeenCalledWith("/user/achievements/recent");
+    expect(mockTypedApi.GET).toHaveBeenCalledWith(
+      "/api/user/achievements/recent",
+    );
     expect(result.current.data).toHaveLength(1);
     expect(result.current.data?.[0].title).toBe("First Steps");
   });
 
   it("handles fetch error", async () => {
-    mockApi.get.mockRejectedValue(new Error("Unauthorized"));
+    mockTypedApi.GET.mockReturnValue(Promise.reject(new Error("Unauthorized")));
 
     const { result } = renderHook(() => useRecentAchievements(), {
       wrapper: createWrapper(),
