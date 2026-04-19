@@ -1290,17 +1290,11 @@ export interface PossibleConsole {
 
 // --- Themes & Keywords ---
 
-export interface Theme {
-  id: string;
-  name: string;
-  gameCount: number;
-}
-
-export interface Keyword {
-  id: string;
-  name: string;
-  gameCount: number;
-}
+// Theme / Keyword are exact structural matches of the generated
+// ThemeResponse / KeywordResponse; aliasing them unblocks typedApi migration
+// of useThemes / useKeywords (no consumer changes needed).
+export type Theme = Schemas["ThemeResponse"];
+export type Keyword = Schemas["KeywordResponse"];
 
 // --- Series & Franchises ---
 
