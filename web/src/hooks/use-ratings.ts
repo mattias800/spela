@@ -1,10 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { api, ApiError } from "@/lib/api-client";
-import type {
-  GameRating,
-  GameRatingsResponse,
-  RatingSummary,
-} from "@/types/api";
+import { typedApi, unwrap, ApiError } from "@/lib/api-client";
 
 export function useGameRatings(
   gameId: string,
@@ -14,8 +9,10 @@ export function useGameRatings(
   return useQuery({
     queryKey: ["ratings", gameId, page, pageSize],
     queryFn: () =>
-      api.get<GameRatingsResponse>(
-        `/games/${gameId}/ratings?page=${page}&pageSize=${pageSize}`,
+      unwrap(
+        typedApi.GET("/api/games/{id}/ratings", {
+          params: { path: { id: gameId }, query: { page, pageSize } },
+        }),
       ),
     enabled: !!gameId,
   });
@@ -24,7 +21,12 @@ export function useGameRatings(
 export function useGameRatingSummary(gameId: string) {
   return useQuery({
     queryKey: ["ratings", gameId, "summary"],
-    queryFn: () => api.get<RatingSummary>(`/games/${gameId}/ratings/summary`),
+    queryFn: () =>
+      unwrap(
+        typedApi.GET("/api/games/{id}/ratings/summary", {
+          params: { path: { id: gameId } },
+        }),
+      ),
     enabled: !!gameId,
   });
 }
@@ -34,7 +36,11 @@ export function useMyRating(gameId: string) {
     queryKey: ["ratings", gameId, "mine"],
     queryFn: async () => {
       try {
-        return await api.get<GameRating>(`/games/${gameId}/ratings/mine`);
+        return await unwrap(
+          typedApi.GET("/api/games/{id}/ratings/mine", {
+            params: { path: { id: gameId } },
+          }),
+        );
       } catch (e) {
         // 404 = no rating submitted yet, not an error
         if (e instanceof ApiError && e.status === 404) {
@@ -61,10 +67,12 @@ export function useRateGame() {
       rating: number;
       review?: string;
     }) => {
-      return api.post<GameRating>(`/games/${gameId}/ratings`, {
-        rating,
-        review,
-      });
+      return unwrap(
+        typedApi.POST("/api/games/{id}/ratings", {
+          params: { path: { id: gameId } },
+          body: { rating, review },
+        }),
+      );
     },
     onSuccess: (_, { gameId }) => {
       queryClient.invalidateQueries({ queryKey: ["ratings", gameId] });
@@ -79,7 +87,11 @@ export function useDeleteRating() {
 
   return useMutation({
     mutationFn: async (gameId: string) => {
-      await api.delete(`/games/${gameId}/ratings`);
+      await unwrap(
+        typedApi.DELETE("/api/games/{id}/ratings", {
+          params: { path: { id: gameId } },
+        }),
+      );
     },
     onSuccess: (_, gameId) => {
       queryClient.invalidateQueries({ queryKey: ["ratings", gameId] });

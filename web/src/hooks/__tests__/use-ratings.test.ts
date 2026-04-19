@@ -10,21 +10,55 @@ import {
   useDeleteRating,
 } from "../use-ratings";
 
-vi.mock("@/lib/api-client", () => ({
-  api: {
-    get: vi.fn(),
-    post: vi.fn(),
-    delete: vi.fn(),
-  },
-}));
+vi.mock("@/lib/api-client", () => {
+  class MockApiError extends Error {
+    status: number;
+    constructor(status: number, message: string) {
+      super(message);
+      this.name = "ApiError";
+      this.status = status;
+    }
+  }
+  return {
+    typedApi: {
+      GET: vi.fn(),
+      POST: vi.fn(),
+      DELETE: vi.fn(),
+    },
+    unwrap: vi.fn(
+      <T,>(p: Promise<{ data?: T; error?: unknown; response: Response }>) =>
+        p.then((r) => {
+          if (r.error !== undefined) {
+            throw new MockApiError(r.response.status, "error");
+          }
+          return r.data;
+        }),
+    ),
+    ApiError: MockApiError,
+  };
+});
 
-import { api } from "@/lib/api-client";
+import { typedApi } from "@/lib/api-client";
 
-const mockApi = api as unknown as {
-  get: ReturnType<typeof vi.fn>;
-  post: ReturnType<typeof vi.fn>;
-  delete: ReturnType<typeof vi.fn>;
+const mockTypedApi = typedApi as unknown as {
+  GET: ReturnType<typeof vi.fn>;
+  POST: ReturnType<typeof vi.fn>;
+  DELETE: ReturnType<typeof vi.fn>;
 };
+
+function ok(data: unknown) {
+  return Promise.resolve({
+    data,
+    response: new Response(null, { status: 200 }),
+  });
+}
+
+function err(status: number) {
+  return Promise.resolve({
+    error: { message: "error" },
+    response: new Response(null, { status }),
+  });
+}
 
 function createWrapper() {
   const queryClient = new QueryClient({
@@ -69,7 +103,7 @@ const mockSummary = {
 
 describe("useGameRatings", () => {
   it("fetches game ratings with default pagination", async () => {
-    mockApi.get.mockResolvedValue(mockRatingsResponse);
+    mockTypedApi.GET.mockReturnValue(ok(mockRatingsResponse));
 
     const { result } = renderHook(() => useGameRatings("g1"), {
       wrapper: createWrapper(),
@@ -77,15 +111,15 @@ describe("useGameRatings", () => {
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
-    expect(mockApi.get).toHaveBeenCalledWith(
-      "/games/g1/ratings?page=1&pageSize=20",
-    );
+    expect(mockTypedApi.GET).toHaveBeenCalledWith("/api/games/{id}/ratings", {
+      params: { path: { id: "g1" }, query: { page: 1, pageSize: 20 } },
+    });
     expect(result.current.data?.data).toHaveLength(1);
-    expect(result.current.data?.data[0].rating).toBe(4);
+    expect(result.current.data?.data?.[0].rating).toBe(4);
   });
 
   it("fetches with custom pagination", async () => {
-    mockApi.get.mockResolvedValue({ ...mockRatingsResponse, page: 2 });
+    mockTypedApi.GET.mockReturnValue(ok({ ...mockRatingsResponse, page: 2 }));
 
     const { result } = renderHook(() => useGameRatings("g1", 2, 10), {
       wrapper: createWrapper(),
@@ -93,15 +127,15 @@ describe("useGameRatings", () => {
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
-    expect(mockApi.get).toHaveBeenCalledWith(
-      "/games/g1/ratings?page=2&pageSize=10",
-    );
+    expect(mockTypedApi.GET).toHaveBeenCalledWith("/api/games/{id}/ratings", {
+      params: { path: { id: "g1" }, query: { page: 2, pageSize: 10 } },
+    });
   });
 });
 
 describe("useGameRatingSummary", () => {
   it("fetches rating summary", async () => {
-    mockApi.get.mockResolvedValue(mockSummary);
+    mockTypedApi.GET.mockReturnValue(ok(mockSummary));
 
     const { result } = renderHook(() => useGameRatingSummary("g1"), {
       wrapper: createWrapper(),
@@ -109,7 +143,10 @@ describe("useGameRatingSummary", () => {
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
-    expect(mockApi.get).toHaveBeenCalledWith("/games/g1/ratings/summary");
+    expect(mockTypedApi.GET).toHaveBeenCalledWith(
+      "/api/games/{id}/ratings/summary",
+      { params: { path: { id: "g1" } } },
+    );
     expect(result.current.data?.averageRating).toBe(4.2);
     expect(result.current.data?.totalRatings).toBe(10);
     expect(result.current.data?.distribution["5"]).toBe(3);
@@ -128,7 +165,7 @@ describe("useMyRating", () => {
       createdAt: "2026-02-13T10:00:00Z",
       updatedAt: "2026-02-13T10:00:00Z",
     };
-    mockApi.get.mockResolvedValue(myRating);
+    mockTypedApi.GET.mockReturnValue(ok(myRating));
 
     const { result } = renderHook(() => useMyRating("g1"), {
       wrapper: createWrapper(),
@@ -136,12 +173,26 @@ describe("useMyRating", () => {
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
-    expect(mockApi.get).toHaveBeenCalledWith("/games/g1/ratings/mine");
+    expect(mockTypedApi.GET).toHaveBeenCalledWith(
+      "/api/games/{id}/ratings/mine",
+      { params: { path: { id: "g1" } } },
+    );
     expect(result.current.data?.rating).toBe(5);
   });
 
-  it("handles no rating (404)", async () => {
-    mockApi.get.mockRejectedValue(new Error("no rating found"));
+  it("returns null on 404 (no rating)", async () => {
+    mockTypedApi.GET.mockReturnValue(err(404));
+
+    const { result } = renderHook(() => useMyRating("g1"), {
+      wrapper: createWrapper(),
+    });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(result.current.data).toBeNull();
+  });
+
+  it("propagates non-404 errors", async () => {
+    mockTypedApi.GET.mockReturnValue(err(500));
 
     const { result } = renderHook(() => useMyRating("g1"), {
       wrapper: createWrapper(),
@@ -163,7 +214,7 @@ describe("useRateGame", () => {
       createdAt: "2026-02-13T11:00:00Z",
       updatedAt: "2026-02-13T11:00:00Z",
     };
-    mockApi.post.mockResolvedValue(createdRating);
+    mockTypedApi.POST.mockReturnValue(ok(createdRating));
 
     const { result } = renderHook(() => useRateGame(), {
       wrapper: createWrapper(),
@@ -172,16 +223,16 @@ describe("useRateGame", () => {
     result.current.mutate({ gameId: "g1", rating: 4, review: "Nice" });
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(mockApi.post).toHaveBeenCalledWith("/games/g1/ratings", {
-      rating: 4,
-      review: "Nice",
+    expect(mockTypedApi.POST).toHaveBeenCalledWith("/api/games/{id}/ratings", {
+      params: { path: { id: "g1" } },
+      body: { rating: 4, review: "Nice" },
     });
   });
 });
 
 describe("useDeleteRating", () => {
   it("deletes a rating", async () => {
-    mockApi.delete.mockResolvedValue(undefined);
+    mockTypedApi.DELETE.mockReturnValue(ok(undefined));
 
     const { result } = renderHook(() => useDeleteRating(), {
       wrapper: createWrapper(),
@@ -190,6 +241,9 @@ describe("useDeleteRating", () => {
     result.current.mutate("g1");
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(mockApi.delete).toHaveBeenCalledWith("/games/g1/ratings");
+    expect(mockTypedApi.DELETE).toHaveBeenCalledWith(
+      "/api/games/{id}/ratings",
+      { params: { path: { id: "g1" } } },
+    );
   });
 });
