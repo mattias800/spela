@@ -35,7 +35,7 @@ export function SharedSessionCreateModal({
         onSuccess: (sharedSession) => {
           toast("success", "Shared session created");
           resetForm();
-          onCreated(sharedSession.id);
+          if (sharedSession) onCreated(sharedSession.id);
         },
         onError: () => {
           toast("error", "Failed to create shared session");
