@@ -2,7 +2,7 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { CheckCircle2, AlertTriangle } from "lucide-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Badge, Button } from "@/components/ui";
-import { api } from "@/lib/api-client";
+import { typedApi, unwrap } from "@/lib/api-client";
 import type { Game } from "@/types/api";
 
 const PREDEFINED_TAGS = [
@@ -64,7 +64,12 @@ export function VerificationBadge({ game, isAdmin }: VerificationBadgeProps) {
 
   const mutation = useMutation({
     mutationFn: (tag: string) =>
-      api.put<void>(`/admin/games/${game.id}/verification-tag`, { tag }),
+      unwrap(
+        typedApi.PUT("/api/admin/games/{id}/verification-tag", {
+          params: { path: { id: game.id } },
+          body: { tag },
+        }),
+      ),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["game", game.id] });
       queryClient.invalidateQueries({ queryKey: ["games"] });
