@@ -792,8 +792,6 @@ class FakeSharedSessionRepository : SharedSessionRepository {
         Result.success(ByteArray(256) { it.toByte() })
     override suspend fun uploadSharedSessionAutoSave(sharedSessionId: String, turnToken: String, data: ByteArray): Result<SharedSessionSave> =
         Result.success(SharedSessionSave(id = 1, sharedSessionId = sharedSessionId, name = "Auto Save", isAuto = true, fileSize = data.size.toLong()))
-    override suspend fun copySharedSessionSaveToGame(sharedSessionId: String, saveId: Long): Result<Unit> =
-        Result.success(Unit)
 }
 
 class FakeCollectionRepository : CollectionRepository {

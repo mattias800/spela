@@ -40,7 +40,6 @@ class SharedSessionDetailViewModel(
             is SharedSessionDetailIntent.LeaveSharedSession -> leaveSharedSession(intent.sharedSessionId)
             is SharedSessionDetailIntent.TakeTurn -> takeTurn(intent.sharedSessionId)
             is SharedSessionDetailIntent.ReleaseTurn -> releaseTurn(intent.sharedSessionId)
-            is SharedSessionDetailIntent.CopySaveToGame -> copySaveToGame(intent.sharedSessionId, intent.saveId)
             SharedSessionDetailIntent.DismissError -> _state.update { it.copy(error = null) }
             SharedSessionDetailIntent.DismissSuccess -> _state.update { it.copy(successMessage = null) }
             SharedSessionDetailIntent.ShowInviteSheet -> inviteDelegate.show()
@@ -124,20 +123,6 @@ class SharedSessionDetailViewModel(
                 },
                 onFailure = { error ->
                     _state.update { it.copy(error = error.message, isTakingTurn = false) }
-                },
-            )
-        }
-    }
-
-    private fun copySaveToGame(sharedSessionId: String, saveId: Long) {
-        _state.update { it.copy(copyingSaveId = saveId) }
-        scope.launch(dispatchers.io) {
-            sharedSessionRepository.copySharedSessionSaveToGame(sharedSessionId, saveId).fold(
-                onSuccess = {
-                    _state.update { it.copy(copyingSaveId = null, successMessage = "Save copied to your library") }
-                },
-                onFailure = { error ->
-                    _state.update { it.copy(copyingSaveId = null, error = error.message) }
                 },
             )
         }

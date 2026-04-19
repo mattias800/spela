@@ -267,6 +267,4 @@ class FakeSharedSessionRepo : SharedSessionRepository {
     override suspend fun uploadSharedSessionAutoSave(sharedSessionId: String, turnToken: String, data: ByteArray): Result<SharedSessionSave> =
         if (shouldFail) Result.failure(Exception("Network error"))
         else Result.success(SharedSessionSave(id = 1, sharedSessionId = sharedSessionId, name = "Auto Save", isAuto = true))
-    override suspend fun copySharedSessionSaveToGame(sharedSessionId: String, saveId: Long): Result<Unit> =
-        if (shouldFail) Result.failure(Exception("Network error")) else Result.success(Unit)
 }

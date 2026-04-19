@@ -267,43 +267,6 @@ class SharedSessionDetailViewModelTest {
     }
 
     @Test
-    fun copySaveToGameShowsSuccessMessage() = runTest(testDispatcher) {
-        val vm = createViewModel()
-        vm.onIntent(SharedSessionDetailIntent.CopySaveToGame("ss1", 1))
-        advanceUntilIdle()
-
-        val state = vm.state.value
-        assertEquals("Save copied to your library", state.successMessage)
-        assertNull(state.copyingSaveId)
-    }
-
-    @Test
-    fun copySaveToGameFailureShowsError() = runTest(testDispatcher) {
-        fakeRepo.shouldFail = true
-        val vm = createViewModel()
-        vm.onIntent(SharedSessionDetailIntent.CopySaveToGame("ss1", 1))
-        advanceUntilIdle()
-
-        val state = vm.state.value
-        assertNotNull(state.error)
-        assertNull(state.copyingSaveId)
-    }
-
-    @Test
-    fun copySaveToGameSetsCopyingSaveId() = runTest(testDispatcher) {
-        val vm = createViewModel()
-        vm.onIntent(SharedSessionDetailIntent.CopySaveToGame("ss1", 42))
-
-        // Before advancing, should have copyingSaveId set
-        assertEquals(42L, vm.state.value.copyingSaveId)
-
-        advanceUntilIdle()
-
-        // After completing, should be cleared
-        assertNull(vm.state.value.copyingSaveId)
-    }
-
-    @Test
     fun dismissSuccessClearsSuccessMessage() = runTest(testDispatcher) {
         val vm = createViewModel()
         vm.onIntent(SharedSessionDetailIntent.InviteUser("ss1", "bob"))

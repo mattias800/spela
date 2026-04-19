@@ -18,7 +18,6 @@ sealed interface SharedSessionDetailIntent {
     data class LeaveSharedSession(val sharedSessionId: String) : SharedSessionDetailIntent
     data class TakeTurn(val sharedSessionId: String) : SharedSessionDetailIntent
     data class ReleaseTurn(val sharedSessionId: String) : SharedSessionDetailIntent
-    data class CopySaveToGame(val sharedSessionId: String, val saveId: Long) : SharedSessionDetailIntent
     data object DismissError : SharedSessionDetailIntent
     data object DismissSuccess : SharedSessionDetailIntent
     data object ShowInviteSheet : SharedSessionDetailIntent

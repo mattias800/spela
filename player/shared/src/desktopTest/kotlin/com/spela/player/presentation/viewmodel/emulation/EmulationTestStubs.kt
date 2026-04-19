@@ -340,7 +340,6 @@ class StubSharedSessionRepository : SharedSessionRepository {
         uploadSharedSessionAutoSaveCallCount++
         return Result.success(SharedSessionSave(id = 1, sharedSessionId = sharedSessionId, name = "Auto Save", isAuto = true))
     }
-    override suspend fun copySharedSessionSaveToGame(sharedSessionId: String, saveId: Long) = Result.success(Unit)
 }
 
 class StubSessionRepository : SessionRepository {

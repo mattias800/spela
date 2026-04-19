@@ -25,7 +25,6 @@ data class SharedSessionDetailState(
     val isTakingTurn: Boolean = false,
     val isReleasingTurn: Boolean = false,
     val turnToken: String? = null,
-    val copyingSaveId: Long? = null,
     val error: String? = null,
     val successMessage: String? = null,
     val showInviteSheet: Boolean = false,

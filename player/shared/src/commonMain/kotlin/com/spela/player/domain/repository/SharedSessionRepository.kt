@@ -27,5 +27,4 @@ interface SharedSessionRepository {
     suspend fun downloadSharedSessionSave(sharedSessionId: String, saveId: Long): Result<ByteArray>
     suspend fun downloadSharedSessionAutoSave(sharedSessionId: String): Result<ByteArray>
     suspend fun uploadSharedSessionAutoSave(sharedSessionId: String, turnToken: String, data: ByteArray): Result<SharedSessionSave>
-    suspend fun copySharedSessionSaveToGame(sharedSessionId: String, saveId: Long): Result<Unit>
 }

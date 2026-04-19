@@ -13,10 +13,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Save
 import androidx.compose.material.icons.filled.Stop
-import androidx.compose.material.icons.outlined.ContentCopy
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -258,8 +255,6 @@ internal fun InviteSection(
 @Composable
 internal fun SharedSessionSaveItem(
     save: SharedSessionSave,
-    isCopying: Boolean = false,
-    onCopyToGame: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
     SpCard(
@@ -300,28 +295,6 @@ internal fun SharedSessionSaveItem(
             }
             if (save.isAuto) {
                 SpChip(text = "Auto", color = SpColor.Primary)
-            }
-            if (onCopyToGame != null) {
-                if (isCopying) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(24.dp),
-                        strokeWidth = 2.dp,
-                        color = SpColor.Primary,
-                    )
-                } else {
-                    IconButton(
-                        onClick = onCopyToGame,
-                        modifier = Modifier.semantics {
-                            contentDescription = "Copy ${save.name} to your library"
-                        },
-                    ) {
-                        Icon(
-                            imageVector = Icons.Outlined.ContentCopy,
-                            contentDescription = null,
-                            tint = SpColor.OnBackgroundTertiary,
-                        )
-                    }
-                }
             }
         }
     }
