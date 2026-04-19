@@ -1,5 +1,6 @@
 package com.spela.player.data.remote.api
 
+import com.spela.client.apis.AdminApi
 import com.spela.client.apis.AuthApi
 import com.spela.client.apis.BiosApi
 import com.spela.client.apis.ChallengesApi
@@ -120,6 +121,7 @@ class SpelaApiClient(
     // every business method routes through the same shared HttpClient (and
     // therefore the same auth / refresh / logging plugins) while letting the
     // generated *Api classes own the URL paths.
+    private lateinit var adminApi: AdminApi
     private lateinit var authApi: AuthApi
     private lateinit var biosApi: BiosApi
     private lateinit var challengesApi: ChallengesApi
@@ -150,6 +152,7 @@ class SpelaApiClient(
     }
 
     private fun rebuildApis() {
+        adminApi = AdminApi(baseUrl, client)
         authApi = AuthApi(baseUrl, client)
         biosApi = BiosApi(baseUrl, client)
         challengesApi = ChallengesApi(baseUrl, client)
@@ -318,12 +321,12 @@ class SpelaApiClient(
 
     /** Admin: scrape metadata for a single game. */
     suspend fun adminScrapeGame(gameId: String) {
-        client.post("$baseUrl/api/admin/games/$gameId/scrape")
+        adminApi.scrapeGame(gameId)
     }
 
     /** Admin: refresh achievement cache for a single game. */
     suspend fun adminRefreshAchievements(gameId: String) {
-        client.post("$baseUrl/api/admin/games/$gameId/achievements/refresh")
+        adminApi.refreshAchievements(gameId)
     }
 
     suspend fun getRecentlyAddedGames(pageSize: Int = 12): com.spela.client.models.PaginatedResponseGameResponse {
@@ -1541,8 +1544,7 @@ class SpelaApiClient(
         gameId: String,
         saveId: String,
     ): com.spela.client.models.GameSessionResponse {
-        // Not currently exposed in the generated SessionsApi, so post directly.
-        return client.post("$baseUrl/api/games/$gameId/sessions/from-shared-save/$saveId").body()
+        return sessionsApi.createSessionFromSharedSave(gameId, saveId).body()
     }
 
     suspend fun createSession(gameId: String, name: String): com.spela.client.models.GameSessionResponse {
