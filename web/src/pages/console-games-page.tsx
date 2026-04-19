@@ -34,7 +34,7 @@ import { Pagination } from "@/components/pagination";
 import { BiosWarningBanner } from "@/features/bios/components/bios-warning-banner";
 import { useAuth } from "@/hooks/use-auth";
 import { useDefaultRegionFilters } from "@/hooks/use-default-region-filters";
-import type { GameFilters } from "@/types/api";
+import type { GameFilters, SavedSearch } from "@/types/api";
 
 type ViewMode = "grid" | "list";
 
@@ -202,7 +202,7 @@ export function ConsoleGamesPage() {
           consoles={consoles}
           themes={themes}
           keywords={keywords}
-          savedSearches={savedSearches}
+          savedSearches={savedSearches as SavedSearch[] | undefined}
           onSaveSearch={handleSaveSearch}
           onDeleteSearch={(deleteId) => deleteSearch.mutate(deleteId)}
           onApplySearch={handleApplySearch}
