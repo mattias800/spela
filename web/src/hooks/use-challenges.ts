@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { api } from "@/lib/api-client";
+import { typedApi, unwrap } from "@/lib/api-client";
 import { useWebSocketEvent } from "@/hooks/use-websocket";
 import type {
   Challenge,
@@ -18,31 +18,43 @@ const sortMapping: Record<string, string> = {
   ending_soon: "newest",
 };
 
-function buildChallengeParams(filters: ChallengeFilters): string {
-  const params = new URLSearchParams();
-  if (filters.page) params.set("page", String(filters.page));
-  if (filters.pageSize) params.set("pageSize", String(filters.pageSize));
-  if (filters.gameId) params.set("gameId", filters.gameId);
-  if (filters.consoleId) params.set("consoleId", filters.consoleId);
-  if (filters.difficulty) params.set("difficulty", filters.difficulty);
-  if (filters.type) params.set("type", filters.type);
-  if (filters.status) params.set("status", filters.status);
-  if (filters.sortBy) params.set("sort", sortMapping[filters.sortBy] ?? filters.sortBy);
-  return params.toString();
+function buildChallengeQuery(filters: ChallengeFilters) {
+  const q: Record<string, string | number | undefined> = {};
+  if (filters.page) q.page = filters.page;
+  if (filters.pageSize) q.pageSize = filters.pageSize;
+  if (filters.gameId) q.gameId = filters.gameId;
+  if (filters.consoleId) q.consoleId = filters.consoleId;
+  if (filters.difficulty) q.difficulty = filters.difficulty;
+  if (filters.type) q.type = filters.type;
+  if (filters.status) q.status = filters.status;
+  if (filters.sortBy) q.sort = sortMapping[filters.sortBy] ?? filters.sortBy;
+  return q;
 }
 
 export function useChallenges(filters: ChallengeFilters = {}) {
-  const queryString = buildChallengeParams(filters);
+  const query = buildChallengeQuery(filters);
   return useQuery({
     queryKey: ["challenges", filters],
-    queryFn: () => api.get<ChallengesResponse>(`/challenges?${queryString}`),
+    queryFn: async () => {
+      const data = await unwrap(
+        typedApi.GET("/api/challenges", { params: { query } }),
+      );
+      return data as ChallengesResponse | undefined;
+    },
   });
 }
 
 export function useChallenge(id: string) {
   return useQuery({
     queryKey: ["challenge", id],
-    queryFn: () => api.get<Challenge>(`/challenges/${id}`),
+    queryFn: async () => {
+      const data = await unwrap(
+        typedApi.GET("/api/challenges/{id}", {
+          params: { path: { id } },
+        }),
+      );
+      return data as Challenge | undefined;
+    },
     enabled: !!id,
   });
 }
@@ -54,10 +66,14 @@ export function useGameChallenges(
 ) {
   return useQuery({
     queryKey: ["challenges", "game", gameId, page, pageSize],
-    queryFn: () =>
-      api.get<ChallengesResponse>(
-        `/games/${gameId}/challenges?page=${page}&pageSize=${pageSize}`,
-      ),
+    queryFn: async () => {
+      const data = await unwrap(
+        typedApi.GET("/api/games/{id}/challenges", {
+          params: { path: { id: gameId }, query: { page, pageSize } },
+        }),
+      );
+      return data as ChallengesResponse | undefined;
+    },
     enabled: !!gameId,
   });
 }
@@ -65,10 +81,14 @@ export function useGameChallenges(
 export function useMyChallenges(page: number = 1, pageSize: number = 20) {
   return useQuery({
     queryKey: ["challenges", "mine", page, pageSize],
-    queryFn: () =>
-      api.get<ChallengesResponse>(
-        `/user/challenges?page=${page}&pageSize=${pageSize}`,
-      ),
+    queryFn: async () => {
+      const data = await unwrap(
+        typedApi.GET("/api/user/challenges", {
+          params: { query: { page, pageSize } },
+        }),
+      );
+      return data as ChallengesResponse | undefined;
+    },
   });
 }
 
@@ -81,10 +101,14 @@ export function useChallengeLeaderboard(
 ) {
   return useQuery({
     queryKey: ["challenge", challengeId, "leaderboard", page, pageSize],
-    queryFn: () =>
-      api.get<ChallengeLeaderboardResponse>(
-        `/challenges/${challengeId}/leaderboard?page=${page}&pageSize=${pageSize}`,
-      ),
+    queryFn: async () => {
+      const data = await unwrap(
+        typedApi.GET("/api/challenges/{id}/leaderboard", {
+          params: { path: { id: challengeId }, query: { page, pageSize } },
+        }),
+      );
+      return data as ChallengeLeaderboardResponse | undefined;
+    },
     enabled: !!challengeId,
   });
 }
@@ -92,8 +116,14 @@ export function useChallengeLeaderboard(
 export function useMyAttempts(challengeId: string) {
   return useQuery({
     queryKey: ["challenge", challengeId, "my-attempts"],
-    queryFn: () =>
-      api.get<ChallengeAttempt[]>(`/challenges/${challengeId}/attempts/mine`),
+    queryFn: async () => {
+      const data = await unwrap(
+        typedApi.GET("/api/challenges/{id}/attempts/mine", {
+          params: { path: { id: challengeId } },
+        }),
+      );
+      return data as ChallengeAttempt[] | undefined;
+    },
     enabled: !!challengeId,
   });
 }
@@ -102,7 +132,12 @@ export function useDeleteChallenge() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (id: string) => api.delete(`/challenges/${id}`),
+    mutationFn: (id: string) =>
+      unwrap(
+        typedApi.DELETE("/api/challenges/{id}", {
+          params: { path: { id } },
+        }),
+      ),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["challenges"] });
     },
@@ -111,10 +146,14 @@ export function useDeleteChallenge() {
 
 export function useStartAttempt() {
   return useMutation({
-    mutationFn: (challengeId: string) =>
-      api.post<StartAttemptResponse>(
-        `/challenges/${challengeId}/attempts/start`,
-      ),
+    mutationFn: async (challengeId: string) => {
+      const data = await unwrap(
+        typedApi.POST("/api/challenges/{id}/attempts/start", {
+          params: { path: { id: challengeId } },
+        }),
+      );
+      return data as StartAttemptResponse | undefined;
+    },
   });
 }
 
@@ -122,16 +161,20 @@ export function useCompleteAttempt() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({
+    mutationFn: async ({
       challengeId,
       attemptId,
     }: {
       challengeId: string;
       attemptId: string;
-    }) =>
-      api.post<CompleteAttemptResponse>(
-        `/challenges/${challengeId}/attempts/${attemptId}/complete`,
-      ),
+    }) => {
+      const data = await unwrap(
+        typedApi.POST("/api/challenges/{id}/attempts/{aid}/complete", {
+          params: { path: { id: challengeId, aid: attemptId } },
+        }),
+      );
+      return data as CompleteAttemptResponse | undefined;
+    },
     onSuccess: (_, { challengeId }) => {
       queryClient.invalidateQueries({
         queryKey: ["challenge", challengeId, "leaderboard"],
@@ -153,8 +196,10 @@ export function useAbandonAttempt() {
       challengeId: string;
       attemptId: string;
     }) =>
-      api.post(
-        `/challenges/${challengeId}/attempts/${attemptId}/abandon`,
+      unwrap(
+        typedApi.POST("/api/challenges/{id}/attempts/{aid}/abandon", {
+          params: { path: { id: challengeId, aid: attemptId } },
+        }),
       ),
   });
 }
