@@ -17,29 +17,37 @@ import {
 } from "../use-challenges";
 
 vi.mock("@/lib/api-client", () => ({
-  api: {
-    get: vi.fn(),
-    post: vi.fn(),
-    put: vi.fn(),
-    delete: vi.fn(),
-    upload: vi.fn(),
-    getAccessToken: vi.fn(() => "test-token"),
+  typedApi: {
+    GET: vi.fn(),
+    POST: vi.fn(),
+    DELETE: vi.fn(),
   },
+  unwrap: vi.fn(<T,>(p: Promise<{ data?: T; error?: unknown; response: Response }>) =>
+    p.then((r) => {
+      if (r.error !== undefined) throw r.error;
+      return r.data;
+    }),
+  ),
 }));
 
 vi.mock("@/hooks/use-websocket", () => ({
   useWebSocketEvent: vi.fn(),
 }));
 
-import { api } from "@/lib/api-client";
+import { typedApi } from "@/lib/api-client";
 
-const mockApi = api as unknown as {
-  get: ReturnType<typeof vi.fn>;
-  post: ReturnType<typeof vi.fn>;
-  put: ReturnType<typeof vi.fn>;
-  delete: ReturnType<typeof vi.fn>;
-  upload: ReturnType<typeof vi.fn>;
+const mockTypedApi = typedApi as unknown as {
+  GET: ReturnType<typeof vi.fn>;
+  POST: ReturnType<typeof vi.fn>;
+  DELETE: ReturnType<typeof vi.fn>;
 };
+
+function ok(data: unknown) {
+  return Promise.resolve({
+    data,
+    response: new Response(null, { status: 200 }),
+  });
+}
 
 function createWrapper() {
   const queryClient = new QueryClient({
@@ -57,10 +65,6 @@ function createWrapper() {
 beforeEach(() => {
   vi.clearAllMocks();
 });
-
-// ---------------------------------------------------------------------------
-// Mock Data
-// ---------------------------------------------------------------------------
 
 const mockChallengesResponse = {
   data: [
@@ -139,13 +143,9 @@ const mockLeaderboardResponse = {
   pageSize: 50,
 };
 
-// ---------------------------------------------------------------------------
-// Tests
-// ---------------------------------------------------------------------------
-
 describe("useChallenges", () => {
   it("fetches paginated challenges list", async () => {
-    mockApi.get.mockResolvedValue(mockChallengesResponse);
+    mockTypedApi.GET.mockReturnValue(ok(mockChallengesResponse));
     const { result } = renderHook(() => useChallenges(), {
       wrapper: createWrapper(),
     });
@@ -154,7 +154,7 @@ describe("useChallenges", () => {
   });
 
   it("passes filter parameters (gameId, consoleId, difficulty, sort)", async () => {
-    mockApi.get.mockResolvedValue(mockChallengesResponse);
+    mockTypedApi.GET.mockReturnValue(ok(mockChallengesResponse));
     const { result } = renderHook(
       () =>
         useChallenges({
@@ -166,15 +166,19 @@ describe("useChallenges", () => {
       { wrapper: createWrapper() },
     );
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    const callUrl = mockApi.get.mock.calls[0][0] as string;
-    expect(callUrl).toContain("gameId=g1");
-    expect(callUrl).toContain("consoleId=c1");
-    expect(callUrl).toContain("difficulty=hard");
-    expect(callUrl).toContain("sort=popular");
+    const call = mockTypedApi.GET.mock.calls[0];
+    expect(call[0]).toBe("/api/challenges");
+    const query = call[1].params.query;
+    expect(query).toMatchObject({
+      gameId: "g1",
+      consoleId: "c1",
+      difficulty: "hard",
+      sort: "popular",
+    });
   });
 
   it("returns loading state initially", () => {
-    mockApi.get.mockReturnValue(new Promise(() => {}));
+    mockTypedApi.GET.mockReturnValue(new Promise(() => {}));
     const { result } = renderHook(() => useChallenges(), {
       wrapper: createWrapper(),
     });
@@ -182,7 +186,7 @@ describe("useChallenges", () => {
   });
 
   it("returns error state on network failure", async () => {
-    mockApi.get.mockRejectedValue(new Error("Network error"));
+    mockTypedApi.GET.mockReturnValue(Promise.reject(new Error("Network error")));
     const { result } = renderHook(() => useChallenges(), {
       wrapper: createWrapper(),
     });
@@ -192,17 +196,19 @@ describe("useChallenges", () => {
 
 describe("useChallenge", () => {
   it("fetches single challenge by ID", async () => {
-    mockApi.get.mockResolvedValue(mockChallengeDetail);
+    mockTypedApi.GET.mockReturnValue(ok(mockChallengeDetail));
     const { result } = renderHook(() => useChallenge("1"), {
       wrapper: createWrapper(),
     });
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(result.current.data).toEqual(mockChallengeDetail);
-    expect(mockApi.get).toHaveBeenCalledWith("/challenges/1");
+    expect(mockTypedApi.GET).toHaveBeenCalledWith("/api/challenges/{id}", {
+      params: { path: { id: "1" } },
+    });
   });
 
   it("returns error for non-existent challenge", async () => {
-    mockApi.get.mockRejectedValue(new Error("Not found"));
+    mockTypedApi.GET.mockReturnValue(Promise.reject(new Error("Not found")));
     const { result } = renderHook(() => useChallenge("999"), {
       wrapper: createWrapper(),
     });
@@ -212,24 +218,22 @@ describe("useChallenge", () => {
 
 describe("useChallengeLeaderboard", () => {
   it("fetches leaderboard for a challenge", async () => {
-    mockApi.get.mockResolvedValue(mockLeaderboardResponse);
+    mockTypedApi.GET.mockReturnValue(ok(mockLeaderboardResponse));
     const { result } = renderHook(() => useChallengeLeaderboard("1"), {
       wrapper: createWrapper(),
     });
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(result.current.data).toEqual(mockLeaderboardResponse);
-    expect(mockApi.get).toHaveBeenCalledWith(
-      "/challenges/1/leaderboard?page=1&pageSize=50",
+    expect(mockTypedApi.GET).toHaveBeenCalledWith(
+      "/api/challenges/{id}/leaderboard",
+      { params: { path: { id: "1" }, query: { page: 1, pageSize: 50 } } },
     );
   });
 
   it("returns empty leaderboard for new challenge", async () => {
-    mockApi.get.mockResolvedValue({
-      data: [],
-      total: 0,
-      page: 1,
-      pageSize: 50,
-    });
+    mockTypedApi.GET.mockReturnValue(
+      ok({ data: [], total: 0, page: 1, pageSize: 50 }),
+    );
     const { result } = renderHook(() => useChallengeLeaderboard("1"), {
       wrapper: createWrapper(),
     });
@@ -240,23 +244,21 @@ describe("useChallengeLeaderboard", () => {
 
 describe("useGameChallenges", () => {
   it("fetches challenges for a specific game", async () => {
-    mockApi.get.mockResolvedValue(mockChallengesResponse);
+    mockTypedApi.GET.mockReturnValue(ok(mockChallengesResponse));
     const { result } = renderHook(() => useGameChallenges("g1"), {
       wrapper: createWrapper(),
     });
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(mockApi.get).toHaveBeenCalledWith(
-      "/games/g1/challenges?page=1&pageSize=5",
+    expect(mockTypedApi.GET).toHaveBeenCalledWith(
+      "/api/games/{id}/challenges",
+      { params: { path: { id: "g1" }, query: { page: 1, pageSize: 5 } } },
     );
   });
 
   it("returns empty list when game has no challenges", async () => {
-    mockApi.get.mockResolvedValue({
-      data: [],
-      total: 0,
-      page: 1,
-      pageSize: 5,
-    });
+    mockTypedApi.GET.mockReturnValue(
+      ok({ data: [], total: 0, page: 1, pageSize: 5 }),
+    );
     const { result } = renderHook(() => useGameChallenges("g1"), {
       wrapper: createWrapper(),
     });
@@ -267,14 +269,14 @@ describe("useGameChallenges", () => {
 
 describe("useMyChallenges", () => {
   it("fetches challenges created by current user", async () => {
-    mockApi.get.mockResolvedValue(mockChallengesResponse);
+    mockTypedApi.GET.mockReturnValue(ok(mockChallengesResponse));
     const { result } = renderHook(() => useMyChallenges(), {
       wrapper: createWrapper(),
     });
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(mockApi.get).toHaveBeenCalledWith(
-      "/user/challenges?page=1&pageSize=20",
-    );
+    expect(mockTypedApi.GET).toHaveBeenCalledWith("/api/user/challenges", {
+      params: { query: { page: 1, pageSize: 20 } },
+    });
   });
 });
 
@@ -293,16 +295,19 @@ describe("useMyAttempts", () => {
         isBest: true,
       },
     ];
-    mockApi.get.mockResolvedValue(mockAttempts);
+    mockTypedApi.GET.mockReturnValue(ok(mockAttempts));
     const { result } = renderHook(() => useMyAttempts("1"), {
       wrapper: createWrapper(),
     });
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(mockApi.get).toHaveBeenCalledWith("/challenges/1/attempts/mine");
+    expect(mockTypedApi.GET).toHaveBeenCalledWith(
+      "/api/challenges/{id}/attempts/mine",
+      { params: { path: { id: "1" } } },
+    );
   });
 
   it("returns empty array when no attempts exist", async () => {
-    mockApi.get.mockResolvedValue([]);
+    mockTypedApi.GET.mockReturnValue(ok([]));
     const { result } = renderHook(() => useMyAttempts("1"), {
       wrapper: createWrapper(),
     });
@@ -313,17 +318,19 @@ describe("useMyAttempts", () => {
 
 describe("useDeleteChallenge", () => {
   it("sends DELETE request for challenge", async () => {
-    mockApi.delete.mockResolvedValue(undefined);
+    mockTypedApi.DELETE.mockReturnValue(ok(undefined));
     const { result } = renderHook(() => useDeleteChallenge(), {
       wrapper: createWrapper(),
     });
     result.current.mutate("1");
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(mockApi.delete).toHaveBeenCalledWith("/challenges/1");
+    expect(mockTypedApi.DELETE).toHaveBeenCalledWith("/api/challenges/{id}", {
+      params: { path: { id: "1" } },
+    });
   });
 
   it("invalidates challenges query cache on success", async () => {
-    mockApi.delete.mockResolvedValue(undefined);
+    mockTypedApi.DELETE.mockReturnValue(ok(undefined));
     const { result } = renderHook(() => useDeleteChallenge(), {
       wrapper: createWrapper(),
     });
@@ -332,7 +339,7 @@ describe("useDeleteChallenge", () => {
   });
 
   it("returns error for unauthorized deletion", async () => {
-    mockApi.delete.mockRejectedValue(new Error("Forbidden"));
+    mockTypedApi.DELETE.mockReturnValue(Promise.reject(new Error("Forbidden")));
     const { result } = renderHook(() => useDeleteChallenge(), {
       wrapper: createWrapper(),
     });
@@ -353,19 +360,22 @@ describe("useStartAttempt", () => {
       durationMs: 0,
       isBest: false,
     };
-    mockApi.post.mockResolvedValue(mockResponse);
+    mockTypedApi.POST.mockReturnValue(ok(mockResponse));
     const { result } = renderHook(() => useStartAttempt(), {
       wrapper: createWrapper(),
     });
     result.current.mutate("1");
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(mockApi.post).toHaveBeenCalledWith(
-      "/challenges/1/attempts/start",
+    expect(mockTypedApi.POST).toHaveBeenCalledWith(
+      "/api/challenges/{id}/attempts/start",
+      { params: { path: { id: "1" } } },
     );
   });
 
   it("returns error when rate limited", async () => {
-    mockApi.post.mockRejectedValue(new Error("Too many requests"));
+    mockTypedApi.POST.mockReturnValue(
+      Promise.reject(new Error("Too many requests")),
+    );
     const { result } = renderHook(() => useStartAttempt(), {
       wrapper: createWrapper(),
     });
@@ -387,19 +397,20 @@ describe("useCompleteAttempt", () => {
       durationMs: 45230,
       isBest: true,
     };
-    mockApi.post.mockResolvedValue(mockResponse);
+    mockTypedApi.POST.mockReturnValue(ok(mockResponse));
     const { result } = renderHook(() => useCompleteAttempt(), {
       wrapper: createWrapper(),
     });
     result.current.mutate({ challengeId: "1", attemptId: "attempt-1" });
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(mockApi.post).toHaveBeenCalledWith(
-      "/challenges/1/attempts/attempt-1/complete",
+    expect(mockTypedApi.POST).toHaveBeenCalledWith(
+      "/api/challenges/{id}/attempts/{aid}/complete",
+      { params: { path: { id: "1", aid: "attempt-1" } } },
     );
   });
 
   it("invalidates leaderboard cache on success", async () => {
-    mockApi.post.mockResolvedValue({});
+    mockTypedApi.POST.mockReturnValue(ok({}));
     const { result } = renderHook(() => useCompleteAttempt(), {
       wrapper: createWrapper(),
     });
@@ -408,7 +419,7 @@ describe("useCompleteAttempt", () => {
   });
 
   it("invalidates my attempts cache on success", async () => {
-    mockApi.post.mockResolvedValue({});
+    mockTypedApi.POST.mockReturnValue(ok({}));
     const { result } = renderHook(() => useCompleteAttempt(), {
       wrapper: createWrapper(),
     });
@@ -419,19 +430,20 @@ describe("useCompleteAttempt", () => {
 
 describe("useAbandonAttempt", () => {
   it("sends POST to abandon attempt", async () => {
-    mockApi.post.mockResolvedValue({});
+    mockTypedApi.POST.mockReturnValue(ok({}));
     const { result } = renderHook(() => useAbandonAttempt(), {
       wrapper: createWrapper(),
     });
     result.current.mutate({ challengeId: "1", attemptId: "attempt-1" });
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(mockApi.post).toHaveBeenCalledWith(
-      "/challenges/1/attempts/attempt-1/abandon",
+    expect(mockTypedApi.POST).toHaveBeenCalledWith(
+      "/api/challenges/{id}/attempts/{aid}/abandon",
+      { params: { path: { id: "1", aid: "attempt-1" } } },
     );
   });
 
   it("invalidates my attempts cache on success", async () => {
-    mockApi.post.mockResolvedValue({});
+    mockTypedApi.POST.mockReturnValue(ok({}));
     const { result } = renderHook(() => useAbandonAttempt(), {
       wrapper: createWrapper(),
     });
