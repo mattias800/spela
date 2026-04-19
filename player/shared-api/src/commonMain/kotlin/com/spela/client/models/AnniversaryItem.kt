@@ -8,9 +8,17 @@
 
 @file:Suppress(
     "ArrayInDataClass",
+    "DuplicatedCode",
     "EnumEntryName",
     "RemoveRedundantQualifierName",
-    "UnusedImport"
+    "RemoveRedundantCallsOfConversionMethods",
+    "REDUNDANT_CALL_OF_CONVERSION_METHOD",
+    "RedundantUnitReturnType",
+    "RemoveEmptyClassBody",
+    "UnnecessaryVariable",
+    "UnusedImport",
+    "UnnecessaryVariable",
+    "unused"
 )
 
 package com.spela.client.models
@@ -34,7 +42,7 @@ data class AnniversaryItem (
 
     @SerialName(value = "game") @Required val game: GameResponse,
 
-    @SerialName(value = "playedAt") @Required val playedAt: kotlinx.datetime.Instant,
+    @SerialName(value = "playedAt") @Required val playedAt: kotlin.time.Instant,
 
     @SerialName(value = "yearsAgo") @Required val yearsAgo: kotlin.Long
 

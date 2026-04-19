@@ -8,9 +8,17 @@
 
 @file:Suppress(
     "ArrayInDataClass",
+    "DuplicatedCode",
     "EnumEntryName",
     "RemoveRedundantQualifierName",
-    "UnusedImport"
+    "RemoveRedundantCallsOfConversionMethods",
+    "REDUNDANT_CALL_OF_CONVERSION_METHOD",
+    "RedundantUnitReturnType",
+    "RemoveEmptyClassBody",
+    "UnnecessaryVariable",
+    "UnusedImport",
+    "UnnecessaryVariable",
+    "unused"
 )
 
 package com.spela.client.models
@@ -36,7 +44,7 @@ data class RateLimitResponse (
 
     @SerialName(value = "isLockedOut") @Required val isLockedOut: kotlin.Boolean,
 
-    @SerialName(value = "lockedUntil") @Required val lockedUntil: kotlinx.datetime.Instant?,
+    @SerialName(value = "lockedUntil") @Required val lockedUntil: kotlin.time.Instant?,
 
     /* A URL to the JSON Schema for this object. */
     @SerialName(value = "\$schema") val dollarSchema: kotlin.String? = null

@@ -8,13 +8,22 @@
 
 @file:Suppress(
     "ArrayInDataClass",
+    "DuplicatedCode",
     "EnumEntryName",
     "RemoveRedundantQualifierName",
-    "UnusedImport"
+    "RemoveRedundantCallsOfConversionMethods",
+    "REDUNDANT_CALL_OF_CONVERSION_METHOD",
+    "RedundantUnitReturnType",
+    "RemoveEmptyClassBody",
+    "UnnecessaryVariable",
+    "UnusedImport",
+    "UnnecessaryVariable",
+    "unused"
 )
 
 package com.spela.client.apis
 
+import com.spela.client.models.Core
 import com.spela.client.models.DeveloperGameResponse
 import com.spela.client.models.GameArtworkResponse
 import com.spela.client.models.GameCheatResponse
@@ -34,6 +43,10 @@ import io.ktor.client.request.forms.formData
 import io.ktor.client.engine.HttpClientEngine
 import kotlinx.serialization.json.Json
 import io.ktor.http.ParametersBuilder
+import io.ktor.http.Headers
+import io.ktor.http.HttpHeaders
+import io.ktor.http.ContentType
+import io.ktor.http.content.PartData
 import kotlinx.serialization.*
 import kotlinx.serialization.descriptors.*
 import kotlinx.serialization.encoding.*
@@ -342,12 +355,12 @@ open class GamesApi : ApiClient {
 
     /**
      * Get recommended libretro core for a game
-     * Returns the recommended libretro core for the game — either the full Core record (when known to the server) or a bare {coreName} fallback.
+     * Returns the recommended libretro core for the game as a full Core record. Responds 404 when the game is unknown or when the recommended core is not seeded on the server.
      * @param id Game ID.
-     * @return kotlin.Any
+     * @return Core
      */
     @Suppress("UNCHECKED_CAST")
-    open suspend fun getRecommendedCore(id: kotlin.String): HttpResponse<kotlin.Any> {
+    open suspend fun getRecommendedCore(id: kotlin.String): HttpResponse<Core> {
 
         val localVariableAuthNames = listOf<String>()
 
@@ -471,8 +484,8 @@ open class GamesApi : ApiClient {
      * @param ratingMin Minimum rating (0-100). (optional)
      * @param ratingMax Maximum rating (0-100). (optional)
      * @param playStatus Restrict to unplayed | played | favorited | play-later for the current user. (optional)
-     * @param grouped Show only primary variants. (optional, default to true)
-     * @param hidePreRelease Hide betas/protos/samples. (optional, default to true)
+     * @param grouped Show only primary variants. (optional, default to Grouped.`true`)
+     * @param hidePreRelease Hide betas/protos/samples. (optional, default to HidePreRelease.`true`)
      * @param sortBy Sort column (title, created_at, file_size, rating, release_date). (optional)
      * @param sort Legacy alias for sortBy. (optional)
      * @param sortOrder Sort direction (asc, desc). (optional)

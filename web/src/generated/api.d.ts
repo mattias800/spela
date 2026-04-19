@@ -1253,7 +1253,11 @@ export interface paths {
          */
         get: operations["listChallenges"];
         put?: never;
-        post?: never;
+        /**
+         * Create a new challenge
+         * @description Creates a challenge for a game with a required starting save state and an optional screenshot. Max save size is 10 MB.
+         */
+        post: operations["createChallenge"];
         delete?: never;
         options?: never;
         head?: never;
@@ -2709,7 +2713,7 @@ export interface paths {
         };
         /**
          * Get recommended libretro core for a game
-         * @description Returns the recommended libretro core for the game — either the full Core record (when known to the server) or a bare {coreName} fallback.
+         * @description Returns the recommended libretro core for the game as a full Core record. Responds 404 when the game is unknown or when the recommended core is not seeded on the server.
          */
         get: operations["getRecommendedCore"];
         put?: never;
@@ -5807,6 +5811,12 @@ export interface components {
             topDevelopers: components["schemas"]["DeveloperSummary"][] | null;
         };
         Core: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/api/schemas/Core.json
+             */
+            readonly $schema?: string;
             /** Format: date-time */
             createdAt: string;
             description?: string;
@@ -10908,6 +10918,64 @@ export interface operations {
             };
         };
     };
+    createChallenge: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "multipart/form-data": {
+                    /** @description libretro core identifier that produced the starting save. */
+                    coreName?: string;
+                    /** @description Optional longer description. Max 2048 characters. */
+                    description?: string;
+                    /** @description Difficulty: 'easy', 'medium', or 'hard'. Defaults to 'medium'. */
+                    difficulty?: string;
+                    /** @description Optional RFC3339 expiry timestamp; must be in the future. */
+                    expiresAt?: string;
+                    /** @description Numeric ID of the game the challenge is for. */
+                    gameId?: string;
+                    /** @description Display name for the challenge. Max 255 characters. */
+                    name?: string;
+                    /**
+                     * Format: binary
+                     * @description Starting save state file. Required. Max 10 MB.
+                     */
+                    save?: string;
+                    /**
+                     * Format: binary
+                     * @description Optional screenshot displayed on the challenge.
+                     */
+                    screenshot?: string;
+                    /** @description Challenge type: 'completion', 'speedrun', or 'survival'. Defaults to 'completion'. */
+                    type?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChallengeResponse"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HumaError"];
+                };
+            };
+        };
+    };
     getChallenge: {
         parameters: {
             query?: never;
@@ -13443,7 +13511,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["Core"];
                 };
             };
             /** @description Error */

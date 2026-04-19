@@ -8,9 +8,17 @@
 
 @file:Suppress(
     "ArrayInDataClass",
+    "DuplicatedCode",
     "EnumEntryName",
     "RemoveRedundantQualifierName",
-    "UnusedImport"
+    "RemoveRedundantCallsOfConversionMethods",
+    "REDUNDANT_CALL_OF_CONVERSION_METHOD",
+    "RedundantUnitReturnType",
+    "RemoveEmptyClassBody",
+    "UnnecessaryVariable",
+    "UnusedImport",
+    "UnnecessaryVariable",
+    "unused"
 )
 
 package com.spela.client.models
@@ -29,6 +37,7 @@ import kotlinx.serialization.encoding.*
  * @param name 
  * @param platforms 
  * @param updatedAt 
+ * @param dollarSchema A URL to the JSON Schema for this object.
  * @param description 
  * @param downloadUrl 
  * @param version 
@@ -37,7 +46,7 @@ import kotlinx.serialization.encoding.*
 
 data class Core (
 
-    @SerialName(value = "createdAt") @Required val createdAt: kotlinx.datetime.Instant,
+    @SerialName(value = "createdAt") @Required val createdAt: kotlin.time.Instant,
 
     @SerialName(value = "displayName") @Required val displayName: kotlin.String,
 
@@ -47,7 +56,10 @@ data class Core (
 
     @SerialName(value = "platforms") @Required val platforms: kotlin.String,
 
-    @SerialName(value = "updatedAt") @Required val updatedAt: kotlinx.datetime.Instant,
+    @SerialName(value = "updatedAt") @Required val updatedAt: kotlin.time.Instant,
+
+    /* A URL to the JSON Schema for this object. */
+    @SerialName(value = "\$schema") val dollarSchema: kotlin.String? = null,
 
     @SerialName(value = "description") val description: kotlin.String? = null,
 

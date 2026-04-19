@@ -2116,6 +2116,15 @@
       "Core": {
         "additionalProperties": false,
         "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "https://example.com/api/schemas/Core.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
           "createdAt": {
             "format": "date-time",
             "type": "string"
@@ -13876,6 +13885,123 @@
         "tags": [
           "challenges"
         ]
+      },
+      "post": {
+        "description": "Creates a challenge for a game with a required starting save state and an optional screenshot. Max save size is 10 MB.",
+        "operationId": "createChallenge",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "encoding": {
+                "coreName": {
+                  "contentType": "text/plain"
+                },
+                "description": {
+                  "contentType": "text/plain"
+                },
+                "difficulty": {
+                  "contentType": "text/plain"
+                },
+                "expiresAt": {
+                  "contentType": "text/plain"
+                },
+                "gameId": {
+                  "contentType": "text/plain"
+                },
+                "name": {
+                  "contentType": "text/plain"
+                },
+                "save": {
+                  "contentType": "application/octet-stream"
+                },
+                "screenshot": {
+                  "contentType": "application/octet-stream"
+                },
+                "type": {
+                  "contentType": "text/plain"
+                }
+              },
+              "schema": {
+                "properties": {
+                  "coreName": {
+                    "description": "libretro core identifier that produced the starting save.",
+                    "type": "string"
+                  },
+                  "description": {
+                    "description": "Optional longer description. Max 2048 characters.",
+                    "type": "string"
+                  },
+                  "difficulty": {
+                    "description": "Difficulty: 'easy', 'medium', or 'hard'. Defaults to 'medium'.",
+                    "type": "string"
+                  },
+                  "expiresAt": {
+                    "description": "Optional RFC3339 expiry timestamp; must be in the future.",
+                    "type": "string"
+                  },
+                  "gameId": {
+                    "description": "Numeric ID of the game the challenge is for.",
+                    "type": "string"
+                  },
+                  "name": {
+                    "description": "Display name for the challenge. Max 255 characters.",
+                    "type": "string"
+                  },
+                  "save": {
+                    "contentEncoding": "binary",
+                    "contentMediaType": "application/octet-stream",
+                    "description": "Starting save state file. Required. Max 10 MB.",
+                    "format": "binary",
+                    "type": "string"
+                  },
+                  "screenshot": {
+                    "contentEncoding": "binary",
+                    "contentMediaType": "application/octet-stream",
+                    "description": "Optional screenshot displayed on the challenge.",
+                    "format": "binary",
+                    "type": "string"
+                  },
+                  "type": {
+                    "description": "Challenge type: 'completion', 'speedrun', or 'survival'. Defaults to 'completion'.",
+                    "type": "string"
+                  }
+                },
+                "type": "object"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChallengeResponse"
+                }
+              }
+            },
+            "description": "Created"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HumaError"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Create a new challenge",
+        "tags": [
+          "challenges"
+        ]
       }
     },
     "/api/challenges/{id}": {
@@ -18227,7 +18353,7 @@
     },
     "/api/games/{id}/core": {
       "get": {
-        "description": "Returns the recommended libretro core for the game — either the full Core record (when known to the server) or a bare {coreName} fallback.",
+        "description": "Returns the recommended libretro core for the game as a full Core record. Responds 404 when the game is unknown or when the recommended core is not seeded on the server.",
         "operationId": "getRecommendedCore",
         "parameters": [
           {
@@ -18245,7 +18371,9 @@
           "200": {
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/Core"
+                }
               }
             },
             "description": "OK"

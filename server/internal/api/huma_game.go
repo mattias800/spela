@@ -78,12 +78,9 @@ type GetGameCheatsOutput struct {
 	Body []GameCheatResponse
 }
 
-// GetRecommendedCoreOutput wraps the recommended-core response. The raw gin
-// handler returns either the full db.Core model or a bare {coreName: ...}
-// object depending on whether the core is known to the server, so the body
-// type is `any` here to preserve byte-for-byte wire compatibility.
+// GetRecommendedCoreOutput wraps the recommended-core response.
 type GetRecommendedCoreOutput struct {
-	Body any
+	Body db.Core
 }
 
 // ScrapeIfNeededInput is the input for POST /api/games/{id}/scrape-if-needed.
@@ -191,7 +188,7 @@ func RegisterGameRoutes(api huma.API, h *GameHandler, jwtSecret string, database
 		Method:      http.MethodGet,
 		Path:        "/api/games/{id}/core",
 		Summary:     "Get recommended libretro core for a game",
-		Description: "Returns the recommended libretro core for the game — either the full Core record (when known to the server) or a bare {coreName} fallback.",
+		Description: "Returns the recommended libretro core for the game as a full Core record. Responds 404 when the game is unknown or when the recommended core is not seeded on the server.",
 		Tags:        []string{"games"},
 		Middlewares: mw,
 		Security:    sec,
@@ -669,9 +666,9 @@ func (h *GameHandler) HumaGetGameCheats(_ context.Context, in *GetGameInput) (*G
 }
 
 // HumaGetRecommendedCore is the huma handler for GET /api/games/{id}/core.
-// Returns the full db.Core struct as JSON when known, or a bare {coreName: ...}
-// object when only the name is available. This matches the raw gin handler
-// wire format byte-for-byte.
+// Returns the full db.Core struct as JSON. A missing Core row indicates a seed
+// data gap on the server (every console's DefaultCore should be in SeedCores);
+// we return 404 rather than a half-populated fallback so the gap is visible.
 func (h *GameHandler) HumaGetRecommendedCore(_ context.Context, in *GetGameInput) (*GetRecommendedCoreOutput, error) {
 	var game db.Game
 	if err := h.DB.Preload("Console").First(&game, in.ID).Error; err != nil {
@@ -685,7 +682,7 @@ func (h *GameHandler) HumaGetRecommendedCore(_ context.Context, in *GetGameInput
 
 	var core db.Core
 	if err := h.DB.Where("name = ?", coreName).First(&core).Error; err != nil {
-		return &GetRecommendedCoreOutput{Body: map[string]any{"coreName": coreName}}, nil
+		return nil, huma.Error404NotFound("no Core record for '" + coreName + "'; server is missing seed data")
 	}
 
 	return &GetRecommendedCoreOutput{Body: core}, nil

@@ -8,9 +8,17 @@
 
 @file:Suppress(
     "ArrayInDataClass",
+    "DuplicatedCode",
     "EnumEntryName",
     "RemoveRedundantQualifierName",
-    "UnusedImport"
+    "RemoveRedundantCallsOfConversionMethods",
+    "REDUNDANT_CALL_OF_CONVERSION_METHOD",
+    "RedundantUnitReturnType",
+    "RemoveEmptyClassBody",
+    "UnnecessaryVariable",
+    "UnusedImport",
+    "UnnecessaryVariable",
+    "unused"
 )
 
 package com.spela.client.models
@@ -64,7 +72,7 @@ data class ConsoleResponse (
 
     @SerialName(value = "coverAspectRatio") @Required val coverAspectRatio: kotlin.Double,
 
-    @SerialName(value = "createdAt") @Required val createdAt: kotlinx.datetime.Instant,
+    @SerialName(value = "createdAt") @Required val createdAt: kotlin.time.Instant,
 
     @SerialName(value = "defaultCore") @Required val defaultCore: kotlin.String,
 
@@ -100,7 +108,7 @@ data class ConsoleResponse (
 
     @SerialName(value = "unitsSold") @Required val unitsSold: kotlin.Long?,
 
-    @SerialName(value = "updatedAt") @Required val updatedAt: kotlinx.datetime.Instant
+    @SerialName(value = "updatedAt") @Required val updatedAt: kotlin.time.Instant
 
 ) {
 

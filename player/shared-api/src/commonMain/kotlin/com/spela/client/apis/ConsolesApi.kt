@@ -8,9 +8,17 @@
 
 @file:Suppress(
     "ArrayInDataClass",
+    "DuplicatedCode",
     "EnumEntryName",
     "RemoveRedundantQualifierName",
-    "UnusedImport"
+    "RemoveRedundantCallsOfConversionMethods",
+    "REDUNDANT_CALL_OF_CONVERSION_METHOD",
+    "RedundantUnitReturnType",
+    "RemoveEmptyClassBody",
+    "UnnecessaryVariable",
+    "UnusedImport",
+    "UnnecessaryVariable",
+    "unused"
 )
 
 package com.spela.client.apis
@@ -27,6 +35,10 @@ import io.ktor.client.request.forms.formData
 import io.ktor.client.engine.HttpClientEngine
 import kotlinx.serialization.json.Json
 import io.ktor.http.ParametersBuilder
+import io.ktor.http.Headers
+import io.ktor.http.HttpHeaders
+import io.ktor.http.ContentType
+import io.ktor.http.content.PartData
 import kotlinx.serialization.*
 import kotlinx.serialization.descriptors.*
 import kotlinx.serialization.encoding.*
@@ -328,13 +340,13 @@ open class ConsolesApi : ApiClient {
      * @param id Console abbreviation (e.g. &#39;snes&#39;) or code.
      * @param page 1-based page number. (optional, default to 1L)
      * @param pageSize Page size. (optional, default to 50L)
-     * @param sortBy Sort column. (optional, default to title)
-     * @param sortOrder Sort direction. (optional, default to asc)
+     * @param sortBy Sort column. (optional, default to SortBy.title)
+     * @param sortOrder Sort direction. (optional, default to SortOrder.asc)
      * @param search Substring match on title. (optional)
      * @param letter Alphabet quick-jump filter (&#39;A&#39;-&#39;Z&#39; or &#39;#&#39; for non-alpha). (optional)
      * @param region Region filter (comma-separated for multi-select). (optional)
-     * @param grouped Show only primary variants. (optional, default to true)
-     * @param hidePreRelease Hide betas/protos/samples. (optional, default to true)
+     * @param grouped Show only primary variants. (optional, default to Grouped.`true`)
+     * @param hidePreRelease Hide betas/protos/samples. (optional, default to HidePreRelease.`true`)
      * @return PaginatedResponseGameResponse
      */
     @Suppress("UNCHECKED_CAST")

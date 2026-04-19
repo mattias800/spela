@@ -43,8 +43,6 @@ import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
 import io.ktor.utils.io.*
 import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.jsonObject
-import kotlinx.serialization.json.jsonPrimitive
 
 class SpelaApiClient(
     private val engineFactory: io.ktor.client.engine.HttpClientEngineFactory<*>,
@@ -829,24 +827,8 @@ class SpelaApiClient(
         return coresApi.listCores().body()
     }
 
-    /** May return either a full Core object or just {coreName: "..."}. The
-     *  lightweight fallback shape can't satisfy [com.spela.client.models.Core]'s
-     *  @Required timestamps, so this method returns the domain type directly. */
     suspend fun getRecommendedCore(gameId: String): com.spela.player.domain.model.LibretroCore {
-        // Server returns the response as either a full Core object or a lightweight
-        // {coreName} fallback. The generated client typed the response as `kotlin.Any`
-        // which would deserialize to a JsonElement; instead read it as a string and
-        // use the existing parsing logic to produce the domain object.
-        val text: String = client.get("$baseUrl/api/games/$gameId/core").body()
-        return try {
-            json.decodeFromString<com.spela.client.models.Core>(text).toDomain()
-        } catch (_: Exception) {
-            // Server returns just {coreName: "..."} when core isn't in DB
-            val obj = json.parseToJsonElement(text).jsonObject
-            val coreName = obj["coreName"]?.jsonPrimitive?.content
-                ?: throw IllegalStateException("No core name in response: $text")
-            com.spela.player.domain.model.LibretroCore(id = 0, name = coreName)
-        }
+        return gamesApi.getRecommendedCore(gameId).body().toDomain()
     }
 
     suspend fun downloadCore(coreId: String, platform: String = "android", onProgress: (Long, Long?) -> Unit = { _, _ -> }): ByteArray {
