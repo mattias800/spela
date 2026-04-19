@@ -260,5 +260,21 @@ export default defineConfig({
     // on process isolation (no native modules, no globals to leak across
     // tests beyond what jsdom already isolates).
     pool: "threads",
+    // React 19 ships a minimal "react-server" conditional export at
+    // react.react-server.js that OMITS createContext/useState/useEffect/
+    // useContext. Under `pool: "threads"` the Node module graph is shared
+    // across tests — if any file's resolution hits the react-server build
+    // first (or a worker-init race partially loads the CJS module), the
+    // cached React module lacks these APIs for the rest of the run, and
+    // every subsequent test using createContext (QueryClientProvider,
+    // React Router) fails intermittently with:
+    //   TypeError: React.createContext is not a function
+    // Force React through Vite's transform pipeline so vite-plugin-react's
+    // condition handling applies consistently per-worker.
+    server: {
+      deps: {
+        inline: ["react", "react-dom"],
+      },
+    },
   },
 });
