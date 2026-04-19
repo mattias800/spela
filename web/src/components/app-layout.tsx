@@ -47,7 +47,7 @@ export function AppLayout() {
   const netplayBadge = netplayInviteCountData?.count;
   const { data: biosData } = useBiosStatus();
   const hasMissingBios =
-    biosData?.consoles.some((c) => c.status === "missing") ?? false;
+    biosData?.consoles?.some((c) => c.status === "missing") ?? false;
   const { data: igdbStatus } = useIgdbStatus();
   const igdbNotConfigured = !(igdbStatus?.configured ?? true);
   const { data: health } = useHealth();

@@ -55,14 +55,14 @@ export function PlayPage() {
   const { data: biosData } = useBiosStatus();
   const { isAdmin } = useAuth();
 
-  const biosConsole = biosData?.consoles.find(
+  const biosConsole = biosData?.consoles?.find(
     (c) => c.consoleId === game?.consoleId,
   );
   const biosMissing =
     biosConsole?.status === "missing" && biosConsole.biosRequired;
   const missingBiosFiles =
     biosConsole?.files
-      .filter((f) => f.status === "missing" && f.required)
+      ?.filter((f) => f.status === "missing" && f.required)
       .map((f) => f.fileName) ?? [];
 
   const { data: autoSaveInfo, isLoading: autoSaveInfoLoading } = useAutoSaveInfo(
@@ -229,7 +229,7 @@ export function PlayPage() {
         : "";
       // Filter BIOS files for the current console only
       const consoleBiosFiles = biosConsole?.files
-        .filter((f) => f.status !== "missing")
+        ?.filter((f) => f.status !== "missing")
         .map((f) => f.fileName) ?? [];
       const biosUrls =
         consoleBiosFiles.length > 0
@@ -295,7 +295,7 @@ export function PlayPage() {
 
       // Build authenticated BIOS file URLs (filtered for current console)
       const consoleBiosFiles2 = biosConsole?.files
-        .filter((f) => f.status !== "missing")
+        ?.filter((f) => f.status !== "missing")
         .map((f) => f.fileName) ?? [];
       const biosUrls =
         consoleBiosFiles2.length > 0

@@ -184,7 +184,7 @@ export function GameDetailPage() {
     );
   }
 
-  const biosConsole = biosData?.consoles.find(
+  const biosConsole = biosData?.consoles?.find(
     (c) => c.consoleId === game?.consoleId,
   );
   const showBiosWarning =
@@ -193,7 +193,7 @@ export function GameDetailPage() {
       (biosConsole?.status === "missing" && biosConsole.biosRequired));
   const missingBiosFiles =
     biosConsole?.files
-      .filter((f) => f.status === "missing" && f.required)
+      ?.filter((f) => f.status === "missing" && f.required)
       .map((f) => f.fileName) ?? [];
 
   function handleDownloadRom() {

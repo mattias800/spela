@@ -11,19 +11,39 @@ import {
 
 vi.mock("@/lib/api-client", () => ({
   api: {
-    get: vi.fn(),
     upload: vi.fn(),
-    delete: vi.fn(),
   },
+  typedApi: {
+    GET: vi.fn(),
+    DELETE: vi.fn(),
+    POST: vi.fn(),
+  },
+  unwrap: vi.fn(<T,>(p: Promise<{ data?: T; error?: unknown; response: Response }>) =>
+    p.then((r) => {
+      if (r.error !== undefined) throw r.error;
+      return r.data;
+    }),
+  ),
 }));
 
-import { api } from "@/lib/api-client";
+import { api, typedApi } from "@/lib/api-client";
 
 const mockApi = api as unknown as {
-  get: ReturnType<typeof vi.fn>;
   upload: ReturnType<typeof vi.fn>;
-  delete: ReturnType<typeof vi.fn>;
 };
+
+const mockTypedApi = typedApi as unknown as {
+  GET: ReturnType<typeof vi.fn>;
+  DELETE: ReturnType<typeof vi.fn>;
+  POST: ReturnType<typeof vi.fn>;
+};
+
+function ok(data: unknown) {
+  return Promise.resolve({
+    data,
+    response: new Response(null, { status: 200 }),
+  });
+}
 
 function createWrapper() {
   const queryClient = new QueryClient({
@@ -80,7 +100,7 @@ const mockBiosResponse = {
 
 describe("useBiosStatus", () => {
   it("fetches enriched BIOS data", async () => {
-    mockApi.get.mockResolvedValue(mockBiosResponse);
+    mockTypedApi.GET.mockReturnValue(ok(mockBiosResponse));
 
     const { result } = renderHook(() => useBiosStatus(), {
       wrapper: createWrapper(),
@@ -88,14 +108,14 @@ describe("useBiosStatus", () => {
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
-    expect(mockApi.get).toHaveBeenCalledWith("/bios");
+    expect(mockTypedApi.GET).toHaveBeenCalledWith("/api/bios");
     expect(result.current.data).toEqual(mockBiosResponse);
     expect(result.current.data?.consoles).toHaveLength(1);
-    expect(result.current.data?.consoles[0].status).toBe("ready");
+    expect(result.current.data?.consoles?.[0].status).toBe("ready");
   });
 
   it("handles fetch error", async () => {
-    mockApi.get.mockRejectedValue(new Error("Server error"));
+    mockTypedApi.GET.mockReturnValue(Promise.reject(new Error("Server error")));
 
     const { result } = renderHook(() => useBiosStatus(), {
       wrapper: createWrapper(),
@@ -108,7 +128,7 @@ describe("useBiosStatus", () => {
 
 describe("useBiosFiles", () => {
   it("returns only the files array for backward compatibility", async () => {
-    mockApi.get.mockResolvedValue(mockBiosResponse);
+    mockTypedApi.GET.mockReturnValue(ok(mockBiosResponse));
 
     const { result } = renderHook(() => useBiosFiles(), {
       wrapper: createWrapper(),
@@ -173,7 +193,7 @@ describe("useUploadBiosFile", () => {
 
 describe("useDeleteBiosFile", () => {
   it("deletes a BIOS file", async () => {
-    mockApi.delete.mockResolvedValue(undefined);
+    mockTypedApi.DELETE.mockReturnValue(ok(undefined));
 
     const { result } = renderHook(() => useDeleteBiosFile(), {
       wrapper: createWrapper(),
@@ -182,11 +202,14 @@ describe("useDeleteBiosFile", () => {
     result.current.mutate("scph5501.bin");
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(mockApi.delete).toHaveBeenCalledWith("/admin/bios/scph5501.bin");
+    expect(mockTypedApi.DELETE).toHaveBeenCalledWith(
+      "/api/admin/bios/{filename}",
+      { params: { path: { filename: "scph5501.bin" } } },
+    );
   });
 
   it("handles delete error", async () => {
-    mockApi.delete.mockRejectedValue(new Error("Not found"));
+    mockTypedApi.DELETE.mockReturnValue(Promise.reject(new Error("Not found")));
 
     const { result } = renderHook(() => useDeleteBiosFile(), {
       wrapper: createWrapper(),
