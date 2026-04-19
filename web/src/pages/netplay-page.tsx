@@ -59,7 +59,7 @@ export function NetplayPage() {
     joinLookup.mutate(code, {
       onSuccess: (session) => {
         setInviteCode("");
-        navigate(`/netplay/${session.id}`);
+        if (session) navigate(`/netplay/${session.id}`);
       },
       onError: () => {
         toast(

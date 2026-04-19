@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { api } from "@/lib/api-client";
+import { typedApi, unwrap } from "@/lib/api-client";
 import { useWebSocketEvent } from "@/hooks/use-websocket";
 import type {
   NetplaySession,
@@ -9,21 +9,30 @@ import type {
 } from "@/types/api";
 
 export function useNetplaySessions(page = 1, pageSize = 20) {
-  const params = new URLSearchParams();
-  params.set("page", String(page));
-  params.set("pageSize", String(pageSize));
-
   return useQuery({
     queryKey: ["netplay", "sessions", page, pageSize],
-    queryFn: () =>
-      api.get<NetplaySessionsResponse>(`/netplay/sessions?${params}`),
+    queryFn: async () => {
+      const data = await unwrap(
+        typedApi.GET("/api/netplay/sessions", {
+          params: { query: { page, pageSize } },
+        }),
+      );
+      return data as NetplaySessionsResponse | undefined;
+    },
   });
 }
 
 export function useNetplaySession(id: string) {
   return useQuery({
     queryKey: ["netplay", "sessions", id],
-    queryFn: () => api.get<NetplaySession>(`/netplay/sessions/${id}`),
+    queryFn: async () => {
+      const data = await unwrap(
+        typedApi.GET("/api/netplay/sessions/{id}", {
+          params: { path: { id } },
+        }),
+      );
+      return data as NetplaySession | undefined;
+    },
     enabled: !!id,
   });
 }
@@ -32,10 +41,12 @@ export function useCreateNetplaySession() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (data: {
-      gameId: string;
-      inputDelay?: number;
-    }) => api.post<NetplaySession>("/netplay/sessions", data),
+    mutationFn: async (data: { gameId: string; inputDelay?: number }) => {
+      const result = await unwrap(
+        typedApi.POST("/api/netplay/sessions", { body: data }),
+      );
+      return result as NetplaySession | undefined;
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["netplay", "sessions"] });
     },
@@ -46,8 +57,14 @@ export function useJoinNetplaySession() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (inviteCode: string) =>
-      api.post<NetplaySession>("/netplay/sessions/join", { inviteCode }),
+    mutationFn: async (inviteCode: string) => {
+      const data = await unwrap(
+        typedApi.POST("/api/netplay/sessions/join", {
+          body: { inviteCode },
+        }),
+      );
+      return data as NetplaySession | undefined;
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["netplay", "sessions"] });
     },
@@ -59,7 +76,11 @@ export function useLeaveNetplaySession() {
 
   return useMutation({
     mutationFn: (id: string) =>
-      api.post(`/netplay/sessions/${id}/leave`),
+      unwrap(
+        typedApi.POST("/api/netplay/sessions/{id}/leave", {
+          params: { path: { id } },
+        }),
+      ),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["netplay", "sessions"] });
     },
@@ -70,13 +91,21 @@ export function useUpdateNetplaySettings() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({
+    mutationFn: async ({
       id,
       inputDelay,
     }: {
       id: string;
       inputDelay: number;
-    }) => api.put<NetplaySession>(`/netplay/sessions/${id}/settings`, { inputDelay }),
+    }) => {
+      const data = await unwrap(
+        typedApi.PUT("/api/netplay/sessions/{id}/settings", {
+          params: { path: { id } },
+          body: { inputDelay },
+        }),
+      );
+      return data as NetplaySession | undefined;
+    },
     onSuccess: (_, { id }) => {
       queryClient.invalidateQueries({ queryKey: ["netplay", "sessions", id] });
     },
@@ -87,7 +116,12 @@ export function useDeleteNetplaySession() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (id: string) => api.delete(`/netplay/sessions/${id}`),
+    mutationFn: (id: string) =>
+      unwrap(
+        typedApi.DELETE("/api/netplay/sessions/{id}", {
+          params: { path: { id } },
+        }),
+      ),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["netplay", "sessions"] });
     },
@@ -99,14 +133,17 @@ export function useDeleteNetplaySession() {
 export function useNetplayInvites() {
   return useQuery({
     queryKey: ["netplay", "invites"],
-    queryFn: () => api.get<NetplayInvitesResponse>("/netplay/invites"),
+    queryFn: async () => {
+      const data = await unwrap(typedApi.GET("/api/netplay/invites"));
+      return data as NetplayInvitesResponse | undefined;
+    },
   });
 }
 
 export function usePendingNetplayInviteCount() {
   return useQuery({
     queryKey: ["netplay", "invites", "count"],
-    queryFn: () => api.get<{ count: number }>("/netplay/invites/count"),
+    queryFn: () => unwrap(typedApi.GET("/api/netplay/invites/count")),
     refetchInterval: 30000,
   });
 }
@@ -114,8 +151,14 @@ export function usePendingNetplayInviteCount() {
 export function useSessionNetplayInvites(sessionId: string) {
   return useQuery({
     queryKey: ["netplay", "sessions", sessionId, "invites"],
-    queryFn: () =>
-      api.get<NetplayInvite[]>(`/netplay/sessions/${sessionId}/invites`),
+    queryFn: async () => {
+      const data = await unwrap(
+        typedApi.GET("/api/netplay/sessions/{id}/invites", {
+          params: { path: { id: sessionId } },
+        }),
+      );
+      return data as NetplayInvite[] | undefined;
+    },
     enabled: !!sessionId,
   });
 }
@@ -130,7 +173,13 @@ export function useSendNetplayInvite() {
     }: {
       sessionId: string;
       username: string;
-    }) => api.post(`/netplay/sessions/${sessionId}/invites`, { username }),
+    }) =>
+      unwrap(
+        typedApi.POST("/api/netplay/sessions/{id}/invites", {
+          params: { path: { id: sessionId } },
+          body: { username },
+        }),
+      ),
     onSuccess: (_, { sessionId }) => {
       queryClient.invalidateQueries({
         queryKey: ["netplay", "sessions", sessionId, "invites"],
@@ -144,7 +193,11 @@ export function useAcceptNetplayInvite() {
 
   return useMutation({
     mutationFn: (inviteId: string) =>
-      api.post(`/netplay/invites/${inviteId}/accept`),
+      unwrap(
+        typedApi.POST("/api/netplay/invites/{inviteId}/accept", {
+          params: { path: { inviteId } },
+        }),
+      ),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["netplay", "invites"] });
       queryClient.invalidateQueries({ queryKey: ["netplay", "sessions"] });
@@ -157,7 +210,11 @@ export function useDeclineNetplayInvite() {
 
   return useMutation({
     mutationFn: (inviteId: string) =>
-      api.post(`/netplay/invites/${inviteId}/decline`),
+      unwrap(
+        typedApi.POST("/api/netplay/invites/{inviteId}/decline", {
+          params: { path: { inviteId } },
+        }),
+      ),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["netplay", "invites"] });
     },
