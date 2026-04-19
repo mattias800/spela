@@ -1,12 +1,6 @@
 import createClient from "openapi-fetch";
 
 import type { paths } from "@/generated/api";
-import type {
-  ApiGetPath,
-  ApiPostPath,
-  ApiPutPath,
-  ApiDeletePath,
-} from "./api-routes";
 
 const API_BASE = "/api";
 
@@ -75,16 +69,14 @@ async function doRefresh(): Promise<string> {
   return data.accessToken;
 }
 
-// sendWithAuth is the shared transport used by both the legacy `api` object
-// and the typed openapi-fetch `typedApi` client below. It handles:
+// sendWithAuth is the shared transport powering `typedApi` below. It handles:
 //   - injecting the bearer access token
 //   - transparent 401 → /auth/refresh → retry-with-new-token
 //   - hard redirect to /login on refresh failure
 //
 // Operates on a plain `Record<string,string>` headers object (rather than a
-// `Headers` instance) so the existing refresh-deduplication tests — which
-// introspect header values via indexing on the fetch mock's call args — keep
-// working without modification.
+// `Headers` instance) so the refresh-deduplication tests — which introspect
+// header values via indexing on the fetch mock's call args — keep working.
 async function sendWithAuth(
   url: string,
   options: RequestInit,
@@ -121,7 +113,10 @@ async function sendWithAuth(
 // authedFetch is the openapi-fetch-compatible wrapper around sendWithAuth.
 // openapi-fetch calls its `fetch` option with a Request object; we extract
 // the url + init, delegate to sendWithAuth, and return the Response.
-async function authedFetch(input: Request): Promise<Response> {
+// Exported solely so the transport tests can exercise sendWithAuth without
+// going through openapi-fetch's URL parser (which rejects relative URLs in
+// jsdom).
+export async function authedFetch(input: Request): Promise<Response> {
   const body = input.body ? await input.arrayBuffer() : undefined;
   const headers: Record<string, string> = {};
   input.headers.forEach((v, k) => {
@@ -143,82 +138,31 @@ async function authedFetch(input: Request): Promise<Response> {
   });
 }
 
-async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
-  const url = `${API_BASE}${path}`;
-  const headers: Record<string, string> = {
-    ...(options.headers as Record<string, string> | undefined),
-  };
-
-  if (options.body && typeof options.body === "string" && !("Content-Type" in headers)) {
-    headers["Content-Type"] = "application/json";
-  }
-
-  const res = await sendWithAuth(url, { ...options, headers });
-
-  if (!res.ok) {
-    const body = await res.text();
-    let message: string;
-    try {
-      const parsed = JSON.parse(body);
-      message = parsed.message ?? parsed.error ?? body;
-    } catch {
-      message = body;
-    }
-    throw new ApiError(res.status, message || `Request failed (${res.status})`);
-  }
-
-  if (res.status === 204) {
-    return undefined as T;
-  }
-
-  return res.json();
-}
-
+// `api` is the small shared namespace for token storage used across the
+// frontend — auth flows set/clear tokens here, WebSocket/iframe URLs read
+// the access token for bearer-on-querystring fallbacks. All HTTP calls go
+// through `typedApi` below.
 export const api = {
-  get: <T>(path: ApiGetPath) => request<T>(path),
-
-  post: <T>(path: ApiPostPath, body?: unknown) =>
-    request<T>(path, {
-      method: "POST",
-      body: body ? JSON.stringify(body) : undefined,
-    }),
-
-  put: <T>(path: ApiPutPath, body?: unknown) =>
-    request<T>(path, {
-      method: "PUT",
-      body: body ? JSON.stringify(body) : undefined,
-    }),
-
-  delete: <T>(path: ApiDeletePath) => request<T>(path, { method: "DELETE" }),
-
-  upload: <T>(path: ApiPostPath, formData: FormData) =>
-    request<T>(path, { method: "POST", body: formData }),
-
-  uploadPut: <T>(path: ApiPutPath, formData: FormData) =>
-    request<T>(path, { method: "PUT", body: formData }),
-
   setTokens,
   clearTokens,
   getAccessToken,
 };
 
-// typedApi is the generated-spec-aware client. Unlike `api` above (which takes
-// already-interpolated paths and an explicit `<T>` return generic), typedApi
-// takes the original OpenAPI path template + a `params.path` object and
-// infers the response type from the spec. Example:
+// typedApi is the generated-spec-aware client built on openapi-fetch. Takes
+// the original OpenAPI path template + a `params.path` object and infers the
+// response type from the spec. Example:
 //
 //   const { data } = await typedApi.GET("/api/games/{id}", {
 //     params: { path: { id: gameId } },
 //   });
 //   // data has type components["schemas"]["GameResponse"] | undefined
 //
-// Call sites can migrate to typedApi incrementally; both clients share the
-// same underlying transport (authedFetch) so 401-refresh and Authorization
-// injection behave identically.
+// Shares `authedFetch` with the shared transport so 401-refresh and
+// Authorization injection apply transparently.
 //
 // openapi-fetch returns `{ data, error, response }` on every call; the
 // `unwrap()` helper below converts that into the throwing ApiError shape
-// call sites already expect, so migrations can be mechanical.
+// call sites already expect.
 export const typedApi = createClient<paths>({
   baseUrl: "",
   fetch: authedFetch,
@@ -246,9 +190,9 @@ export function multipartBodySerializer(body: unknown): FormData {
 }
 
 // unwrap resolves a { data, error, response } FetchResponse into the success
-// value, throwing ApiError on failure. Matches the throw-on-error behavior
-// of the legacy `api` object so migrated call sites don't need to reshape
-// their error handling (react-query onError, try/catch, etc. all keep working).
+// value, throwing ApiError on failure. Hook call sites wrap their typedApi
+// calls in unwrap() so errors bubble through react-query's onError / try-
+// catch paths like a throwing fetcher.
 export async function unwrap<D, E>(
   promise: Promise<
     | { data: D; error?: never; response: Response }

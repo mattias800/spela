@@ -25,7 +25,6 @@ import {
   type CoreMismatchChoice,
 } from "@/features/play/components/core-mismatch-modal";
 import type { EmulatorPreferences } from "@/lib/emulator-protocol";
-import type { GameSession } from "@/types/api";
 
 export function PlayPage() {
   const { id, sessionId: sessionIdParam } = useParams<{ id: string; sessionId: string }>();
@@ -42,9 +41,15 @@ export function PlayPage() {
   useEffect(() => {
     if (sessionIdParam !== "new" || creatingRef.current || createdSessionId) return;
     creatingRef.current = true;
-    api
-      .post<GameSession>(`/games/${id}/sessions`, { name: "Default" })
-      .then((session) => setCreatedSessionId(session.id))
+    unwrap(
+      typedApi.POST("/api/games/{id}/sessions", {
+        params: { path: { id: id ?? "" } },
+        body: { name: "Default" },
+      }),
+    )
+      .then((session) => {
+        if (session) setCreatedSessionId(session.id);
+      })
       .catch(() => {})
       .finally(() => { creatingRef.current = false; });
   }, [sessionIdParam, id, createdSessionId]);

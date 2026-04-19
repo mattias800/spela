@@ -1,5 +1,10 @@
 import { useCallback, useRef, useState } from "react";
-import { api } from "@/lib/api-client";
+import {
+  api,
+  multipartBodySerializer,
+  typedApi,
+  unwrap,
+} from "@/lib/api-client";
 import { uint8ArrayToBase64 } from "@/lib/encoding";
 import { useSaveQueue } from "./use-save-queue";
 import { useAutoSave } from "./use-auto-save";
@@ -66,8 +71,13 @@ export function useEmulatorSaves({
             const ssBytes = Uint8Array.from(atob(ssBase64), (c) => c.charCodeAt(0));
             formData.append("screenshot", new Blob([ssBytes], { type: "image/png" }), "screenshot.png");
           }
-          api
-            .upload(`/sessions/${sessionId}/saves/auto`, formData)
+          unwrap(
+            typedApi.POST("/api/sessions/{id}/saves/auto", {
+              params: { path: { id: sessionId } },
+              body: formData as unknown as never,
+              bodySerializer: multipartBodySerializer,
+            }),
+          )
             .then(() => exitResolve())
             .catch(() => exitResolve());
         } else {
