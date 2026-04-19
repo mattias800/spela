@@ -5,18 +5,31 @@ import { createElement, type ReactNode } from "react";
 import { useUserPreferences, useUpdatePreferences } from "../use-preferences";
 
 vi.mock("@/lib/api-client", () => ({
-  api: {
-    get: vi.fn(),
-    put: vi.fn(),
+  typedApi: {
+    GET: vi.fn(),
+    PUT: vi.fn(),
   },
+  unwrap: vi.fn(<T,>(p: Promise<{ data?: T; error?: unknown; response: Response }>) =>
+    p.then((r) => {
+      if (r.error !== undefined) throw r.error;
+      return r.data;
+    }),
+  ),
 }));
 
-import { api } from "@/lib/api-client";
+import { typedApi } from "@/lib/api-client";
 
-const mockApi = api as unknown as {
-  get: ReturnType<typeof vi.fn>;
-  put: ReturnType<typeof vi.fn>;
+const mockTypedApi = typedApi as unknown as {
+  GET: ReturnType<typeof vi.fn>;
+  PUT: ReturnType<typeof vi.fn>;
 };
+
+function ok(data: unknown) {
+  return Promise.resolve({
+    data,
+    response: new Response(null, { status: 200 }),
+  });
+}
 
 function createWrapper() {
   const queryClient = new QueryClient({
@@ -44,7 +57,7 @@ describe("useUserPreferences", () => {
       selectedShader: "crt-simple",
       consoleShaders: { "1": "bilinear" },
     };
-    mockApi.get.mockResolvedValue(prefs);
+    mockTypedApi.GET.mockReturnValue(ok(prefs));
 
     const { result } = renderHook(() => useUserPreferences(), {
       wrapper: createWrapper(),
@@ -52,12 +65,12 @@ describe("useUserPreferences", () => {
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
-    expect(mockApi.get).toHaveBeenCalledWith("/user/preferences");
+    expect(mockTypedApi.GET).toHaveBeenCalledWith("/api/user/preferences");
     expect(result.current.data).toEqual(prefs);
   });
 
   it("handles fetch error", async () => {
-    mockApi.get.mockRejectedValue(new Error("Network error"));
+    mockTypedApi.GET.mockReturnValue(Promise.reject(new Error("Network error")));
 
     const { result } = renderHook(() => useUserPreferences(), {
       wrapper: createWrapper(),
@@ -70,7 +83,7 @@ describe("useUserPreferences", () => {
 
 describe("useUpdatePreferences", () => {
   it("sends partial update to the server", async () => {
-    mockApi.put.mockResolvedValue(undefined);
+    mockTypedApi.PUT.mockReturnValue(ok(undefined));
 
     const { result } = renderHook(() => useUpdatePreferences(), {
       wrapper: createWrapper(),
@@ -79,13 +92,13 @@ describe("useUpdatePreferences", () => {
     result.current.mutate({ autoSaveEnabled: true });
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(mockApi.put).toHaveBeenCalledWith("/user/preferences", {
-      autoSaveEnabled: true,
+    expect(mockTypedApi.PUT).toHaveBeenCalledWith("/api/user/preferences", {
+      body: { autoSaveEnabled: true },
     });
   });
 
   it("handles update error", async () => {
-    mockApi.put.mockRejectedValue(new Error("Forbidden"));
+    mockTypedApi.PUT.mockReturnValue(Promise.reject(new Error("Forbidden")));
 
     const { result } = renderHook(() => useUpdatePreferences(), {
       wrapper: createWrapper(),

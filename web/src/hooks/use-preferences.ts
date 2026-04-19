@@ -1,11 +1,14 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { api } from "@/lib/api-client";
+import { typedApi, unwrap } from "@/lib/api-client";
 import type { UserPreferences } from "@/types/api";
 
 export function useUserPreferences() {
   return useQuery({
     queryKey: ["user", "preferences"],
-    queryFn: () => api.get<UserPreferences>("/user/preferences"),
+    queryFn: async () => {
+      const data = await unwrap(typedApi.GET("/api/user/preferences"));
+      return data as UserPreferences | undefined;
+    },
   });
 }
 
@@ -14,7 +17,11 @@ export function useUpdatePreferences() {
 
   return useMutation({
     mutationFn: async (data: Partial<UserPreferences>) => {
-      await api.put("/user/preferences", data);
+      await unwrap(
+        typedApi.PUT("/api/user/preferences", {
+          body: data as Record<string, unknown>,
+        }),
+      );
     },
     onMutate: async (newData: Partial<UserPreferences>) => {
       await queryClient.cancelQueries({ queryKey: ["user", "preferences"] });
