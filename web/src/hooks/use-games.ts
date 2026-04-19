@@ -1,45 +1,42 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { api } from "@/lib/api-client";
+import { api, typedApi, unwrap } from "@/lib/api-client";
 import type { Game, GamesResponse, GameFilters, ReplaceROMResponse } from "@/types/api";
 
 export function useGames(filters?: GameFilters, options?: { enabled?: boolean }) {
-  const params = new URLSearchParams();
-  if (filters?.search) params.set("search", filters.search);
-  if (filters?.consoleId) params.set("consoleId", filters.consoleId);
-  if (filters?.genre) params.set("genre", filters.genre);
-  // Multi-select filters
-  if (filters?.consoles?.length) params.set("consoles", filters.consoles.join(","));
-  if (filters?.genres?.length) params.set("genres", filters.genres.join(","));
-  if (filters?.themes?.length) params.set("themes", filters.themes.join(","));
-  if (filters?.keywords?.length) params.set("keywords", filters.keywords.join(","));
-  if (filters?.perspectives?.length) params.set("perspectives", filters.perspectives.join(","));
-  if (filters?.regions?.length) params.set("region", filters.regions.join(","));
-  // Text filters
-  if (filters?.developer) params.set("developer", filters.developer);
-  if (filters?.publisher) params.set("publisher", filters.publisher);
-  // Range filters
-  if (filters?.yearMin != null) params.set("yearMin", String(filters.yearMin));
-  if (filters?.yearMax != null) params.set("yearMax", String(filters.yearMax));
-  if (filters?.ratingMin != null) params.set("ratingMin", String(filters.ratingMin));
-  if (filters?.ratingMax != null) params.set("ratingMax", String(filters.ratingMax));
-  // Play status
-  if (filters?.playStatus) params.set("playStatus", filters.playStatus);
-  // Variant grouping / pre-release
-  if (filters?.grouped === false) params.set("grouped", "false");
-  if (filters?.hidePreRelease === false) params.set("hidePreRelease", "false");
-  // Alphabet quick-jump
-  if (filters?.letter) params.set("letter", filters.letter);
-  if (filters?.sortBy) params.set("sortBy", filters.sortBy);
-  if (filters?.sortOrder) params.set("sortOrder", filters.sortOrder);
-  if (filters?.page) params.set("page", String(filters.page));
-  if (filters?.pageSize) params.set("pageSize", String(filters.pageSize));
-
-  const query = params.toString();
+  const query: Record<string, string | number | boolean | undefined> = {};
+  if (filters?.search) query.search = filters.search;
+  if (filters?.consoleId) query.consoleId = filters.consoleId;
+  if (filters?.genre) query.genre = filters.genre;
+  if (filters?.consoles?.length) query.consoles = filters.consoles.join(",");
+  if (filters?.genres?.length) query.genres = filters.genres.join(",");
+  if (filters?.themes?.length) query.themes = filters.themes.join(",");
+  if (filters?.keywords?.length) query.keywords = filters.keywords.join(",");
+  if (filters?.perspectives?.length)
+    query.perspectives = filters.perspectives.join(",");
+  if (filters?.regions?.length) query.region = filters.regions.join(",");
+  if (filters?.developer) query.developer = filters.developer;
+  if (filters?.publisher) query.publisher = filters.publisher;
+  if (filters?.yearMin != null) query.yearMin = String(filters.yearMin);
+  if (filters?.yearMax != null) query.yearMax = String(filters.yearMax);
+  if (filters?.ratingMin != null) query.ratingMin = String(filters.ratingMin);
+  if (filters?.ratingMax != null) query.ratingMax = String(filters.ratingMax);
+  if (filters?.playStatus) query.playStatus = filters.playStatus;
+  if (filters?.grouped === false) query.grouped = "false";
+  if (filters?.hidePreRelease === false) query.hidePreRelease = "false";
+  if (filters?.letter) query.letter = filters.letter;
+  if (filters?.sortBy) query.sortBy = filters.sortBy;
+  if (filters?.sortOrder) query.sortOrder = filters.sortOrder;
+  if (filters?.page) query.page = filters.page;
+  if (filters?.pageSize) query.pageSize = filters.pageSize;
 
   return useQuery({
     queryKey: ["games", filters],
-    queryFn: () =>
-      api.get<GamesResponse>(query ? `/games?${query}` : "/games"),
+    queryFn: async () => {
+      const data = await unwrap(
+        typedApi.GET("/api/games", { params: { query } }),
+      );
+      return data as GamesResponse | undefined;
+    },
     enabled: options?.enabled,
   });
 }
@@ -47,7 +44,12 @@ export function useGames(filters?: GameFilters, options?: { enabled?: boolean })
 export function useGame(id: string) {
   return useQuery({
     queryKey: ["game", id],
-    queryFn: () => api.get<Game>(`/games/${id}`),
+    queryFn: async () => {
+      const data = await unwrap(
+        typedApi.GET("/api/games/{id}", { params: { path: { id } } }),
+      );
+      return data as Game | undefined;
+    },
     enabled: !!id,
   });
 }
@@ -55,14 +57,20 @@ export function useGame(id: string) {
 export function useRecentGames() {
   return useQuery({
     queryKey: ["games", "recent"],
-    queryFn: () => api.get<Game[]>("/user/recent"),
+    queryFn: async () => {
+      const data = await unwrap(typedApi.GET("/api/user/recent"));
+      return data as Game[] | undefined;
+    },
   });
 }
 
 export function useFavoriteGames() {
   return useQuery({
     queryKey: ["games", "favorites"],
-    queryFn: () => api.get<Game[]>("/user/favorites"),
+    queryFn: async () => {
+      const data = await unwrap(typedApi.GET("/api/user/favorites"));
+      return data as Game[] | undefined;
+    },
   });
 }
 
@@ -78,9 +86,17 @@ export function useToggleFavorite() {
       isFavorite: boolean;
     }) => {
       if (isFavorite) {
-        await api.delete(`/user/favorites/${gameId}`);
+        await unwrap(
+          typedApi.DELETE("/api/user/favorites/{gameId}", {
+            params: { path: { gameId } },
+          }),
+        );
       } else {
-        await api.post(`/user/favorites/${gameId}`);
+        await unwrap(
+          typedApi.POST("/api/user/favorites/{gameId}", {
+            params: { path: { gameId } },
+          }),
+        );
       }
     },
     onSuccess: () => {
@@ -98,10 +114,16 @@ export function useToggleFavorite() {
 export function useScrapeIfNeeded() {
   return useMutation({
     mutationFn: (gameId: string) =>
-      api.post(`/games/${gameId}/scrape-if-needed`),
+      unwrap(
+        typedApi.POST("/api/games/{id}/scrape-if-needed", {
+          params: { path: { id: gameId } },
+        }),
+      ),
   });
 }
 
+// Multipart upload still goes through api.uploadPut — typedApi multipart
+// needs a custom bodySerializer; tracked in #518.
 export function useReplaceRom() {
   const queryClient = useQueryClient();
 
@@ -120,4 +142,3 @@ export function useReplaceRom() {
     },
   });
 }
-
