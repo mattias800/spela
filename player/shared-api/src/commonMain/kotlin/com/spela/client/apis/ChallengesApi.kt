@@ -8,9 +8,17 @@
 
 @file:Suppress(
     "ArrayInDataClass",
+    "DuplicatedCode",
     "EnumEntryName",
     "RemoveRedundantQualifierName",
-    "UnusedImport"
+    "RemoveRedundantCallsOfConversionMethods",
+    "REDUNDANT_CALL_OF_CONVERSION_METHOD",
+    "RedundantUnitReturnType",
+    "RemoveEmptyClassBody",
+    "UnnecessaryVariable",
+    "UnusedImport",
+    "UnnecessaryVariable",
+    "unused"
 )
 
 package com.spela.client.apis
@@ -30,6 +38,10 @@ import io.ktor.client.request.forms.formData
 import io.ktor.client.engine.HttpClientEngine
 import kotlinx.serialization.json.Json
 import io.ktor.http.ParametersBuilder
+import io.ktor.http.Headers
+import io.ktor.http.HttpHeaders
+import io.ktor.http.ContentType
+import io.ktor.http.content.PartData
 import kotlinx.serialization.*
 import kotlinx.serialization.descriptors.*
 import kotlinx.serialization.encoding.*
@@ -109,6 +121,57 @@ open class ChallengesApi : ApiClient {
         )
 
         return request(
+            localVariableConfig,
+            localVariableBody,
+            localVariableAuthNames
+        ).wrap()
+    }
+
+
+    /**
+     * Create a new challenge
+     * Creates a challenge for a game with a required starting save state and an optional screenshot. Max save size is 10 MB.
+     * @param coreName libretro core identifier that produced the starting save. (optional)
+     * @param description Optional longer description. Max 2048 characters. (optional)
+     * @param difficulty Difficulty: &#39;easy&#39;, &#39;medium&#39;, or &#39;hard&#39;. Defaults to &#39;medium&#39;. (optional)
+     * @param expiresAt Optional RFC3339 expiry timestamp; must be in the future. (optional)
+     * @param gameId Numeric ID of the game the challenge is for. (optional)
+     * @param name Display name for the challenge. Max 255 characters. (optional)
+     * @param save Starting save state file. Required. Max 10 MB. (optional)
+     * @param screenshot Optional screenshot displayed on the challenge. (optional)
+     * @param type Challenge type: &#39;completion&#39;, &#39;speedrun&#39;, or &#39;survival&#39;. Defaults to &#39;completion&#39;. (optional)
+     * @return ChallengeResponse
+     */
+    @Suppress("UNCHECKED_CAST")
+    open suspend fun createChallenge(coreName: kotlin.String? = null, description: kotlin.String? = null, difficulty: kotlin.String? = null, expiresAt: kotlin.String? = null, gameId: kotlin.String? = null, name: kotlin.String? = null, save: io.ktor.client.request.forms.FormPart<io.ktor.client.request.forms.InputProvider>? = null, screenshot: io.ktor.client.request.forms.FormPart<io.ktor.client.request.forms.InputProvider>? = null, type: kotlin.String? = null): HttpResponse<ChallengeResponse> {
+
+        val localVariableAuthNames = listOf<String>()
+
+        val localVariableBody = 
+            formData {
+                coreName?.apply { append("coreName", coreName) }
+                description?.apply { append("description", description) }
+                difficulty?.apply { append("difficulty", difficulty) }
+                expiresAt?.apply { append("expiresAt", expiresAt) }
+                gameId?.apply { append("gameId", gameId) }
+                name?.apply { append("name", name) }
+                save?.apply { append(save) }
+                screenshot?.apply { append(screenshot) }
+                type?.apply { append("type", type) }
+            }
+
+        val localVariableQuery = mutableMapOf<String, List<String>>()
+        val localVariableHeaders = mutableMapOf<String, String>()
+
+        val localVariableConfig = RequestConfig<kotlin.Any?>(
+            RequestMethod.POST,
+            "/api/challenges",
+            query = localVariableQuery,
+            headers = localVariableHeaders,
+            requiresAuthentication = false,
+        )
+
+        return multipartFormRequest(
             localVariableConfig,
             localVariableBody,
             localVariableAuthNames

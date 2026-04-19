@@ -8,9 +8,17 @@
 
 @file:Suppress(
     "ArrayInDataClass",
+    "DuplicatedCode",
     "EnumEntryName",
     "RemoveRedundantQualifierName",
-    "UnusedImport"
+    "RemoveRedundantCallsOfConversionMethods",
+    "REDUNDANT_CALL_OF_CONVERSION_METHOD",
+    "RedundantUnitReturnType",
+    "RemoveEmptyClassBody",
+    "UnnecessaryVariable",
+    "UnusedImport",
+    "UnnecessaryVariable",
+    "unused"
 )
 
 package com.spela.client.models
@@ -45,7 +53,7 @@ import kotlinx.serialization.encoding.*
 
 data class NetplayInviteResponse (
 
-    @SerialName(value = "createdAt") @Required val createdAt: kotlinx.datetime.Instant,
+    @SerialName(value = "createdAt") @Required val createdAt: kotlin.time.Instant,
 
     @SerialName(value = "gameId") @Required val gameId: kotlin.String,
 

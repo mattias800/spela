@@ -8,9 +8,17 @@
 
 @file:Suppress(
     "ArrayInDataClass",
+    "DuplicatedCode",
     "EnumEntryName",
     "RemoveRedundantQualifierName",
-    "UnusedImport"
+    "RemoveRedundantCallsOfConversionMethods",
+    "REDUNDANT_CALL_OF_CONVERSION_METHOD",
+    "RedundantUnitReturnType",
+    "RemoveEmptyClassBody",
+    "UnnecessaryVariable",
+    "UnusedImport",
+    "UnnecessaryVariable",
+    "unused"
 )
 
 package com.spela.client.models
@@ -51,7 +59,7 @@ data class ScrapeStatusResponse (
 
     @SerialName(value = "mode") val mode: kotlin.String? = null,
 
-    @SerialName(value = "startedAt") val startedAt: kotlinx.datetime.Instant? = null,
+    @SerialName(value = "startedAt") val startedAt: kotlin.time.Instant? = null,
 
     @SerialName(value = "successes") val successes: kotlin.Long? = null,
 

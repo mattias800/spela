@@ -8,9 +8,17 @@
 
 @file:Suppress(
     "ArrayInDataClass",
+    "DuplicatedCode",
     "EnumEntryName",
     "RemoveRedundantQualifierName",
-    "UnusedImport"
+    "RemoveRedundantCallsOfConversionMethods",
+    "REDUNDANT_CALL_OF_CONVERSION_METHOD",
+    "RedundantUnitReturnType",
+    "RemoveEmptyClassBody",
+    "UnnecessaryVariable",
+    "UnusedImport",
+    "UnnecessaryVariable",
+    "unused"
 )
 
 package com.spela.client.models
@@ -33,7 +41,7 @@ data class SharedSessionHeartbeatResponse (
 
     @SerialName(value = "sharedSessionId") @Required val sharedSessionId: kotlin.String,
 
-    @SerialName(value = "turnTakenAt") @Required val turnTakenAt: kotlinx.datetime.Instant,
+    @SerialName(value = "turnTakenAt") @Required val turnTakenAt: kotlin.time.Instant,
 
     /* A URL to the JSON Schema for this object. */
     @SerialName(value = "\$schema") val dollarSchema: kotlin.String? = null

@@ -8,9 +8,17 @@
 
 @file:Suppress(
     "ArrayInDataClass",
+    "DuplicatedCode",
     "EnumEntryName",
     "RemoveRedundantQualifierName",
-    "UnusedImport"
+    "RemoveRedundantCallsOfConversionMethods",
+    "REDUNDANT_CALL_OF_CONVERSION_METHOD",
+    "RedundantUnitReturnType",
+    "RemoveEmptyClassBody",
+    "UnnecessaryVariable",
+    "UnusedImport",
+    "UnnecessaryVariable",
+    "unused"
 )
 
 package com.spela.client.models
@@ -50,7 +58,7 @@ data class SharedSessionDetailResponse (
 
     @SerialName(value = "activeUserId") @Required val activeUserId: kotlin.String?,
 
-    @SerialName(value = "createdAt") @Required val createdAt: kotlinx.datetime.Instant,
+    @SerialName(value = "createdAt") @Required val createdAt: kotlin.time.Instant,
 
     @SerialName(value = "gameId") @Required val gameId: kotlin.String,
 
@@ -70,9 +78,9 @@ data class SharedSessionDetailResponse (
 
     @SerialName(value = "status") @Required val status: kotlin.String,
 
-    @SerialName(value = "turnTakenAt") @Required val turnTakenAt: kotlinx.datetime.Instant?,
+    @SerialName(value = "turnTakenAt") @Required val turnTakenAt: kotlin.time.Instant?,
 
-    @SerialName(value = "updatedAt") @Required val updatedAt: kotlinx.datetime.Instant,
+    @SerialName(value = "updatedAt") @Required val updatedAt: kotlin.time.Instant,
 
     /* A URL to the JSON Schema for this object. */
     @SerialName(value = "\$schema") val dollarSchema: kotlin.String? = null,

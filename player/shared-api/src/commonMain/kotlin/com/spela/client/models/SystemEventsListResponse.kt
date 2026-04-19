@@ -8,9 +8,17 @@
 
 @file:Suppress(
     "ArrayInDataClass",
+    "DuplicatedCode",
     "EnumEntryName",
     "RemoveRedundantQualifierName",
-    "UnusedImport"
+    "RemoveRedundantCallsOfConversionMethods",
+    "REDUNDANT_CALL_OF_CONVERSION_METHOD",
+    "RedundantUnitReturnType",
+    "RemoveEmptyClassBody",
+    "UnnecessaryVariable",
+    "UnusedImport",
+    "UnnecessaryVariable",
+    "unused"
 )
 
 package com.spela.client.models
@@ -34,7 +42,7 @@ import kotlinx.serialization.encoding.*
 
 data class SystemEventsListResponse (
 
-    @SerialName(value = "data") @Required val `data`: kotlin.collections.List<@Contextual SystemEventResponse>?,
+    @SerialName(value = "data") @Required val `data`: kotlin.collections.List<SystemEventResponse>?,
 
     @SerialName(value = "page") @Required val page: kotlin.Long,
 

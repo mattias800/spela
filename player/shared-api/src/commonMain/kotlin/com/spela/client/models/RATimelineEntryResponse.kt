@@ -8,9 +8,17 @@
 
 @file:Suppress(
     "ArrayInDataClass",
+    "DuplicatedCode",
     "EnumEntryName",
     "RemoveRedundantQualifierName",
-    "UnusedImport"
+    "RemoveRedundantCallsOfConversionMethods",
+    "REDUNDANT_CALL_OF_CONVERSION_METHOD",
+    "RedundantUnitReturnType",
+    "RemoveEmptyClassBody",
+    "UnnecessaryVariable",
+    "UnusedImport",
+    "UnnecessaryVariable",
+    "unused"
 )
 
 package com.spela.client.models
@@ -50,7 +58,7 @@ data class RATimelineEntryResponse (
 
     @SerialName(value = "title") @Required val title: kotlin.String,
 
-    @SerialName(value = "unlockedAt") @Required val unlockedAt: kotlinx.datetime.Instant
+    @SerialName(value = "unlockedAt") @Required val unlockedAt: kotlin.time.Instant
 
 ) {
 

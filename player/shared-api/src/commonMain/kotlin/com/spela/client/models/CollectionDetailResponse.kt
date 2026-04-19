@@ -8,9 +8,17 @@
 
 @file:Suppress(
     "ArrayInDataClass",
+    "DuplicatedCode",
     "EnumEntryName",
     "RemoveRedundantQualifierName",
-    "UnusedImport"
+    "RemoveRedundantCallsOfConversionMethods",
+    "REDUNDANT_CALL_OF_CONVERSION_METHOD",
+    "RedundantUnitReturnType",
+    "RemoveEmptyClassBody",
+    "UnnecessaryVariable",
+    "UnusedImport",
+    "UnnecessaryVariable",
+    "unused"
 )
 
 package com.spela.client.models
@@ -42,7 +50,7 @@ import kotlinx.serialization.encoding.*
 
 data class CollectionDetailResponse (
 
-    @SerialName(value = "createdAt") @Required val createdAt: kotlinx.datetime.Instant,
+    @SerialName(value = "createdAt") @Required val createdAt: kotlin.time.Instant,
 
     @SerialName(value = "gameCount") @Required val gameCount: kotlin.Long,
 
@@ -54,7 +62,7 @@ data class CollectionDetailResponse (
 
     @SerialName(value = "name") @Required val name: kotlin.String,
 
-    @SerialName(value = "updatedAt") @Required val updatedAt: kotlinx.datetime.Instant,
+    @SerialName(value = "updatedAt") @Required val updatedAt: kotlin.time.Instant,
 
     @SerialName(value = "userId") @Required val userId: kotlin.String,
 
