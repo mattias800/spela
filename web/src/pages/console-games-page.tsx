@@ -158,12 +158,12 @@ export function ConsoleGamesPage() {
 
   const games = data?.data ?? [];
 
-  const biosConsole = biosData?.consoles.find((c) => c.consoleId === id);
+  const biosConsole = biosData?.consoles?.find((c) => c.consoleId === id);
   const showBiosWarning =
     biosConsole?.status === "missing" && biosConsole.biosRequired;
   const missingBiosFiles =
     biosConsole?.files
-      .filter((f) => f.status === "missing" && f.required)
+      ?.filter((f) => f.status === "missing" && f.required)
       .map((f) => f.fileName) ?? [];
 
   return (

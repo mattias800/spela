@@ -126,7 +126,7 @@ export function AdminBiosPage() {
     );
   }
 
-  const consoles = biosData?.consoles ?? [];
+  const consoles = (biosData?.consoles ?? []) as BiosConsole[];
   const sortedConsoles = sortConsoles(consoles);
   const hasFiles = (biosData?.files ?? []).length > 0;
 

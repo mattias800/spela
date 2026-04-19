@@ -1,11 +1,11 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { api } from "@/lib/api-client";
-import type { BiosFile, BiosResponse } from "@/types/api";
+import { api, typedApi, unwrap } from "@/lib/api-client";
+import type { BiosFile } from "@/types/api";
 
 export function useBiosStatus() {
   return useQuery({
     queryKey: ["bios"],
-    queryFn: () => api.get<BiosResponse>("/bios"),
+    queryFn: () => unwrap(typedApi.GET("/api/bios")),
   });
 }
 
@@ -18,6 +18,8 @@ export function useBiosFiles() {
   };
 }
 
+// Multipart upload still goes through api.upload — typedApi multipart needs
+// a custom bodySerializer; tracked in #518.
 export function useUploadBiosFile() {
   const queryClient = useQueryClient();
 
@@ -38,7 +40,11 @@ export function useDeleteBiosFile() {
 
   return useMutation({
     mutationFn: async (filename: string) => {
-      await api.delete(`/admin/bios/${encodeURIComponent(filename)}`);
+      await unwrap(
+        typedApi.DELETE("/api/admin/bios/{filename}", {
+          params: { path: { filename } },
+        }),
+      );
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["bios"] });
@@ -50,8 +56,7 @@ export function useDownloadBios() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: () =>
-      api.post<{ message: string; missing: number }>("/admin/bios/download"),
+    mutationFn: () => unwrap(typedApi.POST("/api/admin/bios/download")),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["bios"] });
     },

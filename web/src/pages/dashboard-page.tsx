@@ -215,7 +215,7 @@ export function DashboardPage() {
   const hasMissingBios =
     isAdmin &&
     !biosDismissed &&
-    (biosData?.consoles.some((c) => c.status === "missing") ?? false);
+    (biosData?.consoles?.some((c) => c.status === "missing") ?? false);
   const showIgdbWarning =
     isAdmin && !igdbDismissed && igdbStatus && !igdbStatus.configured;
   const recentGames = useRecentGames();
