@@ -24,6 +24,7 @@ import {
   useRemoveGameFromCollection,
 } from "@/hooks/use-collections";
 import { useAuth } from "@/hooks/use-auth";
+import type { Game } from "@/types/api";
 
 function CollectionDetailSkeleton() {
   return (
@@ -205,45 +206,47 @@ export function CollectionDetailPage() {
       </div>
 
       {/* Games */}
-      {collection.games.length === 0 ? (
-        <EmptyState
-          icon={Gamepad2}
-          title="No games in this collection"
-          description={
-            isOwner
-              ? "Add games from any game detail page."
-              : "This collection has no games yet."
-          }
-        />
-      ) : (
-        <>
-          {collection.games.length > 5 && (
-            <SearchInput
-              placeholder="Search games in this collection..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="max-w-sm"
-            />
-          )}
-          {(() => {
-            const filtered = search.trim()
-              ? collection.games.filter((g) =>
-                  g.title.toLowerCase().includes(search.trim().toLowerCase()),
-                )
-              : collection.games;
-
-            return filtered.length === 0 ? (
-              <EmptyState
-                icon={Gamepad2}
-                title="No matching games"
-                description={`No games matching "${search.trim()}" in this collection.`}
+      {(() => {
+        const games = collection.games ?? [];
+        return games.length === 0 ? (
+          <EmptyState
+            icon={Gamepad2}
+            title="No games in this collection"
+            description={
+              isOwner
+                ? "Add games from any game detail page."
+                : "This collection has no games yet."
+            }
+          />
+        ) : (
+          <>
+            {games.length > 5 && (
+              <SearchInput
+                placeholder="Search games in this collection..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="max-w-sm"
               />
-            ) : (
-              <GameGrid>
-                {filtered.map((game) => (
+            )}
+            {(() => {
+              const filtered = search.trim()
+                ? games.filter((g) =>
+                    g.title.toLowerCase().includes(search.trim().toLowerCase()),
+                  )
+                : games;
+
+              return filtered.length === 0 ? (
+                <EmptyState
+                  icon={Gamepad2}
+                  title="No matching games"
+                  description={`No games matching "${search.trim()}" in this collection.`}
+                />
+              ) : (
+                <GameGrid>
+                  {filtered.map((game) => (
                   <div key={game.id} className="relative group/card">
                     <GameCard
-                      game={game}
+                      game={game as Game}
                       onToggleFavorite={handleToggleFavorite}
                       onTogglePlayLater={handleTogglePlayLater}
                     />
@@ -265,8 +268,9 @@ export function CollectionDetailPage() {
               </GameGrid>
             );
           })()}
-        </>
-      )}
+          </>
+        );
+      })()}
 
       {/* Edit Modal */}
       <Modal
