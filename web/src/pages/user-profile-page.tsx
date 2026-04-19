@@ -198,30 +198,30 @@ export function UserProfilePage() {
 
       {/* Game sections */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {profile.topGames.length > 0 && (
+        {(profile.topGames?.length ?? 0) > 0 && (
           <ProfileSection title="Most Played" icon={Trophy}>
             <div className="space-y-1">
-              {profile.topGames.map((game) => (
+              {profile.topGames?.map((game) => (
                 <ProfileGameCard key={game.id} game={game} />
               ))}
             </div>
           </ProfileSection>
         )}
 
-        {profile.favoriteGames.length > 0 && (
+        {(profile.favoriteGames?.length ?? 0) > 0 && (
           <ProfileSection title="Favorites" icon={Heart}>
             <div className="space-y-1">
-              {profile.favoriteGames.map((game) => (
+              {profile.favoriteGames?.map((game) => (
                 <ProfileGameCard key={game.id} game={game} />
               ))}
             </div>
           </ProfileSection>
         )}
 
-        {profile.recentGames.length > 0 && (
+        {(profile.recentGames?.length ?? 0) > 0 && (
           <ProfileSection title="Recently Played" icon={Clock}>
             <div className="space-y-1">
-              {profile.recentGames.map((game) => (
+              {profile.recentGames?.map((game) => (
                 <ProfileGameCard key={game.id} game={game} />
               ))}
             </div>
