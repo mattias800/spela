@@ -3,6 +3,7 @@ package com.spela.player.data.repository
 import com.spela.player.data.remote.api.SpelaApiClient
 import com.spela.player.data.remote.dto.GameDto
 import com.spela.player.data.remote.dto.toDeveloperUserStats
+import com.spela.player.data.remote.dto.toPublisherUserStats
 import com.spela.player.data.remote.dto.toDomain
 import com.spela.player.domain.model.AchievementGameItem
 import com.spela.player.domain.model.ActiveNowItem
@@ -14,6 +15,7 @@ import com.spela.player.domain.model.ConsoleHighlight
 import com.spela.player.domain.model.ConsoleShowcase
 import com.spela.player.domain.model.CultClassicGame
 import com.spela.player.domain.model.DeveloperDetail
+import com.spela.player.domain.model.PublisherDetail
 import com.spela.player.domain.model.DeveloperSpotlight
 import com.spela.player.domain.model.DeveloperSummary
 import com.spela.player.domain.model.ExploreChallenge
@@ -209,7 +211,7 @@ class ExploreRepositoryImpl(
         resolveEntityDetail(apiClient.getDeveloperDetail(name))
     }
 
-    override suspend fun getPublisherDetail(name: String): Result<DeveloperDetail> = runCatching {
+    override suspend fun getPublisherDetail(name: String): Result<PublisherDetail> = runCatching {
         resolveEntityDetail(apiClient.getPublisherDetail(name))
     }
 
@@ -441,13 +443,35 @@ class ExploreRepositoryImpl(
             games = dto.games,
         )
 
-    private fun resolveEntityDetail(dto: com.spela.client.models.PublisherDetailResponse): DeveloperDetail =
-        dto.toDomain().applyUrlResolution(
-            heroUrl = dto.heroUrl,
-            companyInfo = dto.companyInfo,
-            topGames = dto.topGames,
-            userStats = dto.userStats,
-            games = dto.games,
+    private fun resolveEntityDetail(dto: com.spela.client.models.PublisherDetailResponse): PublisherDetail =
+        dto.toDomain().copy(
+            heroUrl = apiClient.resolveUrl(dto.heroUrl),
+            companyInfo = dto.companyInfo?.let { info ->
+                info.toDomain().copy(
+                    logoUrl = apiClient.resolveUrl(info.logoUrl),
+                )
+            },
+            topGames = dto.topGames.orEmpty().map { gameDto ->
+                gameDto.toDomain().copy(
+                    coverUrl = apiClient.resolveUrl(gameDto.coverUrl),
+                )
+            },
+            userStats = dto.userStats?.let { stats ->
+                stats.toPublisherUserStats().copy(
+                    mostPlayedGame = stats.mostPlayedGame
+                        .takeIf { it.id.isNotEmpty() }
+                        ?.let { gameDto ->
+                            gameDto.toDomain().copy(
+                                coverUrl = apiClient.resolveUrl(gameDto.coverUrl),
+                            )
+                        },
+                )
+            },
+            games = dto.games.orEmpty().map { gameDto ->
+                gameDto.toDomain().copy(
+                    coverUrl = apiClient.resolveUrl(gameDto.coverUrl),
+                )
+            },
         )
 
     private fun DeveloperDetail.applyUrlResolution(

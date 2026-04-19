@@ -112,6 +112,7 @@ import com.spela.player.presentation.ui.screen.ChallengeListScreen
 import com.spela.player.presentation.ui.screen.GlobalChallengesScreen
 import com.spela.player.presentation.ui.screen.StatsScreen
 import com.spela.player.presentation.ui.screen.ExploreDeveloperScreen
+import com.spela.player.presentation.ui.screen.ExplorePublisherScreen
 import com.spela.player.presentation.ui.screen.ExploreGalleryScreen
 import com.spela.player.presentation.ui.screen.ExploreKeywordScreen
 import com.spela.player.presentation.ui.screen.ExploreMoodScreen
@@ -740,7 +741,6 @@ fun SpelaApp(
                                 if (exploreViewModel != null) {
                                     ExploreDeveloperScreen(
                                         name = screen.name,
-                                        isDeveloper = true,
                                         viewModel = exploreViewModel,
                                         onGameSelected = { gameId ->
                                             navigationViewModel.onIntent(
@@ -771,23 +771,22 @@ fun SpelaApp(
 
                             is SpScreen.ExplorePublisher -> {
                                 if (exploreViewModel != null) {
-                                    ExploreDeveloperScreen(
+                                    ExplorePublisherScreen(
                                         name = screen.name,
-                                        isDeveloper = false,
                                         viewModel = exploreViewModel,
                                         onGameSelected = { gameId ->
                                             navigationViewModel.onIntent(
                                                 NavigationIntent.NavigateTo(SpScreen.GameDetail(gameId))
                                             )
                                         },
-                                        onPublisherSelected = { publisherName ->
-                                            navigationViewModel.onIntent(
-                                                NavigationIntent.NavigateTo(SpScreen.ExplorePublisher(publisherName))
-                                            )
-                                        },
                                         onDeveloperSelected = { developerName ->
                                             navigationViewModel.onIntent(
                                                 NavigationIntent.NavigateTo(SpScreen.ExploreDeveloper(developerName))
+                                            )
+                                        },
+                                        onPublisherSelected = { publisherName ->
+                                            navigationViewModel.onIntent(
+                                                NavigationIntent.NavigateTo(SpScreen.ExplorePublisher(publisherName))
                                             )
                                         },
                                         onNavigateToGames = { devName, isDev ->

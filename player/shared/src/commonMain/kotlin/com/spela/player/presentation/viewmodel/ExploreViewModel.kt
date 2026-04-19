@@ -10,6 +10,7 @@ import com.spela.player.domain.model.ConsoleHighlight
 import com.spela.player.domain.model.ConsoleShowcase
 import com.spela.player.domain.model.CultClassicGame
 import com.spela.player.domain.model.DeveloperDetail
+import com.spela.player.domain.model.PublisherDetail
 import com.spela.player.domain.model.DeveloperSpotlight
 import com.spela.player.domain.model.ExploreChallenge
 import com.spela.player.domain.model.ExploreRow
@@ -117,6 +118,44 @@ data class MoodDetailState(
 data class DeveloperDetailState(
     val name: String = "",
     val detail: DeveloperDetail? = null,
+    val consoleFilter: String? = null,
+    val genreFilter: String? = null,
+    val gamesSearchQuery: String = "",
+    val gamesSortBy: String = "title",  // "title", "rating", "releaseDate"
+    val isLoading: Boolean = false,
+    val error: String? = null,
+) {
+    val filteredGames: List<Game>
+        get() {
+            val games = detail?.games ?: return emptyList()
+            var result = games
+            if (consoleFilter != null) {
+                result = result.filter { it.consoleName.equals(consoleFilter, ignoreCase = true) }
+            }
+            if (genreFilter != null) {
+                result = result.filter { game ->
+                    game.genre?.split(",")?.map { it.trim() }?.any { it.equals(genreFilter, ignoreCase = true) } == true
+                }
+            }
+            return result
+        }
+
+    val sortedFilteredGames: List<Game>
+        get() {
+            val filtered = if (gamesSearchQuery.length >= 2) {
+                filteredGames.filter { it.title.contains(gamesSearchQuery, ignoreCase = true) }
+            } else filteredGames
+            return when (gamesSortBy) {
+                "rating" -> filtered.sortedByDescending { it.igdbCriticsRating }
+                "releaseDate" -> filtered.sortedBy { it.releaseDate ?: "" }
+                else -> filtered.sortedBy { it.title.lowercase() }
+            }
+        }
+}
+
+data class PublisherDetailState(
+    val name: String = "",
+    val detail: PublisherDetail? = null,
     val consoleFilter: String? = null,
     val genreFilter: String? = null,
     val gamesSearchQuery: String = "",
@@ -269,6 +308,9 @@ class ExploreViewModel(
     private val _developerDetailState = MutableStateFlow(DeveloperDetailState())
     val developerDetailState: StateFlow<DeveloperDetailState> = _developerDetailState.asStateFlow()
 
+    private val _publisherDetailState = MutableStateFlow(PublisherDetailState())
+    val publisherDetailState: StateFlow<PublisherDetailState> = _publisherDetailState.asStateFlow()
+
     private val _consoleShowcaseState = MutableStateFlow(ConsoleShowcaseState())
     val consoleShowcaseState: StateFlow<ConsoleShowcaseState> = _consoleShowcaseState.asStateFlow()
 
@@ -301,6 +343,7 @@ class ExploreViewModel(
     private var forYouJob: Job? = null
     private var developerSpotlightJob: Job? = null
     private var developerDetailJob: Job? = null
+    private var publisherDetailJob: Job? = null
     private var consoleHighlightsJob: Job? = null
     private var consoleShowcaseJob: Job? = null
     private var artworkShowcaseJob: Job? = null
@@ -601,20 +644,40 @@ class ExploreViewModel(
     }
 
     fun loadPublisherDetail(name: String) {
-        developerDetailJob?.cancel()
-        _developerDetailState.update {
-            DeveloperDetailState(name = name, isLoading = true)
+        publisherDetailJob?.cancel()
+        _publisherDetailState.update {
+            PublisherDetailState(name = name, isLoading = true)
         }
-        developerDetailJob = scope.launch(dispatchers.io) {
+        publisherDetailJob = scope.launch(dispatchers.io) {
             exploreRepository.getPublisherDetail(name).fold(
                 onSuccess = { detail ->
-                    _developerDetailState.update { it.copy(detail = detail, isLoading = false) }
+                    _publisherDetailState.update { it.copy(detail = detail, isLoading = false) }
                 },
                 onFailure = { error ->
-                    _developerDetailState.update { it.copy(isLoading = false, error = error.message) }
+                    _publisherDetailState.update { it.copy(isLoading = false, error = error.message) }
                 },
             )
         }
+    }
+
+    fun setPublisherConsoleFilter(abbreviation: String?) {
+        _publisherDetailState.update { it.copy(consoleFilter = abbreviation) }
+    }
+
+    fun setPublisherGenreFilter(genre: String?) {
+        _publisherDetailState.update { it.copy(genreFilter = genre) }
+    }
+
+    fun setPublisherGamesSearchQuery(query: String) {
+        _publisherDetailState.update { it.copy(gamesSearchQuery = query) }
+    }
+
+    fun setPublisherGamesSortBy(sortBy: String) {
+        _publisherDetailState.update { it.copy(gamesSortBy = sortBy) }
+    }
+
+    fun dismissPublisherDetailError() {
+        _publisherDetailState.update { it.copy(error = null) }
     }
 
     fun setDeveloperConsoleFilter(abbreviation: String?) {

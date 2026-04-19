@@ -48,9 +48,9 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import coil3.compose.SubcomposeAsyncImage
 import com.spela.player.domain.model.CompanyInfo
-import com.spela.player.domain.model.DeveloperDetail
-import com.spela.player.domain.model.DeveloperDetailUserStats
 import com.spela.player.domain.model.Game
+import com.spela.player.domain.model.MakerDetail
+import com.spela.player.domain.model.MakerUserStats
 import androidx.compose.ui.focus.focusRequester
 import com.spela.player.presentation.ui.components.SpCard
 import com.spela.player.presentation.ui.components.SpCarousel
@@ -73,7 +73,7 @@ private val HeroLabelText = Color.White.copy(alpha = 0.40f)
 
 @Composable
 internal fun DeveloperHeroBanner(
-    detail: DeveloperDetail,
+    detail: MakerDetail,
     modifier: Modifier = Modifier,
 ) {
     val companyInfo = detail.companyInfo
@@ -248,7 +248,7 @@ internal fun DeveloperHeroBanner(
 
 @Composable
 private fun DeveloperInfoSection(
-    detail: DeveloperDetail,
+    detail: MakerDetail,
     modifier: Modifier = Modifier,
 ) {
     data class Stat(val icon: ImageVector, val value: String, val label: String)
@@ -350,7 +350,7 @@ internal fun DeveloperTopRatedCard(
 
 @Composable
 internal fun DeveloperUserStatsCard(
-    userStats: DeveloperDetailUserStats,
+    userStats: MakerUserStats,
     totalGames: Int,
     onGameSelected: (String) -> Unit,
     modifier: Modifier = Modifier,
@@ -380,7 +380,8 @@ internal fun DeveloperUserStatsCard(
             )
         }
 
-        if (userStats.mostPlayedGame != null) {
+        val mostPlayedGame = userStats.mostPlayedGame
+        if (mostPlayedGame != null) {
             Spacer(Modifier.height(SpSpacing.Medium))
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -396,7 +397,7 @@ internal fun DeveloperUserStatsCard(
                     modifier = Modifier
                         .weight(1f)
                         .testTag("developer_most_played_game"),
-                    onClick = { onGameSelected(userStats.mostPlayedGame.id) },
+                    onClick = { onGameSelected(mostPlayedGame.id) },
                 ) {
                     Row(
                         modifier = Modifier.padding(SpSpacing.Small),
@@ -404,8 +405,8 @@ internal fun DeveloperUserStatsCard(
                         horizontalArrangement = Arrangement.spacedBy(SpSpacing.Small),
                     ) {
                         SpCoverArt(
-                            imageUrl = userStats.mostPlayedGame.coverUrl,
-                            contentDescription = "${userStats.mostPlayedGame.title} cover",
+                            imageUrl = mostPlayedGame.coverUrl,
+                            contentDescription = "${mostPlayedGame.title} cover",
                             modifier = Modifier
                                 .width(32.dp)
                                 .height(42.dp)
@@ -413,7 +414,7 @@ internal fun DeveloperUserStatsCard(
                             aspectRatio = 0.75f,
                         )
                         Text(
-                            text = userStats.mostPlayedGame.title,
+                            text = mostPlayedGame.title,
                             style = SpTypography.TitleSmall,
                             color = SpColor.OnCard,
                             maxLines = 1,

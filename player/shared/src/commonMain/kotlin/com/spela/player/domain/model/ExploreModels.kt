@@ -147,11 +147,11 @@ data class DeveloperDetailPlatformBreakdown(
 )
 
 data class DeveloperDetailUserStats(
-    val totalPlayTime: Long,
-    val gamesPlayed: Int,
-    val favoriteCount: Int,
-    val mostPlayedGame: Game?,
-)
+    override val totalPlayTime: Long,
+    override val gamesPlayed: Int,
+    override val favoriteCount: Int,
+    override val mostPlayedGame: Game?,
+) : MakerUserStats
 
 data class DeveloperDetailPublisher(
     val name: String,
@@ -200,25 +200,105 @@ data class RelatedDeveloper(
     val sharedPublishers: List<String>,
 )
 
-data class DeveloperDetail(
+data class RelatedPublisher(
     val name: String,
     val gameCount: Int,
-    val avgRating: Double,
-    val consoles: List<String>,
-    val heroUrl: String? = null,
-    val companyInfo: CompanyInfo? = null,
-    val topGames: List<Game> = emptyList(),
+    val sharedDevelopers: List<String>,
+)
+
+data class PublisherDetailGenreBreakdown(
+    val name: String,
+    val gameCount: Int,
+)
+
+data class PublisherDetailPlatformBreakdown(
+    val consoleName: String,
+    val consoleId: String,
+    val count: Int,
+)
+
+data class PublisherDetailUserStats(
+    override val totalPlayTime: Long,
+    override val gamesPlayed: Int,
+    override val favoriteCount: Int,
+    override val mostPlayedGame: Game?,
+) : MakerUserStats
+
+data class PublisherDetailDeveloper(
+    val name: String,
+    val count: Int,
+)
+
+/**
+ * Common fields for a company-maker detail page (developer or publisher). Each
+ * side has its own counterpart-company fields, which live on the concrete
+ * subtype — `DeveloperDetail.publishers / relatedDevelopers` vs.
+ * `PublisherDetail.developers / relatedPublishers`. Shared UI components
+ * consume this interface so they don't need developer-specific types.
+ */
+sealed interface MakerDetail {
+    val name: String
+    val gameCount: Int
+    val avgRating: Double
+    val consoles: List<String>
+    val heroUrl: String?
+    val companyInfo: CompanyInfo?
+    val topGames: List<Game>
+    val userStats: MakerUserStats?
+    val games: List<Game>
+    val activeYears: ActiveYears?
+    val ratingDistribution: RatingDistribution?
+    val primaryGenre: String?
+    val timeline: List<TimelineEntry>
+}
+
+/** Common shape consumed by the shared user-stats UI card. */
+sealed interface MakerUserStats {
+    val totalPlayTime: Long
+    val gamesPlayed: Int
+    val favoriteCount: Int
+    val mostPlayedGame: Game?
+}
+
+data class DeveloperDetail(
+    override val name: String,
+    override val gameCount: Int,
+    override val avgRating: Double,
+    override val consoles: List<String>,
+    override val heroUrl: String? = null,
+    override val companyInfo: CompanyInfo? = null,
+    override val topGames: List<Game> = emptyList(),
     val genreBreakdown: List<DeveloperDetailGenreBreakdown> = emptyList(),
     val platformBreakdown: List<DeveloperDetailPlatformBreakdown> = emptyList(),
-    val userStats: DeveloperDetailUserStats? = null,
+    override val userStats: DeveloperDetailUserStats? = null,
     val publishers: List<DeveloperDetailPublisher> = emptyList(),
-    val games: List<Game>,
-    val activeYears: ActiveYears? = null,
-    val ratingDistribution: RatingDistribution? = null,
-    val primaryGenre: String? = null,
-    val timeline: List<TimelineEntry> = emptyList(),
+    override val games: List<Game>,
+    override val activeYears: ActiveYears? = null,
+    override val ratingDistribution: RatingDistribution? = null,
+    override val primaryGenre: String? = null,
+    override val timeline: List<TimelineEntry> = emptyList(),
     val relatedDevelopers: List<RelatedDeveloper> = emptyList(),
-)
+) : MakerDetail
+
+data class PublisherDetail(
+    override val name: String,
+    override val gameCount: Int,
+    override val avgRating: Double,
+    override val consoles: List<String>,
+    override val heroUrl: String? = null,
+    override val companyInfo: CompanyInfo? = null,
+    override val topGames: List<Game> = emptyList(),
+    val genreBreakdown: List<PublisherDetailGenreBreakdown> = emptyList(),
+    val platformBreakdown: List<PublisherDetailPlatformBreakdown> = emptyList(),
+    override val userStats: PublisherDetailUserStats? = null,
+    val developers: List<PublisherDetailDeveloper> = emptyList(),
+    override val games: List<Game>,
+    override val activeYears: ActiveYears? = null,
+    override val ratingDistribution: RatingDistribution? = null,
+    override val primaryGenre: String? = null,
+    override val timeline: List<TimelineEntry> = emptyList(),
+    val relatedPublishers: List<RelatedPublisher> = emptyList(),
+) : MakerDetail
 
 data class DeveloperSpotlight(
     val name: String,
