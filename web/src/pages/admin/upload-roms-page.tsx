@@ -29,6 +29,7 @@ import {
   type UploadFileStatus,
 } from "@/features/upload/components/upload-progress";
 import { StagedUploadCard } from "@/features/upload/components/staged-upload-card";
+import type { StagedUpload } from "@/types/api";
 
 export function UploadRomsPage() {
   const { toast } = useToast();
@@ -160,7 +161,8 @@ export function UploadRomsPage() {
   const handleAcceptAll = useCallback(() => {
     acceptAll.mutate(undefined, {
       onSuccess: (data) => {
-        toast("success", `Accepted ${data.accepted} ROM${data.accepted === 1 ? "" : "s"}`);
+        const n = data?.accepted ?? 0;
+        toast("success", `Accepted ${n} ROM${n === 1 ? "" : "s"}`);
       },
       onError: (err) => {
         toast(
@@ -174,7 +176,8 @@ export function UploadRomsPage() {
   const handleRejectAll = useCallback(() => {
     rejectAll.mutate(undefined, {
       onSuccess: (data) => {
-        toast("info", `Rejected ${data.rejected} ROM${data.rejected === 1 ? "" : "s"}`);
+        const n = data?.rejected ?? 0;
+        toast("info", `Rejected ${n} ROM${n === 1 ? "" : "s"}`);
       },
       onError: (err) => {
         toast(
@@ -188,7 +191,8 @@ export function UploadRomsPage() {
   const handleClearStaging = useCallback(() => {
     clearStaging.mutate(undefined, {
       onSuccess: (data) => {
-        toast("info", `Cleared ${data.cleared} staged upload${data.cleared === 1 ? "" : "s"}`);
+        const n = data?.cleared ?? 0;
+        toast("info", `Cleared ${n} staged upload${n === 1 ? "" : "s"}`);
         setFileStatuses([]);
       },
       onError: (err) => {
@@ -200,7 +204,7 @@ export function UploadRomsPage() {
     });
   }, [clearStaging, toast]);
 
-  const stagedUploads = uploads ?? [];
+  const stagedUploads = (uploads ?? []) as StagedUpload[];
   const hasPendingScrape = stagedUploads.some(
     (u) => u.status === "pending_scrape",
   );
