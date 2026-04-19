@@ -972,6 +972,38 @@ fun com.spela.client.models.DeveloperDetailResponse.toDomain(): DeveloperDetail 
     relatedDevelopers = relatedDevelopers.orEmpty().map { it.toDomain() },
 )
 
+// PublisherDetailResponse is shape-symmetric with DeveloperDetailResponse —
+// the "counterpart" fields are `developers` / `relatedPublishers` instead of
+// `publishers` / `relatedDevelopers`. The DeveloperDetail domain model holds
+// them as `publishers` / `relatedDevelopers` regardless of which side the
+// page is viewing; callers render the chips with the appropriate label based
+// on `isDeveloper`.
+fun com.spela.client.models.PublisherDetailResponse.toDomain(): DeveloperDetail = DeveloperDetail(
+    name = name,
+    gameCount = gameCount.toInt(),
+    avgRating = avgRating,
+    consoles = consoles.orEmpty(),
+    heroUrl = heroUrl,
+    companyInfo = companyInfo?.toDomain(),
+    topGames = topGames.orEmpty().map { it.toDomain() },
+    genreBreakdown = genreBreakdown.orEmpty().map { it.toDeveloperGenreBreakdown() },
+    platformBreakdown = platformBreakdown.orEmpty().map { it.toDeveloperPlatformBreakdown() },
+    userStats = userStats?.toDeveloperUserStats(),
+    publishers = developers.orEmpty().map { it.toDeveloperPublisher() },
+    games = games.orEmpty().map { it.toDomain() },
+    activeYears = activeYears?.toDomain(),
+    ratingDistribution = ratingDistribution.toDomain(),
+    primaryGenre = primaryGenre,
+    timeline = timeline.orEmpty().map { it.toDomain() },
+    relatedDevelopers = relatedPublishers.orEmpty().map { it.toDomain() },
+)
+
+fun com.spela.client.models.RelatedPublisher.toDomain(): RelatedDeveloper = RelatedDeveloper(
+    name = name,
+    gameCount = gameCount.toInt(),
+    sharedPublishers = sharedDevelopers.orEmpty(),
+)
+
 fun com.spela.client.models.DeveloperSpotlightResponse.toDomain(): DeveloperSpotlight = DeveloperSpotlight(
     name = name,
     gameCount = gameCount.toInt(),
