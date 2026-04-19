@@ -15,11 +15,23 @@ vi.mock("react-router-dom", async () => {
   };
 });
 
+// mockGet retains the legacy signature ((path) => data) so the test bodies
+// don't need to change. The wrapper around typedApi.GET reshapes its output
+// into the { data, response } tuple openapi-fetch returns; unwrap then
+// strips the wrapper inside the hook.
 const mockGet = vi.fn();
 vi.mock("@/lib/api-client", () => ({
-  api: {
-    get: (...args: unknown[]) => mockGet(...args),
+  typedApi: {
+    GET: async (...args: unknown[]) => {
+      const data = await mockGet(...args);
+      return { data, response: new Response(null, { status: 200 }) };
+    },
   },
+  unwrap: <T,>(p: Promise<{ data?: T; error?: unknown; response: Response }>) =>
+    p.then((r) => {
+      if (r.error !== undefined) throw r.error;
+      return r.data;
+    }),
 }));
 
 function createWrapper() {
