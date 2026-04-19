@@ -18,208 +18,17 @@ import type { components } from "@/generated/api";
 
 type Schemas = components["schemas"];
 
-export type AchievementLeaderboardResponse = Schemas["AchievementLeaderboardResponse"];
-export type AchievementTimelineResponse = Schemas["AchievementTimelineResponse"];
-export type ActivePlayerEntry = Schemas["ActivePlayerEntry"];
-export type ActivityEventResponse = Schemas["ActivityEventResponse"];
-export type AddGameToCollectionRequest = Schemas["AddGameToCollectionRequest"];
-export type AdminCreateUserRequest = Schemas["AdminCreateUserRequest"];
-export type AdminRAStatusResponse = Schemas["AdminRAStatusResponse"];
-export type AdminStatsResponse = Schemas["AdminStatsResponse"];
-export type AdminUpdateUserRequest = Schemas["AdminUpdateUserRequest"];
-export type AgeRatingResponse = Schemas["AgeRatingResponse"];
-export type ApplyIGDBMatchRequest = Schemas["ApplyIGDBMatchRequest"];
-export type BackfillImagesResponse = Schemas["BackfillImagesResponse"];
-export type BiosDownloadStartedResponse = Schemas["BiosDownloadStartedResponse"];
-export type BiosFileResponse = Schemas["BiosFileResponse"];
-export type BiosListResponse = Schemas["BiosListResponse"];
-export type BulkDeleteSessionSavesResponse = Schemas["BulkDeleteSessionSavesResponse"];
-export type ChallengeAttemptResponse = Schemas["ChallengeAttemptResponse"];
-export type ChallengeResponse = Schemas["ChallengeResponse"];
-export type ChangePasswordRequest = Schemas["ChangePasswordRequest"];
-export type CheatStatsResponse = Schemas["CheatStatsResponse"];
-export type CheckUploadsWritableResponse = Schemas["CheckUploadsWritableResponse"];
-export type CollectionDetailResponse = Schemas["CollectionDetailResponse"];
-export type CollectionResponse = Schemas["CollectionResponse"];
-export type CompactSavesResponse = Schemas["CompactSavesResponse"];
-export type ConsoleBiosStatus = Schemas["ConsoleBiosStatus"];
-export type ConsoleFileStatus = Schemas["ConsoleFileStatus"];
-export type ConsoleKeyMappingDTO = Schemas["ConsoleKeyMappingDTO"];
 export type ConsoleResponse = Schemas["ConsoleResponse"];
 export type Core = Schemas["Core"];
 export type CoverOption = Schemas["CoverOption"];
-export type CreateCollectionRequest = Schemas["CreateCollectionRequest"];
-export type CreateNetplaySessionRequest = Schemas["CreateNetplaySessionRequest"];
-export type CreateOrUpdateRatingRequest = Schemas["CreateOrUpdateRatingRequest"];
-export type CreateSessionRequest = Schemas["CreateSessionRequest"];
-export type CreateSharedSessionRequest = Schemas["CreateSharedSessionRequest"];
-export type DeletedStatusResponse = Schemas["DeletedStatusResponse"];
-export type DeletedUserResponse = Schemas["DeletedUserResponse"];
-export type DeveloperGameResponse = Schemas["DeveloperGameResponse"];
-export type DevicePreferencesResponse = Schemas["DevicePreferencesResponse"];
-export type DeviceResponse = Schemas["DeviceResponse"];
-export type DiscResponse = Schemas["DiscResponse"];
-export type DismissedResponse = Schemas["DismissedResponse"];
-export type DuplicateSessionRequest = Schemas["DuplicateSessionRequest"];
-export type EnrichmentStartedResponse = Schemas["EnrichmentStartedResponse"];
-export type EnrichmentStatusResponse = Schemas["EnrichmentStatusResponse"];
-export type FranchiseDetailResponse = Schemas["FranchiseDetailResponse"];
-export type FranchiseResponse = Schemas["FranchiseResponse"];
-export type GameArtworkResponse = Schemas["GameArtworkResponse"];
-export type GameCheatResponse = Schemas["GameCheatResponse"];
 export type GameCoversResponse = Schemas["GameCoversResponse"];
-export type GameFranchiseResponse = Schemas["GameFranchiseResponse"];
 export type GameHeroesResponse = Schemas["GameHeroesResponse"];
-export type GameKeyMappingResponse = Schemas["GameKeyMappingResponse"];
-export type GameRatingResponse = Schemas["GameRatingResponse"];
 export type GameResponse = Schemas["GameResponse"];
-export type GameSeriesResponse = Schemas["GameSeriesResponse"];
-export type GameSessionResponse = Schemas["GameSessionResponse"];
-export type GameStatsResponse = Schemas["GameStatsResponse"];
-export type GameStatsTopPlayer = Schemas["GameStatsTopPlayer"];
-export type HardwareMakerResponse = Schemas["HardwareMakerResponse"];
-export type HealthResponse = Schemas["HealthResponse"];
-export type HeatmapEntry = Schemas["HeatmapEntry"];
 export type HeroOption = Schemas["HeroOption"];
-export type HumaError = Schemas["HumaError"];
-export type IGDBSearchResult = Schemas["IGDBSearchResult"];
-export type IGDBStatusResponse = Schemas["IGDBStatusResponse"];
-export type ImportResult = Schemas["ImportResult"];
-export type InviteToSharedSessionRequest = Schemas["InviteToSharedSessionRequest"];
-export type JoinByInviteCodeRequest = Schemas["JoinByInviteCodeRequest"];
 export type KeywordResponse = Schemas["KeywordResponse"];
-export type LanguageSupportResponse = Schemas["LanguageSupportResponse"];
-export type LeaveNetplaySessionResponse = Schemas["LeaveNetplaySessionResponse"];
-export type LinkRAAccountRequest = Schemas["LinkRAAccountRequest"];
-export type ListMyNetplayInvitesResponse = Schemas["ListMyNetplayInvitesResponse"];
-export type LongestGameResponse = Schemas["LongestGameResponse"];
-export type MakerDetailResponse = Schemas["MakerDetailResponse"];
-export type MediaTypeCategoryResponse = Schemas["MediaTypeCategoryResponse"];
-export type MediaTypeResponse = Schemas["MediaTypeResponse"];
-export type MessageResponse = Schemas["MessageResponse"];
-export type MostPlayedEntry = Schemas["MostPlayedEntry"];
-export type MostPlayedResponse = Schemas["MostPlayedResponse"];
-export type NetplayInviteResponse = Schemas["NetplayInviteResponse"];
-export type NetplayInviteUserRequest = Schemas["NetplayInviteUserRequest"];
-export type NetplaySessionResponse = Schemas["NetplaySessionResponse"];
-export type OnlineUserGameResponse = Schemas["OnlineUserGameResponse"];
-export type OnlineUserResponse = Schemas["OnlineUserResponse"];
-export type PaginatedResponseActivityEventResponse = Schemas["PaginatedResponseActivityEventResponse"];
-export type PaginatedResponseChallengeLeaderboardEntry = Schemas["PaginatedResponseChallengeLeaderboardEntry"];
-export type PaginatedResponseChallengeResponse = Schemas["PaginatedResponseChallengeResponse"];
-export type PaginatedResponseCollectionResponse = Schemas["PaginatedResponseCollectionResponse"];
-export type PaginatedResponseGameRatingResponse = Schemas["PaginatedResponseGameRatingResponse"];
-export type PaginatedResponseGameResponse = Schemas["PaginatedResponseGameResponse"];
-export type PaginatedResponseNetplaySessionResponse = Schemas["PaginatedResponseNetplaySessionResponse"];
-export type PaginatedResponseSharedSaveResponse = Schemas["PaginatedResponseSharedSaveResponse"];
-export type PaginatedResponseUserSearchResult = Schemas["PaginatedResponseUserSearchResult"];
-export type ParentGameResponse = Schemas["ParentGameResponse"];
-export type PendingNetplayInviteCountResponse = Schemas["PendingNetplayInviteCountResponse"];
-export type PossibleConsoleResponse = Schemas["PossibleConsoleResponse"];
-export type PublicProfileResponse = Schemas["PublicProfileResponse"];
-export type RALeaderboardEntryResponse = Schemas["RALeaderboardEntryResponse"];
-export type RALinkResponse = Schemas["RALinkResponse"];
-export type RARecentAchievementResponse = Schemas["RARecentAchievementResponse"];
-export type RAStatusResponse = Schemas["RAStatusResponse"];
-export type RATimelineEntryResponse = Schemas["RATimelineEntryResponse"];
-export type RATokenResponse = Schemas["RATokenResponse"];
-export type RAUnlinkResponse = Schemas["RAUnlinkResponse"];
-export type RAUnlockedAchievementResponse = Schemas["RAUnlockedAchievementResponse"];
-export type RateLimitResponse = Schemas["RateLimitResponse"];
-export type RatingSummaryResponse = Schemas["RatingSummaryResponse"];
-export type RecentAchievementsResponse = Schemas["RecentAchievementsResponse"];
-export type RefreshAchievementsResponse = Schemas["RefreshAchievementsResponse"];
-export type RegisterDeviceRequest = Schemas["RegisterDeviceRequest"];
-export type ReleaseDateResponse = Schemas["ReleaseDateResponse"];
-export type RenameSharedSessionSaveRequest = Schemas["RenameSharedSessionSaveRequest"];
-export type ReorderPlayLaterRequest = Schemas["ReorderPlayLaterRequest"];
-export type ReportEmulatorErrorRequest = Schemas["ReportEmulatorErrorRequest"];
-export type ReportedResponse = Schemas["ReportedResponse"];
-export type RomHackGameResponse = Schemas["RomHackGameResponse"];
-export type SavedSearchRequest = Schemas["SavedSearchRequest"];
-export type SavedSearchResponse = Schemas["SavedSearchResponse"];
-export type ScanStartedResponse = Schemas["ScanStartedResponse"];
-export type ScanStatusResponse = Schemas["ScanStatusResponse"];
-export type ScrapeGameResponse = Schemas["ScrapeGameResponse"];
-export type ScrapeStartedResponse = Schemas["ScrapeStartedResponse"];
 export type ScrapeStatusCountsResponse = Schemas["ScrapeStatusCountsResponse"];
-export type ScrapeStatusResponse = Schemas["ScrapeStatusResponse"];
-export type ScraperSourceResultResponse = Schemas["ScraperSourceResultResponse"];
-export type SearchCategoryResultSearchCollectionResult = Schemas["SearchCategoryResultSearchCollectionResult"];
-export type SearchCategoryResultSearchCompanyResult = Schemas["SearchCategoryResultSearchCompanyResult"];
-export type SearchCategoryResultSearchConsoleResult = Schemas["SearchCategoryResultSearchConsoleResult"];
-export type SearchCategoryResultSearchFranchiseResult = Schemas["SearchCategoryResultSearchFranchiseResult"];
-export type SearchCategoryResultSearchGameResult = Schemas["SearchCategoryResultSearchGameResult"];
-export type SearchCategoryResultSearchSeriesResult = Schemas["SearchCategoryResultSearchSeriesResult"];
-export type SearchCollectionResult = Schemas["SearchCollectionResult"];
-export type SearchCompanyResult = Schemas["SearchCompanyResult"];
-export type SearchConsoleResult = Schemas["SearchConsoleResult"];
-export type SearchFranchiseResult = Schemas["SearchFranchiseResult"];
-export type SearchGameResult = Schemas["SearchGameResult"];
-export type SearchResponse = Schemas["SearchResponse"];
-export type SearchSeriesResult = Schemas["SearchSeriesResult"];
-export type SeriesConsoleInfo = Schemas["SeriesConsoleInfo"];
-export type SeriesDetailResponse = Schemas["SeriesDetailResponse"];
-export type SeriesGameResponse = Schemas["SeriesGameResponse"];
-export type SeriesListResponse = Schemas["SeriesListResponse"];
-export type SessionCheatsResponse = Schemas["SessionCheatsResponse"];
-export type SessionSaveResponse = Schemas["SessionSaveResponse"];
-export type SessionStorageConsoleBreakdown = Schemas["SessionStorageConsoleBreakdown"];
-export type SetGameCoverRequest = Schemas["SetGameCoverRequest"];
-export type SetGameHeroRequest = Schemas["SetGameHeroRequest"];
-export type SetUploadConsoleRequest = Schemas["SetUploadConsoleRequest"];
-export type SharedSaveResponse = Schemas["SharedSaveResponse"];
-export type SharedSessionDetailResponse = Schemas["SharedSessionDetailResponse"];
-export type SharedSessionHeartbeatResponse = Schemas["SharedSessionHeartbeatResponse"];
-export type SharedSessionInviteCountResponse = Schemas["SharedSessionInviteCountResponse"];
-export type SharedSessionInviteResponse = Schemas["SharedSessionInviteResponse"];
-export type SharedSessionMemberResponse = Schemas["SharedSessionMemberResponse"];
-export type SharedSessionResponse = Schemas["SharedSessionResponse"];
-export type SharedSessionSaveResponse = Schemas["SharedSessionSaveResponse"];
-export type SharedSessionTakeTurnResponse = Schemas["SharedSessionTakeTurnResponse"];
-export type ShowcaseEntryInput = Schemas["ShowcaseEntryInput"];
-export type ShowcaseEntryResponse = Schemas["ShowcaseEntryResponse"];
-export type SimilarGameResponse = Schemas["SimilarGameResponse"];
-export type StagedUploadResponse = Schemas["StagedUploadResponse"];
-export type StatusMessageResponse = Schemas["StatusMessageResponse"];
-export type SteamGridDBStatusResponse = Schemas["SteamGridDBStatusResponse"];
-export type StorageUsageResponse = Schemas["StorageUsageResponse"];
-export type SystemEventCategoryResponse = Schemas["SystemEventCategoryResponse"];
-export type SystemEventResponse = Schemas["SystemEventResponse"];
-export type SystemEventTypesResponse = Schemas["SystemEventTypesResponse"];
-export type TasteProfileConsole = Schemas["TasteProfileConsole"];
-export type TasteProfileGenre = Schemas["TasteProfileGenre"];
-export type TasteProfileResponse = Schemas["TasteProfileResponse"];
-export type TasteProfileTheme = Schemas["TasteProfileTheme"];
-export type TestIGDBRequest = Schemas["TestIGDBRequest"];
-export type TestIGDBResponse = Schemas["TestIGDBResponse"];
 export type ThemeResponse = Schemas["ThemeResponse"];
-export type TopListGameResponse = Schemas["TopListGameResponse"];
-export type TopRatedGameResponse = Schemas["TopRatedGameResponse"];
-export type UpdateChallengeRequest = Schemas["UpdateChallengeRequest"];
-export type UpdateCollectionRequest = Schemas["UpdateCollectionRequest"];
-export type UpdateDevicePreferencesRequest = Schemas["UpdateDevicePreferencesRequest"];
-export type UpdateDeviceRequest = Schemas["UpdateDeviceRequest"];
-export type UpdateGameKeyMappingRequest = Schemas["UpdateGameKeyMappingRequest"];
-export type UpdateGameMetadataRequest = Schemas["UpdateGameMetadataRequest"];
-export type UpdateGamePlayTimeRequest = Schemas["UpdateGamePlayTimeRequest"];
-export type UpdateGamePlayTimeResponse = Schemas["UpdateGamePlayTimeResponse"];
-export type UpdateNetplaySettingsRequest = Schemas["UpdateNetplaySettingsRequest"];
-export type UpdatePreferencesRequest = Schemas["UpdatePreferencesRequest"];
-export type UpdateProfileRequest = Schemas["UpdateProfileRequest"];
-export type UpdateRASettingsRequest = Schemas["UpdateRASettingsRequest"];
-export type UpdateSessionCheatsRequest = Schemas["UpdateSessionCheatsRequest"];
-export type UpdateSessionPlayTimeRequest = Schemas["UpdateSessionPlayTimeRequest"];
-export type UpdateSessionRequest = Schemas["UpdateSessionRequest"];
-export type UpdateSessionSaveRequest = Schemas["UpdateSessionSaveRequest"];
-export type UpdateSharedSessionRequest = Schemas["UpdateSharedSessionRequest"];
-export type UpdateVerificationTagRequest = Schemas["UpdateVerificationTagRequest"];
-export type UpdateVerificationTagResponse = Schemas["UpdateVerificationTagResponse"];
-export type UserPreferencesResponse = Schemas["UserPreferencesResponse"];
 export type UserResponse = Schemas["UserResponse"];
-export type UserStatsResponse = Schemas["UserStatsResponse"];
-export type VariantResponse = Schemas["VariantResponse"];
-export type VideoResponse = Schemas["VideoResponse"];
 
 // --- End of generated type re-exports ---
 
@@ -300,11 +109,6 @@ export interface SystemEventsListFilters {
   ip?: string;
   since?: string;
   dismissed?: boolean;
-}
-
-export interface SystemEventCategory {
-  code: SystemEventCategoryCode;
-  name: string;
 }
 
 export interface SystemEventTypeInfo {
@@ -641,17 +445,6 @@ export interface UnlockedAchievement {
   consoleName: string;
 }
 
-export interface UnlockedAchievementsResponse {
-  achievements: UnlockedAchievement[];
-}
-
-export interface GameStats {
-  totalPlayers: number;
-  totalPlayTime: number;
-  averagePlayTime: number;
-  topPlayers: GameStatsPlayer[];
-}
-
 export interface GameStatsPlayer {
   userId: string;
   username: string;
@@ -665,10 +458,6 @@ export interface MostPlayedGame {
   totalPlayTime: number;
 }
 
-export interface MostPlayedGamesResponse {
-  games: MostPlayedGame[];
-}
-
 export interface ActivePlayer {
   userId: string;
   username: string;
@@ -678,35 +467,19 @@ export interface ActivePlayer {
   lastPlayed: string;
 }
 
-export interface MostActivePlayersResponse {
-  players: ActivePlayer[];
-}
-
-export interface UserStats {
-  totalPlayTime: number;
-  gamesPlayed: number;
-  currentStreak: number;
-  longestStreak: number;
-  mostPlayedGame: Game | null;
-  mostPlayedGameTime: number;
-  lastPlayedAt: string | null;
-}
-
-export interface AchievementLeaderboardEntry {
-  userId: string;
-  username: string;
-  avatarUrl?: string;
-  unlockedCount: number;
-  earnedPoints: number;
-  lastUnlockedAt: string;
-  firstUnlockedAt: string;
-  isComplete: boolean;
-}
-
 export interface AchievementLeaderboard {
   raGameId: number;
   totalAchievements: number;
-  leaderboard: AchievementLeaderboardEntry[];
+  leaderboard: {
+    userId: string;
+    username: string;
+    avatarUrl?: string;
+    unlockedCount: number;
+    earnedPoints: number;
+    lastUnlockedAt: string;
+    firstUnlockedAt: string;
+    isComplete: boolean;
+  }[];
 }
 
 export interface AchievementTimelineEntry {
@@ -771,10 +544,6 @@ export interface OnlineUser {
   };
 }
 
-export interface OnlineUsersResponse {
-  users: OnlineUser[];
-}
-
 export interface ActivityEvent {
   id: string;
   userId: string;
@@ -808,19 +577,6 @@ export interface GameRating {
   updatedAt: string;
 }
 
-export interface GameRatingsResponse {
-  data: GameRating[];
-  total: number;
-  page: number;
-  pageSize: number;
-}
-
-export interface RatingSummary {
-  averageRating: number;
-  totalRatings: number;
-  distribution: Record<string, number>;
-}
-
 export interface SharedSave {
   id: string;
   userId: string;
@@ -833,13 +589,6 @@ export interface SharedSave {
   screenshotUrl?: string;
   downloadCount: number;
   createdAt: string;
-}
-
-export interface SharedSavesResponse {
-  data: SharedSave[];
-  total: number;
-  page: number;
-  pageSize: number;
 }
 
 export interface Collection {
@@ -856,42 +605,12 @@ export interface Collection {
   updatedAt: string;
 }
 
-export interface CollectionDetail extends Collection {
-  games: Game[];
-}
-
-export interface CollectionsResponse {
-  data: Collection[];
-  total: number;
-  page: number;
-  pageSize: number;
-}
-
 export interface PublicProfileGame {
   id: string;
   title: string;
   coverUrl?: string;
   consoleName: string;
   playTime?: number;
-}
-
-export interface PublicProfile {
-  id: string;
-  username: string;
-  avatarUrl?: string;
-  memberSince: string;
-  isOnline: boolean;
-  currentGame?: {
-    id: string;
-    title: string;
-    coverUrl?: string;
-    consoleName: string;
-  };
-  totalPlayTime: number;
-  gamesPlayed: number;
-  favoriteGames: PublicProfileGame[];
-  recentGames: PublicProfileGame[];
-  topGames: PublicProfileGame[];
 }
 
 export interface SharedSession {
@@ -1054,14 +773,6 @@ export interface BiosConsole {
   files: BiosConsoleFile[];
 }
 
-export interface BiosResponse {
-  files: BiosFile[];
-  consoles: BiosConsole[];
-}
-
-export type BiosFileStatus = BiosFile["status"];
-export type BiosConsoleStatus = BiosConsole["status"];
-
 // --- Top Lists ---
 
 export interface TopListGame {
@@ -1093,12 +804,6 @@ export interface LongestGame {
   timeToBeatNormally: number;
   timeToBeatHastily: number;
   timeToBeatCompletely: number;
-}
-
-export interface PlayStatsEntry {
-  gameId: number;
-  playTime: number;
-  lastPlayedAt: string;
 }
 
 export interface DailyPlayActivity {
@@ -1863,13 +1568,3 @@ export interface StorageConsoleBreakdown {
   saveCount: number;
 }
 
-export interface StorageInfo {
-  usedBytes: number;
-  quotaBytes: number;
-  byConsole: StorageConsoleBreakdown[];
-}
-
-export interface CompactSavesResult {
-  deletedCount: number;
-  freedBytes: number;
-}
