@@ -3,10 +3,7 @@ package api
 import (
 	"encoding/json"
 	"log/slog"
-	"net/http"
-	"strconv"
 
-	"github.com/gin-gonic/gin"
 	"github.com/spela/server/internal/db"
 	"github.com/spela/server/internal/retroachievements"
 	"gorm.io/gorm"
@@ -15,90 +12,12 @@ import (
 const maxShowcaseEntries = 5
 
 // AchievementShowcaseHandler handles achievement showcase endpoints.
+// All HTTP methods are served by huma — see HumaGetShowcase /
+// HumaGetPublicShowcase / HumaUpdateShowcase in huma_achievements.go.
+// This struct + enrichShowcaseEntries helper are referenced from those
+// huma handlers.
 type AchievementShowcaseHandler struct {
 	DB *gorm.DB
-}
-
-// GetShowcase returns the current user's showcased achievements.
-func (h *AchievementShowcaseHandler) GetShowcase(c *gin.Context) {
-	uid := getUserID(c)
-
-	var entries []db.UserAchievementShowcase
-	if err := h.DB.Where("user_id = ?", uid).Order("showcase_order ASC").Find(&entries).Error; err != nil {
-		slog.Error("failed to load achievement showcase", "user_id", uid, "error", err)
-		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to load showcase"})
-		return
-	}
-
-	results := h.enrichShowcaseEntries(entries)
-	c.JSON(http.StatusOK, results)
-}
-
-// GetPublicShowcase returns a user's showcased achievements by user ID (public).
-func (h *AchievementShowcaseHandler) GetPublicShowcase(c *gin.Context) {
-	userID, err := strconv.ParseUint(c.Param("id"), 10, 64)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid user ID"})
-		return
-	}
-
-	var entries []db.UserAchievementShowcase
-	if err := h.DB.Where("user_id = ?", userID).Order("showcase_order ASC").Find(&entries).Error; err != nil {
-		slog.Error("failed to load public achievement showcase", "user_id", userID, "error", err)
-		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to load showcase"})
-		return
-	}
-
-	results := h.enrichShowcaseEntries(entries)
-	c.JSON(http.StatusOK, results)
-}
-
-// UpdateShowcase replaces the current user's showcased achievements.
-func (h *AchievementShowcaseHandler) UpdateShowcase(c *gin.Context) {
-	uid := getUserID(c)
-
-	var req []ShowcaseEntryInput
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid request body"})
-		return
-	}
-
-	if len(req) > maxShowcaseEntries {
-		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "maximum 5 showcase entries allowed"})
-		return
-	}
-
-	// Replace all entries in a transaction
-	if err := h.DB.Transaction(func(tx *gorm.DB) error {
-		// Delete existing entries
-		if err := tx.Where("user_id = ?", uid).Delete(&db.UserAchievementShowcase{}).Error; err != nil {
-			return err
-		}
-
-		// Insert new entries
-		for i, item := range req {
-			entry := db.UserAchievementShowcase{
-				UserID:          uid,
-				AchievementRAID: item.AchievementRAID,
-				RAGameID:        item.RAGameID,
-				ShowcaseOrder:   i,
-			}
-			if err := tx.Create(&entry).Error; err != nil {
-				return err
-			}
-		}
-		return nil
-	}); err != nil {
-		slog.Error("failed to update achievement showcase", "user_id", uid, "error", err)
-		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to update showcase"})
-		return
-	}
-
-	// Return the updated showcase
-	var entries []db.UserAchievementShowcase
-	h.DB.Where("user_id = ?", uid).Order("showcase_order ASC").Find(&entries)
-	results := h.enrichShowcaseEntries(entries)
-	c.JSON(http.StatusOK, results)
 }
 
 // enrichShowcaseEntries loads GameAchievementCache data and enriches showcase entries.

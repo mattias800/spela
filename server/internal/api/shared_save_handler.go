@@ -1,96 +1,21 @@
 package api
 
 import (
-	"net/http"
 	"strconv"
 
-	"github.com/gin-gonic/gin"
 	"github.com/spela/server/internal/db"
 	"github.com/spela/server/internal/storage"
 	ws "github.com/spela/server/internal/websocket"
 	"gorm.io/gorm"
 )
 
-// SharedSaveHandler handles shared save state endpoints.
+// SharedSaveHandler handles shared save state endpoints. All HTTP methods
+// are served by huma_shared.go / huma_shared_uploads.go; this file keeps
+// the struct + response converter still referenced from there.
 type SharedSaveHandler struct {
 	DB      *gorm.DB
 	Storage *storage.Storage
 	Hub     *ws.Hub
-}
-
-// ShareSave has been migrated to huma — see HumaShareSave in
-// huma_shared_uploads.go.
-
-// ListSharedSaves returns paginated shared saves for a game.
-func (h *SharedSaveHandler) ListSharedSaves(c *gin.Context) {
-	gameID := c.Param("id")
-
-	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
-	pageSize, _ := strconv.Atoi(c.DefaultQuery("pageSize", "20"))
-	if page < 1 {
-		page = 1
-	}
-	if pageSize < 1 || pageSize > 100 {
-		pageSize = 20
-	}
-
-	var total int64
-	h.DB.Model(&db.SharedSaveState{}).Where("game_id = ?", gameID).Count(&total)
-
-	var saves []db.SharedSaveState
-	if err := h.DB.Where("game_id = ?", gameID).
-		Preload("User").
-		Order("created_at DESC").
-		Offset((page - 1) * pageSize).
-		Limit(pageSize).
-		Find(&saves).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to fetch shared saves"})
-		return
-	}
-
-	uid := getUserID(c)
-	result := make([]SharedSaveResponse, 0, len(saves))
-	for _, s := range saves {
-		result = append(result, h.toResponse(s, uid))
-	}
-
-	c.JSON(http.StatusOK, PaginatedResponse[SharedSaveResponse]{
-		Data:     result,
-		Total:    total,
-		Page:     page,
-		PageSize: pageSize,
-	})
-}
-
-// DownloadSharedSave has been migrated to huma — see HumaDownloadSharedSave
-// in huma_downloads.go.
-
-// DeleteSharedSave removes a shared save state (owner or admin only).
-func (h *SharedSaveHandler) DeleteSharedSave(c *gin.Context) {
-	uid := getUserID(c)
-	saveID := c.Param("saveId")
-
-	var save db.SharedSaveState
-	if err := h.DB.First(&save, saveID).Error; err != nil {
-		c.JSON(http.StatusNotFound, ErrorResponse{Error: "shared save not found"})
-		return
-	}
-
-	// Check ownership or admin
-	role, _ := c.Get("role")
-	if save.UserID != uid && !db.IsAdminOrOwner(role.(db.UserRole)) {
-		c.JSON(http.StatusForbidden, ErrorResponse{Error: "not authorized to delete this shared save"})
-		return
-	}
-
-	// Delete file
-	if err := h.Storage.DeleteSave(save.FilePath); err != nil {
-		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to delete save file"})
-		return
-	}
-
-	h.DB.Delete(&save)
-	c.JSON(http.StatusOK, gin.H{"message": "shared save deleted"})
 }
 
 // toResponse converts a db.SharedSaveState to its API response.
