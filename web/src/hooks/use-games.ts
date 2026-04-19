@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { api, typedApi, unwrap } from "@/lib/api-client";
+import { multipartBodySerializer, typedApi, unwrap } from "@/lib/api-client";
 import type { Game, GamesResponse, GameFilters, ReplaceROMResponse } from "@/types/api";
 
 export function useGames(filters?: GameFilters, options?: { enabled?: boolean }) {
@@ -122,19 +122,21 @@ export function useScrapeIfNeeded() {
   });
 }
 
-// Multipart upload still goes through api.uploadPut — typedApi multipart
-// needs a custom bodySerializer; tracked in #518.
 export function useReplaceRom() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ gameId, file }: { gameId: string; file: File }) => {
+    mutationFn: async ({ gameId, file }: { gameId: string; file: File }) => {
       const formData = new FormData();
       formData.append("file", file);
-      return api.uploadPut<ReplaceROMResponse>(
-        `/admin/games/${gameId}/replace-rom`,
-        formData,
+      const data = await unwrap(
+        typedApi.PUT("/api/admin/games/{id}/replace-rom", {
+          params: { path: { id: gameId } },
+          body: formData as unknown as never,
+          bodySerializer: multipartBodySerializer,
+        }),
       );
+      return data as ReplaceROMResponse | undefined;
     },
     onSuccess: (_data, { gameId }) => {
       queryClient.invalidateQueries({ queryKey: ["game", gameId] });

@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { api } from "@/lib/api-client";
+import { multipartBodySerializer, typedApi, unwrap } from "@/lib/api-client";
 
 interface CreateRomHackParams {
   baseGameId: string;
@@ -29,7 +29,13 @@ export function useCreateRomHack() {
       if (params.mode === "standalone" && params.title) {
         formData.append("title", params.title);
       }
-      return api.upload<CreateRomHackResponse>("/admin/rom-hacks", formData);
+      const data = await unwrap(
+        typedApi.POST("/api/admin/rom-hacks", {
+          body: formData as unknown as never,
+          bodySerializer: multipartBodySerializer,
+        }),
+      );
+      return data as CreateRomHackResponse | undefined;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["games"] });

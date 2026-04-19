@@ -91,7 +91,7 @@ export function ReplaceRomModal({
       { gameId, file },
       {
         onSuccess: (data) => {
-          setResult(data.replacementResult);
+          if (data) setResult(data.replacementResult);
         },
       },
     );

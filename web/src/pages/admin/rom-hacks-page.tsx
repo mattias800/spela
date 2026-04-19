@@ -50,6 +50,7 @@ export function RomHacksPage() {
         },
         {
           onSuccess: (data) => {
+            if (!data) return;
             toast("success", `ROM hack created: ${data.title}`);
             navigate(`/games/${data.id}`);
           },
