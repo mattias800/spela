@@ -570,17 +570,27 @@ class SpelaApiClient(
         page: Int? = null,
         pageSize: Int? = null,
     ): com.spela.client.models.PaginatedResponseGameResponse {
-        // The filter set is open-ended (`getFilteredGames` is invoked with arbitrary
-        // saved-search keys). Stay on the raw HttpClient so the full filter map is
-        // forwarded as-is; the generated listGames signature lists only the known
-        // filters and would silently drop anything else.
-        return client.get("$baseUrl/api/games") {
-            filters.forEach { (key, value) ->
-                parameter(key, value)
-            }
-            page?.let { parameter("page", it) }
-            pageSize?.let { parameter("pageSize", it) }
-        }.body()
+        return gamesApi.listGames(
+            page = page?.toLong(),
+            pageSize = pageSize?.toLong(),
+            consoles = filters["consoles"],
+            search = filters["search"],
+            letter = filters["letter"],
+            region = filters["region"],
+            genres = filters["genres"],
+            themes = filters["themes"],
+            keywords = filters["keywords"],
+            perspectives = filters["perspectives"],
+            developer = filters["developer"],
+            publisher = filters["publisher"],
+            yearMin = filters["yearMin"],
+            yearMax = filters["yearMax"],
+            ratingMin = filters["ratingMin"],
+            ratingMax = filters["ratingMax"],
+            playStatus = filters["playStatus"],
+            sortBy = filters["sortBy"],
+            sortOrder = filters["sortOrder"],
+        ).body()
     }
 
     /** Returns user's saved searches */
