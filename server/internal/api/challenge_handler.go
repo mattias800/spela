@@ -3,13 +3,11 @@ package api
 import (
 	"fmt"
 	"log/slog"
-	"net/http"
 	"strconv"
 	"strings"
 	"sync"
 	"time"
 
-	"github.com/gin-gonic/gin"
 	"github.com/spela/server/internal/db"
 	"github.com/spela/server/internal/storage"
 	ws "github.com/spela/server/internal/websocket"
@@ -91,147 +89,6 @@ var validDifficulties = map[string]bool{
 	"easy":   true,
 	"medium": true,
 	"hard":   true,
-}
-
-// CreateChallenge creates a new game challenge with an uploaded save state.
-func (h *ChallengeHandler) CreateChallenge(c *gin.Context) {
-	uid := getUserID(c)
-
-	// Parse multipart form with size limit
-	if err := c.Request.ParseMultipartForm(maxChallengeSaveSize + 1<<20); err != nil {
-		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "request too large or invalid multipart form"})
-		return
-	}
-
-	name := strings.TrimSpace(c.PostForm("name"))
-	if name == "" {
-		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "name is required"})
-		return
-	}
-	if len(name) > maxChallengeNameLength {
-		c.JSON(http.StatusBadRequest, ErrorResponse{Error: fmt.Sprintf("name must be %d characters or fewer", maxChallengeNameLength)})
-		return
-	}
-
-	gameIDStr := c.PostForm("gameId")
-	gid, err := strconv.ParseUint(gameIDStr, 10, 64)
-	if err != nil || gid == 0 {
-		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "valid gameId is required"})
-		return
-	}
-
-	// Verify game exists
-	var game db.Game
-	if err := h.DB.First(&game, gid).Error; err != nil {
-		c.JSON(http.StatusNotFound, ErrorResponse{Error: "game not found"})
-		return
-	}
-
-	if err := requirePlayableConsole(h.DB, uint(gid)); err != nil {
-		c.JSON(http.StatusBadRequest, ErrorResponse{Error: errNonPlayableConsole.Error()})
-		return
-	}
-
-	challengeType := c.DefaultPostForm("type", "completion")
-	if !validChallengeTypes[challengeType] {
-		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "type must be completion, speedrun, or survival"})
-		return
-	}
-
-	difficulty := c.DefaultPostForm("difficulty", "medium")
-	if !validDifficulties[difficulty] {
-		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "difficulty must be easy, medium, or hard"})
-		return
-	}
-
-	description := c.PostForm("description")
-	if len(description) > 2048 {
-		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "description must be 2048 characters or fewer"})
-		return
-	}
-	coreName := c.PostForm("coreName")
-
-	var expiresAt *time.Time
-	if expStr := c.PostForm("expiresAt"); expStr != "" {
-		t, err := time.Parse(time.RFC3339, expStr)
-		if err != nil {
-			c.JSON(http.StatusBadRequest, ErrorResponse{Error: "expiresAt must be RFC3339 format"})
-			return
-		}
-		if t.Before(time.Now()) {
-			c.JSON(http.StatusBadRequest, ErrorResponse{Error: "expiresAt must be in the future"})
-			return
-		}
-		expiresAt = &t
-	}
-
-	// Save file (required)
-	saveFile, saveHeader, err := c.Request.FormFile("save")
-	if err != nil {
-		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "save file is required"})
-		return
-	}
-	defer saveFile.Close()
-
-	if saveHeader.Size > maxChallengeSaveSize {
-		c.JSON(http.StatusBadRequest, ErrorResponse{Error: fmt.Sprintf("save file too large (max %d MB)", maxChallengeSaveSize>>20)})
-		return
-	}
-
-	// Create DB record first to get ID
-	challenge := db.Challenge{
-		CreatorID:   uid,
-		GameID:      uint(gid),
-		Name:        name,
-		Description: description,
-		Type:        challengeType,
-		Difficulty:  difficulty,
-		Status:      ChallengeStatusActive,
-		CoreName:    coreName,
-		ExpiresAt:   expiresAt,
-	}
-	if err := h.DB.Create(&challenge).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to create challenge"})
-		return
-	}
-
-	// Write save file
-	savePath, saveSize, err := h.Storage.WriteChallengeSave(challenge.ID, saveFile)
-	if err != nil {
-		h.DB.Unscoped().Delete(&challenge)
-		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to save challenge file"})
-		return
-	}
-
-	challenge.SaveFilePath = savePath
-	challenge.SaveFileSize = saveSize
-
-	// Screenshot (optional)
-	if screenshotFile, _, err := c.Request.FormFile("screenshot"); err == nil {
-		defer screenshotFile.Close()
-		if ssPath, err := h.Storage.WriteChallengeScreenshot(challenge.ID, screenshotFile); err == nil {
-			challenge.ScreenshotPath = ssPath
-		} else {
-			slog.Error("failed to write challenge screenshot", "challengeId", challenge.ID, "error", err)
-		}
-	}
-
-	if err := h.DB.Save(&challenge).Error; err != nil {
-		h.Storage.DeleteChallengeSave(challenge.ID)
-		h.DB.Unscoped().Delete(&challenge)
-		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to update challenge record"})
-		return
-	}
-
-	// Reload with associations
-	h.DB.Preload("Creator").Preload("Game").Preload("Game.Console").First(&challenge, challenge.ID)
-
-	CreateActivityEvent(h.DB, h.Hub, uid, "challenge_created", challenge.GameID, ChallengeCreatedMetadata{
-		ChallengeID:   challenge.ID,
-		ChallengeName: challenge.Name,
-	})
-
-	c.JSON(http.StatusCreated, h.toChallengeResponse(challenge))
 }
 
 func (h *ChallengeHandler) lazyExpire(challenge *db.Challenge, now time.Time) {
