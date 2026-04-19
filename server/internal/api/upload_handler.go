@@ -6,14 +6,12 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
-	"net/http"
 	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
 
 	"github.com/danielgtaylor/huma/v2"
-	"github.com/gin-gonic/gin"
 	"github.com/spela/server/internal/db"
 	"github.com/spela/server/internal/scanner"
 	"github.com/spela/server/internal/scraper"
@@ -54,20 +52,20 @@ type StagedUploadResponse struct {
 	ConsoleID          *string                   `json:"consoleId,omitempty"`
 	ConsoleName        *string                   `json:"consoleName,omitempty"`
 	PossibleConsoles   []PossibleConsoleResponse `json:"possibleConsoles,omitempty"`
-	Status             string   `json:"status"`
-	Title              string   `json:"title,omitempty"`
-	CoverURL           string   `json:"coverUrl,omitempty"`
-	Description        string   `json:"description,omitempty"`
-	IGDBCriticsRating  float64  `json:"igdbCriticsRating,omitempty"`
-	Developer          string   `json:"developer,omitempty"`
-	Publisher          string   `json:"publisher,omitempty"`
-	Genre              string   `json:"genre,omitempty"`
-	Players            int      `json:"players,omitempty"`
-	ReleaseDate        string   `json:"releaseDate,omitempty"`
-	VerificationStatus string   `json:"verificationStatus,omitempty"`
-	CRC32              string   `json:"crc32,omitempty"`
-	CanonicalName      string   `json:"canonicalName,omitempty"`
-	DuplicateOfGameID  *string  `json:"duplicateOfGameId,omitempty"`
+	Status             string                    `json:"status"`
+	Title              string                    `json:"title,omitempty"`
+	CoverURL           string                    `json:"coverUrl,omitempty"`
+	Description        string                    `json:"description,omitempty"`
+	IGDBCriticsRating  float64                   `json:"igdbCriticsRating,omitempty"`
+	Developer          string                    `json:"developer,omitempty"`
+	Publisher          string                    `json:"publisher,omitempty"`
+	Genre              string                    `json:"genre,omitempty"`
+	Players            int                       `json:"players,omitempty"`
+	ReleaseDate        string                    `json:"releaseDate,omitempty"`
+	VerificationStatus string                    `json:"verificationStatus,omitempty"`
+	CRC32              string                    `json:"crc32,omitempty"`
+	CanonicalName      string                    `json:"canonicalName,omitempty"`
+	DuplicateOfGameID  *string                   `json:"duplicateOfGameId,omitempty"`
 }
 
 // toStagedUploadResponse converts a db.StagedUpload to its API response.
@@ -170,28 +168,6 @@ func detectConsole(database *gorm.DB, ext string) (*uint, bool) {
 
 	return nil, false
 }
-
-// CheckWritable checks whether the game library directory is writable.
-// GET /api/admin/uploads/writable
-func (h *UploadHandler) CheckWritable(c *gin.Context) {
-	gameDir := h.GameDirs[0]
-	tmpPath := filepath.Join(gameDir, ".spela-write-test")
-	f, err := os.Create(tmpPath)
-	if err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"writable": false,
-			"reason":   "Game library directory is read-only",
-		})
-		return
-	}
-	f.Close()
-	defer os.Remove(tmpPath)
-	c.JSON(http.StatusOK, gin.H{"writable": true})
-}
-
-// UploadROMs has been migrated to huma — see (*UploadHandler).HumaUploadROMs in
-// huma_admin_multipart.go. The gin handler was removed once nothing referenced
-// it; the OpenAPI spec is now the single source of truth for this endpoint.
 
 // stageROMFile handles the common logic for staging a single ROM file.
 // The writeFn callback writes the file content to the given destPath and returns
@@ -419,94 +395,6 @@ func (h *UploadHandler) extractAndStageZip(zipPath string, originalZipName strin
 	return results
 }
 
-// ListUploads returns all staged uploads.
-// GET /api/admin/uploads
-func (h *UploadHandler) ListUploads(c *gin.Context) {
-	var uploads []db.StagedUpload
-	if err := h.DB.Order("created_at desc").Find(&uploads).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to fetch uploads"})
-		return
-	}
-
-	results := make([]StagedUploadResponse, len(uploads))
-	for i, u := range uploads {
-		results[i] = toStagedUploadResponse(u, h.DB)
-	}
-	c.JSON(http.StatusOK, results)
-}
-
-// SetConsole sets the console for an ambiguous staged upload.
-// POST /api/admin/uploads/:id/console
-func (h *UploadHandler) SetConsole(c *gin.Context) {
-	id := c.Param("id")
-	var staged db.StagedUpload
-	if err := h.DB.First(&staged, id).Error; err != nil {
-		c.JSON(http.StatusNotFound, ErrorResponse{Error: "upload not found"})
-		return
-	}
-
-	var req SetUploadConsoleRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "consoleId required"})
-		return
-	}
-
-	var console db.Console
-	if err := h.DB.Where("LOWER(abbreviation) = LOWER(?)", req.ConsoleID).First(&console).Error; err != nil {
-		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "unknown console"})
-		return
-	}
-
-	staged.ConsoleID = &console.ID
-	staged.Status = "pending_scrape"
-	if err := h.DB.Save(&staged).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to update upload"})
-		return
-	}
-
-	c.JSON(http.StatusOK, toStagedUploadResponse(staged, h.DB))
-}
-
-// ScrapeUpload triggers scraping for a single staged upload.
-// POST /api/admin/uploads/:id/scrape
-func (h *UploadHandler) ScrapeUpload(c *gin.Context) {
-	id := c.Param("id")
-	var staged db.StagedUpload
-	if err := h.DB.First(&staged, id).Error; err != nil {
-		c.JSON(http.StatusNotFound, ErrorResponse{Error: "upload not found"})
-		return
-	}
-
-	if staged.ConsoleID == nil {
-		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "console must be set before scraping"})
-		return
-	}
-
-	h.scrapeStaged(&staged)
-
-	c.JSON(http.StatusOK, toStagedUploadResponse(staged, h.DB))
-}
-
-// ScrapeAllUploads triggers scraping for all uploads pending scrape.
-// POST /api/admin/uploads/scrape
-func (h *UploadHandler) ScrapeAllUploads(c *gin.Context) {
-	var uploads []db.StagedUpload
-	if err := h.DB.Where("status = ?", "pending_scrape").Find(&uploads).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to fetch uploads"})
-		return
-	}
-
-	for i := range uploads {
-		h.scrapeStaged(&uploads[i])
-	}
-
-	results := make([]StagedUploadResponse, len(uploads))
-	for i, u := range uploads {
-		results[i] = toStagedUploadResponse(u, h.DB)
-	}
-	c.JSON(http.StatusOK, results)
-}
-
 // tryIdentifyByDAT attempts to identify the console for a ROM file by computing its CRC32
 // and searching all applicable No-Intro DAT indices, then Redump indices for disc-based systems.
 // Returns the console ID if a match is found, along with CRC32, verification status, and canonical name.
@@ -666,33 +554,6 @@ func (h *UploadHandler) scrapeStaged(staged *db.StagedUpload) {
 	h.DB.Save(staged)
 }
 
-// AcceptUpload moves a staged ROM to the library and creates a Game record.
-// POST /api/admin/uploads/:id/accept
-func (h *UploadHandler) AcceptUpload(c *gin.Context) {
-	id := c.Param("id")
-	var staged db.StagedUpload
-	if err := h.DB.First(&staged, id).Error; err != nil {
-		c.JSON(http.StatusNotFound, ErrorResponse{Error: "upload not found"})
-		return
-	}
-
-	if staged.ConsoleID == nil {
-		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "console must be set before accepting"})
-		return
-	}
-
-	game, err := h.acceptStaged(&staged)
-	if err != nil {
-		slog.Warn("failed to accept upload", "id", id, "error", err)
-		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to accept upload"})
-		return
-	}
-
-	userID := getUserID(c)
-	h.DB.Preload("Console").Preload("Discs").Preload("Screenshots").First(game, game.ID)
-	c.JSON(http.StatusOK, ToGameResponse(*game, h.DB, userID))
-}
-
 // acceptStaged performs the actual accept: move file, create Game record, delete staged record.
 func (h *UploadHandler) acceptStaged(staged *db.StagedUpload) (*db.Game, error) {
 	var console db.Console
@@ -755,77 +616,6 @@ func (h *UploadHandler) acceptStaged(staged *db.StagedUpload) (*db.Game, error) 
 	h.DB.Delete(&staged)
 
 	return &game, nil
-}
-
-// RejectUpload deletes a staged ROM from the staging area.
-// POST /api/admin/uploads/:id/reject
-func (h *UploadHandler) RejectUpload(c *gin.Context) {
-	id := c.Param("id")
-	var staged db.StagedUpload
-	if err := h.DB.First(&staged, id).Error; err != nil {
-		c.JSON(http.StatusNotFound, ErrorResponse{Error: "upload not found"})
-		return
-	}
-
-	os.Remove(staged.FilePath)
-	h.DB.Delete(&staged)
-
-	c.JSON(http.StatusOK, gin.H{"message": "upload rejected"})
-}
-
-// AcceptAllUploads accepts all non-duplicate staged uploads.
-// POST /api/admin/uploads/accept-all
-func (h *UploadHandler) AcceptAllUploads(c *gin.Context) {
-	var uploads []db.StagedUpload
-	if err := h.DB.Where("status IN ? AND console_id IS NOT NULL", []string{"ready", "pending_scrape"}).Find(&uploads).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to fetch uploads"})
-		return
-	}
-
-	var accepted int
-	for i := range uploads {
-		if _, err := h.acceptStaged(&uploads[i]); err != nil {
-			slog.Warn("failed to accept staged upload", "id", uploads[i].ID, "error", err)
-			continue
-		}
-		accepted++
-	}
-
-	c.JSON(http.StatusOK, gin.H{"accepted": accepted})
-}
-
-// RejectAllUploads rejects all staged uploads.
-// POST /api/admin/uploads/reject-all
-func (h *UploadHandler) RejectAllUploads(c *gin.Context) {
-	var uploads []db.StagedUpload
-	if err := h.DB.Find(&uploads).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to fetch uploads"})
-		return
-	}
-
-	for _, u := range uploads {
-		os.Remove(u.FilePath)
-	}
-	h.DB.Where("1 = 1").Delete(&db.StagedUpload{})
-
-	c.JSON(http.StatusOK, gin.H{"rejected": len(uploads)})
-}
-
-// ClearStaging deletes all staged uploads and files.
-// DELETE /api/admin/uploads
-func (h *UploadHandler) ClearStaging(c *gin.Context) {
-	var uploads []db.StagedUpload
-	if err := h.DB.Find(&uploads).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to fetch uploads"})
-		return
-	}
-
-	for _, u := range uploads {
-		os.Remove(u.FilePath)
-	}
-	h.DB.Where("1 = 1").Delete(&db.StagedUpload{})
-
-	c.JSON(http.StatusOK, gin.H{"cleared": len(uploads)})
 }
 
 // copyFile copies a file from src to dst.
