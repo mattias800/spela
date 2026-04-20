@@ -611,36 +611,11 @@ export interface BiosConsole {
 
 // --- Top Lists ---
 
-export interface TopListGame {
-  rank: number;
-  gameId: string;
-  name: string;
-  coverUrl: string;
-  consoleName: string;
-  consoleId: string;
-  igdbCriticsRating: number;
-}
+export type TopListGame = Schemas["TopListGameResponse"];
 
-export interface TopRatedGame {
-  rank: number;
-  name: string;
-  coverUrl: string;
-  igdbCriticsRating: number;
-  localGameId: string | null;
-  consoleName: string;
-}
+export type TopRatedGame = Schemas["TopRatedGameResponse"];
 
-export interface LongestGame {
-  rank: number;
-  gameId: string;
-  name: string;
-  coverUrl: string;
-  consoleName: string;
-  consoleId: string;
-  timeToBeatNormally: number;
-  timeToBeatHastily: number;
-  timeToBeatCompletely: number;
-}
+export type LongestGame = Schemas["LongestGameResponse"];
 
 export type DailyPlayActivity = Schemas["HeatmapEntry"];
 
