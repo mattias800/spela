@@ -24,14 +24,14 @@ type SystemEventResponse struct {
 	CategoryCode string         `json:"categoryCode"`
 	CategoryName string         `json:"categoryName"`
 	EventType    string         `json:"eventType"`
-	Reason       string         `json:"reason,omitempty"`
-	Username     string         `json:"username,omitempty"`
-	UserID       *uint          `json:"userId,omitempty"`
-	IP           string         `json:"ip,omitempty"`
-	Path         string         `json:"path,omitempty"`
-	Metadata     map[string]any `json:"metadata,omitempty"`
-	MetadataRaw  string         `json:"metadataRaw,omitempty"`
-	DismissedAt  *time.Time     `json:"dismissedAt,omitempty"`
+	Reason       string         `json:"reason"`
+	Username     string         `json:"username"`
+	UserID       *uint          `json:"userId"`
+	IP           string         `json:"ip"`
+	Path         string         `json:"path"`
+	Metadata     map[string]any `json:"metadata"`
+	MetadataRaw  string         `json:"metadataRaw"`
+	DismissedAt  *time.Time     `json:"dismissedAt"`
 }
 
 // SystemEventsListResponse is the paginated list payload.

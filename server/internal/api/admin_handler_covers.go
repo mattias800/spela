@@ -4,6 +4,6 @@ package api
 type CoverOption struct {
 	Source       string `json:"source"`
 	URL          string `json:"url"`
-	Label        string `json:"label,omitempty"`
-	LibRetroName string `json:"libretroName,omitempty"`
+	Label        string `json:"label"`
+	LibRetroName string `json:"libretroName"`
 }

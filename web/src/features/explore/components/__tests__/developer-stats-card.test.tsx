@@ -2,41 +2,9 @@ import { render, screen } from "@testing-library/react";
 import { describe, it, expect } from "vitest";
 import { MemoryRouter } from "react-router-dom";
 import { DeveloperStatsCard } from "@/features/explore/components/developer-stats-card";
-import type { EntityUserStats, Game } from "@/types/api";
+import type { EntityUserStats } from "@/types/api";
+import { makeGame } from "@/test-utils/fixtures";
 
-function makeGame(overrides: Partial<Game> = {}): Game {
-  return {
-    id: "1",
-    title: "Test Game",
-    consoleId: "snes",
-    consoleName: "SNES",
-    fileName: "test.sfc",
-    fileSize: 1024,
-    discCount: 1,
-    screenshotUrls: [],
-    scrapeAttempts: 1,
-    coverAspectRatio: 0.75,
-    playable: true,
-    isFavorite: false,
-    isInPlayLater: false,
-    averageRating: 0,
-    ratingCount: 0,
-    totalPlayTime: 0,
-    createdAt: "2025-01-01T00:00:00Z",
-    updatedAt: "2025-01-01T00:00:00Z",
-    coverUrl: "",
-    description: "",
-    developer: "",
-    genre: "",
-    igdbCriticsRating: 0,
-    isPreRelease: false,
-    lastPlayedAt: null,
-    players: 0,
-    publisher: "",
-    releaseDate: "",
-    ...overrides,
-  };
-}
 
 function renderCard(userStats: EntityUserStats, totalGames = 10) {
   return render(
@@ -97,10 +65,14 @@ describe("DeveloperStatsCard", () => {
     expect(img).toHaveAttribute("src", "/covers/mmx.jpg");
   });
 
-  it("renders without most played game when null", () => {
+  it("renders without most played game when null at runtime", () => {
+    // The wire type says mostPlayedGame is always present, but huma's
+    // nullable-$ref limitation means the server can emit null (from the
+    // nil *Game pointer). Simulate that by casting; the component should
+    // gracefully skip rendering in that case.
     renderCard({
       ...baseStats,
-      mostPlayedGame: null,
+      mostPlayedGame: null as unknown as EntityUserStats["mostPlayedGame"],
     });
     expect(
       screen.queryByTestId("developer-most-played-game"),

@@ -25,7 +25,7 @@ type DownloadProgress struct {
 	FileName  string `json:"fileName"`
 	ConsoleID string `json:"consoleId"`
 	Status    string `json:"status"` // "downloaded", "skipped", "failed"
-	Error     string `json:"error,omitempty"`
+	Error     string `json:"error"`
 	Current   int    `json:"current"`
 	Total     int    `json:"total"`
 }

@@ -2,45 +2,13 @@ import { render, screen } from "@testing-library/react";
 import { describe, it, expect, vi } from "vitest";
 import { MemoryRouter } from "react-router-dom";
 import { ForYouSection } from "../for-you-section";
-import type { ForYouRow, Game } from "@/types/api";
+import type { ForYouRow } from "@/types/api";
+import { makeGame } from "@/test-utils/fixtures";
 
 vi.mock("@/hooks/use-auto-scrape", () => ({
   useAutoScrape: () => ({ ref: { current: null }, isScraping: false }),
 }));
 
-function makeGame(overrides: Partial<Game> = {}): Game {
-  return {
-    id: "1",
-    title: "Test Game",
-    consoleId: "snes",
-    consoleName: "SNES",
-    fileName: "test.sfc",
-    fileSize: 1024,
-    discCount: 1,
-    screenshotUrls: [],
-    scrapeAttempts: 1,
-    coverAspectRatio: 0.75,
-    playable: true,
-    isFavorite: false,
-    isInPlayLater: false,
-    averageRating: 0,
-    ratingCount: 0,
-    totalPlayTime: 0,
-    createdAt: "2025-01-01T00:00:00Z",
-    updatedAt: "2025-01-01T00:00:00Z",
-    coverUrl: "",
-    description: "",
-    developer: "",
-    genre: "",
-    igdbCriticsRating: 0,
-    isPreRelease: false,
-    lastPlayedAt: null,
-    players: 0,
-    publisher: "",
-    releaseDate: "",
-    ...overrides,
-  };
-}
 
 function renderComponent(props: {
   rows?: ForYouRow[];
@@ -62,6 +30,7 @@ describe("ForYouSection", () => {
       {
         type: "because_you_played",
         title: "Because you played Chrono Trigger",
+        genre: "",
         sourceGame: makeGame({
           id: "source-1",
           title: "Chrono Trigger",
@@ -90,6 +59,8 @@ describe("ForYouSection", () => {
       {
         type: "more_genre",
         title: "More RPGs for you",
+        genre: "",
+        sourceGame: makeGame(),
         games: [
           makeGame({ id: "g1", title: "Dragon Quest V" }),
           makeGame({ id: "g2", title: "Earthbound" }),
@@ -110,6 +81,8 @@ describe("ForYouSection", () => {
       {
         type: "unfinished",
         title: "Unfinished business",
+        genre: "",
+        sourceGame: makeGame(),
         games: [
           makeGame({ id: "u1", title: "Mega Man X" }),
         ],
@@ -129,6 +102,7 @@ describe("ForYouSection", () => {
         type: "expand_horizons",
         title: "Expand your horizons",
         genre: "Puzzle",
+        sourceGame: makeGame(),
         games: [
           makeGame({ id: "e1", title: "Tetris Attack" }),
           makeGame({ id: "e2", title: "Panel de Pon" }),

@@ -8,7 +8,7 @@ import type { SharedSession } from "@/types/api";
 
 interface SharedSessionCardProps {
   sharedSession: SharedSession;
-  members?: { username: string; avatarUrl?: string }[];
+  members?: { username: string; avatarUrl: string }[];
 }
 
 export function SharedSessionCard({ sharedSession, members }: SharedSessionCardProps) {
@@ -58,7 +58,7 @@ export function SharedSessionCard({ sharedSession, members }: SharedSessionCardP
             {sharedSession.name}
           </h3>
           <p className="text-xs text-surface-500 truncate">
-            {sharedSession.gameTitle} &middot; {sharedSession.gameConsoleName}
+            {sharedSession.gameTitle} &middot; {sharedSession.consoleName}
           </p>
         </div>
         <div className="flex items-center justify-between">
@@ -66,7 +66,7 @@ export function SharedSessionCard({ sharedSession, members }: SharedSessionCardP
             <MemberAvatars members={members} max={3} />
           )}
           <span className="text-xs text-surface-500">
-            {formatRelativeTime(sharedSession.lastActivityAt)}
+            {formatRelativeTime(sharedSession.updatedAt)}
           </span>
         </div>
       </div>

@@ -86,13 +86,13 @@ export function SessionDetailPage() {
     updateCheats.mutate({
       sessionId,
       cheatsEnabled: enabled,
-      enabledIndices: cheats.enabledIndices,
+      enabledIndices: cheats.enabledIndices ?? [],
     });
   }
 
   function handleToggleCheat(index: number, enabled: boolean) {
     if (!sessionId || !cheats) return;
-    const current = new Set(cheats.enabledIndices);
+    const current = new Set(cheats.enabledIndices ?? []);
     if (enabled) current.add(index);
     else current.delete(index);
     updateCheats.mutate({
@@ -362,9 +362,9 @@ export function SessionDetailPage() {
             <h2 className="text-lg font-semibold text-surface-100">Cheats</h2>
           </div>
           <div className="flex items-center gap-3">
-            {cheats && cheats.enabledIndices.length > 0 && (
+            {(cheats?.enabledIndices?.length ?? 0) > 0 && (
               <span className="text-sm text-surface-400">
-                {cheats.enabledIndices.length} enabled
+                {cheats?.enabledIndices?.length ?? 0} enabled
               </span>
             )}
             <Switch
@@ -388,7 +388,7 @@ export function SessionDetailPage() {
         {cheats?.cheatsEnabled && session && (
           <SessionCheatSelector
             gameId={session.gameId}
-            enabledIndices={cheats.enabledIndices}
+            enabledIndices={cheats.enabledIndices ?? []}
             onToggleCheat={handleToggleCheat}
             onSelectAll={handleSelectAllCheats}
             onDeselectAll={handleDeselectAllCheats}

@@ -82,7 +82,7 @@ export function GameActiveSharedSessions({ gameId }: GameActiveSharedSessionsPro
                   {sharedSession.memberCount}
                 </span>
                 <span>&middot;</span>
-                <span>{formatRelativeTime(sharedSession.lastActivityAt)}</span>
+                <span>{formatRelativeTime(sharedSession.updatedAt)}</span>
               </div>
             </div>
             <Badge

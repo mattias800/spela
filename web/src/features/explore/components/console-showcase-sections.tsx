@@ -26,14 +26,14 @@ export function ConsoleRecentlyPlayed({
   const { toggle: handleToggleFavorite } = useToggleFavorite();
   const { toggle: handleTogglePlayLater } = useTogglePlayLater();
 
-  if (!showcase || showcase.recentlyPlayed.length === 0) return null;
+  if (!showcase || (showcase.recentlyPlayed ?? []).length === 0) return null;
 
   return (
     <div data-testid="recently-played-section">
       <GameShelf
         title="Continue Playing"
         icon={Play}
-        games={showcase.recentlyPlayed}
+        games={showcase.recentlyPlayed ?? []}
         isLoading={false}
         hideConsoleName
         onToggleFavorite={handleToggleFavorite}
@@ -48,13 +48,13 @@ export function ConsoleEssentials({ consoleId }: ConsoleShowcaseSectionProps) {
   const { toggle: handleToggleFavorite } = useToggleFavorite();
   const { toggle: handleTogglePlayLater } = useTogglePlayLater();
 
-  if (!showcase || showcase.essentials.length === 0) return null;
+  if (!showcase || (showcase.essentials ?? []).length === 0) return null;
 
   return (
     <GameShelf
       title="Essentials"
       icon={Trophy}
-      games={showcase.essentials}
+      games={showcase.essentials ?? []}
       isLoading={false}
       hideConsoleName
       onToggleFavorite={handleToggleFavorite}
@@ -68,13 +68,13 @@ export function ConsoleHiddenGems({ consoleId }: ConsoleShowcaseSectionProps) {
   const { toggle: handleToggleFavorite } = useToggleFavorite();
   const { toggle: handleTogglePlayLater } = useTogglePlayLater();
 
-  if (!showcase || showcase.hiddenGems.length === 0) return null;
+  if (!showcase || (showcase.hiddenGems ?? []).length === 0) return null;
 
   return (
     <GameShelf
       title="Hidden Gems"
       icon={Gem}
-      games={showcase.hiddenGems}
+      games={showcase.hiddenGems ?? []}
       isLoading={false}
       hideConsoleName
       onToggleFavorite={handleToggleFavorite}
@@ -88,7 +88,7 @@ export function ConsoleGenreBreakdown({
 }: ConsoleShowcaseSectionProps) {
   const { data: showcase } = useConsoleShowcase(consoleId);
 
-  if (!showcase || showcase.genreBreakdown.length === 0) return null;
+  if (!showcase || (showcase.genreBreakdown ?? []).length === 0) return null;
 
   const colorTheme = showcase.console.colorTheme || "#6366f1";
 
@@ -100,7 +100,7 @@ export function ConsoleGenreBreakdown({
         id="genre-breakdown-heading"
       >
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-          {showcase.genreBreakdown.map((genre: GenreCount) => (
+          {(showcase.genreBreakdown ?? []).map((genre: GenreCount) => (
             <div
               key={genre.name}
               className="rounded-xl border border-white/[0.06] p-4"
@@ -128,7 +128,7 @@ export function ConsoleTopDevelopers({
 }: ConsoleShowcaseSectionProps) {
   const { data: showcase } = useConsoleShowcase(consoleId);
 
-  if (!showcase || showcase.topDevelopers.length === 0) return null;
+  if (!showcase || (showcase.topDevelopers ?? []).length === 0) return null;
 
   const colorTheme = showcase.console.colorTheme || "#6366f1";
 
@@ -140,7 +140,7 @@ export function ConsoleTopDevelopers({
         id="top-developers-heading"
       >
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-          {showcase.topDevelopers.map((dev: DeveloperSummary) => (
+          {(showcase.topDevelopers ?? []).map((dev: DeveloperSummary) => (
             <Link
               key={dev.name}
               to={`/explore/developers/${encodeURIComponent(dev.name)}`}
@@ -177,13 +177,13 @@ export function ConsoleRecentlyAdded({
   const { toggle: handleToggleFavorite } = useToggleFavorite();
   const { toggle: handleTogglePlayLater } = useTogglePlayLater();
 
-  if (!showcase || showcase.recentlyAdded.length === 0) return null;
+  if (!showcase || (showcase.recentlyAdded ?? []).length === 0) return null;
 
   return (
     <GameShelf
       title="Recently Added"
       icon={Sparkles}
-      games={showcase.recentlyAdded}
+      games={showcase.recentlyAdded ?? []}
       isLoading={false}
       hideConsoleName
       onToggleFavorite={handleToggleFavorite}

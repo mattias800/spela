@@ -45,7 +45,7 @@ export function InvitationCard({
           {invitation.sharedSessionName}
         </p>
         <p className="text-xs text-surface-500 truncate">
-          {invitation.gameTitle} &middot; {invitation.gameConsoleName}
+          {invitation.gameTitle} &middot; {invitation.consoleName}
         </p>
         <div className="flex items-center gap-2 mt-1.5">
           <PlayerAvatar

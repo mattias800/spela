@@ -119,7 +119,7 @@ export function DeveloperDetailPage() {
   );
 
   // Apply genre + console filter to the all-games list
-  let filteredGames = developer.games;
+  let filteredGames = developer.games ?? [];
   if (genreFilter) {
     filteredGames = filteredGames.filter((g: Game) =>
       g.genre
@@ -168,7 +168,7 @@ export function DeveloperDetailPage() {
         name={developer.name}
         gameCount={developer.gameCount}
         avgRating={developer.avgRating}
-        consoleCount={developer.consoles.length}
+        consoleCount={(developer.consoles ?? []).length}
         heroUrl={developer.heroUrl}
         logoUrl={developer.companyInfo?.logoUrl}
       />
@@ -183,7 +183,7 @@ export function DeveloperDetailPage() {
         gameCount={developer.gameCount}
         activeYears={developer.activeYears}
         primaryGenre={developer.primaryGenre}
-        platformCount={developer.consoles.length}
+        platformCount={(developer.consoles ?? []).length}
         avgRating={developer.avgRating}
       />
 
@@ -244,7 +244,7 @@ export function DeveloperDetailPage() {
       )}
 
       {/* Console filter chips */}
-      {developer.consoles.length > 1 && (
+      {(developer.consoles ?? []).length > 1 && (
         <div
           className="flex flex-wrap gap-2"
           data-testid="developer-console-filters"
@@ -253,10 +253,10 @@ export function DeveloperDetailPage() {
             label="All"
             isSelected={consoleFilter === null}
             onClick={() => setConsoleFilter(null)}
-            count={developer.games.length}
+            count={(developer.games ?? []).length}
           />
-          {developer.consoles.map((consoleName: string) => {
-            const count = developer.games.filter(
+          {(developer.consoles ?? []).map((consoleName: string) => {
+            const count = (developer.games ?? []).filter(
               (g: Game) => g.consoleName === consoleName,
             ).length;
             return (

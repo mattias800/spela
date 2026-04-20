@@ -26,7 +26,7 @@ export function CompletionistMapSection({
     );
   }
 
-  if (!data || data.consoles.length === 0) return null;
+  if (!data || (data.consoles ?? []).length === 0) return null;
 
   return (
     <section data-testid="completionist-map">
@@ -65,7 +65,7 @@ export function CompletionistMapSection({
 
       {/* Per-console breakdown */}
       <div className="space-y-2">
-        {data.consoles.map((console) => (
+        {(data.consoles ?? []).map((console) => (
           <div
             key={console.id}
             data-testid={`console-progress-${console.id}`}

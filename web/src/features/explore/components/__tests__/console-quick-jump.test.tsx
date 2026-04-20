@@ -2,41 +2,9 @@ import { render, screen } from "@testing-library/react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { MemoryRouter } from "react-router-dom";
 import { ConsoleQuickJump } from "@/features/explore/components/console-quick-jump";
-import type { ConsoleHighlight, Game } from "@/types/api";
+import type { ConsoleHighlight } from "@/types/api";
+import { makeGame } from "@/test-utils/fixtures";
 
-function makeGame(overrides: Partial<Game> = {}): Game {
-  return {
-    id: "1",
-    title: "Test Game",
-    consoleId: "snes",
-    consoleName: "SNES",
-    fileName: "test.sfc",
-    fileSize: 1024,
-    discCount: 1,
-    screenshotUrls: [],
-    scrapeAttempts: 1,
-    coverAspectRatio: 0.75,
-    playable: true,
-    isFavorite: false,
-    isInPlayLater: false,
-    averageRating: 0,
-    ratingCount: 0,
-    totalPlayTime: 0,
-    createdAt: "2025-01-01T00:00:00Z",
-    updatedAt: "2025-01-01T00:00:00Z",
-    coverUrl: "",
-    description: "",
-    developer: "",
-    genre: "",
-    igdbCriticsRating: 0,
-    isPreRelease: false,
-    lastPlayedAt: null,
-    players: 0,
-    publisher: "",
-    releaseDate: "",
-    ...overrides,
-  };
-}
 
 function makeConsoleHighlight(
   overrides: Partial<ConsoleHighlight> = {},

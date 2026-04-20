@@ -4,44 +4,12 @@ import { MemoryRouter } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { GameShelf } from "../game-shelf";
 import type { Game } from "@/types/api";
+import { makeGame } from "@/test-utils/fixtures";
 
 vi.mock("@/hooks/use-auto-scrape", () => ({
   useAutoScrape: () => ({ ref: { current: null }, isScraping: false }),
 }));
 
-function makeGame(overrides: Partial<Game> = {}): Game {
-  return {
-    id: "1",
-    title: "Test Game",
-    consoleId: "nes",
-    consoleName: "NES",
-    fileName: "test.nes",
-    fileSize: 1024,
-    discCount: 1,
-    screenshotUrls: [],
-    scrapeAttempts: 1,
-    coverAspectRatio: 0.75,
-    playable: true,
-    isFavorite: false,
-    isInPlayLater: false,
-    averageRating: 0,
-    ratingCount: 0,
-    totalPlayTime: 0,
-    createdAt: "2025-01-01T00:00:00Z",
-    updatedAt: "2025-01-01T00:00:00Z",
-    coverUrl: "",
-    description: "",
-    developer: "",
-    genre: "",
-    igdbCriticsRating: 0,
-    isPreRelease: false,
-    lastPlayedAt: null,
-    players: 0,
-    publisher: "",
-    releaseDate: "",
-    ...overrides,
-  };
-}
 
 const mockGames: Game[] = [
   makeGame({ id: "1", title: "Super Mario World", consoleName: "SNES" }),

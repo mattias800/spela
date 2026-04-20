@@ -63,7 +63,7 @@ export function SharedSessionDetailPage() {
 
   const isOwner = sharedSession?.ownerId === user?.id;
   const consoleInfo = consoles?.find(
-    (c) => c.name === sharedSession?.gameConsoleName,
+    (c) => c.name === sharedSession?.consoleName,
   );
   const canPlayInBrowser = !!consoleInfo?.emulatorJsCore;
 
@@ -136,7 +136,7 @@ export function SharedSessionDetailPage() {
 
       <SharedSessionMembersList
         sharedSessionId={sharedSession.id}
-        members={sharedSession.members}
+        members={sharedSession.members ?? []}
         isOwner={isOwner}
       />
 

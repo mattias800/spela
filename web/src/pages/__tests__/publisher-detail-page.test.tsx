@@ -4,7 +4,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { PublisherDetailPage } from "@/pages/publisher-detail-page";
-import type { PublisherDetailResponse, Game } from "@/types/api";
+import type { PublisherDetailResponse } from "@/types/api";
 
 // Mock hooks
 vi.mock("@/hooks/use-explore", () => ({
@@ -29,42 +29,10 @@ vi.mock("@/hooks/use-animated-counter", () => ({
 }));
 
 import { usePublisherDetail } from "@/hooks/use-explore";
+import { makeGame } from "@/test-utils/fixtures";
 
 const mockUsePublisherDetail = usePublisherDetail as ReturnType<typeof vi.fn>;
 
-function makeGame(overrides: Partial<Game> = {}): Game {
-  return {
-    id: "1",
-    title: "Test Game",
-    consoleId: "snes",
-    consoleName: "SNES",
-    fileName: "test.sfc",
-    fileSize: 1024,
-    discCount: 1,
-    screenshotUrls: [],
-    scrapeAttempts: 1,
-    coverAspectRatio: 0.75,
-    playable: true,
-    isFavorite: false,
-    isInPlayLater: false,
-    averageRating: 0,
-    ratingCount: 0,
-    totalPlayTime: 0,
-    createdAt: "2025-01-01T00:00:00Z",
-    updatedAt: "2025-01-01T00:00:00Z",
-    coverUrl: "",
-    description: "",
-    developer: "",
-    genre: "",
-    igdbCriticsRating: 0,
-    isPreRelease: false,
-    lastPlayedAt: null,
-    players: 0,
-    publisher: "",
-    releaseDate: "",
-    ...overrides,
-  };
-}
 
 const mockPublisherDetail: PublisherDetailResponse = {
   name: "Nintendo",
@@ -95,6 +63,26 @@ const mockPublisherDetail: PublisherDetailResponse = {
     { name: "Nintendo EAD", count: 3 },
     { name: "Intelligent Systems", count: 1 },
   ],
+  activeYears: { first: 1985, last: 2010 },
+  companyInfo: {
+    logoUrl: "",
+    description: "",
+    foundedYear: 0,
+    country: "",
+    websiteUrl: "",
+    wikipediaUrl: "",
+  },
+  heroUrl: "",
+  primaryGenre: "",
+  ratingDistribution: { excellent: 0, good: 0, average: 0, poor: 0, unrated: 0 },
+  relatedPublishers: [],
+  timeline: [],
+  userStats: {
+    totalPlayTime: 0,
+    gamesPlayed: 0,
+    favoriteCount: 0,
+    mostPlayedGame: makeGame({ id: "stub" }),
+  },
 };
 
 function renderPage(name = "Nintendo") {
@@ -432,6 +420,10 @@ describe("PublisherDetailPage", () => {
   });
 
   it("hides user stats card when userStats is absent", () => {
+    mockUsePublisherDetail.mockReturnValue({
+      data: { ...mockPublisherDetail, userStats: undefined },
+      isLoading: false,
+    });
     renderPage();
     expect(
       screen.queryByTestId("developer-user-stats"),
@@ -523,6 +515,10 @@ describe("PublisherDetailPage", () => {
   });
 
   it("hides active years pill when not provided", () => {
+    mockUsePublisherDetail.mockReturnValue({
+      data: { ...mockPublisherDetail, activeYears: undefined },
+      isLoading: false,
+    });
     renderPage();
     expect(
       screen.queryByTestId("glance-active-years"),

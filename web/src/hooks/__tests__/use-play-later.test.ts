@@ -270,7 +270,7 @@ describe("useTogglePlayLater", () => {
 
     act(() => {
       result.current.toggle(
-        game as Parameters<typeof result.current.toggle>[0],
+        game as unknown as Parameters<typeof result.current.toggle>[0],
       );
     });
 

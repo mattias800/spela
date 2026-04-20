@@ -16,7 +16,8 @@
     "format:check": "prettier --no-config --check .",
     "openapi:dump": "cd ../server && go run ./cmd/dump-openapi ../web/src/generated/openapi.json",
     "openapi:types": "openapi-typescript src/generated/openapi.json --output src/generated/api.d.ts",
-    "openapi:gen": "npm run openapi:dump && npm run openapi:types"
+    "openapi:schemas": "node scripts/generate-schema-exports.mjs",
+    "openapi:gen": "npm run openapi:dump && npm run openapi:types && npm run openapi:schemas"
   },
   "dependencies": {
     "@emulatorjs/core-nestopia": "^4.2.3",

@@ -11,7 +11,7 @@ import (
 type humaError struct {
 	status  int
 	Err     string `json:"error"`
-	Message string `json:"message,omitempty"`
+	Message string `json:"message"`
 }
 
 // Error implements the built-in error interface.

@@ -84,7 +84,7 @@ export function BiosConsoleCard({
         <>
         <Divider />
         <div className="px-5 pb-4 space-y-2 pt-3">
-          {biosConsole.files.map((file) => (
+          {(biosConsole.files ?? []).map((file) => (
             <div
               key={file.fileName}
               className="flex items-center gap-2.5 text-sm"

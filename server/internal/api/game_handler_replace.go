@@ -15,7 +15,7 @@ import (
 type ReplaceROMResult struct {
 	Verified       bool   `json:"verified"`
 	CRC32          string `json:"crc32"`
-	CanonicalName  string `json:"canonicalName,omitempty"`
+	CanonicalName  string `json:"canonicalName"`
 	PreviousStatus string `json:"previousStatus"`
 	PreviousCRC32  string `json:"previousCrc32"`
 }

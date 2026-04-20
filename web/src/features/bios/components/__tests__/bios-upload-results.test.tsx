@@ -17,6 +17,8 @@ function makeBiosFile(overrides: Partial<BiosFile> = {}): BiosFile {
     description: "PlayStation BIOS (North America)",
     required: true,
     status: "valid",
+    expectedMd5: "",
+    subDir: "",
     ...overrides,
   };
 }
@@ -58,7 +60,7 @@ describe("BiosUploadResults", () => {
         result: makeBiosFile({
           name: "unknown.bin",
           consoleId: null,
-          consoleName: undefined,
+          consoleName: "",
           description: undefined,
           status: "present",
           required: false,

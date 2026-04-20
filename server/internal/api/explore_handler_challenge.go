@@ -62,15 +62,15 @@ type ExploreChallengeResponse struct {
 	CreatorUsername string     `json:"creatorUsername"`
 	GameID          string     `json:"gameId"`
 	GameTitle       string     `json:"gameTitle"`
-	GameCoverURL    string     `json:"gameCoverUrl,omitempty"`
-	ConsoleName     string     `json:"consoleName,omitempty"`
+	GameCoverURL    string     `json:"gameCoverUrl"`
+	ConsoleName     string     `json:"consoleName"`
 	Name            string     `json:"name"`
-	Description     string     `json:"description,omitempty"`
+	Description     string     `json:"description"`
 	Type            string     `json:"type"`
 	Difficulty      string     `json:"difficulty"`
 	AttemptCount    int        `json:"attemptCount"`
 	CompletionCount int        `json:"completionCount"`
-	ExpiresAt       *time.Time `json:"expiresAt,omitempty"`
+	ExpiresAt       *time.Time `json:"expiresAt"`
 	CreatedAt       time.Time  `json:"createdAt"`
 }
 

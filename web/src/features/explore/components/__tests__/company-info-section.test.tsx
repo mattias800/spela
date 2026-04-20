@@ -3,6 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { describe, it, expect } from "vitest";
 import { CompanyInfoSection } from "@/features/explore/components/company-info-section";
 import type { CompanyInfo } from "@/types/api";
+import { makeCompanyInfo } from "@/test-utils/fixtures";
 
 const fullCompanyInfo: CompanyInfo = {
   logoUrl: "/images/companies/capcom-logo.png",
@@ -22,7 +23,7 @@ describe("CompanyInfoSection", () => {
 
   it("renders nothing when company info has no meaningful data", () => {
     const { container } = render(
-      <CompanyInfoSection companyInfo={{ logoUrl: "/logo.png" }} />,
+      <CompanyInfoSection companyInfo={makeCompanyInfo({ logoUrl: "/logo.png" })} />,
     );
     expect(container.firstChild).toBeNull();
   });
@@ -73,7 +74,7 @@ describe("CompanyInfoSection", () => {
   it("hides toggle for short descriptions", () => {
     render(
       <CompanyInfoSection
-        companyInfo={{ description: "A short description." }}
+        companyInfo={makeCompanyInfo({ description: "A short description." })}
       />,
     );
     expect(screen.getByTestId("company-description")).toBeInTheDocument();
@@ -85,7 +86,7 @@ describe("CompanyInfoSection", () => {
   it("hides description section when no description", () => {
     render(
       <CompanyInfoSection
-        companyInfo={{ foundedYear: 1979, country: "Japan" }}
+        companyInfo={makeCompanyInfo({ foundedYear: 1979, country: "Japan" })}
       />,
     );
     expect(
@@ -103,7 +104,7 @@ describe("CompanyInfoSection", () => {
 
   it("renders only founded year when country is missing", () => {
     render(
-      <CompanyInfoSection companyInfo={{ foundedYear: 1985 }} />,
+      <CompanyInfoSection companyInfo={makeCompanyInfo({ foundedYear: 1985 })} />,
     );
     const meta = screen.getByTestId("company-metadata");
     expect(meta).toHaveTextContent("Founded 1985");
@@ -112,7 +113,7 @@ describe("CompanyInfoSection", () => {
 
   it("renders only country when founded year is missing", () => {
     render(
-      <CompanyInfoSection companyInfo={{ country: "Japan" }} />,
+      <CompanyInfoSection companyInfo={makeCompanyInfo({ country: "Japan" })} />,
     );
     const meta = screen.getByTestId("company-metadata");
     expect(meta).toHaveTextContent("Japan");
@@ -122,7 +123,7 @@ describe("CompanyInfoSection", () => {
   it("hides metadata when neither year nor country is present", () => {
     render(
       <CompanyInfoSection
-        companyInfo={{ description: "Some description that is long enough to be useful." }}
+        companyInfo={makeCompanyInfo({ description: "Some description that is long enough to be useful." })}
       />,
     );
     expect(
@@ -154,7 +155,7 @@ describe("CompanyInfoSection", () => {
   it("hides links section when no URLs provided", () => {
     render(
       <CompanyInfoSection
-        companyInfo={{ foundedYear: 1979, country: "Japan" }}
+        companyInfo={makeCompanyInfo({ foundedYear: 1979, country: "Japan" })}
       />,
     );
     expect(screen.queryByTestId("company-links")).not.toBeInTheDocument();
@@ -163,7 +164,7 @@ describe("CompanyInfoSection", () => {
   it("renders only website link when wikipedia is missing", () => {
     render(
       <CompanyInfoSection
-        companyInfo={{ websiteUrl: "https://example.com" }}
+        companyInfo={makeCompanyInfo({ websiteUrl: "https://example.com" })}
       />,
     );
     expect(screen.getByTestId("company-website-link")).toBeInTheDocument();
@@ -175,7 +176,7 @@ describe("CompanyInfoSection", () => {
   it("renders only wikipedia link when website is missing", () => {
     render(
       <CompanyInfoSection
-        companyInfo={{ wikipediaUrl: "https://en.wikipedia.org/wiki/Test" }}
+        companyInfo={makeCompanyInfo({ wikipediaUrl: "https://en.wikipedia.org/wiki/Test" })}
       />,
     );
     expect(

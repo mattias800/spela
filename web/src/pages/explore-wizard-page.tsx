@@ -104,7 +104,7 @@ export function ExploreWizardPage() {
             role="radiogroup"
             aria-label={step.title}
           >
-            {step.options.map((option) => (
+            {step.options?.map((option) => (
               <button
                 key={option.id}
                 onClick={() => handleSelect(option)}

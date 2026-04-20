@@ -107,7 +107,7 @@ type ScrapeCompletePayload struct {
 // JobID is zero when cancellation is not tied to a specific job
 // (for example, pre-empting a queued job before a new one starts).
 type ScrapeCancelledPayload struct {
-	JobID uint `json:"jobId,omitempty"`
+	JobID uint `json:"jobId"`
 }
 
 // GameScrapeStatusPayload is the payload for EventGameScrapeStatus.

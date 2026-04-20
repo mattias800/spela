@@ -167,7 +167,7 @@ describe("useMySharedSessions", () => {
 
     expect(mockTypedApi.GET).toHaveBeenCalledWith("/api/shared-sessions");
     expect(result.current.data?.data).toHaveLength(1);
-    expect(result.current.data?.data[0].name).toBe("Friday Night SNES");
+    expect(result.current.data?.data?.[0].name).toBe("Friday Night SNES");
   });
 
   it("handles fetch error", async () => {
@@ -195,7 +195,7 @@ describe("useSharedSessionInvitations", () => {
       "/api/user/shared-session-invites",
     );
     expect(result.current.data?.data).toHaveLength(1);
-    expect(result.current.data?.data[0].sharedSessionName).toBe(
+    expect(result.current.data?.data?.[0].sharedSessionName).toBe(
       "Friday Night SNES",
     );
   });
@@ -233,7 +233,7 @@ describe("useSharedSession", () => {
       { params: { path: { id: "ss-1" } } },
     );
     expect(result.current.data?.members).toHaveLength(2);
-    expect(result.current.data?.members[0].role).toBe("owner");
+    expect(result.current.data?.members?.[0].role).toBe("owner");
   });
 
   it("does not fetch when id is empty", () => {

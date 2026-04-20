@@ -11,14 +11,16 @@ function makeSharedSession(overrides: Partial<SharedSession> = {}): SharedSessio
     gameId: "g1",
     gameTitle: "Super Mario World",
     gameCoverUrl: "https://example.com/cover.png",
-    gameConsoleName: "SNES",
+    consoleName: "SNES",
+    coreName: "",
     ownerId: "u1",
     ownerUsername: "alice",
     status: "active",
     activeUserId: null,
+    activeUsername: "",
     turnTakenAt: null,
     memberCount: 3,
-    lastActivityAt: "2026-02-13T10:00:00Z",
+    sessionId: null,
     createdAt: "2026-02-01T10:00:00Z",
     updatedAt: "2026-02-13T10:00:00Z",
     ...overrides,
@@ -91,8 +93,8 @@ describe("SharedSessionCard", () => {
   it("renders member avatars when provided", () => {
     const sharedSession = makeSharedSession();
     const members = [
-      { username: "alice" },
-      { username: "bob" },
+      { username: "alice", avatarUrl: "" },
+      { username: "bob", avatarUrl: "" },
     ];
     render(
       <MemoryRouter>

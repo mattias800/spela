@@ -45,7 +45,9 @@ function makeSeriesConsole(
 
 const mockSeriesDetail: SeriesDetail = {
   id: "1",
+  igdbCollectionId: 1,
   name: "Super Mario",
+  logoUrl: "",
   heroUrl: "/hero/mario.jpg",
   consoles: [
     makeSeriesConsole({ abbreviation: "nes", name: "NES", color: "#e53e3e", gameCount: 2 }),
@@ -95,7 +97,7 @@ const mockSeriesDetail: SeriesDetail = {
       name: "Super Mario Unknown",
       inLibrary: false,
       localGameId: null,
-      releaseDate: null,
+      releaseDate: "",
       igdbCriticsRating: 0,
       consoleAbbreviation: "snes",
       consoleName: "SNES",

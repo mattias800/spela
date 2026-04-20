@@ -108,7 +108,7 @@ describe("useNetplaySessions", () => {
       params: { query: { page: 1, pageSize: 20 } },
     });
     expect(result.current.data?.data).toHaveLength(1);
-    expect(result.current.data?.data[0].gameTitle).toBe("Super Mario World");
+    expect(result.current.data?.data?.[0].gameTitle).toBe("Super Mario World");
   });
 
   it("fetches sessions with custom pagination", async () => {

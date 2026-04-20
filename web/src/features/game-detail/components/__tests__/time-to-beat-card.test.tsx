@@ -1,41 +1,9 @@
 import { render, screen } from "@testing-library/react";
 import { describe, it, expect } from "vitest";
 import { TimeToBeatCard } from "../time-to-beat-card";
-import type { Game } from "@/types/api";
+import type { } from "@/types/api";
+import { makeGame } from "@/test-utils/fixtures";
 
-function makeGame(overrides: Partial<Game> = {}): Game {
-  return {
-    id: "1",
-    title: "Test Game",
-    consoleId: "snes",
-    consoleName: "SNES",
-    fileName: "test.smc",
-    fileSize: 1024,
-    discCount: 1,
-    screenshotUrls: [],
-    scrapeAttempts: 0,
-    coverAspectRatio: 0.75,
-    playable: true,
-    isFavorite: false,
-    isInPlayLater: false,
-    averageRating: 0,
-    ratingCount: 0,
-    totalPlayTime: 0,
-    createdAt: "2026-01-01T00:00:00Z",
-    updatedAt: "2026-01-01T00:00:00Z",
-    coverUrl: "",
-    description: "",
-    developer: "",
-    genre: "",
-    igdbCriticsRating: 0,
-    isPreRelease: false,
-    lastPlayedAt: null,
-    players: 0,
-    publisher: "",
-    releaseDate: "",
-    ...overrides,
-  };
-}
 
 // Helper: convert hours to seconds (IGDB API returns seconds)
 const hrs = (h: number) => h * 3600;

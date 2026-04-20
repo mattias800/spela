@@ -3,7 +3,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { ConsoleGamesPage } from "@/pages/console-games-page";
-import type { Console, Game, GamesResponse } from "@/types/api";
+import type { GamesResponse, Console } from "@/types/api";
 
 // Mock hooks
 vi.mock("@/hooks/use-consoles", () => ({
@@ -52,43 +52,11 @@ vi.mock("@/hooks/use-default-region-filters", () => ({
 
 import { useConsoles } from "@/hooks/use-consoles";
 import { useGames } from "@/hooks/use-games";
+import { makeGame } from "@/test-utils/fixtures";
 
 const mockUseConsoles = useConsoles as ReturnType<typeof vi.fn>;
 const mockUseGames = useGames as ReturnType<typeof vi.fn>;
 
-function makeGame(overrides: Partial<Game> = {}): Game {
-  return {
-    id: "1",
-    title: "Test Game",
-    consoleId: "snes",
-    consoleName: "SNES",
-    fileName: "test.sfc",
-    fileSize: 1024,
-    discCount: 1,
-    screenshotUrls: [],
-    scrapeAttempts: 1,
-    coverAspectRatio: 0.75,
-    playable: true,
-    isFavorite: false,
-    isInPlayLater: false,
-    averageRating: 0,
-    ratingCount: 0,
-    totalPlayTime: 0,
-    createdAt: "2025-01-01T00:00:00Z",
-    updatedAt: "2025-01-01T00:00:00Z",
-    coverUrl: "",
-    description: "",
-    developer: "",
-    genre: "",
-    igdbCriticsRating: 0,
-    isPreRelease: false,
-    lastPlayedAt: null,
-    players: 0,
-    publisher: "",
-    releaseDate: "",
-    ...overrides,
-  };
-}
 
 const testConsoles: Console[] = [
   {
@@ -107,8 +75,10 @@ const testConsoles: Console[] = [
     browserPlayable: false,
     playable: true,
     code: "snes",
-    maker: null,
-    mediaType: null,
+    emulatorJsCore: "",
+    logoPngUrl: "",
+    maker: { code: "", name: "" },
+    mediaType: { code: "", name: "", category: { code: "", name: "" } },
     releaseYear: null,
     unitsSold: null,
     summary: null,

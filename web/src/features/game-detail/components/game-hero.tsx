@@ -77,7 +77,7 @@ export function GameHero({
 }: GameHeroProps) {
   const [showCoverModal, setShowCoverModal] = useState(false);
   const [showHeroModal, setShowHeroModal] = useState(false);
-  const consoleName = game.consoleName ?? "";
+  const consoleName = game.consoleName;
 
   // Prefer hero art (from SteamGridDB), fall back to first screenshot
   const heroImage = game.heroUrl || game.screenshotUrls?.[0] || null;

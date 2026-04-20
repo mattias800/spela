@@ -149,7 +149,7 @@ export function StatsPage() {
 
       {/* Explorer Badges */}
       <ExplorerBadgesSection
-        badges={badgesData?.badges}
+        badges={badgesData?.badges ?? undefined}
         isLoading={isLoadingBadges}
       />
 

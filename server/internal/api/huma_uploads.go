@@ -20,7 +20,7 @@ type CheckUploadsWritableInput struct{}
 // CheckUploadsWritableResponse is the wire format for the writable check.
 type CheckUploadsWritableResponse struct {
 	Writable bool   `json:"writable"`
-	Reason   string `json:"reason,omitempty"`
+	Reason   string `json:"reason"`
 }
 
 // CheckUploadsWritableOutput wraps the writable response.

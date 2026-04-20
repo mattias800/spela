@@ -3,7 +3,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter } from "react-router-dom";
 import { ExplorePage } from "@/pages/explore-page";
-import type { FeaturedGame, FeaturedSeries, Game, ExploreRowsResponse, Theme, Keyword, MoodDefinition, ForYouResponse, PlayersLikeYouResponse, DeveloperSpotlightResponse } from "@/types/api";
+import type { FeaturedGame, FeaturedSeries, ExploreRowsResponse, Theme, Keyword, MoodDefinition, ForYouResponse, PlayersLikeYouResponse, DeveloperSpotlightResponse } from "@/types/api";
 
 // Mock hooks
 vi.mock("@/hooks/use-explore", () => ({
@@ -60,6 +60,7 @@ vi.mock("@/hooks/use-in-view", () => ({
 }));
 
 import { useExploreFeatured, useExploreRows, useThemes, useKeywords, useFeaturedSeries, useMoods, useForYou, usePlayersLikeYou, useDeveloperSpotlight, useConsoleHighlights, useArtworkGallery, useTrending, useCommunityTop, useCultClassics, useRecentlyReviewed, useActiveNow, useOnThisDay, useBestOfYear, useYourAnniversaries, useDecade, useEasyToComplete, useHardestGames, useAlmostDone, useFreshChallenges, useActiveChallenges } from "@/hooks/use-explore";
+import { makeGame } from "@/test-utils/fixtures";
 
 const mockUseExploreFeatured = useExploreFeatured as ReturnType<typeof vi.fn>;
 const mockUseExploreRows = useExploreRows as ReturnType<typeof vi.fn>;
@@ -105,39 +106,6 @@ function makeFeaturedGame(overrides: Partial<FeaturedGame> = {}): FeaturedGame {
   };
 }
 
-function makeGame(overrides: Partial<Game> = {}): Game {
-  return {
-    id: "1",
-    title: "Test Game",
-    consoleId: "nes",
-    consoleName: "NES",
-    fileName: "test.nes",
-    fileSize: 1024,
-    discCount: 1,
-    screenshotUrls: [],
-    scrapeAttempts: 1,
-    coverAspectRatio: 0.75,
-    playable: true,
-    isFavorite: false,
-    isInPlayLater: false,
-    averageRating: 0,
-    ratingCount: 0,
-    totalPlayTime: 0,
-    createdAt: "2025-01-01T00:00:00Z",
-    updatedAt: "2025-01-01T00:00:00Z",
-    coverUrl: "",
-    description: "",
-    developer: "",
-    genre: "",
-    igdbCriticsRating: 0,
-    isPreRelease: false,
-    lastPlayedAt: null,
-    players: 0,
-    publisher: "",
-    releaseDate: "",
-    ...overrides,
-  };
-}
 
 const mockFeatured: FeaturedGame[] = [
   makeFeaturedGame({ gameId: "1", title: "Hero Game One" }),
@@ -169,6 +137,7 @@ const mockForYou: ForYouResponse = {
     {
       type: "because_you_played",
       title: "Because you played Chrono Trigger",
+      genre: "",
       sourceGame: makeGame({ id: "ct", title: "Chrono Trigger", coverUrl: "/covers/ct.jpg" }),
       games: [makeGame({ id: "fy1", title: "For You Game 1" })],
     },

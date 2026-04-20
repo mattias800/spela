@@ -1644,7 +1644,7 @@ func TestCheckWritable_WritableDir(t *testing.T) {
 	var result map[string]interface{}
 	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &result))
 	assert.Equal(t, true, result["writable"])
-	assert.Nil(t, result["reason"])
+	assert.Equal(t, "", result["reason"])
 }
 
 func TestCheckWritable_ReadonlyDir(t *testing.T) {

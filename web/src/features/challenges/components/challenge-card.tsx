@@ -64,7 +64,7 @@ export function ChallengeCard({ challenge }: ChallengeCardProps) {
         <div className="flex items-center gap-2">
           <PlayerAvatar
             username={challenge.creatorUsername}
-            avatarUrl={challenge.creatorAvatarUrl}
+            avatarUrl={challenge.creatorAvatar}
             size="xs"
           />
           <span className="text-xs text-surface-400 truncate">
@@ -76,7 +76,7 @@ export function ChallengeCard({ challenge }: ChallengeCardProps) {
         </div>
         <div className="flex items-center gap-2">
           <Badge variant="brand" className="text-[10px] px-1.5 py-0">
-            {challenge.gameConsoleName}
+            {challenge.consoleName}
           </Badge>
           <span className="text-xs text-surface-500 truncate">
             {challenge.gameTitle}

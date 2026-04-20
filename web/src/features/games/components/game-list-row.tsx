@@ -11,7 +11,7 @@ interface GameListRowProps {
 }
 
 export function GameListRow({ game, hideConsoleName }: GameListRowProps) {
-  const consoleName = game.consoleName ?? "";
+  const consoleName = game.consoleName;
   const year = getReleaseYear(game.releaseDate);
   const releaseYear = year ? year.toString() : undefined;
 

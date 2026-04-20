@@ -18,8 +18,8 @@ import (
 type ForYouRowResponse struct {
 	Type       string         `json:"type"`
 	Title      string         `json:"title"`
-	SourceGame *GameResponse  `json:"sourceGame,omitempty"`
-	Genre      string         `json:"genre,omitempty"`
+	SourceGame *GameResponse  `json:"sourceGame"`
+	Genre      string         `json:"genre"`
 	Games      []GameResponse `json:"games"`
 }
 

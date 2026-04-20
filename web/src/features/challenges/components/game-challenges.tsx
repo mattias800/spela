@@ -108,7 +108,7 @@ export function GameChallenges({ gameId }: GameChallengesProps) {
                 <div className="flex items-center gap-2 mt-0.5">
                   <PlayerAvatar
                     username={challenge.creatorUsername}
-                    avatarUrl={challenge.creatorAvatarUrl}
+                    avatarUrl={challenge.creatorAvatar}
                     size="xs"
                   />
                   <span className="text-xs text-surface-500">

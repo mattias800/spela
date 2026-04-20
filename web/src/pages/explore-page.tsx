@@ -241,7 +241,7 @@ export function ExplorePage() {
 
       {/* Console Quick-Jump */}
       <ConsoleQuickJump
-        consoles={consoleHighlightsData?.consoles}
+        consoles={consoleHighlightsData?.consoles ?? undefined}
         isLoading={isConsoleHighlightsLoading}
       />
 
@@ -254,7 +254,7 @@ export function ExplorePage() {
       {/* Personalized & Social Discovery — lazy-loaded */}
       <div ref={social.ref}  />
       <ForYouSection
-        rows={forYouData?.rows}
+        rows={forYouData?.rows ?? undefined}
         isLoading={isForYouLoading}
         onToggleFavorite={handleToggleFavorite}
         onTogglePlayLater={handleTogglePlayLater}
@@ -262,7 +262,7 @@ export function ExplorePage() {
 
       {/* Players Like You */}
       <PlayersLikeYouShelf
-        games={playersLikeYouData?.games}
+        games={playersLikeYouData?.games ?? undefined}
         isLoading={isPlayersLoading}
         similarUsersCount={playersLikeYouData?.similarUsersCount ?? 0}
         onToggleFavorite={handleToggleFavorite}
@@ -382,7 +382,7 @@ export function ExplorePage() {
         <GameShelf
           key={firstRow.id}
           title={firstRow.title}
-          games={firstRow.games}
+          games={firstRow.games ?? undefined}
           isLoading={false}
           onToggleFavorite={handleToggleFavorite}
           onTogglePlayLater={handleTogglePlayLater}
@@ -422,7 +422,7 @@ export function ExplorePage() {
           <GameShelf
             key={row.id}
             title={row.title}
-            games={row.games}
+            games={row.games ?? undefined}
             isLoading={false}
             onToggleFavorite={handleToggleFavorite}
             onTogglePlayLater={handleTogglePlayLater}
