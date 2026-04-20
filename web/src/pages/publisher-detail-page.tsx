@@ -358,7 +358,7 @@ export function PublisherDetailPage() {
                 <span className="text-xs text-surface-400">
                   {rel.gameCount} {rel.gameCount === 1 ? "game" : "games"}
                 </span>
-                {rel.sharedDevelopers.length > 0 && (
+                {rel.sharedDevelopers && rel.sharedDevelopers.length > 0 && (
                   <span className="text-xs text-surface-500">
                     via {rel.sharedDevelopers.join(", ")}
                   </span>

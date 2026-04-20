@@ -35,7 +35,7 @@ function TimelineYearColumn({ entry }: { entry: TimelineEntry }) {
     <div className="flex-shrink-0 min-w-[100px]" data-testid={`timeline-year-${entry.year}`}>
       <p className="text-sm font-bold text-surface-200 mb-2">{entry.year}</p>
       <div className="flex flex-wrap gap-1.5" style={{ maxWidth: "120px" }}>
-        {entry.games.map((game) => (
+        {entry.games?.map((game) => (
           <TimelineCover key={game.id} game={game} />
         ))}
       </div>
@@ -46,7 +46,7 @@ function TimelineYearColumn({ entry }: { entry: TimelineEntry }) {
 function TimelineCover({
   game,
 }: {
-  game: TimelineEntry["games"][number];
+  game: NonNullable<TimelineEntry["games"]>[number];
 }) {
   const [showTooltip, setShowTooltip] = useState(false);
 
@@ -71,8 +71,8 @@ function TimelineCover({
           data-testid={`timeline-tooltip-${game.id}`}
         >
           <p className="text-xs font-medium text-surface-100">{game.title}</p>
-          {game.rating > 0 && (
-            <p className="text-xs text-amber-400">{game.rating.toFixed(1)}</p>
+          {game.igdbCriticsRating > 0 && (
+            <p className="text-xs text-amber-400">{game.igdbCriticsRating.toFixed(1)}</p>
           )}
         </div>
       )}
