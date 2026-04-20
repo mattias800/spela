@@ -22,7 +22,6 @@ import {
 import { SharedSessionCard } from "@/features/shared-sessions/components/shared-session-card";
 import { SharedSessionCreateModal } from "@/features/shared-sessions/components/shared-session-create-modal";
 import { InvitationCard } from "@/features/shared-sessions/components/invitation-card";
-import { Pagination } from "@/components/pagination";
 
 type Tab = "mine" | "invitations";
 
@@ -53,30 +52,25 @@ function InvitationsSkeleton() {
 export function SharedSessionsPage() {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<Tab>("mine");
-  const [page, setPage] = useState(1);
-  const pageSize = 24;
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [acceptingId, setAcceptingId] = useState<string | null>(null);
   const [rejectingId, setRejectingId] = useState<string | null>(null);
 
   const { toast } = useToast();
-  const { data: sharedSessionsData, isLoading: sharedSessionsLoading } = useMySharedSessions(
-    page,
-    pageSize,
-  );
+  const { data: sharedSessionsData, isLoading: sharedSessionsLoading } =
+    useMySharedSessions();
   const { data: invitationsData, isLoading: invitationsLoading } =
     useSharedSessionInvitations();
   const acceptInvitation = useAcceptSharedSessionInvitation();
   const rejectInvitation = useRejectSharedSessionInvitation();
   useSharedSessionRealtime();
 
-  const sharedSessions = sharedSessionsData?.data ?? [];
+  const sharedSessions = sharedSessionsData ?? [];
   const invitations = invitationsData ?? [];
   const invitationCount = invitations.length;
 
   function handleTabChange(tab: Tab) {
     setActiveTab(tab);
-    setPage(1);
   }
 
   function handleAccept(invitationId: string) {
@@ -163,15 +157,6 @@ export function SharedSessionsPage() {
                 <SharedSessionCard key={sharedSession.id} sharedSession={sharedSession} />
               ))}
             </div>
-          )}
-
-          {sharedSessionsData && (
-            <Pagination
-              total={sharedSessionsData.total}
-              pageSize={pageSize}
-              currentPage={page}
-              onPageChange={setPage}
-            />
           )}
         </>
       )}

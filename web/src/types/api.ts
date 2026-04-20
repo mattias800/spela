@@ -283,7 +283,6 @@ export interface PaginatedFlat<T> {
   total: number;
 }
 
-export type SharedSessionsResponse = Paginated<SharedSession>;
 
 export type NetplaySessionStatus = "waiting" | "in_progress" | "ended";
 export type NetplayEndReason =

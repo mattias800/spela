@@ -2,19 +2,18 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { typedApi, unwrap } from "@/lib/api-client";
 import { useWebSocketEvent } from "@/hooks/use-websocket";
 import type {
-  SharedSessionsResponse,
   SharedSessionDetail,
   SharedSessionInvitation,
   SharedSessionSave,
   SharedSession,
 } from "@/types/api";
 
-export function useMySharedSessions(page = 1, pageSize = 20) {
+export function useMySharedSessions() {
   return useQuery({
-    queryKey: ["shared-sessions", "mine", page, pageSize],
+    queryKey: ["shared-sessions", "mine"],
     queryFn: async () => {
       const data = await unwrap(typedApi.GET("/api/shared-sessions"));
-      return data as SharedSessionsResponse | undefined;
+      return data as SharedSession[] | null | undefined;
     },
   });
 }
