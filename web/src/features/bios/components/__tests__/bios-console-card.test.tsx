@@ -20,15 +20,13 @@ function makeConsole(overrides: Partial<BiosConsole> = {}): BiosConsole {
         description: "PlayStation BIOS (North America)",
         required: true,
         md5: "abc123",
-        status: "valid",
-      },
+        status: "valid", subDir: "" },
       {
         fileName: "scph5500.bin",
         description: "PlayStation BIOS (Japan)",
         required: false,
         md5: "def456",
-        status: "missing",
-      },
+        status: "missing", subDir: "" },
     ],
     ...overrides,
   };

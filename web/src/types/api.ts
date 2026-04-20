@@ -346,25 +346,25 @@ export interface NetplayInvitesResponse {
 
 export type BiosFile = Schemas["BiosFileResponse"];
 
-export interface BiosConsoleFile {
-  fileName: string;
-  description: string;
-  required: boolean;
-  md5: string;
-  status: "valid" | "present" | "invalid" | "missing";
-}
+export type BiosFileStatus = "valid" | "present" | "invalid" | "missing";
+export type BiosConsoleStatus = "ready" | "missing" | "invalid" | "not_required";
 
-export interface BiosConsole {
-  consoleId: string;
-  consoleName: string;
-  biosRequired: boolean;
-  status: "ready" | "missing" | "invalid" | "not_required";
-  requiredPresent: number;
-  requiredTotal: number;
-  optionalPresent: number;
-  optionalTotal: number;
-  files: BiosConsoleFile[];
-}
+// Both narrow the wire status to their literal union so the switch
+// statements in bios-console-card stay exhaustively checked.
+export type BiosConsoleFile = Omit<
+  Schemas["ConsoleFileStatus"],
+  "status"
+> & {
+  status: BiosFileStatus;
+};
+
+export type BiosConsole = Omit<
+  Schemas["ConsoleBiosStatus"],
+  "status" | "files"
+> & {
+  status: BiosConsoleStatus;
+  files: BiosConsoleFile[] | null;
+};
 
 // --- Top Lists ---
 
@@ -384,10 +384,7 @@ export type CoreCompatibilityEntry = Schemas["CoreCompatibilityEntry"];
 
 export type CoreCompatibilityResponse = Schemas["CoreCompatibilityResponse"];
 
-export interface SessionCheatConfig {
-  cheatsEnabled: boolean;
-  enabledIndices: number[];
-}
+export type SessionCheatConfig = Schemas["SessionCheatsResponse"];
 
 // --- Game Sessions ---
 
