@@ -83,6 +83,8 @@ function resultsWithGames(): SearchResults {
           id: "game-1",
           title: "Super Mario World",
           coverUrl: "/covers/smw.jpg",
+          coverAspectRatio: 0.75,
+          genre: "Platformer",
           consoleId: "SNES",
           consoleName: "Super Nintendo",
           developer: "Nintendo",
@@ -90,6 +92,9 @@ function resultsWithGames(): SearchResults {
         {
           id: "game-2",
           title: "Mario Kart 64",
+          coverUrl: "",
+          coverAspectRatio: 0.75,
+          genre: "Racing",
           consoleId: "N64",
           consoleName: "Nintendo 64",
           developer: "Nintendo",

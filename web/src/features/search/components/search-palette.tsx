@@ -84,13 +84,13 @@ export function SearchPalette() {
 
   const hasResults =
     results &&
-    (results.games.results.length > 0 ||
-      results.consoles.results.length > 0 ||
-      results.developers.results.length > 0 ||
-      results.publishers.results.length > 0 ||
-      results.collections.results.length > 0 ||
-      results.series.results.length > 0 ||
-      results.franchises.results.length > 0);
+    ((results.games.results?.length ?? 0) > 0 ||
+      (results.consoles.results?.length ?? 0) > 0 ||
+      (results.developers.results?.length ?? 0) > 0 ||
+      (results.publishers.results?.length ?? 0) > 0 ||
+      (results.collections.results?.length ?? 0) > 0 ||
+      (results.series.results?.length ?? 0) > 0 ||
+      (results.franchises.results?.length ?? 0) > 0);
 
   if (!open) return null;
 

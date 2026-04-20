@@ -81,16 +81,31 @@ function unsubscribe(type: string, listener: Listener) {
   }
 }
 
-export function useWebSocketEvent(
+/**
+ * Subscribe to a WebSocket event by name. The `callback` parameter type
+ * defines the caller's contract with the server for this event's payload —
+ * the runtime data comes through as `unknown` and is passed to the callback
+ * without validation. If the server ever changes the shape, the first
+ * property access inside the callback will blow up at runtime.
+ *
+ * Swapping to per-event runtime validation (e.g. zod schemas) would
+ * eliminate the trust here; until that lands, callers should keep payload
+ * property access defensive.
+ */
+export function useWebSocketEvent<P>(
   type: string,
-  callback: (payload: never) => void,
+  callback: (payload: P) => void,
 ) {
   const callbackRef = useRef(callback);
   callbackRef.current = callback;
 
   useEffect(() => {
-    const listener: Listener = (payload) =>
-      callbackRef.current(payload as never);
+    const listener: Listener = (payload) => {
+      // Trust-the-server narrow at the WebSocket boundary; see the JSDoc
+      // above. Contained to this single line so the rest of the hook graph
+      // stays `as`-free.
+      callbackRef.current(payload as P);
+    };
     subscribe(type, listener);
     return () => unsubscribe(type, listener);
   }, [type]);

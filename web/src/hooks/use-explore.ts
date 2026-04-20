@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { typedApi, unwrap } from "@/lib/api-client";
+import { invariant } from "@/lib/invariant";
 
 // Cache durations for explore data that changes infrequently.
 // Prevents re-fetching 25+ queries every time the user navigates back.
@@ -261,7 +262,7 @@ export function useThemeGames(
       unwrap(
         typedApi.GET("/api/themes/{id}/games", {
           params: {
-            path: { id: themeId as string },
+            path: { id: invariant(themeId, "themeId") },
             query: { page, pageSize },
           },
         }),
@@ -282,7 +283,7 @@ export function useKeywordGames(
       unwrap(
         typedApi.GET("/api/keywords/{id}/games", {
           params: {
-            path: { id: keywordId as string },
+            path: { id: invariant(keywordId, "keywordId") },
             query: { page, pageSize },
           },
         }),
@@ -298,7 +299,7 @@ export function useSeriesDetail(id: string | undefined) {
     queryFn: () =>
       unwrap(
         typedApi.GET("/api/series/{id}", {
-          params: { path: { id: id as string } },
+          params: { path: { id: invariant(id, "id") } },
         }),
       ),
     enabled: !!id,
@@ -312,7 +313,7 @@ export function useFranchiseDetail(id: string | undefined) {
     queryFn: () =>
       unwrap(
         typedApi.GET("/api/franchises/{id}", {
-          params: { path: { id: id as string } },
+          params: { path: { id: invariant(id, "id") } },
         }),
       ),
     enabled: !!id,
@@ -326,7 +327,7 @@ export function useGameSeries(gameId: string | undefined) {
     queryFn: () =>
       unwrap(
         typedApi.GET("/api/games/{id}/series", {
-          params: { path: { id: gameId as string } },
+          params: { path: { id: invariant(gameId, "gameId") } },
         }),
       ),
     enabled: !!gameId,
@@ -340,7 +341,7 @@ export function useGameFranchises(gameId: string | undefined) {
     queryFn: () =>
       unwrap(
         typedApi.GET("/api/games/{id}/franchises", {
-          params: { path: { id: gameId as string } },
+          params: { path: { id: invariant(gameId, "gameId") } },
         }),
       ),
     enabled: !!gameId,
@@ -354,7 +355,7 @@ export function useMoodGames(mood: string | undefined) {
     queryFn: () =>
       unwrap(
         typedApi.GET("/api/explore/mood/{mood}", {
-          params: { path: { mood: mood as string } },
+          params: { path: { mood: invariant(mood, "mood") } },
         }),
       ),
     enabled: !!mood,

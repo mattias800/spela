@@ -1,6 +1,9 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { typedApi, unwrap } from "@/lib/api-client";
-import type { UserResponse } from "@/generated/schemas";
+import type {
+  AdminUpdateUserRequest,
+  UserResponse,
+} from "@/generated/schemas";
 import type { User } from "@/types/api";
 import { asUserRole } from "@/types/view-model-narrowing";
 
@@ -32,18 +35,12 @@ export function useUpdateUser() {
       data,
     }: {
       id: string;
-      data: {
-        role?: string;
-        email?: string;
-        password?: string;
-        disabled?: boolean;
-        pendingApproval?: boolean;
-      };
+      data: AdminUpdateUserRequest;
     }) => {
       await unwrap(
         typedApi.PUT("/api/admin/users/{id}", {
           params: { path: { id } },
-          body: data as Record<string, unknown>,
+          body: data,
         }),
       );
     },

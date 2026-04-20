@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { typedApi, unwrap } from "@/lib/api-client";
+import { invariant } from "@/lib/invariant";
 import type { RALinkRequest, RASettingsRequest } from "@/types/api";
 
 export function useRAStatus() {
@@ -50,7 +51,7 @@ export function useGameAchievements(gameId: string | undefined) {
     queryFn: () =>
       unwrap(
         typedApi.GET("/api/games/{id}/achievements", {
-          params: { path: { id: gameId as string } },
+          params: { path: { id: invariant(gameId, "gameId") } },
         }),
       ),
     enabled: !!gameId,
@@ -71,7 +72,7 @@ export function useGameAchievementProgress(gameId: string | undefined) {
     queryFn: async () => {
       const data = await unwrap(
         typedApi.GET("/api/games/{id}/achievements/progress", {
-          params: { path: { id: gameId as string } },
+          params: { path: { id: invariant(gameId, "gameId") } },
         }),
       );
       return data?.progress ?? null;
@@ -86,7 +87,7 @@ export function useAchievementLeaderboard(gameId: string | undefined) {
     queryFn: () =>
       unwrap(
         typedApi.GET("/api/games/{id}/achievements/leaderboard", {
-          params: { path: { id: gameId as string } },
+          params: { path: { id: invariant(gameId, "gameId") } },
         }),
       ),
     enabled: !!gameId,
@@ -99,7 +100,7 @@ export function useAchievementTimeline(gameId: string | undefined) {
     queryFn: () =>
       unwrap(
         typedApi.GET("/api/games/{id}/achievements/timeline", {
-          params: { path: { id: gameId as string } },
+          params: { path: { id: invariant(gameId, "gameId") } },
         }),
       ),
     enabled: !!gameId,
