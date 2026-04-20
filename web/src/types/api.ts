@@ -324,20 +324,11 @@ export type RASettingsRequest = Schemas["UpdateRASettingsRequest"];
 
 export type Achievement = Schemas["Achievement"];
 
-export interface GameAchievements {
-  status?: "pending";
-  raGameId: number;
-  totalCount: number;
-  totalPoints: number;
-  achievements: Achievement[];
-}
+export type GameAchievements = Schemas["GameAchievementsResponse"];
 
 export type GameAchievementProgress = Schemas["RAProgressEntry"];
 
-export interface GameAchievementProgressResponse {
-  raGameId: number;
-  progress: GameAchievementProgress[];
-}
+export type GameAchievementProgressResponse = Schemas["GameAchievementProgressResponse"];
 
 export type ShowcaseAchievement = Schemas["ShowcaseEntryResponse"];
 
