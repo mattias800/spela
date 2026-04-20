@@ -2,12 +2,51 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { typedApi, unwrap } from "@/lib/api-client";
 import { useWebSocketEvent } from "@/hooks/use-websocket";
 import type {
+  ChallengeAttemptResponse,
+  ChallengeResponse,
+  PaginatedResponseChallengeResponse,
+} from "@/generated/schemas";
+import type {
   Challenge,
   ChallengesResponse,
   ChallengeFilters,
   ChallengeLeaderboardEntry,
   ChallengeAttempt,
 } from "@/types/api";
+import {
+  asAttemptStatus,
+  asChallengeDifficulty,
+  asChallengeStatus,
+  asChallengeType,
+} from "@/types/view-model-narrowing";
+
+// Map wire shapes (type/difficulty/status emitted as `string`) to the
+// view-model shapes (literal unions). If the server ever emits a value
+// outside the claimed union, the narrowing helper throws — loud, not silent.
+function toChallenge(wire: ChallengeResponse): Challenge {
+  return {
+    ...wire,
+    type: asChallengeType(wire.type),
+    difficulty: asChallengeDifficulty(wire.difficulty),
+    status: asChallengeStatus(wire.status),
+  };
+}
+
+function toChallengesResponse(
+  wire: PaginatedResponseChallengeResponse,
+): ChallengesResponse {
+  return {
+    ...wire,
+    data: wire.data?.map(toChallenge) ?? null,
+  };
+}
+
+function toChallengeAttempt(wire: ChallengeAttemptResponse): ChallengeAttempt {
+  return {
+    ...wire,
+    status: asAttemptStatus(wire.status),
+  };
+}
 
 const sortMapping: Record<string, string> = {
   most_attempted: "popular",
@@ -36,7 +75,7 @@ export function useChallenges(filters: ChallengeFilters = {}) {
       const data = await unwrap(
         typedApi.GET("/api/challenges", { params: { query } }),
       );
-      return data as ChallengesResponse | undefined;
+      return data && toChallengesResponse(data);
     },
   });
 }
@@ -50,7 +89,7 @@ export function useChallenge(id: string) {
           params: { path: { id } },
         }),
       );
-      return data as Challenge | undefined;
+      return data && toChallenge(data);
     },
     enabled: !!id,
   });
@@ -69,7 +108,7 @@ export function useGameChallenges(
           params: { path: { id: gameId }, query: { page, pageSize } },
         }),
       );
-      return data as ChallengesResponse | undefined;
+      return data && toChallengesResponse(data);
     },
     enabled: !!gameId,
   });
@@ -84,7 +123,7 @@ export function useMyChallenges(page: number = 1, pageSize: number = 20) {
           params: { query: { page, pageSize } },
         }),
       );
-      return data as ChallengesResponse | undefined;
+      return data && toChallengesResponse(data);
     },
   });
 }
@@ -117,7 +156,7 @@ export function useMyAttempts(challengeId: string) {
           params: { path: { id: challengeId } },
         }),
       );
-      return data as ChallengeAttempt[] | undefined;
+      return data?.map(toChallengeAttempt);
     },
     enabled: !!challengeId,
   });

@@ -2,17 +2,55 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { typedApi, unwrap } from "@/lib/api-client";
 import { useWebSocketEvent } from "@/hooks/use-websocket";
 import type {
+  SharedSessionDetailResponse,
+  SharedSessionMemberResponse,
+  SharedSessionResponse,
+} from "@/generated/schemas";
+import type {
   SharedSessionDetail,
-  SharedSessionInvitation,
+  SharedSessionMember,
   SharedSession,
 } from "@/types/api";
+import {
+  asSharedSessionMemberRole,
+  asSharedSessionStatus,
+} from "@/types/view-model-narrowing";
+
+// Map wire shapes (status/role emitted as `string`) to the view-model
+// shapes (literal unions). If the server ever emits a value outside the
+// claimed union, the narrowing helper throws — loud, not silent.
+function toSharedSession(wire: SharedSessionResponse): SharedSession {
+  return {
+    ...wire,
+    status: asSharedSessionStatus(wire.status),
+  };
+}
+
+function toSharedSessionMember(
+  wire: SharedSessionMemberResponse,
+): SharedSessionMember {
+  return {
+    ...wire,
+    role: asSharedSessionMemberRole(wire.role),
+  };
+}
+
+function toSharedSessionDetail(
+  wire: SharedSessionDetailResponse,
+): SharedSessionDetail {
+  return {
+    ...wire,
+    status: asSharedSessionStatus(wire.status),
+    members: wire.members?.map(toSharedSessionMember) ?? null,
+  };
+}
 
 export function useMySharedSessions() {
   return useQuery({
     queryKey: ["shared-sessions", "mine"],
     queryFn: async () => {
       const data = await unwrap(typedApi.GET("/api/shared-sessions"));
-      return data as SharedSession[] | null | undefined;
+      return data?.map(toSharedSession);
     },
   });
 }
@@ -21,10 +59,12 @@ export function useSharedSessionInvitations() {
   return useQuery({
     queryKey: ["shared-sessions", "invitations"],
     queryFn: async () => {
+      // SharedSessionInvitation is a pure alias of the wire shape — no
+      // narrowing needed. openapi-fetch returns the correct type already.
       const data = await unwrap(
         typedApi.GET("/api/user/shared-session-invites"),
       );
-      return data as SharedSessionInvitation[] | null | undefined;
+      return data;
     },
   });
 }
@@ -47,7 +87,7 @@ export function useSharedSession(id: string) {
           params: { path: { id } },
         }),
       );
-      return data as SharedSessionDetail | undefined;
+      return data && toSharedSessionDetail(data);
     },
     enabled: !!id,
   });
@@ -75,7 +115,7 @@ export function useGameSharedSessions(gameId: string) {
           params: { path: { id: gameId } },
         }),
       );
-      return data as SharedSession[] | undefined;
+      return data?.map(toSharedSession);
     },
     enabled: !!gameId,
   });
@@ -93,7 +133,7 @@ export function useCreateSharedSession() {
       const result = await unwrap(
         typedApi.POST("/api/shared-sessions", { body: data }),
       );
-      return result as SharedSessionDetail | undefined;
+      return result && toSharedSessionDetail(result);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["shared-sessions"] });

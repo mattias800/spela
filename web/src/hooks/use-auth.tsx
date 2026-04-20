@@ -7,6 +7,11 @@ import {
   type ReactNode,
 } from "react";
 import { api, typedApi, unwrap, ApiError } from "@/lib/api-client";
+import { toUser } from "@/hooks/use-admin";
+import type {
+  AuthLoginResponse,
+  AuthRegisterResponse,
+} from "@/generated/schemas";
 import type { User, AuthTokens } from "@/types/api";
 
 interface AuthContextValue {
@@ -28,6 +33,28 @@ interface AuthContextValue {
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
+// Map the wire AuthLoginResponse to the view-model AuthTokens (nested user
+// has its `role` field narrowed from plain `string` to the UserRole union).
+function toAuthTokens(wire: AuthLoginResponse): AuthTokens {
+  return {
+    ...wire,
+    user: toUser(wire.user),
+  };
+}
+
+function errorStatus(err: unknown): number {
+  if (err instanceof ApiError) return err.status;
+  if (
+    err !== null &&
+    typeof err === "object" &&
+    "status" in err &&
+    typeof (err as { status: unknown }).status === "number"
+  ) {
+    return (err as { status: number }).status;
+  }
+  return 0;
+}
+
 export function useAuth() {
   const ctx = useContext(AuthContext);
   if (!ctx) throw new Error("useAuth must be used within AuthProvider");
@@ -46,16 +73,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const fetchProfile = (retriesLeft: number): void => {
       unwrap(typedApi.GET("/api/user/profile"))
         .then((u) => {
-          setUser(u as User);
+          if (u) setUser(toUser(u));
           setIsLoading(false);
         })
         .catch((err: unknown) => {
-          const status =
-            err instanceof ApiError
-              ? err.status
-              : err instanceof Error && "status" in err
-                ? (err as Error & { status: number }).status
-                : 0;
+          const status = errorStatus(err);
           if (status === 401 || status === 403) {
             api.clearTokens();
             setIsLoading(false);
@@ -72,11 +94,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Check setup status first
     unwrap(typedApi.GET("/api/auth/setup-status"))
       .then((data) => {
-        const d = data as { needsSetup: boolean; registrationEnabled: boolean };
-        setNeedsSetup(d.needsSetup);
-        setRegistrationEnabled(d.registrationEnabled);
+        if (!data) {
+          setNeedsSetup(false);
+          setIsLoading(false);
+          return;
+        }
+        setNeedsSetup(data.needsSetup);
+        setRegistrationEnabled(data.registrationEnabled);
 
-        if (d.needsSetup) {
+        if (data.needsSetup) {
           setIsLoading(false);
           return;
         }
@@ -96,11 +122,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const login = useCallback(async (username: string, password: string) => {
-    const data = (await unwrap(
+    const wire = await unwrap(
       typedApi.POST("/api/auth/login", { body: { username, password } }),
-    )) as AuthTokens;
-    api.setTokens(data.accessToken, data.refreshToken);
-    setUser(data.user);
+    );
+    if (!wire) throw new ApiError(500, "Login returned no body");
+    const tokens = toAuthTokens(wire);
+    api.setTokens(tokens.accessToken, tokens.refreshToken);
+    setUser(tokens.user);
   }, []);
 
   const register = useCallback(
@@ -109,15 +137,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       email: string,
       password: string,
     ): Promise<{ pending: boolean }> => {
-      const data = (await unwrap(
+      const wire: AuthRegisterResponse | undefined = await unwrap(
         typedApi.POST("/api/auth/register", {
           body: { username, email, password },
         }),
-      )) as AuthTokens | { pending: true; message: string };
-      if ("pending" in data && data.pending) {
+      );
+      if (!wire) throw new ApiError(500, "Registration returned no body");
+      if (wire.pending) {
         return { pending: true };
       }
-      const tokens = data as AuthTokens;
+      // AuthRegisterResponse shape matches AuthLoginResponse when not pending.
+      const tokens: AuthTokens = {
+        accessToken: wire.accessToken,
+        refreshToken: wire.refreshToken,
+        user: toUser(wire.user),
+      };
       api.setTokens(tokens.accessToken, tokens.refreshToken);
       setUser(tokens.user);
       return { pending: false };
@@ -127,13 +161,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const setup = useCallback(
     async (username: string, email: string, password: string) => {
-      const data = (await unwrap(
+      const wire = await unwrap(
         typedApi.POST("/api/auth/setup", {
           body: { username, email, password },
         }),
-      )) as AuthTokens;
-      api.setTokens(data.accessToken, data.refreshToken);
-      setUser(data.user);
+      );
+      if (!wire) throw new ApiError(500, "Setup returned no body");
+      const tokens = toAuthTokens(wire);
+      api.setTokens(tokens.accessToken, tokens.refreshToken);
+      setUser(tokens.user);
       setNeedsSetup(false);
     },
     [],

@@ -2,11 +2,58 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { typedApi, unwrap } from "@/lib/api-client";
 import { useWebSocketEvent } from "@/hooks/use-websocket";
 import type {
+  NetplayInviteResponse,
+  NetplaySessionResponse,
+  PaginatedResponseNetplaySessionResponse,
+  ListMyNetplayInvitesResponse,
+} from "@/generated/schemas";
+import type {
   NetplaySession,
   NetplaySessionsResponse,
   NetplayInvite,
   NetplayInvitesResponse,
 } from "@/types/api";
+import {
+  asNetplayInviteStatus,
+  asNetplaySessionStatus,
+  asOptionalNetplayEndReason,
+} from "@/types/view-model-narrowing";
+
+// Map the wire shape (huma emits status/endReason as plain `string`) to the
+// view-model shape (literal unions). Each helper throws if the server ever
+// emits a value outside the claimed union — loud, not silent.
+function toNetplaySession(wire: NetplaySessionResponse): NetplaySession {
+  return {
+    ...wire,
+    status: asNetplaySessionStatus(wire.status),
+    endReason: asOptionalNetplayEndReason(wire.endReason),
+  };
+}
+
+function toNetplaySessionsResponse(
+  wire: PaginatedResponseNetplaySessionResponse,
+): NetplaySessionsResponse {
+  return {
+    ...wire,
+    data: wire.data?.map(toNetplaySession) ?? null,
+  };
+}
+
+function toNetplayInvite(wire: NetplayInviteResponse): NetplayInvite {
+  return {
+    ...wire,
+    status: asNetplayInviteStatus(wire.status),
+  };
+}
+
+function toNetplayInvitesResponse(
+  wire: ListMyNetplayInvitesResponse,
+): NetplayInvitesResponse {
+  return {
+    ...wire,
+    data: wire.data?.map(toNetplayInvite) ?? null,
+  };
+}
 
 export function useNetplaySessions(page = 1, pageSize = 20) {
   return useQuery({
@@ -17,7 +64,7 @@ export function useNetplaySessions(page = 1, pageSize = 20) {
           params: { query: { page, pageSize } },
         }),
       );
-      return data as NetplaySessionsResponse | undefined;
+      return data && toNetplaySessionsResponse(data);
     },
   });
 }
@@ -31,7 +78,7 @@ export function useNetplaySession(id: string) {
           params: { path: { id } },
         }),
       );
-      return data as NetplaySession | undefined;
+      return data && toNetplaySession(data);
     },
     enabled: !!id,
   });
@@ -45,7 +92,7 @@ export function useCreateNetplaySession() {
       const result = await unwrap(
         typedApi.POST("/api/netplay/sessions", { body: data }),
       );
-      return result as NetplaySession | undefined;
+      return result && toNetplaySession(result);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["netplay", "sessions"] });
@@ -63,7 +110,7 @@ export function useJoinNetplaySession() {
           body: { inviteCode },
         }),
       );
-      return data as NetplaySession | undefined;
+      return data && toNetplaySession(data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["netplay", "sessions"] });
@@ -104,7 +151,7 @@ export function useUpdateNetplaySettings() {
           body: { inputDelay },
         }),
       );
-      return data as NetplaySession | undefined;
+      return data && toNetplaySession(data);
     },
     onSuccess: (_, { id }) => {
       queryClient.invalidateQueries({ queryKey: ["netplay", "sessions", id] });
@@ -135,7 +182,7 @@ export function useNetplayInvites() {
     queryKey: ["netplay", "invites"],
     queryFn: async () => {
       const data = await unwrap(typedApi.GET("/api/netplay/invites"));
-      return data as NetplayInvitesResponse | undefined;
+      return data && toNetplayInvitesResponse(data);
     },
   });
 }
@@ -157,7 +204,7 @@ export function useSessionNetplayInvites(sessionId: string) {
           params: { path: { id: sessionId } },
         }),
       );
-      return data as NetplayInvite[] | undefined;
+      return data?.map(toNetplayInvite);
     },
     enabled: !!sessionId,
   });
