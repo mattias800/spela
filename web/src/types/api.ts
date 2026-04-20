@@ -17,22 +17,20 @@
 // `UserResponse`). The hand-written types / short-name aliases below exist
 // only for historical reasons and will be pruned as call sites migrate.
 import type { components } from "@/generated/api";
+import type { UserResponse } from "@/generated/schemas";
 
 export * from "@/generated/schemas";
 
 type Schemas = components["schemas"];
 
-export interface User {
-  id: string;
-  username: string;
-  email: string;
-  role: "owner" | "admin" | "user";
-  disabled: boolean;
-  pendingApproval: boolean;
-  avatarUrl?: string;
-  createdAt: string;
-  updatedAt: string;
-}
+// The wire shape (UserResponse) types role as `string` because huma flattens
+// the server's UserRole enum to its JSON representation. Every value the server
+// ever emits is one of three literals (see server/internal/db/models.go:17),
+// so the frontend narrows the field to keep switch-on-role sites
+// exhaustiveness-checked. When a new role is added, this union must grow and
+// tsc will flag every switch that doesn't handle it.
+export type UserRole = "owner" | "admin" | "user";
+export type User = Omit<UserResponse, "role"> & { role: UserRole };
 
 export type RateLimitStatus = Schemas["RateLimitResponse"];
 

@@ -18,7 +18,8 @@ import { Users } from "lucide-react";
 import { Link } from "react-router-dom";
 import { formatDate } from "@/lib/format";
 import { cn } from "@/lib/cn";
-import type { User } from "@/types/api";
+import type { User, UserRole } from "@/types/api";
+import { fallbackNever } from "@/lib/exhaustive";
 import { useUserRateLimit, useResetRateLimit } from "@/hooks/use-admin";
 
 interface UserTableProps {
@@ -31,7 +32,13 @@ interface UserTableProps {
   onApprove: (user: User) => void;
 }
 
-function getRoleBadge(role: string) {
+function getRoleBadge(role: UserRole) {
+  const userBadge = (
+    <Badge variant="default">
+      <Shield className="h-3 w-3 mr-1" />
+      user
+    </Badge>
+  );
   switch (role) {
     case "owner":
       return (
@@ -47,13 +54,10 @@ function getRoleBadge(role: string) {
           admin
         </Badge>
       );
+    case "user":
+      return userBadge;
     default:
-      return (
-        <Badge variant="default">
-          <Shield className="h-3 w-3 mr-1" />
-          user
-        </Badge>
-      );
+      return fallbackNever(role, userBadge);
   }
 }
 
