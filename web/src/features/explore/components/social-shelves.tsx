@@ -24,7 +24,7 @@ import type {
 // --- Trending Shelf ---
 
 interface TrendingShelfProps {
-  games: TrendingGame[] | undefined;
+  games: TrendingGame[] | null | undefined;
   isLoading: boolean;
   onToggleFavorite?: (game: Game) => void;
   onTogglePlayLater?: (game: Game) => void;
@@ -73,7 +73,7 @@ export function TrendingShelf({
 // --- Community Top Shelf ---
 
 interface CommunityTopShelfProps {
-  games: CommunityTopGame[] | undefined;
+  games: CommunityTopGame[] | null | undefined;
   isLoading: boolean;
   onToggleFavorite?: (game: Game) => void;
   onTogglePlayLater?: (game: Game) => void;
@@ -125,7 +125,7 @@ export function CommunityTopShelf({
 // --- Cult Classics Shelf ---
 
 interface CultClassicsShelfProps {
-  games: CultClassicGame[] | undefined;
+  games: CultClassicGame[] | null | undefined;
   isLoading: boolean;
   onToggleFavorite?: (game: Game) => void;
   onTogglePlayLater?: (game: Game) => void;
@@ -175,7 +175,7 @@ export function CultClassicsShelf({
 // --- Recently Reviewed Shelf ---
 
 interface RecentlyReviewedShelfProps {
-  reviews: RecentReviewItem[] | undefined;
+  reviews: RecentReviewItem[] | null | undefined;
   isLoading: boolean;
   onToggleFavorite?: (game: Game) => void;
   onTogglePlayLater?: (game: Game) => void;
@@ -250,7 +250,7 @@ export function RecentlyReviewedShelf({
 // --- Active Now Shelf ---
 
 interface ActiveNowShelfProps {
-  games: ActiveNowItem[] | undefined;
+  games: ActiveNowItem[] | null | undefined;
   isLoading: boolean;
   onToggleFavorite?: (game: Game) => void;
   onTogglePlayLater?: (game: Game) => void;
