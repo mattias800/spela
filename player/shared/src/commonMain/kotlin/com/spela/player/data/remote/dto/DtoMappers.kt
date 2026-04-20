@@ -143,7 +143,7 @@ fun RomHackGameDto.toDomain(): RomHackGame = RomHackGame(
 /** Constructs GameDetail from the enriched GameResponse. */
 fun GameDto.toGameDetail(): GameDetail = GameDetail(
     game = toDomain(),
-    screenshots = screenshotUrls.orEmpty(),
+    screenshots = screenshotUrls,
     variants = variants.map { it.toDomain() },
     parentGame = parentGame.takeIf { it.id.isNotEmpty() }?.toDomain(),
     romHacks = romHacks.map { it.toDomain() },
@@ -173,7 +173,7 @@ fun com.spela.client.models.UserPreferencesResponse.toDomain(): UserPreferences 
     consoleKeyMappings = consoleKeyMappings.mapValues {
         ConsoleKeyMappingPref(
             selectedMapping = it.value.selectedMapping,
-            customMapping = it.value.customMapping.orEmpty(),
+            customMapping = it.value.customMapping,
         )
     },
     defaultSecondScreenPage = defaultSecondScreenPage,
@@ -666,8 +666,8 @@ fun com.spela.client.models.GameSessionResponse.toDomain(): GameSession = GameSe
     isSharedSession = isSharedSession,
     sharedSessionId = sharedSessionId,
     memberCount = memberCount.toInt(),
-    memberUsernames = memberUsernames.orEmpty(),
-    memberAvatars = memberAvatars.orEmpty(),
+    memberUsernames = memberUsernames,
+    memberAvatars = memberAvatars,
 )
 
 fun com.spela.client.models.SessionCheatsResponse.toDomain() = SessionCheatConfig(
@@ -788,7 +788,7 @@ fun com.spela.client.models.MoodResponse.toDomain(): MoodDefinition = MoodDefini
     name = name,
     description = description,
     icon = icon,
-    gradient = gradient.orEmpty(),
+    gradient = gradient,
 )
 
 fun com.spela.client.models.ForYouRowResponse.toDomain(): ForYouRow = ForYouRow(
@@ -852,7 +852,7 @@ fun com.spela.client.models.DeveloperSummary.toDomain(): DeveloperSummary = Deve
     name = name,
     gameCount = gameCount.toInt(),
     avgRating = avgRating,
-    consoles = consoles.orEmpty(),
+    consoles = consoles,
 )
 
 fun com.spela.client.models.GenreCount.toDeveloperGenreBreakdown(): DeveloperDetailGenreBreakdown =
@@ -923,14 +923,14 @@ fun com.spela.client.models.TimelineEntry.toDomain(): TimelineEntry = TimelineEn
 fun com.spela.client.models.RelatedDeveloper.toDomain(): RelatedDeveloper = RelatedDeveloper(
     name = name,
     gameCount = gameCount.toInt(),
-    sharedPublishers = sharedPublishers.orEmpty(),
+    sharedPublishers = sharedPublishers,
 )
 
 fun com.spela.client.models.DeveloperDetailResponse.toDomain(): DeveloperDetail = DeveloperDetail(
     name = name,
     gameCount = gameCount.toInt(),
     avgRating = avgRating,
-    consoles = consoles.orEmpty(),
+    consoles = consoles,
     heroUrl = heroUrl,
     companyInfo = companyInfo.toDomain().takeIf { it.hasAnyData() },
     topGames = topGames.map { it.toDomain() },
@@ -977,14 +977,14 @@ fun com.spela.client.models.NameCount.toPublisherDeveloper(): PublisherDetailDev
 fun com.spela.client.models.RelatedPublisher.toDomain(): RelatedPublisher = RelatedPublisher(
     name = name,
     gameCount = gameCount.toInt(),
-    sharedDevelopers = sharedDevelopers.orEmpty(),
+    sharedDevelopers = sharedDevelopers,
 )
 
 fun com.spela.client.models.PublisherDetailResponse.toDomain(): PublisherDetail = PublisherDetail(
     name = name,
     gameCount = gameCount.toInt(),
     avgRating = avgRating,
-    consoles = consoles.orEmpty(),
+    consoles = consoles,
     heroUrl = heroUrl,
     companyInfo = companyInfo.toDomain().takeIf { it.hasAnyData() },
     topGames = topGames.map { it.toDomain() },
@@ -1004,7 +1004,7 @@ fun com.spela.client.models.DeveloperSpotlightResponse.toDomain(): DeveloperSpot
     name = name,
     gameCount = gameCount.toInt(),
     avgRating = avgRating,
-    consoles = consoles.orEmpty(),
+    consoles = consoles,
     topGames = topGames.map { it.toDomain() },
     heroUrl = heroUrl.ifBlank { null },
 )
