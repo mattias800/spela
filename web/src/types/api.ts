@@ -820,124 +820,34 @@ export type StagedUpload = Schemas["StagedUploadResponse"];
 
 // --- Phase 10: Social & Community Discovery ---
 
-export interface TrendingGame {
-  game: Game;
-  playersThisWeek: number;
-}
-
-export interface TrendingResponse {
-  games: TrendingGame[];
-}
-
-export interface CommunityTopGame {
-  game: Game;
-  avgRating: number;
-  ratingCount: number;
-}
-
-export interface CommunityTopResponse {
-  games: CommunityTopGame[];
-}
-
-export interface CultClassicGame {
-  game: Game;
-  communityRating: number;
-  igdbCriticsRating: number;
-  ratingCount: number;
-}
-
-export interface CultClassicsResponse {
-  games: CultClassicGame[];
-}
-
-export interface RecentReviewItem {
-  game: Game;
-  rating: number;
-  review: string;
-  reviewerName: string;
-  reviewedAt: string;
-}
-
-export interface RecentlyReviewedResponse {
-  reviews: RecentReviewItem[];
-}
-
-export interface ActiveNowItem {
-  game: Game;
-  activeSessions: number;
-  activeChallenges: number;
-}
-
-export interface ActiveNowResponse {
-  games: ActiveNowItem[];
-}
+export type TrendingGame = Schemas["TrendingGameResponse"];
+export type TrendingResponse = Schemas["TrendingResponse"];
+export type CommunityTopGame = Schemas["CommunityTopGame"];
+export type CommunityTopResponse = Schemas["CommunityTopResponse"];
+export type CultClassicGame = Schemas["CultClassicGame"];
+export type CultClassicsResponse = Schemas["CultClassicsResponse"];
+export type RecentReviewItem = Schemas["RecentReviewItem"];
+export type RecentlyReviewedResponse = Schemas["RecentlyReviewedResponse"];
+export type ActiveNowItem = Schemas["ActiveNowItem"];
+export type ActiveNowResponse = Schemas["ActiveNowResponse"];
 
 // --- Phase 11: Temporal Discovery ---
 
-export interface OnThisDayResponse {
-  date: string;
-  games: Game[];
-}
-
-export interface BestOfYearResponse {
-  year: number;
-  games: Game[];
-}
-
-export interface AnniversaryItem {
-  game: Game;
-  yearsAgo: number;
-  playedAt: string;
-}
-
-export interface YourAnniversariesResponse {
-  anniversaries: AnniversaryItem[];
-}
-
-export interface DecadeResponse {
-  decade: string;
-  label: string;
-  games: Game[];
-}
+export type OnThisDayResponse = Schemas["OnThisDayResponse"];
+export type BestOfYearResponse = Schemas["BestOfYearResponse"];
+export type AnniversaryItem = Schemas["AnniversaryItem"];
+export type YourAnniversariesResponse = Schemas["AnniversariesResponse"];
+export type DecadeResponse = Schemas["DecadesResponse"];
 
 // --- Phase 12: Achievement & Challenge Discovery ---
 
-export interface AchievementGameItem {
-  game: Game;
-  totalAchievements: number;
-  avgCompletion: number;
-  playersAttempted: number;
-  playersCompleted: number;
-}
-
-export interface EasyToCompleteResponse {
-  games: AchievementGameItem[];
-}
-
-export interface HardestGamesResponse {
-  games: AchievementGameItem[];
-}
-
-export interface AlmostDoneGame {
-  game: Game;
-  unlockedCount: number;
-  totalCount: number;
-  completionPercent: number;
-}
-
-export interface AlmostDoneResponse {
-  games: AlmostDoneGame[];
-}
-
-export interface FreshChallengeGame {
-  game: Game;
-  totalAchievements: number;
-  totalPoints: number;
-}
-
-export interface FreshChallengesResponse {
-  games: FreshChallengeGame[];
-}
+export type AchievementGameItem = Schemas["AchievementGameResponse"];
+export type EasyToCompleteResponse = Schemas["EasyToCompleteResponse"];
+export type HardestGamesResponse = Schemas["HardestGamesResponse"];
+export type AlmostDoneGame = Schemas["AlmostDoneGame"];
+export type AlmostDoneResponse = Schemas["AlmostDoneResponse"];
+export type FreshChallengeGame = Schemas["FreshChallengeGame"];
+export type FreshChallengesResponse = Schemas["FreshChallengesResponse"];
 
 export interface ExploreChallenge {
   id: string;

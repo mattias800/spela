@@ -38,7 +38,7 @@ export function OnThisDayShelf({
       isLoading={isLoading}
       isEmpty={!data?.games || data.games.length === 0}
     >
-      {data?.games.map((game) => (
+      {data?.games?.map((game) => (
         <div
           key={game.id}
           className="flex-shrink-0"
@@ -157,7 +157,7 @@ export function BestOfYearSection({
 // --- Anniversaries Shelf ---
 
 interface AnniversariesShelfProps {
-  anniversaries: AnniversaryItem[] | undefined;
+  anniversaries: AnniversaryItem[] | null | undefined;
   isLoading: boolean;
   onToggleFavorite?: (game: Game) => void;
   onTogglePlayLater?: (game: Game) => void;
@@ -228,7 +228,7 @@ export function DecadeSpotlight({
       isLoading={isLoading}
       isEmpty={!data?.games || data.games.length === 0}
     >
-      {data?.games.map((game) => (
+      {data?.games?.map((game) => (
         <div
           key={game.id}
           className="flex-shrink-0"

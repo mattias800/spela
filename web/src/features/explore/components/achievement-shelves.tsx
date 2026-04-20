@@ -42,7 +42,7 @@ export function EasyToCompleteShelf({
       isLoading={isLoading}
       isEmpty={!data?.games || data.games.length === 0}
     >
-      {data?.games.map((item) => (
+      {data?.games?.map((item) => (
         <div
           key={item.game.id}
           className="flex-shrink-0"
@@ -91,7 +91,7 @@ export function HardestGamesShelf({
       isLoading={isLoading}
       isEmpty={!data?.games || data.games.length === 0}
     >
-      {data?.games.map((item) => (
+      {data?.games?.map((item) => (
         <div
           key={item.game.id}
           className="flex-shrink-0"
@@ -140,7 +140,7 @@ export function AlmostDoneShelf({
       isLoading={isLoading}
       isEmpty={!data?.games || data.games.length === 0}
     >
-      {data?.games.map((item) => (
+      {data?.games?.map((item) => (
         <div
           key={item.game.id}
           className="flex-shrink-0"
@@ -205,7 +205,7 @@ export function FreshChallengesShelf({
       isLoading={isLoading}
       isEmpty={!data?.games || data.games.length === 0}
     >
-      {data?.games.map((item) => (
+      {data?.games?.map((item) => (
         <div
           key={item.game.id}
           className="flex-shrink-0"
