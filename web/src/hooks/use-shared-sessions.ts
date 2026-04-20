@@ -41,7 +41,7 @@ function toSharedSessionDetail(
   return {
     ...wire,
     status: asSharedSessionStatus(wire.status),
-    members: wire.members?.map(toSharedSessionMember) ?? null,
+    members: wire.members.map(toSharedSessionMember),
   };
 }
 
