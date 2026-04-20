@@ -952,27 +952,10 @@ export interface PlayersLikeYouResponse {
 
 // --- Developers & Publishers ---
 
-export interface DeveloperSummary {
-  name: string;
-  gameCount: number;
-  avgRating: number;
-  consoles: string[];
-}
-
-export interface DeveloperListResponse {
-  developers: DeveloperSummary[];
-}
-
-export interface PlatformCount {
-  consoleName: string;
-  consoleId: string;
-  count: number;
-}
-
-export interface NameCount {
-  name: string;
-  count: number;
-}
+export type DeveloperSummary = Schemas["DeveloperSummary"];
+export type DeveloperListResponse = Schemas["DeveloperListResponse"];
+export type PlatformCount = Schemas["PlatformCount"];
+export type NameCount = Schemas["NameCount"];
 
 export interface EntityUserStats {
   totalPlayTime: number;
