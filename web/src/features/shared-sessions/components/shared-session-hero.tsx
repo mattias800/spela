@@ -49,7 +49,7 @@ export function SharedSessionHero({
               {sharedSession.name}
             </h1>
             <div className="flex items-center gap-3 mt-2">
-              <Badge variant="brand">{sharedSession.gameConsoleName}</Badge>
+              <Badge variant="brand">{sharedSession.consoleName}</Badge>
               <Badge
                 variant={sharedSessionStatusVariant[sharedSession.status]}
                 className="capitalize"
@@ -59,12 +59,6 @@ export function SharedSessionHero({
             </div>
           </div>
 
-          {sharedSession.description && (
-            <p className="text-sm text-surface-300 leading-relaxed">
-              {sharedSession.description}
-            </p>
-          )}
-
           <div className="flex flex-wrap items-center gap-2">
             <Button
               variant="primary"
@@ -73,7 +67,7 @@ export function SharedSessionHero({
               disabled={!canPlayInBrowser || sharedSession.status === "completed"}
               title={
                 !canPlayInBrowser
-                  ? `${sharedSession.gameConsoleName} is not supported for browser play`
+                  ? `${sharedSession.consoleName} is not supported for browser play`
                   : sharedSession.status === "completed"
                     ? "This shared session is completed"
                     : "Play in Browser"
@@ -110,7 +104,7 @@ export function SharedSessionHero({
           </div>
           <div>
             <span className="text-surface-500">Last active:</span>{" "}
-            {formatRelativeTime(sharedSession.lastActivityAt)}
+            {formatRelativeTime(sharedSession.updatedAt)}
           </div>
         </div>
 

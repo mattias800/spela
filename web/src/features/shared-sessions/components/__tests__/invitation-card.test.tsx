@@ -14,7 +14,7 @@ function makeInvitation(
     gameId: "g1",
     gameTitle: "Super Mario World",
     gameCoverUrl: "https://example.com/cover.png",
-    gameConsoleName: "SNES",
+    consoleName: "SNES",
     inviterUsername: "alice",
     createdAt: "2026-02-13T10:00:00Z",
     ...overrides,

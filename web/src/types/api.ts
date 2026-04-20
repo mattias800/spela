@@ -24,6 +24,7 @@ import type {
   ConsoleResponse,
   PaginatedResponseGameResponse,
   ChallengeResponse,
+  SharedSessionResponse,
 } from "@/generated/schemas";
 
 export * from "@/generated/schemas";
@@ -238,26 +239,16 @@ export type Collection = Schemas["CollectionResponse"];
 
 export type PublicProfileGame = Schemas["PublicProfileGame"];
 
-export interface SharedSession {
-  id: string;
-  name: string;
-  description?: string;
-  gameId: string;
-  gameTitle: string;
-  gameCoverUrl?: string;
-  gameConsoleName: string;
-  ownerId: string;
-  ownerUsername: string;
-  status: "active" | "paused" | "completed";
-  activeUserId: string | null;
-  activeUsername?: string;
-  turnTakenAt: string | null;
-  memberCount: number;
-  sessionId?: string | null;
-  lastActivityAt: string;
-  createdAt: string;
-  updatedAt: string;
-}
+export type SharedSessionStatus = "active" | "paused" | "completed";
+
+// Derives from the generated SharedSessionResponse; status re-narrowed so
+// switches can be exhaustiveness-checked. Note: the previous hand-written
+// shape declared description / gameConsoleName / lastActivityAt, which the
+// server never emits — those consumers have been migrated to consoleName /
+// updatedAt and the description references removed.
+export type SharedSession = Omit<SharedSessionResponse, "status"> & {
+  status: SharedSessionStatus;
+};
 
 export interface SharedSessionMember {
   userId: string;
@@ -273,6 +264,9 @@ export interface SharedSessionDetail extends SharedSession {
   members: SharedSessionMember[];
 }
 
+// Frontend-only shape assembled from the list-my-pending-invites endpoint's
+// response (which is an array of these). The generated SharedSessionInviteResponse
+// is the POST-invite mutation response, not the list item — different fields.
 export interface SharedSessionInvitation {
   id: string;
   sharedSessionId: string;
@@ -280,7 +274,7 @@ export interface SharedSessionInvitation {
   gameId: string;
   gameTitle: string;
   gameCoverUrl?: string;
-  gameConsoleName: string;
+  consoleName: string;
   inviterUsername: string;
   inviterAvatarUrl?: string;
   createdAt: string;

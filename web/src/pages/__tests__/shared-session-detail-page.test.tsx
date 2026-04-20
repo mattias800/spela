@@ -49,16 +49,14 @@ const mockUseSharedSessionSaves = useSharedSessionSaves as ReturnType<typeof vi.
 const mockSharedSessionDetail = {
   id: "ss-1",
   name: "Friday Night SNES",
-  description: "We play every Friday",
   gameId: "g1",
   gameTitle: "Super Mario World",
   gameCoverUrl: "https://example.com/cover.png",
-  gameConsoleName: "SNES",
+  consoleName: "SNES",
   ownerId: "u1",
   ownerUsername: "alice",
   status: "active",
   memberCount: 2,
-  lastActivityAt: "2026-02-13T10:00:00Z",
   createdAt: "2026-02-01T10:00:00Z",
   updatedAt: "2026-02-13T10:00:00Z",
   members: [
@@ -128,12 +126,6 @@ describe("SharedSessionDetailPage", () => {
     expect(
       screen.getByRole("heading", { name: "Friday Night SNES" }),
     ).toBeInTheDocument();
-  });
-
-  it("renders shared session description", () => {
-    renderPage();
-
-    expect(screen.getByText("We play every Friday")).toBeInTheDocument();
   });
 
   it("renders game title", () => {
