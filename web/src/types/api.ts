@@ -259,21 +259,11 @@ export type SharedSessionDetail = Omit<
   members: SharedSessionMember[] | null;
 };
 
-// Frontend-only shape assembled from the list-my-pending-invites endpoint's
-// response (which is an array of these). The generated SharedSessionInviteResponse
-// is the POST-invite mutation response, not the list item — different fields.
-export interface SharedSessionInvitation {
-  id: string;
-  sharedSessionId: string;
-  sharedSessionName: string;
-  gameId: string;
-  gameTitle: string;
-  gameCoverUrl?: string;
-  consoleName: string;
-  inviterUsername: string;
-  inviterAvatarUrl?: string;
-  createdAt: string;
-}
+// The wire response for GET /api/user/shared-session-invites is
+// SharedSessionInviteResponse[] — flat array, not paginated. The server
+// now includes game/console/inviter enrichment fields directly; consumers
+// import SharedSessionInviteResponse from @/generated/schemas.
+export type SharedSessionInvitation = Schemas["SharedSessionInviteResponse"];
 
 export type SharedSessionSave = Schemas["SharedSessionSaveResponse"];
 
@@ -294,7 +284,6 @@ export interface PaginatedFlat<T> {
 }
 
 export type SharedSessionsResponse = Paginated<SharedSession>;
-export type SharedSessionInvitationsResponse = PaginatedFlat<SharedSessionInvitation>;
 
 export type NetplaySessionStatus = "waiting" | "in_progress" | "ended";
 export type NetplayEndReason =

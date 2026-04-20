@@ -129,14 +129,20 @@ func (h *SharedSessionHandler) toSharedSessionInviteResponse(inv db.SharedSessio
 
 	sharedSessionName := inv.SharedSession.Name
 	gameTitle := inv.SharedSession.Game.Title
+	gameCoverURL := resolveImageURL(inv.SharedSession.Game.CoverURL)
+	consoleName := inv.SharedSession.Game.Console.Name
 
 	return SharedSessionInviteResponse{
 		ID:                strconv.FormatUint(uint64(inv.ID), 10),
 		SharedSessionID:   strconv.FormatUint(uint64(inv.SharedSessionID), 10),
 		SharedSessionName: sharedSessionName,
+		GameID:            strconv.FormatUint(uint64(inv.SharedSession.GameID), 10),
 		GameTitle:         gameTitle,
+		GameCoverURL:      gameCoverURL,
+		ConsoleName:       consoleName,
 		InviterID:         strconv.FormatUint(uint64(inv.InviterID), 10),
 		InviterUsername:   inviterName,
+		InviterAvatarURL:  inv.Inviter.AvatarURL,
 		InviteeID:         strconv.FormatUint(uint64(inv.InviteeID), 10),
 		InviteeUsername:   inviteeName,
 		Status:            inv.Status,

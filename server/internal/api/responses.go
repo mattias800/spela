@@ -818,16 +818,20 @@ type SharedSessionMemberResponse struct {
 
 // SharedSessionInviteResponse is the API response for a shared session invite.
 type SharedSessionInviteResponse struct {
-	ID                  string    `json:"id"`
-	SharedSessionID     string    `json:"sharedSessionId"`
-	SharedSessionName   string    `json:"sharedSessionName"`
-	GameTitle           string    `json:"gameTitle"`
-	InviterID           string    `json:"inviterId"`
-	InviterUsername     string    `json:"inviterUsername"`
-	InviteeID           string    `json:"inviteeId"`
-	InviteeUsername     string    `json:"inviteeUsername"`
-	Status              string    `json:"status"`
-	CreatedAt           time.Time `json:"createdAt"`
+	ID                string    `json:"id"`
+	SharedSessionID   string    `json:"sharedSessionId"`
+	SharedSessionName string    `json:"sharedSessionName"`
+	GameID            string    `json:"gameId"`
+	GameTitle         string    `json:"gameTitle"`
+	GameCoverURL      string    `json:"gameCoverUrl"`
+	ConsoleName       string    `json:"consoleName"`
+	InviterID         string    `json:"inviterId"`
+	InviterUsername   string    `json:"inviterUsername"`
+	InviterAvatarURL  string    `json:"inviterAvatarUrl"`
+	InviteeID         string    `json:"inviteeId"`
+	InviteeUsername   string    `json:"inviteeUsername"`
+	Status            string    `json:"status"`
+	CreatedAt         time.Time `json:"createdAt"`
 }
 
 // SharedSessionSaveResponse is the API response for a shared session save state.

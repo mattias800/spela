@@ -8696,8 +8696,17 @@
             "readOnly": true,
             "type": "string"
           },
+          "consoleName": {
+            "type": "string"
+          },
           "createdAt": {
             "format": "date-time",
+            "type": "string"
+          },
+          "gameCoverUrl": {
+            "type": "string"
+          },
+          "gameId": {
             "type": "string"
           },
           "gameTitle": {
@@ -8710,6 +8719,9 @@
             "type": "string"
           },
           "inviteeUsername": {
+            "type": "string"
+          },
+          "inviterAvatarUrl": {
             "type": "string"
           },
           "inviterId": {
@@ -8732,9 +8744,13 @@
           "id",
           "sharedSessionId",
           "sharedSessionName",
+          "gameId",
           "gameTitle",
+          "gameCoverUrl",
+          "consoleName",
           "inviterId",
           "inviterUsername",
+          "inviterAvatarUrl",
           "inviteeId",
           "inviteeUsername",
           "status",
