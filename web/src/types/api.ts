@@ -552,17 +552,7 @@ export interface NetplayInvitesResponse {
   total: number;
 }
 
-export interface BiosFile {
-  name: string;
-  size: number;
-  md5: string;
-  expectedMd5?: string;
-  consoleId: string | null;
-  consoleName: string | null;
-  description: string | null;
-  required: boolean;
-  status: "valid" | "present" | "invalid" | "missing";
-}
+export type BiosFile = Schemas["BiosFileResponse"];
 
 export interface BiosConsoleFile {
   fileName: string;

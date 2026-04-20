@@ -58,8 +58,8 @@ describe("BiosUploadResults", () => {
         result: makeBiosFile({
           name: "unknown.bin",
           consoleId: null,
-          consoleName: null,
-          description: null,
+          consoleName: undefined,
+          description: undefined,
           status: "present",
           required: false,
         }),
