@@ -493,8 +493,14 @@ enum class ChallengeType(val apiId: String, val displayName: String) {
     SURVIVAL("survival", "Survival");
 
     companion object {
+        /**
+         * Throws on an unknown server value rather than silently coercing to a
+         * default. See RuntimeNarrowing.kt for the rationale — a lying fallback
+         * breaks exhaustive `when` statements downstream.
+         */
         fun fromApiId(id: String): ChallengeType =
-            entries.find { it.apiId == id } ?: COMPLETION
+            entries.find { it.apiId == id }
+                ?: error("Unexpected challenge type from server: '$id'")
     }
 }
 
@@ -504,8 +510,10 @@ enum class ChallengeDifficulty(val apiId: String, val displayName: String) {
     HARD("hard", "Hard");
 
     companion object {
+        /** See [ChallengeType.fromApiId] rationale. */
         fun fromApiId(id: String): ChallengeDifficulty =
-            entries.find { it.apiId == id } ?: MEDIUM
+            entries.find { it.apiId == id }
+                ?: error("Unexpected challenge difficulty from server: '$id'")
     }
 }
 
