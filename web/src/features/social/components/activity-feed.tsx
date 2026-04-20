@@ -34,7 +34,7 @@ export function ActivityFeed({
   const { data, isLoading } = useActivityFeed(1, maxItems ?? 20);
   useActivityRealtime();
 
-  const events = maxItems ? data?.data.slice(0, maxItems) : data?.data;
+  const events = maxItems ? data?.data?.slice(0, maxItems) : data?.data;
 
   return (
     <div data-testid="activity-feed">

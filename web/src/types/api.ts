@@ -376,23 +376,13 @@ export type RecentAchievement = Schemas["RARecentAchievementResponse"];
 
 export type UserSearchResult = Schemas["UserSearchResult"];
 
-export interface UserSearchResponse {
-  data: UserSearchResult[];
-  total: number;
-  page: number;
-  pageSize: number;
-}
+export type UserSearchResponse = Schemas["PaginatedResponseUserSearchResult"];
 
 export type OnlineUser = Schemas["OnlineUserResponse"];
 
 export type ActivityEvent = Schemas["ActivityEventResponse"];
 
-export interface ActivityFeedResponse {
-  data: ActivityEvent[];
-  total: number;
-  page: number;
-  pageSize: number;
-}
+export type ActivityFeedResponse = Schemas["PaginatedResponseActivityEventResponse"];
 
 export type GameRating = Schemas["GameRatingResponse"];
 
