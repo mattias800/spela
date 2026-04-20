@@ -472,53 +472,13 @@ export type Keyword = Schemas["KeywordResponse"];
 
 // --- Series & Franchises ---
 
-export interface FeaturedSeries {
-  id: string;
-  name: string;
-  libraryGames: number;
-  totalGames: number;
-  consoleCount: number;
-  heroUrl: string;
-}
-
+export type FeaturedSeries = Schemas["FeaturedSeriesResponse"];
 export type SeriesConsole = Schemas["SeriesConsoleInfo"];
-
-export interface SeriesGame {
-  igdbGameId: number;
-  name: string;
-  inLibrary: boolean;
-  localGameId: string | null;
-  coverUrl: string | null;
-  releaseDate: string | null;
-  igdbCriticsRating: number;
-  consoleAbbreviation: string;
-  consoleName: string;
-  consoleColor: string;
-}
-
-export interface SeriesDetail {
-  id: string;
-  name: string;
-  heroUrl: string;
-  consoles: SeriesConsole[];
-  libraryGames: number;
-  totalGames: number;
-  games: SeriesGame[];
-}
-
+export type SeriesGame = Schemas["SeriesGameResponse"];
+export type SeriesDetail = Schemas["SeriesDetailResponse"];
 export type GameSeriesLink = Schemas["GameSeriesResponse"];
 export type GameFranchiseLink = Schemas["GameFranchiseResponse"];
-
-export interface FranchiseDetail {
-  id: string;
-  igdbFranchiseId: number;
-  name: string;
-  heroUrl: string;
-  consoles: SeriesConsole[];
-  libraryGames: number;
-  totalGames: number;
-  games: SeriesGame[];
-}
+export type FranchiseDetail = Schemas["FranchiseDetailResponse"];
 
 // --- Visual Browsing / Gallery ---
 

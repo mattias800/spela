@@ -47,6 +47,7 @@ const mockFranchiseDetail: FranchiseDetail = {
   id: "1",
   igdbFranchiseId: 500,
   name: "Mario",
+  logoUrl: "",
   heroUrl: "/hero/mario-franchise.jpg",
   consoles: [
     makeFranchiseConsole({ abbreviation: "nes", name: "NES", color: "#e53e3e", gameCount: 2 }),
@@ -96,7 +97,7 @@ const mockFranchiseDetail: FranchiseDetail = {
       name: "Mario Unknown",
       inLibrary: false,
       localGameId: null,
-      releaseDate: null,
+      releaseDate: "",
       igdbCriticsRating: 0,
       consoleAbbreviation: "snes",
       consoleName: "SNES",
