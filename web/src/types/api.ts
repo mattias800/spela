@@ -289,19 +289,7 @@ export interface SharedSessionInvitation {
   createdAt: string;
 }
 
-export interface SharedSessionSave {
-  id: string;
-  sharedSessionId: string;
-  gameId: string;
-  userId: string;
-  username: string;
-  avatarUrl?: string;
-  name: string;
-  fileSize: number;
-  isAuto: boolean;
-  createdAt: string;
-  updatedAt: string;
-}
+export type SharedSessionSave = Schemas["SharedSessionSaveResponse"];
 
 export interface SharedSessionsResponse {
   data: SharedSession[];

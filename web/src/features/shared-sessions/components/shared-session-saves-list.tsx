@@ -49,7 +49,7 @@ export function SharedSessionSavesList({
                 <div className="px-5 pb-5 flex items-center gap-4 py-3">
                   <PlayerAvatar
                     username={save.username}
-                    avatarUrl={save.avatarUrl}
+                    avatarUrl={undefined}
                   />
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-surface-100">
