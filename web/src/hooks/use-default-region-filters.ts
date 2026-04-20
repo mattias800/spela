@@ -23,7 +23,7 @@ export function useDefaultRegionFilters(
       !applied &&
       !searchParams.get("regions")
     ) {
-      setFilters((f) => ({ ...f, regions: userPrefs.preferredRegions }));
+      setFilters((f) => ({ ...f, regions: userPrefs.preferredRegions ?? undefined }));
       setApplied(true);
     }
   }, [userPrefs, applied, searchParams, setFilters]);

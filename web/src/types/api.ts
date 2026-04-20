@@ -180,21 +180,7 @@ export type Device = Schemas["DeviceResponse"];
 
 export type ConsoleKeyMapping = Schemas["ConsoleKeyMappingDTO"];
 
-export interface UserPreferences {
-  showPerformanceOverlay: boolean;
-  autoSaveEnabled: boolean;
-  autoLoadSaveEnabled: boolean;
-  selectedShader: string;
-  consoleShaders: Record<string, string>;
-  selectedKeyMapping: string;
-  customKeyMapping: Record<string, string>;
-  consoleKeyMappings: Record<string, ConsoleKeyMapping>;
-  preferredRegions: string[];
-  raLinked: boolean;
-  raUsername: string;
-  raHardcoreEnabled: boolean;
-  selectedTheme: string;
-}
+export type UserPreferences = Schemas["UserPreferencesResponse"];
 
 export type RAStatus = Schemas["RAStatusResponse"];
 
