@@ -1,6 +1,7 @@
 package api
 
 import (
+	"encoding/json"
 	"fmt"
 	"strconv"
 	"strings"
@@ -1333,4 +1334,14 @@ type ScraperSourceResultResponse struct {
 	Error            int64  `json:"error"`
 	ErrorEligible    int64  `json:"errorEligible"`
 	NotAttempted     int64  `json:"notAttempted"`
+}
+
+// --- Saved searches ---
+
+// SavedSearchResponse is the API response for a saved search.
+type SavedSearchResponse struct {
+	ID        string          `json:"id"`
+	Name      string          `json:"name"`
+	Filters   json.RawMessage `json:"filters"`
+	CreatedAt time.Time       `json:"createdAt"`
 }
