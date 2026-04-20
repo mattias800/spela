@@ -168,7 +168,7 @@ class ExploreRepositoryImpl(
     override suspend fun getForYou(): Result<List<ForYouRow>> = runCatching {
         apiClient.getForYou().rows.orEmpty().map { rowDto ->
             rowDto.toDomain().copy(
-                sourceGame = rowDto.sourceGame?.let { sgDto ->
+                sourceGame = rowDto.sourceGame.takeIf { it.id.isNotEmpty() }?.let { sgDto ->
                     sgDto.toDomain().copy(
                         coverUrl = apiClient.resolveUrl(sgDto.coverUrl),
                         heroUrl = apiClient.resolveUrl(sgDto.heroUrl),
@@ -260,7 +260,7 @@ class ExploreRepositoryImpl(
             dto.toDomain().copy(
                 iconUrl = apiClient.resolveUrl(dto.iconUrl) ?: "",
                 logoUrl = apiClient.resolveUrl(dto.logoUrl) ?: "",
-                topGame = topGameDto?.toDomain()?.copy(
+                topGame = topGameDto.takeIf { it.id.isNotEmpty() }?.toDomain()?.copy(
                     coverUrl = apiClient.resolveUrl(topGameDto.coverUrl),
                 ),
             )
@@ -446,20 +446,18 @@ class ExploreRepositoryImpl(
     private fun resolveEntityDetail(dto: com.spela.client.models.PublisherDetailResponse): PublisherDetail =
         dto.toDomain().copy(
             heroUrl = apiClient.resolveUrl(dto.heroUrl),
-            companyInfo = dto.companyInfo?.let { info ->
-                info.toDomain().copy(
-                    logoUrl = apiClient.resolveUrl(info.logoUrl),
-                )
-            },
+            companyInfo = dto.companyInfo.toDomain()
+                .takeIf { it.hasAnyData() }
+                ?.copy(logoUrl = apiClient.resolveUrl(dto.companyInfo.logoUrl)),
             topGames = dto.topGames.orEmpty().map { gameDto ->
                 gameDto.toDomain().copy(
                     coverUrl = apiClient.resolveUrl(gameDto.coverUrl),
                 )
             },
-            userStats = dto.userStats?.let { stats ->
+            userStats = dto.userStats.takeIf { it.gamesPlayed > 0 }?.let { stats ->
                 stats.toPublisherUserStats().copy(
                     mostPlayedGame = stats.mostPlayedGame
-                        ?.takeIf { it.id.isNotEmpty() }
+                        .takeIf { it.id.isNotEmpty() }
                         ?.let { gameDto ->
                             gameDto.toDomain().copy(
                                 coverUrl = apiClient.resolveUrl(gameDto.coverUrl),
@@ -476,26 +474,24 @@ class ExploreRepositoryImpl(
 
     private fun DeveloperDetail.applyUrlResolution(
         heroUrl: String?,
-        companyInfo: com.spela.client.models.CompanyInfo?,
+        companyInfo: com.spela.client.models.CompanyInfo,
         topGames: List<com.spela.client.models.GameResponse>?,
-        userStats: com.spela.client.models.EntityUserStats?,
+        userStats: com.spela.client.models.EntityUserStats,
         games: List<com.spela.client.models.GameResponse>?,
     ): DeveloperDetail = copy(
         heroUrl = apiClient.resolveUrl(heroUrl),
-        companyInfo = companyInfo?.let { info ->
-            info.toDomain().copy(
-                logoUrl = apiClient.resolveUrl(info.logoUrl),
-            )
-        },
+        companyInfo = companyInfo.toDomain()
+            .takeIf { it.hasAnyData() }
+            ?.copy(logoUrl = apiClient.resolveUrl(companyInfo.logoUrl)),
         topGames = topGames.orEmpty().map { gameDto ->
             gameDto.toDomain().copy(
                 coverUrl = apiClient.resolveUrl(gameDto.coverUrl),
             )
         },
-        userStats = userStats?.let { stats ->
+        userStats = userStats.takeIf { it.gamesPlayed > 0 }?.let { stats ->
             stats.toDeveloperUserStats().copy(
                 mostPlayedGame = stats.mostPlayedGame
-                    ?.takeIf { it.id.isNotEmpty() }
+                    .takeIf { it.id.isNotEmpty() }
                     ?.let { gameDto ->
                         gameDto.toDomain().copy(
                             coverUrl = apiClient.resolveUrl(gameDto.coverUrl),

@@ -113,7 +113,7 @@ class LibretroControllerTest {
         assertEquals(1, controller.saveCallCount, "Save count should increment")
 
         // Deserialize
-        val result = controller.unserialize(state!!)
+        val result = controller.unserialize(state)
         assertTrue(result, "Unserialize should succeed")
         assertEquals(1, controller.loadCallCount, "Load count should increment")
     }

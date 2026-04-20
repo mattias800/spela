@@ -165,7 +165,11 @@ data class CompanyInfo(
     val country: String? = null,
     val websiteUrl: String? = null,
     val wikipediaUrl: String? = null,
-)
+) {
+    fun hasAnyData(): Boolean =
+        logoUrl != null || description != null || foundedYear != null ||
+            country != null || websiteUrl != null || wikipediaUrl != null
+}
 
 data class ActiveYears(
     val first: Int,
