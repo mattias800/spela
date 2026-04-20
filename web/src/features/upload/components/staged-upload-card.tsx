@@ -66,11 +66,11 @@ export function StagedUploadCard({
 
   return (
     <GameSummaryCard
-      title={upload.title || upload.canonicalName}
+      title={upload.title || upload.canonicalName || upload.fileName}
       coverUrl={upload.coverUrl || undefined}
-      consoleId={upload.consoleId}
-      consoleName={upload.consoleName}
-      rating={upload.igdbCriticsRating}
+      consoleId={upload.consoleId ?? ""}
+      consoleName={upload.consoleName ?? ""}
+      rating={upload.igdbCriticsRating ?? 0}
       verificationStatus={upload.verificationStatus || undefined}
       fileName={upload.fileName}
       fileSize={upload.fileSize}

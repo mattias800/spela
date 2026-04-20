@@ -877,22 +877,7 @@ export interface DeveloperSpotlightResponse {
   heroUrl: string;
 }
 
-export interface StagedUpload {
-  id: string;
-  fileName: string;
-  originalFileName: string;
-  fileSize: number;
-  consoleId: string;
-  consoleName: string;
-  possibleConsoles: PossibleConsole[];
-  status: StagedUploadStatus;
-  title: string;
-  coverUrl: string;
-  igdbCriticsRating: number;
-  verificationStatus: string;
-  crc32: string;
-  canonicalName: string;
-}
+export type StagedUpload = Schemas["StagedUploadResponse"];
 
 // --- Phase 10: Social & Community Discovery ---
 
