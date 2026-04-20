@@ -157,68 +157,7 @@ export type GameDisc = Schemas["DiscResponse"];
 
 export type GameVariant = Schemas["VariantResponse"];
 
-// GameResponse from backend responses.go DTO layer
-export interface Game {
-  id: string;
-  title: string;
-  consoleId: string;
-  consoleName: string;
-  fileName: string;
-  fileSize: number;
-  discCount: number;
-  discs?: GameDisc[];
-  coverUrl?: string;
-  screenshotUrls: string[];
-  heroUrl?: string;
-  description?: string;
-  developer?: string;
-  publisher?: string;
-  releaseDate?: string;
-  genre?: string;
-  gameModes?: string;
-  storyline?: string;
-  totalRating?: number;
-  totalRatingCount?: number;
-  igdbUserRating?: number;
-  igdbUserRatingCount?: number;
-  timeToBeatHastily?: number;
-  timeToBeatNormally?: number;
-  timeToBeatCompletely?: number;
-  releaseDates?: ReleaseDateInfo[];
-  videos?: VideoInfo[];
-  languageSupports?: LanguageSupportInfo[];
-  ageRatings?: AgeRatingInfo[];
-  players?: number;
-  igdbCriticsRating?: number;
-  coreOverride?: string;
-  scraperId?: string;
-  scrapeAttempts: number;
-  achievementsWarning?: string;
-  verificationStatus?: "verified" | "unverified" | "not_applicable";
-  verificationTag?: string;
-  region?: string;
-  revision?: string;
-  tags?: string;
-  partyInfo?: string;
-  isPreRelease?: boolean;
-  variantCount?: number;
-  groupKey?: string;
-  variants?: GameVariant[];
-  parentGame?: { id: string; title: string; coverUrl: string };
-  romHacks?: { id: string; title: string; coverUrl: string }[];
-  coverAspectRatio: number;
-  playable: boolean;
-  biosStatus?: "ready" | "missing" | "invalid" | "not_required";
-  isFavorite: boolean;
-  isInPlayLater: boolean;
-  averageRating: number;
-  ratingCount: number;
-  userRating?: number;
-  lastPlayedAt?: string | null;
-  totalPlayTime: number;
-  createdAt: string;
-  updatedAt: string;
-}
+export type Game = Schemas["GameResponse"];
 
 export type ReleaseDateInfo = Schemas["ReleaseDateResponse"];
 

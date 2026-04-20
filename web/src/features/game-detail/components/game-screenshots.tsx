@@ -4,7 +4,7 @@ import { Section } from "@/components/ui";
 import { ScreenshotLightbox } from "./screenshot-lightbox";
 
 interface GameScreenshotsProps {
-  screenshotUrls: string[];
+  screenshotUrls: string[] | null;
   gameTitle: string;
 }
 

@@ -23,6 +23,16 @@ function makeGame(overrides: Partial<Game> = {}): Game {
     totalPlayTime: 0,
     createdAt: "2026-01-01T00:00:00Z",
     updatedAt: "2026-01-01T00:00:00Z",
+    coverUrl: "",
+    description: "",
+    developer: "",
+    genre: "",
+    igdbCriticsRating: 0,
+    isPreRelease: false,
+    lastPlayedAt: null,
+    players: 0,
+    publisher: "",
+    releaseDate: "",
     ...overrides,
   };
 }
