@@ -706,19 +706,8 @@ export interface SeriesDetail {
   games: SeriesGame[];
 }
 
-export interface GameSeriesLink {
-  id: string;
-  name: string;
-  totalGames: number;
-  libraryGames: number;
-}
-
-export interface GameFranchiseLink {
-  id: string;
-  name: string;
-  totalGames: number;
-  libraryGames: number;
-}
+export type GameSeriesLink = Schemas["GameSeriesResponse"];
+export type GameFranchiseLink = Schemas["GameFranchiseResponse"];
 
 export interface FranchiseDetail {
   id: string;
