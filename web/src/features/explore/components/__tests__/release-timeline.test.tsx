@@ -8,20 +8,20 @@ const mockTimeline: TimelineEntry[] = [
   {
     year: 1992,
     games: [
-      { id: "g1", title: "Mega Man X", coverUrl: "/covers/mmx.jpg", rating: 95 },
-      { id: "g2", title: "Street Fighter II", coverUrl: "/covers/sf2.jpg", rating: 90 },
+      { id: "g1", title: "Mega Man X", coverUrl: "/covers/mmx.jpg", igdbCriticsRating: 95 },
+      { id: "g2", title: "Street Fighter II", coverUrl: "/covers/sf2.jpg", igdbCriticsRating: 90 },
     ],
   },
   {
     year: 1990,
     games: [
-      { id: "g3", title: "Final Fight", coverUrl: "/covers/ff.jpg", rating: 80 },
+      { id: "g3", title: "Final Fight", coverUrl: "/covers/ff.jpg", igdbCriticsRating: 80 },
     ],
   },
   {
     year: 1995,
     games: [
-      { id: "g4", title: "Mega Man X3", coverUrl: "/covers/mmx3.jpg", rating: 0 },
+      { id: "g4", title: "Mega Man X3", coverUrl: "/covers/mmx3.jpg", igdbCriticsRating: 0 },
     ],
   },
 ];

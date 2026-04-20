@@ -987,29 +987,10 @@ export type ActiveYears = Schemas["ActiveYears"];
 
 export type RatingDistribution = Schemas["RatingDistribution"];
 
-export interface TimelineGame {
-  id: string;
-  title: string;
-  coverUrl: string;
-  rating: number;
-}
-
-export interface TimelineEntry {
-  year: number;
-  games: TimelineGame[];
-}
-
-export interface RelatedDeveloper {
-  name: string;
-  gameCount: number;
-  sharedPublishers: string[];
-}
-
-export interface RelatedPublisher {
-  name: string;
-  gameCount: number;
-  sharedDevelopers: string[];
-}
+export type TimelineGame = Schemas["TimelineGame"];
+export type TimelineEntry = Schemas["TimelineEntry"];
+export type RelatedDeveloper = Schemas["RelatedDeveloper"];
+export type RelatedPublisher = Schemas["RelatedPublisher"];
 
 export interface DeveloperDetailResponse {
   name: string;
