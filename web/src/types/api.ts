@@ -17,7 +17,7 @@
 // `UserResponse`). The hand-written types / short-name aliases below exist
 // only for historical reasons and will be pruned as call sites migrate.
 import type { components } from "@/generated/api";
-import type { UserResponse } from "@/generated/schemas";
+import type { UserResponse, SystemEventResponse } from "@/generated/schemas";
 
 export * from "@/generated/schemas";
 
@@ -61,28 +61,20 @@ export type SystemEventTypeLike = SystemEventType | (string & {});
 
 export type SystemEventCategoryCode = "security" | "operational";
 
-export interface SystemEvent {
-  id: number;
-  createdAt: string;
+// View-model narrowing — server emits categoryCode and eventType as plain
+// strings (huma flattens the Go enums) but the frontend wants the narrow
+// literal unions so Record<SystemEventType, EventMeta> / exhaustive switches
+// keep working. See system-events-page:156 for the cast at the API boundary.
+export type SystemEvent = Omit<
+  SystemEventResponse,
+  "categoryCode" | "eventType"
+> & {
   categoryCode: SystemEventCategoryCode;
-  categoryName: string;
   eventType: SystemEventTypeLike;
-  reason?: string;
-  username?: string;
-  userId?: number;
-  ip?: string;
-  path?: string;
-  metadata?: Record<string, unknown>;
-  metadataRaw?: string;
-  dismissedAt?: string | null;
-}
+};
 
-export interface SystemEventsListResponse {
-  data: SystemEvent[];
-  total: number;
-  page: number;
-  pageSize: number;
-}
+// SystemEventsListResponse and SystemEventTypeInfo are re-exported from
+// @/generated/schemas via the `export *` above — no local definition needed.
 
 export interface SystemEventsListFilters {
   page?: number;
@@ -93,11 +85,6 @@ export interface SystemEventsListFilters {
   ip?: string;
   since?: string;
   dismissed?: boolean;
-}
-
-export interface SystemEventTypeInfo {
-  type: string;
-  category: SystemEventCategoryCode;
 }
 
 export type DeletedUser = Schemas["DeletedUserResponse"];
