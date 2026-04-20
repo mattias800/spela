@@ -10,7 +10,7 @@ import type {
 interface TimelineViewProps {
   timeline:
     | {
-        timeline: AchievementTimelineEntry[];
+        timeline: AchievementTimelineEntry[] | null;
         unlockedCount: number;
         earnedPoints: number;
       }

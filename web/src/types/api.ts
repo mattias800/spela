@@ -383,16 +383,7 @@ export interface AchievementLeaderboard {
 
 export type AchievementTimelineEntry = Schemas["RATimelineEntryResponse"];
 
-export interface AchievementTimeline {
-  raGameId: number;
-  gameTitle: string;
-  totalPlayTime: number;
-  timeline: AchievementTimelineEntry[];
-  totalAchievements: number;
-  unlockedCount: number;
-  totalPoints: number;
-  earnedPoints: number;
-}
+export type AchievementTimeline = Schemas["AchievementTimelineResponse"];
 
 export type RecentAchievement = Schemas["RARecentAchievementResponse"];
 
