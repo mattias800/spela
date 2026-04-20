@@ -38,7 +38,7 @@ data class DeveloperSpotlightResponse (
 
     @SerialName(value = "avgRating") @Required val avgRating: kotlin.Double,
 
-    @SerialName(value = "consoles") @Required val consoles: kotlin.collections.List<kotlin.String>?,
+    @SerialName(value = "consoles") @Required val consoles: kotlin.collections.List<kotlin.String>,
 
     @SerialName(value = "gameCount") @Required val gameCount: kotlin.Long,
 
@@ -46,7 +46,7 @@ data class DeveloperSpotlightResponse (
 
     @SerialName(value = "name") @Required val name: kotlin.String,
 
-    @SerialName(value = "topGames") @Required val topGames: kotlin.collections.List<GameResponse>?,
+    @SerialName(value = "topGames") @Required val topGames: kotlin.collections.List<GameResponse>,
 
     /* A URL to the JSON Schema for this object. */
     @SerialName(value = "\$schema") val dollarSchema: kotlin.String? = null

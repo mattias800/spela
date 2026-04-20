@@ -36,7 +36,7 @@ data class GameStatsResponse (
 
     @SerialName(value = "averagePlayTime") @Required val averagePlayTime: kotlin.Long,
 
-    @SerialName(value = "topPlayers") @Required val topPlayers: kotlin.collections.List<GameStatsTopPlayer>?,
+    @SerialName(value = "topPlayers") @Required val topPlayers: kotlin.collections.List<GameStatsTopPlayer>,
 
     @SerialName(value = "totalPlayTime") @Required val totalPlayTime: kotlin.Long,
 

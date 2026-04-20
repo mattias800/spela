@@ -31,7 +31,7 @@ import kotlinx.serialization.encoding.*
 
 data class AnniversariesResponse (
 
-    @SerialName(value = "anniversaries") @Required val anniversaries: kotlin.collections.List<AnniversaryItem>?,
+    @SerialName(value = "anniversaries") @Required val anniversaries: kotlin.collections.List<AnniversaryItem>,
 
     /* A URL to the JSON Schema for this object. */
     @SerialName(value = "\$schema") val dollarSchema: kotlin.String? = null

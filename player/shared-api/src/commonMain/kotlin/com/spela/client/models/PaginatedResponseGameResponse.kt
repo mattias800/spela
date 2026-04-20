@@ -34,7 +34,7 @@ import kotlinx.serialization.encoding.*
 
 data class PaginatedResponseGameResponse (
 
-    @SerialName(value = "data") @Required val `data`: kotlin.collections.List<GameResponse>?,
+    @SerialName(value = "data") @Required val `data`: kotlin.collections.List<GameResponse>,
 
     @SerialName(value = "page") @Required val page: kotlin.Long,
 

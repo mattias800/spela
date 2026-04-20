@@ -56,7 +56,7 @@ data class UserPreferencesResponse (
 
     @SerialName(value = "defaultSecondScreenPage") @Required val defaultSecondScreenPage: kotlin.String,
 
-    @SerialName(value = "preferredRegions") @Required val preferredRegions: kotlin.collections.List<kotlin.String>?,
+    @SerialName(value = "preferredRegions") @Required val preferredRegions: kotlin.collections.List<kotlin.String>,
 
     @SerialName(value = "raHardcoreEnabled") @Required val raHardcoreEnabled: kotlin.Boolean,
 

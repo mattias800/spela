@@ -119,7 +119,7 @@ func (h *BiosHandler) HumaListBiosFiles(_ context.Context, _ *ListBiosFilesInput
 
 	matchedFiles := make(map[string]bool)
 
-	var fileResponses []BiosFileResponse
+	fileResponses := make([]BiosFileResponse, 0, len(allEntries))
 	for _, e := range allEntries {
 		consoleName := names[e.ConsoleID]
 		consoleID := e.ConsoleID
@@ -190,7 +190,7 @@ func (h *BiosHandler) HumaListBiosFiles(_ context.Context, _ *ListBiosFilesInput
 	}
 
 	consoleOrder := bios.ConsoleIDs()
-	var consoleSummaries []ConsoleBiosStatus
+	consoleSummaries := make([]ConsoleBiosStatus, 0, len(consoleOrder))
 	for _, cid := range consoleOrder {
 		cEntries := bios.ByConsole(cid)
 		consoleName := names[cid]
@@ -203,7 +203,7 @@ func (h *BiosHandler) HumaListBiosFiles(_ context.Context, _ *ListBiosFilesInput
 		hasInvalidRequired := false
 		hasMissingRequired := false
 
-		var consoleFiles []ConsoleFileStatus
+		consoleFiles := make([]ConsoleFileStatus, 0, len(cEntries))
 		for _, e := range cEntries {
 			if e.Required {
 				hasRequired = true

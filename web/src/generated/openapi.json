@@ -89,10 +89,7 @@
             "items": {
               "$ref": "#/components/schemas/RALeaderboardEntryResponse"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           },
           "raGameId": {
             "format": "int64",
@@ -139,10 +136,7 @@
             "items": {
               "$ref": "#/components/schemas/RATimelineEntryResponse"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           },
           "totalAchievements": {
             "format": "int64",
@@ -189,10 +183,7 @@
             "items": {
               "$ref": "#/components/schemas/ExploreChallengeResponse"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           }
         },
         "required": [
@@ -238,10 +229,7 @@
             "items": {
               "$ref": "#/components/schemas/ActiveNowItem"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           }
         },
         "required": [
@@ -586,10 +574,7 @@
             "items": {
               "$ref": "#/components/schemas/AlmostDoneGame"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           }
         },
         "required": [
@@ -613,10 +598,7 @@
             "items": {
               "$ref": "#/components/schemas/AnniversaryItem"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           }
         },
         "required": [
@@ -681,10 +663,7 @@
             "items": {
               "$ref": "#/components/schemas/ArtworkItem"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           },
           "page": {
             "format": "int64",
@@ -996,10 +975,7 @@
             "items": {
               "$ref": "#/components/schemas/GameResponse"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           },
           "year": {
             "format": "int64",
@@ -1121,19 +1097,13 @@
             "items": {
               "$ref": "#/components/schemas/ConsoleBiosStatus"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           },
           "files": {
             "items": {
               "$ref": "#/components/schemas/BiosFileResponse"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           }
         },
         "required": [
@@ -1505,10 +1475,7 @@
             "items": {
               "$ref": "#/components/schemas/GameResponse"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           },
           "id": {
             "type": "string"
@@ -1648,10 +1615,7 @@
             "items": {
               "$ref": "#/components/schemas/CommunityTopGame"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           }
         },
         "required": [
@@ -1766,10 +1730,7 @@
             "items": {
               "$ref": "#/components/schemas/CompletionistConsole"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           },
           "overallPct": {
             "format": "int64",
@@ -1808,10 +1769,7 @@
             "items": {
               "$ref": "#/components/schemas/ConsoleFileStatus"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           },
           "optionalPresent": {
             "format": "int64",
@@ -1931,10 +1889,7 @@
             "items": {
               "$ref": "#/components/schemas/ConsoleHighlight"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           }
         },
         "required": [
@@ -1994,10 +1949,7 @@
             "items": {
               "type": "string"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           },
           "gameCount": {
             "format": "int64",
@@ -2106,55 +2058,37 @@
             "items": {
               "$ref": "#/components/schemas/GameResponse"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           },
           "genreBreakdown": {
             "items": {
               "$ref": "#/components/schemas/GenreCount"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           },
           "hiddenGems": {
             "items": {
               "$ref": "#/components/schemas/GameResponse"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           },
           "recentlyAdded": {
             "items": {
               "$ref": "#/components/schemas/GameResponse"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           },
           "recentlyPlayed": {
             "items": {
               "$ref": "#/components/schemas/GameResponse"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           },
           "topDevelopers": {
             "items": {
               "$ref": "#/components/schemas/DeveloperSummary"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           }
         },
         "required": [
@@ -2269,10 +2203,7 @@
             "items": {
               "$ref": "#/components/schemas/CoreCompatibilityEntry"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           }
         },
         "required": [
@@ -2296,10 +2227,7 @@
             "items": {
               "$ref": "#/components/schemas/CoverItem"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           },
           "page": {
             "format": "int64",
@@ -2541,10 +2469,7 @@
             "items": {
               "$ref": "#/components/schemas/CultClassicGame"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           }
         },
         "required": [
@@ -2571,10 +2496,7 @@
             "items": {
               "$ref": "#/components/schemas/GameResponse"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           },
           "label": {
             "type": "string"
@@ -2672,10 +2594,7 @@
             "items": {
               "type": "string"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           },
           "gameCount": {
             "format": "int64",
@@ -2685,19 +2604,13 @@
             "items": {
               "$ref": "#/components/schemas/GameResponse"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           },
           "genreBreakdown": {
             "items": {
               "$ref": "#/components/schemas/GenreCount"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           },
           "heroUrl": {
             "type": "string"
@@ -2709,10 +2622,7 @@
             "items": {
               "$ref": "#/components/schemas/PlatformCount"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           },
           "primaryGenre": {
             "type": "string"
@@ -2721,10 +2631,7 @@
             "items": {
               "$ref": "#/components/schemas/NameCount"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           },
           "ratingDistribution": {
             "$ref": "#/components/schemas/RatingDistribution"
@@ -2733,28 +2640,19 @@
             "items": {
               "$ref": "#/components/schemas/RelatedDeveloper"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           },
           "timeline": {
             "items": {
               "$ref": "#/components/schemas/TimelineEntry"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           },
           "topGames": {
             "items": {
               "$ref": "#/components/schemas/GameResponse"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           },
           "userStats": {
             "$ref": "#/components/schemas/EntityUserStats"
@@ -2817,10 +2715,7 @@
             "items": {
               "$ref": "#/components/schemas/DeveloperSummary"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           }
         },
         "required": [
@@ -2848,10 +2743,7 @@
             "items": {
               "type": "string"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           },
           "gameCount": {
             "format": "int64",
@@ -2867,10 +2759,7 @@
             "items": {
               "$ref": "#/components/schemas/GameResponse"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           }
         },
         "required": [
@@ -2894,10 +2783,7 @@
             "items": {
               "type": "string"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           },
           "gameCount": {
             "format": "int64",
@@ -3163,10 +3049,7 @@
             "items": {
               "$ref": "#/components/schemas/AchievementGameResponse"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           }
         },
         "required": [
@@ -3350,10 +3233,7 @@
             "items": {
               "$ref": "#/components/schemas/GameResponse"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           },
           "id": {
             "type": "string"
@@ -3385,10 +3265,7 @@
             "items": {
               "$ref": "#/components/schemas/ExploreRowResponse"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           }
         },
         "required": [
@@ -3450,10 +3327,7 @@
             "items": {
               "$ref": "#/components/schemas/ExplorerBadge"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           }
         },
         "required": [
@@ -3569,10 +3443,7 @@
             "items": {
               "$ref": "#/components/schemas/ForYouRowResponse"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           }
         },
         "required": [
@@ -3587,10 +3458,7 @@
             "items": {
               "$ref": "#/components/schemas/GameResponse"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           },
           "genre": {
             "type": "string"
@@ -3655,19 +3523,13 @@
             "items": {
               "$ref": "#/components/schemas/SeriesConsoleInfo"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           },
           "games": {
             "items": {
               "$ref": "#/components/schemas/SeriesGameResponse"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           },
           "heroUrl": {
             "type": "string"
@@ -3766,10 +3628,7 @@
             "items": {
               "$ref": "#/components/schemas/FreshChallengeGame"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           }
         },
         "required": [
@@ -3793,10 +3652,7 @@
             "items": {
               "$ref": "#/components/schemas/RAProgressEntry"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           },
           "raGameId": {
             "format": "int64",
@@ -3827,10 +3683,7 @@
             "items": {
               "$ref": "#/components/schemas/Achievement"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           },
           "raGameId": {
             "description": "RetroAchievements game ID (0 when unknown).",
@@ -3949,10 +3802,7 @@
             "items": {
               "$ref": "#/components/schemas/CoverOption"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           }
         },
         "required": [
@@ -4006,10 +3856,7 @@
             "items": {
               "$ref": "#/components/schemas/HeroOption"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           }
         },
         "required": [
@@ -4123,10 +3970,7 @@
             "items": {
               "$ref": "#/components/schemas/AgeRatingResponse"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           },
           "averageRating": {
             "format": "double",
@@ -4169,10 +4013,7 @@
             "items": {
               "$ref": "#/components/schemas/DiscResponse"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           },
           "fileName": {
             "type": "string"
@@ -4221,10 +4062,7 @@
             "items": {
               "$ref": "#/components/schemas/LanguageSupportResponse"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           },
           "lastPlayedAt": {
             "format": "date-time",
@@ -4266,10 +4104,7 @@
             "items": {
               "$ref": "#/components/schemas/ReleaseDateResponse"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           },
           "revision": {
             "type": "string"
@@ -4278,10 +4113,7 @@
             "items": {
               "$ref": "#/components/schemas/RomHackGameResponse"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           },
           "scrapeAttempts": {
             "format": "int64",
@@ -4294,10 +4126,7 @@
             "items": {
               "type": "string"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           },
           "storyline": {
             "type": "string"
@@ -4351,10 +4180,7 @@
             "items": {
               "$ref": "#/components/schemas/VariantResponse"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           },
           "verificationStatus": {
             "type": "string"
@@ -4366,10 +4192,7 @@
             "items": {
               "$ref": "#/components/schemas/VideoResponse"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           }
         },
         "required": [
@@ -4516,10 +4339,7 @@
             "items": {
               "type": "string"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           },
           "memberCount": {
             "format": "int64",
@@ -4529,10 +4349,7 @@
             "items": {
               "type": "string"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           },
           "name": {
             "type": "string"
@@ -4609,10 +4426,7 @@
             "items": {
               "$ref": "#/components/schemas/GameStatsTopPlayer"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           },
           "totalPlayTime": {
             "format": "int64",
@@ -4689,10 +4503,7 @@
             "items": {
               "$ref": "#/components/schemas/AchievementGameResponse"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           }
         },
         "required": [
@@ -5056,10 +4867,7 @@
             "items": {
               "$ref": "#/components/schemas/NetplayInviteResponse"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           },
           "total": {
             "format": "int64",
@@ -5143,10 +4951,7 @@
             "items": {
               "$ref": "#/components/schemas/ConsoleResponse"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           },
           "name": {
             "type": "string"
@@ -5234,28 +5039,19 @@
             "items": {
               "$ref": "#/components/schemas/GameResponse"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           },
           "unscraped": {
             "items": {
               "$ref": "#/components/schemas/GameResponse"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           },
           "unverified": {
             "items": {
               "$ref": "#/components/schemas/GameResponse"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           }
         },
         "required": [
@@ -5275,10 +5071,7 @@
             "items": {
               "type": "string"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           },
           "icon": {
             "type": "string"
@@ -5315,10 +5108,7 @@
             "items": {
               "$ref": "#/components/schemas/ActivePlayerEntry"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           }
         },
         "required": [
@@ -5364,10 +5154,7 @@
             "items": {
               "$ref": "#/components/schemas/MostPlayedEntry"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           }
         },
         "required": [
@@ -5627,10 +5414,7 @@
             "items": {
               "$ref": "#/components/schemas/GameResponse"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           }
         },
         "required": [
@@ -5703,10 +5487,7 @@
             "items": {
               "$ref": "#/components/schemas/OnlineUserResponse"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           }
         },
         "required": [
@@ -5730,10 +5511,7 @@
             "items": {
               "$ref": "#/components/schemas/ActivityEventResponse"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           },
           "page": {
             "format": "int64",
@@ -5772,10 +5550,7 @@
             "items": {
               "$ref": "#/components/schemas/ChallengeLeaderboardEntry"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           },
           "page": {
             "format": "int64",
@@ -5814,10 +5589,7 @@
             "items": {
               "$ref": "#/components/schemas/ChallengeResponse"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           },
           "page": {
             "format": "int64",
@@ -5856,10 +5628,7 @@
             "items": {
               "$ref": "#/components/schemas/CollectionResponse"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           },
           "page": {
             "format": "int64",
@@ -5898,10 +5667,7 @@
             "items": {
               "$ref": "#/components/schemas/GameRatingResponse"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           },
           "page": {
             "format": "int64",
@@ -5940,10 +5706,7 @@
             "items": {
               "$ref": "#/components/schemas/GameResponse"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           },
           "page": {
             "format": "int64",
@@ -5982,10 +5745,7 @@
             "items": {
               "$ref": "#/components/schemas/NetplaySessionResponse"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           },
           "page": {
             "format": "int64",
@@ -6024,10 +5784,7 @@
             "items": {
               "$ref": "#/components/schemas/SharedSaveResponse"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           },
           "page": {
             "format": "int64",
@@ -6066,10 +5823,7 @@
             "items": {
               "$ref": "#/components/schemas/UserSearchResult"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           },
           "page": {
             "format": "int64",
@@ -6194,10 +5948,7 @@
             "items": {
               "$ref": "#/components/schemas/GameResponse"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           },
           "similarUsersCount": {
             "format": "int64",
@@ -6277,10 +6028,7 @@
             "items": {
               "$ref": "#/components/schemas/PublicProfileGame"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           },
           "gamesPlayed": {
             "format": "int64",
@@ -6300,19 +6048,13 @@
             "items": {
               "$ref": "#/components/schemas/PublicProfileGame"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           },
           "topGames": {
             "items": {
               "$ref": "#/components/schemas/PublicProfileGame"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           },
           "totalPlayTime": {
             "format": "int64",
@@ -6363,19 +6105,13 @@
             "items": {
               "type": "string"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           },
           "developers": {
             "items": {
               "$ref": "#/components/schemas/NameCount"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           },
           "gameCount": {
             "format": "int64",
@@ -6385,19 +6121,13 @@
             "items": {
               "$ref": "#/components/schemas/GameResponse"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           },
           "genreBreakdown": {
             "items": {
               "$ref": "#/components/schemas/GenreCount"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           },
           "heroUrl": {
             "type": "string"
@@ -6409,10 +6139,7 @@
             "items": {
               "$ref": "#/components/schemas/PlatformCount"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           },
           "primaryGenre": {
             "type": "string"
@@ -6424,28 +6151,19 @@
             "items": {
               "$ref": "#/components/schemas/RelatedPublisher"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           },
           "timeline": {
             "items": {
               "$ref": "#/components/schemas/TimelineEntry"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           },
           "topGames": {
             "items": {
               "$ref": "#/components/schemas/GameResponse"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           },
           "userStats": {
             "$ref": "#/components/schemas/EntityUserStats"
@@ -6871,10 +6589,7 @@
             "items": {
               "$ref": "#/components/schemas/RARecentAchievementResponse"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           }
         },
         "required": [
@@ -6928,10 +6643,7 @@
             "items": {
               "$ref": "#/components/schemas/RecentReviewItem"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           }
         },
         "required": [
@@ -7002,10 +6714,7 @@
             "items": {
               "type": "string"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           }
         },
         "required": [
@@ -7029,10 +6738,7 @@
             "items": {
               "type": "string"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           }
         },
         "required": [
@@ -7096,10 +6802,7 @@
             "items": {
               "type": "string"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           }
         },
         "required": [
@@ -7426,10 +7129,7 @@
             "items": {
               "$ref": "#/components/schemas/ScraperSourceResultResponse"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           }
         },
         "required": [
@@ -7563,10 +7263,7 @@
             "items": {
               "$ref": "#/components/schemas/ScreenshotItem"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           },
           "totalCount": {
             "format": "int64",
@@ -7624,10 +7321,7 @@
             "items": {
               "$ref": "#/components/schemas/SearchCollectionResult"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           },
           "total": {
             "format": "int64",
@@ -7647,10 +7341,7 @@
             "items": {
               "$ref": "#/components/schemas/SearchCompanyResult"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           },
           "total": {
             "format": "int64",
@@ -7670,10 +7361,7 @@
             "items": {
               "$ref": "#/components/schemas/SearchConsoleResult"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           },
           "total": {
             "format": "int64",
@@ -7693,10 +7381,7 @@
             "items": {
               "$ref": "#/components/schemas/SearchFranchiseResult"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           },
           "total": {
             "format": "int64",
@@ -7716,10 +7401,7 @@
             "items": {
               "$ref": "#/components/schemas/SearchGameResult"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           },
           "total": {
             "format": "int64",
@@ -7739,10 +7421,7 @@
             "items": {
               "$ref": "#/components/schemas/SearchSeriesResult"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           },
           "total": {
             "format": "int64",
@@ -8014,19 +7693,13 @@
             "items": {
               "$ref": "#/components/schemas/SeriesConsoleInfo"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           },
           "games": {
             "items": {
               "$ref": "#/components/schemas/SeriesGameResponse"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           },
           "heroUrl": {
             "type": "string"
@@ -8173,10 +7846,7 @@
               "format": "int64",
               "type": "integer"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           }
         },
         "required": [
@@ -8420,10 +8090,7 @@
             "items": {
               "$ref": "#/components/schemas/DiagnosticCheck"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           }
         },
         "required": [
@@ -8579,10 +8246,7 @@
             "items": {
               "$ref": "#/components/schemas/SharedSessionMemberResponse"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           },
           "name": {
             "type": "string"
@@ -9152,10 +8816,7 @@
             "items": {
               "$ref": "#/components/schemas/PossibleConsoleResponse"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           },
           "publisher": {
             "type": "string"
@@ -9260,10 +8921,7 @@
             "items": {
               "$ref": "#/components/schemas/SessionStorageConsoleBreakdown"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           },
           "quotaBytes": {
             "format": "int64",
@@ -9411,10 +9069,7 @@
             "items": {
               "$ref": "#/components/schemas/SystemEventTypeInfo"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           }
         },
         "required": [
@@ -9438,10 +9093,7 @@
             "items": {
               "$ref": "#/components/schemas/SystemEventResponse"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           },
           "page": {
             "format": "int64",
@@ -9533,28 +9185,19 @@
             "items": {
               "$ref": "#/components/schemas/TasteProfileGenre"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           },
           "themes": {
             "items": {
               "$ref": "#/components/schemas/TasteProfileTheme"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           },
           "topConsoles": {
             "items": {
               "$ref": "#/components/schemas/TasteProfileConsole"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           },
           "totalPlayTime": {
             "format": "int64",
@@ -9670,10 +9313,7 @@
             "items": {
               "$ref": "#/components/schemas/TimelineGame"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           },
           "year": {
             "format": "int64",
@@ -9819,10 +9459,7 @@
             "items": {
               "$ref": "#/components/schemas/TrendingGameResponse"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           }
         },
         "required": [
@@ -9846,10 +9483,7 @@
             "items": {
               "$ref": "#/components/schemas/RAUnlockedAchievementResponse"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           }
         },
         "required": [
@@ -10214,10 +9848,7 @@
               "format": "int64",
               "type": "integer"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           }
         },
         "required": [
@@ -10393,10 +10024,7 @@
             "items": {
               "type": "string"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           },
           "raHardcoreEnabled": {
             "type": "boolean"
@@ -10668,10 +10296,7 @@
             "items": {
               "$ref": "#/components/schemas/WizardStep"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           }
         },
         "required": [
@@ -10695,10 +10320,7 @@
             "items": {
               "$ref": "#/components/schemas/GameResponse"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           },
           "title": {
             "type": "string"
@@ -10717,10 +10339,7 @@
             "items": {
               "$ref": "#/components/schemas/WizardOption"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           },
           "step": {
             "format": "int64",
@@ -11577,10 +11196,7 @@
                   "items": {
                     "$ref": "#/components/schemas/IGDBSearchResult"
                   },
-                  "type": [
-                    "array",
-                    "null"
-                  ]
+                  "type": "array"
                 }
               }
             },
@@ -12527,10 +12143,7 @@
               "items": {
                 "type": "string"
               },
-              "type": [
-                "array",
-                "null"
-              ]
+              "type": "array"
             }
           },
           {
@@ -12609,10 +12222,7 @@
                   "items": {
                     "$ref": "#/components/schemas/SystemEventCategoryResponse"
                   },
-                  "type": [
-                    "array",
-                    "null"
-                  ]
+                  "type": "array"
                 }
               }
             },
@@ -12826,10 +12436,7 @@
                   "items": {
                     "$ref": "#/components/schemas/StagedUploadResponse"
                   },
-                  "type": [
-                    "array",
-                    "null"
-                  ]
+                  "type": "array"
                 }
               }
             },
@@ -12893,10 +12500,7 @@
                   "items": {
                     "$ref": "#/components/schemas/StagedUploadResponse"
                   },
-                  "type": [
-                    "array",
-                    "null"
-                  ]
+                  "type": "array"
                 }
               }
             },
@@ -13018,10 +12622,7 @@
                   "items": {
                     "$ref": "#/components/schemas/StagedUploadResponse"
                   },
-                  "type": [
-                    "array",
-                    "null"
-                  ]
+                  "type": "array"
                 }
               }
             },
@@ -13304,10 +12905,7 @@
                   "items": {
                     "$ref": "#/components/schemas/UserResponse"
                   },
-                  "type": [
-                    "array",
-                    "null"
-                  ]
+                  "type": "array"
                 }
               }
             },
@@ -13392,10 +12990,7 @@
                   "items": {
                     "$ref": "#/components/schemas/DeletedUserResponse"
                   },
-                  "type": [
-                    "array",
-                    "null"
-                  ]
+                  "type": "array"
                 }
               }
             },
@@ -13553,10 +13148,7 @@
                   "items": {
                     "$ref": "#/components/schemas/DeviceResponse"
                   },
-                  "type": [
-                    "array",
-                    "null"
-                  ]
+                  "type": "array"
                 }
               }
             },
@@ -14517,10 +14109,7 @@
                   "items": {
                     "$ref": "#/components/schemas/ChallengeAttemptResponse"
                   },
-                  "type": [
-                    "array",
-                    "null"
-                  ]
+                  "type": "array"
                 }
               }
             },
@@ -15340,10 +14929,7 @@
                   "items": {
                     "$ref": "#/components/schemas/ConsoleResponse"
                   },
-                  "type": [
-                    "array",
-                    "null"
-                  ]
+                  "type": "array"
                 }
               }
             },
@@ -15711,10 +15297,7 @@
                   "items": {
                     "$ref": "#/components/schemas/LongestGameResponse"
                   },
-                  "type": [
-                    "array",
-                    "null"
-                  ]
+                  "type": "array"
                 }
               }
             },
@@ -15766,10 +15349,7 @@
                   "items": {
                     "$ref": "#/components/schemas/TopListGameResponse"
                   },
-                  "type": [
-                    "array",
-                    "null"
-                  ]
+                  "type": "array"
                 }
               }
             },
@@ -15821,10 +15401,7 @@
                   "items": {
                     "$ref": "#/components/schemas/TopListGameResponse"
                   },
-                  "type": [
-                    "array",
-                    "null"
-                  ]
+                  "type": "array"
                 }
               }
             },
@@ -15876,10 +15453,7 @@
                   "items": {
                     "$ref": "#/components/schemas/TopRatedGameResponse"
                   },
-                  "type": [
-                    "array",
-                    "null"
-                  ]
+                  "type": "array"
                 }
               }
             },
@@ -15919,10 +15493,7 @@
                   "items": {
                     "$ref": "#/components/schemas/Core"
                   },
-                  "type": [
-                    "array",
-                    "null"
-                  ]
+                  "type": "array"
                 }
               }
             },
@@ -16828,10 +16399,7 @@
                   "items": {
                     "$ref": "#/components/schemas/FeaturedGameResponse"
                   },
-                  "type": [
-                    "array",
-                    "null"
-                  ]
+                  "type": "array"
                 }
               }
             },
@@ -17022,10 +16590,7 @@
                   "items": {
                     "$ref": "#/components/schemas/GameResponse"
                   },
-                  "type": [
-                    "array",
-                    "null"
-                  ]
+                  "type": "array"
                 }
               }
             },
@@ -17072,10 +16637,7 @@
                   "items": {
                     "$ref": "#/components/schemas/MoodResponse"
                   },
-                  "type": [
-                    "array",
-                    "null"
-                  ]
+                  "type": "array"
                 }
               }
             },
@@ -17442,10 +17004,7 @@
                   "items": {
                     "$ref": "#/components/schemas/FeaturedSeriesResponse"
                   },
-                  "type": [
-                    "array",
-                    "null"
-                  ]
+                  "type": "array"
                 }
               }
             },
@@ -17776,10 +17335,7 @@
                   "items": {
                     "$ref": "#/components/schemas/FranchiseResponse"
                   },
-                  "type": [
-                    "array",
-                    "null"
-                  ]
+                  "type": "array"
                 }
               }
             },
@@ -18658,10 +18214,7 @@
                   "items": {
                     "$ref": "#/components/schemas/GameCheatResponse"
                   },
-                  "type": [
-                    "array",
-                    "null"
-                  ]
+                  "type": "array"
                 }
               }
             },
@@ -18762,10 +18315,7 @@
                   "items": {
                     "$ref": "#/components/schemas/DeveloperGameResponse"
                   },
-                  "type": [
-                    "array",
-                    "null"
-                  ]
+                  "type": "array"
                 }
               }
             },
@@ -19001,10 +18551,7 @@
                   "items": {
                     "$ref": "#/components/schemas/GameFranchiseResponse"
                   },
-                  "type": [
-                    "array",
-                    "null"
-                  ]
+                  "type": "array"
                 }
               }
             },
@@ -19484,10 +19031,7 @@
                   "items": {
                     "$ref": "#/components/schemas/GameSeriesResponse"
                   },
-                  "type": [
-                    "array",
-                    "null"
-                  ]
+                  "type": "array"
                 }
               }
             },
@@ -19539,10 +19083,7 @@
                   "items": {
                     "$ref": "#/components/schemas/GameSessionResponse"
                   },
-                  "type": [
-                    "array",
-                    "null"
-                  ]
+                  "type": "array"
                 }
               }
             },
@@ -19983,10 +19524,7 @@
                   "items": {
                     "$ref": "#/components/schemas/SharedSessionResponse"
                   },
-                  "type": [
-                    "array",
-                    "null"
-                  ]
+                  "type": "array"
                 }
               }
             },
@@ -20038,10 +19576,7 @@
                   "items": {
                     "$ref": "#/components/schemas/SimilarGameResponse"
                   },
-                  "type": [
-                    "array",
-                    "null"
-                  ]
+                  "type": "array"
                 }
               }
             },
@@ -20175,10 +19710,7 @@
                   "items": {
                     "$ref": "#/components/schemas/KeywordResponse"
                   },
-                  "type": [
-                    "array",
-                    "null"
-                  ]
+                  "type": "array"
                 }
               }
             },
@@ -20289,10 +19821,7 @@
                   "items": {
                     "$ref": "#/components/schemas/MakerDetailResponse"
                   },
-                  "type": [
-                    "array",
-                    "null"
-                  ]
+                  "type": "array"
                 }
               }
             },
@@ -20817,10 +20346,7 @@
                   "items": {
                     "$ref": "#/components/schemas/NetplayInviteResponse"
                   },
-                  "type": [
-                    "array",
-                    "null"
-                  ]
+                  "type": "array"
                 }
               }
             },
@@ -21085,10 +20611,7 @@
                   "items": {
                     "$ref": "#/components/schemas/SeriesListResponse"
                   },
-                  "type": [
-                    "array",
-                    "null"
-                  ]
+                  "type": "array"
                 }
               }
             },
@@ -21659,10 +21182,7 @@
                   "items": {
                     "$ref": "#/components/schemas/SessionSaveResponse"
                   },
-                  "type": [
-                    "array",
-                    "null"
-                  ]
+                  "type": "array"
                 }
               }
             },
@@ -22100,10 +21620,7 @@
                   "items": {
                     "$ref": "#/components/schemas/SessionSaveResponse"
                   },
-                  "type": [
-                    "array",
-                    "null"
-                  ]
+                  "type": "array"
                 }
               }
             },
@@ -22463,10 +21980,7 @@
                   "items": {
                     "$ref": "#/components/schemas/SharedSessionResponse"
                   },
-                  "type": [
-                    "array",
-                    "null"
-                  ]
+                  "type": "array"
                 }
               }
             },
@@ -22981,10 +22495,7 @@
                   "items": {
                     "$ref": "#/components/schemas/SharedSessionSaveResponse"
                   },
-                  "type": [
-                    "array",
-                    "null"
-                  ]
+                  "type": "array"
                 }
               }
             },
@@ -23651,10 +23162,7 @@
                   "items": {
                     "$ref": "#/components/schemas/ThemeResponse"
                   },
-                  "type": [
-                    "array",
-                    "null"
-                  ]
+                  "type": "array"
                 }
               }
             },
@@ -23765,10 +23273,7 @@
                   "items": {
                     "$ref": "#/components/schemas/LongestGameResponse"
                   },
-                  "type": [
-                    "array",
-                    "null"
-                  ]
+                  "type": "array"
                 }
               }
             },
@@ -23808,10 +23313,7 @@
                   "items": {
                     "$ref": "#/components/schemas/TopListGameResponse"
                   },
-                  "type": [
-                    "array",
-                    "null"
-                  ]
+                  "type": "array"
                 }
               }
             },
@@ -23851,10 +23353,7 @@
                   "items": {
                     "$ref": "#/components/schemas/TopListGameResponse"
                   },
-                  "type": [
-                    "array",
-                    "null"
-                  ]
+                  "type": "array"
                 }
               }
             },
@@ -23894,10 +23393,7 @@
                   "items": {
                     "$ref": "#/components/schemas/TopRatedGameResponse"
                   },
-                  "type": [
-                    "array",
-                    "null"
-                  ]
+                  "type": "array"
                 }
               }
             },
@@ -23974,10 +23470,7 @@
                   "items": {
                     "$ref": "#/components/schemas/ShowcaseEntryResponse"
                   },
-                  "type": [
-                    "array",
-                    "null"
-                  ]
+                  "type": "array"
                 }
               }
             },
@@ -24014,10 +23507,7 @@
                 "items": {
                   "$ref": "#/components/schemas/ShowcaseEntryInput"
                 },
-                "type": [
-                  "array",
-                  "null"
-                ]
+                "type": "array"
               }
             }
           },
@@ -24031,10 +23521,7 @@
                   "items": {
                     "$ref": "#/components/schemas/ShowcaseEntryResponse"
                   },
-                  "type": [
-                    "array",
-                    "null"
-                  ]
+                  "type": "array"
                 }
               }
             },
@@ -24209,10 +23696,7 @@
                   "items": {
                     "$ref": "#/components/schemas/DeviceResponse"
                   },
-                  "type": [
-                    "array",
-                    "null"
-                  ]
+                  "type": "array"
                 }
               }
             },
@@ -24546,10 +24030,7 @@
                   "items": {
                     "$ref": "#/components/schemas/GameResponse"
                   },
-                  "type": [
-                    "array",
-                    "null"
-                  ]
+                  "type": "array"
                 }
               }
             },
@@ -24896,10 +24377,7 @@
                   "items": {
                     "$ref": "#/components/schemas/HeatmapEntry"
                   },
-                  "type": [
-                    "array",
-                    "null"
-                  ]
+                  "type": "array"
                 }
               }
             },
@@ -24940,10 +24418,7 @@
                   "items": {
                     "$ref": "#/components/schemas/GameResponse"
                   },
-                  "type": [
-                    "array",
-                    "null"
-                  ]
+                  "type": "array"
                 }
               }
             },
@@ -25126,10 +24601,7 @@
                   "items": {
                     "$ref": "#/components/schemas/PlayStatsEntry"
                   },
-                  "type": [
-                    "array",
-                    "null"
-                  ]
+                  "type": "array"
                 }
               }
             },
@@ -25548,10 +25020,7 @@
                   "items": {
                     "$ref": "#/components/schemas/GameResponse"
                   },
-                  "type": [
-                    "array",
-                    "null"
-                  ]
+                  "type": "array"
                 }
               }
             },
@@ -25591,10 +25060,7 @@
                   "items": {
                     "$ref": "#/components/schemas/SavedSearchResponse"
                   },
-                  "type": [
-                    "array",
-                    "null"
-                  ]
+                  "type": "array"
                 }
               }
             },
@@ -25765,10 +25231,7 @@
                   "items": {
                     "$ref": "#/components/schemas/SharedSessionInviteResponse"
                   },
-                  "type": [
-                    "array",
-                    "null"
-                  ]
+                  "type": "array"
                 }
               }
             },
@@ -26054,10 +25517,7 @@
                   "items": {
                     "$ref": "#/components/schemas/UserSearchResult"
                   },
-                  "type": [
-                    "array",
-                    "null"
-                  ]
+                  "type": "array"
                 }
               }
             },
@@ -26180,10 +25640,7 @@
                   "items": {
                     "$ref": "#/components/schemas/ShowcaseEntryResponse"
                   },
-                  "type": [
-                    "array",
-                    "null"
-                  ]
+                  "type": "array"
                 }
               }
             },
@@ -26235,10 +25692,7 @@
                   "items": {
                     "$ref": "#/components/schemas/HeatmapEntry"
                   },
-                  "type": [
-                    "array",
-                    "null"
-                  ]
+                  "type": "array"
                 }
               }
             },

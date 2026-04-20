@@ -70,7 +70,7 @@ data class ConsoleResponse (
 
     @SerialName(value = "emulatorJsCore") @Required val emulatorJsCore: kotlin.String,
 
-    @SerialName(value = "extensions") @Required val extensions: kotlin.collections.List<kotlin.String>?,
+    @SerialName(value = "extensions") @Required val extensions: kotlin.collections.List<kotlin.String>,
 
     @SerialName(value = "gameCount") @Required val gameCount: kotlin.Long,
 

@@ -156,6 +156,9 @@ func (h *RAHandler) HumaGetGameAchievements(ctx context.Context, in *GetGameAchi
 		if err := json.Unmarshal([]byte(cache.AchievementJSON), &achievements); err != nil {
 			slog.Warn("failed to unmarshal cached achievement data, will re-fetch", "ra_game_id", raGameID, "error", err)
 		} else {
+			if achievements == nil {
+				achievements = []retroachievements.Achievement{}
+			}
 			return &GetGameAchievementsOutput{
 				Status: http.StatusOK,
 				Body: GameAchievementsResponse{
@@ -182,7 +185,11 @@ func (h *RAHandler) HumaGetGameAchievements(ctx context.Context, in *GetGameAchi
 			if err != nil {
 				slog.Error("failed to fetch RA game info", "ra_game_id", raGameID, "error", err)
 			} else {
-				achJSON, _ := json.Marshal(gameInfo.Achievements)
+				achievements := gameInfo.Achievements
+				if achievements == nil {
+					achievements = []retroachievements.Achievement{}
+				}
+				achJSON, _ := json.Marshal(achievements)
 				if cacheHit {
 					cache.Title = gameInfo.Title
 					cache.AchievementJSON = string(achJSON)
@@ -207,7 +214,7 @@ func (h *RAHandler) HumaGetGameAchievements(ctx context.Context, in *GetGameAchi
 					Body: GameAchievementsResponse{
 						RAGameID:     raGameID,
 						Title:        gameInfo.Title,
-						Achievements: gameInfo.Achievements,
+						Achievements: achievements,
 						TotalCount:   gameInfo.TotalCount,
 						TotalPoints:  gameInfo.TotalPoints,
 					},
@@ -237,6 +244,9 @@ func (h *RAHandler) HumaGetGameAchievements(ctx context.Context, in *GetGameAchi
 	if cacheHit {
 		var achievements []retroachievements.Achievement
 		if err := json.Unmarshal([]byte(cache.AchievementJSON), &achievements); err == nil {
+			if achievements == nil {
+				achievements = []retroachievements.Achievement{}
+			}
 			return &GetGameAchievementsOutput{
 				Status: http.StatusOK,
 				Body: GameAchievementsResponse{

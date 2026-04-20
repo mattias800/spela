@@ -34,7 +34,7 @@ import kotlinx.serialization.encoding.*
 
 data class ForYouRowResponse (
 
-    @SerialName(value = "games") @Required val games: kotlin.collections.List<GameResponse>?,
+    @SerialName(value = "games") @Required val games: kotlin.collections.List<GameResponse>,
 
     @SerialName(value = "genre") @Required val genre: kotlin.String,
 

@@ -205,19 +205,12 @@ export function multipart(formData: FormData): {
 // value, throwing ApiError on failure. Hook call sites wrap their typedApi
 // calls in unwrap() so errors bubble through react-query's onError / try-
 // catch paths like a throwing fetcher.
-//
-// Special case: huma serialises Go nil slices as JSON `null`, so flat-list
-// endpoints (e.g. GET /api/consoles, /api/themes) come back typed as
-// `T[] | null` from openapi-fetch. We coerce a top-level `null` body to
-// `undefined` so consumers get a single absence sentinel — every list-based
-// query already treats `data == null/undefined` as "no data yet". This avoids
-// pushing `?? []` boilerplate to every page-level prop site.
 export async function unwrap<D, E>(
   promise: Promise<
     | { data: D; error?: never; response: Response }
     | { data?: never; error: E; response: Response }
   >,
-): Promise<Exclude<D, null>> {
+): Promise<D> {
   const { data, error, response } = await promise;
   if (error !== undefined) {
     const message =
@@ -227,7 +220,7 @@ export async function unwrap<D, E>(
     throw new ApiError(response.status, message);
   }
   if (response.status === 204) {
-    return undefined as Exclude<D, null>;
+    return undefined as D;
   }
-  return (data ?? undefined) as Exclude<D, null>;
+  return data as D;
 }

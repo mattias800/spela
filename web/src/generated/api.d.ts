@@ -5106,7 +5106,7 @@ export interface components {
              * @example https://example.com/api/schemas/AchievementLeaderboardResponse.json
              */
             readonly $schema?: string;
-            leaderboard: components["schemas"]["RALeaderboardEntryResponse"][] | null;
+            leaderboard: components["schemas"]["RALeaderboardEntryResponse"][];
             /** Format: int64 */
             raGameId: number;
             /** Format: int64 */
@@ -5124,7 +5124,7 @@ export interface components {
             gameTitle: string;
             /** Format: int64 */
             raGameId: number;
-            timeline: components["schemas"]["RATimelineEntryResponse"][] | null;
+            timeline: components["schemas"]["RATimelineEntryResponse"][];
             /** Format: int64 */
             totalAchievements: number;
             /** Format: int64 */
@@ -5141,7 +5141,7 @@ export interface components {
              * @example https://example.com/api/schemas/ActiveChallengesResponse.json
              */
             readonly $schema?: string;
-            challenges: components["schemas"]["ExploreChallengeResponse"][] | null;
+            challenges: components["schemas"]["ExploreChallengeResponse"][];
         };
         ActiveNowItem: {
             /** Format: int64 */
@@ -5157,7 +5157,7 @@ export interface components {
              * @example https://example.com/api/schemas/ActiveNowResponse.json
              */
             readonly $schema?: string;
-            games: components["schemas"]["ActiveNowItem"][] | null;
+            games: components["schemas"]["ActiveNowItem"][];
         };
         ActivePlayerEntry: {
             avatarUrl: string;
@@ -5285,7 +5285,7 @@ export interface components {
              * @example https://example.com/api/schemas/AlmostDoneResponse.json
              */
             readonly $schema?: string;
-            games: components["schemas"]["AlmostDoneGame"][] | null;
+            games: components["schemas"]["AlmostDoneGame"][];
         };
         AnniversariesResponse: {
             /**
@@ -5294,7 +5294,7 @@ export interface components {
              * @example https://example.com/api/schemas/AnniversariesResponse.json
              */
             readonly $schema?: string;
-            anniversaries: components["schemas"]["AnniversaryItem"][] | null;
+            anniversaries: components["schemas"]["AnniversaryItem"][];
         };
         AnniversaryItem: {
             game: components["schemas"]["GameResponse"];
@@ -5320,7 +5320,7 @@ export interface components {
              * @example https://example.com/api/schemas/ArtworkGalleryResponse.json
              */
             readonly $schema?: string;
-            artworks: components["schemas"]["ArtworkItem"][] | null;
+            artworks: components["schemas"]["ArtworkItem"][];
             /** Format: int64 */
             page: number;
             /** Format: int64 */
@@ -5445,7 +5445,7 @@ export interface components {
              * @example https://example.com/api/schemas/BestOfYearResponse.json
              */
             readonly $schema?: string;
-            games: components["schemas"]["GameResponse"][] | null;
+            games: components["schemas"]["GameResponse"][];
             /** Format: int64 */
             year: number;
         };
@@ -5486,8 +5486,8 @@ export interface components {
              * @example https://example.com/api/schemas/BiosListResponse.json
              */
             readonly $schema?: string;
-            consoles: components["schemas"]["ConsoleBiosStatus"][] | null;
-            files: components["schemas"]["BiosFileResponse"][] | null;
+            consoles: components["schemas"]["ConsoleBiosStatus"][];
+            files: components["schemas"]["BiosFileResponse"][];
         };
         BulkDeleteSessionSavesResponse: {
             /**
@@ -5621,7 +5621,7 @@ export interface components {
             description: string;
             /** Format: int64 */
             gameCount: number;
-            games: components["schemas"]["GameResponse"][] | null;
+            games: components["schemas"]["GameResponse"][];
             id: string;
             isPublic: boolean;
             name: string;
@@ -5666,7 +5666,7 @@ export interface components {
              * @example https://example.com/api/schemas/CommunityTopResponse.json
              */
             readonly $schema?: string;
-            games: components["schemas"]["CommunityTopGame"][] | null;
+            games: components["schemas"]["CommunityTopGame"][];
         };
         CompactSavesResponse: {
             /**
@@ -5706,7 +5706,7 @@ export interface components {
              * @example https://example.com/api/schemas/CompletionistMapResponse.json
              */
             readonly $schema?: string;
-            consoles: components["schemas"]["CompletionistConsole"][] | null;
+            consoles: components["schemas"]["CompletionistConsole"][];
             /** Format: int64 */
             overallPct: number;
             /** Format: int64 */
@@ -5718,7 +5718,7 @@ export interface components {
             biosRequired: boolean;
             consoleId: string;
             consoleName: string;
-            files: components["schemas"]["ConsoleFileStatus"][] | null;
+            files: components["schemas"]["ConsoleFileStatus"][];
             /** Format: int64 */
             optionalPresent: number;
             /** Format: int64 */
@@ -5754,7 +5754,7 @@ export interface components {
              * @example https://example.com/api/schemas/ConsoleHighlightsResponse.json
              */
             readonly $schema?: string;
-            consoles: components["schemas"]["ConsoleHighlight"][] | null;
+            consoles: components["schemas"]["ConsoleHighlight"][];
         };
         ConsoleKeyMappingDTO: {
             customMapping: {
@@ -5773,7 +5773,7 @@ export interface components {
             createdAt: string;
             defaultCore: string;
             emulatorJsCore: string;
-            extensions: string[] | null;
+            extensions: string[];
             /** Format: int64 */
             gameCount: number;
             /** Format: int64 */
@@ -5803,12 +5803,12 @@ export interface components {
              */
             readonly $schema?: string;
             console: components["schemas"]["ConsoleResponse"];
-            essentials: components["schemas"]["GameResponse"][] | null;
-            genreBreakdown: components["schemas"]["GenreCount"][] | null;
-            hiddenGems: components["schemas"]["GameResponse"][] | null;
-            recentlyAdded: components["schemas"]["GameResponse"][] | null;
-            recentlyPlayed: components["schemas"]["GameResponse"][] | null;
-            topDevelopers: components["schemas"]["DeveloperSummary"][] | null;
+            essentials: components["schemas"]["GameResponse"][];
+            genreBreakdown: components["schemas"]["GenreCount"][];
+            hiddenGems: components["schemas"]["GameResponse"][];
+            recentlyAdded: components["schemas"]["GameResponse"][];
+            recentlyPlayed: components["schemas"]["GameResponse"][];
+            topDevelopers: components["schemas"]["DeveloperSummary"][];
         };
         Core: {
             /**
@@ -5844,7 +5844,7 @@ export interface components {
              * @example https://example.com/api/schemas/CoreCompatibilityResponse.json
              */
             readonly $schema?: string;
-            consoles: components["schemas"]["CoreCompatibilityEntry"][] | null;
+            consoles: components["schemas"]["CoreCompatibilityEntry"][];
         };
         CoverGalleryResponse: {
             /**
@@ -5853,7 +5853,7 @@ export interface components {
              * @example https://example.com/api/schemas/CoverGalleryResponse.json
              */
             readonly $schema?: string;
-            covers: components["schemas"]["CoverItem"][] | null;
+            covers: components["schemas"]["CoverItem"][];
             /** Format: int64 */
             page: number;
             /** Format: int64 */
@@ -5948,7 +5948,7 @@ export interface components {
              * @example https://example.com/api/schemas/CultClassicsResponse.json
              */
             readonly $schema?: string;
-            games: components["schemas"]["CultClassicGame"][] | null;
+            games: components["schemas"]["CultClassicGame"][];
         };
         DecadesResponse: {
             /**
@@ -5958,7 +5958,7 @@ export interface components {
              */
             readonly $schema?: string;
             decade: string;
-            games: components["schemas"]["GameResponse"][] | null;
+            games: components["schemas"]["GameResponse"][];
             label: string;
         };
         DeletedStatusResponse: {
@@ -5992,20 +5992,20 @@ export interface components {
             /** Format: double */
             avgRating: number;
             companyInfo: components["schemas"]["CompanyInfo"];
-            consoles: string[] | null;
+            consoles: string[];
             /** Format: int64 */
             gameCount: number;
-            games: components["schemas"]["GameResponse"][] | null;
-            genreBreakdown: components["schemas"]["GenreCount"][] | null;
+            games: components["schemas"]["GameResponse"][];
+            genreBreakdown: components["schemas"]["GenreCount"][];
             heroUrl: string;
             name: string;
-            platformBreakdown: components["schemas"]["PlatformCount"][] | null;
+            platformBreakdown: components["schemas"]["PlatformCount"][];
             primaryGenre: string;
-            publishers: components["schemas"]["NameCount"][] | null;
+            publishers: components["schemas"]["NameCount"][];
             ratingDistribution: components["schemas"]["RatingDistribution"];
-            relatedDevelopers: components["schemas"]["RelatedDeveloper"][] | null;
-            timeline: components["schemas"]["TimelineEntry"][] | null;
-            topGames: components["schemas"]["GameResponse"][] | null;
+            relatedDevelopers: components["schemas"]["RelatedDeveloper"][];
+            timeline: components["schemas"]["TimelineEntry"][];
+            topGames: components["schemas"]["GameResponse"][];
             userStats: components["schemas"]["EntityUserStats"];
         };
         DeveloperGameResponse: {
@@ -6020,7 +6020,7 @@ export interface components {
              * @example https://example.com/api/schemas/DeveloperListResponse.json
              */
             readonly $schema?: string;
-            developers: components["schemas"]["DeveloperSummary"][] | null;
+            developers: components["schemas"]["DeveloperSummary"][];
         };
         DeveloperSpotlightResponse: {
             /**
@@ -6031,17 +6031,17 @@ export interface components {
             readonly $schema?: string;
             /** Format: double */
             avgRating: number;
-            consoles: string[] | null;
+            consoles: string[];
             /** Format: int64 */
             gameCount: number;
             heroUrl: string;
             name: string;
-            topGames: components["schemas"]["GameResponse"][] | null;
+            topGames: components["schemas"]["GameResponse"][];
         };
         DeveloperSummary: {
             /** Format: double */
             avgRating: number;
-            consoles: string[] | null;
+            consoles: string[];
             /** Format: int64 */
             gameCount: number;
             name: string;
@@ -6141,7 +6141,7 @@ export interface components {
              * @example https://example.com/api/schemas/EasyToCompleteResponse.json
              */
             readonly $schema?: string;
-            games: components["schemas"]["AchievementGameResponse"][] | null;
+            games: components["schemas"]["AchievementGameResponse"][];
         };
         EnrichmentStartedResponse: {
             /**
@@ -6202,7 +6202,7 @@ export interface components {
             type: string;
         };
         ExploreRowResponse: {
-            games: components["schemas"]["GameResponse"][] | null;
+            games: components["schemas"]["GameResponse"][];
             id: string;
             title: string;
         };
@@ -6213,7 +6213,7 @@ export interface components {
              * @example https://example.com/api/schemas/ExploreRowsResponse.json
              */
             readonly $schema?: string;
-            rows: components["schemas"]["ExploreRowResponse"][] | null;
+            rows: components["schemas"]["ExploreRowResponse"][];
         };
         ExplorerBadge: {
             description: string;
@@ -6233,7 +6233,7 @@ export interface components {
              * @example https://example.com/api/schemas/ExplorerBadgesResponse.json
              */
             readonly $schema?: string;
-            badges: components["schemas"]["ExplorerBadge"][] | null;
+            badges: components["schemas"]["ExplorerBadge"][];
         };
         FeaturedGameResponse: {
             consoleAbbreviation: string;
@@ -6268,10 +6268,10 @@ export interface components {
              * @example https://example.com/api/schemas/ForYouResponse.json
              */
             readonly $schema?: string;
-            rows: components["schemas"]["ForYouRowResponse"][] | null;
+            rows: components["schemas"]["ForYouRowResponse"][];
         };
         ForYouRowResponse: {
-            games: components["schemas"]["GameResponse"][] | null;
+            games: components["schemas"]["GameResponse"][];
             genre: string;
             sourceGame: components["schemas"]["GameResponse"];
             title: string;
@@ -6291,8 +6291,8 @@ export interface components {
              * @example https://example.com/api/schemas/FranchiseDetailResponse.json
              */
             readonly $schema?: string;
-            consoles: components["schemas"]["SeriesConsoleInfo"][] | null;
-            games: components["schemas"]["SeriesGameResponse"][] | null;
+            consoles: components["schemas"]["SeriesConsoleInfo"][];
+            games: components["schemas"]["SeriesGameResponse"][];
             heroUrl: string;
             id: string;
             /** Format: int64 */
@@ -6324,7 +6324,7 @@ export interface components {
              * @example https://example.com/api/schemas/FreshChallengesResponse.json
              */
             readonly $schema?: string;
-            games: components["schemas"]["FreshChallengeGame"][] | null;
+            games: components["schemas"]["FreshChallengeGame"][];
         };
         GameAchievementProgressResponse: {
             /**
@@ -6333,7 +6333,7 @@ export interface components {
              * @example https://example.com/api/schemas/GameAchievementProgressResponse.json
              */
             readonly $schema?: string;
-            progress: components["schemas"]["RAProgressEntry"][] | null;
+            progress: components["schemas"]["RAProgressEntry"][];
             /** Format: int64 */
             raGameId: number;
         };
@@ -6345,7 +6345,7 @@ export interface components {
              */
             readonly $schema?: string;
             /** @description Achievement definitions for this game (empty when unknown). */
-            achievements: components["schemas"]["Achievement"][] | null;
+            achievements: components["schemas"]["Achievement"][];
             /**
              * Format: int64
              * @description RetroAchievements game ID (0 when unknown).
@@ -6397,7 +6397,7 @@ export interface components {
              */
             readonly $schema?: string;
             active: string;
-            covers: components["schemas"]["CoverOption"][] | null;
+            covers: components["schemas"]["CoverOption"][];
         };
         GameFranchiseResponse: {
             id: string;
@@ -6415,7 +6415,7 @@ export interface components {
              */
             readonly $schema?: string;
             activeUrl: string;
-            heroes: components["schemas"]["HeroOption"][] | null;
+            heroes: components["schemas"]["HeroOption"][];
         };
         GameKeyMappingResponse: {
             /**
@@ -6458,7 +6458,7 @@ export interface components {
              */
             readonly $schema?: string;
             achievementsWarning: string;
-            ageRatings: components["schemas"]["AgeRatingResponse"][] | null;
+            ageRatings: components["schemas"]["AgeRatingResponse"][];
             /** Format: double */
             averageRating: number;
             biosStatus: string;
@@ -6474,7 +6474,7 @@ export interface components {
             developer: string;
             /** Format: int64 */
             discCount: number;
-            discs: components["schemas"]["DiscResponse"][] | null;
+            discs: components["schemas"]["DiscResponse"][];
             fileName: string;
             /** Format: int64 */
             fileSize: number;
@@ -6492,7 +6492,7 @@ export interface components {
             isFavorite: boolean;
             isInPlayLater: boolean;
             isPreRelease: boolean;
-            languageSupports: components["schemas"]["LanguageSupportResponse"][] | null;
+            languageSupports: components["schemas"]["LanguageSupportResponse"][];
             /** Format: date-time */
             lastPlayedAt: string | null;
             logoUrl: string;
@@ -6506,13 +6506,13 @@ export interface components {
             ratingCount: number;
             region: string;
             releaseDate: string;
-            releaseDates: components["schemas"]["ReleaseDateResponse"][] | null;
+            releaseDates: components["schemas"]["ReleaseDateResponse"][];
             revision: string;
-            romHacks: components["schemas"]["RomHackGameResponse"][] | null;
+            romHacks: components["schemas"]["RomHackGameResponse"][];
             /** Format: int64 */
             scrapeAttempts: number;
             scraperId: string;
-            screenshotUrls: string[] | null;
+            screenshotUrls: string[];
             storyline: string;
             tags: string;
             /** Format: int64 */
@@ -6534,10 +6534,10 @@ export interface components {
             userRating: number | null;
             /** Format: int64 */
             variantCount: number;
-            variants: components["schemas"]["VariantResponse"][] | null;
+            variants: components["schemas"]["VariantResponse"][];
             verificationStatus: string;
             verificationTag: string;
-            videos: components["schemas"]["VideoResponse"][] | null;
+            videos: components["schemas"]["VideoResponse"][];
         };
         GameSeriesResponse: {
             id: string;
@@ -6565,10 +6565,10 @@ export interface components {
             lastPlayedAt: string | null;
             lastPlayedBy: string | null;
             lastPlayedByUsername: string | null;
-            memberAvatars: string[] | null;
+            memberAvatars: string[];
             /** Format: int64 */
             memberCount: number;
-            memberUsernames: string[] | null;
+            memberUsernames: string[];
             name: string;
             ownerId: string;
             ownerUsername: string;
@@ -6590,7 +6590,7 @@ export interface components {
             readonly $schema?: string;
             /** Format: int64 */
             averagePlayTime: number;
-            topPlayers: components["schemas"]["GameStatsTopPlayer"][] | null;
+            topPlayers: components["schemas"]["GameStatsTopPlayer"][];
             /** Format: int64 */
             totalPlayTime: number;
             /** Format: int64 */
@@ -6615,7 +6615,7 @@ export interface components {
              * @example https://example.com/api/schemas/HardestGamesResponse.json
              */
             readonly $schema?: string;
-            games: components["schemas"]["AchievementGameResponse"][] | null;
+            games: components["schemas"]["AchievementGameResponse"][];
         };
         HardwareMakerResponse: {
             code: string;
@@ -6755,7 +6755,7 @@ export interface components {
              * @example https://example.com/api/schemas/ListMyNetplayInvitesResponse.json
              */
             readonly $schema?: string;
-            data: components["schemas"]["NetplayInviteResponse"][] | null;
+            data: components["schemas"]["NetplayInviteResponse"][];
             /** Format: int64 */
             total: number;
         };
@@ -6784,7 +6784,7 @@ export interface components {
             code: string;
             /** Format: int64 */
             consoleCount: number;
-            consoles: components["schemas"]["ConsoleResponse"][] | null;
+            consoles: components["schemas"]["ConsoleResponse"][];
             name: string;
         };
         MediaTypeCategoryResponse: {
@@ -6813,13 +6813,13 @@ export interface components {
              * @example https://example.com/api/schemas/MetadataMatchesResponse.json
              */
             readonly $schema?: string;
-            incomplete: components["schemas"]["GameResponse"][] | null;
-            unscraped: components["schemas"]["GameResponse"][] | null;
-            unverified: components["schemas"]["GameResponse"][] | null;
+            incomplete: components["schemas"]["GameResponse"][];
+            unscraped: components["schemas"]["GameResponse"][];
+            unverified: components["schemas"]["GameResponse"][];
         };
         MoodResponse: {
             description: string;
-            gradient: string[] | null;
+            gradient: string[];
             icon: string;
             id: string;
             name: string;
@@ -6831,7 +6831,7 @@ export interface components {
              * @example https://example.com/api/schemas/MostActivePlayersResponse.json
              */
             readonly $schema?: string;
-            players: components["schemas"]["ActivePlayerEntry"][] | null;
+            players: components["schemas"]["ActivePlayerEntry"][];
         };
         MostPlayedEntry: {
             game: components["schemas"]["GameResponse"];
@@ -6847,7 +6847,7 @@ export interface components {
              * @example https://example.com/api/schemas/MostPlayedResponse.json
              */
             readonly $schema?: string;
-            games: components["schemas"]["MostPlayedEntry"][] | null;
+            games: components["schemas"]["MostPlayedEntry"][];
         };
         NameCount: {
             /** Format: int64 */
@@ -6931,7 +6931,7 @@ export interface components {
              */
             readonly $schema?: string;
             date: string;
-            games: components["schemas"]["GameResponse"][] | null;
+            games: components["schemas"]["GameResponse"][];
         };
         OnlineUserGameResponse: {
             consoleName: string;
@@ -6952,7 +6952,7 @@ export interface components {
              * @example https://example.com/api/schemas/OnlineUsersResponse.json
              */
             readonly $schema?: string;
-            users: components["schemas"]["OnlineUserResponse"][] | null;
+            users: components["schemas"]["OnlineUserResponse"][];
         };
         PaginatedResponseActivityEventResponse: {
             /**
@@ -6961,7 +6961,7 @@ export interface components {
              * @example https://example.com/api/schemas/PaginatedResponseActivityEventResponse.json
              */
             readonly $schema?: string;
-            data: components["schemas"]["ActivityEventResponse"][] | null;
+            data: components["schemas"]["ActivityEventResponse"][];
             /** Format: int64 */
             page: number;
             /** Format: int64 */
@@ -6976,7 +6976,7 @@ export interface components {
              * @example https://example.com/api/schemas/PaginatedResponseChallengeLeaderboardEntry.json
              */
             readonly $schema?: string;
-            data: components["schemas"]["ChallengeLeaderboardEntry"][] | null;
+            data: components["schemas"]["ChallengeLeaderboardEntry"][];
             /** Format: int64 */
             page: number;
             /** Format: int64 */
@@ -6991,7 +6991,7 @@ export interface components {
              * @example https://example.com/api/schemas/PaginatedResponseChallengeResponse.json
              */
             readonly $schema?: string;
-            data: components["schemas"]["ChallengeResponse"][] | null;
+            data: components["schemas"]["ChallengeResponse"][];
             /** Format: int64 */
             page: number;
             /** Format: int64 */
@@ -7006,7 +7006,7 @@ export interface components {
              * @example https://example.com/api/schemas/PaginatedResponseCollectionResponse.json
              */
             readonly $schema?: string;
-            data: components["schemas"]["CollectionResponse"][] | null;
+            data: components["schemas"]["CollectionResponse"][];
             /** Format: int64 */
             page: number;
             /** Format: int64 */
@@ -7021,7 +7021,7 @@ export interface components {
              * @example https://example.com/api/schemas/PaginatedResponseGameRatingResponse.json
              */
             readonly $schema?: string;
-            data: components["schemas"]["GameRatingResponse"][] | null;
+            data: components["schemas"]["GameRatingResponse"][];
             /** Format: int64 */
             page: number;
             /** Format: int64 */
@@ -7036,7 +7036,7 @@ export interface components {
              * @example https://example.com/api/schemas/PaginatedResponseGameResponse.json
              */
             readonly $schema?: string;
-            data: components["schemas"]["GameResponse"][] | null;
+            data: components["schemas"]["GameResponse"][];
             /** Format: int64 */
             page: number;
             /** Format: int64 */
@@ -7051,7 +7051,7 @@ export interface components {
              * @example https://example.com/api/schemas/PaginatedResponseNetplaySessionResponse.json
              */
             readonly $schema?: string;
-            data: components["schemas"]["NetplaySessionResponse"][] | null;
+            data: components["schemas"]["NetplaySessionResponse"][];
             /** Format: int64 */
             page: number;
             /** Format: int64 */
@@ -7066,7 +7066,7 @@ export interface components {
              * @example https://example.com/api/schemas/PaginatedResponseSharedSaveResponse.json
              */
             readonly $schema?: string;
-            data: components["schemas"]["SharedSaveResponse"][] | null;
+            data: components["schemas"]["SharedSaveResponse"][];
             /** Format: int64 */
             page: number;
             /** Format: int64 */
@@ -7081,7 +7081,7 @@ export interface components {
              * @example https://example.com/api/schemas/PaginatedResponseUserSearchResult.json
              */
             readonly $schema?: string;
-            data: components["schemas"]["UserSearchResult"][] | null;
+            data: components["schemas"]["UserSearchResult"][];
             /** Format: int64 */
             page: number;
             /** Format: int64 */
@@ -7124,7 +7124,7 @@ export interface components {
              * @example https://example.com/api/schemas/PlayersLikeYouResponse.json
              */
             readonly $schema?: string;
-            games: components["schemas"]["GameResponse"][] | null;
+            games: components["schemas"]["GameResponse"][];
             /** Format: int64 */
             similarUsersCount: number;
         };
@@ -7149,15 +7149,15 @@ export interface components {
             readonly $schema?: string;
             avatarUrl: string;
             currentGame: components["schemas"]["OnlineUserGameResponse"];
-            favoriteGames: components["schemas"]["PublicProfileGame"][] | null;
+            favoriteGames: components["schemas"]["PublicProfileGame"][];
             /** Format: int64 */
             gamesPlayed: number;
             id: string;
             isOnline: boolean;
             /** Format: date-time */
             memberSince: string;
-            recentGames: components["schemas"]["PublicProfileGame"][] | null;
-            topGames: components["schemas"]["PublicProfileGame"][] | null;
+            recentGames: components["schemas"]["PublicProfileGame"][];
+            topGames: components["schemas"]["PublicProfileGame"][];
             /** Format: int64 */
             totalPlayTime: number;
             username: string;
@@ -7173,20 +7173,20 @@ export interface components {
             /** Format: double */
             avgRating: number;
             companyInfo: components["schemas"]["CompanyInfo"];
-            consoles: string[] | null;
-            developers: components["schemas"]["NameCount"][] | null;
+            consoles: string[];
+            developers: components["schemas"]["NameCount"][];
             /** Format: int64 */
             gameCount: number;
-            games: components["schemas"]["GameResponse"][] | null;
-            genreBreakdown: components["schemas"]["GenreCount"][] | null;
+            games: components["schemas"]["GameResponse"][];
+            genreBreakdown: components["schemas"]["GenreCount"][];
             heroUrl: string;
             name: string;
-            platformBreakdown: components["schemas"]["PlatformCount"][] | null;
+            platformBreakdown: components["schemas"]["PlatformCount"][];
             primaryGenre: string;
             ratingDistribution: components["schemas"]["RatingDistribution"];
-            relatedPublishers: components["schemas"]["RelatedPublisher"][] | null;
-            timeline: components["schemas"]["TimelineEntry"][] | null;
-            topGames: components["schemas"]["GameResponse"][] | null;
+            relatedPublishers: components["schemas"]["RelatedPublisher"][];
+            timeline: components["schemas"]["TimelineEntry"][];
+            topGames: components["schemas"]["GameResponse"][];
             userStats: components["schemas"]["EntityUserStats"];
         };
         RALeaderboardEntryResponse: {
@@ -7326,7 +7326,7 @@ export interface components {
              * @example https://example.com/api/schemas/RecentAchievementsResponse.json
              */
             readonly $schema?: string;
-            achievements: components["schemas"]["RARecentAchievementResponse"][] | null;
+            achievements: components["schemas"]["RARecentAchievementResponse"][];
         };
         RecentReviewItem: {
             game: components["schemas"]["GameResponse"];
@@ -7344,7 +7344,7 @@ export interface components {
              * @example https://example.com/api/schemas/RecentlyReviewedResponse.json
              */
             readonly $schema?: string;
-            reviews: components["schemas"]["RecentReviewItem"][] | null;
+            reviews: components["schemas"]["RecentReviewItem"][];
         };
         RefreshAchievementsResponse: {
             /**
@@ -7371,13 +7371,13 @@ export interface components {
             /** Format: int64 */
             gameCount: number;
             name: string;
-            sharedPublishers: string[] | null;
+            sharedPublishers: string[];
         };
         RelatedPublisher: {
             /** Format: int64 */
             gameCount: number;
             name: string;
-            sharedDevelopers: string[] | null;
+            sharedDevelopers: string[];
         };
         ReleaseDateResponse: {
             date: string;
@@ -7400,7 +7400,7 @@ export interface components {
              * @example https://example.com/api/schemas/ReorderPlayLaterRequest.json
              */
             readonly $schema?: string;
-            gameIds: string[] | null;
+            gameIds: string[];
         };
         ReplaceROMResponse: {
             /**
@@ -7526,7 +7526,7 @@ export interface components {
              * @example https://example.com/api/schemas/ScrapeStatusCountsResponse.json
              */
             readonly $schema?: string;
-            sources: components["schemas"]["ScraperSourceResultResponse"][] | null;
+            sources: components["schemas"]["ScraperSourceResultResponse"][];
         };
         ScrapeStatusResponse: {
             /**
@@ -7576,7 +7576,7 @@ export interface components {
             readonly $schema?: string;
             /** Format: int64 */
             page: number;
-            screenshots: components["schemas"]["ScreenshotItem"][] | null;
+            screenshots: components["schemas"]["ScreenshotItem"][];
             /** Format: int64 */
             totalCount: number;
             /** Format: int64 */
@@ -7591,32 +7591,32 @@ export interface components {
             url: string;
         };
         SearchCategoryResultSearchCollectionResult: {
-            results: components["schemas"]["SearchCollectionResult"][] | null;
+            results: components["schemas"]["SearchCollectionResult"][];
             /** Format: int64 */
             total: number;
         };
         SearchCategoryResultSearchCompanyResult: {
-            results: components["schemas"]["SearchCompanyResult"][] | null;
+            results: components["schemas"]["SearchCompanyResult"][];
             /** Format: int64 */
             total: number;
         };
         SearchCategoryResultSearchConsoleResult: {
-            results: components["schemas"]["SearchConsoleResult"][] | null;
+            results: components["schemas"]["SearchConsoleResult"][];
             /** Format: int64 */
             total: number;
         };
         SearchCategoryResultSearchFranchiseResult: {
-            results: components["schemas"]["SearchFranchiseResult"][] | null;
+            results: components["schemas"]["SearchFranchiseResult"][];
             /** Format: int64 */
             total: number;
         };
         SearchCategoryResultSearchGameResult: {
-            results: components["schemas"]["SearchGameResult"][] | null;
+            results: components["schemas"]["SearchGameResult"][];
             /** Format: int64 */
             total: number;
         };
         SearchCategoryResultSearchSeriesResult: {
-            results: components["schemas"]["SearchSeriesResult"][] | null;
+            results: components["schemas"]["SearchSeriesResult"][];
             /** Format: int64 */
             total: number;
         };
@@ -7699,8 +7699,8 @@ export interface components {
              * @example https://example.com/api/schemas/SeriesDetailResponse.json
              */
             readonly $schema?: string;
-            consoles: components["schemas"]["SeriesConsoleInfo"][] | null;
-            games: components["schemas"]["SeriesGameResponse"][] | null;
+            consoles: components["schemas"]["SeriesConsoleInfo"][];
+            games: components["schemas"]["SeriesGameResponse"][];
             heroUrl: string;
             id: string;
             /** Format: int64 */
@@ -7744,7 +7744,7 @@ export interface components {
              */
             readonly $schema?: string;
             cheatsEnabled: boolean;
-            enabledIndices: number[] | null;
+            enabledIndices: number[];
         };
         SessionSaveData: {
             /**
@@ -7836,7 +7836,7 @@ export interface components {
              */
             readonly $schema?: string;
             /** @description Ordered list of server health checks. */
-            checks: components["schemas"]["DiagnosticCheck"][] | null;
+            checks: components["schemas"]["DiagnosticCheck"][];
         };
         SetupStatusResponse: {
             /**
@@ -7896,7 +7896,7 @@ export interface components {
             id: string;
             /** Format: int64 */
             memberCount: number;
-            members: components["schemas"]["SharedSessionMemberResponse"][] | null;
+            members: components["schemas"]["SharedSessionMemberResponse"][];
             name: string;
             ownerId: string;
             ownerUsername: string;
@@ -8077,7 +8077,7 @@ export interface components {
             originalFileName: string;
             /** Format: int64 */
             players: number;
-            possibleConsoles: components["schemas"]["PossibleConsoleResponse"][] | null;
+            possibleConsoles: components["schemas"]["PossibleConsoleResponse"][];
             publisher: string;
             releaseDate: string;
             status: string;
@@ -8110,7 +8110,7 @@ export interface components {
              * @example https://example.com/api/schemas/StorageUsageResponse.json
              */
             readonly $schema?: string;
-            byConsole: components["schemas"]["SessionStorageConsoleBreakdown"][] | null;
+            byConsole: components["schemas"]["SessionStorageConsoleBreakdown"][];
             /** Format: int64 */
             quotaBytes: number;
             /** Format: int64 */
@@ -8158,7 +8158,7 @@ export interface components {
              * @example https://example.com/api/schemas/SystemEventTypesResponse.json
              */
             readonly $schema?: string;
-            types: components["schemas"]["SystemEventTypeInfo"][] | null;
+            types: components["schemas"]["SystemEventTypeInfo"][];
         };
         SystemEventsListResponse: {
             /**
@@ -8167,7 +8167,7 @@ export interface components {
              * @example https://example.com/api/schemas/SystemEventsListResponse.json
              */
             readonly $schema?: string;
-            data: components["schemas"]["SystemEventResponse"][] | null;
+            data: components["schemas"]["SystemEventResponse"][];
             /** Format: int64 */
             page: number;
             /** Format: int64 */
@@ -8199,9 +8199,9 @@ export interface components {
              * @example https://example.com/api/schemas/TasteProfileResponse.json
              */
             readonly $schema?: string;
-            genres: components["schemas"]["TasteProfileGenre"][] | null;
-            themes: components["schemas"]["TasteProfileTheme"][] | null;
-            topConsoles: components["schemas"]["TasteProfileConsole"][] | null;
+            genres: components["schemas"]["TasteProfileGenre"][];
+            themes: components["schemas"]["TasteProfileTheme"][];
+            topConsoles: components["schemas"]["TasteProfileConsole"][];
             /** Format: int64 */
             totalPlayTime: number;
         };
@@ -8241,7 +8241,7 @@ export interface components {
             name: string;
         };
         TimelineEntry: {
-            games: components["schemas"]["TimelineGame"][] | null;
+            games: components["schemas"]["TimelineGame"][];
             /** Format: int64 */
             year: number;
         };
@@ -8285,7 +8285,7 @@ export interface components {
              * @example https://example.com/api/schemas/TrendingResponse.json
              */
             readonly $schema?: string;
-            games: components["schemas"]["TrendingGameResponse"][] | null;
+            games: components["schemas"]["TrendingGameResponse"][];
         };
         UnlockedAchievementsResponse: {
             /**
@@ -8294,7 +8294,7 @@ export interface components {
              * @example https://example.com/api/schemas/UnlockedAchievementsResponse.json
              */
             readonly $schema?: string;
-            achievements: components["schemas"]["RAUnlockedAchievementResponse"][] | null;
+            achievements: components["schemas"]["RAUnlockedAchievementResponse"][];
         };
         UpdateChallengeRequest: {
             /**
@@ -8456,7 +8456,7 @@ export interface components {
              */
             readonly $schema?: string;
             cheatsEnabled: boolean;
-            enabledIndices: number[] | null;
+            enabledIndices: number[];
         };
         UpdateSessionPlayTimeRequest: {
             /**
@@ -8536,7 +8536,7 @@ export interface components {
                 [key: string]: string;
             };
             defaultSecondScreenPage: string;
-            preferredRegions: string[] | null;
+            preferredRegions: string[];
             raHardcoreEnabled: boolean;
             raLinked: boolean;
             raUsername: string;
@@ -8619,7 +8619,7 @@ export interface components {
              * @example https://example.com/api/schemas/WizardResponse.json
              */
             readonly $schema?: string;
-            steps: components["schemas"]["WizardStep"][] | null;
+            steps: components["schemas"]["WizardStep"][];
         };
         WizardResultsResponse: {
             /**
@@ -8628,11 +8628,11 @@ export interface components {
              * @example https://example.com/api/schemas/WizardResultsResponse.json
              */
             readonly $schema?: string;
-            games: components["schemas"]["GameResponse"][] | null;
+            games: components["schemas"]["GameResponse"][];
             title: string;
         };
         WizardStep: {
-            options: components["schemas"]["WizardOption"][] | null;
+            options: components["schemas"]["WizardOption"][];
             /** Format: int64 */
             step: number;
             title: string;
@@ -9210,7 +9210,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["IGDBSearchResult"][] | null;
+                    "application/json": components["schemas"]["IGDBSearchResult"][];
                 };
             };
             /** @description Error */
@@ -9802,7 +9802,7 @@ export interface operations {
                 /** @description Set to 'true' to include dismissed events. */
                 dismissed?: string;
                 /** @description Filter by one or more event types (repeatable). */
-                eventType?: string[] | null;
+                eventType?: string[];
                 /** @description Case-insensitive username substring filter. */
                 username?: string;
                 /** @description IP address prefix filter (IPv4/IPv6). */
@@ -9851,7 +9851,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["SystemEventCategoryResponse"][] | null;
+                    "application/json": components["schemas"]["SystemEventCategoryResponse"][];
                 };
             };
             /** @description Error */
@@ -9973,7 +9973,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["StagedUploadResponse"][] | null;
+                    "application/json": components["schemas"]["StagedUploadResponse"][];
                 };
             };
             /** @description Error */
@@ -10008,7 +10008,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["StagedUploadResponse"][] | null;
+                    "application/json": components["schemas"]["StagedUploadResponse"][];
                 };
             };
             /** @description Error */
@@ -10130,7 +10130,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["StagedUploadResponse"][] | null;
+                    "application/json": components["schemas"]["StagedUploadResponse"][];
                 };
             };
             /** @description Error */
@@ -10320,7 +10320,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["UserResponse"][] | null;
+                    "application/json": components["schemas"]["UserResponse"][];
                 };
             };
             /** @description Error */
@@ -10382,7 +10382,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["DeletedUserResponse"][] | null;
+                    "application/json": components["schemas"]["DeletedUserResponse"][];
                 };
             };
             /** @description Error */
@@ -10482,7 +10482,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["DeviceResponse"][] | null;
+                    "application/json": components["schemas"]["DeviceResponse"][];
                 };
             };
             /** @description Error */
@@ -11098,7 +11098,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ChallengeAttemptResponse"][] | null;
+                    "application/json": components["schemas"]["ChallengeAttemptResponse"][];
                 };
             };
             /** @description Error */
@@ -11599,7 +11599,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ConsoleResponse"][] | null;
+                    "application/json": components["schemas"]["ConsoleResponse"][];
                 };
             };
             /** @description Error */
@@ -11802,7 +11802,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["LongestGameResponse"][] | null;
+                    "application/json": components["schemas"]["LongestGameResponse"][];
                 };
             };
             /** @description Error */
@@ -11834,7 +11834,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["TopListGameResponse"][] | null;
+                    "application/json": components["schemas"]["TopListGameResponse"][];
                 };
             };
             /** @description Error */
@@ -11866,7 +11866,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["TopListGameResponse"][] | null;
+                    "application/json": components["schemas"]["TopListGameResponse"][];
                 };
             };
             /** @description Error */
@@ -11898,7 +11898,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["TopRatedGameResponse"][] | null;
+                    "application/json": components["schemas"]["TopRatedGameResponse"][];
                 };
             };
             /** @description Error */
@@ -11927,7 +11927,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Core"][] | null;
+                    "application/json": components["schemas"]["Core"][];
                 };
             };
             /** @description Error */
@@ -12497,7 +12497,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["FeaturedGameResponse"][] | null;
+                    "application/json": components["schemas"]["FeaturedGameResponse"][];
                 };
             };
             /** @description Error */
@@ -12620,7 +12620,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GameResponse"][] | null;
+                    "application/json": components["schemas"]["GameResponse"][];
                 };
             };
             /** @description Error */
@@ -12650,7 +12650,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["MoodResponse"][] | null;
+                    "application/json": components["schemas"]["MoodResponse"][];
                 };
             };
             /** @description Error */
@@ -12872,7 +12872,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["FeaturedSeriesResponse"][] | null;
+                    "application/json": components["schemas"]["FeaturedSeriesResponse"][];
                 };
             };
             /** @description Error */
@@ -13065,7 +13065,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["FranchiseResponse"][] | null;
+                    "application/json": components["schemas"]["FranchiseResponse"][];
                 };
             };
             /** @description Error */
@@ -13483,7 +13483,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GameCheatResponse"][] | null;
+                    "application/json": components["schemas"]["GameCheatResponse"][];
                 };
             };
             /** @description Error */
@@ -13547,7 +13547,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["DeveloperGameResponse"][] | null;
+                    "application/json": components["schemas"]["DeveloperGameResponse"][];
                 };
             };
             /** @description Error */
@@ -13684,7 +13684,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GameFranchiseResponse"][] | null;
+                    "application/json": components["schemas"]["GameFranchiseResponse"][];
                 };
             };
             /** @description Error */
@@ -13985,7 +13985,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GameSeriesResponse"][] | null;
+                    "application/json": components["schemas"]["GameSeriesResponse"][];
                 };
             };
             /** @description Error */
@@ -14017,7 +14017,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GameSessionResponse"][] | null;
+                    "application/json": components["schemas"]["GameSessionResponse"][];
                 };
             };
             /** @description Error */
@@ -14270,7 +14270,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["SharedSessionResponse"][] | null;
+                    "application/json": components["schemas"]["SharedSessionResponse"][];
                 };
             };
             /** @description Error */
@@ -14302,7 +14302,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["SimilarGameResponse"][] | null;
+                    "application/json": components["schemas"]["SimilarGameResponse"][];
                 };
             };
             /** @description Error */
@@ -14395,7 +14395,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["KeywordResponse"][] | null;
+                    "application/json": components["schemas"]["KeywordResponse"][];
                 };
             };
             /** @description Error */
@@ -14461,7 +14461,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["MakerDetailResponse"][] | null;
+                    "application/json": components["schemas"]["MakerDetailResponse"][];
                 };
             };
             /** @description Error */
@@ -14811,7 +14811,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["NetplayInviteResponse"][] | null;
+                    "application/json": components["schemas"]["NetplayInviteResponse"][];
                 };
             };
             /** @description Error */
@@ -14978,7 +14978,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["SeriesListResponse"][] | null;
+                    "application/json": components["schemas"]["SeriesListResponse"][];
                 };
             };
             /** @description Error */
@@ -15314,7 +15314,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["SessionSaveResponse"][] | null;
+                    "application/json": components["schemas"]["SessionSaveResponse"][];
                 };
             };
             /** @description Error */
@@ -15595,7 +15595,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["SessionSaveResponse"][] | null;
+                    "application/json": components["schemas"]["SessionSaveResponse"][];
                 };
             };
             /** @description Error */
@@ -15829,7 +15829,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["SharedSessionResponse"][] | null;
+                    "application/json": components["schemas"]["SharedSessionResponse"][];
                 };
             };
             /** @description Error */
@@ -16160,7 +16160,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["SharedSessionSaveResponse"][] | null;
+                    "application/json": components["schemas"]["SharedSessionSaveResponse"][];
                 };
             };
             /** @description Error */
@@ -16574,7 +16574,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ThemeResponse"][] | null;
+                    "application/json": components["schemas"]["ThemeResponse"][];
                 };
             };
             /** @description Error */
@@ -16640,7 +16640,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["LongestGameResponse"][] | null;
+                    "application/json": components["schemas"]["LongestGameResponse"][];
                 };
             };
             /** @description Error */
@@ -16669,7 +16669,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["TopListGameResponse"][] | null;
+                    "application/json": components["schemas"]["TopListGameResponse"][];
                 };
             };
             /** @description Error */
@@ -16698,7 +16698,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["TopListGameResponse"][] | null;
+                    "application/json": components["schemas"]["TopListGameResponse"][];
                 };
             };
             /** @description Error */
@@ -16727,7 +16727,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["TopRatedGameResponse"][] | null;
+                    "application/json": components["schemas"]["TopRatedGameResponse"][];
                 };
             };
             /** @description Error */
@@ -16785,7 +16785,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ShowcaseEntryResponse"][] | null;
+                    "application/json": components["schemas"]["ShowcaseEntryResponse"][];
                 };
             };
             /** @description Error */
@@ -16808,7 +16808,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["ShowcaseEntryInput"][] | null;
+                "application/json": components["schemas"]["ShowcaseEntryInput"][];
             };
         };
         responses: {
@@ -16818,7 +16818,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ShowcaseEntryResponse"][] | null;
+                    "application/json": components["schemas"]["ShowcaseEntryResponse"][];
                 };
             };
             /** @description Error */
@@ -16939,7 +16939,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["DeviceResponse"][] | null;
+                    "application/json": components["schemas"]["DeviceResponse"][];
                 };
             };
             /** @description Error */
@@ -17166,7 +17166,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GameResponse"][] | null;
+                    "application/json": components["schemas"]["GameResponse"][];
                 };
             };
             /** @description Error */
@@ -17395,7 +17395,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["HeatmapEntry"][] | null;
+                    "application/json": components["schemas"]["HeatmapEntry"][];
                 };
             };
             /** @description Error */
@@ -17424,7 +17424,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GameResponse"][] | null;
+                    "application/json": components["schemas"]["GameResponse"][];
                 };
             };
             /** @description Error */
@@ -17550,7 +17550,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["PlayStatsEntry"][] | null;
+                    "application/json": components["schemas"]["PlayStatsEntry"][];
                 };
             };
             /** @description Error */
@@ -17858,7 +17858,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GameResponse"][] | null;
+                    "application/json": components["schemas"]["GameResponse"][];
                 };
             };
             /** @description Error */
@@ -17887,7 +17887,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["SavedSearchResponse"][] | null;
+                    "application/json": components["schemas"]["SavedSearchResponse"][];
                 };
             };
             /** @description Error */
@@ -18010,7 +18010,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["SharedSessionInviteResponse"][] | null;
+                    "application/json": components["schemas"]["SharedSessionInviteResponse"][];
                 };
             };
             /** @description Error */
@@ -18219,7 +18219,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["UserSearchResult"][] | null;
+                    "application/json": components["schemas"]["UserSearchResult"][];
                 };
             };
             /** @description Error */
@@ -18287,7 +18287,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ShowcaseEntryResponse"][] | null;
+                    "application/json": components["schemas"]["ShowcaseEntryResponse"][];
                 };
             };
             /** @description Error */
@@ -18319,7 +18319,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["HeatmapEntry"][] | null;
+                    "application/json": components["schemas"]["HeatmapEntry"][];
                 };
             };
             /** @description Error */

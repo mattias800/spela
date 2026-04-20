@@ -42,17 +42,17 @@ data class ConsoleShowcaseResponse (
 
     @SerialName(value = "console") @Required val console: ConsoleResponse,
 
-    @SerialName(value = "essentials") @Required val essentials: kotlin.collections.List<GameResponse>?,
+    @SerialName(value = "essentials") @Required val essentials: kotlin.collections.List<GameResponse>,
 
-    @SerialName(value = "genreBreakdown") @Required val genreBreakdown: kotlin.collections.List<GenreCount>?,
+    @SerialName(value = "genreBreakdown") @Required val genreBreakdown: kotlin.collections.List<GenreCount>,
 
-    @SerialName(value = "hiddenGems") @Required val hiddenGems: kotlin.collections.List<GameResponse>?,
+    @SerialName(value = "hiddenGems") @Required val hiddenGems: kotlin.collections.List<GameResponse>,
 
-    @SerialName(value = "recentlyAdded") @Required val recentlyAdded: kotlin.collections.List<GameResponse>?,
+    @SerialName(value = "recentlyAdded") @Required val recentlyAdded: kotlin.collections.List<GameResponse>,
 
-    @SerialName(value = "recentlyPlayed") @Required val recentlyPlayed: kotlin.collections.List<GameResponse>?,
+    @SerialName(value = "recentlyPlayed") @Required val recentlyPlayed: kotlin.collections.List<GameResponse>,
 
-    @SerialName(value = "topDevelopers") @Required val topDevelopers: kotlin.collections.List<DeveloperSummary>?,
+    @SerialName(value = "topDevelopers") @Required val topDevelopers: kotlin.collections.List<DeveloperSummary>,
 
     /* A URL to the JSON Schema for this object. */
     @SerialName(value = "\$schema") val dollarSchema: kotlin.String? = null

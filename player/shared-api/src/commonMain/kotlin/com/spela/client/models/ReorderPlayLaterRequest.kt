@@ -30,7 +30,7 @@ import kotlinx.serialization.encoding.*
 
 data class ReorderPlayLaterRequest (
 
-    @SerialName(value = "gameIds") @Required val gameIds: kotlin.collections.List<kotlin.String>?,
+    @SerialName(value = "gameIds") @Required val gameIds: kotlin.collections.List<kotlin.String>,
 
     /* A URL to the JSON Schema for this object. */
     @SerialName(value = "\$schema") val dollarSchema: kotlin.String? = null

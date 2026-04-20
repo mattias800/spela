@@ -32,7 +32,7 @@ import kotlinx.serialization.encoding.*
 
 data class GameAchievementProgressResponse (
 
-    @SerialName(value = "progress") @Required val progress: kotlin.collections.List<RAProgressEntry>?,
+    @SerialName(value = "progress") @Required val progress: kotlin.collections.List<RAProgressEntry>,
 
     @SerialName(value = "raGameId") @Required val raGameId: kotlin.Long,
 

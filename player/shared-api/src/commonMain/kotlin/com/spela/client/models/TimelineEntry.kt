@@ -31,7 +31,7 @@ import kotlinx.serialization.encoding.*
 
 data class TimelineEntry (
 
-    @SerialName(value = "games") @Required val games: kotlin.collections.List<TimelineGame>?,
+    @SerialName(value = "games") @Required val games: kotlin.collections.List<TimelineGame>,
 
     @SerialName(value = "year") @Required val year: kotlin.Long
 

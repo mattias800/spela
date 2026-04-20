@@ -10,6 +10,19 @@ import (
 	"gorm.io/gorm"
 )
 
+// init disables huma's default-nullable-array schema emission. Without
+// this, every `[]T` slice on a response body emits `"type": ["array",
+// "null"]` in OpenAPI (because a Go nil slice marshals to JSON null),
+// which propagates to the TS / Kotlin clients as `T[] | null`.
+//
+// Handlers are responsible for returning non-nil slices (init an empty
+// slice rather than `nil`) — huma doesn't enforce this at compile time,
+// but response tests and the recording code should surface any that
+// slip through.
+func init() {
+	huma.DefaultArrayNullable = false
+}
+
 // SetupHumaAPI attaches a huma.API instance to the gin engine. The returned
 // API is used by handlers to register typed operations alongside the existing
 // raw gin routes — both stacks coexist during the incremental migration to

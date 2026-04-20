@@ -62,31 +62,31 @@ data class PublisherDetailResponse (
 
     @SerialName(value = "companyInfo") @Required val companyInfo: CompanyInfo,
 
-    @SerialName(value = "consoles") @Required val consoles: kotlin.collections.List<kotlin.String>?,
+    @SerialName(value = "consoles") @Required val consoles: kotlin.collections.List<kotlin.String>,
 
-    @SerialName(value = "developers") @Required val developers: kotlin.collections.List<NameCount>?,
+    @SerialName(value = "developers") @Required val developers: kotlin.collections.List<NameCount>,
 
     @SerialName(value = "gameCount") @Required val gameCount: kotlin.Long,
 
-    @SerialName(value = "games") @Required val games: kotlin.collections.List<GameResponse>?,
+    @SerialName(value = "games") @Required val games: kotlin.collections.List<GameResponse>,
 
-    @SerialName(value = "genreBreakdown") @Required val genreBreakdown: kotlin.collections.List<GenreCount>?,
+    @SerialName(value = "genreBreakdown") @Required val genreBreakdown: kotlin.collections.List<GenreCount>,
 
     @SerialName(value = "heroUrl") @Required val heroUrl: kotlin.String,
 
     @SerialName(value = "name") @Required val name: kotlin.String,
 
-    @SerialName(value = "platformBreakdown") @Required val platformBreakdown: kotlin.collections.List<PlatformCount>?,
+    @SerialName(value = "platformBreakdown") @Required val platformBreakdown: kotlin.collections.List<PlatformCount>,
 
     @SerialName(value = "primaryGenre") @Required val primaryGenre: kotlin.String,
 
     @SerialName(value = "ratingDistribution") @Required val ratingDistribution: RatingDistribution,
 
-    @SerialName(value = "relatedPublishers") @Required val relatedPublishers: kotlin.collections.List<RelatedPublisher>?,
+    @SerialName(value = "relatedPublishers") @Required val relatedPublishers: kotlin.collections.List<RelatedPublisher>,
 
-    @SerialName(value = "timeline") @Required val timeline: kotlin.collections.List<TimelineEntry>?,
+    @SerialName(value = "timeline") @Required val timeline: kotlin.collections.List<TimelineEntry>,
 
-    @SerialName(value = "topGames") @Required val topGames: kotlin.collections.List<GameResponse>?,
+    @SerialName(value = "topGames") @Required val topGames: kotlin.collections.List<GameResponse>,
 
     @SerialName(value = "userStats") @Required val userStats: EntityUserStats,
 

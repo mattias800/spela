@@ -31,7 +31,7 @@ import kotlinx.serialization.encoding.*
 
 data class CoreCompatibilityResponse (
 
-    @SerialName(value = "consoles") @Required val consoles: kotlin.collections.List<CoreCompatibilityEntry>?,
+    @SerialName(value = "consoles") @Required val consoles: kotlin.collections.List<CoreCompatibilityEntry>,
 
     /* A URL to the JSON Schema for this object. */
     @SerialName(value = "\$schema") val dollarSchema: kotlin.String? = null

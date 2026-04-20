@@ -31,7 +31,7 @@ import kotlinx.serialization.encoding.*
 
 data class RecentlyReviewedResponse (
 
-    @SerialName(value = "reviews") @Required val reviews: kotlin.collections.List<RecentReviewItem>?,
+    @SerialName(value = "reviews") @Required val reviews: kotlin.collections.List<RecentReviewItem>,
 
     /* A URL to the JSON Schema for this object. */
     @SerialName(value = "\$schema") val dollarSchema: kotlin.String? = null

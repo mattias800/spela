@@ -49,28 +49,28 @@ private fun testGameResponse(
         ratingCount = 0L,
         releaseDate = releaseDate,
         scrapeAttempts = 0L,
-        screenshotUrls = screenshotUrls,
+        screenshotUrls = screenshotUrls ?: emptyList(),
         title = title,
         totalPlayTime = totalPlayTime,
         updatedAt = now,
         achievementsWarning = "",
-        ageRatings = null,
+        ageRatings = emptyList(),
         biosStatus = "",
         coreOverride = "",
-        discs = null,
+        discs = emptyList(),
         gameModes = "",
         groupKey = "",
         heroUrl = "",
         igdbUserRating = 0.0,
         igdbUserRatingCount = 0L,
-        languageSupports = null,
+        languageSupports = emptyList(),
         logoUrl = "",
         parentGame = com.spela.client.models.ParentGameResponse(id = "", title = "", coverUrl = ""),
         partyInfo = "",
         region = "",
-        releaseDates = null,
+        releaseDates = emptyList(),
         revision = "",
-        romHacks = null,
+        romHacks = emptyList(),
         scraperId = "",
         storyline = "",
         tags = "",
@@ -81,10 +81,10 @@ private fun testGameResponse(
         totalRatingCount = 0L,
         userRating = 0L,
         variantCount = 0L,
-        variants = null,
+        variants = emptyList(),
         verificationStatus = "",
         verificationTag = "",
-        videos = null,
+        videos = emptyList(),
     )
 }
 
@@ -192,9 +192,11 @@ class GameRepositoryImplTest {
     }
 
     @Test
-    fun completionistMapResponseHandlesNullConsolesList() {
+    fun completionistMapResponseHandlesEmptyConsolesList() {
+        // Server guarantees non-null lists after DefaultArrayNullable=false;
+        // this exercises the empty-but-present path.
         val response = com.spela.client.models.CompletionistMapResponse(
-            consoles = null,
+            consoles = emptyList(),
             overallPct = 0L,
             totalGames = 0L,
             totalPlayed = 0L,

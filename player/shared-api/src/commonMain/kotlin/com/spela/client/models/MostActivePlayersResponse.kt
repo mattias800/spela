@@ -31,7 +31,7 @@ import kotlinx.serialization.encoding.*
 
 data class MostActivePlayersResponse (
 
-    @SerialName(value = "players") @Required val players: kotlin.collections.List<ActivePlayerEntry>?,
+    @SerialName(value = "players") @Required val players: kotlin.collections.List<ActivePlayerEntry>,
 
     /* A URL to the JSON Schema for this object. */
     @SerialName(value = "\$schema") val dollarSchema: kotlin.String? = null

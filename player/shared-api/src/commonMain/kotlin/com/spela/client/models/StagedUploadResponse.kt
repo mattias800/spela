@@ -81,7 +81,7 @@ data class StagedUploadResponse (
 
     @SerialName(value = "players") @Required val players: kotlin.Long,
 
-    @SerialName(value = "possibleConsoles") @Required val possibleConsoles: kotlin.collections.List<PossibleConsoleResponse>?,
+    @SerialName(value = "possibleConsoles") @Required val possibleConsoles: kotlin.collections.List<PossibleConsoleResponse>,
 
     @SerialName(value = "publisher") @Required val publisher: kotlin.String,
 

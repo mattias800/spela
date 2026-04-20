@@ -34,7 +34,7 @@ data class DeveloperSummary (
 
     @SerialName(value = "avgRating") @Required val avgRating: kotlin.Double,
 
-    @SerialName(value = "consoles") @Required val consoles: kotlin.collections.List<kotlin.String>?,
+    @SerialName(value = "consoles") @Required val consoles: kotlin.collections.List<kotlin.String>,
 
     @SerialName(value = "gameCount") @Required val gameCount: kotlin.Long,
 

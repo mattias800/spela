@@ -31,7 +31,7 @@ import kotlinx.serialization.encoding.*
 
 data class TrendingResponse (
 
-    @SerialName(value = "games") @Required val games: kotlin.collections.List<TrendingGameResponse>?,
+    @SerialName(value = "games") @Required val games: kotlin.collections.List<TrendingGameResponse>,
 
     /* A URL to the JSON Schema for this object. */
     @SerialName(value = "\$schema") val dollarSchema: kotlin.String? = null

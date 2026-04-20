@@ -31,7 +31,7 @@ import kotlinx.serialization.encoding.*
 
 data class ConsoleHighlightsResponse (
 
-    @SerialName(value = "consoles") @Required val consoles: kotlin.collections.List<ConsoleHighlight>?,
+    @SerialName(value = "consoles") @Required val consoles: kotlin.collections.List<ConsoleHighlight>,
 
     /* A URL to the JSON Schema for this object. */
     @SerialName(value = "\$schema") val dollarSchema: kotlin.String? = null

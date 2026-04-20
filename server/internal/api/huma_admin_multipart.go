@@ -629,6 +629,7 @@ func (h *UploadHandler) HumaUploadROMs(_ context.Context, in *AdminUploadROMsInp
 			results = append(results, StagedUploadResponse{
 				OriginalFileName: f.Filename,
 				Status:           "rejected",
+				PossibleConsoles: []PossibleConsoleResponse{},
 			})
 			f.Close()
 			continue

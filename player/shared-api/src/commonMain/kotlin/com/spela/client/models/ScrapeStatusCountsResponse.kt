@@ -31,7 +31,7 @@ import kotlinx.serialization.encoding.*
 
 data class ScrapeStatusCountsResponse (
 
-    @SerialName(value = "sources") @Required val sources: kotlin.collections.List<ScraperSourceResultResponse>?,
+    @SerialName(value = "sources") @Required val sources: kotlin.collections.List<ScraperSourceResultResponse>,
 
     /* A URL to the JSON Schema for this object. */
     @SerialName(value = "\$schema") val dollarSchema: kotlin.String? = null

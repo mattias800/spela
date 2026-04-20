@@ -34,7 +34,7 @@ import kotlinx.serialization.encoding.*
 
 data class CompletionistMapResponse (
 
-    @SerialName(value = "consoles") @Required val consoles: kotlin.collections.List<CompletionistConsole>?,
+    @SerialName(value = "consoles") @Required val consoles: kotlin.collections.List<CompletionistConsole>,
 
     @SerialName(value = "overallPct") @Required val overallPct: kotlin.Long,
 

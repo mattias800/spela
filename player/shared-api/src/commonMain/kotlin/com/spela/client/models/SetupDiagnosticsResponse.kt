@@ -32,7 +32,7 @@ import kotlinx.serialization.encoding.*
 data class SetupDiagnosticsResponse (
 
     /* Ordered list of server health checks. */
-    @SerialName(value = "checks") @Required val checks: kotlin.collections.List<DiagnosticCheck>?,
+    @SerialName(value = "checks") @Required val checks: kotlin.collections.List<DiagnosticCheck>,
 
     /* A URL to the JSON Schema for this object. */
     @SerialName(value = "\$schema") val dollarSchema: kotlin.String? = null

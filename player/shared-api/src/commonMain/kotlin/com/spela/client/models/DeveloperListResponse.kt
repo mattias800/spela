@@ -31,7 +31,7 @@ import kotlinx.serialization.encoding.*
 
 data class DeveloperListResponse (
 
-    @SerialName(value = "developers") @Required val developers: kotlin.collections.List<DeveloperSummary>?,
+    @SerialName(value = "developers") @Required val developers: kotlin.collections.List<DeveloperSummary>,
 
     /* A URL to the JSON Schema for this object. */
     @SerialName(value = "\$schema") val dollarSchema: kotlin.String? = null

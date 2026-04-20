@@ -32,7 +32,7 @@ import kotlinx.serialization.encoding.*
 
 data class WizardResultsResponse (
 
-    @SerialName(value = "games") @Required val games: kotlin.collections.List<GameResponse>?,
+    @SerialName(value = "games") @Required val games: kotlin.collections.List<GameResponse>,
 
     @SerialName(value = "title") @Required val title: kotlin.String,
 

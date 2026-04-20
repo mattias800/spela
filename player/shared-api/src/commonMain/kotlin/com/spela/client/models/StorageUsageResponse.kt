@@ -33,7 +33,7 @@ import kotlinx.serialization.encoding.*
 
 data class StorageUsageResponse (
 
-    @SerialName(value = "byConsole") @Required val byConsole: kotlin.collections.List<SessionStorageConsoleBreakdown>?,
+    @SerialName(value = "byConsole") @Required val byConsole: kotlin.collections.List<SessionStorageConsoleBreakdown>,
 
     @SerialName(value = "quotaBytes") @Required val quotaBytes: kotlin.Long,
 

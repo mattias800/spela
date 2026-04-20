@@ -34,7 +34,7 @@ import kotlinx.serialization.encoding.*
 
 data class SystemEventsListResponse (
 
-    @SerialName(value = "data") @Required val `data`: kotlin.collections.List<@Contextual SystemEventResponse>?,
+    @SerialName(value = "data") @Required val `data`: kotlin.collections.List<@Contextual SystemEventResponse>,
 
     @SerialName(value = "page") @Required val page: kotlin.Long,
 

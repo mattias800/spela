@@ -35,7 +35,7 @@ data class DecadesResponse (
 
     @SerialName(value = "decade") @Required val decade: kotlin.String,
 
-    @SerialName(value = "games") @Required val games: kotlin.collections.List<GameResponse>?,
+    @SerialName(value = "games") @Required val games: kotlin.collections.List<GameResponse>,
 
     @SerialName(value = "label") @Required val label: kotlin.String,
 

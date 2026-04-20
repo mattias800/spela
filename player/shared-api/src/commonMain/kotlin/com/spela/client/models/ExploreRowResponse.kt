@@ -32,7 +32,7 @@ import kotlinx.serialization.encoding.*
 
 data class ExploreRowResponse (
 
-    @SerialName(value = "games") @Required val games: kotlin.collections.List<GameResponse>?,
+    @SerialName(value = "games") @Required val games: kotlin.collections.List<GameResponse>,
 
     @SerialName(value = "id") @Required val id: kotlin.String,
 

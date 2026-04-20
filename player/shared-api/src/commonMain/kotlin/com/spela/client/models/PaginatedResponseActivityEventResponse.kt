@@ -34,7 +34,7 @@ import kotlinx.serialization.encoding.*
 
 data class PaginatedResponseActivityEventResponse (
 
-    @SerialName(value = "data") @Required val `data`: kotlin.collections.List<@Contextual ActivityEventResponse>?,
+    @SerialName(value = "data") @Required val `data`: kotlin.collections.List<@Contextual ActivityEventResponse>,
 
     @SerialName(value = "page") @Required val page: kotlin.Long,
 

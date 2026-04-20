@@ -31,7 +31,7 @@ import kotlinx.serialization.encoding.*
 
 data class SystemEventTypesResponse (
 
-    @SerialName(value = "types") @Required val types: kotlin.collections.List<SystemEventTypeInfo>?,
+    @SerialName(value = "types") @Required val types: kotlin.collections.List<SystemEventTypeInfo>,
 
     /* A URL to the JSON Schema for this object. */
     @SerialName(value = "\$schema") val dollarSchema: kotlin.String? = null

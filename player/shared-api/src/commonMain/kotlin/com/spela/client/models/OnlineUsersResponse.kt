@@ -31,7 +31,7 @@ import kotlinx.serialization.encoding.*
 
 data class OnlineUsersResponse (
 
-    @SerialName(value = "users") @Required val users: kotlin.collections.List<OnlineUserResponse>?,
+    @SerialName(value = "users") @Required val users: kotlin.collections.List<OnlineUserResponse>,
 
     /* A URL to the JSON Schema for this object. */
     @SerialName(value = "\$schema") val dollarSchema: kotlin.String? = null

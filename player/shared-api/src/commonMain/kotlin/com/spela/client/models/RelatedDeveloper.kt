@@ -35,7 +35,7 @@ data class RelatedDeveloper (
 
     @SerialName(value = "name") @Required val name: kotlin.String,
 
-    @SerialName(value = "sharedPublishers") @Required val sharedPublishers: kotlin.collections.List<kotlin.String>?
+    @SerialName(value = "sharedPublishers") @Required val sharedPublishers: kotlin.collections.List<kotlin.String>
 
 ) {
 

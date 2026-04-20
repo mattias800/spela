@@ -31,7 +31,7 @@ import kotlinx.serialization.encoding.*
 
 data class EasyToCompleteResponse (
 
-    @SerialName(value = "games") @Required val games: kotlin.collections.List<AchievementGameResponse>?,
+    @SerialName(value = "games") @Required val games: kotlin.collections.List<AchievementGameResponse>,
 
     /* A URL to the JSON Schema for this object. */
     @SerialName(value = "\$schema") val dollarSchema: kotlin.String? = null

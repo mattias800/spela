@@ -35,7 +35,7 @@ data class MoodResponse (
 
     @SerialName(value = "description") @Required val description: kotlin.String,
 
-    @SerialName(value = "gradient") @Required val gradient: kotlin.collections.List<kotlin.String>?,
+    @SerialName(value = "gradient") @Required val gradient: kotlin.collections.List<kotlin.String>,
 
     @SerialName(value = "icon") @Required val icon: kotlin.String,
 

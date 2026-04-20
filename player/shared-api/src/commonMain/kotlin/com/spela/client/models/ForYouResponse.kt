@@ -31,7 +31,7 @@ import kotlinx.serialization.encoding.*
 
 data class ForYouResponse (
 
-    @SerialName(value = "rows") @Required val rows: kotlin.collections.List<ForYouRowResponse>?,
+    @SerialName(value = "rows") @Required val rows: kotlin.collections.List<ForYouRowResponse>,
 
     /* A URL to the JSON Schema for this object. */
     @SerialName(value = "\$schema") val dollarSchema: kotlin.String? = null

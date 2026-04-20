@@ -88,6 +88,7 @@ func toStagedUploadResponse(su db.StagedUpload, database *gorm.DB) StagedUploadR
 		VerificationStatus: su.VerificationStatus,
 		CRC32:              su.CRC32,
 		CanonicalName:      su.CanonicalName,
+		PossibleConsoles:   []PossibleConsoleResponse{},
 	}
 
 	if su.ConsoleID != nil {
@@ -200,6 +201,7 @@ func (h *UploadHandler) stageROMFile(originalFilename string, ext string, writeF
 		return StagedUploadResponse{
 			OriginalFileName: originalFilename,
 			Status:           "rejected",
+			PossibleConsoles: []PossibleConsoleResponse{},
 		}
 	}
 
@@ -256,6 +258,7 @@ func (h *UploadHandler) stageROMFile(originalFilename string, ext string, writeF
 		return StagedUploadResponse{
 			OriginalFileName: originalFilename,
 			Status:           "rejected",
+			PossibleConsoles: []PossibleConsoleResponse{},
 		}
 	}
 
@@ -276,6 +279,7 @@ func (h *UploadHandler) processZipUploadFormFile(f huma.FormFile) []StagedUpload
 		return []StagedUploadResponse{{
 			OriginalFileName: f.Filename,
 			Status:           "rejected",
+			PossibleConsoles: []PossibleConsoleResponse{},
 		}}
 	}
 	tmpZipPath := tmpZipFile.Name()
@@ -287,6 +291,7 @@ func (h *UploadHandler) processZipUploadFormFile(f huma.FormFile) []StagedUpload
 		return []StagedUploadResponse{{
 			OriginalFileName: f.Filename,
 			Status:           "rejected",
+			PossibleConsoles: []PossibleConsoleResponse{},
 		}}
 	}
 	tmpZipFile.Close()
@@ -303,6 +308,7 @@ func (h *UploadHandler) extractAndStageZip(zipPath string, originalZipName strin
 		return []StagedUploadResponse{{
 			OriginalFileName: originalZipName,
 			Status:           "rejected",
+			PossibleConsoles: []PossibleConsoleResponse{},
 		}}
 	}
 	defer r.Close()
@@ -313,6 +319,7 @@ func (h *UploadHandler) extractAndStageZip(zipPath string, originalZipName strin
 		return []StagedUploadResponse{{
 			OriginalFileName: originalZipName,
 			Status:           "rejected",
+			PossibleConsoles: []PossibleConsoleResponse{},
 		}}
 	}
 
@@ -325,6 +332,7 @@ func (h *UploadHandler) extractAndStageZip(zipPath string, originalZipName strin
 			return []StagedUploadResponse{{
 				OriginalFileName: originalZipName,
 				Status:           "rejected",
+				PossibleConsoles: []PossibleConsoleResponse{},
 			}}
 		}
 	}
@@ -389,6 +397,7 @@ func (h *UploadHandler) extractAndStageZip(zipPath string, originalZipName strin
 		return []StagedUploadResponse{{
 			OriginalFileName: originalZipName,
 			Status:           "rejected",
+			PossibleConsoles: []PossibleConsoleResponse{},
 		}}
 	}
 

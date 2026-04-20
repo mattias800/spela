@@ -33,7 +33,7 @@ import kotlinx.serialization.encoding.*
 
 data class WizardStep (
 
-    @SerialName(value = "options") @Required val options: kotlin.collections.List<WizardOption>?,
+    @SerialName(value = "options") @Required val options: kotlin.collections.List<WizardOption>,
 
     @SerialName(value = "step") @Required val step: kotlin.Long,
 

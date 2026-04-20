@@ -34,7 +34,7 @@ data class OnThisDayResponse (
 
     @SerialName(value = "date") @Required val date: kotlin.String,
 
-    @SerialName(value = "games") @Required val games: kotlin.collections.List<GameResponse>?,
+    @SerialName(value = "games") @Required val games: kotlin.collections.List<GameResponse>,
 
     /* A URL to the JSON Schema for this object. */
     @SerialName(value = "\$schema") val dollarSchema: kotlin.String? = null
