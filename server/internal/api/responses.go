@@ -405,7 +405,7 @@ func toGameResponseWithData(g db.Game, data *userGameData) GameResponse {
 		screenshots[i] = resolveImageURL(s)
 	}
 
-	var discs []DiscResponse
+	discs := make([]DiscResponse, 0, len(g.Discs))
 	for _, d := range g.Discs {
 		discs = append(discs, DiscResponse{
 			DiscNumber: d.DiscNumber,
@@ -462,6 +462,12 @@ func toGameResponseWithData(g db.Game, data *userGameData) GameResponse {
 		Tags:                g.Tags,
 		IsPreRelease:        g.IsPreRelease,
 		GroupKey:            g.GroupKey,
+		ReleaseDates:        []ReleaseDateResponse{},
+		Videos:              []VideoResponse{},
+		LanguageSupports:    []LanguageSupportResponse{},
+		AgeRatings:          []AgeRatingResponse{},
+		Variants:            []VariantResponse{},
+		RomHacks:            []RomHackGameResponse{},
 	}
 
 	// Map release dates

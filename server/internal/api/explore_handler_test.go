@@ -5016,7 +5016,7 @@ func TestGetDeveloperDetail_Timeline_TooFewGames(t *testing.T) {
 	var resp DeveloperDetailResponse
 	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
 
-	assert.Nil(t, resp.Timeline)
+	assert.Empty(t, resp.Timeline)
 }
 
 func TestGetDeveloperDetail_Timeline_SingleYear(t *testing.T) {
@@ -5037,7 +5037,7 @@ func TestGetDeveloperDetail_Timeline_SingleYear(t *testing.T) {
 	var resp DeveloperDetailResponse
 	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
 
-	assert.Nil(t, resp.Timeline)
+	assert.Empty(t, resp.Timeline)
 }
 
 func TestGetDeveloperDetail_Timeline_NoDates(t *testing.T) {
@@ -5057,7 +5057,7 @@ func TestGetDeveloperDetail_Timeline_NoDates(t *testing.T) {
 	var resp DeveloperDetailResponse
 	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
 
-	assert.Nil(t, resp.Timeline)
+	assert.Empty(t, resp.Timeline)
 }
 
 // --- Publisher statistics fields tests ---
@@ -5173,7 +5173,7 @@ func TestGetDeveloperDetail_NonExistent_StatisticsDefaults(t *testing.T) {
 	assert.Equal(t, 0, resp.RatingDistribution.Poor)
 	assert.Equal(t, 0, resp.RatingDistribution.Unrated)
 	assert.Empty(t, resp.PrimaryGenre)
-	assert.Nil(t, resp.Timeline)
+	assert.Empty(t, resp.Timeline)
 }
 
 func TestGetPublisherDetail_NonExistent_StatisticsDefaults(t *testing.T) {
@@ -5196,7 +5196,7 @@ func TestGetPublisherDetail_NonExistent_StatisticsDefaults(t *testing.T) {
 	assert.Equal(t, 0, resp.RatingDistribution.Poor)
 	assert.Equal(t, 0, resp.RatingDistribution.Unrated)
 	assert.Empty(t, resp.PrimaryGenre)
-	assert.Nil(t, resp.Timeline)
+	assert.Empty(t, resp.Timeline)
 }
 
 // --- Related Developers tests ---
@@ -5262,7 +5262,7 @@ func TestGetDeveloperDetail_RelatedDevelopers_NoSharedPublishers(t *testing.T) {
 	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
 
 	// No related developers since no other developer publishes with "Square"
-	assert.Nil(t, resp.RelatedDevelopers)
+	assert.Empty(t, resp.RelatedDevelopers)
 }
 
 func TestGetDeveloperDetail_RelatedDevelopers_SelfPublished(t *testing.T) {
@@ -5379,7 +5379,7 @@ func TestGetPublisherDetail_RelatedPublishers_NoSharedDevelopers(t *testing.T) {
 	var resp PublisherDetailResponse
 	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
 
-	assert.Nil(t, resp.RelatedPublishers)
+	assert.Empty(t, resp.RelatedPublishers)
 }
 
 func TestGetPublisherDetail_RelatedPublishers_SelfPublished(t *testing.T) {

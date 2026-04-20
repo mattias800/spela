@@ -376,7 +376,7 @@ func (h *ExploreHandler) HumaGetCompletionistMap(ctx context.Context, _ *GetComp
 		playedMap[pr.ConsoleID] = pr.PlayedGames
 	}
 
-	var consoles []CompletionistConsole
+	consoles := make([]CompletionistConsole, 0, len(consoleRows))
 	totalGames := 0
 	totalPlayed := 0
 

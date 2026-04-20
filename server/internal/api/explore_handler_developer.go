@@ -22,7 +22,7 @@ import (
 // Returns nil if no related developers are found.
 func buildRelatedDevelopers(database *gorm.DB, developerName string, publishers []NameCount) []RelatedDeveloper {
 	if len(publishers) == 0 {
-		return nil
+		return []RelatedDeveloper{}
 	}
 
 	publisherNames := make([]string, len(publishers))
@@ -44,11 +44,11 @@ func buildRelatedDevelopers(database *gorm.DB, developerName string, publishers 
 		Group("developer, publisher").
 		Scan(&rows).Error; err != nil {
 		slog.Error("failed to fetch related developers", "error", err)
-		return nil
+		return []RelatedDeveloper{}
 	}
 
 	if len(rows) == 0 {
-		return nil
+		return []RelatedDeveloper{}
 	}
 
 	// Aggregate: for each developer, collect shared publishers and total game count
@@ -84,7 +84,7 @@ func buildRelatedDevelopers(database *gorm.DB, developerName string, publishers 
 		Group("developer").
 		Scan(&countRows).Error; err != nil {
 		slog.Error("failed to fetch related developer game counts", "error", err)
-		return nil
+		return []RelatedDeveloper{}
 	}
 
 	for _, cr := range countRows {
@@ -132,7 +132,7 @@ func buildRelatedDevelopers(database *gorm.DB, developerName string, publishers 
 // Returns nil if no related publishers are found.
 func buildRelatedPublishers(database *gorm.DB, publisherName string, developers []NameCount) []RelatedPublisher {
 	if len(developers) == 0 {
-		return nil
+		return []RelatedPublisher{}
 	}
 
 	developerNames := make([]string, len(developers))
@@ -154,11 +154,11 @@ func buildRelatedPublishers(database *gorm.DB, publisherName string, developers 
 		Group("publisher, developer").
 		Scan(&rows).Error; err != nil {
 		slog.Error("failed to fetch related publishers", "error", err)
-		return nil
+		return []RelatedPublisher{}
 	}
 
 	if len(rows) == 0 {
-		return nil
+		return []RelatedPublisher{}
 	}
 
 	// Aggregate: for each publisher, collect shared developers and total game count
@@ -194,7 +194,7 @@ func buildRelatedPublishers(database *gorm.DB, publisherName string, developers 
 		Group("publisher").
 		Scan(&countRows).Error; err != nil {
 		slog.Error("failed to fetch related publisher game counts", "error", err)
-		return nil
+		return []RelatedPublisher{}
 	}
 
 	for _, cr := range countRows {
@@ -545,7 +545,7 @@ func buildTimeline(games []db.Game) []TimelineEntry {
 		})
 	}
 	if datedCount < 3 || len(yearGames) < 2 {
-		return nil
+		return []TimelineEntry{}
 	}
 
 	years := make([]int, 0, len(yearGames))
