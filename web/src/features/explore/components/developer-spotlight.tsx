@@ -114,13 +114,13 @@ export function DeveloperSpotlight({
             {spotlight.avgRating > 0 && (
               <> | Avg rating: {spotlight.avgRating.toFixed(1)}</>
             )}
-            {spotlight.consoles.length > 0 && (
-              <> | {spotlight.consoles.join(", ")}</>
+            {(spotlight.consoles ?? []).length > 0 && (
+              <> | {(spotlight.consoles ?? []).join(", ")}</>
             )}
           </p>
 
           {/* Scrollable game row */}
-          {spotlight.topGames.length > 0 && (
+          {(spotlight.topGames ?? []).length > 0 && (
             <div className="relative">
               {/* Scroll arrows */}
               {canScrollLeft && (
@@ -149,7 +149,7 @@ export function DeveloperSpotlight({
                 role="list"
                 aria-label="Developer spotlight games"
               >
-                {spotlight.topGames.map((game) => (
+                {(spotlight.topGames ?? []).map((game) => (
                   <div
                     key={game.id}
                     className="flex-shrink-0"

@@ -382,7 +382,7 @@ export function ExplorePage() {
         <GameShelf
           key={firstRow.id}
           title={firstRow.title}
-          games={firstRow.games}
+          games={firstRow.games ?? undefined}
           isLoading={false}
           onToggleFavorite={handleToggleFavorite}
           onTogglePlayLater={handleTogglePlayLater}
@@ -422,7 +422,7 @@ export function ExplorePage() {
           <GameShelf
             key={row.id}
             title={row.title}
-            games={row.games}
+            games={row.games ?? undefined}
             isLoading={false}
             onToggleFavorite={handleToggleFavorite}
             onTogglePlayLater={handleTogglePlayLater}

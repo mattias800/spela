@@ -64,6 +64,26 @@ const mockDeveloperDetail: DeveloperDetailResponse = {
     { name: "Capcom", count: 4 },
     { name: "Nintendo", count: 1 },
   ],
+  activeYears: { first: 1987, last: 2010 },
+  companyInfo: {
+    logoUrl: "",
+    description: "",
+    foundedYear: 0,
+    country: "",
+    websiteUrl: "",
+    wikipediaUrl: "",
+  },
+  heroUrl: "",
+  primaryGenre: "",
+  ratingDistribution: { excellent: 0, good: 0, average: 0, poor: 0, unrated: 0 },
+  relatedDevelopers: [],
+  timeline: [],
+  userStats: {
+    totalPlayTime: 0,
+    gamesPlayed: 0,
+    favoriteCount: 0,
+    mostPlayedGame: makeGame({ id: "stub" }),
+  },
 };
 
 function renderPage(name = "Capcom") {
@@ -418,6 +438,10 @@ describe("DeveloperDetailPage", () => {
   });
 
   it("hides user stats card when userStats is absent", () => {
+    mockUseDeveloperDetail.mockReturnValue({
+      data: { ...mockDeveloperDetail, userStats: undefined },
+      isLoading: false,
+    });
     renderPage();
     expect(
       screen.queryByTestId("developer-user-stats"),
@@ -509,6 +533,10 @@ describe("DeveloperDetailPage", () => {
   });
 
   it("hides active years pill when not provided", () => {
+    mockUseDeveloperDetail.mockReturnValue({
+      data: { ...mockDeveloperDetail, activeYears: undefined },
+      isLoading: false,
+    });
     renderPage();
     expect(
       screen.queryByTestId("glance-active-years"),

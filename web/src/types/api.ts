@@ -579,15 +579,8 @@ export type MoodDefinition = Schemas["MoodResponse"];
 
 export type FeaturedGame = Schemas["FeaturedGameResponse"];
 
-export interface ExploreRow {
-  id: string;
-  title: string;
-  games: Game[];
-}
-
-export interface ExploreRowsResponse {
-  rows: ExploreRow[];
-}
+export type ExploreRow = Schemas["ExploreRowResponse"];
+// ExploreRowsResponse flows through @/generated/schemas.
 
 // --- For You / Personalized Recommendations ---
 
@@ -598,26 +591,12 @@ export type GameSummary = Game;
 // (ForYouRowResponse / ForYouResponse).
 export type ForYouRow = Schemas["ForYouRowResponse"];
 
-export interface TasteBreakdown {
-  name: string;
-  percentage: number;
-  playTime: number;
-  gameCount: number;
-}
-
-export interface ConsoleBreakdown {
-  name: string;
-  abbreviation: string;
-  playTime: number;
-  gameCount: number;
-}
-
-export interface TasteProfile {
-  totalPlayTime: number;
-  genres: TasteBreakdown[];
-  themes: TasteBreakdown[];
-  topConsoles: ConsoleBreakdown[];
-}
+// TasteProfileGenre / TasteProfileTheme / TasteProfileConsole /
+// TasteProfileResponse all flow through @/generated/schemas. Consumers
+// import by wire name.
+export type TasteBreakdown = Schemas["TasteProfileGenre"]; // same shape as TasteProfileTheme
+export type ConsoleBreakdown = Schemas["TasteProfileConsole"];
+export type TasteProfile = Schemas["TasteProfileResponse"];
 
 // PlayersLikeYouResponse flows through @/generated/schemas.
 
@@ -641,54 +620,9 @@ export type TimelineEntry = Schemas["TimelineEntry"];
 export type RelatedDeveloper = Schemas["RelatedDeveloper"];
 export type RelatedPublisher = Schemas["RelatedPublisher"];
 
-export interface DeveloperDetailResponse {
-  name: string;
-  gameCount: number;
-  avgRating: number;
-  consoles: string[];
-  games: Game[];
-  heroUrl?: string;
-  topGames?: Game[];
-  genreBreakdown?: GenreCount[];
-  platformBreakdown?: PlatformCount[];
-  userStats?: Schemas["EntityUserStats"];
-  publishers?: NameCount[];
-  companyInfo?: CompanyInfo;
-  activeYears?: ActiveYears;
-  ratingDistribution?: RatingDistribution;
-  primaryGenre?: string;
-  timeline?: TimelineEntry[];
-  relatedDevelopers?: RelatedDeveloper[];
-}
-
-export interface PublisherDetailResponse {
-  name: string;
-  gameCount: number;
-  avgRating: number;
-  consoles: string[];
-  games: Game[];
-  heroUrl?: string;
-  topGames?: Game[];
-  genreBreakdown?: GenreCount[];
-  platformBreakdown?: PlatformCount[];
-  userStats?: Schemas["EntityUserStats"];
-  developers?: NameCount[];
-  companyInfo?: CompanyInfo;
-  activeYears?: ActiveYears;
-  ratingDistribution?: RatingDistribution;
-  primaryGenre?: string;
-  timeline?: TimelineEntry[];
-  relatedPublishers?: RelatedPublisher[];
-}
-
-export interface DeveloperSpotlightResponse {
-  name: string;
-  gameCount: number;
-  avgRating: number;
-  consoles: string[];
-  topGames: Game[];
-  heroUrl: string;
-}
+// DeveloperDetailResponse, PublisherDetailResponse, DeveloperSpotlightResponse
+// all flow through @/generated/schemas — the generated shapes match the
+// hand-written ones now that omitempty is gone.
 
 export type StagedUpload = Schemas["StagedUploadResponse"];
 
@@ -723,61 +657,24 @@ export type AlmostDoneResponse = Schemas["AlmostDoneResponse"];
 export type FreshChallengeGame = Schemas["FreshChallengeGame"];
 export type FreshChallengesResponse = Schemas["FreshChallengesResponse"];
 
-export interface ExploreChallenge {
-  id: string;
-  creatorUsername: string;
-  gameId: string;
-  gameTitle: string;
-  gameCoverUrl?: string;
-  consoleName?: string;
-  name: string;
-  description?: string;
+// ExploreChallenge narrows type/difficulty to their literal unions so
+// switches / records keep exhaustiveness-checked.
+export type ExploreChallenge = Omit<
+  Schemas["ExploreChallengeResponse"],
+  "type" | "difficulty"
+> & {
   type: ChallengeType;
   difficulty: ChallengeDifficulty;
-  attemptCount: number;
-  completionCount: number;
-  expiresAt?: string | null;
-  createdAt: string;
-}
+};
 
-export interface ActiveChallengesResponse {
-  challenges: ExploreChallenge[];
-}
-
-// --- Phase 14: Wild Features — Wizard, Badges, Completionist Map ---
+// ActiveChallengesResponse, WizardOption, WizardStep, WizardResponse,
+// WizardResultsResponse, ExplorerBadge, ExplorerBadgesResponse,
+// CompletionistConsole, CompletionistMapResponse all flow through
+// @/generated/schemas.
 
 export type WizardOption = Schemas["WizardOption"];
-
-export interface WizardStep {
-  step: number;
-  title: string;
-  type: string;
-  options: WizardOption[];
-}
-
-export interface WizardResponse {
-  steps: WizardStep[];
-}
-
-export interface WizardResultsResponse {
-  games: Game[];
-  title: string;
-}
-
 export type ExplorerBadge = Schemas["ExplorerBadge"];
-
-export interface ExplorerBadgesResponse {
-  badges: ExplorerBadge[];
-}
-
 export type CompletionistConsole = Schemas["CompletionistConsole"];
-
-export interface CompletionistMapResponse {
-  consoles: CompletionistConsole[];
-  totalGames: number;
-  totalPlayed: number;
-  overallPct: number;
-}
 
 export type StorageConsoleBreakdown = Schemas["SessionStorageConsoleBreakdown"];
 

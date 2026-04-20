@@ -248,9 +248,9 @@ export function ActiveChallengesShelf({
       icon={Swords}
       testId="active-challenges-shelf"
       isLoading={isLoading}
-      isEmpty={!data?.challenges || data.challenges.length === 0}
+      isEmpty={!data?.challenges || (data.challenges ?? []).length === 0}
     >
-      {data?.challenges.map((ch) => (
+      {data?.challenges?.map((ch) => (
         <div key={ch.id} className="w-64 flex-shrink-0" role="listitem">
           <Link to={`/challenges/${ch.id}`} className="block">
             <div className="bg-surface-800 rounded-lg p-4 hover:bg-surface-700 transition-colors">
