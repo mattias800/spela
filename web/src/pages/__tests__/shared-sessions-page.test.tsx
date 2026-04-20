@@ -34,28 +34,23 @@ import {
 const mockUseMySharedSessions = useMySharedSessions as ReturnType<typeof vi.fn>;
 const mockUseSharedSessionInvitations = useSharedSessionInvitations as ReturnType<typeof vi.fn>;
 
-const mockSharedSessions = {
-  data: [
-    {
-      id: "ss-1",
-      name: "Friday Night SNES",
-      gameId: "g1",
-      gameTitle: "Super Mario World",
-      gameCoverUrl: "https://example.com/cover.png",
-      gameConsoleName: "SNES",
-      ownerId: "u1",
-      ownerUsername: "alice",
-      status: "active",
-      memberCount: 3,
-      lastActivityAt: "2026-02-13T10:00:00Z",
-      createdAt: "2026-02-01T10:00:00Z",
-      updatedAt: "2026-02-13T10:00:00Z",
-    },
-  ],
-  total: 1,
-  page: 1,
-  pageSize: 24,
-};
+const mockSharedSessions = [
+  {
+    id: "ss-1",
+    name: "Friday Night SNES",
+    gameId: "g1",
+    gameTitle: "Super Mario World",
+    gameCoverUrl: "https://example.com/cover.png",
+    gameConsoleName: "SNES",
+    ownerId: "u1",
+    ownerUsername: "alice",
+    status: "active",
+    memberCount: 3,
+    lastActivityAt: "2026-02-13T10:00:00Z",
+    createdAt: "2026-02-01T10:00:00Z",
+    updatedAt: "2026-02-13T10:00:00Z",
+  },
+];
 
 const mockInvitations = [
   {
@@ -128,7 +123,7 @@ describe("SharedSessionsPage", () => {
 
   it("shows empty state when no shared sessions", () => {
     mockUseMySharedSessions.mockReturnValue({
-      data: { data: [], total: 0, page: 1, pageSize: 24 },
+      data: [],
       isLoading: false,
     });
     renderPage();

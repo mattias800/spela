@@ -69,28 +69,23 @@ beforeEach(() => {
   vi.clearAllMocks();
 });
 
-const mockSharedSessionsResponse = {
-  data: [
-    {
-      id: "ss-1",
-      name: "Friday Night SNES",
-      gameId: "g1",
-      gameTitle: "Super Mario World",
-      gameCoverUrl: "https://example.com/cover.png",
-      gameConsoleName: "SNES",
-      ownerId: "u1",
-      ownerUsername: "alice",
-      status: "active",
-      memberCount: 3,
-      lastActivityAt: "2026-02-13T10:00:00Z",
-      createdAt: "2026-02-01T10:00:00Z",
-      updatedAt: "2026-02-13T10:00:00Z",
-    },
-  ],
-  total: 1,
-  page: 1,
-  pageSize: 20,
-};
+const mockSharedSessionsResponse = [
+  {
+    id: "ss-1",
+    name: "Friday Night SNES",
+    gameId: "g1",
+    gameTitle: "Super Mario World",
+    gameCoverUrl: "https://example.com/cover.png",
+    gameConsoleName: "SNES",
+    ownerId: "u1",
+    ownerUsername: "alice",
+    status: "active",
+    memberCount: 3,
+    lastActivityAt: "2026-02-13T10:00:00Z",
+    createdAt: "2026-02-01T10:00:00Z",
+    updatedAt: "2026-02-13T10:00:00Z",
+  },
+];
 
 const mockSharedSessionDetail = {
   id: "ss-1",
@@ -169,8 +164,8 @@ describe("useMySharedSessions", () => {
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
     expect(mockTypedApi.GET).toHaveBeenCalledWith("/api/shared-sessions");
-    expect(result.current.data?.data).toHaveLength(1);
-    expect(result.current.data?.data?.[0].name).toBe("Friday Night SNES");
+    expect(result.current.data).toHaveLength(1);
+    expect(result.current.data?.[0].name).toBe("Friday Night SNES");
   });
 
   it("handles fetch error", async () => {
@@ -272,7 +267,7 @@ describe("useSharedSessionSaves", () => {
 describe("useGameSharedSessions", () => {
   it("fetches shared sessions for a game", async () => {
     mockTypedApi.GET.mockReturnValue(
-      ok([mockSharedSessionsResponse.data[0]]),
+      ok([mockSharedSessionsResponse[0]]),
     );
 
     const { result } = renderHook(() => useGameSharedSessions("g1"), {
