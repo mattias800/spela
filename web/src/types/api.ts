@@ -17,7 +17,11 @@
 // `UserResponse`). The hand-written types / short-name aliases below exist
 // only for historical reasons and will be pruned as call sites migrate.
 import type { components } from "@/generated/api";
-import type { UserResponse, SystemEventResponse } from "@/generated/schemas";
+import type {
+  UserResponse,
+  SystemEventResponse,
+  AuthLoginResponse,
+} from "@/generated/schemas";
 
 export * from "@/generated/schemas";
 
@@ -89,11 +93,9 @@ export interface SystemEventsListFilters {
 
 export type DeletedUser = Schemas["DeletedUserResponse"];
 
-export interface AuthTokens {
-  accessToken: string;
-  refreshToken: string;
-  user: User;
-}
+// Derives from the generated login-response shape; user is narrowed
+// to our view-model User (with the literal role union).
+export type AuthTokens = Omit<AuthLoginResponse, "user"> & { user: User };
 
 export type HardwareMaker = Schemas["HardwareMakerResponse"];
 
