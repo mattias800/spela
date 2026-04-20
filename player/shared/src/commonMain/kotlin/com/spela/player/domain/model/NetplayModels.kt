@@ -25,7 +25,24 @@ data class NetplaySession(
     val endedAt: String? = null,
 )
 
-enum class NetplaySessionStatus { WAITING, IN_PROGRESS, ENDED }
+enum class NetplaySessionStatus(val apiId: String) {
+    WAITING("waiting"),
+    IN_PROGRESS("in_progress"),
+    ENDED("ended");
+
+    companion object {
+        /**
+         * Throws on an unknown server value rather than silently defaulting.
+         * A lying fallback hides API drift that `when` statements would
+         * otherwise catch at compile time. Matches case-sensitively against
+         * the explicit wire `apiId` — consistent with ChallengeType /
+         * ChallengeDifficulty.
+         */
+        fun fromApiId(id: String): NetplaySessionStatus =
+            entries.find { it.apiId == id }
+                ?: error("Unexpected netplay session status from server: '$id'")
+    }
+}
 
 /** Consoles that support deterministic netplay in Phase 1. */
 val NETPLAY_SUPPORTED_CONSOLES = setOf("nes", "snes", "gb", "gbc", "gba", "genesis", "megadrive")
