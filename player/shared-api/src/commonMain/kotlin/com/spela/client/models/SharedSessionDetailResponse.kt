@@ -8,17 +8,9 @@
 
 @file:Suppress(
     "ArrayInDataClass",
-    "DuplicatedCode",
     "EnumEntryName",
     "RemoveRedundantQualifierName",
-    "RemoveRedundantCallsOfConversionMethods",
-    "REDUNDANT_CALL_OF_CONVERSION_METHOD",
-    "RedundantUnitReturnType",
-    "RemoveEmptyClassBody",
-    "UnnecessaryVariable",
-    "UnusedImport",
-    "UnnecessaryVariable",
-    "unused"
+    "UnusedImport"
 )
 
 package com.spela.client.models
@@ -33,7 +25,11 @@ import kotlinx.serialization.encoding.*
  * 
  *
  * @param activeUserId 
+ * @param activeUsername 
+ * @param consoleName 
+ * @param coreName 
  * @param createdAt 
+ * @param gameCoverUrl 
  * @param gameId 
  * @param gameTitle 
  * @param id 
@@ -42,15 +38,11 @@ import kotlinx.serialization.encoding.*
  * @param name 
  * @param ownerId 
  * @param ownerUsername 
+ * @param sessionId 
  * @param status 
  * @param turnTakenAt 
  * @param updatedAt 
  * @param dollarSchema A URL to the JSON Schema for this object.
- * @param activeUsername 
- * @param consoleName 
- * @param coreName 
- * @param gameCoverUrl 
- * @param sessionId 
  */
 @Serializable
 
@@ -58,7 +50,15 @@ data class SharedSessionDetailResponse (
 
     @SerialName(value = "activeUserId") @Required val activeUserId: kotlin.String?,
 
-    @SerialName(value = "createdAt") @Required val createdAt: kotlin.time.Instant,
+    @SerialName(value = "activeUsername") @Required val activeUsername: kotlin.String,
+
+    @SerialName(value = "consoleName") @Required val consoleName: kotlin.String,
+
+    @SerialName(value = "coreName") @Required val coreName: kotlin.String,
+
+    @SerialName(value = "createdAt") @Required val createdAt: kotlinx.datetime.Instant,
+
+    @SerialName(value = "gameCoverUrl") @Required val gameCoverUrl: kotlin.String,
 
     @SerialName(value = "gameId") @Required val gameId: kotlin.String,
 
@@ -76,24 +76,16 @@ data class SharedSessionDetailResponse (
 
     @SerialName(value = "ownerUsername") @Required val ownerUsername: kotlin.String,
 
+    @SerialName(value = "sessionId") @Required val sessionId: kotlin.String?,
+
     @SerialName(value = "status") @Required val status: kotlin.String,
 
-    @SerialName(value = "turnTakenAt") @Required val turnTakenAt: kotlin.time.Instant?,
+    @SerialName(value = "turnTakenAt") @Required val turnTakenAt: kotlinx.datetime.Instant?,
 
-    @SerialName(value = "updatedAt") @Required val updatedAt: kotlin.time.Instant,
+    @SerialName(value = "updatedAt") @Required val updatedAt: kotlinx.datetime.Instant,
 
     /* A URL to the JSON Schema for this object. */
-    @SerialName(value = "\$schema") val dollarSchema: kotlin.String? = null,
-
-    @SerialName(value = "activeUsername") val activeUsername: kotlin.String? = null,
-
-    @SerialName(value = "consoleName") val consoleName: kotlin.String? = null,
-
-    @SerialName(value = "coreName") val coreName: kotlin.String? = null,
-
-    @SerialName(value = "gameCoverUrl") val gameCoverUrl: kotlin.String? = null,
-
-    @SerialName(value = "sessionId") val sessionId: kotlin.String? = null
+    @SerialName(value = "\$schema") val dollarSchema: kotlin.String? = null
 
 ) {
 

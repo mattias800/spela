@@ -8,17 +8,9 @@
 
 @file:Suppress(
     "ArrayInDataClass",
-    "DuplicatedCode",
     "EnumEntryName",
     "RemoveRedundantQualifierName",
-    "RemoveRedundantCallsOfConversionMethods",
-    "REDUNDANT_CALL_OF_CONVERSION_METHOD",
-    "RedundantUnitReturnType",
-    "RemoveEmptyClassBody",
-    "UnnecessaryVariable",
-    "UnusedImport",
-    "UnnecessaryVariable",
-    "unused"
+    "UnusedImport"
 )
 
 package com.spela.client.models
@@ -32,8 +24,8 @@ import kotlinx.serialization.encoding.*
  * 
  *
  * @param date 
- * @param region 
  * @param platform 
+ * @param region 
  */
 @Serializable
 
@@ -41,9 +33,9 @@ data class ReleaseDateResponse (
 
     @SerialName(value = "date") @Required val date: kotlin.String,
 
-    @SerialName(value = "region") @Required val region: kotlin.String,
+    @SerialName(value = "platform") @Required val platform: kotlin.String,
 
-    @SerialName(value = "platform") val platform: kotlin.String? = null
+    @SerialName(value = "region") @Required val region: kotlin.String
 
 ) {
 

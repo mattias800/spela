@@ -8,17 +8,9 @@
 
 @file:Suppress(
     "ArrayInDataClass",
-    "DuplicatedCode",
     "EnumEntryName",
     "RemoveRedundantQualifierName",
-    "RemoveRedundantCallsOfConversionMethods",
-    "REDUNDANT_CALL_OF_CONVERSION_METHOD",
-    "RedundantUnitReturnType",
-    "RemoveEmptyClassBody",
-    "UnnecessaryVariable",
-    "UnusedImport",
-    "UnnecessaryVariable",
-    "unused"
+    "UnusedImport"
 )
 
 package com.spela.client.models
@@ -32,7 +24,6 @@ import kotlinx.serialization.encoding.*
  * 
  *
  * @param active 
- * @param dollarSchema A URL to the JSON Schema for this object.
  * @param current 
  * @param failures 
  * @param jobId 
@@ -41,6 +32,7 @@ import kotlinx.serialization.encoding.*
  * @param successes 
  * @param total 
  * @param verified 
+ * @param dollarSchema A URL to the JSON Schema for this object.
  */
 @Serializable
 
@@ -48,24 +40,24 @@ data class ScrapeStatusResponse (
 
     @SerialName(value = "active") @Required val active: kotlin.Boolean,
 
+    @SerialName(value = "current") @Required val current: kotlin.Long,
+
+    @SerialName(value = "failures") @Required val failures: kotlin.Long,
+
+    @SerialName(value = "jobId") @Required val jobId: kotlin.Long,
+
+    @SerialName(value = "mode") @Required val mode: kotlin.String,
+
+    @SerialName(value = "startedAt") @Required val startedAt: kotlinx.datetime.Instant?,
+
+    @SerialName(value = "successes") @Required val successes: kotlin.Long,
+
+    @SerialName(value = "total") @Required val total: kotlin.Long,
+
+    @SerialName(value = "verified") @Required val verified: kotlin.Long,
+
     /* A URL to the JSON Schema for this object. */
-    @SerialName(value = "\$schema") val dollarSchema: kotlin.String? = null,
-
-    @SerialName(value = "current") val current: kotlin.Long? = null,
-
-    @SerialName(value = "failures") val failures: kotlin.Long? = null,
-
-    @SerialName(value = "jobId") val jobId: kotlin.Long? = null,
-
-    @SerialName(value = "mode") val mode: kotlin.String? = null,
-
-    @SerialName(value = "startedAt") val startedAt: kotlin.time.Instant? = null,
-
-    @SerialName(value = "successes") val successes: kotlin.Long? = null,
-
-    @SerialName(value = "total") val total: kotlin.Long? = null,
-
-    @SerialName(value = "verified") val verified: kotlin.Long? = null
+    @SerialName(value = "\$schema") val dollarSchema: kotlin.String? = null
 
 ) {
 

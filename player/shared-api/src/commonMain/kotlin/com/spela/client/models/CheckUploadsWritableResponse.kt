@@ -8,17 +8,9 @@
 
 @file:Suppress(
     "ArrayInDataClass",
-    "DuplicatedCode",
     "EnumEntryName",
     "RemoveRedundantQualifierName",
-    "RemoveRedundantCallsOfConversionMethods",
-    "REDUNDANT_CALL_OF_CONVERSION_METHOD",
-    "RedundantUnitReturnType",
-    "RemoveEmptyClassBody",
-    "UnnecessaryVariable",
-    "UnusedImport",
-    "UnnecessaryVariable",
-    "unused"
+    "UnusedImport"
 )
 
 package com.spela.client.models
@@ -31,20 +23,20 @@ import kotlinx.serialization.encoding.*
 /**
  * 
  *
+ * @param reason 
  * @param writable 
  * @param dollarSchema A URL to the JSON Schema for this object.
- * @param reason 
  */
 @Serializable
 
 data class CheckUploadsWritableResponse (
 
+    @SerialName(value = "reason") @Required val reason: kotlin.String,
+
     @SerialName(value = "writable") @Required val writable: kotlin.Boolean,
 
     /* A URL to the JSON Schema for this object. */
-    @SerialName(value = "\$schema") val dollarSchema: kotlin.String? = null,
-
-    @SerialName(value = "reason") val reason: kotlin.String? = null
+    @SerialName(value = "\$schema") val dollarSchema: kotlin.String? = null
 
 ) {
 

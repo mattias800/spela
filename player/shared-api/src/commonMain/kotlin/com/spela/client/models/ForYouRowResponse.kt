@@ -8,17 +8,9 @@
 
 @file:Suppress(
     "ArrayInDataClass",
-    "DuplicatedCode",
     "EnumEntryName",
     "RemoveRedundantQualifierName",
-    "RemoveRedundantCallsOfConversionMethods",
-    "REDUNDANT_CALL_OF_CONVERSION_METHOD",
-    "RedundantUnitReturnType",
-    "RemoveEmptyClassBody",
-    "UnnecessaryVariable",
-    "UnusedImport",
-    "UnnecessaryVariable",
-    "unused"
+    "UnusedImport"
 )
 
 package com.spela.client.models
@@ -33,10 +25,10 @@ import kotlinx.serialization.encoding.*
  * 
  *
  * @param games 
- * @param title 
- * @param type 
  * @param genre 
  * @param sourceGame 
+ * @param title 
+ * @param type 
  */
 @Serializable
 
@@ -44,13 +36,13 @@ data class ForYouRowResponse (
 
     @SerialName(value = "games") @Required val games: kotlin.collections.List<GameResponse>?,
 
+    @SerialName(value = "genre") @Required val genre: kotlin.String,
+
+    @SerialName(value = "sourceGame") @Required val sourceGame: GameResponse,
+
     @SerialName(value = "title") @Required val title: kotlin.String,
 
-    @SerialName(value = "type") @Required val type: kotlin.String,
-
-    @SerialName(value = "genre") val genre: kotlin.String? = null,
-
-    @SerialName(value = "sourceGame") val sourceGame: GameResponse? = null
+    @SerialName(value = "type") @Required val type: kotlin.String
 
 ) {
 

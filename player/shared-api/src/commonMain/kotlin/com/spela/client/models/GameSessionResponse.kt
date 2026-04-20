@@ -8,17 +8,9 @@
 
 @file:Suppress(
     "ArrayInDataClass",
-    "DuplicatedCode",
     "EnumEntryName",
     "RemoveRedundantQualifierName",
-    "RemoveRedundantCallsOfConversionMethods",
-    "REDUNDANT_CALL_OF_CONVERSION_METHOD",
-    "RedundantUnitReturnType",
-    "RemoveEmptyClassBody",
-    "UnnecessaryVariable",
-    "UnusedImport",
-    "UnnecessaryVariable",
-    "unused"
+    "UnusedImport"
 )
 
 package com.spela.client.models
@@ -32,10 +24,14 @@ import kotlinx.serialization.encoding.*
  * 
  *
  * @param cheatsEnabled 
+ * @param coreName 
  * @param createdAt 
  * @param gameId 
  * @param id 
  * @param isSharedSession 
+ * @param lastPlayedAt 
+ * @param lastPlayedBy 
+ * @param lastPlayedByUsername 
  * @param memberAvatars 
  * @param memberCount 
  * @param memberUsernames 
@@ -43,15 +39,11 @@ import kotlinx.serialization.encoding.*
  * @param ownerId 
  * @param ownerUsername 
  * @param saveCount 
+ * @param screenshotUrl 
+ * @param sharedSessionId 
  * @param totalPlayTime 
  * @param updatedAt 
  * @param dollarSchema A URL to the JSON Schema for this object.
- * @param coreName 
- * @param lastPlayedAt 
- * @param lastPlayedBy 
- * @param lastPlayedByUsername 
- * @param screenshotUrl 
- * @param sharedSessionId 
  */
 @Serializable
 
@@ -59,13 +51,21 @@ data class GameSessionResponse (
 
     @SerialName(value = "cheatsEnabled") @Required val cheatsEnabled: kotlin.Boolean,
 
-    @SerialName(value = "createdAt") @Required val createdAt: kotlin.time.Instant,
+    @SerialName(value = "coreName") @Required val coreName: kotlin.String,
+
+    @SerialName(value = "createdAt") @Required val createdAt: kotlinx.datetime.Instant,
 
     @SerialName(value = "gameId") @Required val gameId: kotlin.String,
 
     @SerialName(value = "id") @Required val id: kotlin.String,
 
     @SerialName(value = "isSharedSession") @Required val isSharedSession: kotlin.Boolean,
+
+    @SerialName(value = "lastPlayedAt") @Required val lastPlayedAt: kotlinx.datetime.Instant?,
+
+    @SerialName(value = "lastPlayedBy") @Required val lastPlayedBy: kotlin.String?,
+
+    @SerialName(value = "lastPlayedByUsername") @Required val lastPlayedByUsername: kotlin.String?,
 
     @SerialName(value = "memberAvatars") @Required val memberAvatars: kotlin.collections.List<kotlin.String>?,
 
@@ -81,24 +81,16 @@ data class GameSessionResponse (
 
     @SerialName(value = "saveCount") @Required val saveCount: kotlin.Long,
 
+    @SerialName(value = "screenshotUrl") @Required val screenshotUrl: kotlin.String,
+
+    @SerialName(value = "sharedSessionId") @Required val sharedSessionId: kotlin.String?,
+
     @SerialName(value = "totalPlayTime") @Required val totalPlayTime: kotlin.Long,
 
-    @SerialName(value = "updatedAt") @Required val updatedAt: kotlin.time.Instant,
+    @SerialName(value = "updatedAt") @Required val updatedAt: kotlinx.datetime.Instant,
 
     /* A URL to the JSON Schema for this object. */
-    @SerialName(value = "\$schema") val dollarSchema: kotlin.String? = null,
-
-    @SerialName(value = "coreName") val coreName: kotlin.String? = null,
-
-    @SerialName(value = "lastPlayedAt") val lastPlayedAt: kotlin.time.Instant? = null,
-
-    @SerialName(value = "lastPlayedBy") val lastPlayedBy: kotlin.String? = null,
-
-    @SerialName(value = "lastPlayedByUsername") val lastPlayedByUsername: kotlin.String? = null,
-
-    @SerialName(value = "screenshotUrl") val screenshotUrl: kotlin.String? = null,
-
-    @SerialName(value = "sharedSessionId") val sharedSessionId: kotlin.String? = null
+    @SerialName(value = "\$schema") val dollarSchema: kotlin.String? = null
 
 ) {
 

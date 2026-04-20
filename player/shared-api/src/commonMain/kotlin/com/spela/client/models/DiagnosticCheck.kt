@@ -8,17 +8,9 @@
 
 @file:Suppress(
     "ArrayInDataClass",
-    "DuplicatedCode",
     "EnumEntryName",
     "RemoveRedundantQualifierName",
-    "RemoveRedundantCallsOfConversionMethods",
-    "REDUNDANT_CALL_OF_CONVERSION_METHOD",
-    "RedundantUnitReturnType",
-    "RemoveEmptyClassBody",
-    "UnnecessaryVariable",
-    "UnusedImport",
-    "UnnecessaryVariable",
-    "unused"
+    "UnusedImport"
 )
 
 package com.spela.client.models
@@ -31,25 +23,25 @@ import kotlinx.serialization.encoding.*
 /**
  * 
  *
+ * @param detail 
+ * @param fix 
  * @param id 
  * @param label 
  * @param status 
- * @param detail 
- * @param fix 
  */
 @Serializable
 
 data class DiagnosticCheck (
 
+    @SerialName(value = "detail") @Required val detail: kotlin.String,
+
+    @SerialName(value = "fix") @Required val fix: kotlin.String,
+
     @SerialName(value = "id") @Required val id: kotlin.String,
 
     @SerialName(value = "label") @Required val label: kotlin.String,
 
-    @SerialName(value = "status") @Required val status: kotlin.String,
-
-    @SerialName(value = "detail") val detail: kotlin.String? = null,
-
-    @SerialName(value = "fix") val fix: kotlin.String? = null
+    @SerialName(value = "status") @Required val status: kotlin.String
 
 ) {
 

@@ -8,17 +8,9 @@
 
 @file:Suppress(
     "ArrayInDataClass",
-    "DuplicatedCode",
     "EnumEntryName",
     "RemoveRedundantQualifierName",
-    "RemoveRedundantCallsOfConversionMethods",
-    "REDUNDANT_CALL_OF_CONVERSION_METHOD",
-    "RedundantUnitReturnType",
-    "RemoveEmptyClassBody",
-    "UnnecessaryVariable",
-    "UnusedImport",
-    "UnnecessaryVariable",
-    "unused"
+    "UnusedImport"
 )
 
 package com.spela.client.models
@@ -34,9 +26,9 @@ import kotlinx.serialization.encoding.*
  *
  * @param code 
  * @param consoleCount 
+ * @param consoles 
  * @param name 
  * @param dollarSchema A URL to the JSON Schema for this object.
- * @param consoles 
  */
 @Serializable
 
@@ -46,12 +38,12 @@ data class MakerDetailResponse (
 
     @SerialName(value = "consoleCount") @Required val consoleCount: kotlin.Long,
 
+    @SerialName(value = "consoles") @Required val consoles: kotlin.collections.List<ConsoleResponse>?,
+
     @SerialName(value = "name") @Required val name: kotlin.String,
 
     /* A URL to the JSON Schema for this object. */
-    @SerialName(value = "\$schema") val dollarSchema: kotlin.String? = null,
-
-    @SerialName(value = "consoles") val consoles: kotlin.collections.List<ConsoleResponse>? = null
+    @SerialName(value = "\$schema") val dollarSchema: kotlin.String? = null
 
 ) {
 

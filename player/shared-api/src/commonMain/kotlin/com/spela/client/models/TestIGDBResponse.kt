@@ -8,17 +8,9 @@
 
 @file:Suppress(
     "ArrayInDataClass",
-    "DuplicatedCode",
     "EnumEntryName",
     "RemoveRedundantQualifierName",
-    "RemoveRedundantCallsOfConversionMethods",
-    "REDUNDANT_CALL_OF_CONVERSION_METHOD",
-    "RedundantUnitReturnType",
-    "RemoveEmptyClassBody",
-    "UnnecessaryVariable",
-    "UnusedImport",
-    "UnnecessaryVariable",
-    "unused"
+    "UnusedImport"
 )
 
 package com.spela.client.models
@@ -31,20 +23,20 @@ import kotlinx.serialization.encoding.*
 /**
  * 
  *
+ * @param error 
  * @param success 
  * @param dollarSchema A URL to the JSON Schema for this object.
- * @param error 
  */
 @Serializable
 
 data class TestIGDBResponse (
 
+    @SerialName(value = "error") @Required val error: kotlin.String,
+
     @SerialName(value = "success") @Required val success: kotlin.Boolean,
 
     /* A URL to the JSON Schema for this object. */
-    @SerialName(value = "\$schema") val dollarSchema: kotlin.String? = null,
-
-    @SerialName(value = "error") val error: kotlin.String? = null
+    @SerialName(value = "\$schema") val dollarSchema: kotlin.String? = null
 
 ) {
 

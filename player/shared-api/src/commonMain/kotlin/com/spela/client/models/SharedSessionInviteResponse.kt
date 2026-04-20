@@ -8,17 +8,9 @@
 
 @file:Suppress(
     "ArrayInDataClass",
-    "DuplicatedCode",
     "EnumEntryName",
     "RemoveRedundantQualifierName",
-    "RemoveRedundantCallsOfConversionMethods",
-    "REDUNDANT_CALL_OF_CONVERSION_METHOD",
-    "RedundantUnitReturnType",
-    "RemoveEmptyClassBody",
-    "UnnecessaryVariable",
-    "UnusedImport",
-    "UnnecessaryVariable",
-    "unused"
+    "UnusedImport"
 )
 
 package com.spela.client.models
@@ -31,11 +23,15 @@ import kotlinx.serialization.encoding.*
 /**
  * 
  *
+ * @param consoleName 
  * @param createdAt 
+ * @param gameCoverUrl 
+ * @param gameId 
  * @param gameTitle 
  * @param id 
  * @param inviteeId 
  * @param inviteeUsername 
+ * @param inviterAvatarUrl 
  * @param inviterId 
  * @param inviterUsername 
  * @param sharedSessionId 
@@ -47,7 +43,13 @@ import kotlinx.serialization.encoding.*
 
 data class SharedSessionInviteResponse (
 
-    @SerialName(value = "createdAt") @Required val createdAt: kotlin.time.Instant,
+    @SerialName(value = "consoleName") @Required val consoleName: kotlin.String,
+
+    @SerialName(value = "createdAt") @Required val createdAt: kotlinx.datetime.Instant,
+
+    @SerialName(value = "gameCoverUrl") @Required val gameCoverUrl: kotlin.String,
+
+    @SerialName(value = "gameId") @Required val gameId: kotlin.String,
 
     @SerialName(value = "gameTitle") @Required val gameTitle: kotlin.String,
 
@@ -56,6 +58,8 @@ data class SharedSessionInviteResponse (
     @SerialName(value = "inviteeId") @Required val inviteeId: kotlin.String,
 
     @SerialName(value = "inviteeUsername") @Required val inviteeUsername: kotlin.String,
+
+    @SerialName(value = "inviterAvatarUrl") @Required val inviterAvatarUrl: kotlin.String,
 
     @SerialName(value = "inviterId") @Required val inviterId: kotlin.String,
 

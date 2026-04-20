@@ -8,17 +8,9 @@
 
 @file:Suppress(
     "ArrayInDataClass",
-    "DuplicatedCode",
     "EnumEntryName",
     "RemoveRedundantQualifierName",
-    "RemoveRedundantCallsOfConversionMethods",
-    "REDUNDANT_CALL_OF_CONVERSION_METHOD",
-    "RedundantUnitReturnType",
-    "RemoveEmptyClassBody",
-    "UnnecessaryVariable",
-    "UnusedImport",
-    "UnnecessaryVariable",
-    "unused"
+    "UnusedImport"
 )
 
 package com.spela.client.models
@@ -31,20 +23,26 @@ import kotlinx.serialization.encoding.*
 /**
  * 
  *
+ * @param consoleAbbreviation 
+ * @param consoleColor 
+ * @param consoleName 
  * @param coverUrl 
  * @param igdbCriticsRating 
  * @param igdbGameId 
  * @param inLibrary 
  * @param localGameId 
  * @param name 
- * @param consoleAbbreviation 
- * @param consoleColor 
- * @param consoleName 
  * @param releaseDate 
  */
 @Serializable
 
 data class SeriesGameResponse (
+
+    @SerialName(value = "consoleAbbreviation") @Required val consoleAbbreviation: kotlin.String,
+
+    @SerialName(value = "consoleColor") @Required val consoleColor: kotlin.String,
+
+    @SerialName(value = "consoleName") @Required val consoleName: kotlin.String,
 
     @SerialName(value = "coverUrl") @Required val coverUrl: kotlin.String?,
 
@@ -58,13 +56,7 @@ data class SeriesGameResponse (
 
     @SerialName(value = "name") @Required val name: kotlin.String,
 
-    @SerialName(value = "consoleAbbreviation") val consoleAbbreviation: kotlin.String? = null,
-
-    @SerialName(value = "consoleColor") val consoleColor: kotlin.String? = null,
-
-    @SerialName(value = "consoleName") val consoleName: kotlin.String? = null,
-
-    @SerialName(value = "releaseDate") val releaseDate: kotlin.String? = null
+    @SerialName(value = "releaseDate") @Required val releaseDate: kotlin.String
 
 ) {
 

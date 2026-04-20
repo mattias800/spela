@@ -8,17 +8,9 @@
 
 @file:Suppress(
     "ArrayInDataClass",
-    "DuplicatedCode",
     "EnumEntryName",
     "RemoveRedundantQualifierName",
-    "RemoveRedundantCallsOfConversionMethods",
-    "REDUNDANT_CALL_OF_CONVERSION_METHOD",
-    "RedundantUnitReturnType",
-    "RemoveEmptyClassBody",
-    "UnnecessaryVariable",
-    "UnusedImport",
-    "UnnecessaryVariable",
-    "unused"
+    "UnusedImport"
 )
 
 package com.spela.client.models
@@ -31,22 +23,22 @@ import kotlinx.serialization.encoding.*
 /**
  * 
  *
- * @param id 
- * @param label 
  * @param description 
+ * @param id 
  * @param imageUrl 
+ * @param label 
  */
 @Serializable
 
 data class WizardOption (
 
+    @SerialName(value = "description") @Required val description: kotlin.String,
+
     @SerialName(value = "id") @Required val id: kotlin.String,
 
-    @SerialName(value = "label") @Required val label: kotlin.String,
+    @SerialName(value = "imageUrl") @Required val imageUrl: kotlin.String,
 
-    @SerialName(value = "description") val description: kotlin.String? = null,
-
-    @SerialName(value = "imageUrl") val imageUrl: kotlin.String? = null
+    @SerialName(value = "label") @Required val label: kotlin.String
 
 ) {
 

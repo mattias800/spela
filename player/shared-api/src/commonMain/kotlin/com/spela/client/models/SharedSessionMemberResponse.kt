@@ -8,17 +8,9 @@
 
 @file:Suppress(
     "ArrayInDataClass",
-    "DuplicatedCode",
     "EnumEntryName",
     "RemoveRedundantQualifierName",
-    "RemoveRedundantCallsOfConversionMethods",
-    "REDUNDANT_CALL_OF_CONVERSION_METHOD",
-    "RedundantUnitReturnType",
-    "RemoveEmptyClassBody",
-    "UnnecessaryVariable",
-    "UnusedImport",
-    "UnnecessaryVariable",
-    "unused"
+    "UnusedImport"
 )
 
 package com.spela.client.models
@@ -31,28 +23,28 @@ import kotlinx.serialization.encoding.*
 /**
  * 
  *
+ * @param avatarUrl 
  * @param id 
  * @param joinedAt 
  * @param role 
  * @param userId 
  * @param username 
- * @param avatarUrl 
  */
 @Serializable
 
 data class SharedSessionMemberResponse (
 
+    @SerialName(value = "avatarUrl") @Required val avatarUrl: kotlin.String,
+
     @SerialName(value = "id") @Required val id: kotlin.String,
 
-    @SerialName(value = "joinedAt") @Required val joinedAt: kotlin.time.Instant,
+    @SerialName(value = "joinedAt") @Required val joinedAt: kotlinx.datetime.Instant,
 
     @SerialName(value = "role") @Required val role: kotlin.String,
 
     @SerialName(value = "userId") @Required val userId: kotlin.String,
 
-    @SerialName(value = "username") @Required val username: kotlin.String,
-
-    @SerialName(value = "avatarUrl") val avatarUrl: kotlin.String? = null
+    @SerialName(value = "username") @Required val username: kotlin.String
 
 ) {
 

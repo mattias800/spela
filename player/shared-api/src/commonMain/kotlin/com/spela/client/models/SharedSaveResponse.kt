@@ -8,17 +8,9 @@
 
 @file:Suppress(
     "ArrayInDataClass",
-    "DuplicatedCode",
     "EnumEntryName",
     "RemoveRedundantQualifierName",
-    "RemoveRedundantCallsOfConversionMethods",
-    "REDUNDANT_CALL_OF_CONVERSION_METHOD",
-    "RedundantUnitReturnType",
-    "RemoveEmptyClassBody",
-    "UnnecessaryVariable",
-    "UnusedImport",
-    "UnnecessaryVariable",
-    "unused"
+    "UnusedImport"
 )
 
 package com.spela.client.models
@@ -31,24 +23,28 @@ import kotlinx.serialization.encoding.*
 /**
  * 
  *
+ * @param avatarUrl 
  * @param createdAt 
+ * @param description 
  * @param downloadCount 
  * @param fileSize 
  * @param gameId 
  * @param id 
  * @param name 
+ * @param screenshotUrl 
  * @param userId 
  * @param username 
  * @param dollarSchema A URL to the JSON Schema for this object.
- * @param avatarUrl 
- * @param description 
- * @param screenshotUrl 
  */
 @Serializable
 
 data class SharedSaveResponse (
 
-    @SerialName(value = "createdAt") @Required val createdAt: kotlin.time.Instant,
+    @SerialName(value = "avatarUrl") @Required val avatarUrl: kotlin.String,
+
+    @SerialName(value = "createdAt") @Required val createdAt: kotlinx.datetime.Instant,
+
+    @SerialName(value = "description") @Required val description: kotlin.String,
 
     @SerialName(value = "downloadCount") @Required val downloadCount: kotlin.Long,
 
@@ -60,18 +56,14 @@ data class SharedSaveResponse (
 
     @SerialName(value = "name") @Required val name: kotlin.String,
 
+    @SerialName(value = "screenshotUrl") @Required val screenshotUrl: kotlin.String,
+
     @SerialName(value = "userId") @Required val userId: kotlin.String,
 
     @SerialName(value = "username") @Required val username: kotlin.String,
 
     /* A URL to the JSON Schema for this object. */
-    @SerialName(value = "\$schema") val dollarSchema: kotlin.String? = null,
-
-    @SerialName(value = "avatarUrl") val avatarUrl: kotlin.String? = null,
-
-    @SerialName(value = "description") val description: kotlin.String? = null,
-
-    @SerialName(value = "screenshotUrl") val screenshotUrl: kotlin.String? = null
+    @SerialName(value = "\$schema") val dollarSchema: kotlin.String? = null
 
 ) {
 

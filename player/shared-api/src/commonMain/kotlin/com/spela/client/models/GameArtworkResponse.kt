@@ -8,17 +8,9 @@
 
 @file:Suppress(
     "ArrayInDataClass",
-    "DuplicatedCode",
     "EnumEntryName",
     "RemoveRedundantQualifierName",
-    "RemoveRedundantCallsOfConversionMethods",
-    "REDUNDANT_CALL_OF_CONVERSION_METHOD",
-    "RedundantUnitReturnType",
-    "RemoveEmptyClassBody",
-    "UnnecessaryVariable",
-    "UnusedImport",
-    "UnnecessaryVariable",
-    "unused"
+    "UnusedImport"
 )
 
 package com.spela.client.models
@@ -31,26 +23,26 @@ import kotlinx.serialization.encoding.*
 /**
  * 
  *
- * @param dollarSchema A URL to the JSON Schema for this object.
  * @param gridUrl 
  * @param heroUrl 
  * @param iconUrl 
  * @param logoUrl 
+ * @param dollarSchema A URL to the JSON Schema for this object.
  */
 @Serializable
 
 data class GameArtworkResponse (
 
+    @SerialName(value = "gridUrl") @Required val gridUrl: kotlin.String,
+
+    @SerialName(value = "heroUrl") @Required val heroUrl: kotlin.String,
+
+    @SerialName(value = "iconUrl") @Required val iconUrl: kotlin.String,
+
+    @SerialName(value = "logoUrl") @Required val logoUrl: kotlin.String,
+
     /* A URL to the JSON Schema for this object. */
-    @SerialName(value = "\$schema") val dollarSchema: kotlin.String? = null,
-
-    @SerialName(value = "gridUrl") val gridUrl: kotlin.String? = null,
-
-    @SerialName(value = "heroUrl") val heroUrl: kotlin.String? = null,
-
-    @SerialName(value = "iconUrl") val iconUrl: kotlin.String? = null,
-
-    @SerialName(value = "logoUrl") val logoUrl: kotlin.String? = null
+    @SerialName(value = "\$schema") val dollarSchema: kotlin.String? = null
 
 ) {
 

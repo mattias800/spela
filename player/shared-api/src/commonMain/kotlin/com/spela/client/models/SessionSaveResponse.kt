@@ -8,17 +8,9 @@
 
 @file:Suppress(
     "ArrayInDataClass",
-    "DuplicatedCode",
     "EnumEntryName",
     "RemoveRedundantQualifierName",
-    "RemoveRedundantCallsOfConversionMethods",
-    "REDUNDANT_CALL_OF_CONVERSION_METHOD",
-    "RedundantUnitReturnType",
-    "RemoveEmptyClassBody",
-    "UnnecessaryVariable",
-    "UnusedImport",
-    "UnnecessaryVariable",
-    "unused"
+    "UnusedImport"
 )
 
 package com.spela.client.models
@@ -31,29 +23,35 @@ import kotlinx.serialization.encoding.*
 /**
  * 
  *
+ * @param coreMatch 
+ * @param coreName 
  * @param createdAt 
+ * @param currentCore 
  * @param fileSize 
  * @param id 
  * @param isAuto 
  * @param isCurrent 
  * @param name 
+ * @param notes 
+ * @param screenshotUrl 
  * @param sessionId 
+ * @param slot 
  * @param updatedAt 
  * @param userId 
  * @param username 
  * @param dollarSchema A URL to the JSON Schema for this object.
- * @param coreMatch 
- * @param coreName 
- * @param currentCore 
- * @param notes 
- * @param screenshotUrl 
- * @param slot 
  */
 @Serializable
 
 data class SessionSaveResponse (
 
-    @SerialName(value = "createdAt") @Required val createdAt: kotlin.time.Instant,
+    @SerialName(value = "coreMatch") @Required val coreMatch: kotlin.Boolean?,
+
+    @SerialName(value = "coreName") @Required val coreName: kotlin.String,
+
+    @SerialName(value = "createdAt") @Required val createdAt: kotlinx.datetime.Instant,
+
+    @SerialName(value = "currentCore") @Required val currentCore: kotlin.String,
 
     @SerialName(value = "fileSize") @Required val fileSize: kotlin.Long,
 
@@ -65,28 +63,22 @@ data class SessionSaveResponse (
 
     @SerialName(value = "name") @Required val name: kotlin.String,
 
+    @SerialName(value = "notes") @Required val notes: kotlin.String,
+
+    @SerialName(value = "screenshotUrl") @Required val screenshotUrl: kotlin.String,
+
     @SerialName(value = "sessionId") @Required val sessionId: kotlin.String,
 
-    @SerialName(value = "updatedAt") @Required val updatedAt: kotlin.time.Instant,
+    @SerialName(value = "slot") @Required val slot: kotlin.Long?,
+
+    @SerialName(value = "updatedAt") @Required val updatedAt: kotlinx.datetime.Instant,
 
     @SerialName(value = "userId") @Required val userId: kotlin.String,
 
     @SerialName(value = "username") @Required val username: kotlin.String,
 
     /* A URL to the JSON Schema for this object. */
-    @SerialName(value = "\$schema") val dollarSchema: kotlin.String? = null,
-
-    @SerialName(value = "coreMatch") val coreMatch: kotlin.Boolean? = null,
-
-    @SerialName(value = "coreName") val coreName: kotlin.String? = null,
-
-    @SerialName(value = "currentCore") val currentCore: kotlin.String? = null,
-
-    @SerialName(value = "notes") val notes: kotlin.String? = null,
-
-    @SerialName(value = "screenshotUrl") val screenshotUrl: kotlin.String? = null,
-
-    @SerialName(value = "slot") val slot: kotlin.Long? = null
+    @SerialName(value = "\$schema") val dollarSchema: kotlin.String? = null
 
 ) {
 

@@ -8,17 +8,9 @@
 
 @file:Suppress(
     "ArrayInDataClass",
-    "DuplicatedCode",
     "EnumEntryName",
     "RemoveRedundantQualifierName",
-    "RemoveRedundantCallsOfConversionMethods",
-    "REDUNDANT_CALL_OF_CONVERSION_METHOD",
-    "RedundantUnitReturnType",
-    "RemoveEmptyClassBody",
-    "UnnecessaryVariable",
-    "UnusedImport",
-    "UnnecessaryVariable",
-    "unused"
+    "UnusedImport"
 )
 
 package com.spela.client.models
@@ -32,13 +24,13 @@ import kotlinx.serialization.encoding.*
  * 
  *
  * @param achievementRaId 
- * @param raGameId 
- * @param showcaseOrder 
  * @param badgeUrl 
  * @param description 
  * @param gameTitle 
  * @param points 
+ * @param raGameId 
  * @param rarityPercent 
+ * @param showcaseOrder 
  * @param title 
  */
 @Serializable
@@ -47,21 +39,21 @@ data class ShowcaseEntryResponse (
 
     @SerialName(value = "achievementRaId") @Required val achievementRaId: kotlin.Long,
 
+    @SerialName(value = "badgeUrl") @Required val badgeUrl: kotlin.String,
+
+    @SerialName(value = "description") @Required val description: kotlin.String,
+
+    @SerialName(value = "gameTitle") @Required val gameTitle: kotlin.String,
+
+    @SerialName(value = "points") @Required val points: kotlin.Long,
+
     @SerialName(value = "raGameId") @Required val raGameId: kotlin.Long,
+
+    @SerialName(value = "rarityPercent") @Required val rarityPercent: kotlin.Double,
 
     @SerialName(value = "showcaseOrder") @Required val showcaseOrder: kotlin.Long,
 
-    @SerialName(value = "badgeUrl") val badgeUrl: kotlin.String? = null,
-
-    @SerialName(value = "description") val description: kotlin.String? = null,
-
-    @SerialName(value = "gameTitle") val gameTitle: kotlin.String? = null,
-
-    @SerialName(value = "points") val points: kotlin.Long? = null,
-
-    @SerialName(value = "rarityPercent") val rarityPercent: kotlin.Double? = null,
-
-    @SerialName(value = "title") val title: kotlin.String? = null
+    @SerialName(value = "title") @Required val title: kotlin.String
 
 ) {
 

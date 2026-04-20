@@ -8,17 +8,9 @@
 
 @file:Suppress(
     "ArrayInDataClass",
-    "DuplicatedCode",
     "EnumEntryName",
     "RemoveRedundantQualifierName",
-    "RemoveRedundantCallsOfConversionMethods",
-    "REDUNDANT_CALL_OF_CONVERSION_METHOD",
-    "RedundantUnitReturnType",
-    "RemoveEmptyClassBody",
-    "UnnecessaryVariable",
-    "UnusedImport",
-    "UnnecessaryVariable",
-    "unused"
+    "UnusedImport"
 )
 
 package com.spela.client.models
@@ -35,10 +27,10 @@ import kotlinx.serialization.encoding.*
  * @param fileSize 
  * @param id 
  * @param isPreRelease 
- * @param title 
  * @param region 
  * @param revision 
  * @param tags 
+ * @param title 
  * @param verificationStatus 
  */
 @Serializable
@@ -53,15 +45,15 @@ data class VariantResponse (
 
     @SerialName(value = "isPreRelease") @Required val isPreRelease: kotlin.Boolean,
 
+    @SerialName(value = "region") @Required val region: kotlin.String,
+
+    @SerialName(value = "revision") @Required val revision: kotlin.String,
+
+    @SerialName(value = "tags") @Required val tags: kotlin.String,
+
     @SerialName(value = "title") @Required val title: kotlin.String,
 
-    @SerialName(value = "region") val region: kotlin.String? = null,
-
-    @SerialName(value = "revision") val revision: kotlin.String? = null,
-
-    @SerialName(value = "tags") val tags: kotlin.String? = null,
-
-    @SerialName(value = "verificationStatus") val verificationStatus: kotlin.String? = null
+    @SerialName(value = "verificationStatus") @Required val verificationStatus: kotlin.String
 
 ) {
 

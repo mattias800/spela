@@ -8,17 +8,9 @@
 
 @file:Suppress(
     "ArrayInDataClass",
-    "DuplicatedCode",
     "EnumEntryName",
     "RemoveRedundantQualifierName",
-    "RemoveRedundantCallsOfConversionMethods",
-    "REDUNDANT_CALL_OF_CONVERSION_METHOD",
-    "RedundantUnitReturnType",
-    "RemoveEmptyClassBody",
-    "UnnecessaryVariable",
-    "UnusedImport",
-    "UnnecessaryVariable",
-    "unused"
+    "UnusedImport"
 )
 
 package com.spela.client.models
@@ -39,83 +31,91 @@ import kotlinx.serialization.encoding.*
 /**
  * 
  *
+ * @param achievementsWarning 
+ * @param ageRatings 
  * @param averageRating 
+ * @param biosStatus 
  * @param consoleId 
  * @param consoleName 
+ * @param coreOverride 
  * @param coverAspectRatio 
  * @param coverUrl 
  * @param createdAt 
  * @param description 
  * @param developer 
  * @param discCount 
+ * @param discs 
  * @param fileName 
  * @param fileSize 
+ * @param gameModes 
  * @param genre 
+ * @param groupKey 
+ * @param heroUrl 
  * @param id 
  * @param igdbCriticsRating 
+ * @param igdbUserRating 
+ * @param igdbUserRatingCount 
  * @param isFavorite 
  * @param isInPlayLater 
  * @param isPreRelease 
+ * @param languageSupports 
  * @param lastPlayedAt 
+ * @param logoUrl 
+ * @param parentGame 
+ * @param partyInfo 
  * @param playable 
  * @param players 
  * @param publisher 
  * @param ratingCount 
- * @param releaseDate 
- * @param scrapeAttempts 
- * @param screenshotUrls 
- * @param title 
- * @param totalPlayTime 
- * @param updatedAt 
- * @param dollarSchema A URL to the JSON Schema for this object.
- * @param achievementsWarning 
- * @param ageRatings 
- * @param biosStatus 
- * @param coreOverride 
- * @param discs 
- * @param gameModes 
- * @param groupKey 
- * @param heroUrl 
- * @param igdbUserRating 
- * @param igdbUserRatingCount 
- * @param languageSupports 
- * @param logoUrl 
- * @param parentGame 
- * @param partyInfo 
  * @param region 
+ * @param releaseDate 
  * @param releaseDates 
  * @param revision 
  * @param romHacks 
+ * @param scrapeAttempts 
  * @param scraperId 
+ * @param screenshotUrls 
  * @param storyline 
  * @param tags 
  * @param timeToBeatCompletely 
  * @param timeToBeatHastily 
  * @param timeToBeatNormally 
+ * @param title 
+ * @param totalPlayTime 
  * @param totalRating 
  * @param totalRatingCount 
+ * @param updatedAt 
  * @param userRating 
  * @param variantCount 
  * @param variants 
  * @param verificationStatus 
  * @param verificationTag 
  * @param videos 
+ * @param dollarSchema A URL to the JSON Schema for this object.
  */
 @Serializable
 
 data class GameResponse (
 
+    @SerialName(value = "achievementsWarning") @Required val achievementsWarning: kotlin.String,
+
+    @SerialName(value = "ageRatings") @Required val ageRatings: kotlin.collections.List<AgeRatingResponse>?,
+
     @SerialName(value = "averageRating") @Required val averageRating: kotlin.Double,
+
+    @SerialName(value = "biosStatus") @Required val biosStatus: kotlin.String,
 
     @SerialName(value = "consoleId") @Required val consoleId: kotlin.String,
 
     @SerialName(value = "consoleName") @Required val consoleName: kotlin.String,
 
+    @SerialName(value = "coreOverride") @Required val coreOverride: kotlin.String,
+
     @SerialName(value = "coverAspectRatio") @Required val coverAspectRatio: kotlin.Double,
 
     @SerialName(value = "coverUrl") @Required val coverUrl: kotlin.String,
 
-    @SerialName(value = "createdAt") @Required val createdAt: kotlin.time.Instant,
+    @SerialName(value = "createdAt") @Required val createdAt: kotlinx.datetime.Instant,
 
     @SerialName(value = "description") @Required val description: kotlin.String,
 
@@ -123,15 +123,27 @@ data class GameResponse (
 
     @SerialName(value = "discCount") @Required val discCount: kotlin.Long,
 
+    @SerialName(value = "discs") @Required val discs: kotlin.collections.List<DiscResponse>?,
+
     @SerialName(value = "fileName") @Required val fileName: kotlin.String,
 
     @SerialName(value = "fileSize") @Required val fileSize: kotlin.Long,
 
+    @SerialName(value = "gameModes") @Required val gameModes: kotlin.String,
+
     @SerialName(value = "genre") @Required val genre: kotlin.String,
+
+    @SerialName(value = "groupKey") @Required val groupKey: kotlin.String,
+
+    @SerialName(value = "heroUrl") @Required val heroUrl: kotlin.String,
 
     @SerialName(value = "id") @Required val id: kotlin.String,
 
     @SerialName(value = "igdbCriticsRating") @Required val igdbCriticsRating: kotlin.Double,
+
+    @SerialName(value = "igdbUserRating") @Required val igdbUserRating: kotlin.Double,
+
+    @SerialName(value = "igdbUserRatingCount") @Required val igdbUserRatingCount: kotlin.Long,
 
     @SerialName(value = "isFavorite") @Required val isFavorite: kotlin.Boolean,
 
@@ -139,7 +151,15 @@ data class GameResponse (
 
     @SerialName(value = "isPreRelease") @Required val isPreRelease: kotlin.Boolean,
 
-    @SerialName(value = "lastPlayedAt") @Required val lastPlayedAt: kotlin.time.Instant?,
+    @SerialName(value = "languageSupports") @Required val languageSupports: kotlin.collections.List<LanguageSupportResponse>?,
+
+    @SerialName(value = "lastPlayedAt") @Required val lastPlayedAt: kotlinx.datetime.Instant?,
+
+    @SerialName(value = "logoUrl") @Required val logoUrl: kotlin.String,
+
+    @SerialName(value = "parentGame") @Required val parentGame: ParentGameResponse,
+
+    @SerialName(value = "partyInfo") @Required val partyInfo: kotlin.String,
 
     @SerialName(value = "playable") @Required val playable: kotlin.Boolean,
 
@@ -149,84 +169,56 @@ data class GameResponse (
 
     @SerialName(value = "ratingCount") @Required val ratingCount: kotlin.Long,
 
+    @SerialName(value = "region") @Required val region: kotlin.String,
+
     @SerialName(value = "releaseDate") @Required val releaseDate: kotlin.String,
+
+    @SerialName(value = "releaseDates") @Required val releaseDates: kotlin.collections.List<ReleaseDateResponse>?,
+
+    @SerialName(value = "revision") @Required val revision: kotlin.String,
+
+    @SerialName(value = "romHacks") @Required val romHacks: kotlin.collections.List<RomHackGameResponse>?,
 
     @SerialName(value = "scrapeAttempts") @Required val scrapeAttempts: kotlin.Long,
 
+    @SerialName(value = "scraperId") @Required val scraperId: kotlin.String,
+
     @SerialName(value = "screenshotUrls") @Required val screenshotUrls: kotlin.collections.List<kotlin.String>?,
+
+    @SerialName(value = "storyline") @Required val storyline: kotlin.String,
+
+    @SerialName(value = "tags") @Required val tags: kotlin.String,
+
+    @SerialName(value = "timeToBeatCompletely") @Required val timeToBeatCompletely: kotlin.Long,
+
+    @SerialName(value = "timeToBeatHastily") @Required val timeToBeatHastily: kotlin.Long,
+
+    @SerialName(value = "timeToBeatNormally") @Required val timeToBeatNormally: kotlin.Long,
 
     @SerialName(value = "title") @Required val title: kotlin.String,
 
     @SerialName(value = "totalPlayTime") @Required val totalPlayTime: kotlin.Long,
 
-    @SerialName(value = "updatedAt") @Required val updatedAt: kotlin.time.Instant,
+    @SerialName(value = "totalRating") @Required val totalRating: kotlin.Double,
+
+    @SerialName(value = "totalRatingCount") @Required val totalRatingCount: kotlin.Long,
+
+    @SerialName(value = "updatedAt") @Required val updatedAt: kotlinx.datetime.Instant,
+
+    @SerialName(value = "userRating") @Required val userRating: kotlin.Long?,
+
+    @SerialName(value = "variantCount") @Required val variantCount: kotlin.Long,
+
+    @SerialName(value = "variants") @Required val variants: kotlin.collections.List<VariantResponse>?,
+
+    @SerialName(value = "verificationStatus") @Required val verificationStatus: kotlin.String,
+
+    @SerialName(value = "verificationTag") @Required val verificationTag: kotlin.String,
+
+    @SerialName(value = "videos") @Required val videos: kotlin.collections.List<VideoResponse>?,
 
     /* A URL to the JSON Schema for this object. */
-    @SerialName(value = "\$schema") val dollarSchema: kotlin.String? = null,
-
-    @SerialName(value = "achievementsWarning") val achievementsWarning: kotlin.String? = null,
-
-    @SerialName(value = "ageRatings") val ageRatings: kotlin.collections.List<AgeRatingResponse>? = null,
-
-    @SerialName(value = "biosStatus") val biosStatus: kotlin.String? = null,
-
-    @SerialName(value = "coreOverride") val coreOverride: kotlin.String? = null,
-
-    @SerialName(value = "discs") val discs: kotlin.collections.List<DiscResponse>? = null,
-
-    @SerialName(value = "gameModes") val gameModes: kotlin.String? = null,
-
-    @SerialName(value = "groupKey") val groupKey: kotlin.String? = null,
-
-    @SerialName(value = "heroUrl") val heroUrl: kotlin.String? = null,
-
-    @SerialName(value = "igdbUserRating") val igdbUserRating: kotlin.Double? = null,
-
-    @SerialName(value = "igdbUserRatingCount") val igdbUserRatingCount: kotlin.Long? = null,
-
-    @SerialName(value = "languageSupports") val languageSupports: kotlin.collections.List<LanguageSupportResponse>? = null,
-
-    @SerialName(value = "logoUrl") val logoUrl: kotlin.String? = null,
-
-    @SerialName(value = "parentGame") val parentGame: ParentGameResponse? = null,
-
-    @SerialName(value = "partyInfo") val partyInfo: kotlin.String? = null,
-
-    @SerialName(value = "region") val region: kotlin.String? = null,
-
-    @SerialName(value = "releaseDates") val releaseDates: kotlin.collections.List<ReleaseDateResponse>? = null,
-
-    @SerialName(value = "revision") val revision: kotlin.String? = null,
-
-    @SerialName(value = "romHacks") val romHacks: kotlin.collections.List<RomHackGameResponse>? = null,
-
-    @SerialName(value = "scraperId") val scraperId: kotlin.String? = null,
-
-    @SerialName(value = "storyline") val storyline: kotlin.String? = null,
-
-    @SerialName(value = "tags") val tags: kotlin.String? = null,
-
-    @SerialName(value = "timeToBeatCompletely") val timeToBeatCompletely: kotlin.Long? = null,
-
-    @SerialName(value = "timeToBeatHastily") val timeToBeatHastily: kotlin.Long? = null,
-
-    @SerialName(value = "timeToBeatNormally") val timeToBeatNormally: kotlin.Long? = null,
-
-    @SerialName(value = "totalRating") val totalRating: kotlin.Double? = null,
-
-    @SerialName(value = "totalRatingCount") val totalRatingCount: kotlin.Long? = null,
-
-    @SerialName(value = "userRating") val userRating: kotlin.Long? = null,
-
-    @SerialName(value = "variantCount") val variantCount: kotlin.Long? = null,
-
-    @SerialName(value = "variants") val variants: kotlin.collections.List<VariantResponse>? = null,
-
-    @SerialName(value = "verificationStatus") val verificationStatus: kotlin.String? = null,
-
-    @SerialName(value = "verificationTag") val verificationTag: kotlin.String? = null,
-
-    @SerialName(value = "videos") val videos: kotlin.collections.List<VideoResponse>? = null
+    @SerialName(value = "\$schema") val dollarSchema: kotlin.String? = null
 
 ) {
 

@@ -8,17 +8,9 @@
 
 @file:Suppress(
     "ArrayInDataClass",
-    "DuplicatedCode",
     "EnumEntryName",
     "RemoveRedundantQualifierName",
-    "RemoveRedundantCallsOfConversionMethods",
-    "REDUNDANT_CALL_OF_CONVERSION_METHOD",
-    "RedundantUnitReturnType",
-    "RemoveEmptyClassBody",
-    "UnnecessaryVariable",
-    "UnusedImport",
-    "UnnecessaryVariable",
-    "unused"
+    "UnusedImport"
 )
 
 package com.spela.client.models
@@ -32,8 +24,8 @@ import kotlinx.serialization.encoding.*
  * 
  *
  * @param error 
- * @param dollarSchema A URL to the JSON Schema for this object.
  * @param message 
+ * @param dollarSchema A URL to the JSON Schema for this object.
  */
 @Serializable
 
@@ -41,10 +33,10 @@ data class HumaError (
 
     @SerialName(value = "error") @Required val error: kotlin.String,
 
-    /* A URL to the JSON Schema for this object. */
-    @SerialName(value = "\$schema") val dollarSchema: kotlin.String? = null,
+    @SerialName(value = "message") @Required val message: kotlin.String,
 
-    @SerialName(value = "message") val message: kotlin.String? = null
+    /* A URL to the JSON Schema for this object. */
+    @SerialName(value = "\$schema") val dollarSchema: kotlin.String? = null
 
 ) {
 

@@ -8,17 +8,9 @@
 
 @file:Suppress(
     "ArrayInDataClass",
-    "DuplicatedCode",
     "EnumEntryName",
     "RemoveRedundantQualifierName",
-    "RemoveRedundantCallsOfConversionMethods",
-    "REDUNDANT_CALL_OF_CONVERSION_METHOD",
-    "RedundantUnitReturnType",
-    "RemoveEmptyClassBody",
-    "UnnecessaryVariable",
-    "UnusedImport",
-    "UnnecessaryVariable",
-    "unused"
+    "UnusedImport"
 )
 
 package com.spela.client.models
@@ -31,16 +23,16 @@ import kotlinx.serialization.encoding.*
 /**
  * 
  *
- * @param selectedMapping 
  * @param customMapping 
+ * @param selectedMapping 
  */
 @Serializable
 
 data class ConsoleKeyMappingDTO (
 
-    @SerialName(value = "selectedMapping") @Required val selectedMapping: kotlin.String,
+    @SerialName(value = "customMapping") @Required val customMapping: kotlin.collections.Map<kotlin.String, kotlin.String>,
 
-    @SerialName(value = "customMapping") val customMapping: kotlin.collections.Map<kotlin.String, kotlin.String>? = null
+    @SerialName(value = "selectedMapping") @Required val selectedMapping: kotlin.String
 
 ) {
 

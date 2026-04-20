@@ -8,17 +8,9 @@
 
 @file:Suppress(
     "ArrayInDataClass",
-    "DuplicatedCode",
     "EnumEntryName",
     "RemoveRedundantQualifierName",
-    "RemoveRedundantCallsOfConversionMethods",
-    "REDUNDANT_CALL_OF_CONVERSION_METHOD",
-    "RedundantUnitReturnType",
-    "RemoveEmptyClassBody",
-    "UnnecessaryVariable",
-    "UnusedImport",
-    "UnnecessaryVariable",
-    "unused"
+    "UnusedImport"
 )
 
 package com.spela.client.models
@@ -42,17 +34,17 @@ import kotlinx.serialization.encoding.*
 
 data class CompanyInfo (
 
-    @SerialName(value = "country") val country: kotlin.String? = null,
+    @SerialName(value = "country") @Required val country: kotlin.String,
 
-    @SerialName(value = "description") val description: kotlin.String? = null,
+    @SerialName(value = "description") @Required val description: kotlin.String,
 
-    @SerialName(value = "foundedYear") val foundedYear: kotlin.Long? = null,
+    @SerialName(value = "foundedYear") @Required val foundedYear: kotlin.Long,
 
-    @SerialName(value = "logoUrl") val logoUrl: kotlin.String? = null,
+    @SerialName(value = "logoUrl") @Required val logoUrl: kotlin.String,
 
-    @SerialName(value = "websiteUrl") val websiteUrl: kotlin.String? = null,
+    @SerialName(value = "websiteUrl") @Required val websiteUrl: kotlin.String,
 
-    @SerialName(value = "wikipediaUrl") val wikipediaUrl: kotlin.String? = null
+    @SerialName(value = "wikipediaUrl") @Required val wikipediaUrl: kotlin.String
 
 ) {
 

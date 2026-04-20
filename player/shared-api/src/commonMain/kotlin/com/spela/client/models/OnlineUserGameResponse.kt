@@ -8,17 +8,9 @@
 
 @file:Suppress(
     "ArrayInDataClass",
-    "DuplicatedCode",
     "EnumEntryName",
     "RemoveRedundantQualifierName",
-    "RemoveRedundantCallsOfConversionMethods",
-    "REDUNDANT_CALL_OF_CONVERSION_METHOD",
-    "RedundantUnitReturnType",
-    "RemoveEmptyClassBody",
-    "UnnecessaryVariable",
-    "UnusedImport",
-    "UnnecessaryVariable",
-    "unused"
+    "UnusedImport"
 )
 
 package com.spela.client.models
@@ -32,9 +24,9 @@ import kotlinx.serialization.encoding.*
  * 
  *
  * @param consoleName 
+ * @param coverUrl 
  * @param id 
  * @param title 
- * @param coverUrl 
  */
 @Serializable
 
@@ -42,11 +34,11 @@ data class OnlineUserGameResponse (
 
     @SerialName(value = "consoleName") @Required val consoleName: kotlin.String,
 
+    @SerialName(value = "coverUrl") @Required val coverUrl: kotlin.String,
+
     @SerialName(value = "id") @Required val id: kotlin.String,
 
-    @SerialName(value = "title") @Required val title: kotlin.String,
-
-    @SerialName(value = "coverUrl") val coverUrl: kotlin.String? = null
+    @SerialName(value = "title") @Required val title: kotlin.String
 
 ) {
 
