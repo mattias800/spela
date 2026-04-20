@@ -241,7 +241,7 @@ export function ExplorePage() {
 
       {/* Console Quick-Jump */}
       <ConsoleQuickJump
-        consoles={consoleHighlightsData?.consoles}
+        consoles={consoleHighlightsData?.consoles ?? undefined}
         isLoading={isConsoleHighlightsLoading}
       />
 

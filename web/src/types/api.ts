@@ -567,29 +567,9 @@ export type CoverGalleryResponse = Schemas["CoverGalleryResponse"];
 
 export type GenreCount = Schemas["GenreCount"];
 
-export interface ConsoleShowcase {
-  console: Console;
-  essentials: Game[];
-  hiddenGems: Game[];
-  recentlyAdded: Game[];
-  genreBreakdown: GenreCount[];
-  topDevelopers: DeveloperSummary[];
-  recentlyPlayed: Game[];
-}
+export type ConsoleShowcase = Schemas["ConsoleShowcaseResponse"];
 
-export interface ConsoleHighlight {
-  id: string;
-  name: string;
-  colorTheme: string;
-  iconUrl: string;
-  logoUrl: string;
-  gameCount: number;
-  topGame: Game | null;
-}
-
-export interface ConsoleHighlightsResponse {
-  consoles: ConsoleHighlight[];
-}
+// ConsoleHighlight and ConsoleHighlightsResponse flow through @/generated/schemas.
 
 // --- Moods ---
 
