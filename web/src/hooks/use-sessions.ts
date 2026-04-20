@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { typedApi, unwrap } from "@/lib/api-client";
+import { invariant } from "@/lib/invariant";
 
 export function useGameSessions(gameId: string) {
   return useQuery({
@@ -184,7 +185,7 @@ export function useAutoSaveInfo(sessionId: string | undefined) {
     queryFn: () =>
       unwrap(
         typedApi.GET("/api/sessions/{id}/saves", {
-          params: { path: { id: sessionId as string } },
+          params: { path: { id: invariant(sessionId, "sessionId") } },
         }),
       ),
     enabled: !!sessionId,
