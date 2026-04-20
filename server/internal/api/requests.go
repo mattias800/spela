@@ -68,21 +68,23 @@ type AdminUpdateUserRequest struct {
 // --- Games (admin metadata + play time) ---
 
 // UpdateGameMetadataRequest is the body for PUT /api/admin/games/:id/metadata.
-// All fields are optional in the huma schema so partial updates succeed with
+// Every field is a pointer so admin UIs can clear a value (send null or
+// explicit empty string / zero) vs. leave it untouched (omit the key). Fields
+// are declared optional in the huma schema so partial updates succeed with
 // the historical 200 rather than huma's 422 "missing fields" validation.
 type UpdateGameMetadataRequest struct {
-	Title             string  `json:"title,omitempty"`
-	Description       string  `json:"description,omitempty"`
-	CoverURL          string  `json:"coverUrl,omitempty"`
-	ScreenshotURL     string  `json:"screenshotUrl,omitempty"`
-	Developer         string  `json:"developer,omitempty"`
-	Publisher         string  `json:"publisher,omitempty"`
-	ReleaseDate       string  `json:"releaseDate,omitempty"`
-	Genre             string  `json:"genre,omitempty"`
-	Players           int     `json:"players,omitempty"`
-	IGDBCriticsRating float64 `json:"igdbCriticsRating,omitempty"`
-	CoreOverride      string  `json:"coreOverride,omitempty"`
-	PartyInfo         string  `json:"partyInfo,omitempty"`
+	Title             *string  `json:"title,omitempty"`
+	Description       *string  `json:"description,omitempty"`
+	CoverURL          *string  `json:"coverUrl,omitempty"`
+	ScreenshotURL     *string  `json:"screenshotUrl,omitempty"`
+	Developer         *string  `json:"developer,omitempty"`
+	Publisher         *string  `json:"publisher,omitempty"`
+	ReleaseDate       *string  `json:"releaseDate,omitempty"`
+	Genre             *string  `json:"genre,omitempty"`
+	Players           *int     `json:"players,omitempty"`
+	IGDBCriticsRating *float64 `json:"igdbCriticsRating,omitempty"`
+	CoreOverride      *string  `json:"coreOverride,omitempty"`
+	PartyInfo         *string  `json:"partyInfo,omitempty"`
 }
 
 // UpdateGamePlayTimeRequest is the body for POST /api/games/:id/play-time.
