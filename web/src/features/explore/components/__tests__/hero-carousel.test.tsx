@@ -11,6 +11,8 @@ function makeFeaturedGame(overrides: Partial<FeaturedGame> = {}): FeaturedGame {
     title: "Test Game",
     heroUrl: "/hero/test.jpg",
     logoUrl: "/logo/test.png",
+    consoleId: "2",
+    consoleName: "Super Nintendo",
     consoleAbbreviation: "snes",
     consoleColor: "#805ad5",
     igdbCriticsRating: 92.5,
@@ -23,7 +25,7 @@ function makeFeaturedGame(overrides: Partial<FeaturedGame> = {}): FeaturedGame {
 
 const mockGames: FeaturedGame[] = [
   makeFeaturedGame({ gameId: "1", title: "Game One" }),
-  makeFeaturedGame({ gameId: "2", title: "Game Two", logoUrl: null }),
+  makeFeaturedGame({ gameId: "2", title: "Game Two", logoUrl: "" }),
   makeFeaturedGame({ gameId: "3", title: "Game Three" }),
 ];
 
@@ -100,7 +102,7 @@ describe("HeroCarousel", () => {
 
   it("falls back to text title when logoUrl is null", () => {
     renderCarousel({
-      games: [makeFeaturedGame({ gameId: "2", title: "No Logo Game", logoUrl: null })],
+      games: [makeFeaturedGame({ gameId: "2", title: "No Logo Game", logoUrl: "" })],
     });
     expect(screen.getByTestId("hero-title-text-2")).toBeInTheDocument();
     expect(screen.getByText("No Logo Game")).toBeInTheDocument();

@@ -93,6 +93,8 @@ function makeFeaturedGame(overrides: Partial<FeaturedGame> = {}): FeaturedGame {
     title: "Featured Game",
     heroUrl: "/hero/test.jpg",
     logoUrl: "/logo/test.png",
+    consoleId: "2",
+    consoleName: "Super Nintendo",
     consoleAbbreviation: "snes",
     consoleColor: "#805ad5",
     igdbCriticsRating: 92.5,
