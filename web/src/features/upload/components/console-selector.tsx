@@ -14,7 +14,7 @@ export function ConsoleSelector({
 }: ConsoleSelectorProps) {
   const options = [
     { value: "", label: "Select console..." },
-    ...upload.possibleConsoles.map((c) => ({
+    ...(upload.possibleConsoles ?? []).map((c) => ({
       value: c.id,
       label: c.name,
     })),
