@@ -612,13 +612,7 @@ export interface SessionSave {
   createdAt: string;
 }
 
-export interface CoreCompatibilityEntry {
-  consoleId: string;
-  consoleName: string;
-  nativeCore: string;
-  webCore: string;
-  matched: boolean;
-}
+export type CoreCompatibilityEntry = Schemas["CoreCompatibilityEntry"];
 
 export interface CoreCompatibilityResponse {
   consoles: CoreCompatibilityEntry[];
