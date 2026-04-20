@@ -735,30 +735,15 @@ export interface FranchiseDetail {
 
 export type ScreenshotItem = Schemas["ScreenshotItem"];
 
-export interface ScreenshotGalleryResponse {
-  screenshots: ScreenshotItem[];
-  page: number;
-  totalPages: number;
-  totalCount: number;
-}
+export type ScreenshotGalleryResponse = Schemas["ScreenshotGalleryResponse"];
 
 export type ArtworkItem = Schemas["ArtworkItem"];
 
-export interface ArtworkGalleryResponse {
-  artworks: ArtworkItem[];
-  page: number;
-  totalPages: number;
-  totalCount: number;
-}
+export type ArtworkGalleryResponse = Schemas["ArtworkGalleryResponse"];
 
 export type CoverItem = Schemas["CoverItem"];
 
-export interface CoverGalleryResponse {
-  covers: CoverItem[];
-  page: number;
-  totalPages: number;
-  totalCount: number;
-}
+export type CoverGalleryResponse = Schemas["CoverGalleryResponse"];
 
 // --- Console Showcase ---
 

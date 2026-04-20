@@ -406,7 +406,7 @@ export function ExplorePage() {
       />
 
       <ArtworkShowcase
-        artworks={artworkData?.artworks}
+        artworks={artworkData?.artworks ?? undefined}
         isLoading={isArtworkLoading}
       />
 
