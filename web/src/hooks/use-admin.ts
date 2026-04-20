@@ -106,18 +106,13 @@ export function useScanLibrary() {
   });
 }
 
-export interface ScrapeStartResponse {
-  message: string;
-  total: number;
-}
-
 export type ScrapeMode = "new" | "all" | "fallback" | "ra";
 
 export function useScrapeMetadata() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({
+    mutationFn: ({
       mode = "new",
       console,
       source,
@@ -136,10 +131,7 @@ export function useScrapeMetadata() {
         query.mode = mode;
       }
       if (console) query.console = console;
-      const data = await unwrap(
-        typedApi.POST("/api/admin/scrape", { params: { query } }),
-      );
-      return data as ScrapeStartResponse | undefined;
+      return unwrap(typedApi.POST("/api/admin/scrape", { params: { query } }));
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["games"] });
@@ -149,27 +141,10 @@ export function useScrapeMetadata() {
   });
 }
 
-export interface ScrapeSourceCounts {
-  source: string;
-  matched: number;
-  notFound: number;
-  notFoundEligible: number;
-  error: number;
-  errorEligible: number;
-  notAttempted: number;
-}
-
-export interface ScrapeStatusCountsResponse {
-  sources: ScrapeSourceCounts[];
-}
-
 export function useScrapeStatusCounts() {
   return useQuery({
     queryKey: ["admin", "scrape-counts"],
-    queryFn: async () => {
-      const data = await unwrap(typedApi.GET("/api/admin/scrape/counts"));
-      return data as ScrapeStatusCountsResponse | undefined;
-    },
+    queryFn: () => unwrap(typedApi.GET("/api/admin/scrape/counts")),
   });
 }
 
@@ -286,50 +261,23 @@ export function useScrapeStatus() {
   });
 }
 
-export interface ScanStatus {
-  active: boolean;
-  phase?: string;
-  current?: number;
-  total?: number;
-  message?: string;
-}
-
 export function useScanStatus() {
   return useQuery({
     queryKey: ["admin", "scan-status"],
-    queryFn: async () => {
-      const data = await unwrap(
-        typedApi.GET("/api/admin/games/scan/status"),
-      );
-      return data as ScanStatus | undefined;
-    },
+    queryFn: () => unwrap(typedApi.GET("/api/admin/games/scan/status")),
     refetchInterval: 3000,
   });
-}
-
-export interface CoverOption {
-  source: "libretro" | "igdb" | "custom" | "libretro-regional";
-  url: string;
-  label?: string;
-  libretroName?: string;
-}
-
-export interface GameCoversResponse {
-  active: string;
-  covers: CoverOption[];
 }
 
 export function useGameCovers(gameId: string) {
   return useQuery({
     queryKey: ["admin", "game-covers", gameId],
-    queryFn: async () => {
-      const data = await unwrap(
+    queryFn: () =>
+      unwrap(
         typedApi.GET("/api/admin/games/{id}/covers", {
           params: { path: { id: gameId } },
         }),
-      );
-      return data as GameCoversResponse | undefined;
-    },
+      ),
     enabled: !!gameId,
   });
 }
@@ -338,22 +286,21 @@ export function useSetGameCover() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({
+    mutationFn: ({
       gameId,
       source,
       libretroName,
     }: {
       gameId: string;
-      source: CoverOption["source"];
+      source: string;
       libretroName?: string;
-    }) => {
-      await unwrap(
+    }) =>
+      unwrap(
         typedApi.PUT("/api/admin/games/{id}/covers", {
           params: { path: { id: gameId } },
           body: { source, libretroName },
         }),
-      );
-    },
+      ),
     onSuccess: (_data, { gameId }) => {
       queryClient.invalidateQueries({ queryKey: ["game", gameId] });
       queryClient.invalidateQueries({ queryKey: ["games"] });
@@ -364,28 +311,15 @@ export function useSetGameCover() {
   });
 }
 
-export interface HeroOption {
-  url: string;
-  thumb: string;
-  id: number;
-}
-
-export interface GameHeroesResponse {
-  activeUrl: string;
-  heroes: HeroOption[];
-}
-
 export function useGameHeroes(gameId: string) {
   return useQuery({
     queryKey: ["admin", "game-heroes", gameId],
-    queryFn: async () => {
-      const data = await unwrap(
+    queryFn: () =>
+      unwrap(
         typedApi.GET("/api/admin/games/{id}/heroes", {
           params: { path: { id: gameId } },
         }),
-      );
-      return data as GameHeroesResponse | undefined;
-    },
+      ),
     enabled: !!gameId,
   });
 }

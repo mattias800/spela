@@ -10,8 +10,8 @@ import {
   useScrapeStatusCounts,
   useScrapeMetadata,
   useScrapeStatus,
-  type ScrapeSourceCounts,
 } from "@/hooks/use-admin";
+import type { ScraperSourceResultResponse } from "@/generated/schemas";
 import { useScrapeProgress } from "@/hooks/use-scrape-progress";
 
 const SOURCE_LABELS: Record<string, string> = {
@@ -25,7 +25,7 @@ function sourceLabel(source: string): string {
 }
 
 interface SourceSectionProps {
-  counts: ScrapeSourceCounts;
+  counts: ScraperSourceResultResponse;
   scrapeActive: boolean;
   onRetryNotFound: () => void;
   onRetryErrors: () => void;
@@ -107,6 +107,7 @@ export function ScrapeStatusCard() {
   const scrapeMetadata = useScrapeMetadata();
   const { toast } = useToast();
 
+  const sources = data?.sources ?? [];
   const scrapeActive =
     scrapeStatusData?.active === true || scrape.phase === "active";
 
@@ -158,13 +159,12 @@ export function ScrapeStatusCard() {
           </div>
         )}
 
-        {!isLoading && (!data || data.sources.length === 0) && (
+        {!isLoading && sources.length === 0 && (
           <p className="text-sm text-surface-500">No scrape data available.</p>
         )}
 
         {!isLoading &&
-          data &&
-          data.sources.map((counts, i) => (
+          sources.map((counts, i) => (
             <div key={counts.source}>
               {i > 0 && (
                 <Divider className="mb-5" />

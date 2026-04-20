@@ -1,10 +1,7 @@
 import { Check } from "lucide-react";
 import { useToast, Modal } from "@/components/ui";
-import {
-  useGameCovers,
-  useSetGameCover,
-  type CoverOption,
-} from "@/hooks/use-admin";
+import { useGameCovers, useSetGameCover } from "@/hooks/use-admin";
+import type { CoverOption } from "@/generated/schemas";
 import { cn } from "@/lib/cn";
 
 interface CoverArtSelectorProps {
@@ -22,7 +19,8 @@ export function CoverArtSelector({
   const setCover = useSetGameCover();
   const { toast } = useToast();
 
-  const hasCovers = data && data.covers.length >= 2;
+  const covers = data?.covers ?? [];
+  const hasCovers = covers.length >= 2;
 
   function handleSelect(cover: CoverOption) {
     if (cover.source === data!.active && cover.source !== "libretro-regional") {
@@ -57,9 +55,9 @@ export function CoverArtSelector({
         </p>
       ) : (
       <div className="flex flex-wrap gap-4" data-testid="cover-art-selector">
-        {data!.covers.map((cover, index) => {
+        {covers.map((cover, index) => {
           const isActive =
-            cover.source === data.active &&
+            cover.source === data!.active &&
             cover.source !== "libretro-regional";
           const label = cover.label ?? cover.source;
           const key =
