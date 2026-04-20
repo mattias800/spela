@@ -988,10 +988,8 @@ class SpelaApiClient(
 
     // Shared Sessions
 
-    suspend fun getMySharedSessions(@Suppress("UNUSED_PARAMETER") page: Int = 1, @Suppress("UNUSED_PARAMETER") pageSize: Int = 20): List<SharedSessionDto> {
-        // Server returns a bare array (not a paginated wrapper). page/pageSize
-        // are kept on the signature so the repository caller does not need to
-        // change, but they are ignored because the server does not paginate.
+    suspend fun getMySharedSessions(): List<SharedSessionDto> {
+        // Server returns a bare array — not paginated.
         return sharedSessionsApi.listMySharedSessions().body()
     }
 

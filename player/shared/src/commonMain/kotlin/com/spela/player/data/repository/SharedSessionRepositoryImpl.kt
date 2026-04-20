@@ -14,8 +14,8 @@ class SharedSessionRepositoryImpl(
     private val apiClient: SpelaApiClient,
 ) : SharedSessionRepository {
 
-    override suspend fun getMySharedSessions(page: Int, pageSize: Int): Result<List<SharedSession>> = runCatching {
-        apiClient.getMySharedSessions(page, pageSize).map { it.toDomain() }
+    override suspend fun getMySharedSessions(): Result<List<SharedSession>> = runCatching {
+        apiClient.getMySharedSessions().map { it.toDomain() }
     }
 
     override suspend fun getSharedSession(sharedSessionId: String): Result<SharedSessionDetail> = runCatching {
