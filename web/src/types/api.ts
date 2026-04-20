@@ -44,11 +44,7 @@ export interface User {
   updatedAt: string;
 }
 
-export interface RateLimitStatus {
-  failedCount: number;
-  lockedUntil: string | null;
-  isLockedOut: boolean;
-}
+export type RateLimitStatus = Schemas["RateLimitResponse"];
 
 // System event audit log (admin-only). Mirrors the SystemEvent model on
 // the server. The metadata blob is per-event-type and may include things like
@@ -116,15 +112,7 @@ export interface SystemEventTypeInfo {
   category: SystemEventCategoryCode;
 }
 
-export interface DeletedUser {
-  id: string;
-  username: string;
-  email: string;
-  role: "owner" | "admin" | "user";
-  disabled: boolean;
-  createdAt: string;
-  deletedAt: string;
-}
+export type DeletedUser = Schemas["DeletedUserResponse"];
 
 export interface AuthTokens {
   accessToken: string;
@@ -132,21 +120,11 @@ export interface AuthTokens {
   user: User;
 }
 
-export interface HardwareMaker {
-  code: string;
-  name: string;
-}
+export type HardwareMaker = Schemas["HardwareMakerResponse"];
 
-export interface MediaTypeCategory {
-  code: string;
-  name: string;
-}
+export type MediaTypeCategory = Schemas["MediaTypeCategoryResponse"];
 
-export interface MediaType {
-  code: string;
-  name: string;
-  category: MediaTypeCategory;
-}
+export type MediaType = Schemas["MediaTypeResponse"];
 
 // ConsoleResponse from backend responses.go DTO layer
 export interface Console {
@@ -175,11 +153,7 @@ export interface Console {
   updatedAt: string;
 }
 
-export interface GameDisc {
-  discNumber: number;
-  fileName: string;
-  fileSize: number;
-}
+export type GameDisc = Schemas["DiscResponse"];
 
 // GameVariant from backend — represents a variant in the game detail response
 export interface GameVariant {
@@ -257,26 +231,13 @@ export interface Game {
   updatedAt: string;
 }
 
-export interface ReleaseDateInfo {
-  region: string;
-  date: string;
-  platform?: string;
-}
+export type ReleaseDateInfo = Schemas["ReleaseDateResponse"];
 
-export interface VideoInfo {
-  videoId: string;
-  name?: string;
-}
+export type VideoInfo = Schemas["VideoResponse"];
 
-export interface LanguageSupportInfo {
-  language: string;
-  supportType: string;
-}
+export type LanguageSupportInfo = Schemas["LanguageSupportResponse"];
 
-export interface AgeRatingInfo {
-  category: string;
-  rating: string;
-}
+export type AgeRatingInfo = Schemas["AgeRatingResponse"];
 
 // Backend stores settings as flat key-value pairs
 export type ServerSettingsMap = Record<string, string>;
@@ -343,17 +304,7 @@ export interface IgdbSearchResult {
   summary?: string;
 }
 
-export interface Device {
-  id: number;
-  userId: number;
-  deviceUuid: string;
-  name: string;
-  platform: string;
-  lastSeenAt: string;
-  createdAt: string;
-  updatedAt: string;
-  consoleShaders: Record<string, string>;
-}
+export type Device = Schemas["DeviceResponse"];
 
 export interface ConsoleKeyMapping {
   selectedMapping: string;
@@ -391,15 +342,7 @@ export interface RASettingsRequest {
   hardcoreEnabled: boolean;
 }
 
-export interface Achievement {
-  id: number;
-  title: string;
-  description: string;
-  points: number;
-  badgeUrl: string;
-  type: string;
-  rarityPercent: number;
-}
+export type Achievement = Schemas["Achievement"];
 
 export interface GameAchievements {
   status?: "pending";
