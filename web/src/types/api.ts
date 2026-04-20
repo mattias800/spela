@@ -351,21 +351,6 @@ export type UnlockedAchievement = Schemas["RAUnlockedAchievementResponse"];
 
 export type GameStatsPlayer = Schemas["GameStatsTopPlayer"];
 
-export interface MostPlayedGame {
-  game: Game;
-  totalPlayers: number;
-  totalPlayTime: number;
-}
-
-export interface ActivePlayer {
-  userId: string;
-  username: string;
-  avatarUrl?: string;
-  totalPlayTime: number;
-  gamesPlayed: number;
-  lastPlayed: string;
-}
-
 export type AchievementLeaderboard = Schemas["AchievementLeaderboardResponse"];
 
 export type AchievementTimelineEntry = Schemas["RATimelineEntryResponse"];
