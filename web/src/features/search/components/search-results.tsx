@@ -41,13 +41,12 @@ interface ResultItem {
 function buildSections(results: SearchResults): ResultSection[] {
   const sections: ResultSection[] = [];
 
-  const games = results.games.results ?? [];
-  if (games.length > 0) {
+  if (results.games.results.length > 0) {
     sections.push({
       key: "games",
       title: "Games",
       total: results.games.total,
-      items: games.map((g) => ({
+      items: results.games.results.map((g) => ({
         id: `game-${g.id}`,
         path: `/games/${g.id}`,
         render: (highlighted: boolean) => <GameRow game={g} highlighted={highlighted} />,
@@ -55,13 +54,12 @@ function buildSections(results: SearchResults): ResultSection[] {
     });
   }
 
-  const consoles = results.consoles.results ?? [];
-  if (consoles.length > 0) {
+  if (results.consoles.results.length > 0) {
     sections.push({
       key: "consoles",
       title: "Consoles",
       total: results.consoles.total,
-      items: consoles.map((c) => ({
+      items: results.consoles.results.map((c) => ({
         id: `console-${c.id}`,
         path: `/consoles/${c.id}`,
         render: (highlighted: boolean) => <ConsoleRow console={c} highlighted={highlighted} />,
@@ -69,13 +67,12 @@ function buildSections(results: SearchResults): ResultSection[] {
     });
   }
 
-  const developers = results.developers.results ?? [];
-  if (developers.length > 0) {
+  if (results.developers.results.length > 0) {
     sections.push({
       key: "developers",
       title: "Developers",
       total: results.developers.total,
-      items: developers.map((d) => ({
+      items: results.developers.results.map((d) => ({
         id: `dev-${d.name}`,
         path: `/explore/developers/${encodeURIComponent(d.name)}`,
         render: (highlighted: boolean) => <DeveloperRow developer={d} highlighted={highlighted} />,
@@ -83,13 +80,12 @@ function buildSections(results: SearchResults): ResultSection[] {
     });
   }
 
-  const publishers = results.publishers.results ?? [];
-  if (publishers.length > 0) {
+  if (results.publishers.results.length > 0) {
     sections.push({
       key: "publishers",
       title: "Publishers",
       total: results.publishers.total,
-      items: publishers.map((p) => ({
+      items: results.publishers.results.map((p) => ({
         id: `pub-${p.name}`,
         path: `/explore/publishers/${encodeURIComponent(p.name)}`,
         render: (highlighted: boolean) => <PublisherRow publisher={p} highlighted={highlighted} />,
@@ -97,13 +93,12 @@ function buildSections(results: SearchResults): ResultSection[] {
     });
   }
 
-  const collections = results.collections.results ?? [];
-  if (collections.length > 0) {
+  if (results.collections.results.length > 0) {
     sections.push({
       key: "collections",
       title: "Collections",
       total: results.collections.total,
-      items: collections.map((c) => ({
+      items: results.collections.results.map((c) => ({
         id: `col-${c.id}`,
         path: `/collections/${c.id}`,
         render: (highlighted: boolean) => <CollectionRow collection={c} highlighted={highlighted} />,
@@ -111,13 +106,12 @@ function buildSections(results: SearchResults): ResultSection[] {
     });
   }
 
-  const series = results.series.results ?? [];
-  if (series.length > 0) {
+  if (results.series.results.length > 0) {
     sections.push({
       key: "series",
       title: "Series",
       total: results.series.total,
-      items: series.map((s) => ({
+      items: results.series.results.map((s) => ({
         id: `series-${s.id}`,
         path: `/explore/series/${s.id}`,
         render: (highlighted: boolean) => <SeriesRow series={s} highlighted={highlighted} />,
@@ -125,13 +119,12 @@ function buildSections(results: SearchResults): ResultSection[] {
     });
   }
 
-  const franchises = results.franchises.results ?? [];
-  if (franchises.length > 0) {
+  if (results.franchises.results.length > 0) {
     sections.push({
       key: "franchises",
       title: "Franchises",
       total: results.franchises.total,
-      items: franchises.map((f) => ({
+      items: results.franchises.results.map((f) => ({
         id: `fran-${f.id}`,
         path: `/explore/franchise/${f.id}`,
         render: (highlighted: boolean) => <FranchiseRow franchise={f} highlighted={highlighted} />,
