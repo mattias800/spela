@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { multipartBodySerializer, typedApi, unwrap } from "@/lib/api-client";
-import type { Game, GamesResponse, GameFilters, ReplaceROMResponse } from "@/types/api";
+import { multipart, typedApi, unwrap } from "@/lib/api-client";
+import type { Game, GameFilters } from "@/types/api";
 
 export function useGames(filters?: GameFilters, options?: { enabled?: boolean }) {
   const query: Record<string, string | number | boolean | undefined> = {};
@@ -31,12 +31,7 @@ export function useGames(filters?: GameFilters, options?: { enabled?: boolean })
 
   return useQuery({
     queryKey: ["games", filters],
-    queryFn: async () => {
-      const data = await unwrap(
-        typedApi.GET("/api/games", { params: { query } }),
-      );
-      return data as GamesResponse | undefined;
-    },
+    queryFn: () => unwrap(typedApi.GET("/api/games", { params: { query } })),
     enabled: options?.enabled,
   });
 }
@@ -44,12 +39,8 @@ export function useGames(filters?: GameFilters, options?: { enabled?: boolean })
 export function useGame(id: string) {
   return useQuery({
     queryKey: ["game", id],
-    queryFn: async () => {
-      const data = await unwrap(
-        typedApi.GET("/api/games/{id}", { params: { path: { id } } }),
-      );
-      return data as Game | undefined;
-    },
+    queryFn: () =>
+      unwrap(typedApi.GET("/api/games/{id}", { params: { path: { id } } })),
     enabled: !!id,
   });
 }
@@ -57,20 +48,14 @@ export function useGame(id: string) {
 export function useRecentGames() {
   return useQuery({
     queryKey: ["games", "recent"],
-    queryFn: async () => {
-      const data = await unwrap(typedApi.GET("/api/user/recent"));
-      return data as Game[] | undefined;
-    },
+    queryFn: () => unwrap(typedApi.GET("/api/user/recent")),
   });
 }
 
 export function useFavoriteGames() {
   return useQuery({
     queryKey: ["games", "favorites"],
-    queryFn: async () => {
-      const data = await unwrap(typedApi.GET("/api/user/favorites"));
-      return data as Game[] | undefined;
-    },
+    queryFn: () => unwrap(typedApi.GET("/api/user/favorites")),
   });
 }
 
@@ -126,17 +111,15 @@ export function useReplaceRom() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ gameId, file }: { gameId: string; file: File }) => {
+    mutationFn: ({ gameId, file }: { gameId: string; file: File }) => {
       const formData = new FormData();
       formData.append("file", file);
-      const data = await unwrap(
+      return unwrap(
         typedApi.PUT("/api/admin/games/{id}/replace-rom", {
           params: { path: { id: gameId } },
-          body: formData as unknown as never,
-          bodySerializer: multipartBodySerializer,
+          ...multipart(formData),
         }),
       );
-      return data as ReplaceROMResponse | undefined;
     },
     onSuccess: (_data, { gameId }) => {
       queryClient.invalidateQueries({ queryKey: ["game", gameId] });

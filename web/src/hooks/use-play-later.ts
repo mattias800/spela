@@ -5,10 +5,7 @@ import type { Game } from "@/types/api";
 export function usePlayLaterGames() {
   return useQuery({
     queryKey: ["games", "play-later"],
-    queryFn: async () => {
-      const data = await unwrap(typedApi.GET("/api/user/play-later"));
-      return data as Game[] | undefined;
-    },
+    queryFn: () => unwrap(typedApi.GET("/api/user/play-later")),
   });
 }
 

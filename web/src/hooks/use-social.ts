@@ -4,7 +4,6 @@ import { useWebSocketEvent } from "@/hooks/use-websocket";
 import type {
   ActivityEvent,
   ActivityFeedResponse,
-  UserSearchResponse,
 } from "@/types/api";
 
 export function useOnlineUsers() {
@@ -18,14 +17,12 @@ export function useOnlineUsers() {
 export function useActivityFeed(page: number = 1, pageSize: number = 20) {
   return useQuery({
     queryKey: ["social", "activity", page, pageSize],
-    queryFn: async () => {
-      const data = await unwrap(
+    queryFn: () =>
+      unwrap(
         typedApi.GET("/api/social/activity", {
           params: { query: { page, pageSize } },
         }),
-      );
-      return data as ActivityFeedResponse | undefined;
-    },
+      ),
   });
 }
 
@@ -36,14 +33,12 @@ export function useSearchUsers(
 ) {
   return useQuery({
     queryKey: ["users", "search", query, page, pageSize],
-    queryFn: async () => {
-      const data = await unwrap(
+    queryFn: () =>
+      unwrap(
         typedApi.GET("/api/users/search", {
           params: { query: { q: query, page, pageSize } },
         }),
-      );
-      return data as UserSearchResponse | undefined;
-    },
+      ),
   });
 }
 

@@ -1,22 +1,15 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { typedApi, unwrap } from "@/lib/api-client";
-import type {
-  GameSession,
-  SessionSave,
-  SessionCheatConfig,
-} from "@/types/api";
 
 export function useGameSessions(gameId: string) {
   return useQuery({
     queryKey: ["game-sessions", gameId],
-    queryFn: async () => {
-      const data = await unwrap(
+    queryFn: () =>
+      unwrap(
         typedApi.GET("/api/games/{id}/sessions", {
           params: { path: { id: gameId } },
         }),
-      );
-      return data as GameSession[] | undefined;
-    },
+      ),
     enabled: !!gameId,
   });
 }
@@ -87,14 +80,12 @@ export function useSession(sessionId: string) {
 export function useSessionSaves(sessionId: string) {
   return useQuery({
     queryKey: ["session-saves", sessionId],
-    queryFn: async () => {
-      const data = await unwrap(
+    queryFn: () =>
+      unwrap(
         typedApi.GET("/api/sessions/{id}/saves", {
           params: { path: { id: sessionId } },
         }),
-      );
-      return data as SessionSave[] | undefined;
-    },
+      ),
     enabled: !!sessionId,
   });
 }
@@ -102,14 +93,12 @@ export function useSessionSaves(sessionId: string) {
 export function useSessionCheats(sessionId: string) {
   return useQuery({
     queryKey: ["session-cheats", sessionId],
-    queryFn: async () => {
-      const data = await unwrap(
+    queryFn: () =>
+      unwrap(
         typedApi.GET("/api/sessions/{id}/cheats", {
           params: { path: { id: sessionId } },
         }),
-      );
-      return data as SessionCheatConfig | undefined;
-    },
+      ),
     enabled: !!sessionId,
   });
 }
@@ -192,14 +181,12 @@ export function useDeleteSessionSave() {
 export function useAutoSaveInfo(sessionId: string | undefined) {
   return useQuery({
     queryKey: ["session-saves", sessionId],
-    queryFn: async () => {
-      const data = await unwrap(
+    queryFn: () =>
+      unwrap(
         typedApi.GET("/api/sessions/{id}/saves", {
           params: { path: { id: sessionId as string } },
         }),
-      );
-      return data as SessionSave[] | undefined;
-    },
+      ),
     enabled: !!sessionId,
     select: (saves) => saves?.find((s) => s.isAuto) ?? null,
   });

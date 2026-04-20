@@ -5,7 +5,6 @@ import type {
   Challenge,
   ChallengesResponse,
   ChallengeFilters,
-  ChallengeLeaderboardResponse,
   ChallengeLeaderboardEntry,
   ChallengeAttempt,
 } from "@/types/api";
@@ -99,14 +98,12 @@ export function useChallengeLeaderboard(
 ) {
   return useQuery({
     queryKey: ["challenge", challengeId, "leaderboard", page, pageSize],
-    queryFn: async () => {
-      const data = await unwrap(
+    queryFn: () =>
+      unwrap(
         typedApi.GET("/api/challenges/{id}/leaderboard", {
           params: { path: { id: challengeId }, query: { page, pageSize } },
         }),
-      );
-      return data as ChallengeLeaderboardResponse | undefined;
-    },
+      ),
     enabled: !!challengeId,
   });
 }

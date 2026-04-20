@@ -4,7 +4,6 @@ import { useWebSocketEvent } from "@/hooks/use-websocket";
 import type {
   SharedSessionDetail,
   SharedSessionInvitation,
-  SharedSessionSave,
   SharedSession,
 } from "@/types/api";
 
@@ -57,14 +56,12 @@ export function useSharedSession(id: string) {
 export function useSharedSessionSaves(sharedSessionId: string) {
   return useQuery({
     queryKey: ["shared-sessions", "saves", sharedSessionId],
-    queryFn: async () => {
-      const data = await unwrap(
+    queryFn: () =>
+      unwrap(
         typedApi.GET("/api/shared-sessions/{id}/saves", {
           params: { path: { id: sharedSessionId } },
         }),
-      );
-      return data as SharedSessionSave[] | undefined;
-    },
+      ),
     enabled: !!sharedSessionId,
   });
 }

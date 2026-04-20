@@ -1,15 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { typedApi, unwrap } from "@/lib/api-client";
-import type {
-  User,
-  DeletedUser,
-  ServerSettingsMap,
-  MetadataMatchesResponse,
-  IgdbSearchResult,
-  RateLimitStatus,
-  CoreCompatibilityResponse,
-  ScrapeStatusResponse,
-} from "@/types/api";
+import type { User } from "@/types/api";
 
 export function useAdminUsers() {
   return useQuery({
@@ -74,10 +65,7 @@ export function useCreateUser() {
 export function useServerSettings() {
   return useQuery({
     queryKey: ["admin", "settings"],
-    queryFn: async () => {
-      const data = await unwrap(typedApi.GET("/api/admin/settings"));
-      return data as ServerSettingsMap | undefined;
-    },
+    queryFn: () => unwrap(typedApi.GET("/api/admin/settings")),
   });
 }
 
@@ -194,24 +182,14 @@ export function useCancelScrape() {
 export function useMetadataMatches() {
   return useQuery({
     queryKey: ["admin", "metadata-matches"],
-    queryFn: async () => {
-      const data = await unwrap(
-        typedApi.GET("/api/admin/metadata-matches"),
-      );
-      return data as MetadataMatchesResponse | undefined;
-    },
+    queryFn: () => unwrap(typedApi.GET("/api/admin/metadata-matches")),
   });
 }
 
 export function useDeletedUsers() {
   return useQuery({
     queryKey: ["admin", "users", "deleted"],
-    queryFn: async () => {
-      const data = await unwrap(
-        typedApi.GET("/api/admin/users/deleted"),
-      );
-      return data as DeletedUser[] | undefined;
-    },
+    queryFn: () => unwrap(typedApi.GET("/api/admin/users/deleted")),
   });
 }
 
@@ -303,10 +281,7 @@ export function useTestIgdbCredentials() {
 export function useScrapeStatus() {
   return useQuery({
     queryKey: ["admin", "scrape-status"],
-    queryFn: async () => {
-      const data = await unwrap(typedApi.GET("/api/admin/scrape/status"));
-      return data as ScrapeStatusResponse | undefined;
-    },
+    queryFn: () => unwrap(typedApi.GET("/api/admin/scrape/status")),
     refetchInterval: 3000, // Poll every 3s to catch status changes
   });
 }
@@ -489,14 +464,12 @@ export function useUpdateGameMetadata() {
 export function useIgdbSearch(gameId: string, query: string) {
   return useQuery({
     queryKey: ["admin", "igdb-search", gameId, query],
-    queryFn: async () => {
-      const data = await unwrap(
+    queryFn: () =>
+      unwrap(
         typedApi.GET("/api/admin/games/{id}/igdb-search", {
           params: { path: { id: gameId }, query: { q: query } },
         }),
-      );
-      return data as IgdbSearchResult[] | undefined;
-    },
+      ),
     enabled: query.length >= 2,
   });
 }
@@ -532,14 +505,12 @@ export function useApplyIgdbMatch() {
 export function useUserRateLimit(userId: string) {
   return useQuery({
     queryKey: ["admin", "users", userId, "rate-limit"],
-    queryFn: async () => {
-      const data = await unwrap(
+    queryFn: () =>
+      unwrap(
         typedApi.GET("/api/admin/users/{id}/rate-limit", {
           params: { path: { id: userId } },
         }),
-      );
-      return data as RateLimitStatus | undefined;
-    },
+      ),
     enabled: !!userId,
   });
 }
@@ -566,11 +537,6 @@ export function useResetRateLimit() {
 export function useCoreCompatibility() {
   return useQuery({
     queryKey: ["admin", "core-compatibility"],
-    queryFn: async () => {
-      const data = await unwrap(
-        typedApi.GET("/api/admin/core-compatibility"),
-      );
-      return data as CoreCompatibilityResponse | undefined;
-    },
+    queryFn: () => unwrap(typedApi.GET("/api/admin/core-compatibility")),
   });
 }

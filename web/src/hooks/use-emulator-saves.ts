@@ -1,10 +1,5 @@
 import { useCallback, useRef, useState } from "react";
-import {
-  api,
-  multipartBodySerializer,
-  typedApi,
-  unwrap,
-} from "@/lib/api-client";
+import { api, multipart, typedApi, unwrap } from "@/lib/api-client";
 import { uint8ArrayToBase64 } from "@/lib/encoding";
 import { useSaveQueue } from "./use-save-queue";
 import { useAutoSave } from "./use-auto-save";
@@ -74,8 +69,7 @@ export function useEmulatorSaves({
           unwrap(
             typedApi.POST("/api/sessions/{id}/saves/auto", {
               params: { path: { id: sessionId } },
-              body: formData as unknown as never,
-              bodySerializer: multipartBodySerializer,
+              ...multipart(formData),
             }),
           )
             .then(() => exitResolve())
