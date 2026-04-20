@@ -374,12 +374,7 @@ export interface UnlockedAchievement {
   consoleName: string;
 }
 
-export interface GameStatsPlayer {
-  userId: string;
-  username: string;
-  avatarUrl?: string;
-  playTime: number;
-}
+export type GameStatsPlayer = Schemas["GameStatsTopPlayer"];
 
 export interface MostPlayedGame {
   game: Game;
@@ -448,11 +443,7 @@ export interface RecentAchievement {
   coverUrl: string;
 }
 
-export interface UserSearchResult {
-  id: string;
-  username: string;
-  avatarUrl?: string;
-}
+export type UserSearchResult = Schemas["UserSearchResult"];
 
 export interface UserSearchResponse {
   data: UserSearchResult[];
@@ -1378,10 +1369,5 @@ export interface CompletionistMapResponse {
   overallPct: number;
 }
 
-export interface StorageConsoleBreakdown {
-  consoleId: string;
-  consoleName: string;
-  bytes: number;
-  saveCount: number;
-}
+export type StorageConsoleBreakdown = Schemas["SessionStorageConsoleBreakdown"];
 
