@@ -651,10 +651,7 @@ export interface LongestGame {
   timeToBeatCompletely: number;
 }
 
-export interface DailyPlayActivity {
-  date: string;
-  playTime: number;
-}
+export type DailyPlayActivity = Schemas["HeatmapEntry"];
 
 // --- Session Saves & Cheats ---
 
@@ -1049,27 +1046,11 @@ export interface EntityUserStats {
   mostPlayedGame: Game | null;
 }
 
-export interface CompanyInfo {
-  logoUrl?: string;
-  description?: string;
-  foundedYear?: number;
-  country?: string;
-  websiteUrl?: string;
-  wikipediaUrl?: string;
-}
+export type CompanyInfo = Schemas["CompanyInfo"];
 
-export interface ActiveYears {
-  first: number;
-  last: number;
-}
+export type ActiveYears = Schemas["ActiveYears"];
 
-export interface RatingDistribution {
-  excellent: number;
-  good: number;
-  average: number;
-  poor: number;
-  unrated: number;
-}
+export type RatingDistribution = Schemas["RatingDistribution"];
 
 export interface TimelineGame {
   id: string;
