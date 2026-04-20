@@ -137,6 +137,7 @@ const mockForYou: ForYouResponse = {
     {
       type: "because_you_played",
       title: "Because you played Chrono Trigger",
+      genre: "",
       sourceGame: makeGame({ id: "ct", title: "Chrono Trigger", coverUrl: "/covers/ct.jpg" }),
       games: [makeGame({ id: "fy1", title: "For You Game 1" })],
     },

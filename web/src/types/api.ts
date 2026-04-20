@@ -594,17 +594,9 @@ export interface ExploreRowsResponse {
 /** GameSummary is a full Game object when returned by recommendation endpoints */
 export type GameSummary = Game;
 
-export interface ForYouRow {
-  type: "because_you_played" | "more_genre" | "unfinished" | "expand_horizons";
-  title: string;
-  sourceGame?: GameSummary;
-  genre?: string;
-  games: GameSummary[];
-}
-
-export interface ForYouResponse {
-  rows: ForYouRow[];
-}
+// ForYouRow / ForYouResponse flow through @/generated/schemas
+// (ForYouRowResponse / ForYouResponse).
+export type ForYouRow = Schemas["ForYouRowResponse"];
 
 export interface TasteBreakdown {
   name: string;
@@ -627,10 +619,7 @@ export interface TasteProfile {
   topConsoles: ConsoleBreakdown[];
 }
 
-export interface PlayersLikeYouResponse {
-  games: GameSummary[];
-  similarUsersCount: number;
-}
+// PlayersLikeYouResponse flows through @/generated/schemas.
 
 // --- Developers & Publishers ---
 
@@ -639,12 +628,7 @@ export type DeveloperListResponse = Schemas["DeveloperListResponse"];
 export type PlatformCount = Schemas["PlatformCount"];
 export type NameCount = Schemas["NameCount"];
 
-export interface EntityUserStats {
-  totalPlayTime: number;
-  gamesPlayed: number;
-  favoriteCount: number;
-  mostPlayedGame: Game | null;
-}
+// EntityUserStats flows through @/generated/schemas.
 
 export type CompanyInfo = Schemas["CompanyInfo"];
 
@@ -667,7 +651,7 @@ export interface DeveloperDetailResponse {
   topGames?: Game[];
   genreBreakdown?: GenreCount[];
   platformBreakdown?: PlatformCount[];
-  userStats?: EntityUserStats;
+  userStats?: Schemas["EntityUserStats"];
   publishers?: NameCount[];
   companyInfo?: CompanyInfo;
   activeYears?: ActiveYears;
@@ -687,7 +671,7 @@ export interface PublisherDetailResponse {
   topGames?: Game[];
   genreBreakdown?: GenreCount[];
   platformBreakdown?: PlatformCount[];
-  userStats?: EntityUserStats;
+  userStats?: Schemas["EntityUserStats"];
   developers?: NameCount[];
   companyInfo?: CompanyInfo;
   activeYears?: ActiveYears;

@@ -30,6 +30,7 @@ describe("ForYouSection", () => {
       {
         type: "because_you_played",
         title: "Because you played Chrono Trigger",
+        genre: "",
         sourceGame: makeGame({
           id: "source-1",
           title: "Chrono Trigger",
@@ -58,6 +59,8 @@ describe("ForYouSection", () => {
       {
         type: "more_genre",
         title: "More RPGs for you",
+        genre: "",
+        sourceGame: makeGame(),
         games: [
           makeGame({ id: "g1", title: "Dragon Quest V" }),
           makeGame({ id: "g2", title: "Earthbound" }),
@@ -78,6 +81,8 @@ describe("ForYouSection", () => {
       {
         type: "unfinished",
         title: "Unfinished business",
+        genre: "",
+        sourceGame: makeGame(),
         games: [
           makeGame({ id: "u1", title: "Mega Man X" }),
         ],
@@ -97,6 +102,7 @@ describe("ForYouSection", () => {
         type: "expand_horizons",
         title: "Expand your horizons",
         genre: "Puzzle",
+        sourceGame: makeGame(),
         games: [
           makeGame({ id: "e1", title: "Tetris Attack" }),
           makeGame({ id: "e2", title: "Panel de Pon" }),

@@ -65,10 +65,14 @@ describe("DeveloperStatsCard", () => {
     expect(img).toHaveAttribute("src", "/covers/mmx.jpg");
   });
 
-  it("renders without most played game when null", () => {
+  it("renders without most played game when null at runtime", () => {
+    // The wire type says mostPlayedGame is always present, but huma's
+    // nullable-$ref limitation means the server can emit null (from the
+    // nil *Game pointer). Simulate that by casting; the component should
+    // gracefully skip rendering in that case.
     renderCard({
       ...baseStats,
-      mostPlayedGame: null,
+      mostPlayedGame: null as unknown as EntityUserStats["mostPlayedGame"],
     });
     expect(
       screen.queryByTestId("developer-most-played-game"),

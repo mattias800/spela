@@ -254,7 +254,7 @@ export function ExplorePage() {
       {/* Personalized & Social Discovery — lazy-loaded */}
       <div ref={social.ref}  />
       <ForYouSection
-        rows={forYouData?.rows}
+        rows={forYouData?.rows ?? undefined}
         isLoading={isForYouLoading}
         onToggleFavorite={handleToggleFavorite}
         onTogglePlayLater={handleTogglePlayLater}
@@ -262,7 +262,7 @@ export function ExplorePage() {
 
       {/* Players Like You */}
       <PlayersLikeYouShelf
-        games={playersLikeYouData?.games}
+        games={playersLikeYouData?.games ?? undefined}
         isLoading={isPlayersLoading}
         similarUsersCount={playersLikeYouData?.similarUsersCount ?? 0}
         onToggleFavorite={handleToggleFavorite}
