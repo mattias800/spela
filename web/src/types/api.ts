@@ -554,21 +554,7 @@ export type DailyPlayActivity = Schemas["HeatmapEntry"];
 
 // --- Session Saves & Cheats ---
 
-export interface SessionSave {
-  id: string;
-  sessionId: string;
-  name: string;
-  fileSize: number;
-  screenshotUrl: string | null;
-  isAuto: boolean;
-  isCurrent: boolean;
-  coreName: string | null;
-  coreMatch: boolean | null;
-  currentCore: string | null;
-  notes: string | null;
-  slot: number | null;
-  createdAt: string;
-}
+export type SessionSave = Schemas["SessionSaveResponse"];
 
 export type CoreCompatibilityEntry = Schemas["CoreCompatibilityEntry"];
 
