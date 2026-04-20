@@ -649,12 +649,7 @@ export interface ChallengeAttempt {
 
 export type ChallengeLeaderboardEntry = Schemas["ChallengeLeaderboardEntry"];
 
-export interface ChallengeLeaderboardResponse {
-  data: ChallengeLeaderboardEntry[];
-  total: number;
-  page: number;
-  pageSize: number;
-}
+export type ChallengeLeaderboardResponse = Schemas["PaginatedResponseChallengeLeaderboardEntry"];
 
 export interface StartAttemptResponse {
   attemptId: string;
