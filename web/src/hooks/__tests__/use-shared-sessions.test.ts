@@ -124,21 +124,24 @@ const mockSharedSessionDetail = {
   ],
 };
 
-const mockInvitations = {
-  data: [
-    {
-      id: "inv-1",
-      sharedSessionId: "ss-1",
-      sharedSessionName: "Friday Night SNES",
-      gameId: "g1",
-      gameTitle: "Super Mario World",
-      gameConsoleName: "SNES",
-      inviterUsername: "alice",
-      createdAt: "2026-02-13T10:00:00Z",
-    },
-  ],
-  total: 1,
-};
+const mockInvitations = [
+  {
+    id: "inv-1",
+    sharedSessionId: "ss-1",
+    sharedSessionName: "Friday Night SNES",
+    gameId: "g1",
+    gameTitle: "Super Mario World",
+    gameCoverUrl: "",
+    consoleName: "SNES",
+    inviterId: "u1",
+    inviterUsername: "alice",
+    inviterAvatarUrl: "",
+    inviteeId: "u2",
+    inviteeUsername: "bob",
+    status: "pending",
+    createdAt: "2026-02-13T10:00:00Z",
+  },
+];
 
 const mockSaves = [
   {
@@ -194,8 +197,8 @@ describe("useSharedSessionInvitations", () => {
     expect(mockTypedApi.GET).toHaveBeenCalledWith(
       "/api/user/shared-session-invites",
     );
-    expect(result.current.data?.data).toHaveLength(1);
-    expect(result.current.data?.data?.[0].sharedSessionName).toBe(
+    expect(result.current.data).toHaveLength(1);
+    expect(result.current.data?.[0].sharedSessionName).toBe(
       "Friday Night SNES",
     );
   });

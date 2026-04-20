@@ -57,22 +57,24 @@ const mockSharedSessions = {
   pageSize: 24,
 };
 
-const mockInvitations = {
-  data: [
-    {
-      id: "inv-1",
-      sharedSessionId: "ss-2",
-      sharedSessionName: "RPG Club",
-      gameId: "g2",
-      gameTitle: "Chrono Trigger",
-      gameCoverUrl: "https://example.com/chrono.png",
-      gameConsoleName: "SNES",
-      inviterUsername: "bob",
-      createdAt: "2026-02-13T10:00:00Z",
-    },
-  ],
-  total: 1,
-};
+const mockInvitations = [
+  {
+    id: "inv-1",
+    sharedSessionId: "ss-2",
+    sharedSessionName: "RPG Club",
+    gameId: "g2",
+    gameTitle: "Chrono Trigger",
+    gameCoverUrl: "https://example.com/chrono.png",
+    consoleName: "SNES",
+    inviterId: "u1",
+    inviterUsername: "bob",
+    inviterAvatarUrl: "",
+    inviteeId: "u2",
+    inviteeUsername: "alice",
+    status: "pending",
+    createdAt: "2026-02-13T10:00:00Z",
+  },
+];
 
 function renderPage() {
   const queryClient = new QueryClient({
@@ -154,7 +156,7 @@ describe("SharedSessionsPage", () => {
 
   it("shows empty state when no invitations", async () => {
     mockUseSharedSessionInvitations.mockReturnValue({
-      data: { data: [], total: 0 },
+      data: [],
       isLoading: false,
     });
     renderPage();

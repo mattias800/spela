@@ -4,7 +4,7 @@ import { useWebSocketEvent } from "@/hooks/use-websocket";
 import type {
   SharedSessionsResponse,
   SharedSessionDetail,
-  SharedSessionInvitationsResponse,
+  SharedSessionInvitation,
   SharedSessionSave,
   SharedSession,
 } from "@/types/api";
@@ -26,7 +26,7 @@ export function useSharedSessionInvitations() {
       const data = await unwrap(
         typedApi.GET("/api/user/shared-session-invites"),
       );
-      return data as SharedSessionInvitationsResponse | undefined;
+      return data as SharedSessionInvitation[] | null | undefined;
     },
   });
 }

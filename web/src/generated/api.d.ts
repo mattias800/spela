@@ -7935,12 +7935,16 @@ export interface components {
              * @example https://example.com/api/schemas/SharedSessionInviteResponse.json
              */
             readonly $schema?: string;
+            consoleName: string;
             /** Format: date-time */
             createdAt: string;
+            gameCoverUrl: string;
+            gameId: string;
             gameTitle: string;
             id: string;
             inviteeId: string;
             inviteeUsername: string;
+            inviterAvatarUrl: string;
             inviterId: string;
             inviterUsername: string;
             sharedSessionId: string;

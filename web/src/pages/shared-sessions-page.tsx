@@ -71,8 +71,8 @@ export function SharedSessionsPage() {
   useSharedSessionRealtime();
 
   const sharedSessions = sharedSessionsData?.data ?? [];
-  const invitations = invitationsData?.data ?? [];
-  const invitationCount = invitationsData?.total ?? 0;
+  const invitations = invitationsData ?? [];
+  const invitationCount = invitations.length;
 
   function handleTabChange(tab: Tab) {
     setActiveTab(tab);
