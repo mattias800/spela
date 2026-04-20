@@ -101,6 +101,72 @@ func TestUpdateMetadata_PartyInfo(t *testing.T) {
 	assert.Equal(t, "Assembly 1993, 1st place", getResp["partyInfo"])
 }
 
+// TestUpdateMetadata_CanClearFields verifies that sending explicit empty /
+// zero values clears fields via the admin game metadata endpoint. Prior to
+// issue #450 the handler used non-empty semantics (`if req.Title != ""`) so
+// admins couldn't clear a field once set — sending {"title": ""} was a no-op
+// rather than a clear. Pointer-based request fields now distinguish "absent"
+// (leave alone) from "present and zero" (clear).
+func TestUpdateMetadata_CanClearFields(t *testing.T) {
+	database, cfg := setupTestEnv(t)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
+	token := registerAndGetToken(t, router)
+
+	// Seed a game with non-empty metadata.
+	var console db.Console
+	require.NoError(t, database.Where("abbreviation = ?", "ADEMO").First(&console).Error)
+	game := db.Game{
+		ConsoleID:         console.ID,
+		Title:             "Original Title",
+		Description:       "Seed description",
+		Developer:         "Seed Dev",
+		Publisher:         "Seed Pub",
+		Genre:             "Action",
+		Players:           4,
+		IGDBCriticsRating: 82.5,
+		PartyInfo:         "Assembly 1993",
+		FileName:          "seed.adf",
+		FilePath:          "/tmp/seed.adf",
+		FileSize:          100,
+	}
+	require.NoError(t, database.Create(&game).Error)
+	gameID := fmt.Sprintf("%d", game.ID)
+
+	// Clear a subset via explicit zero values.
+	body, _ := json.Marshal(map[string]interface{}{
+		"description":       "",
+		"publisher":         "",
+		"genre":             "",
+		"players":           0,
+		"igdbCriticsRating": 0.0,
+		"partyInfo":         "",
+		// title / developer / coverUrl intentionally omitted — those must
+		// remain at their seeded values.
+	})
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("POST", "/api/admin/games/"+gameID+"/metadata", bytes.NewReader(body))
+	req.Header.Set("Authorization", "Bearer "+token)
+	req.Header.Set("Content-Type", "application/json")
+	router.ServeHTTP(w, req)
+	require.Equal(t, http.StatusOK, w.Code)
+
+	var updated db.Game
+	require.NoError(t, database.First(&updated, game.ID).Error)
+
+	// Cleared fields — all present-but-zero in the request.
+	assert.Empty(t, updated.Description, "description should be cleared by explicit empty")
+	assert.Empty(t, updated.Publisher, "publisher should be cleared")
+	assert.Empty(t, updated.Genre, "genre should be cleared")
+	assert.Zero(t, updated.Players, "players should be cleared to 0")
+	assert.Zero(t, updated.IGDBCriticsRating, "rating should be cleared to 0")
+	assert.Empty(t, updated.PartyInfo, "partyInfo should be cleared")
+
+	// Untouched fields — absent from the request.
+	assert.Equal(t, "Original Title", updated.Title, "omitted title must not be cleared")
+	assert.Equal(t, "Seed Dev", updated.Developer, "omitted developer must not be cleared")
+}
+
 // TestUpdatePlayTime_CreatesPlayHistory verifies that UpdatePlayTime creates
 // a PlayHistory record when the user starts playing a game for the first time.
 // This is a regression guard: PlayHistory should only be created by play-time

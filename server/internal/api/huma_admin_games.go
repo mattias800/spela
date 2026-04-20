@@ -408,41 +408,41 @@ func (h *GameHandler) HumaUpdateMetadata(ctx context.Context, in *UpdateGameMeta
 	}
 
 	req := in.Body
-	if req.Title != "" {
-		game.Title = req.Title
+	if req.Title != nil {
+		game.Title = *req.Title
 	}
-	if req.Description != "" {
-		game.Description = req.Description
+	if req.Description != nil {
+		game.Description = *req.Description
 	}
-	if req.CoverURL != "" {
-		game.CoverURL = req.CoverURL
+	if req.CoverURL != nil {
+		game.CoverURL = *req.CoverURL
 	}
-	if req.ScreenshotURL != "" {
-		game.ScreenshotURL = req.ScreenshotURL
+	if req.ScreenshotURL != nil {
+		game.ScreenshotURL = *req.ScreenshotURL
 	}
-	if req.Developer != "" {
-		game.Developer = req.Developer
+	if req.Developer != nil {
+		game.Developer = *req.Developer
 	}
-	if req.Publisher != "" {
-		game.Publisher = req.Publisher
+	if req.Publisher != nil {
+		game.Publisher = *req.Publisher
 	}
-	if req.ReleaseDate != "" {
-		game.ReleaseDate = req.ReleaseDate
+	if req.ReleaseDate != nil {
+		game.ReleaseDate = *req.ReleaseDate
 	}
-	if req.Genre != "" {
-		game.Genre = req.Genre
+	if req.Genre != nil {
+		game.Genre = *req.Genre
 	}
-	if req.Players > 0 {
-		game.Players = req.Players
+	if req.Players != nil {
+		game.Players = *req.Players
 	}
-	if req.IGDBCriticsRating > 0 {
-		game.IGDBCriticsRating = req.IGDBCriticsRating
+	if req.IGDBCriticsRating != nil {
+		game.IGDBCriticsRating = *req.IGDBCriticsRating
 	}
-	if req.CoreOverride != "" {
-		game.CoreOverride = req.CoreOverride
+	if req.CoreOverride != nil {
+		game.CoreOverride = *req.CoreOverride
 	}
-	if req.PartyInfo != "" {
-		game.PartyInfo = req.PartyInfo
+	if req.PartyInfo != nil {
+		game.PartyInfo = *req.PartyInfo
 	}
 
 	if err := h.DB.Save(&game).Error; err != nil {
