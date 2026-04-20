@@ -277,17 +277,24 @@ export interface SharedSessionInvitation {
 
 export type SharedSessionSave = Schemas["SharedSessionSaveResponse"];
 
-export interface SharedSessionsResponse {
-  data: SharedSession[];
+// Generic paginated wrapper used to type PaginatedResponse* payloads for
+// the view-model types that narrow their wire counterparts (SharedSession,
+// NetplaySession, NetplayInvite, Challenge). Matches the shape huma emits
+// for `PaginatedResponse*` schemas except data is null-safely widened.
+export interface Paginated<T> {
+  data: T[] | null;
   total: number;
   page: number;
   pageSize: number;
 }
 
-export interface SharedSessionInvitationsResponse {
-  data: SharedSessionInvitation[];
+export interface PaginatedFlat<T> {
+  data: T[] | null;
   total: number;
 }
+
+export type SharedSessionsResponse = Paginated<SharedSession>;
+export type SharedSessionInvitationsResponse = PaginatedFlat<SharedSessionInvitation>;
 
 export type NetplaySessionStatus = "waiting" | "in_progress" | "ended";
 export type NetplayEndReason =
@@ -308,12 +315,7 @@ export type NetplaySession = Omit<
   endReason?: NetplayEndReason;
 };
 
-export interface NetplaySessionsResponse {
-  data: NetplaySession[];
-  total: number;
-  page: number;
-  pageSize: number;
-}
+export type NetplaySessionsResponse = Paginated<NetplaySession>;
 
 export type NetplayInviteStatus =
   | "pending"
@@ -325,10 +327,7 @@ export type NetplayInvite = Omit<NetplayInviteResponse, "status"> & {
   status: NetplayInviteStatus;
 };
 
-export interface NetplayInvitesResponse {
-  data: NetplayInvite[];
-  total: number;
-}
+export type NetplayInvitesResponse = PaginatedFlat<NetplayInvite>;
 
 export type BiosFile = Schemas["BiosFileResponse"];
 
@@ -396,12 +395,7 @@ export type Challenge = Omit<
   status: ChallengeStatus;
 };
 
-export interface ChallengesResponse {
-  data: Challenge[];
-  total: number;
-  page: number;
-  pageSize: number;
-}
+export type ChallengesResponse = Paginated<Challenge>;
 
 export interface ChallengeFilters {
   gameId?: string;
