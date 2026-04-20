@@ -155,18 +155,7 @@ export interface Console {
 
 export type GameDisc = Schemas["DiscResponse"];
 
-// GameVariant from backend — represents a variant in the game detail response
-export interface GameVariant {
-  id: string;
-  title: string;
-  fileName: string;
-  region: string;
-  revision: string;
-  tags: string;
-  isPreRelease: boolean;
-  fileSize: number;
-  verificationStatus: string;
-}
+export type GameVariant = Schemas["VariantResponse"];
 
 // GameResponse from backend responses.go DTO layer
 export interface Game {
