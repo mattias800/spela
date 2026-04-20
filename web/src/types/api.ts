@@ -558,9 +558,7 @@ export type SessionSave = Schemas["SessionSaveResponse"];
 
 export type CoreCompatibilityEntry = Schemas["CoreCompatibilityEntry"];
 
-export interface CoreCompatibilityResponse {
-  consoles: CoreCompatibilityEntry[];
-}
+export type CoreCompatibilityResponse = Schemas["CoreCompatibilityResponse"];
 
 export interface SessionCheatConfig {
   cheatsEnabled: boolean;
