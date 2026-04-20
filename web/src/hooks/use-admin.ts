@@ -1,13 +1,24 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { typedApi, unwrap } from "@/lib/api-client";
+import type { UserResponse } from "@/generated/schemas";
 import type { User } from "@/types/api";
+import { asUserRole } from "@/types/view-model-narrowing";
+
+// Map the wire User (role: string) to the view-model User (role: UserRole).
+// Shared between use-admin.ts and use-auth.tsx.
+export function toUser(wire: UserResponse): User {
+  return {
+    ...wire,
+    role: asUserRole(wire.role),
+  };
+}
 
 export function useAdminUsers() {
   return useQuery({
     queryKey: ["admin", "users"],
     queryFn: async () => {
       const data = await unwrap(typedApi.GET("/api/admin/users"));
-      return data as User[] | undefined;
+      return data?.map(toUser);
     },
   });
 }
