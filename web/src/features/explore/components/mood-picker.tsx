@@ -43,7 +43,7 @@ export function MoodPicker({ moods, isLoading }: MoodPickerProps) {
             to={`/explore/mood/${mood.id}`}
             data-testid={`mood-card-${mood.id}`}
             className="group/mood block rounded-xl overflow-hidden shadow-md transition-all duration-200 hover:scale-[1.02] hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 focus-visible:ring-offset-surface-950"
-            style={{ background: buildGradient(mood.gradient) }}
+            style={{ background: buildGradient(mood.gradient ?? []) }}
           >
             <div className="relative h-32 flex flex-col justify-end p-4">
               {/* Subtle overlay for text readability */}

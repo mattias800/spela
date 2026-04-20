@@ -803,13 +803,7 @@ export interface ConsoleHighlightsResponse {
 
 // --- Moods ---
 
-export interface MoodDefinition {
-  id: string;
-  name: string;
-  description: string;
-  icon: string;
-  gradient: string[];
-}
+export type MoodDefinition = Schemas["MoodResponse"];
 
 // --- Explore ---
 
