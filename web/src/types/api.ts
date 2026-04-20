@@ -388,23 +388,7 @@ export type SessionCheatConfig = Schemas["SessionCheatsResponse"];
 
 // --- Game Sessions ---
 
-export interface GameSession {
-  id: string;
-  gameId: string;
-  name: string;
-  lastPlayedAt: string | null;
-  lastPlayedByUsername: string | null;
-  totalPlayTime: number;
-  screenshotUrl: string | null;
-  cheatsEnabled: boolean;
-  isSharedSession: boolean;
-  sharedSessionId?: string;
-  memberCount: number;
-  memberUsernames: string[];
-  memberAvatars: string[] | null;
-  createdAt: string;
-  updatedAt: string;
-}
+export type GameSession = Schemas["GameSessionResponse"];
 
 // --- Challenges ---
 
@@ -444,18 +428,13 @@ export interface ChallengeFilters {
   pageSize?: number;
 }
 
-export interface ChallengeAttempt {
-  id: string;
-  challengeId: string;
-  userId: string;
-  username: string;
-  avatarUrl?: string;
+// ChallengeAttempt narrows status to AttemptStatus for exhaustive handling.
+export type ChallengeAttempt = Omit<
+  Schemas["ChallengeAttemptResponse"],
+  "status"
+> & {
   status: AttemptStatus;
-  startedAt: string;
-  completedAt?: string | null;
-  durationMs: number;
-  isBest: boolean;
-}
+};
 
 export type ChallengeLeaderboardEntry = Schemas["ChallengeLeaderboardEntry"];
 

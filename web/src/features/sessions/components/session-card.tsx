@@ -119,12 +119,12 @@ export function SessionCard({
                 </span>
               </>
             )}
-            {session.isSharedSession && session.memberUsernames.length > 0 && (
+            {session.isSharedSession && (session.memberUsernames?.length ?? 0) > 0 && (
               <>
                 <span>&middot;</span>
                 <span className="flex items-center gap-0.5" data-testid="session-members">
                   <Users className="h-3 w-3" />
-                  {session.memberUsernames.join(", ")}
+                  {session.memberUsernames?.join(", ")}
                 </span>
               </>
             )}
