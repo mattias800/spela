@@ -5,7 +5,7 @@ interface BasedOnLinkProps {
   parentGame: {
     id: string;
     title: string;
-    coverUrl: string;
+    coverUrl?: string;
   };
 }
 

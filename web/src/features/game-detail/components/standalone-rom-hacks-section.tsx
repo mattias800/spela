@@ -5,7 +5,7 @@ import { Section } from "@/components/ui";
 interface RomHackEntry {
   id: string;
   title: string;
-  coverUrl: string;
+  coverUrl?: string;
 }
 
 interface StandaloneRomHacksSectionProps {
