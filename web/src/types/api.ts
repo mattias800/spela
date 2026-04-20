@@ -295,21 +295,11 @@ export interface MetadataMatchesResponse {
   incomplete: Game[];
 }
 
-export interface IgdbSearchResult {
-  igdbId: number;
-  name: string;
-  coverUrl?: string;
-  releaseYear?: number;
-  developer?: string;
-  summary?: string;
-}
+export type IgdbSearchResult = Schemas["IGDBSearchResult"];
 
 export type Device = Schemas["DeviceResponse"];
 
-export interface ConsoleKeyMapping {
-  selectedMapping: string;
-  customMapping?: Record<string, string>;
-}
+export type ConsoleKeyMapping = Schemas["ConsoleKeyMappingDTO"];
 
 export interface UserPreferences {
   showPerformanceOverlay: boolean;
@@ -900,13 +890,7 @@ export interface CompleteAttemptResponse {
 
 // --- Replace ROM ---
 
-export interface ReplaceROMResult {
-  verified: boolean;
-  crc32: string;
-  canonicalName?: string;
-  previousStatus: string;
-  previousCrc32: string;
-}
+export type ReplaceROMResult = Schemas["ReplaceROMResult"];
 
 export interface ReplaceROMResponse {
   game: Game;
@@ -923,10 +907,7 @@ export type StagedUploadStatus =
   | "accepted"
   | "rejected";
 
-export interface PossibleConsole {
-  id: string;
-  name: string;
-}
+export type PossibleConsole = Schemas["PossibleConsoleResponse"];
 
 // --- Themes & Keywords ---
 
@@ -947,12 +928,7 @@ export interface FeaturedSeries {
   heroUrl: string;
 }
 
-export interface SeriesConsole {
-  abbreviation: string;
-  name: string;
-  color: string;
-  gameCount: number;
-}
+export type SeriesConsole = Schemas["SeriesConsoleInfo"];
 
 export interface SeriesGame {
   igdbGameId: number;
