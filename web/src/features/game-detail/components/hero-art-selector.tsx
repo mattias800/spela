@@ -1,10 +1,7 @@
 import { Check } from "lucide-react";
 import { useToast, Modal } from "@/components/ui";
-import {
-  useGameHeroes,
-  useSetGameHero,
-  type HeroOption,
-} from "@/hooks/use-admin";
+import { useGameHeroes, useSetGameHero } from "@/hooks/use-admin";
+import type { HeroOption } from "@/generated/schemas";
 import { cn } from "@/lib/cn";
 
 interface HeroArtSelectorProps {
@@ -22,7 +19,8 @@ export function HeroArtSelector({
   const setHero = useSetGameHero();
   const { toast } = useToast();
 
-  const hasHeroes = data && data.heroes.length >= 2;
+  const heroes = data?.heroes ?? [];
+  const hasHeroes = heroes.length >= 2;
 
   function handleSelect(hero: HeroOption) {
     setHero.mutate(
@@ -55,8 +53,8 @@ export function HeroArtSelector({
           className="flex flex-wrap gap-4"
           data-testid="hero-art-selector"
         >
-          {data!.heroes.map((hero) => {
-            const isActive = data.activeUrl && hero.thumb === data.activeUrl;
+          {heroes.map((hero) => {
+            const isActive = data!.activeUrl && hero.thumb === data!.activeUrl;
             return (
               <button
                 key={hero.id}
