@@ -6,6 +6,8 @@ package api
 // by name and gives callers a single place to find request schemas.
 
 import (
+	"encoding/json"
+
 	"github.com/spela/server/internal/db"
 )
 
@@ -339,4 +341,14 @@ type TestIGDBRequest struct {
 type ShowcaseEntryInput struct {
 	AchievementRAID uint `json:"achievementRaId" binding:"required"`
 	RAGameID        uint `json:"raGameId" binding:"required"`
+}
+
+// --- Saved searches ---
+
+// SavedSearchRequest is the request body for creating a saved search.
+// Fields are marked optional in the huma schema so handler-side validation
+// owns the 400 response (the raw gin handler used binding:"required" tags).
+type SavedSearchRequest struct {
+	Name    string          `json:"name,omitempty" required:"false" binding:"required"`
+	Filters json.RawMessage `json:"filters,omitempty" required:"false" binding:"required"`
 }
