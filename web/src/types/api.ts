@@ -345,17 +345,7 @@ export interface GameAchievementProgressResponse {
   progress: GameAchievementProgress[];
 }
 
-export interface ShowcaseAchievement {
-  achievementRaId: number;
-  raGameId: number;
-  showcaseOrder: number;
-  title?: string;
-  description?: string;
-  points?: number;
-  badgeUrl?: string;
-  rarityPercent?: number;
-  gameTitle?: string;
-}
+export type ShowcaseAchievement = Schemas["ShowcaseEntryResponse"];
 
 export type UnlockedAchievement = Schemas["RAUnlockedAchievementResponse"];
 
