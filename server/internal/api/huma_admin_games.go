@@ -135,7 +135,7 @@ type TestIGDBInput struct {
 // TestIGDBResponse is the wire format for the IGDB test response.
 type TestIGDBResponse struct {
 	Success bool   `json:"success"`
-	Error   string `json:"error,omitempty"`
+	Error   string `json:"error"`
 }
 
 // TestIGDBOutput wraps the IGDB test response.
@@ -211,10 +211,10 @@ type ScanStatusInput struct{}
 // ScanStatusResponse is the wire format for the scan status response.
 type ScanStatusResponse struct {
 	Active  bool   `json:"active"`
-	Phase   string `json:"phase,omitempty"`
-	Current int    `json:"current,omitempty"`
-	Total   int    `json:"total,omitempty"`
-	Message string `json:"message,omitempty"`
+	Phase   string `json:"phase"`
+	Current int    `json:"current"`
+	Total   int    `json:"total"`
+	Message string `json:"message"`
 }
 
 // ScanStatusOutput wraps the scan status response.

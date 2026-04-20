@@ -48,13 +48,13 @@ type AuthRefreshRequest struct {
 // format exactly while keeping the OpenAPI spec a single response type.
 type AuthRegisterResponse struct {
 	// Pending-approval fields.
-	Pending bool   `json:"pending,omitempty" doc:"True when the new account is awaiting admin approval. When true, no tokens are returned."`
-	Message string `json:"message,omitempty" doc:"Human-readable status message (only set when pending)."`
+	Pending bool   `json:"pending" doc:"True when the new account is awaiting admin approval. When true, no tokens are returned."`
+	Message string `json:"message" doc:"Human-readable status message (only set when pending)."`
 
 	// Normal success fields (omitted when pending).
-	AccessToken  string        `json:"accessToken,omitempty" doc:"Bearer access token."`
-	RefreshToken string        `json:"refreshToken,omitempty" doc:"Refresh token (rotate via /api/auth/refresh)."`
-	User         *UserResponse `json:"user,omitempty" doc:"Registered user profile."`
+	AccessToken  string        `json:"accessToken" doc:"Bearer access token."`
+	RefreshToken string        `json:"refreshToken" doc:"Refresh token (rotate via /api/auth/refresh)."`
+	User         *UserResponse `json:"user" doc:"Registered user profile."`
 }
 
 // SetupStatusResponse is the JSON shape for GET /api/auth/setup-status.

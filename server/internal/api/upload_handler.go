@@ -49,23 +49,23 @@ type StagedUploadResponse struct {
 	FileName           string                    `json:"fileName"`
 	OriginalFileName   string                    `json:"originalFileName"`
 	FileSize           int64                     `json:"fileSize"`
-	ConsoleID          *string                   `json:"consoleId,omitempty"`
-	ConsoleName        *string                   `json:"consoleName,omitempty"`
-	PossibleConsoles   []PossibleConsoleResponse `json:"possibleConsoles,omitempty"`
+	ConsoleID          *string                   `json:"consoleId"`
+	ConsoleName        *string                   `json:"consoleName"`
+	PossibleConsoles   []PossibleConsoleResponse `json:"possibleConsoles"`
 	Status             string                    `json:"status"`
-	Title              string                    `json:"title,omitempty"`
-	CoverURL           string                    `json:"coverUrl,omitempty"`
-	Description        string                    `json:"description,omitempty"`
-	IGDBCriticsRating  float64                   `json:"igdbCriticsRating,omitempty"`
-	Developer          string                    `json:"developer,omitempty"`
-	Publisher          string                    `json:"publisher,omitempty"`
-	Genre              string                    `json:"genre,omitempty"`
-	Players            int                       `json:"players,omitempty"`
-	ReleaseDate        string                    `json:"releaseDate,omitempty"`
-	VerificationStatus string                    `json:"verificationStatus,omitempty"`
-	CRC32              string                    `json:"crc32,omitempty"`
-	CanonicalName      string                    `json:"canonicalName,omitempty"`
-	DuplicateOfGameID  *string                   `json:"duplicateOfGameId,omitempty"`
+	Title              string                    `json:"title"`
+	CoverURL           string                    `json:"coverUrl"`
+	Description        string                    `json:"description"`
+	IGDBCriticsRating  float64                   `json:"igdbCriticsRating"`
+	Developer          string                    `json:"developer"`
+	Publisher          string                    `json:"publisher"`
+	Genre              string                    `json:"genre"`
+	Players            int                       `json:"players"`
+	ReleaseDate        string                    `json:"releaseDate"`
+	VerificationStatus string                    `json:"verificationStatus"`
+	CRC32              string                    `json:"crc32"`
+	CanonicalName      string                    `json:"canonicalName"`
+	DuplicateOfGameID  *string                   `json:"duplicateOfGameId"`
 }
 
 // toStagedUploadResponse converts a db.StagedUpload to its API response.

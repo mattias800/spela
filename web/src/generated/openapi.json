@@ -347,8 +347,12 @@
           "createdAt",
           "userId",
           "username",
+          "avatarUrl",
           "gameId",
-          "gameTitle"
+          "gameTitle",
+          "gameCoverUrl",
+          "consoleName",
+          "metadata"
         ],
         "type": "object"
       },
@@ -920,6 +924,13 @@
             "description": "Registered user profile."
           }
         },
+        "required": [
+          "pending",
+          "message",
+          "accessToken",
+          "refreshToken",
+          "user"
+        ],
         "type": "object"
       },
       "BackfillImagesResponse": {
@@ -1046,10 +1057,16 @@
             ]
           },
           "consoleName": {
-            "type": "string"
+            "type": [
+              "string",
+              "null"
+            ]
           },
           "description": {
-            "type": "string"
+            "type": [
+              "string",
+              "null"
+            ]
           },
           "expectedMd5": {
             "type": "string"
@@ -1078,7 +1095,11 @@
           "name",
           "size",
           "md5",
+          "expectedMd5",
+          "subDir",
           "consoleId",
+          "consoleName",
+          "description",
           "required",
           "status"
         ],
@@ -1168,7 +1189,10 @@
           },
           "completedAt": {
             "format": "date-time",
-            "type": "string"
+            "type": [
+              "string",
+              "null"
+            ]
           },
           "durationMs": {
             "format": "int64",
@@ -1199,8 +1223,10 @@
           "challengeId",
           "userId",
           "username",
+          "avatarUrl",
           "status",
           "startedAt",
+          "completedAt",
           "durationMs",
           "isBest"
         ],
@@ -1238,6 +1264,7 @@
           "rank",
           "userId",
           "username",
+          "avatarUrl",
           "durationMs",
           "attemptId",
           "completedAt"
@@ -1291,7 +1318,10 @@
           },
           "expiresAt": {
             "format": "date-time",
-            "type": "string"
+            "type": [
+              "string",
+              "null"
+            ]
           },
           "gameCoverUrl": {
             "type": "string"
@@ -1330,15 +1360,22 @@
           "id",
           "creatorId",
           "creatorUsername",
+          "creatorAvatar",
           "gameId",
           "gameTitle",
+          "gameCoverUrl",
+          "consoleName",
           "name",
+          "description",
           "type",
           "difficulty",
           "status",
           "saveFileSize",
+          "screenshotUrl",
+          "coreName",
           "attemptCount",
           "completionCount",
+          "expiresAt",
           "createdAt",
           "updatedAt"
         ],
@@ -1430,7 +1467,8 @@
           }
         },
         "required": [
-          "writable"
+          "writable",
+          "reason"
         ],
         "type": "object"
       },
@@ -1497,8 +1535,11 @@
           "id",
           "userId",
           "username",
+          "avatarUrl",
           "name",
+          "description",
           "isPublic",
+          "coverUrl",
           "gameCount",
           "createdAt",
           "updatedAt"
@@ -1558,8 +1599,11 @@
           "id",
           "userId",
           "username",
+          "avatarUrl",
           "name",
+          "description",
           "isPublic",
+          "coverUrl",
           "gameCount",
           "createdAt",
           "updatedAt"
@@ -1665,6 +1709,14 @@
             "type": "string"
           }
         },
+        "required": [
+          "logoUrl",
+          "description",
+          "foundedYear",
+          "country",
+          "websiteUrl",
+          "wikipediaUrl"
+        ],
         "type": "object"
       },
       "CompletionistConsole": {
@@ -1821,7 +1873,8 @@
           "description",
           "required",
           "md5",
-          "status"
+          "status",
+          "subDir"
         ],
         "type": "object"
       },
@@ -1857,7 +1910,8 @@
           "colorTheme",
           "iconUrl",
           "logoUrl",
-          "gameCount"
+          "gameCount",
+          "topGame"
         ],
         "type": "object"
       },
@@ -1902,7 +1956,8 @@
           }
         },
         "required": [
-          "selectedMapping"
+          "selectedMapping",
+          "customMapping"
         ],
         "type": "object"
       },
@@ -2011,6 +2066,8 @@
           "updatedAt",
           "name",
           "abbreviation",
+          "maker",
+          "mediaType",
           "releaseYear",
           "unitsSold",
           "summary",
@@ -2161,7 +2218,10 @@
           "updatedAt",
           "name",
           "displayName",
-          "platforms"
+          "description",
+          "version",
+          "platforms",
+          "downloadUrl"
         ],
         "type": "object"
       },
@@ -2322,7 +2382,9 @@
         },
         "required": [
           "source",
-          "url"
+          "url",
+          "label",
+          "libretroName"
         ],
         "type": "object"
       },
@@ -2704,11 +2766,18 @@
           "avgRating",
           "consoles",
           "games",
+          "heroUrl",
           "topGames",
           "genreBreakdown",
           "platformBreakdown",
+          "userStats",
           "publishers",
-          "ratingDistribution"
+          "companyInfo",
+          "activeYears",
+          "ratingDistribution",
+          "primaryGenre",
+          "timeline",
+          "relatedDevelopers"
         ],
         "type": "object"
       },
@@ -3011,7 +3080,9 @@
         "required": [
           "id",
           "label",
-          "status"
+          "status",
+          "detail",
+          "fix"
         ],
         "type": "object"
       },
@@ -3165,7 +3236,12 @@
           }
         },
         "required": [
-          "active"
+          "active",
+          "current",
+          "total",
+          "gameName",
+          "successes",
+          "failures"
         ],
         "type": "object"
       },
@@ -3191,7 +3267,8 @@
         "required": [
           "totalPlayTime",
           "gamesPlayed",
-          "favoriteCount"
+          "favoriteCount",
+          "mostPlayedGame"
         ],
         "type": "object"
       },
@@ -3224,7 +3301,10 @@
           },
           "expiresAt": {
             "format": "date-time",
-            "type": "string"
+            "type": [
+              "string",
+              "null"
+            ]
           },
           "gameCoverUrl": {
             "type": "string"
@@ -3250,11 +3330,15 @@
           "creatorUsername",
           "gameId",
           "gameTitle",
+          "gameCoverUrl",
+          "consoleName",
           "name",
+          "description",
           "type",
           "difficulty",
           "attemptCount",
           "completionCount",
+          "expiresAt",
           "createdAt"
         ],
         "type": "object"
@@ -3464,7 +3548,8 @@
           "name",
           "libraryGames",
           "totalGames",
-          "consoleCount"
+          "consoleCount",
+          "heroUrl"
         ],
         "type": "object"
       },
@@ -3523,6 +3608,8 @@
         "required": [
           "type",
           "title",
+          "sourceGame",
+          "genre",
           "games"
         ],
         "type": "object"
@@ -3611,6 +3698,8 @@
           "id",
           "igdbFranchiseId",
           "name",
+          "heroUrl",
+          "logoUrl",
           "libraryGames",
           "totalGames",
           "consoles",
@@ -3773,9 +3862,11 @@
         },
         "required": [
           "raGameId",
+          "title",
           "achievements",
           "totalCount",
-          "totalPoints"
+          "totalPoints",
+          "status"
         ],
         "type": "object"
       },
@@ -3804,6 +3895,12 @@
             "type": "string"
           }
         },
+        "required": [
+          "heroUrl",
+          "gridUrl",
+          "logoUrl",
+          "iconUrl"
+        ],
         "type": "object"
       },
       "GameCheatResponse": {
@@ -3998,8 +4095,10 @@
           "id",
           "userId",
           "username",
+          "avatarUrl",
           "gameId",
           "rating",
+          "review",
           "createdAt",
           "updatedAt"
         ],
@@ -4239,7 +4338,10 @@
           },
           "userRating": {
             "format": "int64",
-            "type": "integer"
+            "type": [
+              "integer",
+              "null"
+            ]
           },
           "variantCount": {
             "format": "int64",
@@ -4281,6 +4383,7 @@
           "fileName",
           "fileSize",
           "discCount",
+          "discs",
           "description",
           "coverUrl",
           "screenshotUrls",
@@ -4288,17 +4391,48 @@
           "publisher",
           "releaseDate",
           "genre",
+          "gameModes",
+          "storyline",
+          "totalRating",
+          "totalRatingCount",
+          "igdbUserRating",
+          "igdbUserRatingCount",
+          "timeToBeatHastily",
+          "timeToBeatNormally",
+          "timeToBeatCompletely",
           "players",
           "igdbCriticsRating",
+          "releaseDates",
+          "videos",
+          "languageSupports",
+          "ageRatings",
+          "partyInfo",
           "playable",
+          "coreOverride",
+          "scraperId",
           "scrapeAttempts",
+          "achievementsWarning",
+          "verificationStatus",
+          "verificationTag",
+          "region",
+          "revision",
+          "tags",
           "isPreRelease",
+          "variantCount",
+          "groupKey",
+          "variants",
+          "parentGame",
+          "romHacks",
+          "heroUrl",
+          "logoUrl",
+          "biosStatus",
           "isFavorite",
           "isInPlayLater",
           "lastPlayedAt",
           "totalPlayTime",
           "averageRating",
-          "ratingCount"
+          "ratingCount",
+          "userRating"
         ],
         "type": "object"
       },
@@ -4361,13 +4495,22 @@
           },
           "lastPlayedAt": {
             "format": "date-time",
-            "type": "string"
+            "type": [
+              "string",
+              "null"
+            ]
           },
           "lastPlayedBy": {
-            "type": "string"
+            "type": [
+              "string",
+              "null"
+            ]
           },
           "lastPlayedByUsername": {
-            "type": "string"
+            "type": [
+              "string",
+              "null"
+            ]
           },
           "memberAvatars": {
             "items": {
@@ -4408,7 +4551,10 @@
             "type": "string"
           },
           "sharedSessionId": {
-            "type": "string"
+            "type": [
+              "string",
+              "null"
+            ]
           },
           "totalPlayTime": {
             "format": "int64",
@@ -4425,10 +4571,16 @@
           "ownerUsername",
           "gameId",
           "name",
+          "lastPlayedAt",
+          "lastPlayedBy",
+          "lastPlayedByUsername",
           "totalPlayTime",
+          "screenshotUrl",
+          "coreName",
           "cheatsEnabled",
           "saveCount",
           "isSharedSession",
+          "sharedSessionId",
           "memberCount",
           "memberUsernames",
           "memberAvatars",
@@ -4659,7 +4811,8 @@
           }
         },
         "required": [
-          "error"
+          "error",
+          "message"
         ],
         "type": "object"
       },
@@ -4689,7 +4842,11 @@
         },
         "required": [
           "igdbId",
-          "name"
+          "name",
+          "coverUrl",
+          "releaseYear",
+          "developer",
+          "summary"
         ],
         "type": "object"
       },
@@ -4998,7 +5155,8 @@
         "required": [
           "code",
           "name",
-          "consoleCount"
+          "consoleCount",
+          "consoles"
         ],
         "type": "object"
       },
@@ -5302,10 +5460,14 @@
           "netplaySessionId",
           "inviterId",
           "inviterUsername",
+          "inviterAvatarUrl",
           "inviteeId",
           "inviteeUsername",
+          "inviteeAvatarUrl",
           "gameId",
           "gameTitle",
+          "gameCoverUrl",
+          "consoleName",
           "hostUsername",
           "inputDelay",
           "status",
@@ -5377,7 +5539,10 @@
           },
           "endedAt": {
             "format": "date-time",
-            "type": "string"
+            "type": [
+              "string",
+              "null"
+            ]
           },
           "gameCoverUrl": {
             "type": "string"
@@ -5409,7 +5574,10 @@
           },
           "startedAt": {
             "format": "date-time",
-            "type": "string"
+            "type": [
+              "string",
+              "null"
+            ]
           },
           "status": {
             "type": "string"
@@ -5419,14 +5587,24 @@
           "id",
           "hostId",
           "hostUsername",
+          "hostAvatarUrl",
           "clientId",
+          "clientUsername",
+          "clientAvatarUrl",
           "gameId",
           "gameTitle",
+          "gameCoverUrl",
+          "consoleName",
+          "consoleId",
           "coverAspectRatio",
           "status",
+          "endReason",
           "inputDelay",
+          "coreName",
           "inviteCode",
-          "createdAt"
+          "createdAt",
+          "startedAt",
+          "endedAt"
         ],
         "type": "object"
       },
@@ -5480,6 +5658,7 @@
         "required": [
           "id",
           "title",
+          "coverUrl",
           "consoleName"
         ],
         "type": "object"
@@ -5502,7 +5681,9 @@
         },
         "required": [
           "id",
-          "username"
+          "username",
+          "avatarUrl",
+          "currentGame"
         ],
         "type": "object"
       },
@@ -5926,7 +6107,8 @@
         },
         "required": [
           "id",
-          "title"
+          "title",
+          "coverUrl"
         ],
         "type": "object"
       },
@@ -6067,7 +6249,9 @@
         "required": [
           "id",
           "title",
-          "consoleName"
+          "coverUrl",
+          "consoleName",
+          "playTime"
         ],
         "type": "object"
       },
@@ -6141,8 +6325,10 @@
         "required": [
           "id",
           "username",
+          "avatarUrl",
           "memberSince",
           "isOnline",
+          "currentGame",
           "totalPlayTime",
           "gamesPlayed",
           "favoriteGames",
@@ -6271,11 +6457,18 @@
           "avgRating",
           "consoles",
           "games",
+          "heroUrl",
           "topGames",
           "genreBreakdown",
           "platformBreakdown",
+          "userStats",
           "developers",
-          "ratingDistribution"
+          "companyInfo",
+          "activeYears",
+          "ratingDistribution",
+          "primaryGenre",
+          "timeline",
+          "relatedPublishers"
         ],
         "type": "object"
       },
@@ -6864,7 +7057,8 @@
         },
         "required": [
           "region",
-          "date"
+          "date",
+          "platform"
         ],
         "type": "object"
       },
@@ -6960,6 +7154,7 @@
         "required": [
           "verified",
           "crc32",
+          "canonicalName",
           "previousStatus",
           "previousCrc32"
         ],
@@ -7030,7 +7225,8 @@
         },
         "required": [
           "id",
-          "title"
+          "title",
+          "coverUrl"
         ],
         "type": "object"
       },
@@ -7137,7 +7333,11 @@
           }
         },
         "required": [
-          "active"
+          "active",
+          "phase",
+          "current",
+          "total",
+          "message"
         ],
         "type": "object"
       },
@@ -7202,7 +7402,11 @@
           }
         },
         "required": [
-          "total"
+          "jobId",
+          "total",
+          "added",
+          "message",
+          "totalItems"
         ],
         "type": "object"
       },
@@ -7266,7 +7470,10 @@
           },
           "startedAt": {
             "format": "date-time",
-            "type": "string"
+            "type": [
+              "string",
+              "null"
+            ]
           },
           "successes": {
             "format": "int64",
@@ -7282,7 +7489,15 @@
           }
         },
         "required": [
-          "active"
+          "active",
+          "jobId",
+          "current",
+          "total",
+          "successes",
+          "failures",
+          "verified",
+          "mode",
+          "startedAt"
         ],
         "type": "object"
       },
@@ -7842,6 +8057,8 @@
           "id",
           "igdbCollectionId",
           "name",
+          "heroUrl",
+          "logoUrl",
           "libraryGames",
           "totalGames",
           "consoles",
@@ -7897,7 +8114,11 @@
           "inLibrary",
           "localGameId",
           "coverUrl",
-          "igdbCriticsRating"
+          "releaseDate",
+          "igdbCriticsRating",
+          "consoleAbbreviation",
+          "consoleName",
+          "consoleColor"
         ],
         "type": "object"
       },
@@ -8021,7 +8242,10 @@
             "type": "string"
           },
           "coreMatch": {
-            "type": "boolean"
+            "type": [
+              "boolean",
+              "null"
+            ]
           },
           "coreName": {
             "type": "string"
@@ -8060,7 +8284,10 @@
           },
           "slot": {
             "format": "int64",
-            "type": "integer"
+            "type": [
+              "integer",
+              "null"
+            ]
           },
           "updatedAt": {
             "format": "date-time",
@@ -8080,8 +8307,14 @@
           "username",
           "name",
           "fileSize",
+          "screenshotUrl",
           "isAuto",
           "isCurrent",
+          "coreName",
+          "coreMatch",
+          "currentCore",
+          "notes",
+          "slot",
           "createdAt",
           "updatedAt"
         ],
@@ -8284,9 +8517,12 @@
           "id",
           "userId",
           "username",
+          "avatarUrl",
           "gameId",
           "name",
+          "description",
           "fileSize",
+          "screenshotUrl",
           "downloadCount",
           "createdAt"
         ],
@@ -8358,7 +8594,10 @@
             "type": "string"
           },
           "sessionId": {
-            "type": "string"
+            "type": [
+              "string",
+              "null"
+            ]
           },
           "status": {
             "type": "string"
@@ -8382,11 +8621,16 @@
           "ownerUsername",
           "gameId",
           "gameTitle",
+          "gameCoverUrl",
+          "consoleName",
           "name",
           "status",
           "activeUserId",
+          "activeUsername",
           "turnTakenAt",
+          "coreName",
           "memberCount",
+          "sessionId",
           "createdAt",
           "updatedAt"
         ],
@@ -8525,6 +8769,7 @@
           "id",
           "userId",
           "username",
+          "avatarUrl",
           "role",
           "joinedAt"
         ],
@@ -8587,7 +8832,10 @@
             "type": "string"
           },
           "sessionId": {
-            "type": "string"
+            "type": [
+              "string",
+              "null"
+            ]
           },
           "status": {
             "type": "string"
@@ -8610,11 +8858,16 @@
           "ownerUsername",
           "gameId",
           "gameTitle",
+          "gameCoverUrl",
+          "consoleName",
           "name",
           "status",
           "activeUserId",
+          "activeUsername",
           "turnTakenAt",
+          "coreName",
           "memberCount",
+          "sessionId",
           "createdAt",
           "updatedAt"
         ],
@@ -8673,6 +8926,7 @@
           "username",
           "name",
           "fileSize",
+          "screenshotUrl",
           "isAuto",
           "createdAt",
           "updatedAt"
@@ -8766,7 +9020,13 @@
         "required": [
           "achievementRaId",
           "raGameId",
-          "showcaseOrder"
+          "showcaseOrder",
+          "title",
+          "description",
+          "points",
+          "badgeUrl",
+          "rarityPercent",
+          "gameTitle"
         ],
         "type": "object"
       },
@@ -8819,10 +9079,16 @@
             "type": "string"
           },
           "consoleId": {
-            "type": "string"
+            "type": [
+              "string",
+              "null"
+            ]
           },
           "consoleName": {
-            "type": "string"
+            "type": [
+              "string",
+              "null"
+            ]
           },
           "coverUrl": {
             "type": "string"
@@ -8837,7 +9103,10 @@
             "type": "string"
           },
           "duplicateOfGameId": {
-            "type": "string"
+            "type": [
+              "string",
+              "null"
+            ]
           },
           "fileName": {
             "type": "string"
@@ -8893,7 +9162,23 @@
           "fileName",
           "originalFileName",
           "fileSize",
-          "status"
+          "consoleId",
+          "consoleName",
+          "possibleConsoles",
+          "status",
+          "title",
+          "coverUrl",
+          "description",
+          "igdbCriticsRating",
+          "developer",
+          "publisher",
+          "genre",
+          "players",
+          "releaseDate",
+          "verificationStatus",
+          "crc32",
+          "canonicalName",
+          "duplicateOfGameId"
         ],
         "type": "object"
       },
@@ -9020,7 +9305,10 @@
           },
           "dismissedAt": {
             "format": "date-time",
-            "type": "string"
+            "type": [
+              "string",
+              "null"
+            ]
           },
           "eventType": {
             "type": "string"
@@ -9049,7 +9337,10 @@
           "userId": {
             "format": "int64",
             "minimum": 0,
-            "type": "integer"
+            "type": [
+              "integer",
+              "null"
+            ]
           },
           "username": {
             "type": "string"
@@ -9060,7 +9351,15 @@
           "createdAt",
           "categoryCode",
           "categoryName",
-          "eventType"
+          "eventType",
+          "reason",
+          "username",
+          "userId",
+          "ip",
+          "path",
+          "metadata",
+          "metadataRaw",
+          "dismissedAt"
         ],
         "type": "object"
       },
@@ -9322,7 +9621,8 @@
           }
         },
         "required": [
-          "success"
+          "success",
+          "error"
         ],
         "type": "object"
       },
@@ -10169,6 +10469,7 @@
           "username",
           "email",
           "role",
+          "avatarUrl",
           "disabled",
           "pendingApproval",
           "createdAt",
@@ -10191,7 +10492,8 @@
         },
         "required": [
           "id",
-          "username"
+          "username",
+          "avatarUrl"
         ],
         "type": "object"
       },
@@ -10243,6 +10545,7 @@
           "gamesPlayed",
           "currentStreak",
           "longestStreak",
+          "mostPlayedGame",
           "mostPlayedGameTime",
           "lastPlayedAt"
         ],
@@ -10284,8 +10587,12 @@
           "id",
           "title",
           "fileName",
+          "region",
+          "revision",
+          "tags",
           "isPreRelease",
-          "fileSize"
+          "fileSize",
+          "verificationStatus"
         ],
         "type": "object"
       },
@@ -10300,7 +10607,8 @@
           }
         },
         "required": [
-          "videoId"
+          "videoId",
+          "name"
         ],
         "type": "object"
       },
@@ -10322,7 +10630,9 @@
         },
         "required": [
           "id",
-          "label"
+          "label",
+          "description",
+          "imageUrl"
         ],
         "type": "object"
       },

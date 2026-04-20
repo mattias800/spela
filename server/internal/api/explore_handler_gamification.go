@@ -20,8 +20,8 @@ type WizardStep struct {
 type WizardOption struct {
 	ID          string `json:"id"`
 	Label       string `json:"label"`
-	Description string `json:"description,omitempty"`
-	ImageURL    string `json:"imageUrl,omitempty"`
+	Description string `json:"description"`
+	ImageURL    string `json:"imageUrl"`
 }
 
 // WizardResponse is the API response for the wizard endpoint.

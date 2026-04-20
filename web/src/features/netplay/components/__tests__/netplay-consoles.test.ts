@@ -1,41 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { NETPLAY_SUPPORTED_CONSOLES } from "../netplay-consoles";
 import type { Game } from "@/types/api";
-
-function makeGame(overrides: Partial<Game> & { consoleName: string }): Game {
-  const { consoleName, ...rest } = overrides;
-  return {
-    id: "test-id",
-    title: "Test Game",
-    consoleId: "test",
-    consoleName,
-    fileName: "test.rom",
-    fileSize: 1024,
-    discCount: 0,
-    screenshotUrls: [],
-    scrapeAttempts: 0,
-    coverAspectRatio: 1,
-    playable: true,
-    isFavorite: false,
-    isInPlayLater: false,
-    averageRating: 0,
-    ratingCount: 0,
-    totalPlayTime: 0,
-    createdAt: "2024-01-01T00:00:00Z",
-    updatedAt: "2024-01-01T00:00:00Z",
-    coverUrl: "",
-    description: "",
-    developer: "",
-    genre: "",
-    igdbCriticsRating: 0,
-    isPreRelease: false,
-    lastPlayedAt: null,
-    players: 0,
-    publisher: "",
-    releaseDate: "",
-    ...rest,
-  };
-}
+import { makeGame } from "@/test-utils/fixtures";
 
 function filterNetplayGames(games: Game[]): Game[] {
   return games.filter((g) => NETPLAY_SUPPORTED_CONSOLES.includes(g.consoleName));

@@ -59,6 +59,6 @@ type APICredentialsInvalidMetadata struct {
 // "only include set fields" behavior.
 type EmulatorJSLoadFailedMetadata struct {
 	Error  string `json:"error"`
-	GameID string `json:"gameId,omitempty"`
-	Core   string `json:"core,omitempty"`
+	GameID string `json:"gameId"`
+	Core   string `json:"core"`
 }

@@ -47,8 +47,8 @@ type SeriesDetailResponse struct {
 	ID               string               `json:"id"`
 	IGDBCollectionID int                  `json:"igdbCollectionId"`
 	Name             string               `json:"name"`
-	HeroURL          string               `json:"heroUrl,omitempty"`
-	LogoURL          string               `json:"logoUrl,omitempty"`
+	HeroURL          string               `json:"heroUrl"`
+	LogoURL          string               `json:"logoUrl"`
 	LibraryGames     int                  `json:"libraryGames"`
 	TotalGames       int                  `json:"totalGames"`
 	Consoles         []SeriesConsoleInfo  `json:"consoles"`
@@ -70,11 +70,11 @@ type SeriesGameResponse struct {
 	InLibrary           bool    `json:"inLibrary"`
 	LocalGameID         *string `json:"localGameId"`
 	CoverURL            *string `json:"coverUrl"`
-	ReleaseDate         string  `json:"releaseDate,omitempty"`
+	ReleaseDate         string  `json:"releaseDate"`
 	IGDBCriticsRating   float64 `json:"igdbCriticsRating"`
-	ConsoleAbbreviation string  `json:"consoleAbbreviation,omitempty"`
-	ConsoleName         string  `json:"consoleName,omitempty"`
-	ConsoleColor        string  `json:"consoleColor,omitempty"`
+	ConsoleAbbreviation string  `json:"consoleAbbreviation"`
+	ConsoleName         string  `json:"consoleName"`
+	ConsoleColor        string  `json:"consoleColor"`
 }
 
 // --- Franchise endpoints ---
@@ -91,8 +91,8 @@ type FranchiseDetailResponse struct {
 	ID              string               `json:"id"`
 	IGDBFranchiseID int                  `json:"igdbFranchiseId"`
 	Name            string               `json:"name"`
-	HeroURL         string               `json:"heroUrl,omitempty"`
-	LogoURL         string               `json:"logoUrl,omitempty"`
+	HeroURL         string               `json:"heroUrl"`
+	LogoURL         string               `json:"logoUrl"`
 	LibraryGames    int                  `json:"libraryGames"`
 	TotalGames      int                  `json:"totalGames"`
 	Consoles        []SeriesConsoleInfo  `json:"consoles"`

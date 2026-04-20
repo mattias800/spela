@@ -1,7 +1,7 @@
 import { renderHook } from "@testing-library/react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { useAutoScrape } from "../use-auto-scrape";
-import type { Game } from "@/types/api";
+import type { } from "@/types/api";
 
 vi.mock("@/hooks/use-in-view", () => ({
   useInView: vi.fn(),
@@ -13,43 +13,11 @@ vi.mock("@/lib/scrape-queue", () => ({
 
 import { useInView } from "@/hooks/use-in-view";
 import { enqueueScrape } from "@/lib/scrape-queue";
+import { makeGame } from "@/test-utils/fixtures";
 
 const mockUseInView = useInView as ReturnType<typeof vi.fn>;
 const mockEnqueueScrape = enqueueScrape as ReturnType<typeof vi.fn>;
 
-function makeGame(overrides: Partial<Game> = {}): Game {
-  return {
-    id: "game-1",
-    title: "Test Game",
-    consoleId: "c1",
-    consoleName: "NES",
-    fileName: "test.nes",
-    fileSize: 1024,
-    discCount: 1,
-    screenshotUrls: [],
-    scrapeAttempts: 0,
-    coverAspectRatio: 0.75,
-    playable: true,
-    isFavorite: false,
-    isInPlayLater: false,
-    averageRating: 0,
-    ratingCount: 0,
-    totalPlayTime: 0,
-    createdAt: "2026-01-01T00:00:00Z",
-    updatedAt: "2026-01-01T00:00:00Z",
-    coverUrl: "",
-    description: "",
-    developer: "",
-    genre: "",
-    igdbCriticsRating: 0,
-    isPreRelease: false,
-    lastPlayedAt: null,
-    players: 0,
-    publisher: "",
-    releaseDate: "",
-    ...overrides,
-  };
-}
 
 beforeEach(() => {
   vi.clearAllMocks();

@@ -480,7 +480,7 @@ type ScanResult struct {
 	UpdatedGames int    `json:"updatedGames"`
 	RemovedGames int    `json:"removedGames"`
 	TotalGames   int    `json:"totalGames"`
-	NewGameIDs   []uint `json:"newGameIds,omitempty"`
+	NewGameIDs   []uint `json:"newGameIds"`
 }
 
 // parseM3U reads an .m3u file and returns resolved file paths.

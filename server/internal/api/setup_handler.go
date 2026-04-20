@@ -25,8 +25,8 @@ type DiagnosticCheck struct {
 	ID     string `json:"id"`
 	Label  string `json:"label"`
 	Status string `json:"status"` // "ok", "warning", "error"
-	Detail string `json:"detail,omitempty"`
-	Fix    string `json:"fix,omitempty"`
+	Detail string `json:"detail"`
+	Fix    string `json:"fix"`
 }
 
 func (h *SetupHandler) runDiagnostics() []DiagnosticCheck {

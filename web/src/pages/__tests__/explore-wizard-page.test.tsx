@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter } from "react-router-dom";
 import { ExploreWizardPage } from "@/pages/explore-wizard-page";
 import type { WizardResponse, WizardResultsResponse } from "@/types/api";
+import { makeGame } from "@/test-utils/fixtures";
 
 // Mock IntersectionObserver for GameCard lazy loading
 globalThis.IntersectionObserver = class MockIntersectionObserver {
@@ -24,8 +25,8 @@ const mockWizardData: WizardResponse = {
       title: "What are you in the mood for?",
       type: "mood",
       options: [
-        { id: "action", label: "Action & Excitement", description: "Fast-paced thrills" },
-        { id: "chill", label: "Chill & Relaxing", description: "Laid-back vibes" },
+        { id: "action", label: "Action & Excitement", description: "Fast-paced thrills", imageUrl: "" },
+        { id: "chill", label: "Chill & Relaxing", description: "Laid-back vibes", imageUrl: "" },
       ],
     },
     {
@@ -33,8 +34,8 @@ const mockWizardData: WizardResponse = {
       title: "Pick an era",
       type: "era",
       options: [
-        { id: "80s", label: "The 80s", description: "Birth of console gaming" },
-        { id: "any", label: "Any Era", description: "Surprise me" },
+        { id: "80s", label: "The 80s", description: "Birth of console gaming", imageUrl: "" },
+        { id: "any", label: "Any Era", description: "Surprise me", imageUrl: "" },
       ],
     },
     {
@@ -42,46 +43,15 @@ const mockWizardData: WizardResponse = {
       title: "Refine your vibe",
       type: "vibe",
       options: [
-        { id: "solo", label: "Solo Adventure", description: "Just me and the game" },
-        { id: "any", label: "Anything Goes", description: "No preference" },
+        { id: "solo", label: "Solo Adventure", description: "Just me and the game", imageUrl: "" },
+        { id: "any", label: "Anything Goes", description: "No preference", imageUrl: "" },
       ],
     },
   ],
 };
 
 const mockResults: WizardResultsResponse = {
-  games: [
-    {
-      id: "g1",
-      title: "Test Game 1",
-      consoleId: "snes",
-      consoleName: "SNES",
-      fileName: "test.sfc",
-      fileSize: 1024,
-      discCount: 1,
-      screenshotUrls: [],
-      scrapeAttempts: 0,
-      coverAspectRatio: 0.75,
-      playable: true,
-      isFavorite: false,
-      isInPlayLater: false,
-      averageRating: 0,
-      ratingCount: 0,
-      totalPlayTime: 0,
-      createdAt: "2024-01-01",
-      updatedAt: "2024-01-01",
-      igdbCriticsRating: 85,
-      coverUrl: "",
-      description: "",
-      developer: "",
-      genre: "",
-      isPreRelease: false,
-      lastPlayedAt: null,
-      players: 0,
-      publisher: "",
-      releaseDate: "",
-    },
-  ],
+  games: [makeGame({ id: "g1", title: "Test Game 1", consoleId: "snes", consoleName: "SNES", igdbCriticsRating: 85 })],
   title: "Action-Packed Picks",
 };
 

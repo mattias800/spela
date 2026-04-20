@@ -22,7 +22,7 @@ import (
 // the same as Error.
 type ErrorResponse struct {
 	Error   string `json:"error"`
-	Message string `json:"message,omitempty"`
+	Message string `json:"message"`
 }
 
 // MediaTypeCategoryResponse is the API response for a media type category.
@@ -49,7 +49,7 @@ type MakerDetailResponse struct {
 	Code         string            `json:"code"`
 	Name         string            `json:"name"`
 	ConsoleCount int               `json:"consoleCount"`
-	Consoles     []ConsoleResponse `json:"consoles,omitempty"`
+	Consoles     []ConsoleResponse `json:"consoles"`
 }
 
 // ConsoleResponse is the API response for a console, with extensions as an array
@@ -61,8 +61,8 @@ type ConsoleResponse struct {
 	UpdatedAt        time.Time              `json:"updatedAt"`
 	Name             string                 `json:"name"`
 	Abbreviation     string                 `json:"abbreviation"`
-	Maker            *HardwareMakerResponse `json:"maker,omitempty"`
-	MediaType        *MediaTypeResponse     `json:"mediaType,omitempty"`
+	Maker            *HardwareMakerResponse `json:"maker"`
+	MediaType        *MediaTypeResponse     `json:"mediaType"`
 	ReleaseYear      *int                   `json:"releaseYear"`
 	UnitsSold        *int64                 `json:"unitsSold"`
 	Summary          *string                `json:"summary"`
@@ -100,7 +100,7 @@ type GameResponse struct {
 	FileName       string         `json:"fileName"`
 	FileSize       int64          `json:"fileSize"`
 	DiscCount      int            `json:"discCount"`
-	Discs          []DiscResponse `json:"discs,omitempty"`
+	Discs          []DiscResponse `json:"discs"`
 	Description    string         `json:"description"`
 	CoverURL       string         `json:"coverUrl"`
 	ScreenshotURLs []string       `json:"screenshotUrls"`
@@ -108,61 +108,61 @@ type GameResponse struct {
 	Publisher      string         `json:"publisher"`
 	ReleaseDate    string         `json:"releaseDate"`
 	Genre          string                `json:"genre"`
-	GameModes            string                      `json:"gameModes,omitempty"`
-	Storyline            string                      `json:"storyline,omitempty"`
-	TotalRating          float64                     `json:"totalRating,omitempty"`
-	TotalRatingCount     int                         `json:"totalRatingCount,omitempty"`
-	IGDBUserRating       float64                     `json:"igdbUserRating,omitempty"`
-	IGDBUserRatingCount  int                         `json:"igdbUserRatingCount,omitempty"`
-	TimeToBeatHastily    int                         `json:"timeToBeatHastily,omitempty"`
-	TimeToBeatNormally   int                         `json:"timeToBeatNormally,omitempty"`
-	TimeToBeatCompletely int                         `json:"timeToBeatCompletely,omitempty"`
+	GameModes            string                      `json:"gameModes"`
+	Storyline            string                      `json:"storyline"`
+	TotalRating          float64                     `json:"totalRating"`
+	TotalRatingCount     int                         `json:"totalRatingCount"`
+	IGDBUserRating       float64                     `json:"igdbUserRating"`
+	IGDBUserRatingCount  int                         `json:"igdbUserRatingCount"`
+	TimeToBeatHastily    int                         `json:"timeToBeatHastily"`
+	TimeToBeatNormally   int                         `json:"timeToBeatNormally"`
+	TimeToBeatCompletely int                         `json:"timeToBeatCompletely"`
 	Players              int                         `json:"players"`
 	IGDBCriticsRating    float64                     `json:"igdbCriticsRating"`
-	ReleaseDates         []ReleaseDateResponse       `json:"releaseDates,omitempty"`
-	Videos               []VideoResponse             `json:"videos,omitempty"`
-	LanguageSupports     []LanguageSupportResponse   `json:"languageSupports,omitempty"`
-	AgeRatings           []AgeRatingResponse         `json:"ageRatings,omitempty"`
-	PartyInfo           string         `json:"partyInfo,omitempty"`
+	ReleaseDates         []ReleaseDateResponse       `json:"releaseDates"`
+	Videos               []VideoResponse             `json:"videos"`
+	LanguageSupports     []LanguageSupportResponse   `json:"languageSupports"`
+	AgeRatings           []AgeRatingResponse         `json:"ageRatings"`
+	PartyInfo           string         `json:"partyInfo"`
 	Playable            bool           `json:"playable"`
-	CoreOverride        string         `json:"coreOverride,omitempty"`
-	ScraperID           string         `json:"scraperId,omitempty"`
+	CoreOverride        string         `json:"coreOverride"`
+	ScraperID           string         `json:"scraperId"`
 	ScrapeAttempts      int            `json:"scrapeAttempts"`
-	AchievementsWarning string         `json:"achievementsWarning,omitempty"`
-	VerificationStatus  string         `json:"verificationStatus,omitempty"`
-	VerificationTag     string         `json:"verificationTag,omitempty"`
-	Region              string         `json:"region,omitempty"`
-	Revision       string         `json:"revision,omitempty"`
-	Tags           string         `json:"tags,omitempty"`
+	AchievementsWarning string         `json:"achievementsWarning"`
+	VerificationStatus  string         `json:"verificationStatus"`
+	VerificationTag     string         `json:"verificationTag"`
+	Region              string         `json:"region"`
+	Revision       string         `json:"revision"`
+	Tags           string         `json:"tags"`
 	IsPreRelease   bool           `json:"isPreRelease"`
-	VariantCount   int            `json:"variantCount,omitempty"`
-	GroupKey       string         `json:"groupKey,omitempty"`
-	Variants       []VariantResponse `json:"variants,omitempty"`
-	ParentGame     *ParentGameResponse  `json:"parentGame,omitempty"`
-	RomHacks       []RomHackGameResponse `json:"romHacks,omitempty"`
-	HeroURL        string         `json:"heroUrl,omitempty"`
-	LogoURL        string         `json:"logoUrl,omitempty"`
-	BiosStatus     string         `json:"biosStatus,omitempty"`
+	VariantCount   int            `json:"variantCount"`
+	GroupKey       string         `json:"groupKey"`
+	Variants       []VariantResponse `json:"variants"`
+	ParentGame     *ParentGameResponse  `json:"parentGame"`
+	RomHacks       []RomHackGameResponse `json:"romHacks"`
+	HeroURL        string         `json:"heroUrl"`
+	LogoURL        string         `json:"logoUrl"`
+	BiosStatus     string         `json:"biosStatus"`
 	IsFavorite     bool           `json:"isFavorite"`
 	IsInPlayLater  bool           `json:"isInPlayLater"`
 	LastPlayedAt   *time.Time     `json:"lastPlayedAt"`
 	TotalPlayTime  int64          `json:"totalPlayTime"`
 	AverageRating  float64        `json:"averageRating"`
 	RatingCount    int64          `json:"ratingCount"`
-	UserRating     *int           `json:"userRating,omitempty"`
+	UserRating     *int           `json:"userRating"`
 }
 
 // ReleaseDateResponse represents a regional release date in the API response.
 type ReleaseDateResponse struct {
 	Region   string `json:"region"`
 	Date     string `json:"date"`
-	Platform string `json:"platform,omitempty"`
+	Platform string `json:"platform"`
 }
 
 // VideoResponse represents a video in the API response.
 type VideoResponse struct {
 	VideoID string `json:"videoId"`
-	Name    string `json:"name,omitempty"`
+	Name    string `json:"name"`
 }
 
 // LanguageSupportResponse represents a language support entry in the API response.
@@ -182,26 +182,26 @@ type VariantResponse struct {
 	ID                 string `json:"id"`
 	Title              string `json:"title"`
 	FileName           string `json:"fileName"`
-	Region             string `json:"region,omitempty"`
-	Revision           string `json:"revision,omitempty"`
-	Tags               string `json:"tags,omitempty"`
+	Region             string `json:"region"`
+	Revision           string `json:"revision"`
+	Tags               string `json:"tags"`
 	IsPreRelease       bool   `json:"isPreRelease"`
 	FileSize           int64  `json:"fileSize"`
-	VerificationStatus string `json:"verificationStatus,omitempty"`
+	VerificationStatus string `json:"verificationStatus"`
 }
 
 // ParentGameResponse is a minimal reference to a parent game for standalone ROM hacks.
 type ParentGameResponse struct {
 	ID       string `json:"id"`
 	Title    string `json:"title"`
-	CoverURL string `json:"coverUrl,omitempty"`
+	CoverURL string `json:"coverUrl"`
 }
 
 // RomHackGameResponse is a minimal reference to a standalone ROM hack.
 type RomHackGameResponse struct {
 	ID       string `json:"id"`
 	Title    string `json:"title"`
-	CoverURL string `json:"coverUrl,omitempty"`
+	CoverURL string `json:"coverUrl"`
 }
 
 // PaginatedResponse wraps a paginated list with standard keys. The type
@@ -611,7 +611,7 @@ type UserResponse struct {
 	Username        string      `json:"username"`
 	Email           string      `json:"email"`
 	Role            db.UserRole `json:"role"`
-	AvatarURL       string    `json:"avatarUrl,omitempty"`
+	AvatarURL       string    `json:"avatarUrl"`
 	Disabled        bool      `json:"disabled"`
 	PendingApproval bool      `json:"pendingApproval"`
 	CreatedAt       time.Time `json:"createdAt"`
@@ -665,22 +665,22 @@ func ToDeletedUserResponse(u db.User) DeletedUserResponse {
 type UserSearchResult struct {
 	ID        string `json:"id"`
 	Username  string `json:"username"`
-	AvatarURL string `json:"avatarUrl,omitempty"`
+	AvatarURL string `json:"avatarUrl"`
 }
 
 // OnlineUserResponse is the API response for an online user.
 type OnlineUserResponse struct {
 	ID          string                  `json:"id"`
 	Username    string                  `json:"username"`
-	AvatarURL   string                  `json:"avatarUrl,omitempty"`
-	CurrentGame *OnlineUserGameResponse `json:"currentGame,omitempty"`
+	AvatarURL   string                  `json:"avatarUrl"`
+	CurrentGame *OnlineUserGameResponse `json:"currentGame"`
 }
 
 // OnlineUserGameResponse contains game details for an online user's current game.
 type OnlineUserGameResponse struct {
 	ID          string `json:"id"`
 	Title       string `json:"title"`
-	CoverURL    string `json:"coverUrl,omitempty"`
+	CoverURL    string `json:"coverUrl"`
 	ConsoleName string `json:"consoleName"`
 }
 
@@ -688,10 +688,10 @@ type OnlineUserGameResponse struct {
 type PublicProfileResponse struct {
 	ID            string                  `json:"id"`
 	Username      string                  `json:"username"`
-	AvatarURL     string                  `json:"avatarUrl,omitempty"`
+	AvatarURL     string                  `json:"avatarUrl"`
 	MemberSince   time.Time               `json:"memberSince"`
 	IsOnline      bool                    `json:"isOnline"`
-	CurrentGame   *OnlineUserGameResponse `json:"currentGame,omitempty"`
+	CurrentGame   *OnlineUserGameResponse `json:"currentGame"`
 	TotalPlayTime int64                   `json:"totalPlayTime"`
 	GamesPlayed   int64                   `json:"gamesPlayed"`
 	FavoriteGames []PublicProfileGame     `json:"favoriteGames"`
@@ -703,9 +703,9 @@ type PublicProfileResponse struct {
 type PublicProfileGame struct {
 	ID          string `json:"id"`
 	Title       string `json:"title"`
-	CoverURL    string `json:"coverUrl,omitempty"`
+	CoverURL    string `json:"coverUrl"`
 	ConsoleName string `json:"consoleName"`
-	PlayTime    int64  `json:"playTime,omitempty"`
+	PlayTime    int64  `json:"playTime"`
 }
 
 // ActivityEventResponse is the API response for an activity feed event.
@@ -715,12 +715,12 @@ type ActivityEventResponse struct {
 	CreatedAt   time.Time `json:"createdAt"`
 	UserID      string    `json:"userId"`
 	Username    string    `json:"username"`
-	AvatarURL   string    `json:"avatarUrl,omitempty"`
+	AvatarURL   string    `json:"avatarUrl"`
 	GameID      string    `json:"gameId"`
 	GameTitle   string    `json:"gameTitle"`
-	GameCoverURL string  `json:"gameCoverUrl,omitempty"`
-	ConsoleName string    `json:"consoleName,omitempty"`
-	Metadata    map[string]interface{} `json:"metadata,omitempty"`
+	GameCoverURL string  `json:"gameCoverUrl"`
+	ConsoleName string    `json:"consoleName"`
+	Metadata    map[string]interface{} `json:"metadata"`
 }
 
 // GameRatingResponse is the API response for a single game rating.
@@ -728,10 +728,10 @@ type GameRatingResponse struct {
 	ID        string    `json:"id"`
 	UserID    string    `json:"userId"`
 	Username  string    `json:"username"`
-	AvatarURL string    `json:"avatarUrl,omitempty"`
+	AvatarURL string    `json:"avatarUrl"`
 	GameID    string    `json:"gameId"`
 	Rating    int       `json:"rating"`
-	Review    string    `json:"review,omitempty"`
+	Review    string    `json:"review"`
 	CreatedAt time.Time `json:"createdAt"`
 	UpdatedAt time.Time `json:"updatedAt"`
 }
@@ -748,12 +748,12 @@ type SharedSaveResponse struct {
 	ID            string    `json:"id"`
 	UserID        string    `json:"userId"`
 	Username      string    `json:"username"`
-	AvatarURL     string    `json:"avatarUrl,omitempty"`
+	AvatarURL     string    `json:"avatarUrl"`
 	GameID        string    `json:"gameId"`
 	Name          string    `json:"name"`
-	Description   string    `json:"description,omitempty"`
+	Description   string    `json:"description"`
 	FileSize      int64     `json:"fileSize"`
-	ScreenshotURL string    `json:"screenshotUrl,omitempty"`
+	ScreenshotURL string    `json:"screenshotUrl"`
 	DownloadCount int       `json:"downloadCount"`
 	CreatedAt     time.Time `json:"createdAt"`
 }
@@ -763,11 +763,11 @@ type CollectionResponse struct {
 	ID          string    `json:"id"`
 	UserID      string    `json:"userId"`
 	Username    string    `json:"username"`
-	AvatarURL   string    `json:"avatarUrl,omitempty"`
+	AvatarURL   string    `json:"avatarUrl"`
 	Name        string    `json:"name"`
-	Description string    `json:"description,omitempty"`
+	Description string    `json:"description"`
 	IsPublic    bool      `json:"isPublic"`
-	CoverURL    string    `json:"coverUrl,omitempty"`
+	CoverURL    string    `json:"coverUrl"`
 	GameCount   int       `json:"gameCount"`
 	CreatedAt   time.Time `json:"createdAt"`
 	UpdatedAt   time.Time `json:"updatedAt"`
@@ -786,16 +786,16 @@ type SharedSessionResponse struct {
 	OwnerUsername  string     `json:"ownerUsername"`
 	GameID         string     `json:"gameId"`
 	GameTitle      string     `json:"gameTitle"`
-	GameCoverURL   string     `json:"gameCoverUrl,omitempty"`
-	ConsoleName    string     `json:"consoleName,omitempty"`
+	GameCoverURL   string     `json:"gameCoverUrl"`
+	ConsoleName    string     `json:"consoleName"`
 	Name           string     `json:"name"`
 	Status         string     `json:"status"`
 	ActiveUserID   *string    `json:"activeUserId"`
-	ActiveUsername string     `json:"activeUsername,omitempty"`
+	ActiveUsername string     `json:"activeUsername"`
 	TurnTakenAt    *time.Time `json:"turnTakenAt"`
-	CoreName       string     `json:"coreName,omitempty"`
+	CoreName       string     `json:"coreName"`
 	MemberCount    int        `json:"memberCount"`
-	SessionID      *string    `json:"sessionId,omitempty"`
+	SessionID      *string    `json:"sessionId"`
 	CreatedAt      time.Time  `json:"createdAt"`
 	UpdatedAt      time.Time  `json:"updatedAt"`
 }
@@ -811,7 +811,7 @@ type SharedSessionMemberResponse struct {
 	ID        string    `json:"id"`
 	UserID    string    `json:"userId"`
 	Username  string    `json:"username"`
-	AvatarURL string    `json:"avatarUrl,omitempty"`
+	AvatarURL string    `json:"avatarUrl"`
 	Role      string    `json:"role"`
 	JoinedAt  time.Time `json:"joinedAt"`
 }
@@ -838,7 +838,7 @@ type SharedSessionSaveResponse struct {
 	Username        string    `json:"username"`
 	Name            string    `json:"name"`
 	FileSize        int64     `json:"fileSize"`
-	ScreenshotURL   string    `json:"screenshotUrl,omitempty"`
+	ScreenshotURL   string    `json:"screenshotUrl"`
 	IsAuto          bool      `json:"isAuto"`
 	CreatedAt       time.Time `json:"createdAt"`
 	UpdatedAt       time.Time `json:"updatedAt"`
@@ -849,24 +849,24 @@ type NetplaySessionResponse struct {
 	ID               string     `json:"id"`
 	HostUserID       string     `json:"hostId"`
 	HostUsername     string     `json:"hostUsername"`
-	HostAvatarURL    string     `json:"hostAvatarUrl,omitempty"`
+	HostAvatarURL    string     `json:"hostAvatarUrl"`
 	ClientUserID     *string    `json:"clientId"`
-	ClientUsername   string     `json:"clientUsername,omitempty"`
-	ClientAvatarURL  string     `json:"clientAvatarUrl,omitempty"`
+	ClientUsername   string     `json:"clientUsername"`
+	ClientAvatarURL  string     `json:"clientAvatarUrl"`
 	GameID           string     `json:"gameId"`
 	GameTitle        string     `json:"gameTitle"`
-	GameCoverURL     string     `json:"gameCoverUrl,omitempty"`
-	ConsoleName      string     `json:"consoleName,omitempty"`
-	ConsoleID        string     `json:"consoleId,omitempty"`
+	GameCoverURL     string     `json:"gameCoverUrl"`
+	ConsoleName      string     `json:"consoleName"`
+	ConsoleID        string     `json:"consoleId"`
 	CoverAspectRatio float64    `json:"coverAspectRatio"`
 	Status           string     `json:"status"`
-	EndReason        string     `json:"endReason,omitempty"`
+	EndReason        string     `json:"endReason"`
 	InputDelay       int        `json:"inputDelay"`
-	CoreName         string     `json:"coreName,omitempty"`
+	CoreName         string     `json:"coreName"`
 	InviteCode       string     `json:"inviteCode"`
 	CreatedAt        time.Time  `json:"createdAt"`
-	StartedAt        *time.Time `json:"startedAt,omitempty"`
-	EndedAt          *time.Time `json:"endedAt,omitempty"`
+	StartedAt        *time.Time `json:"startedAt"`
+	EndedAt          *time.Time `json:"endedAt"`
 }
 
 // NetplayInviteResponse is the API response for a netplay session invite.
@@ -875,14 +875,14 @@ type NetplayInviteResponse struct {
 	NetplaySessionID string    `json:"netplaySessionId"`
 	InviterID        string    `json:"inviterId"`
 	InviterUsername  string    `json:"inviterUsername"`
-	InviterAvatarURL string    `json:"inviterAvatarUrl,omitempty"`
+	InviterAvatarURL string    `json:"inviterAvatarUrl"`
 	InviteeID        string    `json:"inviteeId"`
 	InviteeUsername  string    `json:"inviteeUsername"`
-	InviteeAvatarURL string    `json:"inviteeAvatarUrl,omitempty"`
+	InviteeAvatarURL string    `json:"inviteeAvatarUrl"`
 	GameID           string    `json:"gameId"`
 	GameTitle        string    `json:"gameTitle"`
-	GameCoverURL     string    `json:"gameCoverUrl,omitempty"`
-	ConsoleName      string    `json:"consoleName,omitempty"`
+	GameCoverURL     string    `json:"gameCoverUrl"`
+	ConsoleName      string    `json:"consoleName"`
 	HostUsername     string    `json:"hostUsername"`
 	InputDelay       int       `json:"inputDelay"`
 	Status           string    `json:"status"`
@@ -894,22 +894,22 @@ type ChallengeResponse struct {
 	ID              string     `json:"id"`
 	CreatorID       string     `json:"creatorId"`
 	CreatorUsername string     `json:"creatorUsername"`
-	CreatorAvatar   string     `json:"creatorAvatar,omitempty"`
+	CreatorAvatar   string     `json:"creatorAvatar"`
 	GameID          string     `json:"gameId"`
 	GameTitle       string     `json:"gameTitle"`
-	GameCoverURL    string     `json:"gameCoverUrl,omitempty"`
-	ConsoleName     string     `json:"consoleName,omitempty"`
+	GameCoverURL    string     `json:"gameCoverUrl"`
+	ConsoleName     string     `json:"consoleName"`
 	Name            string     `json:"name"`
-	Description     string     `json:"description,omitempty"`
+	Description     string     `json:"description"`
 	Type            string     `json:"type"`
 	Difficulty      string     `json:"difficulty"`
 	Status          string     `json:"status"`
 	SaveFileSize    int64      `json:"saveFileSize"`
-	ScreenshotURL   string     `json:"screenshotUrl,omitempty"`
-	CoreName        string     `json:"coreName,omitempty"`
+	ScreenshotURL   string     `json:"screenshotUrl"`
+	CoreName        string     `json:"coreName"`
 	AttemptCount    int        `json:"attemptCount"`
 	CompletionCount int        `json:"completionCount"`
-	ExpiresAt       *time.Time `json:"expiresAt,omitempty"`
+	ExpiresAt       *time.Time `json:"expiresAt"`
 	CreatedAt       time.Time  `json:"createdAt"`
 	UpdatedAt       time.Time  `json:"updatedAt"`
 }
@@ -920,10 +920,10 @@ type ChallengeAttemptResponse struct {
 	ChallengeID string     `json:"challengeId"`
 	UserID      string     `json:"userId"`
 	Username    string     `json:"username"`
-	AvatarURL   string     `json:"avatarUrl,omitempty"`
+	AvatarURL   string     `json:"avatarUrl"`
 	Status      string     `json:"status"`
 	StartedAt   time.Time  `json:"startedAt"`
-	CompletedAt *time.Time `json:"completedAt,omitempty"`
+	CompletedAt *time.Time `json:"completedAt"`
 	DurationMs  int64      `json:"durationMs"`
 	IsBest      bool       `json:"isBest"`
 }
@@ -933,7 +933,7 @@ type ChallengeLeaderboardEntry struct {
 	Rank       int        `json:"rank"`
 	UserID     string     `json:"userId"`
 	Username   string     `json:"username"`
-	AvatarURL  string     `json:"avatarUrl,omitempty"`
+	AvatarURL  string     `json:"avatarUrl"`
 	DurationMs int64      `json:"durationMs"`
 	AttemptID  string     `json:"attemptId"`
 	CompletedAt time.Time `json:"completedAt"`
@@ -953,16 +953,16 @@ type GameSessionResponse struct {
 	OwnerUsername        string     `json:"ownerUsername"`
 	GameID               string     `json:"gameId"`
 	Name                 string     `json:"name"`
-	LastPlayedAt         *time.Time `json:"lastPlayedAt,omitempty"`
-	LastPlayedBy         *string    `json:"lastPlayedBy,omitempty"`
-	LastPlayedByUsername *string    `json:"lastPlayedByUsername,omitempty"`
+	LastPlayedAt         *time.Time `json:"lastPlayedAt"`
+	LastPlayedBy         *string    `json:"lastPlayedBy"`
+	LastPlayedByUsername *string    `json:"lastPlayedByUsername"`
 	TotalPlayTime        int64      `json:"totalPlayTime"`
-	ScreenshotURL        string     `json:"screenshotUrl,omitempty"`
-	CoreName             string     `json:"coreName,omitempty"`
+	ScreenshotURL        string     `json:"screenshotUrl"`
+	CoreName             string     `json:"coreName"`
 	CheatsEnabled        bool       `json:"cheatsEnabled"`
 	SaveCount            int        `json:"saveCount"`
 	IsSharedSession      bool       `json:"isSharedSession"`
-	SharedSessionID      *string    `json:"sharedSessionId,omitempty"`
+	SharedSessionID      *string    `json:"sharedSessionId"`
 	MemberCount          int        `json:"memberCount"`
 	MemberUsernames      []string   `json:"memberUsernames"`
 	MemberAvatars        []string   `json:"memberAvatars"`
@@ -978,14 +978,14 @@ type SessionSaveResponse struct {
 	Username      string    `json:"username"`
 	Name          string    `json:"name"`
 	FileSize      int64     `json:"fileSize"`
-	ScreenshotURL string    `json:"screenshotUrl,omitempty"`
+	ScreenshotURL string    `json:"screenshotUrl"`
 	IsAuto        bool      `json:"isAuto"`
 	IsCurrent     bool      `json:"isCurrent"`
-	CoreName      string    `json:"coreName,omitempty"`
-	CoreMatch     *bool     `json:"coreMatch,omitempty"`
-	CurrentCore   string    `json:"currentCore,omitempty"`
-	Notes         string    `json:"notes,omitempty"`
-	Slot          *int      `json:"slot,omitempty"`
+	CoreName      string    `json:"coreName"`
+	CoreMatch     *bool     `json:"coreMatch"`
+	CurrentCore   string    `json:"currentCore"`
+	Notes         string    `json:"notes"`
+	Slot          *int      `json:"slot"`
 	CreatedAt     time.Time `json:"createdAt"`
 	UpdatedAt     time.Time `json:"updatedAt"`
 }
@@ -1045,7 +1045,7 @@ type UserPreferencesResponse struct {
 // ConsoleKeyMappingDTO is a per-console key mapping entry in the preferences payload.
 type ConsoleKeyMappingDTO struct {
 	SelectedMapping string            `json:"selectedMapping"`
-	CustomMapping   map[string]string `json:"customMapping,omitempty"`
+	CustomMapping   map[string]string `json:"customMapping"`
 }
 
 // UserStatsResponse is the response for GET /api/user/stats.
@@ -1054,7 +1054,7 @@ type UserStatsResponse struct {
 	GamesPlayed        int64         `json:"gamesPlayed"`
 	CurrentStreak      int           `json:"currentStreak"`
 	LongestStreak      int           `json:"longestStreak"`
-	MostPlayedGame     *GameResponse `json:"mostPlayedGame,omitempty"`
+	MostPlayedGame     *GameResponse `json:"mostPlayedGame"`
 	MostPlayedGameTime int64         `json:"mostPlayedGameTime"`
 	LastPlayedAt       *time.Time    `json:"lastPlayedAt"`
 }
@@ -1083,12 +1083,12 @@ type ShowcaseEntryResponse struct {
 	AchievementRAID uint    `json:"achievementRaId"`
 	RAGameID        uint    `json:"raGameId"`
 	ShowcaseOrder   int     `json:"showcaseOrder"`
-	Title           string  `json:"title,omitempty"`
-	Description     string  `json:"description,omitempty"`
-	Points          int     `json:"points,omitempty"`
-	BadgeURL        string  `json:"badgeUrl,omitempty"`
-	RarityPercent   float64 `json:"rarityPercent,omitempty"`
-	GameTitle       string  `json:"gameTitle,omitempty"`
+	Title           string  `json:"title"`
+	Description     string  `json:"description"`
+	Points          int     `json:"points"`
+	BadgeURL        string  `json:"badgeUrl"`
+	RarityPercent   float64 `json:"rarityPercent"`
+	GameTitle       string  `json:"gameTitle"`
 }
 
 // --- RetroAchievements ---
@@ -1177,7 +1177,7 @@ type GameScanResultResponse struct {
 	UpdatedGames int               `json:"updatedGames"`
 	RemovedGames int               `json:"removedGames"`
 	TotalGames   int               `json:"totalGames"`
-	NewGamesList []GameScanSummary `json:"newGamesList,omitempty"`
+	NewGamesList []GameScanSummary `json:"newGamesList"`
 	AutoScraping bool              `json:"autoScraping"`
 }
 
@@ -1260,10 +1260,10 @@ type HeatmapEntry struct {
 
 // GameArtworkResponse is the API response for a game's artwork URLs.
 type GameArtworkResponse struct {
-	HeroURL string `json:"heroUrl,omitempty"`
-	GridURL string `json:"gridUrl,omitempty"`
-	LogoURL string `json:"logoUrl,omitempty"`
-	IconURL string `json:"iconUrl,omitempty"`
+	HeroURL string `json:"heroUrl"`
+	GridURL string `json:"gridUrl"`
+	LogoURL string `json:"logoUrl"`
+	IconURL string `json:"iconUrl"`
 }
 
 // --- BIOS ---
@@ -1273,11 +1273,11 @@ type BiosFileResponse struct {
 	Name        string  `json:"name"`
 	Size        int64   `json:"size"`
 	MD5         string  `json:"md5"`
-	ExpectedMD5 string  `json:"expectedMd5,omitempty"`
-	SubDir      string  `json:"subDir,omitempty"`
+	ExpectedMD5 string  `json:"expectedMd5"`
+	SubDir      string  `json:"subDir"`
 	ConsoleID   *string `json:"consoleId"`
-	ConsoleName *string `json:"consoleName,omitempty"`
-	Description *string `json:"description,omitempty"`
+	ConsoleName *string `json:"consoleName"`
+	Description *string `json:"description"`
 	Required    bool    `json:"required"`
 	Status      string  `json:"status"` // "valid", "present", "invalid", "missing"
 }
@@ -1289,7 +1289,7 @@ type ConsoleFileStatus struct {
 	Required    bool   `json:"required"`
 	MD5         string `json:"md5"`
 	Status      string `json:"status"`           // "valid", "present", "invalid", "missing"
-	SubDir      string `json:"subDir,omitempty"` // subdirectory within system_dir
+	SubDir      string `json:"subDir"` // subdirectory within system_dir
 }
 
 // ConsoleBiosStatus represents the BIOS status summary for one console.

@@ -33,10 +33,10 @@ const mockInvite: NetplayInvite = {
   netplaySessionId: "s1",
   inviterId: "u1",
   inviterUsername: "alice",
-  inviterAvatarUrl: null,
+  inviterAvatarUrl: "",
   inviteeId: "u2",
   inviteeUsername: "bob",
-  inviteeAvatarUrl: null,
+  inviteeAvatarUrl: "",
   gameId: "g1",
   gameTitle: "Super Mario World",
   gameCoverUrl: "https://example.com/smw.png",
@@ -156,7 +156,7 @@ describe("NetplayInviteCard", () => {
     const Wrapper = createWrapper();
     render(
       <Wrapper>
-        <NetplayInviteCard invite={{ ...mockInvite, gameCoverUrl: null }} />
+        <NetplayInviteCard invite={{ ...mockInvite, gameCoverUrl: "" }} />
       </Wrapper>,
     );
 

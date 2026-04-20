@@ -19,6 +19,13 @@ function makeUpload(overrides: Partial<StagedUpload> = {}): StagedUpload {
     verificationStatus: "verified",
     crc32: "abc",
     canonicalName: "Super Mario Bros. (World).nes",
+    description: "",
+    developer: "",
+    duplicateOfGameId: null,
+    genre: "",
+    players: 1,
+    publisher: "",
+    releaseDate: "",
     ...overrides,
   };
 }

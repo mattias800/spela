@@ -38,7 +38,7 @@ type User struct {
 	Email        string         `gorm:"uniqueIndex;size:255;not null" json:"email"`
 	PasswordHash string         `gorm:"not null" json:"-"`
 	Role         UserRole       `gorm:"size:16;default:user" json:"role"`
-	AvatarURL    string         `gorm:"size:512" json:"avatarUrl,omitempty"`
+	AvatarURL    string         `gorm:"size:512" json:"avatarUrl"`
 	TokenVersion        int            `gorm:"default:0" json:"-"`
 	Disabled            bool           `gorm:"default:false" json:"disabled"`
 	PendingApproval     bool           `gorm:"default:false" json:"pendingApproval"`
@@ -48,9 +48,9 @@ type User struct {
 	SelectedShader      string         `gorm:"size:64;default:none" json:"selectedShader"`
 	SelectedTheme       string         `gorm:"size:64;default:default-dark" json:"selectedTheme"`
 	SelectedKeyMapping  string         `gorm:"size:64;default:arrows-left" json:"selectedKeyMapping"`
-	CustomKeyMapping         string         `gorm:"type:text" json:"customKeyMapping,omitempty"` // JSON: {"0":"z","1":"x",...}
+	CustomKeyMapping         string         `gorm:"type:text" json:"customKeyMapping"` // JSON: {"0":"z","1":"x",...}
 	DefaultSecondScreenPage string         `gorm:"size:64;default:art" json:"defaultSecondScreenPage"`
-	PreferredRegions         string         `gorm:"size:255" json:"preferredRegions,omitempty"` // comma-separated ordered list, e.g. "USA,Europe,World"
+	PreferredRegions         string         `gorm:"size:255" json:"preferredRegions"` // comma-separated ordered list, e.g. "USA,Europe,World"
 }
 
 // LoginAttempt tracks failed login attempts per username for account lockout.
@@ -85,7 +85,7 @@ type HardwareMaker struct {
 	UpdatedAt time.Time `json:"updatedAt"`
 	Code      string    `gorm:"uniqueIndex;size:32;not null" json:"code"`
 	Name      string    `gorm:"size:128;not null" json:"name"`
-	Consoles  []Console `gorm:"foreignKey:HardwareMakerID" json:"consoles,omitempty"`
+	Consoles  []Console `gorm:"foreignKey:HardwareMakerID" json:"consoles"`
 }
 
 // Console represents a detected game console/platform.
@@ -107,14 +107,14 @@ type Console struct {
 	Playable         bool           `gorm:"default:true" json:"playable"`
 	Code             *string        `gorm:"uniqueIndex;size:32" json:"code"`
 	HardwareMakerID  *uint          `json:"hardwareMakerId"`
-	HardwareMaker    *HardwareMaker `gorm:"foreignKey:HardwareMakerID" json:"hardwareMaker,omitempty"`
+	HardwareMaker    *HardwareMaker `gorm:"foreignKey:HardwareMakerID" json:"hardwareMaker"`
 	MediaTypeID      *uint          `json:"mediaTypeId"`
-	MediaType        *MediaType     `gorm:"foreignKey:MediaTypeID" json:"mediaType,omitempty"`
+	MediaType        *MediaType     `gorm:"foreignKey:MediaTypeID" json:"mediaType"`
 	ReleaseYear      *int           `json:"releaseYear"`
 	UnitsSold        *int64         `json:"unitsSold"`
 	Summary          *string        `gorm:"type:text" json:"summary"`
-	Games            []Game         `gorm:"foreignKey:ConsoleID" json:"games,omitempty"`
-	GameCount      int            `gorm:"-" json:"gameCount,omitempty"`
+	Games            []Game         `gorm:"foreignKey:ConsoleID" json:"games"`
+	GameCount      int            `gorm:"-" json:"gameCount"`
 }
 
 // Game represents a detected ROM/game file.
@@ -124,49 +124,49 @@ type Game struct {
 	UpdatedAt     time.Time      `json:"updatedAt"`
 	DeletedAt     gorm.DeletedAt `gorm:"index" json:"-"`
 	ConsoleID     uint           `gorm:"index;not null;index:idx_console_group_key,priority:1;index:idx_console_is_primary,priority:1" json:"consoleId"`
-	Console       Console        `gorm:"foreignKey:ConsoleID" json:"console,omitempty"`
+	Console       Console        `gorm:"foreignKey:ConsoleID" json:"console"`
 	Title         string         `gorm:"size:255;not null" json:"title"`
 	FileName      string         `gorm:"size:512;not null" json:"fileName"`
 	FilePath      string         `gorm:"uniqueIndex;size:1024;not null" json:"-"`
 	FileSize      int64          `json:"fileSize"`
 	DiscCount     int            `json:"discCount"`                                    // 0 = single-disc legacy, 2+ = multi-disc
-	Discs         []GameDisc     `gorm:"foreignKey:GameID" json:"discs,omitempty"`
-	Description   string         `gorm:"type:text" json:"description,omitempty"`
-	CoverURL      string         `gorm:"size:512" json:"coverUrl,omitempty"`
-	ScreenshotURL string         `gorm:"size:512" json:"screenshotUrl,omitempty"`
-	Developer     string         `gorm:"size:255" json:"developer,omitempty"`
-	Publisher     string         `gorm:"size:255" json:"publisher,omitempty"`
-	ReleaseDate   string         `gorm:"size:32" json:"releaseDate,omitempty"`
-	Genre         string         `gorm:"size:512" json:"genre,omitempty"`
-	GameModes            string  `gorm:"size:255" json:"gameModes,omitempty"`
-	Storyline            string  `gorm:"type:text" json:"storyline,omitempty"`
-	TotalRating          float64 `json:"totalRating,omitempty"`
-	TotalRatingCount     int     `json:"totalRatingCount,omitempty"`
-	IGDBUserRating       float64 `json:"igdbUserRating,omitempty"`
-	IGDBUserRatingCount  int     `json:"igdbUserRatingCount,omitempty"`
-	TimeToBeatHastily    int     `json:"timeToBeatHastily,omitempty"`
-	TimeToBeatNormally   int     `json:"timeToBeatNormally,omitempty"`
-	TimeToBeatCompletely int     `json:"timeToBeatCompletely,omitempty"`
-	Players              int     `json:"players,omitempty"`
-	IGDBCriticsRating    float64 `gorm:"column:rating" json:"igdbCriticsRating,omitempty"`
-	CoreOverride         string  `gorm:"size:128" json:"coreOverride,omitempty"`
+	Discs         []GameDisc     `gorm:"foreignKey:GameID" json:"discs"`
+	Description   string         `gorm:"type:text" json:"description"`
+	CoverURL      string         `gorm:"size:512" json:"coverUrl"`
+	ScreenshotURL string         `gorm:"size:512" json:"screenshotUrl"`
+	Developer     string         `gorm:"size:255" json:"developer"`
+	Publisher     string         `gorm:"size:255" json:"publisher"`
+	ReleaseDate   string         `gorm:"size:32" json:"releaseDate"`
+	Genre         string         `gorm:"size:512" json:"genre"`
+	GameModes            string  `gorm:"size:255" json:"gameModes"`
+	Storyline            string  `gorm:"type:text" json:"storyline"`
+	TotalRating          float64 `json:"totalRating"`
+	TotalRatingCount     int     `json:"totalRatingCount"`
+	IGDBUserRating       float64 `json:"igdbUserRating"`
+	IGDBUserRatingCount  int     `json:"igdbUserRatingCount"`
+	TimeToBeatHastily    int     `json:"timeToBeatHastily"`
+	TimeToBeatNormally   int     `json:"timeToBeatNormally"`
+	TimeToBeatCompletely int     `json:"timeToBeatCompletely"`
+	Players              int     `json:"players"`
+	IGDBCriticsRating    float64 `gorm:"column:rating" json:"igdbCriticsRating"`
+	CoreOverride         string  `gorm:"size:128" json:"coreOverride"`
 	LibRetroCoverURL    string         `gorm:"size:512" json:"-"`
 	IGDBCoverURL        string         `gorm:"size:512" json:"-"`
 	CoverManuallySet    bool           `gorm:"default:false" json:"-"`
 	ScrapeAttempts      int            `json:"scrapeAttempts"`
-	ScraperID           string         `gorm:"size:128" json:"scraperId,omitempty"`
-	AchievementsWarning string         `gorm:"size:512" json:"achievementsWarning,omitempty"`
-	VerificationStatus  string         `gorm:"size:32" json:"verificationStatus,omitempty"`
-	VerificationTag     string         `gorm:"size:128" json:"verificationTag,omitempty"`
-	Region              string         `gorm:"size:128" json:"region,omitempty"`
-	Revision            string         `gorm:"size:64" json:"revision,omitempty"`
-	Tags                string         `gorm:"size:255" json:"tags,omitempty"`
+	ScraperID           string         `gorm:"size:128" json:"scraperId"`
+	AchievementsWarning string         `gorm:"size:512" json:"achievementsWarning"`
+	VerificationStatus  string         `gorm:"size:32" json:"verificationStatus"`
+	VerificationTag     string         `gorm:"size:128" json:"verificationTag"`
+	Region              string         `gorm:"size:128" json:"region"`
+	Revision            string         `gorm:"size:64" json:"revision"`
+	Tags                string         `gorm:"size:255" json:"tags"`
 	IsPreRelease        bool           `gorm:"default:false;index:idx_game_is_pre_release" json:"isPreRelease"`
-	GroupKey            string         `gorm:"size:255;index:idx_game_group_key;index:idx_console_group_key,priority:2" json:"groupKey,omitempty"`
+	GroupKey            string         `gorm:"size:255;index:idx_game_group_key;index:idx_console_group_key,priority:2" json:"groupKey"`
 	IsPrimary           bool           `gorm:"default:false;index:idx_game_is_primary;index:idx_console_is_primary,priority:2" json:"isPrimary"`
-	PrimaryGameID       *uint          `json:"primaryGameId,omitempty"`
-	ParentGameID        *uint          `gorm:"index:idx_game_parent" json:"parentGameId,omitempty"` // links standalone ROM hacks to their base game
-	PartyInfo           string         `gorm:"size:512" json:"partyInfo,omitempty"`                // Demo party and placement, e.g. "Assembly 1993, 1st place"
+	PrimaryGameID       *uint          `json:"primaryGameId"`
+	ParentGameID        *uint          `gorm:"index:idx_game_parent" json:"parentGameId"` // links standalone ROM hacks to their base game
+	PartyInfo           string         `gorm:"size:512" json:"partyInfo"`                // Demo party and placement, e.g. "Assembly 1993, 1st place"
 	CRC32               string         `gorm:"size:16" json:"-"`
 	RAGameID            uint           `gorm:"index" json:"-"` // RetroAchievements game ID (cached from hash lookup)
 	// RAHashChecked + RAGameID sentinel logic:
@@ -189,7 +189,7 @@ type GameReleaseDate struct {
 	GameID   uint   `gorm:"uniqueIndex:idx_game_release_region;not null" json:"gameId"`
 	Region   string `gorm:"uniqueIndex:idx_game_release_region;size:64;not null" json:"region"`
 	Date     string `gorm:"size:32" json:"date"`
-	Platform string `gorm:"size:128" json:"platform,omitempty"`
+	Platform string `gorm:"size:128" json:"platform"`
 }
 
 // GameVideo stores a video associated with a game (typically YouTube).
@@ -246,7 +246,7 @@ type Favorite struct {
 	UserID    uint           `gorm:"uniqueIndex:idx_user_game;not null" json:"userId"`
 	User      User           `gorm:"foreignKey:UserID" json:"-"`
 	GameID    uint           `gorm:"uniqueIndex:idx_user_game;not null" json:"gameId"`
-	Game      Game           `gorm:"foreignKey:GameID" json:"game,omitempty"`
+	Game      Game           `gorm:"foreignKey:GameID" json:"game"`
 }
 
 // PlayHistory records when a user plays a game.
@@ -258,7 +258,7 @@ type PlayHistory struct {
 	UserID    uint           `gorm:"index;not null" json:"userId"`
 	User      User           `gorm:"foreignKey:UserID" json:"-"`
 	GameID    uint           `gorm:"index;not null" json:"gameId"`
-	Game      Game           `gorm:"foreignKey:GameID" json:"game,omitempty"`
+	Game      Game           `gorm:"foreignKey:GameID" json:"game"`
 	LastPlayed time.Time     `json:"lastPlayed"`
 	PlayTime   int64         `json:"playTime"` // seconds
 }
@@ -429,7 +429,7 @@ type ConsoleKeyMappingPreference struct {
 	UserID          uint           `gorm:"uniqueIndex:idx_user_console_keymapping;not null" json:"userId"`
 	ConsoleID       uint           `gorm:"uniqueIndex:idx_user_console_keymapping;not null" json:"consoleId"`
 	SelectedMapping string         `gorm:"size:64;not null" json:"selectedMapping"`
-	CustomMapping   string         `gorm:"type:text" json:"customMapping,omitempty"` // JSON
+	CustomMapping   string         `gorm:"type:text" json:"customMapping"` // JSON
 }
 
 // Device represents a registered user device.
@@ -508,10 +508,10 @@ type SharedSaveState struct {
 	GameID        uint           `gorm:"index;not null" json:"gameId"`
 	Game          Game           `gorm:"foreignKey:GameID" json:"-"`
 	Name          string         `gorm:"size:255;not null" json:"name"`
-	Description   string         `gorm:"type:text" json:"description,omitempty"`
+	Description   string         `gorm:"type:text" json:"description"`
 	FilePath      string         `gorm:"size:1024;not null" json:"-"`
 	FileSize      int64          `json:"fileSize"`
-	ScreenshotURL string         `gorm:"size:512" json:"screenshotUrl,omitempty"`
+	ScreenshotURL string         `gorm:"size:512" json:"screenshotUrl"`
 	DownloadCount int            `gorm:"default:0" json:"downloadCount"`
 }
 
@@ -526,7 +526,7 @@ type GameRating struct {
 	GameID    uint           `gorm:"uniqueIndex:idx_user_game_rating;not null;index" json:"gameId"`
 	Game      Game           `gorm:"foreignKey:GameID" json:"-"`
 	Rating    int            `gorm:"not null" json:"rating"` // 1-5
-	Review    string         `gorm:"type:text" json:"review,omitempty"`
+	Review    string         `gorm:"type:text" json:"review"`
 }
 
 // ActivityEvent represents a social activity event in the feed.
@@ -539,7 +539,7 @@ type ActivityEvent struct {
 	EventType string         `gorm:"size:64;not null;index" json:"eventType"` // started_playing, favorited_game, rated_game, shared_save
 	GameID    uint           `gorm:"index" json:"gameId"`
 	Game      Game           `gorm:"foreignKey:GameID" json:"-"`
-	Metadata  string         `gorm:"type:text" json:"metadata,omitempty"` // JSON
+	Metadata  string         `gorm:"type:text" json:"metadata"` // JSON
 }
 
 // GameCollection represents a user-created collection of games.
@@ -551,9 +551,9 @@ type GameCollection struct {
 	UserID      uint           `gorm:"index;not null" json:"userId"`
 	User        User           `gorm:"foreignKey:UserID" json:"-"`
 	Name        string         `gorm:"size:255;not null" json:"name"`
-	Description string         `gorm:"type:text" json:"description,omitempty"`
+	Description string         `gorm:"type:text" json:"description"`
 	IsPublic    bool           `gorm:"default:false" json:"isPublic"`
-	Items       []CollectionItem `gorm:"foreignKey:CollectionID" json:"items,omitempty"`
+	Items       []CollectionItem `gorm:"foreignKey:CollectionID" json:"items"`
 }
 
 // CollectionItem represents a game within a collection.
@@ -563,7 +563,7 @@ type CollectionItem struct {
 	DeletedAt    gorm.DeletedAt `gorm:"index" json:"-"`
 	CollectionID uint           `gorm:"uniqueIndex:idx_collection_game;not null" json:"collectionId"`
 	GameID       uint           `gorm:"uniqueIndex:idx_collection_game;not null" json:"gameId"`
-	Game         Game           `gorm:"foreignKey:GameID" json:"game,omitempty"`
+	Game         Game           `gorm:"foreignKey:GameID" json:"game"`
 	Position     int            `gorm:"default:0" json:"position"`
 }
 
@@ -575,7 +575,7 @@ type PlayLaterItem struct {
 	UserID    uint           `gorm:"uniqueIndex:idx_play_later_user_game;not null" json:"userId"`
 	User      User           `gorm:"foreignKey:UserID" json:"-"`
 	GameID    uint           `gorm:"uniqueIndex:idx_play_later_user_game;not null" json:"gameId"`
-	Game      Game           `gorm:"foreignKey:GameID" json:"game,omitempty"`
+	Game      Game           `gorm:"foreignKey:GameID" json:"game"`
 	Position  int            `gorm:"not null;default:0" json:"position"`
 }
 
@@ -591,13 +591,13 @@ type SharedSession struct {
 	Game         Game                   `gorm:"foreignKey:GameID" json:"-"`
 	Name         string                 `gorm:"size:255;not null" json:"name"`
 	Status       string                 `gorm:"size:32;default:active;not null" json:"status"` // "active", "completed", "archived"
-	ActiveUserID *uint                  `json:"activeUserId,omitempty"`
+	ActiveUserID *uint                  `json:"activeUserId"`
 	TurnToken    string                 `gorm:"size:64" json:"-"`
-	TurnTakenAt  *time.Time             `json:"turnTakenAt,omitempty"`
-	CoreName     string                 `gorm:"size:128" json:"coreName,omitempty"`
+	TurnTakenAt  *time.Time             `json:"turnTakenAt"`
+	CoreName     string                 `gorm:"size:128" json:"coreName"`
 	SessionID    *uint                  `gorm:"index" json:"sessionId"`
 	Session      *GameSession           `json:"-"`
-	Members      []SharedSessionMember  `gorm:"foreignKey:SharedSessionID" json:"members,omitempty"`
+	Members      []SharedSessionMember  `gorm:"foreignKey:SharedSessionID" json:"members"`
 }
 
 // SharedSessionMember represents a user's membership in a shared session.
@@ -640,7 +640,7 @@ type SharedSessionSave struct {
 	Name            string         `gorm:"size:255;not null" json:"name"`
 	FilePath        string         `gorm:"size:1024;not null" json:"-"`
 	FileSize        int64          `json:"fileSize"`
-	ScreenshotURL   string         `gorm:"size:512" json:"screenshotUrl,omitempty"`
+	ScreenshotURL   string         `gorm:"size:512" json:"screenshotUrl"`
 	IsAuto          bool           `gorm:"default:false" json:"isAuto"`
 }
 
@@ -652,17 +652,17 @@ type NetplaySession struct {
 	DeletedAt    gorm.DeletedAt `gorm:"index" json:"-"`
 	HostUserID   uint           `gorm:"index;not null" json:"hostUserId"`
 	HostUser     User           `gorm:"foreignKey:HostUserID" json:"-"`
-	ClientUserID *uint          `gorm:"index" json:"clientUserId,omitempty"`
+	ClientUserID *uint          `gorm:"index" json:"clientUserId"`
 	ClientUser   User           `gorm:"foreignKey:ClientUserID" json:"-"`
 	GameID       uint           `gorm:"index;not null" json:"gameId"`
 	Game         Game           `gorm:"foreignKey:GameID" json:"-"`
 	Status       string         `gorm:"size:32;default:waiting;not null" json:"status"` // "waiting", "in_progress", "ended"
-	EndReason    string         `gorm:"size:32" json:"endReason,omitempty"`              // "host_left", "client_left", "timeout", "completed"
+	EndReason    string         `gorm:"size:32" json:"endReason"`              // "host_left", "client_left", "timeout", "completed"
 	InputDelay   int            `gorm:"default:3" json:"inputDelay"`
 	CoreName     string         `gorm:"size:128" json:"coreName"`
 	InviteCode   string         `gorm:"uniqueIndex;size:6;not null" json:"inviteCode"`
-	StartedAt    *time.Time     `json:"startedAt,omitempty"`
-	EndedAt      *time.Time     `json:"endedAt,omitempty"`
+	StartedAt    *time.Time     `json:"startedAt"`
+	EndedAt      *time.Time     `json:"endedAt"`
 }
 
 // NetplayInvite represents a user-to-user invitation to join a netplay session.
@@ -690,17 +690,17 @@ type Challenge struct {
 	GameID          uint           `gorm:"index;not null" json:"gameId"`
 	Game            Game           `gorm:"foreignKey:GameID" json:"-"`
 	Name            string         `gorm:"size:255;not null" json:"name"`
-	Description     string         `gorm:"type:text" json:"description,omitempty"`
+	Description     string         `gorm:"type:text" json:"description"`
 	Type            string         `gorm:"size:32;not null;default:completion" json:"type"`       // "completion", "speedrun", "survival"
 	Difficulty      string         `gorm:"size:32;not null;default:medium" json:"difficulty"`     // "easy", "medium", "hard"
 	Status          string         `gorm:"size:32;not null;default:active;index" json:"status"`   // "active", "closed", "expired"
 	SaveFilePath    string         `gorm:"size:1024;not null" json:"-"`
 	SaveFileSize    int64          `json:"saveFileSize"`
 	ScreenshotPath  string         `gorm:"size:512" json:"-"`
-	CoreName        string         `gorm:"size:128" json:"coreName,omitempty"`
+	CoreName        string         `gorm:"size:128" json:"coreName"`
 	AttemptCount    int            `gorm:"default:0" json:"attemptCount"`
 	CompletionCount int            `gorm:"default:0" json:"completionCount"`
-	ExpiresAt       *time.Time     `json:"expiresAt,omitempty"`
+	ExpiresAt       *time.Time     `json:"expiresAt"`
 }
 
 // ChallengeAttempt represents a user's attempt at a challenge.
@@ -715,7 +715,7 @@ type ChallengeAttempt struct {
 	User        User           `gorm:"foreignKey:UserID" json:"-"`
 	Status      string         `gorm:"size:32;not null;default:in_progress" json:"status"` // "in_progress", "completed", "abandoned"
 	StartedAt   time.Time      `gorm:"not null" json:"startedAt"`
-	CompletedAt *time.Time     `json:"completedAt,omitempty"`
+	CompletedAt *time.Time     `json:"completedAt"`
 	DurationMs  int64          `gorm:"default:0" json:"durationMs"`
 	IsBest      bool           `gorm:"default:false" json:"isBest"`
 }
@@ -762,7 +762,7 @@ type SimilarGame struct {
 	CoverImageID   string         `gorm:"size:128" json:"coverImageId"`
 	CoverLocalPath    string         `gorm:"size:512" json:"-"`
 	IGDBCriticsRating float64        `gorm:"column:rating" json:"igdbCriticsRating"`
-	LocalGameID       *uint          `json:"localGameId,omitempty"`
+	LocalGameID       *uint          `json:"localGameId"`
 }
 
 // Core represents a libretro core.
@@ -773,11 +773,11 @@ type Core struct {
 	DeletedAt   gorm.DeletedAt `gorm:"index" json:"-"`
 	Name        string         `gorm:"uniqueIndex;size:128;not null" json:"name"`
 	DisplayName string         `gorm:"size:255" json:"displayName"`
-	Description string         `gorm:"type:text" json:"description,omitempty"`
-	Version     string         `gorm:"size:64" json:"version,omitempty"`
+	Description string         `gorm:"type:text" json:"description"`
+	Version     string         `gorm:"size:64" json:"version"`
 	Platforms   string         `gorm:"size:255" json:"platforms"` // comma-separated: windows,linux,macos,android
 	FilePath    string         `gorm:"size:1024" json:"-"`
-	DownloadURL string         `gorm:"size:1024" json:"downloadUrl,omitempty"` // URL template for non-buildbot cores; {platform} is replaced by the player
+	DownloadURL string         `gorm:"size:1024" json:"downloadUrl"` // URL template for non-buildbot cores; {platform} is replaced by the player
 }
 
 // CheatCode represents a cheat code for a specific game.
@@ -801,11 +801,11 @@ type GameSession struct {
 	GameID         uint           `gorm:"index;not null" json:"gameId"`
 	Game           Game           `gorm:"foreignKey:GameID" json:"-"`
 	Name           string         `gorm:"size:255;not null" json:"name"`
-	LastPlayedAt   *time.Time     `json:"lastPlayedAt,omitempty"`
-	LastPlayedBy   *uint          `json:"lastPlayedBy,omitempty"`
+	LastPlayedAt   *time.Time     `json:"lastPlayedAt"`
+	LastPlayedBy   *uint          `json:"lastPlayedBy"`
 	TotalPlayTime  int64          `gorm:"default:0" json:"totalPlayTime"` // seconds
-	ScreenshotURL  string         `gorm:"size:512" json:"screenshotUrl,omitempty"`
-	CoreName       string         `gorm:"size:128" json:"coreName,omitempty"`
+	ScreenshotURL  string         `gorm:"size:512" json:"screenshotUrl"`
+	CoreName       string         `gorm:"size:128" json:"coreName"`
 	CheatsEnabled  bool           `gorm:"default:false" json:"cheatsEnabled"`
 }
 
@@ -821,12 +821,12 @@ type SessionSaveState struct {
 	Name          string         `gorm:"size:255;not null" json:"name"`
 	FilePath      string         `gorm:"size:1024;not null" json:"-"`
 	FileSize      int64          `json:"fileSize"`
-	ScreenshotURL string         `gorm:"size:512" json:"screenshotUrl,omitempty"`
+	ScreenshotURL string         `gorm:"size:512" json:"screenshotUrl"`
 	IsAuto        bool           `gorm:"default:false" json:"isAuto"`
 	IsCurrent     bool           `gorm:"default:false" json:"isCurrent"`
-	CoreName      string         `gorm:"size:128" json:"coreName,omitempty"`
-	Notes         string         `gorm:"type:text" json:"notes,omitempty"`
-	Slot          *int           `json:"slot,omitempty"`
+	CoreName      string         `gorm:"size:128" json:"coreName"`
+	Notes         string         `gorm:"type:text" json:"notes"`
+	Slot          *int           `json:"slot"`
 }
 
 // SessionSaveData represents SRAM/battery save data within a game session.
@@ -853,12 +853,12 @@ type SessionCheatSetting struct {
 type GameArtwork struct {
 	ID              uint      `gorm:"primarykey" json:"id"`
 	GameID          uint      `gorm:"uniqueIndex;not null" json:"gameId"`
-	SteamGridDBID   int       `json:"steamGridDbId,omitempty"`
-	HeroURL         string    `gorm:"size:1024" json:"heroUrl,omitempty"`
+	SteamGridDBID   int       `json:"steamGridDbId"`
+	HeroURL         string    `gorm:"size:1024" json:"heroUrl"`
 	HeroManuallySet bool      `gorm:"default:false" json:"-"` // When true, scraper skips overwriting hero during rescrapes
-	GridURL         string    `gorm:"size:1024" json:"gridUrl,omitempty"`
-	LogoURL         string    `gorm:"size:1024" json:"logoUrl,omitempty"`
-	IconURL         string    `gorm:"size:1024" json:"iconUrl,omitempty"`
+	GridURL         string    `gorm:"size:1024" json:"gridUrl"`
+	LogoURL         string    `gorm:"size:1024" json:"logoUrl"`
+	IconURL         string    `gorm:"size:1024" json:"iconUrl"`
 	CreatedAt       time.Time `json:"createdAt"`
 	UpdatedAt       time.Time `json:"updatedAt"`
 }
@@ -868,13 +868,13 @@ type Company struct {
 	ID            uint      `gorm:"primarykey" json:"id"`
 	IGDBCompanyID int       `gorm:"uniqueIndex" json:"igdbCompanyId"`
 	Name          string    `gorm:"index" json:"name"`
-	Description   string    `gorm:"type:text" json:"description,omitempty"`
-	LogoURL       string    `gorm:"size:512" json:"logoUrl,omitempty"`
+	Description   string    `gorm:"type:text" json:"description"`
+	LogoURL       string    `gorm:"size:512" json:"logoUrl"`
 	LogoImageID   string    `gorm:"size:128" json:"-"`
-	Country       int       `json:"country,omitempty"`
-	FoundedYear   int       `json:"foundedYear,omitempty"`
-	WebsiteURL    string    `gorm:"size:512" json:"websiteUrl,omitempty"`
-	WikipediaURL  string    `gorm:"size:512" json:"wikipediaUrl,omitempty"`
+	Country       int       `json:"country"`
+	FoundedYear   int       `json:"foundedYear"`
+	WebsiteURL    string    `gorm:"size:512" json:"websiteUrl"`
+	WikipediaURL  string    `gorm:"size:512" json:"wikipediaUrl"`
 	CreatedAt     time.Time `json:"createdAt"`
 	UpdatedAt     time.Time `json:"updatedAt"`
 }
@@ -925,7 +925,7 @@ type GameSeries struct {
 	UpdatedAt        time.Time         `json:"updatedAt"`
 	IGDBCollectionID int               `gorm:"uniqueIndex;not null" json:"igdbCollectionId"`
 	Name             string            `gorm:"size:255;not null" json:"name"`
-	Entries          []GameSeriesEntry `gorm:"foreignKey:SeriesID" json:"entries,omitempty"`
+	Entries          []GameSeriesEntry `gorm:"foreignKey:SeriesID" json:"entries"`
 }
 
 // GameSeriesEntry represents a game within a series. GameID is nullable because the
@@ -948,7 +948,7 @@ type GameFranchiseGroup struct {
 	UpdatedAt       time.Time            `json:"updatedAt"`
 	IGDBFranchiseID int                  `gorm:"uniqueIndex;not null" json:"igdbFranchiseId"`
 	Name            string               `gorm:"size:255;not null" json:"name"`
-	Entries         []GameFranchiseEntry `gorm:"foreignKey:FranchiseGroupID" json:"entries,omitempty"`
+	Entries         []GameFranchiseEntry `gorm:"foreignKey:FranchiseGroupID" json:"entries"`
 }
 
 // GameFranchiseEntry represents a game within a franchise. GameID is nullable because
@@ -1004,9 +1004,9 @@ type GameScrapeResult struct {
 	GameID        uint       `gorm:"uniqueIndex:idx_scrape_result_game_source;not null" json:"gameId"`
 	Source        string     `gorm:"uniqueIndex:idx_scrape_result_game_source;size:32;not null" json:"source"`
 	Status        string     `gorm:"size:32;not null" json:"status"`
-	SourceID      string     `gorm:"size:128" json:"sourceId,omitempty"`
-	LastAttemptAt *time.Time `json:"lastAttemptAt,omitempty"`
-	ErrorMessage  string     `gorm:"size:512" json:"errorMessage,omitempty"`
+	SourceID      string     `gorm:"size:128" json:"sourceId"`
+	LastAttemptAt *time.Time `json:"lastAttemptAt"`
+	ErrorMessage  string     `gorm:"size:512" json:"errorMessage"`
 }
 
 // StagedUpload represents a ROM file uploaded to the staging area pending admin review.
@@ -1019,24 +1019,24 @@ type StagedUpload struct {
 	OriginalFileName string         `gorm:"size:512;not null" json:"originalFileName"`
 	FilePath         string         `gorm:"size:1024;not null" json:"-"`
 	FileSize         int64          `json:"fileSize"`
-	ConsoleID        *uint          `json:"consoleId,omitempty"`
+	ConsoleID        *uint          `json:"consoleId"`
 	Console          Console        `gorm:"foreignKey:ConsoleID" json:"-"`
-	PossibleConsoles string         `gorm:"size:512" json:"possibleConsoles,omitempty"` // JSON array of abbreviations
+	PossibleConsoles string         `gorm:"size:512" json:"possibleConsoles"` // JSON array of abbreviations
 	Status           string         `gorm:"size:32;not null;default:pending_console" json:"status"`
 	// Scrape results
-	Title       string  `gorm:"size:255" json:"title,omitempty"`
-	CoverURL    string  `gorm:"size:512" json:"coverUrl,omitempty"`
-	Description       string  `gorm:"type:text" json:"description,omitempty"`
-	IGDBCriticsRating float64 `gorm:"column:rating" json:"igdbCriticsRating,omitempty"`
-	Developer         string  `gorm:"size:255" json:"developer,omitempty"`
-	Publisher   string  `gorm:"size:255" json:"publisher,omitempty"`
-	Genre       string  `gorm:"size:128" json:"genre,omitempty"`
-	Players     int     `json:"players,omitempty"`
-	ReleaseDate string  `gorm:"size:32" json:"releaseDate,omitempty"`
+	Title       string  `gorm:"size:255" json:"title"`
+	CoverURL    string  `gorm:"size:512" json:"coverUrl"`
+	Description       string  `gorm:"type:text" json:"description"`
+	IGDBCriticsRating float64 `gorm:"column:rating" json:"igdbCriticsRating"`
+	Developer         string  `gorm:"size:255" json:"developer"`
+	Publisher   string  `gorm:"size:255" json:"publisher"`
+	Genre       string  `gorm:"size:128" json:"genre"`
+	Players     int     `json:"players"`
+	ReleaseDate string  `gorm:"size:32" json:"releaseDate"`
 	// Verification
-	VerificationStatus string `gorm:"size:32" json:"verificationStatus,omitempty"` // verified, unverified, not_applicable
-	CRC32              string `gorm:"size:16" json:"crc32,omitempty"`
-	CanonicalName      string `gorm:"size:512" json:"canonicalName,omitempty"`
+	VerificationStatus string `gorm:"size:32" json:"verificationStatus"` // verified, unverified, not_applicable
+	CRC32              string `gorm:"size:16" json:"crc32"`
+	CanonicalName      string `gorm:"size:512" json:"canonicalName"`
 	// Duplicate detection
-	DuplicateOfGameID *uint `json:"duplicateOfGameId,omitempty"`
+	DuplicateOfGameID *uint `json:"duplicateOfGameId"`
 }

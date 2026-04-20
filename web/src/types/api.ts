@@ -25,6 +25,8 @@ import type {
   PaginatedResponseGameResponse,
   ChallengeResponse,
   SharedSessionResponse,
+  NetplaySessionResponse,
+  NetplayInviteResponse,
 } from "@/generated/schemas";
 
 export * from "@/generated/schemas";
@@ -306,28 +308,24 @@ export interface SharedSessionInvitationsResponse {
   total: number;
 }
 
-export interface NetplaySession {
-  id: string;
-  hostId: string;
-  hostUsername: string;
-  hostAvatarUrl: string | null;
-  clientId: string | null;
-  clientUsername: string | null;
-  clientAvatarUrl: string | null;
-  gameId: string;
-  gameTitle: string;
-  gameCoverUrl: string | null;
-  consoleName: string;
-  consoleId: string;
-  coverAspectRatio: number;
-  status: "waiting" | "in_progress" | "ended";
-  endReason: "host_left" | "client_left" | "timeout" | "completed" | "admin_deleted" | null;
-  inputDelay: number;
-  inviteCode: string;
-  createdAt: string;
-  startedAt: string | null;
-  endedAt: string | null;
-}
+export type NetplaySessionStatus = "waiting" | "in_progress" | "ended";
+export type NetplayEndReason =
+  | "host_left"
+  | "client_left"
+  | "timeout"
+  | "completed"
+  | "admin_deleted";
+
+// Narrowed view of the generated NetplaySessionResponse — status and
+// endReason come back as plain strings on the wire, the frontend uses the
+// narrow unions so Record<NetplaySessionStatus, ...> stays exhaustive.
+export type NetplaySession = Omit<
+  NetplaySessionResponse,
+  "status" | "endReason"
+> & {
+  status: NetplaySessionStatus;
+  endReason?: NetplayEndReason;
+};
 
 export interface NetplaySessionsResponse {
   data: NetplaySession[];
@@ -336,24 +334,15 @@ export interface NetplaySessionsResponse {
   pageSize: number;
 }
 
-export interface NetplayInvite {
-  id: string;
-  netplaySessionId: string;
-  inviterId: string;
-  inviterUsername: string;
-  inviterAvatarUrl: string | null;
-  inviteeId: string;
-  inviteeUsername: string;
-  inviteeAvatarUrl: string | null;
-  gameId: string;
-  gameTitle: string;
-  gameCoverUrl: string | null;
-  consoleName: string;
-  hostUsername: string;
-  inputDelay: number;
-  status: "pending" | "accepted" | "declined" | "expired";
-  createdAt: string;
-}
+export type NetplayInviteStatus =
+  | "pending"
+  | "accepted"
+  | "declined"
+  | "expired";
+
+export type NetplayInvite = Omit<NetplayInviteResponse, "status"> & {
+  status: NetplayInviteStatus;
+};
 
 export interface NetplayInvitesResponse {
   data: NetplayInvite[];

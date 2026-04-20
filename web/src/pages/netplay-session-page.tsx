@@ -152,7 +152,7 @@ export function NetplaySessionPage() {
                 {session.gameTitle}
               </h1>
               <div className="flex items-center gap-3 mt-2">
-                <ConsoleBadge code={session.consoleId} label={session.consoleName} />
+                <ConsoleBadge code={session.consoleId ?? ""} label={session.consoleName ?? ""} />
                 <Badge variant={netplayStatusVariant[session.status]}>
                   {netplayStatusLabel[session.status]}
                 </Badge>

@@ -27,12 +27,12 @@ type TriggerScrapeInput struct {
 
 // ScrapeStartedResponse is the generic scrape-started body.
 type ScrapeStartedResponse struct {
-	JobID   uint   `json:"jobId,omitempty"`
+	JobID   uint   `json:"jobId"`
 	Total   int    `json:"total"`
-	Added   int    `json:"added,omitempty"`
-	Message string `json:"message,omitempty"`
+	Added   int    `json:"added"`
+	Message string `json:"message"`
 	// TotalItems mirrors the merge-conflict response shape.
-	TotalItems int `json:"totalItems,omitempty"`
+	TotalItems int `json:"totalItems"`
 }
 
 // TriggerScrapeOutput wraps the scrape-started body.
@@ -54,14 +54,14 @@ type ScrapeStatusInput struct{}
 // ScrapeStatusResponse is the wire format for scrape status.
 type ScrapeStatusResponse struct {
 	Active    bool       `json:"active"`
-	JobID     uint       `json:"jobId,omitempty"`
-	Current   int        `json:"current,omitempty"`
-	Total     int        `json:"total,omitempty"`
-	Successes int        `json:"successes,omitempty"`
-	Failures  int        `json:"failures,omitempty"`
-	Verified  int        `json:"verified,omitempty"`
-	Mode      string     `json:"mode,omitempty"`
-	StartedAt *time.Time `json:"startedAt,omitempty"`
+	JobID     uint       `json:"jobId"`
+	Current   int        `json:"current"`
+	Total     int        `json:"total"`
+	Successes int        `json:"successes"`
+	Failures  int        `json:"failures"`
+	Verified  int        `json:"verified"`
+	Mode      string     `json:"mode"`
+	StartedAt *time.Time `json:"startedAt"`
 }
 
 // ScrapeStatusOutput wraps the scrape status body.

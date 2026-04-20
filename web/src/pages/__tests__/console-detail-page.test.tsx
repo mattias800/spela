@@ -3,7 +3,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { ConsoleDetailPage } from "@/pages/console-detail-page";
-import type { Console, Game, GamesResponse } from "@/types/api";
+import type { GamesResponse } from "@/types/api";
 
 // Mock hooks
 vi.mock("@/hooks/use-consoles", () => ({
@@ -53,73 +53,12 @@ vi.mock("@/hooks/use-auto-scrape", () => ({
 
 import { useConsoles } from "@/hooks/use-consoles";
 import { useGames } from "@/hooks/use-games";
+import { makeGame, makeConsole } from "@/test-utils/fixtures";
 
 const mockUseConsoles = useConsoles as ReturnType<typeof vi.fn>;
 const mockUseGames = useGames as ReturnType<typeof vi.fn>;
 
-function makeGame(overrides: Partial<Game> = {}): Game {
-  return {
-    id: "1",
-    title: "Test Game",
-    consoleId: "snes",
-    consoleName: "SNES",
-    fileName: "test.sfc",
-    fileSize: 1024,
-    discCount: 1,
-    screenshotUrls: [],
-    scrapeAttempts: 1,
-    coverAspectRatio: 0.75,
-    playable: true,
-    isFavorite: false,
-    isInPlayLater: false,
-    averageRating: 0,
-    ratingCount: 0,
-    totalPlayTime: 0,
-    createdAt: "2025-01-01T00:00:00Z",
-    updatedAt: "2025-01-01T00:00:00Z",
-    coverUrl: "",
-    description: "",
-    developer: "",
-    genre: "",
-    igdbCriticsRating: 0,
-    isPreRelease: false,
-    lastPlayedAt: null,
-    players: 0,
-    publisher: "",
-    releaseDate: "",
-    ...overrides,
-  };
-}
 
-function makeConsole(overrides: Partial<Console> = {}): Console {
-  return {
-    id: "snes",
-    code: "snes",
-    name: "Super Nintendo",
-    abbreviation: "snes",
-    extensions: [".sfc"],
-    defaultCore: "snes9x",
-    coverAspectRatio: 0.75,
-    colorTheme: "#6366f1",
-    generation: 4,
-    iconUrl: "",
-    logoUrl: "",
-    gameCount: 100,
-    saveStateSupport: true,
-    browserPlayable: false,
-    playable: true,
-    emulatorJsCore: "",
-    logoPngUrl: "",
-    maker: undefined,
-    mediaType: undefined,
-    releaseYear: null,
-    unitsSold: null,
-    summary: null,
-    createdAt: "",
-    updatedAt: "",
-    ...overrides,
-  };
-}
 
 function renderPage(consoleId = "snes") {
   const queryClient = new QueryClient({
@@ -151,7 +90,7 @@ describe("ConsoleDetailPage", () => {
   describe("large library (> 24 games)", () => {
     beforeEach(() => {
       mockUseConsoles.mockReturnValue({
-        data: [makeConsole({ gameCount: 100 })],
+        data: [makeConsole({ id: "snes", name: "Super Nintendo", abbreviation: "snes", gameCount: 100 })],
       });
     });
 
@@ -203,7 +142,7 @@ describe("ConsoleDetailPage", () => {
 
     beforeEach(() => {
       mockUseConsoles.mockReturnValue({
-        data: [makeConsole({ gameCount: 10 })],
+        data: [makeConsole({ id: "snes", name: "Super Nintendo", abbreviation: "snes", gameCount: 10 })],
       });
       mockUseGames.mockReturnValue({
         data: smallGames,
@@ -281,7 +220,7 @@ describe("ConsoleDetailPage", () => {
   describe("empty library", () => {
     beforeEach(() => {
       mockUseConsoles.mockReturnValue({
-        data: [makeConsole({ gameCount: 0 })],
+        data: [makeConsole({ id: "snes", name: "Super Nintendo", abbreviation: "snes", gameCount: 0 })],
       });
     });
 

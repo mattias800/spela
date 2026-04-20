@@ -4,7 +4,7 @@ import { PlayerAvatar } from "@/components/player-avatar";
 
 interface FilledSlotProps {
   username: string;
-  avatarUrl: string | null;
+  avatarUrl: string | null | undefined;
   isHost: boolean;
   label: string;
 }

@@ -4,8 +4,8 @@ package api
 type IGDBSearchResult struct {
 	IGDBID      int    `json:"igdbId"`
 	Name        string `json:"name"`
-	CoverURL    string `json:"coverUrl,omitempty"`
-	ReleaseYear int    `json:"releaseYear,omitempty"`
-	Developer   string `json:"developer,omitempty"`
-	Summary     string `json:"summary,omitempty"`
+	CoverURL    string `json:"coverUrl"`
+	ReleaseYear int    `json:"releaseYear"`
+	Developer   string `json:"developer"`
+	Summary     string `json:"summary"`
 }

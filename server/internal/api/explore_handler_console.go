@@ -57,7 +57,7 @@ type ConsoleHighlight struct {
 	IconURL    string        `json:"iconUrl"`
 	LogoURL    string        `json:"logoUrl"`
 	GameCount  int           `json:"gameCount"`
-	TopGame    *GameResponse `json:"topGame,omitempty"`
+	TopGame    *GameResponse `json:"topGame"`
 }
 
 // ConsoleHighlightsResponse is the API response for the console highlights endpoint.

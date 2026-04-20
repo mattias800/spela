@@ -148,11 +148,11 @@ type EnrichMetadataStatusInput struct{}
 // EnrichmentStatusResponse is the wire format for enrichment status.
 type EnrichmentStatusResponse struct {
 	Active    bool   `json:"active"`
-	Current   int    `json:"current,omitempty"`
-	Total     int    `json:"total,omitempty"`
-	GameName  string `json:"gameName,omitempty"`
-	Successes int    `json:"successes,omitempty"`
-	Failures  int    `json:"failures,omitempty"`
+	Current   int    `json:"current"`
+	Total     int    `json:"total"`
+	GameName  string `json:"gameName"`
+	Successes int    `json:"successes"`
+	Failures  int    `json:"failures"`
 }
 
 // EnrichMetadataStatusOutput wraps the status response.

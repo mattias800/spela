@@ -5177,16 +5177,16 @@ export interface components {
             last: number;
         };
         ActivityEventResponse: {
-            avatarUrl?: string;
-            consoleName?: string;
+            avatarUrl: string;
+            consoleName: string;
             /** Format: date-time */
             createdAt: string;
             eventType: string;
-            gameCoverUrl?: string;
+            gameCoverUrl: string;
             gameId: string;
             gameTitle: string;
             id: string;
-            metadata?: {
+            metadata: {
                 [key: string]: unknown;
             };
             userId: string;
@@ -5408,15 +5408,15 @@ export interface components {
              */
             readonly $schema?: string;
             /** @description Bearer access token. */
-            accessToken?: string;
+            accessToken: string;
             /** @description Human-readable status message (only set when pending). */
-            message?: string;
+            message: string;
             /** @description True when the new account is awaiting admin approval. When true, no tokens are returned. */
-            pending?: boolean;
+            pending: boolean;
             /** @description Refresh token (rotate via /api/auth/refresh). */
-            refreshToken?: string;
+            refreshToken: string;
             /** @description Registered user profile. */
-            user?: components["schemas"]["UserResponse"];
+            user: components["schemas"]["UserResponse"];
         };
         BackfillImagesResponse: {
             /**
@@ -5468,16 +5468,16 @@ export interface components {
              */
             readonly $schema?: string;
             consoleId: string | null;
-            consoleName?: string;
-            description?: string;
-            expectedMd5?: string;
+            consoleName: string | null;
+            description: string | null;
+            expectedMd5: string;
             md5: string;
             name: string;
             required: boolean;
             /** Format: int64 */
             size: number;
             status: string;
-            subDir?: string;
+            subDir: string;
         };
         BiosListResponse: {
             /**
@@ -5508,10 +5508,10 @@ export interface components {
              * @example https://example.com/api/schemas/ChallengeAttemptResponse.json
              */
             readonly $schema?: string;
-            avatarUrl?: string;
+            avatarUrl: string;
             challengeId: string;
             /** Format: date-time */
-            completedAt?: string;
+            completedAt: string | null;
             /** Format: int64 */
             durationMs: number;
             id: string;
@@ -5524,7 +5524,7 @@ export interface components {
         };
         ChallengeLeaderboardEntry: {
             attemptId: string;
-            avatarUrl?: string;
+            avatarUrl: string;
             /** Format: date-time */
             completedAt: string;
             /** Format: int64 */
@@ -5545,25 +5545,25 @@ export interface components {
             attemptCount: number;
             /** Format: int64 */
             completionCount: number;
-            consoleName?: string;
-            coreName?: string;
+            consoleName: string;
+            coreName: string;
             /** Format: date-time */
             createdAt: string;
-            creatorAvatar?: string;
+            creatorAvatar: string;
             creatorId: string;
             creatorUsername: string;
-            description?: string;
+            description: string;
             difficulty: string;
             /** Format: date-time */
-            expiresAt?: string;
-            gameCoverUrl?: string;
+            expiresAt: string | null;
+            gameCoverUrl: string;
             gameId: string;
             gameTitle: string;
             id: string;
             name: string;
             /** Format: int64 */
             saveFileSize: number;
-            screenshotUrl?: string;
+            screenshotUrl: string;
             status: string;
             type: string;
             /** Format: date-time */
@@ -5604,7 +5604,7 @@ export interface components {
              * @example https://example.com/api/schemas/CheckUploadsWritableResponse.json
              */
             readonly $schema?: string;
-            reason?: string;
+            reason: string;
             writable: boolean;
         };
         CollectionDetailResponse: {
@@ -5614,11 +5614,11 @@ export interface components {
              * @example https://example.com/api/schemas/CollectionDetailResponse.json
              */
             readonly $schema?: string;
-            avatarUrl?: string;
-            coverUrl?: string;
+            avatarUrl: string;
+            coverUrl: string;
             /** Format: date-time */
             createdAt: string;
-            description?: string;
+            description: string;
             /** Format: int64 */
             gameCount: number;
             games: components["schemas"]["GameResponse"][] | null;
@@ -5637,11 +5637,11 @@ export interface components {
              * @example https://example.com/api/schemas/CollectionResponse.json
              */
             readonly $schema?: string;
-            avatarUrl?: string;
-            coverUrl?: string;
+            avatarUrl: string;
+            coverUrl: string;
             /** Format: date-time */
             createdAt: string;
-            description?: string;
+            description: string;
             /** Format: int64 */
             gameCount: number;
             id: string;
@@ -5681,13 +5681,13 @@ export interface components {
             freedBytes: number;
         };
         CompanyInfo: {
-            country?: string;
-            description?: string;
+            country: string;
+            description: string;
             /** Format: int64 */
-            foundedYear?: number;
-            logoUrl?: string;
-            websiteUrl?: string;
-            wikipediaUrl?: string;
+            foundedYear: number;
+            logoUrl: string;
+            websiteUrl: string;
+            wikipediaUrl: string;
         };
         CompletionistConsole: {
             id: string;
@@ -5735,7 +5735,7 @@ export interface components {
             md5: string;
             required: boolean;
             status: string;
-            subDir?: string;
+            subDir: string;
         };
         ConsoleHighlight: {
             colorTheme: string;
@@ -5745,7 +5745,7 @@ export interface components {
             id: string;
             logoUrl: string;
             name: string;
-            topGame?: components["schemas"]["GameResponse"];
+            topGame: components["schemas"]["GameResponse"];
         };
         ConsoleHighlightsResponse: {
             /**
@@ -5757,7 +5757,7 @@ export interface components {
             consoles: components["schemas"]["ConsoleHighlight"][] | null;
         };
         ConsoleKeyMappingDTO: {
-            customMapping?: {
+            customMapping: {
                 [key: string]: string;
             };
             selectedMapping: string;
@@ -5782,8 +5782,8 @@ export interface components {
             id: string;
             logoPngUrl: string;
             logoUrl: string;
-            maker?: components["schemas"]["HardwareMakerResponse"];
-            mediaType?: components["schemas"]["MediaTypeResponse"];
+            maker: components["schemas"]["HardwareMakerResponse"];
+            mediaType: components["schemas"]["MediaTypeResponse"];
             name: string;
             playable: boolean;
             /** Format: int64 */
@@ -5819,16 +5819,16 @@ export interface components {
             readonly $schema?: string;
             /** Format: date-time */
             createdAt: string;
-            description?: string;
+            description: string;
             displayName: string;
-            downloadUrl?: string;
+            downloadUrl: string;
             /** Format: int64 */
             id: number;
             name: string;
             platforms: string;
             /** Format: date-time */
             updatedAt: string;
-            version?: string;
+            version: string;
         };
         CoreCompatibilityEntry: {
             consoleId: string;
@@ -5874,8 +5874,8 @@ export interface components {
             igdbCriticsRating: number;
         };
         CoverOption: {
-            label?: string;
-            libretroName?: string;
+            label: string;
+            libretroName: string;
             source: string;
             url: string;
         };
@@ -5988,25 +5988,25 @@ export interface components {
              * @example https://example.com/api/schemas/DeveloperDetailResponse.json
              */
             readonly $schema?: string;
-            activeYears?: components["schemas"]["ActiveYears"];
+            activeYears: components["schemas"]["ActiveYears"];
             /** Format: double */
             avgRating: number;
-            companyInfo?: components["schemas"]["CompanyInfo"];
+            companyInfo: components["schemas"]["CompanyInfo"];
             consoles: string[] | null;
             /** Format: int64 */
             gameCount: number;
             games: components["schemas"]["GameResponse"][] | null;
             genreBreakdown: components["schemas"]["GenreCount"][] | null;
-            heroUrl?: string;
+            heroUrl: string;
             name: string;
             platformBreakdown: components["schemas"]["PlatformCount"][] | null;
-            primaryGenre?: string;
+            primaryGenre: string;
             publishers: components["schemas"]["NameCount"][] | null;
             ratingDistribution: components["schemas"]["RatingDistribution"];
-            relatedDevelopers?: components["schemas"]["RelatedDeveloper"][] | null;
-            timeline?: components["schemas"]["TimelineEntry"][] | null;
+            relatedDevelopers: components["schemas"]["RelatedDeveloper"][] | null;
+            timeline: components["schemas"]["TimelineEntry"][] | null;
             topGames: components["schemas"]["GameResponse"][] | null;
-            userStats?: components["schemas"]["EntityUserStats"];
+            userStats: components["schemas"]["EntityUserStats"];
         };
         DeveloperGameResponse: {
             coverUrl: string;
@@ -6103,8 +6103,8 @@ export interface components {
             userId: number;
         };
         DiagnosticCheck: {
-            detail?: string;
-            fix?: string;
+            detail: string;
+            fix: string;
             id: string;
             label: string;
             status: string;
@@ -6163,21 +6163,21 @@ export interface components {
             readonly $schema?: string;
             active: boolean;
             /** Format: int64 */
-            current?: number;
+            current: number;
             /** Format: int64 */
-            failures?: number;
-            gameName?: string;
+            failures: number;
+            gameName: string;
             /** Format: int64 */
-            successes?: number;
+            successes: number;
             /** Format: int64 */
-            total?: number;
+            total: number;
         };
         EntityUserStats: {
             /** Format: int64 */
             favoriteCount: number;
             /** Format: int64 */
             gamesPlayed: number;
-            mostPlayedGame?: components["schemas"]["GameResponse"];
+            mostPlayedGame: components["schemas"]["GameResponse"];
             /** Format: int64 */
             totalPlayTime: number;
         };
@@ -6186,15 +6186,15 @@ export interface components {
             attemptCount: number;
             /** Format: int64 */
             completionCount: number;
-            consoleName?: string;
+            consoleName: string;
             /** Format: date-time */
             createdAt: string;
             creatorUsername: string;
-            description?: string;
+            description: string;
             difficulty: string;
             /** Format: date-time */
-            expiresAt?: string;
-            gameCoverUrl?: string;
+            expiresAt: string | null;
+            gameCoverUrl: string;
             gameId: string;
             gameTitle: string;
             id: string;
@@ -6253,7 +6253,7 @@ export interface components {
         FeaturedSeriesResponse: {
             /** Format: int64 */
             consoleCount: number;
-            heroUrl?: string;
+            heroUrl: string;
             id: string;
             /** Format: int64 */
             libraryGames: number;
@@ -6272,8 +6272,8 @@ export interface components {
         };
         ForYouRowResponse: {
             games: components["schemas"]["GameResponse"][] | null;
-            genre?: string;
-            sourceGame?: components["schemas"]["GameResponse"];
+            genre: string;
+            sourceGame: components["schemas"]["GameResponse"];
             title: string;
             type: string;
         };
@@ -6293,13 +6293,13 @@ export interface components {
             readonly $schema?: string;
             consoles: components["schemas"]["SeriesConsoleInfo"][] | null;
             games: components["schemas"]["SeriesGameResponse"][] | null;
-            heroUrl?: string;
+            heroUrl: string;
             id: string;
             /** Format: int64 */
             igdbFranchiseId: number;
             /** Format: int64 */
             libraryGames: number;
-            logoUrl?: string;
+            logoUrl: string;
             name: string;
             /** Format: int64 */
             totalGames: number;
@@ -6355,9 +6355,9 @@ export interface components {
              * @description Only set to 'pending' when the data is being fetched asynchronously; clients should retry.
              * @enum {string}
              */
-            status?: "pending";
+            status: "pending";
             /** @description RetroAchievements game title; present when achievement data is available. */
-            title?: string;
+            title: string;
             /**
              * Format: int64
              * @description Total number of achievements for this game.
@@ -6376,10 +6376,10 @@ export interface components {
              * @example https://example.com/api/schemas/GameArtworkResponse.json
              */
             readonly $schema?: string;
-            gridUrl?: string;
-            heroUrl?: string;
-            iconUrl?: string;
-            logoUrl?: string;
+            gridUrl: string;
+            heroUrl: string;
+            iconUrl: string;
+            logoUrl: string;
         };
         GameCheatResponse: {
             code: string;
@@ -6437,14 +6437,14 @@ export interface components {
              * @example https://example.com/api/schemas/GameRatingResponse.json
              */
             readonly $schema?: string;
-            avatarUrl?: string;
+            avatarUrl: string;
             /** Format: date-time */
             createdAt: string;
             gameId: string;
             id: string;
             /** Format: int64 */
             rating: number;
-            review?: string;
+            review: string;
             /** Format: date-time */
             updatedAt: string;
             userId: string;
@@ -6457,14 +6457,14 @@ export interface components {
              * @example https://example.com/api/schemas/GameResponse.json
              */
             readonly $schema?: string;
-            achievementsWarning?: string;
-            ageRatings?: components["schemas"]["AgeRatingResponse"][] | null;
+            achievementsWarning: string;
+            ageRatings: components["schemas"]["AgeRatingResponse"][] | null;
             /** Format: double */
             averageRating: number;
-            biosStatus?: string;
+            biosStatus: string;
             consoleId: string;
             consoleName: string;
-            coreOverride?: string;
+            coreOverride: string;
             /** Format: double */
             coverAspectRatio: number;
             coverUrl: string;
@@ -6474,70 +6474,70 @@ export interface components {
             developer: string;
             /** Format: int64 */
             discCount: number;
-            discs?: components["schemas"]["DiscResponse"][] | null;
+            discs: components["schemas"]["DiscResponse"][] | null;
             fileName: string;
             /** Format: int64 */
             fileSize: number;
-            gameModes?: string;
+            gameModes: string;
             genre: string;
-            groupKey?: string;
-            heroUrl?: string;
+            groupKey: string;
+            heroUrl: string;
             id: string;
             /** Format: double */
             igdbCriticsRating: number;
             /** Format: double */
-            igdbUserRating?: number;
+            igdbUserRating: number;
             /** Format: int64 */
-            igdbUserRatingCount?: number;
+            igdbUserRatingCount: number;
             isFavorite: boolean;
             isInPlayLater: boolean;
             isPreRelease: boolean;
-            languageSupports?: components["schemas"]["LanguageSupportResponse"][] | null;
+            languageSupports: components["schemas"]["LanguageSupportResponse"][] | null;
             /** Format: date-time */
             lastPlayedAt: string | null;
-            logoUrl?: string;
-            parentGame?: components["schemas"]["ParentGameResponse"];
-            partyInfo?: string;
+            logoUrl: string;
+            parentGame: components["schemas"]["ParentGameResponse"];
+            partyInfo: string;
             playable: boolean;
             /** Format: int64 */
             players: number;
             publisher: string;
             /** Format: int64 */
             ratingCount: number;
-            region?: string;
+            region: string;
             releaseDate: string;
-            releaseDates?: components["schemas"]["ReleaseDateResponse"][] | null;
-            revision?: string;
-            romHacks?: components["schemas"]["RomHackGameResponse"][] | null;
+            releaseDates: components["schemas"]["ReleaseDateResponse"][] | null;
+            revision: string;
+            romHacks: components["schemas"]["RomHackGameResponse"][] | null;
             /** Format: int64 */
             scrapeAttempts: number;
-            scraperId?: string;
+            scraperId: string;
             screenshotUrls: string[] | null;
-            storyline?: string;
-            tags?: string;
+            storyline: string;
+            tags: string;
             /** Format: int64 */
-            timeToBeatCompletely?: number;
+            timeToBeatCompletely: number;
             /** Format: int64 */
-            timeToBeatHastily?: number;
+            timeToBeatHastily: number;
             /** Format: int64 */
-            timeToBeatNormally?: number;
+            timeToBeatNormally: number;
             title: string;
             /** Format: int64 */
             totalPlayTime: number;
             /** Format: double */
-            totalRating?: number;
+            totalRating: number;
             /** Format: int64 */
-            totalRatingCount?: number;
+            totalRatingCount: number;
             /** Format: date-time */
             updatedAt: string;
             /** Format: int64 */
-            userRating?: number;
+            userRating: number | null;
             /** Format: int64 */
-            variantCount?: number;
-            variants?: components["schemas"]["VariantResponse"][] | null;
-            verificationStatus?: string;
-            verificationTag?: string;
-            videos?: components["schemas"]["VideoResponse"][] | null;
+            variantCount: number;
+            variants: components["schemas"]["VariantResponse"][] | null;
+            verificationStatus: string;
+            verificationTag: string;
+            videos: components["schemas"]["VideoResponse"][] | null;
         };
         GameSeriesResponse: {
             id: string;
@@ -6555,16 +6555,16 @@ export interface components {
              */
             readonly $schema?: string;
             cheatsEnabled: boolean;
-            coreName?: string;
+            coreName: string;
             /** Format: date-time */
             createdAt: string;
             gameId: string;
             id: string;
             isSharedSession: boolean;
             /** Format: date-time */
-            lastPlayedAt?: string;
-            lastPlayedBy?: string;
-            lastPlayedByUsername?: string;
+            lastPlayedAt: string | null;
+            lastPlayedBy: string | null;
+            lastPlayedByUsername: string | null;
             memberAvatars: string[] | null;
             /** Format: int64 */
             memberCount: number;
@@ -6574,8 +6574,8 @@ export interface components {
             ownerUsername: string;
             /** Format: int64 */
             saveCount: number;
-            screenshotUrl?: string;
-            sharedSessionId?: string;
+            screenshotUrl: string;
+            sharedSessionId: string | null;
             /** Format: int64 */
             totalPlayTime: number;
             /** Format: date-time */
@@ -6659,17 +6659,17 @@ export interface components {
              */
             readonly $schema?: string;
             error: string;
-            message?: string;
+            message: string;
         };
         IGDBSearchResult: {
-            coverUrl?: string;
-            developer?: string;
+            coverUrl: string;
+            developer: string;
             /** Format: int64 */
             igdbId: number;
             name: string;
             /** Format: int64 */
-            releaseYear?: number;
-            summary?: string;
+            releaseYear: number;
+            summary: string;
         };
         IGDBStatusResponse: {
             /**
@@ -6784,7 +6784,7 @@ export interface components {
             code: string;
             /** Format: int64 */
             consoleCount: number;
-            consoles?: components["schemas"]["ConsoleResponse"][] | null;
+            consoles: components["schemas"]["ConsoleResponse"][] | null;
             name: string;
         };
         MediaTypeCategoryResponse: {
@@ -6861,20 +6861,20 @@ export interface components {
              * @example https://example.com/api/schemas/NetplayInviteResponse.json
              */
             readonly $schema?: string;
-            consoleName?: string;
+            consoleName: string;
             /** Format: date-time */
             createdAt: string;
-            gameCoverUrl?: string;
+            gameCoverUrl: string;
             gameId: string;
             gameTitle: string;
             hostUsername: string;
             id: string;
             /** Format: int64 */
             inputDelay: number;
-            inviteeAvatarUrl?: string;
+            inviteeAvatarUrl: string;
             inviteeId: string;
             inviteeUsername: string;
-            inviterAvatarUrl?: string;
+            inviterAvatarUrl: string;
             inviterId: string;
             inviterUsername: string;
             netplaySessionId: string;
@@ -6896,23 +6896,23 @@ export interface components {
              * @example https://example.com/api/schemas/NetplaySessionResponse.json
              */
             readonly $schema?: string;
-            clientAvatarUrl?: string;
+            clientAvatarUrl: string;
             clientId: string | null;
-            clientUsername?: string;
-            consoleId?: string;
-            consoleName?: string;
-            coreName?: string;
+            clientUsername: string;
+            consoleId: string;
+            consoleName: string;
+            coreName: string;
             /** Format: double */
             coverAspectRatio: number;
             /** Format: date-time */
             createdAt: string;
-            endReason?: string;
+            endReason: string;
             /** Format: date-time */
-            endedAt?: string;
-            gameCoverUrl?: string;
+            endedAt: string | null;
+            gameCoverUrl: string;
             gameId: string;
             gameTitle: string;
-            hostAvatarUrl?: string;
+            hostAvatarUrl: string;
             hostId: string;
             hostUsername: string;
             id: string;
@@ -6920,7 +6920,7 @@ export interface components {
             inputDelay: number;
             inviteCode: string;
             /** Format: date-time */
-            startedAt?: string;
+            startedAt: string | null;
             status: string;
         };
         OnThisDayResponse: {
@@ -6935,13 +6935,13 @@ export interface components {
         };
         OnlineUserGameResponse: {
             consoleName: string;
-            coverUrl?: string;
+            coverUrl: string;
             id: string;
             title: string;
         };
         OnlineUserResponse: {
-            avatarUrl?: string;
-            currentGame?: components["schemas"]["OnlineUserGameResponse"];
+            avatarUrl: string;
+            currentGame: components["schemas"]["OnlineUserGameResponse"];
             id: string;
             username: string;
         };
@@ -7090,7 +7090,7 @@ export interface components {
             total: number;
         };
         ParentGameResponse: {
-            coverUrl?: string;
+            coverUrl: string;
             id: string;
             title: string;
         };
@@ -7134,10 +7134,10 @@ export interface components {
         };
         PublicProfileGame: {
             consoleName: string;
-            coverUrl?: string;
+            coverUrl: string;
             id: string;
             /** Format: int64 */
-            playTime?: number;
+            playTime: number;
             title: string;
         };
         PublicProfileResponse: {
@@ -7147,8 +7147,8 @@ export interface components {
              * @example https://example.com/api/schemas/PublicProfileResponse.json
              */
             readonly $schema?: string;
-            avatarUrl?: string;
-            currentGame?: components["schemas"]["OnlineUserGameResponse"];
+            avatarUrl: string;
+            currentGame: components["schemas"]["OnlineUserGameResponse"];
             favoriteGames: components["schemas"]["PublicProfileGame"][] | null;
             /** Format: int64 */
             gamesPlayed: number;
@@ -7169,25 +7169,25 @@ export interface components {
              * @example https://example.com/api/schemas/PublisherDetailResponse.json
              */
             readonly $schema?: string;
-            activeYears?: components["schemas"]["ActiveYears"];
+            activeYears: components["schemas"]["ActiveYears"];
             /** Format: double */
             avgRating: number;
-            companyInfo?: components["schemas"]["CompanyInfo"];
+            companyInfo: components["schemas"]["CompanyInfo"];
             consoles: string[] | null;
             developers: components["schemas"]["NameCount"][] | null;
             /** Format: int64 */
             gameCount: number;
             games: components["schemas"]["GameResponse"][] | null;
             genreBreakdown: components["schemas"]["GenreCount"][] | null;
-            heroUrl?: string;
+            heroUrl: string;
             name: string;
             platformBreakdown: components["schemas"]["PlatformCount"][] | null;
-            primaryGenre?: string;
+            primaryGenre: string;
             ratingDistribution: components["schemas"]["RatingDistribution"];
-            relatedPublishers?: components["schemas"]["RelatedPublisher"][] | null;
-            timeline?: components["schemas"]["TimelineEntry"][] | null;
+            relatedPublishers: components["schemas"]["RelatedPublisher"][] | null;
+            timeline: components["schemas"]["TimelineEntry"][] | null;
             topGames: components["schemas"]["GameResponse"][] | null;
-            userStats?: components["schemas"]["EntityUserStats"];
+            userStats: components["schemas"]["EntityUserStats"];
         };
         RALeaderboardEntryResponse: {
             avatarUrl: string;
@@ -7381,7 +7381,7 @@ export interface components {
         };
         ReleaseDateResponse: {
             date: string;
-            platform?: string;
+            platform: string;
             region: string;
         };
         RenameSharedSessionSaveRequest: {
@@ -7413,7 +7413,7 @@ export interface components {
             replacementResult: components["schemas"]["ReplaceROMResult"];
         };
         ReplaceROMResult: {
-            canonicalName?: string;
+            canonicalName: string;
             crc32: string;
             previousCrc32: string;
             previousStatus: string;
@@ -7440,7 +7440,7 @@ export interface components {
             reported: boolean;
         };
         RomHackGameResponse: {
-            coverUrl?: string;
+            coverUrl: string;
             id: string;
             title: string;
         };
@@ -7485,11 +7485,11 @@ export interface components {
             readonly $schema?: string;
             active: boolean;
             /** Format: int64 */
-            current?: number;
-            message?: string;
-            phase?: string;
+            current: number;
+            message: string;
+            phase: string;
             /** Format: int64 */
-            total?: number;
+            total: number;
         };
         ScrapeGameResponse: {
             /**
@@ -7510,14 +7510,14 @@ export interface components {
              */
             readonly $schema?: string;
             /** Format: int64 */
-            added?: number;
+            added: number;
             /** Format: int64 */
-            jobId?: number;
-            message?: string;
+            jobId: number;
+            message: string;
             /** Format: int64 */
             total: number;
             /** Format: int64 */
-            totalItems?: number;
+            totalItems: number;
         };
         ScrapeStatusCountsResponse: {
             /**
@@ -7537,20 +7537,20 @@ export interface components {
             readonly $schema?: string;
             active: boolean;
             /** Format: int64 */
-            current?: number;
+            current: number;
             /** Format: int64 */
-            failures?: number;
+            failures: number;
             /** Format: int64 */
-            jobId?: number;
-            mode?: string;
+            jobId: number;
+            mode: string;
             /** Format: date-time */
-            startedAt?: string;
+            startedAt: string | null;
             /** Format: int64 */
-            successes?: number;
+            successes: number;
             /** Format: int64 */
-            total?: number;
+            total: number;
             /** Format: int64 */
-            verified?: number;
+            verified: number;
         };
         ScraperSourceResultResponse: {
             /** Format: int64 */
@@ -7701,21 +7701,21 @@ export interface components {
             readonly $schema?: string;
             consoles: components["schemas"]["SeriesConsoleInfo"][] | null;
             games: components["schemas"]["SeriesGameResponse"][] | null;
-            heroUrl?: string;
+            heroUrl: string;
             id: string;
             /** Format: int64 */
             igdbCollectionId: number;
             /** Format: int64 */
             libraryGames: number;
-            logoUrl?: string;
+            logoUrl: string;
             name: string;
             /** Format: int64 */
             totalGames: number;
         };
         SeriesGameResponse: {
-            consoleAbbreviation?: string;
-            consoleColor?: string;
-            consoleName?: string;
+            consoleAbbreviation: string;
+            consoleColor: string;
+            consoleName: string;
             coverUrl: string | null;
             /** Format: double */
             igdbCriticsRating: number;
@@ -7724,7 +7724,7 @@ export interface components {
             inLibrary: boolean;
             localGameId: string | null;
             name: string;
-            releaseDate?: string;
+            releaseDate: string;
         };
         SeriesListResponse: {
             id: string;
@@ -7771,22 +7771,22 @@ export interface components {
              * @example https://example.com/api/schemas/SessionSaveResponse.json
              */
             readonly $schema?: string;
-            coreMatch?: boolean;
-            coreName?: string;
+            coreMatch: boolean | null;
+            coreName: string;
             /** Format: date-time */
             createdAt: string;
-            currentCore?: string;
+            currentCore: string;
             /** Format: int64 */
             fileSize: number;
             id: string;
             isAuto: boolean;
             isCurrent: boolean;
             name: string;
-            notes?: string;
-            screenshotUrl?: string;
+            notes: string;
+            screenshotUrl: string;
             sessionId: string;
             /** Format: int64 */
-            slot?: number;
+            slot: number | null;
             /** Format: date-time */
             updatedAt: string;
             userId: string;
@@ -7862,10 +7862,10 @@ export interface components {
              * @example https://example.com/api/schemas/SharedSaveResponse.json
              */
             readonly $schema?: string;
-            avatarUrl?: string;
+            avatarUrl: string;
             /** Format: date-time */
             createdAt: string;
-            description?: string;
+            description: string;
             /** Format: int64 */
             downloadCount: number;
             /** Format: int64 */
@@ -7873,7 +7873,7 @@ export interface components {
             gameId: string;
             id: string;
             name: string;
-            screenshotUrl?: string;
+            screenshotUrl: string;
             userId: string;
             username: string;
         };
@@ -7885,12 +7885,12 @@ export interface components {
              */
             readonly $schema?: string;
             activeUserId: string | null;
-            activeUsername?: string;
-            consoleName?: string;
-            coreName?: string;
+            activeUsername: string;
+            consoleName: string;
+            coreName: string;
             /** Format: date-time */
             createdAt: string;
-            gameCoverUrl?: string;
+            gameCoverUrl: string;
             gameId: string;
             gameTitle: string;
             id: string;
@@ -7900,7 +7900,7 @@ export interface components {
             name: string;
             ownerId: string;
             ownerUsername: string;
-            sessionId?: string;
+            sessionId: string | null;
             status: string;
             /** Format: date-time */
             turnTakenAt: string | null;
@@ -7948,7 +7948,7 @@ export interface components {
             status: string;
         };
         SharedSessionMemberResponse: {
-            avatarUrl?: string;
+            avatarUrl: string;
             id: string;
             /** Format: date-time */
             joinedAt: string;
@@ -7964,12 +7964,12 @@ export interface components {
              */
             readonly $schema?: string;
             activeUserId: string | null;
-            activeUsername?: string;
-            consoleName?: string;
-            coreName?: string;
+            activeUsername: string;
+            consoleName: string;
+            coreName: string;
             /** Format: date-time */
             createdAt: string;
-            gameCoverUrl?: string;
+            gameCoverUrl: string;
             gameId: string;
             gameTitle: string;
             id: string;
@@ -7978,7 +7978,7 @@ export interface components {
             name: string;
             ownerId: string;
             ownerUsername: string;
-            sessionId?: string;
+            sessionId: string | null;
             status: string;
             /** Format: date-time */
             turnTakenAt: string | null;
@@ -7999,7 +7999,7 @@ export interface components {
             id: string;
             isAuto: boolean;
             name: string;
-            screenshotUrl?: string;
+            screenshotUrl: string;
             sharedSessionId: string;
             /** Format: date-time */
             updatedAt: string;
@@ -8026,18 +8026,18 @@ export interface components {
         ShowcaseEntryResponse: {
             /** Format: int64 */
             achievementRaId: number;
-            badgeUrl?: string;
-            description?: string;
-            gameTitle?: string;
+            badgeUrl: string;
+            description: string;
+            gameTitle: string;
             /** Format: int64 */
-            points?: number;
+            points: number;
             /** Format: int64 */
             raGameId: number;
             /** Format: double */
-            rarityPercent?: number;
+            rarityPercent: number;
             /** Format: int64 */
             showcaseOrder: number;
-            title?: string;
+            title: string;
         };
         SimilarGameResponse: {
             coverUrl: string;
@@ -8055,30 +8055,30 @@ export interface components {
              * @example https://example.com/api/schemas/StagedUploadResponse.json
              */
             readonly $schema?: string;
-            canonicalName?: string;
-            consoleId?: string;
-            consoleName?: string;
-            coverUrl?: string;
-            crc32?: string;
-            description?: string;
-            developer?: string;
-            duplicateOfGameId?: string;
+            canonicalName: string;
+            consoleId: string | null;
+            consoleName: string | null;
+            coverUrl: string;
+            crc32: string;
+            description: string;
+            developer: string;
+            duplicateOfGameId: string | null;
             fileName: string;
             /** Format: int64 */
             fileSize: number;
-            genre?: string;
+            genre: string;
             id: string;
             /** Format: double */
-            igdbCriticsRating?: number;
+            igdbCriticsRating: number;
             originalFileName: string;
             /** Format: int64 */
-            players?: number;
-            possibleConsoles?: components["schemas"]["PossibleConsoleResponse"][] | null;
-            publisher?: string;
-            releaseDate?: string;
+            players: number;
+            possibleConsoles: components["schemas"]["PossibleConsoleResponse"][] | null;
+            publisher: string;
+            releaseDate: string;
             status: string;
-            title?: string;
-            verificationStatus?: string;
+            title: string;
+            verificationStatus: string;
         };
         StatusMessageResponse: {
             /**
@@ -8128,20 +8128,20 @@ export interface components {
             /** Format: date-time */
             createdAt: string;
             /** Format: date-time */
-            dismissedAt?: string;
+            dismissedAt: string | null;
             eventType: string;
             /** Format: int64 */
             id: number;
-            ip?: string;
-            metadata?: {
+            ip: string;
+            metadata: {
                 [key: string]: unknown;
             };
-            metadataRaw?: string;
-            path?: string;
-            reason?: string;
+            metadataRaw: string;
+            path: string;
+            reason: string;
             /** Format: int64 */
-            userId?: number;
-            username?: string;
+            userId: number | null;
+            username: string;
         };
         SystemEventTypeInfo: {
             category: string;
@@ -8227,7 +8227,7 @@ export interface components {
              * @example https://example.com/api/schemas/TestIGDBResponse.json
              */
             readonly $schema?: string;
-            error?: string;
+            error: string;
             success: boolean;
         };
         ThemeResponse: {
@@ -8548,7 +8548,7 @@ export interface components {
              * @example https://example.com/api/schemas/UserResponse.json
              */
             readonly $schema?: string;
-            avatarUrl?: string;
+            avatarUrl: string;
             /** Format: date-time */
             createdAt: string;
             disabled: boolean;
@@ -8561,7 +8561,7 @@ export interface components {
             username: string;
         };
         UserSearchResult: {
-            avatarUrl?: string;
+            avatarUrl: string;
             id: string;
             username: string;
         };
@@ -8580,7 +8580,7 @@ export interface components {
             lastPlayedAt: string | null;
             /** Format: int64 */
             longestStreak: number;
-            mostPlayedGame?: components["schemas"]["GameResponse"];
+            mostPlayedGame: components["schemas"]["GameResponse"];
             /** Format: int64 */
             mostPlayedGameTime: number;
             /** Format: int64 */
@@ -8592,20 +8592,20 @@ export interface components {
             fileSize: number;
             id: string;
             isPreRelease: boolean;
-            region?: string;
-            revision?: string;
-            tags?: string;
+            region: string;
+            revision: string;
+            tags: string;
             title: string;
-            verificationStatus?: string;
+            verificationStatus: string;
         };
         VideoResponse: {
-            name?: string;
+            name: string;
             videoId: string;
         };
         WizardOption: {
-            description?: string;
+            description: string;
             id: string;
-            imageUrl?: string;
+            imageUrl: string;
             label: string;
         };
         WizardResponse: {
