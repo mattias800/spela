@@ -21,6 +21,7 @@ import type {
   UserResponse,
   SystemEventResponse,
   AuthLoginResponse,
+  ConsoleResponse,
 } from "@/generated/schemas";
 
 export * from "@/generated/schemas";
@@ -103,32 +104,10 @@ export type MediaTypeCategory = Schemas["MediaTypeCategoryResponse"];
 
 export type MediaType = Schemas["MediaTypeResponse"];
 
-// ConsoleResponse from backend responses.go DTO layer
-export interface Console {
-  id: string;
-  name: string;
-  abbreviation: string;
-  extensions: string[]; // backend splits comma-separated into array
-  defaultCore: string;
-  emulatorJsCore?: string; // EmulatorJS system identifier for browser play
-  coverAspectRatio: number; // backend parses "3:4" into 0.75
-  colorTheme: string;
-  generation: number;
-  iconUrl: string;
-  logoUrl: string;
-  gameCount: number;
-  saveStateSupport: boolean;
-  browserPlayable: boolean;
-  playable: boolean;
-  code: string;
-  maker: HardwareMaker | null;
-  mediaType: MediaType | null;
-  releaseYear: number | null;
-  unitsSold: number | null;
-  summary: string | null;
-  createdAt: string;
-  updatedAt: string;
-}
+// Short-name alias for the generated ConsoleResponse. The wire shape widens
+// extensions to string[] | null and makes maker/mediaType optional instead of
+// nullable; consumers already use truthy / optional-chain access.
+export type Console = ConsoleResponse;
 
 export type GameDisc = Schemas["DiscResponse"];
 
