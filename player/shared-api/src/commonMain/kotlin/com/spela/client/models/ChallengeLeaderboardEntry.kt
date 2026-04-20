@@ -8,17 +8,9 @@
 
 @file:Suppress(
     "ArrayInDataClass",
-    "DuplicatedCode",
     "EnumEntryName",
     "RemoveRedundantQualifierName",
-    "RemoveRedundantCallsOfConversionMethods",
-    "REDUNDANT_CALL_OF_CONVERSION_METHOD",
-    "RedundantUnitReturnType",
-    "RemoveEmptyClassBody",
-    "UnnecessaryVariable",
-    "UnusedImport",
-    "UnnecessaryVariable",
-    "unused"
+    "UnusedImport"
 )
 
 package com.spela.client.models
@@ -32,12 +24,12 @@ import kotlinx.serialization.encoding.*
  * 
  *
  * @param attemptId 
+ * @param avatarUrl 
  * @param completedAt 
  * @param durationMs 
  * @param rank 
  * @param userId 
  * @param username 
- * @param avatarUrl 
  */
 @Serializable
 
@@ -45,7 +37,9 @@ data class ChallengeLeaderboardEntry (
 
     @SerialName(value = "attemptId") @Required val attemptId: kotlin.String,
 
-    @SerialName(value = "completedAt") @Required val completedAt: kotlin.time.Instant,
+    @SerialName(value = "avatarUrl") @Required val avatarUrl: kotlin.String,
+
+    @SerialName(value = "completedAt") @Required val completedAt: kotlinx.datetime.Instant,
 
     @SerialName(value = "durationMs") @Required val durationMs: kotlin.Long,
 
@@ -53,9 +47,7 @@ data class ChallengeLeaderboardEntry (
 
     @SerialName(value = "userId") @Required val userId: kotlin.String,
 
-    @SerialName(value = "username") @Required val username: kotlin.String,
-
-    @SerialName(value = "avatarUrl") val avatarUrl: kotlin.String? = null
+    @SerialName(value = "username") @Required val username: kotlin.String
 
 ) {
 

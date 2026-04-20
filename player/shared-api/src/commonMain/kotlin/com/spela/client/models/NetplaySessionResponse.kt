@@ -8,17 +8,9 @@
 
 @file:Suppress(
     "ArrayInDataClass",
-    "DuplicatedCode",
     "EnumEntryName",
     "RemoveRedundantQualifierName",
-    "RemoveRedundantCallsOfConversionMethods",
-    "REDUNDANT_CALL_OF_CONVERSION_METHOD",
-    "RedundantUnitReturnType",
-    "RemoveEmptyClassBody",
-    "UnnecessaryVariable",
-    "UnusedImport",
-    "UnnecessaryVariable",
-    "unused"
+    "UnusedImport"
 )
 
 package com.spela.client.models
@@ -31,42 +23,60 @@ import kotlinx.serialization.encoding.*
 /**
  * 
  *
+ * @param clientAvatarUrl 
  * @param clientId 
+ * @param clientUsername 
+ * @param consoleId 
+ * @param consoleName 
+ * @param coreName 
  * @param coverAspectRatio 
  * @param createdAt 
+ * @param endReason 
+ * @param endedAt 
+ * @param gameCoverUrl 
  * @param gameId 
  * @param gameTitle 
+ * @param hostAvatarUrl 
  * @param hostId 
  * @param hostUsername 
  * @param id 
  * @param inputDelay 
  * @param inviteCode 
+ * @param startedAt 
  * @param status 
  * @param dollarSchema A URL to the JSON Schema for this object.
- * @param clientAvatarUrl 
- * @param clientUsername 
- * @param consoleId 
- * @param consoleName 
- * @param coreName 
- * @param endReason 
- * @param endedAt 
- * @param gameCoverUrl 
- * @param hostAvatarUrl 
- * @param startedAt 
  */
 @Serializable
 
 data class NetplaySessionResponse (
 
+    @SerialName(value = "clientAvatarUrl") @Required val clientAvatarUrl: kotlin.String,
+
     @SerialName(value = "clientId") @Required val clientId: kotlin.String?,
+
+    @SerialName(value = "clientUsername") @Required val clientUsername: kotlin.String,
+
+    @SerialName(value = "consoleId") @Required val consoleId: kotlin.String,
+
+    @SerialName(value = "consoleName") @Required val consoleName: kotlin.String,
+
+    @SerialName(value = "coreName") @Required val coreName: kotlin.String,
 
     @SerialName(value = "coverAspectRatio") @Required val coverAspectRatio: kotlin.Double,
 
-    @SerialName(value = "createdAt") @Required val createdAt: kotlin.time.Instant,
+    @SerialName(value = "createdAt") @Required val createdAt: kotlinx.datetime.Instant,
+
+    @SerialName(value = "endReason") @Required val endReason: kotlin.String,
+
+    @SerialName(value = "endedAt") @Required val endedAt: kotlinx.datetime.Instant?,
+
+    @SerialName(value = "gameCoverUrl") @Required val gameCoverUrl: kotlin.String,
 
     @SerialName(value = "gameId") @Required val gameId: kotlin.String,
 
     @SerialName(value = "gameTitle") @Required val gameTitle: kotlin.String,
+
+    @SerialName(value = "hostAvatarUrl") @Required val hostAvatarUrl: kotlin.String,
 
     @SerialName(value = "hostId") @Required val hostId: kotlin.String,
 
@@ -78,30 +88,12 @@ data class NetplaySessionResponse (
 
     @SerialName(value = "inviteCode") @Required val inviteCode: kotlin.String,
 
+    @SerialName(value = "startedAt") @Required val startedAt: kotlinx.datetime.Instant?,
+
     @SerialName(value = "status") @Required val status: kotlin.String,
 
     /* A URL to the JSON Schema for this object. */
-    @SerialName(value = "\$schema") val dollarSchema: kotlin.String? = null,
-
-    @SerialName(value = "clientAvatarUrl") val clientAvatarUrl: kotlin.String? = null,
-
-    @SerialName(value = "clientUsername") val clientUsername: kotlin.String? = null,
-
-    @SerialName(value = "consoleId") val consoleId: kotlin.String? = null,
-
-    @SerialName(value = "consoleName") val consoleName: kotlin.String? = null,
-
-    @SerialName(value = "coreName") val coreName: kotlin.String? = null,
-
-    @SerialName(value = "endReason") val endReason: kotlin.String? = null,
-
-    @SerialName(value = "endedAt") val endedAt: kotlin.time.Instant? = null,
-
-    @SerialName(value = "gameCoverUrl") val gameCoverUrl: kotlin.String? = null,
-
-    @SerialName(value = "hostAvatarUrl") val hostAvatarUrl: kotlin.String? = null,
-
-    @SerialName(value = "startedAt") val startedAt: kotlin.time.Instant? = null
+    @SerialName(value = "\$schema") val dollarSchema: kotlin.String? = null
 
 ) {
 

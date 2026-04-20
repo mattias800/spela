@@ -8,17 +8,9 @@
 
 @file:Suppress(
     "ArrayInDataClass",
-    "DuplicatedCode",
     "EnumEntryName",
     "RemoveRedundantQualifierName",
-    "RemoveRedundantCallsOfConversionMethods",
-    "REDUNDANT_CALL_OF_CONVERSION_METHOD",
-    "RedundantUnitReturnType",
-    "RemoveEmptyClassBody",
-    "UnnecessaryVariable",
-    "UnusedImport",
-    "UnnecessaryVariable",
-    "unused"
+    "UnusedImport"
 )
 
 package com.spela.client.models
@@ -34,11 +26,11 @@ import kotlinx.serialization.encoding.*
  *
  * @param achievements Achievement definitions for this game (empty when unknown).
  * @param raGameId RetroAchievements game ID (0 when unknown).
+ * @param status Only set to 'pending' when the data is being fetched asynchronously; clients should retry.
+ * @param title RetroAchievements game title; present when achievement data is available.
  * @param totalCount Total number of achievements for this game.
  * @param totalPoints Total number of points available across all achievements.
  * @param dollarSchema A URL to the JSON Schema for this object.
- * @param status Only set to 'pending' when the data is being fetched asynchronously; clients should retry.
- * @param title RetroAchievements game title; present when achievement data is available.
  */
 @Serializable
 
@@ -50,6 +42,12 @@ data class GameAchievementsResponse (
     /* RetroAchievements game ID (0 when unknown). */
     @SerialName(value = "raGameId") @Required val raGameId: kotlin.Long,
 
+    /* Only set to 'pending' when the data is being fetched asynchronously; clients should retry. */
+    @SerialName(value = "status") @Required val status: GameAchievementsResponse.Status,
+
+    /* RetroAchievements game title; present when achievement data is available. */
+    @SerialName(value = "title") @Required val title: kotlin.String,
+
     /* Total number of achievements for this game. */
     @SerialName(value = "totalCount") @Required val totalCount: kotlin.Long,
 
@@ -57,13 +55,7 @@ data class GameAchievementsResponse (
     @SerialName(value = "totalPoints") @Required val totalPoints: kotlin.Long,
 
     /* A URL to the JSON Schema for this object. */
-    @SerialName(value = "\$schema") val dollarSchema: kotlin.String? = null,
-
-    /* Only set to 'pending' when the data is being fetched asynchronously; clients should retry. */
-    @SerialName(value = "status") val status: GameAchievementsResponse.Status? = null,
-
-    /* RetroAchievements game title; present when achievement data is available. */
-    @SerialName(value = "title") val title: kotlin.String? = null
+    @SerialName(value = "\$schema") val dollarSchema: kotlin.String? = null
 
 ) {
 

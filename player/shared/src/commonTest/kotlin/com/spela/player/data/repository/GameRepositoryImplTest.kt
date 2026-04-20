@@ -53,6 +53,38 @@ private fun testGameResponse(
         title = title,
         totalPlayTime = totalPlayTime,
         updatedAt = now,
+        achievementsWarning = "",
+        ageRatings = null,
+        biosStatus = "",
+        coreOverride = "",
+        discs = null,
+        gameModes = "",
+        groupKey = "",
+        heroUrl = "",
+        igdbUserRating = 0.0,
+        igdbUserRatingCount = 0L,
+        languageSupports = null,
+        logoUrl = "",
+        parentGame = com.spela.client.models.ParentGameResponse(id = "", title = "", coverUrl = ""),
+        partyInfo = "",
+        region = "",
+        releaseDates = null,
+        revision = "",
+        romHacks = null,
+        scraperId = "",
+        storyline = "",
+        tags = "",
+        timeToBeatCompletely = 0L,
+        timeToBeatHastily = 0L,
+        timeToBeatNormally = 0L,
+        totalRating = 0.0,
+        totalRatingCount = 0L,
+        userRating = 0L,
+        variantCount = 0L,
+        variants = null,
+        verificationStatus = "",
+        verificationTag = "",
+        videos = null,
     )
 }
 
@@ -226,6 +258,7 @@ class GameRepositoryImplTest {
             username = "Alice",
             avatarUrl = "/avatars/alice.png",
             description = "Before final boss",
+            screenshotUrl = "",
         )
         val domain = response.toDomain()
         assertEquals("ss1", domain.id)
@@ -249,7 +282,9 @@ class GameRepositoryImplTest {
             name = "Untitled",
             userId = "u",
             username = "bob",
-            description = null,
+            avatarUrl = "",
+            description = "",
+            screenshotUrl = "",
         )
         assertEquals("", response.toDomain().description)
     }
@@ -339,7 +374,8 @@ class GameRepositoryImplTest {
             updatedAt = now,
             userId = "u1",
             username = "mattias",
-            review = null,
+            avatarUrl = "",
+            review = "",
         )
         assertEquals("", response.toDomain().review)
     }
@@ -472,6 +508,12 @@ class GameRepositoryImplTest {
             isCurrent = false,
             createdAt = now,
             updatedAt = now,
+            coreMatch = false,
+            coreName = "",
+            currentCore = "",
+            notes = "",
+            screenshotUrl = "",
+            slot = 0L,
         )
         val domain = dto.toDomain()
 
@@ -489,6 +531,7 @@ class GameRepositoryImplTest {
             accessToken = "access123",
             refreshToken = "refresh456",
             user = UserDto(
+                avatarUrl = "",
                 createdAt = now,
                 disabled = false,
                 email = "test@example.com",
@@ -541,7 +584,9 @@ class GameRepositoryImplTest {
         val now = kotlin.time.Instant.fromEpochSeconds(0)
         val dto = com.spela.client.models.Core(
             createdAt = now,
+            description = "",
             displayName = "Nestopia UE",
+            downloadUrl = "",
             id = 1,
             name = "nestopia",
             platforms = "windows,linux,macos,android",

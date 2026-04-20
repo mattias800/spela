@@ -8,17 +8,9 @@
 
 @file:Suppress(
     "ArrayInDataClass",
-    "DuplicatedCode",
     "EnumEntryName",
     "RemoveRedundantQualifierName",
-    "RemoveRedundantCallsOfConversionMethods",
-    "REDUNDANT_CALL_OF_CONVERSION_METHOD",
-    "RedundantUnitReturnType",
-    "RemoveEmptyClassBody",
-    "UnnecessaryVariable",
-    "UnusedImport",
-    "UnnecessaryVariable",
-    "unused"
+    "UnusedImport"
 )
 
 package com.spela.client.models
@@ -32,22 +24,28 @@ import kotlinx.serialization.encoding.*
  * 
  *
  * @param consoleId 
+ * @param consoleName 
+ * @param description 
+ * @param expectedMd5 
  * @param md5 
  * @param name 
  * @param required 
  * @param propertySize 
  * @param status 
- * @param dollarSchema A URL to the JSON Schema for this object.
- * @param consoleName 
- * @param description 
- * @param expectedMd5 
  * @param subDir 
+ * @param dollarSchema A URL to the JSON Schema for this object.
  */
 @Serializable
 
 data class BiosFileResponse (
 
     @SerialName(value = "consoleId") @Required val consoleId: kotlin.String?,
+
+    @SerialName(value = "consoleName") @Required val consoleName: kotlin.String?,
+
+    @SerialName(value = "description") @Required val description: kotlin.String?,
+
+    @SerialName(value = "expectedMd5") @Required val expectedMd5: kotlin.String,
 
     @SerialName(value = "md5") @Required val md5: kotlin.String,
 
@@ -59,16 +57,10 @@ data class BiosFileResponse (
 
     @SerialName(value = "status") @Required val status: kotlin.String,
 
+    @SerialName(value = "subDir") @Required val subDir: kotlin.String,
+
     /* A URL to the JSON Schema for this object. */
-    @SerialName(value = "\$schema") val dollarSchema: kotlin.String? = null,
-
-    @SerialName(value = "consoleName") val consoleName: kotlin.String? = null,
-
-    @SerialName(value = "description") val description: kotlin.String? = null,
-
-    @SerialName(value = "expectedMd5") val expectedMd5: kotlin.String? = null,
-
-    @SerialName(value = "subDir") val subDir: kotlin.String? = null
+    @SerialName(value = "\$schema") val dollarSchema: kotlin.String? = null
 
 ) {
 

@@ -8,17 +8,9 @@
 
 @file:Suppress(
     "ArrayInDataClass",
-    "DuplicatedCode",
     "EnumEntryName",
     "RemoveRedundantQualifierName",
-    "RemoveRedundantCallsOfConversionMethods",
-    "REDUNDANT_CALL_OF_CONVERSION_METHOD",
-    "RedundantUnitReturnType",
-    "RemoveEmptyClassBody",
-    "UnnecessaryVariable",
-    "UnusedImport",
-    "UnnecessaryVariable",
-    "unused"
+    "UnusedImport"
 )
 
 package com.spela.client.models
@@ -36,18 +28,18 @@ import kotlinx.serialization.encoding.*
  * @param id 
  * @param isAuto 
  * @param name 
+ * @param screenshotUrl 
  * @param sharedSessionId 
  * @param updatedAt 
  * @param userId 
  * @param username 
  * @param dollarSchema A URL to the JSON Schema for this object.
- * @param screenshotUrl 
  */
 @Serializable
 
 data class SharedSessionSaveResponse (
 
-    @SerialName(value = "createdAt") @Required val createdAt: kotlin.time.Instant,
+    @SerialName(value = "createdAt") @Required val createdAt: kotlinx.datetime.Instant,
 
     @SerialName(value = "fileSize") @Required val fileSize: kotlin.Long,
 
@@ -57,18 +49,18 @@ data class SharedSessionSaveResponse (
 
     @SerialName(value = "name") @Required val name: kotlin.String,
 
+    @SerialName(value = "screenshotUrl") @Required val screenshotUrl: kotlin.String,
+
     @SerialName(value = "sharedSessionId") @Required val sharedSessionId: kotlin.String,
 
-    @SerialName(value = "updatedAt") @Required val updatedAt: kotlin.time.Instant,
+    @SerialName(value = "updatedAt") @Required val updatedAt: kotlinx.datetime.Instant,
 
     @SerialName(value = "userId") @Required val userId: kotlin.String,
 
     @SerialName(value = "username") @Required val username: kotlin.String,
 
     /* A URL to the JSON Schema for this object. */
-    @SerialName(value = "\$schema") val dollarSchema: kotlin.String? = null,
-
-    @SerialName(value = "screenshotUrl") val screenshotUrl: kotlin.String? = null
+    @SerialName(value = "\$schema") val dollarSchema: kotlin.String? = null
 
 ) {
 

@@ -8,17 +8,9 @@
 
 @file:Suppress(
     "ArrayInDataClass",
-    "DuplicatedCode",
     "EnumEntryName",
     "RemoveRedundantQualifierName",
-    "RemoveRedundantCallsOfConversionMethods",
-    "REDUNDANT_CALL_OF_CONVERSION_METHOD",
-    "RedundantUnitReturnType",
-    "RemoveEmptyClassBody",
-    "UnnecessaryVariable",
-    "UnusedImport",
-    "UnnecessaryVariable",
-    "unused"
+    "UnusedImport"
 )
 
 package com.spela.client.models
@@ -32,34 +24,34 @@ import kotlinx.serialization.encoding.*
 /**
  * 
  *
- * @param dollarSchema A URL to the JSON Schema for this object.
  * @param accessToken Bearer access token.
  * @param message Human-readable status message (only set when pending).
  * @param pending True when the new account is awaiting admin approval. When true, no tokens are returned.
  * @param refreshToken Refresh token (rotate via /api/auth/refresh).
  * @param user Registered user profile.
+ * @param dollarSchema A URL to the JSON Schema for this object.
  */
 @Serializable
 
 data class AuthRegisterResponse (
 
-    /* A URL to the JSON Schema for this object. */
-    @SerialName(value = "\$schema") val dollarSchema: kotlin.String? = null,
-
     /* Bearer access token. */
-    @SerialName(value = "accessToken") val accessToken: kotlin.String? = null,
+    @SerialName(value = "accessToken") @Required val accessToken: kotlin.String,
 
     /* Human-readable status message (only set when pending). */
-    @SerialName(value = "message") val message: kotlin.String? = null,
+    @SerialName(value = "message") @Required val message: kotlin.String,
 
     /* True when the new account is awaiting admin approval. When true, no tokens are returned. */
-    @SerialName(value = "pending") val pending: kotlin.Boolean? = null,
+    @SerialName(value = "pending") @Required val pending: kotlin.Boolean,
 
     /* Refresh token (rotate via /api/auth/refresh). */
-    @SerialName(value = "refreshToken") val refreshToken: kotlin.String? = null,
+    @SerialName(value = "refreshToken") @Required val refreshToken: kotlin.String,
 
     /* Registered user profile. */
-    @SerialName(value = "user") val user: UserResponse? = null
+    @SerialName(value = "user") @Required val user: UserResponse,
+
+    /* A URL to the JSON Schema for this object. */
+    @SerialName(value = "\$schema") val dollarSchema: kotlin.String? = null
 
 ) {
 

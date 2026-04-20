@@ -8,17 +8,9 @@
 
 @file:Suppress(
     "ArrayInDataClass",
-    "DuplicatedCode",
     "EnumEntryName",
     "RemoveRedundantQualifierName",
-    "RemoveRedundantCallsOfConversionMethods",
-    "REDUNDANT_CALL_OF_CONVERSION_METHOD",
-    "RedundantUnitReturnType",
-    "RemoveEmptyClassBody",
-    "UnnecessaryVariable",
-    "UnusedImport",
-    "UnnecessaryVariable",
-    "unused"
+    "UnusedImport"
 )
 
 package com.spela.client.models
@@ -31,29 +23,29 @@ import kotlinx.serialization.encoding.*
 /**
  * 
  *
- * @param total 
- * @param dollarSchema A URL to the JSON Schema for this object.
  * @param added 
  * @param jobId 
  * @param message 
+ * @param total 
  * @param totalItems 
+ * @param dollarSchema A URL to the JSON Schema for this object.
  */
 @Serializable
 
 data class ScrapeStartedResponse (
 
+    @SerialName(value = "added") @Required val added: kotlin.Long,
+
+    @SerialName(value = "jobId") @Required val jobId: kotlin.Long,
+
+    @SerialName(value = "message") @Required val message: kotlin.String,
+
     @SerialName(value = "total") @Required val total: kotlin.Long,
 
+    @SerialName(value = "totalItems") @Required val totalItems: kotlin.Long,
+
     /* A URL to the JSON Schema for this object. */
-    @SerialName(value = "\$schema") val dollarSchema: kotlin.String? = null,
-
-    @SerialName(value = "added") val added: kotlin.Long? = null,
-
-    @SerialName(value = "jobId") val jobId: kotlin.Long? = null,
-
-    @SerialName(value = "message") val message: kotlin.String? = null,
-
-    @SerialName(value = "totalItems") val totalItems: kotlin.Long? = null
+    @SerialName(value = "\$schema") val dollarSchema: kotlin.String? = null
 
 ) {
 

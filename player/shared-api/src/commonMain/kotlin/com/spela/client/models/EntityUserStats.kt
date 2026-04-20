@@ -8,17 +8,9 @@
 
 @file:Suppress(
     "ArrayInDataClass",
-    "DuplicatedCode",
     "EnumEntryName",
     "RemoveRedundantQualifierName",
-    "RemoveRedundantCallsOfConversionMethods",
-    "REDUNDANT_CALL_OF_CONVERSION_METHOD",
-    "RedundantUnitReturnType",
-    "RemoveEmptyClassBody",
-    "UnnecessaryVariable",
-    "UnusedImport",
-    "UnnecessaryVariable",
-    "unused"
+    "UnusedImport"
 )
 
 package com.spela.client.models
@@ -34,8 +26,8 @@ import kotlinx.serialization.encoding.*
  *
  * @param favoriteCount 
  * @param gamesPlayed 
- * @param totalPlayTime 
  * @param mostPlayedGame 
+ * @param totalPlayTime 
  */
 @Serializable
 
@@ -45,9 +37,9 @@ data class EntityUserStats (
 
     @SerialName(value = "gamesPlayed") @Required val gamesPlayed: kotlin.Long,
 
-    @SerialName(value = "totalPlayTime") @Required val totalPlayTime: kotlin.Long,
+    @SerialName(value = "mostPlayedGame") @Required val mostPlayedGame: GameResponse,
 
-    @SerialName(value = "mostPlayedGame") val mostPlayedGame: GameResponse? = null
+    @SerialName(value = "totalPlayTime") @Required val totalPlayTime: kotlin.Long
 
 ) {
 

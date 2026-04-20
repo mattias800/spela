@@ -8,17 +8,9 @@
 
 @file:Suppress(
     "ArrayInDataClass",
-    "DuplicatedCode",
     "EnumEntryName",
     "RemoveRedundantQualifierName",
-    "RemoveRedundantCallsOfConversionMethods",
-    "REDUNDANT_CALL_OF_CONVERSION_METHOD",
-    "RedundantUnitReturnType",
-    "RemoveEmptyClassBody",
-    "UnnecessaryVariable",
-    "UnusedImport",
-    "UnnecessaryVariable",
-    "unused"
+    "UnusedImport"
 )
 
 package com.spela.client.models
@@ -33,18 +25,18 @@ import kotlinx.serialization.encoding.*
  *
  * @param attemptCount 
  * @param completionCount 
+ * @param consoleName 
  * @param createdAt 
  * @param creatorUsername 
+ * @param description 
  * @param difficulty 
+ * @param expiresAt 
+ * @param gameCoverUrl 
  * @param gameId 
  * @param gameTitle 
  * @param id 
  * @param name 
  * @param type 
- * @param consoleName 
- * @param description 
- * @param expiresAt 
- * @param gameCoverUrl 
  */
 @Serializable
 
@@ -54,11 +46,19 @@ data class ExploreChallengeResponse (
 
     @SerialName(value = "completionCount") @Required val completionCount: kotlin.Long,
 
-    @SerialName(value = "createdAt") @Required val createdAt: kotlin.time.Instant,
+    @SerialName(value = "consoleName") @Required val consoleName: kotlin.String,
+
+    @SerialName(value = "createdAt") @Required val createdAt: kotlinx.datetime.Instant,
 
     @SerialName(value = "creatorUsername") @Required val creatorUsername: kotlin.String,
 
+    @SerialName(value = "description") @Required val description: kotlin.String,
+
     @SerialName(value = "difficulty") @Required val difficulty: kotlin.String,
+
+    @SerialName(value = "expiresAt") @Required val expiresAt: kotlinx.datetime.Instant?,
+
+    @SerialName(value = "gameCoverUrl") @Required val gameCoverUrl: kotlin.String,
 
     @SerialName(value = "gameId") @Required val gameId: kotlin.String,
 
@@ -68,15 +68,7 @@ data class ExploreChallengeResponse (
 
     @SerialName(value = "name") @Required val name: kotlin.String,
 
-    @SerialName(value = "type") @Required val type: kotlin.String,
-
-    @SerialName(value = "consoleName") val consoleName: kotlin.String? = null,
-
-    @SerialName(value = "description") val description: kotlin.String? = null,
-
-    @SerialName(value = "expiresAt") val expiresAt: kotlin.time.Instant? = null,
-
-    @SerialName(value = "gameCoverUrl") val gameCoverUrl: kotlin.String? = null
+    @SerialName(value = "type") @Required val type: kotlin.String
 
 ) {
 

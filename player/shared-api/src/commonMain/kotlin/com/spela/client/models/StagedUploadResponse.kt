@@ -8,17 +8,9 @@
 
 @file:Suppress(
     "ArrayInDataClass",
-    "DuplicatedCode",
     "EnumEntryName",
     "RemoveRedundantQualifierName",
-    "RemoveRedundantCallsOfConversionMethods",
-    "REDUNDANT_CALL_OF_CONVERSION_METHOD",
-    "RedundantUnitReturnType",
-    "RemoveEmptyClassBody",
-    "UnnecessaryVariable",
-    "UnusedImport",
-    "UnnecessaryVariable",
-    "unused"
+    "UnusedImport"
 )
 
 package com.spela.client.models
@@ -32,12 +24,6 @@ import kotlinx.serialization.encoding.*
 /**
  * 
  *
- * @param fileName 
- * @param fileSize 
- * @param id 
- * @param originalFileName 
- * @param status 
- * @param dollarSchema A URL to the JSON Schema for this object.
  * @param canonicalName 
  * @param consoleId 
  * @param consoleName 
@@ -46,63 +32,69 @@ import kotlinx.serialization.encoding.*
  * @param description 
  * @param developer 
  * @param duplicateOfGameId 
+ * @param fileName 
+ * @param fileSize 
  * @param genre 
+ * @param id 
  * @param igdbCriticsRating 
+ * @param originalFileName 
  * @param players 
  * @param possibleConsoles 
  * @param publisher 
  * @param releaseDate 
+ * @param status 
  * @param title 
  * @param verificationStatus 
+ * @param dollarSchema A URL to the JSON Schema for this object.
  */
 @Serializable
 
 data class StagedUploadResponse (
 
+    @SerialName(value = "canonicalName") @Required val canonicalName: kotlin.String,
+
+    @SerialName(value = "consoleId") @Required val consoleId: kotlin.String?,
+
+    @SerialName(value = "consoleName") @Required val consoleName: kotlin.String?,
+
+    @SerialName(value = "coverUrl") @Required val coverUrl: kotlin.String,
+
+    @SerialName(value = "crc32") @Required val crc32: kotlin.String,
+
+    @SerialName(value = "description") @Required val description: kotlin.String,
+
+    @SerialName(value = "developer") @Required val developer: kotlin.String,
+
+    @SerialName(value = "duplicateOfGameId") @Required val duplicateOfGameId: kotlin.String?,
+
     @SerialName(value = "fileName") @Required val fileName: kotlin.String,
 
     @SerialName(value = "fileSize") @Required val fileSize: kotlin.Long,
 
+    @SerialName(value = "genre") @Required val genre: kotlin.String,
+
     @SerialName(value = "id") @Required val id: kotlin.String,
+
+    @SerialName(value = "igdbCriticsRating") @Required val igdbCriticsRating: kotlin.Double,
 
     @SerialName(value = "originalFileName") @Required val originalFileName: kotlin.String,
 
+    @SerialName(value = "players") @Required val players: kotlin.Long,
+
+    @SerialName(value = "possibleConsoles") @Required val possibleConsoles: kotlin.collections.List<PossibleConsoleResponse>?,
+
+    @SerialName(value = "publisher") @Required val publisher: kotlin.String,
+
+    @SerialName(value = "releaseDate") @Required val releaseDate: kotlin.String,
+
     @SerialName(value = "status") @Required val status: kotlin.String,
 
+    @SerialName(value = "title") @Required val title: kotlin.String,
+
+    @SerialName(value = "verificationStatus") @Required val verificationStatus: kotlin.String,
+
     /* A URL to the JSON Schema for this object. */
-    @SerialName(value = "\$schema") val dollarSchema: kotlin.String? = null,
-
-    @SerialName(value = "canonicalName") val canonicalName: kotlin.String? = null,
-
-    @SerialName(value = "consoleId") val consoleId: kotlin.String? = null,
-
-    @SerialName(value = "consoleName") val consoleName: kotlin.String? = null,
-
-    @SerialName(value = "coverUrl") val coverUrl: kotlin.String? = null,
-
-    @SerialName(value = "crc32") val crc32: kotlin.String? = null,
-
-    @SerialName(value = "description") val description: kotlin.String? = null,
-
-    @SerialName(value = "developer") val developer: kotlin.String? = null,
-
-    @SerialName(value = "duplicateOfGameId") val duplicateOfGameId: kotlin.String? = null,
-
-    @SerialName(value = "genre") val genre: kotlin.String? = null,
-
-    @SerialName(value = "igdbCriticsRating") val igdbCriticsRating: kotlin.Double? = null,
-
-    @SerialName(value = "players") val players: kotlin.Long? = null,
-
-    @SerialName(value = "possibleConsoles") val possibleConsoles: kotlin.collections.List<PossibleConsoleResponse>? = null,
-
-    @SerialName(value = "publisher") val publisher: kotlin.String? = null,
-
-    @SerialName(value = "releaseDate") val releaseDate: kotlin.String? = null,
-
-    @SerialName(value = "title") val title: kotlin.String? = null,
-
-    @SerialName(value = "verificationStatus") val verificationStatus: kotlin.String? = null
+    @SerialName(value = "\$schema") val dollarSchema: kotlin.String? = null
 
 ) {
 

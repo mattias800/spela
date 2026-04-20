@@ -8,17 +8,9 @@
 
 @file:Suppress(
     "ArrayInDataClass",
-    "DuplicatedCode",
     "EnumEntryName",
     "RemoveRedundantQualifierName",
-    "RemoveRedundantCallsOfConversionMethods",
-    "REDUNDANT_CALL_OF_CONVERSION_METHOD",
-    "RedundantUnitReturnType",
-    "RemoveEmptyClassBody",
-    "UnnecessaryVariable",
-    "UnusedImport",
-    "UnnecessaryVariable",
-    "unused"
+    "UnusedImport"
 )
 
 package com.spela.client.models
@@ -31,29 +23,33 @@ import kotlinx.serialization.encoding.*
 /**
  * 
  *
+ * @param consoleName 
  * @param createdAt 
+ * @param gameCoverUrl 
  * @param gameId 
  * @param gameTitle 
  * @param hostUsername 
  * @param id 
  * @param inputDelay 
+ * @param inviteeAvatarUrl 
  * @param inviteeId 
  * @param inviteeUsername 
+ * @param inviterAvatarUrl 
  * @param inviterId 
  * @param inviterUsername 
  * @param netplaySessionId 
  * @param status 
  * @param dollarSchema A URL to the JSON Schema for this object.
- * @param consoleName 
- * @param gameCoverUrl 
- * @param inviteeAvatarUrl 
- * @param inviterAvatarUrl 
  */
 @Serializable
 
 data class NetplayInviteResponse (
 
-    @SerialName(value = "createdAt") @Required val createdAt: kotlin.time.Instant,
+    @SerialName(value = "consoleName") @Required val consoleName: kotlin.String,
+
+    @SerialName(value = "createdAt") @Required val createdAt: kotlinx.datetime.Instant,
+
+    @SerialName(value = "gameCoverUrl") @Required val gameCoverUrl: kotlin.String,
 
     @SerialName(value = "gameId") @Required val gameId: kotlin.String,
 
@@ -65,9 +61,13 @@ data class NetplayInviteResponse (
 
     @SerialName(value = "inputDelay") @Required val inputDelay: kotlin.Long,
 
+    @SerialName(value = "inviteeAvatarUrl") @Required val inviteeAvatarUrl: kotlin.String,
+
     @SerialName(value = "inviteeId") @Required val inviteeId: kotlin.String,
 
     @SerialName(value = "inviteeUsername") @Required val inviteeUsername: kotlin.String,
+
+    @SerialName(value = "inviterAvatarUrl") @Required val inviterAvatarUrl: kotlin.String,
 
     @SerialName(value = "inviterId") @Required val inviterId: kotlin.String,
 
@@ -78,15 +78,7 @@ data class NetplayInviteResponse (
     @SerialName(value = "status") @Required val status: kotlin.String,
 
     /* A URL to the JSON Schema for this object. */
-    @SerialName(value = "\$schema") val dollarSchema: kotlin.String? = null,
-
-    @SerialName(value = "consoleName") val consoleName: kotlin.String? = null,
-
-    @SerialName(value = "gameCoverUrl") val gameCoverUrl: kotlin.String? = null,
-
-    @SerialName(value = "inviteeAvatarUrl") val inviteeAvatarUrl: kotlin.String? = null,
-
-    @SerialName(value = "inviterAvatarUrl") val inviterAvatarUrl: kotlin.String? = null
+    @SerialName(value = "\$schema") val dollarSchema: kotlin.String? = null
 
 ) {
 

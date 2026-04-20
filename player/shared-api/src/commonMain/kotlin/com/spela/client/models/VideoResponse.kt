@@ -8,17 +8,9 @@
 
 @file:Suppress(
     "ArrayInDataClass",
-    "DuplicatedCode",
     "EnumEntryName",
     "RemoveRedundantQualifierName",
-    "RemoveRedundantCallsOfConversionMethods",
-    "REDUNDANT_CALL_OF_CONVERSION_METHOD",
-    "RedundantUnitReturnType",
-    "RemoveEmptyClassBody",
-    "UnnecessaryVariable",
-    "UnusedImport",
-    "UnnecessaryVariable",
-    "unused"
+    "UnusedImport"
 )
 
 package com.spela.client.models
@@ -31,16 +23,16 @@ import kotlinx.serialization.encoding.*
 /**
  * 
  *
- * @param videoId 
  * @param name 
+ * @param videoId 
  */
 @Serializable
 
 data class VideoResponse (
 
-    @SerialName(value = "videoId") @Required val videoId: kotlin.String,
+    @SerialName(value = "name") @Required val name: kotlin.String,
 
-    @SerialName(value = "name") val name: kotlin.String? = null
+    @SerialName(value = "videoId") @Required val videoId: kotlin.String
 
 ) {
 

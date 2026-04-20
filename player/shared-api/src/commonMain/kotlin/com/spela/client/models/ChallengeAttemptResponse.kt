@@ -8,17 +8,9 @@
 
 @file:Suppress(
     "ArrayInDataClass",
-    "DuplicatedCode",
     "EnumEntryName",
     "RemoveRedundantQualifierName",
-    "RemoveRedundantCallsOfConversionMethods",
-    "REDUNDANT_CALL_OF_CONVERSION_METHOD",
-    "RedundantUnitReturnType",
-    "RemoveEmptyClassBody",
-    "UnnecessaryVariable",
-    "UnusedImport",
-    "UnnecessaryVariable",
-    "unused"
+    "UnusedImport"
 )
 
 package com.spela.client.models
@@ -31,7 +23,9 @@ import kotlinx.serialization.encoding.*
 /**
  * 
  *
+ * @param avatarUrl 
  * @param challengeId 
+ * @param completedAt 
  * @param durationMs 
  * @param id 
  * @param isBest 
@@ -40,14 +34,16 @@ import kotlinx.serialization.encoding.*
  * @param userId 
  * @param username 
  * @param dollarSchema A URL to the JSON Schema for this object.
- * @param avatarUrl 
- * @param completedAt 
  */
 @Serializable
 
 data class ChallengeAttemptResponse (
 
+    @SerialName(value = "avatarUrl") @Required val avatarUrl: kotlin.String,
+
     @SerialName(value = "challengeId") @Required val challengeId: kotlin.String,
+
+    @SerialName(value = "completedAt") @Required val completedAt: kotlinx.datetime.Instant?,
 
     @SerialName(value = "durationMs") @Required val durationMs: kotlin.Long,
 
@@ -55,7 +51,7 @@ data class ChallengeAttemptResponse (
 
     @SerialName(value = "isBest") @Required val isBest: kotlin.Boolean,
 
-    @SerialName(value = "startedAt") @Required val startedAt: kotlin.time.Instant,
+    @SerialName(value = "startedAt") @Required val startedAt: kotlinx.datetime.Instant,
 
     @SerialName(value = "status") @Required val status: kotlin.String,
 
@@ -64,11 +60,7 @@ data class ChallengeAttemptResponse (
     @SerialName(value = "username") @Required val username: kotlin.String,
 
     /* A URL to the JSON Schema for this object. */
-    @SerialName(value = "\$schema") val dollarSchema: kotlin.String? = null,
-
-    @SerialName(value = "avatarUrl") val avatarUrl: kotlin.String? = null,
-
-    @SerialName(value = "completedAt") val completedAt: kotlin.time.Instant? = null
+    @SerialName(value = "\$schema") val dollarSchema: kotlin.String? = null
 
 ) {
 

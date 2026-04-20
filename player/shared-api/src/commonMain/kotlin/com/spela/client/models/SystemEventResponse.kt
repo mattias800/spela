@@ -8,17 +8,9 @@
 
 @file:Suppress(
     "ArrayInDataClass",
-    "DuplicatedCode",
     "EnumEntryName",
     "RemoveRedundantQualifierName",
-    "RemoveRedundantCallsOfConversionMethods",
-    "REDUNDANT_CALL_OF_CONVERSION_METHOD",
-    "RedundantUnitReturnType",
-    "RemoveEmptyClassBody",
-    "UnnecessaryVariable",
-    "UnusedImport",
-    "UnnecessaryVariable",
-    "unused"
+    "UnusedImport"
 )
 
 package com.spela.client.models
@@ -34,10 +26,9 @@ import kotlinx.serialization.encoding.*
  * @param categoryCode 
  * @param categoryName 
  * @param createdAt 
+ * @param dismissedAt 
  * @param eventType 
  * @param id 
- * @param dollarSchema A URL to the JSON Schema for this object.
- * @param dismissedAt 
  * @param ip 
  * @param metadata 
  * @param metadataRaw 
@@ -45,6 +36,7 @@ import kotlinx.serialization.encoding.*
  * @param reason 
  * @param userId 
  * @param username 
+ * @param dollarSchema A URL to the JSON Schema for this object.
  */
 @Serializable
 
@@ -54,32 +46,32 @@ data class SystemEventResponse (
 
     @SerialName(value = "categoryName") @Required val categoryName: kotlin.String,
 
-    @SerialName(value = "createdAt") @Required val createdAt: kotlin.time.Instant,
+    @SerialName(value = "createdAt") @Required val createdAt: kotlinx.datetime.Instant,
+
+    @SerialName(value = "dismissedAt") @Required val dismissedAt: kotlinx.datetime.Instant,
 
     @SerialName(value = "eventType") @Required val eventType: kotlin.String,
 
     @SerialName(value = "id") @Required val id: kotlin.Long,
 
+    @SerialName(value = "ip") @Required val ip: kotlin.String,
+
+    @SerialName(value = "metadata") @Required val metadata: kotlin.String,
+
+    @SerialName(value = "metadataRaw") @Required val metadataRaw: kotlin.String,
+
+    @SerialName(value = "path") @Required val path: kotlin.String,
+
+    @SerialName(value = "reason") @Required val reason: kotlin.String,
+
+    @SerialName(value = "userId") @Required val userId: kotlin.Long,
+
+    @SerialName(value = "username") @Required val username: kotlin.String,
+
     /* A URL to the JSON Schema for this object. */
-    @SerialName(value = "\$schema") val dollarSchema: kotlin.String? = null,
+    @SerialName(value = "\$schema") val dollarSchema: kotlin.String? = null
 
-    @SerialName(value = "dismissedAt") val dismissedAt: kotlin.time.Instant? = null,
-
-    @SerialName(value = "ip") val ip: kotlin.String? = null,
-
-    @SerialName(value = "metadata") val metadata: kotlinx.serialization.json.JsonObject? = null,
-
-    @SerialName(value = "metadataRaw") val metadataRaw: kotlin.String? = null,
-
-    @SerialName(value = "path") val path: kotlin.String? = null,
-
-    @SerialName(value = "reason") val reason: kotlin.String? = null,
-
-    @SerialName(value = "userId") val userId: kotlin.Long? = null,
-
-    @SerialName(value = "username") val username: kotlin.String? = null
-
-) {
+) : kotlin.collections.HashMap<String, kotlinx.serialization.json.JsonElement>() {
 
 
 }

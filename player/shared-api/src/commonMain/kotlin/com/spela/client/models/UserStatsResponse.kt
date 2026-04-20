@@ -8,17 +8,9 @@
 
 @file:Suppress(
     "ArrayInDataClass",
-    "DuplicatedCode",
     "EnumEntryName",
     "RemoveRedundantQualifierName",
-    "RemoveRedundantCallsOfConversionMethods",
-    "REDUNDANT_CALL_OF_CONVERSION_METHOD",
-    "RedundantUnitReturnType",
-    "RemoveEmptyClassBody",
-    "UnnecessaryVariable",
-    "UnusedImport",
-    "UnnecessaryVariable",
-    "unused"
+    "UnusedImport"
 )
 
 package com.spela.client.models
@@ -36,10 +28,10 @@ import kotlinx.serialization.encoding.*
  * @param gamesPlayed 
  * @param lastPlayedAt 
  * @param longestStreak 
+ * @param mostPlayedGame 
  * @param mostPlayedGameTime 
  * @param totalPlayTime 
  * @param dollarSchema A URL to the JSON Schema for this object.
- * @param mostPlayedGame 
  */
 @Serializable
 
@@ -49,18 +41,18 @@ data class UserStatsResponse (
 
     @SerialName(value = "gamesPlayed") @Required val gamesPlayed: kotlin.Long,
 
-    @SerialName(value = "lastPlayedAt") @Required val lastPlayedAt: kotlin.time.Instant?,
+    @SerialName(value = "lastPlayedAt") @Required val lastPlayedAt: kotlinx.datetime.Instant?,
 
     @SerialName(value = "longestStreak") @Required val longestStreak: kotlin.Long,
+
+    @SerialName(value = "mostPlayedGame") @Required val mostPlayedGame: GameResponse,
 
     @SerialName(value = "mostPlayedGameTime") @Required val mostPlayedGameTime: kotlin.Long,
 
     @SerialName(value = "totalPlayTime") @Required val totalPlayTime: kotlin.Long,
 
     /* A URL to the JSON Schema for this object. */
-    @SerialName(value = "\$schema") val dollarSchema: kotlin.String? = null,
-
-    @SerialName(value = "mostPlayedGame") val mostPlayedGame: GameResponse? = null
+    @SerialName(value = "\$schema") val dollarSchema: kotlin.String? = null
 
 ) {
 

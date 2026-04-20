@@ -8,17 +8,9 @@
 
 @file:Suppress(
     "ArrayInDataClass",
-    "DuplicatedCode",
     "EnumEntryName",
     "RemoveRedundantQualifierName",
-    "RemoveRedundantCallsOfConversionMethods",
-    "REDUNDANT_CALL_OF_CONVERSION_METHOD",
-    "RedundantUnitReturnType",
-    "RemoveEmptyClassBody",
-    "UnnecessaryVariable",
-    "UnusedImport",
-    "UnnecessaryVariable",
-    "unused"
+    "UnusedImport"
 )
 
 package com.spela.client.models
@@ -31,22 +23,22 @@ import kotlinx.serialization.encoding.*
 /**
  * 
  *
- * @param source 
- * @param url 
  * @param label 
  * @param libretroName 
+ * @param source 
+ * @param url 
  */
 @Serializable
 
 data class CoverOption (
 
+    @SerialName(value = "label") @Required val label: kotlin.String,
+
+    @SerialName(value = "libretroName") @Required val libretroName: kotlin.String,
+
     @SerialName(value = "source") @Required val source: kotlin.String,
 
-    @SerialName(value = "url") @Required val url: kotlin.String,
-
-    @SerialName(value = "label") val label: kotlin.String? = null,
-
-    @SerialName(value = "libretroName") val libretroName: kotlin.String? = null
+    @SerialName(value = "url") @Required val url: kotlin.String
 
 ) {
 

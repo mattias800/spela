@@ -8,17 +8,9 @@
 
 @file:Suppress(
     "ArrayInDataClass",
-    "DuplicatedCode",
     "EnumEntryName",
     "RemoveRedundantQualifierName",
-    "RemoveRedundantCallsOfConversionMethods",
-    "REDUNDANT_CALL_OF_CONVERSION_METHOD",
-    "RedundantUnitReturnType",
-    "RemoveEmptyClassBody",
-    "UnnecessaryVariable",
-    "UnusedImport",
-    "UnnecessaryVariable",
-    "unused"
+    "UnusedImport"
 )
 
 package com.spela.client.models
@@ -41,30 +33,34 @@ import kotlinx.serialization.encoding.*
 /**
  * 
  *
+ * @param activeYears 
  * @param avgRating 
+ * @param companyInfo 
  * @param consoles 
  * @param gameCount 
  * @param games 
  * @param genreBreakdown 
+ * @param heroUrl 
  * @param name 
  * @param platformBreakdown 
+ * @param primaryGenre 
  * @param publishers 
  * @param ratingDistribution 
- * @param topGames 
- * @param dollarSchema A URL to the JSON Schema for this object.
- * @param activeYears 
- * @param companyInfo 
- * @param heroUrl 
- * @param primaryGenre 
  * @param relatedDevelopers 
  * @param timeline 
+ * @param topGames 
  * @param userStats 
+ * @param dollarSchema A URL to the JSON Schema for this object.
  */
 @Serializable
 
 data class DeveloperDetailResponse (
 
+    @SerialName(value = "activeYears") @Required val activeYears: ActiveYears,
+
     @SerialName(value = "avgRating") @Required val avgRating: kotlin.Double,
+
+    @SerialName(value = "companyInfo") @Required val companyInfo: CompanyInfo,
 
     @SerialName(value = "consoles") @Required val consoles: kotlin.collections.List<kotlin.String>?,
 
@@ -74,32 +70,28 @@ data class DeveloperDetailResponse (
 
     @SerialName(value = "genreBreakdown") @Required val genreBreakdown: kotlin.collections.List<GenreCount>?,
 
+    @SerialName(value = "heroUrl") @Required val heroUrl: kotlin.String,
+
     @SerialName(value = "name") @Required val name: kotlin.String,
 
     @SerialName(value = "platformBreakdown") @Required val platformBreakdown: kotlin.collections.List<PlatformCount>?,
+
+    @SerialName(value = "primaryGenre") @Required val primaryGenre: kotlin.String,
 
     @SerialName(value = "publishers") @Required val publishers: kotlin.collections.List<NameCount>?,
 
     @SerialName(value = "ratingDistribution") @Required val ratingDistribution: RatingDistribution,
 
+    @SerialName(value = "relatedDevelopers") @Required val relatedDevelopers: kotlin.collections.List<RelatedDeveloper>?,
+
+    @SerialName(value = "timeline") @Required val timeline: kotlin.collections.List<TimelineEntry>?,
+
     @SerialName(value = "topGames") @Required val topGames: kotlin.collections.List<GameResponse>?,
 
+    @SerialName(value = "userStats") @Required val userStats: EntityUserStats,
+
     /* A URL to the JSON Schema for this object. */
-    @SerialName(value = "\$schema") val dollarSchema: kotlin.String? = null,
-
-    @SerialName(value = "activeYears") val activeYears: ActiveYears? = null,
-
-    @SerialName(value = "companyInfo") val companyInfo: CompanyInfo? = null,
-
-    @SerialName(value = "heroUrl") val heroUrl: kotlin.String? = null,
-
-    @SerialName(value = "primaryGenre") val primaryGenre: kotlin.String? = null,
-
-    @SerialName(value = "relatedDevelopers") val relatedDevelopers: kotlin.collections.List<RelatedDeveloper>? = null,
-
-    @SerialName(value = "timeline") val timeline: kotlin.collections.List<TimelineEntry>? = null,
-
-    @SerialName(value = "userStats") val userStats: EntityUserStats? = null
+    @SerialName(value = "\$schema") val dollarSchema: kotlin.String? = null
 
 ) {
 

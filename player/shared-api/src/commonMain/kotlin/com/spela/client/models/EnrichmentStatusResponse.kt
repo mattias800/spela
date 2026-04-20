@@ -8,17 +8,9 @@
 
 @file:Suppress(
     "ArrayInDataClass",
-    "DuplicatedCode",
     "EnumEntryName",
     "RemoveRedundantQualifierName",
-    "RemoveRedundantCallsOfConversionMethods",
-    "REDUNDANT_CALL_OF_CONVERSION_METHOD",
-    "RedundantUnitReturnType",
-    "RemoveEmptyClassBody",
-    "UnnecessaryVariable",
-    "UnusedImport",
-    "UnnecessaryVariable",
-    "unused"
+    "UnusedImport"
 )
 
 package com.spela.client.models
@@ -32,12 +24,12 @@ import kotlinx.serialization.encoding.*
  * 
  *
  * @param active 
- * @param dollarSchema A URL to the JSON Schema for this object.
  * @param current 
  * @param failures 
  * @param gameName 
  * @param successes 
  * @param total 
+ * @param dollarSchema A URL to the JSON Schema for this object.
  */
 @Serializable
 
@@ -45,18 +37,18 @@ data class EnrichmentStatusResponse (
 
     @SerialName(value = "active") @Required val active: kotlin.Boolean,
 
+    @SerialName(value = "current") @Required val current: kotlin.Long,
+
+    @SerialName(value = "failures") @Required val failures: kotlin.Long,
+
+    @SerialName(value = "gameName") @Required val gameName: kotlin.String,
+
+    @SerialName(value = "successes") @Required val successes: kotlin.Long,
+
+    @SerialName(value = "total") @Required val total: kotlin.Long,
+
     /* A URL to the JSON Schema for this object. */
-    @SerialName(value = "\$schema") val dollarSchema: kotlin.String? = null,
-
-    @SerialName(value = "current") val current: kotlin.Long? = null,
-
-    @SerialName(value = "failures") val failures: kotlin.Long? = null,
-
-    @SerialName(value = "gameName") val gameName: kotlin.String? = null,
-
-    @SerialName(value = "successes") val successes: kotlin.Long? = null,
-
-    @SerialName(value = "total") val total: kotlin.Long? = null
+    @SerialName(value = "\$schema") val dollarSchema: kotlin.String? = null
 
 ) {
 

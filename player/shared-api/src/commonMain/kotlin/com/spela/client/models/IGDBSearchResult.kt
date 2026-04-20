@@ -8,17 +8,9 @@
 
 @file:Suppress(
     "ArrayInDataClass",
-    "DuplicatedCode",
     "EnumEntryName",
     "RemoveRedundantQualifierName",
-    "RemoveRedundantCallsOfConversionMethods",
-    "REDUNDANT_CALL_OF_CONVERSION_METHOD",
-    "RedundantUnitReturnType",
-    "RemoveEmptyClassBody",
-    "UnnecessaryVariable",
-    "UnusedImport",
-    "UnnecessaryVariable",
-    "unused"
+    "UnusedImport"
 )
 
 package com.spela.client.models
@@ -31,10 +23,10 @@ import kotlinx.serialization.encoding.*
 /**
  * 
  *
- * @param igdbId 
- * @param name 
  * @param coverUrl 
  * @param developer 
+ * @param igdbId 
+ * @param name 
  * @param releaseYear 
  * @param summary 
  */
@@ -42,17 +34,17 @@ import kotlinx.serialization.encoding.*
 
 data class IGDBSearchResult (
 
+    @SerialName(value = "coverUrl") @Required val coverUrl: kotlin.String,
+
+    @SerialName(value = "developer") @Required val developer: kotlin.String,
+
     @SerialName(value = "igdbId") @Required val igdbId: kotlin.Long,
 
     @SerialName(value = "name") @Required val name: kotlin.String,
 
-    @SerialName(value = "coverUrl") val coverUrl: kotlin.String? = null,
+    @SerialName(value = "releaseYear") @Required val releaseYear: kotlin.Long,
 
-    @SerialName(value = "developer") val developer: kotlin.String? = null,
-
-    @SerialName(value = "releaseYear") val releaseYear: kotlin.Long? = null,
-
-    @SerialName(value = "summary") val summary: kotlin.String? = null
+    @SerialName(value = "summary") @Required val summary: kotlin.String
 
 ) {
 

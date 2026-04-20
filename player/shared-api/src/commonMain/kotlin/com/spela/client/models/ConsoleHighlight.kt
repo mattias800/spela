@@ -8,17 +8,9 @@
 
 @file:Suppress(
     "ArrayInDataClass",
-    "DuplicatedCode",
     "EnumEntryName",
     "RemoveRedundantQualifierName",
-    "RemoveRedundantCallsOfConversionMethods",
-    "REDUNDANT_CALL_OF_CONVERSION_METHOD",
-    "RedundantUnitReturnType",
-    "RemoveEmptyClassBody",
-    "UnnecessaryVariable",
-    "UnusedImport",
-    "UnnecessaryVariable",
-    "unused"
+    "UnusedImport"
 )
 
 package com.spela.client.models
@@ -56,7 +48,7 @@ data class ConsoleHighlight (
 
     @SerialName(value = "name") @Required val name: kotlin.String,
 
-    @SerialName(value = "topGame") val topGame: GameResponse? = null
+    @SerialName(value = "topGame") @Required val topGame: GameResponse
 
 ) {
 

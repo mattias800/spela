@@ -8,17 +8,9 @@
 
 @file:Suppress(
     "ArrayInDataClass",
-    "DuplicatedCode",
     "EnumEntryName",
     "RemoveRedundantQualifierName",
-    "RemoveRedundantCallsOfConversionMethods",
-    "REDUNDANT_CALL_OF_CONVERSION_METHOD",
-    "RedundantUnitReturnType",
-    "RemoveEmptyClassBody",
-    "UnnecessaryVariable",
-    "UnusedImport",
-    "UnnecessaryVariable",
-    "unused"
+    "UnusedImport"
 )
 
 package com.spela.client.models
@@ -31,19 +23,19 @@ import kotlinx.serialization.encoding.*
 /**
  * 
  *
+ * @param avatarUrl 
  * @param id 
  * @param username 
- * @param avatarUrl 
  */
 @Serializable
 
 data class UserSearchResult (
 
+    @SerialName(value = "avatarUrl") @Required val avatarUrl: kotlin.String,
+
     @SerialName(value = "id") @Required val id: kotlin.String,
 
-    @SerialName(value = "username") @Required val username: kotlin.String,
-
-    @SerialName(value = "avatarUrl") val avatarUrl: kotlin.String? = null
+    @SerialName(value = "username") @Required val username: kotlin.String
 
 ) {
 

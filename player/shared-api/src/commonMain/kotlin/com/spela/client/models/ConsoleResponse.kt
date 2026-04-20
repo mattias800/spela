@@ -8,17 +8,9 @@
 
 @file:Suppress(
     "ArrayInDataClass",
-    "DuplicatedCode",
     "EnumEntryName",
     "RemoveRedundantQualifierName",
-    "RemoveRedundantCallsOfConversionMethods",
-    "REDUNDANT_CALL_OF_CONVERSION_METHOD",
-    "RedundantUnitReturnType",
-    "RemoveEmptyClassBody",
-    "UnnecessaryVariable",
-    "UnusedImport",
-    "UnnecessaryVariable",
-    "unused"
+    "UnusedImport"
 )
 
 package com.spela.client.models
@@ -48,6 +40,8 @@ import kotlinx.serialization.encoding.*
  * @param id 
  * @param logoPngUrl 
  * @param logoUrl 
+ * @param maker 
+ * @param mediaType 
  * @param name 
  * @param playable 
  * @param releaseYear 
@@ -55,8 +49,6 @@ import kotlinx.serialization.encoding.*
  * @param summary 
  * @param unitsSold 
  * @param updatedAt 
- * @param maker 
- * @param mediaType 
  */
 @Serializable
 
@@ -72,7 +64,7 @@ data class ConsoleResponse (
 
     @SerialName(value = "coverAspectRatio") @Required val coverAspectRatio: kotlin.Double,
 
-    @SerialName(value = "createdAt") @Required val createdAt: kotlin.time.Instant,
+    @SerialName(value = "createdAt") @Required val createdAt: kotlinx.datetime.Instant,
 
     @SerialName(value = "defaultCore") @Required val defaultCore: kotlin.String,
 
@@ -92,6 +84,10 @@ data class ConsoleResponse (
 
     @SerialName(value = "logoUrl") @Required val logoUrl: kotlin.String,
 
+    @SerialName(value = "maker") @Required val maker: HardwareMakerResponse,
+
+    @SerialName(value = "mediaType") @Required val mediaType: MediaTypeResponse,
+
     @SerialName(value = "name") @Required val name: kotlin.String,
 
     @SerialName(value = "playable") @Required val playable: kotlin.Boolean,
@@ -104,11 +100,7 @@ data class ConsoleResponse (
 
     @SerialName(value = "unitsSold") @Required val unitsSold: kotlin.Long?,
 
-    @SerialName(value = "updatedAt") @Required val updatedAt: kotlin.time.Instant,
-
-    @SerialName(value = "maker") val maker: HardwareMakerResponse? = null,
-
-    @SerialName(value = "mediaType") val mediaType: MediaTypeResponse? = null
+    @SerialName(value = "updatedAt") @Required val updatedAt: kotlinx.datetime.Instant
 
 ) {
 

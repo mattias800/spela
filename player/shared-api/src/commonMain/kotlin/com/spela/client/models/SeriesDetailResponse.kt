@@ -8,17 +8,9 @@
 
 @file:Suppress(
     "ArrayInDataClass",
-    "DuplicatedCode",
     "EnumEntryName",
     "RemoveRedundantQualifierName",
-    "RemoveRedundantCallsOfConversionMethods",
-    "REDUNDANT_CALL_OF_CONVERSION_METHOD",
-    "RedundantUnitReturnType",
-    "RemoveEmptyClassBody",
-    "UnnecessaryVariable",
-    "UnusedImport",
-    "UnnecessaryVariable",
-    "unused"
+    "UnusedImport"
 )
 
 package com.spela.client.models
@@ -35,14 +27,14 @@ import kotlinx.serialization.encoding.*
  *
  * @param consoles 
  * @param games 
+ * @param heroUrl 
  * @param id 
  * @param igdbCollectionId 
  * @param libraryGames 
+ * @param logoUrl 
  * @param name 
  * @param totalGames 
  * @param dollarSchema A URL to the JSON Schema for this object.
- * @param heroUrl 
- * @param logoUrl 
  */
 @Serializable
 
@@ -52,22 +44,22 @@ data class SeriesDetailResponse (
 
     @SerialName(value = "games") @Required val games: kotlin.collections.List<SeriesGameResponse>?,
 
+    @SerialName(value = "heroUrl") @Required val heroUrl: kotlin.String,
+
     @SerialName(value = "id") @Required val id: kotlin.String,
 
     @SerialName(value = "igdbCollectionId") @Required val igdbCollectionId: kotlin.Long,
 
     @SerialName(value = "libraryGames") @Required val libraryGames: kotlin.Long,
 
+    @SerialName(value = "logoUrl") @Required val logoUrl: kotlin.String,
+
     @SerialName(value = "name") @Required val name: kotlin.String,
 
     @SerialName(value = "totalGames") @Required val totalGames: kotlin.Long,
 
     /* A URL to the JSON Schema for this object. */
-    @SerialName(value = "\$schema") val dollarSchema: kotlin.String? = null,
-
-    @SerialName(value = "heroUrl") val heroUrl: kotlin.String? = null,
-
-    @SerialName(value = "logoUrl") val logoUrl: kotlin.String? = null
+    @SerialName(value = "\$schema") val dollarSchema: kotlin.String? = null
 
 ) {
 

@@ -8,17 +8,9 @@
 
 @file:Suppress(
     "ArrayInDataClass",
-    "DuplicatedCode",
     "EnumEntryName",
     "RemoveRedundantQualifierName",
-    "RemoveRedundantCallsOfConversionMethods",
-    "REDUNDANT_CALL_OF_CONVERSION_METHOD",
-    "RedundantUnitReturnType",
-    "RemoveEmptyClassBody",
-    "UnnecessaryVariable",
-    "UnusedImport",
-    "UnnecessaryVariable",
-    "unused"
+    "UnusedImport"
 )
 
 package com.spela.client.models
@@ -31,22 +23,24 @@ import kotlinx.serialization.encoding.*
 /**
  * 
  *
+ * @param avatarUrl 
  * @param createdAt 
  * @param gameId 
  * @param id 
  * @param rating 
+ * @param review 
  * @param updatedAt 
  * @param userId 
  * @param username 
  * @param dollarSchema A URL to the JSON Schema for this object.
- * @param avatarUrl 
- * @param review 
  */
 @Serializable
 
 data class GameRatingResponse (
 
-    @SerialName(value = "createdAt") @Required val createdAt: kotlin.time.Instant,
+    @SerialName(value = "avatarUrl") @Required val avatarUrl: kotlin.String,
+
+    @SerialName(value = "createdAt") @Required val createdAt: kotlinx.datetime.Instant,
 
     @SerialName(value = "gameId") @Required val gameId: kotlin.String,
 
@@ -54,18 +48,16 @@ data class GameRatingResponse (
 
     @SerialName(value = "rating") @Required val rating: kotlin.Long,
 
-    @SerialName(value = "updatedAt") @Required val updatedAt: kotlin.time.Instant,
+    @SerialName(value = "review") @Required val review: kotlin.String,
+
+    @SerialName(value = "updatedAt") @Required val updatedAt: kotlinx.datetime.Instant,
 
     @SerialName(value = "userId") @Required val userId: kotlin.String,
 
     @SerialName(value = "username") @Required val username: kotlin.String,
 
     /* A URL to the JSON Schema for this object. */
-    @SerialName(value = "\$schema") val dollarSchema: kotlin.String? = null,
-
-    @SerialName(value = "avatarUrl") val avatarUrl: kotlin.String? = null,
-
-    @SerialName(value = "review") val review: kotlin.String? = null
+    @SerialName(value = "\$schema") val dollarSchema: kotlin.String? = null
 
 ) {
 

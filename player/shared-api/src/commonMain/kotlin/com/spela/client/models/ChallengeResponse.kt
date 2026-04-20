@@ -8,17 +8,9 @@
 
 @file:Suppress(
     "ArrayInDataClass",
-    "DuplicatedCode",
     "EnumEntryName",
     "RemoveRedundantQualifierName",
-    "RemoveRedundantCallsOfConversionMethods",
-    "REDUNDANT_CALL_OF_CONVERSION_METHOD",
-    "RedundantUnitReturnType",
-    "RemoveEmptyClassBody",
-    "UnnecessaryVariable",
-    "UnusedImport",
-    "UnnecessaryVariable",
-    "unused"
+    "UnusedImport"
 )
 
 package com.spela.client.models
@@ -33,26 +25,26 @@ import kotlinx.serialization.encoding.*
  *
  * @param attemptCount 
  * @param completionCount 
+ * @param consoleName 
+ * @param coreName 
  * @param createdAt 
+ * @param creatorAvatar 
  * @param creatorId 
  * @param creatorUsername 
+ * @param description 
  * @param difficulty 
+ * @param expiresAt 
+ * @param gameCoverUrl 
  * @param gameId 
  * @param gameTitle 
  * @param id 
  * @param name 
  * @param saveFileSize 
+ * @param screenshotUrl 
  * @param status 
  * @param type 
  * @param updatedAt 
  * @param dollarSchema A URL to the JSON Schema for this object.
- * @param consoleName 
- * @param coreName 
- * @param creatorAvatar 
- * @param description 
- * @param expiresAt 
- * @param gameCoverUrl 
- * @param screenshotUrl 
  */
 @Serializable
 
@@ -62,13 +54,25 @@ data class ChallengeResponse (
 
     @SerialName(value = "completionCount") @Required val completionCount: kotlin.Long,
 
-    @SerialName(value = "createdAt") @Required val createdAt: kotlin.time.Instant,
+    @SerialName(value = "consoleName") @Required val consoleName: kotlin.String,
+
+    @SerialName(value = "coreName") @Required val coreName: kotlin.String,
+
+    @SerialName(value = "createdAt") @Required val createdAt: kotlinx.datetime.Instant,
+
+    @SerialName(value = "creatorAvatar") @Required val creatorAvatar: kotlin.String,
 
     @SerialName(value = "creatorId") @Required val creatorId: kotlin.String,
 
     @SerialName(value = "creatorUsername") @Required val creatorUsername: kotlin.String,
 
+    @SerialName(value = "description") @Required val description: kotlin.String,
+
     @SerialName(value = "difficulty") @Required val difficulty: kotlin.String,
+
+    @SerialName(value = "expiresAt") @Required val expiresAt: kotlinx.datetime.Instant?,
+
+    @SerialName(value = "gameCoverUrl") @Required val gameCoverUrl: kotlin.String,
 
     @SerialName(value = "gameId") @Required val gameId: kotlin.String,
 
@@ -80,28 +84,16 @@ data class ChallengeResponse (
 
     @SerialName(value = "saveFileSize") @Required val saveFileSize: kotlin.Long,
 
+    @SerialName(value = "screenshotUrl") @Required val screenshotUrl: kotlin.String,
+
     @SerialName(value = "status") @Required val status: kotlin.String,
 
     @SerialName(value = "type") @Required val type: kotlin.String,
 
-    @SerialName(value = "updatedAt") @Required val updatedAt: kotlin.time.Instant,
+    @SerialName(value = "updatedAt") @Required val updatedAt: kotlinx.datetime.Instant,
 
     /* A URL to the JSON Schema for this object. */
-    @SerialName(value = "\$schema") val dollarSchema: kotlin.String? = null,
-
-    @SerialName(value = "consoleName") val consoleName: kotlin.String? = null,
-
-    @SerialName(value = "coreName") val coreName: kotlin.String? = null,
-
-    @SerialName(value = "creatorAvatar") val creatorAvatar: kotlin.String? = null,
-
-    @SerialName(value = "description") val description: kotlin.String? = null,
-
-    @SerialName(value = "expiresAt") val expiresAt: kotlin.time.Instant? = null,
-
-    @SerialName(value = "gameCoverUrl") val gameCoverUrl: kotlin.String? = null,
-
-    @SerialName(value = "screenshotUrl") val screenshotUrl: kotlin.String? = null
+    @SerialName(value = "\$schema") val dollarSchema: kotlin.String? = null
 
 ) {
 

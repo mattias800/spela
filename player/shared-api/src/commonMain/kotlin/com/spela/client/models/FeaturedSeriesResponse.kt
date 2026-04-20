@@ -8,17 +8,9 @@
 
 @file:Suppress(
     "ArrayInDataClass",
-    "DuplicatedCode",
     "EnumEntryName",
     "RemoveRedundantQualifierName",
-    "RemoveRedundantCallsOfConversionMethods",
-    "REDUNDANT_CALL_OF_CONVERSION_METHOD",
-    "RedundantUnitReturnType",
-    "RemoveEmptyClassBody",
-    "UnnecessaryVariable",
-    "UnusedImport",
-    "UnnecessaryVariable",
-    "unused"
+    "UnusedImport"
 )
 
 package com.spela.client.models
@@ -32,11 +24,11 @@ import kotlinx.serialization.encoding.*
  * 
  *
  * @param consoleCount 
+ * @param heroUrl 
  * @param id 
  * @param libraryGames 
  * @param name 
  * @param totalGames 
- * @param heroUrl 
  */
 @Serializable
 
@@ -44,15 +36,15 @@ data class FeaturedSeriesResponse (
 
     @SerialName(value = "consoleCount") @Required val consoleCount: kotlin.Long,
 
+    @SerialName(value = "heroUrl") @Required val heroUrl: kotlin.String,
+
     @SerialName(value = "id") @Required val id: kotlin.String,
 
     @SerialName(value = "libraryGames") @Required val libraryGames: kotlin.Long,
 
     @SerialName(value = "name") @Required val name: kotlin.String,
 
-    @SerialName(value = "totalGames") @Required val totalGames: kotlin.Long,
-
-    @SerialName(value = "heroUrl") val heroUrl: kotlin.String? = null
+    @SerialName(value = "totalGames") @Required val totalGames: kotlin.Long
 
 ) {
 

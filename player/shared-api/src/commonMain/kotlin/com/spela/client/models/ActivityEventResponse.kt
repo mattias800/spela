@@ -8,17 +8,9 @@
 
 @file:Suppress(
     "ArrayInDataClass",
-    "DuplicatedCode",
     "EnumEntryName",
     "RemoveRedundantQualifierName",
-    "RemoveRedundantCallsOfConversionMethods",
-    "REDUNDANT_CALL_OF_CONVERSION_METHOD",
-    "RedundantUnitReturnType",
-    "RemoveEmptyClassBody",
-    "UnnecessaryVariable",
-    "UnusedImport",
-    "UnnecessaryVariable",
-    "unused"
+    "UnusedImport"
 )
 
 package com.spela.client.models
@@ -31,25 +23,31 @@ import kotlinx.serialization.encoding.*
 /**
  * 
  *
+ * @param avatarUrl 
+ * @param consoleName 
  * @param createdAt 
  * @param eventType 
+ * @param gameCoverUrl 
  * @param gameId 
  * @param gameTitle 
  * @param id 
+ * @param metadata 
  * @param userId 
  * @param username 
- * @param avatarUrl 
- * @param consoleName 
- * @param gameCoverUrl 
- * @param metadata 
  */
 @Serializable
 
 data class ActivityEventResponse (
 
-    @SerialName(value = "createdAt") @Required val createdAt: kotlin.time.Instant,
+    @SerialName(value = "avatarUrl") @Required val avatarUrl: kotlin.String,
+
+    @SerialName(value = "consoleName") @Required val consoleName: kotlin.String,
+
+    @SerialName(value = "createdAt") @Required val createdAt: kotlinx.datetime.Instant,
 
     @SerialName(value = "eventType") @Required val eventType: kotlin.String,
+
+    @SerialName(value = "gameCoverUrl") @Required val gameCoverUrl: kotlin.String,
 
     @SerialName(value = "gameId") @Required val gameId: kotlin.String,
 
@@ -57,19 +55,13 @@ data class ActivityEventResponse (
 
     @SerialName(value = "id") @Required val id: kotlin.String,
 
+    @SerialName(value = "metadata") @Required val metadata: kotlin.String,
+
     @SerialName(value = "userId") @Required val userId: kotlin.String,
 
-    @SerialName(value = "username") @Required val username: kotlin.String,
+    @SerialName(value = "username") @Required val username: kotlin.String
 
-    @SerialName(value = "avatarUrl") val avatarUrl: kotlin.String? = null,
-
-    @SerialName(value = "consoleName") val consoleName: kotlin.String? = null,
-
-    @SerialName(value = "gameCoverUrl") val gameCoverUrl: kotlin.String? = null,
-
-    @SerialName(value = "metadata") val metadata: kotlinx.serialization.json.JsonObject? = null
-
-) {
+) : kotlin.collections.HashMap<String, kotlinx.serialization.json.JsonElement>() {
 
 
 }

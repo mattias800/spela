@@ -8,17 +8,9 @@
 
 @file:Suppress(
     "ArrayInDataClass",
-    "DuplicatedCode",
     "EnumEntryName",
     "RemoveRedundantQualifierName",
-    "RemoveRedundantCallsOfConversionMethods",
-    "REDUNDANT_CALL_OF_CONVERSION_METHOD",
-    "RedundantUnitReturnType",
-    "RemoveEmptyClassBody",
-    "UnnecessaryVariable",
-    "UnusedImport",
-    "UnnecessaryVariable",
-    "unused"
+    "UnusedImport"
 )
 
 package com.spela.client.models
@@ -52,7 +44,7 @@ data class ConsoleFileStatus (
 
     @SerialName(value = "status") @Required val status: kotlin.String,
 
-    @SerialName(value = "subDir") val subDir: kotlin.String? = null
+    @SerialName(value = "subDir") @Required val subDir: kotlin.String
 
 ) {
 

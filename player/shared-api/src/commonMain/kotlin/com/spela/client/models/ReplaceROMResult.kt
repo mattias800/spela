@@ -8,17 +8,9 @@
 
 @file:Suppress(
     "ArrayInDataClass",
-    "DuplicatedCode",
     "EnumEntryName",
     "RemoveRedundantQualifierName",
-    "RemoveRedundantCallsOfConversionMethods",
-    "REDUNDANT_CALL_OF_CONVERSION_METHOD",
-    "RedundantUnitReturnType",
-    "RemoveEmptyClassBody",
-    "UnnecessaryVariable",
-    "UnusedImport",
-    "UnnecessaryVariable",
-    "unused"
+    "UnusedImport"
 )
 
 package com.spela.client.models
@@ -31,15 +23,17 @@ import kotlinx.serialization.encoding.*
 /**
  * 
  *
+ * @param canonicalName 
  * @param crc32 
  * @param previousCrc32 
  * @param previousStatus 
  * @param verified 
- * @param canonicalName 
  */
 @Serializable
 
 data class ReplaceROMResult (
+
+    @SerialName(value = "canonicalName") @Required val canonicalName: kotlin.String,
 
     @SerialName(value = "crc32") @Required val crc32: kotlin.String,
 
@@ -47,9 +41,7 @@ data class ReplaceROMResult (
 
     @SerialName(value = "previousStatus") @Required val previousStatus: kotlin.String,
 
-    @SerialName(value = "verified") @Required val verified: kotlin.Boolean,
-
-    @SerialName(value = "canonicalName") val canonicalName: kotlin.String? = null
+    @SerialName(value = "verified") @Required val verified: kotlin.Boolean
 
 ) {
 
