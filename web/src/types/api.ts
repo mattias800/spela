@@ -465,17 +465,7 @@ export interface UserSearchResponse {
   pageSize: number;
 }
 
-export interface OnlineUser {
-  id: string;
-  username: string;
-  avatarUrl?: string;
-  currentGame?: {
-    id: string;
-    title: string;
-    coverUrl?: string;
-    consoleName: string;
-  };
-}
+export type OnlineUser = Schemas["OnlineUserResponse"];
 
 export interface ActivityEvent {
   id: string;
@@ -980,14 +970,7 @@ export interface FranchiseDetail {
 
 // --- Visual Browsing / Gallery ---
 
-export interface ScreenshotItem {
-  url: string;
-  gameId: string;
-  gameTitle: string;
-  consoleName: string;
-  consoleAbbreviation: string;
-  consoleColor: string;
-}
+export type ScreenshotItem = Schemas["ScreenshotItem"];
 
 export interface ScreenshotGalleryResponse {
   screenshots: ScreenshotItem[];
@@ -996,16 +979,7 @@ export interface ScreenshotGalleryResponse {
   totalCount: number;
 }
 
-export interface ArtworkItem {
-  url: string;
-  width: number;
-  height: number;
-  gameId: string;
-  gameTitle: string;
-  consoleName: string;
-  consoleAbbreviation: string;
-  consoleColor: string;
-}
+export type ArtworkItem = Schemas["ArtworkItem"];
 
 export interface ArtworkGalleryResponse {
   artworks: ArtworkItem[];
@@ -1014,16 +988,7 @@ export interface ArtworkGalleryResponse {
   totalCount: number;
 }
 
-export interface CoverItem {
-  coverUrl: string;
-  gameId: string;
-  gameTitle: string;
-  consoleName: string;
-  consoleAbbreviation: string;
-  consoleColor: string;
-  igdbCriticsRating: number;
-  coverAspectRatio: number;
-}
+export type CoverItem = Schemas["CoverItem"];
 
 export interface CoverGalleryResponse {
   covers: CoverItem[];
