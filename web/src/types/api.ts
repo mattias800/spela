@@ -467,19 +467,7 @@ export interface UserSearchResponse {
 
 export type OnlineUser = Schemas["OnlineUserResponse"];
 
-export interface ActivityEvent {
-  id: string;
-  userId: string;
-  username: string;
-  avatarUrl?: string;
-  eventType: string;
-  gameId: string;
-  gameTitle: string;
-  gameCoverUrl?: string;
-  consoleName?: string;
-  metadata?: Record<string, unknown>;
-  createdAt: string;
-}
+export type ActivityEvent = Schemas["ActivityEventResponse"];
 
 export interface ActivityFeedResponse {
   data: ActivityEvent[];
@@ -488,45 +476,11 @@ export interface ActivityFeedResponse {
   pageSize: number;
 }
 
-export interface GameRating {
-  id: string;
-  userId: string;
-  username: string;
-  avatarUrl?: string;
-  gameId: string;
-  rating: number;
-  review?: string;
-  createdAt: string;
-  updatedAt: string;
-}
+export type GameRating = Schemas["GameRatingResponse"];
 
-export interface SharedSave {
-  id: string;
-  userId: string;
-  username: string;
-  avatarUrl?: string;
-  gameId: string;
-  name: string;
-  description?: string;
-  fileSize: number;
-  screenshotUrl?: string;
-  downloadCount: number;
-  createdAt: string;
-}
+export type SharedSave = Schemas["SharedSaveResponse"];
 
-export interface Collection {
-  id: string;
-  userId: string;
-  username: string;
-  avatarUrl?: string;
-  name: string;
-  description?: string;
-  isPublic: boolean;
-  coverUrl?: string;
-  gameCount: number;
-  createdAt: string;
-  updatedAt: string;
-}
+export type Collection = Schemas["CollectionResponse"];
 
 export interface PublicProfileGame {
   id: string;
