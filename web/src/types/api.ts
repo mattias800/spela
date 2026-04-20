@@ -256,7 +256,7 @@ export type SharedSessionDetail = Omit<
   "status" | "members"
 > & {
   status: SharedSessionStatus;
-  members: SharedSessionMember[] | null;
+  members: SharedSessionMember[];
 };
 
 // The wire response for GET /api/user/shared-session-invites is

@@ -136,7 +136,7 @@ export function SharedSessionDetailPage() {
 
       <SharedSessionMembersList
         sharedSessionId={sharedSession.id}
-        members={sharedSession.members ?? []}
+        members={sharedSession.members}
         isOwner={isOwner}
       />
 

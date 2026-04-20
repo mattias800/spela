@@ -60,7 +60,7 @@ export function ExploreSeriesPage() {
   }
 
   // Sort games by release date, games without dates go to end
-  const sortedGames = [...(series.games ?? [])].sort((a, b) => {
+  const sortedGames = [...series.games].sort((a, b) => {
     if (!a.releaseDate && !b.releaseDate) return 0;
     if (!a.releaseDate) return 1;
     if (!b.releaseDate) return -1;
@@ -141,7 +141,7 @@ export function ExploreSeriesPage() {
       )}
 
       {/* Console badges */}
-      {(series.consoles ?? []).length > 0 && (
+      {series.consoles.length > 0 && (
         <div className="flex flex-wrap gap-2" data-testid="console-filters">
           <button
             onClick={() => setConsoleFilter(null)}
@@ -152,9 +152,9 @@ export function ExploreSeriesPage() {
                 : "bg-surface-800 text-surface-300 border-surface-700 hover:bg-surface-700",
             )}
           >
-            All ({(series.games ?? []).length})
+            All ({series.games.length})
           </button>
-          {(series.consoles ?? []).map((console: SeriesConsole) => (
+          {series.consoles.map((console: SeriesConsole) => (
             <button
               key={console.abbreviation}
               onClick={() =>

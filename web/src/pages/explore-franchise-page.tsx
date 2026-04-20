@@ -54,7 +54,7 @@ export function ExploreFranchisePage() {
     );
   }
 
-  const sortedGames = [...(franchise.games ?? [])].sort((a, b) => {
+  const sortedGames = [...franchise.games].sort((a, b) => {
     if (!a.releaseDate && !b.releaseDate) return 0;
     if (!a.releaseDate) return 1;
     if (!b.releaseDate) return -1;
@@ -132,7 +132,7 @@ export function ExploreFranchisePage() {
         </>
       )}
 
-      {(franchise.consoles ?? []).length > 0 && (
+      {franchise.consoles.length > 0 && (
         <div className="flex flex-wrap gap-2" data-testid="console-filters">
           <button
             onClick={() => setConsoleFilter(null)}
@@ -143,9 +143,9 @@ export function ExploreFranchisePage() {
                 : "bg-surface-800 text-surface-300 border-surface-700 hover:bg-surface-700",
             )}
           >
-            All ({(franchise.games ?? []).length})
+            All ({franchise.games.length})
           </button>
-          {(franchise.consoles ?? []).map((console: SeriesConsole) => (
+          {franchise.consoles.map((console: SeriesConsole) => (
             <button
               key={console.abbreviation}
               onClick={() =>

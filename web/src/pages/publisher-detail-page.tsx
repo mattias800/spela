@@ -113,13 +113,13 @@ export function PublisherDetailPage() {
     publisher.genreBreakdown && publisher.genreBreakdown.length >= 2;
 
   // Build platform-grouped games
-  const platformBreakdown = publisher.platformBreakdown ?? [];
+  const platformBreakdown = publisher.platformBreakdown;
   const sortedPlatforms = [...platformBreakdown].sort(
     (a, b) => b.count - a.count,
   );
 
   // Apply genre + console filter to the all-games list
-  let filteredGames = publisher.games ?? [];
+  let filteredGames = publisher.games;
   if (genreFilter) {
     filteredGames = filteredGames.filter((g: Game) =>
       g.genre
@@ -168,7 +168,7 @@ export function PublisherDetailPage() {
         name={publisher.name}
         gameCount={publisher.gameCount}
         avgRating={publisher.avgRating}
-        consoleCount={(publisher.consoles ?? []).length}
+        consoleCount={publisher.consoles.length}
         heroUrl={publisher.heroUrl}
         logoUrl={publisher.companyInfo?.logoUrl}
       />
@@ -183,7 +183,7 @@ export function PublisherDetailPage() {
         gameCount={publisher.gameCount}
         activeYears={publisher.activeYears}
         primaryGenre={publisher.primaryGenre}
-        platformCount={(publisher.consoles ?? []).length}
+        platformCount={publisher.consoles.length}
         avgRating={publisher.avgRating}
       />
 
@@ -244,7 +244,7 @@ export function PublisherDetailPage() {
       )}
 
       {/* Console filter chips */}
-      {(publisher.consoles ?? []).length > 1 && (
+      {publisher.consoles.length > 1 && (
         <div
           className="flex flex-wrap gap-2"
           data-testid="publisher-console-filters"
@@ -253,10 +253,10 @@ export function PublisherDetailPage() {
             label="All"
             isSelected={consoleFilter === null}
             onClick={() => setConsoleFilter(null)}
-            count={(publisher.games ?? []).length}
+            count={(publisher.games).length}
           />
-          {(publisher.consoles ?? []).map((consoleName: string) => {
-            const count = (publisher.games ?? []).filter(
+          {publisher.consoles.map((consoleName: string) => {
+            const count = (publisher.games).filter(
               (g: Game) => g.consoleName === consoleName,
             ).length;
             return (
