@@ -319,14 +319,8 @@ export interface UserPreferences {
 
 export type RAStatus = Schemas["RAStatusResponse"];
 
-export interface RALinkRequest {
-  username: string;
-  password: string;
-}
-
-export interface RASettingsRequest {
-  hardcoreEnabled: boolean;
-}
+export type RALinkRequest = Schemas["LinkRAAccountRequest"];
+export type RASettingsRequest = Schemas["UpdateRASettingsRequest"];
 
 export type Achievement = Schemas["Achievement"];
 
