@@ -44,7 +44,7 @@ data class AchievementTimelineResponse (
 
     @SerialName(value = "raGameId") @Required val raGameId: kotlin.Long,
 
-    @SerialName(value = "timeline") @Required val timeline: kotlin.collections.List<RATimelineEntryResponse>?,
+    @SerialName(value = "timeline") @Required val timeline: kotlin.collections.List<RATimelineEntryResponse>,
 
     @SerialName(value = "totalAchievements") @Required val totalAchievements: kotlin.Long,
 

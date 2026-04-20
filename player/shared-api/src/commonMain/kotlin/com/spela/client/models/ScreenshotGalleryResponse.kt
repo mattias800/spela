@@ -36,7 +36,7 @@ data class ScreenshotGalleryResponse (
 
     @SerialName(value = "page") @Required val page: kotlin.Long,
 
-    @SerialName(value = "screenshots") @Required val screenshots: kotlin.collections.List<ScreenshotItem>?,
+    @SerialName(value = "screenshots") @Required val screenshots: kotlin.collections.List<ScreenshotItem>,
 
     @SerialName(value = "totalCount") @Required val totalCount: kotlin.Long,
 

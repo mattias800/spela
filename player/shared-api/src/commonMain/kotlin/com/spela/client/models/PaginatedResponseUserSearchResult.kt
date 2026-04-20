@@ -34,7 +34,7 @@ import kotlinx.serialization.encoding.*
 
 data class PaginatedResponseUserSearchResult (
 
-    @SerialName(value = "data") @Required val `data`: kotlin.collections.List<UserSearchResult>?,
+    @SerialName(value = "data") @Required val `data`: kotlin.collections.List<UserSearchResult>,
 
     @SerialName(value = "page") @Required val page: kotlin.Long,
 

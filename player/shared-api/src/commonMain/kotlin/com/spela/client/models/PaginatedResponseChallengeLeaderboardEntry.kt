@@ -34,7 +34,7 @@ import kotlinx.serialization.encoding.*
 
 data class PaginatedResponseChallengeLeaderboardEntry (
 
-    @SerialName(value = "data") @Required val `data`: kotlin.collections.List<ChallengeLeaderboardEntry>?,
+    @SerialName(value = "data") @Required val `data`: kotlin.collections.List<ChallengeLeaderboardEntry>,
 
     @SerialName(value = "page") @Required val page: kotlin.Long,
 

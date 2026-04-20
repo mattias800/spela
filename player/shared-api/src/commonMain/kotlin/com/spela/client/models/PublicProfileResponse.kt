@@ -46,7 +46,7 @@ data class PublicProfileResponse (
 
     @SerialName(value = "currentGame") @Required val currentGame: OnlineUserGameResponse,
 
-    @SerialName(value = "favoriteGames") @Required val favoriteGames: kotlin.collections.List<PublicProfileGame>?,
+    @SerialName(value = "favoriteGames") @Required val favoriteGames: kotlin.collections.List<PublicProfileGame>,
 
     @SerialName(value = "gamesPlayed") @Required val gamesPlayed: kotlin.Long,
 
@@ -56,9 +56,9 @@ data class PublicProfileResponse (
 
     @SerialName(value = "memberSince") @Required val memberSince: kotlinx.datetime.Instant,
 
-    @SerialName(value = "recentGames") @Required val recentGames: kotlin.collections.List<PublicProfileGame>?,
+    @SerialName(value = "recentGames") @Required val recentGames: kotlin.collections.List<PublicProfileGame>,
 
-    @SerialName(value = "topGames") @Required val topGames: kotlin.collections.List<PublicProfileGame>?,
+    @SerialName(value = "topGames") @Required val topGames: kotlin.collections.List<PublicProfileGame>,
 
     @SerialName(value = "totalPlayTime") @Required val totalPlayTime: kotlin.Long,
 

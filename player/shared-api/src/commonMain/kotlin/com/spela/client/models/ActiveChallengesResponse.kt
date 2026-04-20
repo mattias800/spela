@@ -31,7 +31,7 @@ import kotlinx.serialization.encoding.*
 
 data class ActiveChallengesResponse (
 
-    @SerialName(value = "challenges") @Required val challenges: kotlin.collections.List<ExploreChallengeResponse>?,
+    @SerialName(value = "challenges") @Required val challenges: kotlin.collections.List<ExploreChallengeResponse>,
 
     /* A URL to the JSON Schema for this object. */
     @SerialName(value = "\$schema") val dollarSchema: kotlin.String? = null

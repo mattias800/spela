@@ -33,9 +33,9 @@ import kotlinx.serialization.encoding.*
 
 data class BiosListResponse (
 
-    @SerialName(value = "consoles") @Required val consoles: kotlin.collections.List<ConsoleBiosStatus>?,
+    @SerialName(value = "consoles") @Required val consoles: kotlin.collections.List<ConsoleBiosStatus>,
 
-    @SerialName(value = "files") @Required val files: kotlin.collections.List<BiosFileResponse>?,
+    @SerialName(value = "files") @Required val files: kotlin.collections.List<BiosFileResponse>,
 
     /* A URL to the JSON Schema for this object. */
     @SerialName(value = "\$schema") val dollarSchema: kotlin.String? = null

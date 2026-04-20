@@ -31,7 +31,7 @@ import kotlinx.serialization.encoding.*
 
 data class FreshChallengesResponse (
 
-    @SerialName(value = "games") @Required val games: kotlin.collections.List<FreshChallengeGame>?,
+    @SerialName(value = "games") @Required val games: kotlin.collections.List<FreshChallengeGame>,
 
     /* A URL to the JSON Schema for this object. */
     @SerialName(value = "\$schema") val dollarSchema: kotlin.String? = null

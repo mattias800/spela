@@ -31,7 +31,7 @@ import kotlinx.serialization.encoding.*
 
 data class WizardResponse (
 
-    @SerialName(value = "steps") @Required val steps: kotlin.collections.List<WizardStep>?,
+    @SerialName(value = "steps") @Required val steps: kotlin.collections.List<WizardStep>,
 
     /* A URL to the JSON Schema for this object. */
     @SerialName(value = "\$schema") val dollarSchema: kotlin.String? = null

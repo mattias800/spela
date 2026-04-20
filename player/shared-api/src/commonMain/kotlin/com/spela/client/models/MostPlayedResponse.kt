@@ -31,7 +31,7 @@ import kotlinx.serialization.encoding.*
 
 data class MostPlayedResponse (
 
-    @SerialName(value = "games") @Required val games: kotlin.collections.List<MostPlayedEntry>?,
+    @SerialName(value = "games") @Required val games: kotlin.collections.List<MostPlayedEntry>,
 
     /* A URL to the JSON Schema for this object. */
     @SerialName(value = "\$schema") val dollarSchema: kotlin.String? = null

@@ -33,7 +33,7 @@ data class SessionCheatsResponse (
 
     @SerialName(value = "cheatsEnabled") @Required val cheatsEnabled: kotlin.Boolean,
 
-    @SerialName(value = "enabledIndices") @Required val enabledIndices: kotlin.collections.List<kotlin.Long>?,
+    @SerialName(value = "enabledIndices") @Required val enabledIndices: kotlin.collections.List<kotlin.Long>,
 
     /* A URL to the JSON Schema for this object. */
     @SerialName(value = "\$schema") val dollarSchema: kotlin.String? = null

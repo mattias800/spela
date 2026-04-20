@@ -31,7 +31,7 @@ import kotlinx.serialization.encoding.*
 
 data class RecentAchievementsResponse (
 
-    @SerialName(value = "achievements") @Required val achievements: kotlin.collections.List<RARecentAchievementResponse>?,
+    @SerialName(value = "achievements") @Required val achievements: kotlin.collections.List<RARecentAchievementResponse>,
 
     /* A URL to the JSON Schema for this object. */
     @SerialName(value = "\$schema") val dollarSchema: kotlin.String? = null

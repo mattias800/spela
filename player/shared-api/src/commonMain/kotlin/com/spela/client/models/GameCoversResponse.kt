@@ -34,7 +34,7 @@ data class GameCoversResponse (
 
     @SerialName(value = "active") @Required val active: kotlin.String,
 
-    @SerialName(value = "covers") @Required val covers: kotlin.collections.List<CoverOption>?,
+    @SerialName(value = "covers") @Required val covers: kotlin.collections.List<CoverOption>,
 
     /* A URL to the JSON Schema for this object. */
     @SerialName(value = "\$schema") val dollarSchema: kotlin.String? = null

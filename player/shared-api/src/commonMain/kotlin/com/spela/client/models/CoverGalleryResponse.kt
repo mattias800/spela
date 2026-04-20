@@ -34,7 +34,7 @@ import kotlinx.serialization.encoding.*
 
 data class CoverGalleryResponse (
 
-    @SerialName(value = "covers") @Required val covers: kotlin.collections.List<CoverItem>?,
+    @SerialName(value = "covers") @Required val covers: kotlin.collections.List<CoverItem>,
 
     @SerialName(value = "page") @Required val page: kotlin.Long,
 

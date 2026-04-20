@@ -31,7 +31,7 @@ import kotlinx.serialization.encoding.*
 
 data class CultClassicsResponse (
 
-    @SerialName(value = "games") @Required val games: kotlin.collections.List<CultClassicGame>?,
+    @SerialName(value = "games") @Required val games: kotlin.collections.List<CultClassicGame>,
 
     /* A URL to the JSON Schema for this object. */
     @SerialName(value = "\$schema") val dollarSchema: kotlin.String? = null

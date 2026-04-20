@@ -31,7 +31,7 @@ import kotlinx.serialization.encoding.*
 
 data class AlmostDoneResponse (
 
-    @SerialName(value = "games") @Required val games: kotlin.collections.List<AlmostDoneGame>?,
+    @SerialName(value = "games") @Required val games: kotlin.collections.List<AlmostDoneGame>,
 
     /* A URL to the JSON Schema for this object. */
     @SerialName(value = "\$schema") val dollarSchema: kotlin.String? = null

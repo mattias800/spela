@@ -36,11 +36,11 @@ import kotlinx.serialization.encoding.*
 
 data class TasteProfileResponse (
 
-    @SerialName(value = "genres") @Required val genres: kotlin.collections.List<TasteProfileGenre>?,
+    @SerialName(value = "genres") @Required val genres: kotlin.collections.List<TasteProfileGenre>,
 
-    @SerialName(value = "themes") @Required val themes: kotlin.collections.List<TasteProfileTheme>?,
+    @SerialName(value = "themes") @Required val themes: kotlin.collections.List<TasteProfileTheme>,
 
-    @SerialName(value = "topConsoles") @Required val topConsoles: kotlin.collections.List<TasteProfileConsole>?,
+    @SerialName(value = "topConsoles") @Required val topConsoles: kotlin.collections.List<TasteProfileConsole>,
 
     @SerialName(value = "totalPlayTime") @Required val totalPlayTime: kotlin.Long,
 

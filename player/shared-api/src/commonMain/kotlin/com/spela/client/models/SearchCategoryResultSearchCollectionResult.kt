@@ -31,7 +31,7 @@ import kotlinx.serialization.encoding.*
 
 data class SearchCategoryResultSearchCollectionResult (
 
-    @SerialName(value = "results") @Required val results: kotlin.collections.List<SearchCollectionResult>?,
+    @SerialName(value = "results") @Required val results: kotlin.collections.List<SearchCollectionResult>,
 
     @SerialName(value = "total") @Required val total: kotlin.Long
 

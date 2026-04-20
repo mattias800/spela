@@ -67,11 +67,11 @@ data class GameSessionResponse (
 
     @SerialName(value = "lastPlayedByUsername") @Required val lastPlayedByUsername: kotlin.String?,
 
-    @SerialName(value = "memberAvatars") @Required val memberAvatars: kotlin.collections.List<kotlin.String>?,
+    @SerialName(value = "memberAvatars") @Required val memberAvatars: kotlin.collections.List<kotlin.String>,
 
     @SerialName(value = "memberCount") @Required val memberCount: kotlin.Long,
 
-    @SerialName(value = "memberUsernames") @Required val memberUsernames: kotlin.collections.List<kotlin.String>?,
+    @SerialName(value = "memberUsernames") @Required val memberUsernames: kotlin.collections.List<kotlin.String>,
 
     @SerialName(value = "name") @Required val name: kotlin.String,
 

@@ -33,11 +33,11 @@ import kotlinx.serialization.encoding.*
 
 data class MetadataMatchesResponse (
 
-    @SerialName(value = "incomplete") @Required val incomplete: kotlin.collections.List<GameResponse>?,
+    @SerialName(value = "incomplete") @Required val incomplete: kotlin.collections.List<GameResponse>,
 
-    @SerialName(value = "unscraped") @Required val unscraped: kotlin.collections.List<GameResponse>?,
+    @SerialName(value = "unscraped") @Required val unscraped: kotlin.collections.List<GameResponse>,
 
-    @SerialName(value = "unverified") @Required val unverified: kotlin.collections.List<GameResponse>?,
+    @SerialName(value = "unverified") @Required val unverified: kotlin.collections.List<GameResponse>,
 
     /* A URL to the JSON Schema for this object. */
     @SerialName(value = "\$schema") val dollarSchema: kotlin.String? = null

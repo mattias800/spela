@@ -31,7 +31,7 @@ import kotlinx.serialization.encoding.*
 
 data class UnlockedAchievementsResponse (
 
-    @SerialName(value = "achievements") @Required val achievements: kotlin.collections.List<RAUnlockedAchievementResponse>?,
+    @SerialName(value = "achievements") @Required val achievements: kotlin.collections.List<RAUnlockedAchievementResponse>,
 
     /* A URL to the JSON Schema for this object. */
     @SerialName(value = "\$schema") val dollarSchema: kotlin.String? = null

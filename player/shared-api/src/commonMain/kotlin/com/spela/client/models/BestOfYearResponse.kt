@@ -32,7 +32,7 @@ import kotlinx.serialization.encoding.*
 
 data class BestOfYearResponse (
 
-    @SerialName(value = "games") @Required val games: kotlin.collections.List<GameResponse>?,
+    @SerialName(value = "games") @Required val games: kotlin.collections.List<GameResponse>,
 
     @SerialName(value = "year") @Required val year: kotlin.Long,
 

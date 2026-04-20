@@ -41,27 +41,27 @@ private fun gameJson(
     totalPlayTime: Long = 0,
     screenshotUrls: List<String>? = null,
 ): String {
-    val screenshots = screenshotUrls?.joinToString(",", "[", "]") { "\"$it\"" } ?: "null"
+    val screenshots = screenshotUrls?.joinToString(",", "[", "]") { "\"$it\"" } ?: "[]"
     val lastPlayed = lastPlayedAt?.let { "\"$it\"" } ?: "null"
     return """{"id":"$id","title":"$title","consoleId":"1","consoleName":"NES",""" +
-        """"achievementsWarning":"","ageRatings":null,"averageRating":0,"biosStatus":"",""" +
+        """"achievementsWarning":"","ageRatings":[],"averageRating":0,"biosStatus":"",""" +
         """"coreOverride":"","coverAspectRatio":0.75,"coverUrl":"/covers/smb.png",""" +
         """"createdAt":"2024-01-01T00:00:00Z","updatedAt":"2024-01-01T00:00:00Z",""" +
         """"description":"A classic platformer","developer":"Nintendo",""" +
-        """"discCount":0,"discs":null,"fileName":"smb.nes","fileSize":40960,""" +
+        """"discCount":0,"discs":[],"fileName":"smb.nes","fileSize":40960,""" +
         """"gameModes":"","genre":"Platformer","groupKey":"","heroUrl":"",""" +
         """"igdbCriticsRating":0,"igdbUserRating":0,"igdbUserRatingCount":0,""" +
         """"isFavorite":$isFavorite,"isInPlayLater":false,"isPreRelease":false,""" +
-        """"languageSupports":null,"lastPlayedAt":$lastPlayed,"logoUrl":"",""" +
+        """"languageSupports":[],"lastPlayedAt":$lastPlayed,"logoUrl":"",""" +
         """"parentGame":{"id":"","title":"","coverUrl":""},"partyInfo":"",""" +
         """"playable":true,"players":1,"publisher":"Nintendo",""" +
-        """"ratingCount":0,"region":"","releaseDate":"1985-09-13","releaseDates":null,""" +
-        """"revision":"","romHacks":null,"scrapeAttempts":0,"scraperId":"",""" +
+        """"ratingCount":0,"region":"","releaseDate":"1985-09-13","releaseDates":[],""" +
+        """"revision":"","romHacks":[],"scrapeAttempts":0,"scraperId":"",""" +
         """"screenshotUrls":$screenshots,"storyline":"","tags":"",""" +
         """"timeToBeatCompletely":0,"timeToBeatHastily":0,"timeToBeatNormally":0,""" +
         """"totalPlayTime":$totalPlayTime,"totalRating":0,"totalRatingCount":0,""" +
-        """"userRating":null,"variantCount":0,"variants":null,""" +
-        """"verificationStatus":"","verificationTag":"","videos":null}"""
+        """"userRating":null,"variantCount":0,"variants":[],""" +
+        """"verificationStatus":"","verificationTag":"","videos":[]}"""
 }
 
 @OptIn(ExperimentalCoroutinesApi::class)

@@ -34,7 +34,7 @@ import kotlinx.serialization.encoding.*
 
 data class PaginatedResponseSharedSaveResponse (
 
-    @SerialName(value = "data") @Required val `data`: kotlin.collections.List<SharedSaveResponse>?,
+    @SerialName(value = "data") @Required val `data`: kotlin.collections.List<SharedSaveResponse>,
 
     @SerialName(value = "page") @Required val page: kotlin.Long,
 

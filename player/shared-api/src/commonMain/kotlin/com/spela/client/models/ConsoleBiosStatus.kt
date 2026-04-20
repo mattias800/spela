@@ -44,7 +44,7 @@ data class ConsoleBiosStatus (
 
     @SerialName(value = "consoleName") @Required val consoleName: kotlin.String,
 
-    @SerialName(value = "files") @Required val files: kotlin.collections.List<ConsoleFileStatus>?,
+    @SerialName(value = "files") @Required val files: kotlin.collections.List<ConsoleFileStatus>,
 
     @SerialName(value = "optionalPresent") @Required val optionalPresent: kotlin.Long,
 

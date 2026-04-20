@@ -32,7 +32,7 @@ import kotlinx.serialization.encoding.*
 
 data class ListMyNetplayInvitesResponse (
 
-    @SerialName(value = "data") @Required val `data`: kotlin.collections.List<NetplayInviteResponse>?,
+    @SerialName(value = "data") @Required val `data`: kotlin.collections.List<NetplayInviteResponse>,
 
     @SerialName(value = "total") @Required val total: kotlin.Long,
 

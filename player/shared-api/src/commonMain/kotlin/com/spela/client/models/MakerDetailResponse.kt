@@ -38,7 +38,7 @@ data class MakerDetailResponse (
 
     @SerialName(value = "consoleCount") @Required val consoleCount: kotlin.Long,
 
-    @SerialName(value = "consoles") @Required val consoles: kotlin.collections.List<ConsoleResponse>?,
+    @SerialName(value = "consoles") @Required val consoles: kotlin.collections.List<ConsoleResponse>,
 
     @SerialName(value = "name") @Required val name: kotlin.String,
 

@@ -34,7 +34,7 @@ data class GameHeroesResponse (
 
     @SerialName(value = "activeUrl") @Required val activeUrl: kotlin.String,
 
-    @SerialName(value = "heroes") @Required val heroes: kotlin.collections.List<HeroOption>?,
+    @SerialName(value = "heroes") @Required val heroes: kotlin.collections.List<HeroOption>,
 
     /* A URL to the JSON Schema for this object. */
     @SerialName(value = "\$schema") val dollarSchema: kotlin.String? = null

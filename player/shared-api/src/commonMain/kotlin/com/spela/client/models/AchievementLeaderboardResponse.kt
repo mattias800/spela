@@ -33,7 +33,7 @@ import kotlinx.serialization.encoding.*
 
 data class AchievementLeaderboardResponse (
 
-    @SerialName(value = "leaderboard") @Required val leaderboard: kotlin.collections.List<RALeaderboardEntryResponse>?,
+    @SerialName(value = "leaderboard") @Required val leaderboard: kotlin.collections.List<RALeaderboardEntryResponse>,
 
     @SerialName(value = "raGameId") @Required val raGameId: kotlin.Long,
 

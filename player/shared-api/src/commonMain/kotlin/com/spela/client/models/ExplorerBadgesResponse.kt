@@ -31,7 +31,7 @@ import kotlinx.serialization.encoding.*
 
 data class ExplorerBadgesResponse (
 
-    @SerialName(value = "badges") @Required val badges: kotlin.collections.List<ExplorerBadge>?,
+    @SerialName(value = "badges") @Required val badges: kotlin.collections.List<ExplorerBadge>,
 
     /* A URL to the JSON Schema for this object. */
     @SerialName(value = "\$schema") val dollarSchema: kotlin.String? = null

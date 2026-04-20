@@ -99,7 +99,7 @@ data class GameResponse (
 
     @SerialName(value = "achievementsWarning") @Required val achievementsWarning: kotlin.String,
 
-    @SerialName(value = "ageRatings") @Required val ageRatings: kotlin.collections.List<AgeRatingResponse>?,
+    @SerialName(value = "ageRatings") @Required val ageRatings: kotlin.collections.List<AgeRatingResponse>,
 
     @SerialName(value = "averageRating") @Required val averageRating: kotlin.Double,
 
@@ -123,7 +123,7 @@ data class GameResponse (
 
     @SerialName(value = "discCount") @Required val discCount: kotlin.Long,
 
-    @SerialName(value = "discs") @Required val discs: kotlin.collections.List<DiscResponse>?,
+    @SerialName(value = "discs") @Required val discs: kotlin.collections.List<DiscResponse>,
 
     @SerialName(value = "fileName") @Required val fileName: kotlin.String,
 
@@ -151,7 +151,7 @@ data class GameResponse (
 
     @SerialName(value = "isPreRelease") @Required val isPreRelease: kotlin.Boolean,
 
-    @SerialName(value = "languageSupports") @Required val languageSupports: kotlin.collections.List<LanguageSupportResponse>?,
+    @SerialName(value = "languageSupports") @Required val languageSupports: kotlin.collections.List<LanguageSupportResponse>,
 
     @SerialName(value = "lastPlayedAt") @Required val lastPlayedAt: kotlinx.datetime.Instant?,
 
@@ -173,17 +173,17 @@ data class GameResponse (
 
     @SerialName(value = "releaseDate") @Required val releaseDate: kotlin.String,
 
-    @SerialName(value = "releaseDates") @Required val releaseDates: kotlin.collections.List<ReleaseDateResponse>?,
+    @SerialName(value = "releaseDates") @Required val releaseDates: kotlin.collections.List<ReleaseDateResponse>,
 
     @SerialName(value = "revision") @Required val revision: kotlin.String,
 
-    @SerialName(value = "romHacks") @Required val romHacks: kotlin.collections.List<RomHackGameResponse>?,
+    @SerialName(value = "romHacks") @Required val romHacks: kotlin.collections.List<RomHackGameResponse>,
 
     @SerialName(value = "scrapeAttempts") @Required val scrapeAttempts: kotlin.Long,
 
     @SerialName(value = "scraperId") @Required val scraperId: kotlin.String,
 
-    @SerialName(value = "screenshotUrls") @Required val screenshotUrls: kotlin.collections.List<kotlin.String>?,
+    @SerialName(value = "screenshotUrls") @Required val screenshotUrls: kotlin.collections.List<kotlin.String>,
 
     @SerialName(value = "storyline") @Required val storyline: kotlin.String,
 
@@ -209,13 +209,13 @@ data class GameResponse (
 
     @SerialName(value = "variantCount") @Required val variantCount: kotlin.Long,
 
-    @SerialName(value = "variants") @Required val variants: kotlin.collections.List<VariantResponse>?,
+    @SerialName(value = "variants") @Required val variants: kotlin.collections.List<VariantResponse>,
 
     @SerialName(value = "verificationStatus") @Required val verificationStatus: kotlin.String,
 
     @SerialName(value = "verificationTag") @Required val verificationTag: kotlin.String,
 
-    @SerialName(value = "videos") @Required val videos: kotlin.collections.List<VideoResponse>?,
+    @SerialName(value = "videos") @Required val videos: kotlin.collections.List<VideoResponse>,
 
     /* A URL to the JSON Schema for this object. */
     @SerialName(value = "\$schema") val dollarSchema: kotlin.String? = null

@@ -37,7 +37,7 @@ import kotlinx.serialization.encoding.*
 data class GameAchievementsResponse (
 
     /* Achievement definitions for this game (empty when unknown). */
-    @SerialName(value = "achievements") @Required val achievements: kotlin.collections.List<Achievement>?,
+    @SerialName(value = "achievements") @Required val achievements: kotlin.collections.List<Achievement>,
 
     /* RetroAchievements game ID (0 when unknown). */
     @SerialName(value = "raGameId") @Required val raGameId: kotlin.Long,

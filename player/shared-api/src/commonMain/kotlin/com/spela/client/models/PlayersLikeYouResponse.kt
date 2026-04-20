@@ -32,7 +32,7 @@ import kotlinx.serialization.encoding.*
 
 data class PlayersLikeYouResponse (
 
-    @SerialName(value = "games") @Required val games: kotlin.collections.List<GameResponse>?,
+    @SerialName(value = "games") @Required val games: kotlin.collections.List<GameResponse>,
 
     @SerialName(value = "similarUsersCount") @Required val similarUsersCount: kotlin.Long,
 

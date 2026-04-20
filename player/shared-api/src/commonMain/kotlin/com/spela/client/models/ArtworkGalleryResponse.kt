@@ -34,7 +34,7 @@ import kotlinx.serialization.encoding.*
 
 data class ArtworkGalleryResponse (
 
-    @SerialName(value = "artworks") @Required val artworks: kotlin.collections.List<ArtworkItem>?,
+    @SerialName(value = "artworks") @Required val artworks: kotlin.collections.List<ArtworkItem>,
 
     @SerialName(value = "page") @Required val page: kotlin.Long,
 

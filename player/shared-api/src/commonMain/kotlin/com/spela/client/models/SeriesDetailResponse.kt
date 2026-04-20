@@ -40,9 +40,9 @@ import kotlinx.serialization.encoding.*
 
 data class SeriesDetailResponse (
 
-    @SerialName(value = "consoles") @Required val consoles: kotlin.collections.List<SeriesConsoleInfo>?,
+    @SerialName(value = "consoles") @Required val consoles: kotlin.collections.List<SeriesConsoleInfo>,
 
-    @SerialName(value = "games") @Required val games: kotlin.collections.List<SeriesGameResponse>?,
+    @SerialName(value = "games") @Required val games: kotlin.collections.List<SeriesGameResponse>,
 
     @SerialName(value = "heroUrl") @Required val heroUrl: kotlin.String,
 

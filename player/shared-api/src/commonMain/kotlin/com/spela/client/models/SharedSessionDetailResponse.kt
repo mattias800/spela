@@ -68,7 +68,7 @@ data class SharedSessionDetailResponse (
 
     @SerialName(value = "memberCount") @Required val memberCount: kotlin.Long,
 
-    @SerialName(value = "members") @Required val members: kotlin.collections.List<SharedSessionMemberResponse>?,
+    @SerialName(value = "members") @Required val members: kotlin.collections.List<SharedSessionMemberResponse>,
 
     @SerialName(value = "name") @Required val name: kotlin.String,
 
