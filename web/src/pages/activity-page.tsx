@@ -56,7 +56,7 @@ export function ActivityPage() {
           )}
 
           {/* Pagination */}
-          {data && data.data.length > 0 && (
+          {data && (data.data?.length ?? 0) > 0 && (
             <div className="flex items-center justify-center gap-3 mt-8">
               <Button
                 variant="secondary"
