@@ -884,18 +884,7 @@ export interface MoodDefinition {
 
 // --- Explore ---
 
-export interface FeaturedGame {
-  gameId: string;
-  title: string;
-  heroUrl: string;
-  logoUrl: string | null;
-  consoleAbbreviation: string;
-  consoleColor: string;
-  igdbCriticsRating: number;
-  genre: string;
-  isFavorite: boolean;
-  isPlayLater: boolean;
-}
+export type FeaturedGame = Schemas["FeaturedGameResponse"];
 
 export interface ExploreRow {
   id: string;
