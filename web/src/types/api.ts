@@ -366,20 +366,7 @@ export interface ActivePlayer {
   lastPlayed: string;
 }
 
-export interface AchievementLeaderboard {
-  raGameId: number;
-  totalAchievements: number;
-  leaderboard: {
-    userId: string;
-    username: string;
-    avatarUrl?: string;
-    unlockedCount: number;
-    earnedPoints: number;
-    lastUnlockedAt: string;
-    firstUnlockedAt: string;
-    isComplete: boolean;
-  }[];
-}
+export type AchievementLeaderboard = Schemas["AchievementLeaderboardResponse"];
 
 export type AchievementTimelineEntry = Schemas["RATimelineEntryResponse"];
 
