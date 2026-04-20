@@ -338,12 +338,7 @@ export interface GameAchievements {
   achievements: Achievement[];
 }
 
-export interface GameAchievementProgress {
-  achievementId: number;
-  unlockedAt: string;
-  isHardcore: boolean;
-  playTimeAtUnlock: number;
-}
+export type GameAchievementProgress = Schemas["RAProgressEntry"];
 
 export interface GameAchievementProgressResponse {
   raGameId: number;
@@ -362,17 +357,7 @@ export interface ShowcaseAchievement {
   gameTitle?: string;
 }
 
-export interface UnlockedAchievement {
-  achievementRaId: number;
-  raGameId: number;
-  title: string;
-  description: string;
-  points: number;
-  badgeUrl: string;
-  rarityPercent: number;
-  gameTitle: string;
-  consoleName: string;
-}
+export type UnlockedAchievement = Schemas["RAUnlockedAchievementResponse"];
 
 export type GameStatsPlayer = Schemas["GameStatsTopPlayer"];
 
