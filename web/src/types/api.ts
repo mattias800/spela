@@ -317,11 +317,7 @@ export interface UserPreferences {
   selectedTheme: string;
 }
 
-export interface RAStatus {
-  linked: boolean;
-  username: string;
-  hardcoreEnabled: boolean;
-}
+export type RAStatus = Schemas["RAStatusResponse"];
 
 export interface RALinkRequest {
   username: string;
@@ -953,10 +949,7 @@ export interface CoverGalleryResponse {
 
 // --- Console Showcase ---
 
-export interface GenreCount {
-  name: string;
-  gameCount: number;
-}
+export type GenreCount = Schemas["GenreCount"];
 
 export interface ConsoleShowcase {
   console: Console;
@@ -1370,27 +1363,13 @@ export interface WizardResultsResponse {
   title: string;
 }
 
-export interface ExplorerBadge {
-  id: string;
-  name: string;
-  description: string;
-  icon: string;
-  earned: boolean;
-  progress: number;
-  target: number;
-}
+export type ExplorerBadge = Schemas["ExplorerBadge"];
 
 export interface ExplorerBadgesResponse {
   badges: ExplorerBadge[];
 }
 
-export interface CompletionistConsole {
-  id: string;
-  name: string;
-  totalGames: number;
-  playedGames: number;
-  percentage: number;
-}
+export type CompletionistConsole = Schemas["CompletionistConsole"];
 
 export interface CompletionistMapResponse {
   consoles: CompletionistConsole[];
