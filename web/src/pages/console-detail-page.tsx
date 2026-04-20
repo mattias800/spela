@@ -134,7 +134,7 @@ export function ConsoleDetailPage() {
             className="max-w-sm"
             data-testid="small-library-search"
           />
-          {smallLibraryData && smallLibraryData.data.length > 0 ? (
+          {smallLibraryData?.data && smallLibraryData.data.length > 0 ? (
             <GameGrid>
               {smallLibraryData.data.map((game) => (
                 <GameCard

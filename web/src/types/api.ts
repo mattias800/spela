@@ -22,6 +22,7 @@ import type {
   SystemEventResponse,
   AuthLoginResponse,
   ConsoleResponse,
+  PaginatedResponseGameResponse,
 } from "@/generated/schemas";
 
 export * from "@/generated/schemas";
@@ -126,13 +127,7 @@ export type AgeRatingInfo = Schemas["AgeRatingResponse"];
 // Backend stores settings as flat key-value pairs
 export type ServerSettingsMap = Record<string, string>;
 
-// PaginatedResponse from backend responses.go
-export interface GamesResponse {
-  data: Game[];
-  total: number;
-  page: number;
-  pageSize: number;
-}
+export type GamesResponse = PaginatedResponseGameResponse;
 
 export interface GameFilters {
   search?: string;
@@ -173,11 +168,7 @@ export interface SavedSearch {
   createdAt: string;
 }
 
-export interface MetadataMatchesResponse {
-  unscraped: Game[];
-  unverified: Game[];
-  incomplete: Game[];
-}
+// MetadataMatchesResponse is re-exported from @/generated/schemas.
 
 export type IgdbSearchResult = Schemas["IGDBSearchResult"];
 
