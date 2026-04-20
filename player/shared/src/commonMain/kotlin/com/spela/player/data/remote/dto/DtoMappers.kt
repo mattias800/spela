@@ -18,14 +18,12 @@ fun com.spela.client.models.AuthLoginResponse.extractUser(): User = user.toDomai
  * to a "pending approval" UX state if/when the domain model grows a variant.
  */
 fun com.spela.client.models.AuthRegisterResponse.toDomain(): AuthTokens {
-    val access = accessToken
-    val refresh = refreshToken
-    if (pending == true || access == null || refresh == null) {
-        error(message ?: "Registration pending admin approval")
+    if (pending) {
+        error(message.ifEmpty { "Registration pending admin approval" })
     }
     return AuthTokens(
-        accessToken = access,
-        refreshToken = refresh,
+        accessToken = accessToken,
+        refreshToken = refreshToken,
     )
 }
 
@@ -52,9 +50,9 @@ fun com.spela.client.models.ConsoleResponse.toDomain(): Console = Console(
     browserPlayable = browserPlayable,
     playable = playable,
     generation = generation.toInt(),
-    makerName = maker?.name,
-    makerCode = maker?.code,
-    mediaTypeName = mediaType?.name,
+    makerName = maker.name,
+    makerCode = maker.code,
+    mediaTypeName = mediaType.name,
     releaseYear = releaseYear?.toInt(),
     unitsSold = unitsSold,
     summary = summary,
@@ -110,11 +108,11 @@ fun GameDto.toDomain(): Game = Game(
     revision = revision,
     tags = tags,
     isPreRelease = isPreRelease,
-    variantCount = variantCount?.toInt() ?: 0,
+    variantCount = variantCount.toInt(),
     groupKey = groupKey,
-    timeToBeatHastily = timeToBeatHastily?.toInt() ?: 0,
-    timeToBeatNormally = timeToBeatNormally?.toInt() ?: 0,
-    timeToBeatCompletely = timeToBeatCompletely?.toInt() ?: 0,
+    timeToBeatHastily = timeToBeatHastily.toInt(),
+    timeToBeatNormally = timeToBeatNormally.toInt(),
+    timeToBeatCompletely = timeToBeatCompletely.toInt(),
     partyInfo = partyInfo.orEmpty(),
 )
 
@@ -147,7 +145,7 @@ fun GameDto.toGameDetail(): GameDetail = GameDetail(
     game = toDomain(),
     screenshots = screenshotUrls.orEmpty(),
     variants = variants.orEmpty().map { it.toDomain() },
-    parentGame = parentGame?.toDomain(),
+    parentGame = parentGame.takeIf { it.id.isNotEmpty() }?.toDomain(),
     romHacks = romHacks.orEmpty().map { it.toDomain() },
 )
 
@@ -224,7 +222,7 @@ fun com.spela.client.models.OnlineUserResponse.toDomain(): OnlineUser = OnlineUs
     id = id,
     username = username,
     avatarUrl = avatarUrl,
-    currentGame = currentGame?.toDomain(),
+    currentGame = currentGame.takeIf { it.id.isNotEmpty() }?.toDomain(),
 )
 
 fun com.spela.client.models.ActivityEventResponse.toDomain(): ActivityEvent = ActivityEvent(
@@ -259,7 +257,7 @@ fun com.spela.client.models.PublicProfileGame.toDomain(): PublicProfileGame = Pu
     title = title,
     coverUrl = coverUrl,
     consoleName = consoleName,
-    playTime = playTime ?: 0L,
+    playTime = playTime,
 )
 
 fun com.spela.client.models.PublicProfileResponse.toDomain(): PublicProfile = PublicProfile(
@@ -268,7 +266,7 @@ fun com.spela.client.models.PublicProfileResponse.toDomain(): PublicProfile = Pu
     avatarUrl = avatarUrl,
     memberSince = memberSince.toString(),
     isOnline = isOnline,
-    currentGame = currentGame?.toDomain(),
+    currentGame = currentGame.takeIf { it.id.isNotEmpty() }?.toDomain(),
     totalPlayTime = totalPlayTime,
     gamesPlayed = gamesPlayed,
     favoriteGames = favoriteGames.orEmpty().map { it.toDomain() },
@@ -455,7 +453,7 @@ fun com.spela.client.models.UserStatsResponse.toDomain(): UserStats = UserStats(
     longestStreak = longestStreak.toInt(),
     // Server emits an empty Game placeholder when the user has never
     // played anything — detect via empty id and pass null through.
-    mostPlayedGame = mostPlayedGame?.takeIf { it.id.isNotEmpty() }?.toDomain(),
+    mostPlayedGame = mostPlayedGame.takeIf { it.id.isNotEmpty() }?.toDomain(),
     mostPlayedGameTime = mostPlayedGameTime,
     lastPlayedAt = lastPlayedAt?.toString(),
 )
@@ -479,12 +477,12 @@ fun com.spela.client.models.ShowcaseEntryResponse.toDomain(): ShowcaseAchievemen
     achievementRaId = achievementRaId,
     raGameId = raGameId,
     showcaseOrder = showcaseOrder.toInt(),
-    title = title.orEmpty(),
-    description = description.orEmpty(),
-    points = points?.toInt() ?: 0,
+    title = title,
+    description = description,
+    points = points.toInt(),
     badgeUrl = badgeUrl,
-    rarityPercent = rarityPercent ?: 0.0,
-    gameTitle = gameTitle.orEmpty(),
+    rarityPercent = rarityPercent,
+    gameTitle = gameTitle,
 )
 
 fun com.spela.client.models.RAUnlockedAchievementResponse.toDomain(): UnlockedAchievement = UnlockedAchievement(
@@ -796,7 +794,7 @@ fun com.spela.client.models.MoodResponse.toDomain(): MoodDefinition = MoodDefini
 fun com.spela.client.models.ForYouRowResponse.toDomain(): ForYouRow = ForYouRow(
     type = type,
     title = title,
-    sourceGame = sourceGame?.toDomain(),
+    sourceGame = sourceGame.takeIf { it.id.isNotEmpty() }?.toDomain(),
     genre = genre,
     games = games.orEmpty().map { it.toDomain() },
 )
@@ -877,7 +875,7 @@ fun com.spela.client.models.EntityUserStats.toDeveloperUserStats(): DeveloperDet
         favoriteCount = favoriteCount.toInt(),
         // Server emits an empty Game placeholder when the user has never
         // played anything — detect via empty id and pass null through.
-        mostPlayedGame = mostPlayedGame?.takeIf { it.id.isNotEmpty() }?.toDomain(),
+        mostPlayedGame = mostPlayedGame.takeIf { it.id.isNotEmpty() }?.toDomain(),
     )
 
 fun com.spela.client.models.NameCount.toDeveloperPublisher(): DeveloperDetailPublisher =
@@ -887,12 +885,12 @@ fun com.spela.client.models.NameCount.toDeveloperPublisher(): DeveloperDetailPub
     )
 
 fun com.spela.client.models.CompanyInfo.toDomain(): CompanyInfo = CompanyInfo(
-    logoUrl = logoUrl,
-    description = description,
-    foundedYear = foundedYear?.toInt(),
-    country = country,
-    websiteUrl = websiteUrl,
-    wikipediaUrl = wikipediaUrl,
+    logoUrl = logoUrl.ifEmpty { null },
+    description = description.ifEmpty { null },
+    foundedYear = foundedYear.takeIf { it > 0 }?.toInt(),
+    country = country.ifEmpty { null },
+    websiteUrl = websiteUrl.ifEmpty { null },
+    wikipediaUrl = wikipediaUrl.ifEmpty { null },
 )
 
 fun com.spela.client.models.ActiveYears.toDomain(): ActiveYears = ActiveYears(
@@ -934,14 +932,14 @@ fun com.spela.client.models.DeveloperDetailResponse.toDomain(): DeveloperDetail 
     avgRating = avgRating,
     consoles = consoles.orEmpty(),
     heroUrl = heroUrl,
-    companyInfo = companyInfo?.toDomain(),
+    companyInfo = companyInfo.toDomain().takeIf { it.hasAnyData() },
     topGames = topGames.orEmpty().map { it.toDomain() },
     genreBreakdown = genreBreakdown.orEmpty().map { it.toDeveloperGenreBreakdown() },
     platformBreakdown = platformBreakdown.orEmpty().map { it.toDeveloperPlatformBreakdown() },
-    userStats = userStats?.toDeveloperUserStats(),
+    userStats = userStats.takeIf { it.gamesPlayed > 0 }?.toDeveloperUserStats(),
     publishers = publishers.orEmpty().map { it.toDeveloperPublisher() },
     games = games.orEmpty().map { it.toDomain() },
-    activeYears = activeYears?.toDomain(),
+    activeYears = activeYears.takeIf { it.first > 0 }?.toDomain(),
     // Generated RatingDistribution is @Required non-null.
     ratingDistribution = ratingDistribution.toDomain(),
     primaryGenre = primaryGenre,
@@ -967,7 +965,7 @@ fun com.spela.client.models.EntityUserStats.toPublisherUserStats(): PublisherDet
         totalPlayTime = totalPlayTime,
         gamesPlayed = gamesPlayed.toInt(),
         favoriteCount = favoriteCount.toInt(),
-        mostPlayedGame = mostPlayedGame?.takeIf { it.id.isNotEmpty() }?.toDomain(),
+        mostPlayedGame = mostPlayedGame.takeIf { it.id.isNotEmpty() }?.toDomain(),
     )
 
 fun com.spela.client.models.NameCount.toPublisherDeveloper(): PublisherDetailDeveloper =
@@ -988,14 +986,14 @@ fun com.spela.client.models.PublisherDetailResponse.toDomain(): PublisherDetail 
     avgRating = avgRating,
     consoles = consoles.orEmpty(),
     heroUrl = heroUrl,
-    companyInfo = companyInfo?.toDomain(),
+    companyInfo = companyInfo.toDomain().takeIf { it.hasAnyData() },
     topGames = topGames.orEmpty().map { it.toDomain() },
     genreBreakdown = genreBreakdown.orEmpty().map { it.toPublisherGenreBreakdown() },
     platformBreakdown = platformBreakdown.orEmpty().map { it.toPublisherPlatformBreakdown() },
-    userStats = userStats?.toPublisherUserStats(),
+    userStats = userStats.takeIf { it.gamesPlayed > 0 }?.toPublisherUserStats(),
     developers = developers.orEmpty().map { it.toPublisherDeveloper() },
     games = games.orEmpty().map { it.toDomain() },
-    activeYears = activeYears?.toDomain(),
+    activeYears = activeYears.takeIf { it.first > 0 }?.toDomain(),
     ratingDistribution = ratingDistribution.toDomain(),
     primaryGenre = primaryGenre,
     timeline = timeline.orEmpty().map { it.toDomain() },
@@ -1039,7 +1037,7 @@ fun com.spela.client.models.ConsoleHighlight.toDomain(): ConsoleHighlight = Cons
     iconUrl = iconUrl,
     logoUrl = logoUrl,
     gameCount = gameCount.toInt(),
-    topGame = topGame?.toDomain(),
+    topGame = topGame.takeIf { it.id.isNotEmpty() }?.toDomain(),
 )
 
 fun com.spela.client.models.ArtworkItem.toDomain(): ArtworkItem = ArtworkItem(

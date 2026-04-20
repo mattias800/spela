@@ -86,8 +86,8 @@ class SharedSessionDetailViewModelTest {
 
         val state = vm.state.value
         assertNotNull(state.sharedSession)
-        assertEquals("Test Session", state.sharedSession!!.name)
-        assertEquals(2, state.sharedSession!!.members.size)
+        assertEquals("Test Session", state.sharedSession.name)
+        assertEquals(2, state.sharedSession.members.size)
         assertFalse(state.isLoadingSharedSession)
     }
 
