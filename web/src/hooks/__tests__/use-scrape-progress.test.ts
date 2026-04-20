@@ -197,7 +197,6 @@ describe("useScrapeProgress", () => {
         active: true,
         current: 7,
         total: 20,
-        gameName: "Mega Man",
         successes: 5,
         failures: 2,
         verified: 3,
@@ -209,7 +208,6 @@ describe("useScrapeProgress", () => {
     expect(result.current.phase).toBe("active");
     expect(result.current.current).toBe(7);
     expect(result.current.total).toBe(20);
-    expect(result.current.gameName).toBe("Mega Man");
     expect(result.current.successes).toBe(5);
     expect(result.current.failures).toBe(2);
     expect(result.current.verified).toBe(3);
@@ -221,7 +219,6 @@ describe("useScrapeProgress", () => {
         active: true,
         current: 7,
         total: 20,
-        gameName: "Mega Man",
         successes: 5,
         failures: 2,
         verified: 3,

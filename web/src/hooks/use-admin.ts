@@ -8,6 +8,7 @@ import type {
   IgdbSearchResult,
   RateLimitStatus,
   CoreCompatibilityResponse,
+  ScrapeStatusResponse,
 } from "@/types/api";
 
 export function useAdminUsers() {
@@ -299,25 +300,12 @@ export function useTestIgdbCredentials() {
   });
 }
 
-export interface ScrapeStatus {
-  active: boolean;
-  current?: number;
-  total?: number;
-  gameId?: number;
-  gameName?: string;
-  consoleName?: string;
-  consoleAbbr?: string;
-  successes?: number;
-  failures?: number;
-  verified?: number;
-}
-
 export function useScrapeStatus() {
   return useQuery({
     queryKey: ["admin", "scrape-status"],
     queryFn: async () => {
       const data = await unwrap(typedApi.GET("/api/admin/scrape/status"));
-      return data as ScrapeStatus | undefined;
+      return data as ScrapeStatusResponse | undefined;
     },
     refetchInterval: 3000, // Poll every 3s to catch status changes
   });

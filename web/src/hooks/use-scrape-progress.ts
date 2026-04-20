@@ -56,19 +56,17 @@ export function useScrapeProgress(): ScrapeProgressState {
   const [error, setError] = useState<string | null>(null);
   // Sync from polled status — this runs on every status refetch (3s interval).
   // Allows the UI to pick up status after page refresh or WebSocket disconnect.
+  // gameId/gameName/consoleName/consoleAbbr only arrive via the WebSocket
+  // scrape_progress event; the polled status endpoint only exposes counters.
   useEffect(() => {
     if (!initialStatus) return;
     if (initialStatus.active) {
       setPhase("active");
-      setCurrent(initialStatus.current ?? 0);
-      setTotal(initialStatus.total ?? 0);
-      setGameId(initialStatus.gameId ?? 0);
-      setGameName(initialStatus.gameName ?? "");
-      setConsoleName(initialStatus.consoleName ?? "");
-      setConsoleAbbr(initialStatus.consoleAbbr ?? "");
-      setSuccesses(initialStatus.successes ?? 0);
-      setFailures(initialStatus.failures ?? 0);
-      setVerified(initialStatus.verified ?? 0);
+      setCurrent(initialStatus.current);
+      setTotal(initialStatus.total);
+      setSuccesses(initialStatus.successes);
+      setFailures(initialStatus.failures);
+      setVerified(initialStatus.verified);
     } else if (phase === "active") {
       // Status went from active to inactive — scrape finished while we were polling
       setPhase("idle");

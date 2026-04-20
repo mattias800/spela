@@ -78,7 +78,7 @@ export function CollectionDetailPage() {
   function openEditModal() {
     if (!collection) return;
     setEditName(collection.name);
-    setEditDescription(collection.description ?? "");
+    setEditDescription(collection.description);
     setEditIsPublic(collection.isPublic);
     setShowEditModal(true);
   }
