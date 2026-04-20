@@ -406,16 +406,7 @@ export interface AchievementLeaderboard {
   }[];
 }
 
-export interface AchievementTimelineEntry {
-  achievementRaId: number;
-  title: string;
-  description: string;
-  points: number;
-  badgeUrl: string;
-  unlockedAt: string;
-  isHardcore: boolean;
-  playTimeAtUnlock: number;
-}
+export type AchievementTimelineEntry = Schemas["RATimelineEntryResponse"];
 
 export interface AchievementTimeline {
   raGameId: number;
@@ -1286,12 +1277,7 @@ export interface ActiveChallengesResponse {
 
 // --- Phase 14: Wild Features — Wizard, Badges, Completionist Map ---
 
-export interface WizardOption {
-  id: string;
-  label: string;
-  description?: string;
-  imageUrl?: string;
-}
+export type WizardOption = Schemas["WizardOption"];
 
 export interface WizardStep {
   step: number;
