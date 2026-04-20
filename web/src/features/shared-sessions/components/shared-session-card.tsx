@@ -8,7 +8,7 @@ import type { SharedSession } from "@/types/api";
 
 interface SharedSessionCardProps {
   sharedSession: SharedSession;
-  members?: { username: string; avatarUrl?: string }[];
+  members?: { username: string; avatarUrl: string }[];
 }
 
 export function SharedSessionCard({ sharedSession, members }: SharedSessionCardProps) {

@@ -56,9 +56,6 @@ export function SharedSessionMembersList({
                 username={member.username}
                 avatarUrl={member.avatarUrl}
               />
-              {member.isOnline && (
-                <div className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full bg-green-500 ring-2 ring-surface-950" />
-              )}
             </div>
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2">
@@ -74,14 +71,6 @@ export function SharedSessionMembersList({
               </div>
               <div className="flex items-center gap-2 text-xs text-surface-500">
                 <span>Joined {formatRelativeTime(member.joinedAt)}</span>
-                {member.lastPlayedAt && (
-                  <>
-                    <span>&middot;</span>
-                    <span>
-                      Last played {formatRelativeTime(member.lastPlayedAt)}
-                    </span>
-                  </>
-                )}
               </div>
             </div>
             {isOwner &&

@@ -109,7 +109,7 @@ export function SharedSessionHero({
         </div>
 
         {/* Member avatars */}
-        <MemberAvatars members={sharedSession.members} max={6} />
+        <MemberAvatars members={sharedSession.members ?? []} max={6} />
       </div>
     </div>
   );

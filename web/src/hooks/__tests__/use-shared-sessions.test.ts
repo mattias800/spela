@@ -233,7 +233,7 @@ describe("useSharedSession", () => {
       { params: { path: { id: "ss-1" } } },
     );
     expect(result.current.data?.members).toHaveLength(2);
-    expect(result.current.data?.members[0].role).toBe("owner");
+    expect(result.current.data?.members?.[0].role).toBe("owner");
   });
 
   it("does not fetch when id is empty", () => {

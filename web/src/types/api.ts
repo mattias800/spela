@@ -252,19 +252,26 @@ export type SharedSession = Omit<SharedSessionResponse, "status"> & {
   status: SharedSessionStatus;
 };
 
-export interface SharedSessionMember {
-  userId: string;
-  username: string;
-  avatarUrl?: string;
-  role: "owner" | "member";
-  joinedAt: string;
-  lastPlayedAt?: string;
-  isOnline: boolean;
-}
+export type SharedSessionMemberRole = "owner" | "member";
 
-export interface SharedSessionDetail extends SharedSession {
-  members: SharedSessionMember[];
-}
+// Narrows role to the literal union. The server never emits isOnline /
+// lastPlayedAt; those fields were aspirational and are removed from the
+// type. Consumers that checked for them already rendered nothing at
+// runtime.
+export type SharedSessionMember = Omit<
+  Schemas["SharedSessionMemberResponse"],
+  "role"
+> & {
+  role: SharedSessionMemberRole;
+};
+
+export type SharedSessionDetail = Omit<
+  Schemas["SharedSessionDetailResponse"],
+  "status" | "members"
+> & {
+  status: SharedSessionStatus;
+  members: SharedSessionMember[] | null;
+};
 
 // Frontend-only shape assembled from the list-my-pending-invites endpoint's
 // response (which is an array of these). The generated SharedSessionInviteResponse

@@ -93,8 +93,8 @@ describe("SharedSessionCard", () => {
   it("renders member avatars when provided", () => {
     const sharedSession = makeSharedSession();
     const members = [
-      { username: "alice" },
-      { username: "bob" },
+      { username: "alice", avatarUrl: "" },
+      { username: "bob", avatarUrl: "" },
     ];
     render(
       <MemoryRouter>
