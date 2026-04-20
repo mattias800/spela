@@ -280,7 +280,7 @@ private class PlayFromSharedSaveTestGameStatsRepository : GameStatsRepository {
 }
 
 private class PlayFromSharedSaveTestSharedSessionRepository : SharedSessionRepository {
-    override suspend fun getMySharedSessions(page: Int, pageSize: Int) = Result.success(emptyList<SharedSession>())
+    override suspend fun getMySharedSessions() = Result.success(emptyList<SharedSession>())
     override suspend fun getSharedSession(sharedSessionId: String) = Result.failure<SharedSessionDetail>(Exception("stub"))
     override suspend fun getSharedSessionInvitations() = Result.success(emptyList<SharedSessionInvitation>())
     override suspend fun getPendingInvitationCount() = Result.success(0)

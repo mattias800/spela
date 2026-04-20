@@ -221,7 +221,7 @@ class FakeSharedSessionRepo : SharedSessionRepository {
     var sharedSessionSaves: List<SharedSessionSave> = emptyList()
     var shouldFail = false
 
-    override suspend fun getMySharedSessions(page: Int, pageSize: Int): Result<List<SharedSession>> =
+    override suspend fun getMySharedSessions(): Result<List<SharedSession>> =
         if (shouldFail) Result.failure(Exception("Network error")) else Result.success(sharedSessions)
     override suspend fun getSharedSession(sharedSessionId: String): Result<SharedSessionDetail> =
         if (shouldFail) Result.failure(Exception("Network error"))

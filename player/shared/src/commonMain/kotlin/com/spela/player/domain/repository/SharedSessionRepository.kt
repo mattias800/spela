@@ -6,7 +6,7 @@ import com.spela.player.domain.model.SharedSessionInvitation
 import com.spela.player.domain.model.SharedSessionSave
 
 interface SharedSessionRepository {
-    suspend fun getMySharedSessions(page: Int = 1, pageSize: Int = 20): Result<List<SharedSession>>
+    suspend fun getMySharedSessions(): Result<List<SharedSession>>
     suspend fun getSharedSession(sharedSessionId: String): Result<SharedSessionDetail>
     suspend fun getSharedSessionInvitations(): Result<List<SharedSessionInvitation>>
     suspend fun getPendingInvitationCount(): Result<Int>
