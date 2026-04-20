@@ -23,6 +23,7 @@ import type {
   AuthLoginResponse,
   ConsoleResponse,
   PaginatedResponseGameResponse,
+  ChallengeResponse,
 } from "@/generated/schemas";
 
 export * from "@/generated/schemas";
@@ -437,29 +438,18 @@ export type ChallengeDifficulty = "easy" | "medium" | "hard";
 export type ChallengeStatus = "active" | "closed" | "expired";
 export type AttemptStatus = "in_progress" | "completed" | "abandoned";
 
-export interface Challenge {
-  id: string;
-  creatorId: string;
-  creatorUsername: string;
-  creatorAvatarUrl?: string;
-  gameId: string;
-  gameTitle: string;
-  gameCoverUrl?: string;
-  gameConsoleName: string;
-  name: string;
-  description?: string;
+// Derives from the generated ChallengeResponse; type/difficulty/status
+// re-narrowed to their local literal unions so exhaustive switches on those
+// fields (see e.g. difficulty-badge.tsx, challenge-type-icon.tsx) remain
+// exhaustiveness-checked.
+export type Challenge = Omit<
+  ChallengeResponse,
+  "type" | "difficulty" | "status"
+> & {
   type: ChallengeType;
   difficulty: ChallengeDifficulty;
   status: ChallengeStatus;
-  screenshotUrl?: string;
-  coreName: string;
-  saveFileSize: number;
-  attemptCount: number;
-  completionCount: number;
-  expiresAt?: string | null;
-  createdAt: string;
-  updatedAt: string;
-}
+};
 
 export interface ChallengesResponse {
   data: Challenge[];
@@ -496,25 +486,15 @@ export type ChallengeLeaderboardEntry = Schemas["ChallengeLeaderboardEntry"];
 
 export type ChallengeLeaderboardResponse = Schemas["PaginatedResponseChallengeLeaderboardEntry"];
 
-export interface StartAttemptResponse {
-  attemptId: string;
-  startedAt: string;
-}
-
-export interface CompleteAttemptResponse {
-  attempt: ChallengeAttempt;
-  rank: number;
-  isNewBest: boolean;
-}
+// StartAttemptResponse / CompleteAttemptResponse: the actual wire type is
+// ChallengeAttemptResponse — the useStartAttempt/useCompleteAttempt hooks now
+// infer that directly via unwrap(). Consumers only await success; no return
+// value is read.
 
 // --- Replace ROM ---
 
 export type ReplaceROMResult = Schemas["ReplaceROMResult"];
-
-export interface ReplaceROMResponse {
-  game: Game;
-  replacementResult: ReplaceROMResult;
-}
+// ReplaceROMResponse is re-exported from @/generated/schemas.
 
 // --- Staged Uploads ---
 

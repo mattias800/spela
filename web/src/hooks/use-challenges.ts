@@ -8,8 +8,6 @@ import type {
   ChallengeLeaderboardResponse,
   ChallengeLeaderboardEntry,
   ChallengeAttempt,
-  StartAttemptResponse,
-  CompleteAttemptResponse,
 } from "@/types/api";
 
 const sortMapping: Record<string, string> = {
@@ -152,7 +150,7 @@ export function useStartAttempt() {
           params: { path: { id: challengeId } },
         }),
       );
-      return data as StartAttemptResponse | undefined;
+      return data;
     },
   });
 }
@@ -173,7 +171,7 @@ export function useCompleteAttempt() {
           params: { path: { id: challengeId, aid: attemptId } },
         }),
       );
-      return data as CompleteAttemptResponse | undefined;
+      return data;
     },
     onSuccess: (_, { challengeId }) => {
       queryClient.invalidateQueries({

@@ -138,7 +138,7 @@ export function ChallengeDetailPage() {
                 {challenge.gameTitle}
               </p>
               <Badge variant="brand" className="text-[10px] px-1.5 py-0">
-                {challenge.gameConsoleName}
+                {challenge.consoleName}
               </Badge>
             </div>
           </Link>
@@ -147,7 +147,7 @@ export function ChallengeDetailPage() {
           <div className="flex items-center gap-3">
             <PlayerAvatar
               username={challenge.creatorUsername}
-              avatarUrl={challenge.creatorAvatarUrl}
+              avatarUrl={challenge.creatorAvatar}
             />
             <div>
               <p className="text-sm font-medium text-surface-200">
