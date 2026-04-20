@@ -1,65 +1,28 @@
 import { useQuery } from "@tanstack/react-query";
 import { typedApi, unwrap } from "@/lib/api-client";
+import type {
+  SearchResponse,
+  SearchCollectionResult,
+  SearchCompanyResult,
+  SearchConsoleResult,
+  SearchFranchiseResult,
+  SearchGameResult,
+  SearchSeriesResult,
+} from "@/generated/schemas";
 
-export interface GameSearchResult {
-  id: string;
-  title: string;
-  coverUrl?: string;
-  consoleId: string;
-  consoleName: string;
-  developer?: string;
-}
-
-export interface ConsoleSearchResult {
-  id: string;
-  name: string;
-  iconUrl: string;
-  colorTheme: string;
-  gameCount: number;
-}
-
-export interface DeveloperSearchResult {
-  name: string;
-  gameCount: number;
-  avgRating: number;
-}
-
-export interface PublisherSearchResult {
-  name: string;
-  gameCount: number;
-  avgRating: number;
-}
-
-export interface CollectionSearchResult {
-  id: string;
-  name: string;
-  gameCount: number;
-  username: string;
-}
-
-export interface SeriesSearchResult {
-  id: string;
-  name: string;
-  libraryGames: number;
-  totalGames: number;
-}
-
-export interface FranchiseSearchResult {
-  id: string;
-  name: string;
-  libraryGames: number;
-  totalGames: number;
-}
-
-export interface SearchResults {
-  games: { results: GameSearchResult[]; total: number };
-  consoles: { results: ConsoleSearchResult[]; total: number };
-  developers: { results: DeveloperSearchResult[]; total: number };
-  publishers: { results: PublisherSearchResult[]; total: number };
-  collections: { results: CollectionSearchResult[]; total: number };
-  series: { results: SeriesSearchResult[]; total: number };
-  franchises: { results: FranchiseSearchResult[]; total: number };
-}
+// Re-export generated search types under historical names used by
+// `features/search/components/search-results.tsx`. Consumers only read a
+// subset of fields; the generated shapes are structurally supersets of
+// the previous hand-written interfaces, with every field non-null after
+// the omitempty sweep (empty strings for missing optional values).
+export type SearchResults = SearchResponse;
+export type GameSearchResult = SearchGameResult;
+export type ConsoleSearchResult = SearchConsoleResult;
+export type DeveloperSearchResult = SearchCompanyResult;
+export type PublisherSearchResult = SearchCompanyResult;
+export type CollectionSearchResult = SearchCollectionResult;
+export type SeriesSearchResult = SearchSeriesResult;
+export type FranchiseSearchResult = SearchFranchiseResult;
 
 export function useSearch(query: string) {
   return useQuery({
@@ -69,7 +32,7 @@ export function useSearch(query: string) {
         typedApi.GET("/api/search", {
           params: { query: { q: query, limit: 5 } },
         }),
-      ) as Promise<SearchResults>,
+      ),
     enabled: query.length >= 2,
     staleTime: 30 * 1000,
   });
