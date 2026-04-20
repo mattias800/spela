@@ -428,20 +428,7 @@ export interface AchievementTimeline {
   earnedPoints: number;
 }
 
-export interface RecentAchievement {
-  achievementRaId: number;
-  title: string;
-  description: string;
-  points: number;
-  badgeUrl: string;
-  unlockedAt: string;
-  isHardcore: boolean;
-  playTimeAtUnlock: number;
-  gameId: string;
-  gameTitle: string;
-  consoleName: string;
-  coverUrl: string;
-}
+export type RecentAchievement = Schemas["RARecentAchievementResponse"];
 
 export type UserSearchResult = Schemas["UserSearchResult"];
 
@@ -469,13 +456,7 @@ export type SharedSave = Schemas["SharedSaveResponse"];
 
 export type Collection = Schemas["CollectionResponse"];
 
-export interface PublicProfileGame {
-  id: string;
-  title: string;
-  coverUrl?: string;
-  consoleName: string;
-  playTime?: number;
-}
+export type PublicProfileGame = Schemas["PublicProfileGame"];
 
 export interface SharedSession {
   id: string;
@@ -792,14 +773,7 @@ export interface ChallengeAttempt {
   isBest: boolean;
 }
 
-export interface ChallengeLeaderboardEntry {
-  rank: number;
-  userId: string;
-  username: string;
-  avatarUrl?: string;
-  durationMs: number;
-  completedAt: string;
-}
+export type ChallengeLeaderboardEntry = Schemas["ChallengeLeaderboardEntry"];
 
 export interface ChallengeLeaderboardResponse {
   data: ChallengeLeaderboardEntry[];
