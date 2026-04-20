@@ -1,10 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import {
-  multipartBodySerializer,
-  typedApi,
-  unwrap,
-} from "@/lib/api-client";
-import type { StagedUpload } from "@/types/api";
+import { multipart, typedApi, unwrap } from "@/lib/api-client";
 
 export function useUploadWritable() {
   return useQuery({
@@ -24,18 +19,12 @@ export function useUploadRoms() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (files: File[]) => {
+    mutationFn: (files: File[]) => {
       const formData = new FormData();
       for (const file of files) {
         formData.append("files", file);
       }
-      const data = await unwrap(
-        typedApi.POST("/api/admin/uploads", {
-          body: formData as unknown as never,
-          bodySerializer: multipartBodySerializer,
-        }),
-      );
-      return data as StagedUpload[] | undefined;
+      return unwrap(typedApi.POST("/api/admin/uploads", multipart(formData)));
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin", "uploads"] });

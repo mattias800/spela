@@ -1,23 +1,11 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { typedApi, unwrap } from "@/lib/api-client";
-import type {
-  RAStatus,
-  RALinkRequest,
-  RASettingsRequest,
-  GameAchievements,
-  GameAchievementProgressResponse,
-  AchievementLeaderboard,
-  AchievementTimeline,
-  RecentAchievement,
-} from "@/types/api";
+import type { RALinkRequest, RASettingsRequest } from "@/types/api";
 
 export function useRAStatus() {
   return useQuery({
     queryKey: ["ra-status"],
-    queryFn: async () => {
-      const data = await unwrap(typedApi.GET("/api/user/ra/status"));
-      return data as RAStatus | undefined;
-    },
+    queryFn: () => unwrap(typedApi.GET("/api/user/ra/status")),
   });
 }
 
@@ -59,14 +47,12 @@ export function useRASettings() {
 export function useGameAchievements(gameId: string | undefined) {
   return useQuery({
     queryKey: ["game-achievements", gameId],
-    queryFn: async () => {
-      const data = await unwrap(
+    queryFn: () =>
+      unwrap(
         typedApi.GET("/api/games/{id}/achievements", {
           params: { path: { id: gameId as string } },
         }),
-      );
-      return data as GameAchievements | undefined;
-    },
+      ),
     enabled: !!gameId,
     refetchInterval: (query) => {
       // Poll every 2 seconds while the server is processing an RA fetch.
@@ -83,11 +69,11 @@ export function useGameAchievementProgress(gameId: string | undefined) {
   return useQuery({
     queryKey: ["game-achievement-progress", gameId],
     queryFn: async () => {
-      const data = (await unwrap(
+      const data = await unwrap(
         typedApi.GET("/api/games/{id}/achievements/progress", {
           params: { path: { id: gameId as string } },
         }),
-      )) as GameAchievementProgressResponse | undefined;
+      );
       return data?.progress ?? null;
     },
     enabled: !!gameId,
@@ -97,14 +83,12 @@ export function useGameAchievementProgress(gameId: string | undefined) {
 export function useAchievementLeaderboard(gameId: string | undefined) {
   return useQuery({
     queryKey: ["achievement-leaderboard", gameId],
-    queryFn: async () => {
-      const data = await unwrap(
+    queryFn: () =>
+      unwrap(
         typedApi.GET("/api/games/{id}/achievements/leaderboard", {
           params: { path: { id: gameId as string } },
         }),
-      );
-      return data as AchievementLeaderboard | undefined;
-    },
+      ),
     enabled: !!gameId,
   });
 }
@@ -112,14 +96,12 @@ export function useAchievementLeaderboard(gameId: string | undefined) {
 export function useAchievementTimeline(gameId: string | undefined) {
   return useQuery({
     queryKey: ["achievement-timeline", gameId],
-    queryFn: async () => {
-      const data = await unwrap(
+    queryFn: () =>
+      unwrap(
         typedApi.GET("/api/games/{id}/achievements/timeline", {
           params: { path: { id: gameId as string } },
         }),
-      );
-      return data as AchievementTimeline | undefined;
-    },
+      ),
     enabled: !!gameId,
   });
 }
@@ -131,7 +113,7 @@ export function useRecentAchievements() {
       const data = await unwrap(
         typedApi.GET("/api/user/achievements/recent"),
       );
-      return (data?.achievements ?? []) as RecentAchievement[];
+      return data?.achievements ?? [];
     },
   });
 }

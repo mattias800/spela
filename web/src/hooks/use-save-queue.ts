@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { multipartBodySerializer, typedApi, unwrap } from "@/lib/api-client";
+import { multipart, typedApi, unwrap } from "@/lib/api-client";
 
 export interface SaveQueueItem {
   sessionId: string;
@@ -57,16 +57,14 @@ export function useSaveQueue({
         await unwrap(
           typedApi.POST("/api/sessions/{id}/saves/auto", {
             params: { path: { id: item.sessionId } },
-            body: formData as unknown as never,
-            bodySerializer: multipartBodySerializer,
+            ...multipart(formData),
           }),
         );
       } else {
         await unwrap(
           typedApi.POST("/api/sessions/{id}/saves", {
             params: { path: { id: item.sessionId } },
-            body: formData as unknown as never,
-            bodySerializer: multipartBodySerializer,
+            ...multipart(formData),
           }),
         );
       }

@@ -5,10 +5,7 @@ import type { UserPreferences } from "@/types/api";
 export function useUserPreferences() {
   return useQuery({
     queryKey: ["user", "preferences"],
-    queryFn: async () => {
-      const data = await unwrap(typedApi.GET("/api/user/preferences"));
-      return data as UserPreferences | undefined;
-    },
+    queryFn: () => unwrap(typedApi.GET("/api/user/preferences")),
   });
 }
 

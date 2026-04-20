@@ -21,7 +21,10 @@ vi.mock("@/lib/api-client", () => ({
       return r.data;
     }),
   ),
-  multipartBodySerializer: (body: unknown) => body as FormData,
+  multipart: (formData: FormData) => ({
+    body: formData,
+    bodySerializer: (body: unknown) => body as FormData,
+  }),
 }));
 
 import { typedApi } from "@/lib/api-client";

@@ -1,10 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import {
-  multipartBodySerializer,
-  typedApi,
-  unwrap,
-} from "@/lib/api-client";
-import type { BiosFile } from "@/types/api";
+import { multipart, typedApi, unwrap } from "@/lib/api-client";
 
 export function useBiosStatus() {
   return useQuery({
@@ -26,16 +21,10 @@ export function useUploadBiosFile() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (file: File) => {
+    mutationFn: (file: File) => {
       const formData = new FormData();
       formData.append("file", file);
-      const data = await unwrap(
-        typedApi.POST("/api/admin/bios", {
-          body: formData as unknown as never,
-          bodySerializer: multipartBodySerializer,
-        }),
-      );
-      return data as BiosFile | undefined;
+      return unwrap(typedApi.POST("/api/admin/bios", multipart(formData)));
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["bios"] });
