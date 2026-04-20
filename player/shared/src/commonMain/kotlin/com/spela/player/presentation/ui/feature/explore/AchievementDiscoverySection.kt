@@ -209,7 +209,7 @@ internal fun ActiveChallengesSection(
                 .clickable { onChallengeClick(ch.id) }
                 .padding(12.dp)
                 .semantics {
-                    contentDescription = "${ch.name}, ${ch.type} challenge, ${ch.difficulty} difficulty"
+                    contentDescription = "${ch.name}, ${ch.type.displayName} challenge, ${ch.difficulty.displayName} difficulty"
                 },
         ) {
             Text(
@@ -228,7 +228,7 @@ internal fun ActiveChallengesSection(
             )
             Spacer(Modifier.height(2.dp))
             Text(
-                text = "${ch.type} \u00b7 ${ch.difficulty}",
+                text = "${ch.type.displayName} \u00b7 ${ch.difficulty.displayName}",
                 style = SpTypography.LabelSmall,
                 color = SpColor.Link,
                 maxLines = 1,
