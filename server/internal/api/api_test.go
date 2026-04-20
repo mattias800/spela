@@ -2476,9 +2476,8 @@ func TestScrapeStatus_Idle(t *testing.T) {
 	var resp map[string]interface{}
 	json.Unmarshal(w.Body.Bytes(), &resp)
 	assert.Equal(t, false, resp["active"])
-	// When idle, no progress fields should be present
-	_, hasTotal := resp["total"]
-	assert.False(t, hasTotal)
+	// When idle, progress fields are zero.
+	assert.Equal(t, float64(0), resp["total"])
 }
 
 func TestScrapeStatus_NonAdmin(t *testing.T) {
