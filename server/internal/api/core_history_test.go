@@ -7,6 +7,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -98,6 +99,50 @@ func TestDownloadCore_VersionedHashServesHistory(t *testing.T) {
 	require.Equal(t, http.StatusOK, w3.Code, "historical fetch should succeed: %s", w3.Body.String())
 	assert.Equal(t, oldPayload, w3.Body.Bytes(),
 		"?sha256= must serve the snapshot from history, not the live binary")
+}
+
+// TestDownloadCore_RejectsNonHexSha256 verifies that the sha256 query
+// param is validated as 64-char hex before being used to construct any
+// filesystem path. Without this guard, a value like "../" would escape
+// the {CoreDir}/history subdirectory once filepath.Join normalised it.
+// See the security follow-up review on PR for #553/#555.
+func TestDownloadCore_RejectsNonHexSha256(t *testing.T) {
+	database, cfg := setupTestEnv(t)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
+	token := registerAndGetToken(t, router)
+
+	require.NoError(t, os.MkdirAll(cfg.CoreDir, 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(cfg.CoreDir, "nestopia_libretro.so"), []byte("anything"), 0o644))
+
+	var core db.Core
+	require.NoError(t, database.Where("name = ?", "nestopia").First(&core).Error)
+
+	cases := []struct {
+		name string
+		sha  string
+	}{
+		{"path traversal up one", "../etc/passwd"},
+		{"too short", "deadbeef"},
+		{"too long", strings.Repeat("a", 65)},
+		{"slash inside", "abcd/efgh" + strings.Repeat("0", 55)},
+		{"contains dot dot", ".." + strings.Repeat("a", 62)},
+		{"non-hex character", strings.Repeat("g", 64)},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			w := httptest.NewRecorder()
+			req := httptest.NewRequest(
+				"GET",
+				"/api/cores/"+itoa(core.ID)+"/download?platform=linux&sha256="+tc.sha,
+				nil,
+			)
+			req.Header.Set("Authorization", "Bearer "+token)
+			router.ServeHTTP(w, req)
+			assert.Equal(t, http.StatusBadRequest, w.Code,
+				"sha256=%q must be rejected with 400, got %d", tc.sha, w.Code)
+		})
+	}
 }
 
 // TestDownloadCore_UnknownHashReturns404 verifies that requesting a sha256

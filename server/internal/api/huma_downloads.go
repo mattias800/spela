@@ -403,15 +403,26 @@ func (h *CoreHandler) HumaDownloadCore(_ context.Context, in *CoreDownloadInput)
 	// without running the metadata backfill — the metadata corresponds to
 	// whatever's current, not to the historical file.
 	if in.Sha256 != "" {
+		// Validate sha256 is a 64-char hex string before any path
+		// construction. filepath.Join normalises paths, so without this
+		// guard a value like "../" can escape {CoreDir}/history into
+		// CoreDir itself or beyond. Reject anything that isn't [0-9a-fA-F]{64}.
+		if !isValidSha256Hex(in.Sha256) {
+			return nil, huma.Error400BadRequest("invalid sha256 — expected 64 hex characters")
+		}
 		if h.CoreDir == "" {
 			return nil, huma.Error404NotFound("core history not available")
 		}
+		historyRoot := filepath.Join(h.CoreDir, "history")
 		historyPath := h.historyBinaryPath(core, in.Sha256, ext)
+		// Defence in depth: confirm the resolved path stays inside
+		// {CoreDir}/history. The hex guard above already prevents
+		// traversal, but a second check costs nothing.
+		if !storage.ValidateROMPath(historyPath, []string{historyRoot}) {
+			return nil, huma.Error403Forbidden("core file access denied")
+		}
 		if _, err := os.Stat(historyPath); os.IsNotExist(err) {
 			return nil, huma.Error404NotFound("core binary not available for requested sha256")
-		}
-		if !storage.ValidateROMPath(historyPath, []string{h.CoreDir}) {
-			return nil, huma.Error403Forbidden("core file access denied")
 		}
 		return streamFileFromDisk(historyPath, core.Name+"_libretro"+ext, "application/octet-stream"), nil
 	}

@@ -144,6 +144,27 @@ func (h *CoreHandler) snapshotCoreToHistory(core db.Core, corePath, sum string) 
 	}
 }
 
+// isValidSha256Hex reports whether s is a 64-char lowercase-or-uppercase
+// hex string. Used to validate user-supplied sha256 query params before
+// they flow into filesystem paths — without this guard, a value like
+// "../" would escape {CoreDir}/history into CoreDir or beyond when
+// composed with filepath.Join.
+func isValidSha256Hex(s string) bool {
+	if len(s) != 64 {
+		return false
+	}
+	for _, r := range s {
+		switch {
+		case r >= '0' && r <= '9':
+		case r >= 'a' && r <= 'f':
+		case r >= 'A' && r <= 'F':
+		default:
+			return false
+		}
+	}
+	return true
+}
+
 // hashFileSha256 returns the hex sha256 digest and byte length of a file.
 func hashFileSha256(path string) (string, int64, error) {
 	f, err := os.Open(path)
