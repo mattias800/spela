@@ -126,8 +126,11 @@ export function ConsoleDetailPage() {
           description="No games have been detected for this console yet."
         />
       ) : isSmallLibrary ? (
-        /* Small library: inline game grid */
+        /* Small library: inline game grid, with Launch Games above when
+           curated content exists. The shelf self-hides if the server
+           returns an empty list (#633). */
         <>
+          <ConsoleLaunchGames consoleId={id!} />
           <SearchInput
             placeholder={`Search ${consoleName} games...`}
             value={search}
