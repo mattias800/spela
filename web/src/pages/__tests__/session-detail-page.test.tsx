@@ -46,6 +46,16 @@ vi.mock("@/hooks/use-cheats", () => ({
   })),
 }));
 
+// `useToast` is now used by the page for the clone-mutation onError path.
+// Stub it out so tests can render without wrapping in a real ToastProvider.
+vi.mock("@/components/ui", async () => {
+  const actual = await vi.importActual("@/components/ui");
+  return {
+    ...actual,
+    useToast: vi.fn(() => ({ toast: vi.fn() })),
+  };
+});
+
 import {
   useSession,
   useSessionSaves,

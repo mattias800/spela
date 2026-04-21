@@ -21,6 +21,7 @@ import {
   Skeleton,
   Switch,
   ConfirmDeleteModal,
+  useToast,
 } from "@/components/ui";
 import { PageLayout, SectionList } from "@/components/layout";
 import {
@@ -54,6 +55,7 @@ function SessionDetailSkeleton() {
 export function SessionDetailPage() {
   const { sessionId } = useParams<{ sessionId: string }>();
   const navigate = useNavigate();
+  const { toast } = useToast();
   const { data: session, isLoading } = useSession(sessionId ?? "");
   const { data: saves, isLoading: savesLoading } = useSessionSaves(
     sessionId ?? "",
@@ -168,6 +170,9 @@ export function SessionDetailPage() {
           setCloneFromSave(null);
           setShowCloneSession(false);
           if (created?.id) navigate(`/sessions/${created.id}`);
+        },
+        onError: () => {
+          toast("error", "Failed to clone session. Please try again.");
         },
       },
     );

@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Layers, Plus } from "lucide-react";
-import { Button, Section, Skeleton, EmptyState, Input } from "@/components/ui";
+import { Button, Section, Skeleton, EmptyState, Input, useToast } from "@/components/ui";
 import {
   useGameSessions,
   useCreateSession,
@@ -36,11 +36,15 @@ function SessionsSkeleton() {
 
 interface GameSessionsProps {
   gameId: string;
+  /** Game title — passed to the clone-confirmation dialog so the user
+   *  has context about what they're cloning. */
+  gameTitle?: string;
 }
 
-export function GameSessions({ gameId }: GameSessionsProps) {
+export function GameSessions({ gameId, gameTitle }: GameSessionsProps) {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { toast } = useToast();
   const { data: sessions, isLoading } = useGameSessions(gameId);
   const createSession = useCreateSession();
   const renameSession = useRenameSession();
@@ -86,6 +90,9 @@ export function GameSessions({ gameId }: GameSessionsProps) {
           // session's detail page so they can decide whether to rename
           // it further or jump straight to playing.
           if (created?.id) navigate(`/sessions/${created.id}`);
+        },
+        onError: () => {
+          toast("error", "Failed to clone session. Please try again.");
         },
       },
     );
@@ -207,6 +214,11 @@ export function GameSessions({ gameId }: GameSessionsProps) {
           if (!cloneSession.isPending) setCloneTarget(null);
         }}
         sourceName={cloneTarget?.name ?? ""}
+        description={
+          gameTitle
+            ? `Cloning a session of ${gameTitle}.`
+            : undefined
+        }
         isPending={cloneSession.isPending}
         onConfirm={handleConfirmClone}
       />

@@ -395,7 +395,7 @@ export function GameDetailPage() {
 
       {!isDemo && <TimeToBeatCard game={game} />}
 
-      {!isDemo && <GameSessions gameId={game.id} />}
+      {!isDemo && <GameSessions gameId={game.id} gameTitle={game.title} />}
 
       {game.variants && game.variants.length > 0 && (
         <GameVariantsSection variants={game.variants} />

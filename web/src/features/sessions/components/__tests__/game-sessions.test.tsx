@@ -24,6 +24,15 @@ vi.mock("@/hooks/use-sessions", () => ({
   useCloneSession: vi.fn(),
 }));
 
+// `useToast` is now consumed for the clone-mutation onError path.
+vi.mock("@/components/ui", async () => {
+  const actual = await vi.importActual("@/components/ui");
+  return {
+    ...actual,
+    useToast: vi.fn(() => ({ toast: vi.fn() })),
+  };
+});
+
 import {
   useGameSessions,
   useCreateSession,
