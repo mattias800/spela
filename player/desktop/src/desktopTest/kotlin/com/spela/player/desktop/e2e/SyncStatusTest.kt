@@ -27,8 +27,10 @@ class SyncStatusTest {
         )
         advance(harness)
 
-        onNodeWithTag("settings_list")
-            .performScrollToNode(hasText("Sync"))
+        // Sync lives under the "Storage & Sync" category since the
+        // settings screen was split into categorised sub-pages.
+        onNodeWithContentDescription("Storage & Sync").performClick()
+        advanceQuick(harness)
     }
 
     @Test
@@ -48,8 +50,6 @@ class SyncStatusTest {
         setContent { harness.App() }
         navigateToSettingsAndScrollToSync(harness)
 
-        onNodeWithTag("settings_list")
-            .performScrollToNode(hasText("Sync Now"))
         onNodeWithText("Online").assertIsDisplayed()
     }
 
@@ -60,8 +60,6 @@ class SyncStatusTest {
         setContent { harness.App() }
         navigateToSettingsAndScrollToSync(harness)
 
-        onNodeWithTag("settings_list")
-            .performScrollToNode(hasText("Sync Now"))
         onNodeWithText("Sync Now").assertIsDisplayed()
     }
 }
