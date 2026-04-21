@@ -38,6 +38,7 @@ import kotlinx.serialization.encoding.*
  * @param name 
  * @param ownerId 
  * @param ownerUsername 
+ * @param pinnedCoreSha256 
  * @param saveCount 
  * @param screenshotUrl 
  * @param sharedSessionId 
@@ -78,6 +79,8 @@ data class GameSessionResponse (
     @SerialName(value = "ownerId") @Required val ownerId: kotlin.String,
 
     @SerialName(value = "ownerUsername") @Required val ownerUsername: kotlin.String,
+
+    @SerialName(value = "pinnedCoreSha256") @Required val pinnedCoreSha256: kotlin.String,
 
     @SerialName(value = "saveCount") @Required val saveCount: kotlin.Long,
 

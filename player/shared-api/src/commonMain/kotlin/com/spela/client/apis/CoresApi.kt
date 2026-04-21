@@ -48,9 +48,10 @@ open class CoresApi : ApiClient {
      * Serves the core binary for the requested platform (defaults to linux). Responds with application/octet-stream.
      * @param id Core ID.
      * @param platform Target platform: linux, macos, windows, android. (optional, default to "linux")
+     * @param sha256 Optional hex sha256 of a historical core binary. When set, serves that specific version from the history snapshot; returns 404 if it&#39;s been pruned. Defaults to serving the current binary. (optional)
      * @return void
      */
-    open suspend fun downloadCore(id: kotlin.String, platform: kotlin.String? = "linux"): HttpResponse<Unit> {
+    open suspend fun downloadCore(id: kotlin.String, platform: kotlin.String? = "linux", sha256: kotlin.String? = null): HttpResponse<Unit> {
 
         val localVariableAuthNames = listOf<String>()
 
@@ -59,6 +60,7 @@ open class CoresApi : ApiClient {
 
         val localVariableQuery = mutableMapOf<String, List<String>>()
         platform?.apply { localVariableQuery["platform"] = listOf("$platform") }
+        sha256?.apply { localVariableQuery["sha256"] = listOf("$sha256") }
         val localVariableHeaders = mutableMapOf<String, String>()
 
         val localVariableConfig = RequestConfig<kotlin.Any?>(

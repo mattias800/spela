@@ -23,9 +23,9 @@ import kotlinx.serialization.encoding.*
 /**
  * 
  *
- * @param email 
- * @param password 
- * @param username 
+ * @param email New account email.
+ * @param password New account password (8-72 characters).
+ * @param username New account username (3-64 characters).
  * @param dollarSchema A URL to the JSON Schema for this object.
  * @param role 
  */
@@ -33,10 +33,13 @@ import kotlinx.serialization.encoding.*
 
 data class AdminCreateUserRequest (
 
+    /* New account email. */
     @SerialName(value = "email") @Required val email: kotlin.String,
 
+    /* New account password (8-72 characters). */
     @SerialName(value = "password") @Required val password: kotlin.String,
 
+    /* New account username (3-64 characters). */
     @SerialName(value = "username") @Required val username: kotlin.String,
 
     /* A URL to the JSON Schema for this object. */
