@@ -21,6 +21,11 @@ vi.mock("@/hooks/use-sessions", () => ({
     variables: null,
   })),
   useRenameSession: vi.fn(() => ({ mutate: vi.fn(), isPending: false })),
+  useCloneSession: vi.fn(() => ({
+    mutate: vi.fn(),
+    isPending: false,
+    variables: null,
+  })),
 }));
 
 vi.mock("@/hooks/use-games", () => ({
@@ -46,6 +51,7 @@ import {
   useSessionSaves,
   useSessionCheats,
   useUpdateSessionCheats,
+  useCloneSession,
 } from "@/hooks/use-sessions";
 
 const mockUseSession = useSession as ReturnType<typeof vi.fn>;
@@ -54,6 +60,7 @@ const mockUseSessionCheats = useSessionCheats as ReturnType<typeof vi.fn>;
 const mockUseUpdateSessionCheats = useUpdateSessionCheats as ReturnType<
   typeof vi.fn
 >;
+const mockUseCloneSession = useCloneSession as ReturnType<typeof vi.fn>;
 
 const mockSession = {
   id: "s1",
@@ -72,9 +79,13 @@ const mockSession = {
   updatedAt: "2026-02-01T10:00:00Z",
 };
 
+// Save IDs are stringified uints on the wire (see server response.go
+// SessionSaveResponse.ID). The useCloneSession hook parses them back to
+// numbers for the ?saveId= query, so the fixtures must use numeric-
+// strings to exercise that path correctly.
 const mockSaves = [
   {
-    id: "save1",
+    id: "101",
     sessionId: "s1",
     name: "Checkpoint 1",
     fileSize: 32768,
@@ -87,7 +98,7 @@ const mockSaves = [
     createdAt: "2026-02-01T09:00:00Z",
   },
   {
-    id: "save2",
+    id: "102",
     sessionId: "s1",
     name: "Auto Save",
     fileSize: 32768,
@@ -207,29 +218,101 @@ describe("SessionDetailPage", () => {
     });
   });
 
-  it("shows delete session confirmation", async () => {
+  it("shows delete session confirmation from the header `…` menu", async () => {
     renderPage();
-    // The page-level Delete button (not the per-save "Delete save" buttons)
-    const deleteButtons = screen.getAllByRole("button", { name: /Delete/i });
-    const sessionDeleteBtn = deleteButtons.find(
-      (btn) => btn.textContent?.trim() === "Delete",
+    // The header actions are behind the `…` menu; open it, then click
+    // the Delete session item.
+    const headerMenu = screen.getByTestId("session-header-actions");
+    await userEvent.click(
+      headerMenu.querySelector("[data-testid='actions-menu-btn']")!,
     );
-    expect(sessionDeleteBtn).toBeDefined();
-    await userEvent.click(sessionDeleteBtn!);
-    expect(
-      screen.getByText(/Delete "My Session"/),
-    ).toBeInTheDocument();
+    await userEvent.click(
+      screen.getByRole("menuitem", { name: /delete session/i }),
+    );
+    expect(screen.getByText(/Delete "My Session"/)).toBeInTheDocument();
   });
 
-  it("shows delete save confirmation when clicking delete on a save", async () => {
+  it("shows delete save confirmation from the per-save `…` menu", async () => {
     renderPage();
-    const deleteButtons = screen.getAllByRole("button", {
-      name: /Delete save/i,
-    });
-    await userEvent.click(deleteButtons[0]);
+    const saveActions = screen.getByTestId("save-actions-101");
+    await userEvent.click(
+      saveActions.querySelector("[data-testid='actions-menu-btn']")!,
+    );
+    await userEvent.click(
+      screen.getByRole("menuitem", { name: /delete save/i }),
+    );
     expect(
       screen.getByText(/Are you sure you want to delete this save state/i),
     ).toBeInTheDocument();
+  });
+
+  it("opens the clone dialog from the header `…` menu (US-2)", async () => {
+    renderPage();
+    const headerMenu = screen.getByTestId("session-header-actions");
+    await userEvent.click(
+      headerMenu.querySelector("[data-testid='actions-menu-btn']")!,
+    );
+    await userEvent.click(
+      screen.getByRole("menuitem", { name: /clone session/i }),
+    );
+    expect(screen.getByTestId("clone-session-dialog")).toBeInTheDocument();
+    expect(screen.getByTestId("clone-session-name-input")).toHaveValue(
+      "My Session (Copy)",
+    );
+  });
+
+  it("opens the clone dialog from a specific save's `…` menu (US-3)", async () => {
+    renderPage();
+    const saveActions = screen.getByTestId("save-actions-102");
+    await userEvent.click(
+      saveActions.querySelector("[data-testid='actions-menu-btn']")!,
+    );
+    await userEvent.click(
+      screen.getByRole("menuitem", { name: /clone from this save/i }),
+    );
+    expect(screen.getByTestId("clone-session-dialog")).toBeInTheDocument();
+    expect(
+      screen.getByText(/Cloning from save "Auto Save"/),
+    ).toBeInTheDocument();
+  });
+
+  it("calls clone mutation with saveId when confirming a clone-from-save", async () => {
+    const cloneMutate = vi.fn();
+    mockUseCloneSession.mockReturnValue({
+      mutate: cloneMutate,
+      isPending: false,
+      variables: null,
+    });
+    renderPage();
+    const saveActions = screen.getByTestId("save-actions-102");
+    await userEvent.click(
+      saveActions.querySelector("[data-testid='actions-menu-btn']")!,
+    );
+    await userEvent.click(
+      screen.getByRole("menuitem", { name: /clone from this save/i }),
+    );
+    await userEvent.click(screen.getByTestId("clone-session-confirm"));
+    expect(cloneMutate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        id: "s1",
+        gameId: "g1",
+        saveId: 102, // wire-format save ID (stringified uint) parsed back to number.
+        name: "My Session (Copy)",
+      }),
+      expect.any(Object),
+    );
+  });
+
+  it("does not expose a standalone Clone button outside the `…` menu (#553)", () => {
+    renderPage();
+    // Close-state check: clone is only reachable via the menu items
+    // opened above. There must be no direct button anywhere.
+    expect(
+      screen.queryByRole("button", { name: /^clone session$/i }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: /^clone from this save$/i }),
+    ).not.toBeInTheDocument();
   });
 
   it("shows loading state", () => {

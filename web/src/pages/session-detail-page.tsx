@@ -10,8 +10,10 @@ import {
   Layers,
   Save,
   AlertTriangle,
+  Copy,
 } from "lucide-react";
 import {
+  ActionsMenu,
   Button,
   BackButton,
   Section,
@@ -29,12 +31,14 @@ import {
   useDeleteSessionSave,
   useDeleteSession,
   useRenameSession,
+  useCloneSession,
 } from "@/hooks/use-sessions";
 import { useGame } from "@/hooks/use-games";
 import { useGameCheats } from "@/hooks/use-cheats";
 import { formatFileSize, formatRelativeTime, formatPlayTime } from "@/lib/format";
 import type { SessionSave } from "@/types/api";
 import { SessionCheatSelector } from "@/features/sessions/components/session-cheat-selector";
+import { CloneSessionDialog } from "@/features/sessions/components/clone-session-dialog";
 
 function SessionDetailSkeleton() {
   return (
@@ -59,6 +63,7 @@ export function SessionDetailPage() {
   const deleteSave = useDeleteSessionSave();
   const deleteSession = useDeleteSession();
   const renameSession = useRenameSession();
+  const cloneSession = useCloneSession();
 
   const { data: game } = useGame(session?.gameId ?? "");
   const { data: gameCheats, isLoading: gameCheatsLoading } = useGameCheats(session?.gameId ?? "");
@@ -67,6 +72,10 @@ export function SessionDetailPage() {
   const [editName, setEditName] = useState("");
   const [showDeleteSession, setShowDeleteSession] = useState(false);
   const [deleteSaveTarget, setDeleteSaveTarget] = useState<string | null>(null);
+  /** null = dialog closed; a save triggers US-3 (clone from a specific save),
+   *  "session" triggers US-2 (clone-whole-session from the header menu). */
+  const [cloneFromSave, setCloneFromSave] = useState<SessionSave | null>(null);
+  const [showCloneSession, setShowCloneSession] = useState(false);
 
   function handleRename() {
     if (!session || !sessionId) return;
@@ -127,6 +136,38 @@ export function SessionDetailPage() {
       {
         onSuccess: () => {
           navigate(`/games/${session.gameId}`);
+        },
+      },
+    );
+  }
+
+  /**
+   * Confirm handler for both US-2 (clone whole session) and US-3
+   * (clone from a specific save). The dialog state (`cloneFromSave`
+   * vs `showCloneSession`) decides which path runs — consolidating
+   * both into one handler keeps the mutation / navigation logic in
+   * one place.
+   */
+  function handleConfirmClone(name: string) {
+    if (!session || !sessionId) return;
+    // SessionSave.id is a stringified uint on the wire; the clone
+    // endpoint takes a numeric `saveId` query param. parseInt here
+    // rather than in the hook so the hook can stay typed to the
+    // OpenAPI-generated shape.
+    const saveId =
+      cloneFromSave != null ? parseInt(cloneFromSave.id, 10) : undefined;
+    cloneSession.mutate(
+      {
+        id: sessionId,
+        gameId: session.gameId,
+        name: name || undefined,
+        saveId: Number.isFinite(saveId) ? saveId : undefined,
+      },
+      {
+        onSuccess: (created) => {
+          setCloneFromSave(null);
+          setShowCloneSession(false);
+          if (created?.id) navigate(`/sessions/${created.id}`);
         },
       },
     );
@@ -224,15 +265,26 @@ export function SessionDetailPage() {
           </div>
         </div>
 
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => setShowDeleteSession(true)}
-          className="text-red-400 hover:text-red-300"
-        >
-          <Trash2 className="h-4 w-4 mr-1" />
-          Delete
-        </Button>
+        <div data-testid="session-header-actions">
+          <ActionsMenu
+            size="sm"
+            items={[
+              {
+                label: "Clone session",
+                icon: <Copy className="h-4 w-4" />,
+                onClick: () => setShowCloneSession(true),
+                loading:
+                  cloneSession.isPending && !cloneFromSave,
+              },
+              {
+                label: "Delete session",
+                icon: <Trash2 className="h-4 w-4" />,
+                onClick: () => setShowDeleteSession(true),
+                variant: "danger",
+              },
+            ]}
+          />
+        </div>
       </div>
 
       {/* Save States */}
@@ -323,30 +375,35 @@ export function SessionDetailPage() {
                     </p>
                   )}
                 </div>
-                <div className="flex items-center gap-1">
-                  <Button
-                    variant="ghost"
+                <div data-testid={`save-actions-${save.id}`}>
+                  <ActionsMenu
                     size="sm"
-                    onClick={() =>
-                      window.open(
-                        `/api/sessions/${sessionId}/saves/${save.id}/download`,
-                        "_blank",
-                      )
-                    }
-                    aria-label="Download save"
-                    title="Download save"
-                  >
-                    <Download className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setDeleteSaveTarget(save.id)}
-                    aria-label="Delete save"
-                    title="Delete save"
-                  >
-                    <Trash2 className="h-4 w-4 text-red-400" />
-                  </Button>
+                    items={[
+                      {
+                        label: "Clone from this save",
+                        icon: <Copy className="h-4 w-4" />,
+                        onClick: () => setCloneFromSave(save),
+                        loading:
+                          cloneSession.isPending &&
+                          cloneFromSave?.id === save.id,
+                      },
+                      {
+                        label: "Download save",
+                        icon: <Download className="h-4 w-4" />,
+                        onClick: () =>
+                          window.open(
+                            `/api/sessions/${sessionId}/saves/${save.id}/download`,
+                            "_blank",
+                          ),
+                      },
+                      {
+                        label: "Delete save",
+                        icon: <Trash2 className="h-4 w-4" />,
+                        onClick: () => setDeleteSaveTarget(save.id),
+                        variant: "danger",
+                      },
+                    ]}
+                  />
                 </div>
               </div>
             ))}
@@ -421,6 +478,27 @@ export function SessionDetailPage() {
           }
         }}
         isPending={deleteSave.isPending}
+      />
+
+      {/* Clone dialog — serves both US-2 (whole-session) and US-3
+          (clone-from-save). The `cloneFromSave` state distinguishes
+          the two: when set, the confirm handler forwards the save ID
+          as a query param. */}
+      <CloneSessionDialog
+        open={showCloneSession || !!cloneFromSave}
+        onClose={() => {
+          if (cloneSession.isPending) return;
+          setShowCloneSession(false);
+          setCloneFromSave(null);
+        }}
+        sourceName={session.name}
+        description={
+          cloneFromSave
+            ? `Cloning from save "${cloneFromSave.name}". The new session will inherit this save's state and the source session's play time.`
+            : "The new session will inherit this session's total play time and be seeded with the most recent save state."
+        }
+        isPending={cloneSession.isPending}
+        onConfirm={handleConfirmClone}
       />
     </SectionList>
     </PageLayout>
