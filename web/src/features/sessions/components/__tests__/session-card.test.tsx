@@ -23,6 +23,7 @@ const baseSession: GameSession = {
   memberCount: 1,
   memberAvatars: [],
   memberUsernames: [],
+  pinnedCoreSha256: "",
   createdAt: "2026-02-28T10:00:00Z",
   updatedAt: "2026-03-01T10:00:00Z",
 };
