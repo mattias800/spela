@@ -2142,6 +2142,13 @@
           "downloadUrl": {
             "type": "string"
           },
+          "fetchedAt": {
+            "format": "date-time",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
           "id": {
             "format": "int64",
             "minimum": 0,
@@ -2151,6 +2158,16 @@
             "type": "string"
           },
           "platforms": {
+            "type": "string"
+          },
+          "sha256": {
+            "type": "string"
+          },
+          "sizeBytes": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "sourceUrl": {
             "type": "string"
           },
           "updatedAt": {
@@ -2170,7 +2187,11 @@
           "description",
           "version",
           "platforms",
-          "downloadUrl"
+          "downloadUrl",
+          "sha256",
+          "sizeBytes",
+          "fetchedAt",
+          "sourceUrl"
         ],
         "type": "object"
       },

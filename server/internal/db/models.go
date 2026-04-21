@@ -778,6 +778,15 @@ type Core struct {
 	Platforms   string         `gorm:"size:255" json:"platforms"` // comma-separated: windows,linux,macos,android
 	FilePath    string         `gorm:"size:1024" json:"-"`
 	DownloadURL string         `gorm:"size:1024" json:"downloadUrl"` // URL template for non-buildbot cores; {platform} is replaced by the player
+
+	// Factual metadata about the cached binary, populated by the server
+	// whenever it downloads or serves a core for the first time. See #555.
+	// Nullable pointer for FetchedAt so admin UI can distinguish "never
+	// fetched" from "fetched long ago".
+	Sha256    string     `gorm:"size:64" json:"sha256"`    // hex sha256 of the cached binary
+	SizeBytes int64      `json:"sizeBytes"`                // byte length of the cached binary
+	FetchedAt *time.Time `json:"fetchedAt"`                // when the binary was last downloaded
+	SourceURL string     `gorm:"size:1024" json:"sourceUrl"` // URL we pulled the binary from
 }
 
 // CheatCode represents a cheat code for a specific game.
