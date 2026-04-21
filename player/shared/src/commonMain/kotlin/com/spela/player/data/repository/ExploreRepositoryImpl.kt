@@ -258,6 +258,13 @@ class ExploreRepositoryImpl(
                     logoUrl = apiClient.resolveUrl(gameDto.logoUrl),
                 )
             },
+            recentlyAdded = dto.recentlyAdded.map { gameDto ->
+                gameDto.toDomain().copy(
+                    coverUrl = apiClient.resolveUrl(gameDto.coverUrl),
+                    heroUrl = apiClient.resolveUrl(gameDto.heroUrl),
+                    logoUrl = apiClient.resolveUrl(gameDto.logoUrl),
+                )
+            },
         )
     }
 

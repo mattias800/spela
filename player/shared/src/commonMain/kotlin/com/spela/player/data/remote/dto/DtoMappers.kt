@@ -1023,6 +1023,7 @@ fun com.spela.client.models.ConsoleShowcaseResponse.toDomain(): ConsoleShowcase 
     genreBreakdown = genreBreakdown.map { it.toDomain() },
     topDevelopers = topDevelopers.map { it.toDomain() },
     recentlyPlayed = recentlyPlayed.map { it.toDomain() },
+    recentlyAdded = recentlyAdded.map { it.toDomain() },
 )
 
 // Generated ConsoleHighlight has @Required non-nullable topGame, but the

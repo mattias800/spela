@@ -326,6 +326,7 @@ data class ConsoleShowcase(
     val genreBreakdown: List<GenreCount>,
     val topDevelopers: List<DeveloperSummary>,
     val recentlyPlayed: List<Game>,
+    val recentlyAdded: List<Game>,
 )
 
 data class ConsoleHighlight(
