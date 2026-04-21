@@ -121,7 +121,15 @@ test.describe("Admin Scan Page", () => {
   test("shows scrape progress when scrape is active on page load", async ({
     page,
   }) => {
-    // Mock the scrape status endpoint to return active scrape
+    // Mock the scrape status endpoint to return active scrape.
+    //
+    // The real /api/admin/scrape/status response is counters-only
+    // (active/current/total/successes/failures/verified). The per-game
+    // identification fields (gameName, consoleName, gameId, consoleAbbr)
+    // only arrive on the WebSocket `scrape_progress` event — see
+    // web/src/hooks/use-scrape-progress.ts. So this test asserts only
+    // what polling can actually deliver. gameName-centric assertions
+    // belong in a separate test that simulates a WS message (#565).
     await page.route("**/api/admin/scrape/status", (route) => {
       route.fulfill({
         status: 200,
@@ -129,9 +137,12 @@ test.describe("Admin Scan Page", () => {
           active: true,
           current: 3,
           total: 10,
-          gameName: "Super Mario Bros.",
           successes: 2,
           failures: 1,
+          verified: 0,
+          jobId: 0,
+          mode: "",
+          startedAt: null,
         },
       });
     });
@@ -141,7 +152,6 @@ test.describe("Admin Scan Page", () => {
     await expect(page.getByText(/Scraping game 3 of 10/)).toBeVisible({
       timeout: 5_000,
     });
-    await expect(page.getByText("Super Mario Bros.")).toBeVisible();
     await expect(page.getByText("2 succeeded")).toBeVisible();
     await expect(page.getByText("1 failed")).toBeVisible();
   });
