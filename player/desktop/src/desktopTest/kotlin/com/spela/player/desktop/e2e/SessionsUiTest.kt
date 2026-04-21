@@ -108,7 +108,7 @@ class SessionsUiTest {
         assertEquals("Speedrun Attempt", harness.sessionRepo.sessions[0].name)
     }
 
-    // ── Rename session works ──
+    // ── Rename session works (via `…` overflow menu) ──
 
     @Test
     fun renameSession() = runComposeUiTest {
@@ -125,8 +125,10 @@ class SessionsUiTest {
         scrollToSessions()
         onNodeWithTag("session_item_s1").assertIsDisplayed()
 
-        // Click the rename button
-        onNodeWithContentDescription("Rename session").performClick()
+        // Open the session's `…` overflow menu, then click Rename.
+        onNodeWithTag("session_actions_menu_s1").performClick()
+        advanceQuick(harness)
+        onNodeWithTag("session_action_rename_s1").performClick()
         advanceQuick(harness)
 
         // Rename dialog should appear
@@ -146,7 +148,7 @@ class SessionsUiTest {
         assertEquals("New Name", harness.sessionRepo.sessions[0].name)
     }
 
-    // ── Delete session works ──
+    // ── Delete session works (via `…` overflow menu) ──
 
     @Test
     fun deleteSession() = runComposeUiTest {
@@ -163,8 +165,10 @@ class SessionsUiTest {
         scrollToSessions()
         onNodeWithTag("session_item_s1").assertIsDisplayed()
 
-        // Click the delete button
-        onNodeWithContentDescription("Delete session").performClick()
+        // Open the session's `…` overflow menu, then click Delete.
+        onNodeWithTag("session_actions_menu_s1").performClick()
+        advanceQuick(harness)
+        onNodeWithTag("session_action_delete_s1").performClick()
         advanceQuick(harness)
 
         // Delete confirmation dialog should appear
@@ -417,16 +421,21 @@ class SessionsUiTest {
         onNode(hasTestTag("session_member_avatars_s1"), useUnmergedTree = true).assertDoesNotExist()
     }
 
-    // ── Duplicate session creates a copy ──
+    // ── Clone session: #553 US-2 (own session, from list overflow) ──
 
     @Test
-    fun duplicateSessionCreatesACopy() = runComposeUiTest {
+    fun cloneSessionCreatesACopyViaOverflowMenu() = runComposeUiTest {
         val harness = createHarness()
-        harness.sessionRepo.preAddSession(
+        // Pre-populate a session with a pinned core + play time so we can
+        // verify those are inherited by the clone.
+        val source = com.spela.player.domain.model.GameSession(
             id = "s1",
             gameId = "1",
             name = "My Playthrough",
+            totalPlayTime = 36_000L, // 10h
+            pinnedCoreSha256 = "cafebabe1234",
         )
+        harness.sessionRepo.sessions.add(source)
 
         setContent { harness.App() }
         navigateToGameDetail(harness, "1")
@@ -434,14 +443,92 @@ class SessionsUiTest {
         scrollToSessions()
         onNodeWithTag("session_item_s1").assertIsDisplayed()
 
-        // Click the duplicate button
-        onNodeWithContentDescription("Duplicate session").performClick()
+        // Open the session's `…` overflow menu and pick "Clone session".
+        // (No primary "Clone" button exists on the list per #553 PO brief.)
+        onNodeWithTag("session_actions_menu_s1").performClick()
+        advanceQuick(harness)
+        onNodeWithTag("session_action_clone_s1").performClick()
+        advanceQuick(harness)
+
+        // The clone confirmation dialog pre-fills "{source} (Copy)" and is
+        // editable. Accept the default here (US-2).
+        onNodeWithTag("clone_session_dialog").assertIsDisplayed()
+        onNodeWithTag("clone_session_input").assertIsDisplayed()
+        onNodeWithTag("clone_session_confirm").performClick()
         advance(harness)
 
-        // A new session should appear in the list.
+        // Fake repo records the cloneSession call — NOT the deprecated
+        // duplicate path.
+        assertEquals(1, harness.sessionRepo.cloneInvocations.size)
+        val call = harness.sessionRepo.cloneInvocations.first()
+        assertEquals("s1", call.sessionId)
+        assertEquals("My Playthrough (Copy)", call.name)
+        assertEquals(null, call.saveId)
+
+        // A new session now exists with the inherited pin + play time.
         assertEquals(2, harness.sessionRepo.sessions.size)
-        assertEquals("My Playthrough (Copy)", harness.sessionRepo.sessions[1].name)
+        val clone = harness.sessionRepo.sessions[1]
+        assertEquals("My Playthrough (Copy)", clone.name)
+        assertEquals(36_000L, clone.totalPlayTime)
+        assertEquals("cafebabe1234", clone.pinnedCoreSha256)
         onNodeWithText("My Playthrough (Copy)").assertIsDisplayed()
+    }
+
+    // ── Clone session: #553 US-3 (from a specific save, on detail screen) ──
+
+    @Test
+    fun cloneFromSpecificSaveCreatesNewSession() = runComposeUiTest {
+        val harness = createHarness()
+        harness.sessionRepo.preAddSession(
+            id = "s1",
+            gameId = "1",
+            name = "Main",
+        )
+        // Add two saves — older (id=1) and newer (id=2). The older save
+        // carries distinct bytes so the fake can assert which one seeded
+        // the clone.
+        harness.sessionRepo.preAddSessionSave(
+            sessionId = "s1",
+            saveId = "1",
+            name = "Before tough boss",
+            bytes = byteArrayOf(0x11, 0x22, 0x33),
+        )
+        harness.sessionRepo.preAddSessionSave(
+            sessionId = "s1",
+            saveId = "2",
+            name = "After tough boss",
+            bytes = byteArrayOf(0xAA.toByte(), 0xBB.toByte(), 0xCC.toByte()),
+        )
+
+        setContent { harness.App() }
+        // Navigate to the session detail page.
+        harness.navigationViewModel.onIntent(
+            com.spela.player.presentation.navigation.NavigationIntent.NavigateTo(
+                com.spela.player.presentation.navigation.SpScreen.SessionDetail("s1"),
+            ),
+        )
+        advance(harness)
+
+        // Both saves render. Open the OLDER save's per-row `…` menu.
+        onNodeWithTag("session_save_item_1").assertIsDisplayed()
+        onNodeWithTag("session_save_menu_1").performClick()
+        advanceQuick(harness)
+        onNodeWithTag("session_save_clone_item_1").performClick()
+        advanceQuick(harness)
+
+        // Clone dialog — accept the default name.
+        onNodeWithTag("session_detail_clone_from_save_dialog").assertIsDisplayed()
+        onNodeWithTag("session_detail_clone_from_save_confirm").performClick()
+        advance(harness)
+
+        // Verify the clone was seeded from save id=1 (bytes 0x11,0x22,0x33)
+        // — NOT the most-recent save. The Long conversion is explicit in
+        // SessionDetailScreen.kt (SaveState.id is a String on the domain).
+        assertEquals(1, harness.sessionRepo.cloneInvocations.size)
+        val call = harness.sessionRepo.cloneInvocations.first()
+        assertEquals("s1", call.sessionId)
+        assertEquals(1L, call.saveId)
+        assertEquals(byteArrayOf(0x11, 0x22, 0x33).toList(), call.seededSaveBytes?.toList())
     }
 
     // ── Member count overflow shows "+N" ──

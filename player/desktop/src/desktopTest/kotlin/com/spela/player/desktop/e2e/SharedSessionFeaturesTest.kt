@@ -488,4 +488,76 @@ class SharedSessionFeaturesTest {
         onNodeWithText("Invite a friend").assertExists()
         onNodeWithText("Invite Player").assertExists()
     }
+
+    // ---- #553 US-1: non-owner clones a shared session to their library ----
+
+    @Test
+    fun nonOwnerCanCloneSharedSessionToOwnLibrary() = runComposeUiTest {
+        val harness = createLoggedInHarness()
+        // Pre-seed the backing GameSession owned by someone else (Alice).
+        // The current user (id="1", from FakeAuthRepository.getCurrentUser)
+        // is a non-owner member.
+        val backingSession = com.spela.player.domain.model.GameSession(
+            id = "backing-1",
+            gameId = "1",
+            name = "Group Playthrough",
+            totalPlayTime = 36_000L, // 10h — must be inherited
+            pinnedCoreSha256 = "deadbeef42",
+        )
+        harness.sessionRepo.sessions.add(backingSession)
+        // Seed a save so the fake clone has something to copy.
+        harness.sessionRepo.preAddSessionSave(
+            sessionId = "backing-1",
+            saveId = "10",
+            name = "Where we left off",
+            bytes = byteArrayOf(1, 2, 3),
+        )
+        harness.sharedSessionRepo.sharedSessionDetail = SharedSessionDetail(
+            id = "ss1",
+            name = "Group Playthrough",
+            gameId = "1",
+            gameTitle = "Castlevania",
+            ownerId = "2",
+            ownerUsername = "alice",
+            memberCount = 2,
+            members = listOf(
+                SharedSessionMember(userId = "2", username = "alice", role = "owner"),
+                SharedSessionMember(userId = "1", username = "player", role = "member"),
+            ),
+            backingGameSessionId = "backing-1",
+        )
+
+        setContent { harness.App() }
+
+        harness.navigationViewModel.onIntent(
+            NavigationIntent.NavigateTo(SpScreen.SharedSessionDetail("ss1"))
+        )
+        advance(harness)
+
+        // Top-bar `…` menu → Clone to my library.
+        onNodeWithTag("shared_session_more_menu").performClick()
+        advance(harness)
+        onNodeWithTag("shared_session_clone_menu_item").performClick()
+        advance(harness)
+
+        // Dialog pre-fills "{source} (Copy)"; confirm with default.
+        onNodeWithTag("shared_session_clone_dialog").assertIsDisplayed()
+        onNodeWithTag("shared_session_clone_confirm").performClick()
+        advance(harness)
+
+        // Clone was called on the BACKING session id, not the shared
+        // session id, and created a new session under the test user.
+        assertEquals(1, harness.sessionRepo.cloneInvocations.size)
+        val call = harness.sessionRepo.cloneInvocations.first()
+        assertEquals("backing-1", call.sessionId)
+        assertEquals("Group Playthrough (Copy)", call.name)
+        assertEquals(null, call.saveId)
+
+        // Two sessions now exist: the source (alice's) and the clone (us).
+        assertEquals(2, harness.sessionRepo.sessions.size)
+        val clone = harness.sessionRepo.sessions.last()
+        assertEquals("Group Playthrough (Copy)", clone.name)
+        assertEquals(36_000L, clone.totalPlayTime)
+        assertEquals("deadbeef42", clone.pinnedCoreSha256)
+    }
 }
