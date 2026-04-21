@@ -585,10 +585,10 @@ test.describe("Dashboard Play Later Section", () => {
     });
     await expect(playLaterHeading).toBeVisible({ timeout: 10_000 });
 
-    // Assert within the TitledSection div that contains the Play Later heading
-    const playLaterSection = page.locator('[data-comp="TitledSection"]', {
-      has: playLaterHeading,
-    });
+    // Scope the assertion to the Play Later shelf by its testId. The dashboard
+    // renders Play Later via `ScrollShelf` (not `TitledSection`), so the
+    // original [data-comp="TitledSection"] selector matched nothing.
+    const playLaterSection = page.getByTestId("shelf-play-later");
     await expect(
       playLaterSection.getByText("Super Mario Bros.", { exact: true }),
     ).toBeVisible();

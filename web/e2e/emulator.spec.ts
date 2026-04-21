@@ -277,8 +277,20 @@ test.describe("Emulator Page", () => {
       await page.getByPlaceholder(/search/i).fill("Castlevania");
       await page.keyboard.press("Enter");
 
-      await page.getByText("Castlevania", { exact: false }).first().click();
+      // Target the card's anchor specifically. `.getByText(...).first()`
+      // sometimes resolved to a heading inside the card whose click didn't
+      // reliably propagate to the wrapping link — intermittent #565 failure.
+      const firstCard = page.getByRole("link", { name: /Castlevania/ }).first();
+      await expect(firstCard).toBeVisible();
+      await firstCard.click();
       await expect(page).toHaveURL(/\/games\/\d+$/);
+      // Wait for the detail page's queries (game, consoles, saves, achievements)
+      // to settle. Without this the `play-in-browser-btn` locator races with
+      // the react-query cache warm-up and intermittently reports the button
+      // missing (#565). The mock intercepts /api/consoles to return
+      // emulatorJsCore=""; the button only appears once both the game and
+      // its console info have landed in the cache.
+      await page.waitForLoadState("networkidle");
 
       const playButton = page.getByTestId("play-in-browser-btn");
       await expect(playButton).toBeVisible();
