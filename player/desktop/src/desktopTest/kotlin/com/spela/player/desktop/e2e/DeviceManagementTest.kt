@@ -29,7 +29,10 @@ class DeviceManagementTest {
     }
 
     /**
-     * Navigate to Settings and scroll the LazyColumn to the "Devices" section.
+     * Navigate to Settings, open the "Storage & Sync" category where the
+     * Devices section now lives (after settings was split into categorised
+     * sub-pages), and return. No explicit scroll — the category's
+     * LazyColumn doesn't carry a stable settings_list testTag.
      */
     private fun ComposeUiTest.navigateToSettingsAndScrollToDevices(harness: SpelaTestHarness) {
         harness.navigationViewModel.onIntent(
@@ -37,9 +40,8 @@ class DeviceManagementTest {
         )
         advance(harness)
 
-        // Scroll to bring "Devices" section into view
-        onNodeWithTag("settings_list")
-            .performScrollToNode(hasText("Devices"))
+        onNodeWithContentDescription("Storage & Sync").performClick()
+        advanceQuick(harness)
     }
 
     @Test
@@ -60,8 +62,6 @@ class DeviceManagementTest {
         navigateToSettingsAndScrollToDevices(harness)
 
         // With mock API, no real devices
-        onNodeWithTag("settings_list")
-            .performScrollToNode(hasText("No registered devices"))
         onNodeWithText("No registered devices").assertIsDisplayed()
     }
 
@@ -71,10 +71,6 @@ class DeviceManagementTest {
 
         setContent { harness.App() }
         navigateToSettingsAndScrollToDevices(harness)
-
-        // Scroll to "No registered devices" to ensure the DeviceManagementSection lazy item is composed
-        onNodeWithTag("settings_list")
-            .performScrollToNode(hasText("No registered devices"))
 
         // Trigger delete confirmation programmatically while section is in viewport
         harness.settingsViewModel.onIntent(SettingsIntent.ShowDeleteDeviceConfirm(1))
@@ -94,9 +90,6 @@ class DeviceManagementTest {
 
         setContent { harness.App() }
         navigateToSettingsAndScrollToDevices(harness)
-
-        onNodeWithTag("settings_list")
-            .performScrollToNode(hasText("No registered devices"))
 
         harness.settingsViewModel.onIntent(SettingsIntent.ShowDeleteDeviceConfirm(1))
         harness.testDispatcher.scheduler.advanceTimeBy(1_000)
@@ -121,9 +114,6 @@ class DeviceManagementTest {
 
         setContent { harness.App() }
         navigateToSettingsAndScrollToDevices(harness)
-
-        onNodeWithTag("settings_list")
-            .performScrollToNode(hasText("No registered devices"))
 
         harness.settingsViewModel.onIntent(SettingsIntent.ShowDeleteDeviceConfirm(1))
         harness.testDispatcher.scheduler.advanceTimeBy(1_000)
