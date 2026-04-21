@@ -48,6 +48,7 @@ import com.spela.player.presentation.ui.components.SpTitledSection
 import com.spela.player.presentation.ui.feature.explore.ConsoleEssentials
 import com.spela.player.presentation.ui.feature.explore.ConsoleHiddenGems
 import com.spela.player.presentation.ui.feature.explore.ConsoleLaunchGames
+import com.spela.player.presentation.ui.feature.explore.ConsoleRecentlyAdded
 import com.spela.player.presentation.ui.feature.explore.ConsoleTopDevelopers
 import com.spela.player.presentation.ui.feature.home.ContinuePlayingRow
 import com.spela.player.presentation.ui.feature.home.TopRatedRow
@@ -163,6 +164,7 @@ fun ConsoleScreen(
                         ConsoleEssentials(exploreViewModel, onGameSelected)
                         ConsoleLaunchGames(exploreViewModel, onGameSelected)
                         ConsoleHiddenGems(exploreViewModel, onGameSelected)
+                        ConsoleRecentlyAdded(exploreViewModel, onGameSelected)
                     }
 
                     // Top Rated

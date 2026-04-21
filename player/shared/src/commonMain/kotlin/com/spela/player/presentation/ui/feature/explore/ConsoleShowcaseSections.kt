@@ -161,6 +161,29 @@ fun ConsoleRecentlyPlayed(
     }
 }
 
+@Composable
+fun ConsoleRecentlyAdded(
+    viewModel: ExploreViewModel,
+    onGameSelected: (String) -> Unit,
+) {
+    val state by viewModel.consoleShowcaseState.collectAsState()
+    val showcase = state.showcase ?: return
+    if (showcase.recentlyAdded.isEmpty()) return
+
+    SpTitledSection(
+        title = "Recently Added",
+        edgeToEdgeContent = true,
+        modifier = Modifier
+            .rememberFocus("section_recently_added")
+            .testTag("console_recently_added_section"),
+    ) {
+        GameShelf(
+            games = showcase.recentlyAdded,
+            onGameSelected = onGameSelected,
+        )
+    }
+}
+
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 internal fun GenreBreakdownChips(

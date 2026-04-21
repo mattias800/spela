@@ -66,6 +66,7 @@ class ExploreConsoleShowcaseTest {
         genreBreakdown = emptyList(),
         topDevelopers = emptyList(),
         recentlyPlayed = emptyList(),
+        recentlyAdded = emptyList(),
     )
 
     // --- Console highlights on Explore screen ---
@@ -147,5 +148,55 @@ class ExploreConsoleShowcaseTest {
         advance(harness)
 
         onNodeWithTag("console_launch_games_section").assertDoesNotExist()
+    }
+
+    // --- Recently Added shelf ---
+
+    private fun sampleAddedGame(id: String, title: String) = Game(
+        id = id,
+        title = title,
+        consoleId = "snes",
+        consoleName = "Super Nintendo",
+    )
+
+    @Test
+    fun consoleRecentlyAddedSectionRendersWhenPopulated() = runComposeUiTest {
+        val harness = createHarness()
+        // Use distinctive titles that don't collide with the fake gameRepo's
+        // default SNES game list — the console screen also renders those in
+        // an inline grid, so shared titles would satisfy the assertion from
+        // either location.
+        val showcase = sampleShowcase.copy(
+            recentlyAdded = listOf(
+                sampleAddedGame("ra-1", "Recently Added Alpha"),
+                sampleAddedGame("ra-2", "Recently Added Beta"),
+            ),
+        )
+        harness.exploreRepo.consoleShowcases = mapOf("snes" to showcase)
+
+        setContent { harness.App() }
+        harness.navigationViewModel.onIntent(
+            NavigationIntent.NavigateTo(SpScreen.Console("snes"))
+        )
+        advance(harness)
+
+        onNodeWithTag("console_recently_added_section").assertExists()
+        onNodeWithText("Recently Added").assertExists()
+        onNodeWithText("Recently Added Alpha").assertExists()
+        onNodeWithText("Recently Added Beta").assertExists()
+    }
+
+    @Test
+    fun consoleRecentlyAddedSectionHiddenWhenEmpty() = runComposeUiTest {
+        val harness = createHarness()
+        harness.exploreRepo.consoleShowcases = mapOf("snes" to sampleShowcase)
+
+        setContent { harness.App() }
+        harness.navigationViewModel.onIntent(
+            NavigationIntent.NavigateTo(SpScreen.Console("snes"))
+        )
+        advance(harness)
+
+        onNodeWithTag("console_recently_added_section").assertDoesNotExist()
     }
 }
