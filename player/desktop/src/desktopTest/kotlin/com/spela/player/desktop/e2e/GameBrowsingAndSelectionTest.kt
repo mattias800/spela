@@ -68,8 +68,11 @@ class GameBrowsingAndSelectionTest {
         onNodeWithContentDescription("Nintendo Entertainment System, 3 games").performClick()
         advance(harness)
 
-        // Should navigate to console screen and show the browse button
-        onNodeWithText("Browse All 3 Games").assertIsDisplayed()
+        // Should navigate to the console screen. The "Browse games" CTA
+        // on the hero only renders for large libraries (> 15 games);
+        // with 3 games the console screen shows the inline "All Games"
+        // section directly, which contains the NES titles.
+        onNodeWithText("Castlevania").assertExists()
     }
 
     @Test

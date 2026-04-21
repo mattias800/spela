@@ -147,9 +147,13 @@ class ExploreScreenTest {
         harness.navigationViewModel.onIntent(NavigationIntent.NavigateTo(SpScreen.Explore))
         advance(harness)
 
-        // Console name chip and genre chip should be visible for the active slide
-        onNodeWithText("Super Nintendo").assertExists()
-        onNodeWithText("Platformer").assertExists()
+        // The active slide renders a console chip. Genre is no longer
+        // shown in the carousel metadata row — assert on the console
+        // chip only. If genre returns, re-add the assertion.
+        onNodeWithTag("hero_carousel").assertIsDisplayed()
+        onAllNodesWithText("Super Nintendo").fetchSemanticsNodes().let {
+            assert(it.isNotEmpty()) { "Expected 'Super Nintendo' chip text" }
+        }
     }
 
     @Test
