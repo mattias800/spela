@@ -62,6 +62,7 @@ class ExploreConsoleShowcaseTest {
         console = sampleConsole,
         essentials = emptyList(),
         hiddenGems = emptyList(),
+        launchGames = emptyList(),
         genreBreakdown = emptyList(),
         topDevelopers = emptyList(),
         recentlyPlayed = emptyList(),
@@ -100,5 +101,51 @@ class ExploreConsoleShowcaseTest {
 
         val navState = harness.navigationViewModel.state.value
         assertEquals("console/snes", navState.currentScreen.route)
+    }
+
+    // --- Launch games shelf ---
+
+    private fun sampleLaunchGame(id: String, title: String) = Game(
+        id = id,
+        title = title,
+        consoleId = "snes",
+        consoleName = "Super Nintendo",
+    )
+
+    @Test
+    fun consoleLaunchGamesSectionRendersWhenPopulated() = runComposeUiTest {
+        val harness = createHarness()
+        val showcase = sampleShowcase.copy(
+            launchGames = listOf(
+                sampleLaunchGame("1", "Super Mario World"),
+                sampleLaunchGame("2", "F-Zero"),
+            ),
+        )
+        harness.exploreRepo.consoleShowcases = mapOf("snes" to showcase)
+
+        setContent { harness.App() }
+        harness.navigationViewModel.onIntent(
+            NavigationIntent.NavigateTo(SpScreen.Console("snes"))
+        )
+        advance(harness)
+
+        onNodeWithTag("console_launch_games_section").assertExists()
+        onNodeWithText("Launch Games").assertExists()
+        onNodeWithText("Super Mario World").assertExists()
+        onNodeWithText("F-Zero").assertExists()
+    }
+
+    @Test
+    fun consoleLaunchGamesSectionHiddenWhenEmpty() = runComposeUiTest {
+        val harness = createHarness()
+        harness.exploreRepo.consoleShowcases = mapOf("snes" to sampleShowcase)
+
+        setContent { harness.App() }
+        harness.navigationViewModel.onIntent(
+            NavigationIntent.NavigateTo(SpScreen.Console("snes"))
+        )
+        advance(harness)
+
+        onNodeWithTag("console_launch_games_section").assertDoesNotExist()
     }
 }

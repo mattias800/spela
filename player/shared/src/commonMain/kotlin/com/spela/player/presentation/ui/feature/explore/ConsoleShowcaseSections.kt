@@ -70,6 +70,29 @@ fun ConsoleHiddenGems(
 }
 
 @Composable
+fun ConsoleLaunchGames(
+    viewModel: ExploreViewModel,
+    onGameSelected: (String) -> Unit,
+) {
+    val state by viewModel.consoleShowcaseState.collectAsState()
+    val showcase = state.showcase ?: return
+    if (showcase.launchGames.isEmpty()) return
+
+    SpTitledSection(
+        title = "Launch Games",
+        edgeToEdgeContent = true,
+        modifier = Modifier
+            .rememberFocus("section_launch_games")
+            .testTag("console_launch_games_section"),
+    ) {
+        GameShelf(
+            games = showcase.launchGames,
+            onGameSelected = onGameSelected,
+        )
+    }
+}
+
+@Composable
 fun ConsoleGenreBreakdown(
     viewModel: ExploreViewModel,
 ) {
