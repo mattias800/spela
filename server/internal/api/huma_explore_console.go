@@ -95,6 +95,7 @@ func (h *ExploreHandler) HumaGetConsoleShowcase(ctx context.Context, in *GetCons
 		essentialIDs[i] = g.ID
 	}
 	hiddenGems := h.buildConsoleHiddenGems(console.ID, essentialIDs)
+	launchGames := h.buildLaunchGames(console.ID, console.Abbreviation)
 	genreBreakdown := h.buildGenreBreakdown(console.ID)
 	topDevelopers := h.buildConsoleTopDevelopers(console.ID, console.Name)
 
@@ -143,9 +144,10 @@ func (h *ExploreHandler) HumaGetConsoleShowcase(ctx context.Context, in *GetCons
 		slog.Error("failed to fetch recently added games", "console", abbr, "error", err)
 	}
 
-	allGames := make([]db.Game, 0, len(essentials)+len(hiddenGems)+len(recentlyPlayed)+len(recentlyAdded))
+	allGames := make([]db.Game, 0, len(essentials)+len(hiddenGems)+len(launchGames)+len(recentlyPlayed)+len(recentlyAdded))
 	allGames = append(allGames, essentials...)
 	allGames = append(allGames, hiddenGems...)
+	allGames = append(allGames, launchGames...)
 	allGames = append(allGames, recentlyPlayed...)
 	allGames = append(allGames, recentlyAdded...)
 	allGameIDs := make([]uint, len(allGames))
@@ -168,6 +170,7 @@ func (h *ExploreHandler) HumaGetConsoleShowcase(ctx context.Context, in *GetCons
 			Console:        ToConsoleResponse(console),
 			Essentials:     toResponses(essentials),
 			HiddenGems:     toResponses(hiddenGems),
+			LaunchGames:    toResponses(launchGames),
 			GenreBreakdown: genreBreakdown,
 			TopDevelopers:  topDevelopers,
 			RecentlyPlayed: toResponses(recentlyPlayed),

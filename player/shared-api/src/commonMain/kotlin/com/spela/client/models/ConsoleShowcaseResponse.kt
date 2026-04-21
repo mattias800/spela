@@ -30,8 +30,9 @@ import kotlinx.serialization.encoding.*
  * @param console 
  * @param essentials 
  * @param genreBreakdown 
- * @param hiddenGems 
- * @param recentlyAdded 
+ * @param hiddenGems
+ * @param launchGames
+ * @param recentlyAdded
  * @param recentlyPlayed 
  * @param topDevelopers 
  * @param dollarSchema A URL to the JSON Schema for this object.
@@ -47,6 +48,8 @@ data class ConsoleShowcaseResponse (
     @SerialName(value = "genreBreakdown") @Required val genreBreakdown: kotlin.collections.List<GenreCount>,
 
     @SerialName(value = "hiddenGems") @Required val hiddenGems: kotlin.collections.List<GameResponse>,
+
+    @SerialName(value = "launchGames") @Required val launchGames: kotlin.collections.List<GameResponse>,
 
     @SerialName(value = "recentlyAdded") @Required val recentlyAdded: kotlin.collections.List<GameResponse>,
 

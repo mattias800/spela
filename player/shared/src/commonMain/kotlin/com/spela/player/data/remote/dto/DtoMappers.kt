@@ -1019,6 +1019,7 @@ fun com.spela.client.models.ConsoleShowcaseResponse.toDomain(): ConsoleShowcase 
     console = console.toDomain(),
     essentials = essentials.map { it.toDomain() },
     hiddenGems = hiddenGems.map { it.toDomain() },
+    launchGames = launchGames.map { it.toDomain() },
     genreBreakdown = genreBreakdown.map { it.toDomain() },
     topDevelopers = topDevelopers.map { it.toDomain() },
     recentlyPlayed = recentlyPlayed.map { it.toDomain() },

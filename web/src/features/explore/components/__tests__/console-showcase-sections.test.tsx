@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
   ConsoleRecentlyAdded,
   ConsoleEssentials,
+  ConsoleLaunchGames,
 } from "../console-showcase-sections";
 import type { ConsoleShowcase } from "@/types/api";
 
@@ -36,6 +37,7 @@ function makeShowcase(overrides: Partial<ConsoleShowcase> = {}): ConsoleShowcase
     console: makeConsole(),
     essentials: [],
     hiddenGems: [],
+    launchGames: [],
     recentlyAdded: [],
     genreBreakdown: [],
     topDevelopers: [],
@@ -125,6 +127,50 @@ describe("ConsoleEssentials", () => {
 
     const { container } = renderComponent(
       <ConsoleEssentials consoleId="snes" />,
+    );
+    expect(container.innerHTML).toBe("");
+  });
+});
+
+describe("ConsoleLaunchGames", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("renders launch games shelf in seed order", () => {
+    const games = [
+      makeGame({ id: "1", title: "Super Mario World" }),
+      makeGame({ id: "2", title: "F-Zero" }),
+    ];
+    mockUseConsoleShowcase.mockReturnValue({
+      data: makeShowcase({ launchGames: games }),
+    });
+
+    renderComponent(<ConsoleLaunchGames consoleId="snes" />);
+
+    expect(
+      screen.getByRole("heading", { name: "Launch Games", level: 2 }),
+    ).toBeInTheDocument();
+    expect(screen.getByText("Super Mario World")).toBeInTheDocument();
+    expect(screen.getByText("F-Zero")).toBeInTheDocument();
+  });
+
+  it("renders nothing when launchGames is empty", () => {
+    mockUseConsoleShowcase.mockReturnValue({
+      data: makeShowcase({ launchGames: [] }),
+    });
+
+    const { container } = renderComponent(
+      <ConsoleLaunchGames consoleId="snes" />,
+    );
+    expect(container.innerHTML).toBe("");
+  });
+
+  it("renders nothing when showcase is undefined", () => {
+    mockUseConsoleShowcase.mockReturnValue({ data: undefined });
+
+    const { container } = renderComponent(
+      <ConsoleLaunchGames consoleId="snes" />,
     );
     expect(container.innerHTML).toBe("");
   });

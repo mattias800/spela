@@ -26,6 +26,7 @@ import { BiosWarningBanner } from "@/features/bios/components/bios-warning-banne
 import {
   ConsoleEssentials,
   ConsoleHiddenGems,
+  ConsoleLaunchGames,
   ConsoleRecentlyAdded,
   ConsoleGenreBreakdown,
   ConsoleTopDevelopers,
@@ -169,6 +170,7 @@ export function ConsoleDetailPage() {
         <>
           <ConsoleRecentlyPlayed consoleId={id!} />
           <ConsoleEssentials consoleId={id!} />
+          <ConsoleLaunchGames consoleId={id!} />
           <ConsoleHiddenGems consoleId={id!} />
           <ConsoleGenreBreakdown consoleId={id!} />
           <ConsoleTopDevelopers consoleId={id!} />

@@ -322,6 +322,7 @@ data class ConsoleShowcase(
     val console: Console,
     val essentials: List<Game>,
     val hiddenGems: List<Game>,
+    val launchGames: List<Game>,
     val genreBreakdown: List<GenreCount>,
     val topDevelopers: List<DeveloperSummary>,
     val recentlyPlayed: List<Game>,
