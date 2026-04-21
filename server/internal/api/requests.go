@@ -49,10 +49,14 @@ type UpdateGameKeyMappingRequest struct {
 // --- Admin user management ---
 
 // AdminCreateUserRequest is the body for POST /api/admin/users.
+// Validation is lighter than AuthRegisterRequest (the self-signup endpoint):
+// admins can create users with usernames that the public pattern rejects
+// (e.g. containing underscores / dashes) to accommodate migration imports
+// and reserved-name allocation. Length and password strength still apply.
 type AdminCreateUserRequest struct {
-	Username string      `json:"username"`
-	Email    string      `json:"email"`
-	Password string      `json:"password"`
+	Username string      `json:"username" minLength:"3" maxLength:"64" doc:"New account username (3-64 characters)."`
+	Email    string      `json:"email" minLength:"1" doc:"New account email."`
+	Password string      `json:"password" minLength:"8" maxLength:"72" doc:"New account password (8-72 characters)."`
 	Role     db.UserRole `json:"role,omitempty"`
 }
 
