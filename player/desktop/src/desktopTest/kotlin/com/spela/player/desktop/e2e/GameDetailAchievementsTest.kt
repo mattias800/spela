@@ -36,11 +36,23 @@ class GameDetailAchievementsTest {
         return harness
     }
 
-    private fun ComposeUiTest.navigateToGameDetail(harness: SpelaTestHarness) =
-        navigateToGameDetail(harness, "1")
+    private fun ComposeUiTest.navigateToAchievementsScreen(harness: SpelaTestHarness) {
+        advance(harness)
+        harness.navigationViewModel.onIntent(
+            NavigationIntent.NavigateTo(SpScreen.GameAchievements("1"))
+        )
+        advanceFully(harness)
+    }
 
+    /**
+     * The achievements UI is rendered by the standalone
+     * [GameAchievementsScreen] — it was split out of the GameDetail
+     * screen. No intermediate scroll is needed; the section lives at
+     * the top of its own screen's verticalScroll column.
+     */
     private fun ComposeUiTest.scrollToSection(matcher: SemanticsMatcher) {
-        onNodeWithTag("game_detail_content").performScrollToNode(matcher)
+        // No-op: achievements_section is the top element on its screen.
+        // Kept as a shim so the test bodies below remain legible.
     }
 
     // --- Achievement Grid ---
@@ -51,7 +63,7 @@ class GameDetailAchievementsTest {
         // Default: empty achievements list
 
         setContent { harness.App() }
-        navigateToGameDetail(harness)
+        navigateToAchievementsScreen(harness)
 
         onNodeWithTag("achievements_section").assertDoesNotExist()
     }
@@ -62,10 +74,12 @@ class GameDetailAchievementsTest {
         setUpAchievementData(harness)
 
         setContent { harness.App() }
-        navigateToGameDetail(harness)
+        navigateToAchievementsScreen(harness)
 
         scrollToSection(hasTestTag("achievements_section"))
-        onNodeWithText("Achievements").assertIsDisplayed()
+        // "Achievements" appears in both the top bar title and the
+        // section heading; assert the section tag + grid directly.
+        onNodeWithTag("achievements_section").assertIsDisplayed()
         onNodeWithTag("achievements_grid").assertIsDisplayed()
     }
 
@@ -75,7 +89,7 @@ class GameDetailAchievementsTest {
         setUpAchievementData(harness)
 
         setContent { harness.App() }
-        navigateToGameDetail(harness)
+        navigateToAchievementsScreen(harness)
 
         scrollToSection(hasTestTag("achievements_section"))
         // Progress label: "2 of 4 unlocked (30/100 pts)"
@@ -88,7 +102,7 @@ class GameDetailAchievementsTest {
         setUpAchievementData(harness)
 
         setContent { harness.App() }
-        navigateToGameDetail(harness)
+        navigateToAchievementsScreen(harness)
 
         scrollToSection(hasTestTag("achievements_section"))
         onNodeWithText("First Blood").assertIsDisplayed()
@@ -102,7 +116,7 @@ class GameDetailAchievementsTest {
         setUpAllUnlockedData(harness)
 
         setContent { harness.App() }
-        navigateToGameDetail(harness)
+        navigateToAchievementsScreen(harness)
 
         scrollToSection(hasTestTag("achievements_section"))
         onNodeWithTag("achievements_complete_badge").assertIsDisplayed()
@@ -117,7 +131,7 @@ class GameDetailAchievementsTest {
         setUpAchievementData(harness)
 
         setContent { harness.App() }
-        navigateToGameDetail(harness)
+        navigateToAchievementsScreen(harness)
 
         scrollToSection(hasTestTag("achievements_section"))
         onNodeWithTag("achievements_view_toggle").assertIsDisplayed()
@@ -133,7 +147,7 @@ class GameDetailAchievementsTest {
         setUpTimelineData(harness)
 
         setContent { harness.App() }
-        navigateToGameDetail(harness)
+        navigateToAchievementsScreen(harness)
 
         scrollToSection(hasTestTag("achievements_section"))
 
@@ -153,7 +167,7 @@ class GameDetailAchievementsTest {
         setUpLeaderboardData(harness)
 
         setContent { harness.App() }
-        navigateToGameDetail(harness)
+        navigateToAchievementsScreen(harness)
 
         scrollToSection(hasTestTag("achievements_section"))
 
@@ -175,7 +189,7 @@ class GameDetailAchievementsTest {
         setUpLeaderboardData(harness)
 
         setContent { harness.App() }
-        navigateToGameDetail(harness)
+        navigateToAchievementsScreen(harness)
 
         scrollToSection(hasTestTag("achievements_section"))
 
@@ -205,7 +219,7 @@ class GameDetailAchievementsTest {
         }
 
         setContent { harness.App() }
-        navigateToGameDetail(harness)
+        navigateToAchievementsScreen(harness)
 
         scrollToSection(hasTestTag("achievements_section"))
         onNodeWithTag("achievements_warning_banner").assertIsDisplayed()
@@ -219,7 +233,7 @@ class GameDetailAchievementsTest {
         // Default games have no achievementsWarning (null)
 
         setContent { harness.App() }
-        navigateToGameDetail(harness)
+        navigateToAchievementsScreen(harness)
 
         scrollToSection(hasTestTag("achievements_section"))
         onNodeWithTag("achievements_warning_banner").assertDoesNotExist()
