@@ -50,9 +50,9 @@ type UpdateGameKeyMappingRequest struct {
 
 // AdminCreateUserRequest is the body for POST /api/admin/users.
 type AdminCreateUserRequest struct {
-	Username string      `json:"username" binding:"required,min=3,max=64"`
-	Email    string      `json:"email" binding:"required,email"`
-	Password string      `json:"password" binding:"required,min=8,max=72"`
+	Username string      `json:"username"`
+	Email    string      `json:"email"`
+	Password string      `json:"password"`
 	Role     db.UserRole `json:"role,omitempty"`
 }
 
@@ -93,7 +93,7 @@ type UpdateGameMetadataRequest struct {
 // supplied — huma replicates that behaviour via omitempty + handler-side range
 // validation).
 type UpdateGamePlayTimeRequest struct {
-	Seconds int64 `json:"seconds,omitempty" binding:"min=0,max=86400"`
+	Seconds int64 `json:"seconds,omitempty"`
 }
 
 // UpdateVerificationTagRequest is the body for PUT /api/admin/games/:id/verification-tag.
@@ -254,7 +254,7 @@ type AddGameToCollectionRequest struct {
 // with the historical error message rather than huma's 422 "validation
 // failed" shape.
 type CreateOrUpdateRatingRequest struct {
-	Rating int    `json:"rating,omitempty" binding:"required,min=1,max=5"`
+	Rating int    `json:"rating,omitempty"`
 	Review string `json:"review,omitempty"`
 }
 
@@ -271,16 +271,16 @@ type UpdateChallengeRequest struct {
 
 // RegisterDeviceRequest is the body for POST /api/user/devices.
 // Fields are marked optional in the huma schema so handler-side validation
-// owns the 400 response (the raw gin handler used binding:"required" tags).
+// owns the 400 response (the raw gin handler used tags).
 type RegisterDeviceRequest struct {
-	DeviceUUID string `json:"deviceUuid,omitempty" required:"false" binding:"required"`
-	Name       string `json:"name,omitempty" required:"false" binding:"required"`
-	Platform   string `json:"platform,omitempty" required:"false" binding:"required"`
+	DeviceUUID string `json:"deviceUuid,omitempty" required:"false"`
+	Name       string `json:"name,omitempty" required:"false"`
+	Platform   string `json:"platform,omitempty" required:"false"`
 }
 
 // UpdateDeviceRequest is the body for PUT /api/user/devices/:id.
 type UpdateDeviceRequest struct {
-	Name string `json:"name,omitempty" required:"false" binding:"required"`
+	Name string `json:"name,omitempty" required:"false"`
 }
 
 // UpdateDevicePreferencesRequest is the body for PUT /api/user/devices/:id/preferences.
@@ -292,7 +292,7 @@ type UpdateDevicePreferencesRequest struct {
 
 // ReportEmulatorErrorRequest is the body for POST /api/system-events/emulator-error.
 type ReportEmulatorErrorRequest struct {
-	Error  string `json:"error" binding:"required"`
+	Error  string `json:"error"`
 	GameID string `json:"gameId"`
 	Core   string `json:"core"`
 }
@@ -317,10 +317,10 @@ type SetUploadConsoleRequest struct {
 
 // LinkRAAccountRequest is the body for POST /api/user/ra/link.
 // Fields are marked optional in the huma schema so handler-side validation
-// owns the 400 response (the raw gin handler used binding:"required" tags).
+// owns the 400 response (the raw gin handler used tags).
 type LinkRAAccountRequest struct {
-	Username string `json:"username,omitempty" required:"false" binding:"required"`
-	Password string `json:"password,omitempty" required:"false" binding:"required"`
+	Username string `json:"username,omitempty" required:"false"`
+	Password string `json:"password,omitempty" required:"false"`
 }
 
 // UpdateRASettingsRequest is the body for PUT /api/user/ra/settings.
@@ -341,16 +341,16 @@ type TestIGDBRequest struct {
 // ShowcaseEntryInput is one entry in the body for PUT /api/user/achievements/showcase.
 // The full request body is a JSON array of these.
 type ShowcaseEntryInput struct {
-	AchievementRAID uint `json:"achievementRaId" binding:"required"`
-	RAGameID        uint `json:"raGameId" binding:"required"`
+	AchievementRAID uint `json:"achievementRaId"`
+	RAGameID        uint `json:"raGameId"`
 }
 
 // --- Saved searches ---
 
 // SavedSearchRequest is the request body for creating a saved search.
 // Fields are marked optional in the huma schema so handler-side validation
-// owns the 400 response (the raw gin handler used binding:"required" tags).
+// owns the 400 response (the raw gin handler used tags).
 type SavedSearchRequest struct {
-	Name    string          `json:"name,omitempty" required:"false" binding:"required"`
-	Filters json.RawMessage `json:"filters,omitempty" required:"false" binding:"required"`
+	Name    string          `json:"name,omitempty" required:"false"`
+	Filters json.RawMessage `json:"filters,omitempty" required:"false"`
 }
