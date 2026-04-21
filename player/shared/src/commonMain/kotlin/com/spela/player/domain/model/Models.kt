@@ -374,6 +374,14 @@ data class SharedSessionDetail(
     val lastActivityAt: String = "",
     val createdAt: String = "",
     val updatedAt: String = "",
+    /**
+     * Backing `GameSession` id that this shared session's saves are
+     * attached to server-side. `null` when no one has played yet — in
+     * that case the Clone-to-my-library action is disabled because
+     * there's nothing to clone from. Populated from the server's
+     * `SharedSessionDetailResponse.sessionId`.
+     */
+    val backingGameSessionId: String? = null,
 )
 
 data class SharedSessionMember(

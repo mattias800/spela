@@ -16,13 +16,18 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Save
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -82,11 +87,26 @@ fun SessionDetailScreen(
     onBack: () -> Unit,
     onPlay: (gameId: String, sessionId: String) -> Unit,
     onDeleted: () -> Unit,
+    onNavigateToSession: ((String) -> Unit)? = null,
 ) {
     PlatformBackHandler { onBack() }
 
     val state by viewModel.state.collectAsState()
     var showRenameDialog by remember { mutableStateOf(false) }
+    var showCloneDialog by remember { mutableStateOf(false) }
+    /** Tracks which per-save row's `…` menu is open; null when none. */
+    var cloneFromSaveId by remember { mutableStateOf<String?>(null) }
+
+    // After a successful clone, navigate to the new session's detail.
+    // Fall back to a simple "navigate back and up" behavior when the
+    // caller didn't provide an onNavigateToSession hook (host app bug).
+    LaunchedEffect(state.clonedSessionId) {
+        val newId = state.clonedSessionId
+        if (newId != null) {
+            onNavigateToSession?.invoke(newId)
+            viewModel.onIntent(SessionDetailIntent.ClearCloneNavigation)
+        }
+    }
 
     LaunchedEffect(sessionId) {
         viewModel.onIntent(SessionDetailIntent.LoadSession(sessionId))
@@ -175,6 +195,7 @@ fun SessionDetailScreen(
                                 game = state.game,
                                 onRename = { showRenameDialog = true },
                                 onPlay = { onPlay(session.gameId, session.id) },
+                                onClone = { showCloneDialog = true },
                                 modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
                             )
                             Spacer(Modifier.height(SpSpacing.XLarge))
@@ -205,6 +226,7 @@ fun SessionDetailScreen(
                             ) { save ->
                                 SessionSaveItem(
                                     save = save,
+                                    onCloneFromSave = { cloneFromSaveId = save.id },
                                     modifier = Modifier
                                         .fillMaxWidth()
                                         .padding(
@@ -331,6 +353,93 @@ fun SessionDetailScreen(
             )
         }
 
+        // Clone session dialog — US-2 (clone own session) + US-1
+        // (non-owners clone a shared session to their library use the
+        // SharedSessionDetail screen instead).
+        if (showCloneDialog) {
+            val source = state.session
+            var cloneName by remember(source?.id) { mutableStateOf((source?.name ?: "") + " (Copy)") }
+            AlertDialog(
+                onDismissRequest = { showCloneDialog = false },
+                title = { Text("Clone Session") },
+                text = {
+                    OutlinedTextField(
+                        value = cloneName,
+                        onValueChange = { cloneName = it },
+                        label = { Text("New Session Name") },
+                        singleLine = true,
+                        modifier = Modifier.testTag("session_detail_clone_input"),
+                    )
+                },
+                confirmButton = {
+                    TextButton(
+                        onClick = {
+                            if (cloneName.isNotBlank()) {
+                                viewModel.onIntent(
+                                    SessionDetailIntent.CloneSession(sessionId, cloneName.trim(), null)
+                                )
+                                showCloneDialog = false
+                            }
+                        },
+                        modifier = Modifier.testTag("session_detail_clone_confirm"),
+                    ) {
+                        Text("Clone")
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showCloneDialog = false }) {
+                        Text("Cancel")
+                    }
+                },
+                modifier = Modifier.testTag("session_detail_clone_dialog"),
+            )
+        }
+
+        // Clone-from-specific-save dialog — US-3. [cloneFromSaveId] is
+        // a String because SaveState.id is a String; backend clone API
+        // takes Long so we parse at dispatch time.
+        cloneFromSaveId?.let { saveIdStr ->
+            val source = state.session
+            var cloneName by remember(source?.id, saveIdStr) {
+                mutableStateOf((source?.name ?: "") + " (Copy)")
+            }
+            AlertDialog(
+                onDismissRequest = { cloneFromSaveId = null },
+                title = { Text("Clone from this save") },
+                text = {
+                    OutlinedTextField(
+                        value = cloneName,
+                        onValueChange = { cloneName = it },
+                        label = { Text("New Session Name") },
+                        singleLine = true,
+                        modifier = Modifier.testTag("session_detail_clone_from_save_input"),
+                    )
+                },
+                confirmButton = {
+                    TextButton(
+                        onClick = {
+                            if (cloneName.isNotBlank()) {
+                                val parsed = saveIdStr.toLongOrNull()
+                                viewModel.onIntent(
+                                    SessionDetailIntent.CloneSession(sessionId, cloneName.trim(), parsed)
+                                )
+                                cloneFromSaveId = null
+                            }
+                        },
+                        modifier = Modifier.testTag("session_detail_clone_from_save_confirm"),
+                    ) {
+                        Text("Clone")
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { cloneFromSaveId = null }) {
+                        Text("Cancel")
+                    }
+                },
+                modifier = Modifier.testTag("session_detail_clone_from_save_dialog"),
+            )
+        }
+
         // Delete confirmation dialog
         if (state.showDeleteConfirm) {
             AlertDialog(
@@ -403,8 +512,10 @@ private fun SessionDetailHeader(
     game: Game?,
     onRename: () -> Unit,
     onPlay: () -> Unit,
+    onClone: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    var showMoreMenu by remember { mutableStateOf(false) }
     Column(
         modifier = modifier
             .fillMaxWidth()
@@ -491,6 +602,35 @@ private fun SessionDetailHeader(
                     )
                 },
             )
+            // Overflow menu — clone lives here per PO brief (secondary action).
+            Box {
+                IconButton(
+                    onClick = { showMoreMenu = true },
+                    modifier = Modifier.testTag("session_detail_more_menu"),
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.MoreVert,
+                        contentDescription = "More session actions",
+                        tint = SpColor.OnBackgroundSecondary,
+                    )
+                }
+                DropdownMenu(
+                    expanded = showMoreMenu,
+                    onDismissRequest = { showMoreMenu = false },
+                ) {
+                    DropdownMenuItem(
+                        text = { Text("Clone session", style = SpTypography.BodyMedium) },
+                        leadingIcon = {
+                            Icon(Icons.Filled.ContentCopy, contentDescription = null)
+                        },
+                        onClick = {
+                            showMoreMenu = false
+                            onClone()
+                        },
+                        modifier = Modifier.testTag("session_detail_clone_menu_item"),
+                    )
+                }
+            }
         }
     }
 }
@@ -498,8 +638,10 @@ private fun SessionDetailHeader(
 @Composable
 private fun SessionSaveItem(
     save: SaveState,
+    onCloneFromSave: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    var showSaveMenu by remember { mutableStateOf(false) }
     SpCard(
         onGradient = true,
         modifier = modifier.testTag("session_save_item_${save.id}"),
@@ -541,6 +683,37 @@ private fun SessionSaveItem(
             }
             if (save.isAuto) {
                 SpChip(text = "Auto", color = SpColor.Primary)
+            }
+            // Per-save `…` menu — holds "Clone from this save" (US-3).
+            // Clone is the ONLY entry today; future per-save actions
+            // (rename / delete / download) will join this menu.
+            Box {
+                IconButton(
+                    onClick = { showSaveMenu = true },
+                    modifier = Modifier.testTag("session_save_menu_${save.id}"),
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.MoreVert,
+                        contentDescription = "Save actions",
+                        tint = SpColor.OnBackgroundSecondary,
+                    )
+                }
+                DropdownMenu(
+                    expanded = showSaveMenu,
+                    onDismissRequest = { showSaveMenu = false },
+                ) {
+                    DropdownMenuItem(
+                        text = { Text("Clone from this save", style = SpTypography.BodyMedium) },
+                        leadingIcon = {
+                            Icon(Icons.Filled.ContentCopy, contentDescription = null)
+                        },
+                        onClick = {
+                            showSaveMenu = false
+                            onCloneFromSave()
+                        },
+                        modifier = Modifier.testTag("session_save_clone_item_${save.id}"),
+                    )
+                }
             }
         }
     }

@@ -34,10 +34,30 @@ class SessionDetailViewModel(
             is SessionDetailIntent.SelectAllCheats -> selectAllCheats(intent.sessionId)
             is SessionDetailIntent.DeselectAllCheats -> deselectAllCheats(intent.sessionId)
             is SessionDetailIntent.StartFromSave -> { /* Handled by UI navigation */ }
+            is SessionDetailIntent.CloneSession -> cloneSession(intent.sessionId, intent.name, intent.saveId)
+            SessionDetailIntent.ClearCloneNavigation -> _state.update { it.copy(clonedSessionId = null) }
             SessionDetailIntent.ShowDeleteConfirm -> _state.update { it.copy(showDeleteConfirm = true) }
             SessionDetailIntent.DismissDeleteConfirm -> _state.update { it.copy(showDeleteConfirm = false) }
             SessionDetailIntent.DismissError -> _state.update { it.copy(error = null) }
             SessionDetailIntent.DismissSuccess -> _state.update { it.copy(successMessage = null) }
+        }
+    }
+
+    private fun cloneSession(sessionId: String, name: String?, saveId: Long?) {
+        scope.launch(dispatchers.io) {
+            sessionRepository.cloneSession(sessionId, name, saveId).fold(
+                onSuccess = { cloned ->
+                    _state.update {
+                        it.copy(
+                            clonedSessionId = cloned.id,
+                            successMessage = "Session cloned as \"${cloned.name}\"",
+                        )
+                    }
+                },
+                onFailure = { error ->
+                    _state.update { it.copy(error = error.message) }
+                },
+            )
         }
     }
 

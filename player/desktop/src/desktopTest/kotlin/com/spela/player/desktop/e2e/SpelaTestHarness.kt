@@ -280,6 +280,7 @@ class SpelaTestHarness(
         userRepository = userRepo,
         dispatchers = dispatchers,
         scope = scope,
+        sessionRepository = sessionRepo,
     )
 
     val sessionDetailViewModel = SessionDetailViewModel(

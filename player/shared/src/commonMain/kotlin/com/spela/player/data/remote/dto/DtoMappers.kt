@@ -318,6 +318,7 @@ fun com.spela.client.models.SharedSessionDetailResponse.toDomain(): SharedSessio
     lastActivityAt = updatedAt.toString(),
     createdAt = createdAt.toString(),
     updatedAt = updatedAt.toString(),
+    backingGameSessionId = sessionId,
 )
 
 fun com.spela.client.models.SharedSessionMemberResponse.toDomain(): SharedSessionMember = SharedSessionMember(

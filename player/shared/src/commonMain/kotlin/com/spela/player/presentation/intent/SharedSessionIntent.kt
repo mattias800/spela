@@ -18,6 +18,15 @@ sealed interface SharedSessionDetailIntent {
     data class LeaveSharedSession(val sharedSessionId: String) : SharedSessionDetailIntent
     data class TakeTurn(val sharedSessionId: String) : SharedSessionDetailIntent
     data class ReleaseTurn(val sharedSessionId: String) : SharedSessionDetailIntent
+    /**
+     * Clone a shared session's backing `GameSession` into the caller's
+     * own library (US-1). [backingGameSessionId] comes from
+     * [SharedSessionDetail.backingGameSessionId] — the shared session's
+     * currently-played-into game session.
+     */
+    data class CloneToMyLibrary(val backingGameSessionId: String, val name: String?) : SharedSessionDetailIntent
+    /** Clears [SharedSessionDetailState.clonedSessionId] after navigation completes. */
+    data object ClearCloneNavigation : SharedSessionDetailIntent
     data object DismissError : SharedSessionDetailIntent
     data object DismissSuccess : SharedSessionDetailIntent
     data object ShowInviteSheet : SharedSessionDetailIntent
