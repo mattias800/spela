@@ -87,12 +87,16 @@ type DeleteSessionOutput struct {
 	Body MessageResponse
 }
 
-// DuplicateSessionInput is the input for POST /api/sessions/{id}/duplicate.
-// The request body is optional — a missing body defaults to copying the
-// source session's name with " (Copy)" appended.
+// DuplicateSessionInput is the input for POST /api/sessions/{id}/duplicate
+// (and its alias POST /api/sessions/{id}/clone). The request body is optional
+// — a missing body defaults to copying the source session's name with
+// " (Copy)" appended. SaveID optionally seeds the new session from a
+// specific save instead of the most recent; 0 (the default for a missing
+// query param) means "use the most-recent save".
 type DuplicateSessionInput struct {
-	ID   string `path:"id" doc:"Session ID to duplicate."`
-	Body *DuplicateSessionRequest
+	ID     string `path:"id" doc:"Session ID to clone."`
+	SaveID uint   `query:"saveId" required:"false" doc:"Optional save ID to clone from. Defaults to the most recent save when omitted or zero."`
+	Body   *DuplicateSessionRequest
 }
 
 // DuplicateSessionOutput wraps the duplicated session response (201 Created).
@@ -276,12 +280,25 @@ func RegisterSessionRoutes(api huma.API, h *SessionHandler, jwtSecret string, da
 	}, h.HumaDeleteSession)
 
 	huma.Register(api, huma.Operation{
+		OperationID:   "cloneSession",
+		Method:        http.MethodPost,
+		Path:          "/api/sessions/{id}/clone",
+		Summary:       "Clone a session",
+		Description:   "Creates a copy of the session owned by the caller. Inherits TotalPlayTime and PinnedCoreSha256 from the source. Copies SRAM, cheats, the session screenshot, and one save state (the most recent, or the save identified by ?saveId= when provided). Access: owner or any shared-session member.",
+		DefaultStatus: http.StatusCreated,
+		Tags:          []string{"sessions"},
+		Middlewares:   mw,
+		Security:      sec,
+	}, h.HumaDuplicateSession)
+
+	huma.Register(api, huma.Operation{
 		OperationID:   "duplicateSession",
 		Method:        http.MethodPost,
 		Path:          "/api/sessions/{id}/duplicate",
-		Summary:       "Duplicate a session",
-		Description:   "Creates a copy of the session (owned by the caller) including saves, SRAM, cheats and screenshot.",
+		Summary:       "Duplicate a session (deprecated alias of clone)",
+		Description:   "Deprecated — use POST /api/sessions/{id}/clone instead. Behaviour is identical; this path is kept so in-flight clients keep working.",
 		DefaultStatus: http.StatusCreated,
+		Deprecated:    true,
 		Tags:          []string{"sessions"},
 		Middlewares:   mw,
 		Security:      sec,
@@ -669,7 +686,24 @@ func (h *SessionHandler) HumaDeleteSession(ctx context.Context, in *DeleteSessio
 	return &DeleteSessionOutput{Body: MessageResponse{Message: "session deleted"}}, nil
 }
 
-// HumaDuplicateSession is the huma handler for POST /api/sessions/{id}/duplicate.
+// HumaDuplicateSession is the huma handler for
+// POST /api/sessions/{id}/clone (and its deprecated alias .../duplicate).
+//
+// All DB writes happen inside a single gorm transaction so partial failures
+// (a failed save-state copy, for example) don't leak a half-built session.
+// Filesystem writes are done lazily alongside the DB writes; errors on a
+// single save's file copy skip that save but keep the session — matching
+// the pre-transaction behaviour that treated per-save file failures as
+// recoverable.
+//
+// The three US-1/US-2/US-3 semantics come out of one code path:
+//   - Access: owner OR member of a shared session backing this session.
+//   - Name: body.name > "{source.Name} (Copy)".
+//   - Seed save: SaveID (if provided) > most-recent save > no save.
+//   - Inherited fields: CoreName, CheatsEnabled, ScreenshotURL, TotalPlayTime,
+//     PinnedCoreSha256, plus a copy of every SessionCheatSetting and the
+//     chosen SessionSaveState (with its screenshot) and the session's SRAM
+//     if present.
 func (h *SessionHandler) HumaDuplicateSession(ctx context.Context, in *DuplicateSessionInput) (*DuplicateSessionOutput, error) {
 	uid := UserIDFromContext(ctx)
 	sid, err := strconv.ParseUint(in.ID, 10, 64)
@@ -705,76 +739,85 @@ func (h *SessionHandler) HumaDuplicateSession(ctx context.Context, in *Duplicate
 		name = name[:255]
 	}
 
-	newSession := db.GameSession{
-		OwnerID:       uid,
-		GameID:        session.GameID,
-		Name:          name,
-		CoreName:      session.CoreName,
-		CheatsEnabled: session.CheatsEnabled,
+	// Resolve the seed save: explicit SaveID > most recent. Done before the
+	// transaction so an invalid SaveID surfaces as 404 without any writes.
+	var explicitSaveID *uint
+	if in.SaveID != 0 {
+		id := in.SaveID
+		explicitSaveID = &id
 	}
-	if err := h.DB.Create(&newSession).Error; err != nil {
-		return nil, huma.Error500InternalServerError("failed to create session")
+	seedSave, err := h.resolveCloneSeedSave(session.ID, explicitSaveID)
+	if err != nil {
+		return nil, err
 	}
 
-	var saves []db.SessionSaveState
-	h.DB.Where("session_id = ?", session.ID).Find(&saves)
-	for _, save := range saves {
-		newPath := h.Storage.SessionSaveStatePath(newSession.ID, humaFilepathBase(save.FilePath))
-		if _, copyErr := h.Storage.CopyFile(save.FilePath, newPath); copyErr != nil {
-			continue
+	var newSession db.GameSession
+	txErr := h.DB.Transaction(func(tx *gorm.DB) error {
+		newSession = db.GameSession{
+			OwnerID:          uid,
+			GameID:           session.GameID,
+			Name:             name,
+			CoreName:         session.CoreName,
+			CheatsEnabled:    session.CheatsEnabled,
+			TotalPlayTime:    session.TotalPlayTime,
+			PinnedCoreSha256: session.PinnedCoreSha256,
 		}
-		var screenshotURL string
-		if save.ScreenshotURL != "" {
-			dstSubpath := h.Storage.SessionScreenshotSubpath(newSession.ID, humaFilepathBase(save.ScreenshotURL))
-			if _, cpErr := h.Storage.CopyImageFile(save.ScreenshotURL, dstSubpath); cpErr == nil {
-				screenshotURL = dstSubpath
+		if err := tx.Create(&newSession).Error; err != nil {
+			return fmt.Errorf("create session: %w", err)
+		}
+
+		if seedSave != nil {
+			if err := h.cloneSaveInto(tx, *seedSave, newSession.ID, uid); err != nil {
+				return fmt.Errorf("clone save: %w", err)
 			}
 		}
-		slot := save.Slot
-		newSave := db.SessionSaveState{
-			SessionID:     newSession.ID,
-			UserID:        uid,
-			Name:          save.Name,
-			FilePath:      newPath,
-			FileSize:      save.FileSize,
-			ScreenshotURL: screenshotURL,
-			IsAuto:        save.IsAuto,
-			CoreName:      save.CoreName,
-			Notes:         save.Notes,
-			Slot:          slot,
-		}
-		h.DB.Create(&newSave)
-	}
 
-	var sram db.SessionSaveData
-	if err := h.DB.Where("session_id = ?", session.ID).First(&sram).Error; err == nil {
-		newSramPath := h.Storage.SessionSRAMPath(newSession.ID, humaFilepathBase(sram.FilePath))
-		if size, copyErr := h.Storage.CopyFile(sram.FilePath, newSramPath); copyErr == nil {
+		var sram db.SessionSaveData
+		if err := tx.Where("session_id = ?", session.ID).First(&sram).Error; err == nil {
+			newSramPath := h.Storage.SessionSRAMPath(newSession.ID, humaFilepathBase(sram.FilePath))
+			size, copyErr := h.Storage.CopyFile(sram.FilePath, newSramPath)
+			if copyErr != nil {
+				return fmt.Errorf("copy sram: %w", copyErr)
+			}
 			newSram := db.SessionSaveData{
 				SessionID: newSession.ID,
 				FilePath:  newSramPath,
 				FileSize:  size,
 			}
-			h.DB.Create(&newSram)
+			if err := tx.Create(&newSram).Error; err != nil {
+				return fmt.Errorf("create sram record: %w", err)
+			}
 		}
-	}
 
-	var cheats []db.SessionCheatSetting
-	h.DB.Where("session_id = ?", session.ID).Find(&cheats)
-	for _, cheat := range cheats {
-		newCheat := db.SessionCheatSetting{
-			SessionID:  newSession.ID,
-			CheatIndex: cheat.CheatIndex,
-			Enabled:    cheat.Enabled,
+		var cheats []db.SessionCheatSetting
+		if err := tx.Where("session_id = ?", session.ID).Find(&cheats).Error; err != nil {
+			return fmt.Errorf("load cheats: %w", err)
 		}
-		h.DB.Create(&newCheat)
-	}
+		for _, cheat := range cheats {
+			newCheat := db.SessionCheatSetting{
+				SessionID:  newSession.ID,
+				CheatIndex: cheat.CheatIndex,
+				Enabled:    cheat.Enabled,
+			}
+			if err := tx.Create(&newCheat).Error; err != nil {
+				return fmt.Errorf("create cheat: %w", err)
+			}
+		}
 
-	if session.ScreenshotURL != "" {
-		dstSubpath := h.Storage.SessionScreenshotSubpath(newSession.ID, humaFilepathBase(session.ScreenshotURL))
-		if _, cpErr := h.Storage.CopyImageFile(session.ScreenshotURL, dstSubpath); cpErr == nil {
-			h.DB.Model(&newSession).Update("screenshot_url", dstSubpath)
+		if session.ScreenshotURL != "" {
+			dstSubpath := h.Storage.SessionScreenshotSubpath(newSession.ID, humaFilepathBase(session.ScreenshotURL))
+			if _, cpErr := h.Storage.CopyImageFile(session.ScreenshotURL, dstSubpath); cpErr == nil {
+				if err := tx.Model(&newSession).Update("screenshot_url", dstSubpath).Error; err != nil {
+					return fmt.Errorf("update screenshot url: %w", err)
+				}
+			}
+			// A screenshot copy failure is non-fatal: we continue without the
+			// screenshot rather than rolling back the whole clone.
 		}
+		return nil
+	})
+	if txErr != nil {
+		return nil, huma.Error500InternalServerError("failed to clone session: " + txErr.Error())
 	}
 
 	h.DB.Preload("Owner").First(&newSession, newSession.ID)
@@ -784,6 +827,60 @@ func (h *SessionHandler) HumaDuplicateSession(ctx context.Context, in *Duplicate
 	resp := h.toSessionResponse(newSession, int(saveCount))
 	h.enrichWithSharedSessionData(&resp, newSession.ID)
 	return &DuplicateSessionOutput{Body: resp}, nil
+}
+
+// resolveCloneSeedSave returns the SessionSaveState that should seed the
+// clone. When explicitSaveID is nil it picks the most-recently-created save
+// in the source session (or returns nil if the source has no saves — a
+// valid case: a brand-new session with only SRAM can still be cloned).
+// When explicitSaveID is set, the save must exist and belong to the source
+// session; otherwise a 404 is returned.
+func (h *SessionHandler) resolveCloneSeedSave(sessionID uint, explicitSaveID *uint) (*db.SessionSaveState, error) {
+	if explicitSaveID != nil {
+		var save db.SessionSaveState
+		if err := h.DB.Where("id = ? AND session_id = ?", *explicitSaveID, sessionID).First(&save).Error; err != nil {
+			return nil, huma.Error404NotFound("save not found in source session")
+		}
+		return &save, nil
+	}
+	var save db.SessionSaveState
+	err := h.DB.Where("session_id = ?", sessionID).Order("created_at DESC").First(&save).Error
+	if err != nil {
+		// No saves is fine — the clone just starts empty.
+		return nil, nil
+	}
+	return &save, nil
+}
+
+// cloneSaveInto copies a single SessionSaveState (file + screenshot) into
+// newSessionID under the ownership of uid and persists a new row via the
+// supplied tx. Errors bubble up so the caller can roll back the transaction.
+func (h *SessionHandler) cloneSaveInto(tx *gorm.DB, save db.SessionSaveState, newSessionID, uid uint) error {
+	newPath := h.Storage.SessionSaveStatePath(newSessionID, humaFilepathBase(save.FilePath))
+	if _, copyErr := h.Storage.CopyFile(save.FilePath, newPath); copyErr != nil {
+		return fmt.Errorf("copy save file: %w", copyErr)
+	}
+	var screenshotURL string
+	if save.ScreenshotURL != "" {
+		dstSubpath := h.Storage.SessionScreenshotSubpath(newSessionID, humaFilepathBase(save.ScreenshotURL))
+		if _, cpErr := h.Storage.CopyImageFile(save.ScreenshotURL, dstSubpath); cpErr == nil {
+			screenshotURL = dstSubpath
+		}
+		// A missing screenshot is not fatal — the save itself is what matters.
+	}
+	newSave := db.SessionSaveState{
+		SessionID:     newSessionID,
+		UserID:        uid,
+		Name:          save.Name,
+		FilePath:      newPath,
+		FileSize:      save.FileSize,
+		ScreenshotURL: screenshotURL,
+		IsAuto:        save.IsAuto,
+		CoreName:      save.CoreName,
+		Notes:         save.Notes,
+		Slot:          save.Slot,
+	}
+	return tx.Create(&newSave).Error
 }
 
 // HumaListSessionSaves is the huma handler for GET /api/sessions/{id}/saves.
