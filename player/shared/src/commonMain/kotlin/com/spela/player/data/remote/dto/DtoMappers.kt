@@ -318,6 +318,7 @@ fun com.spela.client.models.SharedSessionDetailResponse.toDomain(): SharedSessio
     lastActivityAt = updatedAt.toString(),
     createdAt = createdAt.toString(),
     updatedAt = updatedAt.toString(),
+    backingGameSessionId = sessionId,
 )
 
 fun com.spela.client.models.SharedSessionMemberResponse.toDomain(): SharedSessionMember = SharedSessionMember(
@@ -667,6 +668,9 @@ fun com.spela.client.models.GameSessionResponse.toDomain(): GameSession = GameSe
     memberCount = memberCount.toInt(),
     memberUsernames = memberUsernames,
     memberAvatars = memberAvatars,
+    // Server serializes absent pin as empty string (field is non-optional on
+    // the DTO); map empty → null so consumers can branch on presence.
+    pinnedCoreSha256 = pinnedCoreSha256.takeIf { it.isNotEmpty() },
 )
 
 fun com.spela.client.models.SessionCheatsResponse.toDomain() = SessionCheatConfig(

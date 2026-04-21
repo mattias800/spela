@@ -88,6 +88,42 @@ open class SessionsApi : ApiClient {
 
 
     /**
+     * Clone a session
+     * Creates a copy of the session owned by the caller. Inherits TotalPlayTime and PinnedCoreSha256 from the source. Copies SRAM, cheats, the session screenshot, and one save state (the most recent, or the save identified by ?saveId&#x3D; when provided). Access: owner or any shared-session member.
+     * @param id Session ID to clone.
+     * @param saveId Optional save ID to clone from. Defaults to the most recent save when omitted or zero. (optional)
+     * @param duplicateSessionRequest  (optional)
+     * @return GameSessionResponse
+     */
+    @Suppress("UNCHECKED_CAST")
+    open suspend fun cloneSession(id: kotlin.String, saveId: kotlin.Long? = null, duplicateSessionRequest: DuplicateSessionRequest? = null): HttpResponse<GameSessionResponse> {
+
+        val localVariableAuthNames = listOf<String>()
+
+        val localVariableBody = duplicateSessionRequest
+
+        val localVariableQuery = mutableMapOf<String, List<String>>()
+        saveId?.apply { localVariableQuery["saveId"] = listOf("$saveId") }
+        val localVariableHeaders = mutableMapOf<String, String>()
+
+        val localVariableConfig = RequestConfig<kotlin.Any?>(
+            RequestMethod.POST,
+            "/api/sessions/{id}/clone".replace("{" + "id" + "}", "$id"),
+            query = localVariableQuery,
+            headers = localVariableHeaders,
+            requiresAuthentication = false,
+        )
+
+        return jsonRequest(
+            localVariableConfig,
+            localVariableBody,
+            localVariableAuthNames
+        ).wrap()
+    }
+
+
+
+    /**
      * Create a session for a game
      * Creates a new game session owned by the authenticated user.
      * @param id Game ID.
@@ -353,20 +389,22 @@ open class SessionsApi : ApiClient {
 
 
     /**
-     * Duplicate a session
-     * Creates a copy of the session (owned by the caller) including saves, SRAM, cheats and screenshot.
-     * @param id Session ID to duplicate.
+     * Duplicate a session (deprecated alias of clone)
+     * Deprecated — use POST /api/sessions/{id}/clone instead. Behaviour is identical; this path is kept so in-flight clients keep working.
+     * @param id Session ID to clone.
+     * @param saveId Optional save ID to clone from. Defaults to the most recent save when omitted or zero. (optional)
      * @param duplicateSessionRequest  (optional)
      * @return GameSessionResponse
      */
     @Suppress("UNCHECKED_CAST")
-    open suspend fun duplicateSession(id: kotlin.String, duplicateSessionRequest: DuplicateSessionRequest? = null): HttpResponse<GameSessionResponse> {
+    open suspend fun duplicateSession(id: kotlin.String, saveId: kotlin.Long? = null, duplicateSessionRequest: DuplicateSessionRequest? = null): HttpResponse<GameSessionResponse> {
 
         val localVariableAuthNames = listOf<String>()
 
         val localVariableBody = duplicateSessionRequest
 
         val localVariableQuery = mutableMapOf<String, List<String>>()
+        saveId?.apply { localVariableQuery["saveId"] = listOf("$saveId") }
         val localVariableHeaders = mutableMapOf<String, String>()
 
         val localVariableConfig = RequestConfig<kotlin.Any?>(

@@ -1,5 +1,5 @@
-import { Play, LogOut, Trash2, Repeat } from "lucide-react";
-import { Button, Badge } from "@/components/ui";
+import { Play, LogOut, Trash2, Repeat, Copy } from "lucide-react";
+import { ActionsMenu, Button, Badge } from "@/components/ui";
 import { MemberAvatars } from "@/features/shared-sessions/components/member-avatars";
 import { sharedSessionStatusVariant } from "@/features/shared-sessions/components/shared-session-status";
 import { formatRelativeTime } from "@/lib/format";
@@ -12,6 +12,14 @@ interface SharedSessionHeroProps {
   onPlay: () => void;
   onLeave: () => void;
   onDelete: () => void;
+  /**
+   * Opens the "Clone to my library" dialog. Disabled (menu item
+   * absent) when the shared session has no backing personal session
+   * yet — cloning copies save bytes from a real session, and there
+   * are none before anyone's played.
+   */
+  onClone: () => void;
+  isCloning: boolean;
 }
 
 export function SharedSessionHero({
@@ -21,7 +29,15 @@ export function SharedSessionHero({
   onPlay,
   onLeave,
   onDelete,
+  onClone,
+  isCloning,
 }: SharedSessionHeroProps) {
+  // The backing session is what actually holds the save bytes; until
+  // someone plays the shared session at least once, there is nothing
+  // to clone. We leave the menu visible but omit the clone item in
+  // that edge case rather than showing it disabled — a disabled item
+  // provides no affordance about what would unblock it.
+  const canClone = !!sharedSession.sessionId;
   return (
     <div className="flex flex-col items-center gap-6 md:flex-row md:items-start md:gap-8">
       {/* Cover art */}
@@ -77,18 +93,40 @@ export function SharedSessionHero({
               <Play className="h-5 w-5" />
               Play
             </Button>
-            {!isOwner && (
-              <Button variant="secondary" size="sm" onClick={onLeave}>
-                <LogOut className="h-5 w-5" />
-                Leave
-              </Button>
-            )}
-            {isOwner && (
-              <Button variant="danger" size="sm" onClick={onDelete}>
-                <Trash2 className="h-5 w-5" />
-                Delete
-              </Button>
-            )}
+            <div data-testid="shared-session-hero-actions">
+              <ActionsMenu
+                size="sm"
+                items={[
+                  ...(canClone
+                    ? [
+                        {
+                          label: "Clone to my library",
+                          icon: <Copy className="h-4 w-4" />,
+                          onClick: onClone,
+                          loading: isCloning,
+                        },
+                      ]
+                    : []),
+                  ...(isOwner
+                    ? [
+                        {
+                          label: "Delete shared session",
+                          icon: <Trash2 className="h-4 w-4" />,
+                          onClick: onDelete,
+                          variant: "danger" as const,
+                        },
+                      ]
+                    : [
+                        {
+                          label: "Leave shared session",
+                          icon: <LogOut className="h-4 w-4" />,
+                          onClick: onLeave,
+                          variant: "danger" as const,
+                        },
+                      ]),
+                ]}
+              />
+            </div>
           </div>
         </div>
 

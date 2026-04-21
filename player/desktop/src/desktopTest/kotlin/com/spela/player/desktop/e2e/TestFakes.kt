@@ -531,6 +531,26 @@ class FakeCoreRepository : CoreRepository {
         LibretroCore(2, "snes9x", "Snes9x", "1.62.3", "linux,macos,windows"),
     )
 
+    /**
+     * When true, `getLocalCorePath` returns null so the use case takes
+     * the download path (used by #555 core-pinning tests).
+     */
+    var forceMissingLocalCore: Boolean = false
+
+    /**
+     * Recorded downloadCoreByHash calls for test assertions —
+     * `Pair(coreName, sha256)` in call order.
+     */
+    val downloadByHashCalls: MutableList<Pair<String, String>> = mutableListOf()
+    /** Recorded unversioned downloadCore calls — coreName in call order. */
+    val downloadCalls: MutableList<String> = mutableListOf()
+
+    /**
+     * Sha256 values that should be treated as pruned (404). The fake
+     * throws [CorePrunedException] for these; anything else succeeds.
+     */
+    val prunedHashes: MutableSet<String> = mutableSetOf()
+
     override suspend fun getAvailableCores(): Result<List<LibretroCore>> {
         return Result.success(cores)
     }
@@ -539,14 +559,25 @@ class FakeCoreRepository : CoreRepository {
         return Result.success(cores.first())
     }
 
-    override suspend fun downloadCore(coreId: String, downloadUrl: String?, onProgress: (Float) -> Unit): Result<String> {
+    override suspend fun downloadCore(coreName: String, downloadUrl: String?, onProgress: (Float) -> Unit): Result<String> {
+        downloadCalls.add(coreName)
         onProgress(1f)
-        return Result.success("/fake/cores/$coreId")
+        return Result.success("/fake/cores/$coreName")
     }
 
-    override suspend fun getLocalCorePath(coreId: String): String = "/fake/cores/$coreId"
+    override suspend fun downloadCoreByHash(coreName: String, sha256: String, onProgress: (Float) -> Unit): Result<String> {
+        downloadByHashCalls.add(coreName to sha256)
+        if (sha256 in prunedHashes) {
+            return Result.failure(com.spela.player.domain.repository.CorePrunedException(sha256))
+        }
+        onProgress(1f)
+        return Result.success("/fake/cores/$coreName@$sha256")
+    }
 
-    override suspend fun isCoreCached(coreId: String): Boolean = true
+    override suspend fun getLocalCorePath(coreName: String): String? =
+        if (forceMissingLocalCore) null else "/fake/cores/$coreName"
+
+    override suspend fun isCoreCached(coreName: String): Boolean = !forceMissingLocalCore
 }
 
 class FakeLibretroController : LibretroController {
@@ -1227,7 +1258,16 @@ class FakeSaveDataRepository : SaveDataRepository {
 class FakeSessionRepository : SessionRepository {
     var sessions: MutableList<GameSession> = mutableListOf()
     private val sessionSaves = mutableMapOf<String, MutableList<SaveState>>()
+    /** Test-only: per-save byte payload used to verify which save was cloned from. */
+    private val saveBytes = mutableMapOf<String, ByteArray>()
     private val autoSaves = mutableMapOf<String, ByteArray>()
+
+    /**
+     * Test-only: records every call to [cloneSession] so tests can assert
+     * which source session / save id / name the UI actually requested.
+     */
+    data class CloneInvocation(val sessionId: String, val name: String?, val saveId: Long?, val newSessionId: String, val seededSaveBytes: ByteArray?)
+    val cloneInvocations: MutableList<CloneInvocation> = mutableListOf()
 
     /**
      * Test-only: seed an auto-save for [sessionId]. Used by SaveLoadStateTest
@@ -1359,14 +1399,35 @@ class FakeSessionRepository : SessionRepository {
         return Result.success(config)
     }
 
-    override suspend fun duplicateSession(sessionId: String, name: String?): Result<GameSession> {
+    override suspend fun cloneSession(sessionId: String, name: String?, saveId: Long?): Result<GameSession> {
         val original = sessions.find { it.id == sessionId }
             ?: return Result.failure(Exception("Session not found"))
+        // Mirror the server: clone inherits totalPlayTime + pinnedCoreSha256
+        // from the source and seeds a single save (most-recent when
+        // saveId==null/0, or the save with the matching id otherwise).
+        val sourceSaves = sessionSaves[sessionId] ?: mutableListOf()
+        val seedSave = when {
+            saveId == null || saveId == 0L -> sourceSaves.lastOrNull()
+            else -> sourceSaves.find { it.id == saveId.toString() }
+        }
+        val newId = "session-${nextId++}"
         val newSession = original.copy(
-            id = "session-${nextId++}",
+            id = newId,
             name = name ?: (original.name + " (Copy)"),
+            // totalPlayTime and pinnedCoreSha256 are inherited via .copy().
         )
         sessions.add(newSession)
+        if (seedSave != null) {
+            val seededBytes = saveBytes[seedSave.id]
+            val copied = seedSave.copy(id = ((sessionSaves[newId]?.size ?: 0) + 1).toString())
+            sessionSaves.getOrPut(newId) { mutableListOf() }.add(copied)
+            if (seededBytes != null) {
+                saveBytes[copied.id] = seededBytes
+            }
+            cloneInvocations.add(CloneInvocation(sessionId, name, saveId, newId, seededBytes))
+        } else {
+            cloneInvocations.add(CloneInvocation(sessionId, name, saveId, newId, null))
+        }
         return Result.success(newSession)
     }
 
@@ -1403,6 +1464,7 @@ class FakeSessionRepository : SessionRepository {
         saveId: String = "1",
         name: String = "Save 1",
         isAuto: Boolean = false,
+        bytes: ByteArray? = null,
     ) {
         val save = SaveState(
             id = saveId,
@@ -1410,6 +1472,9 @@ class FakeSessionRepository : SessionRepository {
             isAuto = isAuto,
         )
         sessionSaves.getOrPut(sessionId) { mutableListOf() }.add(save)
+        if (bytes != null) {
+            saveBytes[saveId] = bytes
+        }
     }
 
     fun preSetSessionCheats(sessionId: String, cheatsEnabled: Boolean, enabledIndices: List<Int> = emptyList()) {

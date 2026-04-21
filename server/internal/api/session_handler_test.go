@@ -12,6 +12,7 @@ import (
 	"testing"
 
 	"github.com/spela/server/internal/db"
+	"github.com/spela/server/internal/storage"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"gorm.io/gorm"
@@ -23,6 +24,7 @@ type sessionTestEnv struct {
 	token    string
 	token2   string
 	gameID   string
+	storage  *storage.Storage
 }
 
 func setupSessionTestEnv(t *testing.T) *sessionTestEnv {
@@ -49,6 +51,7 @@ func setupSessionTestEnv(t *testing.T) *sessionTestEnv {
 		token:    token,
 		token2:   token2,
 		gameID:   fmt.Sprintf("%d", game.ID),
+		storage:  cfg.Storage,
 	}
 }
 
@@ -1202,27 +1205,28 @@ func TestDuplicateSession_CustomName(t *testing.T) {
 	assert.Equal(t, "My Custom Copy", resp["name"])
 }
 
-func TestDuplicateSession_CopiesSaves(t *testing.T) {
+func TestDuplicateSession_CopiesMostRecentSave(t *testing.T) {
 	env := setupSessionTestEnv(t)
 
 	created := createGameSession(t, env.router, env.token, env.gameID, "My Session")
 	sessionID := created["id"].(string)
 
-	// Upload saves to original session
+	// Upload saves to original session. Clone only copies the most-recent
+	// save (US-1/US-2 seed semantics) — "Save 2" is the one we expect.
 	w := uploadSessionSave(t, env.router, env.token, sessionID, "Save 1", []byte("save1"))
 	require.Equal(t, http.StatusCreated, w.Code)
 	w = uploadSessionSave(t, env.router, env.token, sessionID, "Save 2", []byte("save2"))
 	require.Equal(t, http.StatusCreated, w.Code)
 
-	// Duplicate
+	// Clone (via the legacy /duplicate alias).
 	w = duplicateSession(t, env.router, env.token, sessionID, nil)
 	require.Equal(t, http.StatusCreated, w.Code)
 
 	var resp map[string]interface{}
 	json.Unmarshal(w.Body.Bytes(), &resp)
-	assert.Equal(t, float64(2), resp["saveCount"])
+	assert.Equal(t, float64(1), resp["saveCount"])
 
-	// List saves in the new session
+	// List saves in the new session — only the most recent made it across.
 	newSessionID := resp["id"].(string)
 	w = httptest.NewRecorder()
 	req := httptest.NewRequest("GET", "/api/sessions/"+newSessionID+"/saves", nil)
@@ -1232,7 +1236,8 @@ func TestDuplicateSession_CopiesSaves(t *testing.T) {
 
 	var saves []map[string]interface{}
 	json.Unmarshal(w.Body.Bytes(), &saves)
-	assert.Len(t, saves, 2)
+	require.Len(t, saves, 1)
+	assert.Equal(t, "Save 2", saves[0]["name"])
 }
 
 func TestDuplicateSession_CopiesSRAM(t *testing.T) {

@@ -42,7 +42,12 @@ fun SpIconButton(
     badge: @Composable (BoxScope.() -> Unit)? = null,
 ) {
     val interactionSource = remember { MutableInteractionSource() }
-    Box(modifier = modifier) {
+    // Merge descendants on the outer Box so a caller-supplied testTag /
+    // contentDescription on `modifier` ends up on the same merged node as
+    // the inner Box's click action. Without this, a test that finds the
+    // outer Box by testTag and calls performClick can't reach the
+    // click handler that lives on the inner Box.
+    Box(modifier = modifier.semantics(mergeDescendants = true) {}) {
         Box(
             modifier = Modifier
                 .size(40.dp)

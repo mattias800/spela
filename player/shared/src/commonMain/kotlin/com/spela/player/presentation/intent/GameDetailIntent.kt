@@ -57,5 +57,11 @@ sealed interface GameDetailIntent {
     data class CreateSession(val gameId: String, val name: String) : GameDetailIntent
     data class RenameSession(val sessionId: String, val name: String) : GameDetailIntent
     data class DeleteSession(val sessionId: String) : GameDetailIntent
-    data class DuplicateSession(val sessionId: String) : GameDetailIntent
+    /**
+     * Clone an existing session into a new session owned by the caller.
+     * [name] defaults to `"{source.name} (Copy)"` server-side when null.
+     * [saveId] selects which save to seed the clone from — omit (null)
+     * for the most-recent save, or pass a specific save id for US-3.
+     */
+    data class CloneSession(val sessionId: String, val name: String? = null, val saveId: Long? = null) : GameDetailIntent
 }

@@ -1,5 +1,6 @@
 package com.spela.player.presentation.viewmodel
 
+import com.spela.player.domain.repository.SessionRepository
 import com.spela.player.domain.repository.SharedSessionRepository
 import com.spela.player.domain.repository.UserRepository
 import com.spela.player.presentation.delegate.InviteSheetDelegate
@@ -19,6 +20,10 @@ class SharedSessionDetailViewModel(
     userRepository: UserRepository,
     private val dispatchers: DispatcherProvider,
     private val scope: CoroutineScope,
+    // Nullable so existing test constructors without a session repo
+    // (e.g. the shared-saves-only unit tests) keep compiling. The clone
+    // action is a no-op when this is null — the UI hides the menu entry.
+    private val sessionRepository: SessionRepository? = null,
 ) {
     private val _state = MutableStateFlow(SharedSessionDetailState())
     val state: StateFlow<SharedSessionDetailState> = _state.asStateFlow()
@@ -40,6 +45,8 @@ class SharedSessionDetailViewModel(
             is SharedSessionDetailIntent.LeaveSharedSession -> leaveSharedSession(intent.sharedSessionId)
             is SharedSessionDetailIntent.TakeTurn -> takeTurn(intent.sharedSessionId)
             is SharedSessionDetailIntent.ReleaseTurn -> releaseTurn(intent.sharedSessionId)
+            is SharedSessionDetailIntent.CloneToMyLibrary -> cloneToMyLibrary(intent.backingGameSessionId, intent.name)
+            SharedSessionDetailIntent.ClearCloneNavigation -> _state.update { it.copy(clonedSessionId = null) }
             SharedSessionDetailIntent.DismissError -> _state.update { it.copy(error = null) }
             SharedSessionDetailIntent.DismissSuccess -> _state.update { it.copy(successMessage = null) }
             SharedSessionDetailIntent.ShowInviteSheet -> inviteDelegate.show()
@@ -138,6 +145,32 @@ class SharedSessionDetailViewModel(
                 },
                 onFailure = { error ->
                     _state.update { it.copy(error = error.message, isReleasingTurn = false) }
+                },
+            )
+        }
+    }
+
+    /**
+     * US-1: non-owner member clones the shared session's backing game
+     * session into their own library. The new session inherits
+     * totalPlayTime and pinnedCoreSha256 from the source — the server
+     * copies the most-recent save so the clone can be played solo
+     * from that point.
+     */
+    private fun cloneToMyLibrary(backingGameSessionId: String, name: String?) {
+        val repo = sessionRepository ?: return
+        scope.launch(dispatchers.io) {
+            repo.cloneSession(backingGameSessionId, name, null).fold(
+                onSuccess = { cloned ->
+                    _state.update {
+                        it.copy(
+                            clonedSessionId = cloned.id,
+                            successMessage = "Cloned as \"${cloned.name}\"",
+                        )
+                    }
+                },
+                onFailure = { error ->
+                    _state.update { it.copy(error = error.message) }
                 },
             )
         }

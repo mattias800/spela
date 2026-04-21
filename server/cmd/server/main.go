@@ -233,6 +233,11 @@ func main() {
 	// Start periodic expired refresh token cleanup (every hour)
 	api.StartTokenCleanup(database, 1*time.Hour)
 
+	// Start the core-history prune job (runs once at startup + every 24h).
+	// See #555 Phase 3 — keeps the last 3 versions per core and everything
+	// from the last 90 days; deletes the rest.
+	(&api.CoreHandler{DB: database, CoreDir: coreDir}).StartCoreHistoryPruner(workerCtx)
+
 	// Auto-download missing BIOS files at startup (non-blocking)
 	bios.StartAutoDownload(store.BiosDir, database)
 

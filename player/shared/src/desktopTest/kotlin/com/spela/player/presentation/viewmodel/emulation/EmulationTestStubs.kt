@@ -210,6 +210,7 @@ class StubCoreRepository : CoreRepository {
     override suspend fun getAvailableCores() = Result.success(emptyList<LibretroCore>())
     override suspend fun getRecommendedCore(gameId: String) = Result.success(LibretroCore(id = 1, name = "nestopia", displayName = "Nestopia"))
     override suspend fun downloadCore(coreName: String, downloadUrl: String?, onProgress: (Float) -> Unit) = Result.success("/path/to/core.so")
+    override suspend fun downloadCoreByHash(coreName: String, sha256: String, onProgress: (Float) -> Unit) = Result.success("/path/to/core.so")
     override suspend fun getLocalCorePath(coreName: String): String = "/path/to/core.so"
     override suspend fun isCoreCached(coreName: String) = true
 }
@@ -393,7 +394,7 @@ class StubSessionRepository : SessionRepository {
         Result.success(GameSession(id = "shared-session-1", gameId = gameId, name = "From shared save $saveId"))
     override suspend fun getSessionCheats(sessionId: String) = Result.success(SessionCheatConfig(false, emptyList()))
     override suspend fun updateSessionCheats(sessionId: String, cheatsEnabled: Boolean, enabledIndices: List<Int>) = Result.success(SessionCheatConfig(cheatsEnabled, enabledIndices))
-    override suspend fun duplicateSession(sessionId: String, name: String?) = Result.failure<GameSession>(Exception("stub"))
+    override suspend fun cloneSession(sessionId: String, name: String?, saveId: Long?) = Result.failure<GameSession>(Exception("stub"))
 }
 
 class StubChallengeRepository : ChallengeRepository {

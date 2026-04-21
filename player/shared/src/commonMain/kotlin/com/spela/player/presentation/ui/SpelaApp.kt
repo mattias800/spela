@@ -1193,6 +1193,11 @@ fun SpelaApp(
                                             )
                                         )
                                     },
+                                    onNavigateToSession = { newSessionId ->
+                                        navigationViewModel.onIntent(
+                                            NavigationIntent.NavigateTo(SpScreen.SessionDetail(newSessionId))
+                                        )
+                                    },
                                 )
                             }
 
@@ -1437,6 +1442,11 @@ fun SpelaApp(
                                         },
                                         onDeleted = {
                                             navigationViewModel.onIntent(NavigationIntent.GoBack)
+                                        },
+                                        onNavigateToSession = { newSessionId ->
+                                            navigationViewModel.onIntent(
+                                                NavigationIntent.NavigateTo(SpScreen.SessionDetail(newSessionId))
+                                            )
                                         },
                                     )
                                 }

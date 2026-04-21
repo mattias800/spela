@@ -30,9 +30,9 @@ import kotlinx.serialization.encoding.*
  * @param console 
  * @param essentials 
  * @param genreBreakdown 
- * @param hiddenGems
- * @param launchGames
- * @param recentlyAdded
+ * @param hiddenGems 
+ * @param launchGames 
+ * @param recentlyAdded 
  * @param recentlyPlayed 
  * @param topDevelopers 
  * @param dollarSchema A URL to the JSON Schema for this object.

@@ -27,9 +27,13 @@ import kotlinx.serialization.encoding.*
  * @param description 
  * @param displayName 
  * @param downloadUrl 
+ * @param fetchedAt 
  * @param id 
  * @param name 
  * @param platforms 
+ * @param sha256 
+ * @param sizeBytes 
+ * @param sourceUrl 
  * @param updatedAt 
  * @param version 
  * @param dollarSchema A URL to the JSON Schema for this object.
@@ -46,11 +50,19 @@ data class Core (
 
     @SerialName(value = "downloadUrl") @Required val downloadUrl: kotlin.String,
 
+    @SerialName(value = "fetchedAt") @Required val fetchedAt: kotlinx.datetime.Instant?,
+
     @SerialName(value = "id") @Required val id: kotlin.Long,
 
     @SerialName(value = "name") @Required val name: kotlin.String,
 
     @SerialName(value = "platforms") @Required val platforms: kotlin.String,
+
+    @SerialName(value = "sha256") @Required val sha256: kotlin.String,
+
+    @SerialName(value = "sizeBytes") @Required val sizeBytes: kotlin.Long,
+
+    @SerialName(value = "sourceUrl") @Required val sourceUrl: kotlin.String,
 
     @SerialName(value = "updatedAt") @Required val updatedAt: kotlinx.datetime.Instant,
 

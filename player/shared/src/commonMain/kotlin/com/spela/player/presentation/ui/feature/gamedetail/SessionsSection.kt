@@ -16,6 +16,7 @@ import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.People
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.outlined.Gamepad
@@ -40,6 +41,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.spela.player.domain.model.GameSession
 import com.spela.player.presentation.ui.components.SpAvatar
+import com.spela.player.presentation.ui.components.SpIconButton
 import com.spela.player.presentation.ui.components.SpSecondaryButton
 import com.spela.player.presentation.ui.components.SpChip
 import com.spela.player.presentation.ui.components.SpStatusChip
@@ -59,12 +61,21 @@ internal fun SessionsSection(
     onCreateSession: (String) -> Unit,
     onRenameSession: (String, String) -> Unit,
     onDeleteSession: (String) -> Unit,
-    onDuplicateSession: (String) -> Unit,
+    /**
+     * Clone entry point. Per #553 PO guidance clone is a SECONDARY
+     * action and only appears inside the per-session `…` overflow
+     * menu. [name] lets the confirmation dialog pass an edited name
+     * (null → server defaults to `"{source} (Copy)"`). [saveId] is
+     * always null here — per-save cloning (US-3) lives on the
+     * Session Detail screen's save rows, not in this list.
+     */
+    onCloneSession: (sessionId: String, name: String?, saveId: Long?) -> Unit,
     onSessionSelected: ((GameSession) -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
     var showRenameDialog by remember { mutableStateOf<GameSession?>(null) }
     var showDeleteDialog by remember { mutableStateOf<GameSession?>(null) }
+    var showCloneDialog by remember { mutableStateOf<GameSession?>(null) }
     var showCreateDialog by remember { mutableStateOf(false) }
 
     SpTitledSection(
@@ -103,7 +114,7 @@ internal fun SessionsSection(
                 onContinueFromTitleScreen = onContinueSessionFromTitleScreen?.let { callback -> { callback(session) } },
                 onRename = { showRenameDialog = session },
                 onDelete = { showDeleteDialog = session },
-                onDuplicate = { onDuplicateSession(session.id) },
+                onClone = { showCloneDialog = session },
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(vertical = SpSpacing.XXSmall),
@@ -170,6 +181,44 @@ internal fun SessionsSection(
         )
     }
 
+    // Clone dialog — mirrors the rename dialog pattern. Pre-fills
+    // "{source.name} (Copy)" but lets the user edit before confirming.
+    showCloneDialog?.let { session ->
+        var cloneName by remember(session.id) { mutableStateOf("${session.name} (Copy)") }
+        AlertDialog(
+            onDismissRequest = { showCloneDialog = null },
+            title = { Text("Clone Session") },
+            text = {
+                OutlinedTextField(
+                    value = cloneName,
+                    onValueChange = { cloneName = it },
+                    label = { Text("New Session Name") },
+                    singleLine = true,
+                    modifier = Modifier.testTag("clone_session_input"),
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        if (cloneName.isNotBlank()) {
+                            onCloneSession(session.id, cloneName.trim(), null)
+                            showCloneDialog = null
+                        }
+                    },
+                    modifier = Modifier.testTag("clone_session_confirm"),
+                ) {
+                    Text("Clone")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showCloneDialog = null }) {
+                    Text("Cancel")
+                }
+            },
+            modifier = Modifier.testTag("clone_session_dialog"),
+        )
+    }
+
     // Create dialog
     if (showCreateDialog) {
         var sessionName by remember { mutableStateOf("Playthrough ${sessions.size + 1}") }
@@ -215,7 +264,7 @@ private fun SessionItem(
     onContinueFromTitleScreen: (() -> Unit)?,
     onRename: () -> Unit,
     onDelete: () -> Unit,
-    onDuplicate: () -> Unit,
+    onClone: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val isMultiplayer = session.memberCount > 1
@@ -297,26 +346,57 @@ private fun SessionItem(
             }
 
             Row {
-                IconButton(onClick = onDuplicate) {
-                    Icon(
-                        Icons.Filled.ContentCopy,
-                        contentDescription = "Duplicate session",
-                        tint = SpColor.OnBackgroundSecondary,
+                // Session-level actions go into a single `…` overflow menu.
+                // Rename/Delete/Clone are all secondary — only Play is
+                // surfaced as a primary button in this row. Clone in
+                // particular is required by #553 PO brief to live inside
+                // a menu, never as its own CTA.
+                Box {
+                    var showActionsMenu by remember { mutableStateOf(false) }
+                    SpIconButton(
+                        icon = Icons.Filled.MoreVert,
+                        contentDescription = "Session actions",
+                        onClick = { showActionsMenu = true },
+                        modifier = Modifier.testTag("session_actions_menu_${session.id}"),
                     )
-                }
-                IconButton(onClick = onRename) {
-                    Icon(
-                        Icons.Filled.Edit,
-                        contentDescription = "Rename session",
-                        tint = SpColor.OnBackgroundSecondary,
-                    )
-                }
-                IconButton(onClick = onDelete) {
-                    Icon(
-                        Icons.Filled.Delete,
-                        contentDescription = "Delete session",
-                        tint = SpColor.OnBackgroundSecondary,
-                    )
+                    DropdownMenu(
+                        expanded = showActionsMenu,
+                        onDismissRequest = { showActionsMenu = false },
+                    ) {
+                        DropdownMenuItem(
+                            text = { Text("Clone session", style = SpTypography.BodyMedium) },
+                            leadingIcon = {
+                                Icon(Icons.Filled.ContentCopy, contentDescription = null)
+                            },
+                            onClick = {
+                                showActionsMenu = false
+                                onClone()
+                            },
+                            modifier = Modifier.testTag("session_action_clone_${session.id}"),
+                        )
+                        DropdownMenuItem(
+                            text = { Text("Rename", style = SpTypography.BodyMedium) },
+                            leadingIcon = {
+                                Icon(Icons.Filled.Edit, contentDescription = null)
+                            },
+                            onClick = {
+                                showActionsMenu = false
+                                onRename()
+                            },
+                            modifier = Modifier.testTag("session_action_rename_${session.id}"),
+                        )
+                        DropdownMenuItem(
+                            text = { Text("Delete", style = SpTypography.BodyMedium, color = SpColor.Error) },
+                            leadingIcon = {
+                                Icon(Icons.Filled.Delete, contentDescription = null, tint = SpColor.Error)
+                            },
+                            onClick = {
+                                showActionsMenu = false
+                                onDelete()
+                            },
+                            modifier = Modifier.testTag("session_action_delete_${session.id}"),
+                        )
+                    }
                 }
                 // Play button with optional dropdown for "Continue from Title Screen"
                 val showChevron = session.lastPlayedAt != null && onContinueFromTitleScreen != null

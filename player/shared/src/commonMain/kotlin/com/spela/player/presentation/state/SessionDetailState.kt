@@ -19,4 +19,10 @@ data class SessionDetailState(
     val showDeleteConfirm: Boolean = false,
     val error: String? = null,
     val successMessage: String? = null,
+    /**
+     * After a successful Clone Session, the id of the newly-created
+     * session. The screen observes this and navigates to the clone's
+     * own detail page, then dispatches [SessionDetailIntent.ClearCloneNavigation].
+     */
+    val clonedSessionId: String? = null,
 )

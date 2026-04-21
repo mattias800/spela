@@ -10,15 +10,29 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ContentCopy
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Save
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import com.spela.player.presentation.intent.SharedSessionDetailIntent
 import com.spela.player.presentation.ui.feature.sharedsession.InviteSection
 import com.spela.player.presentation.ui.feature.sharedsession.MemberItem
@@ -26,6 +40,7 @@ import com.spela.player.presentation.ui.feature.sharedsession.SharedSessionHeade
 import com.spela.player.presentation.ui.feature.sharedsession.SharedSessionSaveItem
 import com.spela.player.presentation.ui.components.InvitePlayerSheet
 import com.spela.player.presentation.ui.components.SpEmptyState
+import com.spela.player.presentation.ui.components.SpIconButton
 import com.spela.player.presentation.ui.components.SpLoadingIndicator
 import com.spela.player.presentation.ui.components.SpSectionHeader
 import com.spela.player.presentation.ui.components.SpSnackbar
@@ -37,7 +52,9 @@ import com.spela.player.presentation.ui.components.SpTopBar
 import com.spela.player.presentation.ui.components.PlatformBackHandler
 import com.spela.player.presentation.ui.gamepad.InputMode
 import com.spela.player.presentation.ui.gamepad.LocalInputMode
+import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
+import com.spela.player.presentation.ui.theme.SpTypography
 import com.spela.player.presentation.viewmodel.SharedSessionDetailViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -47,14 +64,25 @@ fun SharedSessionDetailScreen(
     viewModel: SharedSessionDetailViewModel,
     onBack: () -> Unit,
     onPlay: (gameId: String, sharedSessionId: String) -> Unit,
+    onNavigateToSession: ((String) -> Unit)? = null,
 ) {
     PlatformBackHandler { onBack() }
 
     val state by viewModel.state.collectAsState()
+    var showMoreMenu by remember { mutableStateOf(false) }
+    var showCloneDialog by remember { mutableStateOf(false) }
 
     LaunchedEffect(sharedSessionId) {
         viewModel.onIntent(SharedSessionDetailIntent.LoadSharedSession(sharedSessionId))
         viewModel.onIntent(SharedSessionDetailIntent.LoadSaves(sharedSessionId))
+    }
+
+    LaunchedEffect(state.clonedSessionId) {
+        val newId = state.clonedSessionId
+        if (newId != null) {
+            onNavigateToSession?.invoke(newId)
+            viewModel.onIntent(SharedSessionDetailIntent.ClearCloneNavigation)
+        }
     }
 
     val isGamepad = LocalInputMode.current == InputMode.GAMEPAD
@@ -71,6 +99,38 @@ fun SharedSessionDetailScreen(
                     title = state.sharedSession?.name ?: "Shared Session",
                     showBack = true,
                     onBack = onBack,
+                    actions = {
+                        // Clone action — only meaningful once the shared
+                        // session has been played at least once (we need
+                        // a backing GameSession to clone from). Hide
+                        // entirely when there's nothing to clone.
+                        val backing = state.sharedSession?.backingGameSessionId
+                        if (backing != null) {
+                            SpIconButton(
+                                icon = Icons.Filled.MoreVert,
+                                contentDescription = "Shared session actions",
+                                onClick = { showMoreMenu = true },
+                                modifier = Modifier.testTag("shared_session_more_menu"),
+                                onGradient = true,
+                            )
+                            DropdownMenu(
+                                expanded = showMoreMenu,
+                                onDismissRequest = { showMoreMenu = false },
+                            ) {
+                                DropdownMenuItem(
+                                    text = { Text("Clone to my library", style = SpTypography.BodyMedium) },
+                                    leadingIcon = {
+                                        Icon(Icons.Filled.ContentCopy, contentDescription = null)
+                                    },
+                                    onClick = {
+                                        showMoreMenu = false
+                                        showCloneDialog = true
+                                    },
+                                    modifier = Modifier.testTag("shared_session_clone_menu_item"),
+                                )
+                            }
+                        }
+                    },
                 )
             }
 
@@ -204,6 +264,60 @@ fun SharedSessionDetailScreen(
             onDismiss = { viewModel.onIntent(SharedSessionDetailIntent.DismissSuccess) },
             modifier = Modifier.align(Alignment.BottomCenter),
         )
+    }
+
+    // Clone-to-my-library dialog — opened from the top-bar `…` menu.
+    // Mirrors the rename dialog pattern (editable pre-filled name +
+    // Cancel/Clone buttons). Only renders when the shared session has
+    // a backing GameSessionID — guarded by the menu item above, but
+    // we also defensively re-check here.
+    if (showCloneDialog) {
+        val backing = state.sharedSession?.backingGameSessionId
+        val sourceName = state.sharedSession?.name ?: ""
+        if (backing == null) {
+            // The backing id vanished between menu open and dialog
+            // render (rare). Just close the dialog.
+            showCloneDialog = false
+        } else {
+            var cloneName by remember(backing) { mutableStateOf("$sourceName (Copy)") }
+            AlertDialog(
+                onDismissRequest = { showCloneDialog = false },
+                title = { Text("Clone to my library") },
+                text = {
+                    OutlinedTextField(
+                        value = cloneName,
+                        onValueChange = { cloneName = it },
+                        label = { Text("New Session Name") },
+                        singleLine = true,
+                        modifier = Modifier.testTag("shared_session_clone_input"),
+                    )
+                },
+                confirmButton = {
+                    TextButton(
+                        onClick = {
+                            if (cloneName.isNotBlank()) {
+                                viewModel.onIntent(
+                                    SharedSessionDetailIntent.CloneToMyLibrary(
+                                        backingGameSessionId = backing,
+                                        name = cloneName.trim(),
+                                    )
+                                )
+                                showCloneDialog = false
+                            }
+                        },
+                        modifier = Modifier.testTag("shared_session_clone_confirm"),
+                    ) {
+                        Text("Clone")
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showCloneDialog = false }) {
+                        Text("Cancel")
+                    }
+                },
+                modifier = Modifier.testTag("shared_session_clone_dialog"),
+            )
+        }
     }
 
     // Invite player dialog

@@ -589,9 +589,13 @@ class GameRepositoryImplTest {
             description = "",
             displayName = "Nestopia UE",
             downloadUrl = "",
+            fetchedAt = null,
             id = 1,
             name = "nestopia",
             platforms = "windows,linux,macos,android",
+            sha256 = "",
+            sizeBytes = 0L,
+            sourceUrl = "",
             updatedAt = now,
             version = "1.52.0",
         )

@@ -7,7 +7,7 @@ import {
   useCreateSession,
   useRenameSession,
   useDeleteSession,
-  useDuplicateSession,
+  useCloneSession,
 } from "../use-sessions";
 
 vi.mock("@/lib/api-client", () => ({
@@ -183,13 +183,13 @@ describe("useDeleteSession", () => {
   });
 });
 
-describe("useDuplicateSession", () => {
-  it("duplicates a session", async () => {
+describe("useCloneSession", () => {
+  it("posts to the clone endpoint with no body when name is omitted", async () => {
     mockTypedApi.POST.mockReturnValue(
       ok({ ...mockSessions[0], id: "ses-2", name: "My Session (Copy)" }),
     );
 
-    const { result } = renderHook(() => useDuplicateSession(), {
+    const { result } = renderHook(() => useCloneSession(), {
       wrapper: createWrapper(),
     });
 
@@ -197,17 +197,20 @@ describe("useDuplicateSession", () => {
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(mockTypedApi.POST).toHaveBeenCalledWith(
-      "/api/sessions/{id}/duplicate",
-      { params: { path: { id: "ses-1" } }, body: {} },
+      "/api/sessions/{id}/clone",
+      {
+        params: { path: { id: "ses-1" }, query: undefined },
+        body: {},
+      },
     );
   });
 
-  it("duplicates a session with custom name", async () => {
+  it("sends a custom name in the body when provided", async () => {
     mockTypedApi.POST.mockReturnValue(
       ok({ ...mockSessions[0], id: "ses-2", name: "Custom" }),
     );
 
-    const { result } = renderHook(() => useDuplicateSession(), {
+    const { result } = renderHook(() => useCloneSession(), {
       wrapper: createWrapper(),
     });
 
@@ -215,8 +218,68 @@ describe("useDuplicateSession", () => {
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(mockTypedApi.POST).toHaveBeenCalledWith(
-      "/api/sessions/{id}/duplicate",
-      { params: { path: { id: "ses-1" } }, body: { name: "Custom" } },
+      "/api/sessions/{id}/clone",
+      {
+        params: { path: { id: "ses-1" }, query: undefined },
+        body: { name: "Custom" },
+      },
     );
+  });
+
+  it("passes saveId as a query param when cloning from a specific save", async () => {
+    mockTypedApi.POST.mockReturnValue(
+      ok({ ...mockSessions[0], id: "ses-2", name: "My Session (Copy)" }),
+    );
+
+    const { result } = renderHook(() => useCloneSession(), {
+      wrapper: createWrapper(),
+    });
+
+    result.current.mutate({ id: "ses-1", gameId: "g1", saveId: 42 });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(mockTypedApi.POST).toHaveBeenCalledWith(
+      "/api/sessions/{id}/clone",
+      {
+        params: { path: { id: "ses-1" }, query: { saveId: 42 } },
+        body: {},
+      },
+    );
+  });
+
+  it("omits the saveId query param when saveId is zero", async () => {
+    mockTypedApi.POST.mockReturnValue(
+      ok({ ...mockSessions[0], id: "ses-2", name: "My Session (Copy)" }),
+    );
+
+    const { result } = renderHook(() => useCloneSession(), {
+      wrapper: createWrapper(),
+    });
+
+    result.current.mutate({ id: "ses-1", gameId: "g1", saveId: 0 });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(mockTypedApi.POST).toHaveBeenCalledWith(
+      "/api/sessions/{id}/clone",
+      {
+        params: { path: { id: "ses-1" }, query: undefined },
+        body: {},
+      },
+    );
+  });
+
+  it("works without gameId (shared-session clone case)", async () => {
+    mockTypedApi.POST.mockReturnValue(
+      ok({ ...mockSessions[0], id: "ses-2", name: "My Session (Copy)" }),
+    );
+
+    const { result } = renderHook(() => useCloneSession(), {
+      wrapper: createWrapper(),
+    });
+
+    result.current.mutate({ id: "ses-1" });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(mockTypedApi.POST).toHaveBeenCalled();
   });
 });

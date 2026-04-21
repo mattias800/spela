@@ -65,6 +65,7 @@ func streamBytesInline(data []byte, contentType string) *huma.StreamResponse {
 type CoreDownloadInput struct {
 	ID       string `path:"id" doc:"Core ID."`
 	Platform string `query:"platform" required:"false" default:"linux" doc:"Target platform: linux, macos, windows, android."`
+	Sha256   string `query:"sha256" required:"false" doc:"Optional hex sha256 of a historical core binary. When set, serves that specific version from the history snapshot; returns 404 if it's been pruned. Defaults to serving the current binary."`
 }
 
 // BiosDownloadInput is the input for GET /api/bios/{filename}.
@@ -396,6 +397,36 @@ func (h *CoreHandler) HumaDownloadCore(_ context.Context, in *CoreDownloadInput)
 		platform = "linux"
 	}
 
+	ext := platformExtension(platform)
+
+	// Historical version requested: serve from {CoreDir}/history/{sha}/...
+	// without running the metadata backfill — the metadata corresponds to
+	// whatever's current, not to the historical file.
+	if in.Sha256 != "" {
+		// Validate sha256 is a 64-char hex string before any path
+		// construction. filepath.Join normalises paths, so without this
+		// guard a value like "../" can escape {CoreDir}/history into
+		// CoreDir itself or beyond. Reject anything that isn't [0-9a-fA-F]{64}.
+		if !isValidSha256Hex(in.Sha256) {
+			return nil, huma.Error400BadRequest("invalid sha256 — expected 64 hex characters")
+		}
+		if h.CoreDir == "" {
+			return nil, huma.Error404NotFound("core history not available")
+		}
+		historyRoot := filepath.Join(h.CoreDir, "history")
+		historyPath := h.historyBinaryPath(core, in.Sha256, ext)
+		// Defence in depth: confirm the resolved path stays inside
+		// {CoreDir}/history. The hex guard above already prevents
+		// traversal, but a second check costs nothing.
+		if !storage.ValidateROMPath(historyPath, []string{historyRoot}) {
+			return nil, huma.Error403Forbidden("core file access denied")
+		}
+		if _, err := os.Stat(historyPath); os.IsNotExist(err) {
+			return nil, huma.Error404NotFound("core binary not available for requested sha256")
+		}
+		return streamFileFromDisk(historyPath, core.Name+"_libretro"+ext, "application/octet-stream"), nil
+	}
+
 	corePath := h.resolveCorePath(core, platform)
 	if corePath == "" {
 		return nil, huma.Error404NotFound("core binary not available")
@@ -407,9 +438,10 @@ func (h *CoreHandler) HumaDownloadCore(_ context.Context, in *CoreDownloadInput)
 
 	// Lazy backfill of factual core metadata. Only runs until the row
 	// has all fields populated; afterwards it's a no-op. See #555.
+	// Also snapshots the binary into {CoreDir}/history/{sha256}/... so
+	// future ?sha256= requests can serve it after a newer binary lands.
 	h.ensureCoreMetadata(&core, corePath)
 
-	ext := platformExtension(platform)
 	return streamFileFromDisk(corePath, core.Name+"_libretro"+ext, "application/octet-stream"), nil
 }
 

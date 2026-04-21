@@ -11,11 +11,13 @@ import {
   useLeaveSharedSession,
   useSharedSessionRealtime,
 } from "@/hooks/use-shared-sessions";
+import { useCloneSession } from "@/hooks/use-sessions";
 import { useConsoles } from "@/hooks/use-consoles";
 import { useAuth } from "@/hooks/use-auth";
 import { SharedSessionHero } from "@/features/shared-sessions/components/shared-session-hero";
 import { SharedSessionMembersList } from "@/features/shared-sessions/components/shared-session-members-list";
 import { SharedSessionSavesList } from "@/features/shared-sessions/components/shared-session-saves-list";
+import { CloneSessionDialog } from "@/features/sessions/components/clone-session-dialog";
 
 function SharedSessionDetailSkeleton() {
   return (
@@ -56,10 +58,12 @@ export function SharedSessionDetailPage() {
   const { data: consoles } = useConsoles();
   const deleteSharedSession = useDeleteSharedSession();
   const leaveSharedSession = useLeaveSharedSession();
+  const cloneSession = useCloneSession();
   useSharedSessionRealtime(id);
 
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showLeaveModal, setShowLeaveModal] = useState(false);
+  const [showCloneModal, setShowCloneModal] = useState(false);
 
   const isOwner = sharedSession?.ownerId === user?.id;
   const consoleInfo = consoles?.find(
@@ -121,6 +125,30 @@ export function SharedSessionDetailPage() {
     });
   }
 
+  function handleConfirmClone(name: string) {
+    // Shared sessions are UI shells around a backing personal
+    // session; the clone endpoint takes that backing session's ID.
+    // We guard with `!sharedSession.sessionId` at the menu level so
+    // this path is only reachable when a backing session exists.
+    const backingId = sharedSession!.sessionId;
+    if (!backingId) return;
+    cloneSession.mutate(
+      { id: backingId, name: name || undefined },
+      {
+        onSuccess: (created) => {
+          setShowCloneModal(false);
+          if (created?.id) {
+            toast("success", "Cloned to your library");
+            navigate(`/sessions/${created.id}`);
+          }
+        },
+        onError: () => {
+          toast("error", "Failed to clone to your library");
+        },
+      },
+    );
+  }
+
   return (
     <PageLayout backButtonVariant="standard">
       <SectionList className="max-w-5xl">
@@ -132,6 +160,8 @@ export function SharedSessionDetailPage() {
         onPlay={handlePlay}
         onLeave={() => setShowLeaveModal(true)}
         onDelete={() => setShowDeleteModal(true)}
+        onClone={() => setShowCloneModal(true)}
+        isCloning={cloneSession.isPending}
       />
 
       <SharedSessionMembersList
@@ -226,6 +256,21 @@ export function SharedSessionDetailPage() {
           </Button>
         </div>
       </Modal>
+
+      {/* Clone to my library — US-1: any member can copy a shared
+          session's playthrough into a personal session they own. */}
+      <CloneSessionDialog
+        open={showCloneModal}
+        onClose={() => {
+          if (!cloneSession.isPending) setShowCloneModal(false);
+        }}
+        sourceName={sharedSession.name}
+        title="Clone to My Library"
+        confirmLabel="Clone to my library"
+        description="A new personal session will be created in your library. It inherits this shared session's total play time and is seeded with the most recent save. The shared session is untouched."
+        isPending={cloneSession.isPending}
+        onConfirm={handleConfirmClone}
+      />
     </SectionList>
     </PageLayout>
   );

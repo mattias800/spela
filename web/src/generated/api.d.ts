@@ -3548,6 +3548,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/sessions/{id}/clone": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Clone a session
+         * @description Creates a copy of the session owned by the caller. Inherits TotalPlayTime and PinnedCoreSha256 from the source. Copies SRAM, cheats, the session screenshot, and one save state (the most recent, or the save identified by ?saveId= when provided). Access: owner or any shared-session member.
+         */
+        post: operations["cloneSession"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/sessions/{id}/duplicate": {
         parameters: {
             query?: never;
@@ -3558,8 +3578,9 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * Duplicate a session
-         * @description Creates a copy of the session (owned by the caller) including saves, SRAM, cheats and screenshot.
+         * Duplicate a session (deprecated alias of clone)
+         * @deprecated
+         * @description Deprecated — use POST /api/sessions/{id}/clone instead. Behaviour is identical; this path is kept so in-flight clients keep working.
          */
         post: operations["duplicateSession"];
         delete?: never;
@@ -6582,6 +6603,7 @@ export interface components {
             name: string;
             ownerId: string;
             ownerUsername: string;
+            pinnedCoreSha256: string;
             /** Format: int64 */
             saveCount: number;
             screenshotUrl: string;
@@ -11956,6 +11978,8 @@ export interface operations {
             query?: {
                 /** @description Target platform: linux, macos, windows, android. */
                 platform?: string;
+                /** @description Optional hex sha256 of a historical core binary. When set, serves that specific version from the history snapshot; returns 404 if it's been pruned. Defaults to serving the current binary. */
+                sha256?: string;
             };
             header?: never;
             path: {
@@ -15202,12 +15226,54 @@ export interface operations {
             };
         };
     };
-    duplicateSession: {
+    cloneSession: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Optional save ID to clone from. Defaults to the most recent save when omitted or zero. */
+                saveId?: number;
+            };
             header?: never;
             path: {
-                /** @description Session ID to duplicate. */
+                /** @description Session ID to clone. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["DuplicateSessionRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GameSessionResponse"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HumaError"];
+                };
+            };
+        };
+    };
+    duplicateSession: {
+        parameters: {
+            query?: {
+                /** @description Optional save ID to clone from. Defaults to the most recent save when omitted or zero. */
+                saveId?: number;
+            };
+            header?: never;
+            path: {
+                /** @description Session ID to clone. */
                 id: string;
             };
             cookie?: never;

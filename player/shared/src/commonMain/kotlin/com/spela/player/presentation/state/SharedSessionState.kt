@@ -38,4 +38,10 @@ data class SharedSessionDetailState(
     val invitingUsername: String? = null,
     val invitedUsernames: List<String> = emptyList(),
     val inviteSuccessMessage: String? = null,
+    /**
+     * After a successful Clone to my library, the id of the newly-created
+     * personal `GameSession`. Screen observes this to navigate to the
+     * clone's detail page and clears via [SharedSessionDetailIntent.ClearCloneNavigation].
+     */
+    val clonedSessionId: String? = null,
 )

@@ -374,6 +374,14 @@ data class SharedSessionDetail(
     val lastActivityAt: String = "",
     val createdAt: String = "",
     val updatedAt: String = "",
+    /**
+     * Backing `GameSession` id that this shared session's saves are
+     * attached to server-side. `null` when no one has played yet — in
+     * that case the Clone-to-my-library action is disabled because
+     * there's nothing to clone from. Populated from the server's
+     * `SharedSessionDetailResponse.sessionId`.
+     */
+    val backingGameSessionId: String? = null,
 )
 
 data class SharedSessionMember(
@@ -752,6 +760,15 @@ data class GameSession(
     val memberCount: Int = 1,
     val memberUsernames: List<String> = emptyList(),
     val memberAvatars: List<String> = emptyList(),
+    /**
+     * SHA-256 of the libretro core binary that wrote this session's first
+     * save state, if any. When set, the player can ask the server for the
+     * historical binary by hash (#555 core history retention) so save
+     * states keep loading after future core updates. `null` (serialized
+     * as empty string by the server) means this session has no pin yet —
+     * it will be set on the first save.
+     */
+    val pinnedCoreSha256: String? = null,
 )
 
 data class SessionCheatConfig(

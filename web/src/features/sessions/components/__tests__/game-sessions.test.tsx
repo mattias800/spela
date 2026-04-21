@@ -21,22 +21,31 @@ vi.mock("@/hooks/use-sessions", () => ({
   useCreateSession: vi.fn(),
   useRenameSession: vi.fn(),
   useDeleteSession: vi.fn(),
-  useDuplicateSession: vi.fn(),
+  useCloneSession: vi.fn(),
 }));
+
+// `useToast` is now consumed for the clone-mutation onError path.
+vi.mock("@/components/ui", async () => {
+  const actual = await vi.importActual("@/components/ui");
+  return {
+    ...actual,
+    useToast: vi.fn(() => ({ toast: vi.fn() })),
+  };
+});
 
 import {
   useGameSessions,
   useCreateSession,
   useRenameSession,
   useDeleteSession,
-  useDuplicateSession,
+  useCloneSession,
 } from "@/hooks/use-sessions";
 
 const mockUseGameSessions = useGameSessions as ReturnType<typeof vi.fn>;
 const mockUseCreateSession = useCreateSession as ReturnType<typeof vi.fn>;
 const mockUseRenameSession = useRenameSession as ReturnType<typeof vi.fn>;
 const mockUseDeleteSession = useDeleteSession as ReturnType<typeof vi.fn>;
-const mockUseDuplicateSession = useDuplicateSession as ReturnType<typeof vi.fn>;
+const mockUseCloneSession = useCloneSession as ReturnType<typeof vi.fn>;
 
 const mockSessions = [
   {
@@ -103,7 +112,7 @@ beforeEach(() => {
     isPending: false,
     variables: undefined,
   });
-  mockUseDuplicateSession.mockReturnValue({
+  mockUseCloneSession.mockReturnValue({
     mutate: mockMutate,
     isPending: false,
     variables: undefined,
@@ -243,5 +252,59 @@ describe("GameSessions", () => {
 
     const currentBadges = screen.getAllByText("Current");
     expect(currentBadges).toHaveLength(1);
+  });
+
+  it("opens the clone dialog from the first card's actions menu", () => {
+    mockUseGameSessions.mockReturnValue({
+      data: [mockSessions[0]],
+      isLoading: false,
+    });
+    renderComponent();
+
+    // Dialog must not be mounted before the user triggers clone — the
+    // name input should be absent.
+    expect(
+      screen.queryByTestId("clone-session-dialog"),
+    ).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByTestId("actions-menu-btn"));
+    fireEvent.click(screen.getByRole("menuitem", { name: /clone session/i }));
+
+    expect(screen.getByTestId("clone-session-dialog")).toBeInTheDocument();
+    expect(screen.getByTestId("clone-session-name-input")).toHaveValue(
+      "Main Playthrough (Copy)",
+    );
+  });
+
+  it("fires the clone mutation with the edited name when confirmed", () => {
+    mockUseGameSessions.mockReturnValue({
+      data: [mockSessions[0]],
+      isLoading: false,
+    });
+    renderComponent();
+
+    fireEvent.click(screen.getByTestId("actions-menu-btn"));
+    fireEvent.click(screen.getByRole("menuitem", { name: /clone session/i }));
+
+    const input = screen.getByTestId("clone-session-name-input");
+    fireEvent.change(input, { target: { value: "Boss attempt" } });
+    fireEvent.click(screen.getByTestId("clone-session-confirm"));
+
+    expect(mockMutate).toHaveBeenCalledWith(
+      { id: "ses-1", gameId: "g1", name: "Boss attempt" },
+      expect.any(Object),
+    );
+  });
+
+  it("keeps clone behind the `…` menu — no standalone Clone CTA (#553)", () => {
+    mockUseGameSessions.mockReturnValue({
+      data: [mockSessions[0]],
+      isLoading: false,
+    });
+    renderComponent();
+
+    expect(
+      screen.queryByRole("button", { name: /^clone session$/i }),
+    ).not.toBeInTheDocument();
   });
 });

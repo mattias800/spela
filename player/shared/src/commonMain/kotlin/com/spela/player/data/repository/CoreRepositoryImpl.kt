@@ -3,6 +3,7 @@ package com.spela.player.data.repository
 import com.spela.player.data.remote.api.SpelaApiClient
 import com.spela.player.data.remote.dto.toDomain
 import com.spela.player.domain.model.LibretroCore
+import com.spela.player.domain.repository.CorePrunedException
 import com.spela.player.domain.repository.CoreRepository
 import com.spela.player.util.FileStorage
 import com.spela.player.util.buildbotCoreUrl
@@ -45,6 +46,43 @@ class CoreRepositoryImpl(
         }
         val zipData: ByteArray = response.body()
         val coreData = extractFirstZipEntry(zipData)
+        fileStorage.writeFile(destPath, coreData)
+        destPath
+    }
+
+    override suspend fun downloadCoreByHash(
+        coreName: String,
+        sha256: String,
+        onProgress: (Float) -> Unit,
+    ): Result<String> = runCatching {
+        // Resolve the server-side numeric core id. The versioned endpoint is
+        // `/api/cores/{id}/download?sha256=...` and requires the numeric id;
+        // we only know the core name up here in EmulationUseCases, so look
+        // up the id from the cached cores list.
+        val core = apiClient.getAvailableCores().firstOrNull { it.name == coreName }
+            ?: throw RuntimeException("Unknown core name for versioned download: $coreName")
+
+        val (status, body) = apiClient.downloadCoreByHash(
+            coreId = core.id.toString(),
+            sha256 = sha256,
+            onProgress = { sent, total ->
+                if (total != null && total > 0) onProgress(sent.toFloat() / total)
+            },
+        )
+        if (status == 404) {
+            throw CorePrunedException(sha256)
+        }
+        if (body == null) {
+            throw RuntimeException("Versioned core download failed: HTTP $status")
+        }
+        // Historical binaries live alongside the latest — write them to a
+        // shared filename so the emulator can load them. When cores/ already
+        // contains a different version we overwrite (acceptable: the player
+        // won't hit this path unless the pinned sha != the current sha, and
+        // we want the pinned bytes to take precedence for this session).
+        val fileName = coreFileName(coreName)
+        val destPath = fileStorage.getCoresDir() + "/$fileName"
+        val coreData = extractFirstZipEntry(body)
         fileStorage.writeFile(destPath, coreData)
         destPath
     }

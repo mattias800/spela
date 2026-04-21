@@ -816,6 +816,13 @@ type GameSession struct {
 	ScreenshotURL  string         `gorm:"size:512" json:"screenshotUrl"`
 	CoreName       string         `gorm:"size:128" json:"coreName"`
 	CheatsEnabled  bool           `gorm:"default:false" json:"cheatsEnabled"`
+	// PinnedCoreSha256 is the sha256 of the libretro core binary this session
+	// was first manually saved with. Set lazily on the first manual save (or
+	// auto-save) once we can resolve the matching Core row by name; never
+	// overwritten afterwards. Sessions cloned from another session inherit
+	// this pin so the player can request the exact historical binary via
+	// /api/cores/{id}/download?sha256=… (see #555 Phase 3).
+	PinnedCoreSha256 string `gorm:"size:64" json:"pinnedCoreSha256"`
 }
 
 // SessionSaveState represents a save state within a game session.

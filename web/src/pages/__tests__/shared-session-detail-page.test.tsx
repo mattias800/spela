@@ -1,4 +1,5 @@
 import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
@@ -13,6 +14,14 @@ vi.mock("@/hooks/use-shared-sessions", () => ({
   useRemoveSharedSessionMember: vi.fn(() => ({ mutate: vi.fn(), isPending: false })),
   useInviteToSharedSession: vi.fn(() => ({ mutate: vi.fn(), isPending: false })),
   useDeleteSharedSessionSave: vi.fn(() => ({ mutate: vi.fn(), isPending: false })),
+}));
+
+vi.mock("@/hooks/use-sessions", () => ({
+  useCloneSession: vi.fn(() => ({
+    mutate: vi.fn(),
+    isPending: false,
+    variables: null,
+  })),
 }));
 
 vi.mock("@/hooks/use-consoles", () => ({
@@ -42,9 +51,11 @@ vi.mock("@/components/ui", async () => {
 });
 
 import { useSharedSession, useSharedSessionSaves } from "@/hooks/use-shared-sessions";
+import { useCloneSession } from "@/hooks/use-sessions";
 
 const mockUseSharedSession = useSharedSession as ReturnType<typeof vi.fn>;
 const mockUseSharedSessionSaves = useSharedSessionSaves as ReturnType<typeof vi.fn>;
+const mockUseCloneSession = useCloneSession as ReturnType<typeof vi.fn>;
 
 const mockSharedSessionDetail = {
   id: "ss-1",
@@ -57,6 +68,11 @@ const mockSharedSessionDetail = {
   ownerUsername: "alice",
   status: "active",
   memberCount: 2,
+  // Shared sessions carry a pointer to the backing personal session
+  // where save-state bytes live; Clone to my library copies from this
+  // backing session. Fixture includes it so the clone menu is visible
+  // by default in tests.
+  sessionId: "s42",
   createdAt: "2026-02-01T10:00:00Z",
   updatedAt: "2026-02-13T10:00:00Z",
   members: [
@@ -159,23 +175,29 @@ describe("SharedSessionDetailPage", () => {
     expect(screen.getByText("World 3 Save")).toBeInTheDocument();
   });
 
-  it("shows delete button for shared session owner", () => {
+  it("exposes Delete shared session from the `…` menu for owners", async () => {
     renderPage();
-
+    const heroActions = screen.getByTestId("shared-session-hero-actions");
+    await userEvent.click(
+      heroActions.querySelector("[data-testid='actions-menu-btn']")!,
+    );
     expect(
-      screen.getByRole("button", { name: "Delete" }),
+      screen.getByRole("menuitem", { name: /delete shared session/i }),
     ).toBeInTheDocument();
   });
 
-  it("shows leave button when not owner", () => {
+  it("exposes Leave shared session from the `…` menu for non-owners", async () => {
     mockUseSharedSession.mockReturnValue({
       data: { ...mockSharedSessionDetail, ownerId: "u999" },
       isLoading: false,
     });
     renderPage();
-
+    const heroActions = screen.getByTestId("shared-session-hero-actions");
+    await userEvent.click(
+      heroActions.querySelector("[data-testid='actions-menu-btn']")!,
+    );
     expect(
-      screen.getByRole("button", { name: /Leave/ }),
+      screen.getByRole("menuitem", { name: /leave shared session/i }),
     ).toBeInTheDocument();
   });
 
@@ -209,5 +231,74 @@ describe("SharedSessionDetailPage", () => {
     renderPage();
 
     expect(screen.getByText("No saves yet")).toBeInTheDocument();
+  });
+
+  it("opens the clone dialog from the hero `…` menu (US-1)", async () => {
+    renderPage();
+    const heroActions = screen.getByTestId("shared-session-hero-actions");
+    await userEvent.click(
+      heroActions.querySelector("[data-testid='actions-menu-btn']")!,
+    );
+    await userEvent.click(
+      screen.getByRole("menuitem", { name: /clone to my library/i }),
+    );
+    expect(screen.getByTestId("clone-session-dialog")).toBeInTheDocument();
+    expect(screen.getByTestId("clone-session-name-input")).toHaveValue(
+      "Friday Night SNES (Copy)",
+    );
+  });
+
+  it("calls cloneSession on the backing session ID when confirmed", async () => {
+    const cloneMutate = vi.fn();
+    mockUseCloneSession.mockReturnValue({
+      mutate: cloneMutate,
+      isPending: false,
+      variables: null,
+    });
+    renderPage();
+    const heroActions = screen.getByTestId("shared-session-hero-actions");
+    await userEvent.click(
+      heroActions.querySelector("[data-testid='actions-menu-btn']")!,
+    );
+    await userEvent.click(
+      screen.getByRole("menuitem", { name: /clone to my library/i }),
+    );
+    await userEvent.click(screen.getByTestId("clone-session-confirm"));
+    // The endpoint takes the *backing session*'s ID, not the shared
+    // session wrapper's ID — the shared session is UI shell.
+    expect(cloneMutate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        id: "s42",
+        name: "Friday Night SNES (Copy)",
+      }),
+      expect.any(Object),
+    );
+  });
+
+  it("omits the Clone menu entry when no backing session exists yet", async () => {
+    mockUseSharedSession.mockReturnValue({
+      data: { ...mockSharedSessionDetail, sessionId: null },
+      isLoading: false,
+    });
+    renderPage();
+    const heroActions = screen.getByTestId("shared-session-hero-actions");
+    await userEvent.click(
+      heroActions.querySelector("[data-testid='actions-menu-btn']")!,
+    );
+    expect(
+      screen.queryByRole("menuitem", { name: /clone to my library/i }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("keeps Clone behind the `…` menu — no standalone CTA (#553)", () => {
+    renderPage();
+    expect(
+      screen.queryByRole("button", { name: /clone to my library/i }),
+    ).not.toBeInTheDocument();
+    // Menu item only appears after menu open — asserted by the tests
+    // above. This test locks in the initial-render contract.
+    expect(
+      screen.queryByRole("menuitem", { name: /clone to my library/i }),
+    ).not.toBeInTheDocument();
   });
 });
