@@ -18,7 +18,7 @@ class ChallengeRepositoryImpl(
         sort: String?,
         page: Int,
     ): Result<List<Challenge>> = runCatching {
-        apiClient.getChallenges(gameId, consoleId, difficulty, sort, page).data.orEmpty().map { dto ->
+        apiClient.getChallenges(gameId, consoleId, difficulty, sort, page).data.map { dto ->
             val challenge = dto.toDomain()
             challenge.copy(
                 screenshotUrl = apiClient.resolveUrl(challenge.screenshotUrl),
@@ -29,7 +29,7 @@ class ChallengeRepositoryImpl(
     }
 
     override suspend fun getGameChallenges(gameId: String, page: Int): Result<List<Challenge>> = runCatching {
-        apiClient.getGameChallenges(gameId, page).data.orEmpty().map { dto ->
+        apiClient.getGameChallenges(gameId, page).data.map { dto ->
             val challenge = dto.toDomain()
             challenge.copy(
                 screenshotUrl = apiClient.resolveUrl(challenge.screenshotUrl),
@@ -40,7 +40,7 @@ class ChallengeRepositoryImpl(
     }
 
     override suspend fun getMyChallenges(page: Int): Result<List<Challenge>> = runCatching {
-        apiClient.getMyChallenges(page).data.orEmpty().map { dto ->
+        apiClient.getMyChallenges(page).data.map { dto ->
             val challenge = dto.toDomain()
             challenge.copy(
                 screenshotUrl = apiClient.resolveUrl(challenge.screenshotUrl),
@@ -63,7 +63,7 @@ class ChallengeRepositoryImpl(
         challengeId: String,
         page: Int,
     ): Result<List<ChallengeLeaderboardEntry>> = runCatching {
-        apiClient.getChallengeLeaderboard(challengeId, page).data.orEmpty().map { dto ->
+        apiClient.getChallengeLeaderboard(challengeId, page).data.map { dto ->
             val entry = dto.toDomain()
             entry.copy(avatarUrl = apiClient.resolveUrl(entry.avatarUrl))
         }

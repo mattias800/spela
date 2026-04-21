@@ -23,7 +23,7 @@ class NetplayRepositoryImpl(
     }
 
     override suspend fun getSessions(): Result<List<NetplaySession>> = runCatching {
-        apiClient.getNetplaySessions().data.orEmpty().map { it.toDomain() }
+        apiClient.getNetplaySessions().data.map { it.toDomain() }
     }
 
     override suspend fun getSession(sessionId: String): Result<NetplaySession> = runCatching {

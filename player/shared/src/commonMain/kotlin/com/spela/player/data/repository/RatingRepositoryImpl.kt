@@ -18,7 +18,7 @@ class RatingRepositoryImpl(
     }
 
     override suspend fun getGameRatings(gameId: String, page: Int, pageSize: Int): Result<List<GameRating>> = runCatching {
-        apiClient.getGameRatings(gameId, page = page, pageSize = pageSize).data.orEmpty().map {
+        apiClient.getGameRatings(gameId, page = page, pageSize = pageSize).data.map {
             it.toDomain().resolveUrls()
         }
     }

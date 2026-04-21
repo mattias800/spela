@@ -13,13 +13,13 @@ class CollectionRepositoryImpl(
 ) : CollectionRepository {
 
     override suspend fun getMyCollections(page: Int, pageSize: Int): Result<List<GameCollection>> = runCatching {
-        apiClient.getMyCollections(page = page, pageSize = pageSize).data.orEmpty().map { dto ->
+        apiClient.getMyCollections(page = page, pageSize = pageSize).data.map { dto ->
             dto.toDomain().resolveImageUrls()
         }
     }
 
     override suspend fun getPublicCollections(page: Int, pageSize: Int): Result<List<GameCollection>> = runCatching {
-        apiClient.getPublicCollections(page = page, pageSize = pageSize).data.orEmpty().map { dto ->
+        apiClient.getPublicCollections(page = page, pageSize = pageSize).data.map { dto ->
             dto.toDomain().resolveImageUrls()
         }
     }
