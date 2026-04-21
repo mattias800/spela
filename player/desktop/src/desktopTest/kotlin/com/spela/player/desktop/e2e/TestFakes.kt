@@ -749,7 +749,7 @@ class FakeSharedSessionRepository : SharedSessionRepository {
     var sharedSessionSaves: List<SharedSessionSave> = emptyList()
     var gameSharedSessions: List<SharedSession> = emptyList()
 
-    override suspend fun getMySharedSessions(page: Int, pageSize: Int): Result<List<SharedSession>> =
+    override suspend fun getMySharedSessions(): Result<List<SharedSession>> =
         Result.success(sharedSessions)
     override suspend fun getSharedSession(sharedSessionId: String): Result<SharedSessionDetail> =
         sharedSessionDetail?.let { Result.success(it) }
@@ -1184,7 +1184,7 @@ class FakeBiosRepository(
         syncCalled = true
     }
 
-    override suspend fun fetchBiosStatus(): com.spela.player.data.remote.dto.BiosStatusResponse? {
+    override suspend fun fetchBiosStatus(): com.spela.client.models.BiosListResponse? {
         fetchStatusCalled = true
         return null
     }
@@ -1428,7 +1428,7 @@ class FakeExploreRepository : ExploreRepository {
     var playersLikeYou: PlayersLikeYouResult? = null
     var developerSummaries: List<DeveloperSummary> = emptyList()
     var developerDetails: Map<String, DeveloperDetail> = emptyMap()
-    var publisherDetails: Map<String, DeveloperDetail> = emptyMap()
+    var publisherDetails: Map<String, PublisherDetail> = emptyMap()
     var developerSpotlightData: DeveloperSpotlight? = null
     var consoleShowcases: Map<String, ConsoleShowcase> = emptyMap()
     var consoleHighlightsList: List<ConsoleHighlight> = emptyList()
@@ -1554,7 +1554,7 @@ class FakeExploreRepository : ExploreRepository {
             else Result.failure(Exception("Developer not found"))
         }
 
-    override suspend fun getPublisherDetail(name: String): Result<DeveloperDetail> =
+    override suspend fun getPublisherDetail(name: String): Result<PublisherDetail> =
         if (shouldFail) Result.failure(Exception("Failed to load publisher detail"))
         else {
             val detail = publisherDetails[name]
