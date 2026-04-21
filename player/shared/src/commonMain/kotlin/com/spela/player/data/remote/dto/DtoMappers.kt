@@ -97,7 +97,7 @@ fun GameDto.toDomain(): Game = Game(
     lastPlayedAt = lastPlayedAt?.toString(),
     totalPlayTime = totalPlayTime,
     discCount = discCount.toInt(),
-    discs = discs.orEmpty().map { it.toDomain() },
+    discs = discs.map { it.toDomain() },
     achievementsWarning = achievementsWarning,
     verificationStatus = verificationStatus,
     verificationTag = verificationTag,
@@ -143,10 +143,10 @@ fun RomHackGameDto.toDomain(): RomHackGame = RomHackGame(
 /** Constructs GameDetail from the enriched GameResponse. */
 fun GameDto.toGameDetail(): GameDetail = GameDetail(
     game = toDomain(),
-    screenshots = screenshotUrls.orEmpty(),
-    variants = variants.orEmpty().map { it.toDomain() },
+    screenshots = screenshotUrls,
+    variants = variants.map { it.toDomain() },
     parentGame = parentGame.takeIf { it.id.isNotEmpty() }?.toDomain(),
-    romHacks = romHacks.orEmpty().map { it.toDomain() },
+    romHacks = romHacks.map { it.toDomain() },
 )
 
 fun com.spela.client.models.SessionSaveResponse.toDomain(): SaveState = SaveState(
@@ -173,7 +173,7 @@ fun com.spela.client.models.UserPreferencesResponse.toDomain(): UserPreferences 
     consoleKeyMappings = consoleKeyMappings.mapValues {
         ConsoleKeyMappingPref(
             selectedMapping = it.value.selectedMapping,
-            customMapping = it.value.customMapping.orEmpty(),
+            customMapping = it.value.customMapping,
         )
     },
     defaultSecondScreenPage = defaultSecondScreenPage,
@@ -269,9 +269,9 @@ fun com.spela.client.models.PublicProfileResponse.toDomain(): PublicProfile = Pu
     currentGame = currentGame.takeIf { it.id.isNotEmpty() }?.toDomain(),
     totalPlayTime = totalPlayTime,
     gamesPlayed = gamesPlayed,
-    favoriteGames = favoriteGames.orEmpty().map { it.toDomain() },
-    recentGames = recentGames.orEmpty().map { it.toDomain() },
-    topGames = topGames.orEmpty().map { it.toDomain() },
+    favoriteGames = favoriteGames.map { it.toDomain() },
+    recentGames = recentGames.map { it.toDomain() },
+    topGames = topGames.map { it.toDomain() },
 )
 
 // Shared Session mappers
@@ -314,7 +314,7 @@ fun com.spela.client.models.SharedSessionDetailResponse.toDomain(): SharedSessio
     status = status,
     memberCount = memberCount.toInt(),
     activeUserId = activeUserId,
-    members = members.orEmpty().map { it.toDomain() },
+    members = members.map { it.toDomain() },
     lastActivityAt = updatedAt.toString(),
     createdAt = createdAt.toString(),
     updatedAt = updatedAt.toString(),
@@ -377,7 +377,7 @@ fun com.spela.client.models.CollectionDetailResponse.toDomain(): GameCollectionD
     isPublic = isPublic,
     coverUrl = coverUrl,
     gameCount = gameCount.toInt(),
-    games = games.orEmpty().map { it.toDomain() },
+    games = games.map { it.toDomain() },
 )
 
 // Game Stats mappers
@@ -393,7 +393,7 @@ fun com.spela.client.models.GameStatsResponse.toDomain(): GameStats = GameStats(
     totalPlayers = totalPlayers.toInt(),
     totalPlayTime = totalPlayTime,
     averagePlayTime = averagePlayTime,
-    topPlayers = topPlayers.orEmpty().map { it.toDomain() },
+    topPlayers = topPlayers.map { it.toDomain() },
 )
 
 fun com.spela.client.models.Achievement.toDomain(): GameAchievement = GameAchievement(
@@ -429,7 +429,7 @@ fun com.spela.client.models.AchievementTimelineResponse.toDomain(): AchievementT
     raGameId = raGameId,
     gameTitle = gameTitle,
     totalPlayTime = totalPlayTime,
-    timeline = timeline.orEmpty().map { it.toDomain() },
+    timeline = timeline.map { it.toDomain() },
     totalAchievements = totalAchievements.toInt(),
     unlockedCount = unlockedCount.toInt(),
     totalPoints = totalPoints.toInt(),
@@ -665,13 +665,13 @@ fun com.spela.client.models.GameSessionResponse.toDomain(): GameSession = GameSe
     isSharedSession = isSharedSession,
     sharedSessionId = sharedSessionId,
     memberCount = memberCount.toInt(),
-    memberUsernames = memberUsernames.orEmpty(),
-    memberAvatars = memberAvatars.orEmpty(),
+    memberUsernames = memberUsernames,
+    memberAvatars = memberAvatars,
 )
 
 fun com.spela.client.models.SessionCheatsResponse.toDomain() = SessionCheatConfig(
     cheatsEnabled = cheatsEnabled,
-    enabledIndices = enabledIndices.orEmpty().map { it.toInt() },
+    enabledIndices = enabledIndices.map { it.toInt() },
 )
 
 // Explore mappers
@@ -697,7 +697,7 @@ fun com.spela.client.models.FeaturedGameResponse.toDomain(): FeaturedGame = Feat
 fun com.spela.client.models.ExploreRowResponse.toDomain(): ExploreRow = ExploreRow(
     id = id,
     title = title,
-    games = games.orEmpty().map { it.toDomain() },
+    games = games.map { it.toDomain() },
 )
 
 fun com.spela.client.models.ThemeResponse.toDomain(): Theme = Theme(
@@ -726,10 +726,10 @@ fun com.spela.client.models.SeriesDetailResponse.toDomain(): SeriesDetail = Seri
     name = name,
     heroUrl = heroUrl,
     logoUrl = logoUrl,
-    consoles = consoles.orEmpty().map { it.toDomain() },
+    consoles = consoles.map { it.toDomain() },
     libraryGames = libraryGames.toInt(),
     totalGames = totalGames.toInt(),
-    games = games.orEmpty().map { it.toDomain() },
+    games = games.map { it.toDomain() },
 )
 
 fun com.spela.client.models.FranchiseDetailResponse.toDomain(): SeriesDetail = SeriesDetail(
@@ -737,10 +737,10 @@ fun com.spela.client.models.FranchiseDetailResponse.toDomain(): SeriesDetail = S
     name = name,
     heroUrl = heroUrl,
     logoUrl = logoUrl,
-    consoles = consoles.orEmpty().map { it.toDomain() },
+    consoles = consoles.map { it.toDomain() },
     libraryGames = libraryGames.toInt(),
     totalGames = totalGames.toInt(),
-    games = games.orEmpty().map { it.toDomain() },
+    games = games.map { it.toDomain() },
 )
 
 fun com.spela.client.models.SeriesConsoleInfo.toDomain(): SeriesConsole = SeriesConsole(
@@ -787,7 +787,7 @@ fun com.spela.client.models.MoodResponse.toDomain(): MoodDefinition = MoodDefini
     name = name,
     description = description,
     icon = icon,
-    gradient = gradient.orEmpty(),
+    gradient = gradient,
 )
 
 fun com.spela.client.models.ForYouRowResponse.toDomain(): ForYouRow = ForYouRow(
@@ -795,7 +795,7 @@ fun com.spela.client.models.ForYouRowResponse.toDomain(): ForYouRow = ForYouRow(
     title = title,
     sourceGame = sourceGame.takeIf { it.id.isNotEmpty() }?.toDomain(),
     genre = genre,
-    games = games.orEmpty().map { it.toDomain() },
+    games = games.map { it.toDomain() },
 )
 
 fun com.spela.client.models.TasteProfileGenre.toDomain(): TasteBreakdown = TasteBreakdown(
@@ -821,13 +821,13 @@ fun com.spela.client.models.TasteProfileConsole.toDomain(): ConsoleBreakdown = C
 
 fun com.spela.client.models.TasteProfileResponse.toDomain(): TasteProfile = TasteProfile(
     totalPlayTime = totalPlayTime,
-    genres = genres.orEmpty().map { it.toDomain() },
-    themes = themes.orEmpty().map { it.toDomain() },
-    topConsoles = topConsoles.orEmpty().map { it.toDomain() },
+    genres = genres.map { it.toDomain() },
+    themes = themes.map { it.toDomain() },
+    topConsoles = topConsoles.map { it.toDomain() },
 )
 
 fun com.spela.client.models.PlayersLikeYouResponse.toDomain(): PlayersLikeYouResult = PlayersLikeYouResult(
-    games = games.orEmpty().map { it.toDomain() },
+    games = games.map { it.toDomain() },
     similarUsersCount = similarUsersCount.toInt(),
 )
 
@@ -851,7 +851,7 @@ fun com.spela.client.models.DeveloperSummary.toDomain(): DeveloperSummary = Deve
     name = name,
     gameCount = gameCount.toInt(),
     avgRating = avgRating,
-    consoles = consoles.orEmpty(),
+    consoles = consoles,
 )
 
 fun com.spela.client.models.GenreCount.toDeveloperGenreBreakdown(): DeveloperDetailGenreBreakdown =
@@ -916,34 +916,34 @@ fun com.spela.client.models.TimelineGame.toDomain(): TimelineGame = TimelineGame
 
 fun com.spela.client.models.TimelineEntry.toDomain(): TimelineEntry = TimelineEntry(
     year = year.toInt(),
-    games = games.orEmpty().map { it.toDomain() },
+    games = games.map { it.toDomain() },
 )
 
 fun com.spela.client.models.RelatedDeveloper.toDomain(): RelatedDeveloper = RelatedDeveloper(
     name = name,
     gameCount = gameCount.toInt(),
-    sharedPublishers = sharedPublishers.orEmpty(),
+    sharedPublishers = sharedPublishers,
 )
 
 fun com.spela.client.models.DeveloperDetailResponse.toDomain(): DeveloperDetail = DeveloperDetail(
     name = name,
     gameCount = gameCount.toInt(),
     avgRating = avgRating,
-    consoles = consoles.orEmpty(),
+    consoles = consoles,
     heroUrl = heroUrl,
     companyInfo = companyInfo.toDomain().takeIf { it.hasAnyData() },
-    topGames = topGames.orEmpty().map { it.toDomain() },
-    genreBreakdown = genreBreakdown.orEmpty().map { it.toDeveloperGenreBreakdown() },
-    platformBreakdown = platformBreakdown.orEmpty().map { it.toDeveloperPlatformBreakdown() },
+    topGames = topGames.map { it.toDomain() },
+    genreBreakdown = genreBreakdown.map { it.toDeveloperGenreBreakdown() },
+    platformBreakdown = platformBreakdown.map { it.toDeveloperPlatformBreakdown() },
     userStats = userStats.takeIf { it.gamesPlayed > 0 }?.toDeveloperUserStats(),
-    publishers = publishers.orEmpty().map { it.toDeveloperPublisher() },
-    games = games.orEmpty().map { it.toDomain() },
+    publishers = publishers.map { it.toDeveloperPublisher() },
+    games = games.map { it.toDomain() },
     activeYears = activeYears.takeIf { it.first > 0 }?.toDomain(),
     // Generated RatingDistribution is @Required non-null.
     ratingDistribution = ratingDistribution.toDomain(),
     primaryGenre = primaryGenre,
-    timeline = timeline.orEmpty().map { it.toDomain() },
-    relatedDevelopers = relatedDevelopers.orEmpty().map { it.toDomain() },
+    timeline = timeline.map { it.toDomain() },
+    relatedDevelopers = relatedDevelopers.map { it.toDomain() },
 )
 
 fun com.spela.client.models.GenreCount.toPublisherGenreBreakdown(): PublisherDetailGenreBreakdown =
@@ -976,35 +976,35 @@ fun com.spela.client.models.NameCount.toPublisherDeveloper(): PublisherDetailDev
 fun com.spela.client.models.RelatedPublisher.toDomain(): RelatedPublisher = RelatedPublisher(
     name = name,
     gameCount = gameCount.toInt(),
-    sharedDevelopers = sharedDevelopers.orEmpty(),
+    sharedDevelopers = sharedDevelopers,
 )
 
 fun com.spela.client.models.PublisherDetailResponse.toDomain(): PublisherDetail = PublisherDetail(
     name = name,
     gameCount = gameCount.toInt(),
     avgRating = avgRating,
-    consoles = consoles.orEmpty(),
+    consoles = consoles,
     heroUrl = heroUrl,
     companyInfo = companyInfo.toDomain().takeIf { it.hasAnyData() },
-    topGames = topGames.orEmpty().map { it.toDomain() },
-    genreBreakdown = genreBreakdown.orEmpty().map { it.toPublisherGenreBreakdown() },
-    platformBreakdown = platformBreakdown.orEmpty().map { it.toPublisherPlatformBreakdown() },
+    topGames = topGames.map { it.toDomain() },
+    genreBreakdown = genreBreakdown.map { it.toPublisherGenreBreakdown() },
+    platformBreakdown = platformBreakdown.map { it.toPublisherPlatformBreakdown() },
     userStats = userStats.takeIf { it.gamesPlayed > 0 }?.toPublisherUserStats(),
-    developers = developers.orEmpty().map { it.toPublisherDeveloper() },
-    games = games.orEmpty().map { it.toDomain() },
+    developers = developers.map { it.toPublisherDeveloper() },
+    games = games.map { it.toDomain() },
     activeYears = activeYears.takeIf { it.first > 0 }?.toDomain(),
     ratingDistribution = ratingDistribution.toDomain(),
     primaryGenre = primaryGenre,
-    timeline = timeline.orEmpty().map { it.toDomain() },
-    relatedPublishers = relatedPublishers.orEmpty().map { it.toDomain() },
+    timeline = timeline.map { it.toDomain() },
+    relatedPublishers = relatedPublishers.map { it.toDomain() },
 )
 
 fun com.spela.client.models.DeveloperSpotlightResponse.toDomain(): DeveloperSpotlight = DeveloperSpotlight(
     name = name,
     gameCount = gameCount.toInt(),
     avgRating = avgRating,
-    consoles = consoles.orEmpty(),
-    topGames = topGames.orEmpty().map { it.toDomain() },
+    consoles = consoles,
+    topGames = topGames.map { it.toDomain() },
     heroUrl = heroUrl.ifBlank { null },
 )
 
@@ -1017,11 +1017,11 @@ fun com.spela.client.models.GenreCount.toDomain(): GenreCount = GenreCount(
 
 fun com.spela.client.models.ConsoleShowcaseResponse.toDomain(): ConsoleShowcase = ConsoleShowcase(
     console = console.toDomain(),
-    essentials = essentials.orEmpty().map { it.toDomain() },
-    hiddenGems = hiddenGems.orEmpty().map { it.toDomain() },
-    genreBreakdown = genreBreakdown.orEmpty().map { it.toDomain() },
-    topDevelopers = topDevelopers.orEmpty().map { it.toDomain() },
-    recentlyPlayed = recentlyPlayed.orEmpty().map { it.toDomain() },
+    essentials = essentials.map { it.toDomain() },
+    hiddenGems = hiddenGems.map { it.toDomain() },
+    genreBreakdown = genreBreakdown.map { it.toDomain() },
+    topDevelopers = topDevelopers.map { it.toDomain() },
+    recentlyPlayed = recentlyPlayed.map { it.toDomain() },
 )
 
 // Generated ConsoleHighlight has @Required non-nullable topGame, but the
@@ -1167,11 +1167,11 @@ fun com.spela.client.models.WizardStep.toDomain() = WizardStep(
     step = step.toInt(),
     title = title,
     type = type,
-    options = options.orEmpty().map { it.toDomain() },
+    options = options.map { it.toDomain() },
 )
 
 fun com.spela.client.models.WizardResultsResponse.toDomain() = WizardResults(
-    games = games.orEmpty().map { it.toDomain() },
+    games = games.map { it.toDomain() },
     title = title,
 )
 
@@ -1194,7 +1194,7 @@ fun com.spela.client.models.CompletionistConsole.toDomain() = CompletionistConso
 )
 
 fun com.spela.client.models.CompletionistMapResponse.toDomain() = CompletionistMap(
-    consoles = consoles.orEmpty().map { it.toDomain() },
+    consoles = consoles.map { it.toDomain() },
     totalGames = totalGames.toInt(),
     totalPlayed = totalPlayed.toInt(),
     overallPct = overallPct.toInt(),
@@ -1261,31 +1261,31 @@ fun com.spela.client.models.SearchFranchiseResult.toDomain() = SearchFranchiseRe
 
 fun com.spela.client.models.SearchResponse.toDomain() = GlobalSearchResult(
     games = SearchCategory(
-        results = games.results.orEmpty().map { it.toDomain() },
+        results = games.results.map { it.toDomain() },
         total = games.total.toInt(),
     ),
     consoles = SearchCategory(
-        results = consoles.results.orEmpty().map { it.toDomain() },
+        results = consoles.results.map { it.toDomain() },
         total = consoles.total.toInt(),
     ),
     developers = SearchCategory(
-        results = developers.results.orEmpty().map { it.toDeveloper() },
+        results = developers.results.map { it.toDeveloper() },
         total = developers.total.toInt(),
     ),
     publishers = SearchCategory(
-        results = publishers.results.orEmpty().map { it.toPublisher() },
+        results = publishers.results.map { it.toPublisher() },
         total = publishers.total.toInt(),
     ),
     collections = SearchCategory(
-        results = collections.results.orEmpty().map { it.toDomain() },
+        results = collections.results.map { it.toDomain() },
         total = collections.total.toInt(),
     ),
     series = SearchCategory(
-        results = series.results.orEmpty().map { it.toDomain() },
+        results = series.results.map { it.toDomain() },
         total = series.total.toInt(),
     ),
     franchises = SearchCategory(
-        results = franchises.results.orEmpty().map { it.toDomain() },
+        results = franchises.results.map { it.toDomain() },
         total = franchises.total.toInt(),
     ),
 )
