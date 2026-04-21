@@ -969,6 +969,7 @@ type GameSessionResponse struct {
 	TotalPlayTime        int64      `json:"totalPlayTime"`
 	ScreenshotURL        string     `json:"screenshotUrl"`
 	CoreName             string     `json:"coreName"`
+	PinnedCoreSha256     string     `json:"pinnedCoreSha256"`
 	CheatsEnabled        bool       `json:"cheatsEnabled"`
 	SaveCount            int        `json:"saveCount"`
 	IsSharedSession      bool       `json:"isSharedSession"`

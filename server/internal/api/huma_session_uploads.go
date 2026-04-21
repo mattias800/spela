@@ -354,6 +354,9 @@ func (h *SessionHandler) HumaUpsertSlotSave(ctx context.Context, in *SessionSlot
 	if screenshotURL != "" {
 		updates["screenshot_url"] = screenshotURL
 	}
+	if sha := h.pinSessionCoreSha256(session, body.CoreName); sha != "" {
+		updates["pinned_core_sha256"] = sha
+	}
 	h.DB.Model(&session).Updates(updates)
 
 	h.DB.Preload("User").First(&rec, rec.ID)
@@ -430,6 +433,11 @@ func (h *SessionHandler) tryWriteSessionScreenshot(sessionID uint, screenshot hu
 // touchSessionAfterUpload updates the session's last_played_at, last_played_by,
 // optional screenshot URL and optional core name. Pulled into a helper so the
 // three save-upload handlers share identical update semantics.
+//
+// This also lazily pins PinnedCoreSha256 on the first save that carries a
+// resolvable coreName — see pinSessionCoreSha256 for the policy. We do the
+// pin here (instead of inside each upload handler) so manual and auto-save
+// paths stay in lockstep.
 func (h *SessionHandler) touchSessionAfterUpload(session db.GameSession, uid uint, screenshotURL, coreName string) {
 	now := time.Now()
 	updates := map[string]interface{}{"last_played_at": now, "last_played_by": uid}
@@ -439,5 +447,36 @@ func (h *SessionHandler) touchSessionAfterUpload(session db.GameSession, uid uin
 	if coreName != "" {
 		updates["core_name"] = coreName
 	}
+	if sha := h.pinSessionCoreSha256(session, coreName); sha != "" {
+		updates["pinned_core_sha256"] = sha
+	}
 	h.DB.Model(&session).Updates(updates)
+}
+
+// pinSessionCoreSha256 returns the sha256 to persist into
+// GameSession.PinnedCoreSha256, or "" if the pin should be left alone.
+//
+// Rules:
+//   - If the session already has a pinned SHA, return "" (never overwrite).
+//   - If coreName is empty, return "" (nothing to resolve).
+//   - Otherwise look up the Core by name; if it has a non-empty Sha256,
+//     return it. If no row matches or its SHA is still empty (e.g. the core
+//     binary has never been served so ensureCoreMetadata hasn't run yet),
+//     return "" — we'll pick it up on the next save.
+//
+// This is intentionally lossy: sessions can go a few saves before a pin
+// lands, which is fine because the pin is an optimization — the player
+// will fall back to the latest binary if PinnedCoreSha256 is empty.
+func (h *SessionHandler) pinSessionCoreSha256(session db.GameSession, coreName string) string {
+	if session.PinnedCoreSha256 != "" {
+		return ""
+	}
+	if coreName == "" {
+		return ""
+	}
+	var core db.Core
+	if err := h.DB.Where("name = ?", coreName).First(&core).Error; err != nil {
+		return ""
+	}
+	return core.Sha256
 }
