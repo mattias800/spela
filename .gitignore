@@ -27,11 +27,32 @@ server/saves/
 
 # Dependencies (npm)
 web/node_modules/
+design-proposals/node_modules/
 
 # Build outputs
 web/dist/
 web/build/
 web/dummy-non-existing-folder/
+design-proposals/dist/
+
+# Server build artefacts (local test binaries and dev databases)
+server/spela-server
+server/server
+server/api.test
+server/dump-openapi
+server/spela.db-shm
+server/spela.db-wal
+server/.vite/
+
+# Player-app local dev artefacts
+player/desktop/spela.db
+player/openapitools.json
+
+# Root-level local test + tool output (not source)
+spela.db
+openapitools.json
+test-results/
+node_modules/
 
 # Environment
 .env
