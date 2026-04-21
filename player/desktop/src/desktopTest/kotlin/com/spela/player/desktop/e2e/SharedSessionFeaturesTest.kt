@@ -454,81 +454,13 @@ class SharedSessionFeaturesTest {
     }
 
     // ---- Shared session detail: copy save to game ----
-
-    @Test
-    fun sharedSessionDetailScreenShowsCopyButtonOnSaves() = runComposeUiTest {
-        val harness = createLoggedInHarness()
-        harness.sharedSessionRepo.sharedSessionDetail = SharedSessionDetail(
-            id = "ss1",
-            name = "Test Session",
-            gameId = "1",
-            gameTitle = "Castlevania",
-            ownerId = "1",
-            ownerUsername = "player",
-            memberCount = 1,
-            members = emptyList(),
-        )
-        harness.sharedSessionRepo.sharedSessionSaves = listOf(
-            SharedSessionSave(
-                id = 1,
-                sharedSessionId = "ss1",
-                username = "player",
-                name = "Boss fight save",
-                fileSize = 4096,
-                isAuto = false,
-            ),
-        )
-
-        setContent { harness.App() }
-
-        harness.navigationViewModel.onIntent(
-            NavigationIntent.NavigateTo(SpScreen.SharedSessionDetail("ss1"))
-        )
-        advance(harness)
-
-        onNodeWithContentDescription("Copy Boss fight save to your library").assertExists()
-    }
-
-    @Test
-    fun sharedSessionDetailScreenCopySaveShowsSuccessMessage() = runComposeUiTest {
-        val harness = createLoggedInHarness()
-        harness.sharedSessionRepo.sharedSessionDetail = SharedSessionDetail(
-            id = "ss1",
-            name = "Test Session",
-            gameId = "1",
-            gameTitle = "Castlevania",
-            ownerId = "1",
-            ownerUsername = "player",
-            memberCount = 1,
-            members = emptyList(),
-        )
-        harness.sharedSessionRepo.sharedSessionSaves = listOf(
-            SharedSessionSave(
-                id = 1,
-                sharedSessionId = "ss1",
-                username = "player",
-                name = "Boss fight save",
-                fileSize = 4096,
-                isAuto = false,
-            ),
-        )
-
-        setContent { harness.App() }
-
-        harness.navigationViewModel.onIntent(
-            NavigationIntent.NavigateTo(SpScreen.SharedSessionDetail("ss1"))
-        )
-        advance(harness)
-
-        onNodeWithContentDescription("Copy Boss fight save to your library").assertExists()
-        onNodeWithContentDescription("Copy Boss fight save to your library").performClick()
-        // Advance test dispatcher only (not Compose clock) to process ViewModel coroutine
-        harness.testDispatcher.scheduler.advanceTimeBy(2_000)
-        harness.testDispatcher.scheduler.runCurrent()
-
-        val state = harness.sharedSessionDetailViewModel.state.value
-        assertEquals("Save copied to your library", state.successMessage)
-    }
+    //
+    // The "Copy save to your library" button was removed along with the
+    // game-scoped save model (commit 8b7bcb49). The replacement — session
+    // cloning — is tracked in #553 and will require fresh tests against
+    // the new UI. The two tests that lived here have been deleted rather
+    // than ported, since they exercised an endpoint/button that no longer
+    // exists in any form.
 
     // ---- Shared session detail: invite section ----
 
