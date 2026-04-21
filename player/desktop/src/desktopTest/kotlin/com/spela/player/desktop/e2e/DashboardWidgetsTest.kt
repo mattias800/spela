@@ -58,8 +58,10 @@ class DashboardWidgetsTest {
     @Test
     fun personalStatsHiddenWhenLibraryEmpty() = runComposeUiTest {
         val harness = createLoggedInHarness()
-        // Empty game list triggers the EmptyLibrary state, hiding all sections
+        // Empty library state requires clearing both games AND consoles —
+        // HomeScreen.isEmpty considers consoles too (see PR #656).
         harness.gameRepo.games = emptyList()
+        harness.gameRepo.consoles = emptyList()
 
         setContent { harness.App() }
         advance(harness)
