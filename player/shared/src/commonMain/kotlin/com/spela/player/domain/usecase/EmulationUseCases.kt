@@ -1,8 +1,26 @@
 package com.spela.player.domain.usecase
 
+import com.spela.player.domain.repository.CorePrunedException
 import com.spela.player.domain.repository.CoreRepository
 import com.spela.player.domain.repository.DownloadRepository
 import com.spela.player.util.currentPlatform
+
+/**
+ * Result of preparing a game for emulation. Carries both the resolved
+ * file paths and an optional user-facing warning when we had to fall
+ * back from a pinned core version.
+ */
+data class PrepareGameResult(
+    val gamePath: String,
+    val corePath: String,
+    /**
+     * Non-null when the session had a pinned core sha256 but that
+     * historical binary was no longer available (pruned) and we
+     * silently fell back to the latest core. UI surfaces this as a
+     * non-blocking warning. Null when no pin, or the pin was satisfied.
+     */
+    val coreVersionWarning: String? = null,
+)
 
 /**
  * Some HW-accelerated cores don't work on macOS due to Metal-backed GL
@@ -32,11 +50,27 @@ class PrepareGameUseCase(
     private val downloadRepository: DownloadRepository,
     private val coreRepository: CoreRepository,
 ) {
+    /** Warning copy shown to the user when the session's pinned core is no longer on the server. */
+    private val prunedWarning =
+        "Original core version no longer available. The latest core may not load this save correctly."
+
     /**
      * Ensures both the game ROM and the required libretro core are available locally.
-     * Returns a pair of (gamePath, corePath).
+     *
+     * When [pinnedCoreSha256] is non-null the use case first attempts a
+     * hash-versioned core download (from the server-side history snapshot).
+     * If the historical binary has been pruned, we fall back to the
+     * unversioned download path and surface [prunedWarning] via the
+     * returned [PrepareGameResult.coreVersionWarning]. Save-state failures
+     * downstream still go through the existing error path.
+     *
+     * Returns a [PrepareGameResult] carrying the resolved paths and
+     * (optionally) the fallback warning.
      */
-    suspend operator fun invoke(gameId: String): Result<Pair<String, String>> {
+    suspend operator fun invoke(
+        gameId: String,
+        pinnedCoreSha256: String? = null,
+    ): Result<PrepareGameResult> {
         val gamePath = downloadRepository.getLocalGamePath(gameId)
             ?: return Result.failure(IllegalStateException("Game not downloaded"))
 
@@ -48,7 +82,7 @@ class PrepareGameUseCase(
                 val localPath = coreRepository.getLocalCorePath(coreName)
                 if (localPath != null) {
                     println("[PrepareGame] Using local fallback core: $localPath")
-                    return Result.success(gamePath to localPath)
+                    return Result.success(PrepareGameResult(gamePath, localPath))
                 }
             }
             return Result.failure(networkError)
@@ -60,6 +94,37 @@ class PrepareGameUseCase(
         // constructed from the substituted name.
         val downloadUrl = if (coreName != core.name) null else core.downloadUrl
 
+        // Pinned-core path — #555 Phase 3 session-to-core binding.
+        // We attempt the versioned download only when the session has a
+        // pin; otherwise we use the regular local-cache-or-download flow.
+        // Platform core substitutions (macOS Metal, Android variants)
+        // intentionally skip the hash path because the pinned sha refers
+        // to the ORIGINAL core name's binary, not the substitute's.
+        if (pinnedCoreSha256 != null && coreName == core.name) {
+            val versioned = coreRepository.downloadCoreByHash(coreName, pinnedCoreSha256)
+            val pinnedPath = versioned.getOrNull()
+            if (pinnedPath != null) {
+                return Result.success(PrepareGameResult(gamePath, pinnedPath))
+            }
+            val error = versioned.exceptionOrNull()
+            if (error is CorePrunedException) {
+                println("[PrepareGame] Pinned core $pinnedCoreSha256 pruned — falling back to latest")
+                val fallbackPath = coreRepository.getLocalCorePath(coreName)
+                    ?: coreRepository.downloadCore(coreName, downloadUrl).getOrElse {
+                        return Result.failure(it)
+                    }
+                return Result.success(
+                    PrepareGameResult(gamePath, fallbackPath, coreVersionWarning = prunedWarning),
+                )
+            }
+            // Any other failure: treat as a transient issue — fall back
+            // to unversioned so gameplay still works. No warning surface
+            // in this case: the latest core is also the pinned version
+            // on every-other-update, and the user doesn't need to know
+            // about a transient network glitch.
+            println("[PrepareGame] Versioned core download failed (${error?.message}) — falling back to latest")
+        }
+
         val corePath = coreRepository.getLocalCorePath(coreName)
             ?: run {
                 coreRepository.downloadCore(coreName, downloadUrl).getOrElse {
@@ -67,7 +132,7 @@ class PrepareGameUseCase(
                 }
             }
 
-        return Result.success(gamePath to corePath)
+        return Result.success(PrepareGameResult(gamePath, corePath))
     }
 
     /**

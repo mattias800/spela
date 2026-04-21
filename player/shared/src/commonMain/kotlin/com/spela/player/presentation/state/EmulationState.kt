@@ -81,6 +81,14 @@ data class EmulationState(
     val showExitConfirm: Boolean = false,
     val requestExit: Boolean = false,
     val statusMessage: String? = null,
+    /**
+     * Non-blocking warning shown when the session's pinned core
+     * version (see `GameSession.pinnedCoreSha256`) is no longer
+     * available on the server (pruned from history retention) and
+     * emulation fell back to the latest core. `null` when there's no
+     * issue. #555 Phase 3.
+     */
+    val coreVersionWarning: String? = null,
     val fps: Float = 0f,
     val frameTime: Float = 0f,
     val isFastForward: Boolean = false,

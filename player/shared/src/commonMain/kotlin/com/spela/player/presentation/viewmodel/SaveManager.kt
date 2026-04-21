@@ -87,6 +87,21 @@ class SaveManager(
     }
 
     /**
+     * Returns the [com.spela.player.domain.model.GameSession.pinnedCoreSha256]
+     * for [sessionId], or null when no session / no pin / network failure.
+     * Used by EmulationViewModel to steer [PrepareGameUseCase] onto the
+     * versioned-core-download path when the session has a pin.
+     */
+    suspend fun pinnedCoreSha256For(sessionId: String?): String? {
+        if (sessionId.isNullOrEmpty()) return null
+        return try {
+            sessionRepository.getSession(sessionId).getOrNull()?.pinnedCoreSha256
+        } catch (_: Exception) {
+            null
+        }
+    }
+
+    /**
      * Load SRAM (save data) before starting emulation.
      * Downloads from session SRAM endpoint.
      * If the data starts with ZIP magic bytes, it's a directory-based save (e.g. Dolphin)

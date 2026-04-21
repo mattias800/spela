@@ -847,6 +847,36 @@ class SpelaApiClient(
         return response.body()
     }
 
+    /**
+     * Fetches a specific historical build of the core identified by [coreId]
+     * matching [sha256]. The endpoint returns the binary directly (zipped,
+     * same as the unversioned endpoint) or 404 when the hash has been
+     * pruned from server-side retention.
+     *
+     * Returns the raw HTTP status alongside the body so callers can
+     * distinguish 404 (pruned) from real errors.
+     */
+    suspend fun downloadCoreByHash(
+        coreId: String,
+        sha256: String,
+        platform: String = "android",
+        onProgress: (Long, Long?) -> Unit = { _, _ -> },
+    ): Pair<Int, ByteArray?> {
+        val response = client.get("$baseUrl/api/cores/$coreId/download") {
+            parameter("platform", platform)
+            parameter("sha256", sha256)
+            onDownload { bytesSentTotal, contentLength ->
+                onProgress(bytesSentTotal, contentLength)
+            }
+        }
+        val status = response.status.value
+        return if (response.status.isSuccess()) {
+            status to response.body<ByteArray>()
+        } else {
+            status to null
+        }
+    }
+
     // Shared Saves
 
     suspend fun getSharedSaves(

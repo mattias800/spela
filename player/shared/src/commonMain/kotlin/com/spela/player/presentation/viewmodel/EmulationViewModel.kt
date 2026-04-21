@@ -453,9 +453,21 @@ class EmulationViewModel(
                 }
             }
 
-            // Prepare game and core files
-            prepareGameUseCase(gameId).fold(
-                onSuccess = { (gamePath, corePath) ->
+            // Prepare game and core files. When the session has a
+            // pinnedCoreSha256 (#555 Phase 3) we pass it through so the
+            // use case can attempt a versioned core download first.
+            val pinnedSha = saveManager.pinnedCoreSha256For(saveManager.currentSessionId)
+            prepareGameUseCase(gameId, pinnedSha).fold(
+                onSuccess = { prepared ->
+                    val gamePath = prepared.gamePath
+                    val corePath = prepared.corePath
+                    // Surface the fallback warning (non-blocking) if the
+                    // pinned binary was pruned and we fell back to latest.
+                    if (prepared.coreVersionWarning != null) {
+                        withContext(dispatchers.main) {
+                            _state.update { it.copy(coreVersionWarning = prepared.coreVersionWarning) }
+                        }
+                    }
                     try {
                         // Set core options BEFORE loadCore so they're already in
                         // the variable store when SET_VARIABLES runs during init.

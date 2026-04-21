@@ -531,6 +531,26 @@ class FakeCoreRepository : CoreRepository {
         LibretroCore(2, "snes9x", "Snes9x", "1.62.3", "linux,macos,windows"),
     )
 
+    /**
+     * When true, `getLocalCorePath` returns null so the use case takes
+     * the download path (used by #555 core-pinning tests).
+     */
+    var forceMissingLocalCore: Boolean = false
+
+    /**
+     * Recorded downloadCoreByHash calls for test assertions —
+     * `Pair(coreName, sha256)` in call order.
+     */
+    val downloadByHashCalls: MutableList<Pair<String, String>> = mutableListOf()
+    /** Recorded unversioned downloadCore calls — coreName in call order. */
+    val downloadCalls: MutableList<String> = mutableListOf()
+
+    /**
+     * Sha256 values that should be treated as pruned (404). The fake
+     * throws [CorePrunedException] for these; anything else succeeds.
+     */
+    val prunedHashes: MutableSet<String> = mutableSetOf()
+
     override suspend fun getAvailableCores(): Result<List<LibretroCore>> {
         return Result.success(cores)
     }
@@ -539,14 +559,25 @@ class FakeCoreRepository : CoreRepository {
         return Result.success(cores.first())
     }
 
-    override suspend fun downloadCore(coreId: String, downloadUrl: String?, onProgress: (Float) -> Unit): Result<String> {
+    override suspend fun downloadCore(coreName: String, downloadUrl: String?, onProgress: (Float) -> Unit): Result<String> {
+        downloadCalls.add(coreName)
         onProgress(1f)
-        return Result.success("/fake/cores/$coreId")
+        return Result.success("/fake/cores/$coreName")
     }
 
-    override suspend fun getLocalCorePath(coreId: String): String = "/fake/cores/$coreId"
+    override suspend fun downloadCoreByHash(coreName: String, sha256: String, onProgress: (Float) -> Unit): Result<String> {
+        downloadByHashCalls.add(coreName to sha256)
+        if (sha256 in prunedHashes) {
+            return Result.failure(com.spela.player.domain.repository.CorePrunedException(sha256))
+        }
+        onProgress(1f)
+        return Result.success("/fake/cores/$coreName@$sha256")
+    }
 
-    override suspend fun isCoreCached(coreId: String): Boolean = true
+    override suspend fun getLocalCorePath(coreName: String): String? =
+        if (forceMissingLocalCore) null else "/fake/cores/$coreName"
+
+    override suspend fun isCoreCached(coreName: String): Boolean = !forceMissingLocalCore
 }
 
 class FakeLibretroController : LibretroController {
