@@ -43,7 +43,7 @@ class PauseHintTest {
         advance(harness)
 
         // Start game
-        onNodeWithContentDescription("Play Castlevania").performClick()
+        onNodeWithTag("game_detail_play_button").performClick()
         advance(harness)
 
         // Overlay should be hidden by default
@@ -65,7 +65,7 @@ class PauseHintTest {
         advance(harness)
 
         // Start game (overlay hidden by default)
-        onNodeWithContentDescription("Play Castlevania").performClick()
+        onNodeWithTag("game_detail_play_button").performClick()
         advance(harness)
 
         // Game should be running, overlay hidden
@@ -81,7 +81,7 @@ class PauseHintTest {
         advance(harness)
 
         // Start game (overlay hidden by default)
-        onNodeWithContentDescription("Play Castlevania").performClick()
+        onNodeWithTag("game_detail_play_button").performClick()
         advance(harness)
 
         // The "Press Esc to pause" hint should be visible in the emulation surface.
@@ -104,7 +104,7 @@ class PauseHintTest {
         advance(harness)
 
         // Start game (overlay hidden by default)
-        onNodeWithContentDescription("Play Castlevania").performClick()
+        onNodeWithTag("game_detail_play_button").performClick()
         advance(harness)
 
         // Toggle overlay to show it
@@ -128,7 +128,7 @@ class PauseHintTest {
         advance(harness)
 
         // Start game (overlay hidden by default, FPS HUD should be visible)
-        onNodeWithContentDescription("Play Castlevania").performClick()
+        onNodeWithTag("game_detail_play_button").performClick()
         advance(harness)
 
         // FPS HUD should be visible (the small badge in top-right)
@@ -148,7 +148,7 @@ class PauseHintTest {
         advance(harness)
 
         // Start game (overlay hidden by default, hint would show and fade)
-        onNodeWithContentDescription("Play Castlevania").performClick()
+        onNodeWithTag("game_detail_play_button").performClick()
         advance(harness)
 
         // Open overlay via ViewModel

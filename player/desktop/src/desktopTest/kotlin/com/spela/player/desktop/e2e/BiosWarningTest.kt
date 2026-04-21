@@ -148,7 +148,7 @@ class BiosWarningTest {
         navigateToGameDetail(harness, gameId = "1")
 
         // The play button should be enabled
-        onNodeWithContentDescription("Play Castlevania").assertIsDisplayed()
+        onNodeWithTag("game_detail_play_button").assertIsDisplayed()
     }
 
     @Test

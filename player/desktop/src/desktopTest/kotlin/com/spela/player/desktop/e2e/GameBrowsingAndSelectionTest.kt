@@ -121,7 +121,7 @@ class GameBrowsingAndSelectionTest {
         advance(harness)
 
         // Game is cached, so Play should be shown
-        onNodeWithContentDescription("Play Castlevania").assertIsDisplayed()
+        onNodeWithTag("game_detail_play_button").assertIsDisplayed()
     }
 
     @Test

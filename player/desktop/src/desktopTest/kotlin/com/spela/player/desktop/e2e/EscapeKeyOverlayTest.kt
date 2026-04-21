@@ -39,7 +39,7 @@ class EscapeKeyOverlayTest {
         advance(harness)
 
         // Start game from detail screen (overlay is hidden by default)
-        onNodeWithContentDescription("Play Castlevania").performClick()
+        onNodeWithTag("game_detail_play_button").performClick()
         advance(harness)
     }
 

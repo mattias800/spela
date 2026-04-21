@@ -37,7 +37,7 @@ class EmulationVerificationTest {
         setContent { harness.App() }
         advance(harness)
 
-        onNodeWithContentDescription("Play Castlevania").performClick()
+        onNodeWithTag("game_detail_play_button").performClick()
         advance(harness)
 
         // Verify the correct core was loaded
@@ -54,7 +54,7 @@ class EmulationVerificationTest {
         setContent { harness.App() }
         advance(harness)
 
-        onNodeWithContentDescription("Play Castlevania").performClick()
+        onNodeWithTag("game_detail_play_button").performClick()
         advance(harness)
 
         // Verify emulation state
@@ -72,7 +72,7 @@ class EmulationVerificationTest {
         advance(harness)
 
         // Start game
-        onNodeWithContentDescription("Play Castlevania").performClick()
+        onNodeWithTag("game_detail_play_button").performClick()
         advance(harness)
 
         // Game starts with overlay hidden; verify it's running
@@ -87,7 +87,7 @@ class EmulationVerificationTest {
         setContent { harness.App() }
         advance(harness)
 
-        onNodeWithContentDescription("Play Castlevania").performClick()
+        onNodeWithTag("game_detail_play_button").performClick()
         advance(harness)
 
         assertTrue(harness.libretroController.isRunning)
@@ -124,7 +124,7 @@ class EmulationVerificationTest {
         advance(harness)
 
         // Play first game
-        onNodeWithContentDescription("Play Castlevania").performClick()
+        onNodeWithTag("game_detail_play_button").performClick()
         advance(harness)
 
         assertTrue(harness.libretroController.isRunning)
