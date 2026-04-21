@@ -1577,11 +1577,12 @@ class SpelaApiClient(
         name: String? = null,
         saveId: Long? = null,
     ): com.spela.client.models.GameSessionResponse {
-        val request = if (name != null) {
-            com.spela.client.models.DuplicateSessionRequest(name = name)
-        } else {
-            null
-        }
+        // Always send a DuplicateSessionRequest — the model's `name` field
+        // is nullable server-side, so passing name=null through the DTO
+        // sends `{"name": null}` which huma accepts. Sending the Kotlin
+        // value `null` itself would cause Ktor to serialize the body as
+        // the JSON literal `null`, which huma rejects with 422. See #663.
+        val request = com.spela.client.models.DuplicateSessionRequest(name = name)
         return sessionsApi.cloneSession(sessionId, saveId, request).body()
     }
 
