@@ -31,6 +31,7 @@ class SecondaryScreenArtPageTest {
                 gameTitle = "Super Metroid",
                 sessionElapsedSeconds = 3600,
                 consoleId = "snes",
+                consoleName = "Super Nintendo",
                 consoleColorTheme = null,
                 gameDeveloper = "Nintendo R&D1",
                 gamePublisher = "Nintendo",
@@ -56,6 +57,7 @@ class SecondaryScreenArtPageTest {
                 gameTitle = "Unknown ROM",
                 sessionElapsedSeconds = 0,
                 consoleId = "nes",
+                consoleName = "Nintendo Entertainment System",
                 consoleColorTheme = null,
             )
         }
@@ -71,6 +73,7 @@ class SecondaryScreenArtPageTest {
                 gameTitle = "Chrono Trigger",
                 sessionElapsedSeconds = 120,
                 consoleId = "snes",
+                consoleName = "Super Nintendo",
                 consoleColorTheme = null,
                 gameDescription = "A classic JRPG about time travel and saving the world.",
             )
@@ -88,6 +91,7 @@ class SecondaryScreenArtPageTest {
                 gameTitle = "Final Fantasy VI",
                 sessionElapsedSeconds = 60,
                 consoleId = "snes",
+                consoleName = "Super Nintendo",
                 consoleColorTheme = null,
                 gameRating = 4.8,
             )
@@ -107,6 +111,7 @@ class SecondaryScreenArtPageTest {
                 gameTitle = "Street Fighter II",
                 sessionElapsedSeconds = 300,
                 consoleId = "snes",
+                consoleName = "Super Nintendo",
                 consoleColorTheme = null,
                 gamePlayers = 2,
             )
@@ -124,6 +129,7 @@ class SecondaryScreenArtPageTest {
                 gameTitle = "Mega Man X",
                 sessionElapsedSeconds = 180,
                 consoleId = "snes",
+                consoleName = "Super Nintendo",
                 consoleColorTheme = null,
                 gamePlayers = 1,
             )
@@ -199,6 +205,7 @@ class SecondaryScreenArtPageTest {
                 gameTitle = "Unknown ROM",
                 sessionElapsedSeconds = 0,
                 consoleId = "nes",
+                consoleName = "Nintendo Entertainment System",
                 consoleColorTheme = null,
                 gameDeveloper = "",
                 gamePublisher = "",
@@ -219,6 +226,7 @@ class SecondaryScreenArtPageTest {
                 gameTitle = "Super Metroid",
                 sessionElapsedSeconds = 120,
                 consoleId = "snes",
+                consoleName = "Super Nintendo",
                 consoleColorTheme = null,
             )
         }
@@ -237,6 +245,7 @@ class SecondaryScreenArtPageTest {
                 gameTitle = "Test Game",
                 sessionElapsedSeconds = 3661, // 1h 1m 1s
                 consoleId = "nes",
+                consoleName = "Nintendo Entertainment System",
                 consoleColorTheme = null,
             )
         }

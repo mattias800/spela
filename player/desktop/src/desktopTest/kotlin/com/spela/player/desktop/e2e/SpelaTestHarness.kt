@@ -147,6 +147,7 @@ class SpelaTestHarness(
         sharedSessionRepository = sharedSessionRepo,
         gameRepository = gameRepo,
         apiClient = fakeApiClient,
+        scrapeService = scrapeService,
         dispatchers = dispatchers,
         scope = scope,
         biosRepository = biosRepo,
