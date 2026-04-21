@@ -50,9 +50,9 @@ export function useScanProgress(): ScanProgressState {
     if (!initialStatus) return;
     if (initialStatus.active) {
       setPhase("active");
-      setMessage(initialStatus.message ?? "Scanning...");
-      setCurrent(initialStatus.current ?? 0);
-      setTotal(initialStatus.total ?? 0);
+      setMessage(initialStatus.message || "Scanning...");
+      setCurrent(initialStatus.current);
+      setTotal(initialStatus.total);
     } else if (phase === "active") {
       // Status went from active to inactive — scan finished while we were polling
       setPhase("idle");
