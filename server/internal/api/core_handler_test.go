@@ -110,6 +110,11 @@ func TestDownloadCore_BackfillsMetadata(t *testing.T) {
 	assert.Equal(t, int64(len(payload)), refreshed.SizeBytes)
 	require.NotNil(t, refreshed.FetchedAt)
 	assert.False(t, refreshed.FetchedAt.IsZero())
+	// Nestopia is a buildbot core (DownloadURL is empty in the seed), so
+	// SourceURL must stay empty — the helper only copies a non-empty
+	// DownloadURL into SourceURL. An admin cores UI follow-up can assert
+	// the complementary path for pinned cores like azahar.
+	assert.Empty(t, refreshed.SourceURL)
 
 	// A second serve must not re-hash (the row is already populated, so the
 	// FetchedAt timestamp should remain stable).
@@ -126,4 +131,43 @@ func TestDownloadCore_BackfillsMetadata(t *testing.T) {
 	require.NotNil(t, refreshedAgain.FetchedAt)
 	assert.Equal(t, firstFetchedAt.Unix(), refreshedAgain.FetchedAt.Unix(),
 		"fetchedAt should not change on subsequent serves")
+}
+
+// TestDownloadCore_PinnedCoreCopiesDownloadURL verifies that a core with a
+// populated DownloadURL (pinned cores like azahar) has its DownloadURL
+// copied into SourceURL on the first-serve backfill.
+func TestDownloadCore_PinnedCoreCopiesDownloadURL(t *testing.T) {
+	database, cfg := setupTestEnv(t)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
+	token := registerAndGetToken(t, router)
+
+	require.NoError(t, os.MkdirAll(cfg.CoreDir, 0o755))
+	payload := []byte("pinned-core-bytes")
+	corePath := filepath.Join(cfg.CoreDir, "azahar_libretro.so")
+	require.NoError(t, os.WriteFile(corePath, payload, 0o644))
+
+	var core db.Core
+	require.NoError(t, database.Where("name = ?", "azahar").First(&core).Error)
+	require.NotEmpty(t, core.DownloadURL, "seeded azahar core should have a DownloadURL template")
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/cores/"+itoa(core.ID)+"/download?platform=linux", nil)
+	req.Header.Set("Authorization", "Bearer "+token)
+	router.ServeHTTP(w, req)
+	require.Equal(t, http.StatusOK, w.Code)
+
+	var refreshed db.Core
+	require.NoError(t, database.First(&refreshed, core.ID).Error)
+	assert.Equal(t, core.DownloadURL, refreshed.SourceURL,
+		"pinned core's DownloadURL template should be copied to SourceURL on first serve")
+}
+
+// TestHashFileSha256_Errors verifies that hashFileSha256 returns an error
+// for unreadable paths. This pins the contract that `ensureCoreMetadata`
+// relies on: a hash failure surfaces as a Go error, not a panic, which
+// lets the download path log-and-continue without blocking the user.
+func TestHashFileSha256_Errors(t *testing.T) {
+	_, _, err := hashFileSha256(filepath.Join(t.TempDir(), "does-not-exist"))
+	assert.Error(t, err, "hashing a missing file must return an error, not panic")
 }

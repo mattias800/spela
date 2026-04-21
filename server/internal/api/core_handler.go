@@ -27,7 +27,18 @@ type CoreHandler struct {
 //
 // Errors hashing the file are logged and swallowed — a failure here must
 // not block the user from downloading the core. #555.
+//
+// Limitations tracked for #555 Phase 2:
+//   - Binary replacement staleness: if an admin replaces the on-disk
+//     binary after the row is populated, the recorded sha256 goes stale
+//     until a force-refresh admin endpoint lands.
+//   - Concurrent first-serves may both run the hash and issue
+//     identical UPDATEs — SQLite serialises writes so there's no
+//     corruption, but the second hash is wasted I/O.
 func (h *CoreHandler) ensureCoreMetadata(core *db.Core, corePath string) {
+	// The `SizeBytes > 0` check both skips populated rows and avoids a
+	// bogus skip on zero-byte files: `FetchedAt != nil` is the
+	// authoritative "already ran" marker.
 	if core.Sha256 != "" && core.SizeBytes > 0 && core.FetchedAt != nil {
 		return
 	}
