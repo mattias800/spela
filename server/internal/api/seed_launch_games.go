@@ -449,6 +449,102 @@ var launchGamesByConsole = map[string][]string{
 		"Tennis",
 		"Golf",
 	},
+
+	// ColecoVision — North America, 1982-08.
+	"cv": {
+		"Donkey Kong",
+		"Cosmic Avenger",
+		"Lady Bug",
+		"Mouse Trap",
+		"Smurf: Rescue in Gargamel's Castle",
+		"Venture",
+		"Zaxxon",
+		"Carnival",
+		"Cosmic Crisis",
+		"Head to Head Baseball",
+		"Head to Head Football",
+	},
+
+	// Mattel Intellivision — North America, 1979-12.
+	"intv": {
+		"Las Vegas Poker & Blackjack",
+		"Math Fun",
+		"Backgammon",
+		"Checkers",
+		"Electric Company Math Fun",
+		"Armor Battle",
+		"Auto Racing",
+		"Major League Baseball",
+		"NBA Basketball",
+		"NFL Football",
+		"NHL Hockey",
+	},
+
+	// Magnavox Odyssey 2 — North America, 1978.
+	"o2": {
+		"Speedway!",
+		"Spin-Out!",
+		"Crypto-Logic!",
+		"Math-A-Magic!",
+		"Echo!",
+		"Armored Encounter!",
+		"Sub Chase!",
+		"Las Vegas Blackjack!",
+	},
+
+	// Fairchild Channel F — North America, 1976-11.
+	"chaf": {
+		"Tic-Tac-Toe, Shooting Gallery, Doodle, and Quadra-Doodle",
+		"Desert Fox, Shooting Gallery",
+		"Video Blackjack",
+		"Spitfire",
+	},
+
+	// Atari 5200 — North America, 1982-11.
+	"a52": {
+		"Super Breakout",
+		"Missile Command",
+		"Pac-Man",
+		"Galaxian",
+		"Centipede",
+		"Defender",
+		"Star Raiders",
+		"Space Invaders",
+		"Realsports Football",
+		"Asteroids",
+	},
+
+	// GCE Vectrex — North America, 1982-11.
+	"vec": {
+		"Mine Storm",
+		"Star Trek: The Motion Picture",
+		"Scramble",
+		"Berzerk",
+		"Armor Attack",
+		"Rip Off",
+		"HeadsUp: Soccer/Football",
+		"Hyperchase",
+	},
+
+	// PC Engine SuperGrafx — Japan, 1989-12-08.
+	"sgx": {
+		"Battle Ace",
+		"Daimakaimura",
+	},
+
+	// PC-FX — Japan, 1994-12-23.
+	"pcfx": {
+		"Battle Heat",
+		"Team Innocent: The Point of No Return",
+	},
+
+	// TurboGrafx-CD / PC Engine CD — Japan, 1988-12-04.
+	"pcecd": {
+		"Fighting Street",
+		"No-Ri-Ko",
+		"Bikkuriman World",
+		"CD-ROM^2 System Card",
+	},
 }
 
 // launchGamesFor returns the curated launch-title list for a console, keyed
