@@ -157,10 +157,14 @@ class GamepadNavigationTest {
         harness.gamepadPortManager.setInputMode(InputMode.GAMEPAD)
         advanceQuick(harness)
 
-        // Switch to Consoles section via NextSection (Home → Explore → Consoles)
+        // Switch to Consoles section via NextSection (Home → Explore → Consoles).
+        // The destination screen's `autoFocus()` modifier on the first console
+        // card requests focus after a 500ms delay. `advanceFully` runs enough
+        // dispatcher iterations for that delay to elapse.
         harness.navigationViewModel.onIntent(NavigationIntent.NextSection)
+        advanceQuick(harness)
         harness.navigationViewModel.onIntent(NavigationIntent.NextSection)
-        advance(harness)
+        advanceFully(harness)
 
         // Focus should have been recovered — first console card should be focused
         val nesCard = onNodeWithContentDescription("Nintendo Entertainment System, 3 games")

@@ -131,6 +131,7 @@ import com.spela.player.presentation.ui.theme.SpTypography
 import com.spela.player.presentation.ui.gamepad.GamepadHandler
 import com.spela.player.presentation.ui.gamepad.InputMode
 import com.spela.player.presentation.ui.gamepad.LocalIsForwardNavigation
+import com.spela.player.presentation.ui.gamepad.LocalIsTabSwitch
 import com.spela.player.presentation.ui.gamepad.LocalInputMode
 import com.spela.player.presentation.ui.components.LocalScrapeService
 import com.spela.player.presentation.ui.components.ScrapeUpdates
@@ -458,7 +459,10 @@ fun SpelaApp(
                     fun ScreenContent(screen: com.spela.player.presentation.navigation.SpScreen) {
                         val isForward = !navState.isGoingBack && !navState.isTabSwitch
                         saveableStateHolder.SaveableStateProvider(screen.route) {
-                        CompositionLocalProvider(LocalIsForwardNavigation provides isForward) {
+                        CompositionLocalProvider(
+                            LocalIsForwardNavigation provides isForward,
+                            LocalIsTabSwitch provides navState.isTabSwitch,
+                        ) {
                         when (screen) {
                             is SpScreen.ServerConnection -> {
                                 ServerConnectionScreen(
