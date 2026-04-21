@@ -191,7 +191,7 @@ export function PublisherDetailPage() {
       {showTopRated && (
         <GameShelf
           title="Top Rated"
-          games={publisher.topGames!}
+          games={publisher.topGames}
           isLoading={false}
           onToggleFavorite={handleToggleFavorite}
           onTogglePlayLater={handleTogglePlayLater}
@@ -218,7 +218,7 @@ export function PublisherDetailPage() {
               isSelected={genreFilter === null}
               onClick={() => setGenreFilter(null)}
             />
-            {publisher.genreBreakdown!.map((genre) => (
+            {publisher.genreBreakdown.map((genre) => (
               <FilterChip
                 key={genre.name}
                 label={genre.name}
