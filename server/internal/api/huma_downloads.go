@@ -65,6 +65,7 @@ func streamBytesInline(data []byte, contentType string) *huma.StreamResponse {
 type CoreDownloadInput struct {
 	ID       string `path:"id" doc:"Core ID."`
 	Platform string `query:"platform" required:"false" default:"linux" doc:"Target platform: linux, macos, windows, android."`
+	Sha256   string `query:"sha256" required:"false" doc:"Optional hex sha256 of a historical core binary. When set, serves that specific version from the history snapshot; returns 404 if it's been pruned. Defaults to serving the current binary."`
 }
 
 // BiosDownloadInput is the input for GET /api/bios/{filename}.
@@ -396,6 +397,25 @@ func (h *CoreHandler) HumaDownloadCore(_ context.Context, in *CoreDownloadInput)
 		platform = "linux"
 	}
 
+	ext := platformExtension(platform)
+
+	// Historical version requested: serve from {CoreDir}/history/{sha}/...
+	// without running the metadata backfill — the metadata corresponds to
+	// whatever's current, not to the historical file.
+	if in.Sha256 != "" {
+		if h.CoreDir == "" {
+			return nil, huma.Error404NotFound("core history not available")
+		}
+		historyPath := h.historyBinaryPath(core, in.Sha256, ext)
+		if _, err := os.Stat(historyPath); os.IsNotExist(err) {
+			return nil, huma.Error404NotFound("core binary not available for requested sha256")
+		}
+		if !storage.ValidateROMPath(historyPath, []string{h.CoreDir}) {
+			return nil, huma.Error403Forbidden("core file access denied")
+		}
+		return streamFileFromDisk(historyPath, core.Name+"_libretro"+ext, "application/octet-stream"), nil
+	}
+
 	corePath := h.resolveCorePath(core, platform)
 	if corePath == "" {
 		return nil, huma.Error404NotFound("core binary not available")
@@ -407,9 +427,10 @@ func (h *CoreHandler) HumaDownloadCore(_ context.Context, in *CoreDownloadInput)
 
 	// Lazy backfill of factual core metadata. Only runs until the row
 	// has all fields populated; afterwards it's a no-op. See #555.
+	// Also snapshots the binary into {CoreDir}/history/{sha256}/... so
+	// future ?sha256= requests can serve it after a newer binary lands.
 	h.ensureCoreMetadata(&core, corePath)
 
-	ext := platformExtension(platform)
 	return streamFileFromDisk(corePath, core.Name+"_libretro"+ext, "application/octet-stream"), nil
 }
 
