@@ -44,7 +44,7 @@ class DesktopKeyboardMappingTest {
         advance(harness)
 
         // Start game (overlay hidden by default, game enters playing state)
-        onNodeWithContentDescription("Play Castlevania").performClick()
+        onNodeWithTag("game_detail_play_button").performClick()
         advance(harness)
 
         // Verify the controller is ready for input

@@ -36,7 +36,7 @@ class ChallengeCreationTest {
         advance(harness)
 
         // Start game
-        onNodeWithContentDescription("Play Castlevania").performClick()
+        onNodeWithTag("game_detail_play_button").performClick()
         advance(harness)
 
         // Open overlay
@@ -56,7 +56,7 @@ class ChallengeCreationTest {
         advance(harness)
 
         // Start game -> open overlay -> tap Challenge
-        onNodeWithContentDescription("Play Castlevania").performClick()
+        onNodeWithTag("game_detail_play_button").performClick()
         advance(harness)
         harness.emulationViewModel.onIntent(EmulationIntent.ToggleOverlay)
         advanceQuick(harness)
@@ -80,7 +80,7 @@ class ChallengeCreationTest {
         advance(harness)
 
         // Start game -> open overlay -> create challenge
-        onNodeWithContentDescription("Play Castlevania").performClick()
+        onNodeWithTag("game_detail_play_button").performClick()
         advance(harness)
         harness.emulationViewModel.onIntent(EmulationIntent.ToggleOverlay)
         advanceQuick(harness)
@@ -113,7 +113,7 @@ class ChallengeCreationTest {
         advance(harness)
 
         // Start game -> open overlay -> open creation form
-        onNodeWithContentDescription("Play Castlevania").performClick()
+        onNodeWithTag("game_detail_play_button").performClick()
         advance(harness)
         harness.emulationViewModel.onIntent(EmulationIntent.ToggleOverlay)
         advanceQuick(harness)
@@ -133,7 +133,7 @@ class ChallengeCreationTest {
         advance(harness)
 
         // Start game -> open overlay -> open challenge form -> cancel
-        onNodeWithContentDescription("Play Castlevania").performClick()
+        onNodeWithTag("game_detail_play_button").performClick()
         advance(harness)
         harness.emulationViewModel.onIntent(EmulationIntent.ToggleOverlay)
         advanceQuick(harness)

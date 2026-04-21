@@ -33,7 +33,7 @@ class InGameOverlayTest {
         advance(harness)
 
         // Start game
-        onNodeWithContentDescription("Play Castlevania").performClick()
+        onNodeWithTag("game_detail_play_button").performClick()
         advance(harness)
 
         // Open overlay (hidden by default on game start)

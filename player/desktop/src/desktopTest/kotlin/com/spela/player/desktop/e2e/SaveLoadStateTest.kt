@@ -34,7 +34,7 @@ class SaveLoadStateTest {
         advance(harness)
 
         // Start game
-        onNodeWithContentDescription("Play Castlevania").performClick()
+        onNodeWithTag("game_detail_play_button").performClick()
         advance(harness)
 
         // Open overlay to access Save button
@@ -60,7 +60,7 @@ class SaveLoadStateTest {
         advance(harness)
 
         // Start game
-        onNodeWithContentDescription("Play Castlevania").performClick()
+        onNodeWithTag("game_detail_play_button").performClick()
         advance(harness)
 
         // Open overlay to access Save/Load buttons
@@ -90,7 +90,7 @@ class SaveLoadStateTest {
         advance(harness)
 
         // Start game
-        onNodeWithContentDescription("Play Castlevania").performClick()
+        onNodeWithTag("game_detail_play_button").performClick()
         advance(harness)
 
         val saveCountBefore = harness.libretroController.saveCallCount

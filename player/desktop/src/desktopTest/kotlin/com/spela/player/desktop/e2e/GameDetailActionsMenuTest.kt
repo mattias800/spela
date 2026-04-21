@@ -29,7 +29,7 @@ class GameDetailActionsMenuTest {
         setContent { harness.App() }
         navigateToGameDetail(harness, "1")
 
-        onNodeWithContentDescription("Play Castlevania").assertIsDisplayed()
+        onNodeWithTag("game_detail_play_button").assertIsDisplayed()
     }
 
     @Test
