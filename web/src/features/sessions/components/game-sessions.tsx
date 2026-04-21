@@ -7,10 +7,11 @@ import {
   useCreateSession,
   useRenameSession,
   useDeleteSession,
-  useDuplicateSession,
+  useCloneSession,
 } from "@/hooks/use-sessions";
 import { useAuth } from "@/hooks/use-auth";
 import { SessionCard } from "./session-card";
+import { CloneSessionDialog } from "./clone-session-dialog";
 import type { GameSession } from "@/types/api";
 
 function SessionsSkeleton() {
@@ -44,9 +45,10 @@ export function GameSessions({ gameId }: GameSessionsProps) {
   const createSession = useCreateSession();
   const renameSession = useRenameSession();
   const deleteSession = useDeleteSession();
-  const duplicateSession = useDuplicateSession();
+  const cloneSession = useCloneSession();
   const [showNewInput, setShowNewInput] = useState(false);
   const [newName, setNewName] = useState("");
+  const [cloneTarget, setCloneTarget] = useState<GameSession | null>(null);
 
   function handleCreate() {
     const name = newName.trim() || `Session ${(sessions?.length ?? 0) + 1}`;
@@ -69,8 +71,24 @@ export function GameSessions({ gameId }: GameSessionsProps) {
     deleteSession.mutate({ id: session.id, gameId });
   }
 
-  function handleDuplicate(session: GameSession) {
-    duplicateSession.mutate({ id: session.id, gameId });
+  function handleRequestClone(session: GameSession) {
+    setCloneTarget(session);
+  }
+
+  function handleConfirmClone(name: string) {
+    if (!cloneTarget) return;
+    cloneSession.mutate(
+      { id: cloneTarget.id, gameId, name: name || undefined },
+      {
+        onSuccess: (created) => {
+          setCloneTarget(null);
+          // Cloning is a branching action — drop the user on the new
+          // session's detail page so they can decide whether to rename
+          // it further or jump straight to playing.
+          if (created?.id) navigate(`/sessions/${created.id}`);
+        },
+      },
+    );
   }
 
   function handleContinue(session: GameSession) {
@@ -169,19 +187,29 @@ export function GameSessions({ gameId }: GameSessionsProps) {
               onContinue={handleContinue}
               onRename={handleRename}
               onDelete={handleDelete}
-              onDuplicate={handleDuplicate}
+              onClone={handleRequestClone}
               isDeleting={
                 deleteSession.isPending &&
                 deleteSession.variables?.id === session.id
               }
-              isDuplicating={
-                duplicateSession.isPending &&
-                duplicateSession.variables?.id === session.id
+              isCloning={
+                cloneSession.isPending &&
+                cloneSession.variables?.id === session.id
               }
             />
           ))}
         </div>
       )}
+
+      <CloneSessionDialog
+        open={!!cloneTarget}
+        onClose={() => {
+          if (!cloneSession.isPending) setCloneTarget(null);
+        }}
+        sourceName={cloneTarget?.name ?? ""}
+        isPending={cloneSession.isPending}
+        onConfirm={handleConfirmClone}
+      />
     </Section>
   );
 }

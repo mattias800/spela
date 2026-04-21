@@ -30,7 +30,7 @@ const baseSession: GameSession = {
 const onContinue = vi.fn();
 const onRename = vi.fn();
 const onDelete = vi.fn();
-const onDuplicate = vi.fn();
+const onClone = vi.fn();
 
 function renderCard(
   session: GameSession = baseSession,
@@ -47,12 +47,19 @@ function renderCard(
         onContinue={onContinue}
         onRename={onRename}
         onDelete={onDelete}
-        onDuplicate={onDuplicate}
+        onClone={onClone}
         isDeleting={isDeleting}
-        isDuplicating={false}
+        isCloning={false}
       />
     </MemoryRouter>,
   );
+}
+
+/** Open the session card's `…` actions menu before the click-target
+ *  item is visible. Every secondary action on the card is hidden
+ *  behind this menu per the issue #553 UX guidance. */
+function openActionsMenu() {
+  fireEvent.click(screen.getByTestId("actions-menu-btn"));
 }
 
 beforeEach(() => {
@@ -82,9 +89,10 @@ describe("SessionCard", () => {
     expect(onContinue).toHaveBeenCalledWith(baseSession);
   });
 
-  it("enters rename mode when rename button clicked", () => {
+  it("enters rename mode when rename menu item clicked", () => {
     renderCard();
-    fireEvent.click(screen.getByLabelText("Rename session"));
+    openActionsMenu();
+    fireEvent.click(screen.getByRole("menuitem", { name: /rename session/i }));
     expect(screen.getByTestId("session-name-input")).toBeInTheDocument();
     expect(screen.getByTestId("session-name-input")).toHaveValue(
       "Main Playthrough",
@@ -93,7 +101,8 @@ describe("SessionCard", () => {
 
   it("calls onRename when name is changed and submitted", () => {
     renderCard();
-    fireEvent.click(screen.getByLabelText("Rename session"));
+    openActionsMenu();
+    fireEvent.click(screen.getByRole("menuitem", { name: /rename session/i }));
 
     const input = screen.getByTestId("session-name-input");
     fireEvent.change(input, { target: { value: "New Name" } });
@@ -104,7 +113,8 @@ describe("SessionCard", () => {
 
   it("cancels rename on Escape", () => {
     renderCard();
-    fireEvent.click(screen.getByLabelText("Rename session"));
+    openActionsMenu();
+    fireEvent.click(screen.getByRole("menuitem", { name: /rename session/i }));
 
     const input = screen.getByTestId("session-name-input");
     fireEvent.change(input, { target: { value: "New Name" } });
@@ -114,9 +124,10 @@ describe("SessionCard", () => {
     expect(screen.getByText("Main Playthrough")).toBeInTheDocument();
   });
 
-  it("shows delete confirmation when delete clicked", () => {
+  it("shows delete confirmation when delete menu item clicked", () => {
     renderCard();
-    fireEvent.click(screen.getByLabelText("Delete session"));
+    openActionsMenu();
+    fireEvent.click(screen.getByRole("menuitem", { name: /delete session/i }));
     expect(screen.getByText("Delete Session")).toBeInTheDocument();
     expect(
       screen.getByText(
@@ -127,7 +138,8 @@ describe("SessionCard", () => {
 
   it("calls onDelete when delete is confirmed", () => {
     renderCard();
-    fireEvent.click(screen.getByLabelText("Delete session"));
+    openActionsMenu();
+    fireEvent.click(screen.getByRole("menuitem", { name: /delete session/i }));
     fireEvent.click(screen.getByRole("button", { name: "Delete" }));
     expect(onDelete).toHaveBeenCalledWith(baseSession);
   });
@@ -261,9 +273,23 @@ describe("SessionCard", () => {
     expect(screen.queryByText("Current")).not.toBeInTheDocument();
   });
 
-  it("calls onDuplicate when duplicate button clicked", () => {
+  it("calls onClone when the clone menu item is clicked", () => {
     renderCard();
-    fireEvent.click(screen.getByLabelText("Duplicate session"));
-    expect(onDuplicate).toHaveBeenCalledWith(baseSession);
+    openActionsMenu();
+    fireEvent.click(screen.getByRole("menuitem", { name: /clone session/i }));
+    expect(onClone).toHaveBeenCalledWith(baseSession);
+  });
+
+  it("keeps clone behind the `…` menu — no top-level Clone button (#553)", () => {
+    renderCard();
+    // Before opening the menu, the clone action must not be reachable
+    // by its label. This locks in the PO requirement that cloning is
+    // only surfaced as a secondary action.
+    expect(
+      screen.queryByRole("button", { name: /clone session/i }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("menuitem", { name: /clone session/i }),
+    ).not.toBeInTheDocument();
   });
 });
