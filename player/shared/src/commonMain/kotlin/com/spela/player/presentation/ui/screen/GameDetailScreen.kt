@@ -1000,6 +1000,7 @@ private fun GameHeroContent(
                 SpSplitButton(
                     text = if (isBusy) "Downloading..." else "Download",
                     onClick = onDownloadGame,
+                    modifier = Modifier.testTag("game_detail_download_button"),
                     isLoading = isBusy,
                     enabled = !isBusy,
                     menuItems = menuItems,

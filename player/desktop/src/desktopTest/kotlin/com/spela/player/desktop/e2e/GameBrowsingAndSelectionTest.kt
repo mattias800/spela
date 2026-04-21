@@ -103,7 +103,7 @@ class GameBrowsingAndSelectionTest {
         advance(harness)
 
         // Game is not cached, so Download should be shown
-        onNodeWithContentDescription("Download Castlevania").assertIsDisplayed()
+        onNodeWithTag("game_detail_download_button").assertIsDisplayed()
     }
 
     @Test
