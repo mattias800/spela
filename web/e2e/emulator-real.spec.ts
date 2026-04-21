@@ -131,11 +131,19 @@ test.describe("EmulatorJS Real Integration", () => {
     await page.keyboard.press("Enter");
 
     // Open game detail
-    await page.getByText("Castlevania", { exact: false }).first().click();
+    // Click the card's anchor — `getByText().first()` sometimes resolves to
+    // a non-clickable heading inside the card. Same fix as #565 applied
+    // to emulator.spec.ts.
+    await page.getByRole("link", { name: /Castlevania/ }).first().click();
     await expect(page).toHaveURL(/\/games\/\d+$/);
 
     const gameId = page.url().match(/\/games\/(\d+)$/)?.[1];
     expect(gameId).toBeTruthy();
+
+    // Wait for the detail page's queries to land before clicking the
+    // Play button — the react-query cache warm-up races the button's
+    // enabled state otherwise.
+    await page.waitForLoadState("networkidle");
 
     // Click Play in Browser
     await page.getByTestId("play-in-browser-btn").click();
@@ -227,11 +235,18 @@ test.describe("EmulatorJS Real Integration", () => {
     await page.getByPlaceholder(/search/i).fill("Castlevania");
     await page.keyboard.press("Enter");
 
-    await page.getByText("Castlevania", { exact: false }).first().click();
+    // Click the card's anchor — `getByText().first()` sometimes resolves to
+    // a non-clickable heading inside the card. Same fix as #565 applied
+    // to emulator.spec.ts.
+    await page.getByRole("link", { name: /Castlevania/ }).first().click();
     await expect(page).toHaveURL(/\/games\/\d+$/);
 
     const gameId = page.url().match(/\/games\/(\d+)$/)?.[1];
     expect(gameId).toBeTruthy();
+
+    // Wait for the detail page's queries to land so the Play button is
+    // fully enabled before we click it.
+    await page.waitForLoadState("networkidle");
 
     // Click Play in Browser
     await page.getByTestId("play-in-browser-btn").click();
@@ -314,7 +329,10 @@ test.describe("EmulatorJS Real Integration", () => {
     await page.getByPlaceholder(/search/i).fill("Castlevania");
     await page.keyboard.press("Enter");
 
-    await page.getByText("Castlevania", { exact: false }).first().click();
+    // Click the card's anchor — `getByText().first()` sometimes resolves to
+    // a non-clickable heading inside the card. Same fix as #565 applied
+    // to emulator.spec.ts.
+    await page.getByRole("link", { name: /Castlevania/ }).first().click();
     const gameId = page.url().match(/\/games\/(\d+)$/)?.[1];
     expect(gameId).toBeTruthy();
 
