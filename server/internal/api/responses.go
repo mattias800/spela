@@ -61,8 +61,8 @@ type ConsoleResponse struct {
 	UpdatedAt        time.Time              `json:"updatedAt"`
 	Name             string                 `json:"name"`
 	Abbreviation     string                 `json:"abbreviation"`
-	Maker            *HardwareMakerResponse `json:"maker"`
-	MediaType        *MediaTypeResponse     `json:"mediaType"`
+	Maker            HardwareMakerResponse  `json:"maker"`
+	MediaType        MediaTypeResponse      `json:"mediaType"`
 	ReleaseYear      *int                   `json:"releaseYear"`
 	UnitsSold        *int64                 `json:"unitsSold"`
 	Summary          *string                `json:"summary"`
@@ -231,17 +231,20 @@ func ToConsoleResponse(c db.Console) ConsoleResponse {
 		code = *c.Code
 	}
 
-	var maker *HardwareMakerResponse
+	// ConsoleResponse.maker and mediaType are always-present per the OpenAPI
+	// contract. Post-seed every console has both; rows that haven't been
+	// re-seeded fall back to the zero struct so the wire shape stays valid.
+	var maker HardwareMakerResponse
 	if c.HardwareMaker != nil {
-		maker = &HardwareMakerResponse{
+		maker = HardwareMakerResponse{
 			Code: c.HardwareMaker.Code,
 			Name: c.HardwareMaker.Name,
 		}
 	}
 
-	var mediaType *MediaTypeResponse
+	var mediaType MediaTypeResponse
 	if c.MediaType != nil {
-		mediaType = &MediaTypeResponse{
+		mediaType = MediaTypeResponse{
 			Code: c.MediaType.Code,
 			Name: c.MediaType.Name,
 			Category: MediaTypeCategoryResponse{
