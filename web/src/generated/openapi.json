@@ -4396,6 +4396,9 @@
           "ownerUsername": {
             "type": "string"
           },
+          "pinnedCoreSha256": {
+            "type": "string"
+          },
           "saveCount": {
             "format": "int64",
             "type": "integer"
@@ -4430,6 +4433,7 @@
           "totalPlayTime",
           "screenshotUrl",
           "coreName",
+          "pinnedCoreSha256",
           "cheatsEnabled",
           "saveCount",
           "isSharedSession",
@@ -15582,6 +15586,16 @@
               "description": "Target platform: linux, macos, windows, android.",
               "type": "string"
             }
+          },
+          {
+            "description": "Optional hex sha256 of a historical core binary. When set, serves that specific version from the history snapshot; returns 404 if it's been pruned. Defaults to serving the current binary.",
+            "explode": false,
+            "in": "query",
+            "name": "sha256",
+            "schema": {
+              "description": "Optional hex sha256 of a historical core binary. When set, serves that specific version from the history snapshot; returns 404 if it's been pruned. Defaults to serving the current binary.",
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -20983,19 +20997,31 @@
         ]
       }
     },
-    "/api/sessions/{id}/duplicate": {
+    "/api/sessions/{id}/clone": {
       "post": {
-        "description": "Creates a copy of the session (owned by the caller) including saves, SRAM, cheats and screenshot.",
-        "operationId": "duplicateSession",
+        "description": "Creates a copy of the session owned by the caller. Inherits TotalPlayTime and PinnedCoreSha256 from the source. Copies SRAM, cheats, the session screenshot, and one save state (the most recent, or the save identified by ?saveId= when provided). Access: owner or any shared-session member.",
+        "operationId": "cloneSession",
         "parameters": [
           {
-            "description": "Session ID to duplicate.",
+            "description": "Session ID to clone.",
             "in": "path",
             "name": "id",
             "required": true,
             "schema": {
-              "description": "Session ID to duplicate.",
+              "description": "Session ID to clone.",
               "type": "string"
+            }
+          },
+          {
+            "description": "Optional save ID to clone from. Defaults to the most recent save when omitted or zero.",
+            "explode": false,
+            "in": "query",
+            "name": "saveId",
+            "schema": {
+              "description": "Optional save ID to clone from. Defaults to the most recent save when omitted or zero.",
+              "format": "int64",
+              "minimum": 0,
+              "type": "integer"
             }
           }
         ],
@@ -21035,7 +21061,78 @@
             "bearer": []
           }
         ],
-        "summary": "Duplicate a session",
+        "summary": "Clone a session",
+        "tags": [
+          "sessions"
+        ]
+      }
+    },
+    "/api/sessions/{id}/duplicate": {
+      "post": {
+        "deprecated": true,
+        "description": "Deprecated — use POST /api/sessions/{id}/clone instead. Behaviour is identical; this path is kept so in-flight clients keep working.",
+        "operationId": "duplicateSession",
+        "parameters": [
+          {
+            "description": "Session ID to clone.",
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "description": "Session ID to clone.",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Optional save ID to clone from. Defaults to the most recent save when omitted or zero.",
+            "explode": false,
+            "in": "query",
+            "name": "saveId",
+            "schema": {
+              "description": "Optional save ID to clone from. Defaults to the most recent save when omitted or zero.",
+              "format": "int64",
+              "minimum": 0,
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DuplicateSessionRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GameSessionResponse"
+                }
+              }
+            },
+            "description": "Created"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HumaError"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Duplicate a session (deprecated alias of clone)",
         "tags": [
           "sessions"
         ]
