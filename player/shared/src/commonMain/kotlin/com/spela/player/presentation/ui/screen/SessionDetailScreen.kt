@@ -50,6 +50,7 @@ import com.spela.player.domain.model.Game
 import com.spela.player.domain.model.SaveState
 import com.spela.player.presentation.intent.SessionDetailIntent
 import com.spela.player.presentation.ui.components.SpButton
+import com.spela.player.presentation.ui.components.SpIconButton
 import com.spela.player.presentation.ui.components.SpSecondaryButton
 import com.spela.player.presentation.ui.components.SpCard
 import com.spela.player.presentation.ui.components.SpChip
@@ -604,16 +605,12 @@ private fun SessionDetailHeader(
             )
             // Overflow menu — clone lives here per PO brief (secondary action).
             Box {
-                IconButton(
+                SpIconButton(
+                    icon = Icons.Filled.MoreVert,
+                    contentDescription = "More session actions",
                     onClick = { showMoreMenu = true },
                     modifier = Modifier.testTag("session_detail_more_menu"),
-                ) {
-                    Icon(
-                        imageVector = Icons.Filled.MoreVert,
-                        contentDescription = "More session actions",
-                        tint = SpColor.OnBackgroundSecondary,
-                    )
-                }
+                )
                 DropdownMenu(
                     expanded = showMoreMenu,
                     onDismissRequest = { showMoreMenu = false },
@@ -688,16 +685,12 @@ private fun SessionSaveItem(
             // Clone is the ONLY entry today; future per-save actions
             // (rename / delete / download) will join this menu.
             Box {
-                IconButton(
+                SpIconButton(
+                    icon = Icons.Filled.MoreVert,
+                    contentDescription = "Save actions",
                     onClick = { showSaveMenu = true },
                     modifier = Modifier.testTag("session_save_menu_${save.id}"),
-                ) {
-                    Icon(
-                        imageVector = Icons.Filled.MoreVert,
-                        contentDescription = "Save actions",
-                        tint = SpColor.OnBackgroundSecondary,
-                    )
-                }
+                )
                 DropdownMenu(
                     expanded = showSaveMenu,
                     onDismissRequest = { showSaveMenu = false },

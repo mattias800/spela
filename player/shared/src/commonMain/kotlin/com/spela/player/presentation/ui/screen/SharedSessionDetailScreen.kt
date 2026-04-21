@@ -40,6 +40,7 @@ import com.spela.player.presentation.ui.feature.sharedsession.SharedSessionHeade
 import com.spela.player.presentation.ui.feature.sharedsession.SharedSessionSaveItem
 import com.spela.player.presentation.ui.components.InvitePlayerSheet
 import com.spela.player.presentation.ui.components.SpEmptyState
+import com.spela.player.presentation.ui.components.SpIconButton
 import com.spela.player.presentation.ui.components.SpLoadingIndicator
 import com.spela.player.presentation.ui.components.SpSectionHeader
 import com.spela.player.presentation.ui.components.SpSnackbar
@@ -105,16 +106,13 @@ fun SharedSessionDetailScreen(
                         // entirely when there's nothing to clone.
                         val backing = state.sharedSession?.backingGameSessionId
                         if (backing != null) {
-                            IconButton(
+                            SpIconButton(
+                                icon = Icons.Filled.MoreVert,
+                                contentDescription = "Shared session actions",
                                 onClick = { showMoreMenu = true },
                                 modifier = Modifier.testTag("shared_session_more_menu"),
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Filled.MoreVert,
-                                    contentDescription = "Shared session actions",
-                                    tint = SpColor.OnBackground,
-                                )
-                            }
+                                onGradient = true,
+                            )
                             DropdownMenu(
                                 expanded = showMoreMenu,
                                 onDismissRequest = { showMoreMenu = false },

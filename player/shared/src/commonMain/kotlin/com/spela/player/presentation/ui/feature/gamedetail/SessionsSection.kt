@@ -41,6 +41,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.spela.player.domain.model.GameSession
 import com.spela.player.presentation.ui.components.SpAvatar
+import com.spela.player.presentation.ui.components.SpIconButton
 import com.spela.player.presentation.ui.components.SpSecondaryButton
 import com.spela.player.presentation.ui.components.SpChip
 import com.spela.player.presentation.ui.components.SpStatusChip
@@ -352,16 +353,12 @@ private fun SessionItem(
                 // a menu, never as its own CTA.
                 Box {
                     var showActionsMenu by remember { mutableStateOf(false) }
-                    IconButton(
+                    SpIconButton(
+                        icon = Icons.Filled.MoreVert,
+                        contentDescription = "Session actions",
                         onClick = { showActionsMenu = true },
                         modifier = Modifier.testTag("session_actions_menu_${session.id}"),
-                    ) {
-                        Icon(
-                            Icons.Filled.MoreVert,
-                            contentDescription = "Session actions",
-                            tint = SpColor.OnBackgroundSecondary,
-                        )
-                    }
+                    )
                     DropdownMenu(
                         expanded = showActionsMenu,
                         onDismissRequest = { showActionsMenu = false },
