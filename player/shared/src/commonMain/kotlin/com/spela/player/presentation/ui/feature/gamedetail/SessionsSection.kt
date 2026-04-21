@@ -75,6 +75,7 @@ internal fun SessionsSection(
             SpSecondaryButton(
                 text = "New Session",
                 onClick = { showCreateDialog = true },
+                modifier = Modifier.testTag("create_session_button"),
             )
         },
     ) {
