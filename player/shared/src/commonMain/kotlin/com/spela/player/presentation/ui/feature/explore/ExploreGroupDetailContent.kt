@@ -44,6 +44,7 @@ import androidx.compose.ui.text.font.FontWeight
 import coil3.compose.SubcomposeAsyncImage
 import com.spela.player.presentation.ui.components.SpCard
 import com.spela.player.presentation.ui.components.SpGameGrid
+import com.spela.player.presentation.ui.components.SpProgressBar
 import com.spela.player.presentation.ui.components.SpGridGameCard
 import com.spela.player.presentation.ui.components.SpHeroBanner
 import com.spela.player.presentation.ui.components.SpChip
@@ -166,11 +167,28 @@ fun ExploreGroupDetailContent(
                                             color = Color.White,
                                         )
                                     }
-                                    Text(
-                                        text = "${detail.totalGames} games",
-                                        style = SpTypography.BodyMedium,
-                                        color = Color.White.copy(alpha = 0.7f),
-                                    )
+                                    if (detail.totalGames > 0) {
+                                        Column(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .padding(horizontal = SpSpacing.Large)
+                                                .testTag("${groupLabel}_ownership_progress"),
+                                            horizontalAlignment = Alignment.CenterHorizontally,
+                                        ) {
+                                            Text(
+                                                text = "You own ${detail.libraryGames} of ${detail.totalGames} games",
+                                                style = SpTypography.BodyMedium,
+                                                color = Color.White.copy(alpha = 0.7f),
+                                                modifier = Modifier.testTag("${groupLabel}_ownership_text"),
+                                            )
+                                            Spacer(Modifier.height(SpSpacing.XSmall))
+                                            SpProgressBar(
+                                                progress = detail.libraryGames.toFloat() / detail.totalGames.toFloat(),
+                                                height = 6.dp,
+                                                onGradient = true,
+                                            )
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -214,10 +232,28 @@ fun ExploreGroupDetailContent(
                                 SpGameGrid(
                                     items = filteredGames.map { game ->
                                         @Composable {
+                                            // Rebuild the SpGameCard's baked-in
+                                            // "$title, $subtitle" semantic contract
+                                            // here — SpGameCard's own semantics
+                                            // modifier clears any wrapping
+                                            // contentDescription, so the only
+                                            // stable place to surface "not in
+                                            // library" is via the card's own
+                                            // visible subtitle text. Concatenate
+                                            // the phrase into the subtitle so it
+                                            // renders on-screen AND flows into
+                                            // the card's contentDescription.
+                                            val subtitle = buildString {
+                                                append(game.consoleName ?: "")
+                                                if (!game.inLibrary) {
+                                                    if (isNotEmpty()) append(" \u00b7 ")
+                                                    append("not in library")
+                                                }
+                                            }
                                             Box(modifier = Modifier.alpha(if (game.inLibrary) 1f else 0.5f)) {
                                                 SpGridGameCard(
                                                     title = game.name,
-                                                    subtitle = game.consoleName ?: "",
+                                                    subtitle = subtitle,
                                                     coverUrl = game.coverUrl,
                                                     onClick = if (game.inLibrary && game.localGameId != null) {
                                                         { onGameSelected(game.localGameId) }
