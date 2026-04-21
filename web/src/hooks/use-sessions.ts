@@ -131,26 +131,53 @@ export function useUpdateSessionCheats() {
   });
 }
 
-export function useDuplicateSession() {
+/**
+ * Clones a session into a new session owned by the caller. See
+ * `POST /api/sessions/{id}/clone` — inherits `totalPlayTime` and
+ * `pinnedCoreSha256` from the source, copies SRAM/cheats/screenshot,
+ * and seeds the new session with one save state (most-recent or
+ * `saveId` when specified). Access: owner or any shared-session
+ * member of the source session.
+ */
+export function useCloneSession() {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: ({
       id,
       name,
+      saveId,
     }: {
+      /** Source session ID. */
       id: string;
-      gameId: string;
+      /**
+       * Source session's gameId — not sent to the server; used purely
+       * to invalidate the `game-sessions` query cache on success.
+       * Optional because shared-session clones don't always know it
+       * up front.
+       */
+      gameId?: string;
       name?: string;
+      /**
+       * Specific save ID to clone from. Omit or pass 0 to clone the
+       * most-recent save. `SessionSave.id` is a stringified uint on
+       * the wire; callers should `parseInt` before passing.
+       */
+      saveId?: number;
     }) =>
       unwrap(
-        typedApi.POST("/api/sessions/{id}/duplicate", {
-          params: { path: { id } },
+        typedApi.POST("/api/sessions/{id}/clone", {
+          params: {
+            path: { id },
+            query: saveId && saveId > 0 ? { saveId } : undefined,
+          },
           body: name ? { name } : {},
         }),
       ),
     onSuccess: (_, { gameId }) => {
-      queryClient.invalidateQueries({ queryKey: ["game-sessions", gameId] });
+      if (gameId) {
+        queryClient.invalidateQueries({ queryKey: ["game-sessions", gameId] });
+      }
     },
   });
 }
