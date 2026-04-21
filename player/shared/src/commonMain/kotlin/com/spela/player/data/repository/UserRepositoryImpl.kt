@@ -17,7 +17,7 @@ class UserRepositoryImpl(
     ): Result<UserSearchPage> = runCatching {
         val response = apiClient.searchUsers(query, page, pageSize)
         UserSearchPage(
-            data = response.data.orEmpty().map { it.toDomain() },
+            data = response.data.map { it.toDomain() },
             total = response.total,
             page = response.page.toInt(),
             pageSize = response.pageSize.toInt(),

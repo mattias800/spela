@@ -14,7 +14,7 @@ open class BiosRepository(
 
     open suspend fun syncBiosFiles() {
         val serverFiles = try {
-            apiClient.getBiosStatus().files.orEmpty()
+            apiClient.getBiosStatus().files
         } catch (e: Exception) {
             return // Server may not support BIOS yet
         }
@@ -61,10 +61,10 @@ open class BiosRepository(
      */
     open suspend fun getConsoleStatus(consoleId: String): BiosConsoleStatus? {
         val status = cachedBiosStatus ?: fetchBiosStatus() ?: return null
-        val console = status.consoles.orEmpty().find { it.consoleId == consoleId } ?: return null
+        val console = status.consoles.find { it.consoleId == consoleId } ?: return null
         val biosDir = fileStorage.getBiosDir()
 
-        val missingFiles = console.files.orEmpty()
+        val missingFiles = console.files
             .filter { it.required && it.status == "missing" }
             .map { BiosMissingFile(it.fileName, it.description, it.required, it.subDir) }
 
@@ -129,10 +129,10 @@ open class BiosRepository(
         val localFiles = getLocalBiosFiles()
         val biosDir = fileStorage.getBiosDir()
 
-        return status.consoles.orEmpty()
+        return status.consoles
             .filter { it.biosRequired && it.status == "missing" }
             .mapNotNull { console ->
-                val missingFiles = console.files.orEmpty()
+                val missingFiles = console.files
                     .filter { it.required && it.status == "missing" }
                     .filter { file ->
                         val localPath = if (!file.subDir.isNullOrEmpty()) {

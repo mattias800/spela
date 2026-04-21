@@ -28,7 +28,7 @@ class SocialRepositoryImpl(
     }
 
     override suspend fun getActivityFeed(page: Int, pageSize: Int): Result<List<ActivityEvent>> = runCatching {
-        apiClient.getActivityFeed(page = page, pageSize = pageSize).data.orEmpty().map { dto ->
+        apiClient.getActivityFeed(page = page, pageSize = pageSize).data.map { dto ->
             val event = dto.toDomain()
             event.copy(
                 userAvatarUrl = apiClient.resolveUrl(event.userAvatarUrl),

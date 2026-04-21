@@ -60,7 +60,7 @@ class ExploreRepositoryImpl(
     override suspend fun getExploreRows(): Result<List<ExploreRow>> = runCatching {
         apiClient.getExploreRows().map { dto ->
             dto.toDomain().copy(
-                games = dto.games.orEmpty().map { gameDto ->
+                games = dto.games.map { gameDto ->
                     gameDto.toDomain().copy(
                         coverUrl = apiClient.resolveUrl(gameDto.coverUrl),
                         heroUrl = apiClient.resolveUrl(gameDto.heroUrl),
@@ -76,7 +76,7 @@ class ExploreRepositoryImpl(
     }
 
     override suspend fun getThemeGames(themeId: String, page: Int, pageSize: Int): Result<List<Game>> = runCatching {
-        apiClient.getThemeGames(themeId, page, pageSize).data.orEmpty().map { gameDto ->
+        apiClient.getThemeGames(themeId, page, pageSize).data.map { gameDto ->
             gameDto.toDomain().copy(
                 coverUrl = apiClient.resolveUrl(gameDto.coverUrl),
                 heroUrl = apiClient.resolveUrl(gameDto.heroUrl),
@@ -90,7 +90,7 @@ class ExploreRepositoryImpl(
     }
 
     override suspend fun getKeywordGames(keywordId: String, page: Int, pageSize: Int): Result<List<Game>> = runCatching {
-        apiClient.getKeywordGames(keywordId, page, pageSize).data.orEmpty().map { gameDto ->
+        apiClient.getKeywordGames(keywordId, page, pageSize).data.map { gameDto ->
             gameDto.toDomain().copy(
                 coverUrl = apiClient.resolveUrl(gameDto.coverUrl),
                 heroUrl = apiClient.resolveUrl(gameDto.heroUrl),
@@ -112,7 +112,7 @@ class ExploreRepositoryImpl(
         dto.toDomain().copy(
             heroUrl = apiClient.resolveUrl(dto.heroUrl),
             logoUrl = apiClient.resolveUrl(dto.logoUrl),
-            games = dto.games.orEmpty().map { gameDto ->
+            games = dto.games.map { gameDto ->
                 gameDto.toDomain().copy(
                     coverUrl = apiClient.resolveUrl(gameDto.coverUrl),
                 )
@@ -125,7 +125,7 @@ class ExploreRepositoryImpl(
         dto.toDomain().copy(
             heroUrl = apiClient.resolveUrl(dto.heroUrl),
             logoUrl = apiClient.resolveUrl(dto.logoUrl),
-            games = dto.games.orEmpty().map { gameDto ->
+            games = dto.games.map { gameDto ->
                 gameDto.toDomain().copy(
                     coverUrl = apiClient.resolveUrl(gameDto.coverUrl),
                 )
@@ -166,7 +166,7 @@ class ExploreRepositoryImpl(
     }
 
     override suspend fun getForYou(): Result<List<ForYouRow>> = runCatching {
-        apiClient.getForYou().rows.orEmpty().map { rowDto ->
+        apiClient.getForYou().rows.map { rowDto ->
             rowDto.toDomain().copy(
                 sourceGame = rowDto.sourceGame.takeIf { it.id.isNotEmpty() }?.let { sgDto ->
                     sgDto.toDomain().copy(
@@ -175,7 +175,7 @@ class ExploreRepositoryImpl(
                         logoUrl = apiClient.resolveUrl(sgDto.logoUrl),
                     )
                 },
-                games = rowDto.games.orEmpty().map { gameDto ->
+                games = rowDto.games.map { gameDto ->
                     gameDto.toDomain().copy(
                         coverUrl = apiClient.resolveUrl(gameDto.coverUrl),
                         heroUrl = apiClient.resolveUrl(gameDto.heroUrl),
@@ -193,7 +193,7 @@ class ExploreRepositoryImpl(
     override suspend fun getPlayersLikeYou(): Result<PlayersLikeYouResult> = runCatching {
         val dto = apiClient.getPlayersLikeYou()
         dto.toDomain().copy(
-            games = dto.games.orEmpty().map { gameDto ->
+            games = dto.games.map { gameDto ->
                 gameDto.toDomain().copy(
                     coverUrl = apiClient.resolveUrl(gameDto.coverUrl),
                     heroUrl = apiClient.resolveUrl(gameDto.heroUrl),
@@ -204,7 +204,7 @@ class ExploreRepositoryImpl(
     }
 
     override suspend fun getDevelopers(): Result<List<DeveloperSummary>> = runCatching {
-        apiClient.getDevelopers().developers.orEmpty().map { it.toDomain() }
+        apiClient.getDevelopers().developers.map { it.toDomain() }
     }
 
     override suspend fun getDeveloperDetail(name: String): Result<DeveloperDetail> = runCatching {
@@ -219,7 +219,7 @@ class ExploreRepositoryImpl(
         val dto = apiClient.getDeveloperSpotlight()
         dto.toDomain().copy(
             heroUrl = apiClient.resolveUrl(dto.heroUrl),
-            topGames = dto.topGames.orEmpty().map { gameDto ->
+            topGames = dto.topGames.map { gameDto ->
                 gameDto.toDomain().copy(
                     coverUrl = apiClient.resolveUrl(gameDto.coverUrl),
                 )
@@ -230,21 +230,21 @@ class ExploreRepositoryImpl(
     override suspend fun getConsoleShowcase(consoleId: String): Result<ConsoleShowcase> = runCatching {
         val dto = apiClient.getConsoleShowcase(consoleId)
         dto.toDomain().copy(
-            essentials = dto.essentials.orEmpty().map { gameDto ->
+            essentials = dto.essentials.map { gameDto ->
                 gameDto.toDomain().copy(
                     coverUrl = apiClient.resolveUrl(gameDto.coverUrl),
                     heroUrl = apiClient.resolveUrl(gameDto.heroUrl),
                     logoUrl = apiClient.resolveUrl(gameDto.logoUrl),
                 )
             },
-            hiddenGems = dto.hiddenGems.orEmpty().map { gameDto ->
+            hiddenGems = dto.hiddenGems.map { gameDto ->
                 gameDto.toDomain().copy(
                     coverUrl = apiClient.resolveUrl(gameDto.coverUrl),
                     heroUrl = apiClient.resolveUrl(gameDto.heroUrl),
                     logoUrl = apiClient.resolveUrl(gameDto.logoUrl),
                 )
             },
-            recentlyPlayed = dto.recentlyPlayed.orEmpty().map { gameDto ->
+            recentlyPlayed = dto.recentlyPlayed.map { gameDto ->
                 gameDto.toDomain().copy(
                     coverUrl = apiClient.resolveUrl(gameDto.coverUrl),
                     heroUrl = apiClient.resolveUrl(gameDto.heroUrl),
@@ -255,7 +255,7 @@ class ExploreRepositoryImpl(
     }
 
     override suspend fun getConsoleHighlights(): Result<List<ConsoleHighlight>> = runCatching {
-        apiClient.getConsoleHighlights().consoles.orEmpty().map { dto ->
+        apiClient.getConsoleHighlights().consoles.map { dto ->
             val topGameDto = dto.topGame
             dto.toDomain().copy(
                 iconUrl = apiClient.resolveUrl(dto.iconUrl) ?: "",
@@ -268,7 +268,7 @@ class ExploreRepositoryImpl(
     }
 
     override suspend fun getArtworkGallery(page: Int): Result<List<ArtworkItem>> = runCatching {
-        apiClient.getArtworkGallery(page).artworks.orEmpty().map { dto ->
+        apiClient.getArtworkGallery(page).artworks.map { dto ->
             dto.toDomain().copy(
                 url = apiClient.resolveUrl(dto.url) ?: dto.url,
             )
@@ -276,7 +276,7 @@ class ExploreRepositoryImpl(
     }
 
     override suspend fun getScreenshotGallery(page: Int): Result<List<ScreenshotItem>> = runCatching {
-        apiClient.getScreenshotGallery(page).screenshots.orEmpty().map { dto ->
+        apiClient.getScreenshotGallery(page).screenshots.map { dto ->
             dto.toDomain().copy(
                 url = apiClient.resolveUrl(dto.url) ?: dto.url,
             )
@@ -284,7 +284,7 @@ class ExploreRepositoryImpl(
     }
 
     override suspend fun getTrending(): Result<List<TrendingGame>> = runCatching {
-        apiClient.getTrending().games.orEmpty().map { dto ->
+        apiClient.getTrending().games.map { dto ->
             dto.toDomain().copy(
                 game = resolveGameCovers(dto.game.toDomain(), dto.game),
             )
@@ -292,7 +292,7 @@ class ExploreRepositoryImpl(
     }
 
     override suspend fun getCommunityTop(): Result<List<CommunityTopGame>> = runCatching {
-        apiClient.getCommunityTop().games.orEmpty().map { dto ->
+        apiClient.getCommunityTop().games.map { dto ->
             dto.toDomain().copy(
                 game = resolveGameCovers(dto.game.toDomain(), dto.game),
             )
@@ -300,7 +300,7 @@ class ExploreRepositoryImpl(
     }
 
     override suspend fun getCultClassics(): Result<List<CultClassicGame>> = runCatching {
-        apiClient.getCultClassics().games.orEmpty().map { dto ->
+        apiClient.getCultClassics().games.map { dto ->
             dto.toDomain().copy(
                 game = resolveGameCovers(dto.game.toDomain(), dto.game),
             )
@@ -308,7 +308,7 @@ class ExploreRepositoryImpl(
     }
 
     override suspend fun getRecentlyReviewed(): Result<List<RecentReviewItem>> = runCatching {
-        apiClient.getRecentlyReviewed().reviews.orEmpty().map { dto ->
+        apiClient.getRecentlyReviewed().reviews.map { dto ->
             dto.toDomain().copy(
                 game = resolveGameCovers(dto.game.toDomain(), dto.game),
             )
@@ -316,7 +316,7 @@ class ExploreRepositoryImpl(
     }
 
     override suspend fun getActiveNow(): Result<List<ActiveNowItem>> = runCatching {
-        apiClient.getActiveNow().games.orEmpty().map { dto ->
+        apiClient.getActiveNow().games.map { dto ->
             dto.toDomain().copy(
                 game = resolveGameCovers(dto.game.toDomain(), dto.game),
             )
@@ -325,20 +325,20 @@ class ExploreRepositoryImpl(
 
     override suspend fun getOnThisDay(): Result<Pair<String, List<Game>>> = runCatching {
         val dto = apiClient.getOnThisDay()
-        val games = dto.games.orEmpty().map { gameDto ->
+        val games = dto.games.map { gameDto ->
             resolveGameCovers(gameDto.toDomain(), gameDto)
         }
         Pair(dto.date, games)
     }
 
     override suspend fun getBestOfYear(year: Int): Result<List<Game>> = runCatching {
-        apiClient.getBestOfYear(year).games.orEmpty().map { gameDto ->
+        apiClient.getBestOfYear(year).games.map { gameDto ->
             resolveGameCovers(gameDto.toDomain(), gameDto)
         }
     }
 
     override suspend fun getYourAnniversaries(): Result<List<AnniversaryItem>> = runCatching {
-        apiClient.getYourAnniversaries().anniversaries.orEmpty().map { dto ->
+        apiClient.getYourAnniversaries().anniversaries.map { dto ->
             dto.toDomain().copy(
                 game = resolveGameCovers(dto.game.toDomain(), dto.game),
             )
@@ -347,14 +347,14 @@ class ExploreRepositoryImpl(
 
     override suspend fun getDecade(decade: String): Result<Pair<String, List<Game>>> = runCatching {
         val dto = apiClient.getDecade(decade)
-        val games = dto.games.orEmpty().map { gameDto ->
+        val games = dto.games.map { gameDto ->
             resolveGameCovers(gameDto.toDomain(), gameDto)
         }
         Pair(dto.label, games)
     }
 
     override suspend fun getEasyToComplete(): Result<List<AchievementGameItem>> = runCatching {
-        apiClient.getEasyToComplete().games.orEmpty().map { dto ->
+        apiClient.getEasyToComplete().games.map { dto ->
             dto.toDomain().copy(
                 game = resolveGameCovers(dto.game.toDomain(), dto.game),
             )
@@ -362,7 +362,7 @@ class ExploreRepositoryImpl(
     }
 
     override suspend fun getHardestGames(): Result<List<AchievementGameItem>> = runCatching {
-        apiClient.getHardestGames().games.orEmpty().map { dto ->
+        apiClient.getHardestGames().games.map { dto ->
             dto.toDomain().copy(
                 game = resolveGameCovers(dto.game.toDomain(), dto.game),
             )
@@ -370,7 +370,7 @@ class ExploreRepositoryImpl(
     }
 
     override suspend fun getAlmostDone(): Result<List<AlmostDoneGame>> = runCatching {
-        apiClient.getAlmostDone().games.orEmpty().map { dto ->
+        apiClient.getAlmostDone().games.map { dto ->
             dto.toDomain().copy(
                 game = resolveGameCovers(dto.game.toDomain(), dto.game),
             )
@@ -378,7 +378,7 @@ class ExploreRepositoryImpl(
     }
 
     override suspend fun getFreshChallenges(): Result<List<FreshChallengeGame>> = runCatching {
-        apiClient.getFreshChallenges().games.orEmpty().map { dto ->
+        apiClient.getFreshChallenges().games.map { dto ->
             dto.toDomain().copy(
                 game = resolveGameCovers(dto.game.toDomain(), dto.game),
             )
@@ -386,11 +386,11 @@ class ExploreRepositoryImpl(
     }
 
     override suspend fun getActiveChallenges(): Result<List<ExploreChallenge>> = runCatching {
-        apiClient.getActiveChallenges().challenges.orEmpty().map { it.toDomain() }
+        apiClient.getActiveChallenges().challenges.map { it.toDomain() }
     }
 
     override suspend fun getFilteredGames(filters: Map<String, String>, page: Int, pageSize: Int): Result<List<Game>> = runCatching {
-        apiClient.getFilteredGames(filters, page, pageSize).data.orEmpty().map { gameDto ->
+        apiClient.getFilteredGames(filters, page, pageSize).data.map { gameDto ->
             gameDto.toDomain().copy(
                 coverUrl = apiClient.resolveUrl(gameDto.coverUrl),
                 heroUrl = apiClient.resolveUrl(gameDto.heroUrl),
@@ -412,13 +412,13 @@ class ExploreRepositoryImpl(
     }
 
     override suspend fun getWizardSteps(): Result<List<WizardStep>> = runCatching {
-        apiClient.getWizardSteps().steps.orEmpty().map { it.toDomain() }
+        apiClient.getWizardSteps().steps.map { it.toDomain() }
     }
 
     override suspend fun getWizardResults(mood: String, era: String, vibe: String): Result<WizardResults> = runCatching {
         val response = apiClient.getWizardResults(mood, era, vibe)
         WizardResults(
-            games = response.games.orEmpty().map { dto ->
+            games = response.games.map { dto ->
                 val game = dto.toDomain()
                 resolveGameCovers(game, dto)
             },
@@ -427,7 +427,7 @@ class ExploreRepositoryImpl(
     }
 
     override suspend fun getExplorerBadges(): Result<List<ExplorerBadge>> = runCatching {
-        apiClient.getExplorerBadges().badges.orEmpty().map { it.toDomain() }
+        apiClient.getExplorerBadges().badges.map { it.toDomain() }
     }
 
     override suspend fun getCompletionistMap(): Result<CompletionistMap> = runCatching {
@@ -449,7 +449,7 @@ class ExploreRepositoryImpl(
             companyInfo = dto.companyInfo.toDomain()
                 .takeIf { it.hasAnyData() }
                 ?.copy(logoUrl = apiClient.resolveUrl(dto.companyInfo.logoUrl)),
-            topGames = dto.topGames.orEmpty().map { gameDto ->
+            topGames = dto.topGames.map { gameDto ->
                 gameDto.toDomain().copy(
                     coverUrl = apiClient.resolveUrl(gameDto.coverUrl),
                 )
@@ -465,7 +465,7 @@ class ExploreRepositoryImpl(
                         },
                 )
             },
-            games = dto.games.orEmpty().map { gameDto ->
+            games = dto.games.map { gameDto ->
                 gameDto.toDomain().copy(
                     coverUrl = apiClient.resolveUrl(gameDto.coverUrl),
                 )
@@ -475,15 +475,15 @@ class ExploreRepositoryImpl(
     private fun DeveloperDetail.applyUrlResolution(
         heroUrl: String?,
         companyInfo: com.spela.client.models.CompanyInfo,
-        topGames: List<com.spela.client.models.GameResponse>?,
+        topGames: List<com.spela.client.models.GameResponse>,
         userStats: com.spela.client.models.EntityUserStats,
-        games: List<com.spela.client.models.GameResponse>?,
+        games: List<com.spela.client.models.GameResponse>,
     ): DeveloperDetail = copy(
         heroUrl = apiClient.resolveUrl(heroUrl),
         companyInfo = companyInfo.toDomain()
             .takeIf { it.hasAnyData() }
             ?.copy(logoUrl = apiClient.resolveUrl(companyInfo.logoUrl)),
-        topGames = topGames.orEmpty().map { gameDto ->
+        topGames = topGames.map { gameDto ->
             gameDto.toDomain().copy(
                 coverUrl = apiClient.resolveUrl(gameDto.coverUrl),
             )
@@ -499,7 +499,7 @@ class ExploreRepositoryImpl(
                     },
             )
         },
-        games = games.orEmpty().map { gameDto ->
+        games = games.map { gameDto ->
             gameDto.toDomain().copy(
                 coverUrl = apiClient.resolveUrl(gameDto.coverUrl),
             )

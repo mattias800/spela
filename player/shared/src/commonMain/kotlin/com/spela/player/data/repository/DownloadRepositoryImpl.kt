@@ -61,7 +61,7 @@ class DownloadRepositoryImpl(
         val gameDetail = apiClient.getGameDetail(gameId)
         println("[Download] Game detail: fileName=${gameDetail.fileName} fileSize=${gameDetail.fileSize} discCount=${gameDetail.discCount}")
 
-        val discs = gameDetail.discs.orEmpty()
+        val discs = gameDetail.discs
         if (gameDetail.discCount >= 2) {
             downloadMultiDiscGame(gameId, gameTitle, gameDetail)
         } else if (discs.isNotEmpty() && discs.size == 1) {
@@ -140,7 +140,7 @@ class DownloadRepositoryImpl(
         gameTitle: String,
         game: GameDto,
     ): String {
-        val disc = game.discs.orEmpty().first()
+        val disc = game.discs.first()
         val gameDir = fileStorage.getGamesDir() + "/$gameId"
         if (fileStorage.fileExists(gameDir) && !fileStorage.isDirectory(gameDir)) {
             fileStorage.deleteFile(gameDir)
@@ -207,14 +207,14 @@ class DownloadRepositoryImpl(
         fileStorage.createDirectory(gameDir)
 
         val m3uPath = "$gameDir/game.m3u"
-        val totalDiscs = game.discs.orEmpty().size
+        val totalDiscs = game.discs.size
         val totalSize = game.fileSize
         var completedBytes = 0L
 
         // Download each disc FIRST — write M3U only after all discs succeed.
         // Writing M3U early would make getLocalGamePath treat the game as cached
         // even if disc downloads fail or are still in progress.
-        for ((index, disc) in game.discs.orEmpty().sortedBy { it.discNumber }.withIndex()) {
+        for ((index, disc) in game.discs.sortedBy { it.discNumber }.withIndex()) {
             val discOffset = completedBytes
 
             downloads.update {
@@ -255,7 +255,7 @@ class DownloadRepositoryImpl(
         }
 
         // Write .m3u with local filenames — only after all discs downloaded
-        val m3uContent = game.discs.orEmpty().sortedBy { it.discNumber }
+        val m3uContent = game.discs.sortedBy { it.discNumber }
             .joinToString("\n") { it.fileName } + "\n"
         fileStorage.writeFile(m3uPath, m3uContent.encodeToByteArray())
 
