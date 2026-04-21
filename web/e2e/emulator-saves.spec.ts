@@ -448,16 +448,16 @@ test.describe("Emulator Save State Sync", () => {
 
       await simulatePlaying(page);
 
-      // Intercept fetch to capture FormData keys
+      // Intercept FormData.append to capture all appended keys. Capturing
+      // `window.fetch`'s body won't work — the openapi-fetch transport
+      // serialises the FormData to an ArrayBuffer via authedFetch
+      // (api-client.ts) before the global fetch sees it.
       await page.evaluate(() => {
-        const origFetch = window.fetch;
-        (window as unknown as Record<string, unknown>).__capturedFormDataKeys = [] as string[];
-        window.fetch = async function (...args: Parameters<typeof fetch>) {
-          const [, options] = args;
-          if (options?.body instanceof FormData) {
-            (window as unknown as Record<string, string[]>).__capturedFormDataKeys = Array.from(options.body.keys());
-          }
-          return origFetch.apply(this, args as [RequestInfo | URL, RequestInit?]);
+        const origAppend = FormData.prototype.append;
+        (window as unknown as Record<string, unknown>).__formDataKeys = [] as string[];
+        FormData.prototype.append = function (name: string, ...rest: unknown[]) {
+          (window as unknown as Record<string, string[]>).__formDataKeys.push(name);
+          return origAppend.call(this, name, ...rest);
         };
       });
 
@@ -478,7 +478,7 @@ test.describe("Emulator Save State Sync", () => {
       await page.waitForTimeout(3_000);
 
       const formDataKeys = await page.evaluate(
-        () => (window as unknown as Record<string, string[]>).__capturedFormDataKeys,
+        () => (window as unknown as Record<string, string[]>).__formDataKeys,
       );
       expect(formDataKeys).toContain("save");
       expect(formDataKeys).not.toContain("screenshot");
