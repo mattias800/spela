@@ -80,6 +80,7 @@ internal fun DeveloperHeroBanner(
 
     Box(
         modifier = modifier
+            .testTag("developer_hero_banner")
             .fillMaxWidth()
             .height(200.dp + SpSpacing.TopBarHeight + SpSpacing.Large),
     ) {
