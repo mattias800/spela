@@ -39,7 +39,7 @@ class GameDetailActionsMenuTest {
         setContent { harness.App() }
         navigateToGameDetail(harness, "1")
 
-        onNodeWithContentDescription("Download Castlevania").assertIsDisplayed()
+        onNodeWithTag("game_detail_download_button").assertIsDisplayed()
     }
 
     @Test

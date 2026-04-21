@@ -31,14 +31,14 @@ class GameDownloadAndLaunchTest {
         advance(harness)
 
         // Should show Download button initially
-        onNodeWithContentDescription("Download Castlevania").assertIsDisplayed()
+        onNodeWithTag("game_detail_download_button").assertIsDisplayed()
 
         // Tap Download
-        onNodeWithContentDescription("Download Castlevania").performClick()
+        onNodeWithTag("game_detail_download_button").performClick()
         advance(harness)
 
         // After download completes, Play button should appear
-        onNodeWithContentDescription("Play Castlevania").assertIsDisplayed()
+        onNodeWithTag("game_detail_play_button").assertIsDisplayed()
     }
 
     @Test
@@ -58,7 +58,7 @@ class GameDownloadAndLaunchTest {
         advance(harness)
 
         // Tap Play
-        onNodeWithContentDescription("Play Castlevania").performClick()
+        onNodeWithTag("game_detail_play_button").performClick()
         advance(harness)
 
         // Open overlay (hidden by default) and verify controls
@@ -84,7 +84,7 @@ class GameDownloadAndLaunchTest {
 
         advance(harness)
 
-        onNodeWithContentDescription("Play Castlevania").performClick()
+        onNodeWithTag("game_detail_play_button").performClick()
         advance(harness)
 
         // Verify emulation actually started via the fake controller
@@ -107,7 +107,7 @@ class GameDownloadAndLaunchTest {
 
         advance(harness)
 
-        onNodeWithContentDescription("Play Castlevania").performClick()
+        onNodeWithTag("game_detail_play_button").performClick()
         advance(harness)
 
         // Open overlay to see game title
