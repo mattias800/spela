@@ -1,9 +1,13 @@
 package api
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
+	"io"
 	"log/slog"
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/spela/server/internal/db"
 	"gorm.io/gorm"
@@ -13,6 +17,57 @@ import (
 type CoreHandler struct {
 	DB      *gorm.DB
 	CoreDir string
+}
+
+// ensureCoreMetadata populates Sha256 / SizeBytes / FetchedAt / SourceURL
+// on the core row if any are missing. This is a lazy backfill: the first
+// serve of a core after this code lands (or after a fresh core binary
+// lands on disk) computes the hash and records the metadata. Subsequent
+// serves are no-ops.
+//
+// Errors hashing the file are logged and swallowed — a failure here must
+// not block the user from downloading the core. #555.
+func (h *CoreHandler) ensureCoreMetadata(core *db.Core, corePath string) {
+	if core.Sha256 != "" && core.SizeBytes > 0 && core.FetchedAt != nil {
+		return
+	}
+	sum, size, err := hashFileSha256(corePath)
+	if err != nil {
+		slog.Error("failed to hash core binary for metadata", "core", core.Name, "path", corePath, "error", err)
+		return
+	}
+	now := time.Now().UTC()
+	updates := map[string]interface{}{
+		"sha256":     sum,
+		"size_bytes": size,
+		"fetched_at": &now,
+	}
+	// Only overwrite SourceURL if we actually know where this binary came
+	// from. DownloadURL is a template (contains {platform}); storing it as
+	// the source URL is still better than leaving the field blank, since
+	// the admin can tell at a glance whether the core is pinned or pulled
+	// from the buildbot.
+	if core.SourceURL == "" && core.DownloadURL != "" {
+		updates["source_url"] = core.DownloadURL
+	}
+	if err := h.DB.Model(core).Updates(updates).Error; err != nil {
+		slog.Error("failed to persist core metadata", "core", core.Name, "error", err)
+	}
+}
+
+// hashFileSha256 returns the hex sha256 digest and byte length of a file.
+func hashFileSha256(path string) (string, int64, error) {
+	f, err := os.Open(path)
+	if err != nil {
+		return "", 0, err
+	}
+	defer f.Close()
+	hasher := sha256.New()
+	size, err := io.Copy(hasher, f)
+	if err != nil {
+		return "", 0, err
+	}
+	return hex.EncodeToString(hasher.Sum(nil)), size, nil
 }
 
 // platformExtension returns the shared library extension for the given platform.

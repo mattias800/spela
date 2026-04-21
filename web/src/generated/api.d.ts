@@ -5826,10 +5826,16 @@ export interface components {
             description: string;
             displayName: string;
             downloadUrl: string;
+            /** Format: date-time */
+            fetchedAt: string | null;
             /** Format: int64 */
             id: number;
             name: string;
             platforms: string;
+            sha256: string;
+            /** Format: int64 */
+            sizeBytes: number;
+            sourceUrl: string;
             /** Format: date-time */
             updatedAt: string;
             version: string;

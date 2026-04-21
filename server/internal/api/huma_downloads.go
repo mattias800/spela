@@ -405,6 +405,10 @@ func (h *CoreHandler) HumaDownloadCore(_ context.Context, in *CoreDownloadInput)
 		return nil, huma.Error403Forbidden("core file access denied")
 	}
 
+	// Lazy backfill of factual core metadata. Only runs until the row
+	// has all fields populated; afterwards it's a no-op. See #555.
+	h.ensureCoreMetadata(&core, corePath)
+
 	ext := platformExtension(platform)
 	return streamFileFromDisk(corePath, core.Name+"_libretro"+ext, "application/octet-stream"), nil
 }
