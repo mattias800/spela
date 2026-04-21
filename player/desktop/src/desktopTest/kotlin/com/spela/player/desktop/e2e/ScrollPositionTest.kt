@@ -19,8 +19,11 @@ class ScrollPositionTest {
     private fun createHarnessWithManyConsoles(): SpelaTestHarness {
         val harness = SpelaTestHarness(StandardTestDispatcher())
         harness.authRepo.preSetTokens()
-        // Add enough consoles to require scrolling (all same generation so they render in one group)
-        harness.gameRepo.consoles = (1..20).map { i ->
+        // Add enough consoles to require scrolling. The desktop test viewport
+        // is large; 50 consoles in a single generation group (default 0)
+        // gives roughly 25 rows and forces Console 1 well above the fold
+        // once we scroll mid-list.
+        harness.gameRepo.consoles = (1..50).map { i ->
             Console(
                 id = "console$i",
                 name = "Console $i",
@@ -43,8 +46,9 @@ class ScrollPositionTest {
         // Console 1 should be visible at the top
         onNodeWithText("Console 1").assertIsDisplayed()
 
-        // Scroll down to Console 15
-        onNodeWithTag("consoles-list").performScrollToNode(hasText("Console 15"))
+        // Scroll down to Console 40 — far enough that Console 1 leaves
+        // the viewport on any reasonable desktop test window.
+        onNodeWithTag("consoles-list").performScrollToNode(hasText("Console 40"))
         advanceQuick(harness)
 
         // Console 1 should no longer be visible after scrolling
@@ -52,7 +56,7 @@ class ScrollPositionTest {
 
         // Navigate to a console detail screen
         harness.navigationViewModel.onIntent(
-            NavigationIntent.NavigateTo(SpScreen.Console("console15"))
+            NavigationIntent.NavigateTo(SpScreen.Console("console40"))
         )
         advance(harness)
 
@@ -62,8 +66,8 @@ class ScrollPositionTest {
 
         // Console 1 should still NOT be visible — scroll position was preserved
         onNodeWithText("Console 1").assertIsNotDisplayed()
-        // Console 15 should still be visible
-        onNodeWithText("Console 15").assertIsDisplayed()
+        // Console 40 should still be visible
+        onNodeWithText("Console 40").assertIsDisplayed()
     }
 
     @Test
