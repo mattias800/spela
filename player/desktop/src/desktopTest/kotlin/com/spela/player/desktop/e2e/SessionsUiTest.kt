@@ -53,7 +53,8 @@ class SessionsUiTest {
         scrollToSessions()
         onNodeWithTag("sessions_section").assertIsDisplayed()
         onNodeWithText("Sessions").assertIsDisplayed()
-        onNodeWithText("(1)").assertIsDisplayed()
+        // SessionsSection no longer renders a session count next to the
+        // title — verify the session item itself instead.
         onNodeWithTag("session_item_s1").assertIsDisplayed()
         onNodeWithText("My First Run").assertIsDisplayed()
     }
@@ -71,7 +72,7 @@ class SessionsUiTest {
         scrollToSessions()
         onNodeWithTag("sessions_section").assertIsDisplayed()
         onNodeWithTag("sessions_empty").assertIsDisplayed()
-        onNodeWithText("No sessions yet. Start a new playthrough to track your progress.")
+        onNodeWithText("No sessions yet. Press Play to start your first playthrough.")
             .assertIsDisplayed()
     }
 
@@ -88,8 +89,9 @@ class SessionsUiTest {
         onNodeWithTag("create_session_button").performClick()
         advanceQuick(harness)
 
-        // Dialog should appear with default name
-        onNodeWithText("New Session").assertIsDisplayed()
+        // Dialog should appear with its input field. "New Session" text
+        // appears on both the trigger button and the dialog title so we
+        // key on the input tag for the dialog-open assertion.
         onNodeWithTag("create_session_input").assertIsDisplayed()
 
         // Clear and type a custom name
@@ -191,7 +193,7 @@ class SessionsUiTest {
         navigateToGameDetail(harness, "1")
 
         scrollToSessions()
-        onNodeWithText("(3)").assertIsDisplayed()
+        // No session-count pill next to the title — assert item presence.
         onNodeWithTag("session_item_s1").assertIsDisplayed()
         onNodeWithTag("session_item_s2").assertIsDisplayed()
 
@@ -244,7 +246,9 @@ class SessionsUiTest {
         navigateToGameDetail(harness, "1")
 
         scrollToSessions()
-        onNodeWithText("(1)").assertIsDisplayed()
+        // The Castlevania session item exists and the Mario session (for
+        // a different game) does not — the count pill next to the title
+        // is no longer rendered.
         onNodeWithText("Castlevania Run").assertIsDisplayed()
         onNodeWithText("Mario Run").assertDoesNotExist()
     }
@@ -429,16 +433,14 @@ class SessionsUiTest {
 
         scrollToSessions()
         onNodeWithTag("session_item_s1").assertIsDisplayed()
-        onNodeWithText("(1)").assertIsDisplayed()
 
         // Click the duplicate button
         onNodeWithContentDescription("Duplicate session").performClick()
         advance(harness)
 
-        // A new session should appear in the list
+        // A new session should appear in the list.
         assertEquals(2, harness.sessionRepo.sessions.size)
         assertEquals("My Playthrough (Copy)", harness.sessionRepo.sessions[1].name)
-        onNodeWithText("(2)").assertIsDisplayed()
         onNodeWithText("My Playthrough (Copy)").assertIsDisplayed()
     }
 
