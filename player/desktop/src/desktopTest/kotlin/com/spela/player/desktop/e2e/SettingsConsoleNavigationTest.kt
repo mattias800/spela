@@ -31,7 +31,10 @@ class SettingsConsoleNavigationTest {
     }
 
     private fun ComposeUiTest.navigateToControlsCategory(harness: SpelaTestHarness) {
-        onNodeWithContentDescription("Controls").performClick()
+        // The per-console list lives under the "Per-Console" category,
+        // not "Controls" — it was moved when the settings screen was
+        // split into categorised sub-pages.
+        onNodeWithContentDescription("Per-Console").performClick()
         advanceQuick(harness)
     }
 
