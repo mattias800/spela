@@ -194,7 +194,10 @@ class DashboardSectionOrderTest {
     @Test
     fun emptyStateShownWhenAllSectionsEmpty() = runComposeUiTest {
         val harness = createLoggedInHarness()
+        // HomeScreen treats consoles as a "section" for empty-detection,
+        // so the fake's default two consoles must also be cleared.
         harness.gameRepo.games = emptyList()
+        harness.gameRepo.consoles = emptyList()
         // socialRepo defaults to empty
 
         setContent { harness.App() }
@@ -244,6 +247,7 @@ class DashboardSectionOrderTest {
         val harness = createLoggedInHarness()
         // No personal games, no social data — only top-rated discovery data
         harness.gameRepo.games = emptyList()
+        harness.gameRepo.consoles = emptyList()
         harness.gameRepo.globalTopRatedGames = listOf(
             TopRatedGame(rank = 1, name = "Chrono Trigger", rating = 96.0, localGameId = null),
         )
