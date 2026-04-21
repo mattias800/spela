@@ -752,6 +752,15 @@ data class GameSession(
     val memberCount: Int = 1,
     val memberUsernames: List<String> = emptyList(),
     val memberAvatars: List<String> = emptyList(),
+    /**
+     * SHA-256 of the libretro core binary that wrote this session's first
+     * save state, if any. When set, the player can ask the server for the
+     * historical binary by hash (#555 core history retention) so save
+     * states keep loading after future core updates. `null` (serialized
+     * as empty string by the server) means this session has no pin yet —
+     * it will be set on the first save.
+     */
+    val pinnedCoreSha256: String? = null,
 )
 
 data class SessionCheatConfig(

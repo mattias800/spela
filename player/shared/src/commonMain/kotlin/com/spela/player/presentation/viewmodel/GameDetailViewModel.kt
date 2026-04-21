@@ -112,7 +112,7 @@ class GameDetailViewModel(
             is GameDetailIntent.CreateSession -> createSession(intent.gameId, intent.name)
             is GameDetailIntent.RenameSession -> renameSession(intent.sessionId, intent.name)
             is GameDetailIntent.DeleteSession -> deleteSession(intent.sessionId)
-            is GameDetailIntent.DuplicateSession -> duplicateSession(intent.sessionId)
+            is GameDetailIntent.CloneSession -> cloneSession(intent.sessionId, intent.name, intent.saveId)
 
             // Admin actions
             GameDetailIntent.AdminScrapeGame -> adminScrapeGame()
@@ -873,15 +873,15 @@ class GameDetailViewModel(
         }
     }
 
-    private fun duplicateSession(sessionId: String) {
+    private fun cloneSession(sessionId: String, name: String?, saveId: Long?) {
         val repo = sessionRepository ?: return
         scope.launch(dispatchers.io) {
-            repo.duplicateSession(sessionId).fold(
+            repo.cloneSession(sessionId, name, saveId).fold(
                 onSuccess = { newSession ->
                     _state.update { state ->
                         state.copy(
                             sessions = state.sessions + newSession,
-                            successMessage = "Session duplicated as \"${newSession.name}\"",
+                            successMessage = "Session cloned as \"${newSession.name}\"",
                         )
                     }
                 },

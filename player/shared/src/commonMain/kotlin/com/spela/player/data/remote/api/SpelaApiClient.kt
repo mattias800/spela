@@ -1542,16 +1542,17 @@ class SpelaApiClient(
         sessionsApi.deleteSession(sessionId)
     }
 
-    suspend fun duplicateSession(
+    suspend fun cloneSession(
         sessionId: String,
         name: String? = null,
+        saveId: Long? = null,
     ): com.spela.client.models.GameSessionResponse {
         val request = if (name != null) {
             com.spela.client.models.DuplicateSessionRequest(name = name)
         } else {
             null
         }
-        return sessionsApi.duplicateSession(sessionId, request).body()
+        return sessionsApi.cloneSession(sessionId, saveId, request).body()
     }
 
     suspend fun getSessionSaves(sessionId: String): List<com.spela.client.models.SessionSaveResponse> {

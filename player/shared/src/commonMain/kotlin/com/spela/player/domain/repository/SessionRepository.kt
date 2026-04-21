@@ -22,5 +22,15 @@ interface SessionRepository {
     suspend fun downloadSessionSram(sessionId: String): Result<ByteArray>
     suspend fun getSessionCheats(sessionId: String): Result<SessionCheatConfig>
     suspend fun updateSessionCheats(sessionId: String, cheatsEnabled: Boolean, enabledIndices: List<Int>): Result<SessionCheatConfig>
-    suspend fun duplicateSession(sessionId: String, name: String? = null): Result<GameSession>
+    /**
+     * Clones an existing session into a new session owned by the caller.
+     * The new session inherits `totalPlayTime` and `pinnedCoreSha256`
+     * from the source, copies SRAM/cheats/screenshot, and is seeded
+     * with one save state — the most recent save when [saveId] is null
+     * or zero, or the save with the given id when provided.
+     *
+     * Replaces the deprecated `duplicateSession` operation; the server
+     * still exposes `POST /api/sessions/{id}/duplicate` as an alias.
+     */
+    suspend fun cloneSession(sessionId: String, name: String? = null, saveId: Long? = null): Result<GameSession>
 }

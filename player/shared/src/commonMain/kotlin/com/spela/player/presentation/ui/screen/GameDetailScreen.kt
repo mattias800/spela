@@ -286,8 +286,8 @@ fun GameDetailScreen(
                         onDeleteSession = { sessionId ->
                             viewModel.onIntent(GameDetailIntent.DeleteSession(sessionId))
                         },
-                        onDuplicateSession = { sessionId ->
-                            viewModel.onIntent(GameDetailIntent.DuplicateSession(sessionId))
+                        onCloneSession = { sessionId, name, saveId ->
+                            viewModel.onIntent(GameDetailIntent.CloneSession(sessionId, name, saveId))
                         },
                         onSessionSelected = onNavigateToSession?.let { nav ->
                             { session -> nav(session.id) }
