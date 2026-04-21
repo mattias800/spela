@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useParams } from "react-router-dom";
-import { Skeleton } from "@/components/ui";
+import { ProgressBar, Skeleton } from "@/components/ui";
 import { PageLayout, SectionList } from "@/components/layout";
 import { useFranchiseDetail } from "@/hooks/use-explore";
 import { GameTimelineCard } from "@/features/explore/components/game-timeline-card";
@@ -65,70 +65,66 @@ export function ExploreFranchisePage() {
     ? sortedGames.filter((g) => g.consoleAbbreviation === consoleFilter)
     : sortedGames;
 
-  const progressPercent =
-    franchise.totalGames > 0
-      ? Math.round((franchise.libraryGames / franchise.totalGames) * 100)
-      : 0;
+  const ownershipLabel = `You own ${franchise.libraryGames} of ${franchise.totalGames} games`;
+  const ownershipAriaLabel = `${franchise.libraryGames} of ${franchise.totalGames} games owned`;
+  const showOwnership = franchise.totalGames > 0;
 
-  return (
-    <PageLayout backButtonVariant="standard" backTo="/explore" backLabel="Explore" data-testid="franchise-detail-page">
-      <SectionList>
-      {/* Full-width hero banner */}
-      {franchise.heroUrl ? (
-        <div className="relative w-full h-64 sm:h-80 lg:h-96 -mx-6">
-          <div className="relative w-full h-full rounded-2xl overflow-hidden">
-            <img
-              src={franchise.heroUrl}
-              alt=""
-              className="w-full h-full object-cover"
-            />
-            {/* Multi-layer gradient for depth */}
-            <div className="absolute inset-0 bg-gradient-to-t from-surface-950 via-surface-950/60 to-transparent" />
-            <div className="absolute inset-0 bg-gradient-to-r from-surface-950/40 via-transparent to-surface-950/40" />
+  const renderHero = franchise.heroUrl
+    ? () => (
+        <div className="relative w-full h-64 sm:h-80 lg:h-96 overflow-hidden">
+          <img
+            src={franchise.heroUrl!}
+            alt=""
+            className="w-full h-full object-cover"
+          />
+          {/* Multi-layer gradient for depth */}
+          <div className="absolute inset-0 bg-gradient-to-t from-surface-950 via-surface-950/60 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-r from-surface-950/40 via-transparent to-surface-950/40" />
 
-            {/* Title + progress overlaid at bottom */}
-            <div className="absolute bottom-0 left-0 right-0 p-6 sm:p-8">
-              <h1 className="text-4xl sm:text-5xl font-bold text-white drop-shadow-lg mb-3">
-                {franchise.name}
-              </h1>
+          {/* Title + progress overlaid at bottom */}
+          <div className="absolute bottom-0 left-0 right-0 p-6 sm:p-8">
+            <h1 className="text-4xl sm:text-5xl font-bold text-white drop-shadow-lg mb-3">
+              {franchise.name}
+            </h1>
+            {showOwnership && (
               <div className="flex items-center gap-4" data-testid="ownership-progress">
-                <p className="text-sm text-white/80">
-                  You own {franchise.libraryGames} of {franchise.totalGames} games
-                </p>
-                <div className="flex-1 max-w-xs h-2 bg-white/20 rounded-full overflow-hidden backdrop-blur-sm">
-                  <div
-                    className="h-full bg-brand-400 rounded-full transition-all duration-500"
-                    style={{ width: `${progressPercent}%` }}
-                    role="progressbar"
-                    aria-valuenow={franchise.libraryGames}
-                    aria-valuemin={0}
-                    aria-valuemax={franchise.totalGames}
-                    aria-label={`${franchise.libraryGames} of ${franchise.totalGames} games owned`}
-                  />
-                </div>
+                <p className="text-sm text-white/80 whitespace-nowrap">{ownershipLabel}</p>
+                <ProgressBar
+                  value={franchise.libraryGames}
+                  max={franchise.totalGames}
+                  tone="onHero"
+                  ariaLabel={ownershipAriaLabel}
+                  className="max-w-xs"
+                />
               </div>
-            </div>
+            )}
           </div>
         </div>
-      ) : (
+      )
+    : undefined;
+
+  return (
+    <PageLayout
+      backButtonVariant={franchise.heroUrl ? "floating" : "standard"}
+      backTo="/explore"
+      backLabel="Explore"
+      data-testid="franchise-detail-page"
+      renderHeader={renderHero}
+    >
+      <SectionList>
+      {!franchise.heroUrl && (
         <>
           <h1 className="text-4xl font-bold text-surface-100">{franchise.name}</h1>
-          <div data-testid="ownership-progress">
-            <p className="text-sm text-surface-400 mb-2">
-              You own {franchise.libraryGames} of {franchise.totalGames} games
-            </p>
-            <div className="w-full h-2 bg-surface-800 rounded-full overflow-hidden">
-              <div
-                className="h-full bg-brand-500 rounded-full transition-all duration-500"
-                style={{ width: `${progressPercent}%` }}
-                role="progressbar"
-                aria-valuenow={franchise.libraryGames}
-                aria-valuemin={0}
-                aria-valuemax={franchise.totalGames}
-                aria-label={`${franchise.libraryGames} of ${franchise.totalGames} games owned`}
+          {showOwnership && (
+            <div data-testid="ownership-progress">
+              <p className="text-sm text-surface-400 mb-2">{ownershipLabel}</p>
+              <ProgressBar
+                value={franchise.libraryGames}
+                max={franchise.totalGames}
+                ariaLabel={ownershipAriaLabel}
               />
             </div>
-          </div>
+          )}
         </>
       )}
 

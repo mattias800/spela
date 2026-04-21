@@ -29,3 +29,4 @@ export { ConfirmDeleteModal } from "./confirm-delete-modal";
 export { LeaderboardRow } from "./leaderboard-row";
 export { FilterChip } from "./filter-chip";
 export { Divider } from "./divider";
+export { ProgressBar } from "./progress-bar";
