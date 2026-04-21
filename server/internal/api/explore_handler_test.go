@@ -2466,6 +2466,81 @@ func TestGetConsoleShowcase_RecentlyAdded(t *testing.T) {
 	}
 }
 
+func TestGetConsoleShowcase_LaunchGames(t *testing.T) {
+	env := setupExploreTestEnv(t)
+
+	// SNES curated launch titles include "Super Mario World", "F-Zero",
+	// "Pilotwings". Only games that exist on that console should appear.
+	createExploreGame(t, env.database, "SNES", "Super Mario World", 92)
+	createExploreGame(t, env.database, "SNES", "F-Zero", 88)
+	// Punctuation variance: DB row has no period after "Jr", seed has one.
+	// normalizeLaunchTitle should fold both to the same key, but this
+	// seed title is NES-specific, so it exercises the separate NES assertion.
+	createExploreGame(t, env.database, "SNES", "Non Launch Title", 70)
+
+	// NES launch titles: Super Mario Bros., Duck Hunt, Donkey Kong Jr. Math.
+	createExploreGame(t, env.database, "NES", "Super Mario Bros", 95) // DB title lacks trailing period
+	createExploreGame(t, env.database, "NES", "Duck Hunt", 80)
+	createExploreGame(t, env.database, "NES", "Donkey Kong Jr Math", 65) // DB title missing punctuation vs seed
+	createExploreGame(t, env.database, "NES", "Crystalis", 85)           // not a launch title
+
+	// SNES showcase: expect Super Mario World + F-Zero, in seed order.
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/explore/consoles/snes/showcase", nil)
+	req.Header.Set("Authorization", "Bearer "+env.token)
+	env.router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var snesResp ConsoleShowcaseResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &snesResp))
+	require.Len(t, snesResp.LaunchGames, 2)
+	assert.Equal(t, "Super Mario World", snesResp.LaunchGames[0].Title)
+	assert.Equal(t, "F-Zero", snesResp.LaunchGames[1].Title)
+	for _, g := range snesResp.LaunchGames {
+		assert.Equal(t, "snes", g.ConsoleID)
+	}
+
+	// NES showcase: expect all three, including the punctuation-tolerant
+	// matches. "Crystalis" must not appear.
+	w = httptest.NewRecorder()
+	req = httptest.NewRequest("GET", "/api/explore/consoles/nes/showcase", nil)
+	req.Header.Set("Authorization", "Bearer "+env.token)
+	env.router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var nesResp ConsoleShowcaseResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &nesResp))
+	nesTitles := make([]string, len(nesResp.LaunchGames))
+	for i, g := range nesResp.LaunchGames {
+		nesTitles[i] = g.Title
+	}
+	assert.Contains(t, nesTitles, "Super Mario Bros")
+	assert.Contains(t, nesTitles, "Duck Hunt")
+	assert.Contains(t, nesTitles, "Donkey Kong Jr Math")
+	assert.NotContains(t, nesTitles, "Crystalis")
+	// Seed-order expectation: Super Mario Bros first, Duck Hunt second,
+	// Donkey Kong Jr. Math later in the list.
+	assert.Equal(t, "Super Mario Bros", nesResp.LaunchGames[0].Title)
+	assert.Equal(t, "Duck Hunt", nesResp.LaunchGames[1].Title)
+}
+
+func TestGetConsoleShowcase_LaunchGames_UnsupportedConsoleHidden(t *testing.T) {
+	env := setupExploreTestEnv(t)
+
+	// XBOX has no curated launch list — the section should come back empty.
+	createExploreGame(t, env.database, "XBOX", "Halo: Combat Evolved", 95)
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/explore/consoles/xbox/showcase", nil)
+	req.Header.Set("Authorization", "Bearer "+env.token)
+	env.router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var resp ConsoleShowcaseResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+	assert.Empty(t, resp.LaunchGames)
+}
+
 func TestGetConsoleHighlights(t *testing.T) {
 	env := setupExploreTestEnv(t)
 

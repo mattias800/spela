@@ -3,6 +3,8 @@ package api
 import (
 	"log/slog"
 	"math"
+	"regexp"
+	"strings"
 
 	"github.com/spela/server/internal/db"
 )
@@ -37,6 +39,7 @@ type ConsoleShowcaseResponse struct {
 	Console        ConsoleResponse    `json:"console"`
 	Essentials     []GameResponse     `json:"essentials"`
 	HiddenGems     []GameResponse     `json:"hiddenGems"`
+	LaunchGames    []GameResponse     `json:"launchGames"`
 	GenreBreakdown []GenreCount       `json:"genreBreakdown"`
 	TopDevelopers  []DeveloperSummary `json:"topDevelopers"`
 	RecentlyPlayed []GameResponse     `json:"recentlyPlayed"`
@@ -146,6 +149,72 @@ func (h *ExploreHandler) buildGenreBreakdown(consoleID uint) []GenreCount {
 		}
 	}
 	return result
+}
+
+// reLaunchPunct is the punctuation class used by normalizeLaunchTitle. Kept
+// narrow: we strip characters that commonly differ between ROM filenames and
+// canonical titles (dots, commas, apostrophes, colons, hyphens, etc.) while
+// leaving alphanumerics and spaces intact.
+var reLaunchPunct = regexp.MustCompile(`[.,'":;!?\-_/\\+\(\)\[\]]+`)
+
+// reLaunchSpaces collapses runs of whitespace to a single space.
+var reLaunchSpaces = regexp.MustCompile(`\s+`)
+
+// normalizeLaunchTitle lowercases and strips punctuation/articles so that
+// seed titles like "Donkey Kong Jr. Math" and DB titles like "Donkey Kong Jr
+// Math" compare equal. The normalization is deliberately simpler than the
+// scraper's namematch.normalizeName — launch-game seed data is curated, so
+// we don't need fuzzy matching, only forgiveness for routine punctuation
+// and leading-article variance.
+func normalizeLaunchTitle(title string) string {
+	s := strings.ToLower(strings.TrimSpace(title))
+	// Normalize ampersand to "and" before stripping punctuation so "Rock & Roll" → "rock and roll".
+	s = strings.ReplaceAll(s, "&", " and ")
+	s = reLaunchPunct.ReplaceAllString(s, " ")
+	s = reLaunchSpaces.ReplaceAllString(s, " ")
+	s = strings.TrimSpace(s)
+	// Drop a leading "the " to match "The Legend of Zelda" ↔ "Legend of Zelda".
+	s = strings.TrimPrefix(s, "the ")
+	s = strings.TrimPrefix(s, "a ")
+	s = strings.TrimPrefix(s, "an ")
+	return s
+}
+
+// buildLaunchGames returns games on the given console whose title matches a
+// curated launch-title entry for the console. Order follows the seed list
+// (Wikipedia's canonical launch-day ordering) so early titles surface first.
+// Returns nil if no curated list exists for the console.
+func (h *ExploreHandler) buildLaunchGames(consoleID uint, abbr string) []db.Game {
+	titles := launchGamesFor(strings.ToLower(abbr))
+	if len(titles) == 0 {
+		return nil
+	}
+
+	var games []db.Game
+	if err := h.DB.Preload("Console").
+		Where("console_id = ? AND is_primary = true AND deleted_at IS NULL", consoleID).
+		Find(&games).Error; err != nil {
+		slog.Error("failed to fetch games for launch matching", "console", abbr, "error", err)
+		return nil
+	}
+
+	// Index DB games by normalized title for O(n+m) matching.
+	byTitle := make(map[string]db.Game, len(games))
+	for _, g := range games {
+		key := normalizeLaunchTitle(g.Title)
+		if _, exists := byTitle[key]; !exists {
+			byTitle[key] = g
+		}
+	}
+
+	matched := make([]db.Game, 0, len(titles))
+	for _, seed := range titles {
+		key := normalizeLaunchTitle(seed)
+		if g, ok := byTitle[key]; ok {
+			matched = append(matched, g)
+		}
+	}
+	return matched
 }
 
 // buildConsoleTopDevelopers returns the top 5 developers by game count for a console.
