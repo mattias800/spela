@@ -1228,6 +1228,17 @@ class FakeSessionRepository : SessionRepository {
     var sessions: MutableList<GameSession> = mutableListOf()
     private val sessionSaves = mutableMapOf<String, MutableList<SaveState>>()
     private val autoSaves = mutableMapOf<String, ByteArray>()
+
+    /**
+     * Test-only: seed an auto-save for [sessionId]. Used by SaveLoadStateTest
+     * and InGameOverlayTest to verify that clicking Load downloads and
+     * unserializes a pre-existing auto-save. In production, auto-saves are
+     * written by the periodic background saver; pre-seeding models the
+     * state "a prior play session left an auto-save behind".
+     */
+    fun preSeedAutoSave(sessionId: String, data: ByteArray = ByteArray(128) { it.toByte() }) {
+        autoSaves[sessionId] = data
+    }
     private val slotSaves = mutableMapOf<String, ByteArray>() // key: "$sessionId:$slot"
     private val sram = mutableMapOf<String, ByteArray>()
     private val sessionCheats = mutableMapOf<String, SessionCheatConfig>()

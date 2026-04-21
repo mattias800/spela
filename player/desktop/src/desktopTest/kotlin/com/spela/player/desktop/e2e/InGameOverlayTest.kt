@@ -73,8 +73,14 @@ class InGameOverlayTest {
     fun loadTriggersUnserialization() = runComposeUiTest {
         val harness = createHarnessWithGameReady()
 
-        // Pre-set serialized state so load succeeds
-        harness.libretroController.serializedState = ByteArray(64) { 42 }
+        // The Load button downloads the session's auto-save. Seed a
+        // session + auto-save so there's something to unserialize;
+        // mirrors the state "a prior play left an auto-save behind".
+        val sessionId = "session-1"
+        harness.sessionRepo.sessions.add(
+            com.spela.player.domain.model.GameSession(id = sessionId, gameId = "1", name = "Default"),
+        )
+        harness.sessionRepo.preSeedAutoSave(sessionId)
 
         startGame(harness)
 

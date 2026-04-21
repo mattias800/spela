@@ -1,6 +1,7 @@
 package com.spela.player.desktop.e2e
 
 import androidx.compose.ui.test.*
+import com.spela.player.domain.model.GameSession
 import com.spela.player.presentation.intent.EmulationIntent
 import com.spela.player.presentation.navigation.NavigationIntent
 import com.spela.player.presentation.navigation.SpScreen
@@ -56,6 +57,17 @@ class SaveLoadStateTest {
     fun loadStateRestoresFromSaveRepository() = runComposeUiTest {
         val harness = createHarnessWithGameReady()
 
+        // The Load button downloads the session's *auto*-save (not the
+        // manual save that the Save button uploads — those go to a named
+        // slot). Seed a session + auto-save so Load has something to
+        // unserialize; models the "prior play left an auto-save behind"
+        // state that would be present in real use.
+        val sessionId = "session-1"
+        harness.sessionRepo.sessions.add(
+            GameSession(id = sessionId, gameId = "1", name = "Default"),
+        )
+        harness.sessionRepo.preSeedAutoSave(sessionId)
+
         setContent { harness.App() }
         advance(harness)
 
@@ -66,10 +78,6 @@ class SaveLoadStateTest {
         // Open overlay to access Save/Load buttons
         harness.emulationViewModel.onIntent(EmulationIntent.ToggleOverlay)
         advanceQuick(harness)
-
-        // First save, then load
-        onNodeWithContentDescription("Save").performClick()
-        advance(harness)
 
         val loadCountBefore = harness.libretroController.loadCallCount
 
