@@ -170,7 +170,11 @@ class GlobalSearchTest {
         onNodeWithTag("search_result_game_g1").assertExists()
         onNodeWithTag("search_result_game_g2").assertExists()
 
-        // Console results
+        // Console results — the LazyColumn only composes items that are
+        // in/near the viewport, so scroll the console row into view
+        // before asserting (same pattern the test already applies to
+        // developer/publisher/collection/series/franchise sections).
+        resultsList.performScrollToNode(hasTestTag("search_result_console_snes"))
         onNodeWithTag("search_result_console_snes").assertExists()
 
         // Developer results - may need scroll
@@ -311,6 +315,8 @@ class GlobalSearchTest {
         searchInputNode().performTextInput("super")
         advanceFully(harness)
 
+        onNodeWithTag("search_results_list")
+            .performScrollToNode(hasTestTag("search_result_console_snes"))
         onNodeWithTag("search_result_console_snes").assertExists()
         onNodeWithTag("search_result_console_snes")
             .assertContentDescriptionContains("Super Nintendo", substring = true)
@@ -351,6 +357,8 @@ class GlobalSearchTest {
         searchInputNode().performTextInput("super")
         advanceFully(harness)
 
+        onNodeWithTag("search_results_list")
+            .performScrollToNode(hasTestTag("search_result_console_snes"))
         onNodeWithTag("search_result_console_snes").performClick()
         advance(harness)
 
@@ -624,16 +632,19 @@ class GlobalSearchTest {
         searchInputNode().performTextInput("mario")
         advanceFully(harness)
 
-        // Each quick result item has contentDescription = "${name}, ${type}"
-        // Verify the type badge text is present via content descriptions
-        onNodeWithTag("quick_result_game_g1")
-            .assertContentDescriptionContains("Game", substring = true)
-        onNodeWithTag("quick_result_console_snes")
-            .assertContentDescriptionContains("Console", substring = true)
-        onNodeWithTag("quick_result_developer_Nintendo")
-            .assertContentDescriptionContains("Developer", substring = true)
-        onNodeWithTag("quick_result_publisher_Konami")
-            .assertContentDescriptionContains("Publisher", substring = true)
+        // Each quick result item renders its type as card text (not
+        // contentDescription). Assert presence of the tagged nodes +
+        // the type-badge text inside each.
+        onNodeWithTag("quick_result_game_g1").assertExists()
+        onNodeWithTag("quick_result_console_snes").assertExists()
+        onNodeWithTag("quick_result_developer_Nintendo").assertExists()
+        onNodeWithTag("quick_result_publisher_Konami").assertExists()
+        // The fixture has 2 games + 1 console + 1 developer + 1 publisher,
+        // so the per-type badge text appears with a matching cardinality.
+        onAllNodesWithText("Game").assertCountEquals(2)
+        onAllNodesWithText("Console").assertCountEquals(1)
+        onAllNodesWithText("Developer").assertCountEquals(1)
+        onAllNodesWithText("Publisher").assertCountEquals(1)
     }
 
     // --- Edge cases ---
