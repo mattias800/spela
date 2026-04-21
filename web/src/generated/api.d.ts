@@ -5221,9 +5221,12 @@ export interface components {
              * @example https://example.com/api/schemas/AdminCreateUserRequest.json
              */
             readonly $schema?: string;
+            /** @description New account email. */
             email: string;
+            /** @description New account password (8-72 characters). */
             password: string;
             role?: string;
+            /** @description New account username (3-64 characters). */
             username: string;
         };
         AdminRAStatusResponse: {
@@ -5806,6 +5809,7 @@ export interface components {
             essentials: components["schemas"]["GameResponse"][];
             genreBreakdown: components["schemas"]["GenreCount"][];
             hiddenGems: components["schemas"]["GameResponse"][];
+            launchGames: components["schemas"]["GameResponse"][];
             recentlyAdded: components["schemas"]["GameResponse"][];
             recentlyPlayed: components["schemas"]["GameResponse"][];
             topDevelopers: components["schemas"]["DeveloperSummary"][];

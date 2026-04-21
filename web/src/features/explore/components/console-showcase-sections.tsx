@@ -7,6 +7,7 @@ import {
   Building2,
   Sparkles,
   Play,
+  Rocket,
 } from "lucide-react";
 import { GameShelf } from "@/features/explore/components/game-shelf";
 import { TitledSection } from "@/components/ui";
@@ -55,6 +56,26 @@ export function ConsoleEssentials({ consoleId }: ConsoleShowcaseSectionProps) {
       title="Essentials"
       icon={Trophy}
       games={showcase.essentials ?? []}
+      isLoading={false}
+      hideConsoleName
+      onToggleFavorite={handleToggleFavorite}
+      onTogglePlayLater={handleTogglePlayLater}
+    />
+  );
+}
+
+export function ConsoleLaunchGames({ consoleId }: ConsoleShowcaseSectionProps) {
+  const { data: showcase } = useConsoleShowcase(consoleId);
+  const { toggle: handleToggleFavorite } = useToggleFavorite();
+  const { toggle: handleTogglePlayLater } = useTogglePlayLater();
+
+  if (!showcase || (showcase.launchGames ?? []).length === 0) return null;
+
+  return (
+    <GameShelf
+      title="Launch Games"
+      icon={Rocket}
+      games={showcase.launchGames ?? []}
       isLoading={false}
       hideConsoleName
       onToggleFavorite={handleToggleFavorite}
