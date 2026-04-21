@@ -210,6 +210,7 @@ class StubCoreRepository : CoreRepository {
     override suspend fun getAvailableCores() = Result.success(emptyList<LibretroCore>())
     override suspend fun getRecommendedCore(gameId: String) = Result.success(LibretroCore(id = 1, name = "nestopia", displayName = "Nestopia"))
     override suspend fun downloadCore(coreName: String, downloadUrl: String?, onProgress: (Float) -> Unit) = Result.success("/path/to/core.so")
+    override suspend fun downloadCoreByHash(coreName: String, sha256: String, onProgress: (Float) -> Unit) = Result.success("/path/to/core.so")
     override suspend fun getLocalCorePath(coreName: String): String = "/path/to/core.so"
     override suspend fun isCoreCached(coreName: String) = true
 }
