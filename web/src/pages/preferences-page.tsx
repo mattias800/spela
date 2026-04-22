@@ -44,7 +44,11 @@ export function PreferencesPage() {
   } | null>(null);
 
   function handleToggle(
-    key: "showPerformanceOverlay" | "autoSaveEnabled" | "autoLoadSaveEnabled",
+    key:
+      | "showPerformanceOverlay"
+      | "autoSaveEnabled"
+      | "autoLoadSaveEnabled"
+      | "autoUpdateCoresEnabled",
   ) {
     if (!preferences) return;
     updatePreferences.mutate(

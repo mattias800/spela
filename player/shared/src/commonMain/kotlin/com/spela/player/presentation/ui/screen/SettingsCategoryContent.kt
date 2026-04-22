@@ -200,6 +200,13 @@ private fun androidx.compose.foundation.lazy.LazyListScope.emulationContent(
                     isChecked = state.autoLoadSaveEnabled,
                     onToggle = { viewModel.onIntent(SettingsIntent.ToggleAutoLoadSave) },
                 )
+                SettingsDivider()
+                SettingsToggle(
+                    title = "Auto Update Cores",
+                    subtitle = "Silently re-download emulator cores when the server has a newer build. Turn off to keep the locally cached version until you manually refresh.",
+                    isChecked = state.autoUpdateCoresEnabled,
+                    onToggle = { viewModel.onIntent(SettingsIntent.ToggleAutoUpdateCores) },
+                )
             }
         }
     }

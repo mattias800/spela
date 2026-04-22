@@ -29,6 +29,7 @@ type UpdatePreferencesRequest struct {
 	ShowPerformanceOverlay  *bool                           `json:"showPerformanceOverlay,omitempty"`
 	AutoSaveEnabled         *bool                           `json:"autoSaveEnabled,omitempty"`
 	AutoLoadSaveEnabled     *bool                           `json:"autoLoadSaveEnabled,omitempty"`
+	AutoUpdateCoresEnabled  *bool                           `json:"autoUpdateCoresEnabled,omitempty"`
 	SelectedShader          *string                         `json:"selectedShader,omitempty"`
 	SelectedTheme           *string                         `json:"selectedTheme,omitempty"`
 	DefaultSecondScreenPage *string                         `json:"defaultSecondScreenPage,omitempty"`

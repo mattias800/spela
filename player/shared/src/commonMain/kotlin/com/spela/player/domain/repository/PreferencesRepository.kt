@@ -9,6 +9,7 @@ interface PreferencesRepository {
         showPerformanceOverlay: Boolean? = null,
         autoSaveEnabled: Boolean? = null,
         autoLoadSaveEnabled: Boolean? = null,
+        autoUpdateCoresEnabled: Boolean? = null,
         selectedShader: String? = null,
         selectedTheme: String? = null,
         consoleShaders: Map<String, String>? = null,

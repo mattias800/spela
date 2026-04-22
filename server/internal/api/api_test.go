@@ -584,7 +584,46 @@ func TestGetPreferences_Defaults(t *testing.T) {
 	assert.Equal(t, false, prefs["showPerformanceOverlay"])
 	assert.Equal(t, true, prefs["autoSaveEnabled"])
 	assert.Equal(t, true, prefs["autoLoadSaveEnabled"])
+	assert.Equal(t, true, prefs["autoUpdateCoresEnabled"])
 	assert.Equal(t, "none", prefs["selectedShader"])
+}
+
+// TestUpdatePreferences_AutoUpdateCoresToggle verifies the #555 Phase 2
+// opt-out preference round-trips through the PUT + GET endpoints. This
+// pins the wire contract the player's SettingsViewModel writes against.
+func TestUpdatePreferences_AutoUpdateCoresToggle(t *testing.T) {
+	_, cfg := setupTestEnv(t)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
+	token := registerAndGetToken(t, router)
+
+	body, _ := json.Marshal(map[string]interface{}{
+		"autoUpdateCoresEnabled": false,
+	})
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("PUT", "/api/user/preferences", bytes.NewReader(body))
+	req.Header.Set("Authorization", "Bearer "+token)
+	req.Header.Set("Content-Type", "application/json")
+	router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var prefs map[string]interface{}
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &prefs))
+	assert.Equal(t, false, prefs["autoUpdateCoresEnabled"])
+	// Other prefs stay at their defaults; partial updates mustn't
+	// clobber unrelated fields.
+	assert.Equal(t, true, prefs["autoSaveEnabled"])
+	assert.Equal(t, true, prefs["autoLoadSaveEnabled"])
+
+	// Re-read to confirm the new value persists.
+	w2 := httptest.NewRecorder()
+	req2 := httptest.NewRequest("GET", "/api/user/preferences", nil)
+	req2.Header.Set("Authorization", "Bearer "+token)
+	router.ServeHTTP(w2, req2)
+	assert.Equal(t, http.StatusOK, w2.Code)
+
+	require.NoError(t, json.Unmarshal(w2.Body.Bytes(), &prefs))
+	assert.Equal(t, false, prefs["autoUpdateCoresEnabled"])
 }
 
 func TestUpdatePreferences(t *testing.T) {

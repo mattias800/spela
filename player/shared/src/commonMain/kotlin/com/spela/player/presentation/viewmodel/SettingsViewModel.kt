@@ -39,6 +39,7 @@ data class SettingsState(
     val showPerformanceOverlay: Boolean = false,
     val autoSaveEnabled: Boolean = true,
     val autoLoadSaveEnabled: Boolean = true,
+    val autoUpdateCoresEnabled: Boolean = true,
     val selectedShader: ShaderPreset = ShaderPreset.NONE,
     val selectedTheme: String = "default-dark",
     val consoleShaders: Map<String, ShaderPreset> = emptyMap(),
@@ -65,6 +66,7 @@ sealed interface SettingsIntent {
     data object TogglePerformanceOverlay : SettingsIntent
     data object ToggleAutoSave : SettingsIntent
     data object ToggleAutoLoadSave : SettingsIntent
+    data object ToggleAutoUpdateCores : SettingsIntent
     data class SelectShader(val shader: ShaderPreset) : SettingsIntent
     data class SelectTheme(val theme: String) : SettingsIntent
     data class SelectConsoleShader(val consoleId: String, val shader: ShaderPreset) : SettingsIntent
@@ -137,6 +139,11 @@ class SettingsViewModel(
                 currentValue = { it.autoLoadSaveEnabled },
                 optimisticUpdate = { s, v -> s.copy(autoLoadSaveEnabled = v) },
                 apiCall = { preferencesRepository.updatePreferences(autoLoadSaveEnabled = it) },
+            )
+            SettingsIntent.ToggleAutoUpdateCores -> togglePreference(
+                currentValue = { it.autoUpdateCoresEnabled },
+                optimisticUpdate = { s, v -> s.copy(autoUpdateCoresEnabled = v) },
+                apiCall = { preferencesRepository.updatePreferences(autoUpdateCoresEnabled = it) },
             )
             is SettingsIntent.SelectShader -> selectShader(intent.shader)
             is SettingsIntent.SelectTheme -> selectTheme(intent.theme)
@@ -236,6 +243,7 @@ class SettingsViewModel(
                         showPerformanceOverlay = prefs.showPerformanceOverlay,
                         autoSaveEnabled = prefs.autoSaveEnabled,
                         autoLoadSaveEnabled = prefs.autoLoadSaveEnabled,
+                        autoUpdateCoresEnabled = prefs.autoUpdateCoresEnabled,
                         selectedShader = prefs.selectedShader,
                         selectedTheme = prefs.selectedTheme,
                         consoleShaders = prefs.consoleShaders,

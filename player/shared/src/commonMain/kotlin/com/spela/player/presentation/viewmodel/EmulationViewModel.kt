@@ -456,8 +456,14 @@ class EmulationViewModel(
             // Prepare game and core files. When the session has a
             // pinnedCoreSha256 (#555 Phase 3) we pass it through so the
             // use case can attempt a versioned core download first.
+            // autoUpdateCoresEnabled gates the unpinned cache-invalidation
+            // check (#555 Phase 2 opt-out).
             val pinnedSha = saveManager.pinnedCoreSha256For(saveManager.currentSessionId)
-            prepareGameUseCase(gameId, pinnedSha).fold(
+            prepareGameUseCase(
+                gameId,
+                pinnedSha,
+                autoUpdateCoresEnabled = currentPreferences.autoUpdateCoresEnabled,
+            ).fold(
                 onSuccess = { prepared ->
                     val gamePath = prepared.gamePath
                     val corePath = prepared.corePath

@@ -1043,6 +1043,7 @@ type UserPreferencesResponse struct {
 	ShowPerformanceOverlay  bool                            `json:"showPerformanceOverlay"`
 	AutoSaveEnabled         bool                            `json:"autoSaveEnabled"`
 	AutoLoadSaveEnabled     bool                            `json:"autoLoadSaveEnabled"`
+	AutoUpdateCoresEnabled  bool                            `json:"autoUpdateCoresEnabled"`
 	SelectedShader          string                          `json:"selectedShader"`
 	SelectedTheme           string                          `json:"selectedTheme"`
 	DefaultSecondScreenPage string                          `json:"defaultSecondScreenPage"`

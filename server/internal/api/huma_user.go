@@ -105,6 +105,7 @@ func (h *UserHandler) HumaGetPreferences(ctx context.Context, _ *GetPreferencesI
 			ShowPerformanceOverlay:  user.ShowPerfOverlay,
 			AutoSaveEnabled:         user.AutoSaveEnabled,
 			AutoLoadSaveEnabled:     user.AutoLoadSaveEnabled,
+			AutoUpdateCoresEnabled:  user.AutoUpdateCoresEnabled,
 			SelectedShader:          user.SelectedShader,
 			SelectedTheme:           selectedTheme,
 			DefaultSecondScreenPage: defaultSecondScreenPage,

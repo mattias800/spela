@@ -26,6 +26,7 @@ import kotlinx.serialization.encoding.*
  *
  * @param autoLoadSaveEnabled 
  * @param autoSaveEnabled 
+ * @param autoUpdateCoresEnabled 
  * @param consoleKeyMappings 
  * @param consoleShaders 
  * @param customKeyMapping 
@@ -47,6 +48,8 @@ data class UserPreferencesResponse (
     @SerialName(value = "autoLoadSaveEnabled") @Required val autoLoadSaveEnabled: kotlin.Boolean,
 
     @SerialName(value = "autoSaveEnabled") @Required val autoSaveEnabled: kotlin.Boolean,
+
+    @SerialName(value = "autoUpdateCoresEnabled") @Required val autoUpdateCoresEnabled: kotlin.Boolean,
 
     @SerialName(value = "consoleKeyMappings") @Required val consoleKeyMappings: kotlin.collections.Map<kotlin.String, ConsoleKeyMappingDTO>,
 

@@ -9,6 +9,7 @@ const mockPreferences = {
   showPerformanceOverlay: true,
   autoSaveEnabled: false,
   autoLoadSaveEnabled: true,
+  autoUpdateCoresEnabled: true,
   selectedShader: "crt-simple",
   consoleShaders: { "1": "bilinear" },
   selectedKeyMapping: "default",
@@ -196,6 +197,8 @@ describe("PreferencesPage", () => {
     expect(switches[1]).toHaveAttribute("aria-checked", "false");
     // Auto Load Save is true
     expect(switches[2]).toHaveAttribute("aria-checked", "true");
+    // Auto Update Cores is true (#555 Phase 2 opt-out preference)
+    expect(switches[3]).toHaveAttribute("aria-checked", "true");
   });
 
   it("toggles a preference switch", async () => {
@@ -205,6 +208,17 @@ describe("PreferencesPage", () => {
     await userEvent.click(switches[1]); // Auto Save (currently false)
     expect(mockMutate).toHaveBeenCalledWith(
       { autoSaveEnabled: true },
+      expect.objectContaining({ onError: expect.any(Function) }),
+    );
+  });
+
+  it("toggles the auto-update-cores switch", async () => {
+    renderPage();
+    await userEvent.click(screen.getByRole("tab", { name: "Emulation" }));
+    const switches = screen.getAllByRole("switch");
+    await userEvent.click(switches[3]); // Auto Update Cores (currently true)
+    expect(mockMutate).toHaveBeenCalledWith(
+      { autoUpdateCoresEnabled: false },
       expect.objectContaining({ onError: expect.any(Function) }),
     );
   });

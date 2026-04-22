@@ -18,6 +18,7 @@ package com.spela.client.apis
 import com.spela.client.models.Core
 import com.spela.client.models.CoreManifestResponse
 import com.spela.client.models.HumaError
+import com.spela.client.models.RefreshCoreResponse
 
 import com.spela.client.infrastructure.*
 import io.ktor.client.HttpClient
@@ -153,5 +154,40 @@ open class CoresApi : ApiClient {
             override fun deserialize(decoder: Decoder) = ListCoresResponse(serializer.deserialize(decoder))
         }
     }
+
+    /**
+     * Re-fingerprint a core binary (admin)
+     * Admin-only. Re-hashes the on-disk core binary, updates the DB metadata, snapshots the new binary into the history directory, and emits a core_updated system event when the sha256 actually changed. Use after manually swapping a core binary on disk so stored fingerprints don&#39;t go stale. Returns 404 when the binary isn&#39;t on disk for the requested platform.
+     * @param id Core row ID (not core name).
+     * @param platform Platform whose on-disk binary to re-hash (linux|macos|windows|android). Defaults to linux — the default server host platform. (optional)
+     * @return RefreshCoreResponse
+     */
+    @Suppress("UNCHECKED_CAST")
+    open suspend fun refreshCore(id: kotlin.Long, platform: kotlin.String? = null): HttpResponse<RefreshCoreResponse> {
+
+        val localVariableAuthNames = listOf<String>()
+
+        val localVariableBody = 
+            io.ktor.client.utils.EmptyContent
+
+        val localVariableQuery = mutableMapOf<String, List<String>>()
+        platform?.apply { localVariableQuery["platform"] = listOf("$platform") }
+        val localVariableHeaders = mutableMapOf<String, String>()
+
+        val localVariableConfig = RequestConfig<kotlin.Any?>(
+            RequestMethod.POST,
+            "/api/cores/{id}/refresh".replace("{" + "id" + "}", "$id"),
+            query = localVariableQuery,
+            headers = localVariableHeaders,
+            requiresAuthentication = false,
+        )
+
+        return request(
+            localVariableConfig,
+            localVariableBody,
+            localVariableAuthNames
+        ).wrap()
+    }
+
 
 }

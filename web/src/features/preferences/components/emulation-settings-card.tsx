@@ -5,17 +5,21 @@ import {
 } from "@/components/ui";
 import type { UserPreferences } from "@/types/api";
 
+type EmulationToggleKey =
+  | "showPerformanceOverlay"
+  | "autoSaveEnabled"
+  | "autoLoadSaveEnabled"
+  | "autoUpdateCoresEnabled";
+
 interface EmulationSettingsCardProps {
   preferences: UserPreferences | undefined;
   isLoading: boolean;
   isSaving?: boolean;
-  onToggle: (
-    key: "showPerformanceOverlay" | "autoSaveEnabled" | "autoLoadSaveEnabled",
-  ) => void;
+  onToggle: (key: EmulationToggleKey) => void;
 }
 
 const TOGGLES: Array<{
-  key: "showPerformanceOverlay" | "autoSaveEnabled" | "autoLoadSaveEnabled";
+  key: EmulationToggleKey;
   label: string;
   description: string;
 }> = [
@@ -34,6 +38,12 @@ const TOGGLES: Array<{
     label: "Auto Load Save",
     description:
       "Automatically load the latest save state when starting a game",
+  },
+  {
+    key: "autoUpdateCoresEnabled",
+    label: "Auto Update Cores",
+    description:
+      "Silently re-download emulator cores when the server has a newer build. Turn off to keep the locally cached version until you manually refresh.",
   },
 ];
 
