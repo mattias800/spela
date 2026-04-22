@@ -102,24 +102,27 @@ class CoreRepositoryImpl(
         // fall through to the normal download path.
         val localPath = getLocalCorePath(coreName) ?: return null
 
+        val serverSha = getServerCoreSha(coreName) ?: return null
+
+        val localSha = fileStorage.sha256File(localPath) ?: return null
+
+        return localSha.equals(serverSha, ignoreCase = true)
+    }
+
+    override suspend fun getServerCoreSha(coreName: String): String? {
         // Resolve the server-side numeric core id from the name. Any
-        // failure here (network, name not found) is treated as
-        // "cannot decide" — we don't want a transient HTTP hiccup to
-        // invalidate an otherwise-usable cached core.
+        // failure here (network, name not found) becomes null so the
+        // caller can treat it as "cannot decide".
         val coreId = runCatching {
             apiClient.getAvailableCores().firstOrNull { it.name == coreName }?.id
         }.getOrNull() ?: return null
 
-        val manifest = runCatching { apiClient.getCoreManifest(coreId) }.getOrNull() ?: return null
+        val manifest = runCatching { apiClient.getCoreManifest(coreId) }.getOrNull()
+            ?: return null
 
-        // Server hasn't fingerprinted this core yet (pristine row). We
-        // can't tell whether the local copy matches what the server will
-        // eventually serve, so trust the local cache until the server
-        // lands its own hash on a future download.
-        if (manifest.sha256.isEmpty()) return null
-
-        val localSha = fileStorage.sha256File(localPath) ?: return null
-
-        return localSha.equals(manifest.sha256, ignoreCase = true)
+        // Empty sha == the server has not fingerprinted this core
+        // yet; callers must not treat empty as "no changes" because
+        // it still carries no signal.
+        return manifest.sha256.takeIf { it.isNotEmpty() }
     }
 }

@@ -56,11 +56,30 @@ data class PrepareGameResult(
     val coreVersionWarning: String? = null,
     /**
      * Why (if at all) the VM should consider showing the core-upgrade
-     * decision UI before starting emulation. See [DecisionKind]. The
-     * detection logic lands in PR #3 alongside the UI; v1 always
-     * returns [DecisionKind.None] so existing behaviour is unchanged.
+     * decision UI before starting emulation. See [DecisionKind].
      */
     val decisionKind: DecisionKind = DecisionKind.None,
+    /**
+     * libretro identifier of the core the VM is about to launch —
+     * the post-platform-substitution name, e.g. "mednafen_psx_hw" on
+     * Android. Empty string when the use case bailed early via the
+     * offline-cache fallback path. Used by the VM to build the
+     * `CoreDecision.UpgradeAvailable` payload for Sheet A.
+     */
+    val coreName: String = "",
+    /**
+     * Human-readable display name for [coreName] — falls back to
+     * [coreName] when the server hasn't populated a pretty label.
+     */
+    val coreDisplayName: String = "",
+    /**
+     * Server's current sha256 for [coreName] at the moment this
+     * result was produced. Populated when the use case fetches the
+     * manifest during decision detection; empty otherwise. The VM
+     * reads this directly to build Sheet A's "Saved with version"
+     * meta line without a second network round-trip.
+     */
+    val serverCoreSha: String = "",
 )
 
 /**
@@ -112,6 +131,9 @@ class PrepareGameUseCase(
         gameId: String,
         pinnedCoreSha256: String? = null,
         autoUpdateCoresEnabled: Boolean = true,
+        userLockedCoreVersion: Boolean = false,
+        sessionHasSaves: Boolean = false,
+        skipCoreDecisionPrompt: Boolean = false,
     ): Result<PrepareGameResult> {
         val gamePath = downloadRepository.getLocalGamePath(gameId)
             ?: return Result.failure(IllegalStateException("Game not downloaded"))
@@ -124,7 +146,14 @@ class PrepareGameUseCase(
                 val localPath = coreRepository.getLocalCorePath(coreName)
                 if (localPath != null) {
                     println("[PrepareGame] Using local fallback core: $localPath")
-                    return Result.success(PrepareGameResult(gamePath, localPath))
+                    return Result.success(
+                        PrepareGameResult(
+                            gamePath = gamePath,
+                            corePath = localPath,
+                            coreName = coreName,
+                            coreDisplayName = coreName,
+                        ),
+                    )
                 }
             }
             return Result.failure(networkError)
@@ -135,6 +164,57 @@ class PrepareGameUseCase(
         // original name. Clear it so CoreRepository falls back to the buildbot URL
         // constructed from the substituted name.
         val downloadUrl = if (coreName != core.name) null else core.downloadUrl
+        val platformSubstituted = coreName != core.name
+
+        // #672 core-upgrade decision detection. Runs BEFORE the
+        // pinned-core download path so we can give the VM a chance to
+        // block `loadCore` and show Sheet A when the session's pin no
+        // longer matches the server's current core binary.
+        //
+        // The decision only applies when: the session has a pin, has
+        // at least one save to risk, is not already locked to its pin,
+        // and the core name was not platform-substituted (substitution
+        // mismatches are legitimate — not an upgrade). When we decide a
+        // prompt is needed we still return a usable PrepareGameResult
+        // so the VM can use its paths after resolving the user's
+        // choice without re-invoking the use case.
+        if (pinnedCoreSha256 != null
+            && sessionHasSaves
+            && !userLockedCoreVersion
+            && !platformSubstituted
+            && !skipCoreDecisionPrompt
+        ) {
+            val serverSha = coreRepository.getServerCoreSha(coreName)
+            if (serverSha != null
+                && !serverSha.equals(pinnedCoreSha256, ignoreCase = true)
+            ) {
+                if (!autoUpdateCoresEnabled) {
+                    // Honour user opt-out: tell the VM to show Sheet A.
+                    // We return paths here only as a fallback for the
+                    // "user picked Lock" path — the VM may choose to
+                    // re-download the pinned binary itself after
+                    // collecting the user's choice.
+                    val pinnedPath = coreRepository.downloadCoreByHash(
+                        coreName,
+                        pinnedCoreSha256,
+                    ).getOrNull() ?: coreRepository.getLocalCorePath(coreName) ?: ""
+                    return Result.success(
+                        PrepareGameResult(
+                            gamePath = gamePath,
+                            corePath = pinnedPath,
+                            decisionKind = DecisionKind.UpgradeAvailable,
+                            coreName = coreName,
+                            coreDisplayName = core.displayName.ifEmpty { coreName },
+                            serverCoreSha = serverSha,
+                        ),
+                    )
+                }
+                // autoUpdateCoresEnabled path: fall through to the
+                // existing pinned-download / latest-download logic.
+                // The server sha differs, so we'll silently upgrade
+                // to latest below.
+            }
+        }
 
         // Pinned-core path — #555 Phase 3 session-to-core binding.
         // We attempt the versioned download only when the session has a
@@ -146,7 +226,14 @@ class PrepareGameUseCase(
             val versioned = coreRepository.downloadCoreByHash(coreName, pinnedCoreSha256)
             val pinnedPath = versioned.getOrNull()
             if (pinnedPath != null) {
-                return Result.success(PrepareGameResult(gamePath, pinnedPath))
+                return Result.success(
+                    PrepareGameResult(
+                        gamePath = gamePath,
+                        corePath = pinnedPath,
+                        coreName = coreName,
+                        coreDisplayName = core.displayName.ifEmpty { coreName },
+                    ),
+                )
             }
             val error = versioned.exceptionOrNull()
             if (error is CorePrunedException) {
@@ -156,7 +243,13 @@ class PrepareGameUseCase(
                         return Result.failure(it)
                     }
                 return Result.success(
-                    PrepareGameResult(gamePath, fallbackPath, coreVersionWarning = prunedWarning),
+                    PrepareGameResult(
+                        gamePath = gamePath,
+                        corePath = fallbackPath,
+                        coreVersionWarning = prunedWarning,
+                        coreName = coreName,
+                        coreDisplayName = core.displayName.ifEmpty { coreName },
+                    ),
                 )
             }
             // Any other failure: treat as a transient issue — fall back
@@ -202,7 +295,14 @@ class PrepareGameUseCase(
             }
         }
 
-        return Result.success(PrepareGameResult(gamePath, corePath))
+        return Result.success(
+            PrepareGameResult(
+                gamePath = gamePath,
+                corePath = corePath,
+                coreName = coreName,
+                coreDisplayName = core.displayName.ifEmpty { coreName },
+            ),
+        )
     }
 
     /**

@@ -222,6 +222,18 @@ fun InGameOverlay(
         )
     }
 
+    // #672 core-upgrade decision — Sheet A
+    val coreDecision = state.coreDecision
+    if (coreDecision is com.spela.player.presentation.state.CoreDecision.UpgradeAvailable) {
+        com.spela.player.presentation.ui.feature.ingame.CoreUpgradeDecisionSheet(
+            decision = coreDecision,
+            onTryWithMySave = { viewModel.onIntent(EmulationIntent.ResolveCoreDecisionTry) },
+            onKeepNewVersion = { viewModel.onIntent(EmulationIntent.ResolveCoreDecisionKeepNew) },
+            onLockOldVersion = { viewModel.onIntent(EmulationIntent.ResolveCoreDecisionLockOld) },
+            onRemindLater = { viewModel.onIntent(EmulationIntent.ResolveCoreDecisionRemindLater) },
+        )
+    }
+
     // Core mismatch save warning dialog
     if (state.showCoreMismatchSaveDialog) {
         CoreMismatchSaveDialog(

@@ -81,6 +81,23 @@ class EmulationViewModel(
 
     private var pendingLaunch: PendingLaunch? = null
 
+    /**
+     * Stored [EmulationIntent.StartGame] captured when the
+     * PrepareGameUseCase reports an UpgradeAvailable decision (#672).
+     * Re-fired with `skipCoreDecisionPrompt = true` once the user
+     * picks an action via Sheet A. `null` while no decision is
+     * pending.
+     *
+     * `@Volatile` is load-bearing here — the field is written from
+     * the coroutine running on the IO dispatcher (inside `startGame`)
+     * and read from the main-thread intent dispatcher in
+     * `resolveCoreDecision`. Without the annotation, the resolution
+     * could see a stale `null` if the sheet is dismissed immediately
+     * after the writer coroutine suspends.
+     */
+    @Volatile
+    private var pendingCoreDecisionStart: EmulationIntent.StartGame? = null
+
     private var currentPreferences = UserPreferences()
     private var sessionTimerJob: Job? = null
     private var stopJob: Job? = null
@@ -116,6 +133,7 @@ class EmulationViewModel(
                 intent.netplaySessionId, intent.netplayLocalPort, intent.netplayInputDelay, intent.netplayIsHost,
                 intent.challengeId, intent.challengeSaveData, intent.skipAutoLoad,
                 intent.forceNewSession, intent.sessionId,
+                skipCoreDecisionPrompt = intent.skipCoreDecisionPrompt,
             )
             EmulationIntent.PauseGame -> pauseGame()
             EmulationIntent.ResumeGame -> resumeGame()
@@ -273,6 +291,67 @@ class EmulationViewModel(
                     preferencesRepository.setControlTab(consoleId, intent.tab.id)
                 }
             }
+
+            // #672 core-upgrade decision — Sheet A resolution
+            EmulationIntent.ResolveCoreDecisionTry -> resolveCoreDecision(RehearsalEntry.Try)
+            EmulationIntent.ResolveCoreDecisionKeepNew -> resolveCoreDecision(RehearsalEntry.KeepNew)
+            EmulationIntent.ResolveCoreDecisionLockOld -> resolveCoreDecision(RehearsalEntry.LockOld)
+            EmulationIntent.ResolveCoreDecisionRemindLater -> resolveCoreDecision(RehearsalEntry.RemindLater)
+        }
+    }
+
+    /**
+     * Classifies the user's Sheet A choice so [resolveCoreDecision]
+     * can branch without duplicating side effects for each intent.
+     */
+    private enum class RehearsalEntry { Try, KeepNew, LockOld, RemindLater }
+
+    /**
+     * Applies the side effects of a Sheet A choice (rehearsal mode,
+     * server lock flag) and re-fires the stashed StartGame intent
+     * with `skipCoreDecisionPrompt = true` so the sheet doesn't
+     * reappear immediately. Each branch maps to the spec's
+     * "Pin advancement rules" in
+     * `design-proposals/core-upgrade-decision-spec.md`.
+     *
+     * Surfaces a status message when the server-side lock write
+     * fails so the user isn't led to believe they locked the session
+     * when really the next launch will re-prompt. The launch still
+     * proceeds with the pinned binary locally; we optimistically
+     * re-attempt the lock on subsequent resolves.
+     */
+    private fun resolveCoreDecision(entry: RehearsalEntry) {
+        val pending = pendingCoreDecisionStart ?: return
+        pendingCoreDecisionStart = null
+        _state.update { it.copy(coreDecision = null) }
+
+        scope.launch(dispatchers.io) {
+            when (entry) {
+                RehearsalEntry.Try -> saveManager.rehearsalMode = true
+                RehearsalEntry.KeepNew,
+                RehearsalEntry.RemindLater -> {
+                    saveManager.rehearsalMode = false
+                }
+                RehearsalEntry.LockOld -> {
+                    saveManager.rehearsalMode = false
+                    val locked = saveManager.setSessionCoreLock(
+                        pending.sessionId,
+                        locked = true,
+                    )
+                    if (!locked) {
+                        withContext(dispatchers.main) {
+                            _state.update {
+                                it.copy(
+                                    statusMessage = "Couldn't save the lock — we'll try again next time.",
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+            withContext(dispatchers.main) {
+                onIntent(pending.copy(skipCoreDecisionPrompt = true))
+            }
         }
     }
 
@@ -289,6 +368,7 @@ class EmulationViewModel(
         skipAutoLoad: Boolean = false,
         forceNewSession: Boolean = false,
         sessionId: String? = null,
+        skipCoreDecisionPrompt: Boolean = false,
     ) {
         saveManager.currentSessionId = sessionId
         _state.update {
@@ -457,16 +537,82 @@ class EmulationViewModel(
             // pinnedCoreSha256 (#555 Phase 3) we pass it through so the
             // use case can attempt a versioned core download first.
             // autoUpdateCoresEnabled gates the unpinned cache-invalidation
-            // check (#555 Phase 2 opt-out).
-            val pinnedSha = saveManager.pinnedCoreSha256For(saveManager.currentSessionId)
+            // check (#555 Phase 2 opt-out). userLockedCoreVersion +
+            // sessionHasSaves + skipCoreDecisionPrompt drive the #672
+            // core-upgrade decision flow — see decision handling block
+            // below the fold().
+            val flags = saveManager.coreDecisionFlagsFor(saveManager.currentSessionId)
+            val pinnedSha = flags?.pinnedCoreSha256
+            val userLocked = flags?.userLockedCoreVersion ?: false
+            val hasSaves = saveManager.sessionSaveCount(saveManager.currentSessionId) > 0
             prepareGameUseCase(
                 gameId,
                 pinnedSha,
                 autoUpdateCoresEnabled = currentPreferences.autoUpdateCoresEnabled,
+                userLockedCoreVersion = userLocked,
+                sessionHasSaves = hasSaves,
+                skipCoreDecisionPrompt = skipCoreDecisionPrompt,
             ).fold(
                 onSuccess = { prepared ->
                     val gamePath = prepared.gamePath
                     val corePath = prepared.corePath
+                    // #672 core-upgrade decision gate. When the use
+                    // case reports UpgradeAvailable we stash the
+                    // originating StartGame intent, surface the sheet
+                    // via `state.coreDecision`, and return BEFORE
+                    // touching the emulator. Resolution intents below
+                    // clear the stash and re-fire StartGame with
+                    // `skipCoreDecisionPrompt = true`.
+                    // #672 per spec §"Edge cases": netplay, shared
+                    // session, and challenge runs MUST skip the sheet.
+                    // Netplay requires binary parity across peers and
+                    // challenges lock their own core at creation; both
+                    // have their own core-mismatch negotiation.
+                    val suppressForSpecialMode =
+                        netplaySessionId != null
+                            || sharedSessionId != null
+                            || challengeId != null
+                    if (prepared.decisionKind == com.spela.player.domain.usecase.DecisionKind.UpgradeAvailable
+                        && !suppressForSpecialMode
+                    ) {
+                        pendingCoreDecisionStart = EmulationIntent.StartGame(
+                            gameId = gameId,
+                            sharedSessionId = sharedSessionId,
+                            turnToken = turnToken,
+                            netplaySessionId = netplaySessionId,
+                            netplayLocalPort = netplayLocalPort,
+                            netplayInputDelay = netplayInputDelay,
+                            netplayIsHost = netplayIsHost,
+                            challengeId = challengeId,
+                            challengeSaveData = challengeSaveDataArg,
+                            skipAutoLoad = skipAutoLoad,
+                            forceNewSession = forceNewSession,
+                            sessionId = saveManager.currentSessionId,
+                        )
+                        withContext(dispatchers.main) {
+                            _state.update {
+                                it.copy(
+                                    isLoading = false,
+                                    // Suppress any post-load dialog that
+                                    // might otherwise stack on top of
+                                    // Sheet A — Sheet A is the pre-load
+                                    // decision; CoreMismatchDialog only
+                                    // fires after auto-load fails.
+                                    showCoreMismatchDialog = false,
+                                    coreDecision = com.spela.player.presentation.state.CoreDecision.UpgradeAvailable(
+                                        coreName = prepared.coreName,
+                                        coreDisplayName = prepared.coreDisplayName.ifEmpty { prepared.coreName },
+                                        consoleName = it.consoleName,
+                                        gameTitle = it.gameTitle.ifEmpty { gameId },
+                                        oldSha = pinnedSha ?: "",
+                                        newSha = prepared.serverCoreSha,
+                                        lastPlayedAt = null,
+                                    ),
+                                )
+                            }
+                        }
+                        return@fold
+                    }
                     // Surface the fallback warning (non-blocking) if the
                     // pinned binary was pruned and we fell back to latest.
                     if (prepared.coreVersionWarning != null) {

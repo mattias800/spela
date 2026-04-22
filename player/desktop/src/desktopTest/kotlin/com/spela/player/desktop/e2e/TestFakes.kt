@@ -578,6 +578,7 @@ class FakeCoreRepository : CoreRepository {
         if (forceMissingLocalCore) null else "/fake/cores/$coreName"
 
     override suspend fun isCachedCoreCurrent(coreName: String): Boolean? = null
+    override suspend fun getServerCoreSha(coreName: String): String? = null
 
     override suspend fun isCoreCached(coreName: String): Boolean = !forceMissingLocalCore
 }

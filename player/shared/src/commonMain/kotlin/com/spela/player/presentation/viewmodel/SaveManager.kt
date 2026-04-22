@@ -55,6 +55,17 @@ enum class RehearsalSaveKind { Manual, Auto, Slot, Sram }
 data class RehearsalSaveBlocked(val kind: RehearsalSaveKind)
 
 /**
+ * Compact view of the fields the ViewModel needs from a [GameSession]
+ * to decide whether the #672 core-upgrade sheet should fire on
+ * `startEmulation`. Fetched by [SaveManager.coreDecisionFlagsFor] so
+ * callers don't have to re-hydrate the full session record in hot paths.
+ */
+data class CoreDecisionFlags(
+    val pinnedCoreSha256: String?,
+    val userLockedCoreVersion: Boolean,
+)
+
+/**
  * Manages all save-related operations: SRAM load/save, auto-save/load,
  * and manual save/load state. All operations are session-scoped.
  * When no session is active, operations are silently skipped.
@@ -151,6 +162,61 @@ class SaveManager(
             sessionRepository.getSession(sessionId).getOrNull()?.pinnedCoreSha256
         } catch (_: Exception) {
             null
+        }
+    }
+
+    /**
+     * Reads the #672 core-upgrade decision flags for [sessionId] in a
+     * single network call. Returns `null` when no session is active or
+     * the fetch fails — callers should treat that as "no decision
+     * needed" and fall back to default behaviour.
+     */
+    suspend fun coreDecisionFlagsFor(sessionId: String?): CoreDecisionFlags? {
+        if (sessionId.isNullOrEmpty()) return null
+        return try {
+            val session = sessionRepository.getSession(sessionId).getOrNull()
+                ?: return null
+            CoreDecisionFlags(
+                pinnedCoreSha256 = session.pinnedCoreSha256,
+                userLockedCoreVersion = session.userLockedCoreVersion,
+            )
+        } catch (_: Exception) {
+            null
+        }
+    }
+
+    /**
+     * Counts the save states on [sessionId]. Feeds the "brand new
+     * session — skip the decision sheet" branch of #672's decision
+     * flow. Returns 0 on any error so a network hiccup doesn't surface
+     * a prompt for a session the user never saved to.
+     */
+    suspend fun sessionSaveCount(sessionId: String?): Int {
+        if (sessionId.isNullOrEmpty()) return 0
+        return try {
+            sessionRepository.getSessionSaves(sessionId).getOrNull()?.size ?: 0
+        } catch (_: Exception) {
+            0
+        }
+    }
+
+    /**
+     * Writes `userLockedCoreVersion` on [sessionId]. Called after the
+     * user picks "Lock this session to the older version" on Sheet A
+     * (or the equivalent on Sheets C / D in PR 3c). Returns false on
+     * failure so the VM can still launch the game with the pinned
+     * binary locally — the server-side flag catches up on the next
+     * attempt.
+     */
+    suspend fun setSessionCoreLock(sessionId: String?, locked: Boolean): Boolean {
+        if (sessionId.isNullOrEmpty()) return false
+        return try {
+            sessionRepository.updateSessionCoreFlags(
+                sessionId,
+                userLockedCoreVersion = locked,
+            ).isSuccess
+        } catch (_: Exception) {
+            false
         }
     }
 

@@ -14,6 +14,14 @@ sealed interface EmulationIntent {
         val skipAutoLoad: Boolean = false,
         val forceNewSession: Boolean = false,
         val sessionId: String? = null,
+        /**
+         * When true, the core-upgrade decision sheet (#672) is
+         * suppressed for this launch. Set by the VM when re-firing
+         * `StartGame` after the user resolves a previous Sheet A
+         * prompt — without this flag we'd loop back into the sheet
+         * indefinitely because the pin still differs from the server.
+         */
+        val skipCoreDecisionPrompt: Boolean = false,
     ) : EmulationIntent
     data object PauseGame : EmulationIntent
     data object ResumeGame : EmulationIntent
@@ -119,4 +127,40 @@ sealed interface EmulationIntent {
 
     // Secondary screen control tab
     data class SelectControlTab(val tab: com.spela.player.presentation.state.ControlTab) : EmulationIntent
+
+    // #672 core-upgrade decision — Sheet A resolution intents.
+    // Emitted when the user picks one of the four actions on the
+    // "We updated {core}" sheet. The VM reads EmulationState
+    // .coreDecision for the context it needs (core name, shas, etc.).
+
+    /**
+     * "Try with my save" — enter rehearsal mode and launch with the
+     * new core. Save writes are suppressed until the user confirms
+     * via Sheet C (PR 3c). On PR 3b this activates rehearsal mode
+     * but does not yet wire up the in-game banner or Sheet C exit;
+     * the user can quit the game normally to leave rehearsal.
+     */
+    data object ResolveCoreDecisionTry : EmulationIntent
+
+    /**
+     * "Keep the new version anyway" — launch with the new core. The
+     * session's pin advances only after a successful save on the new
+     * core, so the user can still change their mind mid-session.
+     */
+    data object ResolveCoreDecisionKeepNew : EmulationIntent
+
+    /**
+     * "Lock this session to the older version" — launch with the
+     * pinned binary and mark the session as user-locked so future
+     * `startEmulation` calls skip the decision sheet entirely.
+     */
+    data object ResolveCoreDecisionLockOld : EmulationIntent
+
+    /**
+     * "Remind me the next time I play this" — in-memory dismiss that
+     * launches with the new core without touching the pin. The sheet
+     * will fire again on the next `startEmulation` call for this
+     * session.
+     */
+    data object ResolveCoreDecisionRemindLater : EmulationIntent
 }

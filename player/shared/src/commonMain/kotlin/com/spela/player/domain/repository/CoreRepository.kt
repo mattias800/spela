@@ -49,4 +49,15 @@ interface CoreRepository {
      *               otherwise-usable cached core.
      */
     suspend fun isCachedCoreCurrent(coreName: String): Boolean?
+
+    /**
+     * Returns the server's current sha256 for [coreName] via
+     * `GET /api/cores/{id}/manifest`, or `null` when the server
+     * hasn't fingerprinted the core yet, the core name is unknown,
+     * or the network request fails. Used by
+     * [com.spela.player.domain.usecase.PrepareGameUseCase] to decide
+     * whether a session's pinned sha is still current without
+     * re-downloading the binary. See #672.
+     */
+    suspend fun getServerCoreSha(coreName: String): String?
 }
