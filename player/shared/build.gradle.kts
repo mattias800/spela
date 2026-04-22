@@ -117,7 +117,10 @@ tasks.withType<Test> {
     systemProperty("junit.jupiter.execution.timeout.default", "30s")
     systemProperty("junit.jupiter.execution.timeout.testable.method.default", "30s")
     systemProperty("junit.jupiter.execution.timeout.lifecycle.method.default", "15s")
-    timeout.set(Duration.ofMinutes(5))
+    // Outer cap — see matching comment in desktop/build.gradle.kts.
+    // Raised from 5m to 15m to survive dev-machine contention; the
+    // per-test (30s) and per-class (120s) guards still catch real hangs.
+    timeout.set(Duration.ofMinutes(15))
 }
 
 android {
