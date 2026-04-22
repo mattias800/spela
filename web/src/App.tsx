@@ -30,6 +30,7 @@ const MetadataFixPage = lazy(() => import("@/pages/admin/metadata-fix-page"));
 const AdminCheatsPage = lazy(() => import("@/pages/admin/cheats-page"));
 const AdminBiosPage = lazy(() => import("@/pages/admin/bios-page"));
 const CoreCompatibilityPage = lazy(() => import("@/pages/admin/core-compatibility-page"));
+const AdminCoresPage = lazy(() => import("@/pages/admin/cores-page"));
 const AdminSystemEventsPage = lazy(() => import("@/pages/admin/system-events-page"));
 const UploadRomsPage = lazy(() => import("@/pages/admin/upload-roms-page"));
 const RomHacksPage = lazy(() => import("@/pages/admin/rom-hacks-page"));
@@ -273,6 +274,14 @@ export function App() {
                       element={
                         <ProtectedRoute requireAdmin>
                           <CoreCompatibilityPage />
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="admin/cores"
+                      element={
+                        <ProtectedRoute requireAdmin>
+                          <AdminCoresPage />
                         </ProtectedRoute>
                       }
                     />
