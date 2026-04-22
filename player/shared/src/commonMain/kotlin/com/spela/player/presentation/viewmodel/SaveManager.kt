@@ -239,6 +239,31 @@ class SaveManager(
     }
 
     /**
+     * Writes `rehearsalCrashPending` on [sessionId]. Called immediately
+     * before entering rehearsal mode (with [pending] = true) and after
+     * a clean Sheet C / Sheet D resolution (with [pending] = false).
+     * Surviving the app process means the previous run crashed mid-
+     * rehearsal — on next session restore the player checks this flag
+     * and routes the user directly to Sheet D so they can recover.
+     *
+     * Returns `true` on success, `false` if the write failed; callers
+     * may proceed with the local rehearsal anyway because losing the
+     * sentinel only degrades crash-recovery, not the current session.
+     * See #672 spec §"Crash recovery" / PR 3c.iii.
+     */
+    suspend fun setSessionRehearsalCrashPending(sessionId: String?, pending: Boolean): Boolean {
+        if (sessionId.isNullOrEmpty()) return false
+        return try {
+            sessionRepository.updateSessionCoreFlags(
+                sessionId,
+                rehearsalCrashPending = pending,
+            ).isSuccess
+        } catch (_: Exception) {
+            false
+        }
+    }
+
+    /**
      * Load SRAM (save data) before starting emulation.
      * Downloads from session SRAM endpoint.
      * If the data starts with ZIP magic bytes, it's a directory-based save (e.g. Dolphin)

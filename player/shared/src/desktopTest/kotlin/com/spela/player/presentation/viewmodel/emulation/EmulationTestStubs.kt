@@ -585,6 +585,14 @@ class EmulationViewModelTestBuilder {
      */
     lateinit var saveManager: SaveManager
 
+    /**
+     * Exposed so VM tests can seed state fields (e.g. `sessionId`)
+     * without walking the full StartGame pipeline. Most tests should
+     * prefer intents over direct state pokes — use this sparingly and
+     * only when driving a specific branch is impractical otherwise.
+     */
+    lateinit var mutableState: MutableStateFlow<EmulationState>
+
     /** Advance the VM's virtual clock by [ms] milliseconds and process pending tasks. */
     fun advanceTimeBy(ms: Long) {
         vmScheduler.advanceTimeBy(ms)
@@ -597,14 +605,15 @@ class EmulationViewModelTestBuilder {
         connectivityMonitor = ConnectivityMonitor(apiClient, dispatchers, vmScope)
         presenceService = PresenceService(apiClient, StubMockEngineFactory, dispatchers, vmScope)
         val gamepadPortManager = GamepadPortManager(keyMappingRepository)
-        val mutableState = MutableStateFlow(EmulationState())
+        mutableState = MutableStateFlow(EmulationState())
+        val mutableStateLocal = mutableState
 
         val saveManagerLocal = SaveManager(
             saveDataRepository = saveDataRepository,
             connectivityMonitor = connectivityMonitor,
             libretroController = libretroController,
             screenshotCapture = screenshotCapture,
-            _state = mutableState,
+            _state = mutableStateLocal,
             dispatchers = dispatchers,
             scope = vmScope,
             sessionRepository = sessionRepository,
@@ -614,7 +623,7 @@ class EmulationViewModelTestBuilder {
             challengeRepository = challengeRepository,
             libretroController = libretroController,
             screenshotCapture = screenshotCapture,
-            _state = mutableState,
+            _state = mutableStateLocal,
             dispatchers = dispatchers,
             scope = vmScope,
         )
@@ -623,7 +632,7 @@ class EmulationViewModelTestBuilder {
             libretroController = libretroController,
             apiClient = apiClient,
             engineFactory = StubMockEngineFactory,
-            _state = mutableState,
+            _state = mutableStateLocal,
             dispatchers = dispatchers,
             scope = vmScope,
         )
@@ -644,7 +653,7 @@ class EmulationViewModelTestBuilder {
             saveManager = saveManagerLocal,
             challengeManager = challengeManager,
             netplayManager = netplayManager,
-            _state = mutableState,
+            _state = mutableStateLocal,
             dispatchers = dispatchers,
             scope = vmScope,
             biosRepository = biosRepository,

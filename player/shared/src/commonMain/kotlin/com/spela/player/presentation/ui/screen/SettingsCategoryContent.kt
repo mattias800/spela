@@ -202,8 +202,12 @@ private fun androidx.compose.foundation.lazy.LazyListScope.emulationContent(
                 )
                 SettingsDivider()
                 SettingsToggle(
-                    title = "Auto Update Cores",
-                    subtitle = "Silently re-download emulator cores when the server has a newer build. Turn off to keep the locally cached version until you manually refresh.",
+                    // #672 spec keys core_upd.settings.auto_update_label /
+                    // _desc — the previous copy was technical and didn't
+                    // make clear what "off" meant; the new copy aligns
+                    // with the rest of the core-upgrade decision tone.
+                    title = "Automatically update cores",
+                    subtitle = "When off, we'll only switch cores when you say so.",
                     isChecked = state.autoUpdateCoresEnabled,
                     onToggle = { viewModel.onIntent(SettingsIntent.ToggleAutoUpdateCores) },
                 )
