@@ -367,7 +367,36 @@ class StubSessionRepository : SessionRepository {
         return Result.success(GameSession(id = "auto-${createSessionCallCount}", gameId = gameId, name = name))
     }
     override suspend fun updateSession(sessionId: String, name: String?, coreName: String?) = Result.failure<GameSession>(Exception("stub"))
-    override suspend fun updateSessionCoreFlags(sessionId: String, userLockedCoreVersion: Boolean?, autoLoadSuppressed: Boolean?, rehearsalCrashPending: Boolean?) = Result.failure<GameSession>(Exception("stub"))
+
+    /** Test hook — record every flag update so VM tests can assert what reached the server. */
+    data class CoreFlagsInvocation(
+        val sessionId: String,
+        val userLockedCoreVersion: Boolean?,
+        val autoLoadSuppressed: Boolean?,
+        val rehearsalCrashPending: Boolean?,
+    )
+    val updateSessionCoreFlagsCalls: MutableList<CoreFlagsInvocation> = mutableListOf()
+    /** Test hook — when set, [updateSessionCoreFlags] succeeds with this row. */
+    var updateSessionCoreFlagsResult: Result<GameSession>? = null
+
+    override suspend fun updateSessionCoreFlags(sessionId: String, userLockedCoreVersion: Boolean?, autoLoadSuppressed: Boolean?, rehearsalCrashPending: Boolean?): Result<GameSession> {
+        updateSessionCoreFlagsCalls += CoreFlagsInvocation(
+            sessionId = sessionId,
+            userLockedCoreVersion = userLockedCoreVersion,
+            autoLoadSuppressed = autoLoadSuppressed,
+            rehearsalCrashPending = rehearsalCrashPending,
+        )
+        return updateSessionCoreFlagsResult ?: Result.success(
+            GameSession(
+                id = sessionId,
+                gameId = "",
+                name = "",
+                userLockedCoreVersion = userLockedCoreVersion ?: false,
+                autoLoadSuppressed = autoLoadSuppressed ?: false,
+                rehearsalCrashPending = rehearsalCrashPending ?: false,
+            ),
+        )
+    }
     override suspend fun deleteSession(sessionId: String) = Result.success(Unit)
     override suspend fun getSessionSaves(sessionId: String) = Result.success(emptyList<SaveState>())
     override suspend fun uploadSessionSave(sessionId: String, name: String, data: ByteArray, screenshot: ByteArray?, coreName: String): Result<SaveState> {
@@ -549,6 +578,13 @@ class EmulationViewModelTestBuilder {
     lateinit var connectivityMonitor: ConnectivityMonitor
     lateinit var presenceService: PresenceService
 
+    /**
+     * Exposed so VM tests can emit RehearsalSaveBlocked events through
+     * the real SaveManager surface (the VM's collector is what we want
+     * to assert on). Set inside [build].
+     */
+    lateinit var saveManager: SaveManager
+
     /** Advance the VM's virtual clock by [ms] milliseconds and process pending tasks. */
     fun advanceTimeBy(ms: Long) {
         vmScheduler.advanceTimeBy(ms)
@@ -563,7 +599,7 @@ class EmulationViewModelTestBuilder {
         val gamepadPortManager = GamepadPortManager(keyMappingRepository)
         val mutableState = MutableStateFlow(EmulationState())
 
-        val saveManager = SaveManager(
+        val saveManagerLocal = SaveManager(
             saveDataRepository = saveDataRepository,
             connectivityMonitor = connectivityMonitor,
             libretroController = libretroController,
@@ -573,6 +609,7 @@ class EmulationViewModelTestBuilder {
             scope = vmScope,
             sessionRepository = sessionRepository,
         )
+        saveManager = saveManagerLocal
         val challengeManager = ChallengeManager(
             challengeRepository = challengeRepository,
             libretroController = libretroController,
@@ -604,7 +641,7 @@ class EmulationViewModelTestBuilder {
             secondaryDisplay = fakeSecondaryDisplay,
             presenceService = presenceService,
             gamepadPortManager = gamepadPortManager,
-            saveManager = saveManager,
+            saveManager = saveManagerLocal,
             challengeManager = challengeManager,
             netplayManager = netplayManager,
             _state = mutableState,

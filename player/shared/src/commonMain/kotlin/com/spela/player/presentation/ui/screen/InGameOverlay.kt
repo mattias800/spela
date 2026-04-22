@@ -5,7 +5,13 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import com.spela.player.presentation.ui.theme.SpSpacing
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -222,7 +228,7 @@ fun InGameOverlay(
         )
     }
 
-    // #672 core-upgrade decision sheets
+    // #672 core-upgrade decision sheets + rehearsal banner / sheet
     when (val coreDecision = state.coreDecision) {
         is com.spela.player.presentation.state.CoreDecision.UpgradeAvailable ->
             com.spela.player.presentation.ui.feature.ingame.CoreUpgradeDecisionSheet(
@@ -239,9 +245,46 @@ fun InGameOverlay(
                 onStartFresh = { viewModel.onIntent(EmulationIntent.ResolveCoreDecisionStartFresh) },
                 onRemindLater = { viewModel.onIntent(EmulationIntent.ResolveCoreDecisionRemindLater) },
             )
-        // RehearsalPrompt + RehearsalCrashed sheets land in PR 3c.ii.
+        is com.spela.player.presentation.state.CoreDecision.RehearsalPrompt ->
+            // Explicit top-center placement over the emulator surface.
+            // Wrapping in a fillMaxSize Box with Alignment.TopCenter
+            // makes the intent obvious (and survives future parent
+            // alignment changes). Spec: banner sits top-aligned while
+            // the user evaluates live gameplay underneath.
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.TopCenter,
+            ) {
+                com.spela.player.presentation.ui.feature.ingame.RehearsalBanner(
+                    decision = coreDecision,
+                    onDidThisWork = { viewModel.onIntent(EmulationIntent.RehearsalShowConfirmation) },
+                    modifier = Modifier.padding(
+                        horizontal = SpSpacing.ScreenHorizontal,
+                        vertical = SpSpacing.Default,
+                    ),
+                )
+            }
+        is com.spela.player.presentation.state.CoreDecision.RehearsalCrashed ->
+            com.spela.player.presentation.ui.feature.ingame.RehearsalCrashedDecisionSheet(
+                decision = coreDecision,
+                onLockOldVersion = { viewModel.onIntent(EmulationIntent.RehearsalCompletedLockOld) },
+                onStartFresh = { viewModel.onIntent(EmulationIntent.RehearsalCrashStartFresh) },
+                onReport = { viewModel.onIntent(EmulationIntent.RehearsalCrashDismiss) },
+                onTryLater = { viewModel.onIntent(EmulationIntent.RehearsalCrashDismiss) },
+            )
         null -> Unit
-        else -> Unit
+    }
+
+    // Sheet C — rendered on top of the rehearsal banner when the user
+    // has tapped "Did this work?". Kept as a separate boolean so the
+    // banner stays composed behind the sheet (the user is evaluating
+    // live gameplay while answering).
+    if (state.showRehearsalConfirmSheet) {
+        com.spela.player.presentation.ui.feature.ingame.RehearsalCompleteDecisionSheet(
+            onKeepNewVersion = { viewModel.onIntent(EmulationIntent.RehearsalCompletedKeepNew) },
+            onLockOldVersion = { viewModel.onIntent(EmulationIntent.RehearsalCompletedLockOld) },
+            onTryLonger = { viewModel.onIntent(EmulationIntent.RehearsalContinueLonger) },
+        )
     }
 
     // Core mismatch save warning dialog
