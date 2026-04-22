@@ -105,4 +105,21 @@ class AndroidFileStorage(private val context: Context) : FileStorage {
             }
         }
     }
+
+    override suspend fun sha256File(path: String): String? = withContext(Dispatchers.IO) {
+        val file = File(path)
+        if (!file.exists() || !file.isFile) return@withContext null
+        runCatching {
+            val digest = java.security.MessageDigest.getInstance("SHA-256")
+            file.inputStream().use { input ->
+                val buf = ByteArray(64 * 1024)
+                while (true) {
+                    val read = input.read(buf)
+                    if (read <= 0) break
+                    digest.update(buf, 0, read)
+                }
+            }
+            digest.digest().joinToString("") { "%02x".format(it) }
+        }.getOrNull()
+    }
 }

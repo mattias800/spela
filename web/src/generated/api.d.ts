@@ -1784,6 +1784,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/cores/{id}/manifest": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get fingerprint for a core binary
+         * @description Returns sha256 + size + fetched-at for the server's current cached binary of a core. Players use this to decide whether their locally cached copy is stale without re-downloading the binary itself.
+         */
+        get: operations["getCoreManifest"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/emulator/error": {
         parameters: {
             query?: never;
@@ -5876,6 +5896,28 @@ export interface components {
              */
             readonly $schema?: string;
             consoles: components["schemas"]["CoreCompatibilityEntry"][];
+        };
+        CoreManifestResponse: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/api/schemas/CoreManifestResponse.json
+             */
+            readonly $schema?: string;
+            /**
+             * Format: date-time
+             * @description When the server last downloaded (or re-hashed) this core. Null if it has never been fetched.
+             */
+            fetchedAt: string | null;
+            /** @description Hex sha256 of the cached binary on the server. Empty if the server hasn't served this core yet. */
+            sha256: string;
+            /**
+             * Format: int64
+             * @description Byte length of the cached binary. 0 when no binary has been fetched yet.
+             */
+            sizeBytes: number;
+            /** @description URL the server pulled this binary from. Empty when the server is still defaulting to the buildbot nightly endpoint. */
+            sourceUrl: string;
         };
         CoverGalleryResponse: {
             /**
@@ -11996,6 +12038,38 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HumaError"];
+                };
+            };
+        };
+    };
+    getCoreManifest: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Core row ID (not core name). */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CoreManifestResponse"];
+                };
             };
             /** @description Error */
             default: {

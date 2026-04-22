@@ -66,6 +66,7 @@ export type ConsoleShowcaseResponse = Schemas["ConsoleShowcaseResponse"];
 export type Core = Schemas["Core"];
 export type CoreCompatibilityEntry = Schemas["CoreCompatibilityEntry"];
 export type CoreCompatibilityResponse = Schemas["CoreCompatibilityResponse"];
+export type CoreManifestResponse = Schemas["CoreManifestResponse"];
 export type CoverGalleryResponse = Schemas["CoverGalleryResponse"];
 export type CoverItem = Schemas["CoverItem"];
 export type CoverOption = Schemas["CoverOption"];

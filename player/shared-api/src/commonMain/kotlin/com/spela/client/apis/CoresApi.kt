@@ -16,6 +16,7 @@
 package com.spela.client.apis
 
 import com.spela.client.models.Core
+import com.spela.client.models.CoreManifestResponse
 import com.spela.client.models.HumaError
 
 import com.spela.client.infrastructure.*
@@ -66,6 +67,39 @@ open class CoresApi : ApiClient {
         val localVariableConfig = RequestConfig<kotlin.Any?>(
             RequestMethod.GET,
             "/api/cores/{id}/download".replace("{" + "id" + "}", "$id"),
+            query = localVariableQuery,
+            headers = localVariableHeaders,
+            requiresAuthentication = false,
+        )
+
+        return request(
+            localVariableConfig,
+            localVariableBody,
+            localVariableAuthNames
+        ).wrap()
+    }
+
+
+    /**
+     * Get fingerprint for a core binary
+     * Returns sha256 + size + fetched-at for the server&#39;s current cached binary of a core. Players use this to decide whether their locally cached copy is stale without re-downloading the binary itself.
+     * @param id Core row ID (not core name).
+     * @return CoreManifestResponse
+     */
+    @Suppress("UNCHECKED_CAST")
+    open suspend fun getCoreManifest(id: kotlin.Long): HttpResponse<CoreManifestResponse> {
+
+        val localVariableAuthNames = listOf<String>()
+
+        val localVariableBody = 
+            io.ktor.client.utils.EmptyContent
+
+        val localVariableQuery = mutableMapOf<String, List<String>>()
+        val localVariableHeaders = mutableMapOf<String, String>()
+
+        val localVariableConfig = RequestConfig<kotlin.Any?>(
+            RequestMethod.GET,
+            "/api/cores/{id}/manifest".replace("{" + "id" + "}", "$id"),
             query = localVariableQuery,
             headers = localVariableHeaders,
             requiresAuthentication = false,

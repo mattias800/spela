@@ -2247,6 +2247,48 @@
         ],
         "type": "object"
       },
+      "CoreManifestResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "https://example.com/api/schemas/CoreManifestResponse.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "fetchedAt": {
+            "description": "When the server last downloaded (or re-hashed) this core. Null if it has never been fetched.",
+            "format": "date-time",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "sha256": {
+            "description": "Hex sha256 of the cached binary on the server. Empty if the server hasn't served this core yet.",
+            "type": "string"
+          },
+          "sizeBytes": {
+            "description": "Byte length of the cached binary. 0 when no binary has been fetched yet.",
+            "format": "int64",
+            "type": "integer"
+          },
+          "sourceUrl": {
+            "description": "URL the server pulled this binary from. Empty when the server is still defaulting to the buildbot nightly endpoint.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "sha256",
+          "sizeBytes",
+          "fetchedAt",
+          "sourceUrl"
+        ],
+        "type": "object"
+      },
       "CoverGalleryResponse": {
         "additionalProperties": false,
         "properties": {
@@ -15619,6 +15661,57 @@
           }
         ],
         "summary": "Download a core binary",
+        "tags": [
+          "cores"
+        ]
+      }
+    },
+    "/api/cores/{id}/manifest": {
+      "get": {
+        "description": "Returns sha256 + size + fetched-at for the server's current cached binary of a core. Players use this to decide whether their locally cached copy is stale without re-downloading the binary itself.",
+        "operationId": "getCoreManifest",
+        "parameters": [
+          {
+            "description": "Core row ID (not core name).",
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "description": "Core row ID (not core name).",
+              "format": "int64",
+              "minimum": 0,
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CoreManifestResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HumaError"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get fingerprint for a core binary",
         "tags": [
           "cores"
         ]

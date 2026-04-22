@@ -830,6 +830,10 @@ class SpelaApiClient(
         return coresApi.listCores().body()
     }
 
+    suspend fun getCoreManifest(coreId: Long): com.spela.client.models.CoreManifestResponse {
+        return coresApi.getCoreManifest(coreId).body()
+    }
+
     suspend fun getRecommendedCore(gameId: String): com.spela.player.domain.model.LibretroCore {
         return gamesApi.getRecommendedCore(gameId).body().toDomain()
     }
