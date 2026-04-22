@@ -23,6 +23,7 @@ import {
   GitCompareArrows,
   Puzzle,
   ShieldAlert,
+  Binary,
 } from "lucide-react";
 import { Sidebar } from "@/components/ui";
 import { useAuth } from "@/hooks/use-auth";
@@ -147,6 +148,11 @@ export function AppLayout() {
                 icon: Settings,
                 label: "Settings",
                 warning: igdbNotConfigured,
+              },
+              {
+                to: "/admin/cores",
+                icon: Binary,
+                label: "Cores",
               },
               {
                 to: "/admin/core-compatibility",

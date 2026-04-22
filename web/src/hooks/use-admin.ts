@@ -482,3 +482,10 @@ export function useCoreCompatibility() {
     queryFn: () => unwrap(typedApi.GET("/api/admin/core-compatibility")),
   });
 }
+
+export function useAdminCores() {
+  return useQuery({
+    queryKey: ["admin", "cores"],
+    queryFn: () => unwrap(typedApi.GET("/api/cores")),
+  });
+}
