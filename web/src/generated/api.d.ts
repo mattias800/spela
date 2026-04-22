@@ -1804,6 +1804,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/cores/{id}/refresh": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Re-fingerprint a core binary (admin)
+         * @description Admin-only. Re-hashes the on-disk core binary, updates the DB metadata, snapshots the new binary into the history directory, and emits a core_updated system event when the sha256 actually changed. Use after manually swapping a core binary on disk so stored fingerprints don't go stale. Returns 404 when the binary isn't on disk for the requested platform.
+         */
+        post: operations["refreshCore"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/emulator/error": {
         parameters: {
             query?: never;
@@ -7430,6 +7450,32 @@ export interface components {
             game: string;
             message: string;
         };
+        RefreshCoreResponse: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/api/schemas/RefreshCoreResponse.json
+             */
+            readonly $schema?: string;
+            /** @description True when the on-disk sha256 differed from the previously persisted sha256. */
+            changed: boolean;
+            /**
+             * Format: date-time
+             * @description Timestamp persisted on the row after this refresh.
+             */
+            fetchedAt: string | null;
+            /** @description The sha256 stored before this refresh. Empty on the first-ever fingerprint. */
+            oldSha256: string;
+            /** @description Sha256 of the on-disk binary after the refresh. */
+            sha256: string;
+            /**
+             * Format: int64
+             * @description Size of the on-disk binary after the refresh.
+             */
+            sizeBytes: number;
+            /** @description Source URL persisted on the row. Empty for buildbot-default cores. */
+            sourceUrl: string;
+        };
         RegisterDeviceRequest: {
             /**
              * Format: uri
@@ -12069,6 +12115,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CoreManifestResponse"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HumaError"];
+                };
+            };
+        };
+    };
+    refreshCore: {
+        parameters: {
+            query?: {
+                /** @description Platform whose on-disk binary to re-hash (linux|macos|windows|android). Defaults to linux — the default server host platform. */
+                platform?: string;
+            };
+            header?: never;
+            path: {
+                /** @description Core row ID (not core name). */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RefreshCoreResponse"];
                 };
             };
             /** @description Error */

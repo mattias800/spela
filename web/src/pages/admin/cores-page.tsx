@@ -1,11 +1,37 @@
-import { HardDrive, AlertCircle } from "lucide-react";
+import { HardDrive, AlertCircle, RefreshCw } from "lucide-react";
 import { PageLayout, SectionList } from "@/components/layout";
-import { Section, Skeleton } from "@/components/ui";
-import { useAdminCores } from "@/hooks/use-admin";
+import { Section, Skeleton, Button, useToast } from "@/components/ui";
+import { useAdminCores, useRefreshCore } from "@/hooks/use-admin";
 import { formatFileSize, formatRelativeTime } from "@/lib/format";
 
 export function CoresPage() {
   const { data, isLoading, isError } = useAdminCores();
+  const { toast } = useToast();
+  const refresh = useRefreshCore();
+
+  const onRefresh = (id: number, coreLabel: string) => {
+    refresh.mutate(
+      { id },
+      {
+        onSuccess: (res) => {
+          if (res?.changed) {
+            toast(
+              "success",
+              `${coreLabel} updated to ${res.sha256.slice(0, 12)}…`,
+            );
+          } else {
+            toast("success", `${coreLabel} already current`);
+          }
+        },
+        onError: (err) => {
+          toast(
+            "error",
+            err instanceof Error ? err.message : "Refresh failed",
+          );
+        },
+      },
+    );
+  };
 
   if (isLoading) {
     return (
@@ -78,8 +104,11 @@ export function CoresPage() {
                       <th className="py-2 pr-4 font-medium text-surface-400">
                         Last fetched
                       </th>
-                      <th className="py-2 font-medium text-surface-400">
+                      <th className="py-2 pr-4 font-medium text-surface-400">
                         Source
+                      </th>
+                      <th className="py-2 font-medium text-surface-400 text-right">
+                        Actions
                       </th>
                     </tr>
                   </thead>
@@ -137,7 +166,7 @@ export function CoresPage() {
                             </span>
                           )}
                         </td>
-                        <td className="py-2.5 text-surface-300 font-mono text-xs">
+                        <td className="py-2.5 pr-4 text-surface-300 font-mono text-xs">
                           {core.sourceUrl ? (
                             <span
                               title={core.sourceUrl}
@@ -150,6 +179,31 @@ export function CoresPage() {
                               buildbot
                             </span>
                           )}
+                        </td>
+                        <td className="py-2.5 text-right">
+                          <Button
+                            variant="secondary"
+                            size="sm"
+                            data-testid={`cores-refresh-${core.name}`}
+                            disabled={
+                              refresh.isPending &&
+                              refresh.variables?.id === core.id
+                            }
+                            onClick={() =>
+                              onRefresh(core.id, core.displayName || core.name)
+                            }
+                            title="Re-hash the on-disk binary and update the recorded sha256"
+                          >
+                            <RefreshCw
+                              className={`h-3.5 w-3.5 ${
+                                refresh.isPending &&
+                                refresh.variables?.id === core.id
+                                  ? "animate-spin"
+                                  : ""
+                              }`}
+                            />
+                            <span className="ml-1.5">Refresh</span>
+                          </Button>
                         </td>
                       </tr>
                     ))}

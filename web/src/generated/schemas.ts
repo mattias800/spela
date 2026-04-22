@@ -191,6 +191,7 @@ export type RecentAchievementsResponse = Schemas["RecentAchievementsResponse"];
 export type RecentReviewItem = Schemas["RecentReviewItem"];
 export type RecentlyReviewedResponse = Schemas["RecentlyReviewedResponse"];
 export type RefreshAchievementsResponse = Schemas["RefreshAchievementsResponse"];
+export type RefreshCoreResponse = Schemas["RefreshCoreResponse"];
 export type RegisterDeviceRequest = Schemas["RegisterDeviceRequest"];
 export type RelatedDeveloper = Schemas["RelatedDeveloper"];
 export type RelatedPublisher = Schemas["RelatedPublisher"];

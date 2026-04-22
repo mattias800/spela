@@ -192,6 +192,101 @@ func platformExtension(platform string) string {
 	}
 }
 
+// CoreRefreshResult is what RefreshCoreMetadata returns to callers. It
+// exposes enough state for the admin UI to distinguish "already current"
+// from "replaced with a new binary" without having to diff before/after.
+type CoreRefreshResult struct {
+	Changed   bool       // true when the on-disk sha differs from the DB sha
+	OldSha256 string     // empty on first-ever fingerprint
+	NewSha256 string     // always populated after a successful refresh
+	SizeBytes int64      // size of the on-disk binary after refresh
+	FetchedAt *time.Time // timestamp persisted on the row after refresh
+	SourceURL string     // source URL persisted on the row after refresh
+}
+
+// RefreshCoreMetadata re-hashes the on-disk binary for [core], updates
+// the DB row if the hash differs, snapshots the new binary into history,
+// and emits a SystemEventCoreUpdated audit row when the hash actually
+// changed. Returns 404-worthy errors wrapped in gorm.ErrRecordNotFound
+// when the binary isn't on disk — callers decide how to surface that
+// over HTTP.
+//
+// Unlike ensureCoreMetadata (lazy, gated on missing fields), this always
+// re-hashes. Admins call it after dropping a newer core binary into
+// CoreDir manually so the Phase 1 stored hash doesn't go stale — the
+// limitation documented on ensureCoreMetadata. See #555 Phase 2.
+func (h *CoreHandler) RefreshCoreMetadata(core *db.Core, platform string) (CoreRefreshResult, error) {
+	corePath := h.resolveCorePath(*core, platform)
+	if corePath == "" {
+		return CoreRefreshResult{}, fmt.Errorf("refresh: binary not on disk: %w", gorm.ErrRecordNotFound)
+	}
+	sum, size, err := hashFileSha256(corePath)
+	if err != nil {
+		return CoreRefreshResult{}, fmt.Errorf("refresh: hashing %s: %w", corePath, err)
+	}
+	old := core.Sha256
+	now := time.Now().UTC()
+	updates := map[string]interface{}{
+		"sha256":     sum,
+		"size_bytes": size,
+		"fetched_at": &now,
+	}
+	if core.SourceURL == "" && core.DownloadURL != "" {
+		updates["source_url"] = core.DownloadURL
+	}
+	if err := h.DB.Model(core).Updates(updates).Error; err != nil {
+		return CoreRefreshResult{}, fmt.Errorf("refresh: persisting metadata: %w", err)
+	}
+	core.Sha256 = sum
+	core.SizeBytes = size
+	core.FetchedAt = &now
+	if core.SourceURL == "" && core.DownloadURL != "" {
+		core.SourceURL = core.DownloadURL
+	}
+
+	h.snapshotCoreToHistory(*core, corePath, sum)
+
+	changed := old != sum
+	if changed {
+		meta := map[string]interface{}{
+			"core":        core.Name,
+			"old_sha256":  old,
+			"new_sha256":  sum,
+			"size_bytes":  size,
+			"platform":    platform,
+			"source_url":  core.SourceURL,
+			"trigger":     "admin_refresh",
+		}
+		db.RecordOperationalEvent(h.DB, db.SystemEventInput{
+			EventType: db.SystemEventCoreUpdated,
+			Reason:    fmt.Sprintf("core %q binary replaced: %s → %s", core.Name, shortSha(old), shortSha(sum)),
+			Metadata:  meta,
+		})
+	}
+
+	return CoreRefreshResult{
+		Changed:   changed,
+		OldSha256: old,
+		NewSha256: sum,
+		SizeBytes: size,
+		FetchedAt: &now,
+		SourceURL: core.SourceURL,
+	}, nil
+}
+
+// shortSha renders the leading 12 chars of a sha256 string, or the
+// literal "(none)" when the input is empty. Used only for audit-log
+// reason strings so the full sha stays in the row's Metadata map.
+func shortSha(s string) string {
+	if s == "" {
+		return "(none)"
+	}
+	if len(s) < 12 {
+		return s
+	}
+	return s[:12]
+}
+
 // resolveCorePath finds the core binary file path, checking the database FilePath
 // first, then falling back to discovery by name in the CoreDir using standard
 // libretro naming conventions (e.g., nestopia_libretro.so).

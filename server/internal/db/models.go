@@ -326,6 +326,11 @@ const (
 	SystemEventROMFileMissing          = "rom_file_missing"
 	SystemEventAPICredentialsInvalid   = "api_credentials_invalid"
 	SystemEventEmulatorJSLoadFailed    = "emulatorjs_load_failed"
+	// Emitted when the server observes a new sha256 for a core binary —
+	// either an admin-triggered force-refresh or (future) a background
+	// buildbot poll. Metadata carries old_sha256 and new_sha256 so the
+	// audit trail shows which version replaced which. See #555 Phase 2.
+	SystemEventCoreUpdated = "core_updated"
 )
 
 // AllSystemEventTypes is the canonical catalog of system event type strings.
@@ -346,6 +351,7 @@ var AllSystemEventTypes = []string{
 	SystemEventROMFileMissing,
 	SystemEventAPICredentialsInvalid,
 	SystemEventEmulatorJSLoadFailed,
+	SystemEventCoreUpdated,
 }
 
 // SystemEventTypeCategory maps each event type to its category code. Used by
@@ -366,6 +372,7 @@ var SystemEventTypeCategory = map[string]string{
 	SystemEventROMFileMissing:          CategoryOperational,
 	SystemEventAPICredentialsInvalid:   CategoryOperational,
 	SystemEventEmulatorJSLoadFailed:    CategoryOperational,
+	SystemEventCoreUpdated:             CategoryOperational,
 }
 
 // SystemEvent records an admin-only audit entry for an authentication,
