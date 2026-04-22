@@ -258,6 +258,83 @@ class PrepareGameUseCaseTest {
             "skipCoreDecisionPrompt must short-circuit the detection block on re-entry")
     }
 
+    // ── Launch-time RehearsalCrashed — sentinel from a prior crash ──
+
+    @Test
+    fun signalsRehearsalCrashedWhenSentinelIsSet() = runTest {
+        // Previous rehearsal run died before reaching a clean Sheet
+        // C/D resolution. Next launch must surface Sheet D BEFORE any
+        // other detection — even if the sha hasn't changed and the
+        // session isn't locked.
+        val core = FakeCoreRepository(
+            local = "/local/core.so",
+            isCurrent = true,
+        )
+        val useCase = PrepareGameUseCase(FakeDownloadRepository(), core)
+
+        val result = useCase.invoke(
+            gameId = "g1",
+            rehearsalCrashPending = true,
+        ).getOrThrow()
+
+        assertEquals(DecisionKind.RehearsalCrashed, result.decisionKind,
+            "rehearsalCrashPending=true must surface Sheet D regardless of pin/lock state",
+        )
+        // VM intercepts before loadCore — corePath isn't used on this
+        // branch, so it stays empty.
+        assertEquals("", result.corePath)
+    }
+
+    @Test
+    fun rehearsalCrashedTakesPriorityOverUpgradeAvailable() = runTest {
+        // A user who locked + crashed is still locked — but the crash
+        // recovery prompt must come first because the user explicitly
+        // needs to acknowledge the crash. UpgradeAvailable detection
+        // requires `!userLockedCoreVersion`, but RehearsalCrashed must
+        // fire even when the lock IS set (different concern entirely).
+        val core = FakeCoreRepository(
+            local = "/local/core.so",
+            isCurrent = false,
+            serverSha = "bb".repeat(32),
+        )
+        val useCase = PrepareGameUseCase(FakeDownloadRepository(), core)
+
+        val result = useCase.invoke(
+            gameId = "g1",
+            pinnedCoreSha256 = "aa".repeat(32),
+            sessionHasSaves = true,
+            autoUpdateCoresEnabled = false,
+            rehearsalCrashPending = true,
+        ).getOrThrow()
+
+        assertEquals(DecisionKind.RehearsalCrashed, result.decisionKind,
+            "crash recovery must precede upgrade detection — user must acknowledge the crash first",
+        )
+    }
+
+    @Test
+    fun rehearsalCrashedRespectsSkipFlagForResolutionRefires() = runTest {
+        // After Sheet D resolution the VM re-fires StartGame with
+        // skipCoreDecisionPrompt=true. Detection must short-circuit
+        // even though the sentinel is still true on the server (the
+        // resolution handlers clear it asynchronously).
+        val core = FakeCoreRepository(
+            local = "/local/core.so",
+            isCurrent = true,
+        )
+        val useCase = PrepareGameUseCase(FakeDownloadRepository(), core)
+
+        val result = useCase.invoke(
+            gameId = "g1",
+            rehearsalCrashPending = true,
+            skipCoreDecisionPrompt = true,
+        ).getOrThrow()
+
+        assertEquals(DecisionKind.None, result.decisionKind,
+            "skipCoreDecisionPrompt must short-circuit RehearsalCrashed on re-entry",
+        )
+    }
+
     // ── PinPruned detection — pinned binary rotated out of server retention ──
 
     @Test

@@ -360,7 +360,19 @@ class StubSessionRepository : SessionRepository {
     var existingSessions: List<GameSession> = emptyList()
 
     override suspend fun getSessionsForGame(gameId: String) = Result.success(existingSessions)
-    override suspend fun getSession(sessionId: String) = Result.failure<GameSession>(Exception("stub"))
+
+    /**
+     * Test hook for [getSession] — set to a function that returns the
+     * desired session for a given id. Defaults to looking the id up in
+     * [existingSessions] so seed-and-go tests work without explicit
+     * wiring. VM tests that need a specific failure path can override.
+     */
+    var lookupSession: (String) -> Result<GameSession> = { id ->
+        existingSessions.firstOrNull { it.id == id }
+            ?.let { Result.success(it) }
+            ?: Result.failure(Exception("stub: session $id not found"))
+    }
+    override suspend fun getSession(sessionId: String): Result<GameSession> = lookupSession(sessionId)
     override suspend fun createSession(gameId: String, name: String): Result<GameSession> {
         createSessionCallCount++
         lastCreatedSessionName = name
