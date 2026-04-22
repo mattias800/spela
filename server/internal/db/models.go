@@ -854,6 +854,13 @@ type SessionSaveState struct {
 	IsAuto        bool           `gorm:"default:false" json:"isAuto"`
 	IsCurrent     bool           `gorm:"default:false" json:"isCurrent"`
 	CoreName      string         `gorm:"size:128" json:"coreName"`
+	// CoreSha256 is the hex sha256 of the core binary that produced
+	// this save state. Populated by the player at save-upload time when
+	// available. Used for diagnostics (matching a failing load against
+	// the specific binary that wrote the save) and — eventually — for
+	// rollback UX that offers the exact core version the save was made
+	// with. Empty when the player didn't supply one. See #555 Phase 3.
+	CoreSha256    string         `gorm:"size:64" json:"coreSha256"`
 	Notes         string         `gorm:"type:text" json:"notes"`
 	Slot          *int           `json:"slot"`
 }

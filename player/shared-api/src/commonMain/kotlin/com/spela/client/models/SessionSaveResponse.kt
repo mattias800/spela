@@ -25,6 +25,7 @@ import kotlinx.serialization.encoding.*
  *
  * @param coreMatch 
  * @param coreName 
+ * @param coreSha256 
  * @param createdAt 
  * @param currentCore 
  * @param fileSize 
@@ -48,6 +49,8 @@ data class SessionSaveResponse (
     @SerialName(value = "coreMatch") @Required val coreMatch: kotlin.Boolean?,
 
     @SerialName(value = "coreName") @Required val coreName: kotlin.String,
+
+    @SerialName(value = "coreSha256") @Required val coreSha256: kotlin.String,
 
     @SerialName(value = "createdAt") @Required val createdAt: kotlinx.datetime.Instant,
 

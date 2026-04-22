@@ -8054,6 +8054,9 @@
           "coreName": {
             "type": "string"
           },
+          "coreSha256": {
+            "type": "string"
+          },
           "createdAt": {
             "format": "date-time",
             "type": "string"
@@ -8115,6 +8118,7 @@
           "isAuto",
           "isCurrent",
           "coreName",
+          "coreSha256",
           "coreMatch",
           "currentCore",
           "notes",
@@ -21577,6 +21581,9 @@
                 "coreName": {
                   "contentType": "text/plain"
                 },
+                "coreSha256": {
+                  "contentType": "text/plain"
+                },
                 "name": {
                   "contentType": "text/plain"
                 },
@@ -21591,6 +21598,10 @@
                 "properties": {
                   "coreName": {
                     "description": "Identifier of the libretro core that produced the save.",
+                    "type": "string"
+                  },
+                  "coreSha256": {
+                    "description": "Hex sha256 of the core binary that produced this save state. Optional — the server records it alongside the save for diagnostics and future rollback UX. Invalid values (not 64 hex chars) are silently dropped. See #555 Phase 3.",
                     "type": "string"
                   },
                   "name": {
@@ -21713,6 +21724,9 @@
                 "coreName": {
                   "contentType": "text/plain"
                 },
+                "coreSha256": {
+                  "contentType": "text/plain"
+                },
                 "name": {
                   "contentType": "text/plain"
                 },
@@ -21727,6 +21741,10 @@
                 "properties": {
                   "coreName": {
                     "description": "Identifier of the libretro core that produced the save.",
+                    "type": "string"
+                  },
+                  "coreSha256": {
+                    "description": "Hex sha256 of the core binary that produced this save state. Optional — the server records it alongside the save for diagnostics and future rollback UX. Invalid values (not 64 hex chars) are silently dropped. See #555 Phase 3.",
                     "type": "string"
                   },
                   "name": {
@@ -21869,6 +21887,9 @@
                 "coreName": {
                   "contentType": "text/plain"
                 },
+                "coreSha256": {
+                  "contentType": "text/plain"
+                },
                 "name": {
                   "contentType": "text/plain"
                 },
@@ -21883,6 +21904,10 @@
                 "properties": {
                   "coreName": {
                     "description": "Identifier of the libretro core that produced the save.",
+                    "type": "string"
+                  },
+                  "coreSha256": {
+                    "description": "Hex sha256 of the core binary that produced this save state. Optional — the server records it alongside the save for diagnostics and future rollback UX. Invalid values (not 64 hex chars) are silently dropped. See #555 Phase 3.",
                     "type": "string"
                   },
                   "name": {

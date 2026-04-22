@@ -512,6 +512,7 @@ class GameRepositoryImplTest {
             updatedAt = now,
             coreMatch = false,
             coreName = "",
+            coreSha256 = "",
             currentCore = "",
             notes = "",
             screenshotUrl = "",
