@@ -135,9 +135,17 @@ class AppLaunchAndConnectionTest {
         onNodeWithText("Server Name").performTextInput("Test Server")
         onNodeWithText("Server URL").performTextInput("http://localhost:8080")
 
-        // Click Connect (first server uses "Connect" instead of "Add")
+        // Click Connect (first server uses "Connect" instead of "Add").
+        // Use `advanceFully` here (not the standard `advance`) because
+        // this path runs three async chains in sequence: validateServer
+        // → repo.addServer → state-flow re-emission → form auto-close.
+        // The standard 4-iteration `advance` was borderline under
+        // parallel-fork CPU contention, leading to occasional flakes
+        // where the form-closed assertion fired before the state had
+        // propagated. 6 iterations leaves headroom without slowing
+        // happy-path runs noticeably.
         onNodeWithText("Connect").performClick()
-        advance(harness)
+        advanceFully(harness)
 
         // Server should be added and form should close
         onNodeWithText("Test Server").assertIsDisplayed()

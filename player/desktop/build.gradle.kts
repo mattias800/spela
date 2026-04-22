@@ -178,8 +178,15 @@ tasks.withType<Test> {
     systemProperty("junit.jupiter.execution.timeout.default", "30s")
     systemProperty("junit.jupiter.execution.timeout.testable.method.default", "30s")
     systemProperty("junit.jupiter.execution.timeout.lifecycle.method.default", "15s")
-    // Gradle-level timeout as a backstop for the entire test task.
-    timeout.set(Duration.ofMinutes(5))
+    // Gradle-level timeout as a backstop for the entire test task. Sized
+    // to the real total runtime: 98+ Compose UI test classes × ~30s each
+    // at maxParallelForks = procs/2 gives ~5m on an unloaded 12-core
+    // machine but can blow past 5m under dev-machine contention
+    // (playwright, IDE, concurrent gradle). The per-test 30s guard and
+    // per-class 120s guard still catch real waitForIdle hangs; this
+    // outer cap just keeps a truly stuck Gradle daemon from lasting
+    // forever.
+    timeout.set(Duration.ofMinutes(15))
     testLogging {
         events("failed")
     }
