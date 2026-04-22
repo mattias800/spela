@@ -1,4 +1,5 @@
 import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter } from "react-router-dom";
@@ -7,10 +8,22 @@ import { CoresPage } from "../cores-page";
 
 vi.mock("@/hooks/use-admin", () => ({
   useAdminCores: vi.fn(),
+  useRefreshCore: vi.fn(),
 }));
 
-import { useAdminCores } from "@/hooks/use-admin";
+// `useToast` is used for the refresh success/error feedback. Stub it so
+// tests don't need to wrap in a real ToastProvider.
+vi.mock("@/components/ui", async () => {
+  const actual = await vi.importActual("@/components/ui");
+  return {
+    ...actual,
+    useToast: vi.fn(() => ({ toast: vi.fn() })),
+  };
+});
+
+import { useAdminCores, useRefreshCore } from "@/hooks/use-admin";
 const mockUseAdminCores = useAdminCores as ReturnType<typeof vi.fn>;
+const mockUseRefreshCore = useRefreshCore as ReturnType<typeof vi.fn>;
 
 function renderPage() {
   const queryClient = new QueryClient({
@@ -56,6 +69,11 @@ const pristineCore = {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  mockUseRefreshCore.mockReturnValue({
+    mutate: vi.fn(),
+    isPending: false,
+    variables: undefined,
+  });
 });
 
 describe("CoresPage", () => {
@@ -146,5 +164,44 @@ describe("CoresPage", () => {
     expect(
       screen.getByText(/No cores registered/i),
     ).toBeInTheDocument();
+  });
+
+  it("calls the refresh mutation with the row's id when the button is clicked", async () => {
+    const mutate = vi.fn();
+    mockUseRefreshCore.mockReturnValue({
+      mutate,
+      isPending: false,
+      variables: undefined,
+    });
+    mockUseAdminCores.mockReturnValue({
+      data: [fingerprintedCore],
+      isLoading: false,
+      isError: false,
+    });
+    renderPage();
+
+    await userEvent.click(screen.getByTestId("cores-refresh-nestopia"));
+
+    expect(mutate).toHaveBeenCalledTimes(1);
+    expect(mutate.mock.calls[0][0]).toEqual({ id: 1 });
+  });
+
+  it("disables only the refreshing row's button while the mutation is in flight", () => {
+    mockUseRefreshCore.mockReturnValue({
+      mutate: vi.fn(),
+      isPending: true,
+      variables: { id: 1 }, // refreshing nestopia
+    });
+    mockUseAdminCores.mockReturnValue({
+      data: [fingerprintedCore, pristineCore],
+      isLoading: false,
+      isError: false,
+    });
+    renderPage();
+
+    expect(screen.getByTestId("cores-refresh-nestopia")).toBeDisabled();
+    // The other row's button must remain interactive — users can queue
+    // manual refreshes for different cores in parallel.
+    expect(screen.getByTestId("cores-refresh-mednafen_psx_hw")).not.toBeDisabled();
   });
 });

@@ -11,6 +11,7 @@ import (
 	"strconv"
 	"testing"
 
+	"github.com/spela/server/internal/auth"
 	"github.com/spela/server/internal/db"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -284,4 +285,172 @@ func TestGetCoreManifest_RequiresAuth(t *testing.T) {
 	req := httptest.NewRequest("GET", "/api/cores/"+itoa(core.ID)+"/manifest", nil)
 	router.ServeHTTP(w, req)
 	assert.Equal(t, http.StatusUnauthorized, w.Code)
+}
+
+// TestRefreshCore_PicksUpReplacedBinary is the canonical #555 Phase 2b
+// test: Phase 1 backfill is lazy and only runs when the row has missing
+// metadata. If an admin drops a newer core binary onto disk after the
+// row is populated, the stored sha256 goes stale. The refresh endpoint
+// must re-hash and update the row.
+func TestRefreshCore_PicksUpReplacedBinary(t *testing.T) {
+	database, cfg := setupTestEnv(t)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
+	adminToken := registerAndGetToken(t, router)
+
+	require.NoError(t, os.MkdirAll(cfg.CoreDir, 0o755))
+	corePath := filepath.Join(cfg.CoreDir, "nestopia_libretro.so")
+	originalPayload := []byte("nestopia-v1-bytes")
+	require.NoError(t, os.WriteFile(corePath, originalPayload, 0o644))
+
+	var core db.Core
+	require.NoError(t, database.Where("name = ?", "nestopia").First(&core).Error)
+
+	// Prime metadata via a download — Phase 1 backfill records the
+	// original sha256.
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/cores/"+itoa(core.ID)+"/download?platform=linux", nil)
+	req.Header.Set("Authorization", "Bearer "+adminToken)
+	router.ServeHTTP(w, req)
+	require.Equal(t, http.StatusOK, w.Code)
+
+	var afterDownload db.Core
+	require.NoError(t, database.First(&afterDownload, core.ID).Error)
+	originalSum := sha256.Sum256(originalPayload)
+	require.Equal(t, hex.EncodeToString(originalSum[:]), afterDownload.Sha256)
+
+	// Simulate the admin replacing the binary out-of-band.
+	newPayload := []byte("nestopia-v2-newer-bytes-with-different-length")
+	require.NoError(t, os.WriteFile(corePath, newPayload, 0o644))
+
+	// POST the refresh. Stored sha should move to the new payload's
+	// digest and `changed` should be true.
+	w2 := httptest.NewRecorder()
+	req2 := httptest.NewRequest("POST", "/api/cores/"+itoa(core.ID)+"/refresh?platform=linux", nil)
+	req2.Header.Set("Authorization", "Bearer "+adminToken)
+	router.ServeHTTP(w2, req2)
+	require.Equal(t, http.StatusOK, w2.Code)
+
+	var resp struct {
+		Changed   bool   `json:"changed"`
+		OldSha256 string `json:"oldSha256"`
+		Sha256    string `json:"sha256"`
+		SizeBytes int64  `json:"sizeBytes"`
+	}
+	require.NoError(t, json.Unmarshal(w2.Body.Bytes(), &resp))
+
+	newSum := sha256.Sum256(newPayload)
+	expectedNew := hex.EncodeToString(newSum[:])
+	expectedOld := hex.EncodeToString(originalSum[:])
+
+	assert.True(t, resp.Changed, "refresh must flag changed=true when sha differs")
+	assert.Equal(t, expectedOld, resp.OldSha256)
+	assert.Equal(t, expectedNew, resp.Sha256)
+	assert.Equal(t, int64(len(newPayload)), resp.SizeBytes)
+
+	// DB should reflect the new sha too.
+	var refreshed db.Core
+	require.NoError(t, database.First(&refreshed, core.ID).Error)
+	assert.Equal(t, expectedNew, refreshed.Sha256)
+	assert.Equal(t, int64(len(newPayload)), refreshed.SizeBytes)
+
+	// And a system event must have been recorded so admins can audit
+	// the replacement.
+	var events []db.SystemEvent
+	require.NoError(t, database.Where("event_type = ?", db.SystemEventCoreUpdated).Find(&events).Error)
+	require.Len(t, events, 1, "refresh must emit exactly one core_updated event")
+	assert.Contains(t, events[0].Metadata, expectedNew)
+	assert.Contains(t, events[0].Metadata, expectedOld)
+}
+
+// TestRefreshCore_UnchangedBinarySkipsSystemEvent verifies that
+// re-hashing the same bytes is a no-op at the audit level — we don't
+// want the system events feed spammed by idle admin-refresh clicks.
+func TestRefreshCore_UnchangedBinarySkipsSystemEvent(t *testing.T) {
+	database, cfg := setupTestEnv(t)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
+	adminToken := registerAndGetToken(t, router)
+
+	require.NoError(t, os.MkdirAll(cfg.CoreDir, 0o755))
+	corePath := filepath.Join(cfg.CoreDir, "nestopia_libretro.so")
+	payload := []byte("unchanged-bytes")
+	require.NoError(t, os.WriteFile(corePath, payload, 0o644))
+
+	var core db.Core
+	require.NoError(t, database.Where("name = ?", "nestopia").First(&core).Error)
+
+	// Prime via download.
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/cores/"+itoa(core.ID)+"/download?platform=linux", nil)
+	req.Header.Set("Authorization", "Bearer "+adminToken)
+	router.ServeHTTP(w, req)
+	require.Equal(t, http.StatusOK, w.Code)
+
+	// Refresh without touching the file.
+	w2 := httptest.NewRecorder()
+	req2 := httptest.NewRequest("POST", "/api/cores/"+itoa(core.ID)+"/refresh?platform=linux", nil)
+	req2.Header.Set("Authorization", "Bearer "+adminToken)
+	router.ServeHTTP(w2, req2)
+	require.Equal(t, http.StatusOK, w2.Code)
+
+	var resp struct {
+		Changed bool `json:"changed"`
+	}
+	require.NoError(t, json.Unmarshal(w2.Body.Bytes(), &resp))
+	assert.False(t, resp.Changed, "refresh must flag changed=false when sha matches")
+
+	// No core_updated event.
+	var count int64
+	require.NoError(t, database.Model(&db.SystemEvent{}).Where("event_type = ?", db.SystemEventCoreUpdated).Count(&count).Error)
+	assert.Equal(t, int64(0), count, "refresh on identical bytes must not emit an audit event")
+}
+
+// TestRefreshCore_MissingBinaryReturns404 verifies the admin gets a
+// useful error when the on-disk binary is missing (e.g. the CoreDir
+// hasn't been populated yet for this platform).
+func TestRefreshCore_MissingBinaryReturns404(t *testing.T) {
+	database, cfg := setupTestEnv(t)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
+	adminToken := registerAndGetToken(t, router)
+
+	var core db.Core
+	require.NoError(t, database.Where("name = ?", "nestopia").First(&core).Error)
+
+	// No binary on disk.
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("POST", "/api/cores/"+itoa(core.ID)+"/refresh?platform=linux", nil)
+	req.Header.Set("Authorization", "Bearer "+adminToken)
+	router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusNotFound, w.Code)
+}
+
+// TestRefreshCore_RequiresAdmin verifies non-admin callers are rejected.
+// Refresh is a privileged mutation — it changes persistent server state
+// and emits an audit event — so it must sit behind RequireAdmin.
+func TestRefreshCore_RequiresAdmin(t *testing.T) {
+	database, cfg := setupTestEnv(t)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
+
+	// Direct DB insert — mirrors the pattern in admin_deleted_users_test.go.
+	user := db.User{
+		Username:     "regular-core",
+		Email:        "regular-core@test.com",
+		PasswordHash: "unused",
+		Role:         "user",
+	}
+	require.NoError(t, database.Create(&user).Error)
+	token, err := auth.GenerateAccessToken(user.ID, user.Username, string(user.Role), testJWTSecret)
+	require.NoError(t, err)
+
+	var core db.Core
+	require.NoError(t, database.Where("name = ?", "nestopia").First(&core).Error)
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("POST", "/api/cores/"+itoa(core.ID)+"/refresh", nil)
+	req.Header.Set("Authorization", "Bearer "+token)
+	router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusForbidden, w.Code)
 }

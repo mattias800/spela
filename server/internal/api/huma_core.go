@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"time"
 
@@ -41,12 +42,39 @@ type CoreManifestOutput struct {
 	Body CoreManifestResponse
 }
 
-// RegisterCoreRoutes wires the core list + manifest endpoints into the huma
-// API. Other core endpoints (download) stay on raw gin for now — this
-// migration covers the read paths only.
+// RefreshCoreInput is the input for POST /api/cores/{id}/refresh.
+type RefreshCoreInput struct {
+	ID       uint   `path:"id" doc:"Core row ID (not core name)."`
+	Platform string `query:"platform" required:"false" doc:"Platform whose on-disk binary to re-hash (linux|macos|windows|android). Defaults to linux — the default server host platform."`
+}
+
+// RefreshCoreResponse is the admin-UI payload for the refresh mutation.
+// Mirrors CoreManifestResponse plus a `changed` boolean so the UI can
+// differentiate "already current" from "picked up a new sha" without
+// diffing before/after itself.
+type RefreshCoreResponse struct {
+	Changed   bool       `json:"changed" doc:"True when the on-disk sha256 differed from the previously persisted sha256."`
+	OldSha256 string     `json:"oldSha256" doc:"The sha256 stored before this refresh. Empty on the first-ever fingerprint."`
+	Sha256    string     `json:"sha256" doc:"Sha256 of the on-disk binary after the refresh."`
+	SizeBytes int64      `json:"sizeBytes" doc:"Size of the on-disk binary after the refresh."`
+	FetchedAt *time.Time `json:"fetchedAt" doc:"Timestamp persisted on the row after this refresh."`
+	SourceURL string     `json:"sourceUrl" doc:"Source URL persisted on the row. Empty for buildbot-default cores."`
+}
+
+// RefreshCoreOutput is the huma response envelope for the refresh
+// mutation.
+type RefreshCoreOutput struct {
+	Body RefreshCoreResponse
+}
+
+// RegisterCoreRoutes wires the core list + manifest + admin refresh
+// endpoints into the huma API. Other core endpoints (download) stay on
+// raw gin for now — this migration covers the read paths and the
+// refresh mutation only.
 func RegisterCoreRoutes(api huma.API, h *CoreHandler, jwtSecret string, database *gorm.DB, userLimiter *RateLimiter) {
 	requireAuth := RequireAuth(jwtSecret, database)
 	rateLimit := UserRateLimitMiddleware(userLimiter)
+	requireAdmin := RequireAdmin(api)
 
 	huma.Register(api, huma.Operation{
 		OperationID: "listCores",
@@ -69,6 +97,17 @@ func RegisterCoreRoutes(api huma.API, h *CoreHandler, jwtSecret string, database
 		Middlewares: huma.Middlewares{requireAuth, rateLimit},
 		Security:    []map[string][]string{{"bearer": {}}},
 	}, h.HumaGetCoreManifest)
+
+	huma.Register(api, huma.Operation{
+		OperationID: "refreshCore",
+		Method:      http.MethodPost,
+		Path:        "/api/cores/{id}/refresh",
+		Summary:     "Re-fingerprint a core binary (admin)",
+		Description: "Admin-only. Re-hashes the on-disk core binary, updates the DB metadata, snapshots the new binary into the history directory, and emits a core_updated system event when the sha256 actually changed. Use after manually swapping a core binary on disk so stored fingerprints don't go stale. Returns 404 when the binary isn't on disk for the requested platform.",
+		Tags:        []string{"cores"},
+		Middlewares: huma.Middlewares{requireAuth, rateLimit, requireAdmin},
+		Security:    []map[string][]string{{"bearer": {}}},
+	}, h.HumaRefreshCore)
 }
 
 // HumaListCores is the huma handler for GET /api/cores.
@@ -94,5 +133,40 @@ func (h *CoreHandler) HumaGetCoreManifest(_ context.Context, in *CoreManifestInp
 		SizeBytes: core.SizeBytes,
 		FetchedAt: core.FetchedAt,
 		SourceURL: core.SourceURL,
+	}}, nil
+}
+
+// HumaRefreshCore is the huma handler for POST /api/cores/{id}/refresh.
+// Admin-only. Re-hashes the on-disk binary, updates the DB row, and
+// emits an audit event when the sha256 changed.
+func (h *CoreHandler) HumaRefreshCore(_ context.Context, in *RefreshCoreInput) (*RefreshCoreOutput, error) {
+	var core db.Core
+	if err := h.DB.First(&core, in.ID).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return nil, huma.Error404NotFound("core not found")
+		}
+		return nil, huma.Error500InternalServerError("failed to fetch core")
+	}
+	platform := in.Platform
+	if platform == "" {
+		platform = "linux"
+	}
+	result, err := h.RefreshCoreMetadata(&core, platform)
+	if err != nil {
+		// Binary isn't on disk for this platform — surface as 404 so
+		// the admin UI can show a useful message ("upload a binary
+		// for this platform first") instead of a 500.
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, huma.Error404NotFound("core binary not available on disk for platform " + platform)
+		}
+		return nil, huma.Error500InternalServerError("failed to refresh core: " + err.Error())
+	}
+	return &RefreshCoreOutput{Body: RefreshCoreResponse{
+		Changed:   result.Changed,
+		OldSha256: result.OldSha256,
+		Sha256:    result.NewSha256,
+		SizeBytes: result.SizeBytes,
+		FetchedAt: result.FetchedAt,
+		SourceURL: result.SourceURL,
 	}}, nil
 }

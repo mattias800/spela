@@ -6758,6 +6758,58 @@
         ],
         "type": "object"
       },
+      "RefreshCoreResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "https://example.com/api/schemas/RefreshCoreResponse.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "changed": {
+            "description": "True when the on-disk sha256 differed from the previously persisted sha256.",
+            "type": "boolean"
+          },
+          "fetchedAt": {
+            "description": "Timestamp persisted on the row after this refresh.",
+            "format": "date-time",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "oldSha256": {
+            "description": "The sha256 stored before this refresh. Empty on the first-ever fingerprint.",
+            "type": "string"
+          },
+          "sha256": {
+            "description": "Sha256 of the on-disk binary after the refresh.",
+            "type": "string"
+          },
+          "sizeBytes": {
+            "description": "Size of the on-disk binary after the refresh.",
+            "format": "int64",
+            "type": "integer"
+          },
+          "sourceUrl": {
+            "description": "Source URL persisted on the row. Empty for buildbot-default cores.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "changed",
+          "oldSha256",
+          "sha256",
+          "sizeBytes",
+          "fetchedAt",
+          "sourceUrl"
+        ],
+        "type": "object"
+      },
       "RegisterDeviceRequest": {
         "additionalProperties": false,
         "properties": {
@@ -15712,6 +15764,67 @@
           }
         ],
         "summary": "Get fingerprint for a core binary",
+        "tags": [
+          "cores"
+        ]
+      }
+    },
+    "/api/cores/{id}/refresh": {
+      "post": {
+        "description": "Admin-only. Re-hashes the on-disk core binary, updates the DB metadata, snapshots the new binary into the history directory, and emits a core_updated system event when the sha256 actually changed. Use after manually swapping a core binary on disk so stored fingerprints don't go stale. Returns 404 when the binary isn't on disk for the requested platform.",
+        "operationId": "refreshCore",
+        "parameters": [
+          {
+            "description": "Core row ID (not core name).",
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "description": "Core row ID (not core name).",
+              "format": "int64",
+              "minimum": 0,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Platform whose on-disk binary to re-hash (linux|macos|windows|android). Defaults to linux — the default server host platform.",
+            "explode": false,
+            "in": "query",
+            "name": "platform",
+            "schema": {
+              "description": "Platform whose on-disk binary to re-hash (linux|macos|windows|android). Defaults to linux — the default server host platform.",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RefreshCoreResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HumaError"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Re-fingerprint a core binary (admin)",
         "tags": [
           "cores"
         ]

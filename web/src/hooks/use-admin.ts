@@ -489,3 +489,21 @@ export function useAdminCores() {
     queryFn: () => unwrap(typedApi.GET("/api/cores")),
   });
 }
+
+export function useRefreshCore() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (params: { id: number; platform?: string }) =>
+      unwrap(
+        typedApi.POST("/api/cores/{id}/refresh", {
+          params: {
+            path: { id: params.id },
+            query: params.platform ? { platform: params.platform } : {},
+          },
+        }),
+      ),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin", "cores"] });
+    },
+  });
+}
