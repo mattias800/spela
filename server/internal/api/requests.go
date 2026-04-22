@@ -139,11 +139,26 @@ type CreateSessionRequest struct {
 	Name string `json:"name,omitempty" required:"false"`
 }
 
-// UpdateSessionRequest is the body for PUT /api/sessions/:id.
+// UpdateSessionRequest is the body for PUT /api/sessions/:id. Every
+// field is optional — nil fields are left untouched.
 type UpdateSessionRequest struct {
 	Name          *string `json:"name,omitempty"`
 	CheatsEnabled *bool   `json:"cheatsEnabled,omitempty"`
 	CoreName      *string `json:"coreName,omitempty"`
+	// UserLockedCoreVersion toggles the session's core-version lock.
+	// True = the decision UI marked this session as locked to its
+	// PinnedCoreSha256; false = clear the lock so the pre-play sheet
+	// runs on next launch. See #672.
+	UserLockedCoreVersion *bool `json:"userLockedCoreVersion,omitempty"`
+	// AutoLoadSuppressed asks the player to skip auto-load of a save
+	// state on next launch (set when the user picked "Start fresh on
+	// the new version"). Cleared on first successful manual save.
+	// See #672.
+	AutoLoadSuppressed *bool `json:"autoLoadSuppressed,omitempty"`
+	// RehearsalCrashPending is set by the player before entering
+	// rehearsal mode and cleared on clean resolution. A true value
+	// surviving an app relaunch drives sheet D. See #672.
+	RehearsalCrashPending *bool `json:"rehearsalCrashPending,omitempty"`
 }
 
 // DuplicateSessionRequest is the body for POST /api/sessions/:id/duplicate.

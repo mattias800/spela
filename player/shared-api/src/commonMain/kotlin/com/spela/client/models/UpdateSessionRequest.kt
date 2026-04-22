@@ -24,9 +24,12 @@ import kotlinx.serialization.encoding.*
  * 
  *
  * @param dollarSchema A URL to the JSON Schema for this object.
+ * @param autoLoadSuppressed 
  * @param cheatsEnabled 
  * @param coreName 
  * @param name 
+ * @param rehearsalCrashPending 
+ * @param userLockedCoreVersion 
  */
 @Serializable
 
@@ -35,11 +38,17 @@ data class UpdateSessionRequest (
     /* A URL to the JSON Schema for this object. */
     @SerialName(value = "\$schema") val dollarSchema: kotlin.String? = null,
 
+    @SerialName(value = "autoLoadSuppressed") val autoLoadSuppressed: kotlin.Boolean? = null,
+
     @SerialName(value = "cheatsEnabled") val cheatsEnabled: kotlin.Boolean? = null,
 
     @SerialName(value = "coreName") val coreName: kotlin.String? = null,
 
-    @SerialName(value = "name") val name: kotlin.String? = null
+    @SerialName(value = "name") val name: kotlin.String? = null,
+
+    @SerialName(value = "rehearsalCrashPending") val rehearsalCrashPending: kotlin.Boolean? = null,
+
+    @SerialName(value = "userLockedCoreVersion") val userLockedCoreVersion: kotlin.Boolean? = null
 
 ) {
 

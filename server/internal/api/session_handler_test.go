@@ -268,6 +268,116 @@ func TestUpdateSession_NotOwner(t *testing.T) {
 	assert.Equal(t, http.StatusForbidden, w.Code)
 }
 
+// TestUpdateSession_CoreUpgradeFlagsRoundtrip verifies the three new
+// session flags from #672 (UserLockedCoreVersion, AutoLoadSuppressed,
+// RehearsalCrashPending) round-trip through PUT /api/sessions/{id}
+// and survive a subsequent GET. These are the persistence layer for
+// the player-side core-upgrade decision UI.
+func TestUpdateSession_CoreUpgradeFlagsRoundtrip(t *testing.T) {
+	env := setupSessionTestEnv(t)
+	created := createGameSession(t, env.router, env.token, env.gameID, "Core Lock Test")
+	sessionID := created["id"].(string)
+
+	// Defaults — every flag must start false.
+	assert.Equal(t, false, created["userLockedCoreVersion"])
+	assert.Equal(t, false, created["autoLoadSuppressed"])
+	assert.Equal(t, false, created["rehearsalCrashPending"])
+
+	body, _ := json.Marshal(map[string]interface{}{
+		"userLockedCoreVersion": true,
+		"autoLoadSuppressed":    true,
+		"rehearsalCrashPending": true,
+	})
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("PUT", "/api/sessions/"+sessionID, bytes.NewReader(body))
+	req.Header.Set("Authorization", "Bearer "+env.token)
+	req.Header.Set("Content-Type", "application/json")
+	env.router.ServeHTTP(w, req)
+	require.Equal(t, http.StatusOK, w.Code, "update body: %s", w.Body.String())
+
+	var resp map[string]interface{}
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+	assert.Equal(t, true, resp["userLockedCoreVersion"])
+	assert.Equal(t, true, resp["autoLoadSuppressed"])
+	assert.Equal(t, true, resp["rehearsalCrashPending"])
+
+	// Re-read via GET to confirm persistence (not just the response
+	// being pieced from the in-memory object).
+	w2 := httptest.NewRecorder()
+	req2 := httptest.NewRequest("GET", "/api/sessions/"+sessionID, nil)
+	req2.Header.Set("Authorization", "Bearer "+env.token)
+	env.router.ServeHTTP(w2, req2)
+	require.Equal(t, http.StatusOK, w2.Code)
+
+	var fetched map[string]interface{}
+	require.NoError(t, json.Unmarshal(w2.Body.Bytes(), &fetched))
+	assert.Equal(t, true, fetched["userLockedCoreVersion"])
+	assert.Equal(t, true, fetched["autoLoadSuppressed"])
+	assert.Equal(t, true, fetched["rehearsalCrashPending"])
+}
+
+// TestUpdateSession_CoreUpgradeFlags_PartialUpdate verifies that
+// flipping one flag does not clobber the others. The decision UI
+// frequently sets a single flag at a time (e.g. clearing
+// RehearsalCrashPending after Sheet D resolves) and must not
+// inadvertently reset the user's lock.
+func TestUpdateSession_CoreUpgradeFlags_PartialUpdate(t *testing.T) {
+	env := setupSessionTestEnv(t)
+	created := createGameSession(t, env.router, env.token, env.gameID, "Partial Lock Test")
+	sessionID := created["id"].(string)
+
+	// Set all three flags.
+	all, _ := json.Marshal(map[string]interface{}{
+		"userLockedCoreVersion": true,
+		"autoLoadSuppressed":    true,
+		"rehearsalCrashPending": true,
+	})
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("PUT", "/api/sessions/"+sessionID, bytes.NewReader(all))
+	req.Header.Set("Authorization", "Bearer "+env.token)
+	req.Header.Set("Content-Type", "application/json")
+	env.router.ServeHTTP(w, req)
+	require.Equal(t, http.StatusOK, w.Code)
+
+	// Now clear only the rehearsal sentinel — lock + suppression must
+	// stay set.
+	clear, _ := json.Marshal(map[string]interface{}{
+		"rehearsalCrashPending": false,
+	})
+	w2 := httptest.NewRecorder()
+	req2 := httptest.NewRequest("PUT", "/api/sessions/"+sessionID, bytes.NewReader(clear))
+	req2.Header.Set("Authorization", "Bearer "+env.token)
+	req2.Header.Set("Content-Type", "application/json")
+	env.router.ServeHTTP(w2, req2)
+	require.Equal(t, http.StatusOK, w2.Code)
+
+	var resp map[string]interface{}
+	require.NoError(t, json.Unmarshal(w2.Body.Bytes(), &resp))
+	assert.Equal(t, true, resp["userLockedCoreVersion"], "lock must survive a rehearsal-flag clear")
+	assert.Equal(t, true, resp["autoLoadSuppressed"], "auto-load suppression must survive a rehearsal-flag clear")
+	assert.Equal(t, false, resp["rehearsalCrashPending"])
+}
+
+// TestUpdateSession_CoreUpgradeFlags_NotOwner verifies that a non-owner
+// cannot toggle another user's session lock. These flags affect what
+// core a session loads — letting a stranger flip them would be a
+// playthrough-grief vector.
+func TestUpdateSession_CoreUpgradeFlags_NotOwner(t *testing.T) {
+	env := setupSessionTestEnv(t)
+	created := createGameSession(t, env.router, env.token, env.gameID, "Locked Session")
+	sessionID := created["id"].(string)
+
+	body, _ := json.Marshal(map[string]interface{}{
+		"userLockedCoreVersion": true,
+	})
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("PUT", "/api/sessions/"+sessionID, bytes.NewReader(body))
+	req.Header.Set("Authorization", "Bearer "+env.token2)
+	req.Header.Set("Content-Type", "application/json")
+	env.router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusForbidden, w.Code)
+}
+
 func TestDeleteSession(t *testing.T) {
 	env := setupSessionTestEnv(t)
 

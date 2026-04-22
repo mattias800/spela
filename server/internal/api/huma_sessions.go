@@ -645,6 +645,15 @@ func (h *SessionHandler) HumaUpdateSession(ctx context.Context, in *UpdateSessio
 	if req.CoreName != nil {
 		session.CoreName = *req.CoreName
 	}
+	if req.UserLockedCoreVersion != nil {
+		session.UserLockedCoreVersion = *req.UserLockedCoreVersion
+	}
+	if req.AutoLoadSuppressed != nil {
+		session.AutoLoadSuppressed = *req.AutoLoadSuppressed
+	}
+	if req.RehearsalCrashPending != nil {
+		session.RehearsalCrashPending = *req.RehearsalCrashPending
+	}
 
 	if err := h.DB.Save(&session).Error; err != nil {
 		return nil, huma.Error500InternalServerError("failed to update session")

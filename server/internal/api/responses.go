@@ -973,6 +973,21 @@ type GameSessionResponse struct {
 	ScreenshotURL        string     `json:"screenshotUrl"`
 	CoreName             string     `json:"coreName"`
 	PinnedCoreSha256     string     `json:"pinnedCoreSha256"`
+	// UserLockedCoreVersion is true when the user explicitly locked
+	// this session to PinnedCoreSha256 via the core-upgrade decision
+	// UI. Drives the lock chip on the session detail header and
+	// short-circuits the pre-play decision sheet on subsequent
+	// launches. See #672.
+	UserLockedCoreVersion bool      `json:"userLockedCoreVersion"`
+	// AutoLoadSuppressed is true when the next launch of this session
+	// should skip automatic save-state load. Cleared on the first
+	// successful manual save written against this session. See #672.
+	AutoLoadSuppressed    bool      `json:"autoLoadSuppressed"`
+	// RehearsalCrashPending is set by the player around the
+	// "try with my save" rehearsal mode; a true value surviving an
+	// app relaunch signals that the previous rehearsal ended in a
+	// crash so the UI can route the user to sheet D. See #672.
+	RehearsalCrashPending bool      `json:"rehearsalCrashPending"`
 	CheatsEnabled        bool       `json:"cheatsEnabled"`
 	SaveCount            int        `json:"saveCount"`
 	IsSharedSession      bool       `json:"isSharedSession"`
