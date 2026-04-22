@@ -577,6 +577,8 @@ class FakeCoreRepository : CoreRepository {
     override suspend fun getLocalCorePath(coreName: String): String? =
         if (forceMissingLocalCore) null else "/fake/cores/$coreName"
 
+    override suspend fun isCachedCoreCurrent(coreName: String): Boolean? = null
+
     override suspend fun isCoreCached(coreName: String): Boolean = !forceMissingLocalCore
 }
 
@@ -690,6 +692,7 @@ class FakeFileStorage : FileStorage {
     override suspend fun isDirectory(path: String): Boolean = false
     override suspend fun zipDirectoryToBytes(dirPath: String): ByteArray? = null
     override suspend fun unzipBytesToDirectory(data: ByteArray, targetDir: String) {}
+    override suspend fun sha256File(path: String): String? = null
 }
 
 class FakePreferencesRepository : PreferencesRepository {
@@ -701,6 +704,7 @@ class FakePreferencesRepository : PreferencesRepository {
         showPerformanceOverlay: Boolean?,
         autoSaveEnabled: Boolean?,
         autoLoadSaveEnabled: Boolean?,
+        autoUpdateCoresEnabled: Boolean?,
         selectedShader: String?,
         selectedTheme: String?,
         consoleShaders: Map<String, String>?,

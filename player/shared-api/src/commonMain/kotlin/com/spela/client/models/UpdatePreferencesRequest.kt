@@ -27,6 +27,7 @@ import kotlinx.serialization.encoding.*
  * @param dollarSchema A URL to the JSON Schema for this object.
  * @param autoLoadSaveEnabled 
  * @param autoSaveEnabled 
+ * @param autoUpdateCoresEnabled 
  * @param consoleKeyMappings 
  * @param consoleShaders 
  * @param customKeyMapping 
@@ -47,6 +48,8 @@ data class UpdatePreferencesRequest (
     @SerialName(value = "autoLoadSaveEnabled") val autoLoadSaveEnabled: kotlin.Boolean? = null,
 
     @SerialName(value = "autoSaveEnabled") val autoSaveEnabled: kotlin.Boolean? = null,
+
+    @SerialName(value = "autoUpdateCoresEnabled") val autoUpdateCoresEnabled: kotlin.Boolean? = null,
 
     @SerialName(value = "consoleKeyMappings") val consoleKeyMappings: kotlin.collections.Map<kotlin.String, ConsoleKeyMappingDTO>? = null,
 

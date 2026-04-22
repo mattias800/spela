@@ -9872,6 +9872,9 @@
           "autoSaveEnabled": {
             "type": "boolean"
           },
+          "autoUpdateCoresEnabled": {
+            "type": "boolean"
+          },
           "consoleKeyMappings": {
             "additionalProperties": {
               "$ref": "#/components/schemas/ConsoleKeyMappingDTO"
@@ -10133,6 +10136,9 @@
           "autoSaveEnabled": {
             "type": "boolean"
           },
+          "autoUpdateCoresEnabled": {
+            "type": "boolean"
+          },
           "consoleKeyMappings": {
             "additionalProperties": {
               "$ref": "#/components/schemas/ConsoleKeyMappingDTO"
@@ -10186,6 +10192,7 @@
           "showPerformanceOverlay",
           "autoSaveEnabled",
           "autoLoadSaveEnabled",
+          "autoUpdateCoresEnabled",
           "selectedShader",
           "selectedTheme",
           "defaultSecondScreenPage",

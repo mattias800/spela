@@ -45,6 +45,12 @@ type User struct {
 	ShowPerfOverlay     bool           `gorm:"default:false" json:"showPerformanceOverlay"`
 	AutoSaveEnabled     bool           `gorm:"default:true" json:"autoSaveEnabled"`
 	AutoLoadSaveEnabled bool           `gorm:"default:true" json:"autoLoadSaveEnabled"`
+	// When true, the player silently re-downloads a cached core binary
+	// whose sha256 no longer matches the server's current fingerprint.
+	// When false, the player trusts its local cache even if the server
+	// has a newer build — session pinning keeps long-running saves
+	// loadable without a version mismatch. See #555 Phase 2.
+	AutoUpdateCoresEnabled bool           `gorm:"default:true" json:"autoUpdateCoresEnabled"`
 	SelectedShader      string         `gorm:"size:64;default:none" json:"selectedShader"`
 	SelectedTheme       string         `gorm:"size:64;default:default-dark" json:"selectedTheme"`
 	SelectedKeyMapping  string         `gorm:"size:64;default:arrows-left" json:"selectedKeyMapping"`

@@ -70,6 +70,7 @@ class PrepareGameUseCase(
     suspend operator fun invoke(
         gameId: String,
         pinnedCoreSha256: String? = null,
+        autoUpdateCoresEnabled: Boolean = true,
     ): Result<PrepareGameResult> {
         val gamePath = downloadRepository.getLocalGamePath(gameId)
             ?: return Result.failure(IllegalStateException("Game not downloaded"))
@@ -133,9 +134,18 @@ class PrepareGameUseCase(
         // network hiccup, hash failed) — we intentionally fall through to
         // the existing path-existence check in that case so transient
         // server issues don't block an otherwise-usable cached core.
+        //
+        // The staleness check is gated on the user's
+        // `autoUpdateCoresEnabled` preference: when false, we keep the
+        // local cache regardless of what the server says. Power users
+        // who prefer to own when cores upgrade (e.g. to avoid a
+        // save-state compatibility break in the middle of a long
+        // playthrough) flip this off in Settings.
+        //
         // See #555 Phase 2.
         val cached = coreRepository.getLocalCorePath(coreName)
-        val corePath = if (cached != null && coreRepository.isCachedCoreCurrent(coreName) == false) {
+        val shouldCheckStaleness = autoUpdateCoresEnabled && cached != null
+        val corePath = if (shouldCheckStaleness && coreRepository.isCachedCoreCurrent(coreName) == false) {
             println("[PrepareGame] Cached $coreName is stale vs server — redownloading")
             coreRepository.downloadCore(coreName, downloadUrl).getOrElse {
                 // Re-download failed: fall back to the stale cache rather

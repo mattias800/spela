@@ -166,6 +166,7 @@ fun com.spela.client.models.UserPreferencesResponse.toDomain(): UserPreferences 
     showPerformanceOverlay = showPerformanceOverlay,
     autoSaveEnabled = autoSaveEnabled,
     autoLoadSaveEnabled = autoLoadSaveEnabled,
+    autoUpdateCoresEnabled = autoUpdateCoresEnabled,
     selectedShader = ShaderPreset.fromApiId(selectedShader),
     selectedTheme = selectedTheme,
     consoleShaders = consoleShaders.mapValues { ShaderPreset.fromApiId(it.value) },

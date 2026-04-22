@@ -256,6 +256,7 @@ class StubPreferencesRepository : PreferencesRepository {
         showPerformanceOverlay: Boolean?,
         autoSaveEnabled: Boolean?,
         autoLoadSaveEnabled: Boolean?,
+        autoUpdateCoresEnabled: Boolean?,
         selectedShader: String?,
         selectedTheme: String?,
         consoleShaders: Map<String, String>?,

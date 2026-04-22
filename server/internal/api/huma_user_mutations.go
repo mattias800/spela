@@ -184,6 +184,9 @@ func (h *UserHandler) HumaUpdatePreferences(ctx context.Context, in *UpdatePrefe
 	if req.AutoLoadSaveEnabled != nil {
 		user.AutoLoadSaveEnabled = *req.AutoLoadSaveEnabled
 	}
+	if req.AutoUpdateCoresEnabled != nil {
+		user.AutoUpdateCoresEnabled = *req.AutoUpdateCoresEnabled
+	}
 	if req.SelectedShader != nil {
 		user.SelectedShader = *req.SelectedShader
 	}
@@ -300,6 +303,7 @@ func (h *UserHandler) HumaUpdatePreferences(ctx context.Context, in *UpdatePrefe
 			ShowPerformanceOverlay:  user.ShowPerfOverlay,
 			AutoSaveEnabled:         user.AutoSaveEnabled,
 			AutoLoadSaveEnabled:     user.AutoLoadSaveEnabled,
+			AutoUpdateCoresEnabled:  user.AutoUpdateCoresEnabled,
 			SelectedShader:          user.SelectedShader,
 			SelectedTheme:           selectedTheme,
 			DefaultSecondScreenPage: defaultSecondScreenPage,

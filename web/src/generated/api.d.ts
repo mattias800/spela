@@ -8532,6 +8532,7 @@ export interface components {
             readonly $schema?: string;
             autoLoadSaveEnabled?: boolean;
             autoSaveEnabled?: boolean;
+            autoUpdateCoresEnabled?: boolean;
             consoleKeyMappings?: {
                 [key: string]: components["schemas"]["ConsoleKeyMappingDTO"];
             };
@@ -8646,6 +8647,7 @@ export interface components {
             readonly $schema?: string;
             autoLoadSaveEnabled: boolean;
             autoSaveEnabled: boolean;
+            autoUpdateCoresEnabled: boolean;
             consoleKeyMappings: {
                 [key: string]: components["schemas"]["ConsoleKeyMappingDTO"];
             };

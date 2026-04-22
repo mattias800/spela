@@ -83,6 +83,29 @@ class PrepareGameUseCaseTest {
         assertEquals("/local/core.so", result.corePath)
         assertNull(result.coreVersionWarning, "stale-fallback path does not surface the pinned-pruned warning")
     }
+
+    @Test
+    fun respectsAutoUpdateCoresDisabledEvenWhenServerHasNewerSha() = runTest {
+        val core = FakeCoreRepository(
+            local = "/local/core.so",
+            isCurrent = false, // server thinks local is stale …
+        )
+        val useCase = PrepareGameUseCase(FakeDownloadRepository(), core)
+
+        // … but the user has opted out of auto-updates. We must not
+        // call downloadCore; the locally cached binary stays in use.
+        val result = useCase.invoke(
+            gameId = "g1",
+            autoUpdateCoresEnabled = false,
+        ).getOrThrow()
+
+        assertEquals("/local/core.so", result.corePath)
+        assertEquals(
+            0,
+            core.downloadCoreCalls,
+            "opt-out must short-circuit the staleness check — no redownload even when server has a newer sha",
+        )
+    }
 }
 
 private class FakeDownloadRepository : DownloadRepository {
