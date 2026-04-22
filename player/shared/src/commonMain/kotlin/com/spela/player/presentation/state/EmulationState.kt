@@ -208,12 +208,25 @@ data class EmulationState(
     /**
      * When non-null, a #672 core-upgrade decision is pending and the
      * UI layer should render the matching sheet BEFORE emulation
-     * starts. `null` while emulation runs normally. The VM clears
-     * this as each sheet action resolves; see
+     * starts, OR (for [CoreDecision.RehearsalPrompt] /
+     * [CoreDecision.RehearsalCrashed]) the rehearsal banner / crash
+     * sheet should overlay the running emulator. `null` while
+     * emulation runs normally outside the rehearsal flow. The VM
+     * clears this as each sheet action resolves; see
      * [com.spela.player.presentation.intent.EmulationIntent] for the
      * intents that drive resolution.
      */
     val coreDecision: CoreDecision? = null,
+
+    /**
+     * True when the rehearsal "Did this work?" confirmation Sheet C
+     * is visible on top of the rehearsal banner. Distinct from
+     * `coreDecision` so the banner stays visible behind the sheet —
+     * the user can dismiss the sheet without leaving rehearsal mode.
+     * Always false when `coreDecision !is CoreDecision.RehearsalPrompt`.
+     * See #672 PR 3c.ii.
+     */
+    val showRehearsalConfirmSheet: Boolean = false,
 ) {
     val isNetplayMode: Boolean get() = netplaySessionId != null
     val isChallengeMode: Boolean get() = challengeId != null

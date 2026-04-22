@@ -173,4 +173,72 @@ sealed interface EmulationIntent {
      * save.
      */
     data object ResolveCoreDecisionStartFresh : EmulationIntent
+
+    // ── #672 PR 3c.ii — rehearsal flow (Sheets C/D + banner) ──
+
+    /**
+     * Banner "Did this work?" tap — opens Sheet C over the running
+     * rehearsal session. The banner stays visible behind the sheet
+     * so the user can still see the gameplay they are evaluating.
+     */
+    data object RehearsalShowConfirmation : EmulationIntent
+
+    /**
+     * Sheet C dismissed via back button without picking an action.
+     * Treated identically to "Let me try a bit longer" — close the
+     * sheet, stay in rehearsal mode.
+     */
+    data object RehearsalDismissConfirmation : EmulationIntent
+
+    /**
+     * Sheet C primary — "Yes, keep the new version". Exits rehearsal
+     * mode, discards the in-memory save buffer, resumes normal play.
+     * The session's pin advances on the next successful save (matches
+     * Sheet A's "Keep the new version anyway" pin-advancement rule).
+     */
+    data object RehearsalCompletedKeepNew : EmulationIntent
+
+    /**
+     * Sheet C secondary OR Sheet D primary — "(No,) lock to the older
+     * version". Exits rehearsal mode, sets `UserLockedCoreVersion = true`
+     * on the session, tears down the current emulator, downloads the
+     * pinned binary, and re-launches the session on the old core. The
+     * pin itself is unchanged (still the original sha).
+     */
+    data object RehearsalCompletedLockOld : EmulationIntent
+
+    /**
+     * Sheet C ghost — "Let me try a bit longer". Closes Sheet C and
+     * resumes the rehearsal banner; no state change. Same effect as
+     * back-button dismiss but exposed as an explicit action so users
+     * who don't trust system-back behaviour have a labeled way out.
+     */
+    data object RehearsalContinueLonger : EmulationIntent
+
+    /**
+     * Emitted by the libretro bridge / SaveManager when a core crash
+     * or `retro_unserialize` failure is detected during rehearsal.
+     * Transitions `coreDecision` from `RehearsalPrompt` to
+     * `RehearsalCrashed`, which in turn renders Sheet D.
+     */
+    data class RehearsalCrashed(
+        val coreName: String,
+        val coreDisplayName: String,
+    ) : EmulationIntent
+
+    /**
+     * Sheet D secondary — "Start fresh on the new version" after a
+     * rehearsal crash. Repins to the current sha, sets
+     * `AutoLoadSuppressed = true`, and re-launches without attempting
+     * to load the save state that crashed.
+     */
+    data object RehearsalCrashStartFresh : EmulationIntent
+
+    /**
+     * Sheet D more-options — "Just go back — I'll try again later".
+     * Closes the sheet without changing server state. The user is
+     * left on the (crashed) emulator surface and can quit normally;
+     * the next session launch will re-enter the upgrade decision flow.
+     */
+    data object RehearsalCrashDismiss : EmulationIntent
 }

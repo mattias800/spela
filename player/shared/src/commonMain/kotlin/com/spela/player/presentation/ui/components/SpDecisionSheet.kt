@@ -76,6 +76,15 @@ fun SpDecisionSheet(
     primary: SpDecisionAction,
     onDismiss: () -> Unit,
     secondary: SpDecisionAction? = null,
+    /**
+     * Optional third peer action rendered directly under [secondary]
+     * (no "More options" expander). Intended for sheets whose third
+     * choice is discoverability-critical — e.g. Sheet C's "Let me try
+     * a bit longer" — so the user doesn't have to tap to expand before
+     * seeing it. Sheets whose extras are genuinely secondary (Sheet A
+     * "Lock" / "Remind me") should keep using [moreOptions].
+     */
+    tertiary: SpDecisionAction? = null,
     metaLine: String? = null,
     icon: (@Composable () -> Unit)? = null,
     moreOptions: List<SpDecisionAction> = emptyList(),
@@ -133,6 +142,9 @@ fun SpDecisionSheet(
                 ActionButton(primary, Modifier.testTag("sp-decision-primary"))
                 if (secondary != null) {
                     ActionButton(secondary, Modifier.testTag("sp-decision-secondary"))
+                }
+                if (tertiary != null) {
+                    ActionButton(tertiary, Modifier.testTag("sp-decision-tertiary"))
                 }
                 if (moreOptions.isNotEmpty()) {
                     MoreOptionsSection(moreOptions)

@@ -98,6 +98,21 @@ class EmulationViewModel(
     @Volatile
     private var pendingCoreDecisionStart: EmulationIntent.StartGame? = null
 
+    /**
+     * #672 PR 3c.ii — when the user accepts rehearsal via Sheet A's
+     * "Try with my save", we stash the RehearsalPrompt here and apply
+     * it to [EmulationState.coreDecision] once the re-fired StartGame
+     * has finished initial setup. Writing it directly inside
+     * [resolveCoreDecision] would be overwritten by startGame's bulk
+     * state reset; staging it here and consuming it in startGame keeps
+     * the banner visible from the first composed frame.
+     *
+     * `@Volatile` for the same cross-dispatcher reason as
+     * [pendingCoreDecisionStart].
+     */
+    @Volatile
+    private var pendingRehearsalPrompt: com.spela.player.presentation.state.CoreDecision.RehearsalPrompt? = null
+
     private var currentPreferences = UserPreferences()
     private var sessionTimerJob: Job? = null
     private var stopJob: Job? = null
@@ -123,6 +138,23 @@ class EmulationViewModel(
                         }
                     }
                 }
+        }
+
+        // #672 PR 3c.ii — surface the rehearsal "saves are paused"
+        // snackbar whenever SaveManager silently drops a save write
+        // while rehearsalMode is active. Uses `statusMessage` so the
+        // existing dismissable-snackbar UI picks it up without a new
+        // channel. The copy is the canonical `core_upd.snack.rehearsal_save`
+        // string from the spec.
+        scope.launch(dispatchers.main) {
+            saveManager.rehearsalSaveBlocked.collect {
+                _state.update {
+                    it.copy(
+                        statusMessage = "You're in a trial run — saves are paused until you " +
+                            "keep this version. Tap 'Did this work?' above to decide.",
+                    )
+                }
+            }
         }
     }
 
@@ -298,6 +330,151 @@ class EmulationViewModel(
             EmulationIntent.ResolveCoreDecisionLockOld -> resolveCoreDecision(RehearsalEntry.LockOld)
             EmulationIntent.ResolveCoreDecisionRemindLater -> resolveCoreDecision(RehearsalEntry.RemindLater)
             EmulationIntent.ResolveCoreDecisionStartFresh -> resolveCoreDecision(RehearsalEntry.StartFresh)
+
+            // #672 PR 3c.ii — rehearsal flow (Sheets C/D + banner)
+            EmulationIntent.RehearsalShowConfirmation ->
+                _state.update { it.copy(showRehearsalConfirmSheet = true) }
+            EmulationIntent.RehearsalDismissConfirmation,
+            EmulationIntent.RehearsalContinueLonger ->
+                _state.update { it.copy(showRehearsalConfirmSheet = false) }
+            EmulationIntent.RehearsalCompletedKeepNew -> rehearsalKeepNew()
+            EmulationIntent.RehearsalCompletedLockOld -> rehearsalLockOld()
+            is EmulationIntent.RehearsalCrashed ->
+                _state.update {
+                    it.copy(
+                        coreDecision = com.spela.player.presentation.state.CoreDecision.RehearsalCrashed(
+                            coreName = intent.coreName,
+                            coreDisplayName = intent.coreDisplayName.ifEmpty { intent.coreName },
+                        ),
+                        showRehearsalConfirmSheet = false,
+                    )
+                }
+            EmulationIntent.RehearsalCrashStartFresh -> rehearsalCrashStartFresh()
+            EmulationIntent.RehearsalCrashDismiss ->
+                _state.update { it.copy(coreDecision = null) }
+        }
+    }
+
+    /**
+     * Sheet C primary — "Yes, keep the new version". Exits rehearsal
+     * mode, clears the banner / sheet, and resumes normal play. The
+     * pin itself is not written here; `Phase 3` pin-advancement fires
+     * on the first successful save-write on the new core, matching
+     * Sheet A's "Keep the new version anyway" behaviour.
+     */
+    private fun rehearsalKeepNew() {
+        saveManager.rehearsalMode = false
+        _state.update {
+            it.copy(
+                coreDecision = null,
+                showRehearsalConfirmSheet = false,
+            )
+        }
+    }
+
+    /**
+     * Sheet C secondary / Sheet D primary — "Lock to the older version".
+     * Writes `UserLockedCoreVersion = true` on the server, then (only
+     * on success) clears rehearsal mode and re-launches the session so
+     * detection picks the pinned binary. Reconstructs StartGame from
+     * the current state snapshot because the rehearsal path already
+     * consumed `pendingCoreDecisionStart`.
+     *
+     * Failure handling: if the server write fails we keep the user in
+     * rehearsal mode — saves stay paused, banner/Sheet state is
+     * preserved-ish (the sheet closes so the error snackbar is
+     * visible) — and surface a retry-able error. Re-firing StartGame
+     * anyway would silently leave the user on the new core while the
+     * UI told them they locked to the old one, which is the opposite
+     * of what they asked for.
+     */
+    private fun rehearsalLockOld() {
+        val snapshot = _state.value
+        // Close the sheet so the snackbar can surface, but do NOT yet
+        // clear `coreDecision` or `rehearsalMode` — those rollback
+        // states matter if the server write fails below.
+        _state.update { it.copy(showRehearsalConfirmSheet = false) }
+        val sessionId = snapshot.sessionId
+        scope.launch(dispatchers.io) {
+            val locked = if (!sessionId.isNullOrEmpty()) {
+                saveManager.setSessionCoreLock(sessionId, locked = true)
+            } else {
+                false
+            }
+            if (!locked) {
+                withContext(dispatchers.main) {
+                    _state.update {
+                        it.copy(
+                            statusMessage = "Couldn't save the lock — tap 'No, lock to the older version' again to retry.",
+                        )
+                    }
+                }
+                return@launch
+            }
+            // Write succeeded — now safe to exit rehearsal + relaunch.
+            saveManager.rehearsalMode = false
+            withContext(dispatchers.main) {
+                _state.update { it.copy(coreDecision = null) }
+                // skipCoreDecisionPrompt=true is defence in depth —
+                // detection will also short-circuit because
+                // UserLockedCoreVersion is now true on the server.
+                onIntent(
+                    EmulationIntent.StartGame(
+                        gameId = snapshot.gameId,
+                        sessionId = sessionId,
+                        skipCoreDecisionPrompt = true,
+                    ),
+                )
+            }
+        }
+    }
+
+    /**
+     * Sheet D secondary — "Start fresh on the new version". Writes
+     * `AutoLoadSuppressed = true` so future launches also skip the
+     * stale save, then re-launches with `skipAutoLoad = true` for the
+     * current run. Unlike `rehearsalLockOld`, this path proceeds even
+     * if the server write fails: the local `skipAutoLoad` override
+     * already addresses the immediate crash-loop risk, so the user
+     * lands on a playable session either way. A retry-able error
+     * surfaces when persistence fails.
+     */
+    private fun rehearsalCrashStartFresh() {
+        saveManager.rehearsalMode = false
+        val snapshot = _state.value
+        _state.update {
+            it.copy(
+                coreDecision = null,
+                showRehearsalConfirmSheet = false,
+            )
+        }
+        val sessionId = snapshot.sessionId
+        scope.launch(dispatchers.io) {
+            val persisted = if (!sessionId.isNullOrEmpty()) {
+                saveManager.setSessionAutoLoadSuppressed(sessionId, suppressed = true)
+            } else {
+                true // no session — nothing to persist
+            }
+            if (!persisted) {
+                withContext(dispatchers.main) {
+                    _state.update {
+                        it.copy(
+                            statusMessage = "Skipping the save for this run worked, " +
+                                "but we couldn't remember that choice — it may re-prompt next time.",
+                        )
+                    }
+                }
+            }
+            withContext(dispatchers.main) {
+                onIntent(
+                    EmulationIntent.StartGame(
+                        gameId = snapshot.gameId,
+                        sessionId = sessionId,
+                        skipAutoLoad = true,
+                        skipCoreDecisionPrompt = true,
+                    ),
+                )
+            }
         }
     }
 
@@ -323,13 +500,37 @@ class EmulationViewModel(
      */
     private fun resolveCoreDecision(entry: RehearsalEntry) {
         val pending = pendingCoreDecisionStart ?: return
+        val stashedDecision = _state.value.coreDecision
         pendingCoreDecisionStart = null
         _state.update { it.copy(coreDecision = null) }
 
         scope.launch(dispatchers.io) {
             var refiredIntent = pending.copy(skipCoreDecisionPrompt = true)
             when (entry) {
-                RehearsalEntry.Try -> saveManager.rehearsalMode = true
+                RehearsalEntry.Try -> {
+                    saveManager.rehearsalMode = true
+                    // Build a RehearsalPrompt from whatever Sheet A was
+                    // showing so the banner renders the same core name
+                    // the user just acknowledged. UpgradeAvailable →
+                    // NEW core is running. PinPruned reaches Try via
+                    // the same intent but the old binary is gone, so
+                    // we're also on the new/latest core.
+                    pendingRehearsalPrompt = when (val d = stashedDecision) {
+                        is com.spela.player.presentation.state.CoreDecision.UpgradeAvailable ->
+                            com.spela.player.presentation.state.CoreDecision.RehearsalPrompt(
+                                coreName = d.coreName,
+                                coreDisplayName = d.coreDisplayName,
+                                usingNewSha = true,
+                            )
+                        is com.spela.player.presentation.state.CoreDecision.PinPruned ->
+                            com.spela.player.presentation.state.CoreDecision.RehearsalPrompt(
+                                coreName = d.coreName,
+                                coreDisplayName = d.coreDisplayName,
+                                usingNewSha = true,
+                            )
+                        else -> null
+                    }
+                }
                 RehearsalEntry.KeepNew,
                 RehearsalEntry.RemindLater -> {
                     saveManager.rehearsalMode = false
@@ -385,6 +586,12 @@ class EmulationViewModel(
         skipCoreDecisionPrompt: Boolean = false,
     ) {
         saveManager.currentSessionId = sessionId
+        // Consume the pending rehearsal prompt (set by resolveCoreDecision
+        // when the user picked Sheet A's "Try"). Consumed here rather
+        // than left on the field so a subsequent non-rehearsal launch
+        // doesn't inherit a stale banner.
+        val rehearsalPrompt = pendingRehearsalPrompt
+        pendingRehearsalPrompt = null
         _state.update {
             it.copy(
                 gameId = gameId,
@@ -413,6 +620,13 @@ class EmulationViewModel(
                 isHwRenderEnabled = false,
                 secondaryToast = null,
                 touchControlPort = 0,
+                // RehearsalPrompt survives the state reset so the
+                // in-game banner is visible the moment the emulator
+                // surface composes. Closes the gap where the user
+                // would briefly see a naked emulator without knowing
+                // they're in rehearsal mode.
+                coreDecision = rehearsalPrompt,
+                showRehearsalConfirmSheet = false,
             )
         }
 
