@@ -41,9 +41,13 @@ const TOGGLES: Array<{
   },
   {
     key: "autoUpdateCoresEnabled",
-    label: "Auto Update Cores",
-    description:
-      "Silently re-download emulator cores when the server has a newer build. Turn off to keep the locally cached version until you manually refresh.",
+    // Spec keys core_upd.settings.auto_update_label / _desc — aligned
+    // with the #672 core-upgrade decision tone (see
+    // design-proposals/core-upgrade-decision-spec.md §"Copy library").
+    // The old subtitle was technical; the new copy makes clear what
+    // "off" actually means for the user.
+    label: "Automatically update cores",
+    description: "When off, we'll only switch cores when you say so.",
   },
 ];
 
