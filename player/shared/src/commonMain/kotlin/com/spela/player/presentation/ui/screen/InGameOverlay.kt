@@ -222,16 +222,26 @@ fun InGameOverlay(
         )
     }
 
-    // #672 core-upgrade decision — Sheet A
-    val coreDecision = state.coreDecision
-    if (coreDecision is com.spela.player.presentation.state.CoreDecision.UpgradeAvailable) {
-        com.spela.player.presentation.ui.feature.ingame.CoreUpgradeDecisionSheet(
-            decision = coreDecision,
-            onTryWithMySave = { viewModel.onIntent(EmulationIntent.ResolveCoreDecisionTry) },
-            onKeepNewVersion = { viewModel.onIntent(EmulationIntent.ResolveCoreDecisionKeepNew) },
-            onLockOldVersion = { viewModel.onIntent(EmulationIntent.ResolveCoreDecisionLockOld) },
-            onRemindLater = { viewModel.onIntent(EmulationIntent.ResolveCoreDecisionRemindLater) },
-        )
+    // #672 core-upgrade decision sheets
+    when (val coreDecision = state.coreDecision) {
+        is com.spela.player.presentation.state.CoreDecision.UpgradeAvailable ->
+            com.spela.player.presentation.ui.feature.ingame.CoreUpgradeDecisionSheet(
+                decision = coreDecision,
+                onTryWithMySave = { viewModel.onIntent(EmulationIntent.ResolveCoreDecisionTry) },
+                onKeepNewVersion = { viewModel.onIntent(EmulationIntent.ResolveCoreDecisionKeepNew) },
+                onLockOldVersion = { viewModel.onIntent(EmulationIntent.ResolveCoreDecisionLockOld) },
+                onRemindLater = { viewModel.onIntent(EmulationIntent.ResolveCoreDecisionRemindLater) },
+            )
+        is com.spela.player.presentation.state.CoreDecision.PinPruned ->
+            com.spela.player.presentation.ui.feature.ingame.CorePinPrunedDecisionSheet(
+                decision = coreDecision,
+                onTryWithMySave = { viewModel.onIntent(EmulationIntent.ResolveCoreDecisionTry) },
+                onStartFresh = { viewModel.onIntent(EmulationIntent.ResolveCoreDecisionStartFresh) },
+                onRemindLater = { viewModel.onIntent(EmulationIntent.ResolveCoreDecisionRemindLater) },
+            )
+        // RehearsalPrompt + RehearsalCrashed sheets land in PR 3c.ii.
+        null -> Unit
+        else -> Unit
     }
 
     // Core mismatch save warning dialog

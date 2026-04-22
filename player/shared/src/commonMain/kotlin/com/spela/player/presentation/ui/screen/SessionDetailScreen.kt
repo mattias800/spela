@@ -71,6 +71,7 @@ import com.spela.player.presentation.ui.gamepad.InputMode
 import com.spela.player.presentation.ui.gamepad.LocalInputMode
 import com.spela.player.presentation.ui.gamepad.autoFocus
 import com.spela.player.presentation.ui.feature.sessiondetail.SessionCheatsSection
+import com.spela.player.presentation.ui.feature.sessiondetail.SessionCoreLockChip
 import com.spela.player.presentation.ui.components.SpPlayInfo
 import com.spela.player.presentation.ui.components.social.formatRelativeTime
 import com.spela.player.presentation.ui.theme.SpColor
@@ -193,9 +194,16 @@ fun SessionDetailScreen(
                                 cheatsEnabled = state.cheatsEnabled,
                                 memberCount = session.memberCount,
                                 game = state.game,
+                                pinnedCoreSha256 = session.pinnedCoreSha256,
+                                userLockedCoreVersion = session.userLockedCoreVersion,
                                 onRename = { showRenameDialog = true },
                                 onPlay = { onPlay(session.gameId, session.id) },
                                 onClone = { showCloneDialog = true },
+                                onUnlockCoreVersion = {
+                                    viewModel.onIntent(
+                                        SessionDetailIntent.UnlockCoreVersion(sessionId),
+                                    )
+                                },
                                 modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
                             )
                             Spacer(Modifier.height(SpSpacing.XLarge))
@@ -510,9 +518,12 @@ private fun SessionDetailHeader(
     cheatsEnabled: Boolean,
     memberCount: Int,
     game: Game?,
+    pinnedCoreSha256: String?,
+    userLockedCoreVersion: Boolean,
     onRename: () -> Unit,
     onPlay: () -> Unit,
     onClone: () -> Unit,
+    onUnlockCoreVersion: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     var showMoreMenu by remember { mutableStateOf(false) }
@@ -561,6 +572,21 @@ private fun SessionDetailHeader(
                     }
                 }
             }
+        }
+
+        // Locked-to-version chip (#672). Rendered whenever the user has
+        // explicitly locked the session — even if the sha is missing,
+        // because otherwise the user can't see or clear an invisible lock
+        // (`userLockedCoreVersion = true` without a pin should be rare,
+        // but the chip must still appear so the "Use the latest version
+        // instead" escape hatch remains reachable). The chip itself
+        // handles the empty-sha render path gracefully.
+        if (userLockedCoreVersion) {
+            Spacer(Modifier.height(SpSpacing.Default))
+            SessionCoreLockChip(
+                pinnedCoreSha256 = pinnedCoreSha256.orEmpty(),
+                onUnlock = onUnlockCoreVersion,
+            )
         }
 
         // Last played info

@@ -3,6 +3,7 @@ package com.spela.player.domain.usecase
 import com.spela.player.domain.model.DownloadProgress
 import com.spela.player.domain.model.DownloadedGame
 import com.spela.player.domain.model.LibretroCore
+import com.spela.player.domain.repository.CorePrunedException
 import com.spela.player.domain.repository.CoreRepository
 import com.spela.player.domain.repository.DownloadRepository
 import kotlinx.coroutines.flow.Flow
@@ -257,6 +258,90 @@ class PrepareGameUseCaseTest {
             "skipCoreDecisionPrompt must short-circuit the detection block on re-entry")
     }
 
+    // ── PinPruned detection — pinned binary rotated out of server retention ──
+
+    @Test
+    fun signalsPinPrunedWhenLockedSessionsPinnedBinaryIsGone() = runTest {
+        // Server fingerprinted the core but the *specific* pinned
+        // historical binary was rotated out. For a user-locked session
+        // with saves, the VM must surface Sheet B instead of silently
+        // falling through with a toast.
+        val core = FakeCoreRepository(
+            local = "/local/core.so",
+            isCurrent = true,
+            // downloadCoreByHash returns CorePrunedException — the pinned
+            // binary is no longer in the server's history.
+            hashDownloadResult = Result.failure(CorePrunedException("aa".repeat(32))),
+        )
+        val useCase = PrepareGameUseCase(FakeDownloadRepository(), core)
+
+        val result = useCase.invoke(
+            gameId = "g1",
+            pinnedCoreSha256 = "aa".repeat(32),
+            sessionHasSaves = true,
+            userLockedCoreVersion = true,
+        ).getOrThrow()
+
+        assertEquals(DecisionKind.PinPruned, result.decisionKind,
+            "user-locked + pruned pin must surface Sheet B, not a silent toast")
+        assertEquals("/local/core.so", result.corePath,
+            "corePath still resolves to the fallback so Sheet B can preview with a working core")
+        assertNull(result.coreVersionWarning,
+            "Sheet B replaces the legacy toast — warning must be suppressed when decisionKind is PinPruned")
+    }
+
+    @Test
+    fun pinPrunedStaysSilentWhenSessionIsNotUserLocked() = runTest {
+        // Same pruning event, but the user never explicitly locked — the
+        // legacy silent-fallback-with-warning behaviour is preserved so
+        // we don't churn the pre-#672 UX for the common unpinned case.
+        val core = FakeCoreRepository(
+            local = "/local/core.so",
+            isCurrent = true,
+            hashDownloadResult = Result.failure(CorePrunedException("aa".repeat(32))),
+        )
+        val useCase = PrepareGameUseCase(FakeDownloadRepository(), core)
+
+        val result = useCase.invoke(
+            gameId = "g1",
+            pinnedCoreSha256 = "aa".repeat(32),
+            sessionHasSaves = true,
+            userLockedCoreVersion = false, // not locked — legacy path
+        ).getOrThrow()
+
+        assertEquals(DecisionKind.None, result.decisionKind,
+            "non-locked sessions keep the legacy silent-fallback behaviour")
+        assertEquals(
+            "Original core version no longer available. The latest core may not load this save correctly.",
+            result.coreVersionWarning,
+            "legacy warning copy must still be shown when decisionKind is None",
+        )
+    }
+
+    @Test
+    fun pinPrunedSkipsWhenSkipFlagIsSet() = runTest {
+        // Re-entry after the user resolved Sheet B — the VM re-fires
+        // with skipCoreDecisionPrompt = true. Detection must not loop
+        // back into PinPruned on the same launch.
+        val core = FakeCoreRepository(
+            local = "/local/core.so",
+            isCurrent = true,
+            hashDownloadResult = Result.failure(CorePrunedException("aa".repeat(32))),
+        )
+        val useCase = PrepareGameUseCase(FakeDownloadRepository(), core)
+
+        val result = useCase.invoke(
+            gameId = "g1",
+            pinnedCoreSha256 = "aa".repeat(32),
+            sessionHasSaves = true,
+            userLockedCoreVersion = true,
+            skipCoreDecisionPrompt = true,
+        ).getOrThrow()
+
+        assertEquals(DecisionKind.None, result.decisionKind,
+            "skipCoreDecisionPrompt must short-circuit PinPruned on re-entry")
+    }
+
     @Test
     fun upgradeAvailableResultCarriesServerCoreSha() = runTest {
         // The VM reads prepared.serverCoreSha to populate Sheet A's
@@ -306,6 +391,11 @@ private class FakeCoreRepository(
     private val isCurrent: Boolean?,
     private val downloadResult: Result<String> = Result.success("/local/downloaded-core.so"),
     private val serverSha: String? = null,
+    // PinPruned tests override this with Result.failure(CorePrunedException(...)).
+    // Default stays on the old "not exercised here" marker for the pre-3c tests.
+    private val hashDownloadResult: Result<String> = Result.failure(
+        UnsupportedOperationException("pinned path not exercised here"),
+    ),
 ) : CoreRepository {
     var downloadCoreCalls = 0
         private set
@@ -329,7 +419,7 @@ private class FakeCoreRepository(
         coreName: String,
         sha256: String,
         onProgress: (Float) -> Unit,
-    ): Result<String> = Result.failure(UnsupportedOperationException("pinned path not exercised here"))
+    ): Result<String> = hashDownloadResult
 
     override suspend fun getLocalCorePath(coreName: String): String? = local
 

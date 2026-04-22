@@ -40,6 +40,42 @@ class SessionDetailViewModel(
             SessionDetailIntent.DismissDeleteConfirm -> _state.update { it.copy(showDeleteConfirm = false) }
             SessionDetailIntent.DismissError -> _state.update { it.copy(error = null) }
             SessionDetailIntent.DismissSuccess -> _state.update { it.copy(successMessage = null) }
+            is SessionDetailIntent.UnlockCoreVersion -> unlockCoreVersion(intent.sessionId)
+        }
+    }
+
+    private fun unlockCoreVersion(sessionId: String) {
+        // Optimistic: flip the chip off immediately so the tap feels
+        // responsive on slow connections. Revert in onFailure — matches
+        // the pattern established by `toggleCheatsEnabled` below.
+        val previousSession = _state.value.session
+        if (previousSession != null && previousSession.id == sessionId) {
+            _state.update {
+                it.copy(session = previousSession.copy(userLockedCoreVersion = false))
+            }
+        }
+        scope.launch(dispatchers.io) {
+            sessionRepository.updateSessionCoreFlags(
+                sessionId = sessionId,
+                userLockedCoreVersion = false,
+            ).fold(
+                onSuccess = { updated ->
+                    _state.update {
+                        it.copy(
+                            session = updated,
+                            successMessage = "Lock cleared. We'll check for a newer core next time you play.",
+                        )
+                    }
+                },
+                onFailure = { error ->
+                    _state.update {
+                        it.copy(
+                            session = previousSession,
+                            error = error.message,
+                        )
+                    }
+                },
+            )
         }
     }
 

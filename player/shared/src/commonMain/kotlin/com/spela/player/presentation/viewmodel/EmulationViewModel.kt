@@ -292,19 +292,20 @@ class EmulationViewModel(
                 }
             }
 
-            // #672 core-upgrade decision — Sheet A resolution
+            // #672 core-upgrade decision — Sheet A/B resolution
             EmulationIntent.ResolveCoreDecisionTry -> resolveCoreDecision(RehearsalEntry.Try)
             EmulationIntent.ResolveCoreDecisionKeepNew -> resolveCoreDecision(RehearsalEntry.KeepNew)
             EmulationIntent.ResolveCoreDecisionLockOld -> resolveCoreDecision(RehearsalEntry.LockOld)
             EmulationIntent.ResolveCoreDecisionRemindLater -> resolveCoreDecision(RehearsalEntry.RemindLater)
+            EmulationIntent.ResolveCoreDecisionStartFresh -> resolveCoreDecision(RehearsalEntry.StartFresh)
         }
     }
 
     /**
-     * Classifies the user's Sheet A choice so [resolveCoreDecision]
+     * Classifies the user's Sheet A/B choice so [resolveCoreDecision]
      * can branch without duplicating side effects for each intent.
      */
-    private enum class RehearsalEntry { Try, KeepNew, LockOld, RemindLater }
+    private enum class RehearsalEntry { Try, KeepNew, LockOld, RemindLater, StartFresh }
 
     /**
      * Applies the side effects of a Sheet A choice (rehearsal mode,
@@ -326,6 +327,7 @@ class EmulationViewModel(
         _state.update { it.copy(coreDecision = null) }
 
         scope.launch(dispatchers.io) {
+            var refiredIntent = pending.copy(skipCoreDecisionPrompt = true)
             when (entry) {
                 RehearsalEntry.Try -> saveManager.rehearsalMode = true
                 RehearsalEntry.KeepNew,
@@ -348,9 +350,21 @@ class EmulationViewModel(
                         }
                     }
                 }
+                RehearsalEntry.StartFresh -> {
+                    saveManager.rehearsalMode = false
+                    saveManager.setSessionAutoLoadSuppressed(
+                        pending.sessionId,
+                        suppressed = true,
+                    )
+                    // Locally also skip the auto-load so this launch
+                    // doesn't try to restore the stale save state —
+                    // the server flag caught on next launch, this
+                    // one needs an immediate runtime override.
+                    refiredIntent = refiredIntent.copy(skipAutoLoad = true)
+                }
             }
             withContext(dispatchers.main) {
-                onIntent(pending.copy(skipCoreDecisionPrompt = true))
+                onIntent(refiredIntent)
             }
         }
     }
@@ -572,6 +586,39 @@ class EmulationViewModel(
                         netplaySessionId != null
                             || sharedSessionId != null
                             || challengeId != null
+                    if (prepared.decisionKind == com.spela.player.domain.usecase.DecisionKind.PinPruned
+                        && !suppressForSpecialMode
+                    ) {
+                        pendingCoreDecisionStart = EmulationIntent.StartGame(
+                            gameId = gameId,
+                            sharedSessionId = sharedSessionId,
+                            turnToken = turnToken,
+                            netplaySessionId = netplaySessionId,
+                            netplayLocalPort = netplayLocalPort,
+                            netplayInputDelay = netplayInputDelay,
+                            netplayIsHost = netplayIsHost,
+                            challengeId = challengeId,
+                            challengeSaveData = challengeSaveDataArg,
+                            skipAutoLoad = skipAutoLoad,
+                            forceNewSession = forceNewSession,
+                            sessionId = saveManager.currentSessionId,
+                        )
+                        withContext(dispatchers.main) {
+                            _state.update {
+                                it.copy(
+                                    isLoading = false,
+                                    showCoreMismatchDialog = false,
+                                    coreDecision = com.spela.player.presentation.state.CoreDecision.PinPruned(
+                                        coreName = prepared.coreName,
+                                        coreDisplayName = prepared.coreDisplayName.ifEmpty { prepared.coreName },
+                                        gameTitle = it.gameTitle.ifEmpty { gameId },
+                                        prunedSha = pinnedSha ?: "",
+                                    ),
+                                )
+                            }
+                        }
+                        return@fold
+                    }
                     if (prepared.decisionKind == com.spela.player.domain.usecase.DecisionKind.UpgradeAvailable
                         && !suppressForSpecialMode
                     ) {
