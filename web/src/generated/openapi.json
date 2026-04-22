@@ -4375,6 +4375,9 @@
             "readOnly": true,
             "type": "string"
           },
+          "autoLoadSuppressed": {
+            "type": "boolean"
+          },
           "cheatsEnabled": {
             "type": "boolean"
           },
@@ -4441,6 +4444,9 @@
           "pinnedCoreSha256": {
             "type": "string"
           },
+          "rehearsalCrashPending": {
+            "type": "boolean"
+          },
           "saveCount": {
             "format": "int64",
             "type": "integer"
@@ -4461,6 +4467,9 @@
           "updatedAt": {
             "format": "date-time",
             "type": "string"
+          },
+          "userLockedCoreVersion": {
+            "type": "boolean"
           }
         },
         "required": [
@@ -4476,6 +4485,9 @@
           "screenshotUrl",
           "coreName",
           "pinnedCoreSha256",
+          "userLockedCoreVersion",
+          "autoLoadSuppressed",
+          "rehearsalCrashPending",
           "cheatsEnabled",
           "saveCount",
           "isSharedSession",
@@ -10029,6 +10041,9 @@
             "readOnly": true,
             "type": "string"
           },
+          "autoLoadSuppressed": {
+            "type": "boolean"
+          },
           "cheatsEnabled": {
             "type": "boolean"
           },
@@ -10037,6 +10052,12 @@
           },
           "name": {
             "type": "string"
+          },
+          "rehearsalCrashPending": {
+            "type": "boolean"
+          },
+          "userLockedCoreVersion": {
+            "type": "boolean"
           }
         },
         "type": "object"

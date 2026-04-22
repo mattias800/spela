@@ -6647,6 +6647,7 @@ export interface components {
              * @example https://example.com/api/schemas/GameSessionResponse.json
              */
             readonly $schema?: string;
+            autoLoadSuppressed: boolean;
             cheatsEnabled: boolean;
             coreName: string;
             /** Format: date-time */
@@ -6666,6 +6667,7 @@ export interface components {
             ownerId: string;
             ownerUsername: string;
             pinnedCoreSha256: string;
+            rehearsalCrashPending: boolean;
             /** Format: int64 */
             saveCount: number;
             screenshotUrl: string;
@@ -6674,6 +6676,7 @@ export interface components {
             totalPlayTime: number;
             /** Format: date-time */
             updatedAt: string;
+            userLockedCoreVersion: boolean;
         };
         GameStatsResponse: {
             /**
@@ -8597,9 +8600,12 @@ export interface components {
              * @example https://example.com/api/schemas/UpdateSessionRequest.json
              */
             readonly $schema?: string;
+            autoLoadSuppressed?: boolean;
             cheatsEnabled?: boolean;
             coreName?: string;
             name?: string;
+            rehearsalCrashPending?: boolean;
+            userLockedCoreVersion?: boolean;
         };
         UpdateSessionSaveRequest: {
             /**

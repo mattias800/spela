@@ -24,6 +24,9 @@ const baseSession: GameSession = {
   memberAvatars: [],
   memberUsernames: [],
   pinnedCoreSha256: "",
+  userLockedCoreVersion: false,
+  autoLoadSuppressed: false,
+  rehearsalCrashPending: false,
   createdAt: "2026-02-28T10:00:00Z",
   updatedAt: "2026-03-01T10:00:00Z",
 };

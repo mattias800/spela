@@ -23,6 +23,7 @@ import kotlinx.serialization.encoding.*
 /**
  * 
  *
+ * @param autoLoadSuppressed 
  * @param cheatsEnabled 
  * @param coreName 
  * @param createdAt 
@@ -39,16 +40,20 @@ import kotlinx.serialization.encoding.*
  * @param ownerId 
  * @param ownerUsername 
  * @param pinnedCoreSha256 
+ * @param rehearsalCrashPending 
  * @param saveCount 
  * @param screenshotUrl 
  * @param sharedSessionId 
  * @param totalPlayTime 
  * @param updatedAt 
+ * @param userLockedCoreVersion 
  * @param dollarSchema A URL to the JSON Schema for this object.
  */
 @Serializable
 
 data class GameSessionResponse (
+
+    @SerialName(value = "autoLoadSuppressed") @Required val autoLoadSuppressed: kotlin.Boolean,
 
     @SerialName(value = "cheatsEnabled") @Required val cheatsEnabled: kotlin.Boolean,
 
@@ -82,6 +87,8 @@ data class GameSessionResponse (
 
     @SerialName(value = "pinnedCoreSha256") @Required val pinnedCoreSha256: kotlin.String,
 
+    @SerialName(value = "rehearsalCrashPending") @Required val rehearsalCrashPending: kotlin.Boolean,
+
     @SerialName(value = "saveCount") @Required val saveCount: kotlin.Long,
 
     @SerialName(value = "screenshotUrl") @Required val screenshotUrl: kotlin.String,
@@ -91,6 +98,8 @@ data class GameSessionResponse (
     @SerialName(value = "totalPlayTime") @Required val totalPlayTime: kotlin.Long,
 
     @SerialName(value = "updatedAt") @Required val updatedAt: kotlinx.datetime.Instant,
+
+    @SerialName(value = "userLockedCoreVersion") @Required val userLockedCoreVersion: kotlin.Boolean,
 
     /* A URL to the JSON Schema for this object. */
     @SerialName(value = "\$schema") val dollarSchema: kotlin.String? = null

@@ -836,6 +836,29 @@ type GameSession struct {
 	// this pin so the player can request the exact historical binary via
 	// /api/cores/{id}/download?sha256=… (see #555 Phase 3).
 	PinnedCoreSha256 string `gorm:"size:64" json:"pinnedCoreSha256"`
+
+	// UserLockedCoreVersion is true when the user explicitly locked this
+	// session to PinnedCoreSha256 via the core-upgrade decision UI (issue
+	// #672 sheets A / C / D). Separate from "pin was seeded from the
+	// first save" — a lock always beats the global
+	// User.AutoUpdateCoresEnabled preference; the lock is cleared only
+	// by an explicit unlock from the session detail screen or by
+	// PATCH /api/sessions/{id} with userLockedCoreVersion=false.
+	UserLockedCoreVersion bool `gorm:"default:false" json:"userLockedCoreVersion"`
+
+	// AutoLoadSuppressed is true when the next launch of this session
+	// should skip automatic save-state load (set after the user picked
+	// "Start fresh on the new version" on sheet D, or picks the same
+	// option on sheet B). Cleared on the first successful manual save
+	// written against this session. See #672.
+	AutoLoadSuppressed bool `gorm:"default:false" json:"autoLoadSuppressed"`
+
+	// RehearsalCrashPending is set by the player before entering the
+	// "try with my save" rehearsal mode for this session; it is cleared
+	// on clean resolution of sheet C or D. If the flag is still set on
+	// next app launch we treat that as an app-level crash during
+	// rehearsal and route the user directly to sheet D. See #672.
+	RehearsalCrashPending bool `gorm:"default:false" json:"rehearsalCrashPending"`
 }
 
 // SessionSaveState represents a save state within a game session.
