@@ -87,6 +87,15 @@ const mockSession = {
   memberAvatars: [],
   createdAt: "2026-01-01T00:00:00Z",
   updatedAt: "2026-02-01T10:00:00Z",
+  // #672 PR 5/5 — mirror the server's no-pin wire shape (empty string,
+  // not undefined). GameSessionResponse marks these as required:true,
+  // and the server always sends them. The core-version row must treat
+  // "" as hidden so brand-new sessions don't show a bogus "Core v-"
+  // label.
+  pinnedCoreSha256: "",
+  userLockedCoreVersion: false,
+  autoLoadSuppressed: false,
+  rehearsalCrashPending: false,
 };
 
 // Save IDs are stringified uints on the wire (see server response.go
@@ -360,5 +369,69 @@ describe("SessionDetailPage", () => {
     expect(
       screen.getByText(/Cheats are disabled for this session\. 3 cheats available\./i),
     ).toBeInTheDocument();
+  });
+
+  // ── #672 core-version read-only row ─────────────────────────────
+
+  describe("core version row (#672)", () => {
+    it("does not render when the session has no pinned sha", () => {
+      // Baseline: brand-new session, never saved. Row must stay hidden
+      // so the header doesn't show a nonsense "Core v-" label.
+      renderPage();
+      expect(
+        screen.queryByTestId("session-core-version"),
+      ).not.toBeInTheDocument();
+    });
+
+    it("shows 'Core v-{abbrev}' when the session has a pinned sha", () => {
+      mockUseSession.mockReturnValue({
+        data: {
+          ...mockSession,
+          pinnedCoreSha256: "a3f912b400000000000000000000000000000000000000000000000000000000",
+          coreName: "snes9x",
+        },
+        isLoading: false,
+      });
+      renderPage();
+      const row = screen.getByTestId("session-core-version");
+      expect(row).toBeInTheDocument();
+      // Abbreviation rule: first 4 hex chars, lowercased, real hyphen.
+      expect(row).toHaveTextContent("Core v-a3f9");
+      // Locked badge must NOT appear when the lock flag is off/absent.
+      expect(row).not.toHaveTextContent(/locked/i);
+    });
+
+    it("shows the Locked badge when userLockedCoreVersion is true", () => {
+      mockUseSession.mockReturnValue({
+        data: {
+          ...mockSession,
+          pinnedCoreSha256: "a3f912b400000000000000000000000000000000000000000000000000000000",
+          userLockedCoreVersion: true,
+          coreName: "snes9x",
+        },
+        isLoading: false,
+      });
+      renderPage();
+      const row = screen.getByTestId("session-core-version");
+      expect(row).toHaveTextContent("Core v-a3f9");
+      expect(row).toHaveTextContent(/locked/i);
+    });
+
+    it("lowercases uppercase hex in the abbreviation", () => {
+      // Server normally returns lowercase hex but the abbreviation
+      // must be defensive against uppercase input so the label is
+      // stable regardless of source.
+      mockUseSession.mockReturnValue({
+        data: {
+          ...mockSession,
+          pinnedCoreSha256: "ABCDEF0100000000000000000000000000000000000000000000000000000000",
+        },
+        isLoading: false,
+      });
+      renderPage();
+      expect(
+        screen.getByTestId("session-core-version"),
+      ).toHaveTextContent("Core v-abcd");
+    });
   });
 });

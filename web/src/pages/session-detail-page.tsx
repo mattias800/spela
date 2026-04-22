@@ -10,6 +10,7 @@ import {
   Layers,
   Save,
   AlertTriangle,
+  Cpu,
   Copy,
 } from "lucide-react";
 import {
@@ -245,7 +246,7 @@ export function SessionDetailPage() {
               </Button>
             </h1>
           )}
-          <div className="flex items-center gap-3 mt-2 text-sm text-surface-400">
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-2 text-sm text-surface-400">
             {game && (
               <Link
                 to={`/games/${game.id}`}
@@ -266,6 +267,46 @@ export function SessionDetailPage() {
                 <Zap className="h-3.5 w-3.5" />
                 Cheats
               </span>
+            )}
+            {/*
+              #672 PR 5/5 — read-only "Core version" indicator. The web
+              doesn't drive the decision flow (that's player-app scope);
+              this is surfaced so users can see *which* historical core
+              their session is pinned to and whether the lock is active.
+              Abbreviation rule from the spec: v-{first 4 hex chars},
+              real hyphen. Hidden when the session has no pin yet.
+            */}
+            {session.pinnedCoreSha256 && (
+              (() => {
+                const abbrev = session.pinnedCoreSha256.slice(0, 4).toLowerCase();
+                const ariaLabel = session.coreName
+                  ? `Pinned core ${session.coreName} version v-${abbrev}${
+                      session.userLockedCoreVersion ? " (locked)" : ""
+                    }`
+                  : `Pinned core version v-${abbrev}${
+                      session.userLockedCoreVersion ? " (locked)" : ""
+                    }`;
+                return (
+                  <span
+                    className="flex items-center gap-1"
+                    data-testid="session-core-version"
+                    aria-label={ariaLabel}
+                    title={
+                      session.coreName
+                        ? `Pinned core: ${session.coreName} (sha256: ${session.pinnedCoreSha256})`
+                        : `Pinned sha256: ${session.pinnedCoreSha256}`
+                    }
+                  >
+                    <Cpu className="h-3.5 w-3.5" aria-hidden="true" />
+                    <span>Core v-{abbrev}</span>
+                    {session.userLockedCoreVersion && (
+                      <Badge variant="default" className="ml-1">
+                        Locked
+                      </Badge>
+                    )}
+                  </span>
+                );
+              })()
             )}
           </div>
         </div>
