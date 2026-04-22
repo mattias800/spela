@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/danielgtaylor/huma/v2"
@@ -24,6 +25,7 @@ type SessionSaveUploadBody struct {
 	Screenshot huma.FormFile `form:"screenshot" required:"false" contentType:"application/octet-stream" doc:"Optional screenshot to attach to the save (typically PNG/JPEG)."`
 	Name       string        `form:"name" required:"false" doc:"Display name for the save (defaults to the uploaded filename)."`
 	CoreName   string        `form:"coreName" required:"false" doc:"Identifier of the libretro core that produced the save."`
+	CoreSha256 string        `form:"coreSha256" required:"false" doc:"Hex sha256 of the core binary that produced this save state. Optional — the server records it alongside the save for diagnostics and future rollback UX. Invalid values (not 64 hex chars) are silently dropped. See #555 Phase 3."`
 }
 
 // SessionSaveUploadInput wraps the path parameter and multipart body for
@@ -210,6 +212,7 @@ func (h *SessionHandler) HumaUploadSessionSave(ctx context.Context, in *SessionS
 		FileSize:      size,
 		ScreenshotURL: screenshotURL,
 		CoreName:      body.CoreName,
+		CoreSha256:    sanitizeCoreSha256(body.CoreSha256),
 		IsAuto:        false,
 	}
 	if err := h.DB.Create(&rec).Error; err != nil {
@@ -264,6 +267,7 @@ func (h *SessionHandler) HumaUploadAutoSave(ctx context.Context, in *SessionAuto
 		FileSize:      size,
 		ScreenshotURL: screenshotURL,
 		CoreName:      body.CoreName,
+		CoreSha256:    sanitizeCoreSha256(body.CoreSha256),
 		IsAuto:        true,
 		IsCurrent:     true,
 	}
@@ -337,6 +341,7 @@ func (h *SessionHandler) HumaUpsertSlotSave(ctx context.Context, in *SessionSlot
 			FileSize:      size,
 			ScreenshotURL: screenshotURL,
 			CoreName:      body.CoreName,
+			CoreSha256:    sanitizeCoreSha256(body.CoreSha256),
 			IsAuto:        false,
 			Slot:          &slotNum,
 		}
@@ -346,6 +351,7 @@ func (h *SessionHandler) HumaUpsertSlotSave(ctx context.Context, in *SessionSlot
 		rec.FileSize = size
 		rec.ScreenshotURL = screenshotURL
 		rec.CoreName = body.CoreName
+		rec.CoreSha256 = sanitizeCoreSha256(body.CoreSha256)
 		h.DB.Save(&rec)
 	}
 
@@ -451,6 +457,19 @@ func (h *SessionHandler) touchSessionAfterUpload(session db.GameSession, uid uin
 		updates["pinned_core_sha256"] = sha
 	}
 	h.DB.Model(&session).Updates(updates)
+}
+
+// sanitizeCoreSha256 accepts the raw coreSha256 string from a save
+// upload body and returns the lowercase hex form if it's a valid
+// 64-char hex sha256. Anything malformed (wrong length, non-hex
+// characters, whitespace) is silently dropped to "" — the field is
+// diagnostic metadata, so we prefer "no value" over a 400 that would
+// reject the whole save. See #555 Phase 3.
+func sanitizeCoreSha256(raw string) string {
+	if !isValidSha256Hex(raw) {
+		return ""
+	}
+	return strings.ToLower(raw)
 }
 
 // pinSessionCoreSha256 returns the sha256 to persist into

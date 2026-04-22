@@ -996,6 +996,11 @@ type SessionSaveResponse struct {
 	IsAuto        bool      `json:"isAuto"`
 	IsCurrent     bool      `json:"isCurrent"`
 	CoreName      string    `json:"coreName"`
+	// Hex sha256 of the core binary that produced this save state.
+	// Empty when the player didn't supply one. Used for diagnostics
+	// (matching a failing load to the exact core binary that wrote
+	// the save) and future rollback UX. See #555 Phase 3.
+	CoreSha256    string    `json:"coreSha256"`
 	CoreMatch     *bool     `json:"coreMatch"`
 	CurrentCore   string    `json:"currentCore"`
 	Notes         string    `json:"notes"`

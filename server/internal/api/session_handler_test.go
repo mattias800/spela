@@ -1397,6 +1397,84 @@ func uploadSessionSaveWithCore(t *testing.T, router http.Handler, token, session
 	return resp
 }
 
+// uploadSessionSaveWithCoreAndSha drives the save-upload endpoint with
+// both coreName and coreSha256 fields, used by the #555 Phase 3 tests
+// that pin the save→core fingerprint wire contract.
+func uploadSessionSaveWithCoreAndSha(t *testing.T, router http.Handler, token, sessionID, name, coreName, coreSha256 string, data []byte) map[string]interface{} {
+	t.Helper()
+	var buf bytes.Buffer
+	writer := multipart.NewWriter(&buf)
+	writer.WriteField("name", name)
+	if coreName != "" {
+		writer.WriteField("coreName", coreName)
+	}
+	if coreSha256 != "" {
+		writer.WriteField("coreSha256", coreSha256)
+	}
+	part, _ := writer.CreateFormFile("save", "state.sav")
+	part.Write(data)
+	writer.Close()
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("POST", "/api/sessions/"+sessionID+"/saves", &buf)
+	req.Header.Set("Authorization", "Bearer "+token)
+	req.Header.Set("Content-Type", writer.FormDataContentType())
+	router.ServeHTTP(w, req)
+	require.Equal(t, http.StatusCreated, w.Code, "upload save failed: %s", w.Body.String())
+
+	var resp map[string]interface{}
+	json.Unmarshal(w.Body.Bytes(), &resp)
+	return resp
+}
+
+// TestSaveUpload_CoreSha256Roundtrip verifies that a client-supplied
+// coreSha256 is persisted on the SessionSaveState row and surfaced on
+// the upload response — the full wire round-trip the player will rely
+// on for future rollback UX. See #555 Phase 3.
+func TestSaveUpload_CoreSha256Roundtrip(t *testing.T) {
+	env := setupSessionTestEnv(t)
+	created := createGameSession(t, env.router, env.token, env.gameID, "Roundtrip")
+	sessionID := created["id"].(string)
+
+	// Valid lowercase 64-char hex sha → must be persisted as-is.
+	const sha = "1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef"
+	resp := uploadSessionSaveWithCoreAndSha(t, env.router, env.token, sessionID, "Pinned", "nestopia", sha, []byte("data"))
+	assert.Equal(t, sha, resp["coreSha256"])
+}
+
+// TestSaveUpload_CoreSha256UppercaseNormalized verifies that a valid
+// sha256 supplied in uppercase hex is normalised to lowercase before
+// persistence. The spec calls for lowercase; normalising defensively
+// means a player with a MessageDigest.toHex-style helper doesn't
+// silently produce mismatches against the lower-case history-path
+// layout on disk.
+func TestSaveUpload_CoreSha256UppercaseNormalized(t *testing.T) {
+	env := setupSessionTestEnv(t)
+	created := createGameSession(t, env.router, env.token, env.gameID, "UpperCase")
+	sessionID := created["id"].(string)
+
+	upper := "ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789"
+	lower := "abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789"
+	resp := uploadSessionSaveWithCoreAndSha(t, env.router, env.token, sessionID, "Mixed", "nestopia", upper, []byte("data"))
+	assert.Equal(t, lower, resp["coreSha256"])
+}
+
+// TestSaveUpload_CoreSha256InvalidDropped verifies that malformed
+// coreSha256 values (wrong length, non-hex characters, whitespace) are
+// silently dropped to the empty string rather than failing the whole
+// upload. The field is diagnostic metadata — we'd rather lose the tag
+// than reject a save the user just wrote.
+func TestSaveUpload_CoreSha256InvalidDropped(t *testing.T) {
+	env := setupSessionTestEnv(t)
+	created := createGameSession(t, env.router, env.token, env.gameID, "Invalid")
+	sessionID := created["id"].(string)
+
+	for _, bad := range []string{"", "not-hex-at-all", "short", "  abcdef0123456789abcdef0123456789abcdef0123456789abcdef012345  "} {
+		resp := uploadSessionSaveWithCoreAndSha(t, env.router, env.token, sessionID, "Bad", "nestopia", bad, []byte("x"))
+		assert.Empty(t, resp["coreSha256"], "invalid coreSha256 %q must be dropped to empty", bad)
+	}
+}
+
 func TestSaveResponse_CoreMatch_Matching(t *testing.T) {
 	env := setupSessionTestEnv(t)
 

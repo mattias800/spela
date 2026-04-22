@@ -791,19 +791,21 @@ open class SessionsApi : ApiClient {
      * Stores an auto-save for the session and returns the resulting save record. Older auto-saves beyond the retention limit are pruned. Optionally attaches a screenshot.
      * @param id Session ID.
      * @param coreName Identifier of the libretro core that produced the save. (optional)
+     * @param coreSha256 Hex sha256 of the core binary that produced this save state. Optional — the server records it alongside the save for diagnostics and future rollback UX. Invalid values (not 64 hex chars) are silently dropped. See #555 Phase 3. (optional)
      * @param name Display name for the save (defaults to the uploaded filename). (optional)
      * @param save Save state file. Required. (optional)
      * @param screenshot Optional screenshot to attach to the save (typically PNG/JPEG). (optional)
      * @return SessionSaveResponse
      */
     @Suppress("UNCHECKED_CAST")
-    open suspend fun uploadAutoSave(id: kotlin.String, coreName: kotlin.String? = null, name: kotlin.String? = null, save: io.ktor.client.request.forms.FormPart<io.ktor.client.request.forms.InputProvider>? = null, screenshot: io.ktor.client.request.forms.FormPart<io.ktor.client.request.forms.InputProvider>? = null): HttpResponse<SessionSaveResponse> {
+    open suspend fun uploadAutoSave(id: kotlin.String, coreName: kotlin.String? = null, coreSha256: kotlin.String? = null, name: kotlin.String? = null, save: io.ktor.client.request.forms.FormPart<io.ktor.client.request.forms.InputProvider>? = null, screenshot: io.ktor.client.request.forms.FormPart<io.ktor.client.request.forms.InputProvider>? = null): HttpResponse<SessionSaveResponse> {
 
         val localVariableAuthNames = listOf<String>()
 
         val localVariableBody = 
             formData {
                 coreName?.apply { append("coreName", coreName) }
+                coreSha256?.apply { append("coreSha256", coreSha256) }
                 name?.apply { append("name", name) }
                 save?.apply { append(save) }
                 screenshot?.apply { append(screenshot) }
@@ -869,19 +871,21 @@ open class SessionsApi : ApiClient {
      * Stores a manual save state for the session and returns the resulting save record. Optionally attaches a screenshot.
      * @param id Session ID.
      * @param coreName Identifier of the libretro core that produced the save. (optional)
+     * @param coreSha256 Hex sha256 of the core binary that produced this save state. Optional — the server records it alongside the save for diagnostics and future rollback UX. Invalid values (not 64 hex chars) are silently dropped. See #555 Phase 3. (optional)
      * @param name Display name for the save (defaults to the uploaded filename). (optional)
      * @param save Save state file. Required. (optional)
      * @param screenshot Optional screenshot to attach to the save (typically PNG/JPEG). (optional)
      * @return SessionSaveResponse
      */
     @Suppress("UNCHECKED_CAST")
-    open suspend fun uploadSessionSave(id: kotlin.String, coreName: kotlin.String? = null, name: kotlin.String? = null, save: io.ktor.client.request.forms.FormPart<io.ktor.client.request.forms.InputProvider>? = null, screenshot: io.ktor.client.request.forms.FormPart<io.ktor.client.request.forms.InputProvider>? = null): HttpResponse<SessionSaveResponse> {
+    open suspend fun uploadSessionSave(id: kotlin.String, coreName: kotlin.String? = null, coreSha256: kotlin.String? = null, name: kotlin.String? = null, save: io.ktor.client.request.forms.FormPart<io.ktor.client.request.forms.InputProvider>? = null, screenshot: io.ktor.client.request.forms.FormPart<io.ktor.client.request.forms.InputProvider>? = null): HttpResponse<SessionSaveResponse> {
 
         val localVariableAuthNames = listOf<String>()
 
         val localVariableBody = 
             formData {
                 coreName?.apply { append("coreName", coreName) }
+                coreSha256?.apply { append("coreSha256", coreSha256) }
                 name?.apply { append("name", name) }
                 save?.apply { append(save) }
                 screenshot?.apply { append(screenshot) }
@@ -912,19 +916,21 @@ open class SessionsApi : ApiClient {
      * @param id Session ID.
      * @param slot Slot number 1-10.
      * @param coreName Identifier of the libretro core that produced the save. (optional)
+     * @param coreSha256 Hex sha256 of the core binary that produced this save state. Optional — the server records it alongside the save for diagnostics and future rollback UX. Invalid values (not 64 hex chars) are silently dropped. See #555 Phase 3. (optional)
      * @param name Display name for the save (defaults to the uploaded filename). (optional)
      * @param save Save state file. Required. (optional)
      * @param screenshot Optional screenshot to attach to the save (typically PNG/JPEG). (optional)
      * @return SessionSaveResponse
      */
     @Suppress("UNCHECKED_CAST")
-    open suspend fun upsertSlotSave(id: kotlin.String, slot: kotlin.String, coreName: kotlin.String? = null, name: kotlin.String? = null, save: io.ktor.client.request.forms.FormPart<io.ktor.client.request.forms.InputProvider>? = null, screenshot: io.ktor.client.request.forms.FormPart<io.ktor.client.request.forms.InputProvider>? = null): HttpResponse<SessionSaveResponse> {
+    open suspend fun upsertSlotSave(id: kotlin.String, slot: kotlin.String, coreName: kotlin.String? = null, coreSha256: kotlin.String? = null, name: kotlin.String? = null, save: io.ktor.client.request.forms.FormPart<io.ktor.client.request.forms.InputProvider>? = null, screenshot: io.ktor.client.request.forms.FormPart<io.ktor.client.request.forms.InputProvider>? = null): HttpResponse<SessionSaveResponse> {
 
         val localVariableAuthNames = listOf<String>()
 
         val localVariableBody = 
             formData {
                 coreName?.apply { append("coreName", coreName) }
+                coreSha256?.apply { append("coreSha256", coreSha256) }
                 name?.apply { append("name", name) }
                 save?.apply { append(save) }
                 screenshot?.apply { append(screenshot) }

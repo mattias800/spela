@@ -7893,6 +7893,7 @@ export interface components {
             readonly $schema?: string;
             coreMatch: boolean | null;
             coreName: string;
+            coreSha256: string;
             /** Format: date-time */
             createdAt: string;
             currentCore: string;
@@ -15576,6 +15577,8 @@ export interface operations {
                 "multipart/form-data": {
                     /** @description Identifier of the libretro core that produced the save. */
                     coreName?: string;
+                    /** @description Hex sha256 of the core binary that produced this save state. Optional — the server records it alongside the save for diagnostics and future rollback UX. Invalid values (not 64 hex chars) are silently dropped. See #555 Phase 3. */
+                    coreSha256?: string;
                     /** @description Display name for the save (defaults to the uploaded filename). */
                     name?: string;
                     /**
@@ -15689,6 +15692,8 @@ export interface operations {
                 "multipart/form-data": {
                     /** @description Identifier of the libretro core that produced the save. */
                     coreName?: string;
+                    /** @description Hex sha256 of the core binary that produced this save state. Optional — the server records it alongside the save for diagnostics and future rollback UX. Invalid values (not 64 hex chars) are silently dropped. See #555 Phase 3. */
+                    coreSha256?: string;
                     /** @description Display name for the save (defaults to the uploaded filename). */
                     name?: string;
                     /**
@@ -15774,6 +15779,8 @@ export interface operations {
                 "multipart/form-data": {
                     /** @description Identifier of the libretro core that produced the save. */
                     coreName?: string;
+                    /** @description Hex sha256 of the core binary that produced this save state. Optional — the server records it alongside the save for diagnostics and future rollback UX. Invalid values (not 64 hex chars) are silently dropped. See #555 Phase 3. */
+                    coreSha256?: string;
                     /** @description Display name for the save (defaults to the uploaded filename). */
                     name?: string;
                     /**
