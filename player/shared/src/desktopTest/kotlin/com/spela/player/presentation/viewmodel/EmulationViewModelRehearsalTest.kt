@@ -154,7 +154,12 @@ class EmulationViewModelRehearsalTest {
     }
 
     @Test
-    fun crashDismissClosesSheetDWithoutTouchingServerFlags() = runTest {
+    fun crashDismissWithoutSessionClearsSheetAndSkipsServerWrite() = runTest {
+        // Defensive path: the rehearsal flow shouldn't enter without a
+        // session, but if RehearsalCrashed somehow fires from a
+        // session-less context, dismissing must still clear the sheet
+        // — and the SaveManager helper short-circuits at the null
+        // sessionId guard, so no flag write is attempted.
         val vm = builder.build()
         vm.onIntent(EmulationIntent.RehearsalCrashed("nestopia", "Nestopia UE"))
         builder.advanceTimeBy(50)
@@ -163,10 +168,80 @@ class EmulationViewModelRehearsalTest {
         builder.advanceTimeBy(50)
 
         assertNull(vm.state.value.coreDecision,
-            "CrashDismiss must clear the sheet so the user lands on the (crashed) emulator and can quit normally",
+            "CrashDismiss must clear the sheet so the in-game surface is reachable",
         )
         assertEquals(0, builder.sessionRepository.updateSessionCoreFlagsCalls.size,
-            "CrashDismiss must not write any server flags — it's a 'try again later' close",
+            "Without a sessionId the SaveManager helper short-circuits — no flag write reaches the server",
+        )
+    }
+
+    // ── Launch-time crash recovery (rehearsalCrashPending intercept) ──
+
+    @Test
+    fun launchTimeCrashDismissNavigatesAwayInsteadOfStrandingTheUser() = runTest {
+        // Launch-time intercept: sentinel is true, Sheet D shows, the
+        // user picks "Just go back". There's no running emulator to
+        // resume — we must signal navigation via requestExit so the
+        // user doesn't end up on a blank EmulationScreen with no
+        // affordance to leave.
+        builder.sessionRepository.existingSessions = listOf(
+            com.spela.player.domain.model.GameSession(
+                id = "s1",
+                gameId = "g1",
+                name = "Crashed run",
+                rehearsalCrashPending = true,
+            ),
+        )
+
+        val vm = builder.build()
+        vm.onIntent(EmulationIntent.StartGame(gameId = "g1", sessionId = "s1"))
+        builder.advanceTimeBy(500)
+        // Precondition — Sheet D is visible, game never ran.
+        assertTrue(
+            vm.state.value.coreDecision is com.spela.player.presentation.state.CoreDecision.RehearsalCrashed,
+        )
+        assertFalse(vm.state.value.isRunning,
+            "the game never reached the running state — this is the launch-time intercept path",
+        )
+
+        vm.onIntent(EmulationIntent.RehearsalCrashDismiss)
+        builder.advanceTimeBy(100)
+
+        assertNull(vm.state.value.coreDecision)
+        assertTrue(vm.state.value.requestExit,
+            "launch-time CrashDismiss must request an exit so the user navigates back instead of being stranded",
+        )
+    }
+
+    @Test
+    fun launchTimeCrashSentinelInterceptsStartGameAndShowsSheetD() = runTest {
+        // Simulate a previous rehearsal run that died — the server
+        // session record carries rehearsalCrashPending=true. When the
+        // user taps Play, the VM must intercept BEFORE loadCore and
+        // surface CoreDecision.RehearsalCrashed so the UI renders
+        // Sheet D.
+        builder.sessionRepository.existingSessions = listOf(
+            com.spela.player.domain.model.GameSession(
+                id = "s1",
+                gameId = "g1",
+                name = "Crashed run",
+                rehearsalCrashPending = true,
+            ),
+        )
+
+        val vm = builder.build()
+        vm.onIntent(EmulationIntent.StartGame(gameId = "g1", sessionId = "s1"))
+        builder.advanceTimeBy(500)
+
+        val decision = vm.state.value.coreDecision
+        assertTrue(decision is com.spela.player.presentation.state.CoreDecision.RehearsalCrashed,
+            "Launch with rehearsalCrashPending=true must surface Sheet D — got ${decision?.let { it::class.simpleName }}",
+        )
+        assertFalse(vm.state.value.isLoading,
+            "Sheet D must clear the loading state so the user sees the prompt, not a spinner",
+        )
+        assertEquals(0, builder.libretroController.loadCoreCallCount,
+            "VM must intercept BEFORE loadCore — the previous run might have crashed inside the core",
         )
     }
 

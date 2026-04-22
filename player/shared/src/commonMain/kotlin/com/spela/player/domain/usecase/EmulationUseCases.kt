@@ -30,6 +30,16 @@ enum class DecisionKind {
     PinPruned,
 
     /**
+     * The previous run on this session entered rehearsal mode and the
+     * player process died before reaching a clean Sheet C/D resolution.
+     * Surfaces Sheet D on the next launch so the user can recover. The
+     * sentinel write happens around rehearsal entry / clean exit; see
+     * `SaveManager.setSessionRehearsalCrashPending` and the spec's
+     * §"Crash recovery" for the full lifecycle.
+     */
+    RehearsalCrashed,
+
+    /**
      * The core name was substituted for platform compatibility (macOS
      * Metal, Android variant names). The resulting sha mismatch is
      * legitimate, not an upgrade — the VM must not show Sheet A for
@@ -134,6 +144,7 @@ class PrepareGameUseCase(
         userLockedCoreVersion: Boolean = false,
         sessionHasSaves: Boolean = false,
         skipCoreDecisionPrompt: Boolean = false,
+        rehearsalCrashPending: Boolean = false,
     ): Result<PrepareGameResult> {
         val gamePath = downloadRepository.getLocalGamePath(gameId)
             ?: return Result.failure(IllegalStateException("Game not downloaded"))
@@ -165,6 +176,31 @@ class PrepareGameUseCase(
         // constructed from the substituted name.
         val downloadUrl = if (coreName != core.name) null else core.downloadUrl
         val platformSubstituted = coreName != core.name
+
+        // #672 PR — launch-time crash recovery. If the previous run on
+        // this session entered rehearsal and the player process died
+        // before reaching a clean Sheet C/D resolution, route the user
+        // to Sheet D for that session BEFORE doing any other detection
+        // — the user explicitly needs to acknowledge the crash before
+        // we either retry the new core or fall back to the pinned one.
+        // skipCoreDecisionPrompt is honoured so the resolution
+        // re-launches don't loop back into Sheet D.
+        if (rehearsalCrashPending && !skipCoreDecisionPrompt) {
+            return Result.success(
+                PrepareGameResult(
+                    gamePath = gamePath,
+                    // corePath stays empty — the VM intercepts before
+                    // loadCore is called, and Sheet D's resolution
+                    // re-fires StartGame which re-runs this use case
+                    // with the appropriate skipCoreDecisionPrompt /
+                    // skipAutoLoad flags.
+                    corePath = "",
+                    decisionKind = DecisionKind.RehearsalCrashed,
+                    coreName = coreName,
+                    coreDisplayName = core.displayName.ifEmpty { coreName },
+                ),
+            )
+        }
 
         // #672 core-upgrade decision detection. Runs BEFORE the
         // pinned-core download path so we can give the VM a chance to

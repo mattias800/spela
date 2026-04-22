@@ -63,6 +63,14 @@ data class RehearsalSaveBlocked(val kind: RehearsalSaveKind)
 data class CoreDecisionFlags(
     val pinnedCoreSha256: String?,
     val userLockedCoreVersion: Boolean,
+    /**
+     * When true, the previous run on this session entered rehearsal
+     * mode and the player process didn't reach a clean Sheet C/D
+     * resolution before dying. The next launch must route the user to
+     * Sheet D so they can recover (lock to old / start fresh /
+     * dismiss). Cleared by all of the rehearsal exit handlers.
+     */
+    val rehearsalCrashPending: Boolean = false,
 )
 
 /**
@@ -179,6 +187,7 @@ class SaveManager(
             CoreDecisionFlags(
                 pinnedCoreSha256 = session.pinnedCoreSha256,
                 userLockedCoreVersion = session.userLockedCoreVersion,
+                rehearsalCrashPending = session.rehearsalCrashPending,
             )
         } catch (_: Exception) {
             null

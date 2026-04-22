@@ -361,13 +361,27 @@ class EmulationViewModel(
      * acknowledged the crash here; leaving it set would re-route them
      * to Sheet D on the next launch, which contradicts the "try again
      * later" intent.
+     *
+     * For the launch-time intercept path (sentinel detected before
+     * loadCore was called), there is no running emulator surface to
+     * "go back to" — set [EmulationState.requestExit] so the
+     * EmulationScreen observer navigates away instead of leaving the
+     * user on a blank screen. For the in-session live-crash path the
+     * emulator surface is still visible (just stopped) and the user
+     * can quit normally, so we don't force-exit there.
      */
     private fun rehearsalCrashDismiss() {
         saveManager.rehearsalMode = false
-        val sessionId = _state.value.sessionId
-        _state.update { it.copy(coreDecision = null) }
+        val snapshot = _state.value
+        val isLaunchTimeIntercept = !snapshot.isRunning
+        _state.update {
+            it.copy(
+                coreDecision = null,
+                requestExit = it.requestExit || isLaunchTimeIntercept,
+            )
+        }
         scope.launch(dispatchers.io) {
-            saveManager.setSessionRehearsalCrashPending(sessionId, pending = false)
+            saveManager.setSessionRehearsalCrashPending(snapshot.sessionId, pending = false)
         }
     }
 
@@ -814,6 +828,7 @@ class EmulationViewModel(
             val flags = saveManager.coreDecisionFlagsFor(saveManager.currentSessionId)
             val pinnedSha = flags?.pinnedCoreSha256
             val userLocked = flags?.userLockedCoreVersion ?: false
+            val crashPending = flags?.rehearsalCrashPending ?: false
             val hasSaves = saveManager.sessionSaveCount(saveManager.currentSessionId) > 0
             prepareGameUseCase(
                 gameId,
@@ -822,6 +837,7 @@ class EmulationViewModel(
                 userLockedCoreVersion = userLocked,
                 sessionHasSaves = hasSaves,
                 skipCoreDecisionPrompt = skipCoreDecisionPrompt,
+                rehearsalCrashPending = crashPending,
             ).fold(
                 onSuccess = { prepared ->
                     val gamePath = prepared.gamePath
@@ -842,6 +858,45 @@ class EmulationViewModel(
                         netplaySessionId != null
                             || sharedSessionId != null
                             || challengeId != null
+                    // #672 launch-time crash recovery — Sheet D fires
+                    // BEFORE Sheets A/B because the user explicitly
+                    // needs to acknowledge the crash before any other
+                    // upgrade/lock decision applies. The existing
+                    // `rehearsalCrashStartFresh` / `rehearsalLockOld` /
+                    // `rehearsalCrashDismiss` handlers in this VM
+                    // already clear the sentinel and re-fire StartGame
+                    // with the right skipAutoLoad / skipCoreDecisionPrompt.
+                    if (prepared.decisionKind == com.spela.player.domain.usecase.DecisionKind.RehearsalCrashed
+                        && !suppressForSpecialMode
+                    ) {
+                        pendingCoreDecisionStart = EmulationIntent.StartGame(
+                            gameId = gameId,
+                            sharedSessionId = sharedSessionId,
+                            turnToken = turnToken,
+                            netplaySessionId = netplaySessionId,
+                            netplayLocalPort = netplayLocalPort,
+                            netplayInputDelay = netplayInputDelay,
+                            netplayIsHost = netplayIsHost,
+                            challengeId = challengeId,
+                            challengeSaveData = challengeSaveDataArg,
+                            skipAutoLoad = skipAutoLoad,
+                            forceNewSession = forceNewSession,
+                            sessionId = saveManager.currentSessionId,
+                        )
+                        withContext(dispatchers.main) {
+                            _state.update {
+                                it.copy(
+                                    isLoading = false,
+                                    showCoreMismatchDialog = false,
+                                    coreDecision = com.spela.player.presentation.state.CoreDecision.RehearsalCrashed(
+                                        coreName = prepared.coreName,
+                                        coreDisplayName = prepared.coreDisplayName.ifEmpty { prepared.coreName },
+                                    ),
+                                )
+                            }
+                        }
+                        return@fold
+                    }
                     if (prepared.decisionKind == com.spela.player.domain.usecase.DecisionKind.PinPruned
                         && !suppressForSpecialMode
                     ) {
