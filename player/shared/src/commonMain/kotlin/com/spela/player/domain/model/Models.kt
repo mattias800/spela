@@ -770,6 +770,27 @@ data class GameSession(
      * it will be set on the first save.
      */
     val pinnedCoreSha256: String? = null,
+    /**
+     * True when the user explicitly locked this session to
+     * [pinnedCoreSha256] via the core-upgrade decision UI. The lock
+     * always beats the global auto-update preference and short-circuits
+     * the pre-play decision sheet on subsequent launches. See #672.
+     */
+    val userLockedCoreVersion: Boolean = false,
+    /**
+     * True when the next launch of this session should skip automatic
+     * save-state load (set after the user picked "Start fresh on the
+     * new version" on Sheet B / D). Cleared on first successful manual
+     * save. See #672.
+     */
+    val autoLoadSuppressed: Boolean = false,
+    /**
+     * Sentinel set by the player around the rehearsal flow. A `true`
+     * value surviving an app relaunch signals that the previous
+     * rehearsal ended in a crash so the UI can route the user to
+     * Sheet D after session restore. See #672.
+     */
+    val rehearsalCrashPending: Boolean = false,
 )
 
 data class SessionCheatConfig(

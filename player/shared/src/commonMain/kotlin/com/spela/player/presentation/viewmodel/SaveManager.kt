@@ -10,7 +10,10 @@ import com.spela.player.presentation.state.SecondaryToastData
 import com.spela.player.presentation.state.SecondaryToastType
 import com.spela.player.util.DispatcherProvider
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -36,6 +39,22 @@ sealed class AutoLoadResult {
 }
 
 /**
+ * Classifies a save attempt that was intercepted while the SaveManager
+ * was in rehearsal mode (#672 "Try with my save" flow). The UI
+ * subscribes to these events to surface the
+ * `core_upd.snack.rehearsal_save` snackbar.
+ */
+enum class RehearsalSaveKind { Manual, Auto, Slot, Sram }
+
+/**
+ * Event emitted every time [SaveManager] silently drops a save write
+ * because [SaveManager.rehearsalMode] is active. The UI shows the
+ * "You're in a trial run — saves are paused until you keep this
+ * version" snackbar in response.
+ */
+data class RehearsalSaveBlocked(val kind: RehearsalSaveKind)
+
+/**
  * Manages all save-related operations: SRAM load/save, auto-save/load,
  * and manual save/load state. All operations are session-scoped.
  * When no session is active, operations are silently skipped.
@@ -55,6 +74,40 @@ class SaveManager(
 
     /** The active session ID. When null, save/load operations are no-ops. */
     var currentSessionId: String? = null
+
+    /**
+     * When true, every save-upload path in this manager silently drops
+     * the write and emits a [RehearsalSaveBlocked] event on
+     * [rehearsalSaveBlocked]. Used by the #672 "Try with my save"
+     * rehearsal flow: the user tries the new core binary against an
+     * existing save without risking the durable save file on disk.
+     *
+     * Game-state save/load via the libretro controller is unaffected —
+     * only the server-upload side is suppressed. The emulator's RAM
+     * state continues normally for the rehearsal's lifetime.
+     */
+    var rehearsalMode: Boolean = false
+
+    private val _rehearsalSaveBlocked = MutableSharedFlow<RehearsalSaveBlocked>(
+        extraBufferCapacity = 8,
+    )
+
+    /**
+     * Stream of save-write events that were silently dropped because
+     * [rehearsalMode] was active. See #672.
+     */
+    val rehearsalSaveBlocked: SharedFlow<RehearsalSaveBlocked> =
+        _rehearsalSaveBlocked.asSharedFlow()
+
+    /**
+     * Called from every upload call site while [rehearsalMode] is true
+     * so the UI can surface the `core_upd.snack.rehearsal_save`
+     * snackbar. tryEmit is used (not emit) so the call site stays
+     * non-suspending from the save-state-save path.
+     */
+    private fun emitRehearsalBlocked(kind: RehearsalSaveKind) {
+        _rehearsalSaveBlocked.tryEmit(RehearsalSaveBlocked(kind))
+    }
 
     /**
      * Ensures a session exists for the given game. If sessionId is already set,
@@ -130,6 +183,10 @@ class SaveManager(
      * the save directory and uploading that instead.
      */
     suspend fun saveSramOnStop(gameId: String) {
+        if (rehearsalMode) {
+            emitRehearsalBlocked(RehearsalSaveKind.Sram)
+            return
+        }
         try {
             val sessionId = currentSessionId ?: return
 
@@ -220,6 +277,10 @@ class SaveManager(
      * Called from within an IO coroutine.
      */
     suspend fun autoSaveOnStop(gameId: String) {
+        if (rehearsalMode) {
+            emitRehearsalBlocked(RehearsalSaveKind.Auto)
+            return
+        }
         try {
             val saveData = libretroController.serialize()
             if (saveData != null) {
@@ -254,6 +315,10 @@ class SaveManager(
         if (_state.value.isChallengeMode) return
         if (_state.value.isHardcoreMode) {
             _state.update { it.copy(error = "Save states are disabled in hardcore mode") }
+            return
+        }
+        if (rehearsalMode) {
+            emitRehearsalBlocked(RehearsalSaveKind.Manual)
             return
         }
         scope.launch(dispatchers.io) {
@@ -299,6 +364,10 @@ class SaveManager(
         if (_state.value.isChallengeMode) return
         if (_state.value.isHardcoreMode) {
             _state.update { it.copy(error = "Save states are disabled in hardcore mode") }
+            return
+        }
+        if (rehearsalMode) {
+            emitRehearsalBlocked(RehearsalSaveKind.Slot)
             return
         }
         scope.launch(dispatchers.io) {

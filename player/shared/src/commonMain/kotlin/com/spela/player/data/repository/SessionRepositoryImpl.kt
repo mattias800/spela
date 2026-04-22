@@ -31,6 +31,20 @@ class SessionRepositoryImpl(
         apiClient.updateSession(sessionId, name, coreName).toDomain()
     }
 
+    override suspend fun updateSessionCoreFlags(
+        sessionId: String,
+        userLockedCoreVersion: Boolean?,
+        autoLoadSuppressed: Boolean?,
+        rehearsalCrashPending: Boolean?,
+    ): Result<GameSession> = runCatching {
+        apiClient.updateSessionCoreFlags(
+            sessionId,
+            userLockedCoreVersion = userLockedCoreVersion,
+            autoLoadSuppressed = autoLoadSuppressed,
+            rehearsalCrashPending = rehearsalCrashPending,
+        ).toDomain()
+    }
+
     override suspend fun deleteSession(sessionId: String): Result<Unit> = runCatching {
         apiClient.deleteSession(sessionId)
     }

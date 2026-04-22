@@ -1327,6 +1327,22 @@ class FakeSessionRepository : SessionRepository {
         return Result.success(sessions[idx])
     }
 
+    override suspend fun updateSessionCoreFlags(
+        sessionId: String,
+        userLockedCoreVersion: Boolean?,
+        autoLoadSuppressed: Boolean?,
+        rehearsalCrashPending: Boolean?,
+    ): Result<GameSession> {
+        val idx = sessions.indexOfFirst { it.id == sessionId }
+        if (idx < 0) return Result.failure(Exception("Session not found"))
+        var updated = sessions[idx]
+        if (userLockedCoreVersion != null) updated = updated.copy(userLockedCoreVersion = userLockedCoreVersion)
+        if (autoLoadSuppressed != null) updated = updated.copy(autoLoadSuppressed = autoLoadSuppressed)
+        if (rehearsalCrashPending != null) updated = updated.copy(rehearsalCrashPending = rehearsalCrashPending)
+        sessions[idx] = updated
+        return Result.success(sessions[idx])
+    }
+
     override suspend fun deleteSession(sessionId: String): Result<Unit> {
         sessions.removeAll { it.id == sessionId }
         return Result.success(Unit)

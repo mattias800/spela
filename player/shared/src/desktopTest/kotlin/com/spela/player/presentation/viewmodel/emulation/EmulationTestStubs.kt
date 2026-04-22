@@ -366,6 +366,7 @@ class StubSessionRepository : SessionRepository {
         return Result.success(GameSession(id = "auto-${createSessionCallCount}", gameId = gameId, name = name))
     }
     override suspend fun updateSession(sessionId: String, name: String?, coreName: String?) = Result.failure<GameSession>(Exception("stub"))
+    override suspend fun updateSessionCoreFlags(sessionId: String, userLockedCoreVersion: Boolean?, autoLoadSuppressed: Boolean?, rehearsalCrashPending: Boolean?) = Result.failure<GameSession>(Exception("stub"))
     override suspend fun deleteSession(sessionId: String) = Result.success(Unit)
     override suspend fun getSessionSaves(sessionId: String) = Result.success(emptyList<SaveState>())
     override suspend fun uploadSessionSave(sessionId: String, name: String, data: ByteArray, screenshot: ByteArray?, coreName: String): Result<SaveState> {
