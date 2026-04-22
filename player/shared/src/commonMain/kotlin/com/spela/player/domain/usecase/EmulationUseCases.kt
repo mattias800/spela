@@ -6,9 +6,43 @@ import com.spela.player.domain.repository.DownloadRepository
 import com.spela.player.util.currentPlatform
 
 /**
- * Result of preparing a game for emulation. Carries both the resolved
- * file paths and an optional user-facing warning when we had to fall
- * back from a pinned core version.
+ * Classifies why (if at all) the player might want to surface a
+ * decision UI before loading the core. The actual decision UI lives in
+ * `EmulationViewModel` + presentation layer (see #672); this enum is
+ * the signal the use case hands the VM so the VM doesn't have to
+ * re-derive the reason from raw sha comparisons.
+ */
+enum class DecisionKind {
+    /** No decision needed — proceed straight to loadCore. */
+    None,
+
+    /**
+     * The session has a pinned sha that differs from the server's
+     * current sha for this core. The VM should consider showing Sheet A
+     * from the #672 decision flow.
+     */
+    UpgradeAvailable,
+
+    /**
+     * The session's pinned sha has been rotated out of server-side
+     * history retention. The VM should consider Sheet B.
+     */
+    PinPruned,
+
+    /**
+     * The core name was substituted for platform compatibility (macOS
+     * Metal, Android variant names). The resulting sha mismatch is
+     * legitimate, not an upgrade — the VM must not show Sheet A for
+     * this case.
+     */
+    PlatformSubstitution,
+}
+
+/**
+ * Result of preparing a game for emulation. Carries the resolved file
+ * paths, an optional user-facing warning when we had to fall back from
+ * a pinned core version, and a classification of whether the session
+ * warrants showing the core-upgrade decision UI (#672).
  */
 data class PrepareGameResult(
     val gamePath: String,
@@ -20,6 +54,13 @@ data class PrepareGameResult(
      * non-blocking warning. Null when no pin, or the pin was satisfied.
      */
     val coreVersionWarning: String? = null,
+    /**
+     * Why (if at all) the VM should consider showing the core-upgrade
+     * decision UI before starting emulation. See [DecisionKind]. The
+     * detection logic lands in PR #3 alongside the UI; v1 always
+     * returns [DecisionKind.None] so existing behaviour is unchanged.
+     */
+    val decisionKind: DecisionKind = DecisionKind.None,
 )
 
 /**

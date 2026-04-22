@@ -10,6 +10,19 @@ interface SessionRepository {
     suspend fun createSession(gameId: String, name: String): Result<GameSession>
     suspend fun createSessionFromSharedSave(gameId: String, saveId: String): Result<GameSession>
     suspend fun updateSession(sessionId: String, name: String? = null, coreName: String? = null): Result<GameSession>
+
+    /**
+     * Toggles the core-upgrade decision flags on a session. Each field
+     * is tri-state: `null` leaves the flag untouched, `true` / `false`
+     * sets it. Matches PUT /api/sessions/{id}'s partial-update
+     * semantics. See #672.
+     */
+    suspend fun updateSessionCoreFlags(
+        sessionId: String,
+        userLockedCoreVersion: Boolean? = null,
+        autoLoadSuppressed: Boolean? = null,
+        rehearsalCrashPending: Boolean? = null,
+    ): Result<GameSession>
     suspend fun deleteSession(sessionId: String): Result<Unit>
     suspend fun getSessionSaves(sessionId: String): Result<List<SaveState>>
     suspend fun uploadSessionSave(sessionId: String, name: String, data: ByteArray, screenshot: ByteArray?, coreName: String = ""): Result<SaveState>

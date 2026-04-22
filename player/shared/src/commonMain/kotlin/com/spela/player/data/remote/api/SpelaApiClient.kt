@@ -1572,6 +1572,27 @@ class SpelaApiClient(
         ).body()
     }
 
+    /**
+     * Toggles the core-upgrade decision flags on a session. Each flag is
+     * optional — null fields are left untouched server-side, matching the
+     * partial-update semantics of PUT /api/sessions/{id}. See #672.
+     */
+    suspend fun updateSessionCoreFlags(
+        sessionId: String,
+        userLockedCoreVersion: Boolean? = null,
+        autoLoadSuppressed: Boolean? = null,
+        rehearsalCrashPending: Boolean? = null,
+    ): com.spela.client.models.GameSessionResponse {
+        return sessionsApi.updateSession(
+            sessionId,
+            com.spela.client.models.UpdateSessionRequest(
+                userLockedCoreVersion = userLockedCoreVersion,
+                autoLoadSuppressed = autoLoadSuppressed,
+                rehearsalCrashPending = rehearsalCrashPending,
+            ),
+        ).body()
+    }
+
     suspend fun deleteSession(sessionId: String) {
         sessionsApi.deleteSession(sessionId)
     }
