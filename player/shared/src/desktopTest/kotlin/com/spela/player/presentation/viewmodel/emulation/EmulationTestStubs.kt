@@ -214,6 +214,7 @@ class StubCoreRepository : CoreRepository {
     override suspend fun getLocalCorePath(coreName: String): String = "/path/to/core.so"
     override suspend fun isCoreCached(coreName: String) = true
     override suspend fun isCachedCoreCurrent(coreName: String): Boolean? = null
+    override suspend fun getServerCoreSha(coreName: String): String? = null
 }
 
 class StubSaveDataRepository : SaveDataRepository {

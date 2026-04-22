@@ -204,6 +204,16 @@ data class EmulationState(
 
     /** Which input tab is active on the secondary screen controls page. */
     val selectedControlTab: ControlTab = ControlTab.GAMEPAD,
+
+    /**
+     * When non-null, a #672 core-upgrade decision is pending and the
+     * UI layer should render the matching sheet BEFORE emulation
+     * starts. `null` while emulation runs normally. The VM clears
+     * this as each sheet action resolves; see
+     * [com.spela.player.presentation.intent.EmulationIntent] for the
+     * intents that drive resolution.
+     */
+    val coreDecision: CoreDecision? = null,
 ) {
     val isNetplayMode: Boolean get() = netplaySessionId != null
     val isChallengeMode: Boolean get() = challengeId != null

@@ -27,6 +27,15 @@ sealed class CoreDecision {
     data class UpgradeAvailable(
         val coreName: String,
         val coreDisplayName: String,
+        /**
+         * Name of the console this session is for (e.g. "Nintendo
+         * Entertainment System"). Populates the fallback title when
+         * the core has no display name — spec key
+         * `core_upd.sheet_a.title_fallback` reads
+         * `"The {console} core has a new version"`. Empty when the
+         * VM couldn't resolve it.
+         */
+        val consoleName: String,
         val gameTitle: String,
         val oldSha: String,
         val newSha: String,
