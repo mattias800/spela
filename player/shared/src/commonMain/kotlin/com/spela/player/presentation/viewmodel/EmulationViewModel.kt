@@ -350,8 +350,24 @@ class EmulationViewModel(
                     )
                 }
             EmulationIntent.RehearsalCrashStartFresh -> rehearsalCrashStartFresh()
-            EmulationIntent.RehearsalCrashDismiss ->
-                _state.update { it.copy(coreDecision = null) }
+            EmulationIntent.RehearsalCrashDismiss -> rehearsalCrashDismiss()
+        }
+    }
+
+    /**
+     * Sheet D more-options — "Just go back — I'll try again later".
+     * Closes the sheet without changing core-mode or auto-load state.
+     * Clears the crash-recovery sentinel because the user explicitly
+     * acknowledged the crash here; leaving it set would re-route them
+     * to Sheet D on the next launch, which contradicts the "try again
+     * later" intent.
+     */
+    private fun rehearsalCrashDismiss() {
+        saveManager.rehearsalMode = false
+        val sessionId = _state.value.sessionId
+        _state.update { it.copy(coreDecision = null) }
+        scope.launch(dispatchers.io) {
+            saveManager.setSessionRehearsalCrashPending(sessionId, pending = false)
         }
     }
 
@@ -361,14 +377,22 @@ class EmulationViewModel(
      * pin itself is not written here; `Phase 3` pin-advancement fires
      * on the first successful save-write on the new core, matching
      * Sheet A's "Keep the new version anyway" behaviour.
+     *
+     * Also clears the #672 crash-recovery sentinel — the run reached a
+     * clean resolution without the process dying, so the next launch
+     * must not route to Sheet D.
      */
     private fun rehearsalKeepNew() {
         saveManager.rehearsalMode = false
+        val sessionId = _state.value.sessionId
         _state.update {
             it.copy(
                 coreDecision = null,
                 showRehearsalConfirmSheet = false,
             )
+        }
+        scope.launch(dispatchers.io) {
+            saveManager.setSessionRehearsalCrashPending(sessionId, pending = false)
         }
     }
 
@@ -413,6 +437,11 @@ class EmulationViewModel(
             }
             // Write succeeded — now safe to exit rehearsal + relaunch.
             saveManager.rehearsalMode = false
+            // Clear the crash-recovery sentinel: the user resolved the
+            // rehearsal cleanly. Losing the clear would cause the next
+            // launch to spuriously route to Sheet D, so we fire-and-
+            // continue (best effort) but don't block the relaunch.
+            saveManager.setSessionRehearsalCrashPending(sessionId, pending = false)
             withContext(dispatchers.main) {
                 _state.update { it.copy(coreDecision = null) }
                 // skipCoreDecisionPrompt=true is defence in depth —
@@ -455,6 +484,10 @@ class EmulationViewModel(
             } else {
                 true // no session — nothing to persist
             }
+            // Clear the crash-recovery sentinel: the user resolved the
+            // rehearsal cleanly (even if through a crash), so we don't
+            // want the next launch to re-route to Sheet D.
+            saveManager.setSessionRehearsalCrashPending(sessionId, pending = false)
             if (!persisted) {
                 withContext(dispatchers.main) {
                     _state.update {
@@ -509,6 +542,15 @@ class EmulationViewModel(
             when (entry) {
                 RehearsalEntry.Try -> {
                     saveManager.rehearsalMode = true
+                    // #672 PR 3c.iii — set the crash-recovery sentinel
+                    // BEFORE the new core gets a chance to crash. If
+                    // the player process dies mid-rehearsal, this flag
+                    // surviving on the server tells the next launch to
+                    // route the user to Sheet D. Failure to write is
+                    // logged but doesn't block the rehearsal — losing
+                    // the sentinel only degrades crash-recovery, not
+                    // the active session.
+                    saveManager.setSessionRehearsalCrashPending(pending.sessionId, pending = true)
                     // Build a RehearsalPrompt from whatever Sheet A was
                     // showing so the banner renders the same core name
                     // the user just acknowledged. UpgradeAvailable →

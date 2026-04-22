@@ -5,6 +5,7 @@ import com.spela.player.presentation.state.CoreDecision
 import com.spela.player.presentation.viewmodel.emulation.EmulationViewModelTestBuilder
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
@@ -166,6 +167,60 @@ class EmulationViewModelRehearsalTest {
         )
         assertEquals(0, builder.sessionRepository.updateSessionCoreFlagsCalls.size,
             "CrashDismiss must not write any server flags — it's a 'try again later' close",
+        )
+    }
+
+    // ── Crash-recovery sentinel lifecycle (PR 3c.iii) ────────────
+
+    @Test
+    fun keepNewClearsCrashSentinel() = runTest {
+        val vm = builder.build()
+        builder.mutableState.update { it.copy(sessionId = "s1") }
+
+        vm.onIntent(EmulationIntent.RehearsalCompletedKeepNew)
+        builder.advanceTimeBy(100)
+
+        val clearCalls = builder.sessionRepository.updateSessionCoreFlagsCalls
+            .filter { it.rehearsalCrashPending == false }
+        assertEquals(1, clearCalls.size,
+            "KeepNew must clear rehearsalCrashPending so the next launch doesn't re-route to Sheet D",
+        )
+        assertEquals("s1", clearCalls.single().sessionId)
+    }
+
+    @Test
+    fun crashDismissClearsCrashSentinelAndExitsRehearsal() = runTest {
+        val vm = builder.build()
+        builder.mutableState.update { it.copy(sessionId = "s1") }
+        builder.saveManager.rehearsalMode = true
+
+        vm.onIntent(EmulationIntent.RehearsalCrashed("nestopia", "Nestopia UE"))
+        builder.advanceTimeBy(50)
+        vm.onIntent(EmulationIntent.RehearsalCrashDismiss)
+        builder.advanceTimeBy(100)
+
+        assertFalse(builder.saveManager.rehearsalMode,
+            "CrashDismiss must exit rehearsal mode — the user explicitly acknowledged the crash",
+        )
+        val clearCalls = builder.sessionRepository.updateSessionCoreFlagsCalls
+            .filter { it.rehearsalCrashPending == false }
+        assertEquals(1, clearCalls.size,
+            "CrashDismiss must clear rehearsalCrashPending so the next launch doesn't re-route to Sheet D",
+        )
+    }
+
+    @Test
+    fun crashDismissWithoutSessionIsNoOp() = runTest {
+        val vm = builder.build()
+        // No session bound on state — defensive path. Must not crash
+        // and must not write any server flags.
+        vm.onIntent(EmulationIntent.RehearsalCrashed("nestopia", "Nestopia UE"))
+        builder.advanceTimeBy(50)
+        vm.onIntent(EmulationIntent.RehearsalCrashDismiss)
+        builder.advanceTimeBy(100)
+
+        assertEquals(0, builder.sessionRepository.updateSessionCoreFlagsCalls.size,
+            "CrashDismiss with no sessionId must not attempt a flag write",
         )
     }
 
