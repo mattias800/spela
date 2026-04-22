@@ -242,11 +242,24 @@ class PrepareGameUseCase(
                     ?: coreRepository.downloadCore(coreName, downloadUrl).getOrElse {
                         return Result.failure(it)
                     }
+                // When the user explicitly locked this session to the
+                // pinned sha (#672 UserLockedCoreVersion), pruning
+                // warrants Sheet B rather than the silent toast —
+                // their explicit choice just became impossible and
+                // they need the chance to decide next steps. For
+                // sessions that weren't user-locked we keep the old
+                // silent-fallback-with-warning behaviour.
+                val kind = if (userLockedCoreVersion && sessionHasSaves && !skipCoreDecisionPrompt) {
+                    DecisionKind.PinPruned
+                } else {
+                    DecisionKind.None
+                }
                 return Result.success(
                     PrepareGameResult(
                         gamePath = gamePath,
                         corePath = fallbackPath,
-                        coreVersionWarning = prunedWarning,
+                        coreVersionWarning = if (kind == DecisionKind.None) prunedWarning else null,
+                        decisionKind = kind,
                         coreName = coreName,
                         coreDisplayName = core.displayName.ifEmpty { coreName },
                     ),

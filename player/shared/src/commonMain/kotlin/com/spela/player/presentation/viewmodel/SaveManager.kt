@@ -221,6 +221,24 @@ class SaveManager(
     }
 
     /**
+     * Writes `autoLoadSuppressed` on [sessionId]. Called after the
+     * user picks "Start fresh" on Sheet B / D — the next launch of
+     * the session must skip the stale save auto-load. Cleared by the
+     * session handler on the first successful manual save. See #672.
+     */
+    suspend fun setSessionAutoLoadSuppressed(sessionId: String?, suppressed: Boolean): Boolean {
+        if (sessionId.isNullOrEmpty()) return false
+        return try {
+            sessionRepository.updateSessionCoreFlags(
+                sessionId,
+                autoLoadSuppressed = suppressed,
+            ).isSuccess
+        } catch (_: Exception) {
+            false
+        }
+    }
+
+    /**
      * Load SRAM (save data) before starting emulation.
      * Downloads from session SRAM endpoint.
      * If the data starts with ZIP magic bytes, it's a directory-based save (e.g. Dolphin)

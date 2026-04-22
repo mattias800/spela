@@ -22,4 +22,13 @@ sealed interface SessionDetailIntent {
     data object DismissDeleteConfirm : SessionDetailIntent
     data object DismissError : SessionDetailIntent
     data object DismissSuccess : SessionDetailIntent
+
+    /**
+     * Clears `userLockedCoreVersion` on the session so the next launch
+     * will re-run the #672 core-upgrade decision flow with whatever
+     * the server currently has. Fired from the
+     * [com.spela.player.presentation.ui.feature.sessiondetail.SessionCoreLockChip]
+     * "Use the latest version instead" link.
+     */
+    data class UnlockCoreVersion(val sessionId: String) : SessionDetailIntent
 }

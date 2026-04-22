@@ -163,4 +163,14 @@ sealed interface EmulationIntent {
      * session.
      */
     data object ResolveCoreDecisionRemindLater : EmulationIntent
+
+    /**
+     * "Start fresh on the new version" — launch with the new core and
+     * skip auto-load of the save state. Used by Sheet B (pinned
+     * binary pruned) and, later, Sheet D (rehearsal crashed). Sets
+     * `AutoLoadSuppressed = true` on the session so the next launch
+     * also skips the stale save; cleared on first successful manual
+     * save.
+     */
+    data object ResolveCoreDecisionStartFresh : EmulationIntent
 }

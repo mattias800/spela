@@ -62,10 +62,11 @@ class SessionCoreLockChipTest {
     }
 
     @Test
-    fun toleratesShortShaWithoutCrashing() = runComposeUiTest {
+    fun fallsBackToVersionlessLabelWhenShaIsShorterThanFourChars() = runComposeUiTest {
         // Server shouldn't hand us anything shorter than 64 chars, but
-        // the UI should not crash if a short value slips through —
-        // just render whatever prefix we have.
+        // the UI must not render "v-ab" (a misleading 2-char version
+        // label). Fall back to the version-less copy so the unlock
+        // escape hatch still makes sense.
         setContent {
             SessionCoreLockChip(
                 pinnedCoreSha256 = "ab",
@@ -73,6 +74,26 @@ class SessionCoreLockChipTest {
             )
         }
 
-        onNodeWithText("Locked to version v-ab").assertIsDisplayed()
+        onNodeWithText("Locked to this core version").assertIsDisplayed()
+    }
+
+    @Test
+    fun fallsBackToVersionlessLabelWhenShaIsEmpty() = runComposeUiTest {
+        // Edge case: `userLockedCoreVersion = true` on a session whose
+        // pin was never set (shouldn't happen server-side, defensive
+        // path). Chip must still render so the user can reach the
+        // unlock link.
+        var unlockClicks = 0
+        setContent {
+            SessionCoreLockChip(
+                pinnedCoreSha256 = "",
+                onUnlock = { unlockClicks++ },
+            )
+        }
+
+        onNodeWithText("Locked to this core version").assertIsDisplayed()
+        onNodeWithTag("session-core-unlock-link").performClick()
+        assertEquals(1, unlockClicks,
+            "empty-sha fallback must still expose a working unlock action")
     }
 }
