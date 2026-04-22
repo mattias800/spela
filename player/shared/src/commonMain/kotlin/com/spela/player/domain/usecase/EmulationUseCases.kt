@@ -125,12 +125,31 @@ class PrepareGameUseCase(
             println("[PrepareGame] Versioned core download failed (${error?.message}) — falling back to latest")
         }
 
-        val corePath = coreRepository.getLocalCorePath(coreName)
-            ?: run {
-                coreRepository.downloadCore(coreName, downloadUrl).getOrElse {
-                    return Result.failure(it)
-                }
+        // Unpinned path: if a local copy exists but the server's current
+        // sha256 differs (core was updated upstream since we last
+        // downloaded), silently refresh it so the user is on the latest
+        // build. `isCachedCoreCurrent` returns `null` for the
+        // "can't decide" case (no local file, server hasn't fingerprinted,
+        // network hiccup, hash failed) — we intentionally fall through to
+        // the existing path-existence check in that case so transient
+        // server issues don't block an otherwise-usable cached core.
+        // See #555 Phase 2.
+        val cached = coreRepository.getLocalCorePath(coreName)
+        val corePath = if (cached != null && coreRepository.isCachedCoreCurrent(coreName) == false) {
+            println("[PrepareGame] Cached $coreName is stale vs server — redownloading")
+            coreRepository.downloadCore(coreName, downloadUrl).getOrElse {
+                // Re-download failed: fall back to the stale cache rather
+                // than stranding the user. The game still runs; saves
+                // made here might not load on a fresh install, but that's
+                // strictly better than refusing to launch.
+                println("[PrepareGame] Redownload failed, keeping stale cache: ${it.message}")
+                cached
             }
+        } else {
+            cached ?: coreRepository.downloadCore(coreName, downloadUrl).getOrElse {
+                return Result.failure(it)
+            }
+        }
 
         return Result.success(PrepareGameResult(gamePath, corePath))
     }

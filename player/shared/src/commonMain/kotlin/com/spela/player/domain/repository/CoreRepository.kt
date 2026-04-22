@@ -30,4 +30,23 @@ interface CoreRepository {
 
     suspend fun getLocalCorePath(coreName: String): String?
     suspend fun isCoreCached(coreName: String): Boolean
+
+    /**
+     * Reports whether the locally cached binary for [coreName] matches the
+     * server's current sha256. Used by the emulation path to decide whether
+     * to silently re-download a stale core when a session has no pinned
+     * version. See #555 Phase 2.
+     *
+     * Tri-state semantics:
+     *   - `true`  — local cache matches the server's current sha256 and is
+     *               safe to reuse.
+     *   - `false` — local cache differs from the server; caller should
+     *               discard it and re-download.
+     *   - `null`  — can't decide (no local file, server hasn't fingerprinted
+     *               yet, network failed, or local hash failed). Caller
+     *               should fall back to the existing path-existence check
+     *               so network/server hiccups don't lock users out of an
+     *               otherwise-usable cached core.
+     */
+    suspend fun isCachedCoreCurrent(coreName: String): Boolean?
 }

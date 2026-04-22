@@ -96,4 +96,30 @@ class CoreRepositoryImpl(
     override suspend fun isCoreCached(coreName: String): Boolean {
         return getLocalCorePath(coreName) != null
     }
+
+    override suspend fun isCachedCoreCurrent(coreName: String): Boolean? {
+        // No local binary → nothing to compare against; the caller should
+        // fall through to the normal download path.
+        val localPath = getLocalCorePath(coreName) ?: return null
+
+        // Resolve the server-side numeric core id from the name. Any
+        // failure here (network, name not found) is treated as
+        // "cannot decide" — we don't want a transient HTTP hiccup to
+        // invalidate an otherwise-usable cached core.
+        val coreId = runCatching {
+            apiClient.getAvailableCores().firstOrNull { it.name == coreName }?.id
+        }.getOrNull() ?: return null
+
+        val manifest = runCatching { apiClient.getCoreManifest(coreId) }.getOrNull() ?: return null
+
+        // Server hasn't fingerprinted this core yet (pristine row). We
+        // can't tell whether the local copy matches what the server will
+        // eventually serve, so trust the local cache until the server
+        // lands its own hash on a future download.
+        if (manifest.sha256.isEmpty()) return null
+
+        val localSha = fileStorage.sha256File(localPath) ?: return null
+
+        return localSha.equals(manifest.sha256, ignoreCase = true)
+    }
 }

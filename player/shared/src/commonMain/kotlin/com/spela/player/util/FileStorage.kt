@@ -25,4 +25,13 @@ interface FileStorage {
     suspend fun isDirectory(path: String): Boolean
     suspend fun zipDirectoryToBytes(dirPath: String): ByteArray?
     suspend fun unzipBytesToDirectory(data: ByteArray, targetDir: String)
+
+    /**
+     * Streaming SHA-256 of the file at [path], returned as a lowercase hex
+     * string. Returns `null` when the path doesn't exist or can't be read —
+     * callers treat that as "cannot decide" and should fall back to the
+     * pessimistic choice (e.g. redownload). Used by the core-cache
+     * invalidation path (#555 Phase 2).
+     */
+    suspend fun sha256File(path: String): String?
 }

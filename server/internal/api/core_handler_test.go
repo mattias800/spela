@@ -171,3 +171,117 @@ func TestHashFileSha256_Errors(t *testing.T) {
 	_, _, err := hashFileSha256(filepath.Join(t.TempDir(), "does-not-exist"))
 	assert.Error(t, err, "hashing a missing file must return an error, not panic")
 }
+
+// TestGetCoreManifest_PristineCore verifies that GET /api/cores/{id}/manifest
+// on a row the server hasn't yet fingerprinted returns zero-ish values
+// instead of erroring — the player must be able to poll the endpoint
+// before its first download. #555 Phase 2.
+func TestGetCoreManifest_PristineCore(t *testing.T) {
+	database, cfg := setupTestEnv(t)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
+	token := registerAndGetToken(t, router)
+
+	var core db.Core
+	require.NoError(t, database.Where("name = ?", "nestopia").First(&core).Error)
+	require.Empty(t, core.Sha256, "seeded nestopia must be pristine at start")
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/cores/"+itoa(core.ID)+"/manifest", nil)
+	req.Header.Set("Authorization", "Bearer "+token)
+	router.ServeHTTP(w, req)
+	require.Equal(t, http.StatusOK, w.Code)
+
+	var manifest struct {
+		Sha256    string  `json:"sha256"`
+		SizeBytes int64   `json:"sizeBytes"`
+		FetchedAt *string `json:"fetchedAt"`
+		SourceURL string  `json:"sourceUrl"`
+	}
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &manifest))
+
+	assert.Empty(t, manifest.Sha256)
+	assert.Zero(t, manifest.SizeBytes)
+	assert.Nil(t, manifest.FetchedAt)
+	assert.Empty(t, manifest.SourceURL)
+}
+
+// TestGetCoreManifest_FingerprintedCore verifies that after the first
+// download populates the sha256/size/fetchedAt fields, the manifest
+// endpoint serves the same fingerprint the download path persists —
+// the player uses this to decide whether its cached binary is current.
+func TestGetCoreManifest_FingerprintedCore(t *testing.T) {
+	database, cfg := setupTestEnv(t)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
+	token := registerAndGetToken(t, router)
+
+	require.NoError(t, os.MkdirAll(cfg.CoreDir, 0o755))
+	payload := []byte("manifest-fingerprint-payload")
+	corePath := filepath.Join(cfg.CoreDir, "nestopia_libretro.so")
+	require.NoError(t, os.WriteFile(corePath, payload, 0o644))
+
+	var core db.Core
+	require.NoError(t, database.Where("name = ?", "nestopia").First(&core).Error)
+
+	// Prime metadata by hitting /download once.
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/cores/"+itoa(core.ID)+"/download?platform=linux", nil)
+	req.Header.Set("Authorization", "Bearer "+token)
+	router.ServeHTTP(w, req)
+	require.Equal(t, http.StatusOK, w.Code)
+
+	// Manifest must match what was persisted.
+	w2 := httptest.NewRecorder()
+	req2 := httptest.NewRequest("GET", "/api/cores/"+itoa(core.ID)+"/manifest", nil)
+	req2.Header.Set("Authorization", "Bearer "+token)
+	router.ServeHTTP(w2, req2)
+	require.Equal(t, http.StatusOK, w2.Code)
+
+	var manifest struct {
+		Sha256    string  `json:"sha256"`
+		SizeBytes int64   `json:"sizeBytes"`
+		FetchedAt *string `json:"fetchedAt"`
+		SourceURL string  `json:"sourceUrl"`
+	}
+	require.NoError(t, json.Unmarshal(w2.Body.Bytes(), &manifest))
+
+	expectedSum := sha256.Sum256(payload)
+	assert.Equal(t, hex.EncodeToString(expectedSum[:]), manifest.Sha256)
+	assert.Equal(t, int64(len(payload)), manifest.SizeBytes)
+	require.NotNil(t, manifest.FetchedAt)
+	assert.NotEmpty(t, *manifest.FetchedAt)
+}
+
+// TestGetCoreManifest_UnknownCore verifies that the endpoint returns a
+// proper 404 for a core row that doesn't exist rather than leaking a
+// zero-valued body.
+func TestGetCoreManifest_UnknownCore(t *testing.T) {
+	_, cfg := setupTestEnv(t)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
+	token := registerAndGetToken(t, router)
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/cores/99999/manifest", nil)
+	req.Header.Set("Authorization", "Bearer "+token)
+	router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusNotFound, w.Code)
+}
+
+// TestGetCoreManifest_RequiresAuth verifies that unauthenticated callers
+// cannot poll the manifest. Fingerprint data is low-sensitivity but still
+// lives behind the same auth wall as the rest of the cores API.
+func TestGetCoreManifest_RequiresAuth(t *testing.T) {
+	database, cfg := setupTestEnv(t)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
+
+	var core db.Core
+	require.NoError(t, database.Where("name = ?", "nestopia").First(&core).Error)
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/cores/"+itoa(core.ID)+"/manifest", nil)
+	router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusUnauthorized, w.Code)
+}
