@@ -28,5 +28,7 @@ export { LeaderboardSkeleton } from "./leaderboard-skeleton";
 export { ConfirmDeleteModal } from "./confirm-delete-modal";
 export { LeaderboardRow } from "./leaderboard-row";
 export { FilterChip } from "./filter-chip";
+export { Chip, ChipPicker } from "./chip";
+export type { ChipPickerOption } from "./chip";
 export { Divider } from "./divider";
 export { ProgressBar } from "./progress-bar";
