@@ -126,11 +126,18 @@ export function ConsoleDetailPage() {
           description="No games have been detected for this console yet."
         />
       ) : isSmallLibrary ? (
-        /* Small library: inline game grid, with Launch Games above when
-           curated content exists. The shelf self-hides if the server
-           returns an empty list (#633). */
+        /* Small library: inline game grid, with curated shelves above
+           when content exists. Each shelf self-hides if the server
+           returns an empty list (#633). Essentials, Launch Games, and
+           Hidden Gems are most valuable on small libraries — they
+           help a user with 6 Virtual Boy games discover the
+           curated picks. Top Developers and Genre Breakdown stay
+           hidden on small libraries because their signal degrades
+           with a small pool. */
         <>
+          <ConsoleEssentials consoleId={id!} />
           <ConsoleLaunchGames consoleId={id!} />
+          <ConsoleHiddenGems consoleId={id!} />
           <SearchInput
             placeholder={`Search ${consoleName} games...`}
             value={search}

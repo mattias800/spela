@@ -44,7 +44,7 @@ vi.mock("@/components/ui", async () => {
 });
 
 vi.mock("@/hooks/use-explore", () => ({
-  useConsoleShowcase: () => ({ data: undefined }),
+  useConsoleShowcase: vi.fn(() => ({ data: undefined })),
 }));
 
 vi.mock("@/hooks/use-auto-scrape", () => ({
@@ -53,10 +53,12 @@ vi.mock("@/hooks/use-auto-scrape", () => ({
 
 import { useConsoles } from "@/hooks/use-consoles";
 import { useGames } from "@/hooks/use-games";
+import { useConsoleShowcase } from "@/hooks/use-explore";
 import { makeGame, makeConsole } from "@/test-utils/fixtures";
 
 const mockUseConsoles = useConsoles as ReturnType<typeof vi.fn>;
 const mockUseGames = useGames as ReturnType<typeof vi.fn>;
+const mockUseConsoleShowcase = useConsoleShowcase as ReturnType<typeof vi.fn>;
 
 
 
@@ -214,6 +216,56 @@ describe("ConsoleDetailPage", () => {
       ).toBeInTheDocument();
       // Should not show empty state or game cards
       expect(screen.queryByText("No games found")).not.toBeInTheDocument();
+    });
+
+    // #633 — curated shelves should render above the inline grid on
+    // small libraries when the server provides matching content. The
+    // previous behaviour hid them entirely, which hurt small libraries
+    // the most (a user with 6 Virtual Boy games never saw the Launch
+    // Games shelf). Each shelf self-hides on empty, so no visual
+    // noise for libraries where the curated lists are empty.
+
+    it("renders Essentials, Launch Games, and Hidden Gems shelves when the showcase returns content", () => {
+      mockUseConsoleShowcase.mockReturnValue({
+        data: {
+          console: makeConsole({ id: "snes", name: "Super Nintendo" }),
+          essentials: [makeGame({ id: "10", title: "Mega Man X" })],
+          launchGames: [makeGame({ id: "11", title: "Super Mario World" })],
+          hiddenGems: [makeGame({ id: "12", title: "Terranigma" })],
+          recentlyPlayed: [],
+          recentlyAdded: [],
+          genreBreakdown: [],
+          topDevelopers: [],
+        },
+      });
+      renderPage();
+
+      expect(screen.getByText("Essentials")).toBeInTheDocument();
+      expect(screen.getByText("Launch Games")).toBeInTheDocument();
+      expect(screen.getByText("Hidden Gems")).toBeInTheDocument();
+    });
+
+    it("hides lower-priority curated shelves on small libraries even when populated", () => {
+      // Genre Breakdown / Top Developers / Recently Added are intentionally
+      // omitted from the small-library branch — they lose signal when the
+      // game pool is small. The ticket explicitly scopes them out.
+      mockUseConsoleShowcase.mockReturnValue({
+        data: {
+          console: makeConsole({ id: "snes", name: "Super Nintendo" }),
+          essentials: [],
+          launchGames: [],
+          hiddenGems: [],
+          recentlyPlayed: [],
+          recentlyAdded: [makeGame({ id: "20", title: "Just Added" })],
+          genreBreakdown: [{ name: "Platformer", gameCount: 3 }],
+          topDevelopers: [{ id: "dev1", name: "Nintendo EAD", gameCount: 5 }],
+        },
+      });
+      renderPage();
+
+      expect(screen.queryByTestId("genre-breakdown")).not.toBeInTheDocument();
+      expect(screen.queryByText(/top developers/i)).not.toBeInTheDocument();
+      expect(screen.queryByText("Just Added")).not.toBeInTheDocument();
     });
   });
 
