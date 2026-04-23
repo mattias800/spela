@@ -9,7 +9,7 @@ import {
 import { useGame } from "@/hooks/use-games";
 import { useUserPreferences } from "@/hooks/use-preferences";
 import { useConsoles } from "@/hooks/use-consoles";
-import { useBiosStatus, getBiosFileUrl } from "@/hooks/use-bios";
+import { useBiosStatus } from "@/hooks/use-bios";
 import { useAuth } from "@/hooks/use-auth";
 import { useEmulatorIframe } from "@/hooks/use-emulator-iframe";
 import { useEmulatorSaves } from "@/hooks/use-emulator-saves";
@@ -20,16 +20,15 @@ import { useToast } from "@/components/ui";
 import { useGamepadConnected } from "@/hooks/use-gamepad";
 import { useAutoSaveInfo } from "@/hooks/use-sessions";
 import { useQueryClient } from "@tanstack/react-query";
-import { api, typedApi, unwrap } from "@/lib/api-client";
-import { toEmulatorJsShader } from "@/lib/shader-mapping";
+import { typedApi, unwrap } from "@/lib/api-client";
+import { useEmulatorInit } from "@/features/play/hooks/use-emulator-init";
+import { useResolvedGamePreferences } from "@/features/play/hooks/use-resolved-game-preferences";
 import { PlayToolbar } from "@/features/play/components/play-toolbar";
 import { EmulatorOverlay } from "@/features/play/components/emulator-overlay";
 import {
   CoreMismatchModal,
   type CoreMismatchChoice,
 } from "@/features/play/components/core-mismatch-modal";
-import type { EmulatorPreferences } from "@/lib/emulator-protocol";
-
 export function PlayPage() {
   const { id, sessionId: sessionIdParam } = useParams<{ id: string; sessionId: string }>();
   const navigate = useNavigate();
@@ -98,34 +97,10 @@ export function PlayPage() {
   const emulatorJsCore = consoleInfo?.emulatorJsCore || null;
   const isSupported = !!emulatorJsCore;
 
-  // Resolve shader: per-console override -> global default -> none, then map to EmulatorJS name
-  const spelaShader = preferences
-    ? preferences.consoleShaders[game?.consoleId ?? ""] ||
-      preferences.selectedShader ||
-      "none"
-    : "none";
-  const resolvedShader = toEmulatorJsShader(spelaShader) || spelaShader;
-
-  // Resolve key mapping: per-console override -> global default -> arrows-left
-  const consoleKeyMapping =
-    preferences?.consoleKeyMappings[game?.consoleId ?? ""];
-  const resolvedKeyMapping =
-    consoleKeyMapping?.selectedMapping ??
-    preferences?.selectedKeyMapping ??
-    "arrows-left";
-  const resolvedCustomMapping =
-    resolvedKeyMapping === "custom"
-      ? (consoleKeyMapping?.customMapping ??
-        preferences?.customKeyMapping ??
-        {})
-      : undefined;
-
-  const emulatorPrefs: EmulatorPreferences = {
-    shader: resolvedShader,
-    showPerformanceOverlay: preferences?.showPerformanceOverlay ?? false,
-    keyMapping: resolvedKeyMapping,
-    customKeyMapping: resolvedCustomMapping,
-  };
+  const emulatorPrefs = useResolvedGamePreferences({
+    preferences,
+    consoleId: game?.consoleId,
+  });
 
   const emulator = useEmulatorIframe({
     onGameStarted: () => {
@@ -219,115 +194,27 @@ export function PlayPage() {
     [isSwitchingDisc, discManager.allDiscsReady, emulator],
   );
 
-  // Initialize emulator once iframe is loaded and we have game data
-  useEffect(() => {
-    if (!iframeLoaded || !game || !isSupported || !emulatorJsCore) return;
-    // Wait for auto-save info to settle before initializing (avoids double-init)
-    if (!isFreshStart && autoSaveInfoLoading) return;
-
-    // Disc switch flow: reload with combined bundle + save state + target disc
-    if (pendingDiscSwitchRef.current && pendingDiscSwitchRef.current.saveData) {
-      const { targetDisc, saveData } = pendingDiscSwitchRef.current;
-      const bundle = buildMultiDiscBundleRef.current();
-      if (!bundle) {
-        toast("error", "Failed to build multi-disc bundle");
-        pendingDiscSwitchRef.current = null;
-        setIsSwitchingDisc(false);
-        return;
-      }
-
-      const token = api.getAccessToken();
-      const tokenSuffix = token
-        ? `?token=${encodeURIComponent(token)}`
-        : "";
-      // Filter BIOS files for the current console only
-      const consoleBiosFiles = biosConsole?.files
-        ?.filter((f) => f.status !== "missing")
-        .map((f) => f.fileName) ?? [];
-      const biosUrls =
-        consoleBiosFiles.length > 0
-          ? consoleBiosFiles.map((f) => getBiosFileUrl(f) + tokenSuffix)
-          : undefined;
-
-      // Update currentDisc now that the switch is committed
-      setCurrentDisc(targetDisc + 1); // convert back to 1-indexed
-      pendingDiscSwitchRef.current = null;
-
-      emulator.initEmulator({
-        romUrl: "", // unused when romData is provided
-        romData: bundle,
-        targetDisc,
-        core: emulatorJsCore!,
-        gameName: game!.title,
-        saveStateData: saveData,
-        biosUrls,
-        preferences: emulatorPrefs,
-      });
-
-      setIsSwitchingDisc(false);
-      return;
-    }
-
-    // Normal initialization flow
-    async function init() {
-      // Check for core mismatch before loading the auto-save
-      const currentAutoSave = autoSaveInfoRef.current;
-      if (
-        !isFreshStart &&
-        currentAutoSave &&
-        currentAutoSave.coreMatch === false &&
-        !coreMismatchChoiceRef.current
-      ) {
-        setShowCoreMismatchModal(true);
-        return; // Wait for user choice — will re-enter after choice is made
-      }
-
-      const token = api.getAccessToken();
-      const tokenSuffix = token
-        ? `?token=${encodeURIComponent(token)}`
-        : "";
-      // Multi-disc games (e.g. PS1 .m3u): load disc 1 via the disc endpoint.
-      // The main /download endpoint serves the .m3u playlist file which
-      // EmulatorJS can't use (it needs the actual disc image).
-      // For multi-file disc formats (cue+bin), request format=zip since
-      // EmulatorJS can extract zip but not tar.
-      const isMultiDisc = game!.discCount > 0 && game!.discs && game!.discs.length > 0;
-      // Include the filename in the URL path so EmulatorJS can detect the
-      // file extension (e.g. .gg for Game Gear). Without it, genesis_plus_gx
-      // can't distinguish Game Gear from Genesis ROMs.
-      const romUrl = isMultiDisc
-        ? `/api/games/${game!.id}/discs/1/download?format=zip${token ? `&token=${encodeURIComponent(token)}` : ""}`
-        : `/api/games/${game!.id}/download/${encodeURIComponent(game!.fileName)}${tokenSuffix}`;
-
-      // Determine whether to load the save state based on user choice
-      const choice = coreMismatchChoiceRef.current;
-      const skipSaveState = choice === "fresh" || choice === "sram-only";
-      const saveStateData = await saveManager.loadInitialSave(
-        isFreshStart || skipSaveState,
-      );
-
-      // Build authenticated BIOS file URLs (filtered for current console)
-      const consoleBiosFiles2 = biosConsole?.files
-        ?.filter((f) => f.status !== "missing")
-        .map((f) => f.fileName) ?? [];
-      const biosUrls =
-        consoleBiosFiles2.length > 0
-          ? consoleBiosFiles2.map((f) => getBiosFileUrl(f) + tokenSuffix)
-          : undefined;
-
-      emulator.initEmulator({
-        romUrl,
-        core: emulatorJsCore!,
-        gameName: game!.title,
-        saveStateData,
-        biosUrls,
-        preferences: emulatorPrefs,
-      });
-    }
-
-    init();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [iframeLoaded, game?.id, isSupported, emulatorJsCore, autoSaveInfoLoading]);
+  useEmulatorInit({
+    iframeLoaded,
+    gameId: game?.id,
+    isSupported,
+    emulatorJsCore,
+    autoSaveInfoLoading,
+    game,
+    isFreshStart,
+    biosConsole,
+    emulatorPrefs,
+    autoSaveInfoRef,
+    coreMismatchChoiceRef,
+    pendingDiscSwitchRef,
+    buildMultiDiscBundleRef,
+    emulator,
+    loadInitialSave: saveManager.loadInitialSave,
+    onToastError: (message) => toast("error", message),
+    onRequestCoreMismatchChoice: () => setShowCoreMismatchModal(true),
+    onDiscSwitchCurrentChanged: setCurrentDisc,
+    onDiscSwitchSettled: () => setIsSwitchingDisc(false),
+  });
 
   async function handleBack() {
     if (isExitSaving) return;
