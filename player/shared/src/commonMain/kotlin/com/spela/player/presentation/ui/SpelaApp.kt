@@ -52,14 +52,12 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
-import com.spela.player.presentation.secondarydisplay.PlatformSecondaryDisplay
 import com.spela.player.domain.model.NetplaySessionStatus
 import com.spela.player.presentation.intent.EmulationIntent
 import com.spela.player.presentation.intent.GameDetailIntent
 import com.spela.player.presentation.intent.GameListIntent
 import com.spela.player.presentation.intent.NetplayIntent
 import com.spela.player.presentation.navigation.NavigationIntent
-import com.spela.player.presentation.navigation.NavigationViewModel
 import com.spela.player.presentation.navigation.SpScreen
 import com.spela.player.presentation.ui.components.BottomNavTab
 import com.spela.player.presentation.ui.components.PlatformBackHandler
@@ -75,9 +73,7 @@ import com.spela.player.presentation.ui.components.SpSnackbar
 import com.spela.player.presentation.ui.components.SpSnackbarData
 import com.spela.player.presentation.ui.components.SpSnackbarType
 import com.spela.player.data.remote.ConnectionState
-import com.spela.player.data.remote.ConnectivityMonitor
 import com.spela.player.presentation.navigation.NavigationEvent
-import com.spela.player.presentation.navigation.NavigationEventBus
 import com.spela.player.presentation.ui.feature.ingame.DsPrimaryTouchOverlay
 import com.spela.player.presentation.ui.screen.ConsoleGamesScreen
 import com.spela.player.presentation.ui.screen.DeveloperGamesScreen
@@ -136,70 +132,13 @@ import com.spela.player.presentation.ui.gamepad.LocalInputMode
 import com.spela.player.presentation.ui.components.LocalScrapeService
 import com.spela.player.presentation.ui.components.ScrapeUpdates
 import com.spela.player.presentation.ui.theme.SpelaTheme
-import com.spela.player.data.remote.ScrapeService
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.input.pointer.PointerEventPass
-import com.spela.player.presentation.viewmodel.DownloadsViewModel
-import com.spela.player.presentation.viewmodel.EmulationViewModel
-import com.spela.player.presentation.viewmodel.GameDetailViewModel
-import com.spela.player.presentation.viewmodel.GameListViewModel
-import com.spela.player.presentation.viewmodel.LibretroController
-import com.spela.player.presentation.viewmodel.LoginViewModel
-import com.spela.player.presentation.viewmodel.SharedSessionDetailViewModel
-import com.spela.player.presentation.viewmodel.SessionDetailViewModel
-import com.spela.player.presentation.viewmodel.SharedSessionsViewModel
-import com.spela.player.presentation.viewmodel.ServerConnectionViewModel
-import com.spela.player.presentation.viewmodel.KeyMappingViewModel
-import com.spela.player.presentation.viewmodel.SettingsViewModel
-import com.spela.player.data.remote.PresenceService
-import com.spela.player.presentation.viewmodel.NetplayLobbyViewModel
-import com.spela.player.presentation.viewmodel.NetplayViewModel
-import com.spela.player.presentation.viewmodel.ChallengeDetailViewModel
-import com.spela.player.presentation.viewmodel.ChallengeListViewModel
-import com.spela.player.presentation.viewmodel.ExploreViewModel
-import com.spela.player.presentation.viewmodel.GlobalSearchViewModel
-import com.spela.player.presentation.viewmodel.CollectionsViewModel
-import com.spela.player.presentation.viewmodel.GamepadConfigViewModel
-import com.spela.player.presentation.viewmodel.SocialViewModel
-import com.spela.player.presentation.viewmodel.StatsViewModel
-import com.spela.player.presentation.viewmodel.TopListsViewModel
 import com.spela.player.libretro.ControllerStatusState
-import com.spela.player.libretro.GamepadPortManager
 import com.spela.player.presentation.ui.components.SpSectionIndicator
 
 @Composable
-fun SpelaApp(
-    navigationViewModel: NavigationViewModel,
-    serverConnectionViewModel: ServerConnectionViewModel,
-    loginViewModel: LoginViewModel,
-    gameListViewModel: GameListViewModel,
-    gameDetailViewModel: GameDetailViewModel,
-    emulationViewModel: EmulationViewModel,
-    libretroController: LibretroController,
-    downloadsViewModel: DownloadsViewModel,
-    settingsViewModel: SettingsViewModel,
-    keyMappingViewModel: KeyMappingViewModel,
-    gamepadConfigViewModel: GamepadConfigViewModel? = null,
-    socialViewModel: SocialViewModel,
-    sharedSessionsViewModel: SharedSessionsViewModel,
-    sharedSessionDetailViewModel: SharedSessionDetailViewModel,
-    netplayViewModel: NetplayViewModel,
-    netplayLobbyViewModel: NetplayLobbyViewModel,
-    statsViewModel: StatsViewModel,
-    collectionsViewModel: CollectionsViewModel,
-    challengeListViewModel: ChallengeListViewModel,
-    challengeDetailViewModel: ChallengeDetailViewModel,
-    secondaryDisplay: PlatformSecondaryDisplay,
-    presenceService: PresenceService,
-    connectivityMonitor: ConnectivityMonitor,
-    sessionDetailViewModel: SessionDetailViewModel? = null,
-    topListsViewModel: TopListsViewModel? = null,
-    exploreViewModel: ExploreViewModel? = null,
-    navigationEventBus: NavigationEventBus? = null,
-    gamepadPortManager: GamepadPortManager? = null,
-    globalSearchViewModel: GlobalSearchViewModel? = null,
-    scrapeService: ScrapeService? = null,
-) {
+fun SpelaApp(deps: SpelaAppDependencies) = with(deps) {
     val currentTheme by settingsViewModel.selectedTheme.collectAsState()
 
     SpelaTheme(theme = currentTheme) {
