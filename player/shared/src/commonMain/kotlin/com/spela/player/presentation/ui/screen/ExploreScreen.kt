@@ -176,58 +176,32 @@ fun ExploreScreen(
                             .testTag("explore_search_bar"),
                     )
 
-                    // Console quick-jump section
-                    if (state.isLoadingConsoleHighlights || state.consoleHighlights.isNotEmpty()) {
-                        if (state.isLoadingConsoleHighlights && state.consoleHighlights.isEmpty()) {
-                            SpTitledSection(
-                                title = "Browse by Console",
-                                edgeToEdgeContent = true,
-                            ) {
-                                ConsoleQuickJumpSkeleton()
-                            }
-                        } else if (state.consoleHighlights.isNotEmpty()) {
-                            SpTitledSection(
-                                title = "Browse by Console",
-                                edgeToEdgeContent = true,
-                                modifier = Modifier
-                                    .testTag("explore_consoles_section")
-                                    .rememberFocus("section_browse_by_console"),
-                            ) {
-                                ConsoleQuickJumpSection(
-                                    consoles = state.consoleHighlights,
-                                    onConsoleSelected = { consoleId ->
-                                        onConsoleSelected?.invoke(consoleId)
-                                    },
-                                )
-                            }
-                        }
+                    ExploreSection(
+                        title = "Browse by Console",
+                        testTag = "explore_consoles_section",
+                        focusKey = "section_browse_by_console",
+                        isLoading = state.isLoadingConsoleHighlights,
+                        isEmpty = state.consoleHighlights.isEmpty(),
+                        skeleton = { ConsoleQuickJumpSkeleton() },
+                    ) {
+                        ConsoleQuickJumpSection(
+                            consoles = state.consoleHighlights,
+                            onConsoleSelected = { onConsoleSelected?.invoke(it) },
+                        )
                     }
 
-                    // Mood picker section
-                    if (state.isLoadingMoods || state.moods.isNotEmpty()) {
-                        if (state.isLoadingMoods && state.moods.isEmpty()) {
-                            SpTitledSection(
-                                title = "What are you in the mood for?",
-                                edgeToEdgeContent = true,
-                            ) {
-                                MoodPickerSkeleton()
-                            }
-                        } else if (state.moods.isNotEmpty()) {
-                            SpTitledSection(
-                                title = "What are you in the mood for?",
-                                edgeToEdgeContent = true,
-                                modifier = Modifier
-                                    .testTag("explore_moods_section")
-                                    .rememberFocus("section_moods"),
-                            ) {
-                                MoodPicker(
-                                    moods = state.moods,
-                                    onMoodSelected = { moodId, moodName ->
-                                        onMoodSelected?.invoke(moodId, moodName)
-                                    },
-                                )
-                            }
-                        }
+                    ExploreSection(
+                        title = "What are you in the mood for?",
+                        testTag = "explore_moods_section",
+                        focusKey = "section_moods",
+                        isLoading = state.isLoadingMoods,
+                        isEmpty = state.moods.isEmpty(),
+                        skeleton = { MoodPickerSkeleton() },
+                    ) {
+                        MoodPicker(
+                            moods = state.moods,
+                            onMoodSelected = { id, name -> onMoodSelected?.invoke(id, name) },
+                        )
                     }
 
                     // Wild Features — Lucky & Wizard
@@ -239,110 +213,60 @@ fun ExploreScreen(
                             .rememberFocus("section_wild_features"),
                     )
 
-                    // For You section (personalized recommendations)
-                    if (state.isLoadingForYou || state.forYouRows.isNotEmpty()) {
-                        if (state.isLoadingForYou && state.forYouRows.isEmpty()) {
-                            SpTitledSection(
-                                title = "For You",
-                                edgeToEdgeContent = true,
-                            ) {
-                                ForYouSkeleton()
-                            }
-                        } else if (state.forYouRows.isNotEmpty()) {
-                            SpTitledSection(
-                                title = "For You",
-                                edgeToEdgeContent = true,
-                                modifier = Modifier
-                                    .testTag("explore_for_you_section")
-                                    .rememberFocus("section_for_you"),
-                            ) {
-                                ForYouSection(
-                                    rows = state.forYouRows,
-                                    onGameSelected = onGameSelected,
-                                )
-                            }
-                        }
+                    ExploreSection(
+                        title = "For You",
+                        testTag = "explore_for_you_section",
+                        focusKey = "section_for_you",
+                        isLoading = state.isLoadingForYou,
+                        isEmpty = state.forYouRows.isEmpty(),
+                        skeleton = { ForYouSkeleton() },
+                    ) {
+                        ForYouSection(
+                            rows = state.forYouRows,
+                            onGameSelected = onGameSelected,
+                        )
                     }
 
-                    // Theme grid section
-                    if (state.isLoadingThemes || state.themes.isNotEmpty()) {
-                        if (state.isLoadingThemes && state.themes.isEmpty()) {
-                            SpTitledSection(
-                                title = "Browse by Theme",
-                                edgeToEdgeContent = true,
-                            ) {
-                                ThemeGridSkeleton()
-                            }
-                        } else if (state.themes.isNotEmpty()) {
-                            SpTitledSection(
-                                title = "Browse by Theme",
-                                edgeToEdgeContent = true,
-                                modifier = Modifier
-                                    .testTag("explore_themes_section")
-                                    .rememberFocus("section_themes"),
-                            ) {
-                                ThemeGrid(
-                                    themes = state.themes,
-                                    onThemeSelected = { themeId, themeName ->
-                                        onThemeSelected?.invoke(themeId, themeName)
-                                    },
-                                )
-                            }
-                        }
+                    ExploreSection(
+                        title = "Browse by Theme",
+                        testTag = "explore_themes_section",
+                        focusKey = "section_themes",
+                        isLoading = state.isLoadingThemes,
+                        isEmpty = state.themes.isEmpty(),
+                        skeleton = { ThemeGridSkeleton() },
+                    ) {
+                        ThemeGrid(
+                            themes = state.themes,
+                            onThemeSelected = { id, name -> onThemeSelected?.invoke(id, name) },
+                        )
                     }
 
-                    // Keyword chips section
-                    if (state.isLoadingKeywords || state.keywords.isNotEmpty()) {
-                        if (state.isLoadingKeywords && state.keywords.isEmpty()) {
-                            SpTitledSection(
-                                title = "Popular Keywords",
-                                edgeToEdgeContent = true,
-                            ) {
-                                KeywordChipsSkeleton()
-                            }
-                        } else if (state.keywords.isNotEmpty()) {
-                            SpTitledSection(
-                                title = "Popular Keywords",
-                                edgeToEdgeContent = true,
-                                modifier = Modifier
-                                    .testTag("explore_keywords_section")
-                                    .rememberFocus("section_keywords"),
-                            ) {
-                                KeywordChips(
-                                    keywords = state.keywords,
-                                    onKeywordSelected = { keywordId, keywordName ->
-                                        onKeywordSelected?.invoke(keywordId, keywordName)
-                                    },
-                                )
-                            }
-                        }
+                    ExploreSection(
+                        title = "Popular Keywords",
+                        testTag = "explore_keywords_section",
+                        focusKey = "section_keywords",
+                        isLoading = state.isLoadingKeywords,
+                        isEmpty = state.keywords.isEmpty(),
+                        skeleton = { KeywordChipsSkeleton() },
+                    ) {
+                        KeywordChips(
+                            keywords = state.keywords,
+                            onKeywordSelected = { id, name -> onKeywordSelected?.invoke(id, name) },
+                        )
                     }
 
-                    // Series shelf section
-                    if (state.isLoadingFeaturedSeries || state.featuredSeries.isNotEmpty()) {
-                        if (state.isLoadingFeaturedSeries && state.featuredSeries.isEmpty()) {
-                            SpTitledSection(
-                                title = "Browse by Series",
-                                edgeToEdgeContent = true,
-                            ) {
-                                SeriesShelfSkeleton()
-                            }
-                        } else if (state.featuredSeries.isNotEmpty()) {
-                            SpTitledSection(
-                                title = "Browse by Series",
-                                edgeToEdgeContent = true,
-                                modifier = Modifier
-                                    .testTag("explore_series_section")
-                                    .rememberFocus("section_series"),
-                            ) {
-                                SeriesShelf(
-                                    series = state.featuredSeries,
-                                    onSeriesSelected = { seriesId, seriesName ->
-                                        onSeriesSelected?.invoke(seriesId, seriesName)
-                                    },
-                                )
-                            }
-                        }
+                    ExploreSection(
+                        title = "Browse by Series",
+                        testTag = "explore_series_section",
+                        focusKey = "section_series",
+                        isLoading = state.isLoadingFeaturedSeries,
+                        isEmpty = state.featuredSeries.isEmpty(),
+                        skeleton = { SeriesShelfSkeleton() },
+                    ) {
+                        SeriesShelf(
+                            series = state.featuredSeries,
+                            onSeriesSelected = { id, name -> onSeriesSelected?.invoke(id, name) },
+                        )
                     }
 
 
@@ -362,351 +286,211 @@ fun ExploreScreen(
                         )
                     }
 
-                    // Artwork showcase section
-                    if (state.isLoadingArtwork || state.artworkShowcase.isNotEmpty()) {
-                        if (state.isLoadingArtwork && state.artworkShowcase.isEmpty()) {
-                            SpTitledSection(
-                                title = "Visual Discovery",
-                                edgeToEdgeContent = true,
-                            ) {
-                                ArtworkShowcaseSkeleton()
-                            }
-                        } else if (state.artworkShowcase.isNotEmpty()) {
-                            SpTitledSection(
-                                title = "Visual Discovery",
-                                edgeToEdgeContent = true,
-                                modifier = Modifier
-                                    .testTag("explore_artwork_section")
-                                    .rememberFocus("section_artwork"),
-                                titleTrailing = if (onGallerySelected != null) {
-                                    {
-                                        Text(
-                                            text = "Browse Gallery",
-                                            style = SpTypography.LabelLarge,
-                                            color = SpColor.Link,
-                                            modifier = Modifier
-                                                .clip(RoundedCornerShape(SpSpacing.Small))
-                                                .clickable(onClick = onGallerySelected)
-                                                .padding(SpSpacing.Small)
-                                                .testTag("browse_gallery_button"),
-                                        )
-                                    }
-                                } else null,
-                            ) {
-                                ArtworkShowcaseSection(
-                                    artworks = state.artworkShowcase,
-                                    onGameSelected = onGameSelected,
+                    ExploreSection(
+                        title = "Visual Discovery",
+                        testTag = "explore_artwork_section",
+                        focusKey = "section_artwork",
+                        isLoading = state.isLoadingArtwork,
+                        isEmpty = state.artworkShowcase.isEmpty(),
+                        skeleton = { ArtworkShowcaseSkeleton() },
+                        titleTrailing = onGallerySelected?.let { onClick ->
+                            {
+                                Text(
+                                    text = "Browse Gallery",
+                                    style = SpTypography.LabelLarge,
+                                    color = SpColor.Link,
+                                    modifier = Modifier
+                                        .clip(RoundedCornerShape(SpSpacing.Small))
+                                        .clickable(onClick = onClick)
+                                        .padding(SpSpacing.Small)
+                                        .testTag("browse_gallery_button"),
                                 )
                             }
-                        }
+                        },
+                    ) {
+                        ArtworkShowcaseSection(
+                            artworks = state.artworkShowcase,
+                            onGameSelected = onGameSelected,
+                        )
                     }
 
-                    // Social & Community Discovery sections
-                    // Trending
-                    if (state.isLoadingSocial || state.trendingGames.isNotEmpty()) {
-                        if (state.isLoadingSocial && state.trendingGames.isEmpty()) {
-                            SpTitledSection(
-                                title = "Trending on Your Server",
-                                edgeToEdgeContent = true,
-                            ) {
-                                SocialSectionSkeleton()
-                            }
-                        } else if (state.trendingGames.isNotEmpty()) {
-                            SpTitledSection(
-                                title = "Trending on Your Server",
-                                edgeToEdgeContent = true,
-                                modifier = Modifier
-                                    .testTag("explore_trending_section")
-                                    .rememberFocus("section_trending"),
-                            ) {
-                                TrendingSection(
-                                    games = state.trendingGames,
-                                    onGameSelected = onGameSelected,
-                                )
-                            }
-                        }
+                    // Social & Community Discovery sections — all share the
+                    // single state.isLoadingSocial flag.
+                    ExploreSection(
+                        title = "Trending on Your Server",
+                        testTag = "explore_trending_section",
+                        focusKey = "section_trending",
+                        isLoading = state.isLoadingSocial,
+                        isEmpty = state.trendingGames.isEmpty(),
+                        skeleton = { SocialSectionSkeleton() },
+                    ) {
+                        TrendingSection(
+                            games = state.trendingGames,
+                            onGameSelected = onGameSelected,
+                        )
                     }
 
-                    // Community Favorites
-                    if (state.isLoadingSocial || state.communityTopGames.isNotEmpty()) {
-                        if (state.isLoadingSocial && state.communityTopGames.isEmpty()) {
-                            SpTitledSection(
-                                title = "Community Favorites",
-                                edgeToEdgeContent = true,
-                            ) {
-                                SocialSectionSkeleton()
-                            }
-                        } else if (state.communityTopGames.isNotEmpty()) {
-                            SpTitledSection(
-                                title = "Community Favorites",
-                                edgeToEdgeContent = true,
-                                modifier = Modifier
-                                    .testTag("explore_community_top_section")
-                                    .rememberFocus("section_community_favorites"),
-                            ) {
-                                CommunityTopSection(
-                                    games = state.communityTopGames,
-                                    onGameSelected = onGameSelected,
-                                )
-                            }
-                        }
+                    ExploreSection(
+                        title = "Community Favorites",
+                        testTag = "explore_community_top_section",
+                        focusKey = "section_community_favorites",
+                        isLoading = state.isLoadingSocial,
+                        isEmpty = state.communityTopGames.isEmpty(),
+                        skeleton = { SocialSectionSkeleton() },
+                    ) {
+                        CommunityTopSection(
+                            games = state.communityTopGames,
+                            onGameSelected = onGameSelected,
+                        )
                     }
 
-                    // Cult Classics
-                    if (state.isLoadingSocial || state.cultClassics.isNotEmpty()) {
-                        if (state.isLoadingSocial && state.cultClassics.isEmpty()) {
-                            SpTitledSection(
-                                title = "Cult Classics",
-                                edgeToEdgeContent = true,
-                            ) {
-                                SocialSectionSkeleton()
-                            }
-                        } else if (state.cultClassics.isNotEmpty()) {
-                            SpTitledSection(
-                                title = "Cult Classics",
-                                edgeToEdgeContent = true,
-                                modifier = Modifier
-                                    .testTag("explore_cult_classics_section")
-                                    .rememberFocus("section_cult_classics"),
-                            ) {
-                                CultClassicsSection(
-                                    games = state.cultClassics,
-                                    onGameSelected = onGameSelected,
-                                )
-                            }
-                        }
+                    ExploreSection(
+                        title = "Cult Classics",
+                        testTag = "explore_cult_classics_section",
+                        focusKey = "section_cult_classics",
+                        isLoading = state.isLoadingSocial,
+                        isEmpty = state.cultClassics.isEmpty(),
+                        skeleton = { SocialSectionSkeleton() },
+                    ) {
+                        CultClassicsSection(
+                            games = state.cultClassics,
+                            onGameSelected = onGameSelected,
+                        )
                     }
 
-                    // Active Right Now
-                    if (state.isLoadingSocial || state.activeNowGames.isNotEmpty()) {
-                        if (state.isLoadingSocial && state.activeNowGames.isEmpty()) {
-                            SpTitledSection(
-                                title = "Active Right Now",
-                                edgeToEdgeContent = true,
-                            ) {
-                                SocialSectionSkeleton()
-                            }
-                        } else if (state.activeNowGames.isNotEmpty()) {
-                            SpTitledSection(
-                                title = "Active Right Now",
-                                edgeToEdgeContent = true,
-                                modifier = Modifier
-                                    .testTag("explore_active_now_section")
-                                    .rememberFocus("section_active_now"),
-                            ) {
-                                ActiveNowSection(
-                                    games = state.activeNowGames,
-                                    onGameSelected = onGameSelected,
-                                )
-                            }
-                        }
+                    ExploreSection(
+                        title = "Active Right Now",
+                        testTag = "explore_active_now_section",
+                        focusKey = "section_active_now",
+                        isLoading = state.isLoadingSocial,
+                        isEmpty = state.activeNowGames.isEmpty(),
+                        skeleton = { SocialSectionSkeleton() },
+                    ) {
+                        ActiveNowSection(
+                            games = state.activeNowGames,
+                            onGameSelected = onGameSelected,
+                        )
                     }
 
-                    // Recently Reviewed
-                    if (state.isLoadingSocial || state.recentReviews.isNotEmpty()) {
-                        if (state.isLoadingSocial && state.recentReviews.isEmpty()) {
-                            SpTitledSection(
-                                title = "Recently Reviewed",
-                                edgeToEdgeContent = true,
-                            ) {
-                                SocialSectionSkeleton()
-                            }
-                        } else if (state.recentReviews.isNotEmpty()) {
-                            SpTitledSection(
-                                title = "Recently Reviewed",
-                                edgeToEdgeContent = true,
-                                modifier = Modifier
-                                    .testTag("explore_recently_reviewed_section")
-                                    .rememberFocus("section_recently_reviewed"),
-                            ) {
-                                RecentlyReviewedSection(
-                                    reviews = state.recentReviews,
-                                    onGameSelected = onGameSelected,
-                                )
-                            }
-                        }
+                    ExploreSection(
+                        title = "Recently Reviewed",
+                        testTag = "explore_recently_reviewed_section",
+                        focusKey = "section_recently_reviewed",
+                        isLoading = state.isLoadingSocial,
+                        isEmpty = state.recentReviews.isEmpty(),
+                        skeleton = { SocialSectionSkeleton() },
+                    ) {
+                        RecentlyReviewedSection(
+                            reviews = state.recentReviews,
+                            onGameSelected = onGameSelected,
+                        )
                     }
 
-                    // Temporal Discovery: On This Day
-                    if (state.isLoadingTemporal || state.onThisDayGames.isNotEmpty()) {
-                        if (state.isLoadingTemporal && state.onThisDayGames.isEmpty()) {
-                            SpTitledSection(
-                                title = "On This Day",
-                                edgeToEdgeContent = true,
-                            ) {
-                                TemporalSectionSkeleton()
-                            }
-                        } else if (state.onThisDayGames.isNotEmpty()) {
-                            val title = if (state.onThisDayDate.isNotEmpty()) {
-                                "On This Day (${state.onThisDayDate})"
-                            } else {
-                                "On This Day"
-                            }
-                            SpTitledSection(
-                                title = title,
-                                edgeToEdgeContent = true,
-                                modifier = Modifier
-                                    .testTag("explore_on_this_day_section")
-                                    .rememberFocus("section_on_this_day"),
-                            ) {
-                                OnThisDaySection(
-                                    games = state.onThisDayGames,
-                                    onGameSelected = onGameSelected,
-                                )
-                            }
-                        }
+                    // Title includes the date when populated — the skeleton
+                    // variant doesn't have that context yet, so both branches
+                    // use the static "On This Day" label while loading.
+                    val onThisDayTitle = if (state.onThisDayDate.isNotEmpty()) {
+                        "On This Day (${state.onThisDayDate})"
+                    } else {
+                        "On This Day"
+                    }
+                    ExploreSection(
+                        title = onThisDayTitle,
+                        testTag = "explore_on_this_day_section",
+                        focusKey = "section_on_this_day",
+                        isLoading = state.isLoadingTemporal,
+                        isEmpty = state.onThisDayGames.isEmpty(),
+                        skeleton = { TemporalSectionSkeleton() },
+                    ) {
+                        OnThisDaySection(
+                            games = state.onThisDayGames,
+                            onGameSelected = onGameSelected,
+                        )
                     }
 
-                    // Temporal Discovery: Your Anniversaries
-                    if (state.isLoadingTemporal || state.anniversaries.isNotEmpty()) {
-                        if (state.isLoadingTemporal && state.anniversaries.isEmpty()) {
-                            SpTitledSection(
-                                title = "Your Anniversaries",
-                                edgeToEdgeContent = true,
-                            ) {
-                                TemporalSectionSkeleton()
-                            }
-                        } else if (state.anniversaries.isNotEmpty()) {
-                            SpTitledSection(
-                                title = "Your Anniversaries",
-                                edgeToEdgeContent = true,
-                                modifier = Modifier
-                                    .testTag("explore_anniversaries_section")
-                                    .rememberFocus("section_anniversaries"),
-                            ) {
-                                AnniversariesSection(
-                                    anniversaries = state.anniversaries,
-                                    onGameSelected = onGameSelected,
-                                )
-                            }
-                        }
+                    ExploreSection(
+                        title = "Your Anniversaries",
+                        testTag = "explore_anniversaries_section",
+                        focusKey = "section_anniversaries",
+                        isLoading = state.isLoadingTemporal,
+                        isEmpty = state.anniversaries.isEmpty(),
+                        skeleton = { TemporalSectionSkeleton() },
+                    ) {
+                        AnniversariesSection(
+                            anniversaries = state.anniversaries,
+                            onGameSelected = onGameSelected,
+                        )
                     }
 
-                    // Achievement Discovery: Easy to 100%
-                    if (state.isLoadingAchievement || state.easyToCompleteGames.isNotEmpty()) {
-                        if (state.isLoadingAchievement && state.easyToCompleteGames.isEmpty()) {
-                            SpTitledSection(
-                                title = "Easy to 100%",
-                                edgeToEdgeContent = true,
-                            ) {
-                                AchievementSectionSkeleton()
-                            }
-                        } else if (state.easyToCompleteGames.isNotEmpty()) {
-                            SpTitledSection(
-                                title = "Easy to 100%",
-                                edgeToEdgeContent = true,
-                                modifier = Modifier
-                                    .testTag("explore_easy_to_complete_section")
-                                    .rememberFocus("section_easy_to_complete"),
-                            ) {
-                                EasyToCompleteSection(
-                                    games = state.easyToCompleteGames,
-                                    onGameClick = onGameSelected,
-                                )
-                            }
-                        }
+                    // Achievement Discovery — all share state.isLoadingAchievement.
+                    ExploreSection(
+                        title = "Easy to 100%",
+                        testTag = "explore_easy_to_complete_section",
+                        focusKey = "section_easy_to_complete",
+                        isLoading = state.isLoadingAchievement,
+                        isEmpty = state.easyToCompleteGames.isEmpty(),
+                        skeleton = { AchievementSectionSkeleton() },
+                    ) {
+                        EasyToCompleteSection(
+                            games = state.easyToCompleteGames,
+                            onGameClick = onGameSelected,
+                        )
                     }
 
-                    // Achievement Discovery: Mount Everest (Hardest)
-                    if (state.isLoadingAchievement || state.hardestGames.isNotEmpty()) {
-                        if (state.isLoadingAchievement && state.hardestGames.isEmpty()) {
-                            SpTitledSection(
-                                title = "Mount Everest",
-                                edgeToEdgeContent = true,
-                            ) {
-                                AchievementSectionSkeleton()
-                            }
-                        } else if (state.hardestGames.isNotEmpty()) {
-                            SpTitledSection(
-                                title = "Mount Everest",
-                                edgeToEdgeContent = true,
-                                modifier = Modifier
-                                    .testTag("explore_hardest_games_section")
-                                    .rememberFocus("section_hardest_games"),
-                            ) {
-                                HardestGamesSection(
-                                    games = state.hardestGames,
-                                    onGameClick = onGameSelected,
-                                )
-                            }
-                        }
+                    ExploreSection(
+                        title = "Mount Everest",
+                        testTag = "explore_hardest_games_section",
+                        focusKey = "section_hardest_games",
+                        isLoading = state.isLoadingAchievement,
+                        isEmpty = state.hardestGames.isEmpty(),
+                        skeleton = { AchievementSectionSkeleton() },
+                    ) {
+                        HardestGamesSection(
+                            games = state.hardestGames,
+                            onGameClick = onGameSelected,
+                        )
                     }
 
-                    // Achievement Discovery: Almost Done
-                    if (state.isLoadingAchievement || state.almostDoneGames.isNotEmpty()) {
-                        if (state.isLoadingAchievement && state.almostDoneGames.isEmpty()) {
-                            SpTitledSection(
-                                title = "Almost Done",
-                                edgeToEdgeContent = true,
-                            ) {
-                                AchievementSectionSkeleton()
-                            }
-                        } else if (state.almostDoneGames.isNotEmpty()) {
-                            SpTitledSection(
-                                title = "Almost Done",
-                                edgeToEdgeContent = true,
-                                modifier = Modifier
-                                    .testTag("explore_almost_done_section")
-                                    .rememberFocus("section_almost_done"),
-                            ) {
-                                AlmostDoneSection(
-                                    games = state.almostDoneGames,
-                                    onGameClick = onGameSelected,
-                                )
-                            }
-                        }
+                    ExploreSection(
+                        title = "Almost Done",
+                        testTag = "explore_almost_done_section",
+                        focusKey = "section_almost_done",
+                        isLoading = state.isLoadingAchievement,
+                        isEmpty = state.almostDoneGames.isEmpty(),
+                        skeleton = { AchievementSectionSkeleton() },
+                    ) {
+                        AlmostDoneSection(
+                            games = state.almostDoneGames,
+                            onGameClick = onGameSelected,
+                        )
                     }
 
-                    // Achievement Discovery: Fresh Challenges
-                    if (state.isLoadingAchievement || state.freshChallengeGames.isNotEmpty()) {
-                        if (state.isLoadingAchievement && state.freshChallengeGames.isEmpty()) {
-                            SpTitledSection(
-                                title = "Fresh Challenges",
-                                edgeToEdgeContent = true,
-                            ) {
-                                AchievementSectionSkeleton()
-                            }
-                        } else if (state.freshChallengeGames.isNotEmpty()) {
-                            SpTitledSection(
-                                title = "Fresh Challenges",
-                                edgeToEdgeContent = true,
-                                modifier = Modifier
-                                    .testTag("explore_fresh_challenges_section")
-                                    .rememberFocus("section_fresh_challenges"),
-                            ) {
-                                FreshChallengesSection(
-                                    games = state.freshChallengeGames,
-                                    onGameClick = onGameSelected,
-                                )
-                            }
-                        }
+                    ExploreSection(
+                        title = "Fresh Challenges",
+                        testTag = "explore_fresh_challenges_section",
+                        focusKey = "section_fresh_challenges",
+                        isLoading = state.isLoadingAchievement,
+                        isEmpty = state.freshChallengeGames.isEmpty(),
+                        skeleton = { AchievementSectionSkeleton() },
+                    ) {
+                        FreshChallengesSection(
+                            games = state.freshChallengeGames,
+                            onGameClick = onGameSelected,
+                        )
                     }
 
-                    // Achievement Discovery: Active Challenges
-                    if (state.isLoadingAchievement || state.activeChallenges.isNotEmpty()) {
-                        if (state.isLoadingAchievement && state.activeChallenges.isEmpty()) {
-                            SpTitledSection(
-                                title = "Active Challenges",
-                                edgeToEdgeContent = true,
-                            ) {
-                                AchievementSectionSkeleton()
-                            }
-                        } else if (state.activeChallenges.isNotEmpty()) {
-                            SpTitledSection(
-                                title = "Active Challenges",
-                                edgeToEdgeContent = true,
-                                modifier = Modifier
-                                    .testTag("explore_active_challenges_section")
-                                    .rememberFocus("section_active_challenges"),
-                            ) {
-                                ActiveChallengesSection(
-                                    challenges = state.activeChallenges,
-                                    onChallengeClick = { challengeId ->
-                                        onChallengeSelected?.invoke(challengeId)
-                                    },
-                                )
-                            }
-                        }
+                    ExploreSection(
+                        title = "Active Challenges",
+                        testTag = "explore_active_challenges_section",
+                        focusKey = "section_active_challenges",
+                        isLoading = state.isLoadingAchievement,
+                        isEmpty = state.activeChallenges.isEmpty(),
+                        skeleton = { AchievementSectionSkeleton() },
+                    ) {
+                        ActiveChallengesSection(
+                            challenges = state.activeChallenges,
+                            onChallengeClick = { onChallengeSelected?.invoke(it) },
+                        )
                     }
                     // Shelf rows
                     if (state.isLoadingRows && state.rows.isEmpty()) {
@@ -761,6 +545,55 @@ fun ExploreScreen(
             onDismiss = { viewModel.dismissError() },
             modifier = Modifier.align(Alignment.BottomCenter),
         )
+    }
+}
+
+/**
+ * Renders one Explore section with the canonical loading / populated /
+ * hidden conditional ladder. Collapses the 15+ copies of this pattern
+ * that used to live inline in [ExploreScreen]:
+ *
+ *   - loading + empty data → skeleton inside [SpTitledSection]
+ *   - populated data → content inside [SpTitledSection] with test tag + focus key
+ *   - idle + empty → render nothing
+ *
+ * [isLoading] / [isEmpty] come from the view model. [title] / [testTag] /
+ * [focusKey] are the per-section labels. [titleTrailing] matches
+ * [SpTitledSection]'s optional trailing slot (used by the Artwork
+ * section's "Browse Gallery" link).
+ */
+@Composable
+private fun ExploreSection(
+    title: String,
+    testTag: String,
+    focusKey: String,
+    isLoading: Boolean,
+    isEmpty: Boolean,
+    skeleton: @Composable () -> Unit,
+    titleTrailing: (@Composable () -> Unit)? = null,
+    content: @Composable () -> Unit,
+) {
+    when {
+        isLoading && isEmpty -> {
+            SpTitledSection(
+                title = title,
+                edgeToEdgeContent = true,
+            ) {
+                skeleton()
+            }
+        }
+        !isEmpty -> {
+            SpTitledSection(
+                title = title,
+                edgeToEdgeContent = true,
+                modifier = Modifier
+                    .testTag(testTag)
+                    .rememberFocus(focusKey),
+                titleTrailing = titleTrailing,
+            ) {
+                content()
+            }
+        }
     }
 }
 
