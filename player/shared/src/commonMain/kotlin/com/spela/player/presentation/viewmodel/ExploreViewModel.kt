@@ -35,8 +35,8 @@ import com.spela.player.domain.model.TrendingGame
 import com.spela.player.domain.model.WizardStep
 import com.spela.player.domain.repository.ExploreRepository
 import com.spela.player.util.DispatcherProvider
+import com.spela.player.util.JobManager
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -328,32 +328,10 @@ class ExploreViewModel(
 
     private val _completionistMapState = MutableStateFlow(CompletionistMapState())
     val completionistMapState: StateFlow<CompletionistMapState> = _completionistMapState.asStateFlow()
-    private var featuredJob: Job? = null
-    private var rowsJob: Job? = null
-    private var themesJob: Job? = null
-    private var keywordsJob: Job? = null
-    private var themeDetailJob: Job? = null
-    private var keywordDetailJob: Job? = null
-    private var featuredSeriesJob: Job? = null
-    private var seriesDetailJob: Job? = null
-    private var franchiseDetailJob: Job? = null
-
-    private var moodsJob: Job? = null
-    private var moodDetailJob: Job? = null
-    private var forYouJob: Job? = null
-    private var developerSpotlightJob: Job? = null
-    private var developerDetailJob: Job? = null
-    private var publisherDetailJob: Job? = null
-    private var consoleHighlightsJob: Job? = null
-    private var consoleShowcaseJob: Job? = null
-    private var artworkShowcaseJob: Job? = null
-    private var socialJob: Job? = null
-    private var temporalJob: Job? = null
-    private var achievementJob: Job? = null
-    private var screenshotGalleryJob: Job? = null
-    private var searchJob: Job? = null
-    private var savedSearchesJob: Job? = null
-    private var savingSearchJob: Job? = null
+    // Keyed launcher — replaces 25 separate Job fields. Each load
+    // function passes a unique key so re-entrant calls cancel any
+    // in-flight previous load before starting a new one. See #690.
+    private val jobs = JobManager(scope)
 
     fun load() {
         loadFeatured()
@@ -377,11 +355,10 @@ class ExploreViewModel(
     }
 
     fun loadThemeGames(themeId: String, themeName: String) {
-        themeDetailJob?.cancel()
         _themeDetailState.update {
             ThemeDetailState(themeId = themeId, themeName = themeName, isLoading = true)
         }
-        themeDetailJob = scope.launch(dispatchers.io) {
+        jobs.launch("themeDetail", dispatchers.io) {
             exploreRepository.getThemeGames(themeId, page = 1, pageSize = 50).fold(
                 onSuccess = { games ->
                     _themeDetailState.update { it.copy(games = games, isLoading = false) }
@@ -394,11 +371,10 @@ class ExploreViewModel(
     }
 
     fun loadKeywordGames(keywordId: String, keywordName: String) {
-        keywordDetailJob?.cancel()
         _keywordDetailState.update {
             KeywordDetailState(keywordId = keywordId, keywordName = keywordName, isLoading = true)
         }
-        keywordDetailJob = scope.launch(dispatchers.io) {
+        jobs.launch("keywordDetail", dispatchers.io) {
             exploreRepository.getKeywordGames(keywordId, page = 1, pageSize = 50).fold(
                 onSuccess = { games ->
                     _keywordDetailState.update { it.copy(games = games, isLoading = false) }
@@ -419,11 +395,10 @@ class ExploreViewModel(
     }
 
     fun loadSeriesDetail(seriesId: String, seriesName: String) {
-        seriesDetailJob?.cancel()
         _seriesDetailState.update {
             SeriesDetailState(seriesId = seriesId, seriesName = seriesName, isLoading = true)
         }
-        seriesDetailJob = scope.launch(dispatchers.io) {
+        jobs.launch("seriesDetail", dispatchers.io) {
             exploreRepository.getSeriesDetail(seriesId).fold(
                 onSuccess = { detail ->
                     _seriesDetailState.update { it.copy(detail = detail, isLoading = false) }
@@ -444,11 +419,10 @@ class ExploreViewModel(
     }
 
     fun loadFranchiseDetail(franchiseId: String, franchiseName: String) {
-        franchiseDetailJob?.cancel()
         _franchiseDetailState.update {
             FranchiseDetailState(franchiseId = franchiseId, franchiseName = franchiseName, isLoading = true)
         }
-        franchiseDetailJob = scope.launch(dispatchers.io) {
+        jobs.launch("franchiseDetail", dispatchers.io) {
             exploreRepository.getFranchiseDetail(franchiseId).fold(
                 onSuccess = { detail ->
                     _franchiseDetailState.update { it.copy(detail = detail, isLoading = false) }
@@ -469,9 +443,9 @@ class ExploreViewModel(
     }
 
     private fun loadFeatured() {
-        if (featuredJob?.isActive == true) return
+        if (jobs.isActive("featured")) return
         _state.update { it.copy(isLoadingFeatured = it.featuredGames.isEmpty()) }
-        featuredJob = scope.launch(dispatchers.io) {
+        jobs.launch("featured", dispatchers.io) {
             exploreRepository.getFeaturedGames().fold(
                 onSuccess = { featured ->
                     _state.update { it.copy(featuredGames = featured, isLoadingFeatured = false) }
@@ -484,9 +458,9 @@ class ExploreViewModel(
     }
 
     private fun loadRows() {
-        if (rowsJob?.isActive == true) return
+        if (jobs.isActive("rows")) return
         _state.update { it.copy(isLoadingRows = it.rows.isEmpty()) }
-        rowsJob = scope.launch(dispatchers.io) {
+        jobs.launch("rows", dispatchers.io) {
             exploreRepository.getExploreRows().fold(
                 onSuccess = { rows ->
                     _state.update { it.copy(rows = rows, isLoadingRows = false) }
@@ -499,9 +473,9 @@ class ExploreViewModel(
     }
 
     private fun loadThemes() {
-        if (themesJob?.isActive == true) return
+        if (jobs.isActive("themes")) return
         _state.update { it.copy(isLoadingThemes = it.themes.isEmpty()) }
-        themesJob = scope.launch(dispatchers.io) {
+        jobs.launch("themes", dispatchers.io) {
             exploreRepository.getThemes().fold(
                 onSuccess = { themes ->
                     _state.update { it.copy(themes = themes, isLoadingThemes = false) }
@@ -514,9 +488,9 @@ class ExploreViewModel(
     }
 
     private fun loadKeywords() {
-        if (keywordsJob?.isActive == true) return
+        if (jobs.isActive("keywords")) return
         _state.update { it.copy(isLoadingKeywords = it.keywords.isEmpty()) }
-        keywordsJob = scope.launch(dispatchers.io) {
+        jobs.launch("keywords", dispatchers.io) {
             exploreRepository.getKeywords().fold(
                 onSuccess = { keywords ->
                     _state.update { it.copy(keywords = keywords, isLoadingKeywords = false) }
@@ -529,9 +503,9 @@ class ExploreViewModel(
     }
 
     private fun loadFeaturedSeries() {
-        if (featuredSeriesJob?.isActive == true) return
+        if (jobs.isActive("featuredSeries")) return
         _state.update { it.copy(isLoadingFeaturedSeries = it.featuredSeries.isEmpty()) }
-        featuredSeriesJob = scope.launch(dispatchers.io) {
+        jobs.launch("featuredSeries", dispatchers.io) {
             exploreRepository.getFeaturedSeries().fold(
                 onSuccess = { series ->
                     _state.update { it.copy(featuredSeries = series, isLoadingFeaturedSeries = false) }
@@ -545,9 +519,9 @@ class ExploreViewModel(
 
 
     private fun loadMoods() {
-        if (moodsJob?.isActive == true) return
+        if (jobs.isActive("moods")) return
         _state.update { it.copy(isLoadingMoods = it.moods.isEmpty()) }
-        moodsJob = scope.launch(dispatchers.io) {
+        jobs.launch("moods", dispatchers.io) {
             exploreRepository.getMoods().fold(
                 onSuccess = { moods ->
                     _state.update { it.copy(moods = moods, isLoadingMoods = false) }
@@ -560,9 +534,9 @@ class ExploreViewModel(
     }
 
     private fun loadForYou() {
-        if (forYouJob?.isActive == true) return
+        if (jobs.isActive("forYou")) return
         _state.update { it.copy(isLoadingForYou = it.forYouRows.isEmpty()) }
-        forYouJob = scope.launch(dispatchers.io) {
+        jobs.launch("forYou", dispatchers.io) {
             exploreRepository.getForYou().fold(
                 onSuccess = { rows ->
                     _state.update { it.copy(forYouRows = rows, isLoadingForYou = false) }
@@ -575,12 +549,11 @@ class ExploreViewModel(
     }
 
     fun loadMoodGames(moodId: String, moodName: String) {
-        moodDetailJob?.cancel()
         val mood = _state.value.moods.find { it.id == moodId }
         _moodDetailState.update {
             MoodDetailState(moodId = moodId, moodName = moodName, mood = mood, isLoading = true)
         }
-        moodDetailJob = scope.launch(dispatchers.io) {
+        jobs.launch("moodDetail", dispatchers.io) {
             exploreRepository.getMoodGames(moodId).fold(
                 onSuccess = { games ->
                     _moodDetailState.update { it.copy(games = games, isLoading = false) }
@@ -612,9 +585,9 @@ class ExploreViewModel(
     }
 
     private fun loadDeveloperSpotlight() {
-        if (developerSpotlightJob?.isActive == true) return
+        if (jobs.isActive("developerSpotlight")) return
         _state.update { it.copy(isLoadingDeveloperSpotlight = it.developerSpotlight == null) }
-        developerSpotlightJob = scope.launch(dispatchers.io) {
+        jobs.launch("developerSpotlight", dispatchers.io) {
             exploreRepository.getDeveloperSpotlight().fold(
                 onSuccess = { spotlight ->
                     _state.update { it.copy(developerSpotlight = spotlight, isLoadingDeveloperSpotlight = false) }
@@ -627,11 +600,10 @@ class ExploreViewModel(
     }
 
     fun loadDeveloperDetail(name: String) {
-        developerDetailJob?.cancel()
         _developerDetailState.update {
             DeveloperDetailState(name = name, isLoading = true)
         }
-        developerDetailJob = scope.launch(dispatchers.io) {
+        jobs.launch("developerDetail", dispatchers.io) {
             exploreRepository.getDeveloperDetail(name).fold(
                 onSuccess = { detail ->
                     _developerDetailState.update { it.copy(detail = detail, isLoading = false) }
@@ -644,11 +616,10 @@ class ExploreViewModel(
     }
 
     fun loadPublisherDetail(name: String) {
-        publisherDetailJob?.cancel()
         _publisherDetailState.update {
             PublisherDetailState(name = name, isLoading = true)
         }
-        publisherDetailJob = scope.launch(dispatchers.io) {
+        jobs.launch("publisherDetail", dispatchers.io) {
             exploreRepository.getPublisherDetail(name).fold(
                 onSuccess = { detail ->
                     _publisherDetailState.update { it.copy(detail = detail, isLoading = false) }
@@ -701,9 +672,9 @@ class ExploreViewModel(
     }
 
     private fun loadConsoleHighlights() {
-        if (consoleHighlightsJob?.isActive == true) return
+        if (jobs.isActive("consoleHighlights")) return
         _state.update { it.copy(isLoadingConsoleHighlights = it.consoleHighlights.isEmpty()) }
-        consoleHighlightsJob = scope.launch(dispatchers.io) {
+        jobs.launch("consoleHighlights", dispatchers.io) {
             exploreRepository.getConsoleHighlights().fold(
                 onSuccess = { highlights ->
                     _state.update { it.copy(consoleHighlights = highlights, isLoadingConsoleHighlights = false) }
@@ -716,11 +687,10 @@ class ExploreViewModel(
     }
 
     fun loadConsoleShowcase(consoleId: String) {
-        consoleShowcaseJob?.cancel()
         _consoleShowcaseState.update {
             ConsoleShowcaseState(consoleId = consoleId, isLoading = true)
         }
-        consoleShowcaseJob = scope.launch(dispatchers.io) {
+        jobs.launch("consoleShowcase", dispatchers.io) {
             exploreRepository.getConsoleShowcase(consoleId).fold(
                 onSuccess = { showcase ->
                     _consoleShowcaseState.update { it.copy(showcase = showcase, isLoading = false) }
@@ -737,9 +707,9 @@ class ExploreViewModel(
     }
 
     private fun loadArtworkShowcase() {
-        if (artworkShowcaseJob?.isActive == true) return
+        if (jobs.isActive("artworkShowcase")) return
         _state.update { it.copy(isLoadingArtwork = it.artworkShowcase.isEmpty()) }
-        artworkShowcaseJob = scope.launch(dispatchers.io) {
+        jobs.launch("artworkShowcase", dispatchers.io) {
             exploreRepository.getArtworkGallery(page = 1).fold(
                 onSuccess = { artworks ->
                     _state.update { it.copy(artworkShowcase = artworks, isLoadingArtwork = false) }
@@ -752,9 +722,9 @@ class ExploreViewModel(
     }
 
     private fun loadSocialData() {
-        if (socialJob?.isActive == true) return
+        if (jobs.isActive("social")) return
         _state.update { it.copy(isLoadingSocial = it.trendingGames.isEmpty() && it.communityTopGames.isEmpty()) }
-        socialJob = scope.launch(dispatchers.io) {
+        jobs.launch("social", dispatchers.io) {
             // Load all social endpoints concurrently
             val trendingDeferred = async { exploreRepository.getTrending() }
             val communityTopDeferred = async { exploreRepository.getCommunityTop() }
@@ -778,9 +748,9 @@ class ExploreViewModel(
     }
 
     private fun loadTemporalData() {
-        if (temporalJob?.isActive == true) return
+        if (jobs.isActive("temporal")) return
         _state.update { it.copy(isLoadingTemporal = it.onThisDayGames.isEmpty() && it.anniversaries.isEmpty()) }
-        temporalJob = scope.launch(dispatchers.io) {
+        jobs.launch("temporal", dispatchers.io) {
             val onThisDayDeferred = async { exploreRepository.getOnThisDay() }
             val anniversariesDeferred = async { exploreRepository.getYourAnniversaries() }
 
@@ -799,9 +769,9 @@ class ExploreViewModel(
     }
 
     private fun loadAchievementData() {
-        if (achievementJob?.isActive == true) return
+        if (jobs.isActive("achievement")) return
         _state.update { it.copy(isLoadingAchievement = it.easyToCompleteGames.isEmpty() && it.hardestGames.isEmpty()) }
-        achievementJob = scope.launch(dispatchers.io) {
+        jobs.launch("achievement", dispatchers.io) {
             val easyDeferred = async { exploreRepository.getEasyToComplete() }
             val hardestDeferred = async { exploreRepository.getHardestGames() }
             val almostDoneDeferred = async { exploreRepository.getAlmostDone() }
@@ -824,11 +794,10 @@ class ExploreViewModel(
     }
 
     fun loadScreenshotGallery() {
-        screenshotGalleryJob?.cancel()
         _screenshotGalleryState.update {
             ScreenshotGalleryState(isLoading = true)
         }
-        screenshotGalleryJob = scope.launch(dispatchers.io) {
+        jobs.launch("screenshotGallery", dispatchers.io) {
             exploreRepository.getScreenshotGallery(page = 1).fold(
                 onSuccess = { screenshots ->
                     _screenshotGalleryState.update {
@@ -854,7 +823,7 @@ class ExploreViewModel(
         if (current.isLoading || !current.hasMore) return
         _screenshotGalleryState.update { it.copy(isLoading = true) }
         val nextPage = current.page + 1
-        screenshotGalleryJob = scope.launch(dispatchers.io) {
+        jobs.launch("screenshotGallery", dispatchers.io) {
             exploreRepository.getScreenshotGallery(page = nextPage).fold(
                 onSuccess = { screenshots ->
                     _screenshotGalleryState.update {
@@ -891,9 +860,8 @@ class ExploreViewModel(
 
     fun applyFilters() {
         val filters = _gameSearchState.value.filters
-        searchJob?.cancel()
         _gameSearchState.update { it.copy(isLoading = true, error = null, showFilterPanel = false) }
-        searchJob = scope.launch(dispatchers.io) {
+        jobs.launch("search", dispatchers.io) {
             exploreRepository.getFilteredGames(filters.toQueryMap(), page = 1, pageSize = 50).fold(
                 onSuccess = { games ->
                     _gameSearchState.update { it.copy(results = games, isLoading = false) }
@@ -910,9 +878,8 @@ class ExploreViewModel(
     }
 
     fun loadSavedSearches() {
-        savedSearchesJob?.cancel()
         _gameSearchState.update { it.copy(isLoadingSavedSearches = true) }
-        savedSearchesJob = scope.launch(dispatchers.io) {
+        jobs.launch("savedSearches", dispatchers.io) {
             exploreRepository.getSavedSearches().fold(
                 onSuccess = { searches ->
                     _gameSearchState.update { it.copy(savedSearches = searches, isLoadingSavedSearches = false) }
@@ -927,9 +894,8 @@ class ExploreViewModel(
     fun saveCurrentSearch(name: String) {
         val filters = _gameSearchState.value.filters
         if (filters.isEmpty) return
-        savingSearchJob?.cancel()
         _gameSearchState.update { it.copy(isSaving = true) }
-        savingSearchJob = scope.launch(dispatchers.io) {
+        jobs.launch("savingSearch", dispatchers.io) {
             exploreRepository.createSavedSearch(name, filters.toQueryMap()).fold(
                 onSuccess = { savedSearch ->
                     _gameSearchState.update {
