@@ -38,101 +38,90 @@ interface ResultItem {
   render: (highlighted: boolean) => React.ReactNode;
 }
 
+// Helper for building a section's items. Each of the 7 result types
+// used to have its own 10-line `if (…length > 0) { sections.push({…}) }`
+// block; this collapses them to 3-line entries in `buildSections`.
+function makeSection<T>(
+  key: string,
+  title: string,
+  bucket: { results: T[]; total: number },
+  getId: (item: T) => string,
+  getPath: (item: T) => string,
+  renderRow: (item: T, highlighted: boolean) => React.ReactNode,
+): ResultSection | null {
+  if (bucket.results.length === 0) return null;
+  return {
+    key,
+    title,
+    total: bucket.total,
+    items: bucket.results.map((item) => ({
+      id: getId(item),
+      path: getPath(item),
+      render: (highlighted: boolean) => renderRow(item, highlighted),
+    })),
+  };
+}
+
 function buildSections(results: SearchResults): ResultSection[] {
-  const sections: ResultSection[] = [];
-
-  if (results.games.results.length > 0) {
-    sections.push({
-      key: "games",
-      title: "Games",
-      total: results.games.total,
-      items: results.games.results.map((g) => ({
-        id: `game-${g.id}`,
-        path: `/games/${g.id}`,
-        render: (highlighted: boolean) => <GameRow game={g} highlighted={highlighted} />,
-      })),
-    });
-  }
-
-  if (results.consoles.results.length > 0) {
-    sections.push({
-      key: "consoles",
-      title: "Consoles",
-      total: results.consoles.total,
-      items: results.consoles.results.map((c) => ({
-        id: `console-${c.id}`,
-        path: `/consoles/${c.id}`,
-        render: (highlighted: boolean) => <ConsoleRow console={c} highlighted={highlighted} />,
-      })),
-    });
-  }
-
-  if (results.developers.results.length > 0) {
-    sections.push({
-      key: "developers",
-      title: "Developers",
-      total: results.developers.total,
-      items: results.developers.results.map((d) => ({
-        id: `dev-${d.name}`,
-        path: `/explore/developers/${encodeURIComponent(d.name)}`,
-        render: (highlighted: boolean) => <DeveloperRow developer={d} highlighted={highlighted} />,
-      })),
-    });
-  }
-
-  if (results.publishers.results.length > 0) {
-    sections.push({
-      key: "publishers",
-      title: "Publishers",
-      total: results.publishers.total,
-      items: results.publishers.results.map((p) => ({
-        id: `pub-${p.name}`,
-        path: `/explore/publishers/${encodeURIComponent(p.name)}`,
-        render: (highlighted: boolean) => <PublisherRow publisher={p} highlighted={highlighted} />,
-      })),
-    });
-  }
-
-  if (results.collections.results.length > 0) {
-    sections.push({
-      key: "collections",
-      title: "Collections",
-      total: results.collections.total,
-      items: results.collections.results.map((c) => ({
-        id: `col-${c.id}`,
-        path: `/collections/${c.id}`,
-        render: (highlighted: boolean) => <CollectionRow collection={c} highlighted={highlighted} />,
-      })),
-    });
-  }
-
-  if (results.series.results.length > 0) {
-    sections.push({
-      key: "series",
-      title: "Series",
-      total: results.series.total,
-      items: results.series.results.map((s) => ({
-        id: `series-${s.id}`,
-        path: `/explore/series/${s.id}`,
-        render: (highlighted: boolean) => <SeriesRow series={s} highlighted={highlighted} />,
-      })),
-    });
-  }
-
-  if (results.franchises.results.length > 0) {
-    sections.push({
-      key: "franchises",
-      title: "Franchises",
-      total: results.franchises.total,
-      items: results.franchises.results.map((f) => ({
-        id: `fran-${f.id}`,
-        path: `/explore/franchise/${f.id}`,
-        render: (highlighted: boolean) => <FranchiseRow franchise={f} highlighted={highlighted} />,
-      })),
-    });
-  }
-
-  return sections;
+  const sections: Array<ResultSection | null> = [
+    makeSection(
+      "games",
+      "Games",
+      results.games,
+      (g) => `game-${g.id}`,
+      (g) => `/games/${g.id}`,
+      (g, hl) => <GameRow game={g} highlighted={hl} />,
+    ),
+    makeSection(
+      "consoles",
+      "Consoles",
+      results.consoles,
+      (c) => `console-${c.id}`,
+      (c) => `/consoles/${c.id}`,
+      (c, hl) => <ConsoleRow console={c} highlighted={hl} />,
+    ),
+    makeSection(
+      "developers",
+      "Developers",
+      results.developers,
+      (d) => `dev-${d.name}`,
+      (d) => `/explore/developers/${encodeURIComponent(d.name)}`,
+      (d, hl) => <DeveloperRow developer={d} highlighted={hl} />,
+    ),
+    makeSection(
+      "publishers",
+      "Publishers",
+      results.publishers,
+      (p) => `pub-${p.name}`,
+      (p) => `/explore/publishers/${encodeURIComponent(p.name)}`,
+      (p, hl) => <PublisherRow publisher={p} highlighted={hl} />,
+    ),
+    makeSection(
+      "collections",
+      "Collections",
+      results.collections,
+      (c) => `col-${c.id}`,
+      (c) => `/collections/${c.id}`,
+      (c, hl) => <CollectionRow collection={c} highlighted={hl} />,
+    ),
+    makeSection(
+      "series",
+      "Series",
+      results.series,
+      (s) => `series-${s.id}`,
+      (s) => `/explore/series/${s.id}`,
+      (s, hl) => <SeriesRow series={s} highlighted={hl} />,
+    ),
+    makeSection(
+      "franchises",
+      "Franchises",
+      results.franchises,
+      (f) => `fran-${f.id}`,
+      (f) => `/explore/franchise/${f.id}`,
+      (f, hl) => <FranchiseRow franchise={f} highlighted={hl} />,
+    ),
+  ];
+  return sections.filter((s): s is ResultSection => s !== null);
 }
 
 export function SearchResultsDisplay({
@@ -234,6 +223,86 @@ export function SearchResultsDisplay({
   );
 }
 
+// Shared row primitive — every result row renders as a 3-slot flex
+// container (leading icon, title/subtitle stack, right-side metadata)
+// with the same highlighted/hover treatment. The 7 typed adapters
+// below compose their own slots and delegate here.
+
+interface SearchResultRowProps {
+  icon: React.ReactNode;
+  title: string;
+  subtitle?: string;
+  rightContent: React.ReactNode;
+  highlighted: boolean;
+}
+
+function SearchResultRow({
+  icon,
+  title,
+  subtitle,
+  rightContent,
+  highlighted,
+}: SearchResultRowProps) {
+  return (
+    <div
+      className={cn(
+        "flex items-center gap-3 rounded-lg px-2 py-1.5 transition-colors",
+        highlighted ? "bg-surface-800" : "hover:bg-surface-800/50",
+      )}
+    >
+      {icon}
+      {subtitle !== undefined ? (
+        <div className="min-w-0 flex-1">
+          <p className="text-sm font-medium text-surface-100 truncate">{title}</p>
+          <p className="text-xs text-surface-500 truncate">{subtitle}</p>
+        </div>
+      ) : (
+        <p className="text-sm font-medium text-surface-100 flex-1 truncate">
+          {title}
+        </p>
+      )}
+      {rightContent}
+    </div>
+  );
+}
+
+// Small square icon badge used by the name-only result types
+// (developer, publisher, collection, series, franchise).
+function IconBadge({
+  icon: Icon,
+}: {
+  icon: typeof Code;
+}) {
+  return (
+    <div className="h-8 w-8 rounded-lg bg-surface-800 flex items-center justify-center flex-shrink-0">
+      <Icon className="h-4 w-4 text-surface-400" />
+    </div>
+  );
+}
+
+// Shared "N game(s) + optional rating" right-side renderer used by
+// the developer and publisher rows. Extracted so the rating
+// conditional only lives in one place.
+function GameCountWithRating({
+  gameCount,
+  avgRating,
+}: {
+  gameCount: number;
+  avgRating: number;
+}) {
+  return (
+    <span className="text-xs text-surface-500 flex items-center gap-1.5">
+      {gameCount} {gameCount === 1 ? "game" : "games"}
+      {avgRating > 0 && (
+        <>
+          <Star className="h-3 w-3 text-warning-500 fill-warning-500" />
+          {avgRating.toFixed(1)}
+        </>
+      )}
+    </span>
+  );
+}
+
 // --- Individual row components ---
 
 function GameRow({
@@ -243,34 +312,27 @@ function GameRow({
   game: GameSearchResult;
   highlighted: boolean;
 }) {
+  const icon = game.coverUrl ? (
+    <img
+      src={game.coverUrl}
+      alt=""
+      className="h-10 w-8 rounded object-cover flex-shrink-0"
+    />
+  ) : (
+    <div className="h-10 w-8 rounded bg-surface-700 flex-shrink-0" />
+  );
   return (
-    <div
-      className={cn(
-        "flex items-center gap-3 rounded-lg px-2 py-1.5 transition-colors",
-        highlighted ? "bg-surface-800" : "hover:bg-surface-800/50",
-      )}
-    >
-      {game.coverUrl ? (
-        <img
-          src={game.coverUrl}
-          alt=""
-          className="h-10 w-8 rounded object-cover flex-shrink-0"
-        />
-      ) : (
-        <div className="h-10 w-8 rounded bg-surface-700 flex-shrink-0" />
-      )}
-      <div className="min-w-0 flex-1">
-        <p className="text-sm font-medium text-surface-100 truncate">
-          {game.title}
-        </p>
-        {game.developer && (
-          <p className="text-xs text-surface-500 truncate">{game.developer}</p>
-        )}
-      </div>
-      <span className="text-xs font-medium px-2 py-0.5 rounded bg-surface-800 text-surface-400 uppercase flex-shrink-0">
-        {game.consoleId}
-      </span>
-    </div>
+    <SearchResultRow
+      icon={icon}
+      title={game.title}
+      subtitle={game.developer || undefined}
+      rightContent={
+        <span className="text-xs font-medium px-2 py-0.5 rounded bg-surface-800 text-surface-400 uppercase flex-shrink-0">
+          {game.consoleId}
+        </span>
+      }
+      highlighted={highlighted}
+    />
   );
 }
 
@@ -282,25 +344,23 @@ function ConsoleRow({
   highlighted: boolean;
 }) {
   return (
-    <div
-      className={cn(
-        "flex items-center gap-3 rounded-lg px-2 py-1.5 transition-colors",
-        highlighted ? "bg-surface-800" : "hover:bg-surface-800/50",
-      )}
-    >
-      <img
-        src={c.iconUrl}
-        alt=""
-        className="h-6 w-6 flex-shrink-0"
-        style={{ imageRendering: "pixelated" }}
-      />
-      <p className="text-sm font-medium text-surface-100 flex-1 truncate">
-        {c.name}
-      </p>
-      <span className="text-xs text-surface-500">
-        {c.gameCount} {c.gameCount === 1 ? "game" : "games"}
-      </span>
-    </div>
+    <SearchResultRow
+      icon={
+        <img
+          src={c.iconUrl}
+          alt=""
+          className="h-6 w-6 flex-shrink-0"
+          style={{ imageRendering: "pixelated" }}
+        />
+      }
+      title={c.name}
+      rightContent={
+        <span className="text-xs text-surface-500">
+          {c.gameCount} {c.gameCount === 1 ? "game" : "games"}
+        </span>
+      }
+      highlighted={highlighted}
+    />
   );
 }
 
@@ -312,28 +372,17 @@ function DeveloperRow({
   highlighted: boolean;
 }) {
   return (
-    <div
-      className={cn(
-        "flex items-center gap-3 rounded-lg px-2 py-1.5 transition-colors",
-        highlighted ? "bg-surface-800" : "hover:bg-surface-800/50",
-      )}
-    >
-      <div className="h-8 w-8 rounded-lg bg-surface-800 flex items-center justify-center flex-shrink-0">
-        <Code className="h-4 w-4 text-surface-400" />
-      </div>
-      <p className="text-sm font-medium text-surface-100 flex-1 truncate">
-        {developer.name}
-      </p>
-      <span className="text-xs text-surface-500 flex items-center gap-1.5">
-        {developer.gameCount} {developer.gameCount === 1 ? "game" : "games"}
-        {developer.avgRating > 0 && (
-          <>
-            <Star className="h-3 w-3 text-warning-500 fill-warning-500" />
-            {developer.avgRating.toFixed(1)}
-          </>
-        )}
-      </span>
-    </div>
+    <SearchResultRow
+      icon={<IconBadge icon={Code} />}
+      title={developer.name}
+      rightContent={
+        <GameCountWithRating
+          gameCount={developer.gameCount}
+          avgRating={developer.avgRating}
+        />
+      }
+      highlighted={highlighted}
+    />
   );
 }
 
@@ -345,28 +394,17 @@ function PublisherRow({
   highlighted: boolean;
 }) {
   return (
-    <div
-      className={cn(
-        "flex items-center gap-3 rounded-lg px-2 py-1.5 transition-colors",
-        highlighted ? "bg-surface-800" : "hover:bg-surface-800/50",
-      )}
-    >
-      <div className="h-8 w-8 rounded-lg bg-surface-800 flex items-center justify-center flex-shrink-0">
-        <Building className="h-4 w-4 text-surface-400" />
-      </div>
-      <p className="text-sm font-medium text-surface-100 flex-1 truncate">
-        {publisher.name}
-      </p>
-      <span className="text-xs text-surface-500 flex items-center gap-1.5">
-        {publisher.gameCount} {publisher.gameCount === 1 ? "game" : "games"}
-        {publisher.avgRating > 0 && (
-          <>
-            <Star className="h-3 w-3 text-warning-500 fill-warning-500" />
-            {publisher.avgRating.toFixed(1)}
-          </>
-        )}
-      </span>
-    </div>
+    <SearchResultRow
+      icon={<IconBadge icon={Building} />}
+      title={publisher.name}
+      rightContent={
+        <GameCountWithRating
+          gameCount={publisher.gameCount}
+          avgRating={publisher.avgRating}
+        />
+      }
+      highlighted={highlighted}
+    />
   );
 }
 
@@ -378,27 +416,17 @@ function CollectionRow({
   highlighted: boolean;
 }) {
   return (
-    <div
-      className={cn(
-        "flex items-center gap-3 rounded-lg px-2 py-1.5 transition-colors",
-        highlighted ? "bg-surface-800" : "hover:bg-surface-800/50",
-      )}
-    >
-      <div className="h-8 w-8 rounded-lg bg-surface-800 flex items-center justify-center flex-shrink-0">
-        <FolderOpen className="h-4 w-4 text-surface-400" />
-      </div>
-      <div className="min-w-0 flex-1">
-        <p className="text-sm font-medium text-surface-100 truncate">
-          {collection.name}
-        </p>
-        <p className="text-xs text-surface-500 truncate">
-          by {collection.username}
-        </p>
-      </div>
-      <span className="text-xs text-surface-500">
-        {collection.gameCount} {collection.gameCount === 1 ? "game" : "games"}
-      </span>
-    </div>
+    <SearchResultRow
+      icon={<IconBadge icon={FolderOpen} />}
+      title={collection.name}
+      subtitle={`by ${collection.username}`}
+      rightContent={
+        <span className="text-xs text-surface-500">
+          {collection.gameCount} {collection.gameCount === 1 ? "game" : "games"}
+        </span>
+      }
+      highlighted={highlighted}
+    />
   );
 }
 
@@ -410,22 +438,16 @@ function SeriesRow({
   highlighted: boolean;
 }) {
   return (
-    <div
-      className={cn(
-        "flex items-center gap-3 rounded-lg px-2 py-1.5 transition-colors",
-        highlighted ? "bg-surface-800" : "hover:bg-surface-800/50",
-      )}
-    >
-      <div className="h-8 w-8 rounded-lg bg-surface-800 flex items-center justify-center flex-shrink-0">
-        <Layers className="h-4 w-4 text-surface-400" />
-      </div>
-      <p className="text-sm font-medium text-surface-100 flex-1 truncate">
-        {series.name}
-      </p>
-      <span className="text-xs text-surface-500">
-        {series.libraryGames} of {series.totalGames} in library
-      </span>
-    </div>
+    <SearchResultRow
+      icon={<IconBadge icon={Layers} />}
+      title={series.name}
+      rightContent={
+        <span className="text-xs text-surface-500">
+          {series.libraryGames} of {series.totalGames} in library
+        </span>
+      }
+      highlighted={highlighted}
+    />
   );
 }
 
@@ -437,21 +459,15 @@ function FranchiseRow({
   highlighted: boolean;
 }) {
   return (
-    <div
-      className={cn(
-        "flex items-center gap-3 rounded-lg px-2 py-1.5 transition-colors",
-        highlighted ? "bg-surface-800" : "hover:bg-surface-800/50",
-      )}
-    >
-      <div className="h-8 w-8 rounded-lg bg-surface-800 flex items-center justify-center flex-shrink-0">
-        <Crown className="h-4 w-4 text-surface-400" />
-      </div>
-      <p className="text-sm font-medium text-surface-100 flex-1 truncate">
-        {franchise.name}
-      </p>
-      <span className="text-xs text-surface-500">
-        {franchise.libraryGames} of {franchise.totalGames} in library
-      </span>
-    </div>
+    <SearchResultRow
+      icon={<IconBadge icon={Crown} />}
+      title={franchise.name}
+      rightContent={
+        <span className="text-xs text-surface-500">
+          {franchise.libraryGames} of {franchise.totalGames} in library
+        </span>
+      }
+      highlighted={highlighted}
+    />
   );
 }
