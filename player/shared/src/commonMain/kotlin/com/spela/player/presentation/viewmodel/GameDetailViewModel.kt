@@ -21,7 +21,6 @@ import com.spela.player.domain.repository.SessionRepository
 import com.spela.player.domain.repository.SharedSaveRepository
 import com.spela.player.domain.repository.GameStatsRepository
 import com.spela.player.presentation.intent.GameDetailIntent
-import com.spela.player.presentation.state.AchievementsViewMode
 import com.spela.player.presentation.state.GameDetailState
 import com.spela.player.util.DispatcherProvider
 import kotlinx.coroutines.CoroutineScope
@@ -59,6 +58,23 @@ class GameDetailViewModel(
     val state: StateFlow<GameDetailState> = _state.asStateFlow()
 
     private var currentGameId: String? = null
+
+    // Session + achievement CRUD extracted into their own managers
+    // (#691). Each shares this VM's `_state` so updates land
+    // directly. EmulationViewModel uses the same delegation pattern
+    // for SaveManager / ChallengeManager / NetplayManager.
+    private val sessionManager = GameDetailSessionManager(
+        sessionRepository = sessionRepository,
+        _state = _state,
+        dispatchers = dispatchers,
+        scope = scope,
+    )
+    private val achievementManager = GameDetailAchievementManager(
+        gameStatsRepository = gameStatsRepository,
+        _state = _state,
+        dispatchers = dispatchers,
+        scope = scope,
+    )
 
     fun onIntent(intent: GameDetailIntent) {
         when (intent) {
@@ -100,19 +116,19 @@ class GameDetailViewModel(
             is GameDetailIntent.LoadReviews -> loadReviews(intent.gameId)
             is GameDetailIntent.LoadMoreReviews -> loadMoreReviews(intent.gameId)
             is GameDetailIntent.LoadGameSharedSessions -> loadGameSharedSessions(intent.gameId)
-            is GameDetailIntent.LoadAchievements -> loadAchievements(intent.gameId)
-            is GameDetailIntent.LoadAchievementTimeline -> loadAchievementTimeline(intent.gameId)
-            is GameDetailIntent.LoadAchievementLeaderboard -> loadAchievementLeaderboard(intent.gameId)
-            is GameDetailIntent.ToggleAchievementsView -> toggleAchievementsView(intent.mode)
+            is GameDetailIntent.LoadAchievements -> achievementManager.loadAchievements(intent.gameId)
+            is GameDetailIntent.LoadAchievementTimeline -> achievementManager.loadAchievementTimeline(intent.gameId)
+            is GameDetailIntent.LoadAchievementLeaderboard -> achievementManager.loadAchievementLeaderboard(intent.gameId)
+            is GameDetailIntent.ToggleAchievementsView -> achievementManager.toggleAchievementsView(intent.mode, currentGameId)
             GameDetailIntent.DismissError -> _state.update { it.copy(error = null) }
             GameDetailIntent.DismissSuccess -> _state.update { it.copy(successMessage = null) }
 
             // Sessions
-            is GameDetailIntent.LoadSessions -> loadSessions(intent.gameId)
-            is GameDetailIntent.CreateSession -> createSession(intent.gameId, intent.name)
-            is GameDetailIntent.RenameSession -> renameSession(intent.sessionId, intent.name)
-            is GameDetailIntent.DeleteSession -> deleteSession(intent.sessionId)
-            is GameDetailIntent.CloneSession -> cloneSession(intent.sessionId, intent.name, intent.saveId)
+            is GameDetailIntent.LoadSessions -> sessionManager.loadSessions(intent.gameId)
+            is GameDetailIntent.CreateSession -> sessionManager.createSession(intent.gameId, intent.name)
+            is GameDetailIntent.RenameSession -> sessionManager.renameSession(intent.sessionId, intent.name)
+            is GameDetailIntent.DeleteSession -> sessionManager.deleteSession(intent.sessionId)
+            is GameDetailIntent.CloneSession -> sessionManager.cloneSession(intent.sessionId, intent.name, intent.saveId)
 
             // Admin actions
             GameDetailIntent.AdminScrapeGame -> adminScrapeGame()
@@ -139,7 +155,7 @@ class GameDetailViewModel(
             runCatching { apiClient.adminRefreshAchievements(gameId) }
                 .onSuccess {
                     // Reload achievements
-                    loadAchievements(gameId)
+                    achievementManager.loadAchievements(gameId)
                     _state.update { it.copy(isAdminActionLoading = false, successMessage = "Achievements refreshed") }
                 }
                 .onFailure { error ->
@@ -189,10 +205,10 @@ class GameDetailViewModel(
                     // Load playable-only community data after we know the game is playable
                     if (isPlayable) {
                         loadGameSharedSessions(gameId)
-                        loadAchievements(gameId)
+                        achievementManager.loadAchievements(gameId)
                         loadCheats(gameId)
                         loadBiosStatus()
-                        loadSessions(gameId)
+                        sessionManager.loadSessions(gameId)
                     }
                 },
                 onFailure = { error ->
@@ -630,60 +646,7 @@ class GameDetailViewModel(
         }
     }
 
-    private fun loadAchievements(gameId: String) {
-        _state.update { it.copy(isLoadingAchievements = true) }
-        scope.launch(dispatchers.io) {
-            val achievements = gameStatsRepository.getGameAchievements(gameId).getOrDefault(emptyList())
-            val progress = gameStatsRepository.getAchievementProgress(gameId).getOrDefault(emptyList())
-            _state.update {
-                it.copy(
-                    achievements = achievements,
-                    achievementProgress = progress,
-                    isLoadingAchievements = false,
-                )
-            }
-        }
-    }
-
-    private fun loadAchievementTimeline(gameId: String) {
-        if (_state.value.achievementTimeline != null) return
-        _state.update { it.copy(isLoadingAchievements = true) }
-        scope.launch(dispatchers.io) {
-            gameStatsRepository.getAchievementTimeline(gameId).fold(
-                onSuccess = { timeline ->
-                    _state.update { it.copy(achievementTimeline = timeline, isLoadingAchievements = false) }
-                },
-                onFailure = {
-                    _state.update { it.copy(isLoadingAchievements = false) }
-                },
-            )
-        }
-    }
-
-    private fun loadAchievementLeaderboard(gameId: String) {
-        if (_state.value.achievementLeaderboard.isNotEmpty()) return
-        _state.update { it.copy(isLoadingAchievements = true) }
-        scope.launch(dispatchers.io) {
-            gameStatsRepository.getAchievementLeaderboard(gameId).fold(
-                onSuccess = { leaderboard ->
-                    _state.update { it.copy(achievementLeaderboard = leaderboard, isLoadingAchievements = false) }
-                },
-                onFailure = {
-                    _state.update { it.copy(isLoadingAchievements = false) }
-                },
-            )
-        }
-    }
-
-    private fun toggleAchievementsView(mode: AchievementsViewMode) {
-        _state.update { it.copy(achievementsView = mode) }
-        val gameId = currentGameId ?: return
-        when (mode) {
-            AchievementsViewMode.TIMELINE -> loadAchievementTimeline(gameId)
-            AchievementsViewMode.LEADERBOARD -> loadAchievementLeaderboard(gameId)
-            AchievementsViewMode.GRID -> { /* Already loaded */ }
-        }
-    }
+    // Achievement loading moved to GameDetailAchievementManager (#691).
 
     private fun loadCheats(gameId: String) {
         val repo = cheatRepository ?: return
@@ -798,97 +761,5 @@ class GameDetailViewModel(
         }
     }
 
-    // Sessions
-
-    private fun loadSessions(gameId: String) {
-        val repo = sessionRepository ?: return
-        _state.update { it.copy(isLoadingSessions = true) }
-        scope.launch(dispatchers.io) {
-            repo.getSessionsForGame(gameId).fold(
-                onSuccess = { sessions ->
-                    _state.update { it.copy(sessions = sessions, isLoadingSessions = false) }
-                },
-                onFailure = {
-                    _state.update { it.copy(isLoadingSessions = false) }
-                },
-            )
-        }
-    }
-
-    private fun createSession(gameId: String, name: String) {
-        val repo = sessionRepository ?: return
-        scope.launch(dispatchers.io) {
-            repo.createSession(gameId, name).fold(
-                onSuccess = { session ->
-                    _state.update { state ->
-                        state.copy(
-                            sessions = state.sessions + session,
-                            successMessage = "Session \"${session.name}\" created",
-                        )
-                    }
-                },
-                onFailure = { error ->
-                    _state.update { it.copy(error = error.message) }
-                },
-            )
-        }
-    }
-
-    private fun renameSession(sessionId: String, name: String) {
-        val repo = sessionRepository ?: return
-        scope.launch(dispatchers.io) {
-            repo.updateSession(sessionId, name).fold(
-                onSuccess = { updated ->
-                    _state.update { state ->
-                        state.copy(
-                            sessions = state.sessions.map {
-                                if (it.id == sessionId) updated else it
-                            },
-                        )
-                    }
-                },
-                onFailure = { error ->
-                    _state.update { it.copy(error = error.message) }
-                },
-            )
-        }
-    }
-
-    private fun deleteSession(sessionId: String) {
-        val repo = sessionRepository ?: return
-        scope.launch(dispatchers.io) {
-            repo.deleteSession(sessionId).fold(
-                onSuccess = {
-                    _state.update { state ->
-                        state.copy(
-                            sessions = state.sessions.filter { it.id != sessionId },
-                            successMessage = "Session deleted",
-                        )
-                    }
-                },
-                onFailure = { error ->
-                    _state.update { it.copy(error = error.message) }
-                },
-            )
-        }
-    }
-
-    private fun cloneSession(sessionId: String, name: String?, saveId: Long?) {
-        val repo = sessionRepository ?: return
-        scope.launch(dispatchers.io) {
-            repo.cloneSession(sessionId, name, saveId).fold(
-                onSuccess = { newSession ->
-                    _state.update { state ->
-                        state.copy(
-                            sessions = state.sessions + newSession,
-                            successMessage = "Session cloned as \"${newSession.name}\"",
-                        )
-                    }
-                },
-                onFailure = { error ->
-                    _state.update { it.copy(error = error.message) }
-                },
-            )
-        }
-    }
+    // Session CRUD moved to GameDetailSessionManager (#691).
 }
