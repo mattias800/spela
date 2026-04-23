@@ -59,15 +59,10 @@ import com.spela.player.presentation.ui.components.PlatformBackHandler
 import com.spela.player.presentation.ui.components.NavigationLayoutMode
 import com.spela.player.presentation.ui.components.SpBottomNavBar
 import com.spela.player.presentation.ui.components.SpNavigationRail
-import com.spela.player.presentation.ui.components.SpAuthExpiredDialog
 import com.spela.player.presentation.ui.components.SpButton
-import com.spela.player.presentation.ui.components.SpDatabaseErrorScreen
-import com.spela.player.presentation.ui.components.SpOfflineBanner
-import com.spela.player.presentation.ui.components.SpServerWarningCard
 import com.spela.player.presentation.ui.components.SpSnackbar
 import com.spela.player.presentation.ui.components.SpSnackbarData
 import com.spela.player.presentation.ui.components.SpSnackbarType
-import com.spela.player.data.remote.ConnectionState
 import com.spela.player.presentation.navigation.NavigationEvent
 import com.spela.player.presentation.ui.feature.ingame.DsPrimaryTouchOverlay
 import com.spela.player.presentation.ui.screen.InGameOverlay
@@ -262,67 +257,19 @@ fun SpelaApp(deps: SpelaAppDependencies) = with(deps) {
             }
 
             Column(modifier = Modifier.weight(1f).fillMaxHeight()) {
-                // Connection state
-                val currentConnectionState by connectivityMonitor.connectionState.collectAsState()
-                var serverWarningDismissed by remember { mutableStateOf(false) }
                 var snackbarData by remember { mutableStateOf<SpSnackbarData?>(null) }
 
-                // "Back online" snackbar: fires only after a genuine offline→online transition
-                var hasBeenOffline by remember { mutableStateOf(false) }
-                LaunchedEffect(currentConnectionState) {
-                    if (currentConnectionState is ConnectionState.Online) {
-                        if (hasBeenOffline) {
-                            snackbarData = SpSnackbarData(
-                                message = "Back online",
-                                type = SpSnackbarType.Success,
-                                durationMs = 3000L,
-                            )
-                        }
-                    } else if (!currentConnectionState.isConnected) {
-                        hasBeenOffline = true
-                    }
-                    // Reset dismiss when state changes away from ServerUnreachable
-                    if (currentConnectionState !is ConnectionState.ServerUnreachable) {
-                        serverWarningDismissed = false
-                    }
-                }
-
-                // Priority: DatabaseError (full-screen) > AuthFailed (dialog) > ServerUnreachable (card) > Offline (banner)
-                if (currentConnectionState is ConnectionState.DatabaseError) {
-                    SpDatabaseErrorScreen(
-                        message = (currentConnectionState as ConnectionState.DatabaseError).message,
-                        onResetApp = { navigationViewModel.resetDatabase() },
-                    )
-                } else {
-
-                if (currentConnectionState is ConnectionState.AuthFailed) {
-                    SpAuthExpiredDialog(
-                        onSignIn = {
-                            connectivityMonitor.clearAuthFailure()
-                            navigationViewModel.onIntent(
-                                NavigationIntent.NavigateTo(SpScreen.Login)
-                            )
-                        },
-                        onContinueOffline = {
-                            connectivityMonitor.clearAuthFailure()
-                        },
-                    )
-                }
-
-                // Offline banner (muted grey)
-                SpOfflineBanner(connectionState = currentConnectionState)
-
-                // Server unreachable card (dismissible per-session)
-                if (currentConnectionState is ConnectionState.ServerUnreachable && !serverWarningDismissed) {
-                    SpServerWarningCard(
-                        onCheckServerSettings = {
-                            navigationViewModel.onIntent(
-                                NavigationIntent.NavigateTo(SpScreen.Settings)
-                            )
-                        },
-                        onDismiss = { serverWarningDismissed = true },
-                    )
-                }
+                ConnectionStateOverlay(
+                    connectivityMonitor = connectivityMonitor,
+                    navigationViewModel = navigationViewModel,
+                    onBackOnline = {
+                        snackbarData = SpSnackbarData(
+                            message = "Back online",
+                            type = SpSnackbarType.Success,
+                            durationMs = 3000L,
+                        )
+                    },
+                ) {
 
                 Box(modifier = Modifier.weight(1f)) {
                     val animationsEnabled = com.spela.player.presentation.ui.components.LocalAnimationsEnabled.current
@@ -577,7 +524,7 @@ fun SpelaApp(deps: SpelaAppDependencies) = with(deps) {
                         },
                     )
                 }
-                } // else (not DatabaseError)
+                } // ConnectionStateOverlay content slot
             } // Column (content + bottom bar)
             } // Row (side rail + content column)
 
