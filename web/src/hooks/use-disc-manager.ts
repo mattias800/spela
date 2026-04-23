@@ -33,6 +33,10 @@ export function useDiscManager({
   const downloadingRef = useRef(false);
   const onDiscErrorRef = useRef(onDiscError);
   onDiscErrorRef.current = onDiscError;
+  // Read current disc states inside effects / loops without depending on them
+  // (the background download effect shouldn't re-run every progress tick).
+  const discStatesRef = useRef(discStates);
+  discStatesRef.current = discStates;
 
   const isMultiDisc =
     !!game && game.discCount > 1 && !!game.discs && game.discs.length > 1;
@@ -154,6 +158,17 @@ export function useDiscManager({
   ) {
     for (let i = 1; i <= discCount; i++) {
       if (!downloadingRef.current) break;
+      // Don't re-download a disc that already finished during a
+      // previous pass. `emulatorStatus` flips through "saving" →
+      // "playing" during a disc switch (requestSaveState), which
+      // restarts this effect; without this guard we'd race the
+      // already-complete first disc back to "downloading" mid-
+      // switch and `buildMultiDiscBundle` would briefly return
+      // null even though we already hold the bytes.
+      const current = discStatesRef.current.find(
+        (d) => d.discNumber === i,
+      );
+      if (current?.status === "ready" && current.data) continue;
       await downloadSingleDisc(gameId, i);
     }
   }
