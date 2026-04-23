@@ -8,6 +8,7 @@ import {
   CultClassicsShelf,
   RecentlyReviewedShelf,
   ActiveNowShelf,
+  ReviewCard,
 } from "../social-shelves";
 import type {
   TrendingGame,
@@ -287,5 +288,42 @@ describe("ActiveNowShelf", () => {
   it("returns null when empty", () => {
     const { container } = renderActiveNow({ games: [] });
     expect(container.innerHTML).toBe("");
+  });
+});
+
+// Standalone ReviewCard export — lets other surfaces (user profile,
+// game detail's recent reviews) render the same treatment without
+// duplicating the 5-star + line-clamp-3 layout.
+
+describe("ReviewCard", () => {
+  function renderReview(rating: number) {
+    const review: RecentReviewItem = {
+      game: makeGame({ id: "g1", title: "Chrono Trigger" }),
+      rating,
+      review: "Era-defining JRPG.",
+      reviewerName: "alice",
+      reviewedAt: "2026-04-20T00:00:00Z",
+    };
+    return render(
+      <MemoryRouter>
+        <ReviewCard review={review} />
+      </MemoryRouter>,
+    );
+  }
+
+  it("renders the review text and reviewer name", () => {
+    renderReview(4);
+    expect(screen.getByTestId("review-text")).toHaveTextContent(
+      "Era-defining JRPG.",
+    );
+    expect(screen.getByText(/alice/)).toBeInTheDocument();
+  });
+
+  it("renders a 5-star row with the correct number filled", () => {
+    const { container } = renderReview(3);
+    // 3 amber-filled stars + 2 dim; checking via classlist keeps the
+    // assertion independent of the Lucide icon markup.
+    const filledStars = container.querySelectorAll(".fill-amber-400");
+    expect(filledStars.length).toBe(3);
   });
 });
