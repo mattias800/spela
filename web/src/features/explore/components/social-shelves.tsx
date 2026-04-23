@@ -21,13 +21,55 @@ import type {
   ActiveNowItem,
 } from "@/types/api";
 
-// --- Trending Shelf ---
+// Shared row + footer primitives used across most shelves. The 4
+// GameCard-based shelves used to duplicate the same wrapper; now
+// they delegate to [StandardShelfRow]. [RecentlyReviewedShelf]
+// diverges enough (2-column layout with an inline review excerpt)
+// that it uses [ReviewCard] instead.
 
-interface TrendingShelfProps {
-  games: TrendingGame[] | null | undefined;
-  isLoading: boolean;
+interface ShelfGameHandlers {
   onToggleFavorite?: (game: Game) => void;
   onTogglePlayLater?: (game: Game) => void;
+}
+
+interface StandardShelfRowProps extends ShelfGameHandlers {
+  game: Game;
+  footer?: React.ReactNode;
+}
+
+function StandardShelfRow({
+  game,
+  footer,
+  onToggleFavorite,
+  onTogglePlayLater,
+}: StandardShelfRowProps) {
+  return (
+    <div className="flex-shrink-0" role="listitem">
+      <GameCard
+        game={game}
+        showConsoleBadge
+        coverHeight={CAROUSEL_CARD_HEIGHT}
+        onToggleFavorite={onToggleFavorite}
+        onTogglePlayLater={onTogglePlayLater}
+      />
+      {footer}
+    </div>
+  );
+}
+
+function ShelfFooter({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="flex items-center gap-1.5 mt-1.5 text-xs text-surface-400">
+      {children}
+    </div>
+  );
+}
+
+// ─── Trending Shelf ───────────────────────────────────────────────
+
+interface TrendingShelfProps extends ShelfGameHandlers {
+  games: TrendingGame[] | null | undefined;
+  isLoading: boolean;
 }
 
 export function TrendingShelf({
@@ -46,37 +88,30 @@ export function TrendingShelf({
       isEmpty={!games || games.length === 0}
     >
       {games?.map((item) => (
-        <div
+        <StandardShelfRow
           key={item.game.id}
-          className="flex-shrink-0"
-          role="listitem"
-        >
-          <GameCard
-            game={item.game}
-            showConsoleBadge
-            coverHeight={CAROUSEL_CARD_HEIGHT}
-            onToggleFavorite={onToggleFavorite}
-            onTogglePlayLater={onTogglePlayLater}
-          />
-          <div className="flex items-center gap-1 mt-1.5 text-xs text-surface-400">
-            <Users className="h-3 w-3" />
-            <span data-testid="players-count">
-              {item.playersThisWeek} player{item.playersThisWeek !== 1 ? "s" : ""} this week
-            </span>
-          </div>
-        </div>
+          game={item.game}
+          onToggleFavorite={onToggleFavorite}
+          onTogglePlayLater={onTogglePlayLater}
+          footer={
+            <ShelfFooter>
+              <Users className="h-3 w-3" />
+              <span data-testid="players-count">
+                {item.playersThisWeek} player{item.playersThisWeek !== 1 ? "s" : ""} this week
+              </span>
+            </ShelfFooter>
+          }
+        />
       ))}
     </ScrollShelf>
   );
 }
 
-// --- Community Top Shelf ---
+// ─── Community Top Shelf ──────────────────────────────────────────
 
-interface CommunityTopShelfProps {
+interface CommunityTopShelfProps extends ShelfGameHandlers {
   games: CommunityTopGame[] | null | undefined;
   isLoading: boolean;
-  onToggleFavorite?: (game: Game) => void;
-  onTogglePlayLater?: (game: Game) => void;
 }
 
 export function CommunityTopShelf({
@@ -95,40 +130,33 @@ export function CommunityTopShelf({
       isEmpty={!games || games.length === 0}
     >
       {games?.map((item) => (
-        <div
+        <StandardShelfRow
           key={item.game.id}
-          className="flex-shrink-0"
-          role="listitem"
-        >
-          <GameCard
-            game={item.game}
-            showConsoleBadge
-            coverHeight={CAROUSEL_CARD_HEIGHT}
-            onToggleFavorite={onToggleFavorite}
-            onTogglePlayLater={onTogglePlayLater}
-          />
-          <div className="flex items-center gap-1.5 mt-1.5 text-xs text-surface-400">
-            <Star className="h-3 w-3 text-amber-400 fill-amber-400" />
-            <span data-testid="community-rating">
-              {item.avgRating.toFixed(1)}/5
-            </span>
-            <span className="text-surface-500">
-              ({item.ratingCount} rating{item.ratingCount !== 1 ? "s" : ""})
-            </span>
-          </div>
-        </div>
+          game={item.game}
+          onToggleFavorite={onToggleFavorite}
+          onTogglePlayLater={onTogglePlayLater}
+          footer={
+            <ShelfFooter>
+              <Star className="h-3 w-3 text-amber-400 fill-amber-400" />
+              <span data-testid="community-rating">
+                {item.avgRating.toFixed(1)}/5
+              </span>
+              <span className="text-surface-500">
+                ({item.ratingCount} rating{item.ratingCount !== 1 ? "s" : ""})
+              </span>
+            </ShelfFooter>
+          }
+        />
       ))}
     </ScrollShelf>
   );
 }
 
-// --- Cult Classics Shelf ---
+// ─── Cult Classics Shelf ──────────────────────────────────────────
 
-interface CultClassicsShelfProps {
+interface CultClassicsShelfProps extends ShelfGameHandlers {
   games: CultClassicGame[] | null | undefined;
   isLoading: boolean;
-  onToggleFavorite?: (game: Game) => void;
-  onTogglePlayLater?: (game: Game) => void;
 }
 
 export function CultClassicsShelf({
@@ -147,38 +175,33 @@ export function CultClassicsShelf({
       isEmpty={!games || games.length === 0}
     >
       {games?.map((item) => (
-        <div
+        <StandardShelfRow
           key={item.game.id}
-          className="flex-shrink-0"
-          role="listitem"
-        >
-          <GameCard
-            game={item.game}
-            showConsoleBadge
-            coverHeight={CAROUSEL_CARD_HEIGHT}
-            onToggleFavorite={onToggleFavorite}
-            onTogglePlayLater={onTogglePlayLater}
-          />
-          <div className="flex items-center gap-1.5 mt-1.5 text-xs text-surface-400">
-            <Star className="h-3 w-3 text-amber-400 fill-amber-400" />
-            <span data-testid="cult-community-rating">
-              {item.communityRating.toFixed(1)}/5
-            </span>
-            <span className="text-surface-500">vs IGDB {item.igdbCriticsRating.toFixed(0)}/100</span>
-          </div>
-        </div>
+          game={item.game}
+          onToggleFavorite={onToggleFavorite}
+          onTogglePlayLater={onTogglePlayLater}
+          footer={
+            <ShelfFooter>
+              <Star className="h-3 w-3 text-amber-400 fill-amber-400" />
+              <span data-testid="cult-community-rating">
+                {item.communityRating.toFixed(1)}/5
+              </span>
+              <span className="text-surface-500">
+                vs IGDB {item.igdbCriticsRating.toFixed(0)}/100
+              </span>
+            </ShelfFooter>
+          }
+        />
       ))}
     </ScrollShelf>
   );
 }
 
-// --- Recently Reviewed Shelf ---
+// ─── Recently Reviewed Shelf ──────────────────────────────────────
 
-interface RecentlyReviewedShelfProps {
+interface RecentlyReviewedShelfProps extends ShelfGameHandlers {
   reviews: RecentReviewItem[] | null | undefined;
   isLoading: boolean;
-  onToggleFavorite?: (game: Game) => void;
-  onTogglePlayLater?: (game: Game) => void;
 }
 
 export function RecentlyReviewedShelf({
@@ -197,63 +220,78 @@ export function RecentlyReviewedShelf({
       isEmpty={!reviews || reviews.length === 0}
     >
       {reviews?.map((item) => (
-        <div
+        <ReviewCard
           key={`${item.game.id}-${item.reviewerName}`}
-          className="w-56 sm:w-60 flex-shrink-0"
-          role="listitem"
-        >
-          <div className="flex gap-3">
-            <div className="w-24 flex-shrink-0">
-              <GameCard
-                game={item.game}
-                showConsoleBadge={false}
-                onToggleFavorite={onToggleFavorite}
-                onTogglePlayLater={onTogglePlayLater}
-              />
-            </div>
-            <div className="flex flex-col min-w-0 py-0.5">
-              <Link
-                to={`/games/${item.game.id}`}
-                className="text-sm font-semibold text-surface-100 truncate hover:text-brand-400 transition-colors"
-              >
-                {item.game.title}
-              </Link>
-              <div className="flex items-center gap-1 mt-0.5">
-                {Array.from({ length: 5 }, (_, si) => (
-                  <Star
-                    key={si}
-                    className={`h-3 w-3 ${
-                      si < item.rating
-                        ? "text-amber-400 fill-amber-400"
-                        : "text-surface-600"
-                    }`}
-                  />
-                ))}
-              </div>
-              <p
-                className="text-xs text-surface-400 mt-1 line-clamp-3"
-                data-testid="review-text"
-              >
-                {item.review}
-              </p>
-              <p className="text-xs text-surface-500 mt-auto">
-                — {item.reviewerName}
-              </p>
-            </div>
-          </div>
-        </div>
+          review={item}
+          onToggleFavorite={onToggleFavorite}
+          onTogglePlayLater={onTogglePlayLater}
+        />
       ))}
     </ScrollShelf>
   );
 }
 
-// --- Active Now Shelf ---
+interface ReviewCardProps extends ShelfGameHandlers {
+  review: RecentReviewItem;
+}
 
-interface ActiveNowShelfProps {
+// Exported so profile / game-detail pages can render the same
+// treatment without duplicating the 5-star + line-clamp-3 layout.
+export function ReviewCard({
+  review,
+  onToggleFavorite,
+  onTogglePlayLater,
+}: ReviewCardProps) {
+  return (
+    <div className="w-56 sm:w-60 flex-shrink-0" role="listitem">
+      <div className="flex gap-3">
+        <div className="w-24 flex-shrink-0">
+          <GameCard
+            game={review.game}
+            showConsoleBadge={false}
+            onToggleFavorite={onToggleFavorite}
+            onTogglePlayLater={onTogglePlayLater}
+          />
+        </div>
+        <div className="flex flex-col min-w-0 py-0.5">
+          <Link
+            to={`/games/${review.game.id}`}
+            className="text-sm font-semibold text-surface-100 truncate hover:text-brand-400 transition-colors"
+          >
+            {review.game.title}
+          </Link>
+          <div className="flex items-center gap-1 mt-0.5">
+            {Array.from({ length: 5 }, (_, i) => (
+              <Star
+                key={i}
+                className={`h-3 w-3 ${
+                  i < review.rating
+                    ? "text-amber-400 fill-amber-400"
+                    : "text-surface-600"
+                }`}
+              />
+            ))}
+          </div>
+          <p
+            className="text-xs text-surface-400 mt-1 line-clamp-3"
+            data-testid="review-text"
+          >
+            {review.review}
+          </p>
+          <p className="text-xs text-surface-500 mt-auto">
+            — {review.reviewerName}
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Active Now Shelf ─────────────────────────────────────────────
+
+interface ActiveNowShelfProps extends ShelfGameHandlers {
   games: ActiveNowItem[] | null | undefined;
   isLoading: boolean;
-  onToggleFavorite?: (game: Game) => void;
-  onTogglePlayLater?: (game: Game) => void;
 }
 
 export function ActiveNowShelf({
@@ -272,39 +310,34 @@ export function ActiveNowShelf({
       isEmpty={!games || games.length === 0}
     >
       {games?.map((item) => (
-        <div
+        <StandardShelfRow
           key={item.game.id}
-          className="flex-shrink-0"
-          role="listitem"
-        >
-          <GameCard
-            game={item.game}
-            showConsoleBadge
-            coverHeight={CAROUSEL_CARD_HEIGHT}
-            onToggleFavorite={onToggleFavorite}
-            onTogglePlayLater={onTogglePlayLater}
-          />
-          <div className="flex flex-wrap gap-1.5 mt-1.5">
-            {item.activeSessions > 0 && (
-              <Badge
-                variant="default"
-                className="text-[10px] px-1.5 py-0 gap-1 bg-green-500/15 text-green-400 border-green-500/30"
-              >
-                <Users className="h-2.5 w-2.5" />
-                {item.activeSessions} session{item.activeSessions !== 1 ? "s" : ""}
-              </Badge>
-            )}
-            {item.activeChallenges > 0 && (
-              <Badge
-                variant="default"
-                className="text-[10px] px-1.5 py-0 gap-1 bg-orange-500/15 text-orange-400 border-orange-500/30"
-              >
-                <Swords className="h-2.5 w-2.5" />
-                {item.activeChallenges} challenge{item.activeChallenges !== 1 ? "s" : ""}
-              </Badge>
-            )}
-          </div>
-        </div>
+          game={item.game}
+          onToggleFavorite={onToggleFavorite}
+          onTogglePlayLater={onTogglePlayLater}
+          footer={
+            <div className="flex flex-wrap gap-1.5 mt-1.5">
+              {item.activeSessions > 0 && (
+                <Badge
+                  variant="default"
+                  className="text-[10px] px-1.5 py-0 gap-1 bg-green-500/15 text-green-400 border-green-500/30"
+                >
+                  <Users className="h-2.5 w-2.5" />
+                  {item.activeSessions} session{item.activeSessions !== 1 ? "s" : ""}
+                </Badge>
+              )}
+              {item.activeChallenges > 0 && (
+                <Badge
+                  variant="default"
+                  className="text-[10px] px-1.5 py-0 gap-1 bg-orange-500/15 text-orange-400 border-orange-500/30"
+                >
+                  <Swords className="h-2.5 w-2.5" />
+                  {item.activeChallenges} challenge{item.activeChallenges !== 1 ? "s" : ""}
+                </Badge>
+              )}
+            </div>
+          }
+        />
       ))}
     </ScrollShelf>
   );
