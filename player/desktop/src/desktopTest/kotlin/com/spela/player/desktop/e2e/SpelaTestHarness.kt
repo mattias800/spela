@@ -11,6 +11,7 @@ import com.spela.player.domain.usecase.*
 import com.spela.player.libretro.GamepadPortManager
 import com.spela.player.presentation.navigation.NavigationViewModel
 import com.spela.player.presentation.ui.SpelaApp
+import com.spela.player.presentation.ui.SpelaAppDependencies
 import com.spela.player.platform.secondarydisplay.DesktopSecondaryDisplay
 import com.spela.player.presentation.secondarydisplay.PlatformSecondaryDisplay
 import com.spela.player.presentation.state.EmulationState
@@ -368,34 +369,36 @@ class SpelaTestHarness(
             com.spela.player.presentation.ui.components.LocalAnimationsEnabled provides false,
         ) {
         SpelaApp(
-            navigationViewModel = navigationViewModel,
-            serverConnectionViewModel = serverConnectionViewModel,
-            loginViewModel = loginViewModel,
-            gameListViewModel = gameListViewModel,
-            gameDetailViewModel = gameDetailViewModel,
-            emulationViewModel = emulationViewModel,
-            libretroController = libretroController,
-            downloadsViewModel = downloadsViewModel,
-            settingsViewModel = settingsViewModel,
-            keyMappingViewModel = keyMappingViewModel,
-            gamepadConfigViewModel = gamepadConfigViewModel,
-            socialViewModel = socialViewModel,
-            sharedSessionsViewModel = sharedSessionsViewModel,
-            sharedSessionDetailViewModel = sharedSessionDetailViewModel,
-            netplayViewModel = netplayViewModel,
-            netplayLobbyViewModel = netplayLobbyViewModel,
-            statsViewModel = statsViewModel,
-            collectionsViewModel = collectionsViewModel,
-            challengeListViewModel = challengeListViewModel,
-            challengeDetailViewModel = challengeDetailViewModel,
-            secondaryDisplay = secondaryDisplay,
-            presenceService = presenceService,
-            connectivityMonitor = connectivityMonitor,
-            sessionDetailViewModel = sessionDetailViewModel,
-            topListsViewModel = topListsViewModel,
-            exploreViewModel = exploreViewModel,
-            gamepadPortManager = gamepadPortManager,
-            globalSearchViewModel = globalSearchViewModel,
+            SpelaAppDependencies(
+                navigationViewModel = navigationViewModel,
+                serverConnectionViewModel = serverConnectionViewModel,
+                loginViewModel = loginViewModel,
+                gameListViewModel = gameListViewModel,
+                gameDetailViewModel = gameDetailViewModel,
+                emulationViewModel = emulationViewModel,
+                libretroController = libretroController,
+                downloadsViewModel = downloadsViewModel,
+                settingsViewModel = settingsViewModel,
+                keyMappingViewModel = keyMappingViewModel,
+                gamepadConfigViewModel = gamepadConfigViewModel,
+                socialViewModel = socialViewModel,
+                sharedSessionsViewModel = sharedSessionsViewModel,
+                sharedSessionDetailViewModel = sharedSessionDetailViewModel,
+                netplayViewModel = netplayViewModel,
+                netplayLobbyViewModel = netplayLobbyViewModel,
+                statsViewModel = statsViewModel,
+                collectionsViewModel = collectionsViewModel,
+                challengeListViewModel = challengeListViewModel,
+                challengeDetailViewModel = challengeDetailViewModel,
+                secondaryDisplay = secondaryDisplay,
+                presenceService = presenceService,
+                connectivityMonitor = connectivityMonitor,
+                sessionDetailViewModel = sessionDetailViewModel,
+                topListsViewModel = topListsViewModel,
+                exploreViewModel = exploreViewModel,
+                gamepadPortManager = gamepadPortManager,
+                globalSearchViewModel = globalSearchViewModel,
+            ),
         )
         }
     }

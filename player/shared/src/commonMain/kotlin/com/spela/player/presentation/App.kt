@@ -4,6 +4,7 @@ import androidx.compose.runtime.Composable
 import com.spela.player.presentation.secondarydisplay.PlatformSecondaryDisplay
 import com.spela.player.presentation.navigation.NavigationViewModel
 import com.spela.player.presentation.ui.SpelaApp
+import com.spela.player.presentation.ui.SpelaAppDependencies
 import com.spela.player.presentation.viewmodel.DownloadsViewModel
 import com.spela.player.presentation.viewmodel.EmulationViewModel
 import com.spela.player.presentation.viewmodel.GameDetailViewModel
@@ -72,35 +73,37 @@ fun App() {
     val scrapeService: ScrapeService = koinInject()
 
     SpelaApp(
-        navigationViewModel = navigationViewModel,
-        serverConnectionViewModel = serverConnectionViewModel,
-        loginViewModel = loginViewModel,
-        gameListViewModel = gameListViewModel,
-        gameDetailViewModel = gameDetailViewModel,
-        emulationViewModel = emulationViewModel,
-        libretroController = libretroController,
-        downloadsViewModel = downloadsViewModel,
-        settingsViewModel = settingsViewModel,
-        keyMappingViewModel = keyMappingViewModel,
-        socialViewModel = socialViewModel,
-        sharedSessionsViewModel = sharedSessionsViewModel,
-        sharedSessionDetailViewModel = sharedSessionDetailViewModel,
-        netplayViewModel = netplayViewModel,
-        netplayLobbyViewModel = netplayLobbyViewModel,
-        statsViewModel = statsViewModel,
-        collectionsViewModel = collectionsViewModel,
-        challengeListViewModel = challengeListViewModel,
-        challengeDetailViewModel = challengeDetailViewModel,
-        secondaryDisplay = secondaryDisplay,
-        presenceService = presenceService,
-        connectivityMonitor = connectivityMonitor,
-        sessionDetailViewModel = sessionDetailViewModel,
-        navigationEventBus = navigationEventBus,
-        gamepadPortManager = gamepadPortManager,
-        globalSearchViewModel = globalSearchViewModel,
-        exploreViewModel = exploreViewModel,
-        topListsViewModel = topListsViewModel,
-        gamepadConfigViewModel = gamepadConfigViewModel,
-        scrapeService = scrapeService,
+        SpelaAppDependencies(
+            navigationViewModel = navigationViewModel,
+            serverConnectionViewModel = serverConnectionViewModel,
+            loginViewModel = loginViewModel,
+            gameListViewModel = gameListViewModel,
+            gameDetailViewModel = gameDetailViewModel,
+            emulationViewModel = emulationViewModel,
+            libretroController = libretroController,
+            downloadsViewModel = downloadsViewModel,
+            settingsViewModel = settingsViewModel,
+            keyMappingViewModel = keyMappingViewModel,
+            socialViewModel = socialViewModel,
+            sharedSessionsViewModel = sharedSessionsViewModel,
+            sharedSessionDetailViewModel = sharedSessionDetailViewModel,
+            netplayViewModel = netplayViewModel,
+            netplayLobbyViewModel = netplayLobbyViewModel,
+            statsViewModel = statsViewModel,
+            collectionsViewModel = collectionsViewModel,
+            challengeListViewModel = challengeListViewModel,
+            challengeDetailViewModel = challengeDetailViewModel,
+            secondaryDisplay = secondaryDisplay,
+            presenceService = presenceService,
+            connectivityMonitor = connectivityMonitor,
+            sessionDetailViewModel = sessionDetailViewModel,
+            navigationEventBus = navigationEventBus,
+            gamepadPortManager = gamepadPortManager,
+            globalSearchViewModel = globalSearchViewModel,
+            exploreViewModel = exploreViewModel,
+            topListsViewModel = topListsViewModel,
+            gamepadConfigViewModel = gamepadConfigViewModel,
+            scrapeService = scrapeService,
+        ),
     )
 }
