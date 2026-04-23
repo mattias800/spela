@@ -63,7 +63,6 @@ import com.spela.player.presentation.ui.components.SpButton
 import com.spela.player.presentation.ui.components.SpSnackbar
 import com.spela.player.presentation.ui.components.SpSnackbarData
 import com.spela.player.presentation.ui.components.SpSnackbarType
-import com.spela.player.presentation.navigation.NavigationEvent
 import com.spela.player.presentation.ui.feature.ingame.DsPrimaryTouchOverlay
 import com.spela.player.presentation.ui.screen.InGameOverlay
 import com.spela.player.presentation.ui.feature.ingame.PlatformEmulationSurface
@@ -78,7 +77,6 @@ import com.spela.player.presentation.ui.gamepad.LocalIsForwardNavigation
 import com.spela.player.presentation.ui.gamepad.LocalIsTabSwitch
 import com.spela.player.presentation.ui.gamepad.LocalInputMode
 import com.spela.player.presentation.ui.components.LocalScrapeService
-import com.spela.player.presentation.ui.components.ScrapeUpdates
 import com.spela.player.presentation.ui.theme.SpelaTheme
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.input.pointer.PointerEventPass
@@ -94,13 +92,6 @@ fun SpelaApp(deps: SpelaAppDependencies) = with(deps) {
         LocalScrapeService provides scrapeService,
         LocalInputMode provides (gamepadPortManager?.inputMode?.collectAsState()?.value ?: InputMode.TOUCH),
     ) {
-        // Observe scrape completions and update cover art reactively
-        LaunchedEffect(scrapeService) {
-            scrapeService?.scrapedCovers?.collect { (gameId, coverUrl) ->
-                ScrapeUpdates.onCoverUpdated(gameId, coverUrl)
-            }
-        }
-
         val navState by navigationViewModel.state.collectAsState()
 
         // Input mode detection: TOUCH shows tab bar, GAMEPAD shows section indicator
@@ -138,28 +129,16 @@ fun SpelaApp(deps: SpelaAppDependencies) = with(deps) {
             return@CompositionLocalProvider
         }
 
-        // Connect/disconnect WebSocket presence based on authentication state
         val isAuthenticated = navState.currentScreen !is SpScreen.ServerConnection &&
                 navState.currentScreen !is SpScreen.Login
-        LaunchedEffect(isAuthenticated) {
-            if (isAuthenticated) {
-                presenceService.connect()
-            } else {
-                presenceService.disconnect()
-            }
-        }
 
-        // Collect desktop gamepad navigation events
-        if (navigationEventBus != null) {
-            LaunchedEffect(navigationEventBus) {
-                navigationEventBus.events.collect { event ->
-                    when (event) {
-                        NavigationEvent.NextSection -> navigationViewModel.onIntent(NavigationIntent.NextSection)
-                        NavigationEvent.PreviousSection -> navigationViewModel.onIntent(NavigationIntent.PreviousSection)
-                    }
-                }
-            }
-        }
+        SpelaAppEffects(
+            scrapeService = scrapeService,
+            presenceService = presenceService,
+            isAuthenticated = isAuthenticated,
+            navigationEventBus = navigationEventBus,
+            navigationViewModel = navigationViewModel,
+        )
 
         val isGamepadScreen = navState.currentScreen !is SpScreen.ServerConnection &&
                 navState.currentScreen !is SpScreen.Login
