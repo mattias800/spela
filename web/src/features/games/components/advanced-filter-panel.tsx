@@ -2,88 +2,27 @@ import { useState } from "react";
 import {
   SlidersHorizontal,
   X,
-  ChevronDown,
-  ChevronUp,
   Save,
   Bookmark,
   Trash2,
 } from "lucide-react";
-import { Button, Input, Badge } from "@/components/ui";
+import { Button, Input, Badge, Chip, ChipPicker } from "@/components/ui";
 import { cn } from "@/lib/cn";
 import type { GameFilters, Console, Theme, Keyword, SavedSearch } from "@/types/api";
+import {
+  countActiveFilters,
+  filtersToRecord,
+  GENRE_OPTIONS,
+  PLAY_STATUS_OPTIONS,
+  REGION_OPTIONS,
+} from "../lib/filter-helpers";
 
-// --- Multi-select chip picker ---
+export { savedSearchToFilters } from "../lib/filter-helpers";
 
-function ChipPicker({
-  label,
-  options,
-  selected,
-  onChange,
-  testId,
-}: {
-  label: string;
-  options: Array<{ value: string; label: string }>;
-  selected: string[];
-  onChange: (selected: string[]) => void;
-  testId: string;
-}) {
-  const [expanded, setExpanded] = useState(false);
-  const visibleOptions = expanded ? options : options.slice(0, 12);
-  const labelId = `${testId}-label`;
-
-  return (
-    <div data-testid={testId}>
-      <span id={labelId} className="block text-sm font-medium text-surface-300 mb-2">
-        {label}
-      </span>
-      <div className="flex flex-wrap gap-1.5" role="group" aria-labelledby={labelId}>
-        {visibleOptions.map((opt) => {
-          const isSelected = selected.includes(opt.value);
-          return (
-            <button
-              key={opt.value}
-              aria-pressed={isSelected}
-              onClick={() =>
-                onChange(
-                  isSelected
-                    ? selected.filter((v) => v !== opt.value)
-                    : [...selected, opt.value],
-                )
-              }
-              className={cn(
-                "px-2.5 py-1 rounded-full text-xs font-medium transition-colors",
-                isSelected
-                  ? "bg-brand-600 text-white"
-                  : "bg-surface-800 text-surface-300 hover:bg-surface-700 hover:text-surface-100",
-              )}
-            >
-              {opt.label}
-            </button>
-          );
-        })}
-      </div>
-      {options.length > 12 && (
-        <button
-          onClick={() => setExpanded(!expanded)}
-          className="mt-1.5 text-xs text-surface-400 hover:text-surface-200 flex items-center gap-1"
-        >
-          {expanded ? (
-            <>
-              <ChevronUp className="h-3 w-3" /> Show less
-            </>
-          ) : (
-            <>
-              <ChevronDown className="h-3 w-3" /> Show all ({options.length})
-            </>
-          )}
-        </button>
-      )}
-    </div>
-  );
-}
-
-// --- Range input ---
-
+// Range input — two numeric `Input`s with a "to" separator. Kept
+// local since it's only used inside this panel, but delegates
+// styling to the shared `Input` component instead of duplicating
+// focus-ring / border Tailwind.
 function RangeInput({
   label,
   min,
@@ -109,48 +48,37 @@ function RangeInput({
         {label}
       </span>
       <div className="flex items-center gap-2">
-        <input
+        <Input
           type="number"
           min={min}
           max={max}
           placeholder={String(min)}
           value={valueMin ?? ""}
-          onChange={(e) => onChangeMin(e.target.value ? Number(e.target.value) : undefined)}
+          onChange={(e) =>
+            onChangeMin(e.target.value ? Number(e.target.value) : undefined)
+          }
           aria-label={`${label} minimum`}
-          className="w-24 rounded-lg bg-surface-900 border border-surface-700 px-3 py-1.5 text-sm text-surface-100 focus:outline-none focus:ring-2 focus:ring-brand-500/40 focus:border-brand-500"
+          className="w-24"
           data-testid={`${testId}-min`}
         />
         <span className="text-surface-500 text-sm">to</span>
-        <input
+        <Input
           type="number"
           min={min}
           max={max}
           placeholder={String(max)}
           value={valueMax ?? ""}
-          onChange={(e) => onChangeMax(e.target.value ? Number(e.target.value) : undefined)}
+          onChange={(e) =>
+            onChangeMax(e.target.value ? Number(e.target.value) : undefined)
+          }
           aria-label={`${label} maximum`}
-          className="w-24 rounded-lg bg-surface-900 border border-surface-700 px-3 py-1.5 text-sm text-surface-100 focus:outline-none focus:ring-2 focus:ring-brand-500/40 focus:border-brand-500"
+          className="w-24"
           data-testid={`${testId}-max`}
         />
       </div>
     </div>
   );
 }
-
-// --- Play status chips ---
-
-const PLAY_STATUS_OPTIONS: Array<{
-  value: GameFilters["playStatus"];
-  label: string;
-}> = [
-  { value: undefined, label: "Any" },
-  { value: "unplayed", label: "Unplayed" },
-  { value: "played", label: "Played" },
-  { value: "favorited", label: "Favorited" },
-  { value: "play-later", label: "Play Later" },
-];
-
-// --- Saved search item ---
 
 function SavedSearchItem({
   search,
@@ -181,8 +109,6 @@ function SavedSearchItem({
     </div>
   );
 }
-
-// --- Main panel ---
 
 interface AdvancedFilterPanelProps {
   filters: GameFilters;
@@ -225,18 +151,6 @@ export function AdvancedFilterPanel({
     label: c.name,
   }));
 
-  const regionOptions = [
-    "USA", "Europe", "Japan", "World", "Korea", "Brazil",
-    "France", "Germany", "Spain", "Italy", "Australia",
-    "Canada", "China", "Asia",
-  ].map((r) => ({ value: r, label: r }));
-
-  const genreOptions = [
-    "Action", "Adventure", "RPG", "Platformer", "Puzzle",
-    "Racing", "Shooter", "Sports", "Strategy", "Fighting",
-    "Simulation", "Beat 'em up", "Arcade", "Horror",
-  ].map((g) => ({ value: g, label: g }));
-
   const themeOptions = (themes ?? []).map((t) => ({
     value: String(t.id),
     label: `${t.name} (${t.gameCount})`,
@@ -257,24 +171,6 @@ export function AdvancedFilterPanel({
       page: 1,
       pageSize: prev.pageSize,
     }));
-  };
-
-  const filtersToRecord = (f: GameFilters): Record<string, string | number> => {
-    const rec: Record<string, string | number> = {};
-    if (f.consoles?.length) rec.consoles = f.consoles.join(",");
-    if (f.regions?.length) rec.regions = f.regions.join(",");
-    if (f.genres?.length) rec.genres = f.genres.join(",");
-    if (f.themes?.length) rec.themes = f.themes.join(",");
-    if (f.keywords?.length) rec.keywords = f.keywords.join(",");
-    if (f.developer) rec.developer = f.developer;
-    if (f.publisher) rec.publisher = f.publisher;
-    if (f.yearMin != null) rec.yearMin = f.yearMin;
-    if (f.yearMax != null) rec.yearMax = f.yearMax;
-    if (f.ratingMin != null) rec.ratingMin = f.ratingMin;
-    if (f.ratingMax != null) rec.ratingMax = f.ratingMax;
-    if (f.playStatus) rec.playStatus = f.playStatus;
-    if (f.search) rec.search = f.search;
-    return rec;
   };
 
   const handleSave = () => {
@@ -341,8 +237,8 @@ export function AdvancedFilterPanel({
               label="Consoles"
               options={consoleOptions}
               selected={filters.consoles ?? []}
-              onChange={(consoles) =>
-                onFiltersChange((f) => ({ ...f, consoles, page: 1 }))
+              onChange={(next) =>
+                onFiltersChange((f) => ({ ...f, consoles: next, page: 1 }))
               }
               testId="console-filter"
             />
@@ -352,10 +248,10 @@ export function AdvancedFilterPanel({
           <div>
             <ChipPicker
               label="Regions"
-              options={regionOptions}
+              options={REGION_OPTIONS}
               selected={filters.regions ?? []}
-              onChange={(regions) =>
-                onFiltersChange((f) => ({ ...f, regions, page: 1 }))
+              onChange={(next) =>
+                onFiltersChange((f) => ({ ...f, regions: next, page: 1 }))
               }
               testId="region-filter"
             />
@@ -373,10 +269,10 @@ export function AdvancedFilterPanel({
           {/* Genre picker */}
           <ChipPicker
             label="Genres"
-            options={genreOptions}
+            options={GENRE_OPTIONS}
             selected={filters.genres ?? []}
-            onChange={(genres) =>
-              onFiltersChange((f) => ({ ...f, genres, page: 1 }))
+            onChange={(next) =>
+              onFiltersChange((f) => ({ ...f, genres: next, page: 1 }))
             }
             testId="genre-filter"
           />
@@ -387,8 +283,8 @@ export function AdvancedFilterPanel({
               label="Themes"
               options={themeOptions}
               selected={filters.themes ?? []}
-              onChange={(themes) =>
-                onFiltersChange((f) => ({ ...f, themes, page: 1 }))
+              onChange={(next) =>
+                onFiltersChange((f) => ({ ...f, themes: next, page: 1 }))
               }
               testId="theme-filter"
             />
@@ -400,8 +296,8 @@ export function AdvancedFilterPanel({
               label="Keywords"
               options={keywordOptions}
               selected={filters.keywords ?? []}
-              onChange={(keywords) =>
-                onFiltersChange((f) => ({ ...f, keywords, page: 1 }))
+              onChange={(next) =>
+                onFiltersChange((f) => ({ ...f, keywords: next, page: 1 }))
               }
               testId="keyword-filter"
             />
@@ -479,16 +375,16 @@ export function AdvancedFilterPanel({
             testId="rating-filter"
           />
 
-          {/* Play status */}
+          {/* Play status (single-select) */}
           <div data-testid="play-status-filter">
             <span id="play-status-label" className="block text-sm font-medium text-surface-300 mb-2">
               Play Status
             </span>
             <div className="flex flex-wrap gap-1.5" role="group" aria-labelledby="play-status-label">
               {PLAY_STATUS_OPTIONS.map((opt) => (
-                <button
+                <Chip
                   key={opt.label}
-                  aria-pressed={filters.playStatus === opt.value}
+                  selected={filters.playStatus === opt.value}
                   onClick={() =>
                     onFiltersChange((f) => ({
                       ...f,
@@ -496,15 +392,9 @@ export function AdvancedFilterPanel({
                       page: 1,
                     }))
                   }
-                  className={cn(
-                    "px-2.5 py-1 rounded-full text-xs font-medium transition-colors",
-                    filters.playStatus === opt.value
-                      ? "bg-brand-600 text-white"
-                      : "bg-surface-800 text-surface-300 hover:bg-surface-700 hover:text-surface-100",
-                  )}
                 >
                   {opt.label}
-                </button>
+                </Chip>
               ))}
             </div>
           </div>
@@ -578,46 +468,4 @@ export function AdvancedFilterPanel({
       )}
     </div>
   );
-}
-
-function countActiveFilters(filters: GameFilters): number {
-  let count = 0;
-  if (filters.consoles?.length) count++;
-  if (filters.regions?.length) count++;
-  if (filters.genres?.length) count++;
-  if (filters.themes?.length) count++;
-  if (filters.keywords?.length) count++;
-  if (filters.perspectives?.length) count++;
-  if (filters.developer) count++;
-  if (filters.publisher) count++;
-  if (filters.yearMin != null) count++;
-  if (filters.yearMax != null) count++;
-  if (filters.ratingMin != null) count++;
-  if (filters.ratingMax != null) count++;
-  if (filters.playStatus) count++;
-  return count;
-}
-
-/** Convert a saved-search filter record back to GameFilters */
-export function savedSearchToFilters(
-  record: Record<string, string | number>,
-  base: GameFilters,
-): GameFilters {
-  return {
-    ...base,
-    consoles: record.consoles ? String(record.consoles).split(",") : undefined,
-    regions: record.regions ? String(record.regions).split(",") : undefined,
-    genres: record.genres ? String(record.genres).split(",") : undefined,
-    themes: record.themes ? String(record.themes).split(",") : undefined,
-    keywords: record.keywords ? String(record.keywords).split(",") : undefined,
-    developer: record.developer ? String(record.developer) : undefined,
-    publisher: record.publisher ? String(record.publisher) : undefined,
-    yearMin: record.yearMin != null ? Number(record.yearMin) : undefined,
-    yearMax: record.yearMax != null ? Number(record.yearMax) : undefined,
-    ratingMin: record.ratingMin != null ? Number(record.ratingMin) : undefined,
-    ratingMax: record.ratingMax != null ? Number(record.ratingMax) : undefined,
-    playStatus: record.playStatus as GameFilters["playStatus"],
-    search: record.search ? String(record.search) : base.search,
-    page: 1,
-  };
 }
