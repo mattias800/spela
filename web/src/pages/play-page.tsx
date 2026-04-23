@@ -1,7 +1,11 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { useState, useEffect, useRef, useCallback } from "react";
-import { AlertTriangle } from "lucide-react";
-import { Button, Skeleton } from "@/components/ui";
+import {
+  PlayPageError,
+  PlayPageLoading,
+  PlayPageNotFound,
+  PlayPageUnsupported,
+} from "@/features/play/components/play-page-state";
 import { useGame } from "@/hooks/use-games";
 import { useUserPreferences } from "@/hooks/use-preferences";
 import { useConsoles } from "@/hooks/use-consoles";
@@ -356,80 +360,27 @@ export function PlayPage() {
     [emulator.iframeRef],
   );
 
-  // ── Loading state ─────────────────────────────────────────────────
+  // ── Loading / terminal states ─────────────────────────────────────
+  // Each full-screen placeholder lives in `features/play/components`
+  // so the main page body below can focus on the happy-path layout.
 
-  if (gameLoading || consolesLoading) {
-    return (
-      <div className="flex flex-col h-screen">
-        <div className="flex items-center justify-between px-4 py-2 border-b border-surface-800 bg-surface-950/80">
-          <div className="flex items-center gap-3">
-            <Skeleton className="h-5 w-16" />
-            <Skeleton className="h-5 w-40" />
-          </div>
-          <div className="flex items-center gap-2">
-            <Skeleton className="h-8 w-8 rounded" />
-            <Skeleton className="h-8 w-8 rounded" />
-            <Skeleton className="h-8 w-8 rounded" />
-          </div>
-        </div>
-        <div className="flex-1 bg-surface-950" />
-      </div>
-    );
-  }
-
-  if (!game) {
-    return (
-      <div className="text-center py-20">
-        <p className="text-surface-400">Game not found</p>
-        <Button variant="ghost" onClick={() => navigate(-1)} className="mt-4">
-          Go back
-        </Button>
-      </div>
-    );
-  }
-
+  if (gameLoading || consolesLoading) return <PlayPageLoading />;
+  if (!game) return <PlayPageNotFound onBack={() => navigate(-1)} />;
   if (!isSupported) {
     return (
-      <div className="text-center py-20 space-y-4">
-        <AlertTriangle className="h-12 w-12 text-warning-500 mx-auto" />
-        <h2 className="text-xl font-bold text-surface-100">
-          Browser Play Not Available
-        </h2>
-        <p className="text-surface-400 max-w-md mx-auto">
-          {game.consoleName} is not yet supported for browser play. Use the
-          Spela player app to play this game.
-        </p>
-        <Button variant="secondary" onClick={() => navigate(`/games/${id}`)}>
-          Back to Game Details
-        </Button>
-      </div>
+      <PlayPageUnsupported
+        consoleName={game.consoleName}
+        onBack={() => navigate(`/games/${id}`)}
+      />
     );
   }
-
-  // ── Error state ──────────────────────────────────────────────────
-
   if (emulator.status === "error") {
     return (
-      <div className="text-center py-20 space-y-4">
-        <AlertTriangle className="h-12 w-12 text-danger-500 mx-auto" />
-        <h2 className="text-xl font-bold text-surface-100">
-          Emulation Error
-        </h2>
-        <p className="text-surface-400 max-w-md mx-auto">
-          {emulator.error || "The emulator encountered an unexpected error."}
-        </p>
-        <div className="flex items-center justify-center gap-3 pt-2">
-          <Button
-            variant="secondary"
-            onClick={() => navigate(`/games/${id}`)}
-          >
-            Back to Game Details
-          </Button>
-          <Button onClick={() => window.location.reload()}>
-            Try Again
-          </Button>
-        </div>
-      </div>
+      <PlayPageError
+        error={emulator.error}
+        onBack={() => navigate(`/games/${id}`)}
+        onRetry={() => window.location.reload()}
+      />
     );
   }
 
