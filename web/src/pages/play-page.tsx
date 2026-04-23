@@ -1,4 +1,4 @@
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { useState, useEffect, useRef, useCallback } from "react";
 import {
   PlayPageError,
@@ -21,6 +21,7 @@ import { useGamepadConnected } from "@/hooks/use-gamepad";
 import { useAutoSaveInfo } from "@/hooks/use-sessions";
 import { useQueryClient } from "@tanstack/react-query";
 import { typedApi, unwrap } from "@/lib/api-client";
+import { useDiscSwitchFlow } from "@/features/play/hooks/use-disc-switch-flow";
 import { useEmulatorInit } from "@/features/play/hooks/use-emulator-init";
 import { useResolvedGamePreferences } from "@/features/play/hooks/use-resolved-game-preferences";
 import { PlayToolbar } from "@/features/play/components/play-toolbar";
@@ -29,11 +30,25 @@ import {
   CoreMismatchModal,
   type CoreMismatchChoice,
 } from "@/features/play/components/core-mismatch-modal";
+/**
+ * Iframe URL — `?mockEmulator=true` on the play page swaps the real
+ * EmulatorJS iframe for `/emulator-mock.html`, a deterministic stub
+ * used by Playwright tests. Production builds never set the flag,
+ * but the mock html ships in `public/` so tests can opt in without
+ * a separate build.
+ */
+function resolveEmulatorSrc(useMock: boolean): string {
+  return useMock ? "/emulator-mock.html" : "/emulator.html";
+}
+
 export function PlayPage() {
   const { id, sessionId: sessionIdParam } = useParams<{ id: string; sessionId: string }>();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const [searchParams] = useSearchParams();
+  const useMockEmulator = searchParams.get("mockEmulator") === "true";
+  const emulatorSrc = resolveEmulatorSrc(useMockEmulator);
 
   const isFreshStart = sessionIdParam === "new";
   const [createdSessionId, setCreatedSessionId] = useState<string | undefined>();
@@ -81,16 +96,9 @@ export function PlayPage() {
 
   const [iframeLoaded, setIframeLoaded] = useState(false);
   const [isExitSaving, setIsExitSaving] = useState(false);
-  const [isSwitchingDisc, setIsSwitchingDisc] = useState(false);
-  const [currentDisc, setCurrentDisc] = useState(1);
   const [showCoreMismatchModal, setShowCoreMismatchModal] = useState(false);
   const coreMismatchChoiceRef = useRef<CoreMismatchChoice | null>(null);
   const sessionStartRef = useRef<number>(Date.now());
-  const pendingDiscSwitchRef = useRef<{
-    targetDisc: number; // 0-indexed for EmulatorJS
-    saveData: string;
-  } | null>(null);
-  const buildMultiDiscBundleRef = useRef<() => ArrayBuffer | null>(() => null);
 
   // Resolve the EmulatorJS core identifier for this game's console
   const consoleInfo = consoles?.find((c) => c.id === game?.consoleId);
@@ -107,29 +115,11 @@ export function PlayPage() {
       sessionStartRef.current = Date.now();
     },
     onSaveStateResponse: (data, screenshot) => {
-      // Check if this save state is part of a disc switch flow
-      if (pendingDiscSwitchRef.current) {
-        pendingDiscSwitchRef.current.saveData = data;
-
-        // Reload iframe — the init useEffect will detect the pending
-        // disc switch and build the combined bundle there
-        setIframeLoaded(false);
-        const iframe = emulator.iframeRef.current;
-        if (iframe) {
-          iframe.src = "/emulator.html";
-        }
-        return;
-      }
-
+      if (discSwitch.handleSaveStateResponse(data)) return;
       saveManager.handleSaveStateData(data, screenshot);
     },
     onSaveStateError: (err) => {
-      if (pendingDiscSwitchRef.current) {
-        pendingDiscSwitchRef.current = null;
-        setIsSwitchingDisc(false);
-        toast("error", `Disc switch failed: ${err}`);
-        return;
-      }
+      if (discSwitch.handleSaveStateError(err)) return;
       toast("error", `Save failed: ${err}`);
     },
     onError: (err) => {
@@ -169,30 +159,19 @@ export function PlayPage() {
       toast("error", `Disc ${discNumber} download failed: ${error}`);
     },
   });
-  buildMultiDiscBundleRef.current = discManager.buildMultiDiscBundle;
+
+  const discSwitch = useDiscSwitchFlow({
+    emulator,
+    allDiscsReady: discManager.allDiscsReady,
+    buildMultiDiscBundle: discManager.buildMultiDiscBundle,
+    emulatorSrc,
+    onToastError: (msg) => toast("error", msg),
+    onIframeWillReload: () => setIframeLoaded(false),
+  });
 
   usePlaySession(id, emulator.status);
   const { handleFullscreen } = useFullscreen(emulator.iframeRef);
   const gamepadConnected = useGamepadConnected();
-
-  const handleDiscSwitch = useCallback(
-    (targetDiscNumber: number) => {
-      if (isSwitchingDisc || !discManager.allDiscsReady) return;
-      setIsSwitchingDisc(true);
-
-      // Store target disc (0-indexed for EmulatorJS) — currentDisc is
-      // updated after the switch succeeds in the init useEffect
-      pendingDiscSwitchRef.current = {
-        targetDisc: targetDiscNumber - 1,
-        saveData: "",
-      };
-
-      // Pause and request save state — the flow continues in onSaveStateResponse
-      emulator.pause();
-      emulator.requestSaveState();
-    },
-    [isSwitchingDisc, discManager.allDiscsReady, emulator],
-  );
 
   useEmulatorInit({
     iframeLoaded,
@@ -206,14 +185,14 @@ export function PlayPage() {
     emulatorPrefs,
     autoSaveInfoRef,
     coreMismatchChoiceRef,
-    pendingDiscSwitchRef,
-    buildMultiDiscBundleRef,
+    pendingDiscSwitchRef: discSwitch.pendingDiscSwitchRef,
+    buildMultiDiscBundleRef: discSwitch.buildMultiDiscBundleRef,
     emulator,
     loadInitialSave: saveManager.loadInitialSave,
     onToastError: (message) => toast("error", message),
     onRequestCoreMismatchChoice: () => setShowCoreMismatchModal(true),
-    onDiscSwitchCurrentChanged: setCurrentDisc,
-    onDiscSwitchSettled: () => setIsSwitchingDisc(false),
+    onDiscSwitchCurrentChanged: discSwitch.onDiscSwitchCurrentChanged,
+    onDiscSwitchSettled: discSwitch.onDiscSwitchSettled,
   });
 
   async function handleBack() {
@@ -241,10 +220,10 @@ export function PlayPage() {
       setIframeLoaded(false);
       const iframe = emulator.iframeRef.current;
       if (iframe) {
-        iframe.src = "/emulator.html";
+        iframe.src = emulatorSrc;
       }
     },
-    [emulator.iframeRef],
+    [emulator.iframeRef, emulatorSrc],
   );
 
   // ── Loading / terminal states ─────────────────────────────────────
@@ -296,9 +275,11 @@ export function PlayPage() {
           emulator.focusEmulator();
         }}
         discStates={discManager.isMultiDisc ? discManager.discStates : undefined}
-        currentDisc={discManager.isMultiDisc ? currentDisc : undefined}
-        isSwitchingDisc={isSwitchingDisc}
-        onSwitchDisc={discManager.isMultiDisc ? handleDiscSwitch : undefined}
+        currentDisc={discManager.isMultiDisc ? discSwitch.currentDisc : undefined}
+        isSwitchingDisc={discSwitch.isSwitchingDisc}
+        onSwitchDisc={
+          discManager.isMultiDisc ? discSwitch.handleDiscSwitch : undefined
+        }
         onRetryDisc={discManager.isMultiDisc ? discManager.retryDisc : undefined}
       />
 
@@ -310,13 +291,17 @@ export function PlayPage() {
           biosMissing={biosMissing}
           missingBiosFiles={missingBiosFiles}
           isAdmin={isAdmin}
-          isSwitchingDisc={isSwitchingDisc}
-          switchingToDisc={pendingDiscSwitchRef.current ? pendingDiscSwitchRef.current.targetDisc + 1 : currentDisc}
+          isSwitchingDisc={discSwitch.isSwitchingDisc}
+          switchingToDisc={
+            discSwitch.pendingDiscSwitchRef.current
+              ? discSwitch.pendingDiscSwitchRef.current.targetDisc + 1
+              : discSwitch.currentDisc
+          }
           onRetry={() => {
             setIframeLoaded(false);
             const iframe = emulator.iframeRef.current;
             if (iframe) {
-              iframe.src = "/emulator.html";
+              iframe.src = emulatorSrc;
             }
           }}
           onBack={() => navigate(`/games/${id}`)}
@@ -324,7 +309,7 @@ export function PlayPage() {
 
         <iframe
           ref={emulator.iframeRef}
-          src="/emulator.html"
+          src={emulatorSrc}
           title={`Playing ${game.title}`}
           className="w-full h-full border-0"
           allow="autoplay; gamepad; fullscreen"
