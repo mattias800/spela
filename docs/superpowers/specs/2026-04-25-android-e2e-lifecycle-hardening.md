@@ -20,6 +20,22 @@ The goal is a suite where the **entry contract** is known (logged in, on Home, b
 - Changing the ComposeRule-per-test model (`createAndroidComposeRule<MainActivity>()` relaunches the Activity per test, which is fine and gives us natural isolation).
 - Running the suite in CI (CI does not currently run Android E2E; that remains true).
 
+## Must preserve (existing debugging infrastructure)
+
+The previous session invested heavily in failure diagnostics. All of it stays wired through this work:
+
+- **`FailureDiagnosticsListener`** (registered globally via `testInstrumentationRunnerArguments["listener"]` in `player/android/build.gradle.kts:52-53`) captures per-failure:
+  - `screenshot.png` — display 0 screenshot via `UiAutomation.takeScreenshot`
+  - `ui.xml` — `uiautomator dump` of the accessibility tree
+  - `logcat.txt` — last 2000 lines
+  - `state.json` — package, display ids, a11y services, timestamp
+  - `failure.txt` — exception class, message, stack, causes
+  - `repro.txt` — single-class gradle invocation to reproduce
+- **Fail-fast gate** via `FailureDiagnosticsListener.anyTestFailed`: `KoinResetRule` throws `AssumptionViolatedException` on every test after the first failure so they land as SKIPPED instead of burning minutes on doomed reruns.
+- **Host-side pull** in `run-e2e.sh` copies `/sdcard/spela-test-failures/` to `player/build/test-failures/` on every exit and prints absolute paths.
+
+The new `BaseE2ETest` class does not replace any of this — it sits beside it. The fail-fast gate continues to run inside `KoinResetRule` (order=0), so it still fires before `BaseE2ETest.baseSetUp()`. The `@After` `tearDown()` path is wrapped in `runCatching` so teardown failures cannot mask the original assertion failure already captured by the listener.
+
 ## Design
 
 Three layers. Each can land independently, in order.
