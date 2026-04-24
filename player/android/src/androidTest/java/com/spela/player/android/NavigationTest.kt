@@ -8,24 +8,12 @@ class NavigationTest : BaseE2ETest() {
 
     @Test
     fun backStackNavigation() {
+        // Drive Home → Consoles → NES → Castlevania detail via the canonical
+        // helper (handles the shelves-with-Browse-button layout). Then verify
+        // back-stack navigation returns us through the same screens.
+        rule.navigateToCastlevania()
 
-        // Navigate to Consoles tab and wait for console cards to load
-        rule.tapOn("Consoles")
-        rule.waitForContentDescription("Nintendo Entertainment System", timeout = 8_000)
-
-        // Navigate forward to Screen 2: NES console game list
-        // Use compound matcher to avoid ambiguity with game cards that mention the console name
-        rule.scrollToAndTapMatchingBoth("Nintendo Entertainment System", "games")
-
-        // Verify we're on the console game list (title bar shows console name as text)
-        rule.waitForText("Nintendo Entertainment System", timeout = 8_000)
-
-        // Navigate forward to Screen 3: Game detail
-        // Use a game from the "Top Rated" carousel (visible without scrolling)
-        // to avoid flaky scroll+click issues with LazyColumn off-screen nodes
-        rule.tapOn("Super Mario Bros. 3")
-
-        // Verify game detail screen — wait for action buttons (Download/Play/Resume text)
+        // Verify game detail rendered — wait for an action button.
         rule.pollUntil(timeoutMillis = 15_000) {
             try {
                 rule.onAllNodesWithText("Download", substring = true)
@@ -37,30 +25,23 @@ class NavigationTest : BaseE2ETest() {
             } catch (_: IllegalStateException) { false }
         }
 
-        // BACK #1: Game Detail -> Console game list
+        // BACK #1: Game Detail → previous screen (Browse / game list).
         rule.pressBack()
 
-        // Verify we're back on NES console game list (title bar shows console name)
+        // Verify NES console name is visible (title bar / previous screen).
         rule.waitForText("Nintendo Entertainment System", timeout = 8_000)
 
-        // BACK #2: Console game list -> Consoles screen
+        // BACK: keep going until we reach the Consoles grid.
         rule.pressBack()
-
-        // Verify we're back on Consoles (console cards visible via contentDescription)
         rule.waitForContentDescription("Nintendo Entertainment System", timeout = 8_000)
     }
 
     @Test
     fun autoScrapeMetadata() {
+        // Land on the Castlevania detail screen.
+        rule.navigateToCastlevania()
 
-        // Navigate to Consoles tab, then NES > Castlevania
-        rule.tapOn("Consoles")
-        rule.waitForContentDescription("Nintendo Entertainment System", timeout = 8_000)
-        rule.scrollToAndTapMatchingBoth("Nintendo Entertainment System", "games")
-        rule.waitForText("Nintendo Entertainment System", timeout = 8_000)
-        rule.scrollToAndTapText("Castlevania")
-
-        // Wait for game detail screen — wait for action buttons (Download/Play/Resume text)
+        // Wait for game detail screen — wait for an action button.
         rule.pollUntil(timeoutMillis = 15_000) {
             try {
                 rule.onAllNodesWithText("Download", substring = true)
@@ -72,15 +53,10 @@ class NavigationTest : BaseE2ETest() {
             } catch (_: IllegalStateException) { false }
         }
 
-        // Wait for metadata to auto-scrape (generous timeout for network)
-        rule.waitForText("Download", timeout = 30_000)
-
-        // Verify game detail fully populated
+        // Verify game detail populated.
         rule.assertTextVisible("Castlevania")
 
         // Best-effort cover art check — don't fail the metadata test over image loading.
-        // Use manual polling instead of waitUntil to avoid Compose framework's internal
-        // failure tracking which reports failures even when the exception is caught.
         val deadline = System.currentTimeMillis() + 10_000
         while (System.currentTimeMillis() < deadline) {
             try {
