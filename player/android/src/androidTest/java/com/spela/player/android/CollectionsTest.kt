@@ -2,7 +2,6 @@ package com.spela.player.android
 
 import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.hasText
-import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
@@ -11,10 +10,7 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTextClearance
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextInput
-import androidx.test.ext.junit.runners.AndroidJUnit4
-import org.junit.Rule
 import org.junit.Test
-import org.junit.runner.RunWith
 
 /**
  * E2E tests for collections write operations.
@@ -26,13 +22,7 @@ import org.junit.runner.RunWith
  * - Server running with seeded data (player/player123 and admin/admin123 users)
  * - Device connected and unlocked
  */
-@RunWith(AndroidJUnit4::class)
-class CollectionsTest {
-
-    
-
-    @get:Rule
-    val rule = createAndroidComposeRule<MainActivity>()
+class CollectionsTest : BaseE2ETest() {
 
     // ── Navigation helpers ──
 
@@ -182,7 +172,6 @@ class CollectionsTest {
 
     @Test
     fun deleteCollectionFromDetailScreen() {
-        rule.startLoggedIn()
         val collName = "E2E Delete ${System.currentTimeMillis()}"
 
         // Create a fresh collection
@@ -207,7 +196,6 @@ class CollectionsTest {
 
     @Test
     fun createCollectionValidation() {
-        rule.startLoggedIn()
         navigateToCollectionsTab()
 
         // Tap FAB to open create dialog
@@ -233,7 +221,6 @@ class CollectionsTest {
 
     @Test
     fun editCollectionFromDetailScreen() {
-        rule.startLoggedIn()
         val editedName = "E2E Edited ${System.currentTimeMillis()}"
 
         // Create a collection to edit
@@ -273,7 +260,6 @@ class CollectionsTest {
 
     @Test
     fun createCollectionFromCollectionsScreen() {
-        rule.startLoggedIn()
         val collName = "E2E Create ${System.currentTimeMillis()}"
 
         // Navigate to Collections tab
@@ -294,7 +280,6 @@ class CollectionsTest {
 
     @Test
     fun addGameToCollectionFromGameDetail() {
-        rule.startLoggedIn()
         val collName = "E2E AddGame ${System.currentTimeMillis()}"
 
         // Create collection
@@ -332,7 +317,6 @@ class CollectionsTest {
 
     @Test
     fun removeGameFromCollectionDetail() {
-        rule.startLoggedIn()
         val collName = "E2E RemoveGame ${System.currentTimeMillis()}"
 
         // Create collection
@@ -372,7 +356,6 @@ class CollectionsTest {
 
     @Test
     fun publicTogglePersists() {
-        rule.startLoggedIn()
         val collName = "E2E Public ${System.currentTimeMillis()}"
 
         // Create a public collection
@@ -422,7 +405,6 @@ class CollectionsTest {
     @Test
     fun collectionOwnershipHidesEditDelete() {
         // Start as player (default user)
-        rule.startLoggedIn()
         val collName = "E2E Ownership ${System.currentTimeMillis()}"
 
         // Create a public collection as player
