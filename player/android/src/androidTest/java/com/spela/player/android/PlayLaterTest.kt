@@ -1,20 +1,10 @@
 package com.spela.player.android
 
-import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onAllNodesWithText
-import androidx.test.ext.junit.runners.AndroidJUnit4
-import org.junit.Rule
 import org.junit.Test
-import org.junit.runner.RunWith
 
-@RunWith(AndroidJUnit4::class)
-class PlayLaterTest {
-
-    
-
-    @get:Rule
-    val rule = createAndroidComposeRule<MainActivity>()
+class PlayLaterTest : BaseE2ETest() {
 
     /** Wait for either play later button state to be visible on game detail. */
     private fun waitForPlayLaterButton() {
@@ -54,7 +44,6 @@ class PlayLaterTest {
 
     @Test
     fun addToPlayLaterFromGameDetail() {
-        rule.startLoggedIn()
         rule.navigateToCastlevania()
         ensureNotInPlayLater()
 
@@ -66,7 +55,6 @@ class PlayLaterTest {
 
     @Test
     fun removeFromPlayLaterFromGameDetail() {
-        rule.startLoggedIn()
         rule.navigateToCastlevania()
         ensureInPlayLater()
 
@@ -78,7 +66,6 @@ class PlayLaterTest {
 
     @Test
     fun playLaterSectionOnHomeScreen() {
-        rule.startLoggedIn()
 
         // Ensure a game is in the Play Later queue
         rule.navigateToCastlevania()
@@ -105,7 +92,6 @@ class PlayLaterTest {
 
     @Test
     fun activityFeedShowsPlayLaterEvent() {
-        rule.startLoggedIn()
         rule.navigateToCastlevania()
         ensureNotInPlayLater()
 
@@ -138,7 +124,6 @@ class PlayLaterTest {
 
     @Test
     fun playLaterTogglePersistsOnGameDetail() {
-        rule.startLoggedIn()
         rule.navigateToCastlevania()
         ensureNotInPlayLater()
 

@@ -2,24 +2,14 @@ package com.spela.player.android
 
 import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.hasText
-import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextInput
-import androidx.test.ext.junit.runners.AndroidJUnit4
-import org.junit.Rule
 import org.junit.Test
-import org.junit.runner.RunWith
 
-@RunWith(AndroidJUnit4::class)
-class SessionTest {
-
-    
-
-    @get:Rule
-    val rule = createAndroidComposeRule<MainActivity>()
+class SessionTest : BaseE2ETest() {
 
     /** Tap the confirm button in the sign-out dialog and wait for server connection screen. */
     private fun confirmSignOutDialog() {
@@ -34,7 +24,6 @@ class SessionTest {
     @Test
     fun sessionPersistsAcrossRestart() {
         // Ensure we're logged in
-        rule.ensureLoggedIn()
 
         // Restart app (session should persist via SQLDelight)
         rule.restartApp()
@@ -45,7 +34,6 @@ class SessionTest {
 
     @Test
     fun logoutClearsTokensPreservesServer() {
-        rule.ensureLoggedIn()
 
         // Navigate to Settings → About category (where Sign Out lives)
         rule.navigateToSettingsCategory("About")
@@ -85,7 +73,6 @@ class SessionTest {
 
     @Test
     fun serverPersistsAcrossRestart() {
-        rule.ensureLoggedIn()
 
         // Navigate to Settings → About → Sign Out
         rule.navigateToSettingsCategory("About")
@@ -113,7 +100,6 @@ class SessionTest {
 
     @Test
     fun landscapeLoginFlow() {
-        rule.ensureLoggedIn()
 
         // Sign out to get to a clean state
         rule.navigateToSettingsCategory("About")
@@ -142,7 +128,6 @@ class SessionTest {
 
     @Test
     fun preferencesSyncAcrossRestart() {
-        rule.ensureLoggedIn()
 
         // Navigate to Settings → Emulation category (where Auto Save lives)
         rule.navigateToSettingsCategory("Emulation")

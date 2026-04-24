@@ -3,7 +3,6 @@ package com.spela.player.android
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasText
-import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
@@ -11,20 +10,11 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performSemanticsAction
-import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.uiautomator.UiDevice
-import org.junit.Rule
 import org.junit.Test
-import org.junit.runner.RunWith
 
-@RunWith(AndroidJUnit4::class)
-class SettingsTest {
-
-    
-
-    @get:Rule
-    val rule = createAndroidComposeRule<MainActivity>()
+class SettingsTest : BaseE2ETest() {
 
     /** Scroll down in the LazyColumn until a node with the given contentDescription appears. */
     private fun scrollDownUntilContentDescription(description: String) {
@@ -67,7 +57,6 @@ class SettingsTest {
 
     @Test
     fun shaderPreview() {
-        rule.startLoggedIn()
 
         // Navigate to Settings → Emulation (where Video Filter lives)
         rule.navigateToSettingsCategory("Emulation")
@@ -104,7 +93,6 @@ class SettingsTest {
 
     @Test
     fun consoleShaderPersists() {
-        rule.startLoggedIn()
 
         // Navigate to Settings → Per-Console category
         rule.navigateToSettingsCategory("Per-Console")
@@ -133,7 +121,6 @@ class SettingsTest {
 
     @Test
     fun deviceShaderOverride() {
-        rule.startLoggedIn()
 
         // Navigate to Settings → Emulation → set global shader
         rule.navigateToSettingsCategory("Emulation")
@@ -175,7 +162,6 @@ class SettingsTest {
 
     @Test
     fun shaderSelectionPersists() {
-        rule.ensureLoggedIn()
 
         // Navigate to Settings → Emulation (where Video Filter lives)
         rule.navigateToSettingsCategory("Emulation")
@@ -203,7 +189,6 @@ class SettingsTest {
 
     @Test
     fun retroAchievementsSection() {
-        rule.ensureLoggedIn()
 
         // Navigate to Settings → Achievements category
         rule.navigateToSettingsCategory("Achievements")

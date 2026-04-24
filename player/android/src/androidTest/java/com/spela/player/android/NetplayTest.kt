@@ -1,11 +1,7 @@
 package com.spela.player.android
 
-import androidx.compose.ui.test.junit4.createAndroidComposeRule
-import androidx.test.ext.junit.runners.AndroidJUnit4
 import kotlinx.coroutines.runBlocking
-import org.junit.Rule
 import org.junit.Test
-import org.junit.runner.RunWith
 import java.net.HttpURLConnection
 import java.net.URL
 
@@ -25,12 +21,7 @@ import java.net.URL
  * This catches real Android integration issues: auth token flow, WebSocket
  * connection, session API round-trips, and real-time lobby updates.
  */
-@RunWith(AndroidJUnit4::class)
-class NetplayTest {
-    
-
-    @get:Rule
-    val rule = createAndroidComposeRule<MainActivity>()
+class NetplayTest : BaseE2ETest() {
 
     @Test
     fun testNetplaySessionCreationAndJoin() {
