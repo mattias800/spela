@@ -43,6 +43,19 @@ echo "── Ensuring backend is up (docker compose up -d --build --wait) ──
 docker compose -f "$E2E_COMPOSE" up -d --build --wait
 echo "Backend up and healthy."
 
+# ── Clean-slate app state ──
+# Uninstall the app (if present) so every run starts from a real
+# first-install: no SQLDelight auth tokens, no cached server
+# connection, no play history, no downloaded games, no shader
+# overrides. Pairs with `docker compose down -v` above, which
+# wipes backend state — together the world is genuinely fresh.
+#
+# The `|| true` swallows the "package not found" exit on a
+# machine that's never installed the app.
+echo "── Uninstalling com.spela.player on $ADB_SERIAL ──"
+adb -s "$ADB_SERIAL" uninstall com.spela.player >/dev/null 2>&1 || true
+echo "App uninstalled (or was not present)."
+
 # ── Unlock device if locked ──
 
 LOCKED=$(adb -s "$ADB_SERIAL" shell dumpsys window | grep mInputRestricted | head -1)
