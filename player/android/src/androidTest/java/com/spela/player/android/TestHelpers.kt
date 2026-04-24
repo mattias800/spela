@@ -125,8 +125,8 @@ class KoinResetRule : org.junit.rules.TestRule {
 
 private const val SERVER_NAME = "Local"
 private const val SERVER_URL = "http://127.0.0.1:8080"
-private const val PLAYER_USERNAME = "player"
-private const val PLAYER_PASSWORD = "player123"
+internal const val PLAYER_USERNAME = "player"
+internal const val PLAYER_PASSWORD = "player123"
 private const val ADMIN_USERNAME = "admin"
 private const val ADMIN_PASSWORD = "admin123"
 
@@ -1038,7 +1038,7 @@ fun ComposeRule.loginAsAdmin() {
     addServerAndLogin(ADMIN_USERNAME, ADMIN_PASSWORD)
 }
 
-private fun ComposeRule.signOutIfLoggedIn() {
+internal fun ComposeRule.signOutIfLoggedIn() {
     // Check if we're on Home screen (logged in) via UiAutomator
     if (!isOnHomeScreen()) return
 
@@ -1056,7 +1056,7 @@ private fun ComposeRule.signOutIfLoggedIn() {
     }
 }
 
-private fun ComposeRule.addServerAndLogin(username: String, password: String) {
+internal fun ComposeRule.addServerAndLogin(username: String, password: String) {
     // Wait for server connection screen (use text fallback since test tag on
     // BoxWithConstraints may not be accessible)
     pollUntil(timeoutMillis = TIMEOUT_LONG) {
