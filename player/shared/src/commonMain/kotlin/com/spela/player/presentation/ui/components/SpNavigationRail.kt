@@ -34,6 +34,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
@@ -193,6 +194,7 @@ private fun RailItem(
 
     Box(
         modifier = Modifier
+            .testTag(tab.testTag)
             .then(
                 if (showLabel) Modifier.padding(horizontal = SpSpacing.Small) else Modifier
             )

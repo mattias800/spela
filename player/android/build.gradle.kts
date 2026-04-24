@@ -45,6 +45,12 @@ android {
         val appVersion = project.findProperty("appVersion")?.toString() ?: "1.0.0"
         versionName = appVersion
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        // Register FailureDiagnosticsListener so every test failure
+        // captures screenshot + ui.xml + logcat + state.json + repro.txt
+        // under /sdcard/spela-test-failures/. `run-e2e.sh` pulls them
+        // to player/build/test-failures/ at the end of the run.
+        testInstrumentationRunnerArguments["listener"] =
+            "com.spela.player.android.FailureDiagnosticsListener"
 
         ndk {
             abiFilters += listOf("arm64-v8a", "armeabi-v7a", "x86_64")

@@ -157,15 +157,91 @@ private fun uiDevice(): UiDevice =
  */
 fun ComposeRule.pollUntil(timeoutMillis: Long = 1000L, condition: () -> Boolean) {
     val deadline = System.currentTimeMillis() + timeoutMillis
+    var lastException: Throwable? = null
     while (System.currentTimeMillis() < deadline) {
         try {
             if (condition()) return
-        } catch (_: Exception) {}
+        } catch (e: Exception) {
+            lastException = e
+        }
         Thread.sleep(100)
     }
     throw androidx.compose.ui.test.ComposeTimeoutException(
-        "Condition still not satisfied after $timeoutMillis ms"
+        buildString {
+            append("Condition still not satisfied after ${timeoutMillis}ms.\n")
+            append(lastObservedSnapshot())
+            if (lastException != null) {
+                append("\nLast condition exception: ")
+                append(lastException::class.simpleName)
+                append(": ")
+                append(lastException.message)
+            }
+        },
     )
+}
+
+/**
+ * Snapshots the semantic tree's currently visible texts, content
+ * descriptions and testTags. Attached to every [pollUntil] timeout so
+ * the failure message tells you what the screen actually looked like
+ * when the wait gave up — instead of you having to chase the
+ * screenshot artifact for "what tags were present?"
+ *
+ * Capped at 30 entries per category to keep the message tractable.
+ */
+private fun ComposeRule.lastObservedSnapshot(): String = try {
+    val nodes = onAllNodes(
+        androidx.compose.ui.test.isRoot(),
+        useUnmergedTree = true,
+    ).fetchSemanticsNodes()
+        .flatMap { collectAllNodes(it) }
+    val texts = mutableSetOf<String>()
+    val descs = mutableSetOf<String>()
+    val tags = mutableSetOf<String>()
+    for (n in nodes) {
+        for ((key, value) in n.config) {
+            when (key.name) {
+                "Text" -> {
+                    @Suppress("UNCHECKED_CAST")
+                    (value as? List<androidx.compose.ui.text.AnnotatedString>)
+                        ?.forEach { texts.add(it.text) }
+                }
+                "EditableText" -> {
+                    (value as? androidx.compose.ui.text.AnnotatedString)
+                        ?.let { texts.add(it.text) }
+                }
+                "ContentDescription" -> {
+                    @Suppress("UNCHECKED_CAST")
+                    (value as? List<String>)?.forEach { descs.add(it) }
+                }
+                "TestTag" -> {
+                    (value as? String)?.let { tags.add(it) }
+                }
+            }
+        }
+    }
+    buildString {
+        append("Last observed UI:\n")
+        append("  texts (${texts.size}): ")
+        append(texts.take(30).joinToString(", ").ifEmpty { "<none>" })
+        append('\n')
+        append("  contentDescriptions (${descs.size}): ")
+        append(descs.take(30).joinToString(", ").ifEmpty { "<none>" })
+        append('\n')
+        append("  testTags (${tags.size}): ")
+        append(tags.take(30).joinToString(", ").ifEmpty { "<none>" })
+    }
+} catch (e: Throwable) {
+    "Could not capture last-observed snapshot: ${e.message}"
+}
+
+private fun collectAllNodes(
+    node: androidx.compose.ui.semantics.SemanticsNode,
+): List<androidx.compose.ui.semantics.SemanticsNode> {
+    val out = mutableListOf<androidx.compose.ui.semantics.SemanticsNode>()
+    out.add(node)
+    node.children.forEach { out.addAll(collectAllNodes(it)) }
+    return out
 }
 
 fun ComposeRule.waitForCoreIdle(timeout: Long = 10_000) {
@@ -345,11 +421,119 @@ fun ComposeRule.waitForNotVisible(label: String, timeout: Long = TIMEOUT_SHORT) 
     )
 }
 
-/** Tap a node by text OR content description. Prefers unique matches.
- *  During emulation (Core running), Compose test performClick() blocks on Espresso
- *  idle which never arrives due to the 60fps render loop. In that case, this
- *  function falls back to UiAutomator which bypasses Espresso idle. */
+/**
+ * Click a node by its `Modifier.testTag`. Prefer this over [tapOn] for
+ * standardised app controls — test tags are compile-time constants
+ * from [TestTags] and survive label renames / localisation.
+ *
+ * [fallbackLabel] is used if no node with the tag exists (e.g. an
+ * older screen variant still in the semantic tree). When both are
+ * specified and the tag is found, we take the tag match.
+ */
+fun ComposeRule.tapOnTag(tag: String, fallbackLabel: String? = null) {
+    val tagNodes = onAllNodesWithTag(tag, useUnmergedTree = true).fetchSemanticsNodes()
+    if (tagNodes.isNotEmpty()) {
+        onAllNodesWithTag(tag, useUnmergedTree = true)[0].performClick()
+        waitForIdle()
+        return
+    }
+    if (fallbackLabel != null) {
+        tapOn(fallbackLabel)
+        return
+    }
+    throw AssertionError(
+        "tapOnTag('$tag') found no nodes. The composable that should " +
+            "apply this testTag may be off-screen, not yet composed, or " +
+            "the tag was renamed without updating the TestTags constant.",
+    )
+}
+
+/**
+ * Wait for a node with the given [testTag] to appear in the semantic
+ * tree. Preferred over [waitForText] for standardised controls — see
+ * [tapOnTag].
+ */
+fun ComposeRule.waitForTag(tag: String, timeout: Long = TIMEOUT_MEDIUM) {
+    pollUntil(timeoutMillis = timeout) {
+        onAllNodesWithTag(tag, useUnmergedTree = true)
+            .fetchSemanticsNodes().isNotEmpty()
+    }
+}
+
+/**
+ * Click the Back button in [SpTopBar]. The button is tagged with
+ * [TestTags.BACK_BUTTON]; use this helper instead of searching for
+ * "Go back" content description so callers don't break if the icon
+ * label changes.
+ */
+fun ComposeRule.pressTopBarBack() {
+    tapOnTag(TestTags.BACK_BUTTON, fallbackLabel = "Go back")
+}
+
+/**
+ * Mapping from a human label to the standardised testTag for the same
+ * element. Lets old tests like `tapOn("Settings")` automatically use
+ * the new tag-based lookup without code changes — when the rendered
+ * label changes ("Settings" → "Preferences", localised, hidden in
+ * gamepad mode, etc.) the test keeps working as long as the tag stays
+ * applied to the underlying composable.
+ *
+ * Add an entry whenever you introduce a `TestTags.*` constant for a
+ * label that pre-existing tests already pass to [tapOn].
+ */
+private val labelToTestTag: Map<String, String> = mapOf(
+    "Home" to TestTags.NAV_HOME,
+    "Explore" to TestTags.NAV_EXPLORE,
+    "Consoles" to TestTags.NAV_CONSOLES,
+    "Library" to TestTags.NAV_CONSOLES,
+    "Collections" to TestTags.NAV_COLLECTIONS,
+    "Activity" to TestTags.NAV_ACTIVITY,
+    "Challenges" to TestTags.NAV_CHALLENGES,
+    "Netplay" to TestTags.NAV_NETPLAY,
+    "Settings" to TestTags.NAV_SETTINGS,
+    "General" to TestTags.SETTINGS_CATEGORY_GENERAL,
+    "Emulation" to TestTags.SETTINGS_CATEGORY_EMULATION,
+    "Controls" to TestTags.SETTINGS_CATEGORY_CONTROLS,
+    "About" to TestTags.SETTINGS_CATEGORY_ABOUT,
+    "Achievements" to TestTags.SETTINGS_CATEGORY_ACHIEVEMENTS,
+    "Storage & Sync" to TestTags.SETTINGS_CATEGORY_STORAGE_SYNC,
+    "Per-Console" to TestTags.SETTINGS_CATEGORY_CONSOLES,
+    "Go back" to TestTags.BACK_BUTTON,
+    "Back" to TestTags.BACK_BUTTON,
+)
+
+/**
+ * Tap a node by text OR content description.
+ *
+ * **Prefer [tapOnTag] over this for any element you control.** Labels
+ * are fragile against copy changes, hidden in gamepad mode, and
+ * affected by localisation; testTags are compile-time constants that
+ * survive all three. The [labelToTestTag] map below makes legacy
+ * `tapOn("Settings")`-style calls automatically prefer the tag, but
+ * new code should call [tapOnTag] directly with a [TestTags] constant.
+ *
+ * During emulation (Core running), Compose test performClick() blocks on Espresso
+ * idle which never arrives due to the 60fps render loop. In that case, this
+ * function falls back to UiAutomator which bypasses Espresso idle.
+ */
 fun ComposeRule.tapOn(label: String) {
+    // Prefer testTag if this label is a known standardised element.
+    labelToTestTag[label]?.let { tag ->
+        val nodes = onAllNodesWithTag(tag, useUnmergedTree = true)
+            .fetchSemanticsNodes()
+        if (nodes.isNotEmpty()) {
+            onAllNodesWithTag(tag, useUnmergedTree = true)[0].performClick()
+            waitForIdle()
+            return
+        }
+        // Fall through to text/description matching if the tag isn't
+        // present — could be a screen that hasn't adopted the tag yet
+        // or a node not in the current composition.
+    }
+    tapOnByLabel(label)
+}
+
+private fun ComposeRule.tapOnByLabel(label: String) {
     val device = UiDevice.getInstance(InstrumentationRegistry.getInstrumentation())
     val emulationRunning = device.findObject(UiSelector().descriptionContains("Core running")).exists()
 
@@ -1442,16 +1626,29 @@ fun ComposeRule.openOverlayAndExit() {
  * After this call, the category list is visible with "General" selected.
  */
 fun ComposeRule.navigateToSettings() {
-    tapOn("Settings")
-    Thread.sleep(1_000) // Let the navigation settle
-    // Wait for the category list — "General" is always the first category
-    waitForText("General", TIMEOUT_LONG)
+    // Prefer the stable testTag from TestTags.NAV_SETTINGS — the label
+    // "Settings" can be hidden in gamepad mode or renamed, but the tag
+    // is a compile-time constant applied by both SpBottomNavBar and
+    // SpNavigationRail.
+    tapOnTag(TestTags.NAV_SETTINGS, fallbackLabel = "Settings")
+    Thread.sleep(1_000)
+    // Wait for the category list by its testTag — resilient to label
+    // renames and localisation.
+    waitForTag(TestTags.SETTINGS_CATEGORY_GENERAL, TIMEOUT_LONG)
 }
 
 /**
- * Navigate to a specific Settings category. On wide screens, the category content
- * appears on the right. On phones, it replaces the category list.
+ * Navigate to a specific Settings category by test tag. Prefer passing a
+ * [TestTags] constant here (e.g. `TestTags.SETTINGS_CATEGORY_ABOUT`) so
+ * label changes don't break callers. The label overload is kept for
+ * backwards compatibility.
  */
+fun ComposeRule.navigateToSettingsCategoryTag(tag: String) {
+    navigateToSettings()
+    tapOnTag(tag)
+    waitForIdle()
+}
+
 fun ComposeRule.navigateToSettingsCategory(category: String) {
     navigateToSettings()
     tapOn(category)
