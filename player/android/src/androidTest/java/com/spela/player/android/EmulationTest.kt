@@ -1,25 +1,16 @@
 package com.spela.player.android
 
-import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
-import androidx.test.ext.junit.runners.AndroidJUnit4
-import org.junit.Rule
 import org.junit.Test
-import org.junit.runner.RunWith
 
-@RunWith(AndroidJUnit4::class)
-class EmulationTest {
-
-    @get:Rule(order = 0)
-    val koinResetRule = KoinResetRule()
-
-    @get:Rule(order = 1)
-    val rule = createAndroidComposeRule<MainActivity>()
+class EmulationTest : BaseE2ETest() {
 
     private fun setupGame() {
-        rule.startLoggedIn()
+        // Login is already handled by BaseE2ETest.baseSetUp(). This
+        // wrapper now exists only to navigate to the NES happy-path
+        // game; retain the name so existing call sites don't churn.
         rule.navigateToGameAndPlay()
     }
 
@@ -127,8 +118,6 @@ class EmulationTest {
 
     @Test
     fun exitNoConfirmationWithAutoSave() {
-        rule.startLoggedIn()
-
         // Verify auto-save is visible in Settings
         rule.navigateToSettings()
         rule.waitForText("Auto Save on Exit", timeout = 8_000)
@@ -202,7 +191,8 @@ class EmulationTest {
 
     @Test
     fun nesFpsCheck() {
-        setupGame()
+        rule.enablePerformanceOverlay()
+        rule.navigateToGameAndPlay()
 
         rule.waitForContentDescription("FPS", timeout = 10_000)
 
@@ -212,7 +202,8 @@ class EmulationTest {
 
     @Test
     fun fpsHudVisible() {
-        setupGame()
+        rule.enablePerformanceOverlay()
+        rule.navigateToGameAndPlay()
 
         rule.waitForContentDescription("FPS", timeout = 10_000)
 
@@ -220,6 +211,17 @@ class EmulationTest {
         rule.waitForText("Exit Game")
         rule.assertTextVisible("Continue")
 
+        rule.exitGame()
+    }
+
+    @Test
+    fun fpsHudHiddenByDefault() {
+        // Performance Overlay is opt-in. With no toggle flip, the FPS HUD
+        // should NOT appear during gameplay — casual users don't see frame
+        // timing while playing. (Companion test above proves the HUD is
+        // wired and renders when the preference is enabled.)
+        setupGame()
+        rule.assertNotVisible("FPS")
         rule.exitGame()
     }
 
