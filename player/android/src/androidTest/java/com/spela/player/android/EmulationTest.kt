@@ -205,7 +205,7 @@ class EmulationTest : BaseE2ETest() {
         rule.enablePerformanceOverlay()
         rule.navigateToGameAndPlay()
 
-        rule.waitForContentDescription("FPS", timeout = 10_000)
+        rule.waitForVisible("FPS", timeout = 10_000)
 
         rule.openOverlayAndExit()
         rule.waitForText("Play", timeout = 8_000)
@@ -216,7 +216,7 @@ class EmulationTest : BaseE2ETest() {
         rule.enablePerformanceOverlay()
         rule.navigateToGameAndPlay()
 
-        rule.waitForContentDescription("FPS", timeout = 10_000)
+        rule.waitForVisible("FPS", timeout = 10_000)
 
         rule.pressBack()
         rule.waitForText("Exit Game")
