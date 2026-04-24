@@ -1,14 +1,10 @@
 package com.spela.player.android
 
-import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
-import androidx.test.ext.junit.runners.AndroidJUnit4
 import org.junit.FixMethodOrder
-import org.junit.Rule
 import org.junit.Test
-import org.junit.runner.RunWith
 import org.junit.runners.MethodSorters
 
 /**
@@ -25,14 +21,8 @@ import org.junit.runners.MethodSorters
  * threads across dlclose/dlopen, causing instability after ~4-5 sessions.
  * Alphabetical ordering ensures the multi-session test runs first (fresh state).
  */
-@RunWith(AndroidJUnit4::class)
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
-class HwRenderTest {
-
-    
-
-    @get:Rule
-    val rule = createAndroidComposeRule<MainActivity>()
+class HwRenderTest : BaseE2ETest() {
 
     // N64 core shutdown is slower than NES: auto-save serialization +
     // emulation thread join + native deinit. Angrylion gets progressively
@@ -42,7 +32,6 @@ class HwRenderTest {
     // ── N64 gameplay tests ──
 
     private fun setupN64Game() {
-        rule.startLoggedIn()
         rule.navigateToN64GameAndPlay()
     }
 
@@ -134,7 +123,6 @@ class HwRenderTest {
     // ── NES backward-compatibility tests (software render path) ──
 
     private fun setupNesGame() {
-        rule.startLoggedIn()
         rule.navigateToGameAndPlayFresh()
     }
 

@@ -1,24 +1,13 @@
 package com.spela.player.android
 
-import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onAllNodesWithText
-import androidx.test.ext.junit.runners.AndroidJUnit4
-import org.junit.Rule
 import org.junit.Test
-import org.junit.runner.RunWith
 
-@RunWith(AndroidJUnit4::class)
-class NavigationTest {
-
-    
-
-    @get:Rule
-    val rule = createAndroidComposeRule<MainActivity>()
+class NavigationTest : BaseE2ETest() {
 
     @Test
     fun backStackNavigation() {
-        rule.startLoggedIn()
 
         // Navigate to Consoles tab and wait for console cards to load
         rule.tapOn("Consoles")
@@ -63,7 +52,6 @@ class NavigationTest {
 
     @Test
     fun autoScrapeMetadata() {
-        rule.startLoggedIn()
 
         // Navigate to Consoles tab, then NES > Castlevania
         rule.tapOn("Consoles")

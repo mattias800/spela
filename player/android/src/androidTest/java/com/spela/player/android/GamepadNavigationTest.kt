@@ -1,24 +1,13 @@
 package com.spela.player.android
 
-import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
-import androidx.test.ext.junit.runners.AndroidJUnit4
-import org.junit.Rule
 import org.junit.Test
-import org.junit.runner.RunWith
 
-@RunWith(AndroidJUnit4::class)
-class GamepadNavigationTest {
-
-    
-
-    @get:Rule
-    val rule = createAndroidComposeRule<MainActivity>()
+class GamepadNavigationTest : BaseE2ETest() {
 
     @Test
     fun dpadHomeNavigation() {
-        rule.startLoggedIn()
 
         // Navigate with D-pad: move focus down to a console card
         rule.sendDpad(DpadDirection.DOWN)
@@ -54,7 +43,6 @@ class GamepadNavigationTest {
 
     @Test
     fun dpadOverlayInteraction() {
-        rule.startLoggedIn()
         rule.navigateToGameAndPlay()
 
         // Open overlay
@@ -86,7 +74,6 @@ class GamepadNavigationTest {
 
     @Test
     fun dpadSettingsNavigation() {
-        rule.startLoggedIn()
 
         // Navigate to Settings
         rule.navigateToSettings()
