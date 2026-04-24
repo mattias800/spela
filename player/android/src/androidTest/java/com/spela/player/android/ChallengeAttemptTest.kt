@@ -1,13 +1,9 @@
 package com.spela.player.android
 
-import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
-import androidx.test.ext.junit.runners.AndroidJUnit4
-import org.junit.Rule
 import org.junit.Test
-import org.junit.runner.RunWith
 
 /**
  * E2E tests for attempting challenges (US-5).
@@ -29,17 +25,11 @@ import org.junit.runner.RunWith
  * - Server running with seeded data (player/player123 user, Castlevania game)
  * - Castlevania game available and downloadable
  */
-@RunWith(AndroidJUnit4::class)
-class ChallengeAttemptTest {
+class ChallengeAttemptTest : BaseE2ETest() {
 
     companion object {
         private const val SHARED_CHALLENGE = "Attempt E2E Challenge"
     }
-
-    
-
-    @get:Rule
-    val rule = createAndroidComposeRule<MainActivity>()
 
     /**
      * Ensure the shared challenge exists, navigate to its detail screen,

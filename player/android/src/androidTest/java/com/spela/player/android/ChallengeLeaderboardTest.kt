@@ -1,10 +1,6 @@
 package com.spela.player.android
 
-import androidx.compose.ui.test.junit4.createAndroidComposeRule
-import androidx.test.ext.junit.runners.AndroidJUnit4
-import org.junit.Rule
 import org.junit.Test
-import org.junit.runner.RunWith
 
 /**
  * E2E tests for challenge leaderboards (US-6).
@@ -16,13 +12,7 @@ import org.junit.runner.RunWith
  * Prerequisites:
  * - Server running with seeded data (player/player123 user, Castlevania game)
  */
-@RunWith(AndroidJUnit4::class)
-class ChallengeLeaderboardTest {
-
-    
-
-    @get:Rule
-    val rule = createAndroidComposeRule<MainActivity>()
+class ChallengeLeaderboardTest : BaseE2ETest() {
 
     // ── US-6 AC: Leaderboard visible on challenge detail ──
 
@@ -69,7 +59,6 @@ class ChallengeLeaderboardTest {
     @Test
     fun leaderboardShowsEntryAfterCompletion() {
         // Create challenge
-        rule.startLoggedIn()
         rule.navigateToGameAndPlay()
         rule.createChallengeFromOverlay("Leaderboard Entry Test")
         rule.openOverlayAndExit()

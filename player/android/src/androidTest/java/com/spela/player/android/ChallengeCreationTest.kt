@@ -3,13 +3,9 @@ package com.spela.player.android
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.hasText
-import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performTextInput
-import androidx.test.ext.junit.runners.AndroidJUnit4
-import org.junit.Rule
 import org.junit.Test
-import org.junit.runner.RunWith
 
 /**
  * E2E tests for challenge creation flow (US-1).
@@ -22,16 +18,9 @@ import org.junit.runner.RunWith
  * - Server running with seeded data (player/player123 user, Castlevania game)
  * - Device connected and unlocked
  */
-@RunWith(AndroidJUnit4::class)
-class ChallengeCreationTest {
-
-    
-
-    @get:Rule
-    val rule = createAndroidComposeRule<MainActivity>()
+class ChallengeCreationTest : BaseE2ETest() {
 
     private fun setupGame() {
-        rule.startLoggedIn()
         rule.navigateToGameAndPlay()
     }
 

@@ -1,10 +1,6 @@
 package com.spela.player.android
 
-import androidx.compose.ui.test.junit4.createAndroidComposeRule
-import androidx.test.ext.junit.runners.AndroidJUnit4
-import org.junit.Rule
 import org.junit.Test
-import org.junit.runner.RunWith
 
 /**
  * E2E tests for cross-feature challenge integration.
@@ -16,20 +12,13 @@ import org.junit.runner.RunWith
  *
  * Also serves as regression checks for existing features that challenges touch.
  */
-@RunWith(AndroidJUnit4::class)
-class ChallengeIntegrationTest {
-
-    
-
-    @get:Rule
-    val rule = createAndroidComposeRule<MainActivity>()
+class ChallengeIntegrationTest : BaseE2ETest() {
 
     // ── Activity feed: challenge_completed event ──
 
     @Test
     fun completedChallengeAppearsInActivityFeed() {
         // Create challenge
-        rule.startLoggedIn()
         rule.navigateToGameAndPlay()
         rule.createChallengeFromOverlay("Activity Feed Test")
         rule.openOverlayAndExit()
@@ -103,7 +92,6 @@ class ChallengeIntegrationTest {
 
     @Test
     fun normalOverlayUnaffectedByChallenge() {
-        rule.startLoggedIn()
         rule.navigateToGameAndPlay()
 
         // Normal overlay should still have all standard controls
@@ -124,7 +112,6 @@ class ChallengeIntegrationTest {
 
     @Test
     fun gameDetailLayoutIntactWithChallengesSection() {
-        rule.startLoggedIn()
         rule.navigateToCastlevania()
 
         // Existing game detail sections should still work
