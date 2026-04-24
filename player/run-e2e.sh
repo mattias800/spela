@@ -2,6 +2,8 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+E2E_COMPOSE="$REPO_ROOT/docker-compose.e2e.yml"
 ENV_FILE="$SCRIPT_DIR/.env"
 
 if [ ! -f "$ENV_FILE" ]; then
@@ -10,6 +12,36 @@ if [ ! -f "$ENV_FILE" ]; then
 fi
 
 source "$ENV_FILE"
+
+# ── Clean-slate backend reset ──
+# Every E2E run starts with a fresh backend state so results are fully
+# idempotent — no test mutates a DB row, plays a game, or creates a save
+# that leaks into the next run. We teardown named volumes with `down -v`,
+# then rebuild and wait for health.
+#
+# Opt-out with --skip-reset when iterating fast on a single test and you
+# know the state is already clean (e.g. you just ran a reset five minutes
+# ago). Default is always: reset before every run.
+RESET_BACKEND=true
+ARGS=()
+for arg in "$@"; do
+  case "$arg" in
+    --skip-reset) RESET_BACKEND=false ;;
+    *) ARGS+=("$arg") ;;
+  esac
+done
+set -- "${ARGS[@]+"${ARGS[@]}"}"
+
+if [ "$RESET_BACKEND" = true ]; then
+  echo "── Resetting backend (docker compose down -v) ──"
+  docker compose -f "$E2E_COMPOSE" down -v --remove-orphans >/dev/null 2>&1 || true
+else
+  echo "── Skipping backend reset (--skip-reset) — keeping existing volumes ──"
+fi
+
+echo "── Ensuring backend is up (docker compose up -d --build --wait) ──"
+docker compose -f "$E2E_COMPOSE" up -d --build --wait
+echo "Backend up and healthy."
 
 # ── Unlock device if locked ──
 

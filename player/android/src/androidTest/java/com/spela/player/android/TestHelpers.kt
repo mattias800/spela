@@ -1434,35 +1434,38 @@ fun ComposeRule.downloadGameIfNeeded() {
 }
 
 fun ComposeRule.startGameAndWait() {
-    // Click Play/Resume using Compose tree
-    // Find the Play/Resume button — must have BOTH text AND click action
-    // to avoid clicking non-interactive text nodes
-    val playMatcher = hasText("Play", substring = false) and hasClickAction()
-    val resumeMatcher = hasText("Resume", substring = false) and hasClickAction()
-    val hasResume = try {
-        onAllNodes(resumeMatcher).fetchSemanticsNodes().isNotEmpty()
-    } catch (_: Exception) { false }
-    val hasPlay = try {
-        onAllNodes(playMatcher).fetchSemanticsNodes().isNotEmpty()
-    } catch (_: Exception) { false }
-
-    android.util.Log.d("E2E_NAV", "startGameAndWait: hasResume=$hasResume, hasPlay=$hasPlay")
-
-    if (hasResume) {
-        android.util.Log.d("E2E_NAV", "startGameAndWait: Clicking Resume")
-        onAllNodes(resumeMatcher)[0].performClick()
-    } else if (hasPlay) {
-        android.util.Log.d("E2E_NAV", "startGameAndWait: Clicking Play (clickable)")
-        onAllNodes(playMatcher)[0].performClick()
-    } else {
-        android.util.Log.d("E2E_NAV", "startGameAndWait: No clickable Play/Resume, trying text-only")
-        onNodeWithText("Play", substring = false).performClick()
+    // Click the play/resume CTA via its testTag. Label flips between "Play"
+    // and "Resume" based on save state, and substring text matches collide
+    // with copy like "Last played" / "Play time" elsewhere on the screen.
+    val playButtonTag = com.spela.player.presentation.ui.TestTags.GAME_DETAIL_PLAY_BUTTON
+    val nodes = onAllNodes(hasTestTag(playButtonTag)).fetchSemanticsNodes()
+    android.util.Log.d("E2E_NAV", "startGameAndWait: $playButtonTag count=${nodes.size}")
+    if (nodes.isEmpty()) {
+        // Surface what IS visible so the failure log is actionable.
+        val visibleTags = try {
+            val roots = onAllNodes(androidx.compose.ui.test.isRoot(), useUnmergedTree = true)
+                .fetchSemanticsNodes()
+            val tags = mutableListOf<String>()
+            roots.forEach { root ->
+                collectAllNodes(root).forEach { n ->
+                    for ((k, v) in n.config) if (k.name == "TestTag") (v as? String)?.let { tags.add(it) }
+                }
+            }
+            tags
+        } catch (_: Exception) { emptyList() }
+        android.util.Log.d("E2E_NAV", "startGameAndWait: testTags on screen: ${visibleTags.take(40)}")
+        throw IllegalStateException("Game detail play button (testTag=$playButtonTag) not found")
     }
+    onAllNodes(hasTestTag(playButtonTag))[0].performClick()
     waitForIdle()
 
     // Wait for emulation to start using multiple signals
     val device = uiDevice()
-    val deadline = System.currentTimeMillis() + 120_000
+    // 20s is enough for download + extract + core init on a real device.
+    // First-time runs that need to fetch a fresh core from libretro
+    // buildbot may take longer; bump only if a passing test starts
+    // failing here, NOT to mask a hanging emulation pipeline.
+    val deadline = System.currentTimeMillis() + 20_000
     while (System.currentTimeMillis() < deadline) {
         // Signal 1: Compose "Game running" marker
         try {
@@ -1492,7 +1495,7 @@ fun ComposeRule.startGameAndWait() {
 
         Thread.sleep(2_000)
     }
-    throw IllegalStateException("Game did not start within 120 seconds")
+    throw IllegalStateException("Game did not start within 20 seconds")
 }
 
 fun ComposeRule.openOverlay() {
@@ -1530,7 +1533,19 @@ fun ComposeRule.exitGame(coreIdleTimeout: Long = 10_000) {
 
 // ── Composite helpers for common patterns ──
 
-fun ComposeRule.navigateToGameAndPlay() {
+/**
+ * Navigate from wherever we are to a game's detail screen and start playing.
+ *
+ * When [preferredGameTitle] is given, picks the card whose contentDescription
+ * starts with that title. That makes the test deterministic — otherwise
+ * we tap the first card in the tree, which depends on seeded game ordering
+ * and can land on a ROM nestopia rejects (Super Mario Bros.nes in the
+ * test fixtures fails retro_load_game, while Balloon Fight loads cleanly).
+ * Balloon Fight is the known-good default; it's the first NES game in
+ * Browse Games (alphabetical) and has been verified to start emulation
+ * end-to-end on the nestopia Android core.
+ */
+fun ComposeRule.navigateToGameAndPlay(preferredGameTitle: String? = "Balloon Fight") {
     val device = uiDevice()
     val tag = "E2E_NAV"
 
@@ -1549,18 +1564,24 @@ fun ComposeRule.navigateToGameAndPlay() {
     // shared tag pattern for every shelf on the console landing page —
     // we look up the current tree, find any node whose tag starts with
     // that prefix, and tap the first one.
-    fun findGameCardTags(): List<String> {
+    // Tag prefixes used across screens that render game-pickable cards.
+    // The console landing page uses `explore_game_card_<id>`; the
+    // paginated ConsoleGamesScreen grid uses `game_grid_item_<id>`. The
+    // caller doesn't care which screen it's on — we accept either.
+    val gameCardPrefixes = listOf("explore_game_card_", "game_grid_item_")
+
+    fun findGameCardTags(useUnmerged: Boolean = true): List<String> {
         return try {
             val nodes = onAllNodes(
                 androidx.compose.ui.test.isRoot(),
-                useUnmergedTree = true,
+                useUnmergedTree = useUnmerged,
             ).fetchSemanticsNodes()
             val tags = mutableListOf<String>()
             fun walk(n: androidx.compose.ui.semantics.SemanticsNode) {
                 for ((key, value) in n.config) {
                     if (key.name == "TestTag") {
-                        val tag = value as? String
-                        if (tag?.startsWith("explore_game_card_") == true) tags.add(tag)
+                        val tag = value as? String ?: continue
+                        if (gameCardPrefixes.any { tag.startsWith(it) }) tags.add(tag)
                     }
                 }
                 n.children.forEach { walk(it) }
@@ -1570,36 +1591,107 @@ fun ComposeRule.navigateToGameAndPlay() {
         } catch (_: Exception) { emptyList() }
     }
 
+    // Finds the first game card whose merged contentDescription starts with
+    // [titlePrefix]. The card's contentDescription is set to
+    // "$title, $subtitle(, favorited/in play later)?" by SpGameCard, so a
+    // prefix match on the game title is the stable way to pick a specific
+    // card without hardcoding backend autoincrement IDs.
+    fun findGameCardTagByTitle(titlePrefix: String): String? {
+        return try {
+            val nodes = onAllNodes(
+                androidx.compose.ui.test.isRoot(),
+                useUnmergedTree = true,
+            ).fetchSemanticsNodes()
+            var hit: String? = null
+            val seenTitles = mutableListOf<String>()
+            fun walk(n: androidx.compose.ui.semantics.SemanticsNode) {
+                if (hit != null) return
+                val testTag = n.config.firstOrNull { it.key.name == "TestTag" }?.value as? String
+                if (testTag != null && gameCardPrefixes.any { testTag.startsWith(it) }) {
+                    val cd = n.config.firstOrNull { it.key.name == "ContentDescription" }?.value
+                    val cdText = (cd as? List<*>)?.joinToString(", ") { it.toString() } ?: cd?.toString() ?: ""
+                    seenTitles.add("$testTag→\"$cdText\"")
+                    if (cdText.startsWith(titlePrefix, ignoreCase = true)
+                        || cdText.contains(titlePrefix, ignoreCase = true)) {
+                        hit = testTag
+                    }
+                }
+                n.children.forEach { walk(it) }
+            }
+            nodes.forEach { walk(it) }
+            if (hit == null) {
+                android.util.Log.d("E2E_NAV", "findGameCardTagByTitle($titlePrefix) not found. Scanned ${seenTitles.size} cards: $seenTitles")
+            }
+            hit
+        } catch (_: Exception) { null }
+    }
+
     pollUntil(timeoutMillis = TIMEOUT_EXTRA_LONG) {
         findGameCardTags().isNotEmpty()
     }
     Thread.sleep(1_000) // let layout settle so the first card is clickable
 
-    try {
-        val cards = findGameCardTags()
-        android.util.Log.d(tag, "navigateToGameAndPlay: ${cards.size} game cards visible")
-        if (cards.isNotEmpty()) {
-            onAllNodes(hasTestTag(cards[0]), useUnmergedTree = true)[0].performClick()
+    // Retry the tap up to N times — sometimes the first tap lands while a
+    // LazyRow is still laying out and gets swallowed. We assert navigation
+    // by waiting for a `game_detail_*` testTag to appear, not by polling
+    // loose substring text on the previous screen.
+    // If the caller asked for a specific game and it's not on the front
+    // shelves of the console screen (Essentials/Launch/Recently Added/etc.),
+    // hop through Browse Games — that page lists every game for the console
+    // and is paginated, so titles outside the curated shelves are
+    // reachable. We only do this when the title isn't already visible to
+    // avoid extra navigation when the front page already has it.
+    if (preferredGameTitle != null && findGameCardTagByTitle(preferredGameTitle) == null) {
+        android.util.Log.d(tag, "navigateToGameAndPlay: $preferredGameTitle not on console front page; opening Browse Games")
+        try {
+            onAllNodes(hasTestTag(com.spela.player.presentation.ui.TestTags.consoleBrowseGames("nes")))[0].performClick()
             waitForIdle()
-            Thread.sleep(3_000) // time for navigation + recomposition
-            android.util.Log.d(tag, "navigateToGameAndPlay: tapped ${cards[0]}")
+            Thread.sleep(2_000)
+        } catch (e: Exception) {
+            android.util.Log.d(tag, "navigateToGameAndPlay: Browse Games tap failed: ${e.message?.take(120)}")
         }
-    } catch (e: Exception) {
-        android.util.Log.d(tag, "navigateToGameAndPlay: Failed: ${e.message?.take(100)}")
     }
 
-    // Wait for game detail — use Compose tree to check for game detail content
-    // UiAutomator may show stale accessibility nodes from previous screens
-    android.util.Log.d(tag, "navigateToGameAndPlay: Waiting for game detail")
-    pollUntil(timeoutMillis = 60_000) {
-        try {
-            val hasDownload = onAllNodesWithText("Download", substring = true).fetchSemanticsNodes().isNotEmpty()
-            val hasPlay = onAllNodesWithText("Play", substring = true).fetchSemanticsNodes().isNotEmpty()
-            val hasResume = onAllNodesWithText("Resume", substring = true).fetchSemanticsNodes().isNotEmpty()
-            val hasBalloon = onAllNodesWithText("Balloon Fight", substring = true).fetchSemanticsNodes().isNotEmpty()
-            android.util.Log.d(tag, "navigateToGameAndPlay: Poll — Download=$hasDownload Play=$hasPlay Resume=$hasResume BalloonFight=$hasBalloon")
-            hasDownload || hasPlay || hasResume
-        } catch (_: Exception) { false }
+    val gameDetailAppeared = run {
+        var appeared = false
+        repeat(3) { attempt ->
+            val preferredTag = preferredGameTitle?.let { findGameCardTagByTitle(it) }
+            val allCards = findGameCardTags()
+            val targetTag = preferredTag ?: allCards.firstOrNull()
+            android.util.Log.d(tag, "navigateToGameAndPlay: attempt ${attempt + 1}, preferred=$preferredGameTitle tag=$targetTag allCards=${allCards.size}")
+            if (targetTag == null) return@repeat
+            try {
+                onAllNodes(hasTestTag(targetTag), useUnmergedTree = true)[0].performClick()
+                waitForIdle()
+                android.util.Log.d(tag, "navigateToGameAndPlay: tapped $targetTag")
+            } catch (e: Exception) {
+                android.util.Log.d(tag, "navigateToGameAndPlay: tap failed: ${e.message?.take(120)}")
+                return@repeat
+            }
+
+            val deadline = System.currentTimeMillis() + 15_000
+            while (System.currentTimeMillis() < deadline) {
+                val hasPlayButton = try {
+                    onAllNodes(hasTestTag(com.spela.player.presentation.ui.TestTags.GAME_DETAIL_PLAY_BUTTON))
+                        .fetchSemanticsNodes().isNotEmpty()
+                } catch (_: Exception) { false }
+                val hasDownloadButton = try {
+                    onAllNodes(hasTestTag(com.spela.player.presentation.ui.TestTags.GAME_DETAIL_DOWNLOAD_BUTTON))
+                        .fetchSemanticsNodes().isNotEmpty()
+                } catch (_: Exception) { false }
+                if (hasPlayButton || hasDownloadButton) {
+                    appeared = true
+                    android.util.Log.d(tag, "navigateToGameAndPlay: game detail appeared (play=$hasPlayButton download=$hasDownloadButton)")
+                    return@run true
+                }
+                Thread.sleep(300)
+            }
+            android.util.Log.d(tag, "navigateToGameAndPlay: game detail did NOT appear after tap ${attempt + 1}")
+        }
+        appeared
+    }
+    if (!gameDetailAppeared) {
+        throw IllegalStateException("Could not navigate into game detail from console screen")
     }
     android.util.Log.d(tag, "navigateToGameAndPlay: Game detail loaded!")
     downloadGameIfNeeded()

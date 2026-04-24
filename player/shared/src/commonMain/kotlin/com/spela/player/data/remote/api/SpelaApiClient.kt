@@ -835,7 +835,22 @@ class SpelaApiClient(
     }
 
     suspend fun getRecommendedCore(gameId: String): com.spela.player.domain.model.LibretroCore {
-        return gamesApi.getRecommendedCore(gameId).body().toDomain()
+        println("[ApiClient] getRecommendedCore HTTP call start (gameId=$gameId, baseUrl=$baseUrl)")
+        val resp = try {
+            gamesApi.getRecommendedCore(gameId)
+        } catch (t: Throwable) {
+            println("[ApiClient] getRecommendedCore HTTP call THREW: ${t::class.simpleName}: ${t.message}")
+            throw t
+        }
+        println("[ApiClient] getRecommendedCore HTTP responded; decoding body")
+        val dto = try {
+            resp.body()
+        } catch (t: Throwable) {
+            println("[ApiClient] getRecommendedCore body() THREW: ${t::class.simpleName}: ${t.message}")
+            throw t
+        }
+        println("[ApiClient] getRecommendedCore decoded: name=${dto.name}")
+        return dto.toDomain()
     }
 
     suspend fun downloadCore(coreId: String, platform: String = "android", onProgress: (Long, Long?) -> Unit = { _, _ -> }): ByteArray {

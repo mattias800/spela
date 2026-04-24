@@ -61,4 +61,10 @@ object TestTags {
     // Console library — per-console card on the Consoles screen
     fun consoleCard(consoleId: String) = "console_card_$consoleId"
     fun consoleBrowseGames(consoleId: String) = "console_browse_games_$consoleId"
+
+    // Game detail — primary CTA changes label between Play / Resume / Download
+    // depending on save + cache state. Tests should target the tag, not the
+    // visible label, since a Continue/Resume copy change shouldn't fail tests.
+    const val GAME_DETAIL_PLAY_BUTTON = "game_detail_play_button"
+    const val GAME_DETAIL_DOWNLOAD_BUTTON = "game_detail_download_button"
 }

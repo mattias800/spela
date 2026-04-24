@@ -24,7 +24,7 @@ class EmulationTest {
     }
 
     @Test
-    fun playCastlevania() {
+    fun startGameAndExitViaOverlay() {
         setupGame()
         rule.openOverlay()
         rule.assertTextVisible("Exit Game")
