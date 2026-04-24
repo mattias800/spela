@@ -1535,42 +1535,54 @@ fun ComposeRule.navigateToGameAndPlay() {
     val tag = "E2E_NAV"
 
     // Navigate to Consoles → NES → tap a game directly on the console page.
-    // The console page has a hero banner. Scroll down to find game cards.
+    // The console landing shows "Essentials" / "Recently Added" shelves
+    // of game cards tagged `explore_game_card_<id>`. Tapping any card
+    // routes to its detail page — no separate "Browse" screen is
+    // required on the modern layout.
     android.util.Log.d(tag, "navigateToGameAndPlay: Starting")
     tapOn("Consoles")
     waitForContentDescription("Nintendo Entertainment System", TIMEOUT_EXTRA_LONG)
     scrollToAndTapMatchingBoth("Nintendo Entertainment System", "games")
     waitForContentDescription("screen_console", TIMEOUT_LONG)
 
-    // Wait for games to load (Browse button appears after state.games > 15)
-    Thread.sleep(3_000)
+    // Wait for game cards to render. `explore_game_card_<id>` is the
+    // shared tag pattern for every shelf on the console landing page —
+    // we look up the current tree, find any node whose tag starts with
+    // that prefix, and tap the first one.
+    fun findGameCardTags(): List<String> {
+        return try {
+            val nodes = onAllNodes(
+                androidx.compose.ui.test.isRoot(),
+                useUnmergedTree = true,
+            ).fetchSemanticsNodes()
+            val tags = mutableListOf<String>()
+            fun walk(n: androidx.compose.ui.semantics.SemanticsNode) {
+                for ((key, value) in n.config) {
+                    if (key.name == "TestTag") {
+                        val tag = value as? String
+                        if (tag?.startsWith("explore_game_card_") == true) tags.add(tag)
+                    }
+                }
+                n.children.forEach { walk(it) }
+            }
+            nodes.forEach { walk(it) }
+            tags
+        } catch (_: Exception) { emptyList() }
+    }
+
+    pollUntil(timeoutMillis = TIMEOUT_EXTRA_LONG) {
+        findGameCardTags().isNotEmpty()
+    }
+    Thread.sleep(1_000) // let layout settle so the first card is clickable
+
     try {
-        val browseNodes = onAllNodesWithText("Browse", substring = false).fetchSemanticsNodes()
-        if (browseNodes.isNotEmpty()) {
-            android.util.Log.d(tag, "navigateToGameAndPlay: Clicking Browse")
-            onNodeWithText("Browse", substring = false).performClick()
+        val cards = findGameCardTags()
+        android.util.Log.d(tag, "navigateToGameAndPlay: ${cards.size} game cards visible")
+        if (cards.isNotEmpty()) {
+            onAllNodes(hasTestTag(cards[0]), useUnmergedTree = true)[0].performClick()
             waitForIdle()
-            Thread.sleep(3_000)
-
-            // On ConsoleGamesScreen — find first game and click
-            pollUntil(timeoutMillis = TIMEOUT_EXTRA_LONG) {
-                try {
-                    onAllNodes(hasTestTag("console_games_screen")).fetchSemanticsNodes().isNotEmpty()
-                } catch (_: Exception) { false }
-            }
-            Thread.sleep(2_000)
-
-            // Find any clickable node with a game title
-            // The first game alphabetically is "Balloon Fight"
-            val gameMatcher = hasText("Balloon Fight", substring = true) and hasClickAction()
-            val gameNodes = onAllNodes(gameMatcher).fetchSemanticsNodes()
-            android.util.Log.d(tag, "navigateToGameAndPlay: Balloon Fight clickable nodes: ${gameNodes.size}")
-            if (gameNodes.isNotEmpty()) {
-                onAllNodes(gameMatcher)[0].performClick()
-                waitForIdle()
-                Thread.sleep(5_000) // Give time for navigation + API + recomposition
-                android.util.Log.d(tag, "navigateToGameAndPlay: Clicked Balloon Fight")
-            }
+            Thread.sleep(3_000) // time for navigation + recomposition
+            android.util.Log.d(tag, "navigateToGameAndPlay: tapped ${cards[0]}")
         }
     } catch (e: Exception) {
         android.util.Log.d(tag, "navigateToGameAndPlay: Failed: ${e.message?.take(100)}")
