@@ -103,6 +103,65 @@ onNodeWithTag(TestTags.SCREEN_SERVER_CONNECTION, useUnmergedTree = true)
 
 When adding new screens or interactive elements, add a test tag constant and apply it. This makes tests resilient to text changes and helps agents understand that a component is tested.
 
+### Android Test Lifecycle
+
+Every Android E2E test class extends `BaseE2ETest`. The base class enforces a per-method contract:
+
+- **Entry:** user is logged in, on the Home screen, backend reset to seed state.
+- **Exit:** user is logged in, on the Home screen.
+
+What this buys you:
+
+- Tests don't carry login or screen-recovery boilerplate in their first five lines — they start with what they're actually verifying.
+- A crashed test does not leak its state into the next test. `@After` returns to Home; `@Before` resets the backend; the next test starts clean.
+- Backend state (favorites, saves, collections, challenges, sessions, play history, shader prefs) is wiped between tests via `POST /api/test/reset`.
+
+**To add a new test class:**
+
+```kotlin
+class MyFeatureTest : BaseE2ETest() {
+
+    @Test
+    fun doesTheThing() {
+        // app is logged in, on Home, backend is clean
+        rule.tapOn("Consoles")
+        // ...
+    }
+}
+```
+
+**If you need a different entry state** (explicit sign-out, first-install, multi-user), override `baseSetUp()` and annotate it with `@Before`. See `EstablishSessionTest` for the canonical example.
+
+**Run lifecycle (`player/run-e2e.sh`):**
+
+1. `docker compose -f docker-compose.e2e.yml down -v` then `up -d --build --wait` — fresh backend.
+2. `adb uninstall com.spela.player` — fresh app (no leftover auth, server, or local DB).
+3. `player/scripts/cache-nestopia.sh` — pre-cache the NES core from a host-local cache (first time only, downloaded once from libretro buildbot and reused forever after).
+4. Device hygiene: wake, screen timeout 10 min, a11y services off, launch-prime on display 0.
+5. Gradle runs the test classes one at a time, fail-fast by default.
+
+**Opting out of core pre-cache:**
+
+```bash
+SPELA_E2E_REAL_CORE_DOWNLOAD=1 ./run-e2e.sh
+```
+
+Skips the cache step. Tests that start a game exercise the real first-download flow end-to-end.
+
+**Failure diagnostics (preserved from the previous iteration):**
+
+When any test fails, `FailureDiagnosticsListener` captures under `/sdcard/spela-test-failures/<class>.<method>/`:
+- `screenshot.png` — display 0 screenshot.
+- `ui.xml` — accessibility tree dump.
+- `logcat.txt` — last 2000 lines.
+- `state.json` — focused package, displays, a11y services, timestamp.
+- `failure.txt` — exception + stack.
+- `repro.txt` — one-liner to rerun this failure.
+
+`run-e2e.sh` pulls the tree to `player/build/test-failures/` at the end of the run and prints the host paths. The listener is registered globally via `testInstrumentationRunnerArguments["listener"]` in `player/android/build.gradle.kts` — you don't wire it per-class.
+
+`KoinResetRule` enforces fail-fast: after the first failure, every subsequent test method throws `AssumptionViolatedException` and is marked SKIPPED. One broken test no longer costs 13 redundant failure bundles.
+
 ---
 
 ## Web E2E Details
