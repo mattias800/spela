@@ -178,7 +178,7 @@ type EntityUserStats struct {
 	TotalPlayTime  int64         `json:"totalPlayTime"`
 	GamesPlayed    int           `json:"gamesPlayed"`
 	FavoriteCount  int           `json:"favoriteCount"`
-	MostPlayedGame *GameResponse `json:"mostPlayedGame"`
+	MostPlayedGame *GameResponse `json:"mostPlayedGame,omitempty"`
 }
 
 // DeveloperSpotlightResponse is the API response for the featured developer spotlight.

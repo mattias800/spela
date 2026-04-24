@@ -138,7 +138,13 @@ type GameResponse struct {
 	VariantCount   int            `json:"variantCount"`
 	GroupKey       string         `json:"groupKey"`
 	Variants       []VariantResponse `json:"variants"`
-	ParentGame     *ParentGameResponse  `json:"parentGame"`
+	// `omitempty` is required because Huma 2.37 panics on `nullable:"true"`
+	// for `$ref` fields; without it Huma marks `parentGame` as a required
+	// non-null `ParentGameResponse`, but the server emits JSON `null` for
+	// every game that isn't a ROM hack. Generated Kotlin clients then
+	// reject the entire response on parse. Marking the JSON field optional
+	// matches reality: `parentGame` is genuinely absent for most games.
+	ParentGame     *ParentGameResponse  `json:"parentGame,omitempty"`
 	RomHacks       []RomHackGameResponse `json:"romHacks"`
 	HeroURL        string         `json:"heroUrl"`
 	LogoURL        string         `json:"logoUrl"`
@@ -682,7 +688,10 @@ type OnlineUserResponse struct {
 	ID          string                  `json:"id"`
 	Username    string                  `json:"username"`
 	AvatarURL   string                  `json:"avatarUrl"`
-	CurrentGame *OnlineUserGameResponse `json:"currentGame"`
+	// `omitempty` for the same reason as `GameResponse.parentGame`:
+	// Huma 2.37 can't emit nullable `$ref` and the field is genuinely
+	// absent when the user isn't currently playing.
+	CurrentGame *OnlineUserGameResponse `json:"currentGame,omitempty"`
 }
 
 // OnlineUserGameResponse contains game details for an online user's current game.
@@ -700,7 +709,7 @@ type PublicProfileResponse struct {
 	AvatarURL     string                  `json:"avatarUrl"`
 	MemberSince   time.Time               `json:"memberSince"`
 	IsOnline      bool                    `json:"isOnline"`
-	CurrentGame   *OnlineUserGameResponse `json:"currentGame"`
+	CurrentGame   *OnlineUserGameResponse `json:"currentGame,omitempty"`
 	TotalPlayTime int64                   `json:"totalPlayTime"`
 	GamesPlayed   int64                   `json:"gamesPlayed"`
 	FavoriteGames []PublicProfileGame     `json:"favoriteGames"`
@@ -1089,7 +1098,7 @@ type UserStatsResponse struct {
 	GamesPlayed        int64         `json:"gamesPlayed"`
 	CurrentStreak      int           `json:"currentStreak"`
 	LongestStreak      int           `json:"longestStreak"`
-	MostPlayedGame     *GameResponse `json:"mostPlayedGame"`
+	MostPlayedGame     *GameResponse `json:"mostPlayedGame,omitempty"`
 	MostPlayedGameTime int64         `json:"mostPlayedGameTime"`
 	LastPlayedAt       *time.Time    `json:"lastPlayedAt"`
 }

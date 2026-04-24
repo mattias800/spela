@@ -34,6 +34,21 @@ fi
 adb -s "$ADB_SERIAL" reverse tcp:8080 tcp:8080
 echo "Reverse port forwarding set up (device:8080 → host:8080)."
 
+# ── Suspend third-party accessibility services ──
+# Some devices (notably the AYN Thor via `com.odin.gameassistant`) register an
+# accessibility service that monopolises the accessibility bridge. Android
+# only allows one bridge consumer at a time, so UiAutomator's `dump()` and
+# element lookups fail with "null root node returned by
+# UiTestAutomationBridge" — which cascades through every helper that falls
+# back to UiAutomator (back button, focus checks, fullscreen IME detection).
+# We snapshot the list here and restore it in the cleanup trap so the user's
+# normal accessibility setup comes back when tests finish.
+PREV_A11Y=$(adb -s "$ADB_SERIAL" shell settings get secure enabled_accessibility_services 2>/dev/null | tr -d '\r')
+if [ -n "$PREV_A11Y" ] && [ "$PREV_A11Y" != "null" ]; then
+  adb -s "$ADB_SERIAL" shell "settings put secure enabled_accessibility_services ''" >/dev/null
+  echo "Disabled accessibility services for test run (was: $PREV_A11Y)."
+fi
+
 # ── Keep screen on during tests ──
 # The Gradle build can take 1-2 minutes. Without this, physical devices go back
 # to sleep before the test APK is installed, causing the Activity to pause immediately.
@@ -46,6 +61,10 @@ cleanup_after_tests() {
   if [ -n "$PREV_TIMEOUT" ] && [ "$PREV_TIMEOUT" != "null" ]; then
     adb -s "$ADB_SERIAL" shell settings put system screen_off_timeout "$PREV_TIMEOUT" 2>/dev/null || true
     echo "Screen timeout restored to ${PREV_TIMEOUT}ms."
+  fi
+  if [ -n "$PREV_A11Y" ] && [ "$PREV_A11Y" != "null" ]; then
+    adb -s "$ADB_SERIAL" shell "settings put secure enabled_accessibility_services '$PREV_A11Y'" 2>/dev/null || true
+    echo "Accessibility services restored."
   fi
   # Turn off screen after tests to protect OLED from burn-in
   adb -s "$ADB_SERIAL" shell input keyevent KEYCODE_SLEEP 2>/dev/null || true

@@ -28,10 +28,10 @@ import kotlinx.serialization.encoding.*
  * @param gamesPlayed 
  * @param lastPlayedAt 
  * @param longestStreak 
- * @param mostPlayedGame 
  * @param mostPlayedGameTime 
  * @param totalPlayTime 
  * @param dollarSchema A URL to the JSON Schema for this object.
+ * @param mostPlayedGame 
  */
 @Serializable
 
@@ -45,14 +45,14 @@ data class UserStatsResponse (
 
     @SerialName(value = "longestStreak") @Required val longestStreak: kotlin.Long,
 
-    @SerialName(value = "mostPlayedGame") @Required val mostPlayedGame: GameResponse,
-
     @SerialName(value = "mostPlayedGameTime") @Required val mostPlayedGameTime: kotlin.Long,
 
     @SerialName(value = "totalPlayTime") @Required val totalPlayTime: kotlin.Long,
 
     /* A URL to the JSON Schema for this object. */
-    @SerialName(value = "\$schema") val dollarSchema: kotlin.String? = null
+    @SerialName(value = "\$schema") val dollarSchema: kotlin.String? = null,
+
+    @SerialName(value = "mostPlayedGame") val mostPlayedGame: GameResponse? = null
 
 ) {
 

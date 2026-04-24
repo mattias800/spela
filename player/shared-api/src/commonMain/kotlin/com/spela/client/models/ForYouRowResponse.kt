@@ -26,9 +26,9 @@ import kotlinx.serialization.encoding.*
  *
  * @param games 
  * @param genre 
- * @param sourceGame 
  * @param title 
  * @param type 
+ * @param sourceGame 
  */
 @Serializable
 
@@ -38,11 +38,11 @@ data class ForYouRowResponse (
 
     @SerialName(value = "genre") @Required val genre: kotlin.String,
 
-    @SerialName(value = "sourceGame") @Required val sourceGame: GameResponse,
-
     @SerialName(value = "title") @Required val title: kotlin.String,
 
-    @SerialName(value = "type") @Required val type: kotlin.String
+    @SerialName(value = "type") @Required val type: kotlin.String,
+
+    @SerialName(value = "sourceGame") val sourceGame: GameResponse? = null
 
 ) {
 

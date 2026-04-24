@@ -145,7 +145,7 @@ fun GameDto.toGameDetail(): GameDetail = GameDetail(
     game = toDomain(),
     screenshots = screenshotUrls,
     variants = variants.map { it.toDomain() },
-    parentGame = parentGame.takeIf { it.id.isNotEmpty() }?.toDomain(),
+    parentGame = parentGame?.takeIf { it.id.isNotEmpty() }?.toDomain(),
     romHacks = romHacks.map { it.toDomain() },
 )
 
@@ -223,7 +223,7 @@ fun com.spela.client.models.OnlineUserResponse.toDomain(): OnlineUser = OnlineUs
     id = id,
     username = username,
     avatarUrl = avatarUrl,
-    currentGame = currentGame.takeIf { it.id.isNotEmpty() }?.toDomain(),
+    currentGame = currentGame?.takeIf { it.id.isNotEmpty() }?.toDomain(),
 )
 
 fun com.spela.client.models.ActivityEventResponse.toDomain(): ActivityEvent = ActivityEvent(
@@ -267,7 +267,7 @@ fun com.spela.client.models.PublicProfileResponse.toDomain(): PublicProfile = Pu
     avatarUrl = avatarUrl,
     memberSince = memberSince.toString(),
     isOnline = isOnline,
-    currentGame = currentGame.takeIf { it.id.isNotEmpty() }?.toDomain(),
+    currentGame = currentGame?.takeIf { it.id.isNotEmpty() }?.toDomain(),
     totalPlayTime = totalPlayTime,
     gamesPlayed = gamesPlayed,
     favoriteGames = favoriteGames.map { it.toDomain() },
@@ -455,7 +455,7 @@ fun com.spela.client.models.UserStatsResponse.toDomain(): UserStats = UserStats(
     longestStreak = longestStreak.toInt(),
     // Server emits an empty Game placeholder when the user has never
     // played anything — detect via empty id and pass null through.
-    mostPlayedGame = mostPlayedGame.takeIf { it.id.isNotEmpty() }?.toDomain(),
+    mostPlayedGame = mostPlayedGame?.takeIf { it.id.isNotEmpty() }?.toDomain(),
     mostPlayedGameTime = mostPlayedGameTime,
     lastPlayedAt = lastPlayedAt?.toString(),
 )
@@ -801,7 +801,7 @@ fun com.spela.client.models.MoodResponse.toDomain(): MoodDefinition = MoodDefini
 fun com.spela.client.models.ForYouRowResponse.toDomain(): ForYouRow = ForYouRow(
     type = type,
     title = title,
-    sourceGame = sourceGame.takeIf { it.id.isNotEmpty() }?.toDomain(),
+    sourceGame = sourceGame?.takeIf { it.id.isNotEmpty() }?.toDomain(),
     genre = genre,
     games = games.map { it.toDomain() },
 )
@@ -882,7 +882,7 @@ fun com.spela.client.models.EntityUserStats.toDeveloperUserStats(): DeveloperDet
         favoriteCount = favoriteCount.toInt(),
         // Server emits an empty Game placeholder when the user has never
         // played anything — detect via empty id and pass null through.
-        mostPlayedGame = mostPlayedGame.takeIf { it.id.isNotEmpty() }?.toDomain(),
+        mostPlayedGame = mostPlayedGame?.takeIf { it.id.isNotEmpty() }?.toDomain(),
     )
 
 fun com.spela.client.models.NameCount.toDeveloperPublisher(): DeveloperDetailPublisher =
@@ -972,7 +972,7 @@ fun com.spela.client.models.EntityUserStats.toPublisherUserStats(): PublisherDet
         totalPlayTime = totalPlayTime,
         gamesPlayed = gamesPlayed.toInt(),
         favoriteCount = favoriteCount.toInt(),
-        mostPlayedGame = mostPlayedGame.takeIf { it.id.isNotEmpty() }?.toDomain(),
+        mostPlayedGame = mostPlayedGame?.takeIf { it.id.isNotEmpty() }?.toDomain(),
     )
 
 fun com.spela.client.models.NameCount.toPublisherDeveloper(): PublisherDetailDeveloper =
@@ -1046,7 +1046,7 @@ fun com.spela.client.models.ConsoleHighlight.toDomain(): ConsoleHighlight = Cons
     iconUrl = iconUrl,
     logoUrl = logoUrl,
     gameCount = gameCount.toInt(),
-    topGame = topGame.takeIf { it.id.isNotEmpty() }?.toDomain(),
+    topGame = topGame?.takeIf { it.id.isNotEmpty() }?.toDomain(),
 )
 
 fun com.spela.client.models.ArtworkItem.toDomain(): ArtworkItem = ArtworkItem(

@@ -92,6 +92,7 @@ private fun parseArgs(args: Array<String>): Config {
     )
 }
 
+
 private class NetplayTestRunnerImpl(private val config: Config) {
     private val fileStorage = DesktopFileStorage()
     private val jni = LibretroJni()
@@ -133,7 +134,7 @@ private class NetplayTestRunnerImpl(private val config: Config) {
         val localPort: Int
 
         if (config.role == "host") {
-            // Find the game ID for Chip 'n Dale by listing NES games
+            // Find the game ID for Chip 'n Dale by listing NES games.
             log("Finding game on server...")
             val gamesResponse = apiClient.getGamesForConsole("nes", page = 1, pageSize = 100)
             val games = gamesResponse.data.orEmpty()

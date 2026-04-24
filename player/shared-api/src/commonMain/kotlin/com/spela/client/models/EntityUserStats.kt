@@ -26,8 +26,8 @@ import kotlinx.serialization.encoding.*
  *
  * @param favoriteCount 
  * @param gamesPlayed 
- * @param mostPlayedGame 
  * @param totalPlayTime 
+ * @param mostPlayedGame 
  */
 @Serializable
 
@@ -37,9 +37,9 @@ data class EntityUserStats (
 
     @SerialName(value = "gamesPlayed") @Required val gamesPlayed: kotlin.Long,
 
-    @SerialName(value = "mostPlayedGame") @Required val mostPlayedGame: GameResponse,
+    @SerialName(value = "totalPlayTime") @Required val totalPlayTime: kotlin.Long,
 
-    @SerialName(value = "totalPlayTime") @Required val totalPlayTime: kotlin.Long
+    @SerialName(value = "mostPlayedGame") val mostPlayedGame: GameResponse? = null
 
 ) {
 

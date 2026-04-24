@@ -623,6 +623,11 @@ fun ComposeRule.ensureLoggedIn(
     username: String = PLAYER_USERNAME,
     password: String = PLAYER_PASSWORD
 ) {
+    // Surface environmental problems up-front rather than letting them
+    // cascade into mysterious timeouts deeper in the test. See
+    // StartupDiagnostics for the full list of things this checks.
+    StartupDiagnostics.assertClean()
+
     // Wait for any recognizable screen to load (UiAutomator — no Espresso idle).
     val device = uiDevice()
     pollUntil(timeoutMillis = 30_000L) {

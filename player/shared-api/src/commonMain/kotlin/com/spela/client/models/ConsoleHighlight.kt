@@ -48,7 +48,7 @@ data class ConsoleHighlight (
 
     @SerialName(value = "name") @Required val name: kotlin.String,
 
-    @SerialName(value = "topGame") @Required val topGame: GameResponse
+    @SerialName(value = "topGame") val topGame: GameResponse? = null
 
 ) {
 

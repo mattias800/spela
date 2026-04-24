@@ -54,7 +54,7 @@ type AuthRegisterResponse struct {
 	// Normal success fields (omitted when pending).
 	AccessToken  string        `json:"accessToken" doc:"Bearer access token."`
 	RefreshToken string        `json:"refreshToken" doc:"Refresh token (rotate via /api/auth/refresh)."`
-	User         *UserResponse `json:"user" doc:"Registered user profile."`
+	User         *UserResponse `json:"user,omitempty" doc:"Registered user profile."`
 }
 
 // SetupStatusResponse is the JSON shape for GET /api/auth/setup-status.
