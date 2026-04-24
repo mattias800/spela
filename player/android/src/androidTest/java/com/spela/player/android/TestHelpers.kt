@@ -843,7 +843,7 @@ fun ComposeRule.restartApp() {
  * Handles overlays, game sessions, Settings sub-screens, etc.
  * Stops early on auth screens (server connection, login) to avoid exiting the Activity.
  */
-private fun ComposeRule.navigateBackToHome() {
+internal fun ComposeRule.navigateBackToHome() {
     val device = uiDevice()
     for (i in 1..10) {
         try {
@@ -893,6 +893,43 @@ private fun ComposeRule.navigateBackToHome() {
             Thread.sleep(500)
         }
     }
+}
+
+/**
+ * Cheap post-condition check: we must be on the Home screen.
+ *
+ * Called at the end of BaseE2ETest.baseSetUp() to turn silent
+ * contract violations into a loud early failure instead of letting
+ * the test body limp along and fail somewhere downstream with a
+ * confusing "text not found" that's really about starting on the
+ * wrong screen.
+ *
+ * Fails with a one-line diagnostic listing which top-level screen
+ * indicators are actually visible. Don't use for flaky polling —
+ * that's what pollUntil + isOnHomeScreen are for; this is a
+ * one-shot "are we there yet" assertion.
+ */
+fun ComposeRule.assertOnHome() {
+    if (isOnHomeScreen()) return
+    val indicators = buildList {
+        if (isOnServerConnectionScreen()) add("server-connection")
+        if (isOnLoginScreen()) add("login")
+        try {
+            if (onAllNodesWithTag(TestTags.NAV_HOME, useUnmergedTree = true)
+                    .fetchSemanticsNodes().isNotEmpty()) add("bottom-nav-present")
+        } catch (_: Exception) { /* compose tree not ready */ }
+        val device = uiDevice()
+        if (device.findObject(UiSelector().descriptionContains("Settings")).exists())
+            add("settings-screen")
+        if (device.findObject(UiSelector().descriptionContains("Game running")).exists())
+            add("in-game")
+        if (device.findObject(UiSelector().descriptionContains("Go back")).exists())
+            add("detail-screen")
+    }
+    error(
+        "assertOnHome: not on Home screen. Visible indicators: " +
+            if (indicators.isEmpty()) "none (unknown screen)" else indicators.joinToString(",")
+    )
 }
 
 // ── Login flows ──
