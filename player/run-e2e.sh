@@ -56,6 +56,12 @@ echo "── Uninstalling com.spela.player on $ADB_SERIAL ──"
 adb -s "$ADB_SERIAL" uninstall com.spela.player >/dev/null 2>&1 || true
 echo "App uninstalled (or was not present)."
 
+# ── Core pre-cache (nestopia for NES happy path) ──
+# See player/scripts/cache-nestopia.sh for the resolution order and
+# the SPELA_E2E_REAL_CORE_DOWNLOAD=1 opt-out.
+echo "── Pre-caching nestopia core ──"
+ADB_SERIAL="$ADB_SERIAL" "$SCRIPT_DIR/scripts/cache-nestopia.sh"
+
 # ── Unlock device if locked ──
 
 LOCKED=$(adb -s "$ADB_SERIAL" shell dumpsys window | grep mInputRestricted | head -1)

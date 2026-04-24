@@ -98,8 +98,12 @@ class KoinResetRule : org.junit.rules.TestRule {
             val context = InstrumentationRegistry.getInstrumentation().targetContext
             val coresDir = java.io.File(context.filesDir, "cores")
             coresDir.mkdirs()
-            val knownCores = listOf("nestopia", "snes9x", "mgba", "gambatte", "genesis_plus_gx",
-                "mupen64plus_next", "mednafen_psx_hw", "ppsspp", "desmume")
+            // Only nestopia is pre-cached by run-e2e.sh + scripts/cache-nestopia.sh;
+            // every other core is downloaded on-demand at first use, matching the
+            // real user flow. The list used to include 8 more cores aspirationally,
+            // but nothing in the current suite tests them and they just dragged
+            // Gradle's APK install setup with irrelevant /data/local/tmp/ copies.
+            val knownCores = listOf("nestopia")
             for (coreName in knownCores) {
                 val fileName = "${coreName}_libretro_android.so"
                 val src = java.io.File("/data/local/tmp/$fileName")
@@ -1877,6 +1881,42 @@ fun ComposeRule.navigateToSettingsCategory(category: String) {
     navigateToSettings()
     tapOn(category)
     waitForIdle()
+}
+
+/**
+ * Toggle a setting by its visible title (e.g. "Performance Overlay",
+ * "Auto Save on Exit"). Each [SettingsToggle] composable sets
+ * `contentDescription = title`, so a contentDescription match finds the
+ * row. The caller must already be on the relevant Settings category
+ * (e.g. via [navigateToSettingsCategoryTag]).
+ *
+ * No-op if the toggle is already in the desired state, so tests can
+ * call this idempotently when a previous test may have flipped it.
+ */
+/** Convenience wrapper: enable the FPS/frame-time HUD before starting a game. */
+fun ComposeRule.enablePerformanceOverlay() {
+    navigateToSettingsCategoryTag(TestTags.SETTINGS_CATEGORY_EMULATION)
+    setSettingsToggle("Performance Overlay", enable = true)
+    pressBack()
+    Thread.sleep(500)
+}
+
+fun ComposeRule.setSettingsToggle(title: String, enable: Boolean) {
+    val device = uiDevice()
+    // Find the toggle row. SettingsToggle sets contentDescription=title
+    // and stateDescription="On"/"Off" via Role.Switch semantics.
+    val node = onAllNodes(hasContentDescription(title, substring = true))
+        .fetchSemanticsNodes()
+        .firstOrNull()
+    checkNotNull(node) { "setSettingsToggle: no toggle with title '$title' found" }
+    // stateDescription tells us the current state without relying on
+    // visual switch state.
+    val state = node.config.firstOrNull { it.key.name == "StateDescription" }?.value as? String
+    val currentlyEnabled = state == "On"
+    if (currentlyEnabled == enable) return
+    onAllNodes(hasContentDescription(title, substring = true))[0].performClick()
+    waitForIdle()
+    Thread.sleep(300)
 }
 
 fun ComposeRule.ensureOverlayOpen() {
