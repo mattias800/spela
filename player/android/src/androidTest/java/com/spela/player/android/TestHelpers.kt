@@ -469,20 +469,41 @@ private fun ComposeRule.isOnLoginScreen(): Boolean {
 }
 
 /** Check if we're on the Home screen. UiAutomator + Compose fallback.
- * Uses isInSpelaApp() to avoid matching launcher app labels. */
+ *
+ * Uses isInSpelaApp() to avoid matching launcher app labels.
+ *
+ * Deliberately does NOT substring-match "Spela" — UiAutomator's
+ * textContains turns out to be case-insensitive, so "Spela" matches
+ * the decorative "Nu spelar vi!" quote rendered on ServerConnection
+ * and Login screens. The Home screen is identified by:
+ *   - the SCREEN_HOME content description on HomeScreen (most reliable)
+ *   - Home-only text strings that DO NOT appear on any auth screen
+ *
+ * Exact `text()` matches against "Spela" are safe (the brand-mark
+ * top-bar uses exactly "Spela"), but Android's contentDescription
+ * substring-matching semantics make the UiAutomator API unsafe for
+ * that case — so we use the Compose semantics tree for the exact
+ * match instead.
+ */
 private fun ComposeRule.isOnHomeScreen(): Boolean {
     if (!isInSpelaApp()) return false
     val device = uiDevice()
     if (device.findObject(UiSelector().descriptionContains(TestTags.SCREEN_HOME)).exists() ||
-        device.findObject(UiSelector().textContains("Spela")).exists() ||
         device.findObject(UiSelector().textContains("Your library is empty")).exists() ||
         device.findObject(UiSelector().textContains("Top Rated")).exists() ||
         device.findObject(UiSelector().textContains("Continue Playing")).exists() ||
         device.findObject(UiSelector().textContains("Loading your library")).exists()
     ) return true
     return try {
-        onAllNodesWithText("Spela", substring = true)
-            .fetchSemanticsNodes().isNotEmpty()
+        // Compose semantics-tree fallback. Prefers the testTag (safe
+        // from any text collisions) and falls back to an exact-match
+        // (not substring!) on the "Spela" brand-mark. The exact-match
+        // side is necessary because the SCREEN_HOME testTag can race
+        // with the Compose tree snapshot — the text node appears
+        // before the screen container's testTag does.
+        onAllNodesWithTag(TestTags.SCREEN_HOME, useUnmergedTree = true)
+            .fetchSemanticsNodes().isNotEmpty() ||
+            onAllNodesWithText("Spela").fetchSemanticsNodes().isNotEmpty()
     } catch (_: Exception) { false }
 }
 
