@@ -181,6 +181,7 @@ internal fun ConsoleCard(
 
     Box(
         modifier = modifier
+            .testTag(com.spela.player.presentation.ui.TestTags.consoleCard(console.id))
             .height(120.dp)
             .graphicsLayer { scaleX = scale; scaleY = scale }
             .clip(shape)

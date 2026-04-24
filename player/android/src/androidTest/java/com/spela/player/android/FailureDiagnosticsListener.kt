@@ -39,9 +39,24 @@ import java.util.Locale
  */
 class FailureDiagnosticsListener : RunListener() {
 
+    companion object {
+        // Set to true the first time any test in this run fails. Tests
+        // can consult this in their @Before to abort early instead of
+        // running 13 doomed copies of the same broken navigation flow.
+        // See FailFastRule (TestHelpers.kt) — that's the consumer.
+        @JvmStatic
+        @Volatile
+        var anyTestFailed: Boolean = false
+            private set
+
+        @JvmStatic
+        fun markFailed() { anyTestFailed = true }
+    }
+
     private val baseDir = "/sdcard/spela-test-failures"
 
     override fun testFailure(failure: Failure) {
+        markFailed()
         try {
             val description = failure.description
             val dir = File(

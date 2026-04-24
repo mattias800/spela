@@ -28,7 +28,6 @@ import androidx.test.uiautomator.UiDevice
 import androidx.test.uiautomator.UiSelector
 import com.spela.player.di.commonModule
 import com.spela.player.di.platformModule
-import org.junit.rules.TestWatcher
 import org.junit.runner.Description
 import org.koin.mp.KoinPlatformTools
 import androidx.test.espresso.IdlingPolicies
@@ -69,11 +68,29 @@ private val testConfigured = run {
  * while the Compose tree keeps old LaunchedEffect keys, causing LaunchedEffects
  * to not re-fire (e.g., the server form auto-open doesn't trigger).
  */
-class KoinResetRule : TestWatcher() {
-    override fun starting(description: Description?) {
-        MainActivity.isTestMode = true
-        // Ensure cores are cached before each test (app reinstall wipes files)
-        preCacheCores()
+class KoinResetRule : org.junit.rules.TestRule {
+    override fun apply(base: org.junit.runners.model.Statement, description: Description): org.junit.runners.model.Statement {
+        return object : org.junit.runners.model.Statement() {
+            override fun evaluate() {
+                // FAIL-FAST GATE: once any test in this run has failed,
+                // skip every subsequent test. Without this, when
+                // navigation or login breaks, gradle still runs all 14
+                // EmulationTest methods, producing 14 identical failure
+                // bundles and wasting ~9 minutes per suite. Throwing
+                // AssumptionViolatedException from inside the rule's
+                // statement (not from a TestWatcher callback) makes
+                // JUnit mark the test as ignored/skipped, which gradle
+                // surfaces as SKIPPED rather than FAILED.
+                if (FailureDiagnosticsListener.anyTestFailed) {
+                    throw org.junit.AssumptionViolatedException(
+                        "Skipping ${description.methodName} — earlier failure in this run, fail-fast active"
+                    )
+                }
+                MainActivity.isTestMode = true
+                preCacheCores()
+                base.evaluate()
+            }
+        }
     }
 
     private fun preCacheCores() {
@@ -329,9 +346,36 @@ fun ComposeRule.assertNotVisible(label: String) {
     check(!hasText && !hasDesc) { "Expected '$label' to NOT be visible, but it was found" }
 }
 
-/** Check if we're in the Spela app (not the Android launcher or another app). */
-private fun isInSpelaApp(): Boolean =
-    uiDevice().currentPackageName == "com.spela.player"
+/** Check if we're in the Spela app (not the Android launcher or another app).
+ *
+ * `currentPackageName` only reports the focused window on display 0. On
+ * multi-display hardware (the AYN Thor secondary display) the Spela
+ * activity can be focused on a non-primary display, which makes the
+ * UiAutomator query report the launcher even though Spela is alive
+ * and rendering. Since the Compose test rule's semantics tree comes
+ * directly from the activity's window — regardless of display — fall
+ * back to "any Spela-owned testTag is in the tree" before declaring
+ * we're outside the app.
+ */
+private fun ComposeRule.isInSpelaApp(): Boolean {
+    if (uiDevice().currentPackageName == "com.spela.player") return true
+    return try {
+        // NAV_HOME ships on every screen with a bottom nav (i.e. every
+        // logged-in screen). If it's not present, we're likely on the
+        // server-connect / login screens, so check for those tags too.
+        val anyTag = listOf(
+            TestTags.NAV_HOME,
+            TestTags.SCREEN_HOME,
+            TestTags.SCREEN_LOGIN,
+            TestTags.SCREEN_SERVER_CONNECTION,
+            TestTags.SCREEN_CONSOLE,
+        ).any { tag ->
+            try { onAllNodesWithTag(tag, useUnmergedTree = true).fetchSemanticsNodes().isNotEmpty() }
+            catch (_: Exception) { false }
+        }
+        anyTag
+    } catch (_: Exception) { false }
+}
 
 /** Check if we're on the server connection screen. UiAutomator + Compose fallback. */
 private fun ComposeRule.isOnServerConnectionScreen(): Boolean {
@@ -812,12 +856,24 @@ fun ComposeRule.ensureLoggedIn(
     // StartupDiagnostics for the full list of things this checks.
     StartupDiagnostics.assertClean()
 
-    // Wait for any recognizable screen to load (UiAutomator — no Espresso idle).
+    // Wait for any recognizable screen to load. We accept any logged-in
+    // screen here (Home, Console, Game Detail, in-game, Settings) — the
+    // navigateBackToHome() call below pulls us back to Home if needed.
+    // The previous version only accepted Home/Login/ServerConnect plus a
+    // few UiAutomator markers, which left us stuck for 30s when the
+    // previous test ended on Console or Game Detail.
     val device = uiDevice()
     pollUntil(timeoutMillis = 30_000L) {
         isOnHomeScreen() ||
             isOnServerConnectionScreen() ||
             isOnLoginScreen() ||
+            // "Any logged-in screen" — the bottom-nav testTag is on every
+            // screen below the login flow, and fetchSemanticsNodes works
+            // regardless of which display the activity sits on.
+            try {
+                onAllNodesWithTag(TestTags.NAV_HOME, useUnmergedTree = true)
+                    .fetchSemanticsNodes().isNotEmpty()
+            } catch (_: Exception) { false } ||
             device.findObject(UiSelector().descriptionContains("Settings")).exists() ||
             device.findObject(UiSelector().descriptionContains("Game running")).exists() ||
             device.findObject(UiSelector().descriptionContains("Go back")).exists()
@@ -1555,10 +1611,74 @@ fun ComposeRule.navigateToGameAndPlay(preferredGameTitle: String? = "Balloon Fig
     // routes to its detail page — no separate "Browse" screen is
     // required on the modern layout.
     android.util.Log.d(tag, "navigateToGameAndPlay: Starting")
-    tapOn("Consoles")
-    waitForContentDescription("Nintendo Entertainment System", TIMEOUT_EXTRA_LONG)
-    scrollToAndTapMatchingBoth("Nintendo Entertainment System", "games")
-    waitForContentDescription("screen_console", TIMEOUT_LONG)
+    // The Compose Navigation in this app keeps a per-tab back stack, so a
+    // tap on Consoles when we're already at NES > game detail just pops
+    // one level instead of returning to the consoles list. The reliable
+    // way to reach a known root is to bounce off Home first — Home
+    // doesn't have nested screens, so a Home tap is always idempotent.
+    // After that, a single Consoles tap lands on the consoles list.
+    val nesTag = com.spela.player.presentation.ui.TestTags.consoleCard("nes")
+    // Wait for the bottom-nav Home tab to actually be in the Compose tree
+    // before tapping. Right after ensureLoggedIn the activity may still
+    // be hydrating its first composition.
+    try {
+        pollUntil(timeoutMillis = 10_000L) {
+            try { onAllNodes(hasTestTag(TestTags.NAV_HOME)).fetchSemanticsNodes().isNotEmpty() }
+            catch (_: Exception) { false }
+        }
+    } catch (_: androidx.compose.ui.test.ComposeTimeoutException) {
+        throw IllegalStateException("Bottom nav (NAV_HOME) never appeared — activity not in a logged-in state?")
+    }
+    // Pop back-stack until the system back press is consumed by the
+    // launcher (i.e. we left the app) — but don't actually leave: stop
+    // when isOnHomeScreen() is true. This guarantees we're at a tab
+    // root, not a deep child like NES > game detail. Then tap Consoles
+    // exactly once to land on the consoles list.
+    repeat(8) {
+        if (isOnHomeScreen()) return@repeat
+        pressBack()
+        Thread.sleep(300)
+    }
+    if (!isOnHomeScreen()) {
+        // Last-resort: nuke via Home tab tap (works when we're inside a
+        // sibling tab whose back stack we can't pop into Home).
+        onAllNodes(hasTestTag(TestTags.NAV_HOME))[0].performClick()
+        waitForIdle()
+        Thread.sleep(500)
+    }
+    android.util.Log.d(tag, "navigateToGameAndPlay: reset to Home (isOnHomeScreen=${isOnHomeScreen()})")
+    onAllNodes(hasTestTag(TestTags.NAV_CONSOLES))[0].performClick()
+    waitForIdle()
+    android.util.Log.d(tag, "navigateToGameAndPlay: tapped Consoles")
+    Thread.sleep(500)
+    // The Consoles tab restores its last visited screen (e.g. NES detail
+    // if a previous test landed there) instead of the consoles list root.
+    // Pop back-stack within the Consoles tab until the NES card testTag
+    // is visible on screen (= we're on the consoles list).
+    var landedOnList = false
+    repeat(8) {
+        try {
+            if (onAllNodes(hasTestTag(nesTag)).fetchSemanticsNodes().isNotEmpty()) {
+                landedOnList = true
+                return@repeat
+            }
+        } catch (_: Exception) {}
+        pressBack()
+        Thread.sleep(400)
+    }
+    if (!landedOnList) {
+        try {
+            pollUntil(timeoutMillis = 5_000L) {
+                try { onAllNodes(hasTestTag(nesTag)).fetchSemanticsNodes().isNotEmpty() }
+                catch (_: Exception) { false }
+            }
+        } catch (_: androidx.compose.ui.test.ComposeTimeoutException) {
+            throw IllegalStateException("Could not reach Consoles list — NES card testTag not visible after Home→Consoles bounce + 8 back presses")
+        }
+    }
+    onAllNodes(hasTestTag(nesTag))[0].performClick()
+    waitForIdle()
+    Thread.sleep(500)
 
     // Wait for game cards to render. `explore_game_card_<id>` is the
     // shared tag pattern for every shelf on the console landing page —
