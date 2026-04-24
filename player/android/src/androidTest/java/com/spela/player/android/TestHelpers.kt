@@ -138,6 +138,61 @@ private const val TIMEOUT_EXTRA_LONG = 30_000L
 /** Tracks challenges created in this JVM process to skip expensive re-creation. */
 private val challengesCreated = mutableSetOf<String>()
 
+// ── Backend state reset ──
+
+/**
+ * POST /api/test/reset on the docker-compose E2E server.
+ *
+ * Called from @Before in BaseE2ETest so every test method starts with
+ * user-generated data wiped: sessions, saves, favorites, collections,
+ * challenges, play history, shader prefs, refresh tokens, login
+ * attempts. Consoles, cores, and scanned games are preserved by the
+ * server-side handler — see server/internal/api/huma_test_reset.go.
+ *
+ * Unauthenticated by design (see the handler comment). Runs on the
+ * instrumentation thread (not main), so plain HttpURLConnection is
+ * safe. Reaches the host via `adb reverse tcp:8080 tcp:8080` which
+ * run-e2e.sh sets up before gradle is invoked.
+ *
+ * Hard-failure semantics: any response other than 200 with a body
+ * containing `"status":"reset"` aborts the test immediately. Reset
+ * is load-bearing — silently skipping it defeats the whole isolation
+ * story.
+ *
+ * JWT note: the handler resets User.token_version to 0 and deletes
+ * RefreshToken rows. A JWT issued at token_version=0 stays valid,
+ * so the common case keeps the current session alive. If it doesn't
+ * (tests that rotate tokens), ensureLoggedIn() detects the ensuing
+ * 401 → login screen and re-authenticates.
+ */
+fun resetServerState() {
+    val url = java.net.URL("http://127.0.0.1:8080/api/test/reset")
+    val conn = url.openConnection() as java.net.HttpURLConnection
+    try {
+        conn.requestMethod = "POST"
+        conn.connectTimeout = 3_000
+        conn.readTimeout = 5_000
+        conn.doOutput = true
+        conn.outputStream.use { /* empty body */ }
+        // Trigger the actual request and get the code BEFORE reading a
+        // stream — getInputStream() throws on 4xx/5xx, so we need to
+        // pick the right stream based on the code.
+        val code = conn.responseCode
+        val stream = if (code in 200..299) conn.inputStream else conn.errorStream
+        val body = stream?.bufferedReader()?.use { it.readText() }.orEmpty()
+        check(code == 200) {
+            "resetServerState: expected HTTP 200, got $code. Body: $body. " +
+                "Is docker-compose.e2e.yml running with SPELA_TEST_MODE=true, " +
+                "and is `adb reverse tcp:8080 tcp:8080` set up?"
+        }
+        check(body.contains("\"status\":\"reset\"")) {
+            "resetServerState: expected body to contain '\"status\":\"reset\"', got: $body"
+        }
+    } finally {
+        conn.disconnect()
+    }
+}
+
 // ── Wait helpers ──
 
 /**
