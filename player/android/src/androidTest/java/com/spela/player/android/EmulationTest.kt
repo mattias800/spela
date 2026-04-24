@@ -161,7 +161,18 @@ class EmulationTest : BaseE2ETest() {
         rule.assertVisible("Save")
 
         rule.exitGame()
-        rule.waitForText("Play", timeout = 8_000)
+        // After exit, the action button is "Play" on a fresh game or
+        // "Resume" once auto-save has captured a save. With backend
+        // reset to defaults, autoSaveEnabled=true, so we may see
+        // either depending on timing. Accept both.
+        rule.pollUntil(timeoutMillis = 8_000) {
+            try {
+                rule.onAllNodesWithText("Play", substring = true)
+                    .fetchSemanticsNodes().isNotEmpty() ||
+                    rule.onAllNodesWithText("Resume", substring = true)
+                        .fetchSemanticsNodes().isNotEmpty()
+            } catch (_: IllegalStateException) { false }
+        }
     }
 
     @Test
