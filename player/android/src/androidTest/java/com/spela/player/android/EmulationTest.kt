@@ -34,10 +34,10 @@ class EmulationTest : BaseE2ETest() {
         rule.assertVisible("Fast")
         rule.assertTextVisible("Exit Game")
 
-        // Game title in overlay
-        rule.assertVisible("Castlevania")
-
-        // Performance stats (proves emulation running)
+        // Performance stats (proves emulation running) — game title in
+        // the overlay depends on which NES game navigateToGameAndPlay
+        // happened to pick (currently Balloon Fight by default), so we
+        // don't assert it here.
         rule.waitForVisible("Frame", timeout = 15_000)
 
         rule.exitGame()
