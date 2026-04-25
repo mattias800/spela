@@ -64,7 +64,20 @@ type TestResetOutput struct {
 //
 // The route is intentionally unauthenticated (matches the gin handler) so E2E
 // tests can call it without first logging in.
+//
+// Kicks off a background goroutine to pre-warm cachedSeedHashes() — bcrypt at
+// cost=12 takes 2-5s on docker-on-macOS, so the first /api/test/reset call
+// would otherwise pay that latency in the test path. Doing it at registration
+// time means by the time the first test runs, the hashes are cached and
+// every reset is sub-50ms.
 func RegisterTestRoute(api huma.API, h *TestHandler) {
+	go func() {
+		_, _, err := cachedSeedHashes()
+		if err != nil {
+			slog.Warn("test-reset seed-hash warmup failed", "error", err)
+		}
+	}()
+
 	huma.Register(api, huma.Operation{
 		OperationID: "testReset",
 		Method:      http.MethodPost,
