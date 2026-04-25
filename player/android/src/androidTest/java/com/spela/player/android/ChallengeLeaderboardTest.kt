@@ -1,6 +1,7 @@
 package com.spela.player.android
 
 import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.performSemanticsAction
 import org.junit.Test
 
 /**
@@ -82,8 +83,13 @@ class ChallengeLeaderboardTest : BaseE2ETest() {
         rule.tapOn("Leaderboard Entry Test")
         rule.waitForText("Attempt Challenge", timeout = 5_000)
 
-        // Tag-based click bypasses touch-routing weirdness.
-        rule.tapOnTag("attempt_challenge_button")
+        // Fire onClick via SemanticsActions.OnClick — bypasses
+        // multi-display touch routing and Espresso idle.
+        rule.onAllNodes(
+            androidx.compose.ui.test.hasText("Attempt Challenge", substring = true) and
+                androidx.compose.ui.test.hasClickAction()
+        )[0].performSemanticsAction(androidx.compose.ui.semantics.SemanticsActions.OnClick)
+        Thread.sleep(500)
         rule.waitForGameRunning(timeout = 15_000)
 
         // Let some time pass, then complete
