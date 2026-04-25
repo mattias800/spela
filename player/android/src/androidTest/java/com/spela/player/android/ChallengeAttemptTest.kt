@@ -3,6 +3,7 @@ package com.spela.player.android
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performSemanticsAction
 import org.junit.Test
 
 /**
@@ -44,25 +45,16 @@ class ChallengeAttemptTest : BaseE2ETest() {
         rule.tapOn(SHARED_CHALLENGE)
         rule.waitForText("Attempt Challenge", timeout = 8_000)
 
-        // Start attempt. Find the button via Compose (tag/text +
-        // hasClickAction), grab its bounds, then click via
-        // UiAutomator at the centre. Compose finds the node
-        // regardless of which display the activity sits on (semantic
-        // tree spans all displays); UiAutomator's device.click(x, y)
-        // doesn't go through Espresso's idle wait, which would
-        // otherwise block on the gameplay 60fps render loop.
-        val attemptNodes = rule.onAllNodes(
+        // Start attempt. Compose's onClick semantic action fires
+        // the button's onClick lambda directly without going through
+        // touch dispatch — that bypasses both the multi-display
+        // routing on Thor and the Espresso idle wait. Find the
+        // clickable node by text + clickAction so it doesn't matter
+        // which sub-node carries the tag.
+        rule.onAllNodes(
             androidx.compose.ui.test.hasText("Attempt Challenge", substring = true) and
                 androidx.compose.ui.test.hasClickAction()
-        ).fetchSemanticsNodes()
-        check(attemptNodes.isNotEmpty()) { "Attempt Challenge clickable node not found" }
-        val bounds = attemptNodes[0].boundsInRoot
-        val cx = ((bounds.left + bounds.right) / 2f).toInt()
-        val cy = ((bounds.top + bounds.bottom) / 2f).toInt()
-        val device = androidx.test.uiautomator.UiDevice.getInstance(
-            androidx.test.platform.app.InstrumentationRegistry.getInstrumentation()
-        )
-        device.click(cx, cy)
+        )[0].performSemanticsAction(androidx.compose.ui.semantics.SemanticsActions.OnClick)
         Thread.sleep(500)
 
         // Wait for the game to load. UiAutomator's "Core running"
