@@ -838,68 +838,44 @@ fun ComposeRule.clearAppState() {
 }
 
 fun ComposeRule.restartApp() {
-    // Force-stop the app process via adb shell, then relaunch via
-    // intent. This is closer to a real "user kills app and reopens"
-    // than activityRule.scenario.recreate(), which only triggers a
-    // configuration-change recreate inside the same process — and on
-    // emulators / multi-display devices that path frequently leaves
-    // the Compose hierarchy half-attached.
+    // Note: this uses activityRule.scenario.recreate() which sends
+    // the activity through onPause→onStop→onCreate again, simulating
+    // a configuration change. It does NOT kill the process — that
+    // would invalidate the scenario reference and crash the test
+    // runner. For persistence tests this is enough: SQLDelight is
+    // re-opened, ViewModels are recreated, the dashboard refetches.
+    // It does not exercise process-death restoration; that would
+    // require force-stop, but force-stop is incompatible with
+    // ComposeRule's lifecycle binding.
     //
-    // Note: ComposeRule's `activityRule.scenario` keeps a reference
-    // to the original Activity instance. After force-stop + relaunch
-    // the new Activity is a different instance, so subsequent
-    // Compose-test queries route through onAllNodes / onNode lookups
-    // (which find nodes by their semantics tree, not by activity
-    // ref). UiAutomator queries work regardless. The existing
-    // isOnHomeScreen / isOnLoginScreen / isOnServerConnectionScreen
-    // helpers already do both, which is why they keep working.
-    val device = UiDevice.getInstance(InstrumentationRegistry.getInstrumentation())
-    val ctx = InstrumentationRegistry.getInstrumentation().targetContext
-    val pkg = ctx.packageName
+    // The recreate is sometimes flaky (Compose hierarchy doesn't
+    // re-establish on the first attempt); we retry up to three
+    // times before giving up and surfacing the failure.
+    navigateBackToHome()
 
-    // Land on Home first so an in-game session shuts down cleanly
-    // before the process is killed.
-    runCatching { navigateBackToHome() }
-
-    try {
-        device.executeShellCommand("am force-stop $pkg")
-    } catch (_: Throwable) { /* fall through to recreate path */ }
-    Thread.sleep(500)
-
-    // Relaunch on display 0 explicitly — multi-display devices may
-    // otherwise route the new task to the secondary display.
-    runCatching {
-        device.executeShellCommand("am start --display 0 -n $pkg/.android.MainActivity")
-    }
-    Thread.sleep(2_500)
-
-    // Wait for the new process to bring up a recognised screen. If
-    // this fails we fall back to scenario.recreate() — same flaky
-    // path as before, but it's now the second-line option, not the
-    // primary.
-    val arrived = try {
-        pollUntil(timeoutMillis = 30_000L) {
-            try {
-                isOnHomeScreen() ||
-                    isOnServerConnectionScreen() ||
-                    isOnLoginScreen()
-            } catch (_: Exception) { false }
-        }
-        true
-    } catch (_: androidx.compose.ui.test.ComposeTimeoutException) { false }
-
-    if (arrived) return
-
-    // Fallback: scenario.recreate() (same as the old path).
-    runCatching { activityRule.scenario.recreate() }
-    Thread.sleep(2_000)
-    pollUntil(timeoutMillis = 30_000L) {
+    var lastError: Throwable? = null
+    repeat(3) { attempt ->
         try {
-            isOnHomeScreen() ||
-                isOnServerConnectionScreen() ||
-                isOnLoginScreen()
-        } catch (_: Exception) { false }
+            activityRule.scenario.recreate()
+            Thread.sleep(2_000)
+            pollUntil(timeoutMillis = 30_000L) {
+                try {
+                    isOnHomeScreen() ||
+                        isOnServerConnectionScreen() ||
+                        isOnLoginScreen()
+                } catch (_: Exception) { false }
+            }
+            return // recreate landed us on a recognised screen
+        } catch (e: Throwable) {
+            lastError = e
+            android.util.Log.w(
+                "E2E_RESTART",
+                "restartApp attempt ${attempt + 1}/3 failed: ${e.message?.take(120)}",
+            )
+            Thread.sleep(1_000)
+        }
     }
+    error("restartApp failed after 3 attempts: ${lastError?.message}")
 }
 
 /**
