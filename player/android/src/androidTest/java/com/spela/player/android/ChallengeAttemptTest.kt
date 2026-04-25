@@ -47,9 +47,12 @@ class ChallengeAttemptTest : BaseE2ETest() {
         // Start attempt
         rule.tapOn("Attempt Challenge")
 
-        // Wait for the game to load. The core running indicator confirms the
-        // EmulationViewModel has set isRunning=true.
-        rule.waitForContentDescription("Core running", timeout = 30_000)
+        // Wait for the game to load. UiAutomator's "Core running"
+        // marker can sit on the wrong physical display on Thor's
+        // multi-display setup, and Compose's semantic-tree fetch can
+        // throw AppNotIdleException during the 60fps render loop —
+        // fall back to logcat markers we know fire on real start.
+        rule.waitForGameRunning(timeout = 30_000)
 
         // Wait for touch controls. If the in-game overlay opened unexpectedly
         // (e.g., after a previous test's state leaked), dismiss it first.

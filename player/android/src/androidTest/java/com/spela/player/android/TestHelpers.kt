@@ -381,6 +381,53 @@ fun ComposeRule.waitForContentDescription(desc: String, timeout: Long = TIMEOUT_
     throw IllegalStateException("waitForContentDescription('$desc'): not found within ${timeout}ms")
 }
 
+/**
+ * Wait for the libretro core to have actually started running.
+ *
+ * Uses three independent signals so the wait survives:
+ * - Thor multi-display routing (UiAutomator sees display 0, marker
+ *   may be on display 4)
+ * - the 60fps render loop that defeats Compose semantic-tree fetches
+ *   with AppNotIdleException
+ * - any one signal missing in a particular state transition
+ *
+ * Signals: Compose `Game running` content description, UiAutomator
+ * `Core running` description, and Spela's own logcat lines
+ * (`Game loaded:`, `libretroController.start() returned`).
+ */
+fun ComposeRule.waitForGameRunning(timeout: Long = TIMEOUT_LONG) {
+    val device = uiDevice()
+    val deadline = System.currentTimeMillis() + timeout
+    var iter = 0
+    while (System.currentTimeMillis() < deadline) {
+        iter++
+        try {
+            if (onAllNodesWithContentDescription("Game running", substring = false)
+                    .fetchSemanticsNodes().isNotEmpty()) {
+                android.util.Log.d("E2E_GAMEPLAY", "waitForGameRunning iter=$iter: Compose marker hit")
+                return
+            }
+        } catch (_: Exception) { /* AppNotIdle or tree unavailable */ }
+        if (device.findObject(UiSelector().descriptionContains("Core running")).exists()) {
+            android.util.Log.d("E2E_GAMEPLAY", "waitForGameRunning iter=$iter: UiAutomator marker hit")
+            return
+        }
+        try {
+            val raw = device.executeShellCommand("logcat -d -s System.out:I SpelaLibretro:I -t 500")
+            val hit = raw.lineSequence().firstOrNull { line ->
+                line.contains("Game loaded:") ||
+                    line.contains("libretroController.start() returned")
+            }
+            if (hit != null) {
+                android.util.Log.d("E2E_GAMEPLAY", "waitForGameRunning iter=$iter: logcat hit: ${hit.take(160)}")
+                return
+            }
+        } catch (_: Exception) {}
+        Thread.sleep(500)
+    }
+    throw IllegalStateException("waitForGameRunning: no signal within ${timeout}ms")
+}
+
 fun ComposeRule.waitForTextNotVisible(text: String, timeout: Long = TIMEOUT_SHORT) {
     val obj = uiDevice().findObject(UiSelector().textContains(text))
     if (obj.exists()) {
