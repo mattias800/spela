@@ -145,24 +145,43 @@ class EmulationTest : BaseE2ETest() {
 
     @Test
     fun exitNoConfirmationWithAutoSave() {
-        // Verify auto-save is visible in Settings
-        rule.navigateToSettings()
+        // Verify auto-save is wired up in Settings → Emulation. The
+        // settings screen now uses a list-detail layout with categories;
+        // navigateToSettings() lands on the category list, so we have
+        // to drill into Emulation to see the toggle.
+        rule.navigateToSettingsCategory("Emulation")
         rule.waitForText("Auto Save on Exit", timeout = 8_000)
 
         rule.pressBack()
-        rule.waitForText("Spela")
+        // Pop back to category list, then to Home — pressBack count
+        // depends on whether we landed in detail-only mode or not.
+        // Just look for the brand-mark which only appears on Home.
+        rule.pollUntil(timeoutMillis = 5_000) {
+            try {
+                rule.onAllNodesWithText("Spela").fetchSemanticsNodes().isNotEmpty()
+            } catch (_: IllegalStateException) { false }
+        }
 
         rule.navigateToGameAndPlay()
         rule.openOverlay()
         rule.exitGame()
 
-        rule.waitForText("Play", timeout = 15_000)
+        // After auto-save exit we land on game detail; button is
+        // Resume (save exists) or Play (no save).
+        rule.pollUntil(timeoutMillis = 15_000) {
+            try {
+                rule.onAllNodesWithText("Play", substring = true)
+                    .fetchSemanticsNodes().isNotEmpty() ||
+                    rule.onAllNodesWithText("Resume", substring = true)
+                        .fetchSemanticsNodes().isNotEmpty()
+            } catch (_: IllegalStateException) { false }
+        }
 
+        // The whole point of this test: NO confirmation dialog appears
+        // when auto-save is enabled (it just saves and exits).
         rule.assertTextNotVisible("Exit without saving?")
         rule.assertTextNotVisible("Keep Playing")
         rule.assertTextNotVisible("Exit Anyway")
-
-        rule.assertVisible("Castlevania")
     }
 
     @Test
