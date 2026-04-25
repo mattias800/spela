@@ -194,9 +194,15 @@ class EmulationTest : BaseE2ETest() {
     fun noAutoOverlayOnStart() {
         setupGame()
 
+        // Game is running with no overlay — overlay buttons must NOT show.
         rule.assertTextNotVisible("Exit Game")
         rule.assertTextNotVisible("Continue")
-        rule.assertVisible("Touch controls")
+        // "Touch controls" is the on-screen D-pad/buttons overlay. It's
+        // hidden when a gamepad is connected (AYN Thor always has one,
+        // emulators never do), so we assert "Game running" (always
+        // present while in-game) instead. The overlay-not-showing
+        // assertions above already cover the test's real intent.
+        rule.assertVisible("Game running")
 
         rule.pressBack()
         rule.waitForText("Exit Game")
@@ -204,7 +210,6 @@ class EmulationTest : BaseE2ETest() {
         rule.assertTextVisible("Continue")
         rule.assertVisible("Save")
         rule.assertVisible("Load")
-        rule.assertNotVisible("Touch controls")
 
         rule.tapOn("Continue")
         rule.waitForTextNotVisible("Exit Game")
