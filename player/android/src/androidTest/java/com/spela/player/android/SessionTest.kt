@@ -14,10 +14,10 @@ class SessionTest : BaseE2ETest() {
     /** Tap the confirm button in the sign-out dialog and wait for server connection screen. */
     private fun confirmSignOutDialog() {
         rule.waitForText("re-enter your credentials", timeout = 3_000)
-        // Dialog has 3 "Sign Out" nodes: settings text, dialog title, dialog confirm button.
-        // The confirm button is the LAST one.
-        val nodes = rule.onAllNodesWithText("Sign Out").fetchSemanticsNodes()
-        rule.onAllNodesWithText("Sign Out")[nodes.size - 1].performClick()
+        // SpDialog tags its confirm button — no need to disambiguate
+        // among multiple "Sign Out" text nodes (settings row, dialog
+        // title, dialog confirm button).
+        rule.scrollToAndTapTag("dialog_confirm")
         rule.waitForText("Add Server", timeout = 15_000)
     }
 

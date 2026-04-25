@@ -195,8 +195,11 @@ class SettingsTest : BaseE2ETest() {
         rule.waitForText("Username")
         rule.waitForText("Password")
 
-        // Dismiss dialog
-        rule.onNodeWithText("Cancel").performClick()
+        // Dismiss via the SpDialog dismiss button's stable tag — multiple
+        // "Cancel"-labelled nodes can coexist on the page, and the
+        // SpButton wraps its label inside other Composables so a text
+        // match isn't always the actually-clickable node.
+        rule.scrollToAndTapTag("dialog_dismiss")
 
         // Assert dialog dismissed
         rule.waitForTextNotVisible("Link RetroAchievements")
