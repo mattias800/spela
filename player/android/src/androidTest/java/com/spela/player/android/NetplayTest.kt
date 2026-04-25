@@ -7,16 +7,23 @@ import java.net.HttpURLConnection
 import java.net.URL
 
 /**
- * Netplay E2E tests live on the desktop player target — desktop can
- * run two clients side-by-side, which is exactly what netplay needs
- * to exercise. The single-device-+-API-shim approach in this file
- * simulates the second player via direct REST calls and never tests
- * real WebSocket sync between two real clients.
+ * ⚠️  DO NOT WRITE NETPLAY TESTS HERE — NETPLAY E2E LIVES ON DESKTOP.
  *
- * The class stays on disk so the structure is visible in code review,
- * but @Ignore keeps it out of every test run. Follow-up: rewrite as
- * `player/desktop/src/test/.../NetplayTest.kt` driving two
- * SpelaTestHarness instances.
+ * Why: netplay needs two real clients exchanging WebSocket frames.
+ * Android E2E only has one device, so any "netplay test" here can
+ * only simulate the second player via direct REST calls — that
+ * tests the lobby UI in isolation, never the actual peer sync.
+ * Desktop player can launch two SpelaTestHarness instances in the
+ * same JVM and drive both, which is the right shape for this
+ * feature. See `player/desktop/src/test/` and add new netplay
+ * tests there.
+ *
+ * If you're an agent considering "make the Android netplay test
+ * pass": stop. Move it to desktop instead, then delete this class.
+ *
+ * The class stays on disk so the structure is visible in code
+ * review history. Follow-up: rewrite as
+ * `player/desktop/src/test/.../NetplayTest.kt` driving two harnesses.
  */
 @Ignore("Netplay E2E belongs on the desktop player target — see KDoc.")
 class NetplayTest : BaseE2ETest() {

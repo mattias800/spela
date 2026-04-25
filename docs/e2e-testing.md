@@ -42,6 +42,17 @@ cd player
 Desktop tests use `SpelaTestHarness` with fake repositories — no device or
 backend needed. This is the primary UI test suite for the player app.
 
+**Netplay E2E lives here, not on Android.** Netplay requires two real
+clients exchanging WebSocket frames; only desktop can stand up two
+`SpelaTestHarness` instances in the same JVM and drive both. Android
+E2E can't honestly test netplay — a single device can only simulate
+the second player via direct REST calls, which tests the lobby UI
+in isolation but not the actual peer sync. Add new netplay tests
+under `player/desktop/src/test/`. Do not migrate netplay tests
+under `player/android/src/androidTest/`; the existing
+`NetplayTest.kt` there is `@Ignore`d for this reason and is
+scheduled to move to desktop.
+
 ### Android Player (Instrumented Tests)
 
 ```bash
