@@ -1166,18 +1166,32 @@ private fun ComposeRule.doLogin(username: String, password: String) {
         .performTextInput(password)
     android.util.Log.d("E2E_TIMING", "inputPassword: ${System.currentTimeMillis()-t}ms")
 
-    // Tap Sign In — try UiAutomator first, Compose fallback
-    val signInBtn = device.findObject(UiSelector().textContains("Sign In"))
-    if (signInBtn.exists()) {
-        signInBtn.click()
-    } else {
-        onNodeWithText("Sign In").performClick()
+    // Tap Sign In and wait for home. The server's first /api/auth/login
+    // call after `docker compose up` can hit the OkHttp socket timeout
+    // (the server's bcrypt verification is slow on cold start under
+    // docker-on-macOS), which leaves us back on the login screen with
+    // the credentials still filled in. Retry up to 3 times — clicking
+    // Sign In again starts a fresh request.
+    repeat(3) { attempt ->
+        val signInBtn = device.findObject(UiSelector().textContains("Sign In"))
+        if (signInBtn.exists()) {
+            signInBtn.click()
+        } else {
+            try { onNodeWithText("Sign In").performClick() } catch (_: Throwable) {}
+        }
+        try {
+            pollUntil(timeoutMillis = TIMEOUT_EXTRA_LONG) { isOnHomeScreen() }
+            return // landed on Home, login succeeded
+        } catch (_: androidx.compose.ui.test.ComposeTimeoutException) {
+            // Still on login (or somewhere else); try once more.
+            android.util.Log.w(
+                "E2E_LOGIN",
+                "doLogin attempt ${attempt + 1}/3 didn't reach Home — retrying",
+            )
+        }
     }
-
-    // Verify home screen (UiAutomator — no Espresso idle dependency)
-    pollUntil(timeoutMillis = TIMEOUT_EXTRA_LONG) {
-        isOnHomeScreen()
-    }
+    // Final assertion — let the framework surface a clear failure.
+    pollUntil(timeoutMillis = TIMEOUT_MEDIUM) { isOnHomeScreen() }
 }
 
 // ── Navigation helpers ──
