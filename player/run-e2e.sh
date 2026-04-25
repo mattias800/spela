@@ -142,11 +142,17 @@ echo "── Uninstalling com.spela.player on $ADB_SERIAL ──"
 adb -s "$ADB_SERIAL" uninstall com.spela.player >/dev/null 2>&1 || true
 echo "App uninstalled (or was not present)."
 
-# ── Core pre-cache (nestopia for NES happy path) ──
-# See player/scripts/cache-nestopia.sh for the resolution order and
-# the SPELA_E2E_REAL_CORE_DOWNLOAD=1 opt-out.
-echo "── Pre-caching nestopia core ──"
-ADB_SERIAL="$ADB_SERIAL" "$SCRIPT_DIR/scripts/cache-nestopia.sh"
+# ── Core pre-cache ──
+# nestopia: NES happy path (Castlevania, used by Challenge*, Settings,
+#   Emulation, Session, etc.).
+# mupen64plus_next_gles3: N64 happy path (Banjo-Kazooie, HwRenderTest).
+#   Note the gles3 variant name — on Android the player maps the
+#   abstract core name "mupen64plus_next" onto the buildbot's
+#   variant-specific binary (see ANDROID_CORE_SUBSTITUTIONS).
+# See player/scripts/cache-cores.sh for the resolution order and the
+# SPELA_E2E_REAL_CORE_DOWNLOAD=1 opt-out.
+echo "── Pre-caching libretro cores ──"
+ADB_SERIAL="$ADB_SERIAL" "$SCRIPT_DIR/scripts/cache-cores.sh" nestopia mupen64plus_next_gles3
 
 # ── Unlock device if locked ──
 
