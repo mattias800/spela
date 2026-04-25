@@ -81,7 +81,14 @@ class KoinResetRule : org.junit.rules.TestRule {
                 // statement (not from a TestWatcher callback) makes
                 // JUnit mark the test as ignored/skipped, which gradle
                 // surfaces as SKIPPED rather than FAILED.
-                if (FailureDiagnosticsListener.anyTestFailed) {
+                // Per-test fail-fast: once any test in this class run has
+                // failed, skip every subsequent test. Saves ~9 minutes per
+                // suite on a broken navigation/login. Bypass for a
+                // diagnostic run with `-P android.testInstrumentationRunnerArguments.failFast=off`
+                // to see every failure in a class at once.
+                val ffArg = androidx.test.platform.app.InstrumentationRegistry
+                    .getArguments().getString("failFast")
+                if (ffArg != "off" && FailureDiagnosticsListener.anyTestFailed) {
                     throw org.junit.AssumptionViolatedException(
                         "Skipping ${description.methodName} — earlier failure in this run, fail-fast active"
                     )
