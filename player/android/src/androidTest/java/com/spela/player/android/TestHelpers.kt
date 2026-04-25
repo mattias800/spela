@@ -2343,7 +2343,9 @@ fun ComposeRule.ensureChallengeExists(title: String = "E2E Test Challenge") {
     // The game detail screen restored from behind the overlay has a stale
     // LazyColumn whose "View Challenges" button doesn't respond to clicks.
     navigateBackToHome()
-    waitForText("Spela", TIMEOUT_LONG)
+    pollUntil(timeoutMillis = TIMEOUT_LONG) {
+        try { isOnHomeScreen() } catch (_: Exception) { false }
+    }
     navigateToCastlevania()
 }
 
