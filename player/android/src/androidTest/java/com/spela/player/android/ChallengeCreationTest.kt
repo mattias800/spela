@@ -21,7 +21,7 @@ import org.junit.Test
 class ChallengeCreationTest : BaseE2ETest() {
 
     private fun setupGame() {
-        rule.navigateToGameAndPlay()
+        rule.navigateToGameAndPlay(preferredGameTitle = "Castlevania")
     }
 
     // ── US-1 AC: "Challenge" button appears in emulation overlay ──

@@ -19,7 +19,7 @@ class ChallengeIntegrationTest : BaseE2ETest() {
     @Test
     fun completedChallengeAppearsInActivityFeed() {
         // Create challenge
-        rule.navigateToGameAndPlay()
+        rule.navigateToGameAndPlay(preferredGameTitle = "Castlevania")
         rule.createChallengeFromOverlay("Activity Feed Test")
         rule.openOverlayAndExit()
         rule.waitForText("Download", timeout = 8_000)
@@ -92,7 +92,7 @@ class ChallengeIntegrationTest : BaseE2ETest() {
 
     @Test
     fun normalOverlayUnaffectedByChallenge() {
-        rule.navigateToGameAndPlay()
+        rule.navigateToGameAndPlay(preferredGameTitle = "Castlevania")
 
         // Normal overlay should still have all standard controls
         rule.openOverlay()

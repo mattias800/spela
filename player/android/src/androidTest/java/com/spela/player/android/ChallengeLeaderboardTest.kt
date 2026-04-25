@@ -59,7 +59,7 @@ class ChallengeLeaderboardTest : BaseE2ETest() {
     @Test
     fun leaderboardShowsEntryAfterCompletion() {
         // Create challenge
-        rule.navigateToGameAndPlay()
+        rule.navigateToGameAndPlay(preferredGameTitle = "Castlevania")
         rule.createChallengeFromOverlay("Leaderboard Entry Test")
         rule.openOverlayAndExit()
         rule.waitForText("Download", timeout = 8_000)
