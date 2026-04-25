@@ -93,28 +93,22 @@ class SettingsTest : BaseE2ETest() {
 
     @Test
     fun consoleShaderPersists() {
-
-        // Navigate to Settings → Per-Console category
+        // Per-Console → NES → ConsoleSettingsScreen, set CRT Classic.
         rule.navigateToSettingsCategory("Per-Console")
-
-        // Tap NES console and wait for ConsoleSettingsScreen
         tapNESConsole()
-
-        // Select CRT Classic
         rule.scrollToAndTapText("CRT Classic")
 
-        // Navigate back to Settings
+        // Pop ConsoleSettingsScreen (it's a real sub-screen) back to
+        // the Settings list-detail. Then leave Settings to Home so
+        // the next navigateToSettingsCategory genuinely re-enters.
         rule.pressBack()
-        rule.waitForText("General", timeout = 8_000)
+        rule.navigateBackToHome()
+        rule.pollUntil(timeoutMillis = 5_000) {
+            try { rule.isOnHomeScreen() } catch (_: Exception) { false }
+        }
 
-        // Navigate back to Home
-        rule.pressBack()
-        rule.waitForText("Spela", timeout = 3_000)
-
-        // Return to Settings → Per-Console
+        // Re-enter Per-Console → verify NES row shows CRT Classic.
         rule.navigateToSettingsCategory("Per-Console")
-
-        // Verify NES still shows CRT Classic
         rule.waitForText("Nintendo Entertainment System", timeout = 10_000)
         rule.waitForText("CRT Classic")
     }
