@@ -114,12 +114,16 @@ class ChallengeIntegrationTest : BaseE2ETest() {
     fun gameDetailLayoutIntactWithChallengesSection() {
         rule.navigateToCastlevania()
 
-        // Existing game detail sections should still work
+        // The page should have the primary action and the standard
+        // sections — verify a few section headers scroll into view.
+        // The 'Save States' section was renamed to 'Sessions' and
+        // a sibling 'Community Saves' was added; the challenges
+        // section is the new addition under test.
         rule.assertVisible("Download")
-        rule.scrollToAndTapText("Save States")
+        rule.scrollToAndTapText("Sessions")
         rule.scrollToAndTapText("Community Saves")
 
-        // Challenges section should exist alongside others
+        // Challenges section should exist alongside others.
         rule.scrollToAndTapText("Challenges")
         rule.assertVisible("View Challenges")
 
