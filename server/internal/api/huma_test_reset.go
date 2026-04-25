@@ -4,12 +4,40 @@ import (
 	"context"
 	"log/slog"
 	"net/http"
+	"sync"
 
 	"github.com/danielgtaylor/huma/v2"
 	"github.com/spela/server/internal/auth"
 	"github.com/spela/server/internal/db"
 	"gorm.io/gorm"
 )
+
+// Cached bcrypt hashes for the seeded admin/player passwords. Computed
+// once on first reset and reused — bcrypt at cost=12 is ~250ms per call,
+// so hashing the same two passwords on every reset adds ~500ms to a
+// handler that should be sub-50ms. The hashes are deterministic only in
+// the sense that the inputs ("admin123", "player123") are deterministic;
+// each bcrypt run produces a fresh salt, so we just keep the first
+// successful hash and stop re-hashing. Test-mode-only — production
+// authentication still calls auth.HashPassword on every set-password
+// flow with a fresh salt.
+var (
+	resetHashOnce  sync.Once
+	resetAdminHash string
+	resetPlayerHash string
+	resetHashErr    error
+)
+
+func cachedSeedHashes() (admin, player string, err error) {
+	resetHashOnce.Do(func() {
+		resetAdminHash, resetHashErr = auth.HashPassword("admin123")
+		if resetHashErr != nil {
+			return
+		}
+		resetPlayerHash, resetHashErr = auth.HashPassword("player123")
+	})
+	return resetAdminHash, resetPlayerHash, resetHashErr
+}
 
 // --- Inputs / outputs --------------------------------------------------------
 
@@ -54,6 +82,11 @@ func RegisterTestRoute(api huma.API, h *TestHandler) {
 // all user-generated data while preserving consoles, cores, and scanned games.
 func (h *TestHandler) HumaReset(_ context.Context, _ *TestResetInput) (*TestResetOutput, error) {
 	slog.Info("test reset: resetting database to seed state")
+
+	adminHash, playerHash, hashErr := cachedSeedHashes()
+	if hashErr != nil {
+		return nil, huma.Error500InternalServerError("seed hash failed")
+	}
 
 	err := h.DB.Transaction(func(tx *gorm.DB) error {
 		// Order matters: delete children before parents to respect foreign keys.
@@ -118,11 +151,11 @@ func (h *TestHandler) HumaReset(_ context.Context, _ *TestResetInput) (*TestRese
 		// 12. Delete extra users (keep admin and player)
 		tx.Unscoped().Where("username NOT IN ?", []string{"admin", "player"}).Delete(&db.User{})
 
-		// 13. Reset admin user to default state
-		adminHash, err := auth.HashPassword("admin123")
-		if err != nil {
-			return err
-		}
+		// 13. Reset admin user to default state.
+		// adminHash / playerHash come from the cachedSeedHashes() call
+		// outside the transaction — bcrypt cost=12 is ~250ms per hash,
+		// running both on every reset added ~500ms to what is otherwise
+		// a sub-50ms operation on tmpfs.
 		tx.Model(&db.User{}).Where("username = ?", "admin").Updates(map[string]interface{}{
 			"password_hash":              adminHash,
 			"role":                       "owner",
@@ -141,11 +174,7 @@ func (h *TestHandler) HumaReset(_ context.Context, _ *TestResetInput) (*TestRese
 			"deleted_at":                 nil,
 		})
 
-		// 14. Reset player user to default state
-		playerHash, err := auth.HashPassword("player123")
-		if err != nil {
-			return err
-		}
+		// 14. Reset player user to default state.
 		tx.Model(&db.User{}).Where("username = ?", "player").Updates(map[string]interface{}{
 			"password_hash":              playerHash,
 			"role":                       "user",
