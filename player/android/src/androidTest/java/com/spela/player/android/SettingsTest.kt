@@ -45,16 +45,46 @@ class SettingsTest : BaseE2ETest() {
      */
     private fun tapNESConsole() {
         val desc = "Open Nintendo Entertainment System settings"
-        // Find a scrollable container in the right-hand pane and ask
-        // UiAutomator to scroll it to the NES row.
-        val scrollable = androidx.test.uiautomator.UiScrollable(
-            UiSelector().scrollable(true)
-        )
-        scrollable.scrollIntoView(UiSelector().descriptionContains(desc))
-
+        // The Per-Console list in list-detail layout has the right
+        // pane as a scrollable LazyColumn. UiScrollable can lock onto
+        // the wrong scrollable on this layout, so we drive the
+        // scrolling ourselves: scroll to the top, then sweep
+        // downward checking after each swipe.
         val device = UiDevice.getInstance(InstrumentationRegistry.getInstrumentation())
-        val nesRow = device.findObject(UiSelector().descriptionContains(desc))
-        check(nesRow.exists()) { "NES console row not found after UiScrollable scroll" }
+        val x = (device.displayWidth * 0.7).toInt()
+        // 1. Scroll to top of right pane (downward swipes from top→bottom).
+        repeat(15) {
+            device.swipe(
+                x,
+                (device.displayHeight * 0.3).toInt(),
+                x,
+                (device.displayHeight * 0.8).toInt(),
+                10,
+            )
+        }
+        rule.waitForIdle()
+
+        // 2. Now sweep downward, checking for NES after each swipe.
+        var nesRow: androidx.test.uiautomator.UiObject? = null
+        for (attempt in 0..20) {
+            val row = device.findObject(UiSelector().descriptionContains(desc))
+            if (row.exists()) {
+                nesRow = row
+                break
+            }
+            device.swipe(
+                x,
+                (device.displayHeight * 0.7).toInt(),
+                x,
+                (device.displayHeight * 0.4).toInt(),
+                10,
+            )
+            rule.waitForIdle()
+        }
+        check(nesRow != null) {
+            "NES console row not found after scrolling. The Per-Console " +
+                "list may not include NES on this device."
+        }
         nesRow.click()
         Thread.sleep(500)
         rule.waitForText("Nintendo Entertainment System Settings", timeout = 8_000)
