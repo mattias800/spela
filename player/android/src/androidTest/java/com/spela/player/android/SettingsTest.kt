@@ -40,26 +40,32 @@ class SettingsTest : BaseE2ETest() {
      * Navigate from the Per-Console category to ConsoleSettingsScreen
      * for NES. The Per-Console list is scrollable and NES isn't always
      * above the fold, so scroll the list via UiAutomator until the
-     * NES row's content description is visible, then click.
+     * NES row's content description is visible, then click via
+     * UiAutomator (Compose's tree may sit on a non-primary display
+     * after configuration changes — UiAutomator and Compose disagree
+     * on what's visible there).
      */
     private fun tapNESConsole() {
         val device = UiDevice.getInstance(InstrumentationRegistry.getInstrumentation())
         val desc = "Open Nintendo Entertainment System settings"
+        var nesRow: androidx.test.uiautomator.UiObject? = null
         for (attempt in 0..10) {
-            if (device.findObject(UiSelector().descriptionContains(desc)).exists()) break
-            // Swipe up inside the right-hand detail column to scroll the
-            // console list. Use a coordinate clearly inside the detail
-            // pane on a wide layout.
+            val row = device.findObject(UiSelector().descriptionContains(desc))
+            if (row.exists()) {
+                nesRow = row
+                break
+            }
+            // Swipe up inside the right-hand detail column to scroll
+            // the console list (wide layout has list-detail).
             val x = (device.displayWidth * 0.7).toInt()
             val fromY = (device.displayHeight * 0.7).toInt()
             val toY = (device.displayHeight * 0.3).toInt()
             device.swipe(x, fromY, x, toY, 15)
             rule.waitForIdle()
         }
-        // Click the NES row by its content description.
-        rule.onNodeWithContentDescription(desc, substring = true)
-            .performSemanticsAction(SemanticsActions.OnClick)
-        rule.waitForIdle()
+        check(nesRow != null) { "NES console row not found after scrolling" }
+        nesRow.click()
+        Thread.sleep(500)
         rule.waitForText("Nintendo Entertainment System Settings", timeout = 8_000)
     }
 
