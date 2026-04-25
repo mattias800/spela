@@ -71,9 +71,15 @@ fun InGameOverlay(
         )
     }
 
-    // Performance HUD (always visible when game is running, but small)
-    // Hidden when secondary display is active (HUD moves there)
-    if (state.isRunning && !state.showOverlay && !state.secondaryDisplayActive) {
+    // Performance HUD — opt-in via Settings (showPerformanceOverlay).
+    // Off by default since casual users don't need to see frame timing
+    // while playing. Hidden when secondary display is active (HUD moves
+    // there). Hidden during the main overlay so it doesn't double-render.
+    if (state.isRunning
+        && state.showPerformanceOverlay
+        && !state.showOverlay
+        && !state.secondaryDisplayActive
+    ) {
         FpsHud(
             fps = state.fps,
             isNetplayMode = state.isNetplayMode,
