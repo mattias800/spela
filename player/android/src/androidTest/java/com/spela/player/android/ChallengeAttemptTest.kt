@@ -44,12 +44,26 @@ class ChallengeAttemptTest : BaseE2ETest() {
         rule.tapOn(SHARED_CHALLENGE)
         rule.waitForText("Attempt Challenge", timeout = 8_000)
 
-        // Start attempt — use the stable testTag so the OnClick
-        // semantic action fires directly. The previous text-based
-        // tap dispatched a synthetic touch into the inner Text, which
-        // didn't always propagate to the outer Button's onClick on
-        // multi-display hardware.
-        rule.tapOnTag("attempt_challenge_button")
+        // Start attempt. Find the button via Compose (tag/text +
+        // hasClickAction), grab its bounds, then click via
+        // UiAutomator at the centre. Compose finds the node
+        // regardless of which display the activity sits on (semantic
+        // tree spans all displays); UiAutomator's device.click(x, y)
+        // doesn't go through Espresso's idle wait, which would
+        // otherwise block on the gameplay 60fps render loop.
+        val attemptNodes = rule.onAllNodes(
+            androidx.compose.ui.test.hasText("Attempt Challenge", substring = true) and
+                androidx.compose.ui.test.hasClickAction()
+        ).fetchSemanticsNodes()
+        check(attemptNodes.isNotEmpty()) { "Attempt Challenge clickable node not found" }
+        val bounds = attemptNodes[0].boundsInRoot
+        val cx = ((bounds.left + bounds.right) / 2f).toInt()
+        val cy = ((bounds.top + bounds.bottom) / 2f).toInt()
+        val device = androidx.test.uiautomator.UiDevice.getInstance(
+            androidx.test.platform.app.InstrumentationRegistry.getInstrumentation()
+        )
+        device.click(cx, cy)
+        Thread.sleep(500)
 
         // Wait for the game to load. UiAutomator's "Core running"
         // marker can sit on the wrong physical display on Thor's

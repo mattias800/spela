@@ -644,8 +644,14 @@ fun ComposeRule.waitForNotVisible(label: String, timeout: Long = TIMEOUT_SHORT) 
  * specified and the tag is found, we take the tag match.
  */
 fun ComposeRule.tapOnTag(tag: String, fallbackLabel: String? = null) {
+    // Try both unmerged and merged trees — testTag on a child of a
+    // mergeDescendants composable (e.g. Material3 Button, which sets
+    // mergeDescendants=true on its semantic root) can disappear from
+    // the unmerged tree in some Compose versions.
     val tagNodes = try {
-        onAllNodesWithTag(tag, useUnmergedTree = true).fetchSemanticsNodes()
+        val unmerged = onAllNodesWithTag(tag, useUnmergedTree = true).fetchSemanticsNodes()
+        if (unmerged.isNotEmpty()) unmerged
+        else onAllNodesWithTag(tag, useUnmergedTree = false).fetchSemanticsNodes()
     } catch (_: Exception) {
         // AppNotIdleException etc. — Compose tree is busy. Fall
         // through to the UiAutomator fallback.
