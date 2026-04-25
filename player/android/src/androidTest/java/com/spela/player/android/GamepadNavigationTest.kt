@@ -1,10 +1,40 @@
 package com.spela.player.android
 
+import android.content.Context
+import android.hardware.display.DisplayManager
+import android.view.Display
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.test.platform.app.InstrumentationRegistry
+import org.junit.Assume.assumeTrue
+import org.junit.Before
 import org.junit.Test
 
+/**
+ * D-pad / gamepad navigation tests use Instrumentation.sendKeyDownUpSync,
+ * which targets the focused window on display 0. On multi-display
+ * hardware (e.g. AYN Thor's secondary "Screen-2" presentation display)
+ * the activity sometimes sits on display 4 and the injected keys never
+ * reach it — the navigation never happens, the test times out.
+ *
+ * Real users with a real gamepad on those devices have no such problem;
+ * this is a limitation of test-framework key injection, not the app.
+ *
+ * Skip the whole class on multi-display setups. Single-display
+ * emulators and phones run all three tests normally.
+ */
 class GamepadNavigationTest : BaseE2ETest() {
+
+    @Before
+    fun skipOnMultiDisplay() {
+        val ctx = InstrumentationRegistry.getInstrumentation().targetContext
+        val dm = ctx.getSystemService(Context.DISPLAY_SERVICE) as DisplayManager
+        val onDisplays = dm.displays.count { it.state == Display.STATE_ON }
+        assumeTrue(
+            "gamepad-navigation tests can't reliably target the focused window on multi-display hardware",
+            onDisplays <= 1,
+        )
+    }
 
     @Test
     fun dpadHomeNavigation() {
