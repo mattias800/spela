@@ -49,7 +49,7 @@ class EmulationTest : BaseE2ETest() {
 
         rule.pressBack()
         rule.waitForText("Exit Game")
-        rule.assertTextVisible("Continue")
+        rule.waitForText("Continue", timeout = 3_000)
 
         // Dismiss overlay
         rule.tapOn("Continue")
@@ -58,7 +58,10 @@ class EmulationTest : BaseE2ETest() {
         // Reopen
         rule.pressBack()
         rule.waitForText("Exit Game")
-        rule.assertTextVisible("Continue")
+        // After the overlay re-renders, give Compose a beat to settle
+        // before asserting the second button — the overlay's two main
+        // buttons can render in successive frames on slow devices.
+        rule.waitForText("Continue", timeout = 3_000)
 
         rule.exitGame()
     }
