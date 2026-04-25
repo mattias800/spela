@@ -94,12 +94,22 @@ fi
 # aborts in seconds with a clear message.
 if [ -n "${SPELA_IGDB_CLIENT_ID:-}" ] && [ -n "${SPELA_IGDB_CLIENT_SECRET:-}" ]; then
   echo "── Preflight: validating IGDB credentials ──"
-  LOGIN_RESP=$(curl -fsS -X POST http://localhost:8080/api/auth/login \
-    -H 'Content-Type: application/json' \
-    -d '{"username":"admin","password":"admin123"}' 2>/dev/null || true)
-  ADMIN_TOKEN=$(printf '%s' "$LOGIN_RESP" | sed -n 's/.*"accessToken":"\([^"]*\)".*/\1/p')
+  # Reuse the token from the scan-wait step if we got one, otherwise
+  # try logging in fresh. Login can be transiently slow on a busy
+  # docker startup so retry up to 3 times.
+  ADMIN_TOKEN="${SCAN_TOKEN:-}"
   if [ -z "$ADMIN_TOKEN" ]; then
-    echo "FATAL: admin login failed during IGDB preflight." >&2
+    for attempt in 1 2 3; do
+      LOGIN_RESP=$(curl -fsS -X POST http://localhost:8080/api/auth/login \
+        -H 'Content-Type: application/json' \
+        -d '{"username":"admin","password":"admin123"}' 2>/dev/null || true)
+      ADMIN_TOKEN=$(printf '%s' "$LOGIN_RESP" | sed -n 's/.*"accessToken":"\([^"]*\)".*/\1/p')
+      [ -n "$ADMIN_TOKEN" ] && break
+      sleep 1
+    done
+  fi
+  if [ -z "$ADMIN_TOKEN" ]; then
+    echo "FATAL: admin login failed during IGDB preflight (3 attempts)." >&2
     echo "Login response: $LOGIN_RESP" >&2
     exit 1
   fi
