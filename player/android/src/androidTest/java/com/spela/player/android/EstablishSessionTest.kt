@@ -1,36 +1,50 @@
 package com.spela.player.android
 
-import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
-import androidx.test.ext.junit.runners.AndroidJUnit4
-import org.junit.Rule
+import org.junit.Before
 import org.junit.Test
-import org.junit.runner.RunWith
 
-@RunWith(AndroidJUnit4::class)
-class EstablishSessionTest {
+/**
+ * Tests the user's first-install experience: add server, log in,
+ * land on Home. Overrides the base class's "you start logged in"
+ * contract because the whole point of this test is the pre-login
+ * UX.
+ */
+class EstablishSessionTest : BaseE2ETest() {
 
-    @get:Rule(order = 0)
-    val koinResetRule = KoinResetRule()
+    @Before
+    override fun baseSetUp() {
+        // Still reset the backend — user-generated data from prior
+        // tests must not influence the login flow.
+        resetServerState()
 
-    @get:Rule(order = 1)
-    val composeTestRule = createAndroidComposeRule<MainActivity>()
+        // Make sure we're logged in first (ensureLoggedIn handles
+        // arbitrary entry state), then explicitly sign out so the
+        // test actually exercises the server-connect screen. This
+        // mirrors loginAsPlayer()/loginAsAdmin() in TestHelpers.kt
+        // which already rely on signOutIfLoggedIn.
+        rule.ensureLoggedIn()
+        rule.signOutIfLoggedIn()
+
+        // Skip assertOnHome — we're deliberately NOT on Home here.
+    }
 
     @Test
     fun establishSession() {
-        // Use ensureLoggedIn which handles any starting state
-        composeTestRule.ensureLoggedIn()
+        // App is on the server-connect screen. Drive the full flow:
+        // add server → log in → land on Home.
+        rule.addServerAndLogin(PLAYER_USERNAME, PLAYER_PASSWORD)
 
-        // Verify we're on the Home screen — check multiple indicators since the
-        // Home screen may show "Your library is empty" for users with no play history
-        composeTestRule.pollUntil(timeoutMillis = 8000) {
-            composeTestRule.onAllNodesWithText("Spela")
+        // Verify Home via any of the several indicators the screen
+        // may show depending on whether the user has play history.
+        rule.pollUntil(timeoutMillis = 8_000L) {
+            rule.onAllNodesWithText("Spela")
                 .fetchSemanticsNodes().isNotEmpty() ||
-                composeTestRule.onAllNodesWithText("Your library is empty", substring = true)
+                rule.onAllNodesWithText("Your library is empty", substring = true)
                     .fetchSemanticsNodes().isNotEmpty() ||
-                composeTestRule.onAllNodesWithText("Top Rated", substring = true)
+                rule.onAllNodesWithText("Top Rated", substring = true)
                     .fetchSemanticsNodes().isNotEmpty() ||
-                composeTestRule.onAllNodesWithText("Continue Playing", substring = true)
+                rule.onAllNodesWithText("Continue Playing", substring = true)
                     .fetchSemanticsNodes().isNotEmpty()
         }
     }

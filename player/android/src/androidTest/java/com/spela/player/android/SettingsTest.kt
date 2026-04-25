@@ -3,7 +3,6 @@ package com.spela.player.android
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasText
-import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
@@ -11,20 +10,11 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performSemanticsAction
-import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.uiautomator.UiDevice
-import org.junit.Rule
 import org.junit.Test
-import org.junit.runner.RunWith
 
-@RunWith(AndroidJUnit4::class)
-class SettingsTest {
-
-    
-
-    @get:Rule
-    val rule = createAndroidComposeRule<MainActivity>()
+class SettingsTest : BaseE2ETest() {
 
     /** Scroll down in the LazyColumn until a node with the given contentDescription appears. */
     private fun scrollDownUntilContentDescription(description: String) {
@@ -67,7 +57,6 @@ class SettingsTest {
 
     @Test
     fun shaderPreview() {
-        rule.startLoggedIn()
 
         // Navigate to Settings → Emulation (where Video Filter lives)
         rule.navigateToSettingsCategory("Emulation")
@@ -104,7 +93,6 @@ class SettingsTest {
 
     @Test
     fun consoleShaderPersists() {
-        rule.startLoggedIn()
 
         // Navigate to Settings → Per-Console category
         rule.navigateToSettingsCategory("Per-Console")
@@ -133,49 +121,40 @@ class SettingsTest {
 
     @Test
     fun deviceShaderOverride() {
-        rule.startLoggedIn()
+        // Settings is now a list-detail layout. On wide screens the
+        // category list is always visible; "Video Filter" is a
+        // section header inside the Emulation content (not a
+        // sub-screen). Switching categories means tapping the
+        // category in the list, not pressBack-then-tap.
 
-        // Navigate to Settings → Emulation → set global shader
+        // Set the global shader from Emulation → Video Filter section.
         rule.navigateToSettingsCategory("Emulation")
-        rule.scrollToAndTapText("Video Filter")
-        rule.waitForText("Video Filter")
         rule.scrollToAndTapText("CRT Classic")
 
-        // Go to Per-Console category
-        rule.pressBack() // Back to category list
-        rule.waitForText("General")
-        rule.tapOn("Per-Console")
-
-        // Tap NES console and wait for ConsoleSettingsScreen
+        // Switch to Per-Console category by tapping its row in the list.
+        rule.navigateToSettingsCategory("Per-Console")
         tapNESConsole()
 
-        // Enable device override
+        // Enable device override.
         rule.scrollToAndTapText("Override on this device only")
 
-        // Select Smooth (Bilinear) as device override
-        rule.scrollToAndTapText("Device Shader")
-        rule.waitForText("Device Shader")
+        // Select Smooth (Bilinear) as the device-specific override.
         rule.scrollToAndTapText("Smooth (Bilinear)")
 
-        // Navigate back to Settings
-        rule.pressBack()
-        rule.waitForText("General", timeout = 8_000)
-
-        // Navigate back to Home
-        rule.pressBack()
-        rule.waitForText("Spela", timeout = 3_000)
-
-        // Return to Settings → Per-Console
+        // Verify by leaving and re-entering Per-Console.
+        rule.navigateBackToHome()
+        rule.pollUntil(timeoutMillis = 5_000) {
+            try { rule.isOnHomeScreen() } catch (_: Exception) { false }
+        }
         rule.navigateToSettingsCategory("Per-Console")
 
-        // Verify NES shows Bilinear with device override indicator
+        // NES row should show "Smooth" with the device-override indicator.
         rule.waitForText("Nintendo Entertainment System", timeout = 10_000)
         rule.waitForText("Smooth")
     }
 
     @Test
     fun shaderSelectionPersists() {
-        rule.ensureLoggedIn()
 
         // Navigate to Settings → Emulation (where Video Filter lives)
         rule.navigateToSettingsCategory("Emulation")
@@ -190,8 +169,13 @@ class SettingsTest {
         // Restart app
         rule.restartApp()
 
-        // Session restored - expect Home screen
-        rule.waitForText("Spela", timeout = 15_000)
+        // Session restored - expect Home screen. Use isOnHomeScreen()
+        // (Compose + UiAutomator) instead of waitForText which can
+        // miss the brand mark when activity routes to a non-primary
+        // display after recreate.
+        rule.pollUntil(timeoutMillis = 15_000) {
+            try { rule.isOnHomeScreen() } catch (_: Exception) { false }
+        }
 
         // Navigate to Settings → Emulation and verify shader persisted
         rule.navigateToSettingsCategory("Emulation")
@@ -203,7 +187,6 @@ class SettingsTest {
 
     @Test
     fun retroAchievementsSection() {
-        rule.ensureLoggedIn()
 
         // Navigate to Settings → Achievements category
         rule.navigateToSettingsCategory("Achievements")

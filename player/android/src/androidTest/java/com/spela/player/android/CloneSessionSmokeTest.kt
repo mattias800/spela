@@ -1,12 +1,8 @@
 package com.spela.player.android
 
-import androidx.compose.ui.test.junit4.createAndroidComposeRule
-import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.spela.player.domain.repository.SessionRepository
 import kotlinx.coroutines.runBlocking
-import org.junit.Rule
 import org.junit.Test
-import org.junit.runner.RunWith
 import org.koin.mp.KoinPlatformTools
 import java.net.HttpURLConnection
 import java.net.URL
@@ -44,14 +40,7 @@ import java.net.URL
  *     desktop E2E tests, where it belongs per CLAUDE.md:
  *     "If the code is in commonMain/, test it on desktop."
  */
-@RunWith(AndroidJUnit4::class)
-class CloneSessionSmokeTest {
-
-    @get:Rule(order = 0)
-    val koinResetRule = KoinResetRule()
-
-    @get:Rule(order = 1)
-    val rule = createAndroidComposeRule<MainActivity>()
+class CloneSessionSmokeTest : BaseE2ETest() {
 
     @Test
     fun cloneSessionRoundTripsThroughRealApi() {

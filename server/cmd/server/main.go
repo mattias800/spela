@@ -298,7 +298,16 @@ func main() {
 			slog.Info("post-scrape IGDB group merge complete", "merged", merged)
 		}
 	})
-	go scrapeWorker.Run(workerCtx)
+	if testMode {
+		// Do not start the scrape worker in test mode. The on-demand
+		// scrape-if-needed endpoint and other code paths can still enqueue
+		// items (and they're harmless to leave queued), but nothing
+		// processes them — so no async DB writes contend with
+		// /api/test/reset's transaction.
+		slog.Info("test mode: scrape worker not started (avoids DB contention with /api/test/reset)")
+	} else {
+		go scrapeWorker.Run(workerCtx)
+	}
 
 	// Rebuild variant groups from scratch on startup. This is idempotent —
 	// the result depends only on filenames and IGDB IDs, not on existing
@@ -369,7 +378,15 @@ func main() {
 			"total", result.TotalGames,
 		)
 
-		if result.NewGames > 0 && metaScraper.IsIGDBConfigured() {
+		if testMode {
+			// In test mode the startup scrape job is skipped: it
+			// runs hundreds of IGDB lookups in the background and
+			// each one writes to SQLite, which contends with
+			// /api/test/reset under our single-writer DB. The
+			// metadata that the scan itself produced (titles,
+			// console mapping) is enough for the e2e suite.
+			slog.Info("test mode: skipping startup scrape job to avoid DB contention with /api/test/reset")
+		} else if result.NewGames > 0 && metaScraper.IsIGDBConfigured() {
 			// Collect new (unscraped) game IDs
 			var gameIDs []uint
 			database.Model(&db.Game{}).

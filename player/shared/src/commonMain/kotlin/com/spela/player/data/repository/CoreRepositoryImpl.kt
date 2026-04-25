@@ -27,14 +27,23 @@ class CoreRepositoryImpl(
         apiClient.getAvailableCores().map { it.toDomain() }
     }
 
-    override suspend fun getRecommendedCore(gameId: String): Result<LibretroCore> = runCatching {
-        apiClient.getRecommendedCore(gameId)
+    override suspend fun getRecommendedCore(gameId: String): Result<LibretroCore> {
+        println("[CoreRepo] getRecommendedCore start (gameId=$gameId)")
+        return try {
+            val core = apiClient.getRecommendedCore(gameId)
+            println("[CoreRepo] getRecommendedCore returned: name=${core.name} displayName=${core.displayName}")
+            Result.success(core)
+        } catch (t: Throwable) {
+            println("[CoreRepo] getRecommendedCore FAILED: ${t::class.simpleName}: ${t.message}")
+            Result.failure(t)
+        }
     }
 
     override suspend fun downloadCore(coreName: String, downloadUrl: String?, onProgress: (Float) -> Unit): Result<String> = runCatching {
         val fileName = coreFileName(coreName)
         val destPath = fileStorage.getCoresDir() + "/$fileName"
-        val url = if (downloadUrl != null) resolveDownloadUrl(downloadUrl) else buildbotCoreUrl(coreName)
+        val url = if (!downloadUrl.isNullOrBlank()) resolveDownloadUrl(downloadUrl) else buildbotCoreUrl(coreName)
+        println("[CoreRepo] downloadCore($coreName) → $url")
 
         val response: HttpResponse = httpClient.get(url) {
             onDownload { bytesSentTotal, contentLength ->

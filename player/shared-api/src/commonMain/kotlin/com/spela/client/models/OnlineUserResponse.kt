@@ -25,9 +25,9 @@ import kotlinx.serialization.encoding.*
  * 
  *
  * @param avatarUrl 
- * @param currentGame 
  * @param id 
  * @param username 
+ * @param currentGame 
  */
 @Serializable
 
@@ -35,11 +35,11 @@ data class OnlineUserResponse (
 
     @SerialName(value = "avatarUrl") @Required val avatarUrl: kotlin.String,
 
-    @SerialName(value = "currentGame") @Required val currentGame: OnlineUserGameResponse,
-
     @SerialName(value = "id") @Required val id: kotlin.String,
 
-    @SerialName(value = "username") @Required val username: kotlin.String
+    @SerialName(value = "username") @Required val username: kotlin.String,
+
+    @SerialName(value = "currentGame") val currentGame: OnlineUserGameResponse? = null
 
 ) {
 

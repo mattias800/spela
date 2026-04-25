@@ -28,8 +28,8 @@ import kotlinx.serialization.encoding.*
  * @param message Human-readable status message (only set when pending).
  * @param pending True when the new account is awaiting admin approval. When true, no tokens are returned.
  * @param refreshToken Refresh token (rotate via /api/auth/refresh).
- * @param user Registered user profile.
  * @param dollarSchema A URL to the JSON Schema for this object.
+ * @param user Registered user profile.
  */
 @Serializable
 
@@ -47,11 +47,11 @@ data class AuthRegisterResponse (
     /* Refresh token (rotate via /api/auth/refresh). */
     @SerialName(value = "refreshToken") @Required val refreshToken: kotlin.String,
 
-    /* Registered user profile. */
-    @SerialName(value = "user") @Required val user: UserResponse,
-
     /* A URL to the JSON Schema for this object. */
-    @SerialName(value = "\$schema") val dollarSchema: kotlin.String? = null
+    @SerialName(value = "\$schema") val dollarSchema: kotlin.String? = null,
+
+    /* Registered user profile. */
+    @SerialName(value = "user") val user: UserResponse? = null
 
 ) {
 

@@ -2,6 +2,7 @@ package com.spela.player.presentation.ui.feature.library
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.ui.platform.testTag
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -180,6 +181,7 @@ internal fun ConsoleCard(
 
     Box(
         modifier = modifier
+            .testTag(com.spela.player.presentation.ui.TestTags.consoleCard(console.id))
             .height(120.dp)
             .graphicsLayer { scaleX = scale; scaleY = scale }
             .clip(shape)
@@ -643,6 +645,10 @@ private fun ConsoleHeroBannerContent(
                                 onClick = onBrowseGames,
                                 style = SpButtonStyle.Secondary,
                                 onGradient = true,
+                                modifier = Modifier.testTag(
+                                    com.spela.player.presentation.ui.TestTags
+                                        .consoleBrowseGames(console.id),
+                                ),
                             )
                         }
                     }

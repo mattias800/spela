@@ -26,7 +26,6 @@ import kotlinx.serialization.encoding.*
  * 
  *
  * @param avatarUrl 
- * @param currentGame 
  * @param favoriteGames 
  * @param gamesPlayed 
  * @param id 
@@ -37,14 +36,13 @@ import kotlinx.serialization.encoding.*
  * @param totalPlayTime 
  * @param username 
  * @param dollarSchema A URL to the JSON Schema for this object.
+ * @param currentGame 
  */
 @Serializable
 
 data class PublicProfileResponse (
 
     @SerialName(value = "avatarUrl") @Required val avatarUrl: kotlin.String,
-
-    @SerialName(value = "currentGame") @Required val currentGame: OnlineUserGameResponse,
 
     @SerialName(value = "favoriteGames") @Required val favoriteGames: kotlin.collections.List<PublicProfileGame>,
 
@@ -65,7 +63,9 @@ data class PublicProfileResponse (
     @SerialName(value = "username") @Required val username: kotlin.String,
 
     /* A URL to the JSON Schema for this object. */
-    @SerialName(value = "\$schema") val dollarSchema: kotlin.String? = null
+    @SerialName(value = "\$schema") val dollarSchema: kotlin.String? = null,
+
+    @SerialName(value = "currentGame") val currentGame: OnlineUserGameResponse? = null
 
 ) {
 

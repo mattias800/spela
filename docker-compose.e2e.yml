@@ -13,10 +13,21 @@ services:
       - "8080:8080"
     volumes:
       - ./testdata/roms:/app/games:ro
-      - e2e-data:/app/data
       - e2e-saves:/app/saves
       - e2e-cores:/app/cores
       - e2e-images:/app/images
+    # /app/data is mounted as tmpfs — the SQLite DB lives in RAM only,
+    # which makes /api/test/reset (and every test write) sub-100ms even
+    # under docker-on-macOS IO contention. Contents vanish when the
+    # container stops, which is what we want: every `docker compose up`
+    # starts with a genuinely empty DB. 128m is plenty for the seeded
+    # consoles + ~171 scanned games.
+    #
+    # uid/gid=1000 matches the non-root user the entrypoint drops to;
+    # without these the tmpfs is root-owned and the seed step fails
+    # with "directory not writable".
+    tmpfs:
+      - /app/data:size=128m,uid=1000,gid=1000,mode=755
     environment:
       - SPELA_PORT=8080
       - SPELA_DB_PATH=/app/data/spela.db
@@ -43,7 +54,8 @@ services:
       - server
 
 volumes:
-  e2e-data:
+  # e2e-data was the named volume for the SQLite DB — replaced by a
+  # tmpfs mount on the server service for fsync-free writes.
   e2e-saves:
   e2e-cores:
   e2e-images:

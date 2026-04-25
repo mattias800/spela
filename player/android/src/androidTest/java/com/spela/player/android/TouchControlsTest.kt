@@ -1,24 +1,46 @@
 package com.spela.player.android
 
-import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import android.content.Context
+import android.view.InputDevice
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
-import androidx.test.ext.junit.runners.AndroidJUnit4
-import org.junit.Rule
+import androidx.test.platform.app.InstrumentationRegistry
+import org.junit.Assume.assumeFalse
+import org.junit.Before
 import org.junit.Test
-import org.junit.runner.RunWith
 
-@RunWith(AndroidJUnit4::class)
-class TouchControlsTest {
+/**
+ * Touch-control tests are inherently incompatible with gamepad-attached
+ * hardware — InGameOverlay hides the on-screen touch overlay whenever
+ * a gamepad is connected (the user has real buttons; the touch buttons
+ * would just clutter the screen). Every assertion in this file checks
+ * that the touch overlay IS visible, so on the AYN Thor (clamshell with
+ * always-connected gamepad) the entire class would fail spuriously.
+ *
+ * Skip the whole class via JUnit's Assume on devices with a gamepad
+ * detected. On a non-gamepad emulator (the recommended setup per
+ * docs/e2e-testing.md), all tests run.
+ */
+class TouchControlsTest : BaseE2ETest() {
 
-    
-
-    @get:Rule
-    val rule = createAndroidComposeRule<MainActivity>()
+    @Before
+    fun skipWhenGamepadConnected() {
+        assumeFalse("touch-control tests require no gamepad connected", hasGamepad())
+    }
 
     private fun setupGame() {
-        rule.startLoggedIn()
         rule.navigateToGameAndPlay()
+    }
+
+    private fun hasGamepad(): Boolean {
+        val ctx = InstrumentationRegistry.getInstrumentation().targetContext
+        return ctx.getSystemService(Context.INPUT_SERVICE)
+            ?.let { it as android.hardware.input.InputManager }
+            ?.inputDeviceIds?.any { id ->
+                val dev = InputDevice.getDevice(id) ?: return@any false
+                (dev.sources and InputDevice.SOURCE_GAMEPAD) == InputDevice.SOURCE_GAMEPAD ||
+                    (dev.sources and InputDevice.SOURCE_JOYSTICK) == InputDevice.SOURCE_JOYSTICK
+            } ?: false
     }
 
     @Test

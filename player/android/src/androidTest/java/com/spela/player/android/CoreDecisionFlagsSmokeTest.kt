@@ -1,12 +1,8 @@
 package com.spela.player.android
 
-import androidx.compose.ui.test.junit4.createAndroidComposeRule
-import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.spela.player.domain.repository.SessionRepository
 import kotlinx.coroutines.runBlocking
-import org.junit.Rule
 import org.junit.Test
-import org.junit.runner.RunWith
 import org.koin.mp.KoinPlatformTools
 import java.net.HttpURLConnection
 import java.net.URL
@@ -34,14 +30,7 @@ import java.net.URL
  * test is based on — same Koin-bound production repo + cURL-based
  * bootstrap/teardown/cross-check structure.
  */
-@RunWith(AndroidJUnit4::class)
-class CoreDecisionFlagsSmokeTest {
-
-    @get:Rule(order = 0)
-    val koinResetRule = KoinResetRule()
-
-    @get:Rule(order = 1)
-    val rule = createAndroidComposeRule<MainActivity>()
+class CoreDecisionFlagsSmokeTest : BaseE2ETest() {
 
     @Test
     fun coreDecisionFlagsRoundTripThroughRealApi() {

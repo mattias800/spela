@@ -61,7 +61,6 @@ import kotlinx.serialization.encoding.*
  * @param languageSupports 
  * @param lastPlayedAt 
  * @param logoUrl 
- * @param parentGame 
  * @param partyInfo 
  * @param playable 
  * @param players 
@@ -92,6 +91,7 @@ import kotlinx.serialization.encoding.*
  * @param verificationTag 
  * @param videos 
  * @param dollarSchema A URL to the JSON Schema for this object.
+ * @param parentGame 
  */
 @Serializable
 
@@ -157,8 +157,6 @@ data class GameResponse (
 
     @SerialName(value = "logoUrl") @Required val logoUrl: kotlin.String,
 
-    @SerialName(value = "parentGame") @Required val parentGame: ParentGameResponse,
-
     @SerialName(value = "partyInfo") @Required val partyInfo: kotlin.String,
 
     @SerialName(value = "playable") @Required val playable: kotlin.Boolean,
@@ -218,7 +216,9 @@ data class GameResponse (
     @SerialName(value = "videos") @Required val videos: kotlin.collections.List<VideoResponse>,
 
     /* A URL to the JSON Schema for this object. */
-    @SerialName(value = "\$schema") val dollarSchema: kotlin.String? = null
+    @SerialName(value = "\$schema") val dollarSchema: kotlin.String? = null,
+
+    @SerialName(value = "parentGame") val parentGame: ParentGameResponse? = null
 
 ) {
 

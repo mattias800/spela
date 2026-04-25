@@ -2,7 +2,6 @@ package com.spela.player.android
 
 import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.hasText
-import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
@@ -11,10 +10,8 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTextClearance
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextInput
-import androidx.test.ext.junit.runners.AndroidJUnit4
-import org.junit.Rule
+import com.spela.player.presentation.ui.TestTags
 import org.junit.Test
-import org.junit.runner.RunWith
 
 /**
  * E2E tests for collections write operations.
@@ -26,19 +23,28 @@ import org.junit.runner.RunWith
  * - Server running with seeded data (player/player123 and admin/admin123 users)
  * - Device connected and unlocked
  */
-@RunWith(AndroidJUnit4::class)
-class CollectionsTest {
-
-    
-
-    @get:Rule
-    val rule = createAndroidComposeRule<MainActivity>()
+class CollectionsTest : BaseE2ETest() {
 
     // ── Navigation helpers ──
 
     private fun navigateToCollectionsTab() {
         rule.tapOn("Collections")
-        rule.waitForText("My Collections", timeout = 5_000)
+        // The screen renders one of two states:
+        //   - "My Collections" header — appears when at least one
+        //     collection exists
+        //   - "No collections yet" empty-state — when the user has none
+        // /api/test/reset wipes collections between tests, so on a
+        // fresh suite we typically see the empty state first; tests
+        // that create a collection then re-enter the tab see the
+        // header. Either signal proves we're on the Collections screen.
+        rule.pollUntil(timeoutMillis = 5_000) {
+            try {
+                rule.onAllNodesWithText("My Collections", substring = true)
+                    .fetchSemanticsNodes().isNotEmpty() ||
+                    rule.onAllNodesWithText("No collections yet", substring = true)
+                        .fetchSemanticsNodes().isNotEmpty()
+            } catch (_: IllegalStateException) { false }
+        }
     }
 
     /**
@@ -127,12 +133,16 @@ class CollectionsTest {
         // Wait for the detail screen controls to disappear.
         rule.waitForNotVisible("Delete collection", timeout = 15_000)
 
-        // Navigate to the Collections tab if not already there
-        val hasMyCollections = rule.onAllNodesWithText("My Collections", substring = true)
-            .fetchSemanticsNodes().isNotEmpty()
-        if (!hasMyCollections) {
-            rule.tapOn("Collections")
-            rule.waitForText("My Collections", timeout = 5_000)
+        // Navigate to the Collections tab if not already there. Use the
+        // tab helper rather than waitForText('My Collections') directly —
+        // when the user has just deleted their last collection, the
+        // empty state shows instead of the header.
+        val onCollections = rule.onAllNodesWithText("My Collections", substring = true)
+            .fetchSemanticsNodes().isNotEmpty() ||
+            rule.onAllNodesWithText("No collections yet", substring = true)
+                .fetchSemanticsNodes().isNotEmpty()
+        if (!onCollections) {
+            navigateToCollectionsTab()
         }
     }
 
@@ -182,7 +192,6 @@ class CollectionsTest {
 
     @Test
     fun deleteCollectionFromDetailScreen() {
-        rule.startLoggedIn()
         val collName = "E2E Delete ${System.currentTimeMillis()}"
 
         // Create a fresh collection
@@ -207,7 +216,6 @@ class CollectionsTest {
 
     @Test
     fun createCollectionValidation() {
-        rule.startLoggedIn()
         navigateToCollectionsTab()
 
         // Tap FAB to open create dialog
@@ -233,7 +241,6 @@ class CollectionsTest {
 
     @Test
     fun editCollectionFromDetailScreen() {
-        rule.startLoggedIn()
         val editedName = "E2E Edited ${System.currentTimeMillis()}"
 
         // Create a collection to edit
@@ -273,7 +280,6 @@ class CollectionsTest {
 
     @Test
     fun createCollectionFromCollectionsScreen() {
-        rule.startLoggedIn()
         val collName = "E2E Create ${System.currentTimeMillis()}"
 
         // Navigate to Collections tab
@@ -294,7 +300,6 @@ class CollectionsTest {
 
     @Test
     fun addGameToCollectionFromGameDetail() {
-        rule.startLoggedIn()
         val collName = "E2E AddGame ${System.currentTimeMillis()}"
 
         // Create collection
@@ -304,9 +309,14 @@ class CollectionsTest {
         // Navigate to Castlevania game detail (go via Home to reset tab state)
         navigateToGameDetail()
 
-        // Tap "Add to collection" button (contentDescription, text is empty)
-        rule.onNodeWithContentDescription("Add to collection", substring = true).performClick()
+        // Open the More-actions overflow menu — Add to Collection
+        // moved into the DropdownMenu (GameActionsMenu.kt). Drive by
+        // testTag so the test stays stable through label changes.
+        rule.tapOnTag(TestTags.GAME_DETAIL_MORE_ACTIONS)
+        rule.waitForTag(TestTags.GAME_DETAIL_MENU_ADD_TO_COLLECTION, timeout = 5_000)
+        rule.tapOnTag(TestTags.GAME_DETAIL_MENU_ADD_TO_COLLECTION)
         rule.waitForIdle()
+        // The CollectionPickerDialog header text is "Add to Collection".
         rule.waitForText("Add to Collection", timeout = 5_000)
 
         // Select our test collection from the picker
@@ -332,7 +342,6 @@ class CollectionsTest {
 
     @Test
     fun removeGameFromCollectionDetail() {
-        rule.startLoggedIn()
         val collName = "E2E RemoveGame ${System.currentTimeMillis()}"
 
         // Create collection
@@ -372,7 +381,6 @@ class CollectionsTest {
 
     @Test
     fun publicTogglePersists() {
-        rule.startLoggedIn()
         val collName = "E2E Public ${System.currentTimeMillis()}"
 
         // Create a public collection
@@ -422,7 +430,6 @@ class CollectionsTest {
     @Test
     fun collectionOwnershipHidesEditDelete() {
         // Start as player (default user)
-        rule.startLoggedIn()
         val collName = "E2E Ownership ${System.currentTimeMillis()}"
 
         // Create a public collection as player

@@ -35,6 +35,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.role
@@ -47,13 +48,14 @@ import com.spela.player.presentation.ui.theme.SpTypography
 enum class BottomNavTab(
     val label: String,
     val icon: ImageVector,
+    val testTag: String,
 ) {
-    HOME("Home", Icons.Filled.Home),
-    EXPLORE("Explore", Icons.Filled.Explore),
-    CONSOLES("Consoles", Icons.Filled.SportsEsports),
-    COLLECTIONS("Collections", Icons.Filled.CollectionsBookmark),
-    ACTIVITY("Activity", Icons.Filled.Notifications),
-    SETTINGS("Settings", Icons.Filled.Settings),
+    HOME("Home", Icons.Filled.Home, com.spela.player.presentation.ui.TestTags.NAV_HOME),
+    EXPLORE("Explore", Icons.Filled.Explore, com.spela.player.presentation.ui.TestTags.NAV_EXPLORE),
+    CONSOLES("Consoles", Icons.Filled.SportsEsports, com.spela.player.presentation.ui.TestTags.NAV_CONSOLES),
+    COLLECTIONS("Collections", Icons.Filled.CollectionsBookmark, com.spela.player.presentation.ui.TestTags.NAV_COLLECTIONS),
+    ACTIVITY("Activity", Icons.Filled.Notifications, com.spela.player.presentation.ui.TestTags.NAV_ACTIVITY),
+    SETTINGS("Settings", Icons.Filled.Settings, com.spela.player.presentation.ui.TestTags.NAV_SETTINGS),
 }
 
 @Composable
@@ -102,6 +104,7 @@ fun SpBottomNavBar(
 
                 Box(
                     modifier = Modifier
+                        .testTag(tab.testTag)
                         .weight(1f)
                         .height(64.dp)
                         .clip(RoundedCornerShape(8.dp))

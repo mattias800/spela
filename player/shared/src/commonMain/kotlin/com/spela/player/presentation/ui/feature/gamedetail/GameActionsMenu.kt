@@ -22,11 +22,13 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
+import com.spela.player.presentation.ui.TestTags
 import com.spela.player.presentation.ui.components.SpSecondaryButton
 import com.spela.player.presentation.ui.theme.SpTypography
 
@@ -49,10 +51,12 @@ internal fun GameActionsMenu(
             text = "",
             onClick = { expanded = true },
             onGradient = onGradient,
-            modifier = Modifier.semantics {
-                contentDescription = "More actions"
-                role = Role.Button
-            },
+            modifier = Modifier
+                .testTag(TestTags.GAME_DETAIL_MORE_ACTIONS)
+                .semantics {
+                    contentDescription = "More actions"
+                    role = Role.Button
+                },
             leadingIcon = {
                 Icon(
                     imageVector = Icons.Filled.MoreVert,
@@ -84,6 +88,7 @@ internal fun GameActionsMenu(
                         modifier = Modifier.size(20.dp),
                     )
                 },
+                modifier = Modifier.testTag(TestTags.GAME_DETAIL_MENU_FAVORITE),
             )
             DropdownMenuItem(
                 text = {
@@ -103,6 +108,7 @@ internal fun GameActionsMenu(
                         modifier = Modifier.size(20.dp),
                     )
                 },
+                modifier = Modifier.testTag(TestTags.GAME_DETAIL_MENU_PLAY_LATER),
             )
             DropdownMenuItem(
                 text = {
@@ -115,6 +121,7 @@ internal fun GameActionsMenu(
                     expanded = false
                     onAddToCollection()
                 },
+                modifier = Modifier.testTag(TestTags.GAME_DETAIL_MENU_ADD_TO_COLLECTION),
                 leadingIcon = {
                     Icon(
                         imageVector = Icons.Outlined.LibraryAdd,

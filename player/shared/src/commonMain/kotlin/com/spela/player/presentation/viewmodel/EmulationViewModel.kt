@@ -641,6 +641,7 @@ class EmulationViewModel(
         sessionId: String? = null,
         skipCoreDecisionPrompt: Boolean = false,
     ) {
+        println("[Emulation] startGame(gameId=$gameId, sessionId=$sessionId, skipAutoLoad=$skipAutoLoad, skipCoreDecisionPrompt=$skipCoreDecisionPrompt)")
         saveManager.currentSessionId = sessionId
         // Consume the pending rehearsal prompt (set by resolveCoreDecision
         // when the user picked Sheet A's "Try"). Consumed here rather
@@ -702,10 +703,13 @@ class EmulationViewModel(
             println("[Emulation] Previous emulation stopped (if any)")
 
             // Fetch user preferences (fallback to defaults on error)
+            println("[Emulation] Fetching preferences")
             currentPreferences = preferencesRepository.getPreferences()
                 .getOrDefault(UserPreferences())
+            println("[Emulation] Preferences fetched, autoUpdateCores=${currentPreferences.autoUpdateCoresEnabled}")
 
             // Get game detail for consoleId
+            println("[Emulation] Fetching game detail for $gameId")
             var consoleId = ""
             var consoleName = ""
             getGameDetailUseCase(gameId).onSuccess { detail ->
@@ -728,13 +732,18 @@ class EmulationViewModel(
                         )
                     }
                 }
+            }.onFailure {
+                println("[Emulation] getGameDetailUseCase FAILED: ${it.message}")
             }
+            println("[Emulation] After getGameDetail: consoleId=$consoleId consoleName=$consoleName")
 
             // Auto-create or reuse session for normal play (not shared/netplay/challenge).
             // forceNewSession creates a brand new session (e.g. "New Game"), while
             // skipAutoLoad alone reuses the existing session but skips save state restore.
             if (sharedSessionId == null && netplaySessionId == null && challengeId == null) {
+                println("[Emulation] ensureSession start (gameId=$gameId, forceNew=$forceNewSession)")
                 val resolvedSessionId = saveManager.ensureSession(gameId, sessionId, forceNew = forceNewSession)
+                println("[Emulation] ensureSession returned $resolvedSessionId")
                 saveManager.currentSessionId = resolvedSessionId
                 if (resolvedSessionId != null && resolvedSessionId != sessionId) {
                     withContext(dispatchers.main) {
@@ -745,7 +754,9 @@ class EmulationViewModel(
 
             // Pre-launch BIOS check
             if (biosRepository != null && !skipBiosCheck) {
+                println("[Emulation] BIOS check for $consoleId")
                 val missingFiles = biosRepository.preLaunchBiosCheck(consoleId)
+                println("[Emulation] BIOS check returned ${missingFiles.size} missing")
                 if (missingFiles.isNotEmpty()) {
                     withContext(dispatchers.main) {
                         _state.update {
@@ -830,6 +841,7 @@ class EmulationViewModel(
             val userLocked = flags?.userLockedCoreVersion ?: false
             val crashPending = flags?.rehearsalCrashPending ?: false
             val hasSaves = saveManager.sessionSaveCount(saveManager.currentSessionId) > 0
+            println("[Emulation] prepareGameUseCase start (pinned=$pinnedSha, userLocked=$userLocked, hasSaves=$hasSaves)")
             prepareGameUseCase(
                 gameId,
                 pinnedSha,
@@ -842,6 +854,7 @@ class EmulationViewModel(
                 onSuccess = { prepared ->
                     val gamePath = prepared.gamePath
                     val corePath = prepared.corePath
+                    println("[Emulation] prepareGameUseCase SUCCESS: corePath=$corePath, decisionKind=${prepared.decisionKind}")
                     // #672 core-upgrade decision gate. When the use
                     // case reports UpgradeAvailable we stash the
                     // originating StartGame intent, surface the sheet
@@ -988,7 +1001,9 @@ class EmulationViewModel(
                             libretroController.setCoreVariable("desmume_pointer_mouse", "enabled")
                         }
 
+                        println("[Emulation] About to loadCore($corePath)")
                         libretroController.loadCore(corePath)
+                        println("[Emulation] loadCore returned")
 
                         // On Android emulators (SwiftShader), paraLLEl-RDP Vulkan crashes
                         if (com.spela.player.util.isEmulator() && corePath.contains("mupen64plus")) {
@@ -1000,6 +1015,7 @@ class EmulationViewModel(
 
                         println("[Emulation] Loading game: path=$gamePath core=$corePath")
                         libretroController.loadGame(gamePath)
+                        println("[Emulation] loadGame returned")
 
                         // Set HW render state early so Compose creates the
                         // VulkanEmulationSurface before emulation starts.
@@ -1047,7 +1063,9 @@ class EmulationViewModel(
                             netplayManager.setupNetplayTransport(netplaySessionId, netplayLocalPort, netplayInputDelay, netplayIsHost)
                         }
 
+                        println("[Emulation] About to start emulation")
                         libretroController.start()
+                        println("[Emulation] libretroController.start() returned — emulation should be running")
                         // Don't probe save state support immediately — some cores (e.g. Dolphin)
                         // boot asynchronously and crash if retro_serialize_size is called too early.
                         // Default to true, then re-check after the core has had time to initialize.
@@ -1107,6 +1125,8 @@ class EmulationViewModel(
                             challengeManager.startChallengeTimer()
                         }
                     } catch (e: Exception) {
+                        println("[Emulation] EXCEPTION during emulation start: ${e::class.simpleName}: ${e.message}")
+                        e.printStackTrace()
                         val errorMsg = if (_state.value.missingBiosFiles.isNotEmpty()) {
                             "Emulation failed -- this is likely because required BIOS files are missing"
                         } else {
@@ -1120,6 +1140,7 @@ class EmulationViewModel(
                     }
                 },
                 onFailure = { error ->
+                    println("[Emulation] prepareGameUseCase FAILED: ${error::class.simpleName}: ${error.message}")
                     withContext(dispatchers.main) {
                         _state.update {
                             it.copy(error = "Failed to prepare game: ${error.message}", isLoading = false)
@@ -1131,11 +1152,13 @@ class EmulationViewModel(
     }
 
     private fun prepareLaunch(gameId: String, skipAutoLoad: Boolean, forceNewSession: Boolean = false, sessionId: String? = null) {
+        println("[Emulation] prepareLaunch(gameId=$gameId, sessionId=$sessionId)")
         pendingLaunch = PendingLaunch(gameId, skipAutoLoad, forceNewSession, sessionId)
         scope.launch(dispatchers.io) {
             _syncState.update { null }
             val pending = pendingLaunch ?: return@launch
             pendingLaunch = null
+            println("[Emulation] prepareLaunch → emit launchReady(gameId=${pending.gameId})")
             _launchReady.emit(pending)
         }
     }

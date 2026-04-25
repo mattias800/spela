@@ -1,11 +1,7 @@
 package com.spela.player.android
 
-import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
-import androidx.test.ext.junit.runners.AndroidJUnit4
-import org.junit.Rule
 import org.junit.Test
-import org.junit.runner.RunWith
 
 /**
  * E2E tests for browsing and viewing challenges (US-3, US-4).
@@ -20,19 +16,12 @@ import org.junit.runner.RunWith
  * Prerequisites:
  * - Server running with seeded data (player/player123 user, Castlevania game)
  */
-@RunWith(AndroidJUnit4::class)
-class ChallengeBrowsingTest {
-
-    
-
-    @get:Rule
-    val rule = createAndroidComposeRule<MainActivity>()
+class ChallengeBrowsingTest : BaseE2ETest() {
 
     // ── US-3 AC: Challenges section on game detail screen ──
 
     @Test
     fun gameDetailShowsChallengesSection() {
-        rule.startLoggedIn()
         rule.navigateToCastlevania()
 
         // Game detail should show "Challenges" section with "View Challenges" button
@@ -49,7 +38,6 @@ class ChallengeBrowsingTest {
 
     @Test
     fun viewChallengesNavigatesToList() {
-        rule.startLoggedIn()
         rule.navigateToCastlevania()
 
         // Tap "View Challenges" to navigate to ChallengeListScreen
@@ -65,7 +53,6 @@ class ChallengeBrowsingTest {
 
     @Test
     fun gameWithNoChallengesShowsEmptyState() {
-        rule.startLoggedIn()
 
         // Navigate to Castlevania
         rule.navigateToCastlevania()
@@ -144,13 +131,25 @@ class ChallengeBrowsingTest {
 
     @Test
     fun multipleChallengesVisibleInList() {
-        // Create two challenges
-        rule.startLoggedIn()
-        rule.navigateToGameAndPlay()
+        // Create two challenges on Castlevania (pin so the post-exit
+        // game-detail screen and the later "View Challenges" tap
+        // target the same game).
+        rule.navigateToGameAndPlay(preferredGameTitle = "Castlevania")
         rule.createChallengeFromOverlay("Challenge Alpha")
         rule.createChallengeFromOverlay("Challenge Beta")
         rule.openOverlayAndExit()
-        rule.waitForText("Download", timeout = 8_000)
+        // After exit the action button is Play/Resume/Download
+        // depending on cache + auto-save state.
+        rule.pollUntil(timeoutMillis = 8_000) {
+            try {
+                rule.onAllNodesWithText("Play", substring = true)
+                    .fetchSemanticsNodes().isNotEmpty() ||
+                    rule.onAllNodesWithText("Resume", substring = true)
+                        .fetchSemanticsNodes().isNotEmpty() ||
+                    rule.onAllNodesWithText("Download", substring = true)
+                        .fetchSemanticsNodes().isNotEmpty()
+            } catch (_: IllegalStateException) { false }
+        }
 
         // Navigate to challenge list
         rule.navigateToChallengeList()

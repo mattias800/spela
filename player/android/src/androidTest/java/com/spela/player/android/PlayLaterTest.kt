@@ -1,171 +1,155 @@
 package com.spela.player.android
 
-import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onAllNodesWithText
-import androidx.test.ext.junit.runners.AndroidJUnit4
-import org.junit.Rule
+import com.spela.player.presentation.ui.TestTags
 import org.junit.Test
-import org.junit.runner.RunWith
 
-@RunWith(AndroidJUnit4::class)
-class PlayLaterTest {
+class PlayLaterTest : BaseE2ETest() {
 
-    
-
-    @get:Rule
-    val rule = createAndroidComposeRule<MainActivity>()
-
-    /** Wait for either play later button state to be visible on game detail. */
-    private fun waitForPlayLaterButton() {
-        rule.pollUntil(timeoutMillis = 8_000) {
-            try {
-                rule.onAllNodesWithContentDescription("Add to Play Later", substring = true)
-                    .fetchSemanticsNodes().isNotEmpty() ||
-                    rule.onAllNodesWithContentDescription("Remove from Play Later", substring = true)
-                        .fetchSemanticsNodes().isNotEmpty()
-            } catch (_: IllegalStateException) {
-                false
-            }
-        }
+    /**
+     * Open the More-actions overflow menu on the game detail screen.
+     * The Play-Later toggle lives inside this menu (see
+     * GameActionsMenu in commonMain) — there's no top-level
+     * Play Later button on the page itself.
+     */
+    private fun openActionsMenu() {
+        rule.tapOnTag(TestTags.GAME_DETAIL_MORE_ACTIONS)
+        rule.waitForTag(TestTags.GAME_DETAIL_MENU_PLAY_LATER, timeout = 5_000)
     }
 
-    /** Ensure game is in play later queue. */
-    private fun ensureInPlayLater() {
-        waitForPlayLaterButton()
-        val alreadyInQueue = rule.onAllNodesWithContentDescription("Remove from Play Later", substring = true)
-            .fetchSemanticsNodes().isNotEmpty()
-        if (!alreadyInQueue) {
-            rule.tapOn("Add to Play Later")
-            rule.waitForContentDescription("Remove from Play Later", timeout = 5_000)
-        }
+    /**
+     * True if the game is currently in the Play Later queue. The menu
+     * item's TEXT toggles between "Play Later" and "Remove from Play
+     * Later"; the testTag is the same on both, so we read the text
+     * inside the tagged node.
+     */
+    private fun isInPlayLaterFromMenu(): Boolean {
+        return try {
+            rule.onAllNodesWithText("Remove from Play Later", substring = true)
+                .fetchSemanticsNodes().isNotEmpty()
+        } catch (_: IllegalStateException) { false }
     }
 
-    /** Ensure game is not in play later queue. */
-    private fun ensureNotInPlayLater() {
-        waitForPlayLaterButton()
-        val inQueue = rule.onAllNodesWithContentDescription("Remove from Play Later", substring = true)
-            .fetchSemanticsNodes().isNotEmpty()
-        if (inQueue) {
+    /** Open the menu, return whether the game is currently in Play Later. Closes the menu. */
+    private fun queryPlayLaterState(): Boolean {
+        openActionsMenu()
+        val inQueue = isInPlayLaterFromMenu()
+        // Close menu by tapping outside (backdrop area).
+        rule.tapAtPercent(50f, 5f)
+        Thread.sleep(300)
+        return inQueue
+    }
+
+    /** Toggle the Play Later state via the menu, idempotent — desired-state is `desiredInQueue`. */
+    private fun setPlayLater(desiredInQueue: Boolean) {
+        openActionsMenu()
+        val currentlyInQueue = isInPlayLaterFromMenu()
+        if (currentlyInQueue == desiredInQueue) {
+            // Already in the right state, just close the menu.
+            rule.tapAtPercent(50f, 5f)
+            Thread.sleep(300)
+            return
+        }
+        if (desiredInQueue) {
+            rule.tapOn("Play Later")
+        } else {
             rule.tapOn("Remove from Play Later")
-            rule.waitForContentDescription("Add to Play Later", timeout = 5_000)
         }
+        Thread.sleep(500)
     }
 
     @Test
     fun addToPlayLaterFromGameDetail() {
-        rule.startLoggedIn()
         rule.navigateToCastlevania()
-        ensureNotInPlayLater()
-
-        rule.tapOn("Add to Play Later")
-
-        rule.waitForContentDescription("Remove from Play Later", timeout = 5_000)
-        rule.assertContentDescriptionVisible("Remove from Play Later")
+        setPlayLater(desiredInQueue = false)
+        // Now flip it to "in queue".
+        setPlayLater(desiredInQueue = true)
+        // Verify state changed.
+        check(queryPlayLaterState()) { "Expected game to be in Play Later after toggling on" }
     }
 
     @Test
     fun removeFromPlayLaterFromGameDetail() {
-        rule.startLoggedIn()
         rule.navigateToCastlevania()
-        ensureInPlayLater()
-
-        rule.tapOn("Remove from Play Later")
-
-        rule.waitForContentDescription("Add to Play Later", timeout = 5_000)
-        rule.assertContentDescriptionVisible("Add to Play Later")
+        setPlayLater(desiredInQueue = true)
+        setPlayLater(desiredInQueue = false)
+        check(!queryPlayLaterState()) { "Expected game NOT in Play Later after toggling off" }
     }
 
     @Test
     fun playLaterSectionOnHomeScreen() {
-        rule.startLoggedIn()
-
-        // Ensure a game is in the Play Later queue
+        // Add a game to Play Later first.
         rule.navigateToCastlevania()
-        ensureInPlayLater()
+        setPlayLater(desiredInQueue = true)
 
-        // Navigate back to home
-        rule.pressBack()
-        rule.pressBack()
+        // Navigate back to Home and trigger a dashboard refresh by
+        // bouncing off another tab (avoids restartApp() which is
+        // documented as unreliable on emulators / this device).
+        rule.navigateBackToHome()
+        rule.waitForText("Spela", timeout = 8_000)
+        rule.tapOn("Consoles")
+        rule.waitForContentDescription("Nintendo Entertainment System", timeout = 8_000)
+        rule.tapOn("Home")
         rule.waitForText("Spela", timeout = 8_000)
 
-        // Restart app to force a fresh dashboard load
-        rule.restartApp()
-        rule.waitForText("Spela", timeout = 15_000)
-
-        // Use scrollToAndTapText to find "Play Later" in the LazyColumn
-        // This scrolls through the LazyColumn searching for the text
+        // Find the "Play Later" section header in the LazyColumn.
         try {
             rule.scrollToAndTapText("Play Later")
-            // If we got here, the section header was found
         } catch (e: IllegalStateException) {
-            throw AssertionError("Expected 'Play Later' section on home screen but it was not found after scrolling", e)
-        }
-    }
-
-    @Test
-    fun activityFeedShowsPlayLaterEvent() {
-        rule.startLoggedIn()
-        rule.navigateToCastlevania()
-        ensureNotInPlayLater()
-
-        // Add to play later to generate a queued_play_later activity event
-        rule.tapOn("Add to Play Later")
-        rule.waitForContentDescription("Remove from Play Later", timeout = 5_000)
-
-        // Navigate back to home
-        rule.pressBack()
-        rule.pressBack()
-        rule.waitForText("Spela", timeout = 8_000)
-
-        // Restart app to force fresh data load including activity feed
-        rule.restartApp()
-        rule.waitForText("Spela", timeout = 15_000)
-
-        // The activity event is rendered in the LazyColumn and may be off-screen.
-        // First scroll to find "Recent Activity" section, then verify the event text.
-        // The event text is "player added Castlevania to Play Later queue" (rendered as
-        // annotated string). Search for a substring that identifies the event.
-        try {
-            rule.scrollToAndTapText("Play Later queue")
-        } catch (_: IllegalStateException) {
             throw AssertionError(
-                "Expected activity event with 'Play Later queue' text on home screen " +
-                    "but it was not found after scrolling"
+                "Expected 'Play Later' section on Home after adding a game", e,
             )
         }
     }
 
     @Test
-    fun playLaterTogglePersistsOnGameDetail() {
-        rule.startLoggedIn()
+    fun activityFeedShowsPlayLaterEvent() {
         rule.navigateToCastlevania()
-        ensureNotInPlayLater()
+        setPlayLater(desiredInQueue = false)
+        setPlayLater(desiredInQueue = true) // generates queued_play_later event
 
-        // Add to play later
-        rule.tapOn("Add to Play Later")
-        rule.waitForContentDescription("Remove from Play Later", timeout = 5_000)
+        // Navigate to Home (don't use restartApp — known unreliable).
+        rule.navigateBackToHome()
+        rule.waitForText("Spela", timeout = 8_000)
+        // Bounce tabs to force a dashboard refresh.
+        rule.tapOn("Consoles")
+        rule.waitForContentDescription("Nintendo Entertainment System", timeout = 8_000)
+        rule.tapOn("Home")
+        rule.waitForText("Spela", timeout = 8_000)
 
-        // Navigate back to game list
-        rule.pressBack()
-        rule.waitForText("Castlevania", timeout = 8_000)
+        // Activity event text varies by surface — Home dashboard's
+        // ActivityEventItem renders "added X to Play Later queue", but
+        // the standalone ActivityScreen uses "added X to Play Later".
+        // Either is fine here; we just want to confirm the event was
+        // recorded and is visible on Home.
+        val found = try {
+            rule.scrollToAndTapText("Play Later queue"); true
+        } catch (_: IllegalStateException) {
+            try {
+                rule.scrollToAndTapText("to Play Later"); true
+            } catch (_: IllegalStateException) { false }
+        }
+        check(found) {
+            "Expected an activity event mentioning Play Later on Home"
+        }
+    }
 
-        // Navigate to a different game first, then back, to force a fresh load
-        rule.scrollToAndTapText("Section Z")
-        rule.waitForText("Download", timeout = 5_000)
-        rule.pressBack()
-        rule.waitForText("Castlevania", timeout = 8_000)
+    @Test
+    fun playLaterTogglePersistsOnGameDetail() {
+        rule.navigateToCastlevania()
+        setPlayLater(desiredInQueue = true)
 
-        // Re-navigate to Castlevania
-        rule.scrollToAndTapText("Castlevania")
-        rule.waitForText("Download", timeout = 5_000)
+        // Go all the way back to Home, then re-navigate to Castlevania.
+        // This forces the game-detail screen to re-fetch from the server
+        // rather than relying on cached UI state.
+        rule.navigateBackToHome()
+        rule.waitForText("Spela", timeout = 8_000)
+        rule.navigateToCastlevania()
 
-        // Wait for the play later button to appear (either Add or Remove)
-        waitForPlayLaterButton()
-
-        // The game detail initially loads from the cached game list which may have
-        // stale isInPlayLater state. Give extra time for the server response to arrive.
-        rule.waitForContentDescription("Remove from Play Later", timeout = 15_000)
-        rule.assertContentDescriptionVisible("Remove from Play Later")
+        // The state should still report "in Play Later".
+        check(queryPlayLaterState()) {
+            "Expected Play Later state to persist across navigation"
+        }
     }
 }

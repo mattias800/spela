@@ -168,7 +168,7 @@ class ExploreRepositoryImpl(
     override suspend fun getForYou(): Result<List<ForYouRow>> = runCatching {
         apiClient.getForYou().rows.map { rowDto ->
             rowDto.toDomain().copy(
-                sourceGame = rowDto.sourceGame.takeIf { it.id.isNotEmpty() }?.let { sgDto ->
+                sourceGame = rowDto.sourceGame?.takeIf { it.id.isNotEmpty() }?.let { sgDto ->
                     sgDto.toDomain().copy(
                         coverUrl = apiClient.resolveUrl(sgDto.coverUrl),
                         heroUrl = apiClient.resolveUrl(sgDto.heroUrl),
@@ -274,8 +274,8 @@ class ExploreRepositoryImpl(
             dto.toDomain().copy(
                 iconUrl = apiClient.resolveUrl(dto.iconUrl) ?: "",
                 logoUrl = apiClient.resolveUrl(dto.logoUrl) ?: "",
-                topGame = topGameDto.takeIf { it.id.isNotEmpty() }?.toDomain()?.copy(
-                    coverUrl = apiClient.resolveUrl(topGameDto.coverUrl),
+                topGame = topGameDto?.takeIf { it.id.isNotEmpty() }?.toDomain()?.copy(
+                    coverUrl = apiClient.resolveUrl(topGameDto?.coverUrl ?: ""),
                 ),
             )
         }
@@ -471,7 +471,7 @@ class ExploreRepositoryImpl(
             userStats = dto.userStats.takeIf { it.gamesPlayed > 0 }?.let { stats ->
                 stats.toPublisherUserStats().copy(
                     mostPlayedGame = stats.mostPlayedGame
-                        .takeIf { it.id.isNotEmpty() }
+                        ?.takeIf { it.id.isNotEmpty() }
                         ?.let { gameDto ->
                             gameDto.toDomain().copy(
                                 coverUrl = apiClient.resolveUrl(gameDto.coverUrl),
@@ -505,7 +505,7 @@ class ExploreRepositoryImpl(
         userStats = userStats.takeIf { it.gamesPlayed > 0 }?.let { stats ->
             stats.toDeveloperUserStats().copy(
                 mostPlayedGame = stats.mostPlayedGame
-                    .takeIf { it.id.isNotEmpty() }
+                    ?.takeIf { it.id.isNotEmpty() }
                     ?.let { gameDto ->
                         gameDto.toDomain().copy(
                             coverUrl = apiClient.resolveUrl(gameDto.coverUrl),

@@ -101,6 +101,15 @@ fun SpTextField(
             keyboardOptions = KeyboardOptions(
                 keyboardType = if (isPassword) KeyboardType.Password else keyboardType,
                 imeAction = imeAction,
+                // Android only: tell the IME not to go fullscreen in
+                // landscape. Without this, Gboard (and many OEM keyboards)
+                // occlude the whole screen with an "extract view" whenever
+                // a text field has focus in a short-height window —
+                // unusable on gaming handhelds like the AYN Thor, and it
+                // also hides the UI from UiAutomator, which is why any
+                // Android E2E test that typed into a field would appear
+                // to hang at a black screen. No-op on other platforms.
+                platformImeOptions = noFullscreenImeOptions(),
             ),
             keyboardActions = KeyboardActions(onAny = { onImeAction() }),
             isError = isError || errorMessage != null,

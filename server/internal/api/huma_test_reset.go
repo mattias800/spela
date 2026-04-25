@@ -6,9 +6,27 @@ import (
 	"net/http"
 
 	"github.com/danielgtaylor/huma/v2"
-	"github.com/spela/server/internal/auth"
 	"github.com/spela/server/internal/db"
 	"gorm.io/gorm"
+)
+
+// Pre-computed bcrypt hashes for the seed passwords. Hardcoded on
+// purpose: bcrypt at cost=12 takes 250ms on bare metal but 2-5s on
+// docker-on-macOS, and computing the same two values on every server
+// startup is wasted CPU when the inputs ("admin123", "player123") are
+// deterministic.
+//
+// Generated once via auth.HashPassword (bcrypt cost=12). Test-mode
+// only — production auth still hashes with a fresh salt on every
+// set-password flow. If you change the seeded passwords, regenerate
+// these by running:
+//
+//	go run -mod=mod ./cmd/_unused_genhash  // (a one-off, not in repo)
+//
+// or any equivalent that calls bcrypt.GenerateFromPassword with cost 12.
+const (
+	seedAdminPasswordHash  = "$2a$12$DoU6hcBgMS1rXd/9bo0b0OuVLWZHCPINGynXPC5C5DFk/aGAoryuy"
+	seedPlayerPasswordHash = "$2a$12$Q3192LdcRXeRE4wBD0iD5uamuyVOR9St8eqIvfyAPCBtKG5SmRoDy"
 )
 
 // --- Inputs / outputs --------------------------------------------------------
@@ -118,13 +136,13 @@ func (h *TestHandler) HumaReset(_ context.Context, _ *TestResetInput) (*TestRese
 		// 12. Delete extra users (keep admin and player)
 		tx.Unscoped().Where("username NOT IN ?", []string{"admin", "player"}).Delete(&db.User{})
 
-		// 13. Reset admin user to default state
-		adminHash, err := auth.HashPassword("admin123")
-		if err != nil {
-			return err
-		}
+		// 13. Reset admin user to default state.
+		// password_hash uses the pre-computed seed*PasswordHash constant.
+		// Running auth.HashPassword on every reset cost 2-5s on
+		// docker-on-macOS for no real benefit — the seed passwords
+		// are deterministic, so the bcrypt output can be too.
 		tx.Model(&db.User{}).Where("username = ?", "admin").Updates(map[string]interface{}{
-			"password_hash":              adminHash,
+			"password_hash":              seedAdminPasswordHash,
 			"role":                       "owner",
 			"disabled":                   false,
 			"pending_approval":           false,
@@ -141,13 +159,9 @@ func (h *TestHandler) HumaReset(_ context.Context, _ *TestResetInput) (*TestRese
 			"deleted_at":                 nil,
 		})
 
-		// 14. Reset player user to default state
-		playerHash, err := auth.HashPassword("player123")
-		if err != nil {
-			return err
-		}
+		// 14. Reset player user to default state.
 		tx.Model(&db.User{}).Where("username = ?", "player").Updates(map[string]interface{}{
-			"password_hash":              playerHash,
+			"password_hash":              seedPlayerPasswordHash,
 			"role":                       "user",
 			"disabled":                   false,
 			"pending_approval":           false,

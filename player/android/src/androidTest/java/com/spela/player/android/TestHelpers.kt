@@ -28,7 +28,6 @@ import androidx.test.uiautomator.UiDevice
 import androidx.test.uiautomator.UiSelector
 import com.spela.player.di.commonModule
 import com.spela.player.di.platformModule
-import org.junit.rules.TestWatcher
 import org.junit.runner.Description
 import org.koin.mp.KoinPlatformTools
 import androidx.test.espresso.IdlingPolicies
@@ -69,11 +68,36 @@ private val testConfigured = run {
  * while the Compose tree keeps old LaunchedEffect keys, causing LaunchedEffects
  * to not re-fire (e.g., the server form auto-open doesn't trigger).
  */
-class KoinResetRule : TestWatcher() {
-    override fun starting(description: Description?) {
-        MainActivity.isTestMode = true
-        // Ensure cores are cached before each test (app reinstall wipes files)
-        preCacheCores()
+class KoinResetRule : org.junit.rules.TestRule {
+    override fun apply(base: org.junit.runners.model.Statement, description: Description): org.junit.runners.model.Statement {
+        return object : org.junit.runners.model.Statement() {
+            override fun evaluate() {
+                // FAIL-FAST GATE: once any test in this run has failed,
+                // skip every subsequent test. Without this, when
+                // navigation or login breaks, gradle still runs all 14
+                // EmulationTest methods, producing 14 identical failure
+                // bundles and wasting ~9 minutes per suite. Throwing
+                // AssumptionViolatedException from inside the rule's
+                // statement (not from a TestWatcher callback) makes
+                // JUnit mark the test as ignored/skipped, which gradle
+                // surfaces as SKIPPED rather than FAILED.
+                // Per-test fail-fast: once any test in this class run has
+                // failed, skip every subsequent test. Saves ~9 minutes per
+                // suite on a broken navigation/login. Bypass for a
+                // diagnostic run with `-P android.testInstrumentationRunnerArguments.failFast=off`
+                // to see every failure in a class at once.
+                val ffArg = androidx.test.platform.app.InstrumentationRegistry
+                    .getArguments().getString("failFast")
+                if (ffArg != "off" && FailureDiagnosticsListener.anyTestFailed) {
+                    throw org.junit.AssumptionViolatedException(
+                        "Skipping ${description.methodName} — earlier failure in this run, fail-fast active"
+                    )
+                }
+                MainActivity.isTestMode = true
+                preCacheCores()
+                base.evaluate()
+            }
+        }
     }
 
     private fun preCacheCores() {
@@ -81,8 +105,12 @@ class KoinResetRule : TestWatcher() {
             val context = InstrumentationRegistry.getInstrumentation().targetContext
             val coresDir = java.io.File(context.filesDir, "cores")
             coresDir.mkdirs()
-            val knownCores = listOf("nestopia", "snes9x", "mgba", "gambatte", "genesis_plus_gx",
-                "mupen64plus_next", "mednafen_psx_hw", "ppsspp", "desmume")
+            // Only nestopia is pre-cached by run-e2e.sh + scripts/cache-nestopia.sh;
+            // every other core is downloaded on-demand at first use, matching the
+            // real user flow. The list used to include 8 more cores aspirationally,
+            // but nothing in the current suite tests them and they just dragged
+            // Gradle's APK install setup with irrelevant /data/local/tmp/ copies.
+            val knownCores = listOf("nestopia")
             for (coreName in knownCores) {
                 val fileName = "${coreName}_libretro_android.so"
                 val src = java.io.File("/data/local/tmp/$fileName")
@@ -104,8 +132,8 @@ class KoinResetRule : TestWatcher() {
 
 private const val SERVER_NAME = "Local"
 private const val SERVER_URL = "http://127.0.0.1:8080"
-private const val PLAYER_USERNAME = "player"
-private const val PLAYER_PASSWORD = "player123"
+internal const val PLAYER_USERNAME = "player"
+internal const val PLAYER_PASSWORD = "player123"
 private const val ADMIN_USERNAME = "admin"
 private const val ADMIN_PASSWORD = "admin123"
 
@@ -116,6 +144,65 @@ private const val TIMEOUT_EXTRA_LONG = 30_000L
 
 /** Tracks challenges created in this JVM process to skip expensive re-creation. */
 private val challengesCreated = mutableSetOf<String>()
+
+// ── Backend state reset ──
+
+/**
+ * POST /api/test/reset on the docker-compose E2E server.
+ *
+ * Called from @Before in BaseE2ETest so every test method starts with
+ * user-generated data wiped: sessions, saves, favorites, collections,
+ * challenges, play history, shader prefs, refresh tokens, login
+ * attempts. Consoles, cores, and scanned games are preserved by the
+ * server-side handler — see server/internal/api/huma_test_reset.go.
+ *
+ * Unauthenticated by design (see the handler comment). Runs on the
+ * instrumentation thread (not main), so plain HttpURLConnection is
+ * safe. Reaches the host via `adb reverse tcp:8080 tcp:8080` which
+ * run-e2e.sh sets up before gradle is invoked.
+ *
+ * Hard-failure semantics: any response other than 200 with a body
+ * containing `"status":"reset"` aborts the test immediately. Reset
+ * is load-bearing — silently skipping it defeats the whole isolation
+ * story.
+ *
+ * JWT note: the handler resets User.token_version to 0 and deletes
+ * RefreshToken rows. A JWT issued at token_version=0 stays valid,
+ * so the common case keeps the current session alive. If it doesn't
+ * (tests that rotate tokens), ensureLoggedIn() detects the ensuing
+ * 401 → login screen and re-authenticates.
+ */
+fun resetServerState() {
+    val url = java.net.URL("http://127.0.0.1:8080/api/test/reset")
+    val conn = url.openConnection() as java.net.HttpURLConnection
+    try {
+        conn.requestMethod = "POST"
+        conn.connectTimeout = 3_000
+        // Reset is sub-2ms after the first call (DB on tmpfs, seed
+        // bcrypt hashes cached). First call pays a one-time ~500ms
+        // bcrypt warmup. 5s is comfortable margin for both, and tight
+        // enough to flag a genuinely hung endpoint quickly.
+        conn.readTimeout = 5_000
+        conn.doOutput = true
+        conn.outputStream.use { /* empty body */ }
+        // Trigger the actual request and get the code BEFORE reading a
+        // stream — getInputStream() throws on 4xx/5xx, so we need to
+        // pick the right stream based on the code.
+        val code = conn.responseCode
+        val stream = if (code in 200..299) conn.inputStream else conn.errorStream
+        val body = stream?.bufferedReader()?.use { it.readText() }.orEmpty()
+        check(code == 200) {
+            "resetServerState: expected HTTP 200, got $code. Body: $body. " +
+                "Is docker-compose.e2e.yml running with SPELA_TEST_MODE=true, " +
+                "and is `adb reverse tcp:8080 tcp:8080` set up?"
+        }
+        check(body.contains("\"status\":\"reset\"")) {
+            "resetServerState: expected body to contain '\"status\":\"reset\"', got: $body"
+        }
+    } finally {
+        conn.disconnect()
+    }
+}
 
 // ── Wait helpers ──
 
@@ -157,15 +244,91 @@ private fun uiDevice(): UiDevice =
  */
 fun ComposeRule.pollUntil(timeoutMillis: Long = 1000L, condition: () -> Boolean) {
     val deadline = System.currentTimeMillis() + timeoutMillis
+    var lastException: Throwable? = null
     while (System.currentTimeMillis() < deadline) {
         try {
             if (condition()) return
-        } catch (_: Exception) {}
+        } catch (e: Exception) {
+            lastException = e
+        }
         Thread.sleep(100)
     }
     throw androidx.compose.ui.test.ComposeTimeoutException(
-        "Condition still not satisfied after $timeoutMillis ms"
+        buildString {
+            append("Condition still not satisfied after ${timeoutMillis}ms.\n")
+            append(lastObservedSnapshot())
+            if (lastException != null) {
+                append("\nLast condition exception: ")
+                append(lastException::class.simpleName)
+                append(": ")
+                append(lastException.message)
+            }
+        },
     )
+}
+
+/**
+ * Snapshots the semantic tree's currently visible texts, content
+ * descriptions and testTags. Attached to every [pollUntil] timeout so
+ * the failure message tells you what the screen actually looked like
+ * when the wait gave up — instead of you having to chase the
+ * screenshot artifact for "what tags were present?"
+ *
+ * Capped at 30 entries per category to keep the message tractable.
+ */
+private fun ComposeRule.lastObservedSnapshot(): String = try {
+    val nodes = onAllNodes(
+        androidx.compose.ui.test.isRoot(),
+        useUnmergedTree = true,
+    ).fetchSemanticsNodes()
+        .flatMap { collectAllNodes(it) }
+    val texts = mutableSetOf<String>()
+    val descs = mutableSetOf<String>()
+    val tags = mutableSetOf<String>()
+    for (n in nodes) {
+        for ((key, value) in n.config) {
+            when (key.name) {
+                "Text" -> {
+                    @Suppress("UNCHECKED_CAST")
+                    (value as? List<androidx.compose.ui.text.AnnotatedString>)
+                        ?.forEach { texts.add(it.text) }
+                }
+                "EditableText" -> {
+                    (value as? androidx.compose.ui.text.AnnotatedString)
+                        ?.let { texts.add(it.text) }
+                }
+                "ContentDescription" -> {
+                    @Suppress("UNCHECKED_CAST")
+                    (value as? List<String>)?.forEach { descs.add(it) }
+                }
+                "TestTag" -> {
+                    (value as? String)?.let { tags.add(it) }
+                }
+            }
+        }
+    }
+    buildString {
+        append("Last observed UI:\n")
+        append("  texts (${texts.size}): ")
+        append(texts.take(30).joinToString(", ").ifEmpty { "<none>" })
+        append('\n')
+        append("  contentDescriptions (${descs.size}): ")
+        append(descs.take(30).joinToString(", ").ifEmpty { "<none>" })
+        append('\n')
+        append("  testTags (${tags.size}): ")
+        append(tags.take(30).joinToString(", ").ifEmpty { "<none>" })
+    }
+} catch (e: Throwable) {
+    "Could not capture last-observed snapshot: ${e.message}"
+}
+
+private fun collectAllNodes(
+    node: androidx.compose.ui.semantics.SemanticsNode,
+): List<androidx.compose.ui.semantics.SemanticsNode> {
+    val out = mutableListOf<androidx.compose.ui.semantics.SemanticsNode>()
+    out.add(node)
+    node.children.forEach { out.addAll(collectAllNodes(it)) }
+    return out
 }
 
 fun ComposeRule.waitForCoreIdle(timeout: Long = 10_000) {
@@ -225,37 +388,83 @@ fun ComposeRule.waitForTextNotVisible(text: String, timeout: Long = TIMEOUT_SHOR
     }
 }
 
+// All assert*Visible helpers fall through to the Compose semantics
+// tree when UiAutomator doesn't find the text/description. UiAutomator
+// reads the accessibility tree of display 0, which on multi-display
+// hardware (AYN Thor) misses anything routed to the secondary display.
+// Compose's semantics tree comes directly from the activity window
+// regardless of display.
+
+private fun ComposeRule.composeHasText(text: String): Boolean = try {
+    onAllNodesWithText(text, substring = true).fetchSemanticsNodes().isNotEmpty()
+} catch (_: Exception) { false }
+
+private fun ComposeRule.composeHasDescription(desc: String): Boolean = try {
+    onAllNodesWithContentDescription(desc, substring = true).fetchSemanticsNodes().isNotEmpty()
+} catch (_: Exception) { false }
+
 fun ComposeRule.assertTextVisible(text: String) {
-    check(uiDevice().findObject(UiSelector().textContains(text)).exists()) {
-        "Expected '$text' to be visible, but it was not found"
-    }
+    val ok = uiDevice().findObject(UiSelector().textContains(text)).exists() ||
+        composeHasText(text)
+    check(ok) { "Expected '$text' to be visible, but it was not found" }
 }
 
 fun ComposeRule.assertTextNotVisible(text: String) {
-    check(!uiDevice().findObject(UiSelector().textContains(text)).exists()) {
-        "Expected '$text' to NOT be visible, but it was found"
-    }
+    val visible = uiDevice().findObject(UiSelector().textContains(text)).exists() ||
+        composeHasText(text)
+    check(!visible) { "Expected '$text' to NOT be visible, but it was found" }
 }
 
-/** Assert visible by checking BOTH text and content description via UiAutomator. */
+/** Assert visible by checking text OR content description, via UiAutomator with Compose fallback. */
 fun ComposeRule.assertVisible(label: String) {
     val device = uiDevice()
-    val hasText = device.findObject(UiSelector().textContains(label)).exists()
-    val hasDesc = device.findObject(UiSelector().descriptionContains(label)).exists()
-    check(hasText || hasDesc) { "Expected '$label' to be visible (text or description), but not found" }
+    val ok = device.findObject(UiSelector().textContains(label)).exists() ||
+        device.findObject(UiSelector().descriptionContains(label)).exists() ||
+        composeHasText(label) ||
+        composeHasDescription(label)
+    check(ok) { "Expected '$label' to be visible (text or description), but not found" }
 }
 
-/** Assert NOT visible by checking BOTH text and content description via UiAutomator. */
+/** Assert NOT visible by checking BOTH text and content description, with Compose fallback. */
 fun ComposeRule.assertNotVisible(label: String) {
     val device = uiDevice()
-    val hasText = device.findObject(UiSelector().textContains(label)).exists()
-    val hasDesc = device.findObject(UiSelector().descriptionContains(label)).exists()
-    check(!hasText && !hasDesc) { "Expected '$label' to NOT be visible, but it was found" }
+    val visible = device.findObject(UiSelector().textContains(label)).exists() ||
+        device.findObject(UiSelector().descriptionContains(label)).exists() ||
+        composeHasText(label) ||
+        composeHasDescription(label)
+    check(!visible) { "Expected '$label' to NOT be visible, but it was found" }
 }
 
-/** Check if we're in the Spela app (not the Android launcher or another app). */
-private fun isInSpelaApp(): Boolean =
-    uiDevice().currentPackageName == "com.spela.player"
+/** Check if we're in the Spela app (not the Android launcher or another app).
+ *
+ * `currentPackageName` only reports the focused window on display 0. On
+ * multi-display hardware (the AYN Thor secondary display) the Spela
+ * activity can be focused on a non-primary display, which makes the
+ * UiAutomator query report the launcher even though Spela is alive
+ * and rendering. Since the Compose test rule's semantics tree comes
+ * directly from the activity's window — regardless of display — fall
+ * back to "any Spela-owned testTag is in the tree" before declaring
+ * we're outside the app.
+ */
+private fun ComposeRule.isInSpelaApp(): Boolean {
+    if (uiDevice().currentPackageName == "com.spela.player") return true
+    return try {
+        // NAV_HOME ships on every screen with a bottom nav (i.e. every
+        // logged-in screen). If it's not present, we're likely on the
+        // server-connect / login screens, so check for those tags too.
+        val anyTag = listOf(
+            TestTags.NAV_HOME,
+            TestTags.SCREEN_HOME,
+            TestTags.SCREEN_LOGIN,
+            TestTags.SCREEN_SERVER_CONNECTION,
+            TestTags.SCREEN_CONSOLE,
+        ).any { tag ->
+            try { onAllNodesWithTag(tag, useUnmergedTree = true).fetchSemanticsNodes().isNotEmpty() }
+            catch (_: Exception) { false }
+        }
+        anyTag
+    } catch (_: Exception) { false }
+}
 
 /** Check if we're on the server connection screen. UiAutomator + Compose fallback. */
 private fun ComposeRule.isOnServerConnectionScreen(): Boolean {
@@ -286,20 +495,41 @@ private fun ComposeRule.isOnLoginScreen(): Boolean {
 }
 
 /** Check if we're on the Home screen. UiAutomator + Compose fallback.
- * Uses isInSpelaApp() to avoid matching launcher app labels. */
-private fun ComposeRule.isOnHomeScreen(): Boolean {
+ *
+ * Uses isInSpelaApp() to avoid matching launcher app labels.
+ *
+ * Deliberately does NOT substring-match "Spela" — UiAutomator's
+ * textContains turns out to be case-insensitive, so "Spela" matches
+ * the decorative "Nu spelar vi!" quote rendered on ServerConnection
+ * and Login screens. The Home screen is identified by:
+ *   - the SCREEN_HOME content description on HomeScreen (most reliable)
+ *   - Home-only text strings that DO NOT appear on any auth screen
+ *
+ * Exact `text()` matches against "Spela" are safe (the brand-mark
+ * top-bar uses exactly "Spela"), but Android's contentDescription
+ * substring-matching semantics make the UiAutomator API unsafe for
+ * that case — so we use the Compose semantics tree for the exact
+ * match instead.
+ */
+internal fun ComposeRule.isOnHomeScreen(): Boolean {
     if (!isInSpelaApp()) return false
     val device = uiDevice()
     if (device.findObject(UiSelector().descriptionContains(TestTags.SCREEN_HOME)).exists() ||
-        device.findObject(UiSelector().textContains("Spela")).exists() ||
         device.findObject(UiSelector().textContains("Your library is empty")).exists() ||
         device.findObject(UiSelector().textContains("Top Rated")).exists() ||
         device.findObject(UiSelector().textContains("Continue Playing")).exists() ||
         device.findObject(UiSelector().textContains("Loading your library")).exists()
     ) return true
     return try {
-        onAllNodesWithText("Spela", substring = true)
-            .fetchSemanticsNodes().isNotEmpty()
+        // Compose semantics-tree fallback. Prefers the testTag (safe
+        // from any text collisions) and falls back to an exact-match
+        // (not substring!) on the "Spela" brand-mark. The exact-match
+        // side is necessary because the SCREEN_HOME testTag can race
+        // with the Compose tree snapshot — the text node appears
+        // before the screen container's testTag does.
+        onAllNodesWithTag(TestTags.SCREEN_HOME, useUnmergedTree = true)
+            .fetchSemanticsNodes().isNotEmpty() ||
+            onAllNodesWithText("Spela").fetchSemanticsNodes().isNotEmpty()
     } catch (_: Exception) { false }
 }
 
@@ -345,11 +575,119 @@ fun ComposeRule.waitForNotVisible(label: String, timeout: Long = TIMEOUT_SHORT) 
     )
 }
 
-/** Tap a node by text OR content description. Prefers unique matches.
- *  During emulation (Core running), Compose test performClick() blocks on Espresso
- *  idle which never arrives due to the 60fps render loop. In that case, this
- *  function falls back to UiAutomator which bypasses Espresso idle. */
+/**
+ * Click a node by its `Modifier.testTag`. Prefer this over [tapOn] for
+ * standardised app controls — test tags are compile-time constants
+ * from [TestTags] and survive label renames / localisation.
+ *
+ * [fallbackLabel] is used if no node with the tag exists (e.g. an
+ * older screen variant still in the semantic tree). When both are
+ * specified and the tag is found, we take the tag match.
+ */
+fun ComposeRule.tapOnTag(tag: String, fallbackLabel: String? = null) {
+    val tagNodes = onAllNodesWithTag(tag, useUnmergedTree = true).fetchSemanticsNodes()
+    if (tagNodes.isNotEmpty()) {
+        onAllNodesWithTag(tag, useUnmergedTree = true)[0].performClick()
+        waitForIdle()
+        return
+    }
+    if (fallbackLabel != null) {
+        tapOn(fallbackLabel)
+        return
+    }
+    throw AssertionError(
+        "tapOnTag('$tag') found no nodes. The composable that should " +
+            "apply this testTag may be off-screen, not yet composed, or " +
+            "the tag was renamed without updating the TestTags constant.",
+    )
+}
+
+/**
+ * Wait for a node with the given [testTag] to appear in the semantic
+ * tree. Preferred over [waitForText] for standardised controls — see
+ * [tapOnTag].
+ */
+fun ComposeRule.waitForTag(tag: String, timeout: Long = TIMEOUT_MEDIUM) {
+    pollUntil(timeoutMillis = timeout) {
+        onAllNodesWithTag(tag, useUnmergedTree = true)
+            .fetchSemanticsNodes().isNotEmpty()
+    }
+}
+
+/**
+ * Click the Back button in [SpTopBar]. The button is tagged with
+ * [TestTags.BACK_BUTTON]; use this helper instead of searching for
+ * "Go back" content description so callers don't break if the icon
+ * label changes.
+ */
+fun ComposeRule.pressTopBarBack() {
+    tapOnTag(TestTags.BACK_BUTTON, fallbackLabel = "Go back")
+}
+
+/**
+ * Mapping from a human label to the standardised testTag for the same
+ * element. Lets old tests like `tapOn("Settings")` automatically use
+ * the new tag-based lookup without code changes — when the rendered
+ * label changes ("Settings" → "Preferences", localised, hidden in
+ * gamepad mode, etc.) the test keeps working as long as the tag stays
+ * applied to the underlying composable.
+ *
+ * Add an entry whenever you introduce a `TestTags.*` constant for a
+ * label that pre-existing tests already pass to [tapOn].
+ */
+private val labelToTestTag: Map<String, String> = mapOf(
+    "Home" to TestTags.NAV_HOME,
+    "Explore" to TestTags.NAV_EXPLORE,
+    "Consoles" to TestTags.NAV_CONSOLES,
+    "Library" to TestTags.NAV_CONSOLES,
+    "Collections" to TestTags.NAV_COLLECTIONS,
+    "Activity" to TestTags.NAV_ACTIVITY,
+    "Challenges" to TestTags.NAV_CHALLENGES,
+    "Netplay" to TestTags.NAV_NETPLAY,
+    "Settings" to TestTags.NAV_SETTINGS,
+    "General" to TestTags.SETTINGS_CATEGORY_GENERAL,
+    "Emulation" to TestTags.SETTINGS_CATEGORY_EMULATION,
+    "Controls" to TestTags.SETTINGS_CATEGORY_CONTROLS,
+    "About" to TestTags.SETTINGS_CATEGORY_ABOUT,
+    "Achievements" to TestTags.SETTINGS_CATEGORY_ACHIEVEMENTS,
+    "Storage & Sync" to TestTags.SETTINGS_CATEGORY_STORAGE_SYNC,
+    "Per-Console" to TestTags.SETTINGS_CATEGORY_CONSOLES,
+    "Go back" to TestTags.BACK_BUTTON,
+    "Back" to TestTags.BACK_BUTTON,
+)
+
+/**
+ * Tap a node by text OR content description.
+ *
+ * **Prefer [tapOnTag] over this for any element you control.** Labels
+ * are fragile against copy changes, hidden in gamepad mode, and
+ * affected by localisation; testTags are compile-time constants that
+ * survive all three. The [labelToTestTag] map below makes legacy
+ * `tapOn("Settings")`-style calls automatically prefer the tag, but
+ * new code should call [tapOnTag] directly with a [TestTags] constant.
+ *
+ * During emulation (Core running), Compose test performClick() blocks on Espresso
+ * idle which never arrives due to the 60fps render loop. In that case, this
+ * function falls back to UiAutomator which bypasses Espresso idle.
+ */
 fun ComposeRule.tapOn(label: String) {
+    // Prefer testTag if this label is a known standardised element.
+    labelToTestTag[label]?.let { tag ->
+        val nodes = onAllNodesWithTag(tag, useUnmergedTree = true)
+            .fetchSemanticsNodes()
+        if (nodes.isNotEmpty()) {
+            onAllNodesWithTag(tag, useUnmergedTree = true)[0].performClick()
+            waitForIdle()
+            return
+        }
+        // Fall through to text/description matching if the tag isn't
+        // present — could be a screen that hasn't adopted the tag yet
+        // or a node not in the current composition.
+    }
+    tapOnByLabel(label)
+}
+
+private fun ComposeRule.tapOnByLabel(label: String) {
     val device = UiDevice.getInstance(InstrumentationRegistry.getInstrumentation())
     val emulationRunning = device.findObject(UiSelector().descriptionContains("Core running")).exists()
 
@@ -500,55 +838,44 @@ fun ComposeRule.clearAppState() {
 }
 
 fun ComposeRule.restartApp() {
-    // Simulate a real app restart: recreate the Activity.
-    // This mimics a configuration change or process recreation.
-    // Navigate back to Home first so overlays/sub-screens are dismissed.
+    // Note: this uses activityRule.scenario.recreate() which sends
+    // the activity through onPause→onStop→onCreate again, simulating
+    // a configuration change. It does NOT kill the process — that
+    // would invalidate the scenario reference and crash the test
+    // runner. For persistence tests this is enough: SQLDelight is
+    // re-opened, ViewModels are recreated, the dashboard refetches.
+    // It does not exercise process-death restoration; that would
+    // require force-stop, but force-stop is incompatible with
+    // ComposeRule's lifecycle binding.
+    //
+    // The recreate is sometimes flaky (Compose hierarchy doesn't
+    // re-establish on the first attempt); we retry up to three
+    // times before giving up and surfacing the failure.
     navigateBackToHome()
 
-    activityRule.scenario.recreate()
-
-    // Give the system time to tear down the old Activity and create the new one.
-    Thread.sleep(2_000)
-
-    // Wait for the new Activity's Compose hierarchy to be fully established.
-    // Note: Activity recreation via scenario.recreate() is unreliable on emulators.
-    // The Compose hierarchy sometimes fails to re-establish, causing this to timeout.
-    // When this happens, we attempt to recover by pressing Home and relaunching,
-    // rather than leaving the app in a broken state for subsequent tests.
-    try {
-        pollUntil(timeoutMillis = 30_000L) {
-            try {
-                isOnHomeScreen() ||
-                    isOnServerConnectionScreen() ||
-                    isOnLoginScreen()
-            } catch (_: Exception) {
-                false // Compose hierarchy not yet available after recreate
+    var lastError: Throwable? = null
+    repeat(3) { attempt ->
+        try {
+            activityRule.scenario.recreate()
+            Thread.sleep(2_000)
+            pollUntil(timeoutMillis = 30_000L) {
+                try {
+                    isOnHomeScreen() ||
+                        isOnServerConnectionScreen() ||
+                        isOnLoginScreen()
+                } catch (_: Exception) { false }
             }
-        }
-    } catch (_: androidx.compose.ui.test.ComposeTimeoutException) {
-        // Recreation failed — attempt recovery by relaunching via intent
-        val device = UiDevice.getInstance(InstrumentationRegistry.getInstrumentation())
-        device.pressHome()
-        Thread.sleep(1_000)
-        val context = InstrumentationRegistry.getInstrumentation().targetContext
-        val intent = context.packageManager.getLaunchIntentForPackage(context.packageName)
-        intent?.addFlags(android.content.Intent.FLAG_ACTIVITY_CLEAR_TASK or android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
-        if (intent != null) {
-            context.startActivity(intent)
-            Thread.sleep(3_000)
-        }
-        // Final attempt — if this also fails, the test will fail but at least
-        // the app is in a recoverable state for subsequent tests.
-        pollUntil(timeoutMillis = 30_000L) {
-            try {
-                isOnHomeScreen() ||
-                    isOnServerConnectionScreen() ||
-                    isOnLoginScreen()
-            } catch (_: Exception) {
-                false
-            }
+            return // recreate landed us on a recognised screen
+        } catch (e: Throwable) {
+            lastError = e
+            android.util.Log.w(
+                "E2E_RESTART",
+                "restartApp attempt ${attempt + 1}/3 failed: ${e.message?.take(120)}",
+            )
+            Thread.sleep(1_000)
         }
     }
+    error("restartApp failed after 3 attempts: ${lastError?.message}")
 }
 
 /**
@@ -556,7 +883,7 @@ fun ComposeRule.restartApp() {
  * Handles overlays, game sessions, Settings sub-screens, etc.
  * Stops early on auth screens (server connection, login) to avoid exiting the Activity.
  */
-private fun ComposeRule.navigateBackToHome() {
+internal fun ComposeRule.navigateBackToHome() {
     val device = uiDevice()
     for (i in 1..10) {
         try {
@@ -608,6 +935,43 @@ private fun ComposeRule.navigateBackToHome() {
     }
 }
 
+/**
+ * Cheap post-condition check: we must be on the Home screen.
+ *
+ * Called at the end of BaseE2ETest.baseSetUp() to turn silent
+ * contract violations into a loud early failure instead of letting
+ * the test body limp along and fail somewhere downstream with a
+ * confusing "text not found" that's really about starting on the
+ * wrong screen.
+ *
+ * Fails with a one-line diagnostic listing which top-level screen
+ * indicators are actually visible. Don't use for flaky polling —
+ * that's what pollUntil + isOnHomeScreen are for; this is a
+ * one-shot "are we there yet" assertion.
+ */
+fun ComposeRule.assertOnHome() {
+    if (isOnHomeScreen()) return
+    val indicators = buildList {
+        if (isOnServerConnectionScreen()) add("server-connection")
+        if (isOnLoginScreen()) add("login")
+        try {
+            if (onAllNodesWithTag(TestTags.NAV_HOME, useUnmergedTree = true)
+                    .fetchSemanticsNodes().isNotEmpty()) add("bottom-nav-present")
+        } catch (_: Exception) { /* compose tree not ready */ }
+        val device = uiDevice()
+        if (device.findObject(UiSelector().descriptionContains("Settings")).exists())
+            add("settings-screen")
+        if (device.findObject(UiSelector().descriptionContains("Game running")).exists())
+            add("in-game")
+        if (device.findObject(UiSelector().descriptionContains("Go back")).exists())
+            add("detail-screen")
+    }
+    error(
+        "assertOnHome: not on Home screen. Visible indicators: " +
+            if (indicators.isEmpty()) "none (unknown screen)" else indicators.joinToString(",")
+    )
+}
+
 // ── Login flows ──
 
 /**
@@ -623,12 +987,29 @@ fun ComposeRule.ensureLoggedIn(
     username: String = PLAYER_USERNAME,
     password: String = PLAYER_PASSWORD
 ) {
-    // Wait for any recognizable screen to load (UiAutomator — no Espresso idle).
+    // Surface environmental problems up-front rather than letting them
+    // cascade into mysterious timeouts deeper in the test. See
+    // StartupDiagnostics for the full list of things this checks.
+    StartupDiagnostics.assertClean()
+
+    // Wait for any recognizable screen to load. We accept any logged-in
+    // screen here (Home, Console, Game Detail, in-game, Settings) — the
+    // navigateBackToHome() call below pulls us back to Home if needed.
+    // The previous version only accepted Home/Login/ServerConnect plus a
+    // few UiAutomator markers, which left us stuck for 30s when the
+    // previous test ended on Console or Game Detail.
     val device = uiDevice()
     pollUntil(timeoutMillis = 30_000L) {
         isOnHomeScreen() ||
             isOnServerConnectionScreen() ||
             isOnLoginScreen() ||
+            // "Any logged-in screen" — the bottom-nav testTag is on every
+            // screen below the login flow, and fetchSemanticsNodes works
+            // regardless of which display the activity sits on.
+            try {
+                onAllNodesWithTag(TestTags.NAV_HOME, useUnmergedTree = true)
+                    .fetchSemanticsNodes().isNotEmpty()
+            } catch (_: Exception) { false } ||
             device.findObject(UiSelector().descriptionContains("Settings")).exists() ||
             device.findObject(UiSelector().descriptionContains("Game running")).exists() ||
             device.findObject(UiSelector().descriptionContains("Go back")).exists()
@@ -697,7 +1078,7 @@ fun ComposeRule.loginAsAdmin() {
     addServerAndLogin(ADMIN_USERNAME, ADMIN_PASSWORD)
 }
 
-private fun ComposeRule.signOutIfLoggedIn() {
+internal fun ComposeRule.signOutIfLoggedIn() {
     // Check if we're on Home screen (logged in) via UiAutomator
     if (!isOnHomeScreen()) return
 
@@ -715,7 +1096,7 @@ private fun ComposeRule.signOutIfLoggedIn() {
     }
 }
 
-private fun ComposeRule.addServerAndLogin(username: String, password: String) {
+internal fun ComposeRule.addServerAndLogin(username: String, password: String) {
     // Wait for server connection screen (use text fallback since test tag on
     // BoxWithConstraints may not be accessible)
     pollUntil(timeoutMillis = TIMEOUT_LONG) {
@@ -785,18 +1166,32 @@ private fun ComposeRule.doLogin(username: String, password: String) {
         .performTextInput(password)
     android.util.Log.d("E2E_TIMING", "inputPassword: ${System.currentTimeMillis()-t}ms")
 
-    // Tap Sign In — try UiAutomator first, Compose fallback
-    val signInBtn = device.findObject(UiSelector().textContains("Sign In"))
-    if (signInBtn.exists()) {
-        signInBtn.click()
-    } else {
-        onNodeWithText("Sign In").performClick()
+    // Tap Sign In and wait for home. The server's first /api/auth/login
+    // call after `docker compose up` can hit the OkHttp socket timeout
+    // (the server's bcrypt verification is slow on cold start under
+    // docker-on-macOS), which leaves us back on the login screen with
+    // the credentials still filled in. Retry up to 3 times — clicking
+    // Sign In again starts a fresh request.
+    repeat(3) { attempt ->
+        val signInBtn = device.findObject(UiSelector().textContains("Sign In"))
+        if (signInBtn.exists()) {
+            signInBtn.click()
+        } else {
+            try { onNodeWithText("Sign In").performClick() } catch (_: Throwable) {}
+        }
+        try {
+            pollUntil(timeoutMillis = TIMEOUT_EXTRA_LONG) { isOnHomeScreen() }
+            return // landed on Home, login succeeded
+        } catch (_: androidx.compose.ui.test.ComposeTimeoutException) {
+            // Still on login (or somewhere else); try once more.
+            android.util.Log.w(
+                "E2E_LOGIN",
+                "doLogin attempt ${attempt + 1}/3 didn't reach Home — retrying",
+            )
+        }
     }
-
-    // Verify home screen (UiAutomator — no Espresso idle dependency)
-    pollUntil(timeoutMillis = TIMEOUT_EXTRA_LONG) {
-        isOnHomeScreen()
-    }
+    // Final assertion — let the framework surface a clear failure.
+    pollUntil(timeoutMillis = TIMEOUT_MEDIUM) { isOnHomeScreen() }
 }
 
 // ── Navigation helpers ──
@@ -1033,13 +1428,23 @@ fun ComposeRule.navigateToGameByTitle(gameTitle: String) {
     } catch (_: Exception) {}
     android.util.Log.d(tag, "Step 8: Full page text: $detailText")
 
-    // Wait for game detail — look for Download/Play/Resume button
-    // Use longer timeout — game detail page loads game info from API
+    // Wait for game detail — look for Download/Play/Resume button.
+    // Check both UiAutomator (works when activity is on display 0) and
+    // the Compose semantics tree (works regardless of display, e.g.
+    // AYN Thor's secondary-display routing). Either signal is enough.
     android.util.Log.d(tag, "Step 8: Waiting for game detail (Download/Play/Resume)")
     pollUntil(timeoutMillis = TIMEOUT_EXTRA_LONG) {
         device.findObject(UiSelector().textContains("Download")).exists() ||
             device.findObject(UiSelector().textContains("Play")).exists() ||
-            device.findObject(UiSelector().textContains("Resume")).exists()
+            device.findObject(UiSelector().textContains("Resume")).exists() ||
+            try {
+                onAllNodesWithText("Download", substring = true)
+                    .fetchSemanticsNodes().isNotEmpty() ||
+                    onAllNodesWithText("Play", substring = true)
+                        .fetchSemanticsNodes().isNotEmpty() ||
+                    onAllNodesWithText("Resume", substring = true)
+                        .fetchSemanticsNodes().isNotEmpty()
+            } catch (_: Exception) { false }
     }
     android.util.Log.d(tag, "Step 8: Game detail loaded")
 }
@@ -1245,35 +1650,38 @@ fun ComposeRule.downloadGameIfNeeded() {
 }
 
 fun ComposeRule.startGameAndWait() {
-    // Click Play/Resume using Compose tree
-    // Find the Play/Resume button — must have BOTH text AND click action
-    // to avoid clicking non-interactive text nodes
-    val playMatcher = hasText("Play", substring = false) and hasClickAction()
-    val resumeMatcher = hasText("Resume", substring = false) and hasClickAction()
-    val hasResume = try {
-        onAllNodes(resumeMatcher).fetchSemanticsNodes().isNotEmpty()
-    } catch (_: Exception) { false }
-    val hasPlay = try {
-        onAllNodes(playMatcher).fetchSemanticsNodes().isNotEmpty()
-    } catch (_: Exception) { false }
-
-    android.util.Log.d("E2E_NAV", "startGameAndWait: hasResume=$hasResume, hasPlay=$hasPlay")
-
-    if (hasResume) {
-        android.util.Log.d("E2E_NAV", "startGameAndWait: Clicking Resume")
-        onAllNodes(resumeMatcher)[0].performClick()
-    } else if (hasPlay) {
-        android.util.Log.d("E2E_NAV", "startGameAndWait: Clicking Play (clickable)")
-        onAllNodes(playMatcher)[0].performClick()
-    } else {
-        android.util.Log.d("E2E_NAV", "startGameAndWait: No clickable Play/Resume, trying text-only")
-        onNodeWithText("Play", substring = false).performClick()
+    // Click the play/resume CTA via its testTag. Label flips between "Play"
+    // and "Resume" based on save state, and substring text matches collide
+    // with copy like "Last played" / "Play time" elsewhere on the screen.
+    val playButtonTag = com.spela.player.presentation.ui.TestTags.GAME_DETAIL_PLAY_BUTTON
+    val nodes = onAllNodes(hasTestTag(playButtonTag)).fetchSemanticsNodes()
+    android.util.Log.d("E2E_NAV", "startGameAndWait: $playButtonTag count=${nodes.size}")
+    if (nodes.isEmpty()) {
+        // Surface what IS visible so the failure log is actionable.
+        val visibleTags = try {
+            val roots = onAllNodes(androidx.compose.ui.test.isRoot(), useUnmergedTree = true)
+                .fetchSemanticsNodes()
+            val tags = mutableListOf<String>()
+            roots.forEach { root ->
+                collectAllNodes(root).forEach { n ->
+                    for ((k, v) in n.config) if (k.name == "TestTag") (v as? String)?.let { tags.add(it) }
+                }
+            }
+            tags
+        } catch (_: Exception) { emptyList() }
+        android.util.Log.d("E2E_NAV", "startGameAndWait: testTags on screen: ${visibleTags.take(40)}")
+        throw IllegalStateException("Game detail play button (testTag=$playButtonTag) not found")
     }
+    onAllNodes(hasTestTag(playButtonTag))[0].performClick()
     waitForIdle()
 
     // Wait for emulation to start using multiple signals
     val device = uiDevice()
-    val deadline = System.currentTimeMillis() + 120_000
+    // 20s is enough for download + extract + core init on a real device.
+    // First-time runs that need to fetch a fresh core from libretro
+    // buildbot may take longer; bump only if a passing test starts
+    // failing here, NOT to mask a hanging emulation pipeline.
+    val deadline = System.currentTimeMillis() + 20_000
     while (System.currentTimeMillis() < deadline) {
         // Signal 1: Compose "Game running" marker
         try {
@@ -1303,7 +1711,7 @@ fun ComposeRule.startGameAndWait() {
 
         Thread.sleep(2_000)
     }
-    throw IllegalStateException("Game did not start within 120 seconds")
+    throw IllegalStateException("Game did not start within 20 seconds")
 }
 
 fun ComposeRule.openOverlay() {
@@ -1341,64 +1749,229 @@ fun ComposeRule.exitGame(coreIdleTimeout: Long = 10_000) {
 
 // ── Composite helpers for common patterns ──
 
-fun ComposeRule.navigateToGameAndPlay() {
+/**
+ * Navigate from wherever we are to a game's detail screen and start playing.
+ *
+ * When [preferredGameTitle] is given, picks the card whose contentDescription
+ * starts with that title. That makes the test deterministic — otherwise
+ * we tap the first card in the tree, which depends on seeded game ordering
+ * and can land on a ROM nestopia rejects (Super Mario Bros.nes in the
+ * test fixtures fails retro_load_game, while Balloon Fight loads cleanly).
+ * Balloon Fight is the known-good default; it's the first NES game in
+ * Browse Games (alphabetical) and has been verified to start emulation
+ * end-to-end on the nestopia Android core.
+ */
+fun ComposeRule.navigateToGameAndPlay(preferredGameTitle: String? = "Balloon Fight") {
     val device = uiDevice()
     val tag = "E2E_NAV"
 
     // Navigate to Consoles → NES → tap a game directly on the console page.
-    // The console page has a hero banner. Scroll down to find game cards.
+    // The console landing shows "Essentials" / "Recently Added" shelves
+    // of game cards tagged `explore_game_card_<id>`. Tapping any card
+    // routes to its detail page — no separate "Browse" screen is
+    // required on the modern layout.
     android.util.Log.d(tag, "navigateToGameAndPlay: Starting")
-    tapOn("Consoles")
-    waitForContentDescription("Nintendo Entertainment System", TIMEOUT_EXTRA_LONG)
-    scrollToAndTapMatchingBoth("Nintendo Entertainment System", "games")
-    waitForContentDescription("screen_console", TIMEOUT_LONG)
-
-    // Wait for games to load (Browse button appears after state.games > 15)
-    Thread.sleep(3_000)
+    // The Compose Navigation in this app keeps a per-tab back stack, so a
+    // tap on Consoles when we're already at NES > game detail just pops
+    // one level instead of returning to the consoles list. The reliable
+    // way to reach a known root is to bounce off Home first — Home
+    // doesn't have nested screens, so a Home tap is always idempotent.
+    // After that, a single Consoles tap lands on the consoles list.
+    val nesTag = com.spela.player.presentation.ui.TestTags.consoleCard("nes")
+    // Wait for the bottom-nav Home tab to actually be in the Compose tree
+    // before tapping. Right after ensureLoggedIn the activity may still
+    // be hydrating its first composition.
     try {
-        val browseNodes = onAllNodesWithText("Browse", substring = false).fetchSemanticsNodes()
-        if (browseNodes.isNotEmpty()) {
-            android.util.Log.d(tag, "navigateToGameAndPlay: Clicking Browse")
-            onNodeWithText("Browse", substring = false).performClick()
-            waitForIdle()
-            Thread.sleep(3_000)
-
-            // On ConsoleGamesScreen — find first game and click
-            pollUntil(timeoutMillis = TIMEOUT_EXTRA_LONG) {
-                try {
-                    onAllNodes(hasTestTag("console_games_screen")).fetchSemanticsNodes().isNotEmpty()
-                } catch (_: Exception) { false }
-            }
-            Thread.sleep(2_000)
-
-            // Find any clickable node with a game title
-            // The first game alphabetically is "Balloon Fight"
-            val gameMatcher = hasText("Balloon Fight", substring = true) and hasClickAction()
-            val gameNodes = onAllNodes(gameMatcher).fetchSemanticsNodes()
-            android.util.Log.d(tag, "navigateToGameAndPlay: Balloon Fight clickable nodes: ${gameNodes.size}")
-            if (gameNodes.isNotEmpty()) {
-                onAllNodes(gameMatcher)[0].performClick()
-                waitForIdle()
-                Thread.sleep(5_000) // Give time for navigation + API + recomposition
-                android.util.Log.d(tag, "navigateToGameAndPlay: Clicked Balloon Fight")
-            }
+        pollUntil(timeoutMillis = 10_000L) {
+            try { onAllNodes(hasTestTag(TestTags.NAV_HOME)).fetchSemanticsNodes().isNotEmpty() }
+            catch (_: Exception) { false }
         }
-    } catch (e: Exception) {
-        android.util.Log.d(tag, "navigateToGameAndPlay: Failed: ${e.message?.take(100)}")
+    } catch (_: androidx.compose.ui.test.ComposeTimeoutException) {
+        throw IllegalStateException("Bottom nav (NAV_HOME) never appeared — activity not in a logged-in state?")
+    }
+    // Pop back-stack until the system back press is consumed by the
+    // launcher (i.e. we left the app) — but don't actually leave: stop
+    // when isOnHomeScreen() is true. This guarantees we're at a tab
+    // root, not a deep child like NES > game detail. Then tap Consoles
+    // exactly once to land on the consoles list.
+    repeat(8) {
+        if (isOnHomeScreen()) return@repeat
+        pressBack()
+        Thread.sleep(300)
+    }
+    if (!isOnHomeScreen()) {
+        // Last-resort: nuke via Home tab tap (works when we're inside a
+        // sibling tab whose back stack we can't pop into Home).
+        onAllNodes(hasTestTag(TestTags.NAV_HOME))[0].performClick()
+        waitForIdle()
+        Thread.sleep(500)
+    }
+    android.util.Log.d(tag, "navigateToGameAndPlay: reset to Home (isOnHomeScreen=${isOnHomeScreen()})")
+    onAllNodes(hasTestTag(TestTags.NAV_CONSOLES))[0].performClick()
+    waitForIdle()
+    android.util.Log.d(tag, "navigateToGameAndPlay: tapped Consoles")
+    Thread.sleep(500)
+    // The Consoles tab restores its last visited screen (e.g. NES detail
+    // if a previous test landed there) instead of the consoles list root.
+    // Pop back-stack within the Consoles tab until the NES card testTag
+    // is visible on screen (= we're on the consoles list).
+    var landedOnList = false
+    repeat(8) {
+        try {
+            if (onAllNodes(hasTestTag(nesTag)).fetchSemanticsNodes().isNotEmpty()) {
+                landedOnList = true
+                return@repeat
+            }
+        } catch (_: Exception) {}
+        pressBack()
+        Thread.sleep(400)
+    }
+    if (!landedOnList) {
+        try {
+            pollUntil(timeoutMillis = 5_000L) {
+                try { onAllNodes(hasTestTag(nesTag)).fetchSemanticsNodes().isNotEmpty() }
+                catch (_: Exception) { false }
+            }
+        } catch (_: androidx.compose.ui.test.ComposeTimeoutException) {
+            throw IllegalStateException("Could not reach Consoles list — NES card testTag not visible after Home→Consoles bounce + 8 back presses")
+        }
+    }
+    onAllNodes(hasTestTag(nesTag))[0].performClick()
+    waitForIdle()
+    Thread.sleep(500)
+
+    // Wait for game cards to render. `explore_game_card_<id>` is the
+    // shared tag pattern for every shelf on the console landing page —
+    // we look up the current tree, find any node whose tag starts with
+    // that prefix, and tap the first one.
+    // Tag prefixes used across screens that render game-pickable cards.
+    // The console landing page uses `explore_game_card_<id>`; the
+    // paginated ConsoleGamesScreen grid uses `game_grid_item_<id>`. The
+    // caller doesn't care which screen it's on — we accept either.
+    val gameCardPrefixes = listOf("explore_game_card_", "game_grid_item_")
+
+    fun findGameCardTags(useUnmerged: Boolean = true): List<String> {
+        return try {
+            val nodes = onAllNodes(
+                androidx.compose.ui.test.isRoot(),
+                useUnmergedTree = useUnmerged,
+            ).fetchSemanticsNodes()
+            val tags = mutableListOf<String>()
+            fun walk(n: androidx.compose.ui.semantics.SemanticsNode) {
+                for ((key, value) in n.config) {
+                    if (key.name == "TestTag") {
+                        val tag = value as? String ?: continue
+                        if (gameCardPrefixes.any { tag.startsWith(it) }) tags.add(tag)
+                    }
+                }
+                n.children.forEach { walk(it) }
+            }
+            nodes.forEach { walk(it) }
+            tags
+        } catch (_: Exception) { emptyList() }
     }
 
-    // Wait for game detail — use Compose tree to check for game detail content
-    // UiAutomator may show stale accessibility nodes from previous screens
-    android.util.Log.d(tag, "navigateToGameAndPlay: Waiting for game detail")
-    pollUntil(timeoutMillis = 60_000) {
+    // Finds the first game card whose merged contentDescription starts with
+    // [titlePrefix]. The card's contentDescription is set to
+    // "$title, $subtitle(, favorited/in play later)?" by SpGameCard, so a
+    // prefix match on the game title is the stable way to pick a specific
+    // card without hardcoding backend autoincrement IDs.
+    fun findGameCardTagByTitle(titlePrefix: String): String? {
+        return try {
+            val nodes = onAllNodes(
+                androidx.compose.ui.test.isRoot(),
+                useUnmergedTree = true,
+            ).fetchSemanticsNodes()
+            var hit: String? = null
+            val seenTitles = mutableListOf<String>()
+            fun walk(n: androidx.compose.ui.semantics.SemanticsNode) {
+                if (hit != null) return
+                val testTag = n.config.firstOrNull { it.key.name == "TestTag" }?.value as? String
+                if (testTag != null && gameCardPrefixes.any { testTag.startsWith(it) }) {
+                    val cd = n.config.firstOrNull { it.key.name == "ContentDescription" }?.value
+                    val cdText = (cd as? List<*>)?.joinToString(", ") { it.toString() } ?: cd?.toString() ?: ""
+                    seenTitles.add("$testTag→\"$cdText\"")
+                    if (cdText.startsWith(titlePrefix, ignoreCase = true)
+                        || cdText.contains(titlePrefix, ignoreCase = true)) {
+                        hit = testTag
+                    }
+                }
+                n.children.forEach { walk(it) }
+            }
+            nodes.forEach { walk(it) }
+            if (hit == null) {
+                android.util.Log.d("E2E_NAV", "findGameCardTagByTitle($titlePrefix) not found. Scanned ${seenTitles.size} cards: $seenTitles")
+            }
+            hit
+        } catch (_: Exception) { null }
+    }
+
+    pollUntil(timeoutMillis = TIMEOUT_EXTRA_LONG) {
+        findGameCardTags().isNotEmpty()
+    }
+    Thread.sleep(1_000) // let layout settle so the first card is clickable
+
+    // Retry the tap up to N times — sometimes the first tap lands while a
+    // LazyRow is still laying out and gets swallowed. We assert navigation
+    // by waiting for a `game_detail_*` testTag to appear, not by polling
+    // loose substring text on the previous screen.
+    // If the caller asked for a specific game and it's not on the front
+    // shelves of the console screen (Essentials/Launch/Recently Added/etc.),
+    // hop through Browse Games — that page lists every game for the console
+    // and is paginated, so titles outside the curated shelves are
+    // reachable. We only do this when the title isn't already visible to
+    // avoid extra navigation when the front page already has it.
+    if (preferredGameTitle != null && findGameCardTagByTitle(preferredGameTitle) == null) {
+        android.util.Log.d(tag, "navigateToGameAndPlay: $preferredGameTitle not on console front page; opening Browse Games")
         try {
-            val hasDownload = onAllNodesWithText("Download", substring = true).fetchSemanticsNodes().isNotEmpty()
-            val hasPlay = onAllNodesWithText("Play", substring = true).fetchSemanticsNodes().isNotEmpty()
-            val hasResume = onAllNodesWithText("Resume", substring = true).fetchSemanticsNodes().isNotEmpty()
-            val hasBalloon = onAllNodesWithText("Balloon Fight", substring = true).fetchSemanticsNodes().isNotEmpty()
-            android.util.Log.d(tag, "navigateToGameAndPlay: Poll — Download=$hasDownload Play=$hasPlay Resume=$hasResume BalloonFight=$hasBalloon")
-            hasDownload || hasPlay || hasResume
-        } catch (_: Exception) { false }
+            onAllNodes(hasTestTag(com.spela.player.presentation.ui.TestTags.consoleBrowseGames("nes")))[0].performClick()
+            waitForIdle()
+            Thread.sleep(2_000)
+        } catch (e: Exception) {
+            android.util.Log.d(tag, "navigateToGameAndPlay: Browse Games tap failed: ${e.message?.take(120)}")
+        }
+    }
+
+    val gameDetailAppeared = run {
+        var appeared = false
+        repeat(3) { attempt ->
+            val preferredTag = preferredGameTitle?.let { findGameCardTagByTitle(it) }
+            val allCards = findGameCardTags()
+            val targetTag = preferredTag ?: allCards.firstOrNull()
+            android.util.Log.d(tag, "navigateToGameAndPlay: attempt ${attempt + 1}, preferred=$preferredGameTitle tag=$targetTag allCards=${allCards.size}")
+            if (targetTag == null) return@repeat
+            try {
+                onAllNodes(hasTestTag(targetTag), useUnmergedTree = true)[0].performClick()
+                waitForIdle()
+                android.util.Log.d(tag, "navigateToGameAndPlay: tapped $targetTag")
+            } catch (e: Exception) {
+                android.util.Log.d(tag, "navigateToGameAndPlay: tap failed: ${e.message?.take(120)}")
+                return@repeat
+            }
+
+            val deadline = System.currentTimeMillis() + 15_000
+            while (System.currentTimeMillis() < deadline) {
+                val hasPlayButton = try {
+                    onAllNodes(hasTestTag(com.spela.player.presentation.ui.TestTags.GAME_DETAIL_PLAY_BUTTON))
+                        .fetchSemanticsNodes().isNotEmpty()
+                } catch (_: Exception) { false }
+                val hasDownloadButton = try {
+                    onAllNodes(hasTestTag(com.spela.player.presentation.ui.TestTags.GAME_DETAIL_DOWNLOAD_BUTTON))
+                        .fetchSemanticsNodes().isNotEmpty()
+                } catch (_: Exception) { false }
+                if (hasPlayButton || hasDownloadButton) {
+                    appeared = true
+                    android.util.Log.d(tag, "navigateToGameAndPlay: game detail appeared (play=$hasPlayButton download=$hasDownloadButton)")
+                    return@run true
+                }
+                Thread.sleep(300)
+            }
+            android.util.Log.d(tag, "navigateToGameAndPlay: game detail did NOT appear after tap ${attempt + 1}")
+        }
+        appeared
+    }
+    if (!gameDetailAppeared) {
+        throw IllegalStateException("Could not navigate into game detail from console screen")
     }
     android.util.Log.d(tag, "navigateToGameAndPlay: Game detail loaded!")
     downloadGameIfNeeded()
@@ -1437,20 +2010,69 @@ fun ComposeRule.openOverlayAndExit() {
  * After this call, the category list is visible with "General" selected.
  */
 fun ComposeRule.navigateToSettings() {
-    tapOn("Settings")
-    Thread.sleep(1_000) // Let the navigation settle
-    // Wait for the category list — "General" is always the first category
-    waitForText("General", TIMEOUT_LONG)
+    // Prefer the stable testTag from TestTags.NAV_SETTINGS — the label
+    // "Settings" can be hidden in gamepad mode or renamed, but the tag
+    // is a compile-time constant applied by both SpBottomNavBar and
+    // SpNavigationRail.
+    tapOnTag(TestTags.NAV_SETTINGS, fallbackLabel = "Settings")
+    Thread.sleep(1_000)
+    // Wait for the category list by its testTag — resilient to label
+    // renames and localisation.
+    waitForTag(TestTags.SETTINGS_CATEGORY_GENERAL, TIMEOUT_LONG)
 }
 
 /**
- * Navigate to a specific Settings category. On wide screens, the category content
- * appears on the right. On phones, it replaces the category list.
+ * Navigate to a specific Settings category by test tag. Prefer passing a
+ * [TestTags] constant here (e.g. `TestTags.SETTINGS_CATEGORY_ABOUT`) so
+ * label changes don't break callers. The label overload is kept for
+ * backwards compatibility.
  */
+fun ComposeRule.navigateToSettingsCategoryTag(tag: String) {
+    navigateToSettings()
+    tapOnTag(tag)
+    waitForIdle()
+}
+
 fun ComposeRule.navigateToSettingsCategory(category: String) {
     navigateToSettings()
     tapOn(category)
     waitForIdle()
+}
+
+/**
+ * Toggle a setting by its visible title (e.g. "Performance Overlay",
+ * "Auto Save on Exit"). Each [SettingsToggle] composable sets
+ * `contentDescription = title`, so a contentDescription match finds the
+ * row. The caller must already be on the relevant Settings category
+ * (e.g. via [navigateToSettingsCategoryTag]).
+ *
+ * No-op if the toggle is already in the desired state, so tests can
+ * call this idempotently when a previous test may have flipped it.
+ */
+/** Convenience wrapper: enable the FPS/frame-time HUD before starting a game. */
+fun ComposeRule.enablePerformanceOverlay() {
+    navigateToSettingsCategoryTag(TestTags.SETTINGS_CATEGORY_EMULATION)
+    setSettingsToggle("Performance Overlay", enable = true)
+    pressBack()
+    Thread.sleep(500)
+}
+
+fun ComposeRule.setSettingsToggle(title: String, enable: Boolean) {
+    val device = uiDevice()
+    // Find the toggle row. SettingsToggle sets contentDescription=title
+    // and stateDescription="On"/"Off" via Role.Switch semantics.
+    val node = onAllNodes(hasContentDescription(title, substring = true))
+        .fetchSemanticsNodes()
+        .firstOrNull()
+    checkNotNull(node) { "setSettingsToggle: no toggle with title '$title' found" }
+    // stateDescription tells us the current state without relying on
+    // visual switch state.
+    val state = node.config.firstOrNull { it.key.name == "StateDescription" }?.value as? String
+    val currentlyEnabled = state == "On"
+    if (currentlyEnabled == enable) return
+    onAllNodes(hasContentDescription(title, substring = true))[0].performClick()
+    waitForIdle()
+    Thread.sleep(300)
 }
 
 fun ComposeRule.ensureOverlayOpen() {
@@ -1650,6 +2272,11 @@ fun ComposeRule.dismissChallengeResult() {
  * Returns with the game still running after the "Challenge created!" toast.
  */
 fun ComposeRule.createChallengeFromOverlay(title: String = "E2E Test Challenge") {
+    // The in-game challenge create flow uses ChallengeCreationPanel
+    // (different from the game-detail CreateChallengeDialog). It
+    // pulls save data straight from libretroController.serialize()
+    // — the live emulator state — so it does NOT need a server-side
+    // save state to exist first. No Save tap needed.
     openOverlay()
     tapOn("Challenge")
     waitForText("Create Challenge", timeout = 5_000)
@@ -1669,8 +2296,12 @@ fun ComposeRule.createChallengeFromOverlay(title: String = "E2E Test Challenge")
         titleField.setText(title)
     }
 
-    // Tap the "Create" button (not the "Create Challenge" dialog title)
-    tapOn("Create")
+    // Tap the "Create" button. tapOn would substring-match and could
+    // hit the "Create Challenge" dialog title first; tapLastWithText
+    // uses UiSelector.text() (exact match) so only the actual button
+    // qualifies, and `last` ensures we get the bottom one if the
+    // panel is ever rendered with multiple "Create" exact matches.
+    tapLastWithText("Create")
     waitForText("Challenge created!", timeout = 15_000)
 
     // Game resumes after toast
@@ -1690,17 +2321,38 @@ fun ComposeRule.ensureChallengeExists(title: String = "E2E Test Challenge") {
         navigateToCastlevania()
         return
     }
-    navigateToGameAndPlay()
+    // Pin the game-and-play target to Castlevania — the create-flow
+    // attaches the challenge to whichever game is running, and the
+    // helper's contract is "challenge exists for Castlevania" since
+    // it returns the user there. Without this pin,
+    // navigateToGameAndPlay defaults to Balloon Fight, the challenge
+    // gets created on Balloon Fight, and then the test taps Castlevania's
+    // 'View Challenges' which shows an unrelated list.
+    navigateToGameAndPlay(preferredGameTitle = "Castlevania")
     createChallengeFromOverlay(title)
     openOverlayAndExit()
-    waitForText("Download", TIMEOUT_LONG)
+    // Post-exit, the action button is Play/Resume/Download depending on
+    // cache + auto-save state. Any of them means we're back on game
+    // detail.
+    pollUntil(timeoutMillis = TIMEOUT_LONG) {
+        try {
+            onAllNodesWithText("Play", substring = true)
+                .fetchSemanticsNodes().isNotEmpty() ||
+                onAllNodesWithText("Resume", substring = true)
+                    .fetchSemanticsNodes().isNotEmpty() ||
+                onAllNodesWithText("Download", substring = true)
+                    .fetchSemanticsNodes().isNotEmpty()
+        } catch (_: Exception) { false }
+    }
     challengesCreated.add(title)
 
     // Navigate all the way back to Home and then through the full path.
     // The game detail screen restored from behind the overlay has a stale
     // LazyColumn whose "View Challenges" button doesn't respond to clicks.
     navigateBackToHome()
-    waitForText("Spela", TIMEOUT_LONG)
+    pollUntil(timeoutMillis = TIMEOUT_LONG) {
+        try { isOnHomeScreen() } catch (_: Exception) { false }
+    }
     navigateToCastlevania()
 }
 
