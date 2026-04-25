@@ -96,7 +96,19 @@ class EmulationTest : BaseE2ETest() {
         setupGame()
         rule.openOverlayAndExit()
 
-        rule.waitForText("Download", timeout = 8_000)
+        // Wait for the game-detail action area to render. The exact button
+        // depends on cache + auto-save state: "Play"/"Resume" once the
+        // game is downloaded, "Download" otherwise. Poll for any of them.
+        rule.pollUntil(timeoutMillis = 8_000) {
+            try {
+                rule.onAllNodesWithText("Play", substring = true)
+                    .fetchSemanticsNodes().isNotEmpty() ||
+                    rule.onAllNodesWithText("Resume", substring = true)
+                        .fetchSemanticsNodes().isNotEmpty() ||
+                    rule.onAllNodesWithText("Download", substring = true)
+                        .fetchSemanticsNodes().isNotEmpty()
+            } catch (_: IllegalStateException) { false }
+        }
 
         // Second play session — button may be "Resume" if saves exist
         val hasResume = rule.onAllNodesWithText("Resume", substring = true)
