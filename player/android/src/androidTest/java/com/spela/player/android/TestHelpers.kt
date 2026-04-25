@@ -2272,20 +2272,12 @@ fun ComposeRule.dismissChallengeResult() {
  * Returns with the game still running after the "Challenge created!" toast.
  */
 fun ComposeRule.createChallengeFromOverlay(title: String = "E2E Test Challenge") {
-    // Challenges need a save state to attach to. The /api/test/reset
-    // run between tests deletes all save states, so before the first
-    // challenge of each test we must save manually. Wait for the
-    // server to register the save (the dialog reads `saveStates`
-    // from the ViewModel which fetches from the server).
+    // The in-game challenge create flow uses ChallengeCreationPanel
+    // (different from the game-detail CreateChallengeDialog). It
+    // pulls save data straight from libretroController.serialize()
+    // — the live emulator state — so it does NOT need a server-side
+    // save state to exist first. No Save tap needed.
     openOverlay()
-    tapOn("Save")
-    // Wait for the server to acknowledge the save, then a beat for
-    // the ViewModel to refresh its saveStates list. Without this
-    // the Create-Challenge dialog opens with no save states and
-    // its Submit button stays disabled.
-    Thread.sleep(2_500)
-    ensureOverlayOpen()
-
     tapOn("Challenge")
     waitForText("Create Challenge", timeout = 5_000)
 
@@ -2304,8 +2296,12 @@ fun ComposeRule.createChallengeFromOverlay(title: String = "E2E Test Challenge")
         titleField.setText(title)
     }
 
-    // Tap the "Create" button (not the "Create Challenge" dialog title)
-    tapOn("Create")
+    // Tap the "Create" button. tapOn would substring-match and could
+    // hit the "Create Challenge" dialog title first; tapLastWithText
+    // uses UiSelector.text() (exact match) so only the actual button
+    // qualifies, and `last` ensures we get the bottom one if the
+    // panel is ever rendered with multiple "Create" exact matches.
+    tapLastWithText("Create")
     waitForText("Challenge created!", timeout = 15_000)
 
     // Game resumes after toast
