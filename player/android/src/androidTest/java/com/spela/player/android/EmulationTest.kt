@@ -212,11 +212,10 @@ class EmulationTest : BaseE2ETest() {
     fun fpsHudHiddenByDefault() {
         // Performance Overlay is opt-in. With no toggle flip, the FPS HUD
         // should NOT appear during gameplay — casual users don't see frame
-        // timing while playing. (Companion test above proves the HUD is
-        // wired and renders when the preference is enabled.)
+        // timing while playing.
         setupGame()
         rule.assertNotVisible("FPS")
-        rule.exitGame()
+        rule.openOverlayAndExit()
     }
 
     @Test
