@@ -388,32 +388,51 @@ fun ComposeRule.waitForTextNotVisible(text: String, timeout: Long = TIMEOUT_SHOR
     }
 }
 
+// All assert*Visible helpers fall through to the Compose semantics
+// tree when UiAutomator doesn't find the text/description. UiAutomator
+// reads the accessibility tree of display 0, which on multi-display
+// hardware (AYN Thor) misses anything routed to the secondary display.
+// Compose's semantics tree comes directly from the activity window
+// regardless of display.
+
+private fun ComposeRule.composeHasText(text: String): Boolean = try {
+    onAllNodesWithText(text, substring = true).fetchSemanticsNodes().isNotEmpty()
+} catch (_: Exception) { false }
+
+private fun ComposeRule.composeHasDescription(desc: String): Boolean = try {
+    onAllNodesWithContentDescription(desc, substring = true).fetchSemanticsNodes().isNotEmpty()
+} catch (_: Exception) { false }
+
 fun ComposeRule.assertTextVisible(text: String) {
-    check(uiDevice().findObject(UiSelector().textContains(text)).exists()) {
-        "Expected '$text' to be visible, but it was not found"
-    }
+    val ok = uiDevice().findObject(UiSelector().textContains(text)).exists() ||
+        composeHasText(text)
+    check(ok) { "Expected '$text' to be visible, but it was not found" }
 }
 
 fun ComposeRule.assertTextNotVisible(text: String) {
-    check(!uiDevice().findObject(UiSelector().textContains(text)).exists()) {
-        "Expected '$text' to NOT be visible, but it was found"
-    }
+    val visible = uiDevice().findObject(UiSelector().textContains(text)).exists() ||
+        composeHasText(text)
+    check(!visible) { "Expected '$text' to NOT be visible, but it was found" }
 }
 
-/** Assert visible by checking BOTH text and content description via UiAutomator. */
+/** Assert visible by checking text OR content description, via UiAutomator with Compose fallback. */
 fun ComposeRule.assertVisible(label: String) {
     val device = uiDevice()
-    val hasText = device.findObject(UiSelector().textContains(label)).exists()
-    val hasDesc = device.findObject(UiSelector().descriptionContains(label)).exists()
-    check(hasText || hasDesc) { "Expected '$label' to be visible (text or description), but not found" }
+    val ok = device.findObject(UiSelector().textContains(label)).exists() ||
+        device.findObject(UiSelector().descriptionContains(label)).exists() ||
+        composeHasText(label) ||
+        composeHasDescription(label)
+    check(ok) { "Expected '$label' to be visible (text or description), but not found" }
 }
 
-/** Assert NOT visible by checking BOTH text and content description via UiAutomator. */
+/** Assert NOT visible by checking BOTH text and content description, with Compose fallback. */
 fun ComposeRule.assertNotVisible(label: String) {
     val device = uiDevice()
-    val hasText = device.findObject(UiSelector().textContains(label)).exists()
-    val hasDesc = device.findObject(UiSelector().descriptionContains(label)).exists()
-    check(!hasText && !hasDesc) { "Expected '$label' to NOT be visible, but it was found" }
+    val visible = device.findObject(UiSelector().textContains(label)).exists() ||
+        device.findObject(UiSelector().descriptionContains(label)).exists() ||
+        composeHasText(label) ||
+        composeHasDescription(label)
+    check(!visible) { "Expected '$label' to NOT be visible, but it was found" }
 }
 
 /** Check if we're in the Spela app (not the Android launcher or another app).
