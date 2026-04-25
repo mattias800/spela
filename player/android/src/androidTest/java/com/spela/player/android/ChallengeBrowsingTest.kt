@@ -131,12 +131,25 @@ class ChallengeBrowsingTest : BaseE2ETest() {
 
     @Test
     fun multipleChallengesVisibleInList() {
-        // Create two challenges
-        rule.navigateToGameAndPlay()
+        // Create two challenges on Castlevania (pin so the post-exit
+        // game-detail screen and the later "View Challenges" tap
+        // target the same game).
+        rule.navigateToGameAndPlay(preferredGameTitle = "Castlevania")
         rule.createChallengeFromOverlay("Challenge Alpha")
         rule.createChallengeFromOverlay("Challenge Beta")
         rule.openOverlayAndExit()
-        rule.waitForText("Download", timeout = 8_000)
+        // After exit the action button is Play/Resume/Download
+        // depending on cache + auto-save state.
+        rule.pollUntil(timeoutMillis = 8_000) {
+            try {
+                rule.onAllNodesWithText("Play", substring = true)
+                    .fetchSemanticsNodes().isNotEmpty() ||
+                    rule.onAllNodesWithText("Resume", substring = true)
+                        .fetchSemanticsNodes().isNotEmpty() ||
+                    rule.onAllNodesWithText("Download", substring = true)
+                        .fetchSemanticsNodes().isNotEmpty()
+            } catch (_: IllegalStateException) { false }
+        }
 
         // Navigate to challenge list
         rule.navigateToChallengeList()
