@@ -215,7 +215,10 @@ class EmulationTest : BaseE2ETest() {
         rule.waitForTextNotVisible("Exit Game")
 
         rule.assertTextNotVisible("Exit Game")
-        rule.assertVisible("Touch controls")
+        // Same gamepad-vs-touch caveat as above — assert "Game running"
+        // instead of "Touch controls" so the test works on both
+        // gamepad-connected and touch-only devices.
+        rule.assertVisible("Game running")
 
         rule.openOverlayAndExit()
     }
