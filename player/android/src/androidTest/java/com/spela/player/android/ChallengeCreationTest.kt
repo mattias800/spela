@@ -3,6 +3,7 @@ package com.spela.player.android
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.hasText
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performTextInput
 import org.junit.Test
@@ -108,23 +109,38 @@ class ChallengeCreationTest : BaseE2ETest() {
         rule.tapOn("Challenge")
         rule.waitForText("Create Challenge", timeout = 5_000)
 
-        // Fill in the form
-        rule.clearTextField("Title")
-        rule.onNode(hasText("Title") and hasSetTextAction())
-            .performTextInput("E2E Test Challenge")
+        // All form interaction goes through UiAutomator: Compose's
+        // performTextInput / performClick block on Espresso idle
+        // during the 60fps emulation render loop.
+        val device = androidx.test.uiautomator.UiDevice.getInstance(
+            androidx.test.platform.app.InstrumentationRegistry.getInstrumentation()
+        )
+        val deadline = System.currentTimeMillis() + 5_000L
+        var titleField = device.findObject(
+            androidx.test.uiautomator.UiSelector().className("android.widget.EditText").instance(0)
+        )
+        while (!titleField.exists() && System.currentTimeMillis() < deadline) {
+            Thread.sleep(200)
+            titleField = device.findObject(
+                androidx.test.uiautomator.UiSelector().className("android.widget.EditText").instance(0)
+            )
+        }
+        check(titleField.exists()) { "Title field not found" }
+        titleField.clearTextField()
+        titleField.setText("E2E Test Challenge")
 
-        // Submit
-        rule.tapOn("Create")
+        device.findObject(androidx.test.uiautomator.UiSelector().text("Create")).click()
 
-        // US-1 AC: toast "Challenge created!", game resumes
+        // US-1 AC: toast "Challenge created!", game resumes.
         rule.waitForText("Challenge created!", timeout = 8_000)
 
-        // Overlay should be dismissed, game running
-        rule.assertTextNotVisible("Create Challenge")
-        rule.assertTextNotVisible("Exit Game")
+        // Toast auto-dismisses 2s after success; afterwards the
+        // panel + overlay are gone and the game is running.
+        rule.waitForTextNotVisible("Create Challenge", timeout = 5_000)
+        rule.waitForTextNotVisible("Exit Game", timeout = 3_000)
 
         // Game still running
-        rule.waitForVisible("Game running", timeout = 5_000)
+        rule.waitForVisible("Game running", timeout = 10_000)
 
         rule.openOverlayAndExit()
     }
@@ -139,17 +155,25 @@ class ChallengeCreationTest : BaseE2ETest() {
         rule.tapOn("Challenge")
         rule.waitForText("Create Challenge", timeout = 5_000)
 
-        // Type and difficulty chips are always visible — tap the desired one directly
-        rule.tapOn("Speedrun")
-        rule.tapOn("Hard")
+        // Drive the panel via UiAutomator: Compose's performClick /
+        // performTextInput block on Espresso idle during the 60fps
+        // emulation render loop.
+        val device = androidx.test.uiautomator.UiDevice.getInstance(
+            androidx.test.platform.app.InstrumentationRegistry.getInstrumentation()
+        )
+        device.findObject(androidx.test.uiautomator.UiSelector().text("Speedrun")).click()
+        device.findObject(androidx.test.uiautomator.UiSelector().text("Hard")).click()
 
-        // Fill title
-        rule.clearTextField("Title")
-        rule.onNode(hasText("Title") and hasSetTextAction())
-            .performTextInput("Hard Speedrun Challenge")
+        // Fill title — first EditText
+        val titleField = device.findObject(
+            androidx.test.uiautomator.UiSelector().className("android.widget.EditText").instance(0)
+        )
+        check(titleField.exists()) { "Title field not found" }
+        titleField.clearTextField()
+        titleField.setText("Hard Speedrun Challenge")
 
         // Submit
-        rule.tapOn("Create")
+        device.findObject(androidx.test.uiautomator.UiSelector().text("Create")).click()
         rule.waitForText("Challenge created!", timeout = 8_000)
 
         rule.openOverlayAndExit()
@@ -165,16 +189,38 @@ class ChallengeCreationTest : BaseE2ETest() {
         rule.tapOn("Challenge")
         rule.waitForText("Create Challenge", timeout = 5_000)
 
-        // Fill title
-        rule.clearTextField("Title")
-        rule.onNode(hasText("Title") and hasSetTextAction())
-            .performTextInput("Described Challenge")
+        // All form interaction goes through UiAutomator: Compose's
+        // performTextInput / performClick block on Espresso idle
+        // during the 60fps emulation render loop.
+        val device = androidx.test.uiautomator.UiDevice.getInstance(
+            androidx.test.platform.app.InstrumentationRegistry.getInstrumentation()
+        )
 
-        // Fill optional description — label is "Description (optional)"
-        rule.onNode(hasText("Description", substring = true) and hasSetTextAction())
-            .performTextInput("Beat the first boss without taking damage")
+        // Fill title — first EditText on the panel. Poll briefly so
+        // we don't race the Compose accessibility tree.
+        val deadline = System.currentTimeMillis() + 5_000L
+        var titleField = device.findObject(
+            androidx.test.uiautomator.UiSelector().className("android.widget.EditText").instance(0)
+        )
+        while (!titleField.exists() && System.currentTimeMillis() < deadline) {
+            Thread.sleep(200)
+            titleField = device.findObject(
+                androidx.test.uiautomator.UiSelector().className("android.widget.EditText").instance(0)
+            )
+        }
+        check(titleField.exists()) { "Title field not found" }
+        titleField.clearTextField()
+        titleField.setText("Described Challenge")
 
-        rule.tapOn("Create")
+        // Fill optional description — second EditText.
+        val descField = device.findObject(
+            androidx.test.uiautomator.UiSelector().className("android.widget.EditText").instance(1)
+        )
+        check(descField.exists()) { "Description field not found" }
+        descField.setText("Beat the first boss without taking damage")
+
+        // Click Create.
+        device.findObject(androidx.test.uiautomator.UiSelector().text("Create")).click()
         rule.waitForText("Challenge created!", timeout = 8_000)
 
         rule.openOverlayAndExit()
@@ -190,8 +236,12 @@ class ChallengeCreationTest : BaseE2ETest() {
         rule.tapOn("Challenge")
         rule.waitForText("Create Challenge", timeout = 5_000)
 
-        // Tap Cancel button to dismiss creation panel
-        rule.tapOn("Cancel")
+        // Tap Cancel via the panel's stable testTag. The tag-based
+        // helper invokes the OnClick semantic action directly, which
+        // bypasses both Espresso idle (blocked by the 60fps render
+        // loop) and the touch-dispatch ambiguity of clicking a Text
+        // child of SpSecondaryButton.
+        rule.tapOnTag("challenge_create_cancel_button")
 
         // Creation panel should be dismissed
         rule.waitForTextNotVisible("Create Challenge")
@@ -218,21 +268,27 @@ class ChallengeCreationTest : BaseE2ETest() {
     @Test
     fun createdChallengeVisibleInChallengeList() {
         setupGame()
-        rule.openOverlay()
 
-        rule.tapOn("Challenge")
-        rule.waitForText("Create Challenge", timeout = 5_000)
+        // Use the shared helper — it does the overlay open, panel
+        // wait, EditText polling and UiAutomator-based Create click
+        // (Compose's tapOn blocks on Espresso idle during the 60fps
+        // emulation render loop).
+        rule.createChallengeFromOverlay("My Created Challenge")
 
-        rule.clearTextField("Title")
-        rule.onNode(hasText("Title") and hasSetTextAction())
-            .performTextInput("My Created Challenge")
-
-        rule.tapOn("Create")
-        rule.waitForText("Challenge created!", timeout = 8_000)
-
-        // Exit game to go back to game detail
+        // Exit game to go back to game detail. The CTA depends on
+        // download + auto-save state — after playing once the
+        // primary action is "Resume" or "Play", not "Download".
         rule.openOverlayAndExit()
-        rule.waitForText("Download", timeout = 8_000)
+        rule.pollUntil(timeoutMillis = 8_000L) {
+            try {
+                rule.onAllNodesWithText("Resume", substring = false)
+                    .fetchSemanticsNodes().isNotEmpty() ||
+                    rule.onAllNodesWithText("Play", substring = false)
+                        .fetchSemanticsNodes().isNotEmpty() ||
+                    rule.onAllNodesWithText("Download", substring = false)
+                        .fetchSemanticsNodes().isNotEmpty()
+            } catch (_: Exception) { false }
+        }
 
         // Navigate to challenge list via "View Challenges" button
         rule.navigateToChallengeList()
