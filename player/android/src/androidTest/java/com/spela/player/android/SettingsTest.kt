@@ -57,38 +57,24 @@ class SettingsTest : BaseE2ETest() {
 
     @Test
     fun shaderPreview() {
-
-        // Navigate to Settings → Emulation (where Video Filter lives)
+        // Set the global shader from Emulation → Video Filter section.
         rule.navigateToSettingsCategory("Emulation")
-
-        // Scroll to Video Filter
-        rule.scrollToAndTapText("Video Filter")
-        rule.waitForText("Video Filter")
-
-        // Select CRT Classic
         rule.scrollToAndTapText("CRT Classic")
 
-        // Navigate to Per-Console category for console-specific shaders
-        rule.pressBack() // Back to category list
-        rule.waitForText("General")
-        rule.tapOn("Per-Console")
-
-        // Tap NES console and wait for ConsoleSettingsScreen
+        // Switch to Per-Console category in the still-visible list.
+        rule.navigateToSettingsCategory("Per-Console")
         tapNESConsole()
 
-        // Scroll to shader preview on ConsoleSettingsScreen
+        // Scroll to the shader preview row on ConsoleSettingsScreen.
         scrollDownUntilContentDescription("Shader preview")
 
-        // Test fullscreen preview dialog
+        // Open the fullscreen preview dialog and dismiss it.
         rule.onNodeWithContentDescription("Shader preview", substring = true).performClick()
         rule.waitForText("Tap to close", timeout = 3_000)
-
-        // Dismiss dialog
         rule.onNodeWithText("Tap to close").performClick()
 
-        // Navigate back to Settings
+        // Pop ConsoleSettingsScreen back to the Settings list-detail.
         rule.pressBack()
-        rule.waitForText("General", timeout = 8_000)
     }
 
     @Test
