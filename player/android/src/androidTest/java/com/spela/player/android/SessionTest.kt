@@ -127,8 +127,10 @@ class SessionTest : BaseE2ETest() {
         rule.onNodeWithText("Sign In").performScrollTo()
         rule.onNodeWithText("Sign In").performClick()
 
-        // Verify home screen
-        rule.waitForText("Spela", timeout = 8_000)
+        // Verify home screen — multi-display safe.
+        rule.pollUntil(timeoutMillis = 15_000) {
+            try { rule.isOnHomeScreen() } catch (_: Exception) { false }
+        }
     }
 
     @Test
