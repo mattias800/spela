@@ -53,13 +53,13 @@ class ChallengeIntegrationTest : BaseE2ETest() {
         rule.tapOn("Done")
         rule.waitForIdle()
 
-        // Navigate back to home
-        rule.pressBack() // challenge detail → challenge list
-        rule.pressBack() // challenge list → game detail
-        rule.pressBack() // game detail → console list
-        rule.pressBack() // console list → home
-
-        rule.waitForText("Spela", timeout = 8_000)
+        // Navigate back to home — use the helper which knows to
+        // press back through any deep screen and stop at the Home
+        // tab root rather than counting back-presses by hand.
+        rule.navigateBackToHome()
+        rule.pollUntil(timeoutMillis = 8_000L) {
+            try { rule.isOnHomeScreen() } catch (_: Exception) { false }
+        }
 
         // Navigate to Activity tab
         rule.tapOn("Activity")
