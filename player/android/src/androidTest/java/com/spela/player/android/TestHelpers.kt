@@ -1064,33 +1064,18 @@ fun ComposeRule.startLoggedIn() {
  * Use for tests that need a clean session (e.g., settings defaults, persistence tests).
  */
 fun ComposeRule.loginAsPlayer() {
-    forceFreshLogin(PLAYER_USERNAME, PLAYER_PASSWORD)
+    ensureLoggedIn()
+    signOutIfLoggedIn()
+    addServerAndLogin(PLAYER_USERNAME, PLAYER_PASSWORD)
 }
 
 /**
  * Signs out if currently logged in, then performs a fresh login as admin.
  */
 fun ComposeRule.loginAsAdmin() {
-    forceFreshLogin(ADMIN_USERNAME, ADMIN_PASSWORD)
-}
-
-/**
- * Force a fresh login as the given user. The naive "sign out + tap
- * server" flow doesn't work because the in-app sign out leaves
- * SQLDelight tokens cached, and tapping the server card with a valid
- * cached JWT auto-restores the session straight to Home — bypassing
- * the login screen and the test's intent of "log in as a specific user".
- *
- * Instead: ensure we're logged in (so we know app state is sane),
- * then wipe the local DB / prefs / filesDir entirely, restart the
- * Activity (force-stop equivalent via scenario.recreate), then drive
- * the full add-server-and-login flow from a genuine fresh state.
- */
-private fun ComposeRule.forceFreshLogin(username: String, password: String) {
     ensureLoggedIn()
-    clearAppState()
-    restartApp()
-    addServerAndLogin(username, password)
+    signOutIfLoggedIn()
+    addServerAndLogin(ADMIN_USERNAME, ADMIN_PASSWORD)
 }
 
 internal fun ComposeRule.signOutIfLoggedIn() {
