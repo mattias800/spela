@@ -432,9 +432,12 @@ class CollectionsTest : BaseE2ETest() {
         // Switch to admin user
         switchUser("admin", "admin123")
 
-        // Navigate to Collections > Public tab to find player's collection
+        // The Collections screen no longer has My/Public tabs — both
+        // sections render in the same LazyColumn under "My Collections"
+        // and "Public Collections" headers. Just scroll until the
+        // player's public collection is visible.
         navigateToCollectionsTab()
-        rule.tapOn("Public")
+        rule.scrollToAndTapText("Public Collections")
         rule.waitForText(collName, timeout = 8_000)
 
         // Open the public collection
