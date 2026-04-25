@@ -293,8 +293,11 @@ fi
 # nightly all-tests-summary).
 
 ANDROID_TEST_DIR="$SCRIPT_DIR/android/src/androidTest/java/com/spela/player/android"
+# BaseE2ETest is an abstract base class — no @Test methods. Including it
+# in the batch produces an initializationError that's not actionable.
 TEST_CLASSES=$(find "$ANDROID_TEST_DIR" -name '*Test.kt' -maxdepth 1 \
   | xargs -I{} basename {} .kt \
+  | grep -v '^BaseE2ETest$' \
   | sort \
   | sed 's|^|com.spela.player.android.|')
 

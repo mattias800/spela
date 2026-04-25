@@ -1649,7 +1649,12 @@ fun ComposeRule.scrollToAndTapTag(tag: String, maxSwipes: Int = 10) {
     val mergedSize = mergedNodes.fetchSemanticsNodes().size
     if (mergedSize > 0) {
         val node = mergedNodes[0]
-        node.performScrollTo()
+        // performScrollTo throws when the parent isn't scrollable
+        // (e.g., dialog buttons inside a fixed-height Column). After
+        // scrollToTag succeeded, the node is already in the semantic
+        // tree, so a missing scroll parent just means we don't need to
+        // scroll.
+        try { node.performScrollTo() } catch (_: AssertionError) { }
         val hasOnClick = node.fetchSemanticsNode().config.contains(SemanticsActions.OnClick)
         if (hasOnClick) {
             node.performSemanticsAction(SemanticsActions.OnClick)
@@ -1657,8 +1662,9 @@ fun ComposeRule.scrollToAndTapTag(tag: String, maxSwipes: Int = 10) {
             node.performClick()
         }
     } else {
-        onAllNodesWithTag(tag, useUnmergedTree = true)[0].performScrollTo()
-        onAllNodesWithTag(tag, useUnmergedTree = true)[0].performClick()
+        val unmerged = onAllNodesWithTag(tag, useUnmergedTree = true)[0]
+        try { unmerged.performScrollTo() } catch (_: AssertionError) { }
+        unmerged.performClick()
     }
     waitForIdle()
 }
