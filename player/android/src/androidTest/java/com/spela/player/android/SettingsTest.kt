@@ -121,41 +121,34 @@ class SettingsTest : BaseE2ETest() {
 
     @Test
     fun deviceShaderOverride() {
+        // Settings is now a list-detail layout. On wide screens the
+        // category list is always visible; "Video Filter" is a
+        // section header inside the Emulation content (not a
+        // sub-screen). Switching categories means tapping the
+        // category in the list, not pressBack-then-tap.
 
-        // Navigate to Settings → Emulation → set global shader
+        // Set the global shader from Emulation → Video Filter section.
         rule.navigateToSettingsCategory("Emulation")
-        rule.scrollToAndTapText("Video Filter")
-        rule.waitForText("Video Filter")
         rule.scrollToAndTapText("CRT Classic")
 
-        // Go to Per-Console category
-        rule.pressBack() // Back to category list
-        rule.waitForText("General")
-        rule.tapOn("Per-Console")
-
-        // Tap NES console and wait for ConsoleSettingsScreen
+        // Switch to Per-Console category by tapping its row in the list.
+        rule.navigateToSettingsCategory("Per-Console")
         tapNESConsole()
 
-        // Enable device override
+        // Enable device override.
         rule.scrollToAndTapText("Override on this device only")
 
-        // Select Smooth (Bilinear) as device override
-        rule.scrollToAndTapText("Device Shader")
-        rule.waitForText("Device Shader")
+        // Select Smooth (Bilinear) as the device-specific override.
         rule.scrollToAndTapText("Smooth (Bilinear)")
 
-        // Navigate back to Settings
-        rule.pressBack()
-        rule.waitForText("General", timeout = 8_000)
-
-        // Navigate back to Home
-        rule.pressBack()
-        rule.waitForText("Spela", timeout = 3_000)
-
-        // Return to Settings → Per-Console
+        // Verify by leaving and re-entering Per-Console.
+        rule.navigateBackToHome()
+        rule.pollUntil(timeoutMillis = 5_000) {
+            try { rule.isOnHomeScreen() } catch (_: Exception) { false }
+        }
         rule.navigateToSettingsCategory("Per-Console")
 
-        // Verify NES shows Bilinear with device override indicator
+        // NES row should show "Smooth" with the device-override indicator.
         rule.waitForText("Nintendo Entertainment System", timeout = 10_000)
         rule.waitForText("Smooth")
     }
