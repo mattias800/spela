@@ -37,6 +37,31 @@ class SettingsTest : BaseE2ETest() {
     }
 
     /**
+     * Swipe a long settings list until the given text comes into view
+     * (or give up after [maxAttempts] swipes). Uses UiAutomator so
+     * Compose-recomposition races don't intervene between find and
+     * use.
+     */
+    private fun scrollUntilVisible(
+        device: UiDevice,
+        textSubstring: String,
+        maxAttempts: Int = 15,
+    ) {
+        for (attempt in 0..maxAttempts) {
+            if (device.findObject(UiSelector().textContains(textSubstring)).exists()) return
+            val x = (device.displayWidth * 0.7).toInt()
+            device.swipe(
+                x,
+                (device.displayHeight * 0.7).toInt(),
+                x,
+                (device.displayHeight * 0.3).toInt(),
+                10,
+            )
+            rule.waitForIdle()
+        }
+    }
+
+    /**
      * Navigate from the Per-Console category to ConsoleSettingsScreen
      * for NES. The Per-Console list is a scrollable LazyColumn and
      * NES isn't always above the fold. Use UiAutomator's
@@ -150,11 +175,19 @@ class SettingsTest : BaseE2ETest() {
         rule.navigateToSettingsCategory("Per-Console")
         tapNESConsole()
 
-        // Enable device override.
-        rule.scrollToAndTapText("Override on this device only")
-
-        // Select Smooth (Bilinear) as the device-specific override.
-        rule.scrollToAndTapText("Smooth (Bilinear)")
+        // Enable device override + select Smooth (Bilinear) via
+        // UiAutomator. The console-shader list is a LazyColumn whose
+        // rows can recompose between Compose's scrollToAndTapText
+        // 'find node' and 'click node' phases, leading to "node is no
+        // longer in the tree" failures. UiAutomator works on
+        // accessibility tree screenshots and avoids that race.
+        val device = UiDevice.getInstance(InstrumentationRegistry.getInstrumentation())
+        scrollUntilVisible(device, "Override on this device only")
+        device.findObject(UiSelector().textContains("Override on this device only")).click()
+        rule.waitForIdle()
+        scrollUntilVisible(device, "Smooth (Bilinear)")
+        device.findObject(UiSelector().textContains("Smooth (Bilinear)")).click()
+        rule.waitForIdle()
 
         // Verify by leaving and re-entering Per-Console.
         rule.navigateBackToHome()
