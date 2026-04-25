@@ -404,21 +404,14 @@ class CollectionsTest : BaseE2ETest() {
      * which otherwise auto-redirects past the login screen), and log in as a different user.
      */
     private fun switchUser(username: String, password: String) {
-        // Navigate to Home first
-        rule.tapOn("Home")
-        rule.waitForText("Spela", timeout = 5_000)
+        // Sign Out lives in Settings → About in the list-detail layout.
+        // Use the canonical signOutIfLoggedIn helper which navigates
+        // to the right category and confirms the dialog.
+        rule.signOutIfLoggedIn()
 
-        // Navigate to Settings and sign out
-        rule.navigateToSettings()
-        rule.onNodeWithText("Sign Out").performClick()
-        rule.waitForText("re-enter your credentials", timeout = 5_000)
-        val nodes = rule.onAllNodesWithText("Sign Out").fetchSemanticsNodes()
-        rule.onAllNodesWithText("Sign Out")[nodes.size - 1].performClick()
-        rule.waitForText("Add Server", timeout = 15_000)
-
-        // Restart app to reset LoginViewModel state (isLoggedIn stays true after
-        // logout, which causes LoginScreen to auto-redirect to Home via
-        // LaunchedEffect(state.isLoggedIn) before we can enter new credentials).
+        // Restart app to reset LoginViewModel state (isLoggedIn can stay
+        // true after logout, which causes LoginScreen to auto-redirect
+        // to Home before we can enter new credentials).
         rule.restartApp()
 
         // Login as the new user
