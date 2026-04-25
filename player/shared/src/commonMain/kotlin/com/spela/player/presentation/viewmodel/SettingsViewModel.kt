@@ -46,6 +46,14 @@ data class SettingsState(
     val deviceShaderOverrides: Map<String, ShaderPreset> = emptyMap(),
     val consoles: List<Console> = emptyList(),
     val showLogoutConfirm: Boolean = false,
+    /**
+     * Set to true after [SettingsIntent.Logout] has finished clearing
+     * the auth tokens. Consumers (the navigator) should observe this
+     * to navigate away from authenticated screens — navigating before
+     * tokens clear races against the in-memory cache and lets the next
+     * screen auto-login back into Home.
+     */
+    val loggedOut: Boolean = false,
     val showClearCacheConfirm: Boolean = false,
     val fullscreenPreviewConsoleId: String? = null,
     val raStatus: RAStatus? = null,
@@ -275,9 +283,14 @@ class SettingsViewModel(
     }
 
     private fun logout() {
+        // Hide the confirm dialog immediately so the UI doesn't look
+        // wedged while clearTokens runs.
+        _state.update { it.copy(showLogoutConfirm = false) }
         scope.launch(dispatchers.io) {
             authRepository.clearTokens()
-            _state.update { it.copy(showLogoutConfirm = false) }
+            // Tokens are gone — only now is it safe to navigate away
+            // from authenticated screens. Consumers observe loggedOut.
+            _state.update { it.copy(loggedOut = true) }
         }
     }
 
