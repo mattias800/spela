@@ -644,29 +644,51 @@ fun ComposeRule.waitForNotVisible(label: String, timeout: Long = TIMEOUT_SHORT) 
  * specified and the tag is found, we take the tag match.
  */
 fun ComposeRule.tapOnTag(tag: String, fallbackLabel: String? = null) {
-    val tagNodes = onAllNodesWithTag(tag, useUnmergedTree = true).fetchSemanticsNodes()
+    val tagNodes = try {
+        onAllNodesWithTag(tag, useUnmergedTree = true).fetchSemanticsNodes()
+    } catch (_: Exception) {
+        // AppNotIdleException etc. — Compose tree is busy. Fall
+        // through to the UiAutomator fallback.
+        emptyList()
+    }
     if (tagNodes.isNotEmpty()) {
         // Prefer the merged-tree node so testTag and the OnClick action
         // resolve onto the same semantic node — invoking OnClick is
         // more reliable than dispatching a synthetic touch (which can
         // miss on multi-display devices like the AYN Thor and is
         // sensitive to tiny tagged hitboxes).
-        val merged = onAllNodesWithTag(tag, useUnmergedTree = false).fetchSemanticsNodes()
-        if (merged.isNotEmpty()) {
-            val node = onAllNodesWithTag(tag, useUnmergedTree = false)[0]
-            val hasOnClick = node.fetchSemanticsNode().config.contains(SemanticsActions.OnClick)
-            if (hasOnClick) {
-                node.performSemanticsAction(SemanticsActions.OnClick)
+        try {
+            val merged = onAllNodesWithTag(tag, useUnmergedTree = false).fetchSemanticsNodes()
+            if (merged.isNotEmpty()) {
+                val node = onAllNodesWithTag(tag, useUnmergedTree = false)[0]
+                val hasOnClick = node.fetchSemanticsNode().config.contains(SemanticsActions.OnClick)
+                if (hasOnClick) {
+                    node.performSemanticsAction(SemanticsActions.OnClick)
+                } else {
+                    node.performClick()
+                }
             } else {
-                node.performClick()
+                onAllNodesWithTag(tag, useUnmergedTree = true)[0].performClick()
             }
-        } else {
-            onAllNodesWithTag(tag, useUnmergedTree = true)[0].performClick()
+            waitForIdle()
+            return
+        } catch (_: Exception) {
+            // Click attempt threw — fall through to UiAutomator
+            // fallback below.
         }
-        waitForIdle()
-        return
     }
+    // UiAutomator fallback by content description (testTag isn't
+    // exposed as a resource id, but Compose's semantics block on the
+    // same node usually carries a contentDescription that matches
+    // the tab label or icon name).
     if (fallbackLabel != null) {
+        val device = uiDevice()
+        val byDesc = device.findObject(UiSelector().descriptionContains(fallbackLabel))
+        if (byDesc.exists()) {
+            byDesc.click()
+            Thread.sleep(300)
+            return
+        }
         tapOn(fallbackLabel)
         return
     }
