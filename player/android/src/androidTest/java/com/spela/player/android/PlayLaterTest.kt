@@ -85,9 +85,9 @@ class PlayLaterTest : BaseE2ETest() {
         rule.navigateToCastlevania()
         setPlayLater(desiredInQueue = true)
 
-        // Navigate back to Home.
-        rule.pressBack()
-        rule.pressBack()
+        // Navigate back to Home (handles however many pressBacks the
+        // current screen stack needs).
+        rule.navigateBackToHome()
         rule.waitForText("Spela", timeout = 8_000)
 
         // Force a fresh dashboard load via restart.
