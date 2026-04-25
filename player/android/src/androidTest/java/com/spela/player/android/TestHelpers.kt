@@ -838,54 +838,67 @@ fun ComposeRule.clearAppState() {
 }
 
 fun ComposeRule.restartApp() {
-    // Simulate a real app restart: recreate the Activity.
-    // This mimics a configuration change or process recreation.
-    // Navigate back to Home first so overlays/sub-screens are dismissed.
-    navigateBackToHome()
+    // Force-stop the app process via adb shell, then relaunch via
+    // intent. This is closer to a real "user kills app and reopens"
+    // than activityRule.scenario.recreate(), which only triggers a
+    // configuration-change recreate inside the same process — and on
+    // emulators / multi-display devices that path frequently leaves
+    // the Compose hierarchy half-attached.
+    //
+    // Note: ComposeRule's `activityRule.scenario` keeps a reference
+    // to the original Activity instance. After force-stop + relaunch
+    // the new Activity is a different instance, so subsequent
+    // Compose-test queries route through onAllNodes / onNode lookups
+    // (which find nodes by their semantics tree, not by activity
+    // ref). UiAutomator queries work regardless. The existing
+    // isOnHomeScreen / isOnLoginScreen / isOnServerConnectionScreen
+    // helpers already do both, which is why they keep working.
+    val device = UiDevice.getInstance(InstrumentationRegistry.getInstrumentation())
+    val ctx = InstrumentationRegistry.getInstrumentation().targetContext
+    val pkg = ctx.packageName
 
-    activityRule.scenario.recreate()
+    // Land on Home first so an in-game session shuts down cleanly
+    // before the process is killed.
+    runCatching { navigateBackToHome() }
 
-    // Give the system time to tear down the old Activity and create the new one.
-    Thread.sleep(2_000)
-
-    // Wait for the new Activity's Compose hierarchy to be fully established.
-    // Note: Activity recreation via scenario.recreate() is unreliable on emulators.
-    // The Compose hierarchy sometimes fails to re-establish, causing this to timeout.
-    // When this happens, we attempt to recover by pressing Home and relaunching,
-    // rather than leaving the app in a broken state for subsequent tests.
     try {
+        device.executeShellCommand("am force-stop $pkg")
+    } catch (_: Throwable) { /* fall through to recreate path */ }
+    Thread.sleep(500)
+
+    // Relaunch on display 0 explicitly — multi-display devices may
+    // otherwise route the new task to the secondary display.
+    runCatching {
+        device.executeShellCommand("am start --display 0 -n $pkg/.android.MainActivity")
+    }
+    Thread.sleep(2_500)
+
+    // Wait for the new process to bring up a recognised screen. If
+    // this fails we fall back to scenario.recreate() — same flaky
+    // path as before, but it's now the second-line option, not the
+    // primary.
+    val arrived = try {
         pollUntil(timeoutMillis = 30_000L) {
             try {
                 isOnHomeScreen() ||
                     isOnServerConnectionScreen() ||
                     isOnLoginScreen()
-            } catch (_: Exception) {
-                false // Compose hierarchy not yet available after recreate
-            }
+            } catch (_: Exception) { false }
         }
-    } catch (_: androidx.compose.ui.test.ComposeTimeoutException) {
-        // Recreation failed — attempt recovery by relaunching via intent
-        val device = UiDevice.getInstance(InstrumentationRegistry.getInstrumentation())
-        device.pressHome()
-        Thread.sleep(1_000)
-        val context = InstrumentationRegistry.getInstrumentation().targetContext
-        val intent = context.packageManager.getLaunchIntentForPackage(context.packageName)
-        intent?.addFlags(android.content.Intent.FLAG_ACTIVITY_CLEAR_TASK or android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
-        if (intent != null) {
-            context.startActivity(intent)
-            Thread.sleep(3_000)
-        }
-        // Final attempt — if this also fails, the test will fail but at least
-        // the app is in a recoverable state for subsequent tests.
-        pollUntil(timeoutMillis = 30_000L) {
-            try {
-                isOnHomeScreen() ||
-                    isOnServerConnectionScreen() ||
-                    isOnLoginScreen()
-            } catch (_: Exception) {
-                false
-            }
-        }
+        true
+    } catch (_: androidx.compose.ui.test.ComposeTimeoutException) { false }
+
+    if (arrived) return
+
+    // Fallback: scenario.recreate() (same as the old path).
+    runCatching { activityRule.scenario.recreate() }
+    Thread.sleep(2_000)
+    pollUntil(timeoutMillis = 30_000L) {
+        try {
+            isOnHomeScreen() ||
+                isOnServerConnectionScreen() ||
+                isOnLoginScreen()
+        } catch (_: Exception) { false }
     }
 }
 
