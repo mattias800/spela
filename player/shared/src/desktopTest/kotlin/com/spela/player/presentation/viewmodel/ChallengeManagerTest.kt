@@ -224,15 +224,43 @@ class ChallengeManagerTest {
     }
 
     @Test
-    fun dismissChallengeCreationClearsFlagsAndResumes() = runTest(testDispatcher) {
-        state.update { it.copy(showChallengeCreation = true) }
+    fun dismissChallengeCreationFromCancelRestoresOverlay() = runTest(testDispatcher) {
+        // Cancel path: user opened the panel (which hid the overlay)
+        // and tapped Cancel without submitting. Expected behaviour is
+        // to restore the overlay so the user can pick another action;
+        // do NOT resume the game.
+        state.update { it.copy(showChallengeCreation = true, showOverlay = false) }
 
         var resumeGameCalled = false
         manager.dismissChallengeCreation { resumeGameCalled = true }
 
-        assertTrue(resumeGameCalled)
+        assertEquals(false, resumeGameCalled)
         assertEquals(false, state.value.showChallengeCreation)
         assertEquals(false, state.value.challengeCreationSuccess)
+        assertEquals(true, state.value.showOverlay)
+    }
+
+    @Test
+    fun dismissChallengeCreationAfterSuccessResumesGame() = runTest(testDispatcher) {
+        // Auto-dismiss after a successful submit: the success-toast
+        // LaunchedEffect calls dismissChallengeCreation. Expected
+        // behaviour is to drop straight back into gameplay (no
+        // overlay), since the user already committed an action.
+        state.update {
+            it.copy(
+                showChallengeCreation = false,
+                challengeCreationSuccess = true,
+                showOverlay = false,
+            )
+        }
+
+        var resumeGameCalled = false
+        manager.dismissChallengeCreation { resumeGameCalled = true }
+
+        assertEquals(true, resumeGameCalled)
+        assertEquals(false, state.value.showChallengeCreation)
+        assertEquals(false, state.value.challengeCreationSuccess)
+        assertEquals(false, state.value.showOverlay)
     }
 
     @Test
