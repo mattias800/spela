@@ -308,8 +308,12 @@ class CollectionsTest : BaseE2ETest() {
         // Navigate to Castlevania game detail (go via Home to reset tab state)
         navigateToGameDetail()
 
-        // Tap "Add to collection" button (contentDescription, text is empty)
-        rule.onNodeWithContentDescription("Add to collection", substring = true).performClick()
+        // Open the More-actions overflow menu — "Add to Collection"
+        // moved into the DropdownMenu (see GameActionsMenu.kt) and is
+        // no longer a top-level button on game detail.
+        rule.tapOn("More actions")
+        rule.waitForText("Add to Collection", timeout = 5_000)
+        rule.tapOn("Add to Collection")
         rule.waitForIdle()
         rule.waitForText("Add to Collection", timeout = 5_000)
 
