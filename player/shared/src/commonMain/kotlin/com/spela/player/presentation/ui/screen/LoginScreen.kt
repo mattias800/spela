@@ -53,14 +53,26 @@ fun LoginScreen(
 ) {
     val state by viewModel.state.collectAsState()
 
+    // Wipe transient state on every fresh mount so the credentials
+    // and isLoggedIn flag from a prior session don't leak into the
+    // next login attempt. The LoginViewModel is held at activity
+    // scope, so without this Reset the screen comes up with stale
+    // values when the user signs out and revisits.
+    LaunchedEffect(Unit) {
+        viewModel.onIntent(LoginIntent.Reset)
+        viewModel.onIntent(LoginIntent.SetServerUrl(serverUrl))
+    }
+
     LaunchedEffect(serverUrl) {
         viewModel.onIntent(LoginIntent.SetServerUrl(serverUrl))
     }
 
-    LaunchedEffect(state.isLoggedIn) {
-        if (state.isLoggedIn) {
-            onLoginSuccess()
-        }
+    // Navigate on a one-shot SharedFlow event rather than the sticky
+    // `state.isLoggedIn` flag. The flow only emits when a submit
+    // succeeds; a stale `true` from an earlier session will not
+    // re-emit on screen mount, so the user actually sees the form.
+    LaunchedEffect(viewModel) {
+        viewModel.loginSucceeded.collect { onLoginSuccess() }
     }
 
     BoxWithConstraints(modifier = Modifier.fillMaxSize().testTag(TestTags.SCREEN_LOGIN)) {

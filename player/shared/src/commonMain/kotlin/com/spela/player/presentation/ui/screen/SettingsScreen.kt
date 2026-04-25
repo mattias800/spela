@@ -182,13 +182,16 @@ private fun SettingsDialogs(
             title = "Sign Out",
             message = "Are you sure you want to sign out? You'll need to re-enter your credentials.",
             onDismiss = { viewModel.onIntent(SettingsIntent.DismissLogoutConfirm) },
-            onConfirm = {
-                viewModel.onIntent(SettingsIntent.Logout)
-                onLogout()
-            },
+            onConfirm = { viewModel.onIntent(SettingsIntent.Logout) },
             confirmText = "Sign Out",
             isDestructive = true,
         )
+    }
+
+    // Logout fires onLogout only after tokens have been cleared so the
+    // post-logout navigation can't auto-login back into Home.
+    LaunchedEffect(state.loggedOut) {
+        if (state.loggedOut) onLogout()
     }
 
     if (state.showClearCacheConfirm) {

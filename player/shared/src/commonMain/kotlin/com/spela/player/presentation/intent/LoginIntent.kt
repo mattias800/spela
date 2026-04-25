@@ -8,4 +8,11 @@ sealed interface LoginIntent {
     data object ToggleRegisterMode : LoginIntent
     data object Submit : LoginIntent
     data object DismissError : LoginIntent
+    /**
+     * Wipe transient state (credentials, isLoggedIn) so the screen
+     * starts from a clean slate. Called when LoginScreen mounts so a
+     * stale `isLoggedIn = true` from a prior session can't auto-fire
+     * onLoginSuccess before the user has had a chance to log in.
+     */
+    data object Reset : LoginIntent
 }
