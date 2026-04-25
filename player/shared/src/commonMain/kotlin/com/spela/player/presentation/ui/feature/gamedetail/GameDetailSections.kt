@@ -124,7 +124,11 @@ fun ChallengesSection(
     onViewAll: () -> Unit,
     onCreateChallenge: (() -> Unit)? = null,
 ) {
-    SpTitledSection(title = "Challenges", icon = Icons.Outlined.Flag) {
+    SpTitledSection(
+        title = "Challenges",
+        icon = Icons.Outlined.Flag,
+        modifier = Modifier.testTag("challenges_section"),
+    ) {
         Text(
             text = "Compete on community-created challenges for $gameTitle",
             style = SpTypography.BodyMedium,
