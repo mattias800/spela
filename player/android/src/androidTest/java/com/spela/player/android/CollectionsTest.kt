@@ -3,6 +3,7 @@ package com.spela.player.android
 import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.onAllNodesWithContentDescription
+import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
@@ -28,20 +29,15 @@ class CollectionsTest : BaseE2ETest() {
     // ── Navigation helpers ──
 
     private fun navigateToCollectionsTab() {
-        rule.tapOn("Collections")
-        // The screen renders one of two states:
-        //   - "My Collections" header — appears when at least one
-        //     collection exists
-        //   - "No collections yet" empty-state — when the user has none
-        // /api/test/reset wipes collections between tests, so on a
-        // fresh suite we typically see the empty state first; tests
-        // that create a collection then re-enter the tab see the
-        // header. Either signal proves we're on the Collections screen.
+        rule.tapOnTag(TestTags.NAV_COLLECTIONS)
+        // The screen renders one of two states: a list with section
+        // headers (when the user has collections) or an empty state
+        // (when they don't). Wait for whichever shows up first.
         rule.pollUntil(timeoutMillis = 5_000) {
             try {
-                rule.onAllNodesWithText("My Collections", substring = true)
+                rule.onAllNodesWithTag(TestTags.COLLECTIONS_LIST, useUnmergedTree = true)
                     .fetchSemanticsNodes().isNotEmpty() ||
-                    rule.onAllNodesWithText("No collections yet", substring = true)
+                    rule.onAllNodesWithTag(TestTags.COLLECTIONS_EMPTY_STATE, useUnmergedTree = true)
                         .fetchSemanticsNodes().isNotEmpty()
             } catch (_: IllegalStateException) { false }
         }
@@ -133,14 +129,14 @@ class CollectionsTest : BaseE2ETest() {
         // Wait for the detail screen controls to disappear.
         rule.waitForNotVisible("Delete collection", timeout = 15_000)
 
-        // Navigate to the Collections tab if not already there. Use the
-        // tab helper rather than waitForText('My Collections') directly —
-        // when the user has just deleted their last collection, the
-        // empty state shows instead of the header.
-        val onCollections = rule.onAllNodesWithText("My Collections", substring = true)
-            .fetchSemanticsNodes().isNotEmpty() ||
-            rule.onAllNodesWithText("No collections yet", substring = true)
-                .fetchSemanticsNodes().isNotEmpty()
+        // Navigate to the Collections tab if not already there. Tag-based
+        // so it works whether the user has zero or many collections.
+        val onCollections = try {
+            rule.onAllNodesWithTag(TestTags.COLLECTIONS_LIST, useUnmergedTree = true)
+                .fetchSemanticsNodes().isNotEmpty() ||
+                rule.onAllNodesWithTag(TestTags.COLLECTIONS_EMPTY_STATE, useUnmergedTree = true)
+                    .fetchSemanticsNodes().isNotEmpty()
+        } catch (_: Exception) { false }
         if (!onCollections) {
             navigateToCollectionsTab()
         }
@@ -433,11 +429,16 @@ class CollectionsTest : BaseE2ETest() {
         switchUser("admin", "admin123")
 
         // The Collections screen no longer has My/Public tabs — both
-        // sections render in the same LazyColumn under "My Collections"
-        // and "Public Collections" headers. Just scroll until the
-        // player's public collection is visible.
+        // sections render in the same LazyColumn. Scroll to the
+        // Public-Collections header (tag) and verify the collection
+        // appears.
         navigateToCollectionsTab()
-        rule.scrollToAndTapText("Public Collections")
+        rule.pollUntil(timeoutMillis = 8_000) {
+            try {
+                rule.onAllNodesWithTag(TestTags.COLLECTIONS_PUBLIC_HEADER, useUnmergedTree = true)
+                    .fetchSemanticsNodes().isNotEmpty()
+            } catch (_: Exception) { false }
+        }
         rule.waitForText(collName, timeout = 8_000)
 
         // Open the public collection
