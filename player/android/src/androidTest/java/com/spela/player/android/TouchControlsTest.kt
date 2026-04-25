@@ -1,13 +1,46 @@
 package com.spela.player.android
 
+import android.content.Context
+import android.view.InputDevice
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.test.platform.app.InstrumentationRegistry
+import org.junit.Assume.assumeFalse
+import org.junit.Before
 import org.junit.Test
 
+/**
+ * Touch-control tests are inherently incompatible with gamepad-attached
+ * hardware — InGameOverlay hides the on-screen touch overlay whenever
+ * a gamepad is connected (the user has real buttons; the touch buttons
+ * would just clutter the screen). Every assertion in this file checks
+ * that the touch overlay IS visible, so on the AYN Thor (clamshell with
+ * always-connected gamepad) the entire class would fail spuriously.
+ *
+ * Skip the whole class via JUnit's Assume on devices with a gamepad
+ * detected. On a non-gamepad emulator (the recommended setup per
+ * docs/e2e-testing.md), all tests run.
+ */
 class TouchControlsTest : BaseE2ETest() {
+
+    @Before
+    fun skipWhenGamepadConnected() {
+        assumeFalse("touch-control tests require no gamepad connected", hasGamepad())
+    }
 
     private fun setupGame() {
         rule.navigateToGameAndPlay()
+    }
+
+    private fun hasGamepad(): Boolean {
+        val ctx = InstrumentationRegistry.getInstrumentation().targetContext
+        return ctx.getSystemService(Context.INPUT_SERVICE)
+            ?.let { it as android.hardware.input.InputManager }
+            ?.inputDeviceIds?.any { id ->
+                val dev = InputDevice.getDevice(id) ?: return@any false
+                (dev.sources and InputDevice.SOURCE_GAMEPAD) == InputDevice.SOURCE_GAMEPAD ||
+                    (dev.sources and InputDevice.SOURCE_JOYSTICK) == InputDevice.SOURCE_JOYSTICK
+            } ?: false
     }
 
     @Test
