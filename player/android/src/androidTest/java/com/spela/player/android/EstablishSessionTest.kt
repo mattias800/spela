@@ -14,17 +14,17 @@ class EstablishSessionTest : BaseE2ETest() {
 
     @Before
     override fun baseSetUp() {
-        // Still reset the backend — user-generated data from prior
-        // tests must not influence the login flow.
+        // Reset the backend — user-generated data from prior tests
+        // must not influence the login flow.
         resetServerState()
 
-        // Make sure we're logged in first (ensureLoggedIn handles
-        // arbitrary entry state), then explicitly sign out so the
-        // test actually exercises the server-connect screen. This
-        // mirrors loginAsPlayer()/loginAsAdmin() in TestHelpers.kt
-        // which already rely on signOutIfLoggedIn.
-        rule.ensureLoggedIn()
-        rule.signOutIfLoggedIn()
+        // Wipe app-local state (SQLDelight DB, prefs, files dir) and
+        // restart the activity. Sign-out alone leaves the cached JWT
+        // in SQLDelight, which causes the server-card tap to
+        // auto-restore the session and bypass the login screen
+        // entirely — defeating the whole point of this test.
+        rule.clearAppState()
+        rule.restartApp()
 
         // Skip assertOnHome — we're deliberately NOT on Home here.
     }
