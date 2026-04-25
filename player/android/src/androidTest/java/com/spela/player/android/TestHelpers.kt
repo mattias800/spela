@@ -170,12 +170,12 @@ fun resetServerState() {
     val conn = url.openConnection() as java.net.HttpURLConnection
     try {
         conn.requestMethod = "POST"
-        conn.connectTimeout = 5_000
-        // The reset handler deletes ~20 tables and does two UPDATEs. On
-        // docker-on-macOS (colima VM + overlayfs) latency is wildly
-        // variable — observed range 0.5s to 11s back-to-back. 60s
-        // gives us margin without masking a genuinely hung endpoint.
-        conn.readTimeout = 60_000
+        conn.connectTimeout = 3_000
+        // Reset is sub-2ms after the first call (DB on tmpfs, seed
+        // bcrypt hashes cached). First call pays a one-time ~500ms
+        // bcrypt warmup. 5s is comfortable margin for both, and tight
+        // enough to flag a genuinely hung endpoint quickly.
+        conn.readTimeout = 5_000
         conn.doOutput = true
         conn.outputStream.use { /* empty body */ }
         // Trigger the actual request and get the code BEFORE reading a
