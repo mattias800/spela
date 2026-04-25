@@ -28,7 +28,22 @@ class CollectionsTest : BaseE2ETest() {
 
     private fun navigateToCollectionsTab() {
         rule.tapOn("Collections")
-        rule.waitForText("My Collections", timeout = 5_000)
+        // The screen renders one of two states:
+        //   - "My Collections" header — appears when at least one
+        //     collection exists
+        //   - "No collections yet" empty-state — when the user has none
+        // /api/test/reset wipes collections between tests, so on a
+        // fresh suite we typically see the empty state first; tests
+        // that create a collection then re-enter the tab see the
+        // header. Either signal proves we're on the Collections screen.
+        rule.pollUntil(timeoutMillis = 5_000) {
+            try {
+                rule.onAllNodesWithText("My Collections", substring = true)
+                    .fetchSemanticsNodes().isNotEmpty() ||
+                    rule.onAllNodesWithText("No collections yet", substring = true)
+                        .fetchSemanticsNodes().isNotEmpty()
+            } catch (_: IllegalStateException) { false }
+        }
     }
 
     /**
