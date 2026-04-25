@@ -589,7 +589,23 @@ fun ComposeRule.waitForNotVisible(label: String, timeout: Long = TIMEOUT_SHORT) 
 fun ComposeRule.tapOnTag(tag: String, fallbackLabel: String? = null) {
     val tagNodes = onAllNodesWithTag(tag, useUnmergedTree = true).fetchSemanticsNodes()
     if (tagNodes.isNotEmpty()) {
-        onAllNodesWithTag(tag, useUnmergedTree = true)[0].performClick()
+        // Prefer the merged-tree node so testTag and the OnClick action
+        // resolve onto the same semantic node — invoking OnClick is
+        // more reliable than dispatching a synthetic touch (which can
+        // miss on multi-display devices like the AYN Thor and is
+        // sensitive to tiny tagged hitboxes).
+        val merged = onAllNodesWithTag(tag, useUnmergedTree = false).fetchSemanticsNodes()
+        if (merged.isNotEmpty()) {
+            val node = onAllNodesWithTag(tag, useUnmergedTree = false)[0]
+            val hasOnClick = node.fetchSemanticsNode().config.contains(SemanticsActions.OnClick)
+            if (hasOnClick) {
+                node.performSemanticsAction(SemanticsActions.OnClick)
+            } else {
+                node.performClick()
+            }
+        } else {
+            onAllNodesWithTag(tag, useUnmergedTree = true)[0].performClick()
+        }
         waitForIdle()
         return
     }
