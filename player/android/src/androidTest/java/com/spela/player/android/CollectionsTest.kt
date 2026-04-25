@@ -132,12 +132,16 @@ class CollectionsTest : BaseE2ETest() {
         // Wait for the detail screen controls to disappear.
         rule.waitForNotVisible("Delete collection", timeout = 15_000)
 
-        // Navigate to the Collections tab if not already there
-        val hasMyCollections = rule.onAllNodesWithText("My Collections", substring = true)
-            .fetchSemanticsNodes().isNotEmpty()
-        if (!hasMyCollections) {
-            rule.tapOn("Collections")
-            rule.waitForText("My Collections", timeout = 5_000)
+        // Navigate to the Collections tab if not already there. Use the
+        // tab helper rather than waitForText('My Collections') directly —
+        // when the user has just deleted their last collection, the
+        // empty state shows instead of the header.
+        val onCollections = rule.onAllNodesWithText("My Collections", substring = true)
+            .fetchSemanticsNodes().isNotEmpty() ||
+            rule.onAllNodesWithText("No collections yet", substring = true)
+                .fetchSemanticsNodes().isNotEmpty()
+        if (!onCollections) {
+            navigateToCollectionsTab()
         }
     }
 
