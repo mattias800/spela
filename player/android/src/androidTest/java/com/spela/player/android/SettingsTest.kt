@@ -38,32 +38,23 @@ class SettingsTest : BaseE2ETest() {
 
     /**
      * Navigate from the Per-Console category to ConsoleSettingsScreen
-     * for NES. The Per-Console list is scrollable and NES isn't always
-     * above the fold, so scroll the list via UiAutomator until the
-     * NES row's content description is visible, then click via
-     * UiAutomator (Compose's tree may sit on a non-primary display
-     * after configuration changes — UiAutomator and Compose disagree
-     * on what's visible there).
+     * for NES. The Per-Console list is a scrollable LazyColumn and
+     * NES isn't always above the fold. Use UiAutomator's
+     * UiScrollable which scrolls until the target description is
+     * found (handles bottom-of-list bounce, doesn't overshoot).
      */
     private fun tapNESConsole() {
-        val device = UiDevice.getInstance(InstrumentationRegistry.getInstrumentation())
         val desc = "Open Nintendo Entertainment System settings"
-        var nesRow: androidx.test.uiautomator.UiObject? = null
-        for (attempt in 0..10) {
-            val row = device.findObject(UiSelector().descriptionContains(desc))
-            if (row.exists()) {
-                nesRow = row
-                break
-            }
-            // Swipe up inside the right-hand detail column to scroll
-            // the console list (wide layout has list-detail).
-            val x = (device.displayWidth * 0.7).toInt()
-            val fromY = (device.displayHeight * 0.7).toInt()
-            val toY = (device.displayHeight * 0.3).toInt()
-            device.swipe(x, fromY, x, toY, 15)
-            rule.waitForIdle()
-        }
-        check(nesRow != null) { "NES console row not found after scrolling" }
+        // Find a scrollable container in the right-hand pane and ask
+        // UiAutomator to scroll it to the NES row.
+        val scrollable = androidx.test.uiautomator.UiScrollable(
+            UiSelector().scrollable(true)
+        )
+        scrollable.scrollIntoView(UiSelector().descriptionContains(desc))
+
+        val device = UiDevice.getInstance(InstrumentationRegistry.getInstrumentation())
+        val nesRow = device.findObject(UiSelector().descriptionContains(desc))
+        check(nesRow.exists()) { "NES console row not found after UiScrollable scroll" }
         nesRow.click()
         Thread.sleep(500)
         rule.waitForText("Nintendo Entertainment System Settings", timeout = 8_000)
