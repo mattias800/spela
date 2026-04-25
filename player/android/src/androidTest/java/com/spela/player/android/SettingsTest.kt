@@ -163,9 +163,12 @@ class SettingsTest : BaseE2ETest() {
         }
         rule.navigateToSettingsCategory("Per-Console")
 
-        // NES row should show "Smooth" with the device-override indicator.
-        rule.waitForText("Nintendo Entertainment System", timeout = 10_000)
-        rule.waitForText("Smooth")
+        // Open the NES ConsoleSettingsScreen — the active shader is
+        // shown there as text. tapNESConsole already scrolls the
+        // Per-Console list to the NES row, which the assertion would
+        // otherwise have to do manually.
+        tapNESConsole()
+        rule.waitForText("Smooth", timeout = 10_000)
     }
 
     @Test
