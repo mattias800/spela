@@ -1279,17 +1279,60 @@ fun ComposeRule.navigateToGameByTitle(gameTitle: String) {
     val device = uiDevice()
     val tag = "E2E_NAV"
 
-    // Navigate to Consoles tab
+    // Navigate to Consoles tab. Don't wait on a generic
+    // "Nintendo Entertainment System" content description — that
+    // string also appears on Home game cards. Also, the bottom-nav
+    // tab preserves its stack, so a previous test could have left
+    // the per-console screen (screen_console) on top of the Consoles
+    // tab. Pop back to the consoles list root before tapping NES.
     android.util.Log.d(tag, "Step 1: Tapping Consoles tab")
     tapOn("Consoles")
-    android.util.Log.d(tag, "Step 2: Waiting for NES content description")
-    waitForContentDescription("Nintendo Entertainment System", TIMEOUT_EXTRA_LONG)
-    android.util.Log.d(tag, "Step 2: NES found")
+    val consolesDeadline = System.currentTimeMillis() + TIMEOUT_EXTRA_LONG
+    while (System.currentTimeMillis() < consolesDeadline) {
+        val onConsolesList = try {
+            onAllNodesWithTag("consoles-list", useUnmergedTree = true)
+                .fetchSemanticsNodes().isNotEmpty()
+        } catch (_: Exception) { false }
+        if (onConsolesList) break
+        // If we're stranded on the per-console screen, press back
+        // until the consoles list is visible.
+        val onPerConsole = try {
+            onAllNodesWithContentDescription("screen_console", substring = false)
+                .fetchSemanticsNodes().isNotEmpty()
+        } catch (_: Exception) { false }
+        if (onPerConsole) {
+            android.util.Log.d(tag, "Step 2: stranded on screen_console, pressing back")
+            pressBack()
+            Thread.sleep(500)
+        } else {
+            Thread.sleep(250)
+        }
+    }
+    android.util.Log.d(tag, "Step 2: Consoles screen confirmed")
 
-    // Tap the NES console card. With isTestMode=true, Compose APIs are fast.
-    // Use the compound matcher to find the card with both "NES" and "games".
-    android.util.Log.d(tag, "Step 3: Tapping NES card")
-    scrollToAndTapMatchingBoth("Nintendo Entertainment System", "games")
+    // Tap the NES console card via its stable testTag — robust
+    // against card layout/copy changes (a recent UI tweak broke the
+    // old "Nintendo Entertainment System" + "games" pair matcher).
+    android.util.Log.d(tag, "Step 3: Tapping NES card (testTag console_card_nes)")
+    val nesCardTag = com.spela.player.presentation.ui.TestTags.consoleCard("nes")
+    // Poll for the tag — Compose's accessibility tree can briefly be
+    // unavailable right after a tab switch (AppNotIdleException).
+    val tagDeadline = System.currentTimeMillis() + 8_000
+    var tagPresent = false
+    while (System.currentTimeMillis() < tagDeadline) {
+        tagPresent = try {
+            onAllNodesWithTag(nesCardTag, useUnmergedTree = true)
+                .fetchSemanticsNodes().isNotEmpty()
+        } catch (_: Exception) { false }
+        if (tagPresent) break
+        Thread.sleep(250)
+    }
+    if (tagPresent) {
+        scrollToAndTapTag(nesCardTag, maxSwipes = 10)
+    } else {
+        android.util.Log.d(tag, "Step 3: NES tag not found, falling back to text-pair matcher")
+        scrollToAndTapMatchingBoth("Nintendo Entertainment System", "games")
+    }
     android.util.Log.d(tag, "Step 3: NES card tapped, waiting for console screen")
 
     // Verify we navigated to the console screen
@@ -1821,40 +1864,72 @@ fun ComposeRule.startGameAndWait() {
 
     // Wait for emulation to start using multiple signals
     val device = uiDevice()
-    // 20s is enough for download + extract + core init on a real device.
-    // First-time runs that need to fetch a fresh core from libretro
-    // buildbot may take longer; bump only if a passing test starts
-    // failing here, NOT to mask a hanging emulation pipeline.
+    // 20s is plenty: a cached core + ROM starts in well under a
+    // second. If this trips, the emulation pipeline is wedged or the
+    // detection markers are missing — investigate that instead of
+    // bumping the timeout.
     val deadline = System.currentTimeMillis() + 20_000
+    var iter = 0
     while (System.currentTimeMillis() < deadline) {
+        iter++
         // Signal 1: Compose "Game running" marker
         try {
-            if (onAllNodesWithContentDescription("Game running", substring = false)
-                    .fetchSemanticsNodes().isNotEmpty()) {
+            val composeCount = onAllNodesWithContentDescription("Game running", substring = false)
+                .fetchSemanticsNodes().size
+            android.util.Log.d("E2E_GAMEPLAY", "iter=$iter compose 'Game running' nodes=$composeCount")
+            if (composeCount > 0) {
                 android.util.Log.d("E2E_GAMEPLAY", "Game started! Compose 'Game running' marker")
                 Thread.sleep(2_000)
                 return
             }
-        } catch (_: Exception) {}
+        } catch (e: Exception) {
+            android.util.Log.d("E2E_GAMEPLAY", "iter=$iter compose check error: ${e.message?.take(80)}")
+        }
 
         // Signal 2: UiAutomator "Core running" marker
-        if (device.findObject(UiSelector().descriptionContains("Core running")).exists()) {
+        val uiAutomatorRunning = device.findObject(UiSelector().descriptionContains("Core running")).exists()
+        android.util.Log.d("E2E_GAMEPLAY", "iter=$iter uiautomator 'Core running' exists=$uiAutomatorRunning")
+        if (uiAutomatorRunning) {
             android.util.Log.d("E2E_GAMEPLAY", "Game started! UiAutomator 'Core running' marker")
             return
         }
 
-        // Signal 3: Logcat core messages
+        // Signal 3: Logcat core messages — match the actual Spela
+        // logs emitted by EmulationViewModel + LibretroController.
+        // `executeShellCommand` runs a single binary (no pipes), so
+        // we filter by tag at the logcat level and then do the
+        // pattern match in Kotlin. The two tags between them carry
+        // every "game-started" hint we need.
         try {
-            val logOutput = device.executeShellCommand("logcat -d -t 30 | grep -i 'retro_run\\|nativeRun\\|Core running\\|emulation started'")
-            if (logOutput.isNotEmpty()) {
-                android.util.Log.d("E2E_GAMEPLAY", "Game started! Logcat: ${logOutput.take(100)}")
+            val raw = device.executeShellCommand("logcat -d -s System.out:I SpelaLibretro:I -t 500")
+            val hit = raw.lineSequence().firstOrNull { line ->
+                line.contains("Game loaded:") ||
+                    line.contains("libretroController.start() returned")
+            }
+            if (hit != null) {
+                android.util.Log.d("E2E_GAMEPLAY", "iter=$iter logcat hit: ${hit.take(160)}")
+                android.util.Log.d("E2E_GAMEPLAY", "Game started! Logcat marker found")
                 Thread.sleep(2_000)
                 return
+            } else {
+                android.util.Log.d("E2E_GAMEPLAY", "iter=$iter logcat: no match yet (raw=${raw.length} bytes)")
             }
-        } catch (_: Exception) {}
+        } catch (e: Exception) {
+            android.util.Log.d("E2E_GAMEPLAY", "iter=$iter logcat error: ${e.message?.take(80)}")
+        }
 
         Thread.sleep(2_000)
     }
+    // Dump some context about what content descriptions WERE visible
+    // when we gave up so the next debug session has data to work with.
+    val lastDesc = try {
+        onAllNodesWithContentDescription("", substring = true).fetchSemanticsNodes()
+            .mapNotNull {
+                it.config.find { p -> p.key.name == "ContentDescription" }?.value as? List<*>
+            }
+            .flatten().filterIsInstance<String>().take(20)
+    } catch (_: Exception) { emptyList() }
+    android.util.Log.d("E2E_GAMEPLAY", "Game did not start. Visible contentDescriptions sample: $lastDesc")
     throw IllegalStateException("Game did not start within 20 seconds")
 }
 
@@ -2425,31 +2500,40 @@ fun ComposeRule.createChallengeFromOverlay(title: String = "E2E Test Challenge")
     tapOn("Challenge")
     waitForText("Create Challenge", timeout = 5_000)
 
-    // During emulation, Compose test performTextInput/performClick block on idle.
-    // Use UiAutomator for text input and button click.
+    // During emulation, Compose test performTextInput/performClick
+    // can block on Espresso idle (the 60fps render loop never goes
+    // idle), so use UiAutomator. Compose's accessibility tree often
+    // needs a moment to publish the EditText after the panel renders
+    // — poll for it instead of failing on the first miss.
     val device = UiDevice.getInstance(InstrumentationRegistry.getInstrumentation())
-    val titleField = device.findObject(UiSelector().textContains("Title").className("android.widget.EditText"))
-    if (!titleField.exists()) {
-        // Fallback: find by resource ID or any editable field
-        val anyField = device.findObject(UiSelector().className("android.widget.EditText"))
-        check(anyField.exists()) { "createChallengeFromOverlay: no text field found" }
-        anyField.clearTextField()
-        anyField.setText(title)
-    } else {
-        titleField.clearTextField()
-        titleField.setText(title)
+    val deadline = System.currentTimeMillis() + 5_000L
+    var titleField = device.findObject(UiSelector().className("android.widget.EditText"))
+    while (!titleField.exists() && System.currentTimeMillis() < deadline) {
+        Thread.sleep(200)
+        titleField = device.findObject(UiSelector().className("android.widget.EditText"))
     }
+    check(titleField.exists()) { "createChallengeFromOverlay: no Title text field found" }
+    titleField.clearTextField()
+    titleField.setText(title)
 
-    // Tap the "Create" button. tapOn would substring-match and could
-    // hit the "Create Challenge" dialog title first; tapLastWithText
-    // uses UiSelector.text() (exact match) so only the actual button
-    // qualifies, and `last` ensures we get the bottom one if the
-    // panel is ever rendered with multiple "Create" exact matches.
-    tapLastWithText("Create")
+    // Tap the "Create" button via UiAutomator directly. tapLastWithText
+    // tries Compose performClick first when "Core running" content
+    // description isn't detected — but the overlay/panel can hide
+    // that signal mid-flow, sending the click into Espresso's idle
+    // wait, which never completes during 60fps emulation.
+    var createIdx = 0
+    while (device.findObject(UiSelector().text("Create").instance(createIdx + 1)).exists()) {
+        createIdx++
+    }
+    val createBtn = device.findObject(UiSelector().text("Create").instance(createIdx))
+    check(createBtn.exists()) { "createChallengeFromOverlay: no Create button found" }
+    createBtn.click()
     waitForText("Challenge created!", timeout = 15_000)
 
-    // Game resumes after toast
-    waitForVisible("Game running", timeout = 5_000)
+    // Game resumes after the success toast auto-dismisses (~2s delay
+    // in InGameOverlay) plus another frame for emulation to restart.
+    // The 1dp "Game running" semantic marker is the canonical signal.
+    waitForVisible("Game running", timeout = 10_000)
 }
 
 /**

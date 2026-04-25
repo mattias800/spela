@@ -25,6 +25,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import com.spela.player.domain.model.ChallengeDifficulty
@@ -90,7 +91,9 @@ fun ChallengeCreationPanel(
                 onValueChange = { name = it },
                 label = "Title",
                 singleLine = true,
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .testTag("challenge_create_title_field"),
             )
 
             Spacer(Modifier.height(SpSpacing.Medium))
@@ -165,7 +168,7 @@ fun ChallengeCreationPanel(
                     text = "Cancel",
                     onClick = onDismiss,
                     enabled = !isSubmitting,
-                    modifier = Modifier.weight(1f),
+                    modifier = Modifier.weight(1f).testTag("challenge_create_cancel_button"),
                 )
                 SpButton(
                     text = if (isSubmitting) "Creating..." else "Create",
@@ -175,7 +178,7 @@ fun ChallengeCreationPanel(
                         }
                     },
                     enabled = name.isNotBlank() && !isSubmitting,
-                    modifier = Modifier.weight(1f),
+                    modifier = Modifier.weight(1f).testTag("challenge_create_submit_button"),
                 )
             }
         }
