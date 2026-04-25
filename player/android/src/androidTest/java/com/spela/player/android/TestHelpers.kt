@@ -1305,6 +1305,26 @@ fun ComposeRule.navigateToGameByTitle(gameTitle: String) {
     // Try multiple strategies to find and click Browse
     var browseClicked = false
 
+    // Strategy 0: testTag — most reliable. ConsoleScreen tags the
+    // browse-games CTA via TestTags.consoleBrowseGames(consoleId).
+    // We don't know the consoleId here at compile time, but the
+    // current screen is for NES — try the well-known id first.
+    if (!browseClicked) {
+        try {
+            val browseTag = "console_browse_games_nes"
+            val nodes = onAllNodesWithTag(browseTag, useUnmergedTree = true)
+                .fetchSemanticsNodes()
+            if (nodes.isNotEmpty()) {
+                android.util.Log.d(tag, "Step 5: Found Browse via testTag '$browseTag'")
+                tapOnTag(browseTag)
+                browseClicked = true
+                Thread.sleep(2_000)
+            }
+        } catch (e: Exception) {
+            android.util.Log.d(tag, "Step 5: tapOnTag(console_browse_games_nes) failed: ${e.message?.take(80)}")
+        }
+    }
+
     // Strategy 1: Compose tree — exact text "Browse" (not "Browser play")
     if (!browseClicked) {
         try {
