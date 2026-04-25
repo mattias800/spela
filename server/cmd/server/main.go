@@ -369,7 +369,15 @@ func main() {
 			"total", result.TotalGames,
 		)
 
-		if result.NewGames > 0 && metaScraper.IsIGDBConfigured() {
+		if testMode {
+			// In test mode the startup scrape job is skipped: it
+			// runs hundreds of IGDB lookups in the background and
+			// each one writes to SQLite, which contends with
+			// /api/test/reset under our single-writer DB. The
+			// metadata that the scan itself produced (titles,
+			// console mapping) is enough for the e2e suite.
+			slog.Info("test mode: skipping startup scrape job to avoid DB contention with /api/test/reset")
+		} else if result.NewGames > 0 && metaScraper.IsIGDBConfigured() {
 			// Collect new (unscraped) game IDs
 			var gameIDs []uint
 			database.Model(&db.Game{}).
