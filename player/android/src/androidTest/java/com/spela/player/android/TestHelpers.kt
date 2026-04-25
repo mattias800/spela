@@ -2301,7 +2301,19 @@ fun ComposeRule.ensureChallengeExists(title: String = "E2E Test Challenge") {
     navigateToGameAndPlay()
     createChallengeFromOverlay(title)
     openOverlayAndExit()
-    waitForText("Download", TIMEOUT_LONG)
+    // Post-exit, the action button is Play/Resume/Download depending on
+    // cache + auto-save state. Any of them means we're back on game
+    // detail.
+    pollUntil(timeoutMillis = TIMEOUT_LONG) {
+        try {
+            onAllNodesWithText("Play", substring = true)
+                .fetchSemanticsNodes().isNotEmpty() ||
+                onAllNodesWithText("Resume", substring = true)
+                    .fetchSemanticsNodes().isNotEmpty() ||
+                onAllNodesWithText("Download", substring = true)
+                    .fetchSemanticsNodes().isNotEmpty()
+        } catch (_: Exception) { false }
+    }
     challengesCreated.add(title)
 
     // Navigate all the way back to Home and then through the full path.
