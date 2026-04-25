@@ -298,7 +298,16 @@ func main() {
 			slog.Info("post-scrape IGDB group merge complete", "merged", merged)
 		}
 	})
-	go scrapeWorker.Run(workerCtx)
+	if testMode {
+		// Do not start the scrape worker in test mode. The on-demand
+		// scrape-if-needed endpoint and other code paths can still enqueue
+		// items (and they're harmless to leave queued), but nothing
+		// processes them — so no async DB writes contend with
+		// /api/test/reset's transaction.
+		slog.Info("test mode: scrape worker not started (avoids DB contention with /api/test/reset)")
+	} else {
+		go scrapeWorker.Run(workerCtx)
+	}
 
 	// Rebuild variant groups from scratch on startup. This is idempotent —
 	// the result depends only on filenames and IGDB IDs, not on existing
