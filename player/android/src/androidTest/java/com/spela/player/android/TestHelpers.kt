@@ -1700,6 +1700,24 @@ fun ComposeRule.assertTagVisible(tag: String) {
 }
 
 /**
+ * Assert that a radio-button node tagged with [tag] is in the
+ * "Selected" state. SpRadioOption sets `stateDescription = "Selected"
+ * | "Not selected"` based on its `isSelected` flag, so this checks
+ * that semantic property without depending on visual rendering or
+ * label text.
+ */
+fun ComposeRule.assertRadioSelected(tag: String) {
+    val nodes = onAllNodesWithTag(tag, useUnmergedTree = true).fetchSemanticsNodes()
+    check(nodes.isNotEmpty()) { "No node with testTag '$tag' found" }
+    val key = androidx.compose.ui.semantics.SemanticsProperties.StateDescription
+    val cfg = nodes[0].config
+    val state = cfg.find { it.key == key }?.value as? String
+    check(state == "Selected") {
+        "Expected radio '$tag' to be Selected, was '$state'"
+    }
+}
+
+/**
  * Assert that a node with the given testTag is NOT in the Compose
  * semantics tree.
  */
