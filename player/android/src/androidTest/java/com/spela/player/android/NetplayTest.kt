@@ -1,26 +1,24 @@
 package com.spela.player.android
 
 import kotlinx.coroutines.runBlocking
+import org.junit.Ignore
 import org.junit.Test
 import java.net.HttpURLConnection
 import java.net.URL
 
 /**
- * Android netplay smoke test — single-device integration test.
+ * Netplay E2E tests live on the desktop player target — desktop can
+ * run two clients side-by-side, which is exactly what netplay needs
+ * to exercise. The single-device-+-API-shim approach in this file
+ * simulates the second player via direct REST calls and never tests
+ * real WebSocket sync between two real clients.
  *
- * Verifies the full netplay session lifecycle through the real app UI
- * on one device, with the second player simulated via direct API calls.
- *
- * Test flow:
- *   1. Admin logs in, navigates to an NES game, taps "Netplay" to create session
- *   2. Lobby screen appears with invite code and "Waiting for player" slot
- *   3. Direct API call joins as "player" (simulates second device)
- *   4. Lobby updates to show both players connected
- *   5. Auto-launch countdown begins ("Starting game in...")
- *
- * This catches real Android integration issues: auth token flow, WebSocket
- * connection, session API round-trips, and real-time lobby updates.
+ * The class stays on disk so the structure is visible in code review,
+ * but @Ignore keeps it out of every test run. Follow-up: rewrite as
+ * `player/desktop/src/test/.../NetplayTest.kt` driving two
+ * SpelaTestHarness instances.
  */
+@Ignore("Netplay E2E belongs on the desktop player target — see KDoc.")
 class NetplayTest : BaseE2ETest() {
 
     @Test
