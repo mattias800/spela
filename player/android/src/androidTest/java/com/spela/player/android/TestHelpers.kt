@@ -1330,27 +1330,24 @@ fun ComposeRule.navigateToGameByTitle(gameTitle: String) {
     // "Nintendo Entertainment System" content description — that
     // string also appears on Home game cards. Also, the bottom-nav
     // tab preserves its stack, so a previous test could have left
-    // the per-console screen (screen_console) on top of the Consoles
-    // tab. Pop back to the consoles list root before tapping NES.
+    // any deeper screen (per-console, game detail, console settings)
+    // on top of the Consoles tab. Press back until the consoles list
+    // testTag is visible.
     android.util.Log.d(tag, "Step 1: Tapping Consoles tab")
     tapOn("Consoles")
     val consolesDeadline = System.currentTimeMillis() + TIMEOUT_EXTRA_LONG
+    var backPresses = 0
     while (System.currentTimeMillis() < consolesDeadline) {
         val onConsolesList = try {
             onAllNodesWithTag("consoles-list", useUnmergedTree = true)
                 .fetchSemanticsNodes().isNotEmpty()
         } catch (_: Exception) { false }
         if (onConsolesList) break
-        // If we're stranded on the per-console screen, press back
-        // until the consoles list is visible.
-        val onPerConsole = try {
-            onAllNodesWithContentDescription("screen_console", substring = false)
-                .fetchSemanticsNodes().isNotEmpty()
-        } catch (_: Exception) { false }
-        if (onPerConsole) {
-            android.util.Log.d(tag, "Step 2: stranded on screen_console, pressing back")
+        if (backPresses < 5) {
+            android.util.Log.d(tag, "Step 2: not on consoles list yet, pressing back (attempt ${backPresses + 1})")
             pressBack()
-            Thread.sleep(500)
+            backPresses++
+            Thread.sleep(400)
         } else {
             Thread.sleep(250)
         }
@@ -2279,12 +2276,25 @@ fun ComposeRule.navigateToSettings() {
     // Prefer the stable testTag from TestTags.NAV_SETTINGS — the label
     // "Settings" can be hidden in gamepad mode or renamed, but the tag
     // is a compile-time constant applied by both SpBottomNavBar and
-    // SpNavigationRail.
+    // SpNavigationRail. Re-tap once if the first tap didn't take —
+    // can happen if we're caught mid-recomposition while the home
+    // screen is still loading library data and the SwitchTab intent
+    // ends up dropped.
     tapOnTag(TestTags.NAV_SETTINGS, fallbackLabel = "Settings")
-    Thread.sleep(1_000)
-    // Wait for the category list by its testTag — resilient to label
-    // renames and localisation.
-    waitForTag(TestTags.SETTINGS_CATEGORY_GENERAL, TIMEOUT_LONG)
+    val deadline = System.currentTimeMillis() + TIMEOUT_LONG
+    while (System.currentTimeMillis() < deadline) {
+        try {
+            if (onAllNodesWithTag(TestTags.SETTINGS_CATEGORY_GENERAL, useUnmergedTree = true)
+                    .fetchSemanticsNodes().isNotEmpty()) return
+        } catch (_: Exception) {}
+        Thread.sleep(500)
+        // Re-issue the tap if Settings still hasn't appeared after a
+        // few seconds — bottom-nav tabs accept a no-op re-tap.
+        if (System.currentTimeMillis() - (deadline - TIMEOUT_LONG) > 3_000) {
+            tapOnTag(TestTags.NAV_SETTINGS, fallbackLabel = "Settings")
+        }
+    }
+    error("navigateToSettings: SETTINGS_CATEGORY_GENERAL never appeared within ${TIMEOUT_LONG}ms")
 }
 
 /**

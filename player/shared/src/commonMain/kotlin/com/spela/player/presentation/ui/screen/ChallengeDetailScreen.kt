@@ -230,7 +230,10 @@ fun ChallengeDetailScreen(
                     SpButton(
                         text = "Attempt Challenge",
                         onClick = { onAttempt(challenge.id, challenge.gameId) },
-                        modifier = Modifier.autoFocus().fillMaxWidth(),
+                        modifier = Modifier
+                            .autoFocus()
+                            .fillMaxWidth()
+                            .testTag("attempt_challenge_button"),
                     )
 
                     // Delete button (visible for challenge creator)

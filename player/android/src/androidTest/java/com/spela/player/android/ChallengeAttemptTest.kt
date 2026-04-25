@@ -44,8 +44,12 @@ class ChallengeAttemptTest : BaseE2ETest() {
         rule.tapOn(SHARED_CHALLENGE)
         rule.waitForText("Attempt Challenge", timeout = 8_000)
 
-        // Start attempt
-        rule.tapOn("Attempt Challenge")
+        // Start attempt — use the stable testTag so the OnClick
+        // semantic action fires directly. The previous text-based
+        // tap dispatched a synthetic touch into the inner Text, which
+        // didn't always propagate to the outer Button's onClick on
+        // multi-display hardware.
+        rule.tapOnTag("attempt_challenge_button")
 
         // Wait for the game to load. UiAutomator's "Core running"
         // marker can sit on the wrong physical display on Thor's

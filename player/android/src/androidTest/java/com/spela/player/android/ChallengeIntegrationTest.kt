@@ -1,5 +1,6 @@
 package com.spela.player.android
 
+import androidx.compose.ui.test.onAllNodesWithText
 import org.junit.Test
 
 /**
@@ -22,7 +23,19 @@ class ChallengeIntegrationTest : BaseE2ETest() {
         rule.navigateToGameAndPlay(preferredGameTitle = "Castlevania")
         rule.createChallengeFromOverlay("Activity Feed Test")
         rule.openOverlayAndExit()
-        rule.waitForText("Download", timeout = 8_000)
+        // After exit the action button is Play/Resume/Download
+        // depending on cache + auto-save state — any of them means
+        // we're back on game detail.
+        rule.pollUntil(timeoutMillis = 8_000L) {
+            try {
+                rule.onAllNodesWithText("Resume", substring = false)
+                    .fetchSemanticsNodes().isNotEmpty() ||
+                    rule.onAllNodesWithText("Play", substring = false)
+                        .fetchSemanticsNodes().isNotEmpty() ||
+                    rule.onAllNodesWithText("Download", substring = false)
+                        .fetchSemanticsNodes().isNotEmpty()
+            } catch (_: Exception) { false }
+        }
 
         // Navigate to challenge and attempt it
         rule.navigateToChallengeList()
@@ -30,9 +43,10 @@ class ChallengeIntegrationTest : BaseE2ETest() {
         rule.tapOn("Activity Feed Test")
         rule.waitForText("Attempt Challenge", timeout = 5_000)
 
-        // Start and complete attempt
-        rule.tapOn("Attempt Challenge")
-        rule.waitForVisible("Game running", timeout = 15_000)
+        // Start and complete attempt — testTag click bypasses the
+        // touch-routing weirdness on multi-display hardware.
+        rule.tapOnTag("attempt_challenge_button")
+        rule.waitForGameRunning(timeout = 15_000)
         Thread.sleep(1_000)
         rule.completeChallenge()
         rule.waitForText("Challenge Complete", timeout = 8_000)

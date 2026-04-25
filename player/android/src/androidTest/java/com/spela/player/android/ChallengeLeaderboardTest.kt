@@ -1,5 +1,6 @@
 package com.spela.player.android
 
+import androidx.compose.ui.test.onAllNodesWithText
 import org.junit.Test
 
 /**
@@ -62,7 +63,18 @@ class ChallengeLeaderboardTest : BaseE2ETest() {
         rule.navigateToGameAndPlay(preferredGameTitle = "Castlevania")
         rule.createChallengeFromOverlay("Leaderboard Entry Test")
         rule.openOverlayAndExit()
-        rule.waitForText("Download", timeout = 8_000)
+        // After exit the action button is Play/Resume/Download
+        // depending on cache + auto-save state.
+        rule.pollUntil(timeoutMillis = 8_000L) {
+            try {
+                rule.onAllNodesWithText("Resume", substring = false)
+                    .fetchSemanticsNodes().isNotEmpty() ||
+                    rule.onAllNodesWithText("Play", substring = false)
+                        .fetchSemanticsNodes().isNotEmpty() ||
+                    rule.onAllNodesWithText("Download", substring = false)
+                        .fetchSemanticsNodes().isNotEmpty()
+            } catch (_: Exception) { false }
+        }
 
         // Navigate to challenge detail and start attempt
         rule.navigateToChallengeList()
@@ -70,8 +82,9 @@ class ChallengeLeaderboardTest : BaseE2ETest() {
         rule.tapOn("Leaderboard Entry Test")
         rule.waitForText("Attempt Challenge", timeout = 5_000)
 
-        rule.tapOn("Attempt Challenge")
-        rule.waitForVisible("Game running", timeout = 15_000)
+        // Tag-based click bypasses touch-routing weirdness.
+        rule.tapOnTag("attempt_challenge_button")
+        rule.waitForGameRunning(timeout = 15_000)
 
         // Let some time pass, then complete
         Thread.sleep(1_500)
