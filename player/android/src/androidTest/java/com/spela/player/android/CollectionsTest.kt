@@ -10,6 +10,7 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTextClearance
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextInput
+import com.spela.player.presentation.ui.TestTags
 import org.junit.Test
 
 /**
@@ -308,13 +309,14 @@ class CollectionsTest : BaseE2ETest() {
         // Navigate to Castlevania game detail (go via Home to reset tab state)
         navigateToGameDetail()
 
-        // Open the More-actions overflow menu — "Add to Collection"
-        // moved into the DropdownMenu (see GameActionsMenu.kt) and is
-        // no longer a top-level button on game detail.
-        rule.tapOn("More actions")
-        rule.waitForText("Add to Collection", timeout = 5_000)
-        rule.tapOn("Add to Collection")
+        // Open the More-actions overflow menu — Add to Collection
+        // moved into the DropdownMenu (GameActionsMenu.kt). Drive by
+        // testTag so the test stays stable through label changes.
+        rule.tapOnTag(TestTags.GAME_DETAIL_MORE_ACTIONS)
+        rule.waitForTag(TestTags.GAME_DETAIL_MENU_ADD_TO_COLLECTION, timeout = 5_000)
+        rule.tapOnTag(TestTags.GAME_DETAIL_MENU_ADD_TO_COLLECTION)
         rule.waitForIdle()
+        // The CollectionPickerDialog header text is "Add to Collection".
         rule.waitForText("Add to Collection", timeout = 5_000)
 
         // Select our test collection from the picker

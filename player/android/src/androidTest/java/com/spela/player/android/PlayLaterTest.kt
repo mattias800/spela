@@ -2,6 +2,7 @@ package com.spela.player.android
 
 import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onAllNodesWithText
+import com.spela.player.presentation.ui.TestTags
 import org.junit.Test
 
 class PlayLaterTest : BaseE2ETest() {
@@ -13,19 +14,16 @@ class PlayLaterTest : BaseE2ETest() {
      * Play Later button on the page itself.
      */
     private fun openActionsMenu() {
-        rule.tapOn("More actions")
-        // Menu is a DropdownMenu — wait for an item to render.
-        rule.pollUntil(timeoutMillis = 5_000) {
-            try {
-                rule.onAllNodesWithText("Favorite", substring = true)
-                    .fetchSemanticsNodes().isNotEmpty() ||
-                    rule.onAllNodesWithText("Play Later", substring = true)
-                        .fetchSemanticsNodes().isNotEmpty()
-            } catch (_: IllegalStateException) { false }
-        }
+        rule.tapOnTag(TestTags.GAME_DETAIL_MORE_ACTIONS)
+        rule.waitForTag(TestTags.GAME_DETAIL_MENU_PLAY_LATER, timeout = 5_000)
     }
 
-    /** True if game is currently in the Play Later queue (menu shows "Remove from Play Later"). */
+    /**
+     * True if the game is currently in the Play Later queue. The menu
+     * item's TEXT toggles between "Play Later" and "Remove from Play
+     * Later"; the testTag is the same on both, so we read the text
+     * inside the tagged node.
+     */
     private fun isInPlayLaterFromMenu(): Boolean {
         return try {
             rule.onAllNodesWithText("Remove from Play Later", substring = true)
