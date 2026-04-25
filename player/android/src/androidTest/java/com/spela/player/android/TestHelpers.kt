@@ -1406,13 +1406,23 @@ fun ComposeRule.navigateToGameByTitle(gameTitle: String) {
     } catch (_: Exception) {}
     android.util.Log.d(tag, "Step 8: Full page text: $detailText")
 
-    // Wait for game detail — look for Download/Play/Resume button
-    // Use longer timeout — game detail page loads game info from API
+    // Wait for game detail — look for Download/Play/Resume button.
+    // Check both UiAutomator (works when activity is on display 0) and
+    // the Compose semantics tree (works regardless of display, e.g.
+    // AYN Thor's secondary-display routing). Either signal is enough.
     android.util.Log.d(tag, "Step 8: Waiting for game detail (Download/Play/Resume)")
     pollUntil(timeoutMillis = TIMEOUT_EXTRA_LONG) {
         device.findObject(UiSelector().textContains("Download")).exists() ||
             device.findObject(UiSelector().textContains("Play")).exists() ||
-            device.findObject(UiSelector().textContains("Resume")).exists()
+            device.findObject(UiSelector().textContains("Resume")).exists() ||
+            try {
+                onAllNodesWithText("Download", substring = true)
+                    .fetchSemanticsNodes().isNotEmpty() ||
+                    onAllNodesWithText("Play", substring = true)
+                        .fetchSemanticsNodes().isNotEmpty() ||
+                    onAllNodesWithText("Resume", substring = true)
+                        .fetchSemanticsNodes().isNotEmpty()
+            } catch (_: Exception) { false }
     }
     android.util.Log.d(tag, "Step 8: Game detail loaded")
 }
