@@ -85,14 +85,15 @@ class PlayLaterTest : BaseE2ETest() {
         rule.navigateToCastlevania()
         setPlayLater(desiredInQueue = true)
 
-        // Navigate back to Home (handles however many pressBacks the
-        // current screen stack needs).
+        // Navigate back to Home and trigger a dashboard refresh by
+        // bouncing off another tab (avoids restartApp() which is
+        // documented as unreliable on emulators / this device).
         rule.navigateBackToHome()
         rule.waitForText("Spela", timeout = 8_000)
-
-        // Force a fresh dashboard load via restart.
-        rule.restartApp()
-        rule.waitForText("Spela", timeout = 15_000)
+        rule.tapOn("Consoles")
+        rule.waitForContentDescription("Nintendo Entertainment System", timeout = 8_000)
+        rule.tapOn("Home")
+        rule.waitForText("Spela", timeout = 8_000)
 
         // Find the "Play Later" section header in the LazyColumn.
         try {
@@ -110,13 +111,14 @@ class PlayLaterTest : BaseE2ETest() {
         setPlayLater(desiredInQueue = false)
         setPlayLater(desiredInQueue = true) // generates queued_play_later event
 
-        // Navigate to Home.
-        rule.pressBack()
-        rule.pressBack()
+        // Navigate to Home (don't use restartApp — known unreliable).
+        rule.navigateBackToHome()
         rule.waitForText("Spela", timeout = 8_000)
-
-        rule.restartApp()
-        rule.waitForText("Spela", timeout = 15_000)
+        // Bounce tabs to force a dashboard refresh.
+        rule.tapOn("Consoles")
+        rule.waitForContentDescription("Nintendo Entertainment System", timeout = 8_000)
+        rule.tapOn("Home")
+        rule.waitForText("Spela", timeout = 8_000)
 
         // Activity event text contains "Play Later queue".
         try {
