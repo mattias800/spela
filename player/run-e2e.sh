@@ -13,6 +13,16 @@ fi
 
 source "$ENV_FILE"
 
+# Also pull in the repo-root .env if present — that's where SPELA_IGDB_*
+# credentials live (docker-compose reads it automatically; the bash
+# preflight below needs them sourced into the shell).
+if [ -f "$REPO_ROOT/.env" ]; then
+  set -a
+  # shellcheck disable=SC1091
+  source "$REPO_ROOT/.env"
+  set +a
+fi
+
 # ── Clean-slate backend reset ──
 # Every E2E run starts with a fresh backend state so results are fully
 # idempotent — no test mutates a DB row, plays a game, or creates a save
@@ -42,6 +52,39 @@ fi
 echo "── Ensuring backend is up (docker compose up -d --build --wait) ──"
 docker compose -f "$E2E_COMPOSE" up -d --build --wait
 echo "Backend up and healthy."
+
+# ── IGDB credential preflight ──
+# Many tests assert metadata sourced from IGDB (Top Rated shelves,
+# scraped titles, cover art, auto-scrape verification). If creds
+# are missing or invalid, those tests fail mysteriously deep into
+# the run. Probe IGDB at suite start so a credential problem
+# aborts in seconds with a clear message.
+if [ -n "${SPELA_IGDB_CLIENT_ID:-}" ] && [ -n "${SPELA_IGDB_CLIENT_SECRET:-}" ]; then
+  echo "── Preflight: validating IGDB credentials ──"
+  LOGIN_RESP=$(curl -fsS -X POST http://localhost:8080/api/auth/login \
+    -H 'Content-Type: application/json' \
+    -d '{"username":"admin","password":"admin123"}' 2>/dev/null || true)
+  ADMIN_TOKEN=$(printf '%s' "$LOGIN_RESP" | sed -n 's/.*"accessToken":"\([^"]*\)".*/\1/p')
+  if [ -z "$ADMIN_TOKEN" ]; then
+    echo "FATAL: admin login failed during IGDB preflight." >&2
+    echo "Login response: $LOGIN_RESP" >&2
+    exit 1
+  fi
+  IGDB_RESP=$(curl -sS -X POST http://localhost:8080/api/admin/igdb/test \
+    -H "Authorization: Bearer $ADMIN_TOKEN" \
+    -H 'Content-Type: application/json' \
+    -d "{\"clientId\":\"$SPELA_IGDB_CLIENT_ID\",\"clientSecret\":\"$SPELA_IGDB_CLIENT_SECRET\"}" 2>/dev/null || true)
+  if ! printf '%s' "$IGDB_RESP" | grep -q '"success":true'; then
+    echo "FATAL: IGDB credential validation failed." >&2
+    echo "Response: $IGDB_RESP" >&2
+    echo "Check SPELA_IGDB_CLIENT_ID and SPELA_IGDB_CLIENT_SECRET in .env." >&2
+    exit 1
+  fi
+  echo "IGDB credentials valid."
+else
+  echo "WARN: SPELA_IGDB_CLIENT_ID / SPELA_IGDB_CLIENT_SECRET unset." >&2
+  echo "      Many tests rely on IGDB metadata and will likely fail." >&2
+fi
 
 # ── Clean-slate app state ──
 # Uninstall the app (if present) so every run starts from a real
