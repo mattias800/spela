@@ -511,7 +511,7 @@ private fun ComposeRule.isOnLoginScreen(): Boolean {
  * that case — so we use the Compose semantics tree for the exact
  * match instead.
  */
-private fun ComposeRule.isOnHomeScreen(): Boolean {
+internal fun ComposeRule.isOnHomeScreen(): Boolean {
     if (!isInSpelaApp()) return false
     val device = uiDevice()
     if (device.findObject(UiSelector().descriptionContains(TestTags.SCREEN_HOME)).exists() ||

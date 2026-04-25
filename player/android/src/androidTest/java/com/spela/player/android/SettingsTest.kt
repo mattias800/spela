@@ -176,8 +176,13 @@ class SettingsTest : BaseE2ETest() {
         // Restart app
         rule.restartApp()
 
-        // Session restored - expect Home screen
-        rule.waitForText("Spela", timeout = 15_000)
+        // Session restored - expect Home screen. Use isOnHomeScreen()
+        // (Compose + UiAutomator) instead of waitForText which can
+        // miss the brand mark when activity routes to a non-primary
+        // display after recreate.
+        rule.pollUntil(timeoutMillis = 15_000) {
+            try { rule.isOnHomeScreen() } catch (_: Exception) { false }
+        }
 
         // Navigate to Settings → Emulation and verify shader persisted
         rule.navigateToSettingsCategory("Emulation")
