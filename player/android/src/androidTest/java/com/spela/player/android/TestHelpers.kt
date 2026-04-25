@@ -17,8 +17,10 @@ import androidx.compose.ui.test.onAllNodesWithText
 import com.spela.player.presentation.ui.TestTags
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.test.performTextClearance
 import androidx.compose.ui.test.performImeAction
 import androidx.compose.ui.test.performTextInput
@@ -1632,11 +1634,32 @@ fun ComposeRule.scrollToAndTapText(text: String) {
  * Compose semantics tree, then click it via Compose. Use this to drive
  * lazy-list rows or sections by their stable tag rather than fragile
  * text labels.
+ *
+ * Click is dispatched via [SemanticsActions.OnClick] when the merged-tree
+ * node exposes that action, bypassing touch routing. On multi-display
+ * devices like the AYN Thor, [performClick] (which dispatches a touch
+ * event) sometimes lands on the wrong display, so the action-based path
+ * is more reliable. Falls back to a real touch click if the action is
+ * not present (e.g., nodes that handle pointer input without exposing
+ * OnClick semantics).
  */
 fun ComposeRule.scrollToAndTapTag(tag: String, maxSwipes: Int = 10) {
     scrollToTag(tag, maxSwipes)
-    onAllNodesWithTag(tag, useUnmergedTree = true)[0].performScrollTo()
-    onAllNodesWithTag(tag, useUnmergedTree = true)[0].performClick()
+    val mergedNodes = onAllNodesWithTag(tag, useUnmergedTree = false)
+    val mergedSize = mergedNodes.fetchSemanticsNodes().size
+    if (mergedSize > 0) {
+        val node = mergedNodes[0]
+        node.performScrollTo()
+        val hasOnClick = node.fetchSemanticsNode().config.contains(SemanticsActions.OnClick)
+        if (hasOnClick) {
+            node.performSemanticsAction(SemanticsActions.OnClick)
+        } else {
+            node.performClick()
+        }
+    } else {
+        onAllNodesWithTag(tag, useUnmergedTree = true)[0].performScrollTo()
+        onAllNodesWithTag(tag, useUnmergedTree = true)[0].performClick()
+    }
     waitForIdle()
 }
 

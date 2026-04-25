@@ -1,18 +1,14 @@
 package com.spela.player.android
 
-import androidx.compose.ui.semantics.SemanticsActions
-import androidx.compose.ui.test.hasClickAction
-import androidx.compose.ui.test.hasText
+import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.onAllNodesWithContentDescription
-import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
-import androidx.compose.ui.test.performScrollTo
-import androidx.compose.ui.test.performSemanticsAction
+import androidx.compose.ui.test.performScrollToNode
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.uiautomator.UiDevice
-import androidx.test.uiautomator.UiSelector
 import org.junit.Test
 
 class SettingsTest : BaseE2ETest() {
@@ -37,81 +33,20 @@ class SettingsTest : BaseE2ETest() {
     }
 
     /**
-     * Swipe a long settings list until the given text comes into view
-     * (or give up after [maxAttempts] swipes). Uses UiAutomator so
-     * Compose-recomposition races don't intervene between find and
-     * use.
-     */
-    private fun scrollUntilVisible(
-        device: UiDevice,
-        textSubstring: String,
-        maxAttempts: Int = 15,
-    ) {
-        for (attempt in 0..maxAttempts) {
-            if (device.findObject(UiSelector().textContains(textSubstring)).exists()) return
-            val x = (device.displayWidth * 0.7).toInt()
-            device.swipe(
-                x,
-                (device.displayHeight * 0.7).toInt(),
-                x,
-                (device.displayHeight * 0.3).toInt(),
-                10,
-            )
-            rule.waitForIdle()
-        }
-    }
-
-    /**
      * Navigate from the Per-Console category to ConsoleSettingsScreen
-     * for NES. The Per-Console list is a scrollable LazyColumn and
-     * NES isn't always above the fold. Use UiAutomator's
-     * UiScrollable which scrolls until the target description is
-     * found (handles bottom-of-list bounce, doesn't overshoot).
+     * for NES. The Per-Console list is a LazyColumn tagged
+     * `settings_category_content_list`; each row exposes a
+     * `console_settings_row_<id>` testTag. We drive scrolling through
+     * Compose's `performScrollToNode` (which talks directly to the
+     * LazyColumn state) rather than UiAutomator swipes — the latter
+     * can land on the wrong display on multi-display devices like the
+     * AYN Thor. The click itself goes through the OnClick semantics
+     * action, again avoiding touch dispatch.
      */
     private fun tapNESConsole() {
-        val desc = "Open Nintendo Entertainment System settings"
-        // The Per-Console list in list-detail layout has the right
-        // pane as a scrollable LazyColumn. UiScrollable can lock onto
-        // the wrong scrollable on this layout, so we drive the
-        // scrolling ourselves: scroll to the top, then sweep
-        // downward checking after each swipe.
-        val device = UiDevice.getInstance(InstrumentationRegistry.getInstrumentation())
-        val x = (device.displayWidth * 0.7).toInt()
-        // 1. Scroll to top of right pane (downward swipes from top→bottom).
-        repeat(15) {
-            device.swipe(
-                x,
-                (device.displayHeight * 0.3).toInt(),
-                x,
-                (device.displayHeight * 0.8).toInt(),
-                10,
-            )
-        }
-        rule.waitForIdle()
-
-        // 2. Now sweep downward, checking for NES after each swipe.
-        var nesRow: androidx.test.uiautomator.UiObject? = null
-        for (attempt in 0..20) {
-            val row = device.findObject(UiSelector().descriptionContains(desc))
-            if (row.exists()) {
-                nesRow = row
-                break
-            }
-            device.swipe(
-                x,
-                (device.displayHeight * 0.7).toInt(),
-                x,
-                (device.displayHeight * 0.4).toInt(),
-                10,
-            )
-            rule.waitForIdle()
-        }
-        check(nesRow != null) {
-            "NES console row not found after scrolling. The Per-Console " +
-                "list may not include NES on this device."
-        }
-        nesRow.click()
-        Thread.sleep(500)
+        rule.onNodeWithTag("settings_category_content_list")
+            .performScrollToNode(hasTestTag("console_settings_row_nes"))
+        rule.scrollToAndTapTag("console_settings_row_nes", maxSwipes = 0)
         rule.waitForText("Nintendo Entertainment System Settings", timeout = 8_000)
     }
 
@@ -175,19 +110,17 @@ class SettingsTest : BaseE2ETest() {
         rule.navigateToSettingsCategory("Per-Console")
         tapNESConsole()
 
-        // Enable device override + select Smooth (Bilinear) via
-        // UiAutomator. The console-shader list is a LazyColumn whose
-        // rows can recompose between Compose's scrollToAndTapText
-        // 'find node' and 'click node' phases, leading to "node is no
-        // longer in the tree" failures. UiAutomator works on
-        // accessibility tree screenshots and avoids that race.
-        val device = UiDevice.getInstance(InstrumentationRegistry.getInstrumentation())
-        scrollUntilVisible(device, "Override on this device only")
-        device.findObject(UiSelector().textContains("Override on this device only")).click()
-        rule.waitForIdle()
-        scrollUntilVisible(device, "Smooth (Bilinear)")
-        device.findObject(UiSelector().textContains("Smooth (Bilinear)")).click()
-        rule.waitForIdle()
+        // Enable device override + select Smooth (Bilinear) via testTags.
+        // Tags are stable across copy changes and survive LazyColumn
+        // recomposition (the row identity is preserved by the tag, not
+        // by transient label text).
+        rule.scrollToAndTapTag("device_shader_override_toggle")
+        // Toggle is async (click → intent → ViewModel → recomposition).
+        // Wait for at least one device-shader option to render before
+        // scrolling for "bilinear" — otherwise scrollToTag's swipes can
+        // race past the section as it appears.
+        rule.waitForTag("device_shader_option_none", timeout = 5_000)
+        rule.scrollToAndTapTag("device_shader_option_bilinear")
 
         // Verify by leaving and re-entering Per-Console.
         rule.navigateBackToHome()
