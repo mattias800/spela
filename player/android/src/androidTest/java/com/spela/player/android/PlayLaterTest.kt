@@ -135,10 +135,10 @@ class PlayLaterTest : BaseE2ETest() {
         rule.navigateToCastlevania()
         setPlayLater(desiredInQueue = true)
 
-        // Navigate away and back to force a re-fetch from the server.
-        rule.pressBack()
-        rule.waitForText("Nintendo Entertainment System", timeout = 8_000)
-        rule.pressBack()
+        // Go all the way back to Home, then re-navigate to Castlevania.
+        // This forces the game-detail screen to re-fetch from the server
+        // rather than relying on cached UI state.
+        rule.navigateBackToHome()
         rule.waitForText("Spela", timeout = 8_000)
         rule.navigateToCastlevania()
 
