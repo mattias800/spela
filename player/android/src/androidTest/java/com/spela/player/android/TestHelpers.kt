@@ -2321,7 +2321,14 @@ fun ComposeRule.ensureChallengeExists(title: String = "E2E Test Challenge") {
         navigateToCastlevania()
         return
     }
-    navigateToGameAndPlay()
+    // Pin the game-and-play target to Castlevania — the create-flow
+    // attaches the challenge to whichever game is running, and the
+    // helper's contract is "challenge exists for Castlevania" since
+    // it returns the user there. Without this pin,
+    // navigateToGameAndPlay defaults to Balloon Fight, the challenge
+    // gets created on Balloon Fight, and then the test taps Castlevania's
+    // 'View Challenges' which shows an unrelated list.
+    navigateToGameAndPlay(preferredGameTitle = "Castlevania")
     createChallengeFromOverlay(title)
     openOverlayAndExit()
     // Post-exit, the action button is Play/Resume/Download depending on
