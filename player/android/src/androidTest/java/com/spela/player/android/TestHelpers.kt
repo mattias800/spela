@@ -2272,7 +2272,18 @@ fun ComposeRule.dismissChallengeResult() {
  * Returns with the game still running after the "Challenge created!" toast.
  */
 fun ComposeRule.createChallengeFromOverlay(title: String = "E2E Test Challenge") {
+    // Challenges need a save state to attach to. The /api/test/reset
+    // run between tests deletes all save states, so before the first
+    // challenge of each test we must save manually. The Save button
+    // is in the in-game overlay; tapping it from the closed overlay
+    // first opens, then saves, then we have to reopen for the
+    // Challenge button. Doing it explicitly here makes
+    // createChallengeFromOverlay self-contained.
     openOverlay()
+    tapOn("Save")
+    Thread.sleep(500)
+    ensureOverlayOpen()
+
     tapOn("Challenge")
     waitForText("Create Challenge", timeout = 5_000)
 
