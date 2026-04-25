@@ -107,12 +107,22 @@ class KoinResetRule : org.junit.rules.TestRule {
             val context = InstrumentationRegistry.getInstrumentation().targetContext
             val coresDir = java.io.File(context.filesDir, "cores")
             coresDir.mkdirs()
-            // Only nestopia is pre-cached by run-e2e.sh + scripts/cache-nestopia.sh;
-            // every other core is downloaded on-demand at first use, matching the
-            // real user flow. The list used to include 8 more cores aspirationally,
-            // but nothing in the current suite tests them and they just dragged
-            // Gradle's APK install setup with irrelevant /data/local/tmp/ copies.
-            val knownCores = listOf("nestopia")
+            // Cores pre-cached by run-e2e.sh + scripts/cache-cores.sh
+            // and copied into the app's cores dir here so the first
+            // game start in a test class doesn't pay the libretro
+            // buildbot fetch + extract cost.
+            //
+            // nestopia: NES happy path (Castlevania, used by every
+            //   Challenge*, Settings, Emulation, Session test).
+            // mupen64plus_next_gles3: N64 happy path
+            //   (Banjo-Kazooie, used by HwRenderTest). The gles3
+            //   variant is what the libretro buildbot ships for
+            //   Android — the player maps the abstract
+            //   "mupen64plus_next" onto this binary at runtime via
+            //   ANDROID_CORE_SUBSTITUTIONS in EmulationUseCases.
+            // Other cores download on-demand at first use, matching
+            // the real user flow.
+            val knownCores = listOf("nestopia", "mupen64plus_next_gles3")
             for (coreName in knownCores) {
                 val fileName = "${coreName}_libretro_android.so"
                 val src = java.io.File("/data/local/tmp/$fileName")
