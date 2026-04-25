@@ -235,7 +235,10 @@ class EmulationViewModelChallengeTest {
     }
 
     @Test
-    fun dismissChallengeCreationResumes() = runTest {
+    fun dismissChallengeCreationFromCancelKeepsGamePausedAndRestoresOverlay() = runTest {
+        // Cancel path: opening the panel hid the overlay; dismissing
+        // restores it. Game stays paused so the user can pick another
+        // overlay action without the game running underneath.
         val vm = builder.build()
         vm.onIntent(EmulationIntent.StartGame("game1"))
         builder.advanceTimeBy(100)
@@ -244,9 +247,11 @@ class EmulationViewModelChallengeTest {
         builder.advanceTimeBy(100)
         assertTrue(vm.state.value.showChallengeCreation)
         assertTrue(vm.state.value.isPaused)
+        assertFalse(vm.state.value.showOverlay)
 
         vm.onIntent(EmulationIntent.DismissChallengeCreation)
         assertFalse(vm.state.value.showChallengeCreation)
-        assertFalse(vm.state.value.isPaused)
+        assertTrue(vm.state.value.isPaused)
+        assertTrue(vm.state.value.showOverlay)
     }
 }

@@ -231,8 +231,21 @@ class ChallengeManager(
     fun dismissChallengeCreation(resumeGame: () -> Unit) {
         challengeCreationSaveData = null
         challengeCreationScreenshot = null
-        _state.update { it.copy(showChallengeCreation = false, challengeCreationSuccess = false) }
-        resumeGame()
+        // Cancel returns the user to the in-game overlay (where they
+        // started before tapping Challenge), not directly back to the
+        // running game. The overlay was hidden on init so the panel
+        // could take its place; restore it now. The success path
+        // (after a real submit) closes the overlay too — that's
+        // handled by submitChallenge's own state update.
+        val wasSuccess = _state.value.challengeCreationSuccess
+        _state.update {
+            it.copy(
+                showChallengeCreation = false,
+                challengeCreationSuccess = false,
+                showOverlay = if (wasSuccess) false else true,
+            )
+        }
+        if (wasSuccess) resumeGame()
     }
 
     /**
