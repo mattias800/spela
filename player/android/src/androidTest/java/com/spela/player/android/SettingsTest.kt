@@ -12,6 +12,7 @@ import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performSemanticsAction
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.uiautomator.UiDevice
+import androidx.test.uiautomator.UiSelector
 import org.junit.Test
 
 class SettingsTest : BaseE2ETest() {
@@ -36,21 +37,28 @@ class SettingsTest : BaseE2ETest() {
     }
 
     /**
-     * Navigate from the Per Console tab to ConsoleSettingsScreen for NES.
-     * Uses hasClickAction() to find the clickable SpCard (not a child text node)
-     * and performSemanticsAction to invoke onClick directly, bypassing touch
-     * event handling that can be intercepted by the LazyColumn scroll handler.
+     * Navigate from the Per-Console category to ConsoleSettingsScreen
+     * for NES. The Per-Console list is scrollable and NES isn't always
+     * above the fold, so scroll the list via UiAutomator until the
+     * NES row's content description is visible, then click.
      */
     private fun tapNESConsole() {
-        val nesCard = hasText("Nintendo Entertainment System", substring = true) and
-                hasText("Super", substring = true).not() and
-                hasClickAction()
-        rule.pollUntil(timeoutMillis = 10_000) {
-            try {
-                rule.onAllNodes(nesCard).fetchSemanticsNodes().isNotEmpty()
-            } catch (_: IllegalStateException) { false }
+        val device = UiDevice.getInstance(InstrumentationRegistry.getInstrumentation())
+        val desc = "Open Nintendo Entertainment System settings"
+        for (attempt in 0..10) {
+            if (device.findObject(UiSelector().descriptionContains(desc)).exists()) break
+            // Swipe up inside the right-hand detail column to scroll the
+            // console list. Use a coordinate clearly inside the detail
+            // pane on a wide layout.
+            val x = (device.displayWidth * 0.7).toInt()
+            val fromY = (device.displayHeight * 0.7).toInt()
+            val toY = (device.displayHeight * 0.3).toInt()
+            device.swipe(x, fromY, x, toY, 15)
+            rule.waitForIdle()
         }
-        rule.onNode(nesCard).performSemanticsAction(SemanticsActions.OnClick)
+        // Click the NES row by its content description.
+        rule.onNodeWithContentDescription(desc, substring = true)
+            .performSemanticsAction(SemanticsActions.OnClick)
         rule.waitForIdle()
         rule.waitForText("Nintendo Entertainment System Settings", timeout = 8_000)
     }

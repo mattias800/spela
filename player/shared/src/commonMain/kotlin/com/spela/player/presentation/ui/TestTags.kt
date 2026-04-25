@@ -76,4 +76,17 @@ object TestTags {
     const val GAME_DETAIL_MENU_FAVORITE = "game_detail_menu_favorite"
     const val GAME_DETAIL_MENU_PLAY_LATER = "game_detail_menu_play_later"
     const val GAME_DETAIL_MENU_ADD_TO_COLLECTION = "game_detail_menu_add_to_collection"
+
+    // Collections screen — list-detail with two section headers in a
+    // single LazyColumn. The empty state shares the screen container.
+    const val SCREEN_COLLECTIONS = "screen_collections"
+    const val COLLECTIONS_LIST = "collections_list"
+    const val COLLECTIONS_MY_HEADER = "collections_my_header"
+    const val COLLECTIONS_PUBLIC_HEADER = "collections_public_header"
+    const val COLLECTIONS_EMPTY_STATE = "collections_empty_state"
+    const val COLLECTIONS_FAB = "collections_fab"
+
+    // Collection detail — owner-only edit / delete buttons in the top bar.
+    const val COLLECTION_DETAIL_EDIT = "collection_detail_edit"
+    const val COLLECTION_DETAIL_DELETE = "collection_detail_delete"
 }
