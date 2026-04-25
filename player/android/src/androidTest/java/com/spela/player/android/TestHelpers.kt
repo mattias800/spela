@@ -172,10 +172,10 @@ fun resetServerState() {
         conn.requestMethod = "POST"
         conn.connectTimeout = 5_000
         // The reset handler deletes ~20 tables and does two UPDATEs. On
-        // docker-on-macOS (colima VM + overlayfs) this can take 7-10s
-        // even with an effectively empty DB. 30s gives us headroom for
-        // a busy dev machine without masking a genuinely hung endpoint.
-        conn.readTimeout = 30_000
+        // docker-on-macOS (colima VM + overlayfs) latency is wildly
+        // variable — observed range 0.5s to 11s back-to-back. 60s
+        // gives us margin without masking a genuinely hung endpoint.
+        conn.readTimeout = 60_000
         conn.doOutput = true
         conn.outputStream.use { /* empty body */ }
         // Trigger the actual request and get the code BEFORE reading a
