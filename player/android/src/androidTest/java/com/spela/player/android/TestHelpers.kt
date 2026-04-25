@@ -1627,6 +1627,67 @@ fun ComposeRule.scrollToAndTapText(text: String) {
     waitForIdle()
 }
 
+/**
+ * Scroll a parent container until a node with the given testTag is in the
+ * Compose semantics tree, then click it via Compose. Use this to drive
+ * lazy-list rows or sections by their stable tag rather than fragile
+ * text labels.
+ */
+fun ComposeRule.scrollToAndTapTag(tag: String, maxSwipes: Int = 10) {
+    scrollToTag(tag, maxSwipes)
+    onAllNodesWithTag(tag, useUnmergedTree = true)[0].performScrollTo()
+    onAllNodesWithTag(tag, useUnmergedTree = true)[0].performClick()
+    waitForIdle()
+}
+
+/**
+ * Scroll a parent container until a node with the given testTag is in the
+ * Compose semantics tree. Does not click. Use when the tag identifies a
+ * section / heading you only need to verify is reachable, not interact
+ * with.
+ */
+fun ComposeRule.scrollToTag(tag: String, maxSwipes: Int = 10) {
+    val device = UiDevice.getInstance(InstrumentationRegistry.getInstrumentation())
+    for (attempt in 0..maxSwipes) {
+        val present = try {
+            onAllNodesWithTag(tag, useUnmergedTree = true)
+                .fetchSemanticsNodes().isNotEmpty()
+        } catch (_: Exception) { false }
+        if (present) return
+        if (attempt == maxSwipes) break
+        val centerX = device.displayWidth / 2
+        val fromY = (device.displayHeight * 0.7).toInt()
+        val toY = (device.displayHeight * 0.3).toInt()
+        device.swipe(centerX, fromY, centerX, toY, 15)
+        waitForIdle()
+    }
+    error("Could not find node with testTag '$tag' after $maxSwipes scrolls")
+}
+
+/**
+ * Assert that a node with the given testTag is currently in the Compose
+ * semantics tree. Tag-equivalent of [assertVisible].
+ */
+fun ComposeRule.assertTagVisible(tag: String) {
+    val present = try {
+        onAllNodesWithTag(tag, useUnmergedTree = true)
+            .fetchSemanticsNodes().isNotEmpty()
+    } catch (_: Exception) { false }
+    check(present) { "Expected node with testTag '$tag' to be visible, but not found" }
+}
+
+/**
+ * Assert that a node with the given testTag is NOT in the Compose
+ * semantics tree.
+ */
+fun ComposeRule.assertTagNotVisible(tag: String) {
+    val present = try {
+        onAllNodesWithTag(tag, useUnmergedTree = true)
+            .fetchSemanticsNodes().isNotEmpty()
+    } catch (_: Exception) { false }
+    check(!present) { "Expected node with testTag '$tag' to NOT be visible, but it was" }
+}
+
 fun ComposeRule.downloadGameIfNeeded() {
     // Use Compose tree — UiAutomator accessibility tree can be stale after navigation
     val hasDownload = try {
