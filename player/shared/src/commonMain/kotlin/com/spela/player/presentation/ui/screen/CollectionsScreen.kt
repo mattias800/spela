@@ -28,12 +28,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.spela.player.presentation.ui.TestTags
 import com.spela.player.domain.model.GameCollection
 import com.spela.player.presentation.ui.components.SpCard
 import com.spela.player.presentation.ui.components.SpCoverArt
@@ -84,7 +86,7 @@ fun CollectionsScreen(
         SpColor.PrimaryDark.darken(0.72f),
     )
 
-    Box(modifier = Modifier.fillMaxSize()) {
+    Box(modifier = Modifier.fillMaxSize().testTag(TestTags.SCREEN_COLLECTIONS)) {
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -119,7 +121,9 @@ fun CollectionsScreen(
                 ) {
                     if (state.myCollections.isEmpty() && state.publicCollections.isEmpty()) {
                         Box(
-                            modifier = Modifier.fillMaxSize(),
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .testTag(TestTags.COLLECTIONS_EMPTY_STATE),
                             contentAlignment = Alignment.Center,
                         ) {
                             SpEmptyStates.NoCollections(
@@ -130,7 +134,7 @@ fun CollectionsScreen(
                         }
                     } else {
                         LazyColumn(
-                            modifier = Modifier.fillMaxSize(),
+                            modifier = Modifier.fillMaxSize().testTag(TestTags.COLLECTIONS_LIST),
                             contentPadding = PaddingValues(
                                 start = SpSpacing.ScreenHorizontal,
                                 end = SpSpacing.ScreenHorizontal,
@@ -145,7 +149,9 @@ fun CollectionsScreen(
                                         text = "My Collections",
                                         style = SpTypography.TitleLarge,
                                         color = SpColor.OnBackground,
-                                        modifier = Modifier.padding(vertical = SpSpacing.Small),
+                                        modifier = Modifier
+                                            .padding(vertical = SpSpacing.Small)
+                                            .testTag(TestTags.COLLECTIONS_MY_HEADER),
                                     )
                                 }
                                 items(state.myCollections, key = { "my-${it.id}" }) { collection ->
@@ -162,10 +168,12 @@ fun CollectionsScreen(
                                         text = "Public Collections",
                                         style = SpTypography.TitleLarge,
                                         color = SpColor.OnBackground,
-                                        modifier = Modifier.padding(
-                                            top = if (state.myCollections.isNotEmpty()) SpSpacing.Large else SpSpacing.Small,
-                                            bottom = SpSpacing.Small,
-                                        ),
+                                        modifier = Modifier
+                                            .padding(
+                                                top = if (state.myCollections.isNotEmpty()) SpSpacing.Large else SpSpacing.Small,
+                                                bottom = SpSpacing.Small,
+                                            )
+                                            .testTag(TestTags.COLLECTIONS_PUBLIC_HEADER),
                                     )
                                 }
                                 items(state.publicCollections, key = { "public-${it.id}" }) { collection ->

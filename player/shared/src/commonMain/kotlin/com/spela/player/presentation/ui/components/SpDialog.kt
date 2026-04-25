@@ -12,6 +12,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.spela.player.presentation.ui.theme.SpColor
@@ -61,7 +62,7 @@ fun SpDialog(
                     text = confirmText,
                     onClick = onConfirm,
                     style = if (isDestructive) SpButtonStyle.Secondary else SpButtonStyle.Primary,
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier.fillMaxWidth().testTag("dialog_confirm"),
                     isLoading = isLoading,
                     enabled = !isLoading,
                 )
@@ -69,7 +70,7 @@ fun SpDialog(
                     text = dismissText,
                     onClick = onDismiss,
                     style = SpButtonStyle.Ghost,
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier.fillMaxWidth().testTag("dialog_dismiss"),
                     enabled = !isLoading,
                 )
             }

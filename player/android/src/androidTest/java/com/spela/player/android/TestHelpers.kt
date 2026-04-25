@@ -17,8 +17,10 @@ import androidx.compose.ui.test.onAllNodesWithText
 import com.spela.player.presentation.ui.TestTags
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.test.performTextClearance
 import androidx.compose.ui.test.performImeAction
 import androidx.compose.ui.test.performTextInput
@@ -587,7 +589,23 @@ fun ComposeRule.waitForNotVisible(label: String, timeout: Long = TIMEOUT_SHORT) 
 fun ComposeRule.tapOnTag(tag: String, fallbackLabel: String? = null) {
     val tagNodes = onAllNodesWithTag(tag, useUnmergedTree = true).fetchSemanticsNodes()
     if (tagNodes.isNotEmpty()) {
-        onAllNodesWithTag(tag, useUnmergedTree = true)[0].performClick()
+        // Prefer the merged-tree node so testTag and the OnClick action
+        // resolve onto the same semantic node — invoking OnClick is
+        // more reliable than dispatching a synthetic touch (which can
+        // miss on multi-display devices like the AYN Thor and is
+        // sensitive to tiny tagged hitboxes).
+        val merged = onAllNodesWithTag(tag, useUnmergedTree = false).fetchSemanticsNodes()
+        if (merged.isNotEmpty()) {
+            val node = onAllNodesWithTag(tag, useUnmergedTree = false)[0]
+            val hasOnClick = node.fetchSemanticsNode().config.contains(SemanticsActions.OnClick)
+            if (hasOnClick) {
+                node.performSemanticsAction(SemanticsActions.OnClick)
+            } else {
+                node.performClick()
+            }
+        } else {
+            onAllNodesWithTag(tag, useUnmergedTree = true)[0].performClick()
+        }
         waitForIdle()
         return
     }
@@ -1287,6 +1305,26 @@ fun ComposeRule.navigateToGameByTitle(gameTitle: String) {
     // Try multiple strategies to find and click Browse
     var browseClicked = false
 
+    // Strategy 0: testTag — most reliable. ConsoleScreen tags the
+    // browse-games CTA via TestTags.consoleBrowseGames(consoleId).
+    // We don't know the consoleId here at compile time, but the
+    // current screen is for NES — try the well-known id first.
+    if (!browseClicked) {
+        try {
+            val browseTag = "console_browse_games_nes"
+            val nodes = onAllNodesWithTag(browseTag, useUnmergedTree = true)
+                .fetchSemanticsNodes()
+            if (nodes.isNotEmpty()) {
+                android.util.Log.d(tag, "Step 5: Found Browse via testTag '$browseTag'")
+                tapOnTag(browseTag)
+                browseClicked = true
+                Thread.sleep(2_000)
+            }
+        } catch (e: Exception) {
+            android.util.Log.d(tag, "Step 5: tapOnTag(console_browse_games_nes) failed: ${e.message?.take(80)}")
+        }
+    }
+
     // Strategy 1: Compose tree — exact text "Browse" (not "Browser play")
     if (!browseClicked) {
         try {
@@ -1625,6 +1663,112 @@ fun ComposeRule.scrollToAndTapText(text: String) {
         onAllNodesWithText(text, substring = true)[lastIndex].performClick()
     }
     waitForIdle()
+}
+
+/**
+ * Scroll a parent container until a node with the given testTag is in the
+ * Compose semantics tree, then click it via Compose. Use this to drive
+ * lazy-list rows or sections by their stable tag rather than fragile
+ * text labels.
+ *
+ * Click is dispatched via [SemanticsActions.OnClick] when the merged-tree
+ * node exposes that action, bypassing touch routing. On multi-display
+ * devices like the AYN Thor, [performClick] (which dispatches a touch
+ * event) sometimes lands on the wrong display, so the action-based path
+ * is more reliable. Falls back to a real touch click if the action is
+ * not present (e.g., nodes that handle pointer input without exposing
+ * OnClick semantics).
+ */
+fun ComposeRule.scrollToAndTapTag(tag: String, maxSwipes: Int = 10) {
+    scrollToTag(tag, maxSwipes)
+    val mergedNodes = onAllNodesWithTag(tag, useUnmergedTree = false)
+    val mergedSize = mergedNodes.fetchSemanticsNodes().size
+    if (mergedSize > 0) {
+        val node = mergedNodes[0]
+        // performScrollTo throws when the parent isn't scrollable
+        // (e.g., dialog buttons inside a fixed-height Column). After
+        // scrollToTag succeeded, the node is already in the semantic
+        // tree, so a missing scroll parent just means we don't need to
+        // scroll.
+        try { node.performScrollTo() } catch (_: AssertionError) { }
+        val hasOnClick = node.fetchSemanticsNode().config.contains(SemanticsActions.OnClick)
+        if (hasOnClick) {
+            node.performSemanticsAction(SemanticsActions.OnClick)
+        } else {
+            node.performClick()
+        }
+    } else {
+        val unmerged = onAllNodesWithTag(tag, useUnmergedTree = true)[0]
+        try { unmerged.performScrollTo() } catch (_: AssertionError) { }
+        unmerged.performClick()
+    }
+    waitForIdle()
+}
+
+/**
+ * Scroll a parent container until a node with the given testTag is in the
+ * Compose semantics tree. Does not click. Use when the tag identifies a
+ * section / heading you only need to verify is reachable, not interact
+ * with.
+ */
+fun ComposeRule.scrollToTag(tag: String, maxSwipes: Int = 10) {
+    val device = UiDevice.getInstance(InstrumentationRegistry.getInstrumentation())
+    for (attempt in 0..maxSwipes) {
+        val present = try {
+            onAllNodesWithTag(tag, useUnmergedTree = true)
+                .fetchSemanticsNodes().isNotEmpty()
+        } catch (_: Exception) { false }
+        if (present) return
+        if (attempt == maxSwipes) break
+        val centerX = device.displayWidth / 2
+        val fromY = (device.displayHeight * 0.7).toInt()
+        val toY = (device.displayHeight * 0.3).toInt()
+        device.swipe(centerX, fromY, centerX, toY, 15)
+        waitForIdle()
+    }
+    error("Could not find node with testTag '$tag' after $maxSwipes scrolls")
+}
+
+/**
+ * Assert that a node with the given testTag is currently in the Compose
+ * semantics tree. Tag-equivalent of [assertVisible].
+ */
+fun ComposeRule.assertTagVisible(tag: String) {
+    val present = try {
+        onAllNodesWithTag(tag, useUnmergedTree = true)
+            .fetchSemanticsNodes().isNotEmpty()
+    } catch (_: Exception) { false }
+    check(present) { "Expected node with testTag '$tag' to be visible, but not found" }
+}
+
+/**
+ * Assert that a radio-button node tagged with [tag] is in the
+ * "Selected" state. SpRadioOption sets `stateDescription = "Selected"
+ * | "Not selected"` based on its `isSelected` flag, so this checks
+ * that semantic property without depending on visual rendering or
+ * label text.
+ */
+fun ComposeRule.assertRadioSelected(tag: String) {
+    val nodes = onAllNodesWithTag(tag, useUnmergedTree = true).fetchSemanticsNodes()
+    check(nodes.isNotEmpty()) { "No node with testTag '$tag' found" }
+    val key = androidx.compose.ui.semantics.SemanticsProperties.StateDescription
+    val cfg = nodes[0].config
+    val state = cfg.find { it.key == key }?.value as? String
+    check(state == "Selected") {
+        "Expected radio '$tag' to be Selected, was '$state'"
+    }
+}
+
+/**
+ * Assert that a node with the given testTag is NOT in the Compose
+ * semantics tree.
+ */
+fun ComposeRule.assertTagNotVisible(tag: String) {
+    val present = try {
+        onAllNodesWithTag(tag, useUnmergedTree = true)
+            .fetchSemanticsNodes().isNotEmpty()
+    } catch (_: Exception) { false }
+    check(!present) { "Expected node with testTag '$tag' to NOT be visible, but it was" }
 }
 
 fun ComposeRule.downloadGameIfNeeded() {

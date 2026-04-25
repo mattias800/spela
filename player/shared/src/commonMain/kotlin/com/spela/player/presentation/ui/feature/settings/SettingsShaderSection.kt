@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import com.spela.player.domain.model.ShaderPreset
 import com.spela.player.presentation.ui.components.ShaderPreview
@@ -33,6 +34,7 @@ internal fun LazyListScope.shaderDefaultScopeItems(
                         description = shader.description,
                         isSelected = state.selectedShader == shader,
                         onClick = { viewModel.onIntent(SettingsIntent.SelectShader(shader)) },
+                        modifier = Modifier.testTag("shader_option_${shader.apiId}"),
                     )
                     if (index < ShaderPreset.entries.size - 1) {
                         SettingsDivider()

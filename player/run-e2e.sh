@@ -259,15 +259,27 @@ cleanup_after_tests() {
 trap cleanup_after_tests EXIT
 
 # ── Run Compose instrumented tests ──
+#
+# Parse flags first so they can appear in any position (including
+# alone, with no test-class argument — that means "batch mode with the
+# flag applied").
+FAIL_FAST=true
+POSITIONAL_ARGS=()
+for arg in "$@"; do
+  case "$arg" in
+    --no-fail-fast) FAIL_FAST=false ;;
+    *) POSITIONAL_ARGS+=("$arg") ;;
+  esac
+done
 
-if [ $# -gt 0 ]; then
+if [ "${#POSITIONAL_ARGS[@]}" -gt 0 ]; then
   # Run a specific test class or method.
   # Usage:
   #   ./run-e2e.sh com.spela.player.android.EmulationTest#playCastlevania
   #   ./run-e2e.sh com.spela.player.android.EmulationTest
-  echo "Running test: $1"
+  echo "Running test: ${POSITIONAL_ARGS[0]}"
   ANDROID_SERIAL="$ADB_SERIAL" "$SCRIPT_DIR/gradlew" :android:connectedDebugAndroidTest \
-    -Pandroid.testInstrumentationRunnerArguments.class="$1"
+    -Pandroid.testInstrumentationRunnerArguments.class="${POSITIONAL_ARGS[0]}"
   exit $?
 fi
 
@@ -279,16 +291,13 @@ fi
 #
 # Pass `--no-fail-fast` to run every class regardless (e.g. for a
 # nightly all-tests-summary).
-FAIL_FAST=true
-for arg in "$@"; do
-  case "$arg" in
-    --no-fail-fast) FAIL_FAST=false ;;
-  esac
-done
 
 ANDROID_TEST_DIR="$SCRIPT_DIR/android/src/androidTest/java/com/spela/player/android"
+# BaseE2ETest is an abstract base class — no @Test methods. Including it
+# in the batch produces an initializationError that's not actionable.
 TEST_CLASSES=$(find "$ANDROID_TEST_DIR" -name '*Test.kt' -maxdepth 1 \
   | xargs -I{} basename {} .kt \
+  | grep -v '^BaseE2ETest$' \
   | sort \
   | sed 's|^|com.spela.player.android.|')
 

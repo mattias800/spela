@@ -21,6 +21,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
@@ -71,7 +72,7 @@ fun SettingsCategoryContent(
     topPadding: Dp = 0.dp,
 ) {
     LazyColumn(
-        modifier = modifier.fillMaxSize(),
+        modifier = modifier.fillMaxSize().testTag("settings_category_content_list"),
         contentPadding = PaddingValues(
             start = SpSpacing.ScreenHorizontal,
             end = SpSpacing.ScreenHorizontal,
@@ -274,6 +275,7 @@ private fun androidx.compose.foundation.lazy.LazyListScope.consolesContent(
             key = { "console_${it.id}" },
         ) { console ->
             SpCard(
+                modifier = Modifier.testTag("console_settings_row_${console.id}"),
                 onClick = { onNavigateToConsoleSettings(console.id) },
                 onGradient = true,
             ) {

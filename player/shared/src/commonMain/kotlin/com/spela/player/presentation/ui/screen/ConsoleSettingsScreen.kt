@@ -140,7 +140,8 @@ fun ConsoleSettingsScreen(
                                         SettingsIntent.SelectConsoleShader(consoleId, shader)
                                     )
                                 },
-                                modifier = if (index == 0) Modifier.autoFocus() else Modifier,
+                                modifier = (if (index == 0) Modifier.autoFocus() else Modifier)
+                                    .testTag("shader_option_${shader.apiId}"),
                             )
                             if (index < ShaderPreset.entries.size - 1) {
                                 SettingsDivider()
@@ -187,6 +188,7 @@ fun ConsoleSettingsScreen(
                                     }
                                 }
                                 .gamepadFocusable(shape = RoundedCornerShape(SpSpacing.RadiusLarge))
+                                .testTag("device_shader_override_toggle")
                                 .semantics { contentDescription = "Override on this device only" }
                                 .padding(horizontal = SpSpacing.Default, vertical = SpSpacing.Medium),
                             verticalAlignment = Alignment.CenterVertically,
@@ -242,6 +244,7 @@ fun ConsoleSettingsScreen(
                                                 SettingsIntent.SetDeviceOverride(consoleId, shader)
                                             )
                                         },
+                                        modifier = Modifier.testTag("device_shader_option_${shader.apiId}"),
                                     )
                                     if (index < ShaderPreset.entries.size - 1) {
                                         SettingsDivider()
