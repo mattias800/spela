@@ -53,6 +53,39 @@ echo "── Ensuring backend is up (docker compose up -d --build --wait) ──
 docker compose -f "$E2E_COMPOSE" up -d --build --wait
 echo "Backend up and healthy."
 
+# ── Wait for the seed scan to finish ──
+# `docker compose --wait` only checks the /api/health endpoint. The
+# server reports healthy as soon as it can serve HTTP, but the seed
+# step keeps scanning ~171 ROMs + enriching with IGDB for tens of
+# seconds afterwards. SQLite is single-writer, so test runs that
+# fire `/api/test/reset` while the scanner is still mid-INSERT
+# block on the lock and time out.
+#
+# Poll /api/admin/games/scan/status until active=false. Needs admin
+# auth. 90s ceiling so a stuck scanner doesn't hang the suite.
+echo "── Waiting for initial game scan to finish ──"
+SCAN_LOGIN=$(curl -fsS -X POST http://localhost:8080/api/auth/login \
+  -H 'Content-Type: application/json' \
+  -d '{"username":"admin","password":"admin123"}' 2>/dev/null || true)
+SCAN_TOKEN=$(printf '%s' "$SCAN_LOGIN" | sed -n 's/.*"accessToken":"\([^"]*\)".*/\1/p')
+if [ -z "$SCAN_TOKEN" ]; then
+  echo "WARN: admin login failed during scan-wait — proceeding anyway." >&2
+else
+  scan_deadline=$(( $(date +%s) + 90 ))
+  while [ "$(date +%s)" -lt "$scan_deadline" ]; do
+    SCAN_STATUS=$(curl -fsS -H "Authorization: Bearer $SCAN_TOKEN" \
+      http://localhost:8080/api/admin/games/scan/status 2>/dev/null || true)
+    if printf '%s' "$SCAN_STATUS" | grep -q '"active":false'; then
+      echo "Initial scan done."
+      break
+    fi
+    sleep 0.5
+  done
+  if [ "$(date +%s)" -ge "$scan_deadline" ]; then
+    echo "WARN: scan still active after 90s — proceeding, tests may flake on DB lock." >&2
+  fi
+fi
+
 # ── IGDB credential preflight ──
 # Many tests assert metadata sourced from IGDB (Top Rated shelves,
 # scraped titles, cover art, auto-scrape verification). If creds
