@@ -28,8 +28,13 @@ class SessionTest : BaseE2ETest() {
         // Restart app (session should persist via SQLDelight)
         rule.restartApp()
 
-        // Assert home screen appears without login prompt
-        rule.waitForText("Spela", timeout = 8_000)
+        // Assert home screen appears without login prompt. Use
+        // isOnHomeScreen() (Compose + UiAutomator) instead of
+        // waitForText('Spela') which UiAutomator misses on the
+        // secondary display the AYN Thor sometimes routes to.
+        rule.pollUntil(timeoutMillis = 15_000) {
+            try { rule.isOnHomeScreen() } catch (_: Exception) { false }
+        }
     }
 
     @Test
@@ -139,8 +144,10 @@ class SessionTest : BaseE2ETest() {
         // Restart app
         rule.restartApp()
 
-        // Session restored
-        rule.waitForText("Spela", timeout = 15_000)
+        // Session restored — wait for Home, multi-display safe.
+        rule.pollUntil(timeoutMillis = 15_000) {
+            try { rule.isOnHomeScreen() } catch (_: Exception) { false }
+        }
 
         // Navigate to Settings → Emulation and verify toggle persisted
         rule.navigateToSettingsCategory("Emulation")
