@@ -73,12 +73,18 @@ class ChallengeIntegrationTest : BaseE2ETest() {
 
         // Navigate to Activity tab
         rule.tapOn("Activity")
-        rule.waitForText("Activity", timeout = 5_000)
 
-        // Activity feed should show challenge completion event
-        // Per spec: "player completed Activity Feed Test in {time}"
+        // Activity feed should show challenge completion event.
+        // Format from formatActivityAction(): "completed a challenge for $gameName"
+        // (game name is "Castlevania", so the full feed line is
+        // "player completed a challenge for Castlevania"). The challenge name
+        // is shown separately via the metadata, but the feed item's primary
+        // text always contains "completed". Use that as the wait target —
+        // unlike the bare "Activity" string it's only present after the feed
+        // has actually loaded, so it doubles as a feed-loaded synchronisation
+        // point.
         rule.scrollToAndTapText("completed")
-        rule.assertVisible("Activity Feed Test")
+        rule.assertVisible("Castlevania")
 
         rule.pressBack()
     }
@@ -100,7 +106,13 @@ class ChallengeIntegrationTest : BaseE2ETest() {
 
         // Restart app
         rule.restartApp()
-        rule.waitForText("Spela", timeout = 15_000)
+        // Wait for the app to land on Home (or whatever logged-in
+        // surface the restored session takes us to). "Spela" alone
+        // can collide with login-screen branding and isn't reliably
+        // visible to UiAutomator on Thor's secondary display.
+        rule.pollUntil(timeoutMillis = 15_000) {
+            try { rule.isOnHomeScreen() } catch (_: Exception) { false }
+        }
 
         // Navigate back to game detail
         rule.navigateToCastlevania()
