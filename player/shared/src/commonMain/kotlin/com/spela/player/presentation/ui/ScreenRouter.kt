@@ -1025,6 +1025,7 @@ fun ScreenRouter(
                                     onBack = {
                                         navigationViewModel.onIntent(NavigationIntent.GoBack)
                                     },
+                                    overlayClosedTick = navState.overlayClosedTick,
                                 )
                             }
 

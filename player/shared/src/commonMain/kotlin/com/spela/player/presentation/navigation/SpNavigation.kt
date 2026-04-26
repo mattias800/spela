@@ -80,6 +80,15 @@ data class NavigationState(
     val isRestoringSession: Boolean = true,
     val restoredServerUrl: String? = null,
     val isOffline: Boolean = false,
+    /**
+     * Monotonic counter incremented every time the in-game overlay
+     * hides. Screens behind the overlay (e.g. ChallengeDetail) use it
+     * as a re-key signal so their LaunchedEffect data-loaders refire
+     * after the user finishes / exits a session — otherwise they show
+     * stale state from before the play session (e.g. an empty
+     * leaderboard after a freshly completed attempt).
+     */
+    val overlayClosedTick: Int = 0,
 ) {
     /** The currently visible screen — last entry on the active tab's stack. */
     val currentScreen: SpScreen

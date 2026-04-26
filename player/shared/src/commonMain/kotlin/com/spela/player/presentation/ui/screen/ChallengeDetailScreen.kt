@@ -71,11 +71,16 @@ fun ChallengeDetailScreen(
     onUserSelected: (String) -> Unit,
     onGameSelected: (String) -> Unit,
     onBack: () -> Unit,
+    /** Bumps every time the in-game overlay hides — see
+     *  NavigationState.overlayClosedTick. Re-keys the data load below
+     *  so the leaderboard / attempts refresh after the user finishes
+     *  a challenge attempt and returns to this screen. */
+    overlayClosedTick: Int = 0,
 ) {
     val state by viewModel.state.collectAsState()
     var showDeleteConfirm by remember { mutableStateOf(false) }
 
-    LaunchedEffect(challengeId) {
+    LaunchedEffect(challengeId, overlayClosedTick) {
         viewModel.onIntent(ChallengeIntent.LoadChallengeDetail(challengeId))
     }
 
