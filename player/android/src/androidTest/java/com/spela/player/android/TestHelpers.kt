@@ -1718,7 +1718,17 @@ fun ComposeRule.navigateToN64Game() {
         scrollToAndTapText("Banjo-Kazooie")
     }
 
-    waitForText("Download", TIMEOUT_LONG)
+    // Wait for the GameDetail primary CTA. The label depends on local
+    // state: "Download" pre-download, "Play" post-download with no save,
+    // "Resume" once a save exists. After a previous test already ran the
+    // game, "Download" is gone — accept any of the three.
+    pollUntil(timeoutMillis = TIMEOUT_LONG) {
+        try {
+            onAllNodesWithText("Download", substring = false).fetchSemanticsNodes().isNotEmpty() ||
+                onAllNodesWithText("Play", substring = false).fetchSemanticsNodes().isNotEmpty() ||
+                onAllNodesWithText("Resume", substring = false).fetchSemanticsNodes().isNotEmpty()
+        } catch (_: Exception) { false }
+    }
 }
 
 fun ComposeRule.navigateToN64GameAndPlay() {

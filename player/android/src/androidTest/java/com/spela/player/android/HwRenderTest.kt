@@ -46,15 +46,21 @@ class HwRenderTest : BaseE2ETest() {
      * Verifies: exit returns to game detail, second session starts,
      * overlay shows correct controls after resume.
      *
-     * QUARANTINED — see issue #724. Restarting the mupen64plus_next
-     * core in the same process fails with `failed to initialize
-     * core (err=2)` because `nativeDeinit` skips `retro_deinit` for
-     * GL HW render cores (avoids Play! PS2 GL cleanup crash) and
-     * mupen64plus's internal state then refuses a second
-     * `retro_init`. This affects real users who exit an N64 game
-     * and click Resume — the same product bug, surfaced here.
+     * QUARANTINED — see #724 / #726. The original workaround that
+     * skips retro_deinit + dlclose for GL HW render cores was
+     * over-broad (catching mupen64plus alongside Play!). Narrowing
+     * the workaround to Play!-only (so mupen64plus retro_deinit
+     * runs) fixes the err=2 re-init failure exposed by this test —
+     * but lets a second crash through:
+     * `Scudo ERROR: invalid chunk state when deallocating` in
+     * `vkDestroySwapchainKHR`, surfaced from `nativeGpuDeinit`
+     * after `retro_deinit` returns. So mupen64plus's retro_deinit
+     * also corrupts heap state, just less visibly than Play!'s.
+     * Both cores need upstream verification before the workaround
+     * can be narrowed or removed. See #726 for the verification
+     * playbook.
      */
-    @Ignore("#724 — N64 mupen64plus_next core can't re-initialize after exit (HW-render retro_deinit skip leaves core in 'initialized' state)")
+    @Ignore("#724 / #726 — mupen64plus retro_deinit corrupts heap (Scudo abort in vkDestroySwapchainKHR); workaround stays in place core-wide until upstream verified")
     @Test
     fun n64ExitAndResume() {
         setupN64Game()
