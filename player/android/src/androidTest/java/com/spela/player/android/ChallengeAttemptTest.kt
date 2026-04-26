@@ -71,9 +71,12 @@ class ChallengeAttemptTest : BaseE2ETest() {
         // never fires during the 60fps emulation render loop, and on Thor
         // the "Game running" 1dp marker can render on display 4 where
         // UiAutomator can't see it.
+        // ComposeTimeoutException extends Throwable directly, not
+        // Exception, so we catch Throwable here. AppNotIdleException is
+        // a RuntimeException so a Throwable catch covers both.
         try {
             rule.waitForVisible("Game running", timeout = 5_000)
-        } catch (_: Exception) {
+        } catch (_: Throwable) {
             val device = androidx.test.uiautomator.UiDevice.getInstance(
                 androidx.test.platform.app.InstrumentationRegistry.getInstrumentation()
             )
