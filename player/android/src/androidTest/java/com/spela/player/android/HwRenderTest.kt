@@ -4,7 +4,6 @@ import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import org.junit.FixMethodOrder
-import org.junit.Ignore
 import org.junit.Test
 import org.junit.runners.MethodSorters
 
@@ -43,25 +42,16 @@ class HwRenderTest : BaseE2ETest() {
 
     /**
      * Tests exit-and-resume lifecycle with two N64 sessions.
-     * Runs first (alphabetically) when native state is freshest.
      * Verifies: exit returns to game detail, second session starts,
      * overlay shows correct controls after resume.
      *
-     * QUARANTINED — see #724 / #726. The original workaround that
-     * skips retro_deinit + dlclose for GL HW render cores was
-     * over-broad (catching mupen64plus alongside Play!). Narrowing
-     * the workaround to Play!-only (so mupen64plus retro_deinit
-     * runs) fixes the err=2 re-init failure exposed by this test —
-     * but lets a second crash through:
-     * `Scudo ERROR: invalid chunk state when deallocating` in
-     * `vkDestroySwapchainKHR`, surfaced from `nativeGpuDeinit`
-     * after `retro_deinit` returns. So mupen64plus's retro_deinit
-     * also corrupts heap state, just less visibly than Play!'s.
-     * Both cores need upstream verification before the workaround
-     * can be narrowed or removed. See #726 for the verification
-     * playbook.
+     * Closed via #736 — moving retro_unload_game + retro_deinit onto
+     * the emulation thread (matching RetroArch's runloop_event_deinit_core
+     * invariant) made the second retro_load_game succeed. The earlier
+     * "skip retro_deinit for GL HW cores" workaround that masked this
+     * is gone, and mupen64plus_next's "ROM still open" symptom went
+     * away with it. Manual repro on AYN Thor verified the fix.
      */
-    @Ignore("#724 / #726 — mupen64plus retro_deinit corrupts heap (Scudo abort in vkDestroySwapchainKHR); workaround stays in place core-wide until upstream verified")
     @Test
     fun n64ExitAndResume() {
         setupN64Game()
