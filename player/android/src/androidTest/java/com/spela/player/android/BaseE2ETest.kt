@@ -59,7 +59,15 @@ abstract class BaseE2ETest {
         //    tokens).
         rule.ensureLoggedIn()
 
-        // 3. Contract check. If we're not on Home, something in the
+        // 3. Force the active tab to Home so each test starts on a
+        //    deterministic stack. ensureLoggedIn can return when ANY
+        //    logged-in screen is visible (Home, Settings, etc.) — if
+        //    a previous test ended on a different tab and the @After
+        //    teardown was skipped (e.g. process restart), the next
+        //    test's first tap can race against an unexpected tab.
+        runCatching { rule.tapOnTag(TestTags.NAV_HOME, fallbackLabel = "Home") }
+
+        // 4. Contract check. If we're not on Home, something in the
         //    setup path is broken — surface it now, not 30s into the
         //    test body.
         rule.assertOnHome()
