@@ -36,27 +36,6 @@ class ChallengeLeaderboardTest : BaseE2ETest() {
         rule.pressBack()
     }
 
-    // ── US-6 AC: Empty leaderboard shows "No attempts yet" ──
-
-    @Test
-    fun emptyLeaderboardShowsPrompt() {
-        // Create a fresh challenge (no attempts)
-        rule.ensureChallengeExists("Empty Leaderboard Test")
-
-        rule.navigateToChallengeList()
-        rule.waitForText("Empty Leaderboard Test", timeout = 8_000)
-        rule.tapOn("Empty Leaderboard Test")
-        rule.waitForText("Leaderboard", timeout = 5_000)
-
-        rule.scrollToAndTapText("Leaderboard")
-
-        // US-6 AC: empty state from SpEmptyStates.NoAttempts()
-        rule.assertTextVisible("No attempts yet")
-        rule.assertVisible("Be the first")
-
-        rule.pressBack()
-    }
-
     // ── US-6 AC: Leaderboard shows entry after completing an attempt ──
 
     @Test

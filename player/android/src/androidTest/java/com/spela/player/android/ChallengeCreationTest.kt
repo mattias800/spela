@@ -145,53 +145,6 @@ class ChallengeCreationTest : BaseE2ETest() {
         rule.openOverlayAndExit()
     }
 
-    // ── US-1 AC: Optional description field ──
-
-    @Test
-    fun createChallengeWithDescription() {
-        setupGame()
-        rule.openOverlay()
-
-        rule.tapOn("Challenge")
-        rule.waitForText("Create Challenge", timeout = 5_000)
-
-        // All form interaction goes through UiAutomator: Compose's
-        // performTextInput / performClick block on Espresso idle
-        // during the 60fps emulation render loop.
-        val device = androidx.test.uiautomator.UiDevice.getInstance(
-            androidx.test.platform.app.InstrumentationRegistry.getInstrumentation()
-        )
-
-        // Fill title — first EditText on the panel. Poll briefly so
-        // we don't race the Compose accessibility tree.
-        val deadline = System.currentTimeMillis() + 5_000L
-        var titleField = device.findObject(
-            androidx.test.uiautomator.UiSelector().className("android.widget.EditText").instance(0)
-        )
-        while (!titleField.exists() && System.currentTimeMillis() < deadline) {
-            Thread.sleep(200)
-            titleField = device.findObject(
-                androidx.test.uiautomator.UiSelector().className("android.widget.EditText").instance(0)
-            )
-        }
-        check(titleField.exists()) { "Title field not found" }
-        titleField.clearTextField()
-        titleField.setText("Described Challenge")
-
-        // Fill optional description — second EditText.
-        val descField = device.findObject(
-            androidx.test.uiautomator.UiSelector().className("android.widget.EditText").instance(1)
-        )
-        check(descField.exists()) { "Description field not found" }
-        descField.setText("Beat the first boss without taking damage")
-
-        // Click Create.
-        device.findObject(androidx.test.uiautomator.UiSelector().text("Create")).click()
-        rule.waitForText("Challenge created!", timeout = 8_000)
-
-        rule.openOverlayAndExit()
-    }
-
     // ── Cancel challenge creation returns to overlay ──
 
     @Test

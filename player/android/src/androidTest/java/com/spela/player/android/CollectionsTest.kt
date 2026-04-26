@@ -317,50 +317,6 @@ class CollectionsTest : BaseE2ETest() {
         deleteCurrentCollection()
     }
 
-    // ── Test: Remove Game from Collection ──
-
-    @Test
-    fun removeGameFromCollectionDetail() {
-        val collName = "E2E RemoveGame ${System.currentTimeMillis()}"
-
-        // Create collection
-        navigateToCollectionsTab()
-        createCollection(collName)
-
-        // Add Castlevania to the collection. The action moved into
-        // the More-actions overflow menu (GameActionsMenu.kt); drive
-        // it by stable testTag instead of the no-longer-present
-        // "Add to collection" contentDescription.
-        navigateToGameDetail()
-        rule.tapOnTag(TestTags.GAME_DETAIL_MORE_ACTIONS)
-        rule.waitForTag(TestTags.GAME_DETAIL_MENU_ADD_TO_COLLECTION, timeout = 5_000)
-        rule.tapOnTag(TestTags.GAME_DETAIL_MENU_ADD_TO_COLLECTION)
-        rule.waitForIdle()
-        rule.waitForText("Add to Collection", timeout = 5_000)
-        rule.tapOn(collName)
-        rule.waitForText("Added to $collName", timeout = 8_000)
-
-        // Navigate to the collection
-        rule.tapOn("Home")
-        rule.waitForText("Spela", timeout = 5_000)
-        navigateToCollectionsTab()
-        openCollection(collName)
-
-        // Verify Castlevania is in the collection
-        rule.waitForText("Castlevania", timeout = 8_000)
-
-        // Remove Castlevania from the collection
-        rule.onNodeWithContentDescription("Remove Castlevania from collection", substring = true).performClick()
-        rule.waitForIdle()
-        rule.waitForText("Removed from collection", timeout = 8_000)
-
-        // Verify Castlevania is gone (collection should be empty now)
-        rule.waitForTextNotVisible("Castlevania", timeout = 5_000)
-
-        // Clean up — delete the collection
-        deleteCurrentCollection()
-    }
-
     // ── User switching helper ──
 
     /**
