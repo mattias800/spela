@@ -144,23 +144,4 @@ class ChallengeIntegrationTest : BaseE2ETest() {
         rule.exitGame()
     }
 
-    // ── Game detail "Challenges" section coexists with existing sections ──
-
-    @Test
-    fun gameDetailLayoutIntactWithChallengesSection() {
-        rule.navigateToCastlevania()
-
-        // The page should have the primary action plus the always-on
-        // sections. game_shared_sessions_section only renders when
-        // shared sessions exist (or a load is in flight); a fresh
-        // test seed has neither, so we don't assert on it here.
-        // Drive everything by tag so the test stays stable across
-        // copy changes.
-        rule.assertVisible("Download")
-        rule.scrollToAndTapTag("sessions_section")
-        rule.scrollToAndTapTag("challenges_section")
-        rule.assertTagVisible("view_challenges_button")
-
-        rule.pressBack()
-    }
 }

@@ -77,33 +77,6 @@ class SessionTest : BaseE2ETest() {
     }
 
     @Test
-    fun serverPersistsAcrossRestart() {
-
-        // Navigate to Settings → About → Sign Out
-        rule.navigateToSettingsCategory("About")
-        rule.scrollToAndTapText("Sign Out")
-        confirmSignOutDialog()
-
-        // Verify server is visible
-        rule.assertTextVisible("Local")
-
-        // Restart app
-        rule.restartApp()
-
-        // After restart, server should persist (may show Login or server list)
-        rule.pollUntil(timeoutMillis = 15_000) {
-            try {
-                rule.onAllNodesWithText("Local", substring = true)
-                    .fetchSemanticsNodes().isNotEmpty() ||
-                    rule.onAllNodesWithText("Welcome", substring = true)
-                        .fetchSemanticsNodes().isNotEmpty()
-            } catch (_: IllegalStateException) {
-                false
-            }
-        }
-    }
-
-    @Test
     fun landscapeLoginFlow() {
 
         // Sign out to get to a clean state

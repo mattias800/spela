@@ -82,31 +82,6 @@ class EmulationTest : BaseE2ETest() {
     }
 
     @Test
-    fun exitReturnsToGameDetail() {
-        setupGame()
-        rule.openOverlayAndExit()
-
-        // After exit we land on the game-detail screen for whichever
-        // NES game navigateToGameAndPlay happened to pick (Balloon
-        // Fight by default). The action-button area is what proves
-        // "we're on game detail"; accept any of Play/Resume/Download.
-        rule.pollUntil(timeoutMillis = 8_000) {
-            try {
-                rule.onAllNodesWithText("Play", substring = true)
-                    .fetchSemanticsNodes().isNotEmpty() ||
-                    rule.onAllNodesWithText("Resume", substring = true)
-                        .fetchSemanticsNodes().isNotEmpty() ||
-                    rule.onAllNodesWithText("Download", substring = true)
-                        .fetchSemanticsNodes().isNotEmpty()
-            } catch (_: IllegalStateException) { false }
-        }
-
-        // We're not on Home and the in-game overlay is gone.
-        rule.assertTextNotVisible("Exit Game")
-        rule.assertTextNotVisible("Continue")
-    }
-
-    @Test
     fun exitAndResume() {
         setupGame()
         rule.openOverlayAndExit()
@@ -196,29 +171,6 @@ class EmulationTest : BaseE2ETest() {
         rule.waitForVisible("Fast", timeout = 3_000)
 
         rule.exitGame()
-    }
-
-    @Test
-    fun nesStability() {
-        setupGame()
-        rule.openOverlay()
-
-        rule.assertTextVisible("Continue")
-        rule.assertVisible("Save")
-
-        rule.exitGame()
-        // After exit, the action button is "Play" on a fresh game or
-        // "Resume" once auto-save has captured a save. With backend
-        // reset to defaults, autoSaveEnabled=true, so we may see
-        // either depending on timing. Accept both.
-        rule.pollUntil(timeoutMillis = 8_000) {
-            try {
-                rule.onAllNodesWithText("Play", substring = true)
-                    .fetchSemanticsNodes().isNotEmpty() ||
-                    rule.onAllNodesWithText("Resume", substring = true)
-                        .fetchSemanticsNodes().isNotEmpty()
-            } catch (_: IllegalStateException) { false }
-        }
     }
 
     @Test

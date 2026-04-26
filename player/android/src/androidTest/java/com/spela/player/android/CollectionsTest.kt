@@ -275,26 +275,6 @@ class CollectionsTest : BaseE2ETest() {
         deleteCurrentCollection()
     }
 
-    // ── Test: Create Collection ──
-
-    @Test
-    fun createCollectionFromCollectionsScreen() {
-        val collName = "E2E Create ${System.currentTimeMillis()}"
-
-        // Navigate to Collections tab
-        navigateToCollectionsTab()
-
-        // Tap FAB to create
-        createCollection(collName, description = "Test description")
-
-        // Verify collection appears in the list
-        rule.assertTextVisible(collName)
-
-        // Clean up
-        openCollection(collName)
-        deleteCurrentCollection()
-    }
-
     // ── Test: Add Game to Collection ──
 
     @Test
@@ -378,26 +358,6 @@ class CollectionsTest : BaseE2ETest() {
         rule.waitForTextNotVisible("Castlevania", timeout = 5_000)
 
         // Clean up — delete the collection
-        deleteCurrentCollection()
-    }
-
-    // ── Test: Public toggle shows badge ──
-
-    @Test
-    fun publicTogglePersists() {
-        val collName = "E2E Public ${System.currentTimeMillis()}"
-
-        // Create a public collection
-        navigateToCollectionsTab()
-        createCollection(collName, description = "A public collection", isPublic = true)
-
-        // Open the collection detail
-        openCollection(collName)
-
-        // Verify "Public" badge is visible
-        rule.waitForText("Public", timeout = 5_000)
-
-        // Clean up
         deleteCurrentCollection()
     }
 

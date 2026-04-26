@@ -9,13 +9,14 @@ import org.junit.Test
 import org.junit.runners.MethodSorters
 
 /**
- * E2E tests for N64 cores on Android.
+ * E2E tests for HW-rendered N64 cores on Android. The libretro-NES path is
+ * exercised by `EmulationTest` which uses the same nestopia core via the
+ * shared software render pipeline, so we no longer mirror those assertions
+ * here.
  *
- * These tests use Nintendo 64 (Banjo-Kazooie) via the mupen64plus_next core.
- * They verify:
- * 1. N64 games launch and run correctly
- * 2. Emulation lifecycle (overlay, exit, resume, save/load) works for N64 cores
- * 3. NES games (software render path) still work after HW render changes
+ * Uses Nintendo 64 (Banjo-Kazooie) via the mupen64plus_next core. Verifies
+ * that N64 games launch, run, and exercise the emulation lifecycle (overlay,
+ * save/load, exit) on a real GLideN64 GLES context.
  *
  * IMPORTANT: N64 tests are combined into fewer methods to minimize core
  * load/unload cycles. The mupen64plus_next Angrylion renderer leaks native
@@ -136,57 +137,4 @@ class HwRenderTest : BaseE2ETest() {
         }
     }
 
-    // ── NES backward-compatibility tests (software render path) ──
-
-    private fun setupNesGame() {
-        rule.navigateToGameAndPlayFresh()
-    }
-
-    @Test
-    fun nesStillWorksAfterHwRenderChanges() {
-        setupNesGame()
-        rule.openOverlay()
-
-        rule.assertTextVisible("Continue")
-        rule.assertVisible("Save")
-        rule.assertVisible("Load")
-        rule.assertTextVisible("Exit Game")
-        rule.assertVisible("Castlevania")
-
-        rule.exitGame()
-    }
-
-    @Test
-    fun nesExitAndResumeStillWorks() {
-        setupNesGame()
-        rule.openOverlayAndExit()
-
-        // Game already downloaded — wait for the GameDetail title rather than
-        // a Download button (which only appears pre-download).
-        rule.waitForVisible("Castlevania", timeout = 8_000)
-
-        // After exit with auto-save, the primary button label flips from
-        // "Play" → "Resume". Wait for whichever is showing now.
-        rule.pollUntil(timeoutMillis = 8_000) {
-            try {
-                rule.onAllNodesWithText("Resume", substring = false)
-                    .fetchSemanticsNodes().isNotEmpty() ||
-                rule.onAllNodesWithText("Play", substring = false)
-                    .fetchSemanticsNodes().isNotEmpty()
-            } catch (_: IllegalStateException) { false }
-        }
-        val hasResume = rule.onAllNodesWithText("Resume", substring = false)
-            .fetchSemanticsNodes().isNotEmpty()
-        if (hasResume) {
-            rule.onNodeWithText("Resume").performClick()
-        } else {
-            rule.onNodeWithText("Play").performClick()
-        }
-        rule.waitForVisible("Game running", timeout = 15_000)
-
-        rule.openOverlay()
-        rule.assertTextVisible("Continue")
-
-        rule.exitGame()
-    }
 }

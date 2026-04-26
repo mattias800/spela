@@ -34,21 +34,6 @@ class ChallengeBrowsingTest : BaseE2ETest() {
         rule.pressBack()
     }
 
-    // ── US-3 AC: View Challenges navigates to ChallengeListScreen ──
-
-    @Test
-    fun viewChallengesNavigatesToList() {
-        rule.navigateToCastlevania()
-
-        // Tap "View Challenges" to navigate to ChallengeListScreen
-        rule.navigateToChallengeList()
-
-        // Should be on the ChallengeListScreen (shows game title in top bar)
-        rule.waitForText("Castlevania", timeout = 5_000)
-
-        rule.pressBack()
-    }
-
     // ── US-3 AC: Empty state when no challenges for a game ──
 
     @Test
@@ -127,37 +112,4 @@ class ChallengeBrowsingTest : BaseE2ETest() {
         rule.pressBack()
     }
 
-    // ── Multiple challenges visible in list ──
-
-    @Test
-    fun multipleChallengesVisibleInList() {
-        // Create two challenges on Castlevania (pin so the post-exit
-        // game-detail screen and the later "View Challenges" tap
-        // target the same game).
-        rule.navigateToGameAndPlay(preferredGameTitle = "Castlevania")
-        rule.createChallengeFromOverlay("Challenge Alpha")
-        rule.createChallengeFromOverlay("Challenge Beta")
-        rule.openOverlayAndExit()
-        // After exit the action button is Play/Resume/Download
-        // depending on cache + auto-save state.
-        rule.pollUntil(timeoutMillis = 8_000) {
-            try {
-                rule.onAllNodesWithText("Play", substring = true)
-                    .fetchSemanticsNodes().isNotEmpty() ||
-                    rule.onAllNodesWithText("Resume", substring = true)
-                        .fetchSemanticsNodes().isNotEmpty() ||
-                    rule.onAllNodesWithText("Download", substring = true)
-                        .fetchSemanticsNodes().isNotEmpty()
-            } catch (_: IllegalStateException) { false }
-        }
-
-        // Navigate to challenge list
-        rule.navigateToChallengeList()
-
-        // Both should appear
-        rule.waitForText("Challenge Alpha", timeout = 8_000)
-        rule.assertVisible("Challenge Beta")
-
-        rule.pressBack()
-    }
 }

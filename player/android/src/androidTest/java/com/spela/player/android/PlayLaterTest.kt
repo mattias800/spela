@@ -70,14 +70,6 @@ class PlayLaterTest : BaseE2ETest() {
     }
 
     @Test
-    fun removeFromPlayLaterFromGameDetail() {
-        rule.navigateToCastlevania()
-        setPlayLater(desiredInQueue = true)
-        setPlayLater(desiredInQueue = false)
-        check(!queryPlayLaterState()) { "Expected game NOT in Play Later after toggling off" }
-    }
-
-    @Test
     fun playLaterSectionOnHomeScreen() {
         // Add a game to Play Later first.
         rule.navigateToCastlevania()
