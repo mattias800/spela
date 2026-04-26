@@ -244,7 +244,7 @@ class ChallengeAttemptTest : BaseE2ETest() {
         rule.assertVisible("Complete")
         rule.assertVisible("Restart")
         rule.assertTextVisible("Give Up")
-        rule.assertNotVisible("Save")
+        rule.assertNotVisibleExact("Save")
 
         rule.resumeChallengeFromOverlay()
         rule.abandonChallenge()
@@ -262,7 +262,7 @@ class ChallengeAttemptTest : BaseE2ETest() {
 
         // Verify it's the challenge overlay, not normal overlay
         rule.assertVisible("Complete")
-        rule.assertNotVisible("Save")
+        rule.assertNotVisibleExact("Save")
 
         // Dismiss overlay with "Resume"
         rule.resumeChallengeFromOverlay()
