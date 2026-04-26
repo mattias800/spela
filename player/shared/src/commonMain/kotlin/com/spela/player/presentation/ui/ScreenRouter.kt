@@ -195,6 +195,7 @@ fun ScreenRouter(
                                     },
                                     hasActiveDownloads = downloadsState.activeDownloads.isNotEmpty(),
                                     activeNetplaySessions = activeNetplaySessions,
+                                    overlayClosedTick = navState.overlayClosedTick,
                                 )
                             }
 
@@ -715,6 +716,7 @@ fun ScreenRouter(
                                             NavigationIntent.NavigateTo(SpScreen.GameAchievements(gameId))
                                         )
                                     },
+                                    overlayClosedTick = navState.overlayClosedTick,
                                 )
                             }
 

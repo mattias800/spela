@@ -116,6 +116,13 @@ fun HomeScreen(
     onSearchSelected: () -> Unit = {},
     hasActiveDownloads: Boolean = false,
     activeNetplaySessions: List<NetplaySession> = emptyList(),
+    /** Bumps every time the in-game overlay hides — see
+     *  NavigationState.overlayClosedTick. Re-keys the dashboard load
+     *  below so "Continue Playing", recent games, activity feed, and
+     *  the play-later section refresh after the user finishes a play
+     *  session — Home stays composed under the overlay so a plain
+     *  LaunchedEffect(Unit) wouldn't refire on its own. */
+    overlayClosedTick: Int = 0,
 ) {
     val state by viewModel.state.collectAsState()
     val socialState by socialViewModel.state.collectAsState()
@@ -127,8 +134,8 @@ fun HomeScreen(
     if (state.isLoading) sawLoading = true
     if (sawLoading && !state.isLoading) hasInitiallyLoaded = true
 
-    LaunchedEffect(Unit) {
-        println("[HomeScreen] LaunchedEffect(Unit) fired — loading dashboard")
+    LaunchedEffect(overlayClosedTick) {
+        println("[HomeScreen] LaunchedEffect fired — loading dashboard (overlayClosedTick=$overlayClosedTick)")
         viewModel.onIntent(GameListIntent.LoadDashboard)
         socialViewModel.onIntent(SocialIntent.RefreshAll)
         settingsViewModel?.onIntent(SettingsIntent.LoadSettings)

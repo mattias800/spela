@@ -77,13 +77,21 @@ fun GameDetailScreen(
     onPlaySession: ((gameId: String, sessionId: String) -> Unit)? = null,
     onPlaySessionFromTitleScreen: ((gameId: String, sessionId: String) -> Unit)? = null,
     onNavigateToSession: ((sessionId: String) -> Unit)? = null,
+    /** Bumps every time the in-game overlay hides — see
+     *  NavigationState.overlayClosedTick. Re-keys the data load below
+     *  so play history, sessions, save state info, and the cached/Resume
+     *  CTA refresh after the user finishes a play session and returns
+     *  to this screen. Prior to this, "Continue Playing" / Resume
+     *  / Last Played fields stayed frozen at the values fetched on
+     *  initial screen entry. */
+    overlayClosedTick: Int = 0,
 ) {
     PlatformBackHandler { onBack() }
 
     val state by viewModel.state.collectAsState()
     val keyMappingState = keyMappingViewModel?.state?.collectAsState()
 
-    LaunchedEffect(gameId) {
+    LaunchedEffect(gameId, overlayClosedTick) {
         viewModel.onIntent(GameDetailIntent.LoadGame(gameId))
     }
 
