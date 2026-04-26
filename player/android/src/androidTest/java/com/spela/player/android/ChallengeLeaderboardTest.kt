@@ -1,5 +1,6 @@
 package com.spela.player.android
 
+import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.performSemanticsAction
 import org.junit.Test
@@ -97,20 +98,26 @@ class ChallengeLeaderboardTest : BaseE2ETest() {
         rule.completeChallenge()
         rule.waitForText("Challenge Complete", timeout = 8_000)
 
-        // Dismiss result — goes back to previous screen
+        // Dismiss result — goes back to previous screen.
+        // HideOverlay restores tabStacksBehindOverlay, so the user lands
+        // back on ChallengeDetail (which is where the attempt was started
+        // from).
         rule.tapOn("Done")
         rule.waitForIdle()
 
-        // Navigate back to the challenge detail to check leaderboard
-        // (Done exits the game, we should be back on the challenge detail or need to re-navigate)
-        rule.waitForText("Leaderboard", timeout = 8_000)
-
-        // Scroll to leaderboard section
+        // The leaderboard section header rendering is necessary but not
+        // sufficient: state.isLoadingLeaderboard then state.leaderboard
+        // populates async after the screen recomposes. Poll on the actual
+        // row content (the "Rank 1: …" contentDescription set by
+        // LeaderboardRow) rather than asserting once on the bare label —
+        // assertVisible is a single-shot check, no polling.
         rule.scrollToAndTapText("Leaderboard")
-
-        // Current user (player) should now appear in leaderboard
-        // LeaderboardRow contentDescription: "Rank 1: {username}, {duration}"
-        rule.assertVisible("player")
+        rule.pollUntil(timeoutMillis = 8_000L) {
+            try {
+                rule.onAllNodesWithContentDescription("Rank 1", substring = true)
+                    .fetchSemanticsNodes().isNotEmpty()
+            } catch (_: Exception) { false }
+        }
         rule.assertVisible("Rank 1")
 
         rule.pressBack()

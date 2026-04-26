@@ -190,6 +190,7 @@ class NavigationViewModel(
                         tabStacks = restoredStacks,
                         activeTabBehindOverlay = null,
                         tabStacksBehindOverlay = emptyMap(),
+                        overlayClosedTick = it.overlayClosedTick + 1,
                     )
                 }
                 // Sync pending save states to the server after leaving a game.
