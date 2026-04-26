@@ -185,6 +185,12 @@ private val challengesCreated = mutableSetOf<String>()
  * 401 → login screen and re-authenticates.
  */
 fun resetServerState() {
+    // Reset the JVM-side cache too — challengesCreated tracks
+    // whether a given challenge title was created in this run, so
+    // ensureChallengeExists can short-circuit. The server reset
+    // wipes every challenge, so the cache lies after this point
+    // unless we clear it.
+    challengesCreated.clear()
     val url = java.net.URL("http://127.0.0.1:8080/api/test/reset")
     val conn = url.openConnection() as java.net.HttpURLConnection
     try {
@@ -2017,12 +2023,21 @@ fun ComposeRule.startGameAndWait() {
 
 fun ComposeRule.openOverlay() {
     pressBack()
-    // During emulation, Compose/Espresso APIs block on idle (60fps Choreographer).
-    // Use UiAutomator-only polling to wait for the overlay to appear.
+    // During emulation, Compose/Espresso APIs block on idle (60fps
+    // Choreographer). Prefer UiAutomator polling. Fall back to
+    // Compose's semantic-tree fetch — UiAutomator sees only the
+    // primary display, so on multi-display hardware (AYN Thor) the
+    // "Exit Game" Text on display 4 is invisible to UiAutomator
+    // even though the overlay rendered correctly. Compose's tree
+    // spans all displays.
     val device = uiDevice()
     val deadline = System.currentTimeMillis() + TIMEOUT_MEDIUM
     while (System.currentTimeMillis() < deadline) {
         if (device.findObject(UiSelector().textContains("Exit Game")).exists()) return
+        try {
+            if (onAllNodesWithText("Exit Game", substring = true)
+                    .fetchSemanticsNodes().isNotEmpty()) return
+        } catch (_: Exception) { /* AppNotIdleException — ignore, retry */ }
         Thread.sleep(200)
     }
     throw IllegalStateException("openOverlay: 'Exit Game' not found within ${TIMEOUT_MEDIUM}ms")
