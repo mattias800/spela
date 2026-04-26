@@ -2555,8 +2555,18 @@ fun ComposeRule.resumeChallengeFromOverlay() {
  * Waits until back on the challenge detail screen (or game detail).
  */
 fun ComposeRule.abandonChallenge() {
-    val hasOverlay = onAllNodesWithText("Give Up", substring = true)
-        .fetchSemanticsNodes().isNotEmpty()
+    // Probe for the challenge overlay first via UiAutomator — Compose's
+    // fetchSemanticsNodes() blocks on Espresso idle, which never arrives
+    // during the 60fps emulation render loop and throws
+    // AppNotIdleException after 3s. The accessibility tree is also a
+    // reliable signal for "Give Up" because the overlay uses real Text
+    // nodes, not zero-size markers.
+    val device = uiDevice()
+    val hasOverlay = device.findObject(UiSelector().textContains("Give Up")).exists() ||
+        runCatching {
+            onAllNodesWithText("Give Up", substring = true)
+                .fetchSemanticsNodes().isNotEmpty()
+        }.getOrDefault(false)
     if (!hasOverlay) {
         openChallengeOverlay()
     }
@@ -2575,8 +2585,16 @@ fun ComposeRule.abandonChallenge() {
  * Opens overlay if needed, taps "Complete", waits for result screen.
  */
 fun ComposeRule.completeChallenge() {
-    val hasOverlay = onAllNodesWithContentDescription("Complete", substring = true)
-        .fetchSemanticsNodes().isNotEmpty()
+    // Probe via UiAutomator first — Compose's fetchSemanticsNodes()
+    // blocks on Espresso idle which never fires during the 60fps
+    // emulation render loop, throwing AppNotIdleException after 3s.
+    val device = uiDevice()
+    val hasOverlay = device.findObject(UiSelector().textContains("Complete")).exists() ||
+        device.findObject(UiSelector().descriptionContains("Complete")).exists() ||
+        runCatching {
+            onAllNodesWithContentDescription("Complete", substring = true)
+                .fetchSemanticsNodes().isNotEmpty()
+        }.getOrDefault(false)
     if (!hasOverlay) {
         openChallengeOverlay()
     }
