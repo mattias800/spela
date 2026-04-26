@@ -148,6 +148,28 @@ class AndroidLibretroController(
             } else {
                 runEmulationLoop()
             }
+            // Libretro contract (RetroArch's runloop_event_deinit_core,
+            // see #724 research): retro_unload_game and retro_deinit must
+            // run on the same thread that called retro_run. Calling them
+            // from stop()'s caller thread after thread.join() leaves
+            // cores like Play! PS2 and mupen64plus_next confused — the
+            // EGL "current context" is wrong, and worker threads inside
+            // the core look for synchronization with a thread that's
+            // gone. Run them here, as the emulation thread's last act
+            // before exiting; stop() picks up the join and finishes the
+            // GPU teardown afterwards.
+            try {
+                jni.nativeUnloadGame()
+                Log.i(TAG, "emulation thread: nativeUnloadGame complete")
+            } catch (t: Throwable) {
+                Log.e(TAG, "nativeUnloadGame on emulation thread failed", t)
+            }
+            try {
+                jni.nativeDeinit()
+                Log.i(TAG, "emulation thread: nativeDeinit complete")
+            } catch (t: Throwable) {
+                Log.e(TAG, "nativeDeinit on emulation thread failed", t)
+            }
         }, "SpelaEmulation").apply {
             priority = Thread.MAX_PRIORITY
             start()
@@ -173,23 +195,19 @@ class AndroidLibretroController(
             req.latch.countDown()
         }
         netplayTransport?.disconnect()
-        // No timeout: we MUST wait for retro_run() to return before calling
-        // nativeUnloadGame(). Heavy cores (N64 Angrylion) may take 10-30s per
-        // frame on slow devices. Calling unload while retro_run() is active
-        // causes SIGSEGV in the core.
+        // The emulation thread runs nativeUnloadGame + nativeDeinit as
+        // its final acts before exiting (see start()'s thread body). We
+        // wait for it to finish, then take down our frontend-side GPU
+        // resources. No timeout — heavy cores can spend tens of seconds
+        // in retro_unload_game / retro_deinit on slow devices.
         emulationThread?.join()
-        Log.i(TAG, "emulation thread joined")
+        Log.i(TAG, "emulation thread joined (libretro teardown complete)")
         emulationThread = null
         audioPlayer?.stop()
         audioPlayer = null
         clearNetplayMode()
-        jni.nativeUnloadGame()
-        Log.i(TAG, "game unloaded")
-        jni.nativeDeinit()
-        Log.i(TAG, "core deinitialized")
-        // Destroy GPU renderer after core is fully unloaded. nativeDeinit already
-        // handled HW render cleanup (context_destroy, hw_vulkan_deinit), so this
-        // just tears down the remaining Vulkan infrastructure (device, instance).
+        // Frontend-side Vulkan compositor teardown — safe on any thread,
+        // doesn't touch core state.
         jni.nativeGpuDeinit()
         Log.i(TAG, "GPU renderer destroyed")
         mainHandler.post { _frameBitmap.value = null }
