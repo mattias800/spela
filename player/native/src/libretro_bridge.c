@@ -654,16 +654,11 @@ static int core_load(const char *path) {
             g_core.retro_unload_game();
             g_core.game_loaded = false;
         }
-        if (g_core.initialized && !g_core.hw_gl_was_used) {
+        if (g_core.initialized) {
             g_core.retro_deinit();
             g_core.initialized = false;
-        } else if (g_core.hw_gl_was_used) {
-            LOGI("Skipping retro_deinit in core_load for GL HW core");
-            g_core.initialized = false;
         }
-        if (!g_core.hw_gl_was_used) {
-            sp_dlclose(g_core.handle);
-        }
+        sp_dlclose(g_core.handle);
         g_core.handle = NULL;
     }
 
@@ -1025,123 +1020,95 @@ JNI_FUNC(void, nativeUnloadGame)(JNIEnv *env, jobject thiz) {
 }
 
 JNI_FUNC(void, nativeDeinit)(JNIEnv *env, jobject thiz) {
-    if (!g_core.initialized) return;
+    if (!g_core.initialized && !g_core.game_loaded) return;
 
-    /* GL HW render cores (e.g. Play! PS2) crash in retro_deinit because
-     * their internal GL state is corrupted during cleanup. Skip the entire
-     * normal deinit path — just unload the game and mark as deinitialized.
-     * The library stays loaded (dlclose is also skipped). */
-    if (g_core.hw_gl_was_used) {
-        LOGI("GL HW core: skipping retro_deinit, unloading game only");
-        if (g_core.game_loaded) {
-            g_core.retro_unload_game();
-            g_core.game_loaded = false;
+    /* Mirror RetroArch's runloop_event_deinit_core (runloop.c:4059-4136) —
+     * single ordered teardown on the same thread that ran retro_run. The
+     * caller (AndroidLibretroController.stop) now hands off to the
+     * emulation thread before reaching here, so the libretro contract
+     * "all retro_* entry points on the same thread" is respected.
+     *
+     * Order:
+     *   1. context_destroy callback (free HW render context)
+     *   2. retro_unload_game
+     *   3. retro_deinit
+     *   4. video_deinit / input_deinit / audio_deinit
+     *   5. destroy our hw_gl_ctx wrapper
+     *   6. dlclose
+     *
+     * Previously this had per-flag skip-retro_deinit / skip-dlclose
+     * branches added to dodge a Play! PS2 SIGSEGV. Strong evidence (see
+     * RetroArch research and #724 investigation) suggests that crash was
+     * a thread-mismatch artifact — Play!'s GL cleanup running on a thread
+     * whose EGL context was different from the one that created the
+     * resources. With teardown moved onto the emulation thread, the
+     * standard order should be safe. */
+
+    /* Step 1: HW render context_destroy. The Vulkan HW path needs a
+     * wait-idle + brief grace before the vulkan_deinit; the GL path just
+     * fires the callback once. Cores may have already destroyed their own
+     * context during emulation (we observe hw_gl_ctx going NULL via
+     * the env callback in some flows), so guard each branch. */
+    if (g_core.hw_render_enabled && g_gpu_renderer &&
+        gpu_renderer_is_hw_render_active(g_gpu_renderer)) {
+        gpu_renderer_wait_idle(g_gpu_renderer);
+        if (g_core.hw_render_callback.context_destroy) {
+            g_core.hw_render_callback.context_destroy();
         }
-        g_core.initialized = false;
-        video_deinit();
-        input_deinit();
-        audio_deinit();
-        g_core.hw_vk_negotiation = NULL;
+        gpu_renderer_wait_idle(g_gpu_renderer);
+        sp_sleep_ms(200); /* grace for any Granite background work */
+        gpu_renderer_hw_vulkan_deinit(g_gpu_renderer);
         g_core.hw_render_enabled = false;
-        memset(&g_core.hw_render_callback, 0, sizeof(g_core.hw_render_callback));
-        if (g_core.hw_gl_ctx) {
-            hw_gl_destroy(g_core.hw_gl_ctx);
-            g_core.hw_gl_ctx = NULL;
+    } else if (g_core.hw_gl_ctx) {
+        hw_gl_make_current(g_core.hw_gl_ctx);
+        if (g_core.hw_render_callback.context_destroy) {
+            g_core.hw_render_callback.context_destroy();
         }
-        /* Skip dlclose — keep library loaded */
-        g_core.handle = NULL;
-        LOGI("GL HW core deinitialized (retro_deinit skipped)");
-        return;
     }
 
+    /* Step 2: retro_unload_game */
     if (g_core.game_loaded) {
-        /* Clean up Vulkan HW render if still active */
-        if (g_core.hw_render_enabled && g_gpu_renderer &&
-            gpu_renderer_is_hw_render_active(g_gpu_renderer)) {
-            gpu_renderer_wait_idle(g_gpu_renderer);
-            if (g_core.hw_render_callback.context_destroy) {
-                g_core.hw_render_callback.context_destroy();
-            }
-            gpu_renderer_wait_idle(g_gpu_renderer);
-            sp_sleep_ms(200); /* 200ms grace for Granite background threads */
-            gpu_renderer_hw_vulkan_deinit(g_gpu_renderer);
-            g_core.hw_render_enabled = false;
-        }
-        /* Clean up GL/GLES HW render core.
-         * Skip retro_deinit for GL HW render cores — cores like Play! PS2
-         * crash in retro_deinit → Release() because their internal GL state
-         * is already corrupted by the time cleanup runs. The library stays
-         * loaded (dlclose is skipped for HW cores), so OS cleanup handles
-         * resource deallocation. retro_unload_game is safe to call.
-         * Use the sticky hw_gl_was_used flag — both hw_render_enabled and
-         * hw_gl_ctx may already be cleared by context_destroy during emulation. */
-        LOGI("nativeDeinit: hw_gl_was_used=%d hw_gl_ctx=%p hw_render_enabled=%d initialized=%d game_loaded=%d",
-             g_core.hw_gl_was_used, (void*)g_core.hw_gl_ctx, g_core.hw_render_enabled,
-             g_core.initialized, g_core.game_loaded);
-        if (g_core.hw_gl_was_used) {
-            if (g_core.hw_gl_ctx) {
-                hw_gl_make_current(g_core.hw_gl_ctx);
-                if (g_core.hw_render_callback.context_destroy) {
-                    g_core.hw_render_callback.context_destroy();
-                }
-            }
-            if (g_core.game_loaded) {
-                g_core.retro_unload_game();
-                g_core.game_loaded = false;
-            }
-            /* Skip retro_deinit — crashes in Play! PS2 GL cleanup */
-            LOGI("Skipping retro_deinit for GL HW render core (known crash in GL cleanup)");
-            g_core.initialized = false;
-            if (g_core.hw_gl_ctx) {
-                hw_gl_destroy(g_core.hw_gl_ctx);
-                g_core.hw_gl_ctx = NULL;
-            }
-            g_core.hw_render_enabled = false;
-            /* Keep hw_gl_was_used = true — the core library is still loaded
-             * (dlclose is skipped), so subsequent runs need the same treatment. */
-        }
-        if (g_core.game_loaded) {
-            g_core.retro_unload_game();
-            g_core.game_loaded = false;
-        }
+        g_core.retro_unload_game();
+        g_core.game_loaded = false;
     }
+
+    /* Step 3: retro_deinit */
     if (g_core.initialized) {
-        if (g_core.hw_gl_was_used) {
-            LOGI("Skipping retro_deinit (GL HW core, final path)");
-        } else {
-            g_core.retro_deinit();
-        }
+        g_core.retro_deinit();
+        g_core.initialized = false;
     }
-    g_core.initialized = false;
+
+    /* Step 4: subsystem teardown */
     video_deinit();
     input_deinit();
     audio_deinit();
 
-    /* Clear pointers into core's memory before sp_dlclose */
+    /* Step 5: destroy our GL context wrapper after the core has
+     * detached from it via context_destroy. */
+    if (g_core.hw_gl_ctx) {
+        hw_gl_destroy(g_core.hw_gl_ctx);
+        g_core.hw_gl_ctx = NULL;
+    }
     g_core.hw_vk_negotiation = NULL;
     g_core.hw_render_enabled = false;
     memset(&g_core.hw_render_callback, 0, sizeof(g_core.hw_render_callback));
 
+    /* Step 6: dlclose. RetroArch always dlcloses (runloop.c:3881). The
+     * Android skip below is preserved as a separate, narrower concern:
+     * Granite-driven HW cores (Dolphin's Vulkan shader compiler) leak
+     * background threads past retro_deinit. That's a real issue and
+     * orthogonal to the Play! one — the threading fix above doesn't
+     * change Granite's behaviour. Revisit once the threading fix is
+     * validated for non-Granite GL HW cores like mupen64plus_next. */
     if (g_core.handle) {
 #ifdef __ANDROID__
-        /* HW render cores (e.g. Dolphin) use Granite for background shader
-         * compilation. retro_deinit() signals shutdown but does not join all
-         * threads — calling dlclose() unmaps the code while threads are still
-         * running, causing SIGSEGV. Skip dlclose for these cores; the library
-         * stays loaded until the process exits. dlopen() with the same path
-         * reuses the loaded library (increments ref count), so restarting
-         * the same core works correctly. */
         if (g_gpu_renderer) {
             LOGI("Skipping dlclose for HW render core (background threads may still be running)");
         } else {
             sp_dlclose(g_core.handle);
         }
 #else
-        if (g_core.hw_gl_was_used) {
-            LOGI("Skipping dlclose for GL HW render core");
-        } else {
-            sp_dlclose(g_core.handle);
-        }
+        sp_dlclose(g_core.handle);
 #endif
         g_core.handle = NULL;
     }
