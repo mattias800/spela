@@ -2695,45 +2695,18 @@ fun ComposeRule.createChallengeFromOverlay(title: String = "E2E Test Challenge")
     titleField.clearTextField()
     titleField.setText(title)
 
-    // Submit the challenge. Try the Compose semantic OnClick action
-    // first — that fires the SpButton's onClick lambda directly without
-    // hit-testing coordinates, so it survives layout shifts and bypasses
-    // Espresso's idle wait. SpButton wraps the "Create" Text in a
-    // Material3 Button (mergeDescendants=true), so the merged tree node
-    // carries hasClickAction + hasText("Create"). Fall back to
-    // UiAutomator clicks at the TextView bounds for cases where the
-    // Compose tree is mid-recomposition.
-    val composeClicked = runCatching {
-        onAllNodes(
-            androidx.compose.ui.test.hasText("Create", substring = false) and
-                androidx.compose.ui.test.hasClickAction()
-        ).fetchSemanticsNodes().isNotEmpty()
-    }.getOrDefault(false)
-    if (composeClicked) {
-        runCatching {
-            onAllNodes(
-                androidx.compose.ui.test.hasText("Create", substring = false) and
-                    androidx.compose.ui.test.hasClickAction()
-            )[0].performSemanticsAction(
-                androidx.compose.ui.semantics.SemanticsActions.OnClick
-            )
-        }.onFailure {
-            // Fall through to UiAutomator
-            var createIdx = 0
-            while (device.findObject(UiSelector().text("Create").instance(createIdx + 1)).exists()) {
-                createIdx++
-            }
-            device.findObject(UiSelector().text("Create").instance(createIdx)).click()
-        }
-    } else {
-        var createIdx = 0
-        while (device.findObject(UiSelector().text("Create").instance(createIdx + 1)).exists()) {
-            createIdx++
-        }
-        val createBtn = device.findObject(UiSelector().text("Create").instance(createIdx))
-        check(createBtn.exists()) { "createChallengeFromOverlay: no Create button found" }
-        createBtn.click()
+    // Tap the "Create" button via UiAutomator directly. tapLastWithText
+    // tries Compose performClick first when "Core running" content
+    // description isn't detected — but the overlay/panel can hide
+    // that signal mid-flow, sending the click into Espresso's idle
+    // wait, which never completes during 60fps emulation.
+    var createIdx = 0
+    while (device.findObject(UiSelector().text("Create").instance(createIdx + 1)).exists()) {
+        createIdx++
     }
+    val createBtn = device.findObject(UiSelector().text("Create").instance(createIdx))
+    check(createBtn.exists()) { "createChallengeFromOverlay: no Create button found" }
+    createBtn.click()
     waitForText("Challenge created!", timeout = 15_000)
 
     // Game resumes after the success toast auto-dismisses (~2s delay
