@@ -20,6 +20,10 @@ class LibretroJni {
     external fun nativeReset()
     external fun nativeUnloadGame()
     external fun nativeDeinit()
+    /** True once retro_run() has returned at least once for the
+     *  currently-loaded game. Used to gate post-launch operations
+     *  (save-state probe, deferred auto-load) — see #737. */
+    external fun nativeFirstFrameRun(): Boolean
 
     /* Save state */
     external fun nativeSerializeSize(): Long
@@ -77,6 +81,7 @@ class LibretroJni {
     external fun nativeGpuIsActive(): Boolean
     external fun nativeGpuSetSourceRect(x: Int, y: Int, w: Int, h: Int)
     external fun nativeIsHwRenderEnabled(): Boolean
+    external fun nativeIsVulkanHwRender(): Boolean
 
     /* Cheats */
     external fun nativeCheatReset()

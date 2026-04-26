@@ -238,6 +238,8 @@ class AndroidLibretroController(
     override fun supportsSaveStates(): Boolean =
         runOnEmulationThread { jni.nativeSerializeSize() > 0 } ?: true
 
+    override fun firstFrameRun(): Boolean = jni.nativeFirstFrameRun()
+
     override fun serialize(): ByteArray? =
         runOnEmulationThread { jni.nativeSerialize() }
 
@@ -314,6 +316,8 @@ class AndroidLibretroController(
     fun gpuIsActive(): Boolean = jni.nativeGpuIsActive()
     fun gpuSetSourceRect(x: Int, y: Int, w: Int, h: Int) = jni.nativeGpuSetSourceRect(x, y, w, h)
     override fun isHwRenderEnabled(): Boolean = jni.nativeIsHwRenderEnabled()
+
+    override fun isVulkanHwRender(): Boolean = jni.nativeIsVulkanHwRender()
 
     /**
      * Notify that physical controller input was received.

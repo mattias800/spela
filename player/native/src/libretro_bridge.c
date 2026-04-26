@@ -1123,6 +1123,16 @@ JNI_FUNC(jlong, nativeSerializeSize)(JNIEnv *env, jobject thiz) {
     return (jlong)g_core.retro_serialize_size();
 }
 
+/* True once retro_run() has returned at least once for the currently
+ * loaded core. EmulationViewModel polls this after start() to gate
+ * post-launch operations (save-state probe, deferred auto-load) that
+ * are unsafe before the core has ticked one frame — replaces the
+ * conservative fixed delay that was tuned for Dolphin's worst case.
+ * See #737. */
+JNI_FUNC(jboolean, nativeFirstFrameRun)(JNIEnv *env, jobject thiz) {
+    return g_first_frame_run ? JNI_TRUE : JNI_FALSE;
+}
+
 JNI_FUNC(jbyteArray, nativeSerialize)(JNIEnv *env, jobject thiz) {
     if (!g_core.game_loaded) return NULL;
 
@@ -1653,6 +1663,12 @@ JNI_FUNC(jboolean, nativeGpuIsActive)(JNIEnv *env, jobject thiz) {
 
 JNI_FUNC(jboolean, nativeIsHwRenderEnabled)(JNIEnv *env, jobject thiz) {
     return g_core.hw_render_enabled ? JNI_TRUE : JNI_FALSE;
+}
+
+JNI_FUNC(jboolean, nativeIsVulkanHwRender)(JNIEnv *env, jobject thiz) {
+    return (g_core.hw_render_enabled &&
+            g_core.hw_render_callback.context_type == RETRO_HW_CONTEXT_VULKAN)
+        ? JNI_TRUE : JNI_FALSE;
 }
 
 JNI_FUNC(void, nativeGpuSetSourceRect)(JNIEnv *env, jobject thiz,

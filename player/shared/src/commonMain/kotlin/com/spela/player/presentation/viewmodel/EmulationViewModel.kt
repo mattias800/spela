@@ -1080,13 +1080,22 @@ class EmulationViewModel(
                         // Populate save slot thumbnails for the secondary screen
                         saveManager.refreshSaveSlots()
 
-                        // Re-check save state support after core has run a few frames.
-                        // Skip for GL HW render cores (e.g. PPSSPP) — calling
-                        // nativeSerializeSize triggers GL calls that crash on the
-                        // IO dispatcher thread. Default of true (set above) is fine.
-                        println("[Emulation] Starting 3-second delay for HW render init")
-                        kotlinx.coroutines.delay(3000)
-                        println("[Emulation] 3-second delay completed, checking save state support")
+                        // Wait for the core to be ready for post-launch operations
+                        // (save-state probe, deferred auto-load). Most cores set
+                        // g_first_frame_run within 1-2 retro_run() calls (~16-32ms);
+                        // Vulkan HW cores like Dolphin spin up an additional GPU /
+                        // shader-compile thread that's not gated by first-frame, so
+                        // they get an extra pad. Replaces a fixed 3000ms delay
+                        // tuned for Dolphin's worst case (#737).
+                        val readinessDeadline = System.currentTimeMillis() + 1500L
+                        while (!libretroController.firstFrameRun() && System.currentTimeMillis() < readinessDeadline) {
+                            kotlinx.coroutines.delay(50)
+                        }
+                        if (libretroController.isVulkanHwRender()) {
+                            println("[Emulation] Vulkan HW core — extra 2s pad for GPU thread spin-up")
+                            kotlinx.coroutines.delay(2000)
+                        }
+                        println("[Emulation] Core ready, checking save state support")
                         val saveStatesSupported = if (hwRender) true else libretroController.supportsSaveStates()
                         println("[Emulation] saveStatesSupported=$saveStatesSupported")
                         withContext(dispatchers.main) {
@@ -1733,6 +1742,12 @@ interface LibretroController {
     fun setFastForward(enabled: Boolean)
     fun performanceStats(): kotlinx.coroutines.flow.Flow<Pair<Float, Float>>
 
+    /** True once retro_run() has returned at least one frame for the
+     *  currently loaded game. Replaces a fixed Dolphin-tuned wait
+     *  with a per-core readiness check — see #737. Default returns
+     *  true so platforms / fakes that don't track this don't block. */
+    fun firstFrameRun(): Boolean = true
+
     /** Set pointer/touch state for the given port (used for DS touch screen). */
     fun setPointer(port: Int, x: Int, y: Int, pressed: Boolean) {}
 
@@ -1753,6 +1768,14 @@ interface LibretroController {
 
     /** Returns true if the loaded core uses HW rendering (OpenGL/Vulkan). */
     fun isHwRenderEnabled(): Boolean = false
+
+    /** Returns true if the loaded core's HW render context is Vulkan
+     *  specifically (Dolphin, Beetle PSX HW, paraLLEl-RDP). Used by
+     *  the post-launch readiness wait — Vulkan HW cores spin up a
+     *  separate GPU/shader-compile thread that takes longer to reach
+     *  a state where retro_unserialize is safe, beyond the first
+     *  retro_run frame. See #737. */
+    fun isVulkanHwRender(): Boolean = false
 
     /**
      * Enter netplay lockstep mode. The emulation loop will synchronize inputs
