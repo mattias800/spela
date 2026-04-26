@@ -340,7 +340,14 @@ func (h *ExploreHandler) HumaGetDeveloperSpotlight(ctx context.Context, _ *GetDe
 	}
 
 	if len(rows) == 0 {
-		return nil, huma.Error404NotFound("no developers with hero art found")
+		// Empty spotlight is a normal state on a fresh / minimally-seeded
+		// server, not an error. Return 200 with an empty Name so the
+		// client can hide the section without surfacing a HumaError to
+		// the user.
+		return &GetDeveloperSpotlightOutput{
+			CacheControl: "private, max-age=60",
+			Body:         DeveloperSpotlightResponse{},
+		}, nil
 	}
 
 	_, weekNumber := time.Now().ISOWeek()
