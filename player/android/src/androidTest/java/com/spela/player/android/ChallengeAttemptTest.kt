@@ -136,10 +136,13 @@ class ChallengeAttemptTest : BaseE2ETest() {
         rule.assertTextVisible("Give Up")
         rule.assertVisible("Controls")
 
-        // Normal overlay controls should NOT be present:
-        rule.assertNotVisible("Save")
-        rule.assertNotVisible("Load")
-        rule.assertNotVisible("Fast")
+        // Normal overlay controls should NOT be present.
+        // Exact match — "Save" substring-matches "Save Slots" on the
+        // secondary display companion, which is unrelated to the
+        // in-game overlay action buttons we're verifying here.
+        rule.assertNotVisibleExact("Save")
+        rule.assertNotVisibleExact("Load")
+        rule.assertNotVisibleExact("Fast")
 
         // Game title visible in overlay
         rule.assertVisible("Castlevania")

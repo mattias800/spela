@@ -500,6 +500,26 @@ fun ComposeRule.assertNotVisible(label: String) {
     check(!visible) { "Expected '$label' to NOT be visible, but it was found" }
 }
 
+/**
+ * Like [assertNotVisible] but uses exact-match equality instead of substring
+ * matching. Use this when the label collides with longer strings elsewhere
+ * in the tree — e.g. "Save" matches "Save Slots" on the secondary display
+ * companion, which is irrelevant to in-game overlay action assertions.
+ */
+fun ComposeRule.assertNotVisibleExact(label: String) {
+    val device = uiDevice()
+    val visible = device.findObject(UiSelector().text(label)).exists() ||
+        device.findObject(UiSelector().description(label)).exists() ||
+        runCatching {
+            onAllNodesWithText(label, substring = false).fetchSemanticsNodes().isNotEmpty()
+        }.getOrDefault(false) ||
+        runCatching {
+            onAllNodesWithContentDescription(label, substring = false)
+                .fetchSemanticsNodes().isNotEmpty()
+        }.getOrDefault(false)
+    check(!visible) { "Expected exact '$label' to NOT be visible, but it was found" }
+}
+
 /** Check if we're in the Spela app (not the Android launcher or another app).
  *
  * `currentPackageName` only reports the focused window on display 0. On
