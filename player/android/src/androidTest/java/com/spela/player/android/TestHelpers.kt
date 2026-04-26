@@ -821,16 +821,22 @@ private fun ComposeRule.tapOnByLabel(label: String) {
     val emulationRunning = device.findObject(UiSelector().descriptionContains("Core running")).exists()
 
     if (emulationRunning) {
-        // UiAutomator path — bypasses Espresso idle
+        // UiAutomator path — bypasses Espresso idle. UiObject.click()
+        // can throw UiObjectNotFoundException if a recomposition
+        // removed the node between exists() and click(); retry once
+        // before failing.
         val byText = device.findObject(UiSelector().textContains(label))
-        if (byText.exists()) {
-            byText.click()
+        if (byText.exists() && runCatching { byText.click() }.isSuccess) {
             Thread.sleep(300)
             return
         }
         val byDesc = device.findObject(UiSelector().descriptionContains(label))
-        if (byDesc.exists()) {
-            byDesc.click()
+        if (byDesc.exists() && runCatching { byDesc.click() }.isSuccess) {
+            Thread.sleep(300)
+            return
+        }
+        val byTextRetry = device.findObject(UiSelector().textContains(label))
+        if (byTextRetry.exists() && runCatching { byTextRetry.click() }.isSuccess) {
             Thread.sleep(300)
             return
         }
@@ -859,16 +865,26 @@ private fun ComposeRule.tapOnByLabel(label: String) {
         waitForIdle()
     } catch (_: Exception) {
         // Compose failed (AppNotIdleException from image loading, etc.)
-        // Fall back to UiAutomator which bypasses Espresso idle.
+        // Fall back to UiAutomator which bypasses Espresso idle. The
+        // UiObject.click() can throw UiObjectNotFoundException if the
+        // node disappeared between exists() and click() — common during
+        // recompositions — so wrap the click in a runCatching and try
+        // the next selector on failure.
         val byText = device.findObject(UiSelector().textContains(label))
-        if (byText.exists()) {
-            byText.click()
+        if (byText.exists() && runCatching { byText.click() }.isSuccess) {
             Thread.sleep(300)
             return
         }
         val byDesc = device.findObject(UiSelector().descriptionContains(label))
-        if (byDesc.exists()) {
-            byDesc.click()
+        if (byDesc.exists() && runCatching { byDesc.click() }.isSuccess) {
+            Thread.sleep(300)
+            return
+        }
+        // Last resort: re-fetch and retry the text click once — if
+        // exists() raced with the first click, the second observation
+        // is usually stable.
+        val byTextRetry = device.findObject(UiSelector().textContains(label))
+        if (byTextRetry.exists() && runCatching { byTextRetry.click() }.isSuccess) {
             Thread.sleep(300)
             return
         }
