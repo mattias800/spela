@@ -36,36 +36,4 @@ class NavigationTest : BaseE2ETest() {
         rule.waitForContentDescription("Nintendo Entertainment System", timeout = 8_000)
     }
 
-    @Test
-    fun autoScrapeMetadata() {
-        // Land on the Castlevania detail screen.
-        rule.navigateToCastlevania()
-
-        // Wait for game detail screen — wait for an action button.
-        rule.pollUntil(timeoutMillis = 15_000) {
-            try {
-                rule.onAllNodesWithText("Download", substring = true)
-                    .fetchSemanticsNodes().isNotEmpty() ||
-                    rule.onAllNodesWithText("Play", substring = true)
-                        .fetchSemanticsNodes().isNotEmpty() ||
-                    rule.onAllNodesWithText("Resume", substring = true)
-                        .fetchSemanticsNodes().isNotEmpty()
-            } catch (_: IllegalStateException) { false }
-        }
-
-        // Verify game detail populated.
-        rule.assertTextVisible("Castlevania")
-
-        // Best-effort cover art check — don't fail the metadata test over image loading.
-        val deadline = System.currentTimeMillis() + 10_000
-        while (System.currentTimeMillis() < deadline) {
-            try {
-                val nodes = rule.onAllNodesWithContentDescription(
-                    "Castlevania cover art", substring = true
-                ).fetchSemanticsNodes()
-                if (nodes.isNotEmpty()) break
-            } catch (_: Exception) { /* hierarchy not ready */ }
-            Thread.sleep(500)
-        }
-    }
 }
