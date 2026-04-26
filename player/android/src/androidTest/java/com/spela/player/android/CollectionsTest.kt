@@ -228,8 +228,11 @@ class CollectionsTest : BaseE2ETest() {
         // Dialog should still be open — check for a dialog element
         rule.waitForText("Name is required", timeout = 3_000)
 
-        // Cancel the dialog
-        rule.onNodeWithText("Cancel").performClick()
+        // Cancel the dialog via the SpDialog dismiss button's testTag.
+        // Tapping the "Cancel" Text node directly hits a child node
+        // whose touch doesn't always propagate to the Button's
+        // onClick on multi-display hardware.
+        rule.tapOnTag("dialog_dismiss")
         rule.waitForTextNotVisible("Name is required")
     }
 
@@ -344,9 +347,14 @@ class CollectionsTest : BaseE2ETest() {
         navigateToCollectionsTab()
         createCollection(collName)
 
-        // Add Castlevania to the collection
+        // Add Castlevania to the collection. The action moved into
+        // the More-actions overflow menu (GameActionsMenu.kt); drive
+        // it by stable testTag instead of the no-longer-present
+        // "Add to collection" contentDescription.
         navigateToGameDetail()
-        rule.onNodeWithContentDescription("Add to collection", substring = true).performClick()
+        rule.tapOnTag(TestTags.GAME_DETAIL_MORE_ACTIONS)
+        rule.waitForTag(TestTags.GAME_DETAIL_MENU_ADD_TO_COLLECTION, timeout = 5_000)
+        rule.tapOnTag(TestTags.GAME_DETAIL_MENU_ADD_TO_COLLECTION)
         rule.waitForIdle()
         rule.waitForText("Add to Collection", timeout = 5_000)
         rule.tapOn(collName)

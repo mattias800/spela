@@ -185,6 +185,12 @@ private val challengesCreated = mutableSetOf<String>()
  * 401 → login screen and re-authenticates.
  */
 fun resetServerState() {
+    // Reset the JVM-side cache too — challengesCreated tracks
+    // whether a given challenge title was created in this run, so
+    // ensureChallengeExists can short-circuit. The server reset
+    // wipes every challenge, so the cache lies after this point
+    // unless we clear it.
+    challengesCreated.clear()
     val url = java.net.URL("http://127.0.0.1:8080/api/test/reset")
     val conn = url.openConnection() as java.net.HttpURLConnection
     try {
@@ -494,6 +500,26 @@ fun ComposeRule.assertNotVisible(label: String) {
     check(!visible) { "Expected '$label' to NOT be visible, but it was found" }
 }
 
+/**
+ * Like [assertNotVisible] but uses exact-match equality instead of substring
+ * matching. Use this when the label collides with longer strings elsewhere
+ * in the tree — e.g. "Save" matches "Save Slots" on the secondary display
+ * companion, which is irrelevant to in-game overlay action assertions.
+ */
+fun ComposeRule.assertNotVisibleExact(label: String) {
+    val device = uiDevice()
+    val visible = device.findObject(UiSelector().text(label)).exists() ||
+        device.findObject(UiSelector().description(label)).exists() ||
+        runCatching {
+            onAllNodesWithText(label, substring = false).fetchSemanticsNodes().isNotEmpty()
+        }.getOrDefault(false) ||
+        runCatching {
+            onAllNodesWithContentDescription(label, substring = false)
+                .fetchSemanticsNodes().isNotEmpty()
+        }.getOrDefault(false)
+    check(!visible) { "Expected exact '$label' to NOT be visible, but it was found" }
+}
+
 /** Check if we're in the Spela app (not the Android launcher or another app).
  *
  * `currentPackageName` only reports the focused window on display 0. On
@@ -644,8 +670,14 @@ fun ComposeRule.waitForNotVisible(label: String, timeout: Long = TIMEOUT_SHORT) 
  * specified and the tag is found, we take the tag match.
  */
 fun ComposeRule.tapOnTag(tag: String, fallbackLabel: String? = null) {
+    // Try both unmerged and merged trees — testTag on a child of a
+    // mergeDescendants composable (e.g. Material3 Button, which sets
+    // mergeDescendants=true on its semantic root) can disappear from
+    // the unmerged tree in some Compose versions.
     val tagNodes = try {
-        onAllNodesWithTag(tag, useUnmergedTree = true).fetchSemanticsNodes()
+        val unmerged = onAllNodesWithTag(tag, useUnmergedTree = true).fetchSemanticsNodes()
+        if (unmerged.isNotEmpty()) unmerged
+        else onAllNodesWithTag(tag, useUnmergedTree = false).fetchSemanticsNodes()
     } catch (_: Exception) {
         // AppNotIdleException etc. — Compose tree is busy. Fall
         // through to the UiAutomator fallback.
@@ -789,16 +821,22 @@ private fun ComposeRule.tapOnByLabel(label: String) {
     val emulationRunning = device.findObject(UiSelector().descriptionContains("Core running")).exists()
 
     if (emulationRunning) {
-        // UiAutomator path — bypasses Espresso idle
+        // UiAutomator path — bypasses Espresso idle. UiObject.click()
+        // can throw UiObjectNotFoundException if a recomposition
+        // removed the node between exists() and click(); retry once
+        // before failing.
         val byText = device.findObject(UiSelector().textContains(label))
-        if (byText.exists()) {
-            byText.click()
+        if (byText.exists() && runCatching { byText.click() }.isSuccess) {
             Thread.sleep(300)
             return
         }
         val byDesc = device.findObject(UiSelector().descriptionContains(label))
-        if (byDesc.exists()) {
-            byDesc.click()
+        if (byDesc.exists() && runCatching { byDesc.click() }.isSuccess) {
+            Thread.sleep(300)
+            return
+        }
+        val byTextRetry = device.findObject(UiSelector().textContains(label))
+        if (byTextRetry.exists() && runCatching { byTextRetry.click() }.isSuccess) {
             Thread.sleep(300)
             return
         }
@@ -827,16 +865,26 @@ private fun ComposeRule.tapOnByLabel(label: String) {
         waitForIdle()
     } catch (_: Exception) {
         // Compose failed (AppNotIdleException from image loading, etc.)
-        // Fall back to UiAutomator which bypasses Espresso idle.
+        // Fall back to UiAutomator which bypasses Espresso idle. The
+        // UiObject.click() can throw UiObjectNotFoundException if the
+        // node disappeared between exists() and click() — common during
+        // recompositions — so wrap the click in a runCatching and try
+        // the next selector on failure.
         val byText = device.findObject(UiSelector().textContains(label))
-        if (byText.exists()) {
-            byText.click()
+        if (byText.exists() && runCatching { byText.click() }.isSuccess) {
             Thread.sleep(300)
             return
         }
         val byDesc = device.findObject(UiSelector().descriptionContains(label))
-        if (byDesc.exists()) {
-            byDesc.click()
+        if (byDesc.exists() && runCatching { byDesc.click() }.isSuccess) {
+            Thread.sleep(300)
+            return
+        }
+        // Last resort: re-fetch and retry the text click once — if
+        // exists() raced with the first click, the second observation
+        // is usually stable.
+        val byTextRetry = device.findObject(UiSelector().textContains(label))
+        if (byTextRetry.exists() && runCatching { byTextRetry.click() }.isSuccess) {
             Thread.sleep(300)
             return
         }
@@ -1585,23 +1633,38 @@ fun ComposeRule.navigateToGameByTitle(gameTitle: String) {
     } catch (_: Exception) {}
     android.util.Log.d(tag, "Step 8: Full page text: $detailText")
 
-    // Wait for game detail — look for Download/Play/Resume button.
-    // Check both UiAutomator (works when activity is on display 0) and
-    // the Compose semantics tree (works regardless of display, e.g.
-    // AYN Thor's secondary-display routing). Either signal is enough.
+    // Wait for game detail. The most reliable signal is the
+    // GAME_DETAIL_PLAY_BUTTON / GAME_DETAIL_DOWNLOAD_BUTTON testTag
+    // — text-based searches collide with cover-art alt text and
+    // shelf headers ("Continue Playing"), and AYN Thor's secondary-
+    // display routing can hide UiAutomator matches even when the
+    // activity is showing on a non-primary display. testTags travel
+    // with the Compose semantic tree regardless of display.
     android.util.Log.d(tag, "Step 8: Waiting for game detail (Download/Play/Resume)")
     pollUntil(timeoutMillis = TIMEOUT_EXTRA_LONG) {
-        device.findObject(UiSelector().textContains("Download")).exists() ||
-            device.findObject(UiSelector().textContains("Play")).exists() ||
-            device.findObject(UiSelector().textContains("Resume")).exists() ||
-            try {
-                onAllNodesWithText("Download", substring = true)
+        // Fast path: testTag via Compose tree
+        try {
+            if (onAllNodes(hasTestTag(com.spela.player.presentation.ui.TestTags.GAME_DETAIL_PLAY_BUTTON))
                     .fetchSemanticsNodes().isNotEmpty() ||
-                    onAllNodesWithText("Play", substring = true)
-                        .fetchSemanticsNodes().isNotEmpty() ||
-                    onAllNodesWithText("Resume", substring = true)
-                        .fetchSemanticsNodes().isNotEmpty()
-            } catch (_: Exception) { false }
+                onAllNodes(hasTestTag(com.spela.player.presentation.ui.TestTags.GAME_DETAIL_DOWNLOAD_BUTTON))
+                    .fetchSemanticsNodes().isNotEmpty()
+            ) return@pollUntil true
+        } catch (_: Throwable) { /* AppNotIdle — drop to text fallback */ }
+        // Fallback: UiAutomator text match (display 0 only, but
+        // sufficient when Compose tree is busy)
+        if (device.findObject(UiSelector().textContains("Download")).exists() ||
+            device.findObject(UiSelector().textContains("Play")).exists() ||
+            device.findObject(UiSelector().textContains("Resume")).exists()
+        ) return@pollUntil true
+        // Last-resort: Compose text search
+        try {
+            onAllNodesWithText("Download", substring = true)
+                .fetchSemanticsNodes().isNotEmpty() ||
+                onAllNodesWithText("Play", substring = true)
+                    .fetchSemanticsNodes().isNotEmpty() ||
+                onAllNodesWithText("Resume", substring = true)
+                    .fetchSemanticsNodes().isNotEmpty()
+        } catch (_: Throwable) { false }
     }
     android.util.Log.d(tag, "Step 8: Game detail loaded")
 }
@@ -2011,12 +2074,21 @@ fun ComposeRule.startGameAndWait() {
 
 fun ComposeRule.openOverlay() {
     pressBack()
-    // During emulation, Compose/Espresso APIs block on idle (60fps Choreographer).
-    // Use UiAutomator-only polling to wait for the overlay to appear.
+    // During emulation, Compose/Espresso APIs block on idle (60fps
+    // Choreographer). Prefer UiAutomator polling. Fall back to
+    // Compose's semantic-tree fetch — UiAutomator sees only the
+    // primary display, so on multi-display hardware (AYN Thor) the
+    // "Exit Game" Text on display 4 is invisible to UiAutomator
+    // even though the overlay rendered correctly. Compose's tree
+    // spans all displays.
     val device = uiDevice()
     val deadline = System.currentTimeMillis() + TIMEOUT_MEDIUM
     while (System.currentTimeMillis() < deadline) {
         if (device.findObject(UiSelector().textContains("Exit Game")).exists()) return
+        try {
+            if (onAllNodesWithText("Exit Game", substring = true)
+                    .fetchSemanticsNodes().isNotEmpty()) return
+        } catch (_: Exception) { /* AppNotIdleException — ignore, retry */ }
         Thread.sleep(200)
     }
     throw IllegalStateException("openOverlay: 'Exit Game' not found within ${TIMEOUT_MEDIUM}ms")
@@ -2534,8 +2606,18 @@ fun ComposeRule.resumeChallengeFromOverlay() {
  * Waits until back on the challenge detail screen (or game detail).
  */
 fun ComposeRule.abandonChallenge() {
-    val hasOverlay = onAllNodesWithText("Give Up", substring = true)
-        .fetchSemanticsNodes().isNotEmpty()
+    // Probe for the challenge overlay first via UiAutomator — Compose's
+    // fetchSemanticsNodes() blocks on Espresso idle, which never arrives
+    // during the 60fps emulation render loop and throws
+    // AppNotIdleException after 3s. The accessibility tree is also a
+    // reliable signal for "Give Up" because the overlay uses real Text
+    // nodes, not zero-size markers.
+    val device = uiDevice()
+    val hasOverlay = device.findObject(UiSelector().textContains("Give Up")).exists() ||
+        runCatching {
+            onAllNodesWithText("Give Up", substring = true)
+                .fetchSemanticsNodes().isNotEmpty()
+        }.getOrDefault(false)
     if (!hasOverlay) {
         openChallengeOverlay()
     }
@@ -2554,8 +2636,16 @@ fun ComposeRule.abandonChallenge() {
  * Opens overlay if needed, taps "Complete", waits for result screen.
  */
 fun ComposeRule.completeChallenge() {
-    val hasOverlay = onAllNodesWithContentDescription("Complete", substring = true)
-        .fetchSemanticsNodes().isNotEmpty()
+    // Probe via UiAutomator first — Compose's fetchSemanticsNodes()
+    // blocks on Espresso idle which never fires during the 60fps
+    // emulation render loop, throwing AppNotIdleException after 3s.
+    val device = uiDevice()
+    val hasOverlay = device.findObject(UiSelector().textContains("Complete")).exists() ||
+        device.findObject(UiSelector().descriptionContains("Complete")).exists() ||
+        runCatching {
+            onAllNodesWithContentDescription("Complete", substring = true)
+                .fetchSemanticsNodes().isNotEmpty()
+        }.getOrDefault(false)
     if (!hasOverlay) {
         openChallengeOverlay()
     }

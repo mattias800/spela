@@ -470,6 +470,23 @@ fun SpelaApp(deps: SpelaAppDependencies) = with(deps) {
                             keyMappingViewModel = keyMappingViewModel,
                             gamepadConfigViewModel = gamepadConfigViewModel,
                             onExit = {
+                                // Mirror the requestExit-driven
+                                // LaunchedEffect's cleanup. Several
+                                // InGameOverlay dialogs (Confirm Exit,
+                                // Confirm Give Up, Netplay leave,
+                                // Netplay session expired) dispatch
+                                // their own intent that flips
+                                // requestExit = true and then call
+                                // onExit() before the LaunchedEffect
+                                // can fire ClearExitRequest. Without
+                                // an explicit clear here, requestExit
+                                // stays true; the next time
+                                // showInGameOverlay flips to true the
+                                // LaunchedEffect re-fires HideOverlay
+                                // immediately and the in-game overlay
+                                // closes before the user can use it.
+                                emulationViewModel.onIntent(EmulationIntent.ClearExitRequest)
+                                netplayViewModel.onIntent(NetplayIntent.ClearJoinedSession)
                                 navigationViewModel.onIntent(NavigationIntent.HideOverlay)
                             },
                         )

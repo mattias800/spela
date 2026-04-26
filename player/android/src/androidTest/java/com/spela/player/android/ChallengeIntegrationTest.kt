@@ -1,6 +1,9 @@
 package com.spela.player.android
 
+import androidx.compose.ui.test.hasClickAction
+import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.performSemanticsAction
 import org.junit.Test
 
 /**
@@ -43,9 +46,16 @@ class ChallengeIntegrationTest : BaseE2ETest() {
         rule.tapOn("Activity Feed Test")
         rule.waitForText("Attempt Challenge", timeout = 5_000)
 
-        // Start and complete attempt — testTag click bypasses the
-        // touch-routing weirdness on multi-display hardware.
-        rule.tapOnTag("attempt_challenge_button")
+        // Start and complete attempt — fire the SpButton's onClick
+        // directly via SemanticsActions.OnClick. Bypasses the
+        // multi-display touch routing on Thor and Espresso's idle
+        // wait, both of which break a Compose performClick on the
+        // inner Text child of an SpButton.
+        rule.onAllNodes(
+            androidx.compose.ui.test.hasText("Attempt Challenge", substring = true) and
+                androidx.compose.ui.test.hasClickAction()
+        )[0].performSemanticsAction(androidx.compose.ui.semantics.SemanticsActions.OnClick)
+        Thread.sleep(500)
         rule.waitForGameRunning(timeout = 15_000)
         Thread.sleep(1_000)
         rule.completeChallenge()

@@ -2,6 +2,7 @@ package com.spela.player.android
 
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.spela.player.presentation.ui.TestTags
 import org.junit.After
 import org.junit.Before
 import org.junit.Rule
@@ -58,9 +59,12 @@ abstract class BaseE2ETest {
         //    tokens).
         rule.ensureLoggedIn()
 
-        // 3. Contract check. If we're not on Home, something in the
-        //    setup path is broken — surface it now, not 30s into the
-        //    test body.
+        // 3. Contract check. The @After teardown of the previous test
+        //    is responsible for parking us on Home; we trust it here
+        //    rather than tapping NAV_HOME again, because re-tapping
+        //    immediately after ensureLoggedIn has triggered Compose
+        //    "Unsupported concurrent change during composition"
+        //    errors — the home tab is already selected.
         rule.assertOnHome()
     }
 
@@ -70,11 +74,16 @@ abstract class BaseE2ETest {
         // known state without having to run slow screen detection.
         // navigateBackToHome handles in-game overlays, settings
         // sub-screens, and arbitrary deep links; it stops at auth
-        // screens to avoid exiting the Activity.
+        // screens to avoid exiting the Activity. Then explicitly
+        // switch to the Home tab — navigateBackToHome only presses
+        // back, so a previous test that ended on the Settings or
+        // Consoles tab leaves the activeTab there and the next test
+        // starts with the wrong tab on top.
         //
         // runCatching because a failure here must not mask the real
         // assertion failure — FailureDiagnosticsListener has already
         // captured artefacts at the moment of the @Test failure.
         runCatching { rule.navigateBackToHome() }
+        runCatching { rule.tapOnTag(TestTags.NAV_HOME, fallbackLabel = "Home") }
     }
 }
