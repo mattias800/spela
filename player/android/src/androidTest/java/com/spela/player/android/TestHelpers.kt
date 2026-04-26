@@ -2756,18 +2756,28 @@ fun ComposeRule.createChallengeFromOverlay(title: String = "E2E Test Challenge")
     titleField.clearTextField()
     titleField.setText(title)
 
-    // Tap the "Create" button via UiAutomator directly. tapLastWithText
-    // tries Compose performClick first when "Core running" content
-    // description isn't detected — but the overlay/panel can hide
-    // that signal mid-flow, sending the click into Espresso's idle
-    // wait, which never completes during 60fps emulation.
-    var createIdx = 0
-    while (device.findObject(UiSelector().text("Create").instance(createIdx + 1)).exists()) {
-        createIdx++
+    // Submit via Compose's SemanticsActions.OnClick on the clickable
+    // Create button. UiAutomator's coordinate click on the "Create"
+    // TextView misses the parent button's onClick when the text node
+    // sits at the bottom of a small Compose Button — observed flake on
+    // Thor where the Create-button TextView's bounds (100x38px) miss
+    // the parent's hit-test region. The semantic-action approach fires
+    // the onClick lambda directly, bypassing both touch dispatch and
+    // Espresso idle (which never goes idle during 60fps emulation).
+    // Also retries briefly because the button is disabled until the
+    // title field validation propagates after setText.
+    pollUntil(timeoutMillis = 5_000L) {
+        try {
+            onAllNodes(
+                androidx.compose.ui.test.hasText("Create", substring = false) and
+                    androidx.compose.ui.test.hasClickAction()
+            ).fetchSemanticsNodes().isNotEmpty()
+        } catch (_: Exception) { false }
     }
-    val createBtn = device.findObject(UiSelector().text("Create").instance(createIdx))
-    check(createBtn.exists()) { "createChallengeFromOverlay: no Create button found" }
-    createBtn.click()
+    onAllNodes(
+        androidx.compose.ui.test.hasText("Create", substring = false) and
+            androidx.compose.ui.test.hasClickAction()
+    )[0].performSemanticsAction(androidx.compose.ui.semantics.SemanticsActions.OnClick)
     waitForText("Challenge created!", timeout = 15_000)
 
     // Game resumes after the success toast auto-dismisses (~2s delay
