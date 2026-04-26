@@ -55,7 +55,12 @@ data class ActivityEventResponse (
 
     @SerialName(value = "id") @Required val id: kotlin.String,
 
-    @SerialName(value = "metadata") @Required val metadata: kotlin.String,
+    // Manually patched: server returns metadata as a JSON object, but the
+    // OpenAPI generator emits `kotlin.String` for `type: object,
+    // additionalProperties: {}`. The generated default fails to deserialize
+    // (Unexpected JSON token: Expected beginning of the string, but got `{`).
+    // Use JsonObject so it round-trips correctly.
+    @SerialName(value = "metadata") @Required val metadata: kotlinx.serialization.json.JsonObject,
 
     @SerialName(value = "userId") @Required val userId: kotlin.String,
 

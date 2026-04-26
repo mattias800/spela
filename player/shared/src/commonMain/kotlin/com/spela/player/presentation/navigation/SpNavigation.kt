@@ -91,6 +91,13 @@ sealed interface NavigationIntent {
     data class NavigateTo(val screen: SpScreen) : NavigationIntent
     /** Switch to a root tab via bottom nav click — no animation. */
     data class SwitchTab(val screen: SpScreen) : NavigationIntent
+    /**
+     * Reset the entire tab system to its default state — activeTab=HOME,
+     * every tabStack truncated to its root screen. Used after login
+     * succeeds to scrub any stale stacks that were built up before
+     * the user signed out.
+     */
+    data object ResetToHome : NavigationIntent
     data object GoBack : NavigationIntent
     data object NextSection : NavigationIntent
     data object PreviousSection : NavigationIntent

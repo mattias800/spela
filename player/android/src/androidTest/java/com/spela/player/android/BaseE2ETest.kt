@@ -84,6 +84,18 @@ abstract class BaseE2ETest {
         // assertion failure — FailureDiagnosticsListener has already
         // captured artefacts at the moment of the @Test failure.
         runCatching { rule.navigateBackToHome() }
-        runCatching { rule.tapOnTag(TestTags.NAV_HOME, fallbackLabel = "Home") }
+        // Only tap NAV_HOME if we're NOT already on Home. The redundant
+        // tap dispatches a SwitchTab(HOME) intent that, even when
+        // activeTab is already HOME, mutates navState (isTabSwitch=true)
+        // and triggers a recomposition. After a previous test's
+        // restartApp() that recomposition has been observed to leave
+        // the bottom-nav's RailItem onClick handlers wired to a stale
+        // closure, so the NEXT test's first tapOnTag(NAV_SETTINGS) does
+        // nothing.
+        runCatching {
+            if (!rule.isOnHomeScreen()) {
+                rule.tapOnTag(TestTags.NAV_HOME, fallbackLabel = "Home")
+            }
+        }
     }
 }
