@@ -1010,6 +1010,34 @@ fun ComposeRule.restartApp() {
                         isOnLoginScreen()
                 } catch (_: Exception) { false }
             }
+            // Stabilize the bottom-nav and dashboard. The recreate sequence
+            // can leave Compose mid-recomposition; subsequent tapOnTag(NAV_*)
+            // calls fire OnClick before the child's
+            // `clickable { onTabSelected }` lambda is wired up, and the
+            // screen never switches. Wait for both NAV_HOME with an
+            // OnClick action AND for one of the home dashboard's first-paint
+            // shelves to be present.
+            if (isOnHomeScreen()) {
+                pollUntil(timeoutMillis = 15_000L) {
+                    try {
+                        val hasNavHomeClick = onAllNodesWithTag(
+                            TestTags.NAV_HOME, useUnmergedTree = false,
+                        ).fetchSemanticsNodes().any { node ->
+                            node.config.contains(SemanticsActions.OnClick)
+                        }
+                        val hasNavSettingsClick = onAllNodesWithTag(
+                            TestTags.NAV_SETTINGS, useUnmergedTree = false,
+                        ).fetchSemanticsNodes().any { node ->
+                            node.config.contains(SemanticsActions.OnClick)
+                        }
+                        hasNavHomeClick && hasNavSettingsClick
+                    } catch (_: Throwable) { false }
+                }
+                // Settle for one more recomposition cycle so the click handlers
+                // are wired up to the latest captured callbacks (recreate can
+                // leave the first frame's lambdas referencing prior state).
+                Thread.sleep(500)
+            }
             return // recreate landed us on a recognised screen
         } catch (e: Throwable) {
             lastError = e
@@ -2384,18 +2412,41 @@ fun ComposeRule.navigateToSettings() {
     // can happen if we're caught mid-recomposition while the home
     // screen is still loading library data and the SwitchTab intent
     // ends up dropped.
+    //
+    // After a previous test's scenario.recreate(), the merged-tree
+    // OnClick action on nav tabs has been observed to fire on a stale
+    // closure (the SwitchTab intent dispatches but the screen never
+    // actually transitions). Force a synthetic-touch performClick here
+    // so we're hitting the live composition's clickable handler.
     tapOnTag(TestTags.NAV_SETTINGS, fallbackLabel = "Settings")
+    val device = uiDevice()
     val deadline = System.currentTimeMillis() + TIMEOUT_LONG
+    var lastTapAt = System.currentTimeMillis()
+    var triedUiAutomatorTap = false
     while (System.currentTimeMillis() < deadline) {
         try {
             if (onAllNodesWithTag(TestTags.SETTINGS_CATEGORY_GENERAL, useUnmergedTree = true)
                     .fetchSemanticsNodes().isNotEmpty()) return
         } catch (_: Exception) {}
         Thread.sleep(500)
-        // Re-issue the tap if Settings still hasn't appeared after a
-        // few seconds — bottom-nav tabs accept a no-op re-tap.
-        if (System.currentTimeMillis() - (deadline - TIMEOUT_LONG) > 3_000) {
+        val elapsed = System.currentTimeMillis() - (deadline - TIMEOUT_LONG)
+        // After 3s of no Settings screen, re-issue the Compose tap. The
+        // bottom-nav tab accepts a no-op re-tap.
+        if (elapsed > 3_000 && System.currentTimeMillis() - lastTapAt > 1_500) {
             tapOnTag(TestTags.NAV_SETTINGS, fallbackLabel = "Settings")
+            lastTapAt = System.currentTimeMillis()
+        }
+        // After 7s, also try a physical UiAutomator touch on the
+        // "Settings" content-description node. Compose's
+        // performSemanticsAction can fire on a stale OnClick lambda
+        // after a scenario.recreate(); a synthetic touch goes through
+        // the input dispatcher and rebinds against the live composition.
+        if (elapsed > 7_000 && !triedUiAutomatorTap) {
+            triedUiAutomatorTap = true
+            runCatching {
+                val byDesc = device.findObject(UiSelector().description("Settings"))
+                if (byDesc.exists()) byDesc.click()
+            }
         }
     }
     error("navigateToSettings: SETTINGS_CATEGORY_GENERAL never appeared within ${TIMEOUT_LONG}ms")

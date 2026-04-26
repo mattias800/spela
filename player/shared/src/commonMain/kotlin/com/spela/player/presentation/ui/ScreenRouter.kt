@@ -99,8 +99,16 @@ fun ScreenRouter(
                                     viewModel = loginViewModel,
                                     serverUrl = serverUrl,
                                     onLoginSuccess = {
+                                        // Reset the whole tab system rather than
+                                        // pushing Home onto the active tab's stack —
+                                        // the user signed out from inside Settings (or
+                                        // any other tab), so the active stack is full
+                                        // of pre-logout breadcrumbs that pushing Home
+                                        // would just hide. ResetToHome rebuilds tabStacks
+                                        // from defaults and sets activeTab=HOME so the
+                                        // user lands on a clean state.
                                         navigationViewModel.onIntent(
-                                            NavigationIntent.NavigateTo(SpScreen.Home)
+                                            NavigationIntent.ResetToHome
                                         )
                                     },
                                     onChangeServer = {

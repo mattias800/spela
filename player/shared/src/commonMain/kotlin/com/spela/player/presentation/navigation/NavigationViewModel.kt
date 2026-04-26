@@ -104,6 +104,20 @@ class NavigationViewModel(
                 }
             }
 
+            NavigationIntent.ResetToHome -> {
+                _state.update {
+                    it.copy(
+                        activeTab = BottomNavTab.HOME,
+                        tabStacks = defaultTabStacks(),
+                        isGoingBack = false,
+                        isTabSwitch = false,
+                        showInGameOverlay = false,
+                        activeTabBehindOverlay = null,
+                        tabStacksBehindOverlay = emptyMap(),
+                    )
+                }
+            }
+
             NavigationIntent.GoBack -> {
                 _state.update { current ->
                     popScreen(current) ?: current
