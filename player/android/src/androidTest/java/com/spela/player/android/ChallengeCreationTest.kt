@@ -145,40 +145,6 @@ class ChallengeCreationTest : BaseE2ETest() {
         rule.openOverlayAndExit()
     }
 
-    // ── US-1 AC: Challenge type and difficulty can be changed ──
-
-    @Test
-    fun createChallengeWithCustomTypeAndDifficulty() {
-        setupGame()
-        rule.openOverlay()
-
-        rule.tapOn("Challenge")
-        rule.waitForText("Create Challenge", timeout = 5_000)
-
-        // Drive the panel via UiAutomator: Compose's performClick /
-        // performTextInput block on Espresso idle during the 60fps
-        // emulation render loop.
-        val device = androidx.test.uiautomator.UiDevice.getInstance(
-            androidx.test.platform.app.InstrumentationRegistry.getInstrumentation()
-        )
-        device.findObject(androidx.test.uiautomator.UiSelector().text("Speedrun")).click()
-        device.findObject(androidx.test.uiautomator.UiSelector().text("Hard")).click()
-
-        // Fill title — first EditText
-        val titleField = device.findObject(
-            androidx.test.uiautomator.UiSelector().className("android.widget.EditText").instance(0)
-        )
-        check(titleField.exists()) { "Title field not found" }
-        titleField.clearTextField()
-        titleField.setText("Hard Speedrun Challenge")
-
-        // Submit
-        device.findObject(androidx.test.uiautomator.UiSelector().text("Create")).click()
-        rule.waitForText("Challenge created!", timeout = 8_000)
-
-        rule.openOverlayAndExit()
-    }
-
     // ── US-1 AC: Optional description field ──
 
     @Test

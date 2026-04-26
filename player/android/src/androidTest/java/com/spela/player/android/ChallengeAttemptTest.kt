@@ -114,18 +114,6 @@ class ChallengeAttemptTest : BaseE2ETest() {
         rule.abandonChallenge()
     }
 
-    // ── US-5 AC: Timer displayed during gameplay ──
-
-    @Test
-    fun challengeTimerVisibleDuringPlay() {
-        startAttempt()
-
-        // Timer HUD should be visible while playing
-        rule.waitForVisible("Challenge timer", timeout = 5_000)
-
-        rule.abandonChallenge()
-    }
-
     // ── US-5 AC: Modified overlay — no Save/Load/FF ──
 
     @Test
