@@ -450,8 +450,10 @@ class ExploreViewModel(
                 onSuccess = { featured ->
                     _state.update { it.copy(featuredGames = featured, isLoadingFeatured = false) }
                 },
-                onFailure = { error ->
-                    _state.update { it.copy(isLoadingFeatured = false, error = error.message) }
+                onFailure = {
+                    // Optional explore section — fail soft, never leak error
+                    // text (HumaError JSON) to a user-facing snackbar.
+                    _state.update { it.copy(isLoadingFeatured = false) }
                 },
             )
         }
@@ -465,8 +467,8 @@ class ExploreViewModel(
                 onSuccess = { rows ->
                     _state.update { it.copy(rows = rows, isLoadingRows = false) }
                 },
-                onFailure = { error ->
-                    _state.update { it.copy(isLoadingRows = false, error = error.message) }
+                onFailure = {
+                    _state.update { it.copy(isLoadingRows = false) }
                 },
             )
         }
@@ -480,8 +482,8 @@ class ExploreViewModel(
                 onSuccess = { themes ->
                     _state.update { it.copy(themes = themes, isLoadingThemes = false) }
                 },
-                onFailure = { error ->
-                    _state.update { it.copy(isLoadingThemes = false, error = error.message) }
+                onFailure = {
+                    _state.update { it.copy(isLoadingThemes = false) }
                 },
             )
         }
@@ -495,8 +497,8 @@ class ExploreViewModel(
                 onSuccess = { keywords ->
                     _state.update { it.copy(keywords = keywords, isLoadingKeywords = false) }
                 },
-                onFailure = { error ->
-                    _state.update { it.copy(isLoadingKeywords = false, error = error.message) }
+                onFailure = {
+                    _state.update { it.copy(isLoadingKeywords = false) }
                 },
             )
         }
@@ -510,8 +512,8 @@ class ExploreViewModel(
                 onSuccess = { series ->
                     _state.update { it.copy(featuredSeries = series, isLoadingFeaturedSeries = false) }
                 },
-                onFailure = { error ->
-                    _state.update { it.copy(isLoadingFeaturedSeries = false, error = error.message) }
+                onFailure = {
+                    _state.update { it.copy(isLoadingFeaturedSeries = false) }
                 },
             )
         }
@@ -526,8 +528,8 @@ class ExploreViewModel(
                 onSuccess = { moods ->
                     _state.update { it.copy(moods = moods, isLoadingMoods = false) }
                 },
-                onFailure = { error ->
-                    _state.update { it.copy(isLoadingMoods = false, error = error.message) }
+                onFailure = {
+                    _state.update { it.copy(isLoadingMoods = false) }
                 },
             )
         }
@@ -541,8 +543,8 @@ class ExploreViewModel(
                 onSuccess = { rows ->
                     _state.update { it.copy(forYouRows = rows, isLoadingForYou = false) }
                 },
-                onFailure = { error ->
-                    _state.update { it.copy(isLoadingForYou = false, error = error.message) }
+                onFailure = {
+                    _state.update { it.copy(isLoadingForYou = false) }
                 },
             )
         }
@@ -590,10 +592,19 @@ class ExploreViewModel(
         jobs.launch("developerSpotlight", dispatchers.io) {
             exploreRepository.getDeveloperSpotlight().fold(
                 onSuccess = { spotlight ->
-                    _state.update { it.copy(developerSpotlight = spotlight, isLoadingDeveloperSpotlight = false) }
+                    // Server returns an empty spotlight (Name="") on minimally-seeded
+                    // installs — treat that as "no section visible" rather than
+                    // rendering an empty card.
+                    val effective = spotlight.takeIf { it.name.isNotEmpty() }
+                    _state.update {
+                        it.copy(developerSpotlight = effective, isLoadingDeveloperSpotlight = false)
+                    }
                 },
-                onFailure = { error ->
-                    _state.update { it.copy(isLoadingDeveloperSpotlight = false, error = error.message) }
+                onFailure = {
+                    // The spotlight is an optional explore section; failure must
+                    // not surface as a global error snackbar (would leak raw
+                    // HumaError JSON to the user). Just hide the section.
+                    _state.update { it.copy(isLoadingDeveloperSpotlight = false) }
                 },
             )
         }
@@ -679,8 +690,8 @@ class ExploreViewModel(
                 onSuccess = { highlights ->
                     _state.update { it.copy(consoleHighlights = highlights, isLoadingConsoleHighlights = false) }
                 },
-                onFailure = { error ->
-                    _state.update { it.copy(isLoadingConsoleHighlights = false, error = error.message) }
+                onFailure = {
+                    _state.update { it.copy(isLoadingConsoleHighlights = false) }
                 },
             )
         }
@@ -714,8 +725,8 @@ class ExploreViewModel(
                 onSuccess = { artworks ->
                     _state.update { it.copy(artworkShowcase = artworks, isLoadingArtwork = false) }
                 },
-                onFailure = { error ->
-                    _state.update { it.copy(isLoadingArtwork = false, error = error.message) }
+                onFailure = {
+                    _state.update { it.copy(isLoadingArtwork = false) }
                 },
             )
         }

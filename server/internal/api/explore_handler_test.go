@@ -2212,7 +2212,15 @@ func TestGetDeveloperSpotlight_NoHeroArt(t *testing.T) {
 	req.Header.Set("Authorization", "Bearer "+env.token)
 	env.router.ServeHTTP(w, req)
 
-	assert.Equal(t, http.StatusNotFound, w.Code)
+	// Empty spotlight is a normal API response (200 with empty Name),
+	// not an error — the client uses Name="" as the "hide section"
+	// signal so the user never sees a "no developers with hero art"
+	// HumaError snackbar on a freshly-seeded server.
+	assert.Equal(t, http.StatusOK, w.Code)
+	var resp DeveloperSpotlightResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+	assert.Empty(t, resp.Name)
+	assert.Empty(t, resp.TopGames)
 }
 
 // --- Phase 8: Console Showcase tests ---
