@@ -211,3 +211,56 @@ func TestUpdatePlayTime_CreatesPlayHistory(t *testing.T) {
 	assert.Equal(t, int64(60), ph.PlayTime)
 	assert.False(t, ph.LastPlayed.IsZero(), "LastPlayed should be set")
 }
+
+// TestDownloadGame_NormalizesINESHeader verifies that .nes ROMs with a
+// dirty iNES 1.0 header (e.g. tool-provenance markers like "NI2.1" in
+// reserved bytes) are streamed with bytes 8-15 zeroed, but the on-disk
+// file is left untouched. Strict cores like nestopia reject the dirty
+// header at retro_load_game; #712.
+func TestDownloadGame_NormalizesINESHeader(t *testing.T) {
+	database, cfg := setupTestEnv(t)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
+	token := registerAndGetToken(t, router)
+
+	// Build an iNES 1.0 ROM whose reserved bytes 11-15 carry the
+	// "NI2.1" ASCII marker. PRG/CHR sizes are nominal — the body
+	// content past the header doesn't matter for this assertion.
+	header := []byte{0x4e, 0x45, 0x53, 0x1a, 0x02, 0x01, 0x01, 0x00, 0, 0, 0, 'N', 'I', '2', '.', '1'}
+	rom := append(header, bytes.Repeat([]byte{0xaa}, 64)...)
+	romPath := filepath.Join(cfg.GameDirs[0], "smb.nes")
+	require.NoError(t, os.WriteFile(romPath, rom, 0644))
+
+	var console db.Console
+	database.First(&console)
+	game := db.Game{
+		ConsoleID: console.ID,
+		Title:     "iNES Header Test",
+		FileName:  "smb.nes",
+		FilePath:  "smb.nes",
+		FileSize:  int64(len(rom)),
+	}
+	require.NoError(t, database.Create(&game).Error)
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", fmt.Sprintf("/api/games/%d/download", game.ID), nil)
+	req.Header.Set("Authorization", "Bearer "+token)
+	router.ServeHTTP(w, req)
+	require.Equal(t, http.StatusOK, w.Code)
+
+	got := w.Body.Bytes()
+	require.Equal(t, len(rom), len(got), "response length should match on-disk ROM length")
+	// Header bytes 0-7 unchanged.
+	assert.Equal(t, rom[:8], got[:8])
+	// Reserved bytes 8-15 should now be zero in the response.
+	for i := 8; i < 16; i++ {
+		assert.Equal(t, byte(0), got[i], "byte %d should be normalized to zero", i)
+	}
+	// Body past the header is untouched.
+	assert.Equal(t, rom[16:], got[16:])
+
+	// On-disk file must NOT have been modified.
+	onDisk, err := os.ReadFile(romPath)
+	require.NoError(t, err)
+	assert.Equal(t, rom, onDisk, "on-disk ROM must be untouched by the download path")
+}
