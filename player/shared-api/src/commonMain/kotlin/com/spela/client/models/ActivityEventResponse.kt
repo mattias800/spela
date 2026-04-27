@@ -8,9 +8,17 @@
 
 @file:Suppress(
     "ArrayInDataClass",
+    "DuplicatedCode",
     "EnumEntryName",
     "RemoveRedundantQualifierName",
-    "UnusedImport"
+    "RemoveRedundantCallsOfConversionMethods",
+    "REDUNDANT_CALL_OF_CONVERSION_METHOD",
+    "RedundantUnitReturnType",
+    "RemoveEmptyClassBody",
+    "UnnecessaryVariable",
+    "UnusedImport",
+    "UnnecessaryVariable",
+    "unused"
 )
 
 package com.spela.client.models
@@ -43,7 +51,7 @@ data class ActivityEventResponse (
 
     @SerialName(value = "consoleName") @Required val consoleName: kotlin.String,
 
-    @SerialName(value = "createdAt") @Required val createdAt: kotlinx.datetime.Instant,
+    @SerialName(value = "createdAt") @Required val createdAt: kotlin.time.Instant,
 
     @SerialName(value = "eventType") @Required val eventType: kotlin.String,
 
@@ -55,20 +63,13 @@ data class ActivityEventResponse (
 
     @SerialName(value = "id") @Required val id: kotlin.String,
 
-    // Manually patched: server returns metadata as a JSON object (or null
-    // for events that have no metadata, e.g. queued_play_later), but the
-    // OpenAPI generator emits `kotlin.String` for `type: object,
-    // additionalProperties: {}`. The generated default fails to deserialize
-    // both branches (Unexpected JSON token: Expected beginning of the
-    // string, but got `{`/`null`). Use a nullable JsonObject so both
-    // null and object payloads round-trip.
-    @SerialName(value = "metadata") val metadata: kotlinx.serialization.json.JsonObject? = null,
+    @SerialName(value = "metadata") @Required val metadata: kotlinx.serialization.json.JsonObject,
 
     @SerialName(value = "userId") @Required val userId: kotlin.String,
 
     @SerialName(value = "username") @Required val username: kotlin.String
 
-) : kotlin.collections.HashMap<String, kotlinx.serialization.json.JsonElement>() {
+) {
 
 
 }

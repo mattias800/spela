@@ -165,7 +165,7 @@ data class LibretroCore(
     val displayName: String = "",
     val version: String? = null,
     val platforms: String = "",
-    val downloadUrl: String? = null,
+    val customDownloadUrl: String? = null,
 )
 
 enum class ShaderPreset(val apiId: String, val displayName: String, val description: String) {

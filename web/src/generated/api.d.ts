@@ -5480,7 +5480,7 @@ export interface components {
             /** @description Refresh token (rotate via /api/auth/refresh). */
             refreshToken: string;
             /** @description Registered user profile. */
-            user: components["schemas"]["UserResponse"];
+            user?: components["schemas"]["UserResponse"];
         };
         BackfillImagesResponse: {
             /**
@@ -5809,7 +5809,7 @@ export interface components {
             id: string;
             logoUrl: string;
             name: string;
-            topGame: components["schemas"]["GameResponse"];
+            topGame?: components["schemas"]["GameResponse"];
         };
         ConsoleHighlightsResponse: {
             /**
@@ -5884,9 +5884,9 @@ export interface components {
             readonly $schema?: string;
             /** Format: date-time */
             createdAt: string;
+            customDownloadUrl: string;
             description: string;
             displayName: string;
-            downloadUrl: string;
             /** Format: date-time */
             fetchedAt: string | null;
             /** Format: int64 */
@@ -6270,7 +6270,7 @@ export interface components {
             favoriteCount: number;
             /** Format: int64 */
             gamesPlayed: number;
-            mostPlayedGame: components["schemas"]["GameResponse"];
+            mostPlayedGame?: components["schemas"]["GameResponse"];
             /** Format: int64 */
             totalPlayTime: number;
         };
@@ -6366,7 +6366,7 @@ export interface components {
         ForYouRowResponse: {
             games: components["schemas"]["GameResponse"][];
             genre: string;
-            sourceGame: components["schemas"]["GameResponse"];
+            sourceGame?: components["schemas"]["GameResponse"];
             title: string;
             type: string;
         };
@@ -6589,7 +6589,7 @@ export interface components {
             /** Format: date-time */
             lastPlayedAt: string | null;
             logoUrl: string;
-            parentGame: components["schemas"]["ParentGameResponse"];
+            parentGame?: components["schemas"]["ParentGameResponse"];
             partyInfo: string;
             playable: boolean;
             /** Format: int64 */
@@ -7038,7 +7038,7 @@ export interface components {
         };
         OnlineUserResponse: {
             avatarUrl: string;
-            currentGame: components["schemas"]["OnlineUserGameResponse"];
+            currentGame?: components["schemas"]["OnlineUserGameResponse"];
             id: string;
             username: string;
         };
@@ -7245,7 +7245,7 @@ export interface components {
              */
             readonly $schema?: string;
             avatarUrl: string;
-            currentGame: components["schemas"]["OnlineUserGameResponse"];
+            currentGame?: components["schemas"]["OnlineUserGameResponse"];
             favoriteGames: components["schemas"]["PublicProfileGame"][];
             /** Format: int64 */
             gamesPlayed: number;
@@ -8713,7 +8713,7 @@ export interface components {
             lastPlayedAt: string | null;
             /** Format: int64 */
             longestStreak: number;
-            mostPlayedGame: components["schemas"]["GameResponse"];
+            mostPlayedGame?: components["schemas"]["GameResponse"];
             /** Format: int64 */
             mostPlayedGameTime: number;
             /** Format: int64 */

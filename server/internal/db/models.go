@@ -790,7 +790,18 @@ type Core struct {
 	Version     string         `gorm:"size:64" json:"version"`
 	Platforms   string         `gorm:"size:255" json:"platforms"` // comma-separated: windows,linux,macos,android
 	FilePath    string         `gorm:"size:1024" json:"-"`
-	DownloadURL string         `gorm:"size:1024" json:"downloadUrl"` // URL template for non-buildbot cores; {platform} is replaced by the player
+	// CustomDownloadURL is an OPTIONAL override URL — set only for cores
+	// that aren't pulled from the libretro buildbot (e.g. the seeded
+	// `azahar` 3DS core). When unset/empty, the player constructs the
+	// buildbot URL from the core name. {platform} in the template is
+	// substituted with the player's runtime platform.
+	//
+	// Old name was `DownloadURL` / json:`downloadUrl`, which read like
+	// "the URL" and led to consumers checking `!= null` only and
+	// passing empty strings into URL resolution. Renamed to make the
+	// override semantics explicit. The DB column stays `download_url`
+	// to avoid a migration.
+	CustomDownloadURL string `gorm:"column:download_url;size:1024" json:"customDownloadUrl"`
 
 	// Factual metadata about the cached binary, populated by the server
 	// whenever it downloads or serves a core for the first time. See #555.

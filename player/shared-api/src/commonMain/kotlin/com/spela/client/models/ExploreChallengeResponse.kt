@@ -8,9 +8,17 @@
 
 @file:Suppress(
     "ArrayInDataClass",
+    "DuplicatedCode",
     "EnumEntryName",
     "RemoveRedundantQualifierName",
-    "UnusedImport"
+    "RemoveRedundantCallsOfConversionMethods",
+    "REDUNDANT_CALL_OF_CONVERSION_METHOD",
+    "RedundantUnitReturnType",
+    "RemoveEmptyClassBody",
+    "UnnecessaryVariable",
+    "UnusedImport",
+    "UnnecessaryVariable",
+    "unused"
 )
 
 package com.spela.client.models
@@ -48,7 +56,7 @@ data class ExploreChallengeResponse (
 
     @SerialName(value = "consoleName") @Required val consoleName: kotlin.String,
 
-    @SerialName(value = "createdAt") @Required val createdAt: kotlinx.datetime.Instant,
+    @SerialName(value = "createdAt") @Required val createdAt: kotlin.time.Instant,
 
     @SerialName(value = "creatorUsername") @Required val creatorUsername: kotlin.String,
 
@@ -56,7 +64,7 @@ data class ExploreChallengeResponse (
 
     @SerialName(value = "difficulty") @Required val difficulty: kotlin.String,
 
-    @SerialName(value = "expiresAt") @Required val expiresAt: kotlinx.datetime.Instant?,
+    @SerialName(value = "expiresAt") @Required val expiresAt: kotlin.time.Instant?,
 
     @SerialName(value = "gameCoverUrl") @Required val gameCoverUrl: kotlin.String,
 

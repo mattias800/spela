@@ -43,7 +43,7 @@ func TestListCores_AzaharHasDownloadURL(t *testing.T) {
 		}
 	}
 	require.NotNil(t, azahar, "azahar core should be seeded")
-	url, _ := azahar["downloadUrl"].(string)
+	url, _ := azahar["customDownloadUrl"].(string)
 	assert.Contains(t, url, "github.com/azahar-emu/azahar")
 	assert.Contains(t, url, "{platform}")
 }
@@ -66,7 +66,7 @@ func TestListCores_BuildbotCoresHaveNoDownloadURL(t *testing.T) {
 
 	for _, c := range cores {
 		if c.Name == "nestopia" || c.Name == "snes9x" || c.Name == "dolphin" {
-			assert.Empty(t, c.DownloadURL, "buildbot core %s should have no downloadUrl", c.Name)
+			assert.Empty(t, c.CustomDownloadURL, "buildbot core %s should have no downloadUrl", c.Name)
 		}
 	}
 }
@@ -150,7 +150,7 @@ func TestDownloadCore_PinnedCoreCopiesDownloadURL(t *testing.T) {
 
 	var core db.Core
 	require.NoError(t, database.Where("name = ?", "azahar").First(&core).Error)
-	require.NotEmpty(t, core.DownloadURL, "seeded azahar core should have a DownloadURL template")
+	require.NotEmpty(t, core.CustomDownloadURL, "seeded azahar core should have a DownloadURL template")
 
 	w := httptest.NewRecorder()
 	req := httptest.NewRequest("GET", "/api/cores/"+itoa(core.ID)+"/download?platform=linux", nil)
@@ -160,7 +160,7 @@ func TestDownloadCore_PinnedCoreCopiesDownloadURL(t *testing.T) {
 
 	var refreshed db.Core
 	require.NoError(t, database.First(&refreshed, core.ID).Error)
-	assert.Equal(t, core.DownloadURL, refreshed.SourceURL,
+	assert.Equal(t, core.CustomDownloadURL, refreshed.SourceURL,
 		"pinned core's DownloadURL template should be copied to SourceURL on first serve")
 }
 

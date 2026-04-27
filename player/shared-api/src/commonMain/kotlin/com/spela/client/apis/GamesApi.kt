@@ -8,9 +8,17 @@
 
 @file:Suppress(
     "ArrayInDataClass",
+    "DuplicatedCode",
     "EnumEntryName",
     "RemoveRedundantQualifierName",
-    "UnusedImport"
+    "RemoveRedundantCallsOfConversionMethods",
+    "REDUNDANT_CALL_OF_CONVERSION_METHOD",
+    "RedundantUnitReturnType",
+    "RemoveEmptyClassBody",
+    "UnnecessaryVariable",
+    "UnusedImport",
+    "UnnecessaryVariable",
+    "unused"
 )
 
 package com.spela.client.apis
@@ -35,6 +43,10 @@ import io.ktor.client.request.forms.formData
 import io.ktor.client.engine.HttpClientEngine
 import kotlinx.serialization.json.Json
 import io.ktor.http.ParametersBuilder
+import io.ktor.http.Headers
+import io.ktor.http.HttpHeaders
+import io.ktor.http.ContentType
+import io.ktor.http.content.PartData
 import kotlinx.serialization.*
 import kotlinx.serialization.descriptors.*
 import kotlinx.serialization.encoding.*
@@ -472,8 +484,8 @@ open class GamesApi : ApiClient {
      * @param ratingMin Minimum rating (0-100). (optional)
      * @param ratingMax Maximum rating (0-100). (optional)
      * @param playStatus Restrict to unplayed | played | favorited | play-later for the current user. (optional)
-     * @param grouped Show only primary variants. (optional, default to true)
-     * @param hidePreRelease Hide betas/protos/samples. (optional, default to true)
+     * @param grouped Show only primary variants. (optional, default to Grouped.`true`)
+     * @param hidePreRelease Hide betas/protos/samples. (optional, default to HidePreRelease.`true`)
      * @param sortBy Sort column (title, created_at, file_size, rating, release_date). (optional)
      * @param sort Legacy alias for sortBy. (optional)
      * @param sortOrder Sort direction (asc, desc). (optional)

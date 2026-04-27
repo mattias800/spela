@@ -8,9 +8,17 @@
 
 @file:Suppress(
     "ArrayInDataClass",
+    "DuplicatedCode",
     "EnumEntryName",
     "RemoveRedundantQualifierName",
-    "UnusedImport"
+    "RemoveRedundantCallsOfConversionMethods",
+    "REDUNDANT_CALL_OF_CONVERSION_METHOD",
+    "RedundantUnitReturnType",
+    "RemoveEmptyClassBody",
+    "UnnecessaryVariable",
+    "UnusedImport",
+    "UnnecessaryVariable",
+    "unused"
 )
 
 package com.spela.client.models
@@ -40,11 +48,11 @@ data class RALeaderboardEntryResponse (
 
     @SerialName(value = "earnedPoints") @Required val earnedPoints: kotlin.Long,
 
-    @SerialName(value = "firstUnlockedAt") @Required val firstUnlockedAt: kotlinx.datetime.Instant,
+    @SerialName(value = "firstUnlockedAt") @Required val firstUnlockedAt: kotlin.time.Instant,
 
     @SerialName(value = "isComplete") @Required val isComplete: kotlin.Boolean,
 
-    @SerialName(value = "lastUnlockedAt") @Required val lastUnlockedAt: kotlinx.datetime.Instant,
+    @SerialName(value = "lastUnlockedAt") @Required val lastUnlockedAt: kotlin.time.Instant,
 
     @SerialName(value = "unlockedCount") @Required val unlockedCount: kotlin.Long,
 
