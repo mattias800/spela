@@ -1,0 +1,15 @@
+ScummVM "Modern Remastered" logo
+Source: https://commons.wikimedia.org/wiki/File:ScummVM_%22Modern_Remastered%22_Logo.svg
+Author: The ScummVM Team
+       (Original "Modern" mark by Jean Marc Gimenez for the ScummVM project)
+
+Licensed under the GNU General Public License version 2 or later (GPL-2.0+).
+This work is free software; you can redistribute it and/or modify it under
+the terms of the GNU General Public License as published by the Free Software
+Foundation; either version 2 of the License, or any later version.
+
+A copy of the GPL is available at https://www.gnu.org/licenses/old-licenses/gpl-2.0.html.
+
+The same license terms cover the rasterized PNG variant in
+../console-logos-png/scummvm.png and the mascot icon in
+../console-icons/scummvm.png.
