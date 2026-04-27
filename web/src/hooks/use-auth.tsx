@@ -147,6 +147,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return { pending: true };
       }
       // AuthRegisterResponse shape matches AuthLoginResponse when not pending.
+      if (!wire.user) throw new ApiError(500, "Registration returned no user");
       const tokens: AuthTokens = {
         accessToken: wire.accessToken,
         refreshToken: wire.refreshToken,
