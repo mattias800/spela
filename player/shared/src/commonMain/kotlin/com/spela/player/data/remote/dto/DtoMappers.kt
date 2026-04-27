@@ -245,7 +245,7 @@ fun com.spela.client.models.Core.toDomain(): LibretroCore = LibretroCore(
     displayName = displayName,
     version = version,
     platforms = platforms,
-    downloadUrl = downloadUrl,
+    customDownloadUrl = customDownloadUrl,
 )
 
 fun com.spela.client.models.HeatmapEntry.toDomain(): HeatmapEntry = HeatmapEntry(

@@ -485,7 +485,7 @@ private class FakeCoreRepository(
 
     override suspend fun downloadCore(
         coreName: String,
-        downloadUrl: String?,
+        customDownloadUrl: String?,
         onProgress: (Float) -> Unit,
     ): Result<String> {
         downloadCoreCalls++

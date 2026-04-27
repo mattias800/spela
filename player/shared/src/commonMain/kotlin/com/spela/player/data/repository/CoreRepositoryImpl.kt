@@ -39,10 +39,10 @@ class CoreRepositoryImpl(
         }
     }
 
-    override suspend fun downloadCore(coreName: String, downloadUrl: String?, onProgress: (Float) -> Unit): Result<String> = runCatching {
+    override suspend fun downloadCore(coreName: String, customDownloadUrl: String?, onProgress: (Float) -> Unit): Result<String> = runCatching {
         val fileName = coreFileName(coreName)
         val destPath = fileStorage.getCoresDir() + "/$fileName"
-        val url = if (!downloadUrl.isNullOrBlank()) resolveDownloadUrl(downloadUrl) else buildbotCoreUrl(coreName)
+        val url = if (!customDownloadUrl.isNullOrBlank()) resolveDownloadUrl(customDownloadUrl) else buildbotCoreUrl(coreName)
         println("[CoreRepo] downloadCore($coreName) → $url")
 
         val response: HttpResponse = httpClient.get(url) {

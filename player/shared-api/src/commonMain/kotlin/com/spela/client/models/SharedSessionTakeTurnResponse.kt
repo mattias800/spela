@@ -8,9 +8,17 @@
 
 @file:Suppress(
     "ArrayInDataClass",
+    "DuplicatedCode",
     "EnumEntryName",
     "RemoveRedundantQualifierName",
-    "UnusedImport"
+    "RemoveRedundantCallsOfConversionMethods",
+    "REDUNDANT_CALL_OF_CONVERSION_METHOD",
+    "RedundantUnitReturnType",
+    "RemoveEmptyClassBody",
+    "UnnecessaryVariable",
+    "UnusedImport",
+    "UnnecessaryVariable",
+    "unused"
 )
 
 package com.spela.client.models
@@ -31,7 +39,7 @@ import kotlinx.serialization.encoding.*
 
 data class SharedSessionTakeTurnResponse (
 
-    @SerialName(value = "turnTakenAt") @Required val turnTakenAt: kotlinx.datetime.Instant,
+    @SerialName(value = "turnTakenAt") @Required val turnTakenAt: kotlin.time.Instant,
 
     @SerialName(value = "turnToken") @Required val turnToken: kotlin.String,
 

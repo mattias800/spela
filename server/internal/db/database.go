@@ -1016,7 +1016,7 @@ func SeedCores(db *gorm.DB) error {
 			Description: "Nintendo 3DS emulator (Citra successor)",
 			Platforms:   "windows,linux,macos,android",
 			Version:     "2125.0.1",
-			DownloadURL: "https://github.com/azahar-emu/azahar/releases/download/2125.0.1/azahar-libretro-{platform}-2125.0.1.zip",
+			CustomDownloadURL: "https://github.com/azahar-emu/azahar/releases/download/2125.0.1/azahar-libretro-{platform}-2125.0.1.zip",
 		},
 		{Name: "scummvm", DisplayName: "ScummVM", Description: "Point-and-click adventure game engine", Platforms: "windows,linux,macos,android"},
 		{Name: "freechaf", DisplayName: "FreeChaF", Description: "Fairchild Channel F emulator", Platforms: "windows,linux,macos,android"},
@@ -1055,8 +1055,8 @@ func SeedCores(db *gorm.DB) error {
 			}
 			slog.Info("seeded core", "name", c.Name)
 		} else {
-			if existing.DownloadURL == "" && c.DownloadURL != "" {
-				db.Model(&existing).Update("download_url", c.DownloadURL)
+			if existing.CustomDownloadURL == "" && c.CustomDownloadURL != "" {
+				db.Model(&existing).Update("download_url", c.CustomDownloadURL)
 				slog.Info("backfilled DownloadURL", "name", existing.Name)
 			}
 			if existing.Version == "" && c.Version != "" {

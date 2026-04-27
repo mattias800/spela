@@ -8,9 +8,17 @@
 
 @file:Suppress(
     "ArrayInDataClass",
+    "DuplicatedCode",
     "EnumEntryName",
     "RemoveRedundantQualifierName",
-    "UnusedImport"
+    "RemoveRedundantCallsOfConversionMethods",
+    "REDUNDANT_CALL_OF_CONVERSION_METHOD",
+    "RedundantUnitReturnType",
+    "RemoveEmptyClassBody",
+    "UnnecessaryVariable",
+    "UnusedImport",
+    "UnnecessaryVariable",
+    "unused"
 )
 
 package com.spela.client.models
@@ -24,9 +32,9 @@ import kotlinx.serialization.encoding.*
  * 
  *
  * @param createdAt 
+ * @param customDownloadUrl 
  * @param description 
  * @param displayName 
- * @param downloadUrl 
  * @param fetchedAt 
  * @param id 
  * @param name 
@@ -42,15 +50,15 @@ import kotlinx.serialization.encoding.*
 
 data class Core (
 
-    @SerialName(value = "createdAt") @Required val createdAt: kotlinx.datetime.Instant,
+    @SerialName(value = "createdAt") @Required val createdAt: kotlin.time.Instant,
+
+    @SerialName(value = "customDownloadUrl") @Required val customDownloadUrl: kotlin.String,
 
     @SerialName(value = "description") @Required val description: kotlin.String,
 
     @SerialName(value = "displayName") @Required val displayName: kotlin.String,
 
-    @SerialName(value = "downloadUrl") @Required val downloadUrl: kotlin.String,
-
-    @SerialName(value = "fetchedAt") @Required val fetchedAt: kotlinx.datetime.Instant?,
+    @SerialName(value = "fetchedAt") @Required val fetchedAt: kotlin.time.Instant?,
 
     @SerialName(value = "id") @Required val id: kotlin.Long,
 
@@ -64,7 +72,7 @@ data class Core (
 
     @SerialName(value = "sourceUrl") @Required val sourceUrl: kotlin.String,
 
-    @SerialName(value = "updatedAt") @Required val updatedAt: kotlinx.datetime.Instant,
+    @SerialName(value = "updatedAt") @Required val updatedAt: kotlin.time.Instant,
 
     @SerialName(value = "version") @Required val version: kotlin.String,
 

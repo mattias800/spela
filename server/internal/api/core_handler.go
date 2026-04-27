@@ -81,8 +81,8 @@ func (h *CoreHandler) ensureCoreMetadata(core *db.Core, corePath string) {
 		// it as the source URL is still better than leaving the field blank,
 		// since the admin can tell at a glance whether the core is pinned or
 		// pulled from the buildbot.
-		if core.SourceURL == "" && core.DownloadURL != "" {
-			updates["source_url"] = core.DownloadURL
+		if core.SourceURL == "" && core.CustomDownloadURL != "" {
+			updates["source_url"] = core.CustomDownloadURL
 		}
 		if err := h.DB.Model(core).Updates(updates).Error; err != nil {
 			slog.Error("failed to persist core metadata", "core", core.Name, "error", err)
@@ -231,8 +231,8 @@ func (h *CoreHandler) RefreshCoreMetadata(core *db.Core, platform string) (CoreR
 		"size_bytes": size,
 		"fetched_at": &now,
 	}
-	if core.SourceURL == "" && core.DownloadURL != "" {
-		updates["source_url"] = core.DownloadURL
+	if core.SourceURL == "" && core.CustomDownloadURL != "" {
+		updates["source_url"] = core.CustomDownloadURL
 	}
 	if err := h.DB.Model(core).Updates(updates).Error; err != nil {
 		return CoreRefreshResult{}, fmt.Errorf("refresh: persisting metadata: %w", err)
@@ -240,8 +240,8 @@ func (h *CoreHandler) RefreshCoreMetadata(core *db.Core, platform string) (CoreR
 	core.Sha256 = sum
 	core.SizeBytes = size
 	core.FetchedAt = &now
-	if core.SourceURL == "" && core.DownloadURL != "" {
-		core.SourceURL = core.DownloadURL
+	if core.SourceURL == "" && core.CustomDownloadURL != "" {
+		core.SourceURL = core.CustomDownloadURL
 	}
 
 	h.snapshotCoreToHistory(*core, corePath, sum)

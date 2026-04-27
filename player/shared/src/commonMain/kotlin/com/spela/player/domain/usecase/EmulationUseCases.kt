@@ -173,12 +173,12 @@ class PrepareGameUseCase(
         }
 
         val coreName = platformCoreSubstitution(core.name)
-        // When the core name was substituted, the server's download URL is for the
-        // original name. Clear it so CoreRepository falls back to the buildbot URL
-        // constructed from the substituted name.
-        val downloadUrl = if (coreName != core.name) null else core.downloadUrl?.takeIf { it.isNotBlank() }
+        // When the core name was substituted, the server's custom override URL is
+        // for the original name. Clear it so CoreRepository falls back to the
+        // buildbot URL constructed from the substituted name.
+        val customDownloadUrl = if (coreName != core.name) null else core.customDownloadUrl?.takeIf { it.isNotBlank() }
         val platformSubstituted = coreName != core.name
-        println("[PrepareGame] After getRecommendedCore: coreName=$coreName, platformSubstituted=$platformSubstituted, downloadUrl=$downloadUrl")
+        println("[PrepareGame] After getRecommendedCore: coreName=$coreName, platformSubstituted=$platformSubstituted, customDownloadUrl=$customDownloadUrl")
 
         // #672 PR — launch-time crash recovery. If the previous run on
         // this session entered rehearsal and the player process died
@@ -278,7 +278,7 @@ class PrepareGameUseCase(
             if (error is CorePrunedException) {
                 println("[PrepareGame] Pinned core $pinnedCoreSha256 pruned — falling back to latest")
                 val fallbackPath = coreRepository.getLocalCorePath(coreName)
-                    ?: coreRepository.downloadCore(coreName, downloadUrl).getOrElse {
+                    ?: coreRepository.downloadCore(coreName, customDownloadUrl).getOrElse {
                         return Result.failure(it)
                     }
                 // When the user explicitly locked this session to the
@@ -334,7 +334,7 @@ class PrepareGameUseCase(
         val shouldCheckStaleness = autoUpdateCoresEnabled && cached != null
         val corePath = if (shouldCheckStaleness && coreRepository.isCachedCoreCurrent(coreName) == false) {
             println("[PrepareGame] Cached $coreName is stale vs server — redownloading")
-            coreRepository.downloadCore(coreName, downloadUrl).getOrElse {
+            coreRepository.downloadCore(coreName, customDownloadUrl).getOrElse {
                 // Re-download failed: fall back to the stale cache rather
                 // than stranding the user. The game still runs; saves
                 // made here might not load on a fresh install, but that's
@@ -348,7 +348,7 @@ class PrepareGameUseCase(
                 cached
             } else {
                 println("[PrepareGame] No cached core — downloading $coreName")
-                coreRepository.downloadCore(coreName, downloadUrl).getOrElse {
+                coreRepository.downloadCore(coreName, customDownloadUrl).getOrElse {
                     println("[PrepareGame] downloadCore FAILED: ${it::class.simpleName}: ${it.message}")
                     return Result.failure(it)
                 }.also { println("[PrepareGame] downloadCore succeeded → $it") }

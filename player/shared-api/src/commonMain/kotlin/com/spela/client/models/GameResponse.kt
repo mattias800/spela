@@ -8,9 +8,17 @@
 
 @file:Suppress(
     "ArrayInDataClass",
+    "DuplicatedCode",
     "EnumEntryName",
     "RemoveRedundantQualifierName",
-    "UnusedImport"
+    "RemoveRedundantCallsOfConversionMethods",
+    "REDUNDANT_CALL_OF_CONVERSION_METHOD",
+    "RedundantUnitReturnType",
+    "RemoveEmptyClassBody",
+    "UnnecessaryVariable",
+    "UnusedImport",
+    "UnnecessaryVariable",
+    "unused"
 )
 
 package com.spela.client.models
@@ -115,7 +123,7 @@ data class GameResponse (
 
     @SerialName(value = "coverUrl") @Required val coverUrl: kotlin.String,
 
-    @SerialName(value = "createdAt") @Required val createdAt: kotlinx.datetime.Instant,
+    @SerialName(value = "createdAt") @Required val createdAt: kotlin.time.Instant,
 
     @SerialName(value = "description") @Required val description: kotlin.String,
 
@@ -153,7 +161,7 @@ data class GameResponse (
 
     @SerialName(value = "languageSupports") @Required val languageSupports: kotlin.collections.List<LanguageSupportResponse>,
 
-    @SerialName(value = "lastPlayedAt") @Required val lastPlayedAt: kotlinx.datetime.Instant?,
+    @SerialName(value = "lastPlayedAt") @Required val lastPlayedAt: kotlin.time.Instant?,
 
     @SerialName(value = "logoUrl") @Required val logoUrl: kotlin.String,
 
@@ -201,7 +209,7 @@ data class GameResponse (
 
     @SerialName(value = "totalRatingCount") @Required val totalRatingCount: kotlin.Long,
 
-    @SerialName(value = "updatedAt") @Required val updatedAt: kotlinx.datetime.Instant,
+    @SerialName(value = "updatedAt") @Required val updatedAt: kotlin.time.Instant,
 
     @SerialName(value = "userRating") @Required val userRating: kotlin.Long?,
 

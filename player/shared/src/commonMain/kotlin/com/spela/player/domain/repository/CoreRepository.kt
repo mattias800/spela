@@ -15,7 +15,7 @@ class CorePrunedException(sha256: String) : RuntimeException(
 interface CoreRepository {
     suspend fun getAvailableCores(): Result<List<LibretroCore>>
     suspend fun getRecommendedCore(gameId: String): Result<LibretroCore>
-    suspend fun downloadCore(coreName: String, downloadUrl: String? = null, onProgress: (Float) -> Unit = {}): Result<String>
+    suspend fun downloadCore(coreName: String, customDownloadUrl: String? = null, onProgress: (Float) -> Unit = {}): Result<String>
 
     /**
      * Downloads a specific historical build of [coreName] identified by

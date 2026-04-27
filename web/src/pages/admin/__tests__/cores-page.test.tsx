@@ -47,7 +47,7 @@ const fingerprintedCore = {
   description: "Nintendo Entertainment System emulator",
   version: "1.52",
   platforms: "windows,linux,macos,android",
-  downloadUrl: "",
+  customDownloadUrl: "",
   sha256: "ab12cd34ef56ab12cd34ef56ab12cd34ef56ab12cd34ef56ab12cd34ef56ab12",
   sizeBytes: 4_400_000,
   fetchedAt,

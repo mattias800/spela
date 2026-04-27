@@ -559,7 +559,7 @@ class FakeCoreRepository : CoreRepository {
         return Result.success(cores.first())
     }
 
-    override suspend fun downloadCore(coreName: String, downloadUrl: String?, onProgress: (Float) -> Unit): Result<String> {
+    override suspend fun downloadCore(coreName: String, customDownloadUrl: String?, onProgress: (Float) -> Unit): Result<String> {
         downloadCalls.add(coreName)
         onProgress(1f)
         return Result.success("/fake/cores/$coreName")

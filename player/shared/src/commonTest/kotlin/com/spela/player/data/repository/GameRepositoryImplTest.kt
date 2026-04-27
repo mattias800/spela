@@ -589,7 +589,7 @@ class GameRepositoryImplTest {
             createdAt = now,
             description = "",
             displayName = "Nestopia UE",
-            downloadUrl = "",
+            customDownloadUrl = "",
             fetchedAt = null,
             id = 1,
             name = "nestopia",
