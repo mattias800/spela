@@ -761,6 +761,12 @@ func (h *GameHandler) HumaDownloadGame(_ context.Context, in *GameDownloadInput)
 
 	// Fallback: inline single file. Match the gin "inline" Content-Disposition
 	// (the file may be a ROM that the client renders inline rather than saves).
+	//
+	// For .nes ROMs, the first 16 bytes are normalized in memory so iNES 1.0
+	// headers polluted with tool-provenance markers (e.g. "DiskDude!", "NI2.1"
+	// from old GoodNES dumps) don't trip strict cores like nestopia. The
+	// on-disk file is never modified — only the bytes streamed to the client.
+	normalizeINES := strings.HasSuffix(lower, ".nes")
 	return &huma.StreamResponse{
 		Body: func(hctx huma.Context) {
 			f, err := os.Open(absPath)
@@ -771,7 +777,25 @@ func (h *GameHandler) HumaDownloadGame(_ context.Context, in *GameDownloadInput)
 			defer f.Close()
 			hctx.SetHeader("Content-Type", "application/octet-stream")
 			hctx.SetHeader("Content-Disposition", fmt.Sprintf("inline; filename=%q", game.FileName))
-			_, _ = io.Copy(hctx.BodyWriter(), f)
+			w := hctx.BodyWriter()
+			if normalizeINES {
+				var head [16]byte
+				n, _ := io.ReadFull(f, head[:])
+				if n == len(head) {
+					if scanner.NormalizeINESHeaderBytes(head[:]) {
+						slog.Info("normalized iNES header for download",
+							"game", game.Title, "file", game.FileName)
+					}
+					if _, err := w.Write(head[:]); err != nil {
+						return
+					}
+				} else if n > 0 {
+					if _, err := w.Write(head[:n]); err != nil {
+						return
+					}
+				}
+			}
+			_, _ = io.Copy(w, f)
 		},
 	}, nil
 }

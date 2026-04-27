@@ -2159,12 +2159,9 @@ fun ComposeRule.exitGame(coreIdleTimeout: Long = 10_000) {
  *
  * When [preferredGameTitle] is given, picks the card whose contentDescription
  * starts with that title. That makes the test deterministic — otherwise
- * we tap the first card in the tree, which depends on seeded game ordering
- * and can land on a ROM nestopia rejects (Super Mario Bros.nes in the
- * test fixtures fails retro_load_game, while Balloon Fight loads cleanly).
- * Balloon Fight is the known-good default; it's the first NES game in
- * Browse Games (alphabetical) and has been verified to start emulation
- * end-to-end on the nestopia Android core.
+ * we tap the first card in the tree, which depends on seeded game ordering.
+ * Balloon Fight is the default because it's a small ROM that boots quickly
+ * and is verified to start emulation end-to-end on the nestopia Android core.
  */
 fun ComposeRule.navigateToGameAndPlay(preferredGameTitle: String? = "Balloon Fight") {
     val device = uiDevice()
