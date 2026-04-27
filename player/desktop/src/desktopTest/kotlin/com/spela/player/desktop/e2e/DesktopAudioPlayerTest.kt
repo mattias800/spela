@@ -69,7 +69,7 @@ class DesktopAudioPlayerTest {
         val buffer = controller.getAudioBuffer()
 
         assertTrue(buffer != null, "Audio buffer should not be null")
-        assertTrue(buffer!!.isNotEmpty(), "Audio buffer should contain samples")
+        assertTrue(buffer.isNotEmpty(), "Audio buffer should contain samples")
         assertEquals(1024, buffer.size, "Audio buffer should have 1024 samples")
     }
 
@@ -129,7 +129,7 @@ class DesktopAudioPlayerTest {
 
         val buffer = controller.getAudioBuffer()
         assertTrue(buffer != null, "Empty buffer should not be null")
-        assertTrue(buffer!!.isEmpty(), "Empty buffer should have size 0")
+        assertTrue(buffer.isEmpty(), "Empty buffer should have size 0")
     }
 
     @Test
