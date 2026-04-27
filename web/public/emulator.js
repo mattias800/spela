@@ -230,6 +230,19 @@
       window.EJS_volume = prefs.volume;
     }
 
+    // Per-core libretro variable defaults. EmulatorJS exposes them in its
+    // settings menu; these override RetroArch's defaults at boot. Users
+    // can still flip them back via the gear menu.
+    //
+    // puae (Amiga): silence the floppy drive seek/click sample. The core's
+    // default volume is 80 (loud); value "100" is labelled "disabled" in
+    // the option (it's an attenuation %, where 100 = full silence).
+    if (config.core === "puae") {
+      if (window.EJS_defaultOptions["puae_floppy_sound"] === undefined) {
+        window.EJS_defaultOptions["puae_floppy_sound"] = "100";
+      }
+    }
+
     // Key mapping
     // EmulatorJS uses its own key name format (e.g., "up arrow" not "arrowup").
     // This map converts standard DOM KeyboardEvent.key names to EmulatorJS names.
