@@ -93,6 +93,12 @@ private val credits = listOf(
         license = "Apache-2.0",
         description = "Image loading library for Compose Multiplatform.",
     ),
+    CreditEntry(
+        name = "ScummVM project",
+        url = "www.scummvm.org",
+        license = "GPL-2.0",
+        description = "ScummVM \"Modern Remastered\" logo and mascot icon used for the SCUMMVM platform. Logo by the ScummVM Team; original \"Modern\" mark by Jean Marc Gimenez for the ScummVM project.",
+    ),
 )
 
 @Composable
