@@ -275,7 +275,7 @@ class ExploreRepositoryImpl(
                 iconUrl = apiClient.resolveUrl(dto.iconUrl) ?: "",
                 logoUrl = apiClient.resolveUrl(dto.logoUrl) ?: "",
                 topGame = topGameDto?.takeIf { it.id.isNotEmpty() }?.toDomain()?.copy(
-                    coverUrl = apiClient.resolveUrl(topGameDto?.coverUrl ?: ""),
+                    coverUrl = apiClient.resolveUrl(topGameDto.coverUrl),
                 ),
             )
         }
