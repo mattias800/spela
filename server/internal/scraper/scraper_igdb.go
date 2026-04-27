@@ -220,14 +220,26 @@ func (s *Scraper) ScrapeGame(game *db.Game) error {
 
 // scrapeIGDB searches IGDB for game metadata and downloads images.
 func (s *Scraper) scrapeIGDB(game *db.Game, console db.Console, gameIDStr string) error {
-	platformIDs, ok := igdb.AbbreviationToIGDBPlatform[console.Abbreviation]
-	if !ok {
+	// SCUMMVM uses a hint-aware resolver because games originally shipped on
+	// a mix of DOS/Amiga/Mac/Atari ST and IGDB has no "ScummVM" platform —
+	// see igdb.IGDBPlatformsFor.
+	platformIDs := igdb.IGDBPlatformsFor(console.Abbreviation, game.Title)
+	if len(platformIDs) == 0 {
 		return fmt.Errorf("no IGDB platform ID for console %s", console.Abbreviation)
 	}
 
-	cleanName := igdb.CleanGameName(game.FileName)
+	// ScummVM games are folder-based; the FileName ("monkey.scummvm") is just
+	// the engine's gameid marker, not a meaningful search term. The folder
+	// name lives in game.Title (set by the scanner). For ScummVM, search by
+	// the cleaned title; for everything else, the FileName-derived behaviour
+	// is preserved.
+	searchSource := game.FileName
+	if console.Abbreviation == "SCUMMVM" && game.Title != "" {
+		searchSource = game.Title
+	}
+	cleanName := igdb.CleanGameName(searchSource)
 	if cleanName == "" {
-		return fmt.Errorf("empty game name after cleaning: %s", game.FileName)
+		return fmt.Errorf("empty game name after cleaning: %s", searchSource)
 	}
 
 	// CRC-based identification: look up ROM in No-Intro DAT
@@ -400,7 +412,7 @@ func (s *Scraper) applyIGDBMatch(game *db.Game, console db.Console, match igdb.G
 	// Use platform-specific release date when available (e.g. SNES release of
 	// a game that originally launched on another platform), falling back to
 	// the global first release date.
-	platformIDs := igdb.AbbreviationToIGDBPlatform[console.Abbreviation]
+	platformIDs := igdb.IGDBPlatformsFor(console.Abbreviation, game.Title)
 	if rd := earliestPlatformReleaseDate(match.ReleaseDates, platformIDs); rd > 0 {
 		t := time.Unix(rd, 0)
 		game.ReleaseDate = t.Format("2006-01-02")

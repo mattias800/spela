@@ -91,6 +91,63 @@ var AbbreviationToIGDBPlatform = map[string][]int{
 	"VIC20":  {71},
 }
 
+// IGDBPlatformsFor returns the IGDB platform IDs to constrain a search by
+// for [consoleAbbrev]. Most consoles are a direct lookup in
+// [AbbreviationToIGDBPlatform]; SCUMMVM is the exception.
+//
+// SCUMMVM games are runtime-emulated adventure games that originally
+// shipped on a mix of DOS, Mac, Amiga, Atari ST, and Apple II. IGDB has
+// no "ScummVM" platform, so we sniff the game title (e.g. "The Secret
+// of Monkey Island (CD DOS VGA)") for an explicit platform hint. When a
+// hint is present we narrow to that platform; otherwise we fall back to
+// searching across the four most common ScummVM source platforms — DOS,
+// Amiga, Mac, Atari ST. IGDB's `platforms = (X,Y,Z)` filter is an "any
+// of" match, so a wider set just improves recall.
+//
+// Returns an empty slice when the console has no IGDB mapping at all.
+func IGDBPlatformsFor(consoleAbbrev, hintText string) []int {
+	if consoleAbbrev == "SCUMMVM" {
+		return scummvmPlatformsFromHint(hintText)
+	}
+	return AbbreviationToIGDBPlatform[consoleAbbrev]
+}
+
+// scummvmPlatformsFromHint inspects [hint] (typically the game title or
+// folder name) for an explicit platform marker and returns matching IGDB
+// platform IDs. When no marker is found, returns the canonical
+// ScummVM-source platform set [DOS, Amiga, Mac, Atari ST].
+func scummvmPlatformsFromHint(hint string) []int {
+	const (
+		dosID     = 13
+		macID     = 14
+		amigaID   = 16
+		atariSTID = 63
+		appleIIID = 75
+	)
+	lower := strings.ToLower(hint)
+	switch {
+	case strings.Contains(lower, "dos"),
+		strings.Contains(lower, "vga"),
+		strings.Contains(lower, "ega"),
+		strings.Contains(lower, "(pc)"),
+		strings.Contains(lower, " pc "):
+		return []int{dosID}
+	case strings.Contains(lower, "amiga"):
+		return []int{amigaID}
+	case strings.Contains(lower, "macintosh"),
+		strings.Contains(lower, "(mac)"),
+		strings.Contains(lower, " mac "):
+		return []int{macID}
+	case strings.Contains(lower, "atari st"):
+		return []int{atariSTID}
+	case strings.Contains(lower, "apple ii"),
+		strings.Contains(lower, "iigs"):
+		return []int{appleIIID}
+	default:
+		return []int{dosID, amigaID, macID, atariSTID}
+	}
+}
+
 // formatPlatformList renders a list of platform IDs as an IGDB query tuple:
 // [19, 58] → "(19, 58)". This matches IGDB's syntax for matching a game
 // where any of the listed platforms is present.

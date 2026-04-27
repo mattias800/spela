@@ -904,3 +904,74 @@ func TestPlatformMapping(t *testing.T) {
 	_, exists := AbbreviationToIGDBPlatform["UNKNOWN"]
 	assert.False(t, exists)
 }
+
+func TestIGDBPlatformsFor(t *testing.T) {
+	tests := []struct {
+		name          string
+		consoleAbbrev string
+		hint          string
+		want          []int
+	}{
+		{
+			name:          "non-scummvm console falls through to direct map lookup",
+			consoleAbbrev: "SNES",
+			hint:          "Super Mario World",
+			want:          []int{19, 58},
+		},
+		{
+			name:          "non-scummvm console with no map entry returns empty",
+			consoleAbbrev: "UNKNOWN",
+			hint:          "anything",
+			want:          nil,
+		},
+		{
+			name:          "scummvm DOS hint resolves to DOS only",
+			consoleAbbrev: "SCUMMVM",
+			hint:          "The Secret of Monkey Island (CD DOS VGA)",
+			want:          []int{13},
+		},
+		{
+			name:          "scummvm VGA hint resolves to DOS",
+			consoleAbbrev: "SCUMMVM",
+			hint:          "Loom (VGA)",
+			want:          []int{13},
+		},
+		{
+			name:          "scummvm Amiga hint resolves to Amiga",
+			consoleAbbrev: "SCUMMVM",
+			hint:          "Indiana Jones and the Last Crusade (Amiga)",
+			want:          []int{16},
+		},
+		{
+			name:          "scummvm Macintosh hint resolves to Mac",
+			consoleAbbrev: "SCUMMVM",
+			hint:          "The Secret of Monkey Island (Macintosh)",
+			want:          []int{14},
+		},
+		{
+			name:          "scummvm Atari ST hint resolves to Atari ST",
+			consoleAbbrev: "SCUMMVM",
+			hint:          "Zak McKracken (Atari ST)",
+			want:          []int{63},
+		},
+		{
+			name:          "scummvm Apple II hint resolves to Apple II",
+			consoleAbbrev: "SCUMMVM",
+			hint:          "Maniac Mansion (Apple IIgs)",
+			want:          []int{75},
+		},
+		{
+			name:          "scummvm with no hint searches multi-platform",
+			consoleAbbrev: "SCUMMVM",
+			hint:          "Day of the Tentacle",
+			want:          []int{13, 16, 14, 63},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := IGDBPlatformsFor(tt.consoleAbbrev, tt.hint)
+			assert.Equal(t, tt.want, got)
+		})
+	}
+}
