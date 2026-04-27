@@ -231,6 +231,7 @@ Spela is built with and uses the following open-source projects:
 - **[EmulatorJS](https://emulatorjs.org)** (GPL-3.0) — Browser-based emulation frontend
 - **[libretro / RetroArch](https://www.libretro.com)** (GPL-3.0) — Emulation API and cores
 - **[RetroAchievements](https://retroachievements.org)** — Achievement system for retro games
+- **[ScummVM project](https://www.scummvm.org)** (GPL-2.0) — ScummVM "Modern Remastered" logo and mascot icon used for the SCUMMVM platform. Logo by the ScummVM Team; original "Modern" mark by Jean Marc Gimenez for the ScummVM project.
 
 ## License
 

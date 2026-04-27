@@ -65,6 +65,13 @@ const credits: CreditEntry[] = [
     license: "Community project",
     description: "Achievement system for retro games.",
   },
+  {
+    name: "ScummVM project",
+    url: "https://www.scummvm.org",
+    license: "GPL-2.0",
+    description:
+      'ScummVM "Modern Remastered" logo and mascot icon used for the SCUMMVM platform. Logo by the ScummVM Team; original "Modern" mark by Jean Marc Gimenez for the ScummVM project.',
+  },
 ];
 
 export function LicensesPage() {
