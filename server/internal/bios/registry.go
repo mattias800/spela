@@ -110,6 +110,23 @@ var registry = []Entry{
 	{ConsoleID: "cdi", FileName: "cdimono1.zip", Description: "CD-i Mono-I BIOS", MD5: "", Required: true, OverrideURL: "https://github.com/Abdess/retrobios/raw/main/bios/Philips/CD-i/cdimono1.zip", SubDir: "same_cdi/bios"},
 	{ConsoleID: "cdi", FileName: "cdimono2.zip", Description: "CD-i Mono-II BIOS", MD5: "", Required: false, OverrideURL: "https://archive.org/download/MAME208RomsOnlyMerged/cdimono2.zip", SubDir: "same_cdi/bios"},
 	{ConsoleID: "cdi", FileName: "cdibios.zip", Description: "CD-i BIOS (generic)", MD5: "", Required: false, OverrideURL: "https://archive.org/download/MAME208RomsOnlyMerged/cdibios.zip", SubDir: "same_cdi/bios"},
+
+	// ScummVM — Roland MT-32 / CM-32L MIDI ROMs. The libretro scummvm core
+	// hardcodes its "extrapath" to <system_dir>/scummvm/extra/, so that's
+	// where ScummVM picks up these ROMs to enable MT-32 sound emulation
+	// (vastly better than AdLib for late-80s/early-90s adventure games like
+	// Monkey Island, Indiana Jones, Loom, …). With auto music_driver
+	// (default), ScummVM prefers MT-32 over AdLib when ROMs are present;
+	// CM-32L is preferred over MT-32 when both are available.
+	//
+	// All four are Optional — most games sound fine on AdLib, and not every
+	// user wants the ROMs. Sources are archive.org's MAME-versioned dump.
+	// CM-32L's source filenames are MAME-style lowercase; FileName/SubDir
+	// rename them to ScummVM's expected uppercase target names on download.
+	{ConsoleID: "scummvm", FileName: "MT32_CONTROL.ROM", Description: "Roland MT-32 Control ROM (firmware v1.07)", MD5: "5626206284b22c2734f3e9efefcd2675", Required: false, SubDir: "scummvm/extra", OverrideURL: "https://archive.org/download/mame-versioned-roland-mt-32-and-cm-32l-rom-files/MT-32_v1.07_legacy_ROM_files.zip/MT32_CONTROL.ROM"},
+	{ConsoleID: "scummvm", FileName: "MT32_PCM.ROM", Description: "Roland MT-32 PCM ROM", MD5: "89e42e386e82e0cacb4a2704a03706ca", Required: false, SubDir: "scummvm/extra", OverrideURL: "https://archive.org/download/mame-versioned-roland-mt-32-and-cm-32l-rom-files/MT-32_v1.07_legacy_ROM_files.zip/MT32_PCM.ROM"},
+	{ConsoleID: "scummvm", FileName: "CM32L_CONTROL.ROM", Description: "Roland CM-32L Control ROM (v1.02) — preferred over MT-32 when present", MD5: "bfff32b6144c1d706109accb6e6b1113", Required: false, SubDir: "scummvm/extra", OverrideURL: "https://archive.org/download/mame-versioned-roland-mt-32-and-cm-32l-rom-files/MT-32_and_CM-32L_MAME-Versioned_ROM_files..zip/cm32l_ctrl_1_02.rom"},
+	{ConsoleID: "scummvm", FileName: "CM32L_PCM.ROM", Description: "Roland CM-32L PCM ROM (1MB, expanded sample bank)", MD5: "08cdcfa0ed93e9cb16afa76e6ac5f0a4", Required: false, SubDir: "scummvm/extra", OverrideURL: "https://archive.org/download/mame-versioned-roland-mt-32-and-cm-32l-rom-files/MT-32_and_CM-32L_MAME-Versioned_ROM_files..zip/cm32l_pcm.rom"},
 }
 
 // repoFolders maps console IDs to their folder path in the
