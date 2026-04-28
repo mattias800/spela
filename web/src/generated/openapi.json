@@ -2066,12 +2066,6 @@
             },
             "type": "array"
           },
-          "genreBreakdown": {
-            "items": {
-              "$ref": "#/components/schemas/GenreCount"
-            },
-            "type": "array"
-          },
           "hiddenGems": {
             "items": {
               "$ref": "#/components/schemas/GameResponse"
@@ -2108,7 +2102,6 @@
           "essentials",
           "hiddenGems",
           "launchGames",
-          "genreBreakdown",
           "topDevelopers",
           "recentlyPlayed",
           "recentlyAdded"
@@ -2682,12 +2675,6 @@
             },
             "type": "array"
           },
-          "genreBreakdown": {
-            "items": {
-              "$ref": "#/components/schemas/GenreCount"
-            },
-            "type": "array"
-          },
           "heroUrl": {
             "type": "string"
           },
@@ -2742,7 +2729,6 @@
           "games",
           "heroUrl",
           "topGames",
-          "genreBreakdown",
           "platformBreakdown",
           "userStats",
           "publishers",
@@ -4559,23 +4545,6 @@
         ],
         "type": "object"
       },
-      "GenreCount": {
-        "additionalProperties": false,
-        "properties": {
-          "gameCount": {
-            "format": "int64",
-            "type": "integer"
-          },
-          "name": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "name",
-          "gameCount"
-        ],
-        "type": "object"
-      },
       "HardestGamesResponse": {
         "additionalProperties": false,
         "properties": {
@@ -6210,12 +6179,6 @@
             },
             "type": "array"
           },
-          "genreBreakdown": {
-            "items": {
-              "$ref": "#/components/schemas/GenreCount"
-            },
-            "type": "array"
-          },
           "heroUrl": {
             "type": "string"
           },
@@ -6264,7 +6227,6 @@
           "games",
           "heroUrl",
           "topGames",
-          "genreBreakdown",
           "platformBreakdown",
           "userStats",
           "developers",

@@ -2282,47 +2282,10 @@ func TestGetConsoleShowcase_Success(t *testing.T) {
 		assert.Equal(t, "snes", g.ConsoleID)
 	}
 
-	// Genre breakdown should have 3 genres
-	assert.Len(t, resp.GenreBreakdown, 3)
-
 	// Top developers — Nintendo has 2 games, Square has 1
 	require.NotEmpty(t, resp.TopDevelopers)
 	assert.Equal(t, "Nintendo", resp.TopDevelopers[0].Name)
 	assert.Equal(t, 2, resp.TopDevelopers[0].GameCount)
-}
-
-func TestGetConsoleShowcase_GenreBreakdown(t *testing.T) {
-	env := setupExploreTestEnv(t)
-
-	// Create games with various genres on SNES
-	createExploreGameWithGenre(t, env.database, "SNES", "Game A", 90, "RPG", 1)
-	createExploreGameWithGenre(t, env.database, "SNES", "Game B", 85, "RPG", 1)
-	createExploreGameWithGenre(t, env.database, "SNES", "Game C", 80, "RPG", 1)
-	createExploreGameWithGenre(t, env.database, "SNES", "Game D", 75, "Platformer", 1)
-	createExploreGameWithGenre(t, env.database, "SNES", "Game E", 70, "Platformer", 1)
-	createExploreGameWithGenre(t, env.database, "SNES", "Game F", 65, "Action", 1)
-
-	// NES game should not be counted
-	createExploreGameWithGenre(t, env.database, "NES", "NES Game", 90, "RPG", 1)
-
-	w := httptest.NewRecorder()
-	req := httptest.NewRequest("GET", "/api/explore/consoles/snes/showcase", nil)
-	req.Header.Set("Authorization", "Bearer "+env.token)
-	env.router.ServeHTTP(w, req)
-
-	assert.Equal(t, http.StatusOK, w.Code)
-
-	var resp ConsoleShowcaseResponse
-	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
-
-	// Genre breakdown sorted by count desc
-	require.Len(t, resp.GenreBreakdown, 3)
-	assert.Equal(t, "RPG", resp.GenreBreakdown[0].Name)
-	assert.Equal(t, 3, resp.GenreBreakdown[0].GameCount)
-	assert.Equal(t, "Platformer", resp.GenreBreakdown[1].Name)
-	assert.Equal(t, 2, resp.GenreBreakdown[1].GameCount)
-	assert.Equal(t, "Action", resp.GenreBreakdown[2].Name)
-	assert.Equal(t, 1, resp.GenreBreakdown[2].GameCount)
 }
 
 func TestGetConsoleShowcase_TopDevelopers(t *testing.T) {
@@ -4501,74 +4464,6 @@ func TestGetDeveloperDetail_TopGames_NoRated(t *testing.T) {
 	assert.Empty(t, resp.TopGames)
 }
 
-func TestGetDeveloperDetail_GenreBreakdown(t *testing.T) {
-	env := setupExploreTestEnv(t)
-
-	createExploreGameFull(t, env.database, "NES", "Action 1", 85, "GenreDev", "Pub", "Action")
-	createExploreGameFull(t, env.database, "NES", "Action 2", 80, "GenreDev", "Pub", "Action")
-	createExploreGameFull(t, env.database, "SNES", "RPG 1", 90, "GenreDev", "Pub", "RPG")
-
-	w := httptest.NewRecorder()
-	req := httptest.NewRequest("GET", "/api/explore/developers/GenreDev", nil)
-	req.Header.Set("Authorization", "Bearer "+env.token)
-	env.router.ServeHTTP(w, req)
-
-	assert.Equal(t, http.StatusOK, w.Code)
-
-	var resp DeveloperDetailResponse
-	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
-
-	require.Len(t, resp.GenreBreakdown, 2)
-	// Sorted by count DESC
-	assert.Equal(t, "Action", resp.GenreBreakdown[0].Name)
-	assert.Equal(t, 2, resp.GenreBreakdown[0].GameCount)
-	assert.Equal(t, "RPG", resp.GenreBreakdown[1].Name)
-	assert.Equal(t, 1, resp.GenreBreakdown[1].GameCount)
-}
-
-func TestGetDeveloperDetail_GenreBreakdown_CommaSeparated(t *testing.T) {
-	env := setupExploreTestEnv(t)
-
-	createExploreGameFull(t, env.database, "NES", "Multi Genre", 85, "CSVDev", "Pub", "Action, RPG")
-	createExploreGameFull(t, env.database, "SNES", "Pure Action", 80, "CSVDev", "Pub", "Action")
-
-	w := httptest.NewRecorder()
-	req := httptest.NewRequest("GET", "/api/explore/developers/CSVDev", nil)
-	req.Header.Set("Authorization", "Bearer "+env.token)
-	env.router.ServeHTTP(w, req)
-
-	assert.Equal(t, http.StatusOK, w.Code)
-
-	var resp DeveloperDetailResponse
-	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
-
-	require.Len(t, resp.GenreBreakdown, 2)
-	// Action appears in both games
-	assert.Equal(t, "Action", resp.GenreBreakdown[0].Name)
-	assert.Equal(t, 2, resp.GenreBreakdown[0].GameCount)
-	// RPG appears in one game (from comma-separated value)
-	assert.Equal(t, "RPG", resp.GenreBreakdown[1].Name)
-	assert.Equal(t, 1, resp.GenreBreakdown[1].GameCount)
-}
-
-func TestGetDeveloperDetail_GenreBreakdown_EmptyGenres(t *testing.T) {
-	env := setupExploreTestEnv(t)
-
-	createExploreGameFull(t, env.database, "NES", "No Genre", 85, "NoGenreDev", "Pub", "")
-
-	w := httptest.NewRecorder()
-	req := httptest.NewRequest("GET", "/api/explore/developers/NoGenreDev", nil)
-	req.Header.Set("Authorization", "Bearer "+env.token)
-	env.router.ServeHTTP(w, req)
-
-	assert.Equal(t, http.StatusOK, w.Code)
-
-	var resp DeveloperDetailResponse
-	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
-
-	assert.Empty(t, resp.GenreBreakdown)
-}
-
 func TestGetDeveloperDetail_PlatformBreakdown(t *testing.T) {
 	env := setupExploreTestEnv(t)
 
@@ -4701,7 +4596,6 @@ func TestGetDeveloperDetail_NonExistent_EmptyArrays(t *testing.T) {
 	assert.Equal(t, 0, resp.GameCount)
 	assert.Empty(t, resp.Games)
 	assert.Empty(t, resp.TopGames)
-	assert.Empty(t, resp.GenreBreakdown)
 	assert.Empty(t, resp.PlatformBreakdown)
 	assert.Empty(t, resp.Publishers)
 	assert.Nil(t, resp.UserStats)
@@ -4746,9 +4640,6 @@ func TestGetPublisherDetail_Enriched(t *testing.T) {
 
 	// Top games (all 3 have rating > 0)
 	assert.Len(t, resp.TopGames, 3)
-
-	// Genre breakdown
-	require.Len(t, resp.GenreBreakdown, 3)
 
 	// Platform breakdown
 	require.Len(t, resp.PlatformBreakdown, 3)

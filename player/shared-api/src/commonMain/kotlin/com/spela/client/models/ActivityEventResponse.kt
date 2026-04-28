@@ -8,17 +8,9 @@
 
 @file:Suppress(
     "ArrayInDataClass",
-    "DuplicatedCode",
     "EnumEntryName",
     "RemoveRedundantQualifierName",
-    "RemoveRedundantCallsOfConversionMethods",
-    "REDUNDANT_CALL_OF_CONVERSION_METHOD",
-    "RedundantUnitReturnType",
-    "RemoveEmptyClassBody",
-    "UnnecessaryVariable",
-    "UnusedImport",
-    "UnnecessaryVariable",
-    "unused"
+    "UnusedImport"
 )
 
 package com.spela.client.models
@@ -51,7 +43,7 @@ data class ActivityEventResponse (
 
     @SerialName(value = "consoleName") @Required val consoleName: kotlin.String,
 
-    @SerialName(value = "createdAt") @Required val createdAt: kotlin.time.Instant,
+    @SerialName(value = "createdAt") @Required val createdAt: kotlinx.datetime.Instant,
 
     @SerialName(value = "eventType") @Required val eventType: kotlin.String,
 
@@ -63,13 +55,13 @@ data class ActivityEventResponse (
 
     @SerialName(value = "id") @Required val id: kotlin.String,
 
-    @SerialName(value = "metadata") @Required val metadata: kotlinx.serialization.json.JsonObject,
+    @SerialName(value = "metadata") @Required val metadata: kotlin.String,
 
     @SerialName(value = "userId") @Required val userId: kotlin.String,
 
     @SerialName(value = "username") @Required val username: kotlin.String
 
-) {
+) : kotlin.collections.HashMap<String, kotlinx.serialization.json.JsonElement>() {
 
 
 }

@@ -39,7 +39,6 @@ function makeShowcase(overrides: Partial<ConsoleShowcase> = {}): ConsoleShowcase
     hiddenGems: [],
     launchGames: [],
     recentlyAdded: [],
-    genreBreakdown: [],
     topDevelopers: [],
     recentlyPlayed: [],
     ...overrides,

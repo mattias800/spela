@@ -8,17 +8,9 @@
 
 @file:Suppress(
     "ArrayInDataClass",
-    "DuplicatedCode",
     "EnumEntryName",
     "RemoveRedundantQualifierName",
-    "RemoveRedundantCallsOfConversionMethods",
-    "REDUNDANT_CALL_OF_CONVERSION_METHOD",
-    "RedundantUnitReturnType",
-    "RemoveEmptyClassBody",
-    "UnnecessaryVariable",
-    "UnusedImport",
-    "UnnecessaryVariable",
-    "unused"
+    "UnusedImport"
 )
 
 package com.spela.client.models
@@ -67,7 +59,7 @@ data class GameSessionResponse (
 
     @SerialName(value = "coreName") @Required val coreName: kotlin.String,
 
-    @SerialName(value = "createdAt") @Required val createdAt: kotlin.time.Instant,
+    @SerialName(value = "createdAt") @Required val createdAt: kotlinx.datetime.Instant,
 
     @SerialName(value = "gameId") @Required val gameId: kotlin.String,
 
@@ -75,7 +67,7 @@ data class GameSessionResponse (
 
     @SerialName(value = "isSharedSession") @Required val isSharedSession: kotlin.Boolean,
 
-    @SerialName(value = "lastPlayedAt") @Required val lastPlayedAt: kotlin.time.Instant?,
+    @SerialName(value = "lastPlayedAt") @Required val lastPlayedAt: kotlinx.datetime.Instant?,
 
     @SerialName(value = "lastPlayedBy") @Required val lastPlayedBy: kotlin.String?,
 
@@ -105,7 +97,7 @@ data class GameSessionResponse (
 
     @SerialName(value = "totalPlayTime") @Required val totalPlayTime: kotlin.Long,
 
-    @SerialName(value = "updatedAt") @Required val updatedAt: kotlin.time.Instant,
+    @SerialName(value = "updatedAt") @Required val updatedAt: kotlinx.datetime.Instant,
 
     @SerialName(value = "userLockedCoreVersion") @Required val userLockedCoreVersion: kotlin.Boolean,
 

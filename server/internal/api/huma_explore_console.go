@@ -96,7 +96,6 @@ func (h *ExploreHandler) HumaGetConsoleShowcase(ctx context.Context, in *GetCons
 	}
 	hiddenGems := h.buildConsoleHiddenGems(console.ID, essentialIDs)
 	launchGames := h.buildLaunchGames(console.ID, console.Abbreviation)
-	genreBreakdown := h.buildGenreBreakdown(console.ID)
 	topDevelopers := h.buildConsoleTopDevelopers(console.ID, console.Name)
 
 	var recentlyPlayed []db.Game
@@ -171,7 +170,6 @@ func (h *ExploreHandler) HumaGetConsoleShowcase(ctx context.Context, in *GetCons
 			Essentials:     toResponses(essentials),
 			HiddenGems:     toResponses(hiddenGems),
 			LaunchGames:    toResponses(launchGames),
-			GenreBreakdown: genreBreakdown,
 			TopDevelopers:  topDevelopers,
 			RecentlyPlayed: toResponses(recentlyPlayed),
 			RecentlyAdded:  toResponses(recentlyAdded),

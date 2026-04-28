@@ -276,37 +276,6 @@ func buildTopGames(gameResponses []GameResponse, limit int) []GameResponse {
 	return top
 }
 
-// buildGenreBreakdownFromGames computes genre distribution from a slice of games.
-// Handles comma-separated genre values by splitting and trimming each part.
-func buildGenreBreakdownFromGames(games []db.Game) []GenreCount {
-	genreCounts := make(map[string]int)
-	for _, g := range games {
-		if g.Genre == "" {
-			continue
-		}
-		// Handle comma-separated genres
-		parts := strings.Split(g.Genre, ",")
-		for _, part := range parts {
-			genre := strings.TrimSpace(part)
-			if genre != "" {
-				genreCounts[genre]++
-			}
-		}
-	}
-
-	result := make([]GenreCount, 0, len(genreCounts))
-	for name, count := range genreCounts {
-		result = append(result, GenreCount{Name: name, GameCount: count})
-	}
-	sort.Slice(result, func(i, j int) bool {
-		if result[i].GameCount != result[j].GameCount {
-			return result[i].GameCount > result[j].GameCount
-		}
-		return result[i].Name < result[j].Name
-	})
-	return result
-}
-
 // buildPlatformBreakdown computes games-per-console from a slice of games.
 func buildPlatformBreakdown(games []db.Game) []PlatformCount {
 	type platformInfo struct {

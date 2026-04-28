@@ -8,17 +8,9 @@
 
 @file:Suppress(
     "ArrayInDataClass",
-    "DuplicatedCode",
     "EnumEntryName",
     "RemoveRedundantQualifierName",
-    "RemoveRedundantCallsOfConversionMethods",
-    "REDUNDANT_CALL_OF_CONVERSION_METHOD",
-    "RedundantUnitReturnType",
-    "RemoveEmptyClassBody",
-    "UnnecessaryVariable",
-    "UnusedImport",
-    "UnnecessaryVariable",
-    "unused"
+    "UnusedImport"
 )
 
 package com.spela.client.models
@@ -47,7 +39,7 @@ data class RefreshCoreResponse (
     @SerialName(value = "changed") @Required val changed: kotlin.Boolean,
 
     /* Timestamp persisted on the row after this refresh. */
-    @SerialName(value = "fetchedAt") @Required val fetchedAt: kotlin.time.Instant?,
+    @SerialName(value = "fetchedAt") @Required val fetchedAt: kotlinx.datetime.Instant?,
 
     /* The sha256 stored before this refresh. Empty on the first-ever fingerprint. */
     @SerialName(value = "oldSha256") @Required val oldSha256: kotlin.String,

@@ -8,17 +8,9 @@
 
 @file:Suppress(
     "ArrayInDataClass",
-    "DuplicatedCode",
     "EnumEntryName",
     "RemoveRedundantQualifierName",
-    "RemoveRedundantCallsOfConversionMethods",
-    "REDUNDANT_CALL_OF_CONVERSION_METHOD",
-    "RedundantUnitReturnType",
-    "RemoveEmptyClassBody",
-    "UnnecessaryVariable",
-    "UnusedImport",
-    "UnnecessaryVariable",
-    "unused"
+    "UnusedImport"
 )
 
 package com.spela.client.models
@@ -39,7 +31,7 @@ import kotlinx.serialization.encoding.*
 
 data class UpdateGamePlayTimeResponse (
 
-    @SerialName(value = "lastPlayed") @Required val lastPlayed: kotlin.time.Instant,
+    @SerialName(value = "lastPlayed") @Required val lastPlayed: kotlinx.datetime.Instant,
 
     @SerialName(value = "playTime") @Required val playTime: kotlin.Long,
 

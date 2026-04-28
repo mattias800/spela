@@ -50,12 +50,6 @@ const mockDeveloperDetail: DeveloperDetailResponse = {
     makeGame({ id: "1", title: "Mega Man X", consoleName: "SNES", igdbCriticsRating: 95 }),
     makeGame({ id: "4", title: "Street Fighter II", consoleName: "SNES", igdbCriticsRating: 92 }),
   ],
-  genreBreakdown: [
-    { name: "Platformer", gameCount: 2 },
-    { name: "Fighting", gameCount: 1 },
-    { name: "RPG", gameCount: 1 },
-    { name: "Action", gameCount: 1 },
-  ],
   platformBreakdown: [
     { consoleName: "SNES", consoleId: "snes", count: 4 },
     { consoleName: "GBA", consoleId: "gba", count: 1 },
@@ -293,54 +287,6 @@ describe("DeveloperDetailPage", () => {
     });
     renderPage();
     // Re-renders with empty topGames
-  });
-
-  // --- Genre Breakdown section ---
-
-  it("shows genre breakdown chips when 2+ genres", () => {
-    renderPage();
-    const section = screen.getByTestId("developer-genre-breakdown");
-    expect(section).toBeInTheDocument();
-    expect(within(section).getByText(/Platformer \(2\)/)).toBeInTheDocument();
-    expect(within(section).getByText(/Fighting \(1\)/)).toBeInTheDocument();
-    expect(within(section).getByText(/RPG \(1\)/)).toBeInTheDocument();
-  });
-
-  it("hides genre breakdown when fewer than 2 genres", () => {
-    mockUseDeveloperDetail.mockReturnValue({
-      data: {
-        ...mockDeveloperDetail,
-        genreBreakdown: [{ name: "Platformer", gameCount: 5 }],
-      },
-      isLoading: false,
-    });
-    renderPage();
-    expect(
-      screen.queryByTestId("developer-genre-breakdown"),
-    ).not.toBeInTheDocument();
-  });
-
-  it("filters games when clicking a genre chip", async () => {
-    const user = userEvent.setup();
-    renderPage();
-
-    const section = screen.getByTestId("developer-genre-breakdown");
-    const platformerBtn = within(section).getByText(/Platformer \(2\)/);
-    await user.click(platformerBtn);
-
-    // After genre filter, only platformer games remain.
-    // Since all Platformer games are on SNES, we get a grid (single platform = no grouping).
-    const grid = screen.getByTestId("developer-game-grid");
-    // Grid should only contain platformer games
-    const links = within(grid).getAllByRole("link");
-    expect(links).toHaveLength(2);
-    expect(within(grid).getByText("Mega Man X")).toBeInTheDocument();
-    expect(within(grid).getByText("Mega Man X2")).toBeInTheDocument();
-    // Non-platformer games should not be in the grid
-    expect(within(grid).queryByText("Breath of Fire")).not.toBeInTheDocument();
-    expect(
-      within(grid).queryByText("Street Fighter II"),
-    ).not.toBeInTheDocument();
   });
 
   // --- Platform sections ---

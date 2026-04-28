@@ -8,17 +8,9 @@
 
 @file:Suppress(
     "ArrayInDataClass",
-    "DuplicatedCode",
     "EnumEntryName",
     "RemoveRedundantQualifierName",
-    "RemoveRedundantCallsOfConversionMethods",
-    "REDUNDANT_CALL_OF_CONVERSION_METHOD",
-    "RedundantUnitReturnType",
-    "RemoveEmptyClassBody",
-    "UnnecessaryVariable",
-    "UnusedImport",
-    "UnnecessaryVariable",
-    "unused"
+    "UnusedImport"
 )
 
 package com.spela.client.models
@@ -54,9 +46,9 @@ data class SystemEventResponse (
 
     @SerialName(value = "categoryName") @Required val categoryName: kotlin.String,
 
-    @SerialName(value = "createdAt") @Required val createdAt: kotlin.time.Instant,
+    @SerialName(value = "createdAt") @Required val createdAt: kotlinx.datetime.Instant,
 
-    @SerialName(value = "dismissedAt") @Required val dismissedAt: kotlin.time.Instant?,
+    @SerialName(value = "dismissedAt") @Required val dismissedAt: kotlinx.datetime.Instant,
 
     @SerialName(value = "eventType") @Required val eventType: kotlin.String,
 
@@ -64,7 +56,7 @@ data class SystemEventResponse (
 
     @SerialName(value = "ip") @Required val ip: kotlin.String,
 
-    @SerialName(value = "metadata") @Required val metadata: kotlinx.serialization.json.JsonObject,
+    @SerialName(value = "metadata") @Required val metadata: kotlin.String,
 
     @SerialName(value = "metadataRaw") @Required val metadataRaw: kotlin.String,
 
@@ -72,14 +64,14 @@ data class SystemEventResponse (
 
     @SerialName(value = "reason") @Required val reason: kotlin.String,
 
-    @SerialName(value = "userId") @Required val userId: kotlin.Long?,
+    @SerialName(value = "userId") @Required val userId: kotlin.Long,
 
     @SerialName(value = "username") @Required val username: kotlin.String,
 
     /* A URL to the JSON Schema for this object. */
     @SerialName(value = "\$schema") val dollarSchema: kotlin.String? = null
 
-) {
+) : kotlin.collections.HashMap<String, kotlinx.serialization.json.JsonElement>() {
 
 
 }

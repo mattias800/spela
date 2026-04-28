@@ -135,10 +135,6 @@ data class DeveloperSummary(
     val consoles: List<String>,
 )
 
-data class DeveloperDetailGenreBreakdown(
-    val name: String,
-    val gameCount: Int,
-)
 
 data class DeveloperDetailPlatformBreakdown(
     val consoleName: String,
@@ -210,10 +206,6 @@ data class RelatedPublisher(
     val sharedDevelopers: List<String>,
 )
 
-data class PublisherDetailGenreBreakdown(
-    val name: String,
-    val gameCount: Int,
-)
 
 data class PublisherDetailPlatformBreakdown(
     val consoleName: String,
@@ -272,7 +264,6 @@ data class DeveloperDetail(
     override val heroUrl: String? = null,
     override val companyInfo: CompanyInfo? = null,
     override val topGames: List<Game> = emptyList(),
-    val genreBreakdown: List<DeveloperDetailGenreBreakdown> = emptyList(),
     val platformBreakdown: List<DeveloperDetailPlatformBreakdown> = emptyList(),
     override val userStats: DeveloperDetailUserStats? = null,
     val publishers: List<DeveloperDetailPublisher> = emptyList(),
@@ -292,7 +283,6 @@ data class PublisherDetail(
     override val heroUrl: String? = null,
     override val companyInfo: CompanyInfo? = null,
     override val topGames: List<Game> = emptyList(),
-    val genreBreakdown: List<PublisherDetailGenreBreakdown> = emptyList(),
     val platformBreakdown: List<PublisherDetailPlatformBreakdown> = emptyList(),
     override val userStats: PublisherDetailUserStats? = null,
     val developers: List<PublisherDetailDeveloper> = emptyList(),
@@ -313,17 +303,11 @@ data class DeveloperSpotlight(
     val heroUrl: String?,
 )
 
-data class GenreCount(
-    val name: String,
-    val gameCount: Int,
-)
-
 data class ConsoleShowcase(
     val console: Console,
     val essentials: List<Game>,
     val hiddenGems: List<Game>,
     val launchGames: List<Game>,
-    val genreBreakdown: List<GenreCount>,
     val topDevelopers: List<DeveloperSummary>,
     val recentlyPlayed: List<Game>,
     val recentlyAdded: List<Game>,

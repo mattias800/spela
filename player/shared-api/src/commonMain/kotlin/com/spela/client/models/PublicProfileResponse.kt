@@ -8,17 +8,9 @@
 
 @file:Suppress(
     "ArrayInDataClass",
-    "DuplicatedCode",
     "EnumEntryName",
     "RemoveRedundantQualifierName",
-    "RemoveRedundantCallsOfConversionMethods",
-    "REDUNDANT_CALL_OF_CONVERSION_METHOD",
-    "RedundantUnitReturnType",
-    "RemoveEmptyClassBody",
-    "UnnecessaryVariable",
-    "UnusedImport",
-    "UnnecessaryVariable",
-    "unused"
+    "UnusedImport"
 )
 
 package com.spela.client.models
@@ -60,7 +52,7 @@ data class PublicProfileResponse (
 
     @SerialName(value = "isOnline") @Required val isOnline: kotlin.Boolean,
 
-    @SerialName(value = "memberSince") @Required val memberSince: kotlin.time.Instant,
+    @SerialName(value = "memberSince") @Required val memberSince: kotlinx.datetime.Instant,
 
     @SerialName(value = "recentGames") @Required val recentGames: kotlin.collections.List<PublicProfileGame>,
 

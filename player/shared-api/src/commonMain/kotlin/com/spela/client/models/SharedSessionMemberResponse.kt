@@ -8,17 +8,9 @@
 
 @file:Suppress(
     "ArrayInDataClass",
-    "DuplicatedCode",
     "EnumEntryName",
     "RemoveRedundantQualifierName",
-    "RemoveRedundantCallsOfConversionMethods",
-    "REDUNDANT_CALL_OF_CONVERSION_METHOD",
-    "RedundantUnitReturnType",
-    "RemoveEmptyClassBody",
-    "UnnecessaryVariable",
-    "UnusedImport",
-    "UnnecessaryVariable",
-    "unused"
+    "UnusedImport"
 )
 
 package com.spela.client.models
@@ -46,7 +38,7 @@ data class SharedSessionMemberResponse (
 
     @SerialName(value = "id") @Required val id: kotlin.String,
 
-    @SerialName(value = "joinedAt") @Required val joinedAt: kotlin.time.Instant,
+    @SerialName(value = "joinedAt") @Required val joinedAt: kotlinx.datetime.Instant,
 
     @SerialName(value = "role") @Required val role: kotlin.String,
 

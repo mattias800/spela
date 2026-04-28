@@ -8,17 +8,9 @@
 
 @file:Suppress(
     "ArrayInDataClass",
-    "DuplicatedCode",
     "EnumEntryName",
     "RemoveRedundantQualifierName",
-    "RemoveRedundantCallsOfConversionMethods",
-    "REDUNDANT_CALL_OF_CONVERSION_METHOD",
-    "RedundantUnitReturnType",
-    "RemoveEmptyClassBody",
-    "UnnecessaryVariable",
-    "UnusedImport",
-    "UnnecessaryVariable",
-    "unused"
+    "UnusedImport"
 )
 
 package com.spela.client.models
@@ -70,7 +62,7 @@ data class RARecentAchievementResponse (
 
     @SerialName(value = "title") @Required val title: kotlin.String,
 
-    @SerialName(value = "unlockedAt") @Required val unlockedAt: kotlin.time.Instant
+    @SerialName(value = "unlockedAt") @Required val unlockedAt: kotlinx.datetime.Instant
 
 ) {
 

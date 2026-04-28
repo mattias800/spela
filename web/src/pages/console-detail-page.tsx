@@ -28,7 +28,6 @@ import {
   ConsoleHiddenGems,
   ConsoleLaunchGames,
   ConsoleRecentlyAdded,
-  ConsoleGenreBreakdown,
   ConsoleTopDevelopers,
   ConsoleRecentlyPlayed,
 } from "@/features/explore/components/console-showcase-sections";
@@ -131,9 +130,8 @@ export function ConsoleDetailPage() {
            returns an empty list (#633). Essentials, Launch Games, and
            Hidden Gems are most valuable on small libraries — they
            help a user with 6 Virtual Boy games discover the
-           curated picks. Top Developers and Genre Breakdown stay
-           hidden on small libraries because their signal degrades
-           with a small pool. */
+           curated picks. Top Developers stays hidden on small
+           libraries because its signal degrades with a small pool. */
         <>
           <ConsoleEssentials consoleId={id!} />
           <ConsoleLaunchGames consoleId={id!} />
@@ -182,7 +180,6 @@ export function ConsoleDetailPage() {
           <ConsoleEssentials consoleId={id!} />
           <ConsoleLaunchGames consoleId={id!} />
           <ConsoleHiddenGems consoleId={id!} />
-          <ConsoleGenreBreakdown consoleId={id!} />
           <ConsoleTopDevelopers consoleId={id!} />
           <ConsoleRecentlyAdded consoleId={id!} />
         </>

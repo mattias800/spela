@@ -77,7 +77,6 @@ export function DeveloperDetailPage() {
   const { data: developer, isLoading } = useDeveloperDetail(name);
   const { toggle: handleToggleFavorite } = useToggleFavorite();
   const { toggle: handleTogglePlayLater } = useTogglePlayLater();
-  const [genreFilter, setGenreFilter] = useState<string | null>(null);
   const [consoleFilter, setConsoleFilter] = useState<string | null>(null);
 
   if (isLoading) {
@@ -108,26 +107,14 @@ export function DeveloperDetailPage() {
     developer.topGames &&
     developer.topGames.length > 0;
 
-  // Show genre breakdown when 2+ genres exist
-  const showGenreBreakdown =
-    developer.genreBreakdown && developer.genreBreakdown.length >= 2;
-
   // Build platform-grouped games
   const platformBreakdown = developer.platformBreakdown;
   const sortedPlatforms = [...platformBreakdown].sort(
     (a, b) => b.count - a.count,
   );
 
-  // Apply genre + console filter to the all-games list
+  // Apply console filter to the all-games list
   let filteredGames = developer.games;
-  if (genreFilter) {
-    filteredGames = filteredGames.filter((g: Game) =>
-      g.genre
-        ?.split(",")
-        .map((s) => s.trim())
-        .includes(genreFilter),
-    );
-  }
   if (consoleFilter) {
     filteredGames = filteredGames.filter(
       (g: Game) => g.consoleName === consoleFilter,
@@ -206,33 +193,6 @@ export function DeveloperDetailPage() {
       {/* Rating Distribution */}
       {developer.ratingDistribution && (
         <RatingDistribution distribution={developer.ratingDistribution} />
-      )}
-
-      {/* Genre Breakdown (filter chips) */}
-      {showGenreBreakdown && (
-        <section data-testid="developer-genre-breakdown">
-          <h2 className="text-lg font-bold text-surface-100 mb-3">Genres</h2>
-          <div className="flex flex-wrap gap-2">
-            <FilterChip
-              label="All"
-              isSelected={genreFilter === null}
-              onClick={() => setGenreFilter(null)}
-            />
-            {developer.genreBreakdown.map((genre) => (
-              <FilterChip
-                key={genre.name}
-                label={genre.name}
-                isSelected={genreFilter === genre.name}
-                onClick={() =>
-                  setGenreFilter(
-                    genreFilter === genre.name ? null : genre.name,
-                  )
-                }
-                count={genre.gameCount}
-              />
-            ))}
-          </div>
-        </section>
       )}
 
       {/* User Stats Card */}

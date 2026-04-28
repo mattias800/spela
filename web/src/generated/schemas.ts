@@ -124,7 +124,6 @@ export type GameSeriesResponse = Schemas["GameSeriesResponse"];
 export type GameSessionResponse = Schemas["GameSessionResponse"];
 export type GameStatsResponse = Schemas["GameStatsResponse"];
 export type GameStatsTopPlayer = Schemas["GameStatsTopPlayer"];
-export type GenreCount = Schemas["GenreCount"];
 export type HardestGamesResponse = Schemas["HardestGamesResponse"];
 export type HardwareMakerResponse = Schemas["HardwareMakerResponse"];
 export type HealthResponse = Schemas["HealthResponse"];

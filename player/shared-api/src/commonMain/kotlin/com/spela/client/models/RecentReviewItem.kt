@@ -8,17 +8,9 @@
 
 @file:Suppress(
     "ArrayInDataClass",
-    "DuplicatedCode",
     "EnumEntryName",
     "RemoveRedundantQualifierName",
-    "RemoveRedundantCallsOfConversionMethods",
-    "REDUNDANT_CALL_OF_CONVERSION_METHOD",
-    "RedundantUnitReturnType",
-    "RemoveEmptyClassBody",
-    "UnnecessaryVariable",
-    "UnusedImport",
-    "UnnecessaryVariable",
-    "unused"
+    "UnusedImport"
 )
 
 package com.spela.client.models
@@ -48,7 +40,7 @@ data class RecentReviewItem (
 
     @SerialName(value = "review") @Required val review: kotlin.String,
 
-    @SerialName(value = "reviewedAt") @Required val reviewedAt: kotlin.time.Instant,
+    @SerialName(value = "reviewedAt") @Required val reviewedAt: kotlinx.datetime.Instant,
 
     @SerialName(value = "reviewerName") @Required val reviewerName: kotlin.String
 

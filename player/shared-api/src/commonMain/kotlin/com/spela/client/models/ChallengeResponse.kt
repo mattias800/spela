@@ -8,17 +8,9 @@
 
 @file:Suppress(
     "ArrayInDataClass",
-    "DuplicatedCode",
     "EnumEntryName",
     "RemoveRedundantQualifierName",
-    "RemoveRedundantCallsOfConversionMethods",
-    "REDUNDANT_CALL_OF_CONVERSION_METHOD",
-    "RedundantUnitReturnType",
-    "RemoveEmptyClassBody",
-    "UnnecessaryVariable",
-    "UnusedImport",
-    "UnnecessaryVariable",
-    "unused"
+    "UnusedImport"
 )
 
 package com.spela.client.models
@@ -66,7 +58,7 @@ data class ChallengeResponse (
 
     @SerialName(value = "coreName") @Required val coreName: kotlin.String,
 
-    @SerialName(value = "createdAt") @Required val createdAt: kotlin.time.Instant,
+    @SerialName(value = "createdAt") @Required val createdAt: kotlinx.datetime.Instant,
 
     @SerialName(value = "creatorAvatar") @Required val creatorAvatar: kotlin.String,
 
@@ -78,7 +70,7 @@ data class ChallengeResponse (
 
     @SerialName(value = "difficulty") @Required val difficulty: kotlin.String,
 
-    @SerialName(value = "expiresAt") @Required val expiresAt: kotlin.time.Instant?,
+    @SerialName(value = "expiresAt") @Required val expiresAt: kotlinx.datetime.Instant?,
 
     @SerialName(value = "gameCoverUrl") @Required val gameCoverUrl: kotlin.String,
 
@@ -98,7 +90,7 @@ data class ChallengeResponse (
 
     @SerialName(value = "type") @Required val type: kotlin.String,
 
-    @SerialName(value = "updatedAt") @Required val updatedAt: kotlin.time.Instant,
+    @SerialName(value = "updatedAt") @Required val updatedAt: kotlinx.datetime.Instant,
 
     /* A URL to the JSON Schema for this object. */
     @SerialName(value = "\$schema") val dollarSchema: kotlin.String? = null

@@ -464,8 +464,6 @@ export type CoverGalleryResponse = Schemas["CoverGalleryResponse"];
 
 // --- Console Showcase ---
 
-export type GenreCount = Schemas["GenreCount"];
-
 export type ConsoleShowcase = Schemas["ConsoleShowcaseResponse"];
 
 // ConsoleHighlight and ConsoleHighlightsResponse flow through @/generated/schemas.
