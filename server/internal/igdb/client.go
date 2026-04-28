@@ -7,6 +7,7 @@ import (
 	"log/slog"
 	"net/http"
 	"net/url"
+	"regexp"
 	"strings"
 	"sync"
 	"time"
@@ -146,6 +147,98 @@ func scummvmPlatformsFromHint(hint string) []int {
 	default:
 		return []int{dosID, amigaID, macID, atariSTID}
 	}
+}
+
+// scummvmGameTitles maps ScummVM gameids (the contents of `*.scummvm`
+// marker files, e.g. `monkey`, `gob1`, `indy3`, `ite`) to canonical game
+// titles searchable on IGDB.
+//
+// ScummVM games on disk are folders; the convention used by RetroArch /
+// EmulationStation / Recalbox / LaunchBox is that the folder contains a
+// `<gameid>.scummvm` marker whose content is the gameid. When the folder
+// name is also just the gameid (common — most users don't rename the
+// folder), the scanner-derived title is "gob1" or "ite", which IGDB
+// can't match. This map gives the scraper a real title to search for.
+//
+// The mapping is intentionally narrow — only the gameids users actually
+// drop in. Add entries as needed; missing entries fall through and the
+// scraper uses the original title (which works for descriptive folder
+// names like "The Secret of Monkey Island (CD DOS VGA)").
+//
+// Source: ScummVM's per-engine detection_tables.h files, cross-checked
+// against IGDB title spelling so the search hits cleanly.
+var scummvmGameTitles = map[string]string{
+	// LucasArts SCUMM
+	"atlantis": "Indiana Jones and the Fate of Atlantis",
+	"dig":      "The Dig",
+	"ft":       "Full Throttle",
+	"indy3":    "Indiana Jones and the Last Crusade: The Graphic Adventure",
+	"loom":     "Loom",
+	"maniac":   "Maniac Mansion",
+	"monkey":   "The Secret of Monkey Island",
+	"monkey2":  "Monkey Island 2: LeChuck's Revenge",
+	"samnmax":  "Sam & Max Hit the Road",
+	"tentacle": "Day of the Tentacle",
+	"zak":      "Zak McKracken and the Alien Mindbenders",
+
+	// Sierra AGI / SCI handled by other engines, but a few canonical IDs
+	// users commonly drop in:
+	"kq1":   "King's Quest: Quest for the Crown",
+	"kq2":   "King's Quest II: Romancing the Throne",
+	"kq3":   "King's Quest III: To Heir Is Human",
+	"kq4":   "King's Quest IV: The Perils of Rosella",
+	"sq1":   "Space Quest: The Sarien Encounter",
+	"sq2":   "Space Quest II: Vohaul's Revenge",
+	"lsl1":  "Leisure Suit Larry in the Land of the Lounge Lizards",
+
+	// Coktel Vision (Gob* engine)
+	"gob1":  "Gobliiins",
+	"gob2":  "Gobliins 2: The Prince of Buffoon",
+	"gob3":  "Goblins Quest 3",
+	"woodruff": "The Bizarre Adventures of Woodruff and the Schnibble",
+
+	// SAGA engine
+	"ite": "Inherit the Earth: Quest for the Orb",
+	"ihnm": "I Have No Mouth, and I Must Scream",
+
+	// Westwood / Cyan / Revolution etc.
+	"kyra1": "The Legend of Kyrandia",
+	"kyra2": "The Legend of Kyrandia: Hand of Fate",
+	"kyra3": "The Legend of Kyrandia: Malcolm's Revenge",
+	"sky":   "Beneath a Steel Sky",
+	"bs1":   "Broken Sword: The Shadow of the Templars",
+	"bs2":   "Broken Sword II: The Smoking Mirror",
+
+	// Misc
+	"simon1": "Simon the Sorcerer",
+	"simon2": "Simon the Sorcerer II: The Lion, the Witch and the Wardrobe",
+	"toon":   "Toonstruck",
+}
+
+// reScummvmGameID matches a string that looks like a ScummVM gameid:
+// short, lowercase alphanumerics + optional digits + optional underscores
+// or hyphens, no spaces, no parentheses. Used to decide whether the
+// fallback title-as-search-term path or the gameid-resolver path applies.
+//
+// Examples it matches: gob1, monkey, monkey2, samnmax, kyra1, indy3, ite.
+// Examples it doesn't: "The Secret of Monkey Island (CD DOS VGA)",
+// "Loom (FM-Towns)", "Day of the Tentacle".
+var reScummvmGameID = regexp.MustCompile(`^[a-z][a-z0-9_-]{1,15}$`)
+
+// LookupScummvmGameTitle returns the canonical IGDB-searchable title for a
+// ScummVM [gameid] (e.g. "gob1" → "Gobliiins"), or empty string when the
+// id isn't in the curated map.
+//
+// [gameid] is matched case-insensitively after trimming surrounding
+// whitespace. When the input doesn't match the gameid pattern (e.g. it's
+// a real descriptive title), this returns "" and the caller should keep
+// using the original title.
+func LookupScummvmGameTitle(gameid string) string {
+	id := strings.ToLower(strings.TrimSpace(gameid))
+	if !reScummvmGameID.MatchString(id) {
+		return ""
+	}
+	return scummvmGameTitles[id]
 }
 
 // formatPlatformList renders a list of platform IDs as an IGDB query tuple:

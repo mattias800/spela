@@ -975,3 +975,64 @@ func TestIGDBPlatformsFor(t *testing.T) {
 		})
 	}
 }
+
+func TestLookupScummvmGameTitle(t *testing.T) {
+	tests := []struct {
+		name   string
+		gameid string
+		want   string
+	}{
+		{
+			name:   "gob1 resolves to Gobliiins",
+			gameid: "gob1",
+			want:   "Gobliiins",
+		},
+		{
+			name:   "case-insensitive (uppercase)",
+			gameid: "GOB1",
+			want:   "Gobliiins",
+		},
+		{
+			name:   "leading/trailing whitespace tolerated",
+			gameid: "  indy3 ",
+			want:   "Indiana Jones and the Last Crusade: The Graphic Adventure",
+		},
+		{
+			name:   "ite resolves to Inherit the Earth",
+			gameid: "ite",
+			want:   "Inherit the Earth: Quest for the Orb",
+		},
+		{
+			name:   "monkey resolves to Secret of Monkey Island",
+			gameid: "monkey",
+			want:   "The Secret of Monkey Island",
+		},
+		{
+			name:   "unknown gameid returns empty",
+			gameid: "unknown_engine_xyz",
+			want:   "",
+		},
+		{
+			name:   "descriptive title with parentheses isn't matched",
+			gameid: "The Secret of Monkey Island (CD DOS VGA)",
+			want:   "",
+		},
+		{
+			name:   "title with spaces isn't matched",
+			gameid: "Day of the Tentacle",
+			want:   "",
+		},
+		{
+			name:   "empty string returns empty",
+			gameid: "",
+			want:   "",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := LookupScummvmGameTitle(tt.gameid)
+			assert.Equal(t, tt.want, got)
+		})
+	}
+}
