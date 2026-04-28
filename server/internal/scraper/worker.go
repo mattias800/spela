@@ -82,16 +82,6 @@ func (w *ScrapeWorker) sleepOrShutdown(ctx context.Context, d time.Duration) boo
 }
 
 func (w *ScrapeWorker) processItem(ctx context.Context, item *db.ScrapeQueueItem) {
-	var game db.Game
-	if err := w.db.Preload("Console").First(&game, item.GameID).Error; err != nil {
-		slog.Warn("scrape worker: game not found", "gameId", item.GameID, "error", err)
-		w.queue.MarkFailed(item, fmt.Sprintf("game not found: %v", err))
-		w.broadcastScrapeStatus(item.GameID, "idle")
-		return
-	}
-
-	w.broadcastScrapeStatus(game.ID, "scraping")
-
 	// Dispatch based on queue item type.
 	// Default to "scrape" for backward compatibility with items created before
 	// the Type field was added (they have Type="" due to GORM zero-value).
@@ -100,13 +90,34 @@ func (w *ScrapeWorker) processItem(ctx context.Context, item *db.ScrapeQueueItem
 		itemType = "scrape"
 	}
 
+	// Only "scrape" items represent user-visible scrape activity. "ra_fetch"
+	// is background achievement-metadata polling — not a scrape. The UI's
+	// scrape-status indicator should not fire for it (otherwise a polling
+	// achievements query looks like the game is being rescraped over and
+	// over). Both still go through MarkCompleted / MarkFailed for queue
+	// bookkeeping; only the WS broadcast is gated.
+	broadcastStatus := itemType == "scrape"
+
+	var game db.Game
+	if err := w.db.Preload("Console").First(&game, item.GameID).Error; err != nil {
+		slog.Warn("scrape worker: game not found", "gameId", item.GameID, "error", err)
+		w.queue.MarkFailed(item, fmt.Sprintf("game not found: %v", err))
+		if broadcastStatus {
+			w.broadcastScrapeStatus(item.GameID, "idle")
+		}
+		return
+	}
+
+	if broadcastStatus {
+		w.broadcastScrapeStatus(game.ID, "scraping")
+	}
+
 	switch itemType {
 	case "ra_fetch":
 		if err := w.scraper.FetchRAAchievements(&game); err != nil {
 			slog.Warn("scrape worker: RA fetch failed", "game", game.Title, "error", err)
 			jobDone, _ := w.queue.MarkFailed(item, err.Error())
 			w.broadcastProgress(item, &game, false, jobDone)
-			w.broadcastScrapeStatus(game.ID, "idle")
 			return
 		}
 
@@ -160,7 +171,9 @@ func (w *ScrapeWorker) processItem(ctx context.Context, item *db.ScrapeQueueItem
 
 	jobDone, _ := w.queue.MarkCompleted(item)
 	w.broadcastProgress(item, &game, verified, jobDone)
-	w.broadcastScrapeStatus(game.ID, "idle")
+	if broadcastStatus {
+		w.broadcastScrapeStatus(game.ID, "idle")
+	}
 }
 
 func (w *ScrapeWorker) broadcastProgress(item *db.ScrapeQueueItem, game *db.Game, verified bool, jobDone bool) {
