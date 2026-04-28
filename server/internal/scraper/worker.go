@@ -174,6 +174,17 @@ func (w *ScrapeWorker) broadcastProgress(item *db.ScrapeQueueItem, game *db.Game
 			return
 		}
 
+		// Skip the progress broadcast when the job is no longer running —
+		// e.g. the admin clicked "Cancel scrape" while the worker had an
+		// item in flight. CancelJob marks pending items + the job as
+		// "cancelled", but the in-flight item keeps running until its
+		// scrape finishes; without this guard we emit a final
+		// EventScrapeProgress for that item that the UI mistakes for
+		// "the scrape is still going" right after Cancel was acked.
+		if job.Status != "running" {
+			return
+		}
+
 		w.hub.Broadcast(ws.Event{
 			Type: ws.EventScrapeProgress,
 			Payload: ScrapeProgress{
