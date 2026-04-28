@@ -12,34 +12,64 @@ import (
 	"sync"
 )
 
-// DiscBasedSystems lists console abbreviations where CRC-based identification
-// is impractical — either disc images are too large, or No-Intro DATs don't
-// exist for the platform (arcade ROM sets, DOS, etc.).
-var DiscBasedSystems = map[string]bool{
-	"PSX":    true,
-	"SAT":    true,
-	"DC":     true,
-	"SCD":    true,
-	"PS2":    true,
-	"GC":     true,  // disc-based
-	"PCFX":   true,  // disc-based
-	"NEOGEO": true,  // arcade ROM sets, no No-Intro DAT
-	"ARCADE": true,  // MAME ROM sets, no No-Intro DAT
-	"DOS":    true,  // no No-Intro DAT
-	"PS3":    true,  // disc/pkg-based
-	"PS4":    true,  // disc/pkg-based
-	"PS5":    true,  // disc/pkg-based
-	"X360":   true,  // disc/xex-based
-	"XONE":   true,  // disc-based
-	"XSX":    true,  // disc-based
-	"WII":    true,  // disc-based
-	"WIIU":   true,  // disc-based
-	"NSW":    true,  // cartridge images, too large for CRC
+// VerificationSkipSystems lists console abbreviations where No-Intro CRC
+// verification is impractical or meaningless. Games on these consoles get
+// VerificationStatus = "not_applicable" instead of "unverified", so the
+// admin UI doesn't dangle a useless "unverified" badge on them.
+//
+// Three reasons a console belongs here:
+//
+//  1. Disc-based — the image is too large to CRC and No-Intro doesn't
+//     index disc media anyway. Redump may be tried separately.
+//  2. No DAT exists for this platform (arcade ROM sets, demoscene
+//     productions, ScummVM folders, …).
+//  3. The DAT exists but the dump format isn't bitwise-deterministic —
+//     e.g. Amiga ADF dumps vary by source tool / filesystem layout, so
+//     a "verified" hit is fragile and an "unverified" tag is just noise.
+var VerificationSkipSystems = map[string]bool{
+	// Disc-based consoles
+	"PSX":  true,
+	"SAT":  true,
+	"DC":   true,
+	"SCD":  true,
+	"PS2":  true,
+	"GC":   true,
+	"PCFX": true,
+	"PS3":  true, // disc/pkg-based
+	"PS4":  true, // disc/pkg-based
+	"PS5":  true, // disc/pkg-based
+	"X360": true, // disc/xex-based
+	"XONE": true,
+	"XSX":  true,
+	"WII":  true,
+	"WIIU": true,
+
+	// Cartridge images too large for practical CRC
+	"NSW": true,
+
+	// No No-Intro DAT for these platforms
+	"NEOGEO": true, // arcade ROM sets
+	"ARCADE": true, // MAME ROM sets
+	"DOS":    true,
+
+	// Demoscene productions — never indexed in any DAT
+	"ADEMO": true, // Amiga demos
+	"DDEMO": true, // DOS demos
+
+	// ScummVM games are folder-based, no concept of a verifiable hash
+	"SCUMMVM": true,
+
+	// Amiga commercial games: a Commodore - Amiga.dat exists but ADF
+	// dumps aren't bitwise-deterministic (filesystem layout varies),
+	// so "verified" is fragile and "unverified" is just confusing.
+	"AMIGA": true,
+	"ACD32": true,
 }
+
 
 // MaxROMSize defines conservative upper bounds (in bytes) per console abbreviation.
 // Used during auto-identification to skip consoles where the file is too large to be a ROM.
-// Consoles not in this map (and not in DiscBasedSystems) are skipped during auto-identification.
+// Consoles not in this map (and not in VerificationSkipSystems) are skipped during auto-identification.
 var MaxROMSize = map[string]int64{
 	"NES":  4 * 1024 * 1024,   // 4 MB
 	"SNES": 16 * 1024 * 1024,  // 16 MB
@@ -119,7 +149,7 @@ func (c *DATCache) Dir() string {
 // It loads and parses the bundled DAT file from disk if not already in memory.
 // Returns nil, nil for disc-based systems, unmapped systems, or if the file is missing.
 func (c *DATCache) GetIndex(consoleAbbrev string) (*DATIndex, error) {
-	if DiscBasedSystems[consoleAbbrev] {
+	if VerificationSkipSystems[consoleAbbrev] {
 		return nil, nil
 	}
 
@@ -198,7 +228,7 @@ func (c *DATCache) RefreshAll() {
 
 	var ok, failures int
 	for consoleAbbrev, systemName := range AbbreviationToLibRetro {
-		if DiscBasedSystems[consoleAbbrev] && !nameOnlyDATSystems[consoleAbbrev] {
+		if VerificationSkipSystems[consoleAbbrev] && !nameOnlyDATSystems[consoleAbbrev] {
 			continue
 		}
 

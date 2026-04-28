@@ -352,7 +352,7 @@ func (h *GameHandler) HumaReplaceROM(ctx context.Context, in *AdminReplaceROMInp
 
 	if h.Scraper != nil && h.Scraper.DATCache != nil {
 		consoleAbbrev := game.Console.Abbreviation
-		if scraper.DiscBasedSystems[consoleAbbrev] {
+		if scraper.VerificationSkipSystems[consoleAbbrev] {
 			newVerificationStatus = "not_applicable"
 			if idx, err := h.Scraper.DATCache.GetRedumpIndex(consoleAbbrev); err == nil && idx != nil {
 				if entry, ok := idx.LookupCRC(crc); ok {

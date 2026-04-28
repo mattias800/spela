@@ -235,6 +235,22 @@ func Initialize(dbPath string) (*gorm.DB, error) {
 		slog.Warn("failed to ensure token_blacklists expires_at index", "error", err)
 	}
 
+	// One-time backfill: games on consoles where CRC verification doesn't
+	// apply (Amiga, demos, ScummVM) used to land with status "unverified"
+	// because the scraper's skip-list didn't cover them. Flip those to
+	// "not_applicable" so the verification badge stops showing on those
+	// game detail pages without forcing a full rescrape.
+	if err := db.Exec(`
+		UPDATE games SET verification_status = 'not_applicable'
+		WHERE verification_status = 'unverified'
+		  AND console_id IN (
+		    SELECT id FROM consoles WHERE abbreviation IN
+		      ('AMIGA','ACD32','ADEMO','DDEMO','SCUMMVM')
+		  )
+	`).Error; err != nil {
+		slog.Warn("verification_status backfill for skip-list consoles failed", "error", err)
+	}
+
 	// Promote the first user to owner if no owner exists (handles upgrades).
 	var ownerCount int64
 	db.Model(&User{}).Where("role = ?", RoleOwner).Count(&ownerCount)

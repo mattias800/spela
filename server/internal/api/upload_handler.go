@@ -421,7 +421,7 @@ func (h *UploadHandler) tryIdentifyByDAT(filePath string, fileSize int64) (conso
 
 	// Try No-Intro DATs for cartridge-based systems
 	for abbrev := range scraper.AbbreviationToLibRetro {
-		if scraper.DiscBasedSystems[abbrev] {
+		if scraper.VerificationSkipSystems[abbrev] {
 			continue
 		}
 		maxSize, ok := scraper.MaxROMSize[abbrev]
@@ -508,8 +508,8 @@ func (h *UploadHandler) scrapeStaged(staged *db.StagedUpload) {
 		if staged.CanonicalName != "" {
 			staged.Title = scanner.GameTitle(staged.CanonicalName)
 		}
-	} else if scraper.DiscBasedSystems[console.Abbreviation] {
-		// Disc-based system: try Redump DAT verification if available
+	} else if scraper.VerificationSkipSystems[console.Abbreviation] {
+		// CRC verification skipped — try Redump DAT for disc-based consoles
 		staged.VerificationStatus = "not_applicable"
 		if h.Scraper != nil && h.Scraper.DATCache != nil {
 			if crc, err := scraper.ComputeFileCRC32(staged.FilePath); err == nil {
