@@ -90,6 +90,18 @@ var AbbreviationToIGDBPlatform = map[string][]int{
 	"PET":    {90},
 	"PLUS4":  {94},
 	"VIC20":  {71},
+	// Verified against IGDB platforms endpoint (2026-04):
+	"A800":    {65},  // Atari 8-bit family (400/800/XL/XE)
+	"ATARIST": {63},  // Atari ST/STE
+	"CHAF":    {127}, // Fairchild Channel F
+	"FDS":     {51},  // Family Computer Disk System
+	"GW":      {307}, // Nintendo Game & Watch
+	"INTV":    {67},  // Mattel Intellivision
+	"O2":      {133}, // Magnavox Odyssey 2 / Videopac G7000
+	"SG1K":    {84},  // Sega SG-1000
+	"SGX":     {128}, // NEC PC Engine SuperGrafx
+	"VEC":     {70},  // GCE Vectrex
+	"VITA":    {46},  // Sony PlayStation Vita
 }
 
 // IGDBPlatformsFor returns the IGDB platform IDs to constrain a search by
