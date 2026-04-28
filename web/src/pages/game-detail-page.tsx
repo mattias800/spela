@@ -167,20 +167,22 @@ export function GameDetailPage() {
 
   if (isLoading) {
     return (
-      <div className="max-w-5xl">
+      <PageLayout backButtonVariant="floating">
         <GameDetailSkeleton aspectRatio={consoleInfo?.coverAspectRatio} />
-      </div>
+      </PageLayout>
     );
   }
 
   if (!game) {
     return (
-      <div className="text-center py-20">
-        <p className="text-surface-400">Game not found</p>
-        <Button variant="ghost" onClick={() => navigate(-1)} className="mt-4">
-          Go back
-        </Button>
-      </div>
+      <PageLayout backButtonVariant="floating">
+        <div className="text-center py-20">
+          <p className="text-surface-400">Game not found</p>
+          <Button variant="ghost" onClick={() => navigate(-1)} className="mt-4">
+            Go back
+          </Button>
+        </div>
+      </PageLayout>
     );
   }
 
