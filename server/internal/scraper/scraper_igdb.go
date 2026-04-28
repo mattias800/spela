@@ -60,7 +60,7 @@ func (s *Scraper) ScrapeGame(game *db.Game) error {
 	}
 
 	// Mark disc-based systems as not applicable for CRC verification
-	if DiscBasedSystems[console.Abbreviation] {
+	if VerificationSkipSystems[console.Abbreviation] {
 		game.VerificationStatus = "not_applicable"
 	}
 
