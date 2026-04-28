@@ -51,7 +51,7 @@ function ShowcaseCard({
   const pillClass = getRarityPillClass(rarity.tier);
 
   return (
-    <div className="flex flex-col items-center gap-2 w-36 flex-shrink-0">
+    <div data-comp="ShowcaseCard" className="flex flex-col items-center gap-2 w-36 flex-shrink-0">
       {/* Badge */}
       <div
         className={cn(
@@ -113,7 +113,7 @@ export function AchievementShowcase({ userId }: { userId: string }) {
   if (!hasShowcase && !isOwnProfile) return null;
 
   return (
-    <section>
+    <section data-comp="AchievementShowcase">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2.5">
           <Trophy className="h-5 w-5 text-brand-400" />

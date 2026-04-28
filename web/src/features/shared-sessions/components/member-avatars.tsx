@@ -11,7 +11,7 @@ export function MemberAvatars({ members, max = 4 }: MemberAvatarsProps) {
   const overflow = members.length - max;
 
   return (
-    <div className="flex -space-x-2">
+    <div data-comp="MemberAvatars" className="flex -space-x-2">
       {visible.map((member) => (
         <div
           key={member.username}

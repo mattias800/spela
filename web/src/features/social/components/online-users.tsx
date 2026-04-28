@@ -6,7 +6,7 @@ import { useOnlineUsers } from "@/hooks/use-social";
 
 function OnlineUsersSkeleton() {
   return (
-    <div className="space-y-3">
+    <div data-comp="OnlineUsersSkeleton" className="space-y-3">
       {Array.from({ length: 3 }, (_, i) => (
         <div key={i} className="flex items-center gap-3 px-3 py-2">
           <Skeleton className="h-8 w-8 rounded-full" />
@@ -24,7 +24,7 @@ export function OnlineUsers() {
   const { data, isLoading } = useOnlineUsers();
 
   return (
-    <div data-testid="online-users-widget">
+    <div data-comp="OnlineUsers" data-testid="online-users-widget">
       <div className="flex items-center gap-2.5 mb-4">
         <Users className="h-5 w-5 text-brand-400" />
         <h2 className="text-lg font-bold text-surface-100">Online Now</h2>

@@ -8,7 +8,7 @@ import { OnlineUsers } from "@/features/social/components/online-users";
 
 function ActivityPageSkeleton() {
   return (
-    <div className="space-y-2">
+    <div data-comp="ActivityPageSkeleton" className="space-y-2">
       {Array.from({ length: 10 }, (_, i) => (
         <div key={i} className="flex items-start gap-3 px-3 py-3">
           <Skeleton className="h-8 w-8 rounded-full flex-shrink-0" />

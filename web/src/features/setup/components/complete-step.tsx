@@ -14,7 +14,7 @@ export function CompleteStep({
   const navigate = useNavigate();
 
   return (
-    <div className="space-y-6 text-center">
+    <div data-comp="CompleteStep" className="space-y-6 text-center">
       <div className="flex justify-center">
         <div className="h-16 w-16 rounded-full bg-success-500/20 flex items-center justify-center">
           <CheckCircle2 className="h-8 w-8 text-success-500" />

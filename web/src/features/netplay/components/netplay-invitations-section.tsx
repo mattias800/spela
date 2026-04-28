@@ -5,7 +5,7 @@ import { NetplayInviteCard } from "@/features/netplay/components/netplay-invite-
 
 function InvitationsSkeleton() {
   return (
-    <div className="space-y-3">
+    <div data-comp="InvitationsSkeleton" className="space-y-3">
       {Array.from({ length: 2 }, (_, i) => (
         <div
           key={i}
@@ -50,7 +50,7 @@ export function NetplayInvitationsSection() {
   }
 
   return (
-    <section>
+    <section data-comp="NetplayInvitationsSection">
       <div className="flex items-center gap-2.5 mb-4">
         <Mail className="h-5 w-5 text-brand-400" />
         <h2 className="text-xl font-bold text-surface-100">Invitations</h2>

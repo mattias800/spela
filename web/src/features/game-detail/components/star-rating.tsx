@@ -27,7 +27,7 @@ export function StarRating({
   const interactive = !readonly && !!onChange;
 
   return (
-    <div
+    <div data-comp="StarRating"
       className="inline-flex items-center gap-0.5"
       onMouseLeave={() => interactive && setHovered(0)}
       data-testid="star-rating"

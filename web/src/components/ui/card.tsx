@@ -7,7 +7,7 @@ interface CardProps extends HTMLAttributes<HTMLDivElement> {
 
 export function Card({ className, hover, children, ...props }: CardProps) {
   return (
-    <div
+    <div data-comp="Card"
       className={cn(
         "rounded-2xl bg-surface-900/50 border border-surface-800/50 overflow-hidden",
         hover &&
@@ -27,7 +27,7 @@ export function CardHeader({
   ...props
 }: HTMLAttributes<HTMLDivElement>) {
   return (
-    <div className={cn("px-5 pt-5 pb-2", className)} {...props}>
+    <div data-comp="CardHeader" className={cn("px-5 pt-5 pb-2", className)} {...props}>
       {children}
     </div>
   );
@@ -39,7 +39,7 @@ export function CardContent({
   ...props
 }: HTMLAttributes<HTMLDivElement>) {
   return (
-    <div className={cn("px-5 pb-5", className)} {...props}>
+    <div data-comp="CardContent" className={cn("px-5 pb-5", className)} {...props}>
       {children}
     </div>
   );

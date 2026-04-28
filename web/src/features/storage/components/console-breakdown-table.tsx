@@ -11,7 +11,7 @@ export function ConsoleBreakdownTable({
   const sorted = [...consoles].sort((a, b) => b.bytes - a.bytes);
 
   return (
-    <div className="overflow-x-auto">
+    <div data-comp="ConsoleBreakdownTable" className="overflow-x-auto">
       <table className="w-full text-left">
         <thead>
           <tr className="border-b border-surface-800/50">

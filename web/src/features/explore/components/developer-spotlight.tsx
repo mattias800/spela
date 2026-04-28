@@ -15,7 +15,7 @@ interface DeveloperSpotlightProps {
 
 function DeveloperSpotlightSkeleton() {
   return (
-    <section data-testid="developer-spotlight-skeleton">
+    <section data-comp="DeveloperSpotlightSkeleton" data-testid="developer-spotlight-skeleton">
       <Skeleton className="w-full h-64 rounded-2xl" />
     </section>
   );
@@ -70,7 +70,7 @@ export function DeveloperSpotlight({
   }
 
   return (
-    <section
+    <section data-comp="DeveloperSpotlight"
       data-testid="developer-spotlight"
       className="group/spotlight relative"
     >

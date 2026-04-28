@@ -14,7 +14,7 @@ interface ForYouSectionProps {
 
 function ForYouSkeleton() {
   return (
-    <div data-testid="for-you-skeleton" className="space-y-10">
+    <div data-comp="ForYouSkeleton" data-testid="for-you-skeleton" className="space-y-10">
       {Array.from({ length: 3 }, (_, i) => (
         <section key={i}>
           <div className="h-7 w-64 rounded bg-surface-800 animate-pulse mb-5" />
@@ -81,7 +81,7 @@ function ForYouShelf({
   const testId = `for-you-row-${row.type}`;
 
   return (
-    <section data-testid={testId} className="group/shelf relative">
+    <section data-comp="ForYouShelf" data-testid={testId} className="group/shelf relative">
       <div className="flex items-center gap-3 mb-5">
         {/* Show source game thumbnail for "because_you_played" rows */}
         {row.type === "because_you_played" && row.sourceGame?.coverUrl && (
@@ -167,7 +167,7 @@ export function ForYouSection({
   }
 
   return (
-    <div data-testid="for-you-section" className="space-y-10">
+    <div data-comp="ForYouSection" data-testid="for-you-section" className="space-y-10">
       {rows.map((row, index) => (
         <ForYouShelf
           key={`${row.type}-${index}`}

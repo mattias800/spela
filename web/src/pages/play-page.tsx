@@ -253,7 +253,7 @@ export function PlayPage() {
   // ── Main emulator layout ──────────────────────────────────────────
 
   return (
-    <div className="flex flex-col h-screen">
+    <div data-comp="PlayPage" className="flex flex-col h-screen">
       <CoreMismatchModal
         open={showCoreMismatchModal}
         onChoice={handleCoreMismatchChoice}

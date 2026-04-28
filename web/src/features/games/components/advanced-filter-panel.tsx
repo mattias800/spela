@@ -43,7 +43,7 @@ function RangeInput({
   testId: string;
 }) {
   return (
-    <div data-testid={testId}>
+    <div data-comp="RangeInput" data-testid={testId}>
       <span className="block text-sm font-medium text-surface-300 mb-2">
         {label}
       </span>
@@ -90,7 +90,7 @@ function SavedSearchItem({
   onDelete: () => void;
 }) {
   return (
-    <div className="flex items-center gap-2 group" data-testid="saved-search-item">
+    <div data-comp="SavedSearchItem" className="flex items-center gap-2 group" data-testid="saved-search-item">
       <button
         onClick={onApply}
         className="flex-1 text-left px-3 py-2 rounded-lg bg-surface-800 hover:bg-surface-700 text-sm text-surface-200 transition-colors truncate"
@@ -181,7 +181,7 @@ export function AdvancedFilterPanel({
   };
 
   return (
-    <div data-testid="advanced-filter-panel">
+    <div data-comp="AdvancedFilterPanel" data-testid="advanced-filter-panel">
       {/* Toggle button */}
       <button
         onClick={onToggle}

@@ -10,7 +10,7 @@ interface WizardLayoutProps {
 
 export function WizardLayout({ currentStep, children }: WizardLayoutProps) {
   return (
-    <div className="min-h-screen flex flex-col items-center px-4 py-8">
+    <div data-comp="WizardLayout" className="min-h-screen flex flex-col items-center px-4 py-8">
       <div className="fixed inset-0 bg-gradient-to-br from-brand-950/40 via-surface-950 to-surface-950" />
 
       <div className="relative w-full max-w-2xl space-y-8">

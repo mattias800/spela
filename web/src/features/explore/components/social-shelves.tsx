@@ -44,7 +44,7 @@ function StandardShelfRow({
   onTogglePlayLater,
 }: StandardShelfRowProps) {
   return (
-    <div className="flex-shrink-0" role="listitem">
+    <div data-comp="StandardShelfRow" className="flex-shrink-0" role="listitem">
       <GameCard
         game={game}
         showConsoleBadge
@@ -59,7 +59,7 @@ function StandardShelfRow({
 
 function ShelfFooter({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex items-center gap-1.5 mt-1.5 text-xs text-surface-400">
+    <div data-comp="ShelfFooter" className="flex items-center gap-1.5 mt-1.5 text-xs text-surface-400">
       {children}
     </div>
   );
@@ -243,7 +243,7 @@ export function ReviewCard({
   onTogglePlayLater,
 }: ReviewCardProps) {
   return (
-    <div className="w-56 sm:w-60 flex-shrink-0" role="listitem">
+    <div data-comp="ReviewCard" className="w-56 sm:w-60 flex-shrink-0" role="listitem">
       <div className="flex gap-3">
         <div className="w-24 flex-shrink-0">
           <GameCard

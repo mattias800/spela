@@ -23,7 +23,7 @@ export function SharedSessionSavesList({
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
 
   return (
-    <section>
+    <section data-comp="SharedSessionSavesList">
       <div className="flex items-center gap-2.5 mb-4">
         <Save className="h-5 w-5 text-brand-400" />
         <h2 className="text-xl font-bold text-surface-100">Shared Session Saves</h2>

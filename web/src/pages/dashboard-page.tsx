@@ -40,7 +40,7 @@ import type { RecentAchievement } from "@/types/api";
 
 function RecentAchievementsSkeleton() {
   return (
-    <div className="flex gap-4 overflow-x-auto pb-2">
+    <div data-comp="RecentAchievementsSkeleton" className="flex gap-4 overflow-x-auto pb-2">
       {Array.from({ length: 4 }, (_, i) => (
         <div
           key={i}
@@ -127,7 +127,7 @@ function RecentAchievementsSection() {
   }
 
   return (
-    <div data-testid="recent-achievements-section">
+    <div data-comp="RecentAchievementsSection" data-testid="recent-achievements-section">
       <TitledSection
         title="Recent Achievements"
         icon={Trophy}
@@ -190,7 +190,7 @@ function TrendingChallengesSection() {
   if (!data?.data || data.data.length === 0) return null;
 
   return (
-    <div data-testid="trending-challenges-section">
+    <div data-comp="TrendingChallengesSection" data-testid="trending-challenges-section">
       <TitledSection
         title="Trending Challenges"
         icon={Flag}

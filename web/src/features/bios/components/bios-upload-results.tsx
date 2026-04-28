@@ -64,7 +64,7 @@ function UploadResultItem({ item }: { item: UploadResult }) {
   }
 
   return (
-    <div className="flex items-start gap-2.5 text-sm">
+    <div data-comp="UploadResultItem" className="flex items-start gap-2.5 text-sm">
       <HelpCircle className="h-4 w-4 text-surface-400 mt-0.5 flex-shrink-0" />
       <div>
         <span className="text-surface-200 font-mono text-xs">
@@ -86,7 +86,7 @@ export function BiosUploadResults({ results }: BiosUploadResultsProps) {
   if (results.length === 0) return null;
 
   return (
-    <div
+    <div data-comp="BiosUploadResults"
       className="rounded-xl bg-surface-800/50 p-4 space-y-3"
       data-testid="bios-upload-results"
     >

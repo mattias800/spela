@@ -76,7 +76,7 @@ function ThemeApplier({ children }: { children: React.ReactNode }) {
 // connection, so a heavy spinner would flash and feel worse than nothing.
 function RouteFallback() {
   return (
-    <div
+    <div data-comp="RouteFallback"
       data-testid="route-fallback"
       className="min-h-screen bg-surface-950"
       aria-hidden="true"

@@ -20,7 +20,7 @@ const zoomGridClasses: Record<ZoomLevel, string> = {
 
 function CoverGallerySkeleton() {
   return (
-    <div data-testid="cover-gallery-skeleton">
+    <div data-comp="CoverGallerySkeleton" data-testid="cover-gallery-skeleton">
       <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10 gap-3">
         {Array.from({ length: 20 }, (_, i) => (
           <Skeleton

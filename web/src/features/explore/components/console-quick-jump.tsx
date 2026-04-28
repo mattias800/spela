@@ -11,7 +11,7 @@ interface ConsoleQuickJumpProps {
 
 function ConsoleQuickJumpSkeleton() {
   return (
-    <section data-testid="console-quick-jump-skeleton">
+    <section data-comp="ConsoleQuickJumpSkeleton" data-testid="console-quick-jump-skeleton">
       <h2 className="text-xl font-bold text-surface-100 mb-5">
         Browse by Console
       </h2>
@@ -71,7 +71,7 @@ export function ConsoleQuickJump({
   }
 
   return (
-    <section
+    <section data-comp="ConsoleQuickJump"
       data-testid="console-quick-jump"
       className="group/console-jump relative"
     >

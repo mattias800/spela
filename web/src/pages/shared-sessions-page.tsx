@@ -27,7 +27,7 @@ type Tab = "mine" | "invitations";
 
 function InvitationsSkeleton() {
   return (
-    <div className="space-y-3">
+    <div data-comp="InvitationsSkeleton" className="space-y-3">
       {Array.from({ length: 3 }, (_, i) => (
         <div
           key={i}

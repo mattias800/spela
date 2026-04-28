@@ -9,7 +9,7 @@ import { TopRatedGameCard } from "./top-rated-game-card";
 
 function TopRatedSkeletonContent() {
   return (
-    <div className="flex gap-4 overflow-hidden">
+    <div data-comp="TopRatedSkeletonContent" className="flex gap-4 overflow-hidden">
       {Array.from({ length: 6 }, (_, i) => (
         <GameCardSkeleton key={i} coverHeight={CAROUSEL_CARD_HEIGHT} />
       ))}

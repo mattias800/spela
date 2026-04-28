@@ -4,7 +4,7 @@ import { TabNav, TabItem } from "@/components/ui";
 
 export function LibraryLayout() {
   return (
-    <div>
+    <div data-comp="LibraryLayout">
       <TabNav className="mb-6">
         <TabItem to="/consoles" icon={Gamepad2} label="Consoles" />
         <TabItem to="/games" icon={Library} label="Games" />

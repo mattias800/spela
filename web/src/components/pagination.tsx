@@ -57,7 +57,7 @@ export function Pagination({
   const pages = getPageNumbers(currentPage, pageCount);
 
   return (
-    <nav className="flex justify-center items-center gap-1.5 pt-4" aria-label="Pagination" data-testid="pagination">
+    <nav data-comp="Pagination" className="flex justify-center items-center gap-1.5 pt-4" aria-label="Pagination" data-testid="pagination">
       {/* Previous button */}
       <button
         onClick={() => onPageChange(currentPage - 1)}

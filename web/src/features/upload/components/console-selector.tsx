@@ -21,7 +21,7 @@ export function ConsoleSelector({
   ];
 
   return (
-    <div className="flex items-center gap-2" data-testid="console-selector">
+    <div data-comp="ConsoleSelector" className="flex items-center gap-2" data-testid="console-selector">
       <Select
         options={options}
         value=""

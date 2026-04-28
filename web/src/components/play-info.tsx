@@ -14,7 +14,7 @@ export function PlayInfo({ gameId, className }: PlayInfoProps) {
   if (!entry) return null;
 
   return (
-    <span
+    <span data-comp="PlayInfo"
       className={`inline-flex items-center gap-3 text-xs text-surface-500 ${className ?? ""}`}
     >
       {entry.playTime > 0 && (

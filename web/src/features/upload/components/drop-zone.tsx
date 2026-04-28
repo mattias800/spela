@@ -38,7 +38,7 @@ export function DropZone({ onFiles, isUploading }: DropZoneProps) {
   }
 
   return (
-    <div
+    <div data-comp="DropZone"
       className={`rounded-2xl border-2 border-dashed p-8 text-center transition-colors ${
         isDragOver
           ? "border-brand-500 bg-brand-500/5"

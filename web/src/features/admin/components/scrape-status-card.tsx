@@ -42,7 +42,7 @@ function SourceSection({
   isPending,
 }: SourceSectionProps) {
   return (
-    <div className="space-y-2">
+    <div data-comp="SourceSection" className="space-y-2">
       <h3 className="text-sm font-semibold text-surface-200">
         {sourceLabel(counts.source)}
       </h3>

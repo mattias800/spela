@@ -12,7 +12,7 @@ export function IgdbWarningBanner({
   onDismiss,
 }: IgdbWarningBannerProps) {
   return (
-    <div
+    <div data-comp="IgdbWarningBanner"
       className="rounded-xl bg-warning-500/10 border border-warning-500/30 px-4 py-3 flex items-start gap-3"
       role="alert"
       data-testid="igdb-warning-banner"

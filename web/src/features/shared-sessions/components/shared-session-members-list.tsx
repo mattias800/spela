@@ -25,7 +25,7 @@ export function SharedSessionMembersList({
   const { user } = useAuth();
 
   return (
-    <section>
+    <section data-comp="SharedSessionMembersList">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2.5">
           <Users className="h-5 w-5 text-brand-400" />

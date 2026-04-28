@@ -71,7 +71,7 @@ function EditUserForm({
   }
 
   return (
-    <div className="space-y-4">
+    <div data-comp="EditUserForm" className="space-y-4">
       <Input
         label="Email"
         type="email"

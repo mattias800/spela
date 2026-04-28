@@ -56,7 +56,7 @@ interface SidebarSectionProps {
 
 function SidebarSection({ title, children }: SidebarSectionProps) {
   return (
-    <div className="space-y-1">
+    <div data-comp="SidebarSection" className="space-y-1">
       {title && (
         <p className="px-3 py-2 text-xs font-semibold uppercase tracking-wider text-surface-500">
           {title}

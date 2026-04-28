@@ -14,7 +14,7 @@ import {
 
 function SharedSavesSkeleton() {
   return (
-    <div className="space-y-3">
+    <div data-comp="SharedSavesSkeleton" className="space-y-3">
       {Array.from({ length: 3 }, (_, i) => (
         <div
           key={i}
@@ -51,7 +51,7 @@ export function SharedSavesList({ gameId }: SharedSavesListProps) {
   const hasMore = data ? page * pageSize < data.total : false;
 
   return (
-    <section data-testid="shared-saves-list">
+    <section data-comp="SharedSavesList" data-testid="shared-saves-list">
       <div className="flex items-center gap-2.5 mb-4">
         <Share2 className="h-5 w-5 text-brand-400" />
         <h2 className="text-lg font-semibold text-surface-100">Community Saves</h2>

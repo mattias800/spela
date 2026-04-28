@@ -2,7 +2,7 @@ import { Skeleton } from "@/components/ui";
 
 export function LeaderboardSkeleton() {
   return (
-    <div className="space-y-2">
+    <div data-comp="LeaderboardSkeleton" className="space-y-2">
       {Array.from({ length: 5 }, (_, i) => (
         <div
           key={i}

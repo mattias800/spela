@@ -37,7 +37,7 @@ export function ShaderPreviewModal({
   if (!open) return null;
 
   return (
-    <div
+    <div data-comp="ShaderPreviewModal"
       className="fixed inset-0 z-50 flex flex-col items-center justify-center"
       onClick={onClose}
     >

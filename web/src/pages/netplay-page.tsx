@@ -21,7 +21,7 @@ import { NetplayInvitationsSection } from "@/features/netplay/components/netplay
 
 function SessionListSkeleton() {
   return (
-    <div className="space-y-3">
+    <div data-comp="SessionListSkeleton" className="space-y-3">
       {Array.from({ length: 4 }, (_, i) => (
         <div
           key={i}

@@ -173,7 +173,7 @@ export function PlayHeatmap({ data, className }: PlayHeatmapProps) {
   const svgHeight = TOP_MARGIN + DAYS * (CELL_SIZE + CELL_GAP);
 
   return (
-    <div className={cn("relative", className)}>
+    <div data-comp="PlayHeatmap" className={cn("relative", className)}>
       <div className="overflow-x-auto">
         <svg
           width={svgWidth}

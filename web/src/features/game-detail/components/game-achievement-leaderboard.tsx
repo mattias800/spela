@@ -34,7 +34,7 @@ function RankBadge({ rank }: { rank: number }) {
   }
 
   return (
-    <span className="inline-flex items-center justify-center h-7 w-7 text-sm font-medium text-surface-500">
+    <span data-comp="RankBadge" className="inline-flex items-center justify-center h-7 w-7 text-sm font-medium text-surface-500">
       {rank}
     </span>
   );

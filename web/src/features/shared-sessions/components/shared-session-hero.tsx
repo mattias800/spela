@@ -39,7 +39,7 @@ export function SharedSessionHero({
   // provides no affordance about what would unblock it.
   const canClone = !!sharedSession.sessionId;
   return (
-    <div className="flex flex-col items-center gap-6 md:flex-row md:items-start md:gap-8">
+    <div data-comp="SharedSessionHero" className="flex flex-col items-center gap-6 md:flex-row md:items-start md:gap-8">
       {/* Cover art */}
       <div className="w-48 flex-shrink-0 md:w-64">
         <div className="aspect-[3/4] rounded-2xl overflow-hidden bg-surface-900 border border-surface-800 shadow-2xl">

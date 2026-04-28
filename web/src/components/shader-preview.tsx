@@ -144,7 +144,7 @@ export function ShaderPreview({
   }, []);
 
   return (
-    <div
+    <div data-comp="ShaderPreview"
       ref={containerRef}
       className={cn("relative", onClick && "cursor-pointer", className)}
       onClick={onClick}

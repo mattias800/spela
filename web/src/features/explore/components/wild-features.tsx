@@ -37,7 +37,7 @@ function FeatureCard({
 }: FeatureCardProps) {
   const accent = accentClasses[colorAccent];
   return (
-    <div
+    <div data-comp="FeatureCard"
       data-testid={testId}
       className={cn(
         "flex items-start gap-4 rounded-xl border border-surface-800 bg-gradient-to-br p-6",
@@ -76,7 +76,7 @@ export function WildFeaturesSection() {
   }
 
   return (
-    <section data-testid="wild-features">
+    <section data-comp="WildFeaturesSection" data-testid="wild-features">
       <h2 className="text-xl font-bold text-surface-100 mb-5">
         Feeling Adventurous?
       </h2>
@@ -148,7 +148,7 @@ export function WildFeaturesSection() {
 
 export function WildFeaturesSkeleton() {
   return (
-    <section>
+    <section data-comp="WildFeaturesSkeleton">
       <Skeleton className="w-56 h-7 mb-5" />
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <Skeleton className="h-28 rounded-xl" />

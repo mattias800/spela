@@ -10,7 +10,7 @@ interface ArtworkShowcaseProps {
 
 function ArtworkSkeletonContent() {
   return (
-    <div className="flex gap-5 overflow-hidden">
+    <div data-comp="ArtworkSkeletonContent" className="flex gap-5 overflow-hidden">
       {Array.from({ length: 4 }, (_, i) => (
         <div key={i} className="w-80 sm:w-96 flex-shrink-0">
           <Skeleton className="w-full rounded-xl" style={{ aspectRatio: "16/9" }} />

@@ -12,7 +12,7 @@ import type { Game } from "@/types/api";
 
 function PlayLaterSkeleton() {
   return (
-    <div className="space-y-2">
+    <div data-comp="PlayLaterSkeleton" className="space-y-2">
       {Array.from({ length: 5 }, (_, i) => (
         <div
           key={i}

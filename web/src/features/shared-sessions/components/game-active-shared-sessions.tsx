@@ -12,7 +12,7 @@ const statusVariant: Record<string, "success" | "warning" | "default"> = {
 
 function GameActiveSharedSessionsSkeleton() {
   return (
-    <div className="space-y-2">
+    <div data-comp="GameActiveSharedSessionsSkeleton" className="space-y-2">
       {Array.from({ length: 2 }, (_, i) => (
         <div
           key={i}

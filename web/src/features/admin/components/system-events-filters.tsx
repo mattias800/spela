@@ -81,7 +81,7 @@ export function SystemEventsFilters({
     since !== DEFAULT_SYSTEM_EVENTS_SINCE;
 
   return (
-    <div className="space-y-4 rounded-2xl border border-surface-800/50 bg-surface-900/50 p-5">
+    <div data-comp="SystemEventsFilters" className="space-y-4 rounded-2xl border border-surface-800/50 bg-surface-900/50 p-5">
       <div className="flex items-center justify-between">
         <h2 className="text-sm font-semibold uppercase tracking-wider text-surface-400">
           Filters

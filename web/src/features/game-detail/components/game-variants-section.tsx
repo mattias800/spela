@@ -71,7 +71,7 @@ function CollapsibleVariantList({
   const panelId = `${testId}-panel`;
 
   return (
-    <div data-testid={testId}>
+    <div data-comp="CollapsibleVariantList" data-testid={testId}>
       <button
         onClick={() => setExpanded(!expanded)}
         className="flex items-center gap-2 w-full text-left group/toggle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 rounded-md px-1 py-0.5 -mx-1 hover:bg-surface-800/30"
@@ -110,7 +110,7 @@ export function GameVariantsSection({ variants }: GameVariantsSectionProps) {
   if (versionVariants.length === 0 && hackVariants.length === 0) return null;
 
   return (
-    <section
+    <section data-comp="GameVariantsSection"
       className="space-y-4"
       data-testid="game-variants-section"
     >

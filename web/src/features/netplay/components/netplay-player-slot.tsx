@@ -16,7 +16,7 @@ export function NetplayPlayerSlot({
   label,
 }: FilledSlotProps) {
   return (
-    <div
+    <div data-comp="NetplayPlayerSlot"
       className="flex items-center gap-4 px-4 py-3 rounded-xl bg-surface-900/50"
       data-testid={`netplay-player-slot-${label}`}
     >
@@ -44,7 +44,7 @@ export function NetplayPlayerSlot({
 
 export function NetplayEmptySlot() {
   return (
-    <div
+    <div data-comp="NetplayEmptySlot"
       className="flex items-center gap-4 px-4 py-3 rounded-xl bg-surface-900/50 border border-dashed border-surface-700"
       data-testid="netplay-player-slot-empty"
     >

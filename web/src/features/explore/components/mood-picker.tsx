@@ -10,7 +10,7 @@ interface MoodPickerProps {
 
 function MoodPickerSkeleton() {
   return (
-    <section data-testid="mood-picker-skeleton">
+    <section data-comp="MoodPickerSkeleton" data-testid="mood-picker-skeleton">
       <Skeleton className="w-72 h-7 mb-5" />
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
         {Array.from({ length: 6 }, (_, i) => (
@@ -31,7 +31,7 @@ export function MoodPicker({ moods, isLoading }: MoodPickerProps) {
   }
 
   return (
-    <section data-testid="mood-picker">
+    <section data-comp="MoodPicker" data-testid="mood-picker">
       <h2 className="text-xl font-bold text-surface-100 mb-5">
         What are you in the mood for?
       </h2>

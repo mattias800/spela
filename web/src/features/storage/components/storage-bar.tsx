@@ -22,7 +22,7 @@ export function StorageBar({ usedBytes, quotaBytes }: StorageBarProps) {
   const clampedWidth = Math.min(percentage, 100);
 
   return (
-    <div>
+    <div data-comp="StorageBar">
       <div className="flex items-baseline justify-between mb-2">
         <p className="text-sm text-surface-300">
           <span className={getTextColor(percentage)}>

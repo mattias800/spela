@@ -122,7 +122,7 @@ export function SystemEventDetailModal({
 }
 
 function DetailGrid({ children }: { children: React.ReactNode }) {
-  return <dl className="grid grid-cols-1 gap-3 sm:grid-cols-2">{children}</dl>;
+  return <dl data-comp="DetailGrid" className="grid grid-cols-1 gap-3 sm:grid-cols-2">{children}</dl>;
 }
 
 interface DetailRowProps {
@@ -134,7 +134,7 @@ interface DetailRowProps {
 
 function DetailRow({ label, value, mono, secondary }: DetailRowProps) {
   return (
-    <div>
+    <div data-comp="DetailRow">
       <dt className="text-xs font-medium uppercase tracking-wider text-surface-500">
         {label}
       </dt>

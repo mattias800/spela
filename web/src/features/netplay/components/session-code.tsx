@@ -20,7 +20,7 @@ export function SessionCode({ code }: SessionCodeProps) {
   }
 
   return (
-    <div className="flex items-center gap-4">
+    <div data-comp="SessionCode" className="flex items-center gap-4">
       <div className="px-5 py-3 rounded-xl bg-surface-900 border border-surface-700">
         <span className="font-mono text-3xl tracking-[0.3em] text-surface-100">
           {code}

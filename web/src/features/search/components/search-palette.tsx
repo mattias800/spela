@@ -95,7 +95,7 @@ export function SearchPalette() {
   if (!open) return null;
 
   return (
-    <div
+    <div data-comp="SearchPalette"
       ref={overlayRef}
       className="fixed inset-0 z-50 flex items-start justify-center pt-[15vh] px-4"
       onClick={(e) => {

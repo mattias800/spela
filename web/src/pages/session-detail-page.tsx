@@ -44,7 +44,7 @@ import { CloneSessionDialog } from "@/features/sessions/components/clone-session
 
 function SessionDetailSkeleton() {
   return (
-    <div className="max-w-4xl space-y-6">
+    <div data-comp="SessionDetailSkeleton" className="max-w-4xl space-y-6">
       <Skeleton className="h-6 w-32" />
       <Skeleton className="h-10 w-64" />
       <Skeleton className="h-48 w-full rounded-xl" />

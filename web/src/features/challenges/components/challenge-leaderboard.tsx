@@ -32,7 +32,7 @@ export function ChallengeLeaderboard({
   }
 
   return (
-    <section data-testid="challenge-leaderboard">
+    <section data-comp="ChallengeLeaderboard" data-testid="challenge-leaderboard">
       <h2 className="text-xl font-bold text-surface-100 flex items-center gap-2.5 mb-5">
         <Trophy className="h-5 w-5 text-brand-400" />
         Leaderboard

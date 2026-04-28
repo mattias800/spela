@@ -16,7 +16,7 @@ export function AuthFormLayout({
   footer,
 }: AuthFormLayoutProps) {
   return (
-    <div className="min-h-screen flex items-center justify-center px-4">
+    <div data-comp="AuthFormLayout" className="min-h-screen flex items-center justify-center px-4">
       {/* Background gradient */}
       <div className="fixed inset-0 bg-gradient-to-br from-brand-950/40 via-surface-950 to-surface-950" />
 

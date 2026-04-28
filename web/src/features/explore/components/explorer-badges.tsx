@@ -44,7 +44,7 @@ export function ExplorerBadgesSection({
   if (!badges || badges.length === 0) return null;
 
   return (
-    <section data-testid="explorer-badges">
+    <section data-comp="ExplorerBadgesSection" data-testid="explorer-badges">
       <div className="flex items-center gap-2.5 mb-5">
         <Medal className="h-5 w-5 text-brand-400" />
         <h2 className="text-xl font-bold text-surface-100">Explorer Badges</h2>

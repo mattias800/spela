@@ -64,7 +64,7 @@ export function AchievementCard({
   const showRarityPercent = unlocked && rarity.tier !== "Common";
 
   return (
-    <div
+    <div data-comp="AchievementCard"
       className={cn(
         "flex items-start gap-3 rounded-lg border p-3",
         unlocked

@@ -94,7 +94,7 @@ function ScrapeMatchContent({
     igdbStatus && igdbStatus.status !== "connected";
 
   return (
-    <div className="space-y-4">
+    <div data-comp="ScrapeMatchContent" className="space-y-4">
       {fileName && (
         <p className="text-sm text-surface-400 truncate" title={fileName}>
           ROM: <span className="text-surface-200 font-mono">{fileName}</span>
@@ -180,7 +180,7 @@ function IgdbResultItem({
   onSelect: () => void;
 }) {
   return (
-    <button
+    <button data-comp="IgdbResultItem"
       onClick={onSelect}
       disabled={isApplying || isCurrentMatch}
       data-testid={`igdb-result-${result.igdbId}`}

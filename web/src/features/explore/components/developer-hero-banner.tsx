@@ -51,7 +51,7 @@ export function DeveloperHeroBanner({
   };
 
   return (
-    <div
+    <div data-comp="DeveloperHeroBanner"
       className="relative w-full rounded-2xl overflow-hidden"
       data-testid="developer-hero-banner"
     >
