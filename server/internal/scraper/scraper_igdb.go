@@ -236,6 +236,19 @@ func (s *Scraper) scrapeIGDB(game *db.Game, console db.Console, gameIDStr string
 	searchSource := game.FileName
 	if console.Abbreviation == "SCUMMVM" && game.Title != "" {
 		searchSource = game.Title
+		// When the user dropped the game in a folder named after the
+		// ScummVM gameid (e.g. "gob1", "indy3", "ite") rather than a real
+		// descriptive title, the scanner-derived title is just that
+		// gameid. IGDB has no idea what "gob1" is. Look it up in the
+		// curated gameid → title map. When found, also write the
+		// canonical title back so the UI shows "Gobliiins" instead of
+		// "gob1" before the IGDB scrape lands.
+		if canonical := igdb.LookupScummvmGameTitle(game.Title); canonical != "" {
+			slog.Info("ScummVM gameid resolved to canonical title",
+				"gameid", game.Title, "title", canonical)
+			searchSource = canonical
+			game.Title = canonical
+		}
 	}
 	cleanName := igdb.CleanGameName(searchSource)
 	if cleanName == "" {

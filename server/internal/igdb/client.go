@@ -7,6 +7,7 @@ import (
 	"log/slog"
 	"net/http"
 	"net/url"
+	"regexp"
 	"strings"
 	"sync"
 	"time"
@@ -146,6 +147,37 @@ func scummvmPlatformsFromHint(hint string) []int {
 	default:
 		return []int{dosID, amigaID, macID, atariSTID}
 	}
+}
+
+// scummvmGameTitles is generated — see `scummvm_titles_data.go` and
+// `cmd/gen-scummvm-titles/main.go`. Sourced from scummvm-web's
+// data/en/games.yaml so it covers every game ScummVM officially
+// supports (~1,137 entries today).
+
+// reScummvmGameID matches a string that looks like a ScummVM gameid:
+// short, lowercase alphanumerics + optional digits + optional underscores
+// or hyphens, no spaces, no parentheses. Used to decide whether the
+// fallback title-as-search-term path or the gameid-resolver path applies.
+//
+// Examples it matches: gob1, monkey, monkey2, samnmax, kyra1, indy3, ite.
+// Examples it doesn't: "The Secret of Monkey Island (CD DOS VGA)",
+// "Loom (FM-Towns)", "Day of the Tentacle".
+var reScummvmGameID = regexp.MustCompile(`^[a-z][a-z0-9_-]{1,15}$`)
+
+// LookupScummvmGameTitle returns the canonical IGDB-searchable title for a
+// ScummVM [gameid] (e.g. "gob1" → "Gobliiins"), or empty string when the
+// id isn't in the curated map.
+//
+// [gameid] is matched case-insensitively after trimming surrounding
+// whitespace. When the input doesn't match the gameid pattern (e.g. it's
+// a real descriptive title), this returns "" and the caller should keep
+// using the original title.
+func LookupScummvmGameTitle(gameid string) string {
+	id := strings.ToLower(strings.TrimSpace(gameid))
+	if !reScummvmGameID.MatchString(id) {
+		return ""
+	}
+	return scummvmGameTitles[id]
 }
 
 // formatPlatformList renders a list of platform IDs as an IGDB query tuple:
