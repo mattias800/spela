@@ -356,7 +356,7 @@ func (h *AdminHandler) HumaCancelScrape(ctx context.Context, _ *CancelScrapeInpu
 		return nil, huma.Error500InternalServerError("checking active job")
 	}
 	if job == nil {
-		return nil, huma.Error409Conflict("no scrape operation is running")
+		return nil, huma.Error409Conflict("No scrape operation is running")
 	}
 
 	if err := h.Scraper.Queue.CancelJob(job.ID); err != nil {
