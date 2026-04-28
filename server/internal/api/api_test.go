@@ -958,6 +958,20 @@ func TestListConsoles_IncludesEmulatorJSCore(t *testing.T) {
 		{"ARCADE", "fbneo"},
 		{"PCE", "mednafen_pce"},
 		{"A26", "stella2014"},
+		// Consoles whose libretro core has no upstream EmulatorJS build:
+		// EmulatorJS just tries to download "<core>-thread-legacy-wasm.data"
+		// verbatim and 404s. These must be empty so the web UI shows the
+		// "not supported in browser" placeholder; the native player still
+		// plays them via DefaultCore.
+		{"CHAF", ""},
+		{"VEC", ""},
+		{"O2", ""},
+		{"INTV", ""},
+		{"GW", ""},
+		{"A800", ""},
+		{"A52", ""},
+		{"ATARIST", ""},
+		{"SGX", ""},
 	}
 
 	for _, tt := range tests {

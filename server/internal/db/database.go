@@ -251,6 +251,20 @@ func Initialize(dbPath string) (*gorm.DB, error) {
 		slog.Warn("verification_status backfill for skip-list consoles failed", "error", err)
 	}
 
+	// One-time backfill: clear EmulatorJSCore on consoles whose libretro
+	// core has no upstream EmulatorJS build. The seed previously stamped
+	// values like "freechaf" and "vecx" — EmulatorJS just tries to
+	// download "<core>-thread-legacy-wasm.data" verbatim and 404s. The
+	// regular seed loop only writes when the new value is non-empty, so
+	// existing wrong values won't clear without an explicit UPDATE.
+	if err := db.Exec(`
+		UPDATE consoles SET emulator_js_core = ''
+		WHERE abbreviation IN
+		  ('CHAF','VEC','O2','INTV','GW','A800','A52','ATARIST','SGX')
+	`).Error; err != nil {
+		slog.Warn("emulator_js_core backfill for unsupported consoles failed", "error", err)
+	}
+
 	// Promote the first user to owner if no owner exists (handles upgrades).
 	var ownerCount int64
 	db.Model(&User{}).Where("role = ?", RoleOwner).Count(&ownerCount)
@@ -852,7 +866,7 @@ func SeedConsoles(db *gorm.DB) error {
 		{Name: "Game Gear", Abbreviation: "GG", Extensions: ".gg", DefaultCore: "genesis_plus_gx", EmulatorJSCore: "segaGG", FolderName: "gamegear", ColorTheme: "#1a1a1a", CoverAspect: "1:1", Generation: 4, SaveStateSupport: true, Playable: true},
 		{Name: "TurboGrafx-16", Abbreviation: "PCE", Extensions: ".pce", DefaultCore: "mednafen_pce", EmulatorJSCore: "mednafen_pce", FolderName: "tg16", ColorTheme: "#ff6600", Generation: 4, SaveStateSupport: true, Playable: true},
 		{Name: "TurboGrafx-CD", Abbreviation: "PCECD", Extensions: ".chd,.cue,.iso,.m3u", DefaultCore: "mednafen_pce", EmulatorJSCore: "mednafen_pce", FolderName: "tg16cd", ColorTheme: "#ff6600", Generation: 4, SaveStateSupport: true, Playable: true},
-		{Name: "PC Engine SuperGrafx", Abbreviation: "SGX", Extensions: ".sgx,.pce", DefaultCore: "mednafen_supergrafx", EmulatorJSCore: "mednafen_supergrafx", FolderName: "supergrafx", ColorTheme: "#ff6600", Generation: 4, SaveStateSupport: true, Playable: true},
+		{Name: "PC Engine SuperGrafx", Abbreviation: "SGX", Extensions: ".sgx,.pce", DefaultCore: "mednafen_supergrafx", EmulatorJSCore: "", FolderName: "supergrafx", ColorTheme: "#ff6600", Generation: 4, SaveStateSupport: true, Playable: true},
 		{Name: "Neo Geo", Abbreviation: "NEOGEO", Extensions: ".zip", DefaultCore: "fbneo", EmulatorJSCore: "fbneo", FolderName: "neogeo", ColorTheme: "#ffcc00", Generation: 4, SaveStateSupport: true, Playable: true},
 		{Name: "Neo Geo CD", Abbreviation: "NEOCD", Extensions: ".chd,.cue,.iso", DefaultCore: "neocd", EmulatorJSCore: "", FolderName: "neogeocd", ColorTheme: "#ffcc00", Generation: 4, SaveStateSupport: true, Playable: true},
 		{Name: "Atari Lynx", Abbreviation: "LYNX", Extensions: ".lnx,.lyx", DefaultCore: "handy", EmulatorJSCore: "handy", FolderName: "atarilynx", ColorTheme: "#8b4513", CoverAspect: "1:1", Generation: 4, SaveStateSupport: true, Playable: true},
@@ -896,17 +910,17 @@ func SeedConsoles(db *gorm.DB) error {
 		{Name: "Xbox Series", Abbreviation: "XSX", Extensions: ".xvd", DefaultCore: "", EmulatorJSCore: "", FolderName: "xboxseries", ColorTheme: "#107c10", CoverAspect: "8:11", Generation: 9, SaveStateSupport: false, Playable: false},
 		// 2nd Generation
 		{Name: "Atari 2600", Abbreviation: "A26", Extensions: ".a26,.bin", DefaultCore: "stella", EmulatorJSCore: "stella2014", FolderName: "atari2600", ColorTheme: "#8b4513", Generation: 2, SaveStateSupport: true, Playable: true},
-		{Name: "Atari 5200", Abbreviation: "A52", Extensions: ".a52,.bin", DefaultCore: "atari800", EmulatorJSCore: "atari800", FolderName: "atari5200", ColorTheme: "#8b4513", Generation: 2, SaveStateSupport: true, Playable: true},
+		{Name: "Atari 5200", Abbreviation: "A52", Extensions: ".a52,.bin", DefaultCore: "atari800", EmulatorJSCore: "", FolderName: "atari5200", ColorTheme: "#8b4513", Generation: 2, SaveStateSupport: true, Playable: true},
 		{Name: "ColecoVision", Abbreviation: "CV", Extensions: ".col,.rom", DefaultCore: "gearcoleco", EmulatorJSCore: "gearcoleco", FolderName: "colecovision", ColorTheme: "#000000", Generation: 2, SaveStateSupport: true, Playable: true},
-		{Name: "Fairchild Channel F", Abbreviation: "CHAF", Extensions: ".bin,.chf", DefaultCore: "freechaf", EmulatorJSCore: "freechaf", FolderName: "channelf", ColorTheme: "#cc6600", Generation: 2, SaveStateSupport: true, Playable: true},
-		{Name: "Magnavox Odyssey 2", Abbreviation: "O2", Extensions: ".bin,.o2", DefaultCore: "o2em", EmulatorJSCore: "o2em", FolderName: "odyssey2", ColorTheme: "#b8860b", Generation: 2, SaveStateSupport: true, Playable: true},
-		{Name: "Mattel Intellivision", Abbreviation: "INTV", Extensions: ".int,.bin,.rom", DefaultCore: "freeintv", EmulatorJSCore: "freeintv", FolderName: "intellivision", ColorTheme: "#8b6914", Generation: 2, SaveStateSupport: true, Playable: true},
-		{Name: "GCE Vectrex", Abbreviation: "VEC", Extensions: ".bin,.vec", DefaultCore: "vecx", EmulatorJSCore: "vecx", FolderName: "vectrex", ColorTheme: "#333333", Generation: 2, SaveStateSupport: true, Playable: true},
+		{Name: "Fairchild Channel F", Abbreviation: "CHAF", Extensions: ".bin,.chf", DefaultCore: "freechaf", EmulatorJSCore: "", FolderName: "channelf", ColorTheme: "#cc6600", Generation: 2, SaveStateSupport: true, Playable: true},
+		{Name: "Magnavox Odyssey 2", Abbreviation: "O2", Extensions: ".bin,.o2", DefaultCore: "o2em", EmulatorJSCore: "", FolderName: "odyssey2", ColorTheme: "#b8860b", Generation: 2, SaveStateSupport: true, Playable: true},
+		{Name: "Mattel Intellivision", Abbreviation: "INTV", Extensions: ".int,.bin,.rom", DefaultCore: "freeintv", EmulatorJSCore: "", FolderName: "intellivision", ColorTheme: "#8b6914", Generation: 2, SaveStateSupport: true, Playable: true},
+		{Name: "GCE Vectrex", Abbreviation: "VEC", Extensions: ".bin,.vec", DefaultCore: "vecx", EmulatorJSCore: "", FolderName: "vectrex", ColorTheme: "#333333", Generation: 2, SaveStateSupport: true, Playable: true},
 		// Handheld / Pre-generation
-		{Name: "Nintendo Game & Watch", Abbreviation: "GW", Extensions: ".mgw", DefaultCore: "gw", EmulatorJSCore: "gw", FolderName: "gameandwatch", ColorTheme: "#c0392b", CoverAspect: "1:1", Generation: 1, SaveStateSupport: true, Playable: true},
+		{Name: "Nintendo Game & Watch", Abbreviation: "GW", Extensions: ".mgw", DefaultCore: "gw", EmulatorJSCore: "", FolderName: "gameandwatch", ColorTheme: "#c0392b", CoverAspect: "1:1", Generation: 1, SaveStateSupport: true, Playable: true},
 		// Home Computers (generation = 100)
-		{Name: "Atari 8-bit", Abbreviation: "A800", Extensions: ".a52,.atr,.atx,.bas,.bin,.car,.cas,.com,.rom,.xex,.xfd", DefaultCore: "atari800", EmulatorJSCore: "atari800", FolderName: "atari800", ColorTheme: "#8b4513", Generation: 100, SaveStateSupport: true, Playable: true},
-		{Name: "Atari ST", Abbreviation: "ATARIST", Extensions: ".st,.stx,.msa,.dim,.ipf,.m3u", DefaultCore: "hatari", EmulatorJSCore: "hatari", FolderName: "atarist", ColorTheme: "#8b4513", Generation: 100, SaveStateSupport: true, Playable: true},
+		{Name: "Atari 8-bit", Abbreviation: "A800", Extensions: ".a52,.atr,.atx,.bas,.bin,.car,.cas,.com,.rom,.xex,.xfd", DefaultCore: "atari800", EmulatorJSCore: "", FolderName: "atari800", ColorTheme: "#8b4513", Generation: 100, SaveStateSupport: true, Playable: true},
+		{Name: "Atari ST", Abbreviation: "ATARIST", Extensions: ".st,.stx,.msa,.dim,.ipf,.m3u", DefaultCore: "hatari", EmulatorJSCore: "", FolderName: "atarist", ColorTheme: "#8b4513", Generation: 100, SaveStateSupport: true, Playable: true},
 		{Name: "Commodore 64", Abbreviation: "C64", Extensions: ".d64,.t64,.prg,.crt,.tap", DefaultCore: "vice_x64sc", EmulatorJSCore: "vice_x64sc", FolderName: "c64", ColorTheme: "#6c5eb5", Generation: 100, SaveStateSupport: true, Playable: true},
 		{Name: "Commodore 128", Abbreviation: "C128", Extensions: ".d64,.d71,.d81,.t64,.prg,.crt", DefaultCore: "vice_x128", EmulatorJSCore: "vice_x128", FolderName: "c128", ColorTheme: "#6c5eb5", Generation: 100, SaveStateSupport: true, Playable: true},
 		{Name: "Commodore PET", Abbreviation: "PET", Extensions: ".prg,.d64,.t64", DefaultCore: "vice_xpet", EmulatorJSCore: "vice_xpet", FolderName: "pet", ColorTheme: "#6c5eb5", Generation: 100, SaveStateSupport: true, Playable: true},
