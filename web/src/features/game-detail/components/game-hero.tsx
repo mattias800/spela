@@ -168,7 +168,7 @@ export function GameHero({
   ];
 
   return (
-    <div className="relative">
+    <div className="relative" data-comp={"GameHero"}>
       {/* Hero banner background */}
       <div className="relative min-h-[320px] md:min-h-[400px] overflow-hidden">
         {heroImage ? (
