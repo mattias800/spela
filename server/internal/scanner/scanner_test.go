@@ -406,6 +406,55 @@ func TestDiscPattern(t *testing.T) {
 	}
 }
 
+func TestAmigaDiscPattern(t *testing.T) {
+	// Pattern matches the Amiga floppy convention `<space><LETTER>` at end
+	// of the name-without-extension. Caller is responsible for stripping
+	// the extension first and limiting to .adf/.ipf files.
+	tests := []struct {
+		nameNoExt string
+		matches   bool
+		stripped  string
+	}{
+		{"Odyssey (Alcatraz) A", true, "Odyssey (Alcatraz)"},
+		{"Batman Movie (Ocean) B", true, "Batman Movie (Ocean)"},
+		{"Impossible Mission 2025 (MicroProse) A", true, "Impossible Mission 2025 (MicroProse)"},
+		{"World of Commodore (Sanity)", false, "World of Commodore (Sanity)"},
+		{"2nd Demo (Hypnotic) [1991]", false, "2nd Demo (Hypnotic) [1991]"},
+		// Lowercase letters don't match (Amiga convention is uppercase)
+		{"Title (Pub) a", false, "Title (Pub) a"},
+		// Multi-letter doesn't match
+		{"Title (Pub) AB", false, "Title (Pub) AB"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.nameNoExt, func(t *testing.T) {
+			assert.Equal(t, tt.matches, amigaDiscPattern.MatchString(tt.nameNoExt))
+			assert.Equal(t, tt.stripped, stripAmigaDiscMarker(tt.nameNoExt))
+		})
+	}
+}
+
+func TestAmigaDiscNumber(t *testing.T) {
+	tests := []struct {
+		letter string
+		want   int
+	}{
+		{"A", 1},
+		{"B", 2},
+		{"C", 3},
+		{"E", 5},
+		{"Z", 26},
+		{"a", 0}, // lowercase rejected
+		{"AB", 0},
+		{"", 0},
+	}
+	for _, tt := range tests {
+		t.Run(tt.letter, func(t *testing.T) {
+			assert.Equal(t, tt.want, amigaDiscNumber(tt.letter))
+		})
+	}
+}
+
 func TestDiscCompanionFiles_CueBin(t *testing.T) {
 	dir := t.TempDir()
 	binPath := filepath.Join(dir, "game.bin")
