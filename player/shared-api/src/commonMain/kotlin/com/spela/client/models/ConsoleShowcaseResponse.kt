@@ -8,17 +8,9 @@
 
 @file:Suppress(
     "ArrayInDataClass",
-    "DuplicatedCode",
     "EnumEntryName",
     "RemoveRedundantQualifierName",
-    "RemoveRedundantCallsOfConversionMethods",
-    "REDUNDANT_CALL_OF_CONVERSION_METHOD",
-    "RedundantUnitReturnType",
-    "RemoveEmptyClassBody",
-    "UnnecessaryVariable",
-    "UnusedImport",
-    "UnnecessaryVariable",
-    "unused"
+    "UnusedImport"
 )
 
 package com.spela.client.models
@@ -26,7 +18,6 @@ package com.spela.client.models
 import com.spela.client.models.ConsoleResponse
 import com.spela.client.models.DeveloperSummary
 import com.spela.client.models.GameResponse
-import com.spela.client.models.GenreCount
 
 import kotlinx.serialization.*
 import kotlinx.serialization.descriptors.*
@@ -37,7 +28,6 @@ import kotlinx.serialization.encoding.*
  *
  * @param console 
  * @param essentials 
- * @param genreBreakdown 
  * @param hiddenGems 
  * @param launchGames 
  * @param recentlyAdded 
@@ -52,8 +42,6 @@ data class ConsoleShowcaseResponse (
     @SerialName(value = "console") @Required val console: ConsoleResponse,
 
     @SerialName(value = "essentials") @Required val essentials: kotlin.collections.List<GameResponse>,
-
-    @SerialName(value = "genreBreakdown") @Required val genreBreakdown: kotlin.collections.List<GenreCount>,
 
     @SerialName(value = "hiddenGems") @Required val hiddenGems: kotlin.collections.List<GameResponse>,
 

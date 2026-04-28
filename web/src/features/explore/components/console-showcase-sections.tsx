@@ -3,7 +3,6 @@ import {
   Star,
   Trophy,
   Gem,
-  LayoutGrid,
   Building2,
   Sparkles,
   Play,
@@ -14,7 +13,7 @@ import { TitledSection } from "@/components/ui";
 import { useConsoleShowcase } from "@/hooks/use-explore";
 import { useToggleFavorite } from "@/hooks/use-games";
 import { useTogglePlayLater } from "@/hooks/use-play-later";
-import type { GenreCount, DeveloperSummary } from "@/types/api";
+import type { DeveloperSummary } from "@/types/api";
 
 interface ConsoleShowcaseSectionProps {
   consoleId: string;
@@ -101,46 +100,6 @@ export function ConsoleHiddenGems({ consoleId }: ConsoleShowcaseSectionProps) {
       onToggleFavorite={handleToggleFavorite}
       onTogglePlayLater={handleTogglePlayLater}
     />
-  );
-}
-
-export function ConsoleGenreBreakdown({
-  consoleId,
-}: ConsoleShowcaseSectionProps) {
-  const { data: showcase } = useConsoleShowcase(consoleId);
-
-  if (!showcase || (showcase.genreBreakdown ?? []).length === 0) return null;
-
-  const colorTheme = showcase.console.colorTheme || "#6366f1";
-
-  return (
-    <div data-testid="genre-breakdown" aria-labelledby="genre-breakdown-heading">
-      <TitledSection
-        title="Genre Breakdown"
-        icon={LayoutGrid}
-        id="genre-breakdown-heading"
-      >
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-          {(showcase.genreBreakdown ?? []).map((genre: GenreCount) => (
-            <div
-              key={genre.name}
-              className="rounded-xl border border-white/[0.06] p-4"
-              style={{
-                background: `linear-gradient(135deg, ${colorTheme}15, transparent)`,
-              }}
-              data-testid={`genre-card-${genre.name}`}
-            >
-              <p className="text-sm font-semibold text-surface-100">
-                {genre.name}
-              </p>
-              <p className="text-xs text-surface-400 mt-1">
-                {genre.gameCount} {genre.gameCount === 1 ? "game" : "games"}
-              </p>
-            </div>
-          ))}
-        </div>
-      </TitledSection>
-    </div>
   );
 }
 

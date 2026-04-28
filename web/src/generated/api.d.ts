@@ -5868,7 +5868,6 @@ export interface components {
             readonly $schema?: string;
             console: components["schemas"]["ConsoleResponse"];
             essentials: components["schemas"]["GameResponse"][];
-            genreBreakdown: components["schemas"]["GenreCount"][];
             hiddenGems: components["schemas"]["GameResponse"][];
             launchGames: components["schemas"]["GameResponse"][];
             recentlyAdded: components["schemas"]["GameResponse"][];
@@ -6089,7 +6088,6 @@ export interface components {
             /** Format: int64 */
             gameCount: number;
             games: components["schemas"]["GameResponse"][];
-            genreBreakdown: components["schemas"]["GenreCount"][];
             heroUrl: string;
             name: string;
             platformBreakdown: components["schemas"]["PlatformCount"][];
@@ -6700,11 +6698,6 @@ export interface components {
             userId: string;
             username: string;
         };
-        GenreCount: {
-            /** Format: int64 */
-            gameCount: number;
-            name: string;
-        };
         HardestGamesResponse: {
             /**
              * Format: uri
@@ -7275,7 +7268,6 @@ export interface components {
             /** Format: int64 */
             gameCount: number;
             games: components["schemas"]["GameResponse"][];
-            genreBreakdown: components["schemas"]["GenreCount"][];
             heroUrl: string;
             name: string;
             platformBreakdown: components["schemas"]["PlatformCount"][];

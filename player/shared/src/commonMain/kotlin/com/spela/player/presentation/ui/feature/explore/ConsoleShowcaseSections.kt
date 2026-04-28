@@ -2,26 +2,17 @@ package com.spela.player.presentation.ui.feature.explore
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.semantics
 import com.spela.player.domain.model.DeveloperSummary
-import com.spela.player.domain.model.GenreCount
 import com.spela.player.presentation.ui.components.SpDeveloperCard
-import com.spela.player.presentation.ui.components.SpChip
 import com.spela.player.presentation.ui.components.SpTitledSection
 import com.spela.player.presentation.ui.gamepad.rememberFocus
-import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.viewmodel.ExploreViewModel
-import com.spela.player.util.parseHexColor
 
 @Composable
 fun ConsoleEssentials(
@@ -93,30 +84,6 @@ fun ConsoleLaunchGames(
 }
 
 @Composable
-fun ConsoleGenreBreakdown(
-    viewModel: ExploreViewModel,
-) {
-    val state by viewModel.consoleShowcaseState.collectAsState()
-    val showcase = state.showcase ?: return
-    if (showcase.genreBreakdown.isEmpty()) return
-
-    val accentColor = parseHexColor(showcase.console.colorTheme, SpColor.Primary)
-
-    SpTitledSection(
-        title = "Genre Breakdown",
-        edgeToEdgeContent = true,
-        modifier = Modifier
-            .rememberFocus("section_genre_breakdown")
-            .testTag("console_genre_breakdown_section"),
-    ) {
-        GenreBreakdownChips(
-            genres = showcase.genreBreakdown,
-            accentColor = accentColor,
-        )
-    }
-}
-
-@Composable
 fun ConsoleTopDevelopers(
     viewModel: ExploreViewModel,
     onDeveloperSelected: (String) -> Unit,
@@ -181,33 +148,6 @@ fun ConsoleRecentlyAdded(
             games = showcase.recentlyAdded,
             onGameSelected = onGameSelected,
         )
-    }
-}
-
-@OptIn(ExperimentalLayoutApi::class)
-@Composable
-internal fun GenreBreakdownChips(
-    genres: List<GenreCount>,
-    accentColor: Color,
-    modifier: Modifier = Modifier,
-) {
-    FlowRow(
-        modifier = modifier
-            .testTag("genre_breakdown_chips"),
-        horizontalArrangement = Arrangement.spacedBy(SpSpacing.Small),
-        verticalArrangement = Arrangement.spacedBy(SpSpacing.Small),
-    ) {
-        genres.forEach { genre ->
-            SpChip(
-                text = "${genre.name} (${genre.gameCount})",
-                color = accentColor,
-                modifier = Modifier
-                    .testTag("genre_chip_${genre.name}")
-                    .semantics {
-                        contentDescription = "${genre.name}, ${genre.gameCount} games"
-                    },
-            )
-        }
     }
 }
 

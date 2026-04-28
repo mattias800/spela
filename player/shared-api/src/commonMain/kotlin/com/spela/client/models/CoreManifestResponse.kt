@@ -8,17 +8,9 @@
 
 @file:Suppress(
     "ArrayInDataClass",
-    "DuplicatedCode",
     "EnumEntryName",
     "RemoveRedundantQualifierName",
-    "RemoveRedundantCallsOfConversionMethods",
-    "REDUNDANT_CALL_OF_CONVERSION_METHOD",
-    "RedundantUnitReturnType",
-    "RemoveEmptyClassBody",
-    "UnnecessaryVariable",
-    "UnusedImport",
-    "UnnecessaryVariable",
-    "unused"
+    "UnusedImport"
 )
 
 package com.spela.client.models
@@ -42,7 +34,7 @@ import kotlinx.serialization.encoding.*
 data class CoreManifestResponse (
 
     /* When the server last downloaded (or re-hashed) this core. Null if it has never been fetched. */
-    @SerialName(value = "fetchedAt") @Required val fetchedAt: kotlin.time.Instant?,
+    @SerialName(value = "fetchedAt") @Required val fetchedAt: kotlinx.datetime.Instant?,
 
     /* Hex sha256 of the cached binary on the server. Empty if the server hasn't served this core yet. */
     @SerialName(value = "sha256") @Required val sha256: kotlin.String,

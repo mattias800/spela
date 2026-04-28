@@ -8,17 +8,9 @@
 
 @file:Suppress(
     "ArrayInDataClass",
-    "DuplicatedCode",
     "EnumEntryName",
     "RemoveRedundantQualifierName",
-    "RemoveRedundantCallsOfConversionMethods",
-    "REDUNDANT_CALL_OF_CONVERSION_METHOD",
-    "RedundantUnitReturnType",
-    "RemoveEmptyClassBody",
-    "UnnecessaryVariable",
-    "UnusedImport",
-    "UnnecessaryVariable",
-    "unused"
+    "UnusedImport"
 )
 
 package com.spela.client.models
@@ -27,7 +19,6 @@ import com.spela.client.models.ActiveYears
 import com.spela.client.models.CompanyInfo
 import com.spela.client.models.EntityUserStats
 import com.spela.client.models.GameResponse
-import com.spela.client.models.GenreCount
 import com.spela.client.models.NameCount
 import com.spela.client.models.PlatformCount
 import com.spela.client.models.RatingDistribution
@@ -47,7 +38,6 @@ import kotlinx.serialization.encoding.*
  * @param consoles 
  * @param gameCount 
  * @param games 
- * @param genreBreakdown 
  * @param heroUrl 
  * @param name 
  * @param platformBreakdown 
@@ -75,8 +65,6 @@ data class DeveloperDetailResponse (
     @SerialName(value = "gameCount") @Required val gameCount: kotlin.Long,
 
     @SerialName(value = "games") @Required val games: kotlin.collections.List<GameResponse>,
-
-    @SerialName(value = "genreBreakdown") @Required val genreBreakdown: kotlin.collections.List<GenreCount>,
 
     @SerialName(value = "heroUrl") @Required val heroUrl: kotlin.String,
 

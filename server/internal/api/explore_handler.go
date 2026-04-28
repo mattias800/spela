@@ -127,7 +127,6 @@ type DeveloperDetailResponse struct {
 	Games              []GameResponse      `json:"games"`
 	HeroURL            string              `json:"heroUrl"`
 	TopGames           []GameResponse      `json:"topGames"`
-	GenreBreakdown     []GenreCount        `json:"genreBreakdown"`
 	PlatformBreakdown  []PlatformCount     `json:"platformBreakdown"`
 	UserStats          *EntityUserStats    `json:"userStats"`
 	Publishers         []NameCount         `json:"publishers"`
@@ -148,7 +147,6 @@ type PublisherDetailResponse struct {
 	Games              []GameResponse      `json:"games"`
 	HeroURL            string              `json:"heroUrl"`
 	TopGames           []GameResponse      `json:"topGames"`
-	GenreBreakdown     []GenreCount        `json:"genreBreakdown"`
 	PlatformBreakdown  []PlatformCount     `json:"platformBreakdown"`
 	UserStats          *EntityUserStats    `json:"userStats"`
 	Developers         []NameCount         `json:"developers"`

@@ -234,7 +234,6 @@ describe("ConsoleDetailPage", () => {
           hiddenGems: [makeGame({ id: "12", title: "Terranigma" })],
           recentlyPlayed: [],
           recentlyAdded: [],
-          genreBreakdown: [],
           topDevelopers: [],
         },
       });
@@ -246,9 +245,8 @@ describe("ConsoleDetailPage", () => {
     });
 
     it("hides lower-priority curated shelves on small libraries even when populated", () => {
-      // Genre Breakdown / Top Developers / Recently Added are intentionally
-      // omitted from the small-library branch — they lose signal when the
-      // game pool is small. The ticket explicitly scopes them out.
+      // Top Developers / Recently Added are intentionally omitted from the
+      // small-library branch — they lose signal when the game pool is small.
       mockUseConsoleShowcase.mockReturnValue({
         data: {
           console: makeConsole({ id: "snes", name: "Super Nintendo" }),
@@ -257,13 +255,11 @@ describe("ConsoleDetailPage", () => {
           hiddenGems: [],
           recentlyPlayed: [],
           recentlyAdded: [makeGame({ id: "20", title: "Just Added" })],
-          genreBreakdown: [{ name: "Platformer", gameCount: 3 }],
           topDevelopers: [{ id: "dev1", name: "Nintendo EAD", gameCount: 5 }],
         },
       });
       renderPage();
 
-      expect(screen.queryByTestId("genre-breakdown")).not.toBeInTheDocument();
       expect(screen.queryByText(/top developers/i)).not.toBeInTheDocument();
       expect(screen.queryByText("Just Added")).not.toBeInTheDocument();
     });

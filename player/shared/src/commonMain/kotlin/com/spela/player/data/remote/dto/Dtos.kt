@@ -362,9 +362,9 @@ typealias SharedSessionInvitationCountResponse = com.spela.client.models.SharedS
 // Game placeholder when the user has no play history on the dev); the
 // mapper converts the empty id back to null.
 
-// Console Showcase — GenreCountDto / ConsoleShowcaseDto /
-// ConsoleHighlightDto / ConsoleHighlightsResponseDto replaced by
-// com.spela.client.models.GenreCount / ConsoleShowcaseResponse /
+// Console Showcase — ConsoleShowcaseDto / ConsoleHighlightDto /
+// ConsoleHighlightsResponseDto replaced by
+// com.spela.client.models.ConsoleShowcaseResponse /
 // ConsoleHighlight / ConsoleHighlightsResponse.
 //
 // Noteworthy: generated ConsoleShowcaseResponse adds a `recentlyAdded`

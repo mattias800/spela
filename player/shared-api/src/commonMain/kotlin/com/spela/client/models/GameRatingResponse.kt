@@ -8,17 +8,9 @@
 
 @file:Suppress(
     "ArrayInDataClass",
-    "DuplicatedCode",
     "EnumEntryName",
     "RemoveRedundantQualifierName",
-    "RemoveRedundantCallsOfConversionMethods",
-    "REDUNDANT_CALL_OF_CONVERSION_METHOD",
-    "RedundantUnitReturnType",
-    "RemoveEmptyClassBody",
-    "UnnecessaryVariable",
-    "UnusedImport",
-    "UnnecessaryVariable",
-    "unused"
+    "UnusedImport"
 )
 
 package com.spela.client.models
@@ -48,7 +40,7 @@ data class GameRatingResponse (
 
     @SerialName(value = "avatarUrl") @Required val avatarUrl: kotlin.String,
 
-    @SerialName(value = "createdAt") @Required val createdAt: kotlin.time.Instant,
+    @SerialName(value = "createdAt") @Required val createdAt: kotlinx.datetime.Instant,
 
     @SerialName(value = "gameId") @Required val gameId: kotlin.String,
 
@@ -58,7 +50,7 @@ data class GameRatingResponse (
 
     @SerialName(value = "review") @Required val review: kotlin.String,
 
-    @SerialName(value = "updatedAt") @Required val updatedAt: kotlin.time.Instant,
+    @SerialName(value = "updatedAt") @Required val updatedAt: kotlinx.datetime.Instant,
 
     @SerialName(value = "userId") @Required val userId: kotlin.String,
 

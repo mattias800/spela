@@ -862,12 +862,6 @@ fun com.spela.client.models.DeveloperSummary.toDomain(): DeveloperSummary = Deve
     consoles = consoles,
 )
 
-fun com.spela.client.models.GenreCount.toDeveloperGenreBreakdown(): DeveloperDetailGenreBreakdown =
-    DeveloperDetailGenreBreakdown(
-        name = name,
-        gameCount = gameCount.toInt(),
-    )
-
 fun com.spela.client.models.PlatformCount.toDeveloperPlatformBreakdown(): DeveloperDetailPlatformBreakdown =
     DeveloperDetailPlatformBreakdown(
         consoleName = consoleName,
@@ -941,7 +935,6 @@ fun com.spela.client.models.DeveloperDetailResponse.toDomain(): DeveloperDetail 
     heroUrl = heroUrl,
     companyInfo = companyInfo.toDomain().takeIf { it.hasAnyData() },
     topGames = topGames.map { it.toDomain() },
-    genreBreakdown = genreBreakdown.map { it.toDeveloperGenreBreakdown() },
     platformBreakdown = platformBreakdown.map { it.toDeveloperPlatformBreakdown() },
     userStats = userStats.takeIf { it.gamesPlayed > 0 }?.toDeveloperUserStats(),
     publishers = publishers.map { it.toDeveloperPublisher() },
@@ -953,12 +946,6 @@ fun com.spela.client.models.DeveloperDetailResponse.toDomain(): DeveloperDetail 
     timeline = timeline.map { it.toDomain() },
     relatedDevelopers = relatedDevelopers.map { it.toDomain() },
 )
-
-fun com.spela.client.models.GenreCount.toPublisherGenreBreakdown(): PublisherDetailGenreBreakdown =
-    PublisherDetailGenreBreakdown(
-        name = name,
-        gameCount = gameCount.toInt(),
-    )
 
 fun com.spela.client.models.PlatformCount.toPublisherPlatformBreakdown(): PublisherDetailPlatformBreakdown =
     PublisherDetailPlatformBreakdown(
@@ -995,7 +982,6 @@ fun com.spela.client.models.PublisherDetailResponse.toDomain(): PublisherDetail 
     heroUrl = heroUrl,
     companyInfo = companyInfo.toDomain().takeIf { it.hasAnyData() },
     topGames = topGames.map { it.toDomain() },
-    genreBreakdown = genreBreakdown.map { it.toPublisherGenreBreakdown() },
     platformBreakdown = platformBreakdown.map { it.toPublisherPlatformBreakdown() },
     userStats = userStats.takeIf { it.gamesPlayed > 0 }?.toPublisherUserStats(),
     developers = developers.map { it.toPublisherDeveloper() },
@@ -1018,17 +1004,11 @@ fun com.spela.client.models.DeveloperSpotlightResponse.toDomain(): DeveloperSpot
 
 // Console Showcase mappers
 
-fun com.spela.client.models.GenreCount.toDomain(): GenreCount = GenreCount(
-    name = name,
-    gameCount = gameCount.toInt(),
-)
-
 fun com.spela.client.models.ConsoleShowcaseResponse.toDomain(): ConsoleShowcase = ConsoleShowcase(
     console = console.toDomain(),
     essentials = essentials.map { it.toDomain() },
     hiddenGems = hiddenGems.map { it.toDomain() },
     launchGames = launchGames.map { it.toDomain() },
-    genreBreakdown = genreBreakdown.map { it.toDomain() },
     topDevelopers = topDevelopers.map { it.toDomain() },
     recentlyPlayed = recentlyPlayed.map { it.toDomain() },
     recentlyAdded = recentlyAdded.map { it.toDomain() },

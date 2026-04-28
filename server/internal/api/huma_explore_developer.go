@@ -213,7 +213,6 @@ func (h *ExploreHandler) HumaGetDeveloperDetail(ctx context.Context, in *GetDeve
 	gameResponses := ToGameResponses(games, h.DB, userID)
 	heroURL := h.findHeroURL(games)
 	topGames := buildTopGames(gameResponses, 8)
-	genreBreakdown := buildGenreBreakdownFromGames(games)
 	platformBreakdown := buildPlatformBreakdown(games)
 	publishers := buildNameCountBreakdown(games, func(g db.Game) string { return g.Publisher })
 
@@ -239,7 +238,6 @@ func (h *ExploreHandler) HumaGetDeveloperDetail(ctx context.Context, in *GetDeve
 			Games:              gameResponses,
 			HeroURL:            heroURL,
 			TopGames:           topGames,
-			GenreBreakdown:     genreBreakdown,
 			PlatformBreakdown:  platformBreakdown,
 			UserStats:          userStats,
 			Publishers:         publishers,
@@ -277,7 +275,6 @@ func (h *ExploreHandler) HumaGetPublisherDetail(ctx context.Context, in *GetPubl
 	gameResponses := ToGameResponses(games, h.DB, userID)
 	heroURL := h.findHeroURL(games)
 	topGames := buildTopGames(gameResponses, 8)
-	genreBreakdown := buildGenreBreakdownFromGames(games)
 	platformBreakdown := buildPlatformBreakdown(games)
 	developers := buildNameCountBreakdown(games, func(g db.Game) string { return g.Developer })
 
@@ -303,7 +300,6 @@ func (h *ExploreHandler) HumaGetPublisherDetail(ctx context.Context, in *GetPubl
 			Games:              gameResponses,
 			HeroURL:            heroURL,
 			TopGames:           topGames,
-			GenreBreakdown:     genreBreakdown,
 			PlatformBreakdown:  platformBreakdown,
 			UserStats:          userStats,
 			Developers:         developers,

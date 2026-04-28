@@ -28,19 +28,12 @@ const effectiveRatingPrefixed = "COALESCE(NULLIF(games.rating, 0), NULLIF(games.
 // and the shared helper functions remain here because the huma handlers still
 // depend on them.
 
-// GenreCount holds a genre name and the number of games in that genre.
-type GenreCount struct {
-	Name      string `json:"name"`
-	GameCount int    `json:"gameCount"`
-}
-
 // ConsoleShowcaseResponse is the API response for a console showcase page.
 type ConsoleShowcaseResponse struct {
 	Console        ConsoleResponse    `json:"console"`
 	Essentials     []GameResponse     `json:"essentials"`
 	HiddenGems     []GameResponse     `json:"hiddenGems"`
 	LaunchGames    []GameResponse     `json:"launchGames"`
-	GenreBreakdown []GenreCount       `json:"genreBreakdown"`
 	TopDevelopers  []DeveloperSummary `json:"topDevelopers"`
 	RecentlyPlayed []GameResponse     `json:"recentlyPlayed"`
 	RecentlyAdded  []GameResponse     `json:"recentlyAdded"`
@@ -121,34 +114,6 @@ func (h *ExploreHandler) buildConsoleHiddenGems(consoleID uint, excludeIDs []uin
 	}
 
 	return games
-}
-
-// buildGenreBreakdown returns genre counts for games on a specific console.
-func (h *ExploreHandler) buildGenreBreakdown(consoleID uint) []GenreCount {
-	type genreRow struct {
-		Genre     string
-		GameCount int
-	}
-	var rows []genreRow
-	if err := h.DB.
-		Table("games").
-		Select("genre, COUNT(*) as game_count").
-		Where("console_id = ? AND is_primary = true AND deleted_at IS NULL AND genre != ''", consoleID).
-		Group("genre").
-		Order("game_count DESC").
-		Scan(&rows).Error; err != nil {
-		slog.Error("failed to fetch genre breakdown", "error", err)
-		return []GenreCount{}
-	}
-
-	result := make([]GenreCount, len(rows))
-	for i, r := range rows {
-		result[i] = GenreCount{
-			Name:      r.Genre,
-			GameCount: r.GameCount,
-		}
-	}
-	return result
 }
 
 // reLaunchPunct is the punctuation class used by normalizeLaunchTitle. Kept

@@ -50,11 +50,6 @@ const mockPublisherDetail: PublisherDetailResponse = {
     makeGame({ id: "1", title: "Super Mario World", consoleName: "SNES", igdbCriticsRating: 96 }),
     makeGame({ id: "2", title: "Zelda: ALTTP", consoleName: "SNES", igdbCriticsRating: 95 }),
   ],
-  genreBreakdown: [
-    { name: "Platformer", gameCount: 3 },
-    { name: "RPG", gameCount: 1 },
-    { name: "Action", gameCount: 1 },
-  ],
   platformBreakdown: [
     { consoleName: "NES", consoleId: "nes", count: 3 },
     { consoleName: "SNES", consoleId: "snes", count: 2 },
@@ -280,49 +275,6 @@ describe("PublisherDetailPage", () => {
     });
     renderPage();
     expect(screen.queryByTestId("shelf-Top Rated")).not.toBeInTheDocument();
-  });
-
-  // --- Genre Breakdown section ---
-
-  it("shows genre breakdown chips when 2+ genres", () => {
-    renderPage();
-    const section = screen.getByTestId("publisher-genre-breakdown");
-    expect(section).toBeInTheDocument();
-    expect(within(section).getByText(/Platformer \(3\)/)).toBeInTheDocument();
-    expect(within(section).getByText(/RPG \(1\)/)).toBeInTheDocument();
-    expect(within(section).getByText(/Action \(1\)/)).toBeInTheDocument();
-  });
-
-  it("hides genre breakdown when fewer than 2 genres", () => {
-    mockUsePublisherDetail.mockReturnValue({
-      data: {
-        ...mockPublisherDetail,
-        genreBreakdown: [{ name: "Platformer", gameCount: 5 }],
-      },
-      isLoading: false,
-    });
-    renderPage();
-    expect(
-      screen.queryByTestId("publisher-genre-breakdown"),
-    ).not.toBeInTheDocument();
-  });
-
-  it("filters games when clicking a genre chip", async () => {
-    const user = userEvent.setup();
-    renderPage();
-
-    const section = screen.getByTestId("publisher-genre-breakdown");
-    const platformerBtn = within(section).getByText(/Platformer \(3\)/);
-    await user.click(platformerBtn);
-
-    // After genre filter, platformer games are on NES and SNES, so we get platform grouping
-    // Games may also appear in the top rated shelf, so use getAllByText
-    expect(screen.getAllByText("Super Mario World").length).toBeGreaterThanOrEqual(1);
-    expect(screen.getByText("Super Mario Bros.")).toBeInTheDocument();
-    expect(screen.getByText("Kirby's Adventure")).toBeInTheDocument();
-    // Non-platformer games should be gone from the main section
-    // (Zelda:ALTTP is in top rated shelf but not in filtered platform sections)
-    expect(screen.queryByText("Metroid")).not.toBeInTheDocument();
   });
 
   // --- Platform sections ---
