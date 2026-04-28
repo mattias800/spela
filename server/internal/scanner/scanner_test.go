@@ -44,6 +44,12 @@ func TestGameTitle(t *testing.T) {
 		// Article at end (no subtitle)
 		{"Addams Family, The (USA).sfc", "The Addams Family"},
 		{"Boy and His Blob, A (USA).nes", "A Boy and His Blob"},
+		// All-parens / all-brackets filenames — demoscene productions
+		// where the title itself is parenthesised. Falls back to the
+		// first paren/bracket group when stripping leaves empty.
+		{"(E) (Moshe, Zden) [1996].zip", "(E)"},
+		{"(intro) (group) [1995].adf", "(intro)"},
+		{"[Untitled] (Author) [2000].zip", "[Untitled]"},
 	}
 
 	for _, tt := range tests {

@@ -1518,9 +1518,36 @@ func consoleHasExtension(console *db.Console, ext string) bool {
 }
 
 // GameTitle extracts a clean game title from a filename.
+//
+// Most ROMs follow the No-Intro convention "Title (Region) (Tags) [Hash]",
+// so we iteratively strip parenthesised + bracketed groups to leave just
+// the title. But some demoscene productions (esp. for ADEMO/DDEMO) follow
+// "(Title) (Authors) [Year]" where the title itself is parenthesised —
+// e.g. "(E) (Moshe, Zden) [1996].zip" is a real 1996 DOS demo whose title
+// is literally "(E)". Stripping every paren-group leaves the empty string.
+//
+// To handle both: after stripping, if the result is empty, fall back to
+// the first paren-group as the title (`(E)` in the example). If that's
+// also missing, fall back to the filename without extension. Result is
+// never empty for a non-empty filename.
 func GameTitle(filename string) string {
 	// Remove extension
 	name := strings.TrimSuffix(filename, filepath.Ext(filename))
+	original := name
+
+	// Remember the first parenthesised group at the start of the name —
+	// candidate fallback title for filenames that are all-parens.
+	firstParenGroup := ""
+	if strings.HasPrefix(name, "(") {
+		if end := strings.Index(name, ")"); end > 0 {
+			firstParenGroup = name[:end+1]
+		}
+	} else if strings.HasPrefix(name, "[") {
+		if end := strings.Index(name, "]"); end > 0 {
+			firstParenGroup = name[:end+1]
+		}
+	}
+
 	// Remove common tags in parentheses/brackets
 	for _, pair := range [][2]string{{"(", ")"}, {"[", "]"}} {
 		for {
@@ -1536,6 +1563,16 @@ func GameTitle(filename string) string {
 		}
 	}
 	name = strings.TrimSpace(name)
+
+	// All-parens filename — fall back to the first paren-group as title,
+	// or the original filename-minus-extension as a last resort.
+	if name == "" {
+		if firstParenGroup != "" {
+			name = firstParenGroup
+		} else {
+			name = strings.TrimSpace(original)
+		}
+	}
 
 	// No-Intro article-suffix convention: "Name, The - Subtitle" or "Name, The"
 	// Move the article to the front for a natural display title.
