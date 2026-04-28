@@ -169,24 +169,28 @@ export function GameHero({
 
   return (
     <div className="relative" data-comp={"GameHero"}>
-      {/* Hero banner background */}
-      <div className="relative min-h-[320px] md:min-h-[400px] overflow-hidden">
-        {heroImage ? (
-          <img
-            src={heroImage}
-            alt=""
-            className="absolute inset-0 w-full h-full object-cover"
-          />
-        ) : (
-          <div className="absolute inset-0 bg-gradient-to-br from-surface-800 via-surface-900 to-surface-950" />
-        )}
+      {/* Hero banner background — absolute so the wrapper height is driven
+          by the content below. On narrow screens the cover + title box
+          stack into a column that's taller than the 400px the row layout
+          uses; the background needs to grow with them so the title box
+          (which is positioned over the background) doesn't bleed onto
+          the game description rendered after this component. */}
+      {heroImage ? (
+        <img
+          src={heroImage}
+          alt=""
+          className="absolute inset-0 w-full h-full object-cover"
+        />
+      ) : (
+        <div className="absolute inset-0 bg-gradient-to-br from-surface-800 via-surface-900 to-surface-950" />
+      )}
 
-        {/* Subtle bottom gradient — just enough for transition to page background */}
-        <div className="absolute inset-0 bg-gradient-to-t from-surface-950 via-transparent to-transparent" />
-      </div>
+      {/* Subtle bottom gradient — just enough for transition to page background */}
+      <div className="absolute inset-0 bg-gradient-to-t from-surface-950 via-transparent to-transparent" />
 
-      {/* Content overlay — outside overflow-hidden so dropdowns aren't clipped */}
-      <div className="absolute inset-0 z-10 flex flex-col items-center md:flex-row md:items-end min-h-[320px] md:min-h-[400px] p-6 md:p-8 gap-6 md:gap-8">
+      {/* Content — in-flow so it sizes the wrapper. Dropdowns aren't
+          clipped because no ancestor has overflow-hidden. */}
+      <div className="relative z-10 flex flex-col items-center md:flex-row md:items-end min-h-[320px] md:min-h-[400px] p-6 md:p-8 gap-6 md:gap-8">
         {/* Cover art */}
           <div className="flex-shrink-0 self-center md:self-end">
             <div className="rounded-xl overflow-hidden bg-surface-900/80 border border-white/10 shadow-2xl backdrop-blur-sm">
