@@ -2,6 +2,7 @@ package scraper
 
 import (
 	"testing"
+	"time"
 
 	"github.com/spela/server/internal/db"
 	"github.com/stretchr/testify/assert"
@@ -336,6 +337,53 @@ func TestIsGameQueuedForType_IgnoresCompletedItems(t *testing.T) {
 	queued, err := q.IsGameQueuedForType(42, "ra_fetch")
 	require.NoError(t, err)
 	assert.False(t, queued)
+}
+
+func TestWasGameRecentlyAttemptedForType(t *testing.T) {
+	database := setupQueueTestDB(t)
+	q := NewScrapeQueue(database)
+
+	// Brand new — nothing attempted.
+	recent, err := q.WasGameRecentlyAttemptedForType(42, "ra_fetch", 5*time.Minute)
+	require.NoError(t, err)
+	assert.False(t, recent, "no queue item — should not be recently attempted")
+
+	// Pending/in-progress doesn't count as "attempted" (still ongoing).
+	require.NoError(t, q.EnqueueGameWithType(42, nil, 100, "ra_fetch"))
+	recent, _ = q.WasGameRecentlyAttemptedForType(42, "ra_fetch", 5*time.Minute)
+	assert.False(t, recent, "pending item — not yet attempted")
+
+	// Failed item within window → counts.
+	item, _ := q.Dequeue()
+	require.NotNil(t, item)
+	_, err = q.MarkFailed(item, "transient error")
+	require.NoError(t, err)
+	recent, _ = q.WasGameRecentlyAttemptedForType(42, "ra_fetch", 5*time.Minute)
+	assert.True(t, recent, "failed item within window — should count")
+
+	// Different type — not counted.
+	recent, _ = q.WasGameRecentlyAttemptedForType(42, "scrape", 5*time.Minute)
+	assert.False(t, recent, "different item type — should not count")
+
+	// Different game — not counted.
+	recent, _ = q.WasGameRecentlyAttemptedForType(99, "ra_fetch", 5*time.Minute)
+	assert.False(t, recent, "different game — should not count")
+
+	// Beyond window — not counted. Backdate the completion timestamp.
+	old := time.Now().Add(-10 * time.Minute)
+	require.NoError(t, database.Model(&db.ScrapeQueueItem{}).
+		Where("id = ?", item.ID).Update("completed_at", old).Error)
+	recent, _ = q.WasGameRecentlyAttemptedForType(42, "ra_fetch", 5*time.Minute)
+	assert.False(t, recent, "completed_at older than window — should not count")
+
+	// Completed (not just failed) within window also counts — same backoff applies.
+	require.NoError(t, q.EnqueueGameWithType(43, nil, 100, "ra_fetch"))
+	item2, _ := q.Dequeue()
+	require.NotNil(t, item2)
+	_, err = q.MarkCompleted(item2)
+	require.NoError(t, err)
+	recent, _ = q.WasGameRecentlyAttemptedForType(43, "ra_fetch", 5*time.Minute)
+	assert.True(t, recent, "completed item within window — should count")
 }
 
 func TestResetInProgressItems(t *testing.T) {

@@ -139,6 +139,21 @@ func (q *ScrapeQueue) IsGameQueuedForType(gameID uint, itemType string) (bool, e
 	return count > 0, err
 }
 
+// WasGameRecentlyAttemptedForType reports whether a finished (completed or
+// failed) queue item of the given type exists for this game within `since`.
+// Use as a backoff so a polling client can't drive an infinite re-enqueue
+// loop when fetches keep failing — once a recent attempt is on record, the
+// caller should stop re-enqueuing and let the cooldown expire.
+func (q *ScrapeQueue) WasGameRecentlyAttemptedForType(gameID uint, itemType string, since time.Duration) (bool, error) {
+	cutoff := time.Now().Add(-since)
+	var count int64
+	err := q.db.Model(&db.ScrapeQueueItem{}).
+		Where("game_id = ? AND type = ? AND status IN ? AND completed_at >= ?",
+			gameID, itemType, []string{"completed", "failed"}, cutoff).
+		Count(&count).Error
+	return count > 0, err
+}
+
 // Dequeue returns the next pending item (highest priority first, then oldest)
 // and marks it as in_progress. Returns nil if queue is empty.
 func (q *ScrapeQueue) Dequeue() (*db.ScrapeQueueItem, error) {
