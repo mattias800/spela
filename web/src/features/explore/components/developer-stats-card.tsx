@@ -13,7 +13,7 @@ export function DeveloperStatsCard({
   totalGames,
 }: DeveloperStatsCardProps) {
   return (
-    <section data-testid="developer-user-stats">
+    <section data-comp="DeveloperStatsCard" data-testid="developer-user-stats">
       <h2 className="text-xl font-bold text-surface-100 mb-4">Your Stats</h2>
       <div className="rounded-xl border border-white/[0.06] bg-surface-900/50 p-5">
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-4">

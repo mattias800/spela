@@ -31,7 +31,7 @@ export function GamePicker({
   const showResults = gameSearch.length > 0 && !selectedGame;
 
   return (
-    <div className="space-y-1.5">
+    <div data-comp="GamePicker" className="space-y-1.5">
       <label className="block text-sm font-medium text-surface-300">
         Game
       </label>

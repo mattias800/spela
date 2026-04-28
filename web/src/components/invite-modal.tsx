@@ -29,7 +29,7 @@ function UserAvatar({ user }: { user: UserSearchResult }) {
     );
   }
   return (
-    <div className="h-8 w-8 rounded-full bg-surface-600 flex items-center justify-center text-xs font-medium text-surface-300">
+    <div data-comp="UserAvatar" className="h-8 w-8 rounded-full bg-surface-600 flex items-center justify-center text-xs font-medium text-surface-300">
       {user.username[0]?.toUpperCase()}
     </div>
   );

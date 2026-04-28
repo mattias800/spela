@@ -38,7 +38,7 @@ export function CreateAccountStep({ onNext }: CreateAccountStepProps) {
   }
 
   return (
-    <div className="space-y-6">
+    <div data-comp="CreateAccountStep" className="space-y-6">
       <div>
         <h2 className="text-xl font-semibold text-surface-100">
           Create Owner Account

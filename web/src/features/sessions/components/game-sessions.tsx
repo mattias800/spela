@@ -16,7 +16,7 @@ import type { GameSession } from "@/types/api";
 
 function SessionsSkeleton() {
   return (
-    <div className="space-y-2">
+    <div data-comp="SessionsSkeleton" className="space-y-2">
       {Array.from({ length: 2 }, (_, i) => (
         <div
           key={i}

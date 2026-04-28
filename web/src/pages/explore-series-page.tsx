@@ -9,7 +9,7 @@ import type { SeriesConsole } from "@/types/api";
 
 function SeriesPageSkeleton() {
   return (
-    <div className="space-y-8" data-testid="series-detail-skeleton">
+    <div data-comp="SeriesPageSkeleton" className="space-y-8" data-testid="series-detail-skeleton">
       {/* Hero skeleton */}
       <Skeleton className="w-full h-64 sm:h-80 lg:h-96 rounded-2xl" />
       {/* Title */}

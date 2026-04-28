@@ -29,7 +29,7 @@ export function CompletionistMapSection({
   if (!data || (data.consoles ?? []).length === 0) return null;
 
   return (
-    <section data-testid="completionist-map">
+    <section data-comp="CompletionistMapSection" data-testid="completionist-map">
       <div className="flex items-center gap-2.5 mb-5">
         <Map className="h-5 w-5 text-brand-400" />
         <h2 className="text-xl font-bold text-surface-100">

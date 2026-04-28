@@ -43,7 +43,7 @@ export function RankBadge({ rank }: RankBadgeProps) {
   }
 
   return (
-    <span
+    <span data-comp="RankBadge"
       data-testid={`rank-badge-${rank}`}
       className="inline-flex items-center justify-center h-7 w-7 text-sm font-medium text-surface-500 flex-shrink-0"
     >

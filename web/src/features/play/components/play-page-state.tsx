@@ -13,7 +13,7 @@ interface PlayPageLoadingProps {
 /** Top-bar + blank stage skeleton while game / consoles are loading. */
 export function PlayPageLoading(_props: PlayPageLoadingProps = {}) {
   return (
-    <div className="flex flex-col h-screen">
+    <div data-comp="PlayPageLoading" className="flex flex-col h-screen">
       <div className="flex items-center justify-between px-4 py-2 border-b border-surface-800 bg-surface-950/80">
         <div className="flex items-center gap-3">
           <Skeleton className="h-5 w-16" />
@@ -36,7 +36,7 @@ interface PlayPageNotFoundProps {
 
 export function PlayPageNotFound({ onBack }: PlayPageNotFoundProps) {
   return (
-    <div className="text-center py-20">
+    <div data-comp="PlayPageNotFound" className="text-center py-20">
       <p className="text-surface-400">Game not found</p>
       <Button variant="ghost" onClick={onBack} className="mt-4">
         Go back
@@ -55,7 +55,7 @@ export function PlayPageUnsupported({
   onBack,
 }: PlayPageUnsupportedProps) {
   return (
-    <div className="text-center py-20 space-y-4">
+    <div data-comp="PlayPageUnsupported" className="text-center py-20 space-y-4">
       <AlertTriangle className="h-12 w-12 text-warning-500 mx-auto" />
       <h2 className="text-xl font-bold text-surface-100">
         Browser Play Not Available
@@ -83,7 +83,7 @@ export function PlayPageError({
   onRetry,
 }: PlayPageErrorProps) {
   return (
-    <div className="text-center py-20 space-y-4">
+    <div data-comp="PlayPageError" className="text-center py-20 space-y-4">
       <AlertTriangle className="h-12 w-12 text-danger-500 mx-auto" />
       <h2 className="text-xl font-bold text-surface-100">Emulation Error</h2>
       <p className="text-surface-400 max-w-md mx-auto">

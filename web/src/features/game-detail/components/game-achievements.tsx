@@ -194,7 +194,7 @@ function ViewToggle({
   onChange: (mode: ViewMode) => void;
 }) {
   return (
-    <div
+    <div data-comp="ViewToggle"
       className="flex rounded-full bg-surface-800 p-0.5"
       data-testid="view-toggle"
     >

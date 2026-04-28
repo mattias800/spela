@@ -18,7 +18,7 @@ import type { Game } from "@/types/api";
 
 function DeveloperPageSkeleton() {
   return (
-    <div className="space-y-8" data-testid="developer-detail-skeleton">
+    <div data-comp="DeveloperPageSkeleton" className="space-y-8" data-testid="developer-detail-skeleton">
       {/* Hero banner skeleton */}
       <Skeleton className="w-full h-48 rounded-2xl" />
 

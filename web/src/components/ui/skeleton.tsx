@@ -7,7 +7,7 @@ interface SkeletonProps {
 
 export function Skeleton({ className, style }: SkeletonProps) {
   return (
-    <div
+    <div data-comp="Skeleton"
       className={cn("animate-pulse rounded-lg bg-surface-800/60", className)}
       style={style}
     />
@@ -22,7 +22,7 @@ export function GameCardSkeleton({
   coverHeight?: number;
 }) {
   return (
-    <div className={`space-y-3${coverHeight ? " flex-shrink-0" : ""}`}>
+    <div data-comp="GameCardSkeleton" className={`space-y-3${coverHeight ? " flex-shrink-0" : ""}`}>
       <Skeleton
         className="rounded-2xl"
         style={coverHeight ? { height: coverHeight, aspectRatio: aspectRatio ?? 3 / 4 } : { aspectRatio: aspectRatio ?? 3 / 4, width: "100%" }}
@@ -37,7 +37,7 @@ export function GameCardSkeleton({
 
 export function ConsoleCardSkeleton() {
   return (
-    <div className="space-y-3">
+    <div data-comp="ConsoleCardSkeleton" className="space-y-3">
       <Skeleton className="aspect-[16/10] w-full rounded-2xl" />
       <div className="space-y-2 px-1">
         <Skeleton className="h-5 w-2/3" />
@@ -53,7 +53,7 @@ export function GameDetailSkeleton({
   aspectRatio?: number;
 }) {
   return (
-    <div className="space-y-8">
+    <div data-comp="GameDetailSkeleton" className="space-y-8">
       <div className="flex flex-col items-center gap-6 md:flex-row md:items-start md:gap-8">
         <Skeleton
           className="w-48 md:w-64 rounded-2xl flex-shrink-0"
@@ -76,7 +76,7 @@ export function GameDetailSkeleton({
 
 export function GameListRowSkeleton() {
   return (
-    <div className="flex items-center gap-4 px-4 py-3 rounded-xl">
+    <div data-comp="GameListRowSkeleton" className="flex items-center gap-4 px-4 py-3 rounded-xl">
       <Skeleton className="h-12 w-9 rounded-lg flex-shrink-0" />
       <div className="flex-1 min-w-0 space-y-2">
         <Skeleton className="h-4 w-2/5" />
@@ -95,7 +95,7 @@ export function GameListRowSkeleton() {
 // resolved to real rows.
 export function TableRowSkeleton({ columns = 5 }: { columns?: number }) {
   return (
-    <tr>
+    <tr data-comp="TableRowSkeleton">
       {Array.from({ length: columns }, (_, i) => (
         <td key={i} className="px-5 py-3">
           <Skeleton className="h-4 w-full" />

@@ -22,7 +22,7 @@ export function ConsoleHeroBanner({
   const Icon = style.icon;
 
   return (
-    <div
+    <div data-comp="ConsoleHeroBanner"
       className={cn(
         "relative overflow-hidden rounded-2xl border border-white/[0.06]",
         "bg-gradient-to-br",

@@ -57,7 +57,7 @@ interface ThemeGridProps {
 
 function ThemeGridSkeleton() {
   return (
-    <section data-testid="theme-grid-skeleton">
+    <section data-comp="ThemeGridSkeleton" data-testid="theme-grid-skeleton">
       <h2 className="text-xl font-bold text-surface-100 mb-5">
         Browse by Theme
       </h2>
@@ -117,7 +117,7 @@ export function ThemeGrid({ themes, isLoading }: ThemeGridProps) {
   }
 
   return (
-    <section data-testid="theme-grid" className="group/themes relative">
+    <section data-comp="ThemeGrid" data-testid="theme-grid" className="group/themes relative">
       <h2 className="text-xl font-bold text-surface-100 mb-5">
         Browse by Theme
       </h2>

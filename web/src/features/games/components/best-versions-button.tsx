@@ -39,7 +39,7 @@ export function BestVersionsButton({
   };
 
   return (
-    <button
+    <button data-comp="BestVersionsButton"
       onClick={handleClick}
       className={cn(
         "inline-flex items-center gap-1.5 rounded-lg border px-3 py-2.5 text-sm font-medium transition-all",

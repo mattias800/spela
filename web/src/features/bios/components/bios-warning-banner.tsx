@@ -16,7 +16,7 @@ export function BiosWarningBanner({
   missingFiles,
 }: BiosWarningBannerProps) {
   return (
-    <div
+    <div data-comp="BiosWarningBanner"
       className="rounded-xl bg-warning-500/10 border border-warning-500/30 px-4 py-3 flex items-start gap-3"
       role="alert"
       data-testid="bios-warning-banner"

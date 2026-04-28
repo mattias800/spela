@@ -94,7 +94,7 @@ export function VerificationBadge({ game, isAdmin }: VerificationBadgeProps) {
   const displayText = game.verificationTag || "Unverified";
 
   return (
-    <div className="relative">
+    <div data-comp="VerificationBadge" className="relative">
       <button
         type="button"
         onClick={() => setShowInfo(!showInfo)}

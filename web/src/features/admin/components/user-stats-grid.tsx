@@ -21,7 +21,7 @@ export function UserStatsGrid({ stats }: UserStatsGridProps) {
   ];
 
   return (
-    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+    <div data-comp="UserStatsGrid" className="grid grid-cols-2 md:grid-cols-4 gap-4">
       {items.map(({ icon: Icon, value, label }) => (
         <Section key={label}>
           <div className="px-5 pb-5 flex items-center gap-3 py-4">

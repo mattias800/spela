@@ -58,7 +58,7 @@ export function TimelineView({
   );
 
   return (
-    <div data-testid="timeline-view">
+    <div data-comp="TimelineView" data-testid="timeline-view">
       {/* Mini stat summary */}
       {timelineEntries.length > 0 && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
@@ -126,7 +126,7 @@ export function TimelineView({
 
 function TimelineEntryCard({ entry }: { entry: AchievementTimelineEntry }) {
   return (
-    <div className="relative flex items-start gap-3">
+    <div data-comp="TimelineEntryCard" className="relative flex items-start gap-3">
       {/* Node */}
       <div className="absolute -left-6 top-2 h-3 w-3 rounded-full bg-brand-400 border-2 border-surface-900" />
 
@@ -174,7 +174,7 @@ function TimelineEntryCard({ entry }: { entry: AchievementTimelineEntry }) {
 
 function LockedTimelineEntry({ achievement }: { achievement: Achievement }) {
   return (
-    <div className="relative flex items-start gap-3 opacity-40">
+    <div data-comp="LockedTimelineEntry" className="relative flex items-start gap-3 opacity-40">
       {/* Node */}
       <div className="absolute -left-6 top-2 h-3 w-3 rounded-full bg-surface-700 border-2 border-surface-900" />
 
@@ -208,7 +208,7 @@ function LockedTimelineEntry({ achievement }: { achievement: Achievement }) {
 
 function TimelineSkeleton() {
   return (
-    <div className="space-y-4" data-testid="timeline-skeleton">
+    <div data-comp="TimelineSkeleton" className="space-y-4" data-testid="timeline-skeleton">
       {Array.from({ length: 4 }, (_, i) => (
         <div key={i} className="flex items-start gap-3">
           <Skeleton className="h-3 w-3 rounded-full flex-shrink-0" />

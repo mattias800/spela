@@ -206,7 +206,7 @@ export function ActiveFilterPills({
   };
 
   return (
-    <div className="flex flex-wrap items-center gap-2" data-testid="active-filter-pills">
+    <div data-comp="ActiveFilterPills" className="flex flex-wrap items-center gap-2" data-testid="active-filter-pills">
       {pills.map((pill) => (
         <button
           key={pill.key}

@@ -60,7 +60,7 @@ export function RatingDistribution({ distribution }: RatingDistributionProps) {
   const visibleBars = bars.filter((b) => b.count > 0);
 
   return (
-    <section data-testid="rating-distribution">
+    <section data-comp="RatingDistribution" data-testid="rating-distribution">
       <h2 className="text-lg font-bold text-surface-100 mb-4">
         Rating Distribution
       </h2>

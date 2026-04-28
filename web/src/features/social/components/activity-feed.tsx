@@ -6,7 +6,7 @@ import { useActivityFeed, useActivityRealtime } from "@/hooks/use-social";
 
 function ActivityFeedSkeleton({ count = 5 }: { count?: number }) {
   return (
-    <div className="space-y-2">
+    <div data-comp="ActivityFeedSkeleton" className="space-y-2">
       {Array.from({ length: count }, (_, i) => (
         <div key={i} className="flex items-start gap-3 px-3 py-3">
           <Skeleton className="h-8 w-8 rounded-full flex-shrink-0" />
@@ -37,7 +37,7 @@ export function ActivityFeed({
   const events = maxItems ? data?.data?.slice(0, maxItems) : data?.data;
 
   return (
-    <div data-testid="activity-feed">
+    <div data-comp="ActivityFeed" data-testid="activity-feed">
       {showHeader && (
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2.5">

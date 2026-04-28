@@ -44,7 +44,7 @@ export function AlphabetBar({
   const isVertical = orientation === "vertical";
 
   return (
-    <nav
+    <nav data-comp="AlphabetBar"
       aria-label="Alphabet quick-jump"
       className={cn(
         "flex gap-0.5",

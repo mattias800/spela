@@ -5,7 +5,7 @@
 export function ProgressBar({ value, max }: { value: number; max: number }) {
   const pct = max > 0 ? Math.round((value / max) * 100) : 0;
   return (
-    <div className="h-2 w-full rounded-full bg-surface-700">
+    <div data-comp="ProgressBar" className="h-2 w-full rounded-full bg-surface-700">
       <div
         className="h-2 rounded-full bg-brand-500 transition-all duration-300 ease-out"
         style={{ width: `${pct}%` }}

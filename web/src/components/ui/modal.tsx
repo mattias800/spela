@@ -51,7 +51,7 @@ export function Modal({
   if (!open) return null;
 
   return (
-    <div
+    <div data-comp="Modal"
       ref={overlayRef}
       className="fixed inset-0 z-50 flex items-center justify-center p-4"
       onClick={(e) => {

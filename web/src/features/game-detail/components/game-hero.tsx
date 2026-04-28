@@ -359,7 +359,7 @@ function getRegionFlag(region: string): string | null {
 function RegionBadge({ region }: { region: string }) {
   const flag = getRegionFlag(region);
   return (
-    <span className="inline-flex items-center gap-1 rounded-md bg-black/30 backdrop-blur-sm px-2 py-0.5 text-xs font-medium text-white/80">
+    <span data-comp="RegionBadge" className="inline-flex items-center gap-1 rounded-md bg-black/30 backdrop-blur-sm px-2 py-0.5 text-xs font-medium text-white/80">
       {flag && <span>{flag}</span>}
       {region}
     </span>
@@ -373,7 +373,7 @@ function IgdbRatingStars({ rating }: { rating: number }) {
   const emptyStars = 5 - fullStars - (halfStar ? 1 : 0);
 
   return (
-    <div className="flex items-center gap-1.5">
+    <div data-comp="IgdbRatingStars" className="flex items-center gap-1.5">
       <div className="flex items-center">
         {Array.from({ length: fullStars }, (_, i) => (
           <Star

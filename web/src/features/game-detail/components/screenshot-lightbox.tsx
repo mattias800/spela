@@ -58,7 +58,7 @@ export function ScreenshotLightbox({
   if (!open) return null;
 
   return (
-    <div
+    <div data-comp="ScreenshotLightbox"
       ref={dialogRef}
       role="dialog"
       aria-modal="true"

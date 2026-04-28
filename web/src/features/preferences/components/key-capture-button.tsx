@@ -29,7 +29,7 @@ export function KeyCaptureButton({ value, onChange }: KeyCaptureButtonProps) {
   }, [listening, onChange]);
 
   return (
-    <button
+    <button data-comp="KeyCaptureButton"
       ref={buttonRef}
       type="button"
       onClick={() => setListening(true)}

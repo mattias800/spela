@@ -10,7 +10,7 @@ interface SeriesShelfProps {
 
 function SeriesSkeletonContent() {
   return (
-    <div className="flex gap-4 overflow-hidden">
+    <div data-comp="SeriesSkeletonContent" className="flex gap-4 overflow-hidden">
       {Array.from({ length: 5 }, (_, i) => (
         <Skeleton key={i} className="w-56 sm:w-60 lg:w-64 h-36 flex-shrink-0 rounded-2xl" />
       ))}

@@ -129,7 +129,7 @@ interface ActivityEventItemProps {
 
 export function ActivityEventItem({ event, compact }: ActivityEventItemProps) {
   return (
-    <div
+    <div data-comp="ActivityEventItem"
       className="flex items-start gap-3 rounded-xl px-3 py-3 hover:bg-surface-800/50 transition-colors"
       data-testid={`activity-event-${event.id}`}
     >

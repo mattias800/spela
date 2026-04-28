@@ -171,7 +171,7 @@ export function AppLayout() {
   ];
 
   return (
-    <div className="min-h-screen">
+    <div data-comp="AppLayout" className="min-h-screen">
       {/* Mobile header bar — visible below lg */}
       <header className="fixed top-0 left-0 right-0 z-30 flex items-center gap-3 h-14 px-4 bg-surface-950 border-b border-surface-800/50 lg:hidden">
         <button

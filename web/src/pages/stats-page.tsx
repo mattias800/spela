@@ -51,7 +51,7 @@ function RankBadge({ rank }: { rank: number }) {
   }
 
   return (
-    <span className="inline-flex items-center justify-center h-7 w-7 text-sm font-medium text-surface-500">
+    <span data-comp="RankBadge" className="inline-flex items-center justify-center h-7 w-7 text-sm font-medium text-surface-500">
       {rank}
     </span>
   );
@@ -59,7 +59,7 @@ function RankBadge({ rank }: { rank: number }) {
 
 function MostPlayedSkeleton() {
   return (
-    <div className="space-y-2">
+    <div data-comp="MostPlayedSkeleton" className="space-y-2">
       {Array.from({ length: 10 }, (_, i) => (
         <div
           key={i}
@@ -81,7 +81,7 @@ function MostPlayedSkeleton() {
 
 function MostActiveSkeleton() {
   return (
-    <div className="space-y-2">
+    <div data-comp="MostActiveSkeleton" className="space-y-2">
       {Array.from({ length: 10 }, (_, i) => (
         <div
           key={i}

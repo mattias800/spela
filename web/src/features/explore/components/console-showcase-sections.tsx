@@ -29,7 +29,7 @@ export function ConsoleRecentlyPlayed({
   if (!showcase || (showcase.recentlyPlayed ?? []).length === 0) return null;
 
   return (
-    <div data-testid="recently-played-section">
+    <div data-comp="ConsoleRecentlyPlayed" data-testid="recently-played-section">
       <GameShelf
         title="Continue Playing"
         icon={Play}
@@ -113,7 +113,7 @@ export function ConsoleTopDevelopers({
   const colorTheme = showcase.console.colorTheme || "#6366f1";
 
   return (
-    <div data-testid="top-developers" aria-labelledby="top-developers-heading">
+    <div data-comp="ConsoleTopDevelopers" data-testid="top-developers" aria-labelledby="top-developers-heading">
       <TitledSection
         title="Studios That Defined This Console"
         icon={Building2}

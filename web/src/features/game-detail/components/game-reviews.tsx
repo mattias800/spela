@@ -8,7 +8,7 @@ import { useGameRatings } from "@/hooks/use-ratings";
 
 function ReviewsSkeleton() {
   return (
-    <div className="space-y-4">
+    <div data-comp="ReviewsSkeleton" className="space-y-4">
       {Array.from({ length: 3 }, (_, i) => (
         <div
           key={i}
@@ -38,7 +38,7 @@ export function GameReviews({ gameId }: GameReviewsProps) {
   const hasMore = data ? page * pageSize < data.total : false;
 
   return (
-    <div data-testid="game-reviews">
+    <div data-comp="GameReviews" data-testid="game-reviews">
       <div className="flex items-center gap-2.5 mb-4">
         <MessageSquare className="h-5 w-5 text-brand-400" />
         <h2 className="text-lg font-semibold text-surface-100">Reviews</h2>

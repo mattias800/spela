@@ -59,7 +59,7 @@ export function SteamGridDBStep({ onSkip, onSave }: SteamGridDBStepProps) {
   }
 
   return (
-    <div className="space-y-6">
+    <div data-comp="SteamGridDBStep" className="space-y-6">
       <div>
         <h2 className="text-xl font-semibold text-surface-100">
           SteamGridDB Artwork

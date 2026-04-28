@@ -28,7 +28,7 @@ import type { Game } from "@/types/api";
 
 function CollectionDetailSkeleton() {
   return (
-    <div className="space-y-6">
+    <div data-comp="CollectionDetailSkeleton" className="space-y-6">
       <Skeleton className="h-5 w-16" />
       <div className="space-y-3">
         <Skeleton className="h-9 w-72" />

@@ -14,7 +14,7 @@ import { ConsoleBreakdownTable } from "@/features/storage/components/console-bre
 
 function StorageSkeleton() {
   return (
-    <div className="space-y-6">
+    <div data-comp="StorageSkeleton" className="space-y-6">
       <Section>
         <div className="px-5 pt-5 pb-2">
           <Skeleton className="h-6 w-40" />

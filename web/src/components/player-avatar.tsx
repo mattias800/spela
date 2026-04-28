@@ -29,7 +29,7 @@ export function PlayerAvatar({
   }
 
   return (
-    <div
+    <div data-comp="PlayerAvatar"
       className={`${classes} rounded-full bg-gradient-to-br from-brand-500 to-brand-700 flex items-center justify-center font-bold text-white`}
     >
       {username.charAt(0).toUpperCase()}

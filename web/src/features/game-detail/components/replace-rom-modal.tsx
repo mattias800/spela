@@ -227,7 +227,7 @@ function ResultView({
   onClose: () => void;
 }) {
   return (
-    <div className="space-y-4" data-testid="replace-result">
+    <div data-comp="ResultView" className="space-y-4" data-testid="replace-result">
       {result.verified ? (
         <div className="flex flex-col items-center gap-3 py-2">
           <CheckCircle2 className="h-12 w-12 text-success-500" />

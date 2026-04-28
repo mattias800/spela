@@ -13,7 +13,7 @@ export function ReleaseTimeline({ timeline }: ReleaseTimelineProps) {
   const sorted = [...timeline].sort((a, b) => a.year - b.year);
 
   return (
-    <section data-testid="release-timeline">
+    <section data-comp="ReleaseTimeline" data-testid="release-timeline">
       <h2 className="text-lg font-bold text-surface-100 mb-4">
         Release Timeline
       </h2>
@@ -32,7 +32,7 @@ export function ReleaseTimeline({ timeline }: ReleaseTimelineProps) {
 
 function TimelineYearColumn({ entry }: { entry: TimelineEntry }) {
   return (
-    <div className="flex-shrink-0 min-w-[100px]" data-testid={`timeline-year-${entry.year}`}>
+    <div data-comp="TimelineYearColumn" className="flex-shrink-0 min-w-[100px]" data-testid={`timeline-year-${entry.year}`}>
       <p className="text-sm font-bold text-surface-200 mb-2">{entry.year}</p>
       <div className="flex flex-wrap gap-1.5" style={{ maxWidth: "120px" }}>
         {entry.games?.map((game) => (
@@ -51,7 +51,7 @@ function TimelineCover({
   const [showTooltip, setShowTooltip] = useState(false);
 
   return (
-    <div
+    <div data-comp="TimelineCover"
       className="relative"
       onMouseEnter={() => setShowTooltip(true)}
       onMouseLeave={() => setShowTooltip(false)}

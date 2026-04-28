@@ -67,7 +67,7 @@ function ProfileSection({
   children: React.ReactNode;
 }) {
   return (
-    <div className="rounded-2xl bg-surface-900/50 p-5">
+    <div data-comp="ProfileSection" className="rounded-2xl bg-surface-900/50 p-5">
       <div className="flex items-center gap-2.5 mb-4">
         <Icon className="h-5 w-5 text-brand-400" />
         <h2 className="text-lg font-bold text-surface-100">{title}</h2>
@@ -79,7 +79,7 @@ function ProfileSection({
 
 function ProfileSkeleton() {
   return (
-    <div className="space-y-8">
+    <div data-comp="ProfileSkeleton" className="space-y-8">
       <div className="flex items-center gap-6">
         <Skeleton className="h-20 w-20 rounded-full" />
         <div className="space-y-2">

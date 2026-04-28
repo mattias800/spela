@@ -31,7 +31,7 @@ import { formatDate } from "@/lib/format";
 
 function NetplaySessionSkeleton() {
   return (
-    <div className="max-w-5xl space-y-8">
+    <div data-comp="NetplaySessionSkeleton" className="max-w-5xl space-y-8">
       <Skeleton className="h-5 w-16" />
       <div className="flex flex-col gap-6 md:flex-row md:gap-8">
         <Skeleton className="w-48 md:w-64 aspect-[3/4] rounded-2xl" /> {/* Skeleton uses default 3:4, actual page uses session.coverAspectRatio */}

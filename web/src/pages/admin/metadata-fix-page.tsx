@@ -34,7 +34,7 @@ function GameRow({
   const navigate = useNavigate();
 
   return (
-    <div
+    <div data-comp="GameRow"
       className="flex items-center gap-4 p-4 rounded-xl bg-surface-800/30 border border-surface-800 hover:border-surface-700 transition-colors cursor-pointer"
       onClick={() => navigate(`/games/${game.id}`)}
     >

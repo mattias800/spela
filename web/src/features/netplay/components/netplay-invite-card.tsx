@@ -44,7 +44,7 @@ export function NetplayInviteCard({ invite }: NetplayInviteCardProps) {
   }
 
   return (
-    <div
+    <div data-comp="NetplayInviteCard"
       className="flex items-center gap-4 px-4 py-4 rounded-xl bg-surface-900/50"
       data-testid={`netplay-invite-${invite.id}`}
     >

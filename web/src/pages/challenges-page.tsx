@@ -18,7 +18,7 @@ type Tab = "popular" | "recent" | "mine";
 
 function ChallengeCardSkeleton() {
   return (
-    <div className="space-y-3">
+    <div data-comp="ChallengeCardSkeleton" className="space-y-3">
       <Skeleton className="aspect-[16/10] rounded-2xl" />
       <div className="px-1 space-y-1.5">
         <Skeleton className="h-4 w-32" />
@@ -31,7 +31,7 @@ function ChallengeCardSkeleton() {
 
 function ChallengeGridSkeleton() {
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5">
+    <div data-comp="ChallengeGridSkeleton" className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5">
       {Array.from({ length: 8 }, (_, i) => (
         <ChallengeCardSkeleton key={i} />
       ))}

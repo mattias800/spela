@@ -96,7 +96,7 @@ export function ShowcaseEditor({ onClose }: { onClose: () => void }) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
+    <div data-comp="ShowcaseEditor" className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
       <div className="bg-surface-900 rounded-2xl w-full max-w-lg mx-4 max-h-[80vh] flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between p-5 border-b border-surface-800">

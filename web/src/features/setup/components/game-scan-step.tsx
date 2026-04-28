@@ -48,7 +48,7 @@ export function GameScanStep({ onSkip, onComplete }: GameScanStepProps) {
   }
 
   return (
-    <div className="space-y-6">
+    <div data-comp="GameScanStep" className="space-y-6">
       <div>
         <h2 className="text-xl font-semibold text-surface-100">
           Scan for Games

@@ -15,7 +15,7 @@ interface HeroCarouselProps {
 
 function HeroCarouselSkeleton() {
   return (
-    <div
+    <div data-comp="HeroCarouselSkeleton"
       className="relative w-full overflow-hidden rounded-2xl"
       data-testid="hero-carousel-skeleton"
     >
@@ -34,7 +34,7 @@ function NavigationDots({
   onSelect: (index: number) => void;
 }) {
   return (
-    <div
+    <div data-comp="NavigationDots"
       className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-2 z-10"
       role="tablist"
       aria-label="Carousel navigation"
@@ -68,7 +68,7 @@ function HeroSlide({
   const [imageError, setImageError] = useState(false);
 
   return (
-    <div
+    <div data-comp="HeroSlide"
       className={cn(
         "absolute inset-0 transition-opacity duration-700 ease-in-out",
         isActive ? "opacity-100 z-[1]" : "opacity-0 z-0",
@@ -218,7 +218,7 @@ export function HeroCarousel({ games, isLoading }: HeroCarouselProps) {
   }
 
   return (
-    <div
+    <div data-comp="HeroCarousel"
       ref={containerRef}
       className="relative w-full overflow-hidden rounded-2xl group aspect-[21/9]"
       onMouseEnter={() => setIsPaused(true)}

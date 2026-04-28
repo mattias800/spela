@@ -19,7 +19,7 @@ export function UploadProgress({ files }: UploadProgressProps) {
   const total = files.length;
 
   return (
-    <div className="space-y-3" data-testid="upload-progress">
+    <div data-comp="UploadProgress" className="space-y-3" data-testid="upload-progress">
       <div className="flex items-center justify-between text-sm">
         <span className="text-surface-300">
           Uploaded {completed} of {total} files

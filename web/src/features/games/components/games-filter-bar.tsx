@@ -42,7 +42,7 @@ export function GamesFilterBar({
   ];
 
   return (
-    <div className="flex flex-wrap items-center gap-3">
+    <div data-comp="GamesFilterBar" className="flex flex-wrap items-center gap-3">
       <div className="flex-1 min-w-[240px] max-w-md">
         <SearchInput
           placeholder="Search games..."

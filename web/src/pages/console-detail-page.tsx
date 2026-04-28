@@ -201,7 +201,7 @@ function ScanButton({
   toast: ReturnType<typeof useToast>["toast"];
 }) {
   return (
-    <button
+    <button data-comp="ScanButton"
       className="inline-flex items-center gap-2 rounded-lg bg-white/10 backdrop-blur-sm px-4 py-2 text-sm font-medium text-white hover:bg-white/20 transition-colors disabled:opacity-50"
       disabled={scanLibrary.isPending}
       data-testid="scan-button"

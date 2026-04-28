@@ -186,7 +186,7 @@ export function SearchResultsDisplay({
   let globalIndex = 0;
 
   return (
-    <div ref={scrollRef} className="overflow-y-auto max-h-[60vh]">
+    <div data-comp="SearchResultsDisplay" ref={scrollRef} className="overflow-y-auto max-h-[60vh]">
       {sections.map((section) => (
         <div key={section.key} className="py-2">
           <div className="px-4 py-1.5 flex items-center justify-between">
@@ -244,7 +244,7 @@ function SearchResultRow({
   highlighted,
 }: SearchResultRowProps) {
   return (
-    <div
+    <div data-comp="SearchResultRow"
       className={cn(
         "flex items-center gap-3 rounded-lg px-2 py-1.5 transition-colors",
         highlighted ? "bg-surface-800" : "hover:bg-surface-800/50",
@@ -274,7 +274,7 @@ function IconBadge({
   icon: typeof Code;
 }) {
   return (
-    <div className="h-8 w-8 rounded-lg bg-surface-800 flex items-center justify-center flex-shrink-0">
+    <div data-comp="IconBadge" className="h-8 w-8 rounded-lg bg-surface-800 flex items-center justify-center flex-shrink-0">
       <Icon className="h-4 w-4 text-surface-400" />
     </div>
   );
@@ -291,7 +291,7 @@ function GameCountWithRating({
   avgRating: number;
 }) {
   return (
-    <span className="text-xs text-surface-500 flex items-center gap-1.5">
+    <span data-comp="GameCountWithRating" className="text-xs text-surface-500 flex items-center gap-1.5">
       {gameCount} {gameCount === 1 ? "game" : "games"}
       {avgRating > 0 && (
         <>

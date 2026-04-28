@@ -18,7 +18,7 @@ export function CompanyInfoSection({ companyInfo }: CompanyInfoSectionProps) {
   }
 
   return (
-    <section data-testid="company-info-section" className="space-y-3">
+    <section data-comp="CompanyInfoSection" data-testid="company-info-section" className="space-y-3">
       {/* Description */}
       {hasDescription && (
         <div data-testid="company-description">

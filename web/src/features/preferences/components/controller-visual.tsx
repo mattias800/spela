@@ -6,7 +6,7 @@ interface ControllerVisualProps {
 
 function KeyBadge({ label, keyName }: { label: string; keyName: string }) {
   return (
-    <div className="flex items-center gap-2">
+    <div data-comp="KeyBadge" className="flex items-center gap-2">
       <span className="text-xs text-surface-400 w-20 text-right">{label}</span>
       <span className="inline-flex items-center justify-center min-w-[2rem] px-1.5 py-0.5 rounded bg-surface-800 border border-surface-700 text-xs font-mono text-surface-200">
         {formatKeyName(keyName)}
@@ -17,7 +17,7 @@ function KeyBadge({ label, keyName }: { label: string; keyName: string }) {
 
 export function ControllerVisual({ mapping }: ControllerVisualProps) {
   return (
-    <div
+    <div data-comp="ControllerVisual"
       data-testid="controller-visual"
       className="bg-surface-900 border border-surface-800 rounded-xl p-5"
     >

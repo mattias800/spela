@@ -10,7 +10,7 @@ import type { ScreenshotItem } from "@/types/api";
 
 function GallerySkeleton() {
   return (
-    <div data-testid="screenshot-gallery-skeleton">
+    <div data-comp="GallerySkeleton" data-testid="screenshot-gallery-skeleton">
       <div className="columns-2 md:columns-3 xl:columns-4 gap-4">
         {Array.from({ length: 12 }, (_, i) => (
           <div key={i} className="break-inside-avoid mb-4">
@@ -27,7 +27,7 @@ function GallerySkeleton() {
 
 function ScreenshotCard({ screenshot }: { screenshot: ScreenshotItem }) {
   return (
-    <div className="break-inside-avoid mb-4" role="listitem" data-testid="screenshot-card">
+    <div data-comp="ScreenshotCard" className="break-inside-avoid mb-4" role="listitem" data-testid="screenshot-card">
       <Link
         to={`/games/${screenshot.gameId}`}
         className="group relative block rounded-xl overflow-hidden"

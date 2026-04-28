@@ -11,7 +11,7 @@ interface KeywordChipsProps {
 
 function KeywordChipsSkeleton() {
   return (
-    <section data-testid="keyword-chips-skeleton">
+    <section data-comp="KeywordChipsSkeleton" data-testid="keyword-chips-skeleton">
       <h2 className="text-xl font-bold text-surface-100 mb-5">
         Popular Keywords
       </h2>
@@ -72,7 +72,7 @@ export function KeywordChips({ keywords, isLoading }: KeywordChipsProps) {
   }
 
   return (
-    <section data-testid="keyword-chips" className="group/keywords relative">
+    <section data-comp="KeywordChips" data-testid="keyword-chips" className="group/keywords relative">
       <h2 className="text-xl font-bold text-surface-100 mb-5">
         Popular Keywords
       </h2>

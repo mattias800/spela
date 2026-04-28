@@ -25,7 +25,7 @@ interface StatPillProps {
 
 function StatPill({ icon, label, value, testId }: StatPillProps) {
   return (
-    <div
+    <div data-comp="StatPill"
       className="flex items-center gap-2.5 rounded-xl border border-white/[0.06] bg-surface-900/60 px-4 py-2.5"
       data-testid={testId}
     >
@@ -103,7 +103,7 @@ export function AtAGlanceRow({
   if (pills.length === 0) return null;
 
   return (
-    <section data-testid="at-a-glance-row">
+    <section data-comp="AtAGlanceRow" data-testid="at-a-glance-row">
       <div className="flex flex-wrap gap-3">
         {pills.map((pill) => (
           <StatPill key={pill.testId} {...pill} />

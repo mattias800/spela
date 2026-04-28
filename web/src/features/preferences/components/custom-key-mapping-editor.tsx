@@ -29,7 +29,7 @@ export function CustomKeyMappingEditor({
   }));
 
   return (
-    <div className="space-y-4">
+    <div data-comp="CustomKeyMappingEditor" className="space-y-4">
       {groups.map((group) => (
         <div key={group.label}>
           <p className="text-xs font-semibold uppercase tracking-wider text-surface-400 mb-2">

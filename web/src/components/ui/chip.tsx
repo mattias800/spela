@@ -14,7 +14,7 @@ export interface ChipProps
 
 export function Chip({ selected, className, children, ...rest }: ChipProps) {
   return (
-    <button
+    <button data-comp="Chip"
       aria-pressed={selected}
       className={cn(
         "px-2.5 py-1 rounded-full text-xs font-medium transition-colors",
@@ -64,7 +64,7 @@ export function ChipPicker({
   const hasOverflow = options.length > initiallyVisible;
 
   return (
-    <div data-testid={testId}>
+    <div data-comp="ChipPicker" data-testid={testId}>
       <span
         id={labelId}
         className="block text-sm font-medium text-surface-300 mb-2"

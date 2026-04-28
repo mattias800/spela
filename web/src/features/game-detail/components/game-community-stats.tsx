@@ -14,7 +14,7 @@ interface GameCommunityStatsProps {
 
 function CommunityStatsSkeleton() {
   return (
-    <div className="space-y-5">
+    <div data-comp="CommunityStatsSkeleton" className="space-y-5">
       <div className="flex items-center gap-2.5">
         <Skeleton className="h-5 w-5" />
         <Skeleton className="h-6 w-32" />
@@ -80,7 +80,7 @@ export function GameCommunityStats({ gameId, game }: GameCommunityStatsProps) {
       : 1;
 
   return (
-    <section>
+    <section data-comp="GameCommunityStats">
       <h2 className="text-lg font-semibold text-surface-100 flex items-center gap-2.5 mb-5">
         <Activity className="h-5 w-5 text-brand-400" />
         Play Activity

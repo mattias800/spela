@@ -51,7 +51,7 @@ function RankBadge({ rank }: { rank: number }) {
   }
 
   return (
-    <span className="inline-flex items-center justify-center h-7 w-7 text-sm font-medium text-surface-500">
+    <span data-comp="RankBadge" className="inline-flex items-center justify-center h-7 w-7 text-sm font-medium text-surface-500">
       {rank}
     </span>
   );
@@ -59,7 +59,7 @@ function RankBadge({ rank }: { rank: number }) {
 
 function ListSkeleton() {
   return (
-    <div className="space-y-2">
+    <div data-comp="ListSkeleton" className="space-y-2">
       {Array.from({ length: 10 }, (_, i) => (
         <div
           key={i}
@@ -94,7 +94,7 @@ function TopRatedList({ games }: { games: TopListGame[] }) {
   }
 
   return (
-    <div className="space-y-2">
+    <div data-comp="TopRatedList" className="space-y-2">
       {games.map((game) => (
         <Link
           key={game.gameId}
@@ -142,7 +142,7 @@ function LongestGamesList({ games }: { games: LongestGame[] }) {
   }
 
   return (
-    <div className="space-y-2">
+    <div data-comp="LongestGamesList" className="space-y-2">
       {games.map((game) => (
         <Link
           key={game.gameId}

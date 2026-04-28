@@ -43,7 +43,7 @@ export function UserRating({ gameId }: UserRatingProps) {
   };
 
   return (
-    <div className="rounded-xl bg-surface-800/30 p-4" data-testid="user-rating">
+    <div data-comp="UserRating" className="rounded-xl bg-surface-800/30 p-4" data-testid="user-rating">
       <div className="flex items-center gap-2.5 mb-3">
         <Star className="h-4 w-4 text-brand-400" />
         <h3 className="text-sm font-semibold text-surface-200">Your Rating</h3>

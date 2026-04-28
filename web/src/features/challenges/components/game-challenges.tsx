@@ -13,7 +13,7 @@ interface GameChallengesProps {
 
 function ChallengesSkeleton() {
   return (
-    <div className="space-y-2">
+    <div data-comp="ChallengesSkeleton" className="space-y-2">
       {Array.from({ length: 3 }, (_, i) => (
         <div
           key={i}
@@ -35,7 +35,7 @@ export function GameChallenges({ gameId }: GameChallengesProps) {
   const { data, isLoading } = useGameChallenges(gameId);
 
   return (
-    <section data-testid="game-challenges">
+    <section data-comp="GameChallenges" data-testid="game-challenges">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2.5">
           <Flag className="h-5 w-5 text-brand-400" />

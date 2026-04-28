@@ -37,7 +37,7 @@ export function PlayToolbar({
   onRetryDisc,
 }: PlayToolbarProps) {
   return (
-    <div className="flex items-center justify-between px-4 py-2 border-b border-surface-800 bg-surface-950/80">
+    <div data-comp="PlayToolbar" className="flex items-center justify-between px-4 py-2 border-b border-surface-800 bg-surface-950/80">
       <div className="flex items-center gap-3">
         <BackButton
           onClick={onBack}

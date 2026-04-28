@@ -21,7 +21,7 @@ interface NetplaySessionInvitesProps {
 
 function InvitesSkeleton() {
   return (
-    <div className="space-y-2">
+    <div data-comp="InvitesSkeleton" className="space-y-2">
       {Array.from({ length: 2 }, (_, i) => (
         <div
           key={i}
@@ -61,7 +61,7 @@ export function NetplaySessionInvites({ sessionId }: NetplaySessionInvitesProps)
   }
 
   return (
-    <section>
+    <section data-comp="NetplaySessionInvites">
       <div className="flex items-center gap-2.5 mb-4">
         <Mail className="h-5 w-5 text-brand-400" />
         <h2 className="text-xl font-bold text-surface-100">
