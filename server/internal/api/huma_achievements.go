@@ -227,6 +227,14 @@ func (h *RAHandler) HumaGetGameAchievements(ctx context.Context, in *GetGameAchi
 	if h.Queue != nil && h.RAAPIKey != "" {
 		queued, _ := h.Queue.IsGameQueuedForType(game.ID, "ra_fetch")
 		if !queued {
+			// Don't re-enqueue if a fetch attempt completed or failed in the
+			// last 5 minutes. The achievements UI polls every 2s while the
+			// response is "pending"; without this backoff a transient RA
+			// failure would loop forever (re-enqueue → fail → re-enqueue).
+			recent, _ := h.Queue.WasGameRecentlyAttemptedForType(game.ID, "ra_fetch", 5*time.Minute)
+			if recent {
+				return empty(), nil
+			}
 			if err := h.Queue.EnqueueGameWithType(game.ID, nil, 100, "ra_fetch"); err != nil {
 				slog.Warn("RA auto-fetch: failed to enqueue", "game", game.Title, "error", err)
 			}
