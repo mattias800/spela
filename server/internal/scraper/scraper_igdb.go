@@ -228,26 +228,36 @@ func (s *Scraper) scrapeIGDB(game *db.Game, console db.Console, gameIDStr string
 		return fmt.Errorf("no IGDB platform ID for console %s", console.Abbreviation)
 	}
 
-	// ScummVM games are folder-based; the FileName ("monkey.scummvm") is just
-	// the engine's gameid marker, not a meaningful search term. The folder
-	// name lives in game.Title (set by the scanner). For ScummVM, search by
-	// the cleaned title; for everything else, the FileName-derived behaviour
-	// is preserved.
+	// ScummVM games are folder-based; the FileName ("monkey.scummvm") is the
+	// engine's gameid marker, not a meaningful search term — but its
+	// stripped form ("monkey") IS the canonical ScummVM gameid by
+	// convention. That's our source of truth.
+	//
+	// Resolve the gameid → canonical title BEFORE the IGDB search every
+	// time, derived from the marker filename rather than game.Title. This
+	// means a re-scrape always uses the right title even when a previous
+	// scrape overwrote game.Title with a bad IGDB match (e.g. "Dig It!"
+	// for the gameid "dig"). When the gameid isn't in our curated map we
+	// fall back to game.Title — covers descriptively-named folders like
+	// "The Secret of Monkey Island (CD DOS VGA)".
 	searchSource := game.FileName
-	if console.Abbreviation == "SCUMMVM" && game.Title != "" {
-		searchSource = game.Title
-		// When the user dropped the game in a folder named after the
-		// ScummVM gameid (e.g. "gob1", "indy3", "ite") rather than a real
-		// descriptive title, the scanner-derived title is just that
-		// gameid. IGDB has no idea what "gob1" is. Look it up in the
-		// curated gameid → title map. When found, also write the
-		// canonical title back so the UI shows "Gobliiins" instead of
-		// "gob1" before the IGDB scrape lands.
-		if canonical := igdb.LookupScummvmGameTitle(game.Title); canonical != "" {
+	if console.Abbreviation == "SCUMMVM" {
+		canonical := ""
+		gameid := ""
+		if strings.HasSuffix(strings.ToLower(game.FileName), ".scummvm") {
+			gameid = strings.TrimSuffix(game.FileName, ".scummvm")
+			gameid = strings.TrimSuffix(gameid, ".SCUMMVM")
+			canonical = igdb.LookupScummvmGameTitle(gameid)
+		}
+		switch {
+		case canonical != "":
 			slog.Info("ScummVM gameid resolved to canonical title",
-				"gameid", game.Title, "title", canonical)
+				"gameid", gameid, "title", canonical, "previousTitle", game.Title)
 			searchSource = canonical
 			game.Title = canonical
+		case game.Title != "":
+			// Gameid not in the map — fall back to the folder-derived title.
+			searchSource = game.Title
 		}
 	}
 	cleanName := igdb.CleanGameName(searchSource)
