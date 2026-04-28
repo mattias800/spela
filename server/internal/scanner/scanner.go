@@ -325,6 +325,17 @@ var directoryConsoleMap = map[string]string{
 // discPattern matches disc/disk/cd markers in filenames, e.g. "(Disc 1)", "[Disk 2]", "(CD 3)".
 var discPattern = regexp.MustCompile(`(?i)[\(\[]\s*(?:disc|disk|cd)\s*(\d+)\s*[\)\]]`)
 
+// amigaDiscPattern matches the Amiga floppy convention where each disk is
+// suffixed with a single uppercase letter — e.g. "Odyssey (Alcatraz) A.adf",
+// "Batman Movie (Ocean) B.adf". The letter sits between a space and the
+// extension, so we anchor on `<space><LETTER><end>` (the extension is
+// stripped before this is matched). Captures the letter in group 1.
+//
+// Only checked for .adf / .ipf files (Amiga floppy formats); other
+// consoles' ROM names occasionally end in a letter for legitimate
+// non-disc reasons.
+var amigaDiscPattern = regexp.MustCompile(`\s([A-Z])$`)
+
 // trackPattern matches CD audio track markers in filenames, e.g. "(Track 06)", "(Track 1)".
 // These are companion files referenced by .cue sheets and should not be scanned as standalone games.
 var trackPattern = regexp.MustCompile(`(?i)\(Track\s*\d+\)`)
@@ -620,6 +631,22 @@ func generateM3U(dir, baseName string, discFiles []string) (string, error) {
 // stripDiscMarker removes the disc marker from a filename to get the base title.
 func stripDiscMarker(filename string) string {
 	return strings.TrimSpace(discPattern.ReplaceAllString(filename, ""))
+}
+
+// stripAmigaDiscMarker removes the Amiga letter-suffix disc marker from a
+// filename (extension already stripped). "Odyssey (Alcatraz) A" → "Odyssey
+// (Alcatraz)". Pass-through if no match.
+func stripAmigaDiscMarker(nameNoExt string) string {
+	return strings.TrimSpace(amigaDiscPattern.ReplaceAllString(nameNoExt, ""))
+}
+
+// amigaDiscNumber converts a single uppercase letter to a 1-indexed disc
+// number ("A" → 1, "B" → 2, "E" → 5). Used for sorting Amiga disk sets.
+func amigaDiscNumber(letter string) int {
+	if len(letter) != 1 || letter[0] < 'A' || letter[0] > 'Z' {
+		return 0
+	}
+	return int(letter[0]-'A') + 1
 }
 
 // discGroupKey returns a key for grouping disc files: (parentDir, baseTitle).
@@ -944,6 +971,13 @@ func (s *Scanner) scanMultiDisc(dir string, consoleMap map[string]*db.Console, f
 			parentDir := filepath.Dir(path)
 			nameNoExt := strings.TrimSuffix(info.Name(), filepath.Ext(info.Name()))
 			baseTitle := stripDiscMarker(nameNoExt)
+			key := discGroupKey{Dir: parentDir, Title: baseTitle}
+			discGroups[key] = append(discGroups[key], path)
+		} else if (ext == ".adf" || ext == ".ipf") && amigaDiscPattern.MatchString(strings.TrimSuffix(info.Name(), ext)) {
+			// Amiga floppy convention: "Title (Pub) A.adf" / "Title (Pub) B.adf" — letter suffix.
+			parentDir := filepath.Dir(path)
+			nameNoExt := strings.TrimSuffix(info.Name(), filepath.Ext(info.Name()))
+			baseTitle := stripAmigaDiscMarker(nameNoExt)
 			key := discGroupKey{Dir: parentDir, Title: baseTitle}
 			discGroups[key] = append(discGroups[key], path)
 		}
