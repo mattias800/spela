@@ -18,6 +18,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.ErrorOutline
 import androidx.compose.material.icons.filled.FastForward
 import androidx.compose.material.icons.filled.FastRewind
 import androidx.compose.material.icons.filled.Flag
@@ -25,6 +26,7 @@ import androidx.compose.material.icons.filled.FolderOpen
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Replay
 import androidx.compose.material.icons.filled.Save
+import androidx.compose.material.icons.filled.Sync
 import androidx.compose.material.icons.filled.Code
 import androidx.compose.material.icons.filled.SportsEsports
 import androidx.compose.material.icons.filled.Stop
@@ -270,6 +272,8 @@ internal fun InGameOverlayPanel(
                             supportsSaveStates = state.supportsSaveStates,
                             rewindEnabled = state.rewindEnabled,
                             hasCheats = state.hasCheats,
+                            isSaveInProgress = state.isSaveInProgress,
+                            saveStateError = state.saveStateError,
                             onSave = { viewModel.onIntent(EmulationIntent.SaveState) },
                             onLoad = { viewModel.onIntent(EmulationIntent.LoadState) },
                             onScreenshot = { viewModel.onIntent(EmulationIntent.TakeScreenshot) },
@@ -363,6 +367,8 @@ internal fun RowScope.OverlayActionButtons(
     supportsSaveStates: Boolean,
     rewindEnabled: Boolean = false,
     hasCheats: Boolean = false,
+    isSaveInProgress: Boolean = false,
+    saveStateError: String? = null,
     onSave: () -> Unit,
     onLoad: () -> Unit,
     onScreenshot: () -> Unit,
@@ -373,7 +379,26 @@ internal fun RowScope.OverlayActionButtons(
     onControls: () -> Unit,
 ) {
     if (supportsSaveStates) {
-        OverlayAction(label = "Save", icon = Icons.Filled.Save, onClick = onSave)
+        // State-aware Save action: idle / in-progress / failed (#803).
+        // Success uses the existing "State saved" toast — adding an
+        // auto-clearing checkmark to the button is a follow-up.
+        val saveLabel: String
+        val saveIcon: ImageVector
+        when {
+            isSaveInProgress -> {
+                saveLabel = "Saving…"
+                saveIcon = Icons.Filled.Sync
+            }
+            saveStateError != null -> {
+                saveLabel = "Save failed"
+                saveIcon = Icons.Filled.ErrorOutline
+            }
+            else -> {
+                saveLabel = "Save"
+                saveIcon = Icons.Filled.Save
+            }
+        }
+        OverlayAction(label = saveLabel, icon = saveIcon, onClick = onSave)
         OverlayAction(label = "Load", icon = Icons.Filled.FolderOpen, onClick = onLoad)
     }
     if (rewindEnabled) {

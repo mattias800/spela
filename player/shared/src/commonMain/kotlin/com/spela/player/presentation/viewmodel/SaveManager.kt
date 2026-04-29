@@ -459,8 +459,17 @@ class SaveManager(
             emitRehearsalBlocked(RehearsalSaveKind.Manual)
             return
         }
+        // Inline button feedback: tap → "Saving…" immediately, even
+        // if the user dismisses the overlay before the toast renders.
+        // Clears any stale error from a prior failed attempt so the
+        // button doesn't read "Save failed" while a fresh save is
+        // in flight (#803).
+        _state.update { it.copy(isSaveInProgress = true, saveStateError = null) }
         scope.launch(dispatchers.io) {
-            val staged = stageSaveToTempFile() ?: return@launch
+            val staged = stageSaveToTempFile() ?: run {
+                _state.update { it.copy(isSaveInProgress = false) }
+                return@launch
+            }
             try {
                 val sessionId = currentSessionId
                 if (sessionId != null) {
@@ -473,6 +482,7 @@ class SaveManager(
                                 _state.update {
                                     it.copy(
                                         statusMessage = "State saved",
+                                        isSaveInProgress = false,
                                         secondaryToast = SecondaryToastData(
                                             message = "Saved to Slot ${it.activeSlot}",
                                             type = SecondaryToastType.SAVE,
@@ -484,14 +494,20 @@ class SaveManager(
                         },
                         onFailure = { error ->
                             withContext(dispatchers.main) {
-                                _state.update { it.copy(error = "Failed to save: ${error.message}") }
+                                _state.update {
+                                    it.copy(
+                                        error = "Failed to save: ${error.message}",
+                                        isSaveInProgress = false,
+                                        saveStateError = "Failed to save: ${error.message}",
+                                    )
+                                }
                             }
                         },
                     )
                 } else {
                     // No session — save state was serialized by the controller
                     withContext(dispatchers.main) {
-                        _state.update { it.copy(statusMessage = "State saved") }
+                        _state.update { it.copy(statusMessage = "State saved", isSaveInProgress = false) }
                     }
                 }
             } finally {
