@@ -225,6 +225,9 @@ data class DownloadProgress(
     val totalBytes: Long = -1,
     val currentDisc: Int = 0,
     val totalDiscs: Int = 0,
+    /** Rolling-window average bytes per second over the most recent
+     *  ~2 s of progress samples. 0 when stalled or not yet computable. */
+    val bytesPerSecond: Long = 0,
 ) {
     val progress: Float
         get() = when {

@@ -22,6 +22,19 @@ class DownloadRepositoryImpl(
     private val downloads = MutableStateFlow<Map<String, DownloadProgress>>(emptyMap())
     private val _downloadedGames = MutableStateFlow<List<DownloadedGame>>(emptyList())
 
+    /** Per-game rolling speed calculator. Created on first in-flight
+     *  emission for a game id, removed when the download enters a
+     *  terminal state (COMPLETED / FAILED) so a re-download starts
+     *  fresh. See [SpeedTracker] and #801. */
+    private val speedTrackers = mutableMapOf<String, SpeedTracker>()
+
+    private fun recordSpeed(gameId: String, bytesDownloaded: Long): Long =
+        speedTrackers.getOrPut(gameId) { SpeedTracker() }.record(bytesDownloaded)
+
+    private fun resetSpeed(gameId: String) {
+        speedTrackers.remove(gameId)
+    }
+
     init {
         refreshDownloadedGames()
     }
@@ -81,6 +94,7 @@ class DownloadRepositoryImpl(
         refreshDownloadedGames()
     }.onFailure {
         cleanupPartialDownload(gameId)
+        resetSpeed(gameId)
         downloads.update {
             it + (gameId to DownloadProgress(gameId, gameTitle, DownloadState.FAILED))
         }
@@ -108,8 +122,9 @@ class DownloadRepositoryImpl(
             // compressed size while downloaded bytes count decompressed data,
             // causing the progress bar to jump past 100%.
             val reportedTotal = if (expectedSize > 0) expectedSize else (total ?: -1)
+            val speed = recordSpeed(gameId, downloaded)
             downloads.update {
-                it + (gameId to DownloadProgress(gameId, gameTitle, DownloadState.DOWNLOADING, downloaded, reportedTotal))
+                it + (gameId to DownloadProgress(gameId, gameTitle, DownloadState.DOWNLOADING, downloaded, reportedTotal, bytesPerSecond = speed))
             }
         }
 
@@ -123,6 +138,7 @@ class DownloadRepositoryImpl(
                 "Download size mismatch: expected $expectedSize bytes, got $actualSize bytes"
             )
         }
+        resetSpeed(gameId)
         downloads.update {
             it + (gameId to DownloadProgress(gameId, gameTitle, DownloadState.COMPLETED, actualSize, actualSize))
         }
@@ -152,8 +168,9 @@ class DownloadRepositoryImpl(
             // Tar archive (cue+bin or gdi+tracks) — stream-extract directly to disk
             apiClient.downloadDiscAndExtract(gameId, disc.discNumber.toInt(), fileStorage, gameDir) { downloaded, total ->
                 val reportedTotal = if (disc.fileSize > 0) disc.fileSize else (total ?: -1)
+                val speed = recordSpeed(gameId, downloaded)
                 downloads.update {
-                    it + (gameId to DownloadProgress(gameId, gameTitle, DownloadState.DOWNLOADING, downloaded, reportedTotal))
+                    it + (gameId to DownloadProgress(gameId, gameTitle, DownloadState.DOWNLOADING, downloaded, reportedTotal, bytesPerSecond = speed))
                 }
             }
         } else {
@@ -161,12 +178,14 @@ class DownloadRepositoryImpl(
             val discPath = "$gameDir/${disc.fileName}"
             apiClient.downloadDiscToFile(gameId, disc.discNumber.toInt(), fileStorage, discPath) { downloaded, total ->
                 val reportedTotal = if (disc.fileSize > 0) disc.fileSize else (total ?: -1)
+                val speed = recordSpeed(gameId, downloaded)
                 downloads.update {
-                    it + (gameId to DownloadProgress(gameId, gameTitle, DownloadState.DOWNLOADING, downloaded, reportedTotal))
+                    it + (gameId to DownloadProgress(gameId, gameTitle, DownloadState.DOWNLOADING, downloaded, reportedTotal, bytesPerSecond = speed))
                 }
             }
         }
 
+        resetSpeed(gameId)
         downloads.update {
             it + (gameId to DownloadProgress(gameId, gameTitle, DownloadState.COMPLETED, game.fileSize, game.fileSize))
         }
@@ -191,11 +210,13 @@ class DownloadRepositoryImpl(
 
         apiClient.downloadGameAndExtract(gameId, fileStorage, gameDir) { downloaded, total ->
             val reportedTotal = if (expectedSize > 0) expectedSize else (total ?: -1)
+            val speed = recordSpeed(gameId, downloaded)
             downloads.update {
-                it + (gameId to DownloadProgress(gameId, gameTitle, DownloadState.DOWNLOADING, downloaded, reportedTotal))
+                it + (gameId to DownloadProgress(gameId, gameTitle, DownloadState.DOWNLOADING, downloaded, reportedTotal, bytesPerSecond = speed))
             }
         }
 
+        resetSpeed(gameId)
         downloads.update {
             it + (gameId to DownloadProgress(gameId, gameTitle, DownloadState.COMPLETED, expectedSize, expectedSize))
         }
@@ -229,11 +250,14 @@ class DownloadRepositoryImpl(
                 disc.fileName.endsWith(".gdi", ignoreCase = true)) {
                 // Tar archive (cue+bin or gdi+tracks) - stream-extract directly to disk
                 apiClient.downloadDiscAndExtract(gameId, disc.discNumber.toInt(), fileStorage, gameDir) { downloaded, total ->
+                    val totalDownloaded = discOffset + downloaded
+                    val speed = recordSpeed(gameId, totalDownloaded)
                     downloads.update {
                         it + (gameId to DownloadProgress(
                             gameId, gameTitle, DownloadState.DOWNLOADING,
-                            bytesDownloaded = discOffset + downloaded, totalBytes = totalSize,
+                            bytesDownloaded = totalDownloaded, totalBytes = totalSize,
                             currentDisc = disc.discNumber.toInt(), totalDiscs = totalDiscs,
+                            bytesPerSecond = speed,
                         ))
                     }
                 }
@@ -241,11 +265,14 @@ class DownloadRepositoryImpl(
                 // Single file (ISO/CHD/CSO) - stream to disk
                 val discPath = "$gameDir/${disc.fileName}"
                 apiClient.downloadDiscToFile(gameId, disc.discNumber.toInt(), fileStorage, discPath) { downloaded, total ->
+                    val totalDownloaded = discOffset + downloaded
+                    val speed = recordSpeed(gameId, totalDownloaded)
                     downloads.update {
                         it + (gameId to DownloadProgress(
                             gameId, gameTitle, DownloadState.DOWNLOADING,
-                            bytesDownloaded = discOffset + downloaded, totalBytes = totalSize,
+                            bytesDownloaded = totalDownloaded, totalBytes = totalSize,
                             currentDisc = disc.discNumber.toInt(), totalDiscs = totalDiscs,
+                            bytesPerSecond = speed,
                         ))
                     }
                 }
@@ -259,6 +286,7 @@ class DownloadRepositoryImpl(
             .joinToString("\n") { it.fileName } + "\n"
         fileStorage.writeFile(m3uPath, m3uContent.encodeToByteArray())
 
+        resetSpeed(gameId)
         downloads.update {
             it + (gameId to DownloadProgress(
                 gameId, gameTitle, DownloadState.COMPLETED,
