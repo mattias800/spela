@@ -108,7 +108,7 @@ func RegisterSessionSaveUploadRoutes(
 		Tags:          []string{"sessions"},
 		Middlewares:   uploadMW,
 		Security:      sec,
-		MaxBodyBytes:  maxSaveUploadSize,
+		MaxBodyBytes:  maxSaveUploadBytes(),
 	}, h.HumaUploadSessionSave)
 
 	huma.Register(api, huma.Operation{
@@ -121,7 +121,7 @@ func RegisterSessionSaveUploadRoutes(
 		Tags:          []string{"sessions"},
 		Middlewares:   uploadMW,
 		Security:      sec,
-		MaxBodyBytes:  maxSaveUploadSize,
+		MaxBodyBytes:  maxSaveUploadBytes(),
 	}, h.HumaUploadAutoSave)
 
 	huma.Register(api, huma.Operation{
@@ -133,7 +133,7 @@ func RegisterSessionSaveUploadRoutes(
 		Tags:         []string{"sessions"},
 		Middlewares:  uploadMW,
 		Security:     sec,
-		MaxBodyBytes: maxSaveUploadSize,
+		MaxBodyBytes: maxSaveUploadBytes(),
 	}, h.HumaUpsertSlotSave)
 
 	huma.Register(api, huma.Operation{
@@ -145,7 +145,7 @@ func RegisterSessionSaveUploadRoutes(
 		Tags:         []string{"sessions"},
 		Middlewares:  uploadMW,
 		Security:     sec,
-		MaxBodyBytes: maxSaveUploadSize,
+		MaxBodyBytes: maxSaveUploadBytes(),
 	}, h.HumaUploadSRAM)
 }
 
