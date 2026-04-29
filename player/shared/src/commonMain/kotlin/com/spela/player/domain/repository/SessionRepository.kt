@@ -26,10 +26,21 @@ interface SessionRepository {
     suspend fun deleteSession(sessionId: String): Result<Unit>
     suspend fun getSessionSaves(sessionId: String): Result<List<SaveState>>
     suspend fun uploadSessionSave(sessionId: String, name: String, data: ByteArray, screenshot: ByteArray?, coreName: String = ""): Result<SaveState>
+    /** Streaming variant: reads save bytes from [savePath] without loading
+     *  the full state into a JVM ByteArray. Required for cores like
+     *  Dolphin whose save states (~90 MB) can't fit alongside the rest
+     *  of the heap on Android. See #798. */
+    suspend fun uploadSessionSaveFromFile(sessionId: String, name: String, savePath: String, saveSize: Long, screenshot: ByteArray?, coreName: String = ""): Result<SaveState>
     suspend fun downloadSessionSave(sessionId: String, saveId: String): Result<ByteArray>
     suspend fun uploadSessionAutoSave(sessionId: String, data: ByteArray, screenshot: ByteArray?, coreName: String = ""): Result<Unit>
+    suspend fun uploadSessionAutoSaveFromFile(sessionId: String, savePath: String, saveSize: Long, screenshot: ByteArray?, coreName: String = ""): Result<Unit>
     suspend fun downloadSessionAutoSave(sessionId: String): Result<ByteArray>
+    /** Streaming variant of [downloadSessionAutoSave]: writes the body to
+     *  [outputPath] without materialising the full payload as a ByteArray.
+     *  See #798. */
+    suspend fun downloadSessionAutoSaveToFile(sessionId: String, outputPath: String): Result<Unit>
     suspend fun uploadSlotSave(sessionId: String, slot: Int, data: ByteArray, screenshot: ByteArray?, coreName: String = ""): Result<SaveState>
+    suspend fun uploadSlotSaveFromFile(sessionId: String, slot: Int, savePath: String, saveSize: Long, screenshot: ByteArray?, coreName: String = ""): Result<SaveState>
     suspend fun downloadSlotSave(sessionId: String, slot: Int): Result<ByteArray>
     suspend fun uploadSessionSram(sessionId: String, data: ByteArray, coreName: String = ""): Result<Unit>
     suspend fun downloadSessionSram(sessionId: String): Result<ByteArray>

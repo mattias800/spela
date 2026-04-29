@@ -1748,6 +1748,13 @@ interface LibretroController {
     fun serializeToFile(path: String): Long? = null
 
     fun unserialize(data: ByteArray): Boolean
+
+    /** Reads a save state from [path] and applies it without ever
+     *  materialising the bytes as a JVM ByteArray. Returns false when
+     *  the controller has no native fast path — caller should fall
+     *  back to [unserialize] with a regular file read. Companion to
+     *  [serializeToFile] for #798. */
+    fun unserializeFromFile(path: String): Boolean = false
     fun setFastForward(enabled: Boolean)
     fun performanceStats(): kotlinx.coroutines.flow.Flow<Pair<Float, Float>>
 

@@ -251,6 +251,9 @@ class AndroidLibretroController(
     override fun unserialize(data: ByteArray): Boolean =
         runOnEmulationThread { jni.nativeUnserialize(data) } ?: false
 
+    override fun unserializeFromFile(path: String): Boolean =
+        runOnEmulationThread { jni.nativeUnserializeFromFile(path) } ?: false
+
     override fun setFastForward(enabled: Boolean) {
         fastForward = enabled
     }
