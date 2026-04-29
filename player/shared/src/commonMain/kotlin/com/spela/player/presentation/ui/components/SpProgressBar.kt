@@ -42,7 +42,10 @@ fun SpProgressBar(
 ) {
     val resolvedTrackColor = if (onGradient) SpColor.OnGradientTrack else trackColor
     val resolvedProgressColors = if (onGradient) listOf(SpColor.OnGradientSecondary, SpColor.OnGradientPrimary) else progressColors
-    val resolvedLabelColor = if (onGradient) SpColor.OnGradientSecondary else SpColor.OnBackgroundSecondary
+    // Original alpha here was 0.70f, slightly stronger than
+    // OnGradientSecondary (0.65). Keeping the literal preserves visual
+    // parity — consolidating on 0.65 is a separate design call.
+    val resolvedLabelColor = if (onGradient) Color.White.copy(alpha = 0.70f) else SpColor.OnBackgroundSecondary
 
     var maxProgress by remember { mutableFloatStateOf(0f) }
     val clampedProgress = progress.coerceIn(0f, 1f)
