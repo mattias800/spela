@@ -28,6 +28,8 @@ import {
 import { cn } from "@/lib/cn";
 import type { Game } from "@/types/api";
 
+import type { GameScrapeStatus } from "@/hooks/use-game-scrape-status";
+
 interface GameHeroProps {
   game: Game;
   canPlayInBrowser: boolean;
@@ -35,7 +37,7 @@ interface GameHeroProps {
   isFavorite: boolean;
   isInPlayLater: boolean;
   isPlayLaterPending?: boolean;
-  isScraping: boolean;
+  scrapeStatus: GameScrapeStatus;
   isRefreshingAchievements?: boolean;
   hasAchievements?: boolean;
   achievementCount?: number;
@@ -59,7 +61,7 @@ export function GameHero({
   isFavorite,
   isInPlayLater,
   isPlayLaterPending,
-  isScraping,
+  scrapeStatus,
   isRefreshingAchievements,
   hasAchievements,
   achievementCount,
@@ -78,6 +80,8 @@ export function GameHero({
   const [showCoverModal, setShowCoverModal] = useState(false);
   const [showHeroModal, setShowHeroModal] = useState(false);
   const consoleName = game.consoleName;
+  const isScraping = scrapeStatus === "scraping";
+  const isQueued = scrapeStatus === "queued";
 
   // Prefer hero art (from SteamGridDB), fall back to first screenshot
   const heroImage = game.heroUrl || game.screenshotUrls?.[0] || null;
@@ -308,6 +312,12 @@ export function GameHero({
                 <span className="flex items-center gap-1.5 text-sm text-brand-400">
                   <RefreshCw className="h-4 w-4 animate-spin" />
                   Scraping…
+                </span>
+              )}
+              {isQueued && (
+                <span className="flex items-center gap-1.5 text-sm text-white/60">
+                  <Clock className="h-4 w-4" />
+                  Scrape queued
                 </span>
               )}
               <div className="flex items-center gap-3 text-sm text-white/60">

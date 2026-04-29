@@ -5,17 +5,44 @@ import (
 	"time"
 
 	"github.com/spela/server/internal/db"
+	ws "github.com/spela/server/internal/websocket"
 	"gorm.io/gorm"
 )
 
 // ScrapeQueue manages the persistent scrape queue backed by SQLite.
 type ScrapeQueue struct {
-	db *gorm.DB
+	db  *gorm.DB
+	hub *ws.Hub
 }
 
 // NewScrapeQueue creates a new ScrapeQueue.
 func NewScrapeQueue(database *gorm.DB) *ScrapeQueue {
 	return &ScrapeQueue{db: database}
+}
+
+// SetHub wires the WebSocket hub so the queue can broadcast scrape
+// status changes (queued / scraping / idle). Safe to leave unset —
+// the broadcast helpers are nil-safe — but production wiring should
+// call this once at startup.
+func (q *ScrapeQueue) SetHub(hub *ws.Hub) {
+	q.hub = hub
+}
+
+// broadcastQueued emits a "queued" scrape-status event for a single
+// game. Skipped when no hub is wired or when itemType isn't "scrape" —
+// only user-visible scrape activity belongs in the scrape-status feed
+// (mirrors the broadcastStatus gate in worker.go::processItem).
+func (q *ScrapeQueue) broadcastQueued(gameID uint, itemType string) {
+	if q.hub == nil || itemType != "scrape" {
+		return
+	}
+	q.hub.Broadcast(ws.Event{
+		Type: ws.EventGameScrapeStatus,
+		Payload: ws.GameScrapeStatusPayload{
+			GameID: gameID,
+			Status: "queued",
+		},
+	})
 }
 
 // CreateJob creates a new scrape job in "running" state.
@@ -50,6 +77,9 @@ func (q *ScrapeQueue) GetActiveJob() (*db.ScrapeJob, error) {
 }
 
 // EnqueueGames bulk-inserts queue items for the given game IDs.
+// Items default to Type="scrape", so each enqueued game also broadcasts a
+// "queued" scrape-status event so the UI can show "Scrape queued" before
+// the worker actually picks the item up.
 func (q *ScrapeQueue) EnqueueGames(jobID uint, gameIDs []uint, priority int) error {
 	if len(gameIDs) == 0 {
 		return nil
@@ -65,6 +95,9 @@ func (q *ScrapeQueue) EnqueueGames(jobID uint, gameIDs []uint, priority int) err
 	}
 	if err := q.db.CreateInBatches(items, 500).Error; err != nil {
 		return fmt.Errorf("enqueuing %d games: %w", len(gameIDs), err)
+	}
+	for _, gid := range gameIDs {
+		q.broadcastQueued(gid, "scrape")
 	}
 	return nil
 }
@@ -87,6 +120,9 @@ func (q *ScrapeQueue) EnqueueGamesWithType(jobID uint, gameIDs []uint, priority 
 	if err := q.db.CreateInBatches(items, 500).Error; err != nil {
 		return fmt.Errorf("enqueuing %d games (type=%s): %w", len(gameIDs), itemType, err)
 	}
+	for _, gid := range gameIDs {
+		q.broadcastQueued(gid, itemType)
+	}
 	return nil
 }
 
@@ -101,6 +137,7 @@ func (q *ScrapeQueue) EnqueueGame(gameID uint, jobID *uint, priority int) error 
 	if err := q.db.Create(item).Error; err != nil {
 		return fmt.Errorf("enqueuing game %d: %w", gameID, err)
 	}
+	q.broadcastQueued(gameID, "scrape")
 	return nil
 }
 
@@ -126,6 +163,7 @@ func (q *ScrapeQueue) EnqueueGameWithType(gameID uint, jobID *uint, priority int
 	if err := q.db.Create(item).Error; err != nil {
 		return fmt.Errorf("enqueuing game %d (type=%s): %w", gameID, itemType, err)
 	}
+	q.broadcastQueued(gameID, itemType)
 	return nil
 }
 

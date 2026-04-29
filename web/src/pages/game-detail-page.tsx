@@ -130,7 +130,7 @@ export function GameDetailPage() {
   const togglePlayLater = useTogglePlayLater();
   const { user: currentUser } = useAuth();
   const scrapeGame = useScrapeGame();
-  const { isScraping } = useGameScrapeStatus(id!);
+  const { scrapeStatus } = useGameScrapeStatus(id!);
   const refreshAchievements = useRefreshAchievements();
   const scrapeIfNeeded = useScrapeIfNeeded();
   const { data: consoles } = useConsoles();
@@ -218,7 +218,7 @@ export function GameDetailPage() {
         isFavorite={isFavorite}
         isInPlayLater={isInPlayLater}
         isPlayLaterPending={togglePlayLater.isPending}
-        isScraping={isScraping}
+        scrapeStatus={scrapeStatus}
         hasAchievements={hasAchievements}
         achievementCount={achievementCount}
         achievementUnlocked={achievementUnlocked}
