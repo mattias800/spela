@@ -45,6 +45,24 @@ func streamFileFromDisk(absPath, downloadName, contentType string) *huma.StreamR
 	}
 }
 
+// streamSaveFromDisk wraps [streamFileFromDisk] with an X-Compression
+// response header so the downloading player knows whether to gunzip
+// before passing the bytes to retro_unserialize. Empty compression
+// means uncompressed (the only case before #804 phase 2). Players
+// that don't recognise a value should refuse to load the save rather
+// than feed garbage to the core.
+func streamSaveFromDisk(absPath, downloadName, compression string) *huma.StreamResponse {
+	inner := streamFileFromDisk(absPath, downloadName, "application/octet-stream")
+	return &huma.StreamResponse{
+		Body: func(hctx huma.Context) {
+			if compression != "" {
+				hctx.SetHeader("X-Compression", compression)
+			}
+			inner.Body(hctx)
+		},
+	}
+}
+
 // streamBytesInline returns a huma.StreamResponse that writes the given bytes
 // inline (no Content-Disposition — the browser renders them directly,
 // typical for console icons / logos). Used by endpoints that serve embedded
@@ -504,7 +522,7 @@ func (h *SessionHandler) HumaDownloadSessionSave(ctx context.Context, in *Sessio
 	if !storage.ValidateROMPath(save.FilePath, []string{h.Storage.SaveDir}) {
 		return nil, huma.Error403Forbidden("file access denied")
 	}
-	return streamFileFromDisk(save.FilePath, filepath.Base(save.FilePath), "application/octet-stream"), nil
+	return streamSaveFromDisk(save.FilePath, filepath.Base(save.FilePath), save.Compression), nil
 }
 
 // HumaDownloadAutoSave is the huma implementation of GET
@@ -526,7 +544,7 @@ func (h *SessionHandler) HumaDownloadAutoSave(ctx context.Context, in *SessionAu
 	if !storage.ValidateROMPath(save.FilePath, []string{h.Storage.SaveDir}) {
 		return nil, huma.Error403Forbidden("file access denied")
 	}
-	return streamFileFromDisk(save.FilePath, filepath.Base(save.FilePath), "application/octet-stream"), nil
+	return streamSaveFromDisk(save.FilePath, filepath.Base(save.FilePath), save.Compression), nil
 }
 
 // HumaDownloadSlotSave is the huma implementation of GET
@@ -550,7 +568,7 @@ func (h *SessionHandler) HumaDownloadSlotSave(ctx context.Context, in *SessionSl
 	if !storage.ValidateROMPath(save.FilePath, []string{h.Storage.SaveDir}) {
 		return nil, huma.Error403Forbidden("file access denied")
 	}
-	return streamFileFromDisk(save.FilePath, filepath.Base(save.FilePath), "application/octet-stream"), nil
+	return streamSaveFromDisk(save.FilePath, filepath.Base(save.FilePath), save.Compression), nil
 }
 
 // HumaDownloadSRAM is the huma implementation of GET /api/sessions/{id}/sram.

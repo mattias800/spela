@@ -1029,6 +1029,11 @@ type SessionSaveResponse struct {
 	CurrentCore   string    `json:"currentCore"`
 	Notes         string    `json:"notes"`
 	Slot          *int      `json:"slot"`
+	// Compression algorithm applied to the saved bytes. Empty string =
+	// uncompressed (all pre-#804 saves). Known values: "" | "gzip".
+	// Players use this on download to decide whether to gunzip the
+	// stream before passing it to the libretro core. See #804 phase 2.
+	Compression   string    `json:"compression"`
 	CreatedAt     time.Time `json:"createdAt"`
 	UpdatedAt     time.Time `json:"updatedAt"`
 }

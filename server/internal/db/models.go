@@ -897,6 +897,12 @@ type SessionSaveState struct {
 	CoreSha256    string         `gorm:"size:64" json:"coreSha256"`
 	Notes         string         `gorm:"type:text" json:"notes"`
 	Slot          *int           `json:"slot"`
+	// Compression algorithm applied to the bytes at FilePath. Empty
+	// string = uncompressed (the only case for pre-#804 saves). Known
+	// values: "" | "gzip". Players that don't recognise a value should
+	// reject the save with a "newer client required" error rather than
+	// load garbage. See #804 phase 2.
+	Compression   string         `gorm:"size:16" json:"compression"`
 }
 
 // SessionSaveData represents SRAM/battery save data within a game session.
