@@ -46,6 +46,7 @@ import com.spela.player.presentation.ui.gamepad.autoFocus
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.ui.theme.SpTypography
+import com.spela.player.util.formatBytes
 import com.spela.player.util.formatPlayTime
 
 /**
@@ -194,15 +195,32 @@ fun GameHeroContent(
                         add(SpSplitButtonMenuItem("Netplay") { onCreateNetplay(gameId) })
                     }
                 }
-                SpSplitButton(
-                    text = if (isBusy) "Downloading..." else "Download",
-                    onClick = onDownloadGame,
-                    modifier = Modifier.testTag("game_detail_download_button"),
-                    isLoading = isBusy,
-                    enabled = !isBusy,
-                    menuItems = menuItems,
-                    onGradient = true,
-                )
+                Column(verticalArrangement = Arrangement.spacedBy(SpSpacing.XSmall)) {
+                    SpSplitButton(
+                        text = if (isBusy) "Downloading..." else "Download",
+                        onClick = onDownloadGame,
+                        modifier = Modifier.testTag("game_detail_download_button"),
+                        isLoading = isBusy,
+                        enabled = !isBusy,
+                        menuItems = menuItems,
+                        onGradient = true,
+                    )
+                    // Size hint under the button — answers "is this 5 MB or
+                    // 5 GB?" before the user commits, without scrolling
+                    // down to the metadata table. Hidden during the active
+                    // download because SpDownloadProgressBar already shows
+                    // the downloaded / total byte counter (#801).
+                    if (!isBusy && game.fileSize > 0) {
+                        Text(
+                            text = formatBytes(game.fileSize),
+                            style = SpTypography.LabelSmall,
+                            color = Color.White.copy(alpha = 0.65f),
+                            modifier = Modifier
+                                .testTag("game_detail_download_size")
+                                .align(Alignment.CenterHorizontally),
+                        )
+                    }
+                }
             }
 
             GameActionsMenu(
