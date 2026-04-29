@@ -143,6 +143,7 @@ func (h *SessionHandler) toSaveResponse(s db.SessionSaveState, currentCore strin
 		CoreSha256:    s.CoreSha256,
 		Notes:         s.Notes,
 		Slot:          s.Slot,
+		Compression:   s.Compression,
 		CreatedAt:     s.CreatedAt,
 		UpdatedAt:     s.UpdatedAt,
 	}

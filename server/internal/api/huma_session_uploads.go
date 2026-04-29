@@ -26,6 +26,11 @@ type SessionSaveUploadBody struct {
 	Name       string        `form:"name" required:"false" doc:"Display name for the save (defaults to the uploaded filename)."`
 	CoreName   string        `form:"coreName" required:"false" doc:"Identifier of the libretro core that produced the save."`
 	CoreSha256 string        `form:"coreSha256" required:"false" doc:"Hex sha256 of the core binary that produced this save state. Optional — the server records it alongside the save for diagnostics and future rollback UX. Invalid values (not 64 hex chars) are silently dropped. See #555 Phase 3."`
+	// Compression algorithm applied to the save bytes before upload.
+	// Empty / omitted = uncompressed (pre-#804 default). Known values:
+	// \"\" | \"gzip\". Stored opaquely; the server doesn't decompress —
+	// players echo the value on download to decide whether to gunzip.
+	Compression string `form:"compression" required:"false" doc:"Compression algorithm applied to the save bytes (empty or 'gzip'). Stored opaquely; players use it on download to decide whether to decompress. See #804."`
 }
 
 // SessionSaveUploadInput wraps the path parameter and multipart body for
@@ -213,6 +218,7 @@ func (h *SessionHandler) HumaUploadSessionSave(ctx context.Context, in *SessionS
 		ScreenshotURL: screenshotURL,
 		CoreName:      body.CoreName,
 		CoreSha256:    sanitizeCoreSha256(body.CoreSha256),
+		Compression:   sanitizeCompression(body.Compression),
 		IsAuto:        false,
 	}
 	if err := h.DB.Create(&rec).Error; err != nil {
@@ -268,6 +274,7 @@ func (h *SessionHandler) HumaUploadAutoSave(ctx context.Context, in *SessionAuto
 		ScreenshotURL: screenshotURL,
 		CoreName:      body.CoreName,
 		CoreSha256:    sanitizeCoreSha256(body.CoreSha256),
+		Compression:   sanitizeCompression(body.Compression),
 		IsAuto:        true,
 		IsCurrent:     true,
 	}
@@ -342,6 +349,7 @@ func (h *SessionHandler) HumaUpsertSlotSave(ctx context.Context, in *SessionSlot
 			ScreenshotURL: screenshotURL,
 			CoreName:      body.CoreName,
 			CoreSha256:    sanitizeCoreSha256(body.CoreSha256),
+			Compression:   sanitizeCompression(body.Compression),
 			IsAuto:        false,
 			Slot:          &slotNum,
 		}
@@ -352,6 +360,7 @@ func (h *SessionHandler) HumaUpsertSlotSave(ctx context.Context, in *SessionSlot
 		rec.ScreenshotURL = screenshotURL
 		rec.CoreName = body.CoreName
 		rec.CoreSha256 = sanitizeCoreSha256(body.CoreSha256)
+		rec.Compression = sanitizeCompression(body.Compression)
 		h.DB.Save(&rec)
 	}
 
@@ -470,6 +479,20 @@ func sanitizeCoreSha256(raw string) string {
 		return ""
 	}
 	return strings.ToLower(raw)
+}
+
+// sanitizeCompression normalises the client-supplied compression value
+// to the closed set the server stores. Anything else collapses to ""
+// (uncompressed) — being conservative protects players that don't yet
+// recognise newer codecs from receiving a save tagged with one. See
+// #804 phase 2.
+func sanitizeCompression(raw string) string {
+	switch strings.ToLower(strings.TrimSpace(raw)) {
+	case "gzip":
+		return "gzip"
+	default:
+		return ""
+	}
 }
 
 // pinSessionCoreSha256 returns the sha256 to persist into
