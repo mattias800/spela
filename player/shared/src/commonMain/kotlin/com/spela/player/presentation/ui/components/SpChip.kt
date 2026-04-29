@@ -59,7 +59,7 @@ fun SpChip(
         else -> SpColor.Divider
     }
     val textColor = when {
-        onGradient -> Color.White.copy(alpha = 0.90f)
+        onGradient -> SpColor.OnGradientPrimary
         isSelected -> SpColor.OnBackgroundSecondary
         else -> SpColor.OnBackgroundSecondary
     }

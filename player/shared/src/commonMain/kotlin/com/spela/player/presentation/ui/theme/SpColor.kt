@@ -48,6 +48,18 @@ object SpColor {
     val OnSurfaceVariant = Color(0xFFA0A0A0)
     val OnCard = Color(0xFFE0E0E0)
 
+    // Text and icons on the brand-gradient hero backdrop (game-detail
+    // hero, console banners, developer pages, in-game progress
+    // labels). Standard `OnBackground*` greyscale doesn't have enough
+    // contrast on the gradient — every site historically used
+    // `Color.White.copy(alpha = X)` directly. These tokens centralise
+    // those magic alphas so a future gradient or readability tweak
+    // touches one place. (#808)
+    val OnGradientPrimary = Color(0xFFFFFFFF).copy(alpha = 0.90f)
+    val OnGradientSecondary = Color(0xFFFFFFFF).copy(alpha = 0.65f)
+    val OnGradientTertiary = Color(0xFFFFFFFF).copy(alpha = 0.45f)
+    val OnGradientTrack = Color(0xFFFFFFFF).copy(alpha = 0.12f)
+
     // Semantic interaction colors
     val Favorite = Color(0xFFFF4757)  // heart / like
     val Rating = Color(0xFFFACC15)    // star rating

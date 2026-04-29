@@ -40,9 +40,9 @@ fun SpProgressBar(
     label: String? = null,
     onGradient: Boolean = false,
 ) {
-    val resolvedTrackColor = if (onGradient) Color.White.copy(alpha = 0.12f) else trackColor
-    val resolvedProgressColors = if (onGradient) listOf(Color.White.copy(alpha = 0.65f), Color.White.copy(alpha = 0.90f)) else progressColors
-    val resolvedLabelColor = if (onGradient) Color.White.copy(alpha = 0.70f) else SpColor.OnBackgroundSecondary
+    val resolvedTrackColor = if (onGradient) SpColor.OnGradientTrack else trackColor
+    val resolvedProgressColors = if (onGradient) listOf(SpColor.OnGradientSecondary, SpColor.OnGradientPrimary) else progressColors
+    val resolvedLabelColor = if (onGradient) SpColor.OnGradientSecondary else SpColor.OnBackgroundSecondary
 
     var maxProgress by remember { mutableFloatStateOf(0f) }
     val clampedProgress = progress.coerceIn(0f, 1f)
@@ -110,9 +110,9 @@ fun SpDownloadProgressBar(
      *  download doesn't show a stale value (#801). */
     bytesPerSecond: Long = 0,
 ) {
-    val byteLabelColor = if (onGradient) Color.White.copy(alpha = 0.65f) else SpColor.OnBackgroundTertiary
-    val indeterminateTrackColor = if (onGradient) Color.White.copy(alpha = 0.12f) else SpColor.SurfaceBright
-    val indeterminateColor = if (onGradient) Color.White.copy(alpha = 0.90f) else SpColor.Accent
+    val byteLabelColor = if (onGradient) SpColor.OnGradientSecondary else SpColor.OnBackgroundTertiary
+    val indeterminateTrackColor = if (onGradient) SpColor.OnGradientTrack else SpColor.SurfaceBright
+    val indeterminateColor = if (onGradient) SpColor.OnGradientPrimary else SpColor.Accent
 
     Column(modifier = modifier) {
         if (progress < 0f) {

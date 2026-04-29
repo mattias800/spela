@@ -129,7 +129,7 @@ fun GameHeroContent(
                         Icon(
                             imageVector = Icons.Filled.EmojiEvents,
                             contentDescription = null,
-                            tint = Color.White.copy(alpha = 0.65f),
+                            tint = SpColor.OnGradientSecondary,
                             modifier = Modifier.size(14.dp),
                         )
                     },
@@ -214,7 +214,7 @@ fun GameHeroContent(
                         Text(
                             text = formatBytes(game.fileSize),
                             style = SpTypography.LabelSmall,
-                            color = Color.White.copy(alpha = 0.65f),
+                            color = SpColor.OnGradientSecondary,
                             modifier = Modifier
                                 .testTag("game_detail_download_size")
                                 .align(Alignment.CenterHorizontally),
@@ -246,7 +246,7 @@ fun GameHeroContent(
                                 Icon(
                                     imageVector = Icons.Filled.AccessTime,
                                     contentDescription = null,
-                                    tint = Color.White.copy(alpha = 0.65f),
+                                    tint = SpColor.OnGradientSecondary,
                                     modifier = Modifier.size(14.dp),
                                 )
                             },
@@ -262,7 +262,7 @@ fun GameHeroContent(
                                     Icon(
                                         imageVector = Icons.Filled.History,
                                         contentDescription = null,
-                                        tint = Color.White.copy(alpha = 0.65f),
+                                        tint = SpColor.OnGradientSecondary,
                                         modifier = Modifier.size(14.dp),
                                     )
                                 },
@@ -305,13 +305,13 @@ fun GameHeroContent(
                         CircularProgressIndicator(
                             modifier = Modifier.size(14.dp),
                             strokeWidth = 2.dp,
-                            color = Color.White.copy(alpha = 0.65f),
+                            color = SpColor.OnGradientSecondary,
                         )
                     }
                     Text(
                         text = statusText,
                         style = SpTypography.LabelSmall,
-                        color = Color.White.copy(alpha = 0.65f),
+                        color = SpColor.OnGradientSecondary,
                     )
                 }
 
