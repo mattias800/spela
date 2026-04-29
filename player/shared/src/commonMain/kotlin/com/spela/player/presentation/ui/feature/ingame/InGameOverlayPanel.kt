@@ -274,6 +274,7 @@ internal fun InGameOverlayPanel(
                             hasCheats = state.hasCheats,
                             isSaveInProgress = state.isSaveInProgress,
                             saveStateError = state.saveStateError,
+                            saveStateJustSucceeded = state.saveStateJustSucceeded,
                             onSave = { viewModel.onIntent(EmulationIntent.SaveState) },
                             onLoad = { viewModel.onIntent(EmulationIntent.LoadState) },
                             onScreenshot = { viewModel.onIntent(EmulationIntent.TakeScreenshot) },
@@ -369,6 +370,7 @@ internal fun RowScope.OverlayActionButtons(
     hasCheats: Boolean = false,
     isSaveInProgress: Boolean = false,
     saveStateError: String? = null,
+    saveStateJustSucceeded: Boolean = false,
     onSave: () -> Unit,
     onLoad: () -> Unit,
     onScreenshot: () -> Unit,
@@ -379,15 +381,20 @@ internal fun RowScope.OverlayActionButtons(
     onControls: () -> Unit,
 ) {
     if (supportsSaveStates) {
-        // State-aware Save action: idle / in-progress / failed (#803).
-        // Success uses the existing "State saved" toast — adding an
-        // auto-clearing checkmark to the button is a follow-up.
+        // State-aware Save action: idle / in-progress / just-succeeded /
+        // failed (#803). Success briefly flashes a checkmark before
+        // returning to idle, so the user catches the confirmation even
+        // if they dismiss the overlay before the toast renders.
         val saveLabel: String
         val saveIcon: ImageVector
         when {
             isSaveInProgress -> {
                 saveLabel = "Saving…"
                 saveIcon = Icons.Filled.Sync
+            }
+            saveStateJustSucceeded -> {
+                saveLabel = "Saved"
+                saveIcon = Icons.Filled.CheckCircle
             }
             saveStateError != null -> {
                 saveLabel = "Save failed"

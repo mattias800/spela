@@ -282,6 +282,34 @@ class SaveManagerRehearsalTest {
             "saveStateError should be null after success")
     }
 
+    /** After a successful save the "Saved" flag flashes true and then
+     *  auto-clears so the in-game overlay's checkmark disappears
+     *  cleanly (#803). */
+    @Test
+    fun saveStateFlashesSuccessAndAutoClears() = runTest {
+        val dispatcher = UnconfinedTestDispatcher(testScheduler)
+        val scope = CoroutineScope(dispatcher + Job())
+        val fx = makeManagerFixture(scope, dispatcher)
+
+        fx.manager.rehearsalMode = false
+        fx.manager.saveState()
+        // Settle the upload but don't yet pass the auto-clear delay.
+        // (UnconfinedTestDispatcher runs everything inline; here we
+        // verify the flag is true between settle and auto-clear by
+        // checking right after advanceUntilIdle which blocks on the
+        // launched timer too — so we instead advance time slightly
+        // less than the flash window.)
+        testScheduler.advanceTimeBy(1_400)
+        testScheduler.runCurrent()
+        assertEquals(true, fx.state.value.saveStateJustSucceeded,
+            "saveStateJustSucceeded should still be true within the flash window")
+
+        testScheduler.advanceTimeBy(200)
+        testScheduler.runCurrent()
+        assertEquals(false, fx.state.value.saveStateJustSucceeded,
+            "saveStateJustSucceeded should auto-clear after the flash window")
+    }
+
     /** Failure path: error sticks until cleared, in-progress drops. */
     @Test
     fun saveStateRecordsErrorOnFailure() = runTest {
