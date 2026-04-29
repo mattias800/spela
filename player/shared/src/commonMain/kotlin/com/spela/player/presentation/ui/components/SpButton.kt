@@ -77,7 +77,7 @@ fun SpButton(
                 onClick = { if (!isLoading) onClick() },
                 modifier = modifier
                     .heightIn(min = 48.dp)
-                    .then(if (!skipBackground) Modifier.neonGlow(shape = shape, intense = true) else Modifier)
+                    .then(if (!skipBackground && enabled) Modifier.neonGlow(shape = shape, intense = true) else Modifier)
                     .then(if (!skipBackground) Modifier.background(
                         brush = if (enabled) brush else Brush.linearGradient(
                             listOf(SpColor.SurfaceBright, SpColor.SurfaceBright)
@@ -107,7 +107,7 @@ fun SpButton(
                 onClick = { if (!isLoading) onClick() },
                 modifier = modifier
                     .heightIn(min = 48.dp)
-                    .neonGlow(shape = shape, intense = false)
+                    .then(if (enabled) Modifier.neonGlow(shape = shape, intense = false) else Modifier)
                     .border(1.5.dp, if (enabled) brush else Brush.linearGradient(listOf(SpColor.Divider, SpColor.Divider)), shape)
                     .then(focusMods),
                 enabled = enabled,
@@ -132,7 +132,7 @@ fun SpButton(
                 onClick = { if (!isLoading) onClick() },
                 modifier = modifier
                     .heightIn(min = 48.dp)
-                    .neonGlow(shape = shape, intense = false)
+                    .then(if (enabled) Modifier.neonGlow(shape = shape, intense = false) else Modifier)
                     .then(focusMods),
                 enabled = enabled,
                 shape = shape,
