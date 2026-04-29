@@ -23,6 +23,7 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"maps"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -96,6 +97,41 @@ func main() {
 			continue
 		}
 		chosen[gameid] = e
+	}
+
+	// Backfill `<base>1` aliases. ScummVM upstream lists the first game
+	// of a series under the bare id (`monkey`) and sequels with explicit
+	// numbering (`monkey2`, `monkey4`). User directory layouts often use
+	// `<base>1` for the first game, paralleling the sequels — but the
+	// upstream YAML doesn't carry that alias. Add it: for every `<base>`
+	// where `<base>2`/`<base>3`/`<base>4`/`<base>5` exists but
+	// `<base>1` doesn't, set `chosen[<base>1] = chosen[<base>]`.
+	//
+	// Skip when `<base>` itself ends in a digit (e.g. `sq4`, `sword2`) —
+	// the resulting compound (`sq41`, `sword21`) is noise that no user
+	// would type, and the digit-suffixed siblings the heuristic latched
+	// onto (`sq45`, `sword25`) are sub-version markers, not sequels.
+	for base, entry := range maps.Clone(chosen) {
+		if base == "" {
+			continue
+		}
+		if last := base[len(base)-1]; last >= '0' && last <= '9' {
+			continue
+		}
+		if _, has := chosen[base+"1"]; has {
+			continue
+		}
+		hasSequel := false
+		for _, suffix := range []string{"2", "3", "4", "5"} {
+			if _, ok := chosen[base+suffix]; ok {
+				hasSequel = true
+				break
+			}
+		}
+		if !hasSequel {
+			continue
+		}
+		chosen[base+"1"] = entry
 	}
 
 	// Sort gameids for deterministic output.

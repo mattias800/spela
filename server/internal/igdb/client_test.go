@@ -1008,6 +1008,26 @@ func TestLookupScummvmGameTitle(t *testing.T) {
 			want:   "The Secret of Monkey Island",
 		},
 		{
+			name:   "monkey1 alias resolves to the same",
+			gameid: "monkey1",
+			want:   "The Secret of Monkey Island",
+		},
+		{
+			name:   "eob1 alias resolves to Eye of the Beholder",
+			gameid: "eob1",
+			want:   "Eye of the Beholder",
+		},
+		{
+			name:   "freddi1 alias resolves to Freddi Fish 1",
+			gameid: "freddi1",
+			want:   "Freddi Fish and the Case of the Missing Kelp Seeds",
+		},
+		{
+			name:   "myst1 alias resolves to Myst",
+			gameid: "myst1",
+			want:   "Myst",
+		},
+		{
 			name:   "unknown gameid returns empty",
 			gameid: "unknown_engine_xyz",
 			want:   "",
