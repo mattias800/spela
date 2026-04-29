@@ -139,34 +139,22 @@ export function SystemEventsFilters({
 
       {/* Username + IP search row */}
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-        <div className="relative">
-          <Search
-            aria-hidden="true"
-            className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-surface-500"
-          />
-          <Input
-            type="text"
-            placeholder="Username contains..."
-            value={username}
-            onChange={(e) => onUsernameChange(e.target.value)}
-            className="pl-9"
-            aria-label="Filter by username"
-          />
-        </div>
-        <div className="relative">
-          <Search
-            aria-hidden="true"
-            className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-surface-500"
-          />
-          <Input
-            type="text"
-            placeholder="IP starts with..."
-            value={ip}
-            onChange={(e) => onIpChange(e.target.value)}
-            className="pl-9"
-            aria-label="Filter by IP"
-          />
-        </div>
+        <Input
+          type="text"
+          placeholder="Username contains..."
+          value={username}
+          onChange={(e) => onUsernameChange(e.target.value)}
+          leftIcon={<Search aria-hidden="true" className="h-4 w-4" />}
+          aria-label="Filter by username"
+        />
+        <Input
+          type="text"
+          placeholder="IP starts with..."
+          value={ip}
+          onChange={(e) => onIpChange(e.target.value)}
+          leftIcon={<Search aria-hidden="true" className="h-4 w-4" />}
+          aria-label="Filter by IP"
+        />
       </div>
 
       {/* Event type chips — filtered by selected category */}

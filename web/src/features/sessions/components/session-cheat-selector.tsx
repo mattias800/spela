@@ -55,13 +55,12 @@ export function SessionCheatSelector({
   return (
     <div data-comp="SessionCheatSelector" className="mt-4 space-y-3">
       <div className="flex items-center gap-2">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-surface-500" />
+        <div className="flex-1">
           <Input
             value={filter}
             onChange={(e) => setFilter(e.target.value)}
             placeholder="Filter cheats..."
-            className="pl-9"
+            leftIcon={<Search className="h-4 w-4" />}
             data-testid="cheat-filter-input"
           />
         </div>
