@@ -449,6 +449,12 @@ class SaveManager(
      * Manual save state. Blocks in challenge mode and hardcore mode.
      * When no session is active, delegates to the libretro controller directly.
      */
+    private companion object {
+        /** How long the "Saved" checkmark stays on the in-game overlay's
+         *  Save button after a successful upload (#803). */
+        const val SAVE_SUCCESS_FLASH_MS = 1_500L
+    }
+
     fun saveState() {
         if (_state.value.isChallengeMode) return
         if (_state.value.isHardcoreMode) {
@@ -464,7 +470,13 @@ class SaveManager(
         // Clears any stale error from a prior failed attempt so the
         // button doesn't read "Save failed" while a fresh save is
         // in flight (#803).
-        _state.update { it.copy(isSaveInProgress = true, saveStateError = null) }
+        _state.update {
+            it.copy(
+                isSaveInProgress = true,
+                saveStateError = null,
+                saveStateJustSucceeded = false,
+            )
+        }
         scope.launch(dispatchers.io) {
             // Wrap staging in try/catch so a thrown exception still
             // clears isSaveInProgress — otherwise the button is stuck
@@ -499,6 +511,7 @@ class SaveManager(
                                     it.copy(
                                         statusMessage = "State saved",
                                         isSaveInProgress = false,
+                                        saveStateJustSucceeded = true,
                                         secondaryToast = SecondaryToastData(
                                             message = "Saved to Slot ${it.activeSlot}",
                                             type = SecondaryToastType.SAVE,
@@ -507,6 +520,16 @@ class SaveManager(
                                 }
                             }
                             refreshSaveSlots()
+                            // Hold the "Saved" checkmark briefly so the
+                            // user catches it even if the toast is
+                            // dismissed first, then drop the flag so
+                            // the button returns to idle. (#803)
+                            scope.launch(dispatchers.io) {
+                                kotlinx.coroutines.delay(SAVE_SUCCESS_FLASH_MS)
+                                withContext(dispatchers.main) {
+                                    _state.update { it.copy(saveStateJustSucceeded = false) }
+                                }
+                            }
                         },
                         onFailure = { error ->
                             withContext(dispatchers.main) {

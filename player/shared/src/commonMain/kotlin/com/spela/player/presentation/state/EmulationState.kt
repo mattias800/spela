@@ -90,6 +90,10 @@ data class EmulationState(
      *  Cleared at the start of the next save attempt so the button
      *  doesn't show stale failure text indefinitely. See #803. */
     val saveStateError: String? = null,
+    /** True briefly after a manual save succeeds so the in-game
+     *  overlay can flash a "Saved" checkmark on the Save button.
+     *  Auto-cleared by SaveManager ~1.5 s after the upload settles. */
+    val saveStateJustSucceeded: Boolean = false,
     /**
      * Non-blocking warning shown when the session's pinned core
      * version (see `GameSession.pinnedCoreSha256`) is no longer
