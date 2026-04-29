@@ -324,6 +324,7 @@ fun GameHeroContent(
                         progress = dp?.progress ?: -1f,
                         bytesDownloaded = dp?.bytesDownloaded ?: 0L,
                         totalBytes = dp?.totalBytes ?: -1L,
+                        bytesPerSecond = dp?.bytesPerSecond ?: 0L,
                         onGradient = true,
                         modifier = Modifier.fillMaxWidth(),
                     )

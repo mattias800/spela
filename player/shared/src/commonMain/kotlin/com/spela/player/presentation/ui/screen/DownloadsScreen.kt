@@ -262,6 +262,7 @@ private fun DownloadItem(
                     progress = download.progress,
                     bytesDownloaded = download.bytesDownloaded,
                     totalBytes = download.totalBytes,
+                    bytesPerSecond = download.bytesPerSecond,
                 )
             }
         }
