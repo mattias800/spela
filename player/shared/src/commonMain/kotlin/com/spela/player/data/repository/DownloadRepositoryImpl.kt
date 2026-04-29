@@ -313,6 +313,10 @@ class DownloadRepositoryImpl(
 
     override suspend fun cancelDownload(gameId: String) {
         downloads.update { it - gameId }
+        // Drop the tracker too so a cancel-then-restart starts with a fresh
+        // window. Without this the old samples briefly inflate the reported
+        // speed of the new download until they age out.
+        resetSpeed(gameId)
     }
 
     override suspend fun getLocalGamePath(gameId: String): String? {
