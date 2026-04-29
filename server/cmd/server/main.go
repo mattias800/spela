@@ -255,6 +255,10 @@ func main() {
 	hub := websocket.NewHub(effectiveWSOrigins)
 	go hub.Run()
 
+	// Wire the hub into the scrape queue so enqueue paths can broadcast
+	// "queued" scrape-status events. Done after the hub is constructed.
+	metaScraper.Queue.SetHub(hub)
+
 	// Initialize Netplay WebSocket hub
 	netplayHub := websocket.NewNetplayHub(effectiveWSOrigins)
 	netplayHub.StartCleanup(database)

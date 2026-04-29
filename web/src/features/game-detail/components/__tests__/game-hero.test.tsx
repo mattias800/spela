@@ -14,7 +14,7 @@ const defaultProps = {
   isAdmin: false,
   isFavorite: false,
   isInPlayLater: false,
-  isScraping: false,
+  scrapeStatus: "idle" as const,
   onPlay: vi.fn(),
   onScrape: vi.fn(),
   onToggleFavorite: vi.fn(),

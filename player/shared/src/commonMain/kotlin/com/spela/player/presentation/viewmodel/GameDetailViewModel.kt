@@ -256,6 +256,13 @@ class GameDetailViewModel(
                 _state.update { it.copy(isScraping = gameId in scrapingIds) }
             }
         }
+        // Track queued state — game has a pending ScrapeQueueItem the
+        // worker hasn't picked up yet. Drives the "Scrape queued" hint.
+        scope.launch(dispatchers.io) {
+            scrapeService.queuedGameIds.collect { queuedIds ->
+                _state.update { it.copy(isScrapeQueued = gameId in queuedIds) }
+            }
+        }
 
         // Reload game data when scraping finishes
         scope.launch(dispatchers.io) {

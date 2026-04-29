@@ -34,6 +34,10 @@ class ScrapeService(
     private val _scrapingGameIds = MutableStateFlow<Set<String>>(emptySet())
     val scrapingGameIds: StateFlow<Set<String>> = _scrapingGameIds.asStateFlow()
 
+    /** Games queued for scraping but not yet picked up by the worker. */
+    private val _queuedGameIds = MutableStateFlow<Set<String>>(emptySet())
+    val queuedGameIds: StateFlow<Set<String>> = _queuedGameIds.asStateFlow()
+
     /** Emitted when a game finishes scraping (status: idle). Observers should refetch game data. */
     private val _gameScrapeDone = MutableSharedFlow<String>(extraBufferCapacity = 16)
     val gameScrapeDone: SharedFlow<String> = _gameScrapeDone.asSharedFlow()
@@ -74,8 +78,13 @@ class ScrapeService(
      */
     fun onScrapeStatusChanged(gameId: String, status: String) {
         when (status) {
-            "scraping" -> _scrapingGameIds.update { it + gameId }
+            "queued" -> _queuedGameIds.update { it + gameId }
+            "scraping" -> {
+                _queuedGameIds.update { it - gameId }
+                _scrapingGameIds.update { it + gameId }
+            }
             "idle" -> {
+                _queuedGameIds.update { it - gameId }
                 _scrapingGameIds.update { it - gameId }
                 _gameScrapeDone.tryEmit(gameId)
                 // Fetch updated game to get the new cover URL for card updates

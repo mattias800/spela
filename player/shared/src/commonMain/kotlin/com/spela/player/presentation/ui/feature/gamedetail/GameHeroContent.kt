@@ -220,6 +220,7 @@ fun GameHeroContent(
             // Status indicators (scraping, syncing, downloading)
             val statusText = when {
                 state.isScraping -> "Scraping\u2026"
+                state.isScrapeQueued -> "Scrape queued"
                 syncState != null && !syncState.isTimedOut -> syncState.message
                 state.isDownloading -> {
                     val p = state.downloadProgress

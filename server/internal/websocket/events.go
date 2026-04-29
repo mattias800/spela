@@ -111,7 +111,10 @@ type ScrapeCancelledPayload struct {
 }
 
 // GameScrapeStatusPayload is the payload for EventGameScrapeStatus.
-// Status is typically "scraping" or "idle".
+// Status is one of "queued" (item enqueued, worker hasn't started),
+// "scraping" (worker actively processing), or "idle" (no scrape activity
+// — completed, failed, cancelled, or never started). Only "scrape"-typed
+// queue items broadcast these events; "ra_fetch" items are silent.
 type GameScrapeStatusPayload struct {
 	GameID uint   `json:"gameId"`
 	Status string `json:"status"`
