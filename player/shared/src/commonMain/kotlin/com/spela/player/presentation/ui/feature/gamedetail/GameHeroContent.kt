@@ -5,7 +5,9 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccessTime
 import androidx.compose.material.icons.filled.EmojiEvents
@@ -34,6 +36,7 @@ import com.spela.player.presentation.ui.components.SpButton
 import com.spela.player.presentation.ui.components.SpButtonStyle
 import com.spela.player.presentation.ui.components.SpChip
 import com.spela.player.presentation.ui.components.SpConsoleChip
+import com.spela.player.presentation.ui.components.SpDownloadProgressBar
 import com.spela.player.presentation.ui.components.SpRegionChip
 import com.spela.player.presentation.ui.components.SpSplitButton
 import com.spela.player.presentation.ui.components.SpSplitButtonMenuItem
@@ -226,24 +229,42 @@ fun GameHeroContent(
                 else -> null
             }
             if (statusText != null) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(SpSpacing.XSmall),
+                Column(
+                    modifier = Modifier.widthIn(max = 320.dp).fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(SpSpacing.XSmall),
                 ) {
-                    // Show spinner for non-download statuses (scraping, sync).
-                    // Downloads already have a spinner in the button.
-                    if (!state.isDownloading) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(14.dp),
-                            strokeWidth = 2.dp,
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(SpSpacing.XSmall),
+                    ) {
+                        // Show spinner for non-download statuses (scraping, sync).
+                        // Downloads already have a spinner in the button.
+                        if (!state.isDownloading) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(14.dp),
+                                strokeWidth = 2.dp,
+                                color = Color.White.copy(alpha = 0.65f),
+                            )
+                        }
+                        Text(
+                            text = statusText,
+                            style = SpTypography.LabelSmall,
                             color = Color.White.copy(alpha = 0.65f),
                         )
                     }
-                    Text(
-                        text = statusText,
-                        style = SpTypography.LabelSmall,
-                        color = Color.White.copy(alpha = 0.65f),
-                    )
+
+                    // Download progress: bytes + bar / indeterminate stripe.
+                    // Only when an active download is reporting progress.
+                    val dp = state.downloadProgress
+                    if (state.isDownloading && dp != null && dp.state == DownloadState.DOWNLOADING) {
+                        SpDownloadProgressBar(
+                            progress = dp.progress,
+                            bytesDownloaded = dp.bytesDownloaded,
+                            totalBytes = dp.totalBytes,
+                            onGradient = true,
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                    }
                 }
             }
 

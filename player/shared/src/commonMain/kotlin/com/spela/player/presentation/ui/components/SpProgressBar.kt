@@ -105,7 +105,12 @@ fun SpDownloadProgressBar(
     bytesDownloaded: Long,
     totalBytes: Long,
     modifier: Modifier = Modifier,
+    onGradient: Boolean = false,
 ) {
+    val byteLabelColor = if (onGradient) Color.White.copy(alpha = 0.65f) else SpColor.OnBackgroundTertiary
+    val indeterminateTrackColor = if (onGradient) Color.White.copy(alpha = 0.12f) else SpColor.SurfaceBright
+    val indeterminateColor = if (onGradient) Color.White.copy(alpha = 0.90f) else SpColor.Accent
+
     Column(modifier = modifier) {
         if (progress < 0f) {
             if (com.spela.player.presentation.ui.components.LocalAnimationsEnabled.current) {
@@ -114,14 +119,15 @@ fun SpDownloadProgressBar(
                         .fillMaxWidth()
                         .height(6.dp)
                         .clip(RoundedCornerShape(3.dp)),
-                    color = SpColor.Accent,
-                    trackColor = SpColor.SurfaceBright,
+                    color = indeterminateColor,
+                    trackColor = indeterminateTrackColor,
                 )
             }
         } else {
             SpProgressBar(
                 progress = progress,
                 progressColors = listOf(SpColor.Accent, SpColor.AccentLight),
+                onGradient = onGradient,
             )
         }
         Spacer(Modifier.height(SpSpacing.XSmall))
@@ -129,13 +135,13 @@ fun SpDownloadProgressBar(
             Text(
                 text = formatBytes(bytesDownloaded),
                 style = SpTypography.LabelSmall,
-                color = SpColor.OnBackgroundTertiary,
+                color = byteLabelColor,
             )
             Spacer(Modifier.weight(1f))
             Text(
                 text = if (totalBytes < 0) "..." else formatBytes(totalBytes),
                 style = SpTypography.LabelSmall,
-                color = SpColor.OnBackgroundTertiary,
+                color = byteLabelColor,
             )
         }
     }
