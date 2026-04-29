@@ -16,8 +16,26 @@ import (
 	"gorm.io/gorm"
 )
 
-// maxSaveUploadSize is the maximum allowed save state upload size (64 MB).
-const maxSaveUploadSize = 64 << 20
+// defaultMaxSaveUploadMB is the default per-upload save-state cap. Sized
+// for uncompressed Dolphin GameCube states which typically run 80–100 MB
+// (#805). Smaller systems pay nothing extra — they just don't reach the
+// ceiling.
+const defaultMaxSaveUploadMB = 256
+
+// maxSaveUploadBytes returns the configured per-upload save-state cap in
+// bytes. Defaults to [defaultMaxSaveUploadMB]; override via the
+// SPELA_MAX_SAVE_UPLOAD_MB environment variable. Non-positive or
+// unparseable values fall back to the default so a typo can't accidentally
+// disable all uploads.
+func maxSaveUploadBytes() int64 {
+	mb := int64(defaultMaxSaveUploadMB)
+	if envVal := os.Getenv("SPELA_MAX_SAVE_UPLOAD_MB"); envVal != "" {
+		if parsed, err := strconv.ParseInt(envVal, 10, 64); err == nil && parsed > 0 {
+			mb = parsed
+		}
+	}
+	return mb << 20
+}
 
 const defaultMaxSaveStorageMB = 1024
 

@@ -97,7 +97,7 @@ func RegisterSharedUploadRoutes(
 		Tags:          []string{"shared-saves"},
 		Middlewares:   uploadMW,
 		Security:      sec,
-		MaxBodyBytes:  maxSaveUploadSize,
+		MaxBodyBytes:  maxSaveUploadBytes(),
 	}, sharedSaveH.HumaShareSave)
 
 	huma.Register(api, huma.Operation{
@@ -110,7 +110,7 @@ func RegisterSharedUploadRoutes(
 		Tags:          []string{"shared-sessions"},
 		Middlewares:   uploadMW,
 		Security:      sec,
-		MaxBodyBytes:  maxSaveUploadSize,
+		MaxBodyBytes:  maxSaveUploadBytes(),
 	}, sharedSessionH.HumaUploadSharedSessionSave)
 
 	huma.Register(api, huma.Operation{
@@ -122,7 +122,7 @@ func RegisterSharedUploadRoutes(
 		Tags:         []string{"shared-sessions"},
 		Middlewares:  uploadMW,
 		Security:     sec,
-		MaxBodyBytes: maxSaveUploadSize,
+		MaxBodyBytes: maxSaveUploadBytes(),
 	}, sharedSessionH.HumaUploadSharedSessionAutoSave)
 }
 
