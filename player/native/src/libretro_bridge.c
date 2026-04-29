@@ -1093,23 +1093,15 @@ JNI_FUNC(void, nativeDeinit)(JNIEnv *env, jobject thiz) {
     g_core.hw_render_enabled = false;
     memset(&g_core.hw_render_callback, 0, sizeof(g_core.hw_render_callback));
 
-    /* Step 6: dlclose. RetroArch always dlcloses (runloop.c:3881). The
-     * Android skip below is preserved as a separate, narrower concern:
-     * Granite-driven HW cores (Dolphin's Vulkan shader compiler) leak
-     * background threads past retro_deinit. That's a real issue and
-     * orthogonal to the Play! one — the threading fix above doesn't
-     * change Granite's behaviour. Revisit once the threading fix is
-     * validated for non-Granite GL HW cores like mupen64plus_next. */
+    /* Step 6: dlclose. RetroArch always dlcloses (runloop.c:3881) and we
+     * now do too. The Android-only skip-for-HW-cores guard previously
+     * here was a remnant of the Play! / Granite teardown crashes that
+     * the same-thread retro_deinit move in PR #736 actually fixed.
+     * Verified clean for Play! (PS2), mupen64plus_next (N64), and
+     * Dolphin (GameCube) on AYN Thor in #786 — exit-and-relaunch in the
+     * same process, no SIGSEGV, no Scudo "invalid chunk state". */
     if (g_core.handle) {
-#ifdef __ANDROID__
-        if (g_gpu_renderer) {
-            LOGI("Skipping dlclose for HW render core (background threads may still be running)");
-        } else {
-            sp_dlclose(g_core.handle);
-        }
-#else
         sp_dlclose(g_core.handle);
-#endif
         g_core.handle = NULL;
     }
     LOGI("Core deinitialized");
