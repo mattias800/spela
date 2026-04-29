@@ -18,6 +18,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.CloudDone
 import androidx.compose.material.icons.filled.ErrorOutline
 import androidx.compose.material.icons.filled.FastForward
 import androidx.compose.material.icons.filled.FastRewind
@@ -393,8 +394,12 @@ internal fun RowScope.OverlayActionButtons(
                 saveIcon = Icons.Filled.Sync
             }
             saveStateJustSucceeded -> {
-                saveLabel = "Saved"
-                saveIcon = Icons.Filled.CheckCircle
+                // "Synced" rather than just "Saved" — communicates that
+                // the bytes reached the server, not just local. SaveManager
+                // only flips this flag after the upload's onSuccess fires,
+                // so the label is accurate. (#803)
+                saveLabel = "Synced"
+                saveIcon = Icons.Filled.CloudDone
             }
             saveStateError != null -> {
                 saveLabel = "Save failed"
