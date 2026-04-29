@@ -116,6 +116,10 @@ open class StubLibretroController : LibretroController {
 
     var supportsSaveStatesResult = true
     var serializeResult: ByteArray? = byteArrayOf()
+    /** Drives [serialize] to throw, simulating a native serialize-to-file
+     *  exception. Used by tests that verify SaveManager clears its
+     *  in-progress flag when staging blows up (#803). */
+    var serializeThrows: Boolean = false
     var unserializeResult = true
     var isHwRenderEnabledResult = false
     var getSRAMResult: ByteArray? = byteArrayOf(1, 2, 3)
@@ -138,7 +142,11 @@ open class StubLibretroController : LibretroController {
     override fun resume() { resumeCallCount++ }
     override fun stop() { stopCallCount++ }
     override fun supportsSaveStates(): Boolean = supportsSaveStatesResult
-    override fun serialize(): ByteArray? { serializeCallCount++; return serializeResult }
+    override fun serialize(): ByteArray? {
+        serializeCallCount++
+        if (serializeThrows) throw RuntimeException("test: native serialize threw")
+        return serializeResult
+    }
     override fun unserialize(data: ByteArray): Boolean { unserializeCallCount++; lastUnserializeData = data; return unserializeResult }
     override fun setFastForward(enabled: Boolean) { setFastForwardCallCount++; lastFastForwardEnabled = enabled }
     override fun performanceStats(): Flow<Pair<Float, Float>> = emptyFlow()
@@ -357,6 +365,10 @@ class StubSessionRepository : SessionRepository {
 
     var downloadSessionAutoSaveResult: Result<ByteArray> = Result.failure(Exception("no auto-save"))
     var downloadSessionSramResult: Result<ByteArray> = Result.failure(Exception("no sram"))
+    /** Drives the manual-save-upload outcome. Default = success so existing
+     *  tests don't need to set it. Tests covering #803's failure feedback
+     *  set this to [Result.failure] before calling [SaveManager.saveState]. */
+    var uploadSessionSaveResult: Result<SaveState> = Result.success(SaveState(id = "1", name = "Manual Save"))
     var existingSessions: List<GameSession> = emptyList()
 
     override suspend fun getSessionsForGame(gameId: String) = Result.success(existingSessions)
@@ -413,11 +425,11 @@ class StubSessionRepository : SessionRepository {
     override suspend fun getSessionSaves(sessionId: String) = Result.success(emptyList<SaveState>())
     override suspend fun uploadSessionSave(sessionId: String, name: String, data: ByteArray, screenshot: ByteArray?, coreName: String): Result<SaveState> {
         uploadSessionSaveCallCount++
-        return Result.success(SaveState(id = "1", name = name))
+        return uploadSessionSaveResult
     }
     override suspend fun uploadSessionSaveFromFile(sessionId: String, name: String, savePath: String, saveSize: Long, screenshot: ByteArray?, coreName: String): Result<SaveState> {
         uploadSessionSaveCallCount++
-        return Result.success(SaveState(id = "1", name = name))
+        return uploadSessionSaveResult
     }
     override suspend fun downloadSessionSave(sessionId: String, saveId: String) = Result.success(byteArrayOf())
     override suspend fun uploadSessionAutoSave(sessionId: String, data: ByteArray, screenshot: ByteArray?, coreName: String): Result<Unit> {

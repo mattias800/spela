@@ -81,6 +81,15 @@ data class EmulationState(
     val showExitConfirm: Boolean = false,
     val requestExit: Boolean = false,
     val statusMessage: String? = null,
+    /** True from the moment the user taps the in-game overlay's Save
+     *  button until the upload completes (success or failure). Drives
+     *  the inline button feedback in the overlay so the user sees
+     *  "Saving…" without having to wait for a toast. See #803. */
+    val isSaveInProgress: Boolean = false,
+    /** Sticky error message from the most recent failed manual save.
+     *  Cleared at the start of the next save attempt so the button
+     *  doesn't show stale failure text indefinitely. See #803. */
+    val saveStateError: String? = null,
     /**
      * Non-blocking warning shown when the session's pinned core
      * version (see `GameSession.pinnedCoreSha256`) is no longer

@@ -15,6 +15,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
@@ -44,6 +45,42 @@ class SaveManagerRehearsalTest {
             override val io: CoroutineDispatcher = dispatcher
             override val default: CoroutineDispatcher = dispatcher
         }
+
+    /** Bag of test fixtures returned by [makeManager]. Adds [state] so
+     *  tests can assert transitions on EmulationState fields the
+     *  manager mutates (e.g. isSaveInProgress, saveStateError). */
+    private data class ManagerFixture(
+        val manager: SaveManager,
+        val sessionRepo: StubSessionRepository,
+        val libretro: StubLibretroController,
+        val state: MutableStateFlow<EmulationState>,
+    )
+
+    private fun makeManagerFixture(
+        scope: CoroutineScope,
+        dispatcher: CoroutineDispatcher,
+    ): ManagerFixture {
+        val dispatchers = testDispatchers(dispatcher)
+        val apiClient = SpelaApiClient(StubMockEngineFactory, TokenManager())
+        val connectivity = ConnectivityMonitor(apiClient, dispatchers, scope)
+        val sessionRepo = StubSessionRepository()
+        val libretro = StubLibretroController()
+        val state = MutableStateFlow(EmulationState())
+        val manager = SaveManager(
+            saveDataRepository = StubSaveDataRepository(),
+            connectivityMonitor = connectivity,
+            libretroController = libretro,
+            screenshotCapture = null,
+            _state = state,
+            dispatchers = dispatchers,
+            scope = scope,
+            sessionRepository = sessionRepo,
+            fileStorage = TestFileStorage(),
+        )
+        manager.currentSessionId = "s1"
+        manager.currentCoreName = "nestopia"
+        return ManagerFixture(manager, sessionRepo, libretro, state)
+    }
 
     private fun makeManager(
         scope: CoroutineScope,
@@ -222,6 +259,93 @@ class SaveManagerRehearsalTest {
         advanceUntilIdle()
         assertEquals(1, sessionRepo.uploadSessionSaveCallCount,
             "upload must resume after rehearsal mode is cleared")
+    }
+
+    /** #803 — the in-game overlay's Save button needs feedback even
+     *  if the user dismisses the overlay before the success toast
+     *  renders. SaveManager must publish an in-progress flag while
+     *  the upload is in flight, and clear it before the success path
+     *  runs. */
+    @Test
+    fun saveStateClearsInProgressOnSuccess() = runTest {
+        val dispatcher = UnconfinedTestDispatcher(testScheduler)
+        val scope = CoroutineScope(dispatcher + Job())
+        val fx = makeManagerFixture(scope, dispatcher)
+
+        fx.manager.rehearsalMode = false
+        fx.manager.saveState()
+        advanceUntilIdle()
+
+        assertEquals(false, fx.state.value.isSaveInProgress,
+            "isSaveInProgress should be false after a successful save")
+        assertEquals(null, fx.state.value.saveStateError,
+            "saveStateError should be null after success")
+    }
+
+    /** Failure path: error sticks until cleared, in-progress drops. */
+    @Test
+    fun saveStateRecordsErrorOnFailure() = runTest {
+        val dispatcher = UnconfinedTestDispatcher(testScheduler)
+        val scope = CoroutineScope(dispatcher + Job())
+        val fx = makeManagerFixture(scope, dispatcher)
+
+        // Configure the stub to fail the upload.
+        fx.sessionRepo.uploadSessionSaveResult = Result.failure(RuntimeException("test: 413 too large"))
+
+        fx.manager.rehearsalMode = false
+        fx.manager.saveState()
+        advanceUntilIdle()
+
+        assertEquals(false, fx.state.value.isSaveInProgress,
+            "isSaveInProgress should be false after the upload finishes (success or failure)")
+        assertTrue(
+            fx.state.value.saveStateError?.contains("test: 413 too large") == true,
+            "saveStateError should carry the failure message; got '${fx.state.value.saveStateError}'",
+        )
+    }
+
+    /** Regression: if staging the save state throws (rather than
+     *  returns null), the in-progress flag must still reach false —
+     *  otherwise the Save button is stuck on "Saving…" for the rest
+     *  of the session. The inner runCatching in stageSaveToTempFile
+     *  only covers the file write, not the controller / FileStorage
+     *  calls around it, so this is a real path. */
+    @Test
+    fun saveStateClearsInProgressWhenStagingThrows() = runTest {
+        val dispatcher = UnconfinedTestDispatcher(testScheduler)
+        val scope = CoroutineScope(dispatcher + Job())
+        val fx = makeManagerFixture(scope, dispatcher)
+
+        fx.libretro.serializeThrows = true
+        fx.manager.rehearsalMode = false
+        fx.manager.saveState()
+        advanceUntilIdle()
+
+        assertEquals(false, fx.state.value.isSaveInProgress,
+            "isSaveInProgress must reach false even when staging throws")
+        assertTrue(
+            fx.state.value.saveStateError?.contains("native serialize threw") == true,
+            "saveStateError should carry the staging exception; got '${fx.state.value.saveStateError}'",
+        )
+    }
+
+    /** A new save attempt clears any prior failure so the button isn't
+     *  stuck in "Save failed" state forever. */
+    @Test
+    fun newSaveAttemptClearsPriorError() = runTest {
+        val dispatcher = UnconfinedTestDispatcher(testScheduler)
+        val scope = CoroutineScope(dispatcher + Job())
+        val fx = makeManagerFixture(scope, dispatcher)
+
+        // Seed the state with a failure from a prior attempt.
+        fx.state.update { it.copy(saveStateError = "stale failure") }
+
+        fx.manager.rehearsalMode = false
+        fx.manager.saveState()
+        advanceUntilIdle()
+
+        assertEquals(null, fx.state.value.saveStateError,
+            "starting a new save attempt must clear any prior error")
     }
 
     @Test

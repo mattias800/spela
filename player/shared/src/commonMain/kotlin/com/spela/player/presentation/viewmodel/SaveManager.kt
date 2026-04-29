@@ -459,8 +459,33 @@ class SaveManager(
             emitRehearsalBlocked(RehearsalSaveKind.Manual)
             return
         }
+        // Inline button feedback: tap → "Saving…" immediately, even
+        // if the user dismisses the overlay before the toast renders.
+        // Clears any stale error from a prior failed attempt so the
+        // button doesn't read "Save failed" while a fresh save is
+        // in flight (#803).
+        _state.update { it.copy(isSaveInProgress = true, saveStateError = null) }
         scope.launch(dispatchers.io) {
-            val staged = stageSaveToTempFile() ?: return@launch
+            // Wrap staging in try/catch so a thrown exception still
+            // clears isSaveInProgress — otherwise the button is stuck
+            // on "Saving…" for the rest of the session. The inner
+            // runCatching in stageSaveToTempFile only covers the
+            // file write, not the controller / FileStorage calls
+            // around it.
+            val staged = try {
+                stageSaveToTempFile() ?: run {
+                    _state.update { it.copy(isSaveInProgress = false) }
+                    return@launch
+                }
+            } catch (e: Exception) {
+                _state.update {
+                    it.copy(
+                        isSaveInProgress = false,
+                        saveStateError = "Failed to save: ${e.message}",
+                    )
+                }
+                return@launch
+            }
             try {
                 val sessionId = currentSessionId
                 if (sessionId != null) {
@@ -473,6 +498,7 @@ class SaveManager(
                                 _state.update {
                                     it.copy(
                                         statusMessage = "State saved",
+                                        isSaveInProgress = false,
                                         secondaryToast = SecondaryToastData(
                                             message = "Saved to Slot ${it.activeSlot}",
                                             type = SecondaryToastType.SAVE,
@@ -484,14 +510,23 @@ class SaveManager(
                         },
                         onFailure = { error ->
                             withContext(dispatchers.main) {
-                                _state.update { it.copy(error = "Failed to save: ${error.message}") }
+                                // saveStateError is the canonical surface for
+                                // manual-save failures (sticky inline label on
+                                // the Save button). Don't *also* fire the
+                                // top-of-screen error toast — duplicate UX.
+                                _state.update {
+                                    it.copy(
+                                        isSaveInProgress = false,
+                                        saveStateError = "Failed to save: ${error.message}",
+                                    )
+                                }
                             }
                         },
                     )
                 } else {
                     // No session — save state was serialized by the controller
                     withContext(dispatchers.main) {
-                        _state.update { it.copy(statusMessage = "State saved") }
+                        _state.update { it.copy(statusMessage = "State saved", isSaveInProgress = false) }
                     }
                 }
             } finally {
