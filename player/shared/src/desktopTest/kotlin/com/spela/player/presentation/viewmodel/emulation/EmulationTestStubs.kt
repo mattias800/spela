@@ -116,6 +116,10 @@ open class StubLibretroController : LibretroController {
 
     var supportsSaveStatesResult = true
     var serializeResult: ByteArray? = byteArrayOf()
+    /** Drives [serialize] to throw, simulating a native serialize-to-file
+     *  exception. Used by tests that verify SaveManager clears its
+     *  in-progress flag when staging blows up (#803). */
+    var serializeThrows: Boolean = false
     var unserializeResult = true
     var isHwRenderEnabledResult = false
     var getSRAMResult: ByteArray? = byteArrayOf(1, 2, 3)
@@ -138,7 +142,11 @@ open class StubLibretroController : LibretroController {
     override fun resume() { resumeCallCount++ }
     override fun stop() { stopCallCount++ }
     override fun supportsSaveStates(): Boolean = supportsSaveStatesResult
-    override fun serialize(): ByteArray? { serializeCallCount++; return serializeResult }
+    override fun serialize(): ByteArray? {
+        serializeCallCount++
+        if (serializeThrows) throw RuntimeException("test: native serialize threw")
+        return serializeResult
+    }
     override fun unserialize(data: ByteArray): Boolean { unserializeCallCount++; lastUnserializeData = data; return unserializeResult }
     override fun setFastForward(enabled: Boolean) { setFastForwardCallCount++; lastFastForwardEnabled = enabled }
     override fun performanceStats(): Flow<Pair<Float, Float>> = emptyFlow()

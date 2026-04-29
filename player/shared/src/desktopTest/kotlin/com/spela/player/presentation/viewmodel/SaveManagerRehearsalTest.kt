@@ -304,6 +304,31 @@ class SaveManagerRehearsalTest {
         )
     }
 
+    /** Regression: if staging the save state throws (rather than
+     *  returns null), the in-progress flag must still reach false —
+     *  otherwise the Save button is stuck on "Saving…" for the rest
+     *  of the session. The inner runCatching in stageSaveToTempFile
+     *  only covers the file write, not the controller / FileStorage
+     *  calls around it, so this is a real path. */
+    @Test
+    fun saveStateClearsInProgressWhenStagingThrows() = runTest {
+        val dispatcher = UnconfinedTestDispatcher(testScheduler)
+        val scope = CoroutineScope(dispatcher + Job())
+        val fx = makeManagerFixture(scope, dispatcher)
+
+        fx.libretro.serializeThrows = true
+        fx.manager.rehearsalMode = false
+        fx.manager.saveState()
+        advanceUntilIdle()
+
+        assertEquals(false, fx.state.value.isSaveInProgress,
+            "isSaveInProgress must reach false even when staging throws")
+        assertTrue(
+            fx.state.value.saveStateError?.contains("native serialize threw") == true,
+            "saveStateError should carry the staging exception; got '${fx.state.value.saveStateError}'",
+        )
+    }
+
     /** A new save attempt clears any prior failure so the button isn't
      *  stuck in "Save failed" state forever. */
     @Test

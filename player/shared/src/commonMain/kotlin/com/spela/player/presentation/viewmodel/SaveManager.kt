@@ -466,8 +466,24 @@ class SaveManager(
         // in flight (#803).
         _state.update { it.copy(isSaveInProgress = true, saveStateError = null) }
         scope.launch(dispatchers.io) {
-            val staged = stageSaveToTempFile() ?: run {
-                _state.update { it.copy(isSaveInProgress = false) }
+            // Wrap staging in try/catch so a thrown exception still
+            // clears isSaveInProgress — otherwise the button is stuck
+            // on "Saving…" for the rest of the session. The inner
+            // runCatching in stageSaveToTempFile only covers the
+            // file write, not the controller / FileStorage calls
+            // around it.
+            val staged = try {
+                stageSaveToTempFile() ?: run {
+                    _state.update { it.copy(isSaveInProgress = false) }
+                    return@launch
+                }
+            } catch (e: Exception) {
+                _state.update {
+                    it.copy(
+                        isSaveInProgress = false,
+                        saveStateError = "Failed to save: ${e.message}",
+                    )
+                }
                 return@launch
             }
             try {
@@ -494,9 +510,12 @@ class SaveManager(
                         },
                         onFailure = { error ->
                             withContext(dispatchers.main) {
+                                // saveStateError is the canonical surface for
+                                // manual-save failures (sticky inline label on
+                                // the Save button). Don't *also* fire the
+                                // top-of-screen error toast — duplicate UX.
                                 _state.update {
                                     it.copy(
-                                        error = "Failed to save: ${error.message}",
                                         isSaveInProgress = false,
                                         saveStateError = "Failed to save: ${error.message}",
                                     )
