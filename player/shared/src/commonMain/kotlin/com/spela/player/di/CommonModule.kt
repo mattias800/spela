@@ -181,6 +181,7 @@ val commonModule = module {
             dispatchers = get(),
             scope = get(),
             sessionRepository = get(),
+            fileStorage = get(),
         )
     }
     single {

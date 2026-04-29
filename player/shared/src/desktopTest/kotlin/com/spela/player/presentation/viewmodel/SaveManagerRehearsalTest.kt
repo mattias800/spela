@@ -9,6 +9,7 @@ import com.spela.player.presentation.viewmodel.emulation.StubMockEngineFactory
 import com.spela.player.presentation.viewmodel.emulation.StubSaveDataRepository
 import com.spela.player.presentation.viewmodel.emulation.StubSessionRepository
 import com.spela.player.util.DispatcherProvider
+import com.spela.player.util.FileStorage
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -63,10 +64,36 @@ class SaveManagerRehearsalTest {
             dispatchers = dispatchers,
             scope = scope,
             sessionRepository = sessionRepo,
+            fileStorage = TestFileStorage(),
         )
         manager.currentSessionId = "s1"
         manager.currentCoreName = "nestopia"
         return Triple(manager, sessionRepo, libretro)
+    }
+
+    /** Minimal in-test FileStorage. SaveManager reads from this only when
+     *  the libretro controller's native fast path produced a temp file —
+     *  the stub controller never does, so these methods are unreached in
+     *  practice but must exist to satisfy the interface. */
+    private class TestFileStorage : FileStorage {
+        override fun getGamesDir(): String = "/tmp/games"
+        override fun getCoresDir(): String = "/tmp/cores"
+        override fun getSavesDir(): String = "/tmp/saves"
+        override fun getBiosDir(): String = "/tmp/bios"
+        override suspend fun createDirectory(path: String) {}
+        override suspend fun writeFile(path: String, data: ByteArray) {}
+        override suspend fun readFile(path: String): ByteArray = byteArrayOf()
+        override suspend fun fileExists(path: String): Boolean = false
+        override suspend fun deleteFile(path: String) {}
+        override suspend fun deleteDirectory(path: String) {}
+        override suspend fun getDirectorySize(path: String): Long = 0
+        override suspend fun writeFileStreaming(path: String, writer: suspend (append: suspend (ByteArray, Int, Int) -> Unit) -> Unit) {}
+        override suspend fun getFileSize(path: String): Long = 0
+        override suspend fun listFiles(path: String): List<String> = emptyList()
+        override suspend fun isDirectory(path: String): Boolean = false
+        override suspend fun zipDirectoryToBytes(dirPath: String): ByteArray? = null
+        override suspend fun unzipBytesToDirectory(data: ByteArray, targetDir: String) {}
+        override suspend fun sha256File(path: String): String? = null
     }
 
     @Test

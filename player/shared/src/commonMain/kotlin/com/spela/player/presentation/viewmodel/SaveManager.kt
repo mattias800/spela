@@ -9,6 +9,7 @@ import com.spela.player.presentation.state.SaveSlotInfo
 import com.spela.player.presentation.state.SecondaryToastData
 import com.spela.player.presentation.state.SecondaryToastType
 import com.spela.player.util.DispatcherProvider
+import com.spela.player.util.FileStorage
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -87,6 +88,7 @@ class SaveManager(
     private val dispatchers: DispatcherProvider,
     private val scope: CoroutineScope,
     private val sessionRepository: SessionRepository,
+    private val fileStorage: FileStorage,
 ) {
     /** The libretro core name used for the current emulation session. */
     var currentCoreName: String = ""
@@ -440,7 +442,7 @@ class SaveManager(
             return
         }
         scope.launch(dispatchers.io) {
-            val saveData = libretroController.serialize() ?: return@launch
+            val saveData = serializeViaTempFile() ?: return@launch
             val sessionId = currentSessionId
             if (sessionId != null) {
                 val screenshot = screenshotCapture?.captureScreenshot()
@@ -472,6 +474,34 @@ class SaveManager(
                 }
             }
         }
+    }
+
+    /**
+     * Pulls the current save state out of the libretro core via the native
+     * fast path when available — Android's [LibretroController.serializeToFile]
+     * writes directly into a temp file in the saves dir, never allocating a
+     * jbyteArray on the Java heap. We then read the temp file back into a
+     * ByteArray for the upload call. Even though the read-back allocation
+     * is the same size as the legacy in-memory serialize, the JNI handoff
+     * no longer holds the buffer in two places at once — see #798.
+     *
+     * Falls back to [LibretroController.serialize] if the controller has no
+     * native fast path (desktop / fakes).
+     */
+    private suspend fun serializeViaTempFile(): ByteArray? {
+        val tempPath = "${fileStorage.getSavesDir()}/.tmp-save-${currentSessionId ?: "none"}"
+        val written = libretroController.serializeToFile(tempPath)
+        if (written != null && written > 0) {
+            return try {
+                fileStorage.readFile(tempPath)
+            } catch (_: Exception) {
+                null
+            } finally {
+                runCatching { fileStorage.deleteFile(tempPath) }
+            }
+        }
+        // Native fast path unavailable or returned no bytes — legacy path.
+        return libretroController.serialize()
     }
 
     /**

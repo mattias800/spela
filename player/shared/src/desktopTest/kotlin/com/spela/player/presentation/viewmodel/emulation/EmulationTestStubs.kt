@@ -629,6 +629,7 @@ class EmulationViewModelTestBuilder {
             dispatchers = dispatchers,
             scope = vmScope,
             sessionRepository = sessionRepository,
+            fileStorage = StubFileStorage(),
         )
         saveManager = saveManagerLocal
         val challengeManager = ChallengeManager(

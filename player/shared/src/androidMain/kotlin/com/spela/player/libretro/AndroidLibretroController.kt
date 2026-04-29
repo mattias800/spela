@@ -243,6 +243,11 @@ class AndroidLibretroController(
     override fun serialize(): ByteArray? =
         runOnEmulationThread { jni.nativeSerialize() }
 
+    override fun serializeToFile(path: String): Long? {
+        val n = runOnEmulationThread { jni.nativeSerializeToFile(path) } ?: return null
+        return if (n < 0) null else n
+    }
+
     override fun unserialize(data: ByteArray): Boolean =
         runOnEmulationThread { jni.nativeUnserialize(data) } ?: false
 

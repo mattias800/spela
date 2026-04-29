@@ -1147,6 +1147,49 @@ JNI_FUNC(jbyteArray, nativeSerialize)(JNIEnv *env, jobject thiz) {
     return result;
 }
 
+/* nativeSerializeToFile writes the libretro save state directly to the
+ * given filesystem path without ever crossing the JNI boundary as a
+ * jbyteArray. Returns the number of bytes written, or -1 on failure.
+ * Used by the manual-save path to avoid a 30–50 MB Java-heap allocation
+ * for cores like Dolphin (#798).
+ */
+JNI_FUNC(jlong, nativeSerializeToFile)(JNIEnv *env, jobject thiz, jstring path) {
+    if (!g_core.game_loaded || !path) return -1;
+
+    size_t size = g_core.retro_serialize_size();
+    if (size == 0) return -1;
+
+    void *buf = malloc(size);
+    if (!buf) return -1;
+
+    if (!g_core.retro_serialize(buf, size)) {
+        free(buf);
+        return -1;
+    }
+
+    const char *cpath = (*env)->GetStringUTFChars(env, path, NULL);
+    if (!cpath) {
+        free(buf);
+        return -1;
+    }
+
+    FILE *f = fopen(cpath, "wb");
+    (*env)->ReleaseStringUTFChars(env, path, cpath);
+    if (!f) {
+        free(buf);
+        return -1;
+    }
+
+    size_t written = fwrite(buf, 1, size, f);
+    int closed = fclose(f);
+    free(buf);
+
+    if (written != size || closed != 0) {
+        return -1;
+    }
+    return (jlong)size;
+}
+
 JNI_FUNC(jboolean, nativeUnserialize)(JNIEnv *env, jobject thiz, jbyteArray data) {
     if (!g_core.game_loaded || !data) return JNI_FALSE;
 
