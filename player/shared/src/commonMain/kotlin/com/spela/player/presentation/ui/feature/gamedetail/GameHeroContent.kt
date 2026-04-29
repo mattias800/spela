@@ -217,58 +217,6 @@ fun GameHeroContent(
                 isAdminActionLoading = state.isAdminActionLoading,
             )
 
-            // Status indicators (scraping, syncing, downloading)
-            val statusText = when {
-                state.isScraping -> "Scraping\u2026"
-                state.isScrapeQueued -> "Scrape queued"
-                syncState != null && !syncState.isTimedOut -> syncState.message
-                state.isDownloading -> {
-                    val p = state.downloadProgress
-                    if (p != null && p.totalDiscs > 1) "Downloading disc ${p.currentDisc}/${p.totalDiscs}\u2026"
-                    else "Downloading\u2026"
-                }
-                else -> null
-            }
-            if (statusText != null) {
-                Column(
-                    modifier = Modifier.widthIn(max = 320.dp).fillMaxWidth(),
-                    verticalArrangement = Arrangement.spacedBy(SpSpacing.XSmall),
-                ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(SpSpacing.XSmall),
-                    ) {
-                        // Show spinner for non-download statuses (scraping, sync).
-                        // Downloads already have a spinner in the button.
-                        if (!state.isDownloading) {
-                            CircularProgressIndicator(
-                                modifier = Modifier.size(14.dp),
-                                strokeWidth = 2.dp,
-                                color = Color.White.copy(alpha = 0.65f),
-                            )
-                        }
-                        Text(
-                            text = statusText,
-                            style = SpTypography.LabelSmall,
-                            color = Color.White.copy(alpha = 0.65f),
-                        )
-                    }
-
-                    // Download progress: bytes + bar / indeterminate stripe.
-                    // Only when an active download is reporting progress.
-                    val dp = state.downloadProgress
-                    if (state.isDownloading && dp != null && dp.state == DownloadState.DOWNLOADING) {
-                        SpDownloadProgressBar(
-                            progress = dp.progress,
-                            bytesDownloaded = dp.bytesDownloaded,
-                            totalBytes = dp.totalBytes,
-                            onGradient = true,
-                            modifier = Modifier.fillMaxWidth(),
-                        )
-                    }
-                }
-            }
-
             // Playtime + last played grouped so they wrap together
             if (game.totalPlayTime > 0 || game.lastPlayedAt != null) {
                 Row(horizontalArrangement = Arrangement.spacedBy(SpSpacing.Small)) {
@@ -303,6 +251,64 @@ fun GameHeroContent(
                             )
                         }
                     }
+                }
+            }
+        }
+
+        // Status indicators (scraping, syncing, downloading) — sibling of
+        // the FlowRow above so their layout never interacts with how the
+        // FlowRow wraps action items. Visibility is latched on
+        // state.isDownloading (not on dp.state) so a single in-flight
+        // progress event doesn't flip the indicator on/off and reflow
+        // the page each frame (#797).
+        val statusText = when {
+            state.isScraping -> "Scraping…"
+            state.isScrapeQueued -> "Scrape queued"
+            syncState != null && !syncState.isTimedOut -> syncState.message
+            state.isDownloading -> {
+                val p = state.downloadProgress
+                if (p != null && p.totalDiscs > 1) "Downloading disc ${p.currentDisc}/${p.totalDiscs}…"
+                else "Downloading…"
+            }
+            else -> null
+        }
+        if (statusText != null) {
+            Column(
+                modifier = Modifier.widthIn(max = 320.dp),
+                verticalArrangement = Arrangement.spacedBy(SpSpacing.XSmall),
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(SpSpacing.XSmall),
+                ) {
+                    // Show spinner for non-download statuses (scraping, sync).
+                    // Downloads already have a spinner in the button.
+                    if (!state.isDownloading) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(14.dp),
+                            strokeWidth = 2.dp,
+                            color = Color.White.copy(alpha = 0.65f),
+                        )
+                    }
+                    Text(
+                        text = statusText,
+                        style = SpTypography.LabelSmall,
+                        color = Color.White.copy(alpha = 0.65f),
+                    )
+                }
+
+                // Latched on isDownloading. The dp object's individual
+                // values (progress, bytes) still update continuously —
+                // only the show/hide decision is held stable.
+                if (state.isDownloading) {
+                    val dp = state.downloadProgress
+                    SpDownloadProgressBar(
+                        progress = dp?.progress ?: -1f,
+                        bytesDownloaded = dp?.bytesDownloaded ?: 0L,
+                        totalBytes = dp?.totalBytes ?: -1L,
+                        onGradient = true,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
                 }
             }
         }
