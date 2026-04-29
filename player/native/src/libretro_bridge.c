@@ -1147,6 +1147,99 @@ JNI_FUNC(jbyteArray, nativeSerialize)(JNIEnv *env, jobject thiz) {
     return result;
 }
 
+/* nativeSerializeToFile writes the libretro save state directly to the
+ * given filesystem path without ever crossing the JNI boundary as a
+ * jbyteArray. Returns the number of bytes written, or -1 on failure.
+ * Used by the manual-save path to avoid a 30–50 MB Java-heap allocation
+ * for cores like Dolphin (#798).
+ */
+JNI_FUNC(jlong, nativeSerializeToFile)(JNIEnv *env, jobject thiz, jstring path) {
+    if (!g_core.game_loaded || !path) return -1;
+
+    size_t size = g_core.retro_serialize_size();
+    if (size == 0) return -1;
+
+    void *buf = malloc(size);
+    if (!buf) return -1;
+
+    if (!g_core.retro_serialize(buf, size)) {
+        free(buf);
+        return -1;
+    }
+
+    const char *cpath = (*env)->GetStringUTFChars(env, path, NULL);
+    if (!cpath) {
+        free(buf);
+        return -1;
+    }
+
+    FILE *f = fopen(cpath, "wb");
+    (*env)->ReleaseStringUTFChars(env, path, cpath);
+    if (!f) {
+        free(buf);
+        return -1;
+    }
+
+    size_t written = fwrite(buf, 1, size, f);
+    int closed = fclose(f);
+    free(buf);
+
+    if (written != size || closed != 0) {
+        return -1;
+    }
+    return (jlong)size;
+}
+
+/* nativeUnserializeFromFile reads a libretro save state from the given
+ * filesystem path and applies it via retro_unserialize without ever
+ * crossing the JNI boundary as a jbyteArray. Returns JNI_TRUE on
+ * success. Used by the auto-load and slot-load paths to avoid a
+ * 90+ MB Java-heap allocation on Android (#798).
+ */
+JNI_FUNC(jboolean, nativeUnserializeFromFile)(JNIEnv *env, jobject thiz, jstring path) {
+    if (!g_core.game_loaded || !path) return JNI_FALSE;
+
+    const char *cpath = (*env)->GetStringUTFChars(env, path, NULL);
+    if (!cpath) return JNI_FALSE;
+
+    FILE *f = fopen(cpath, "rb");
+    (*env)->ReleaseStringUTFChars(env, path, cpath);
+    if (!f) return JNI_FALSE;
+
+    if (fseek(f, 0, SEEK_END) != 0) { fclose(f); return JNI_FALSE; }
+    long sz = ftell(f);
+    if (sz < 0) { fclose(f); return JNI_FALSE; }
+    if (fseek(f, 0, SEEK_SET) != 0) { fclose(f); return JNI_FALSE; }
+
+    void *buf = malloc((size_t)sz);
+    if (!buf) { fclose(f); return JNI_FALSE; }
+
+    size_t read = fread(buf, 1, (size_t)sz, f);
+    fclose(f);
+    if (read != (size_t)sz) {
+        free(buf);
+        return JNI_FALSE;
+    }
+
+    /* Same context-current dance as nativeUnserialize — Citra/Azahar
+     * reinitialises GLES inside retro_unserialize. Without a current
+     * context, glGetString returns NULL and the core crashes. Safe
+     * because unserialize runs on the emulation thread via the queue. */
+    bool made_current = false;
+    if (g_core.hw_render_enabled && g_core.hw_gl_ctx) {
+        hw_gl_make_current(g_core.hw_gl_ctx);
+        made_current = true;
+    }
+
+    bool ok = g_core.retro_unserialize(buf, (size_t)sz);
+    free(buf);
+
+    if (made_current) {
+        hw_gl_release_current(g_core.hw_gl_ctx);
+    }
+    return ok ? JNI_TRUE : JNI_FALSE;
+}
+
 JNI_FUNC(jboolean, nativeUnserialize)(JNIEnv *env, jobject thiz, jbyteArray data) {
     if (!g_core.game_loaded || !data) return JNI_FALSE;
 

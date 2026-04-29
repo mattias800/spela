@@ -9,6 +9,7 @@ import com.spela.player.presentation.state.SaveSlotInfo
 import com.spela.player.presentation.state.SecondaryToastData
 import com.spela.player.presentation.state.SecondaryToastType
 import com.spela.player.util.DispatcherProvider
+import com.spela.player.util.FileStorage
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -87,6 +88,7 @@ class SaveManager(
     private val dispatchers: DispatcherProvider,
     private val scope: CoroutineScope,
     private val sessionRepository: SessionRepository,
+    private val fileStorage: FileStorage,
 ) {
     /** The libretro core name used for the current emulation session. */
     var currentCoreName: String = ""
@@ -348,16 +350,19 @@ class SaveManager(
         }
 
         println("[SaveManager] autoLoadSaveState: loading session $sessionId auto-save")
-        return sessionRepository.downloadSessionAutoSave(sessionId).fold(
-            onSuccess = { saveData ->
-                println("[SaveManager] autoLoadSaveState: got ${saveData.size} bytes from session, unserializing")
-                val ok = libretroController.unserialize(saveData)
+        val tempPath = "${fileStorage.getSavesDir()}/.tmp-load-$sessionId"
+        return sessionRepository.downloadSessionAutoSaveToFile(sessionId, tempPath).fold(
+            onSuccess = {
+                val size = runCatching { fileStorage.getFileSize(tempPath) }.getOrDefault(-1L)
+                println("[SaveManager] autoLoadSaveState: streamed $size bytes to disk, unserializing from file")
+                val ok = libretroController.unserializeFromFile(tempPath)
+                runCatching { fileStorage.deleteFile(tempPath) }
                 println("[SaveManager] autoLoadSaveState: unserialize result=$ok")
                 AutoLoadResult.Loaded
             },
             onFailure = { e ->
+                runCatching { fileStorage.deleteFile(tempPath) }
                 println("[SaveManager] autoLoadSaveState: session auto-save failed: ${e.message}")
-                // Treat 404 / no-data as NoSave, other errors as Error
                 if (e.message?.contains("404") == true || e.message?.contains("not found", ignoreCase = true) == true) {
                     AutoLoadResult.NoSave
                 } else {
@@ -375,14 +380,16 @@ class SaveManager(
     suspend fun forceAutoLoadSaveState(): Boolean {
         val sessionId = currentSessionId ?: return false
         println("[SaveManager] forceAutoLoadSaveState: loading session $sessionId auto-save (ignoring core mismatch)")
-        return sessionRepository.downloadSessionAutoSave(sessionId).fold(
-            onSuccess = { saveData ->
-                println("[SaveManager] forceAutoLoadSaveState: got ${saveData.size} bytes, unserializing")
-                val ok = libretroController.unserialize(saveData)
+        val tempPath = "${fileStorage.getSavesDir()}/.tmp-load-force-$sessionId"
+        return sessionRepository.downloadSessionAutoSaveToFile(sessionId, tempPath).fold(
+            onSuccess = {
+                val ok = libretroController.unserializeFromFile(tempPath)
+                runCatching { fileStorage.deleteFile(tempPath) }
                 println("[SaveManager] forceAutoLoadSaveState: unserialize result=$ok")
                 ok
             },
             onFailure = { e ->
+                runCatching { fileStorage.deleteFile(tempPath) }
                 println("[SaveManager] forceAutoLoadSaveState: failed: ${e.message}")
                 false
             },
@@ -399,29 +406,42 @@ class SaveManager(
             emitRehearsalBlocked(RehearsalSaveKind.Auto)
             return
         }
+        println("[SaveManager] autoSaveOnStop: staging save state to disk…")
+        val staged = try { stageSaveToTempFile() } catch (e: Exception) {
+            println("[SaveManager] autoSaveOnStop: stage failed: ${e.message}")
+            null
+        } ?: run {
+            println("[SaveManager] autoSaveOnStop: stageSaveToTempFile returned null")
+            return
+        }
+        println("[SaveManager] autoSaveOnStop: staged ${staged.size} bytes at ${staged.path}, uploading…")
         try {
-            val saveData = libretroController.serialize()
-            if (saveData != null) {
-                val sessionId = currentSessionId
-                if (sessionId != null) {
-                    val screenshot = screenshotCapture?.captureScreenshot()
-                    val result = sessionRepository.uploadSessionAutoSave(sessionId, saveData, screenshot, currentCoreName)
-                    if (result.isFailure) {
-                        val msg = result.exceptionOrNull()?.message ?: "Unknown error"
-                        println("[SaveManager] autoSaveOnStop: upload failed: $msg")
-                        val userMsg = if (msg.contains("413") || msg.contains("quota", ignoreCase = true)) {
-                            "Auto-save failed: storage quota exceeded. Delete old saves to free space."
-                        } else {
-                            "Auto-save upload failed: $msg"
-                        }
-                        withContext(dispatchers.main) {
-                            _state.update { it.copy(error = userMsg) }
-                        }
+            val sessionId = currentSessionId
+            if (sessionId != null) {
+                val screenshot = screenshotCapture?.captureScreenshot()
+                val result = sessionRepository.uploadSessionAutoSaveFromFile(
+                    sessionId, staged.path, staged.size, screenshot, currentCoreName,
+                )
+                if (result.isSuccess) {
+                    println("[SaveManager] autoSaveOnStop: upload OK")
+                }
+                if (result.isFailure) {
+                    val msg = result.exceptionOrNull()?.message ?: "Unknown error"
+                    println("[SaveManager] autoSaveOnStop: upload failed: $msg")
+                    val userMsg = if (msg.contains("413") || msg.contains("quota", ignoreCase = true)) {
+                        "Auto-save failed: storage quota exceeded. Delete old saves to free space."
+                    } else {
+                        "Auto-save upload failed: $msg"
+                    }
+                    withContext(dispatchers.main) {
+                        _state.update { it.copy(error = userMsg) }
                     }
                 }
             }
         } catch (e: Exception) {
             println("[SaveManager] autoSaveOnStop: exception: ${e.message}")
+        } finally {
+            staged.cleanup()
         }
     }
 
@@ -440,37 +460,91 @@ class SaveManager(
             return
         }
         scope.launch(dispatchers.io) {
-            val saveData = libretroController.serialize() ?: return@launch
-            val sessionId = currentSessionId
-            if (sessionId != null) {
-                val screenshot = screenshotCapture?.captureScreenshot()
-                sessionRepository.uploadSessionSave(sessionId, "Manual Save", saveData, screenshot, currentCoreName).fold(
-                    onSuccess = {
-                        withContext(dispatchers.main) {
-                            _state.update {
-                                it.copy(
-                                    statusMessage = "State saved",
-                                    secondaryToast = SecondaryToastData(
-                                        message = "Saved to Slot ${it.activeSlot}",
-                                        type = SecondaryToastType.SAVE,
-                                    ),
-                                )
+            val staged = stageSaveToTempFile() ?: return@launch
+            try {
+                val sessionId = currentSessionId
+                if (sessionId != null) {
+                    val screenshot = screenshotCapture?.captureScreenshot()
+                    sessionRepository.uploadSessionSaveFromFile(
+                        sessionId, "Manual Save", staged.path, staged.size, screenshot, currentCoreName,
+                    ).fold(
+                        onSuccess = {
+                            withContext(dispatchers.main) {
+                                _state.update {
+                                    it.copy(
+                                        statusMessage = "State saved",
+                                        secondaryToast = SecondaryToastData(
+                                            message = "Saved to Slot ${it.activeSlot}",
+                                            type = SecondaryToastType.SAVE,
+                                        ),
+                                    )
+                                }
                             }
-                        }
-                        refreshSaveSlots()
-                    },
-                    onFailure = { error ->
-                        withContext(dispatchers.main) {
-                            _state.update { it.copy(error = "Failed to save: ${error.message}") }
-                        }
-                    },
-                )
-            } else {
-                // No session — save state was serialized by the controller
-                withContext(dispatchers.main) {
-                    _state.update { it.copy(statusMessage = "State saved") }
+                            refreshSaveSlots()
+                        },
+                        onFailure = { error ->
+                            withContext(dispatchers.main) {
+                                _state.update { it.copy(error = "Failed to save: ${error.message}") }
+                            }
+                        },
+                    )
+                } else {
+                    // No session — save state was serialized by the controller
+                    withContext(dispatchers.main) {
+                        _state.update { it.copy(statusMessage = "State saved") }
+                    }
                 }
+            } finally {
+                staged.cleanup()
             }
+        }
+    }
+
+    /**
+     * Pulls the current save state out of the libretro core via the native
+     * fast path when available — Android's [LibretroController.serializeToFile]
+     * writes directly into a temp file in the saves dir, never allocating a
+     * jbyteArray on the Java heap. We then read the temp file back into a
+     * ByteArray for the upload call. Even though the read-back allocation
+     * is the same size as the legacy in-memory serialize, the JNI handoff
+     * no longer holds the buffer in two places at once — see #798.
+     *
+     * Falls back to [LibretroController.serialize] if the controller has no
+     * native fast path (desktop / fakes).
+     */
+    /**
+     * Result of [stageSaveToTempFile]. The file at [path] is owned by the
+     * caller — they must invoke [cleanup] after the upload regardless of
+     * outcome to avoid leaking temp files.
+     */
+    private data class StagedSave(val path: String, val size: Long, val cleanup: suspend () -> Unit)
+
+    /**
+     * Serialize the current core state to a temp file using the native
+     * fast path when available. Returns the path + byte count for a
+     * caller to stream-upload directly from disk; the JVM never holds
+     * the full save in a ByteArray. See #798 (Dolphin GameCube ~90 MB).
+     *
+     * Returns null when serialization fails. When the controller has no
+     * native fast path (desktop / fakes), this still works — it falls
+     * back to [serialize] + writeFile so the caller's contract holds.
+     */
+    private suspend fun stageSaveToTempFile(): StagedSave? {
+        val tempPath = "${fileStorage.getSavesDir()}/.tmp-save-${currentSessionId ?: "none"}"
+        val cleanup: suspend () -> Unit = { runCatching { fileStorage.deleteFile(tempPath) } }
+        val written = libretroController.serializeToFile(tempPath)
+        if (written != null && written > 0) {
+            return StagedSave(tempPath, written, cleanup)
+        }
+        // Native fast path unavailable — fall back to in-memory serialize
+        // and write through. On JVM-only platforms (desktop) this is fine;
+        // they have plenty of heap.
+        val bytes = libretroController.serialize() ?: return null
+        return runCatching {
+            fileStorage.writeFile(tempPath, bytes)
+            StagedSave(tempPath, bytes.size.toLong(), cleanup)
+        }.getOrNull().also {
+            if (it == null) cleanup()
         }
     }
 
@@ -489,35 +563,41 @@ class SaveManager(
             return
         }
         scope.launch(dispatchers.io) {
-            val saveData = libretroController.serialize() ?: return@launch
-            val sessionId = currentSessionId
-            if (sessionId != null) {
-                val screenshot = screenshotCapture?.captureScreenshot()
-                sessionRepository.uploadSlotSave(sessionId, slot, saveData, screenshot, currentCoreName).fold(
-                    onSuccess = {
-                        withContext(dispatchers.main) {
-                            _state.update {
-                                it.copy(
-                                    statusMessage = "Saved to slot $slot",
-                                    secondaryToast = SecondaryToastData(
-                                        message = "Saved to Slot $slot",
-                                        type = SecondaryToastType.SAVE,
-                                    ),
-                                )
+            val staged = stageSaveToTempFile() ?: return@launch
+            try {
+                val sessionId = currentSessionId
+                if (sessionId != null) {
+                    val screenshot = screenshotCapture?.captureScreenshot()
+                    sessionRepository.uploadSlotSaveFromFile(
+                        sessionId, slot, staged.path, staged.size, screenshot, currentCoreName,
+                    ).fold(
+                        onSuccess = {
+                            withContext(dispatchers.main) {
+                                _state.update {
+                                    it.copy(
+                                        statusMessage = "Saved to slot $slot",
+                                        secondaryToast = SecondaryToastData(
+                                            message = "Saved to Slot $slot",
+                                            type = SecondaryToastType.SAVE,
+                                        ),
+                                    )
+                                }
                             }
-                        }
-                        refreshSaveSlots()
-                    },
-                    onFailure = { error ->
-                        withContext(dispatchers.main) {
-                            _state.update { it.copy(error = "Failed to save to slot $slot: ${error.message}") }
-                        }
-                    },
-                )
-            } else {
-                withContext(dispatchers.main) {
-                    _state.update { it.copy(statusMessage = "State saved") }
+                            refreshSaveSlots()
+                        },
+                        onFailure = { error ->
+                            withContext(dispatchers.main) {
+                                _state.update { it.copy(error = "Failed to save to slot $slot: ${error.message}") }
+                            }
+                        },
+                    )
+                } else {
+                    withContext(dispatchers.main) {
+                        _state.update { it.copy(statusMessage = "State saved") }
+                    }
                 }
+            } finally {
+                staged.cleanup()
             }
         }
     }
@@ -573,9 +653,11 @@ class SaveManager(
         scope.launch(dispatchers.io) {
             val sessionId = currentSessionId
             if (sessionId != null) {
-                sessionRepository.downloadSessionAutoSave(sessionId).fold(
-                    onSuccess = { saveData ->
-                        libretroController.unserialize(saveData)
+                val tempPath = "${fileStorage.getSavesDir()}/.tmp-load-manual-$sessionId"
+                sessionRepository.downloadSessionAutoSaveToFile(sessionId, tempPath).fold(
+                    onSuccess = {
+                        libretroController.unserializeFromFile(tempPath)
+                        runCatching { fileStorage.deleteFile(tempPath) }
                         withContext(dispatchers.main) {
                             _state.update {
                                 it.copy(
@@ -589,6 +671,7 @@ class SaveManager(
                         }
                     },
                     onFailure = { error ->
+                        runCatching { fileStorage.deleteFile(tempPath) }
                         withContext(dispatchers.main) {
                             _state.update { it.copy(error = "Failed to load save: ${error.message}") }
                         }

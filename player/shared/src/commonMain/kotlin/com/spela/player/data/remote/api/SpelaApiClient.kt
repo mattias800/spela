@@ -1652,6 +1652,105 @@ class SpelaApiClient(
         ).body()
     }
 
+    /**
+     * Streaming variant of [uploadSessionSave] that reads the save bytes
+     * from a file path on disk instead of holding them in a JVM ByteArray.
+     * Required for Dolphin / GameCube (#798) where save states are
+     * ~90 MB and a single ByteArray of that size doesn't fit alongside
+     * the rest of the heap on Android (256 MB ceiling).
+     */
+    suspend fun uploadSessionSaveFromFile(
+        sessionId: String,
+        name: String,
+        savePath: String,
+        saveSize: Long,
+        screenshot: ByteArray?,
+        coreName: String = "",
+    ): com.spela.client.models.SessionSaveResponse {
+        return client.submitFormWithBinaryData(
+            url = "$baseUrl/api/sessions/$sessionId/saves",
+            formData = formData {
+                append("name", name)
+                if (coreName.isNotEmpty()) {
+                    append("coreName", coreName)
+                }
+                append("save", io.ktor.client.request.forms.ChannelProvider(saveSize) {
+                    com.spela.player.util.openFileReadChannel(savePath)
+                }, Headers.build {
+                    append(HttpHeaders.ContentDisposition, "filename=\"save.sav\"")
+                    append(HttpHeaders.ContentType, ContentType.Application.OctetStream.toString())
+                })
+                if (screenshot != null) {
+                    append("screenshot", screenshot, Headers.build {
+                        append(HttpHeaders.ContentDisposition, "filename=\"screenshot.png\"")
+                        append(HttpHeaders.ContentType, ContentType.Image.PNG.toString())
+                    })
+                }
+            }
+        ).body()
+    }
+
+    suspend fun uploadSessionAutoSaveFromFile(
+        sessionId: String,
+        savePath: String,
+        saveSize: Long,
+        screenshot: ByteArray?,
+        coreName: String = "",
+    ) {
+        client.submitFormWithBinaryData(
+            url = "$baseUrl/api/sessions/$sessionId/saves/auto",
+            formData = formData {
+                if (coreName.isNotEmpty()) {
+                    append("coreName", coreName)
+                }
+                append("save", io.ktor.client.request.forms.ChannelProvider(saveSize) {
+                    com.spela.player.util.openFileReadChannel(savePath)
+                }, Headers.build {
+                    append(HttpHeaders.ContentDisposition, "filename=\"autosave.sav\"")
+                    append(HttpHeaders.ContentType, ContentType.Application.OctetStream.toString())
+                })
+                if (screenshot != null) {
+                    append("screenshot", screenshot, Headers.build {
+                        append(HttpHeaders.ContentDisposition, "filename=\"screenshot.png\"")
+                        append(HttpHeaders.ContentType, ContentType.Image.PNG.toString())
+                    })
+                }
+            }
+        )
+    }
+
+    suspend fun uploadSlotSaveFromFile(
+        sessionId: String,
+        slot: Int,
+        savePath: String,
+        saveSize: Long,
+        screenshot: ByteArray?,
+        coreName: String = "",
+    ): com.spela.client.models.SessionSaveResponse {
+        return client.submitFormWithBinaryData(
+            url = "$baseUrl/api/sessions/$sessionId/saves/slot/$slot",
+            formData = formData {
+                if (coreName.isNotEmpty()) {
+                    append("coreName", coreName)
+                }
+                append("save", io.ktor.client.request.forms.ChannelProvider(saveSize) {
+                    com.spela.player.util.openFileReadChannel(savePath)
+                }, Headers.build {
+                    append(HttpHeaders.ContentDisposition, "filename=\"slot_${slot}.sav\"")
+                    append(HttpHeaders.ContentType, ContentType.Application.OctetStream.toString())
+                })
+                if (screenshot != null) {
+                    append("screenshot", screenshot, Headers.build {
+                        append(HttpHeaders.ContentDisposition, "filename=\"screenshot.png\"")
+                        append(HttpHeaders.ContentType, ContentType.Image.PNG.toString())
+                    })
+                }
+            }
+        ) {
+            method = HttpMethod.Put
+        }.body()
+    }
+
     suspend fun downloadSessionSave(sessionId: String, saveId: String): ByteArray {
         return sessionsApi.downloadSessionSave(sessionId, saveId).response.body<ByteArray>()
     }
@@ -1679,6 +1778,49 @@ class SpelaApiClient(
 
     suspend fun downloadSessionAutoSave(sessionId: String): ByteArray {
         return sessionsApi.downloadSessionAutoSave(sessionId).response.body<ByteArray>()
+    }
+
+    /**
+     * Streaming variant of [downloadSessionAutoSave] that writes the
+     * response body directly to [outputPath] without materialising the
+     * full payload as a JVM ByteArray. Required for cores like Dolphin
+     * (#798) where save states are ~90 MB and don't fit alongside the
+     * rest of the heap on Android.
+     *
+     * Uses `prepareGet().execute { }` to keep the connection open while
+     * streaming — `client.get(url)` would eagerly buffer the body.
+     */
+    suspend fun downloadSessionAutoSaveToFile(sessionId: String, fileStorage: FileStorage, outputPath: String) {
+        client.prepareGet("$baseUrl/api/sessions/$sessionId/saves/auto") {
+            timeout { requestTimeoutMillis = Long.MAX_VALUE }
+        }.execute { response ->
+            if (!response.status.isSuccess()) {
+                throw RuntimeException("auto-save download failed: HTTP ${response.status.value}")
+            }
+            streamResponseToFile(response, fileStorage, outputPath) { _, _ -> }
+        }
+    }
+
+    suspend fun downloadSessionSaveToFile(sessionId: String, saveId: String, fileStorage: FileStorage, outputPath: String) {
+        client.prepareGet("$baseUrl/api/sessions/$sessionId/saves/$saveId") {
+            timeout { requestTimeoutMillis = Long.MAX_VALUE }
+        }.execute { response ->
+            if (!response.status.isSuccess()) {
+                throw RuntimeException("session save download failed: HTTP ${response.status.value}")
+            }
+            streamResponseToFile(response, fileStorage, outputPath) { _, _ -> }
+        }
+    }
+
+    suspend fun downloadSlotSaveToFile(sessionId: String, slot: Int, fileStorage: FileStorage, outputPath: String) {
+        client.prepareGet("$baseUrl/api/sessions/$sessionId/saves/slot/$slot") {
+            timeout { requestTimeoutMillis = Long.MAX_VALUE }
+        }.execute { response ->
+            if (!response.status.isSuccess()) {
+                throw RuntimeException("slot save download failed: HTTP ${response.status.value}")
+            }
+            streamResponseToFile(response, fileStorage, outputPath) { _, _ -> }
+        }
     }
 
     suspend fun uploadSlotSave(sessionId: String, slot: Int, data: ByteArray, screenshot: ByteArray?, coreName: String = ""): com.spela.client.models.SessionSaveResponse {

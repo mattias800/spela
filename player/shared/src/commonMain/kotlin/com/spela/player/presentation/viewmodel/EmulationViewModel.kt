@@ -1738,7 +1738,23 @@ interface LibretroController {
     fun stop()
     fun supportsSaveStates(): Boolean
     fun serialize(): ByteArray?
+
+    /** Writes the current save state directly to [path] without
+     *  materializing it as a JVM ByteArray. Returns the number of
+     *  bytes written, or null when the controller doesn't support a
+     *  native fast path — the caller should fall back to [serialize]
+     *  + a regular file write. Avoids the Java-heap copy that trips
+     *  up GameCube saves on Android (#798). */
+    fun serializeToFile(path: String): Long? = null
+
     fun unserialize(data: ByteArray): Boolean
+
+    /** Reads a save state from [path] and applies it without ever
+     *  materialising the bytes as a JVM ByteArray. Returns false when
+     *  the controller has no native fast path — caller should fall
+     *  back to [unserialize] with a regular file read. Companion to
+     *  [serializeToFile] for #798. */
+    fun unserializeFromFile(path: String): Boolean = false
     fun setFastForward(enabled: Boolean)
     fun performanceStats(): kotlinx.coroutines.flow.Flow<Pair<Float, Float>>
 

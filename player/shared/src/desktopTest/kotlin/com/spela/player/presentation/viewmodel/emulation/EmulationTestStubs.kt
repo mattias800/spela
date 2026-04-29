@@ -415,14 +415,26 @@ class StubSessionRepository : SessionRepository {
         uploadSessionSaveCallCount++
         return Result.success(SaveState(id = "1", name = name))
     }
+    override suspend fun uploadSessionSaveFromFile(sessionId: String, name: String, savePath: String, saveSize: Long, screenshot: ByteArray?, coreName: String): Result<SaveState> {
+        uploadSessionSaveCallCount++
+        return Result.success(SaveState(id = "1", name = name))
+    }
     override suspend fun downloadSessionSave(sessionId: String, saveId: String) = Result.success(byteArrayOf())
     override suspend fun uploadSessionAutoSave(sessionId: String, data: ByteArray, screenshot: ByteArray?, coreName: String): Result<Unit> {
+        uploadSessionAutoSaveCallCount++
+        return Result.success(Unit)
+    }
+    override suspend fun uploadSessionAutoSaveFromFile(sessionId: String, savePath: String, saveSize: Long, screenshot: ByteArray?, coreName: String): Result<Unit> {
         uploadSessionAutoSaveCallCount++
         return Result.success(Unit)
     }
     override suspend fun downloadSessionAutoSave(sessionId: String): Result<ByteArray> {
         downloadSessionAutoSaveCallCount++
         return downloadSessionAutoSaveResult
+    }
+    override suspend fun downloadSessionAutoSaveToFile(sessionId: String, outputPath: String): Result<Unit> {
+        downloadSessionAutoSaveCallCount++
+        return downloadSessionAutoSaveResult.map { Unit }
     }
     override suspend fun uploadSessionSram(sessionId: String, data: ByteArray, coreName: String): Result<Unit> {
         uploadSessionSramCallCount++
@@ -433,6 +445,8 @@ class StubSessionRepository : SessionRepository {
         return downloadSessionSramResult
     }
     override suspend fun uploadSlotSave(sessionId: String, slot: Int, data: ByteArray, screenshot: ByteArray?, coreName: String) =
+        Result.success(SaveState(id = "1", name = "Slot $slot"))
+    override suspend fun uploadSlotSaveFromFile(sessionId: String, slot: Int, savePath: String, saveSize: Long, screenshot: ByteArray?, coreName: String) =
         Result.success(SaveState(id = "1", name = "Slot $slot"))
     override suspend fun downloadSlotSave(sessionId: String, slot: Int) = Result.failure<ByteArray>(Exception("stub"))
     override suspend fun createSessionFromSharedSave(gameId: String, saveId: String) =
@@ -629,6 +643,7 @@ class EmulationViewModelTestBuilder {
             dispatchers = dispatchers,
             scope = vmScope,
             sessionRepository = sessionRepository,
+            fileStorage = StubFileStorage(),
         )
         saveManager = saveManagerLocal
         val challengeManager = ChallengeManager(

@@ -220,6 +220,15 @@ private class FakeSessionRepo : SessionRepository {
         coreName: String,
     ): Result<SaveState> = Result.failure(UnsupportedOperationException("not exercised"))
 
+    override suspend fun uploadSessionSaveFromFile(
+        sessionId: String,
+        name: String,
+        savePath: String,
+        saveSize: Long,
+        screenshot: ByteArray?,
+        coreName: String,
+    ): Result<SaveState> = Result.failure(UnsupportedOperationException("not exercised"))
+
     override suspend fun downloadSessionSave(sessionId: String, saveId: String): Result<ByteArray> =
         Result.failure(UnsupportedOperationException("not exercised"))
 
@@ -230,13 +239,33 @@ private class FakeSessionRepo : SessionRepository {
         coreName: String,
     ): Result<Unit> = Result.failure(UnsupportedOperationException("not exercised"))
 
+    override suspend fun uploadSessionAutoSaveFromFile(
+        sessionId: String,
+        savePath: String,
+        saveSize: Long,
+        screenshot: ByteArray?,
+        coreName: String,
+    ): Result<Unit> = Result.failure(UnsupportedOperationException("not exercised"))
+
     override suspend fun downloadSessionAutoSave(sessionId: String): Result<ByteArray> =
+        Result.failure(UnsupportedOperationException("not exercised"))
+
+    override suspend fun downloadSessionAutoSaveToFile(sessionId: String, outputPath: String): Result<Unit> =
         Result.failure(UnsupportedOperationException("not exercised"))
 
     override suspend fun uploadSlotSave(
         sessionId: String,
         slot: Int,
         data: ByteArray,
+        screenshot: ByteArray?,
+        coreName: String,
+    ): Result<SaveState> = Result.failure(UnsupportedOperationException("not exercised"))
+
+    override suspend fun uploadSlotSaveFromFile(
+        sessionId: String,
+        slot: Int,
+        savePath: String,
+        saveSize: Long,
         screenshot: ByteArray?,
         coreName: String,
     ): Result<SaveState> = Result.failure(UnsupportedOperationException("not exercised"))

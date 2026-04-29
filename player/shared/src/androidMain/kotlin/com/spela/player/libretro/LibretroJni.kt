@@ -28,7 +28,13 @@ class LibretroJni {
     /* Save state */
     external fun nativeSerializeSize(): Long
     external fun nativeSerialize(): ByteArray?
+    /** Writes the save state directly to [path] without ever crossing JNI as
+     *  a ByteArray. Returns bytes written, or -1 on failure. */
+    external fun nativeSerializeToFile(path: String): Long
     external fun nativeUnserialize(data: ByteArray): Boolean
+    /** Reads the save state from [path] and applies it without crossing
+     *  JNI as a ByteArray. Returns true on success. */
+    external fun nativeUnserializeFromFile(path: String): Boolean
 
     /* Video */
     external fun nativeGetVideoFrame(): ByteArray?

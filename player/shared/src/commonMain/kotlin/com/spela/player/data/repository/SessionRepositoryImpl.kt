@@ -6,9 +6,11 @@ import com.spela.player.domain.model.GameSession
 import com.spela.player.domain.model.SaveState
 import com.spela.player.domain.model.SessionCheatConfig
 import com.spela.player.domain.repository.SessionRepository
+import com.spela.player.util.FileStorage
 
 class SessionRepositoryImpl(
     private val apiClient: SpelaApiClient,
+    private val fileStorage: FileStorage,
 ) : SessionRepository {
 
     override suspend fun getSessionsForGame(gameId: String): Result<List<GameSession>> = runCatching {
@@ -63,6 +65,17 @@ class SessionRepositoryImpl(
         apiClient.uploadSessionSave(sessionId, name, data, screenshot, coreName).toDomain()
     }
 
+    override suspend fun uploadSessionSaveFromFile(
+        sessionId: String,
+        name: String,
+        savePath: String,
+        saveSize: Long,
+        screenshot: ByteArray?,
+        coreName: String,
+    ): Result<SaveState> = runCatching {
+        apiClient.uploadSessionSaveFromFile(sessionId, name, savePath, saveSize, screenshot, coreName).toDomain()
+    }
+
     override suspend fun downloadSessionSave(sessionId: String, saveId: String): Result<ByteArray> = runCatching {
         apiClient.downloadSessionSave(sessionId, saveId)
     }
@@ -76,8 +89,22 @@ class SessionRepositoryImpl(
         apiClient.uploadSessionAutoSave(sessionId, data, screenshot, coreName)
     }
 
+    override suspend fun uploadSessionAutoSaveFromFile(
+        sessionId: String,
+        savePath: String,
+        saveSize: Long,
+        screenshot: ByteArray?,
+        coreName: String,
+    ): Result<Unit> = runCatching {
+        apiClient.uploadSessionAutoSaveFromFile(sessionId, savePath, saveSize, screenshot, coreName)
+    }
+
     override suspend fun downloadSessionAutoSave(sessionId: String): Result<ByteArray> = runCatching {
         apiClient.downloadSessionAutoSave(sessionId)
+    }
+
+    override suspend fun downloadSessionAutoSaveToFile(sessionId: String, outputPath: String): Result<Unit> = runCatching {
+        apiClient.downloadSessionAutoSaveToFile(sessionId, fileStorage, outputPath)
     }
 
     override suspend fun uploadSlotSave(
@@ -88,6 +115,17 @@ class SessionRepositoryImpl(
         coreName: String,
     ): Result<SaveState> = runCatching {
         apiClient.uploadSlotSave(sessionId, slot, data, screenshot, coreName).toDomain()
+    }
+
+    override suspend fun uploadSlotSaveFromFile(
+        sessionId: String,
+        slot: Int,
+        savePath: String,
+        saveSize: Long,
+        screenshot: ByteArray?,
+        coreName: String,
+    ): Result<SaveState> = runCatching {
+        apiClient.uploadSlotSaveFromFile(sessionId, slot, savePath, saveSize, screenshot, coreName).toDomain()
     }
 
     override suspend fun downloadSlotSave(sessionId: String, slot: Int): Result<ByteArray> = runCatching {
