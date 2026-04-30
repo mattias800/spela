@@ -1666,6 +1666,7 @@ class SpelaApiClient(
         saveSize: Long,
         screenshot: ByteArray?,
         coreName: String = "",
+        compression: String = "",
     ): com.spela.client.models.SessionSaveResponse {
         return client.submitFormWithBinaryData(
             url = "$baseUrl/api/sessions/$sessionId/saves",
@@ -1673,6 +1674,9 @@ class SpelaApiClient(
                 append("name", name)
                 if (coreName.isNotEmpty()) {
                     append("coreName", coreName)
+                }
+                if (compression.isNotEmpty()) {
+                    append("compression", compression)
                 }
                 append("save", io.ktor.client.request.forms.ChannelProvider(saveSize) {
                     com.spela.player.util.openFileReadChannel(savePath)
@@ -1696,12 +1700,16 @@ class SpelaApiClient(
         saveSize: Long,
         screenshot: ByteArray?,
         coreName: String = "",
+        compression: String = "",
     ) {
         client.submitFormWithBinaryData(
             url = "$baseUrl/api/sessions/$sessionId/saves/auto",
             formData = formData {
                 if (coreName.isNotEmpty()) {
                     append("coreName", coreName)
+                }
+                if (compression.isNotEmpty()) {
+                    append("compression", compression)
                 }
                 append("save", io.ktor.client.request.forms.ChannelProvider(saveSize) {
                     com.spela.player.util.openFileReadChannel(savePath)
@@ -1726,12 +1734,16 @@ class SpelaApiClient(
         saveSize: Long,
         screenshot: ByteArray?,
         coreName: String = "",
+        compression: String = "",
     ): com.spela.client.models.SessionSaveResponse {
         return client.submitFormWithBinaryData(
             url = "$baseUrl/api/sessions/$sessionId/saves/slot/$slot",
             formData = formData {
                 if (coreName.isNotEmpty()) {
                     append("coreName", coreName)
+                }
+                if (compression.isNotEmpty()) {
+                    append("compression", compression)
                 }
                 append("save", io.ktor.client.request.forms.ChannelProvider(saveSize) {
                     com.spela.player.util.openFileReadChannel(savePath)
@@ -1797,7 +1809,7 @@ class SpelaApiClient(
             if (!response.status.isSuccess()) {
                 throw RuntimeException("auto-save download failed: HTTP ${response.status.value}")
             }
-            streamResponseToFile(response, fileStorage, outputPath) { _, _ -> }
+            streamSaveResponseToFile(response, fileStorage, outputPath)
         }
     }
 
@@ -1808,7 +1820,7 @@ class SpelaApiClient(
             if (!response.status.isSuccess()) {
                 throw RuntimeException("session save download failed: HTTP ${response.status.value}")
             }
-            streamResponseToFile(response, fileStorage, outputPath) { _, _ -> }
+            streamSaveResponseToFile(response, fileStorage, outputPath)
         }
     }
 
@@ -1819,8 +1831,44 @@ class SpelaApiClient(
             if (!response.status.isSuccess()) {
                 throw RuntimeException("slot save download failed: HTTP ${response.status.value}")
             }
-            streamResponseToFile(response, fileStorage, outputPath) { _, _ -> }
+            streamSaveResponseToFile(response, fileStorage, outputPath)
         }
+    }
+
+    /**
+     * Stream a save-state response to [outputPath] and decompress it
+     * inline when the server tags the body with `X-Compression: gzip`.
+     * Callers receive a temp file containing raw save bytes regardless
+     * of how the bytes were stored on the server, so the libretro
+     * `unserializeFromFile` step never has to know about compression.
+     * See #804 phase 2.
+     */
+    private suspend fun streamSaveResponseToFile(
+        response: HttpResponse,
+        fileStorage: FileStorage,
+        outputPath: String,
+    ) {
+        val compression = response.headers["X-Compression"]?.lowercase()?.trim().orEmpty()
+        if (compression == "gzip") {
+            // Stream the gzip-encoded body to a sibling and inflate
+            // into outputPath, so the file at outputPath is always
+            // raw save bytes the core can consume directly. If gunzip
+            // throws mid-stream (truncated body, corrupted bytes) we
+            // delete the partial outputPath as well so callers find
+            // a clean "file missing" rather than a silently-bogus one.
+            val gzPath = "$outputPath.gz.tmp"
+            try {
+                streamResponseToFile(response, fileStorage, gzPath) { _, _ -> }
+                com.spela.player.util.gunzipFile(gzPath, outputPath)
+            } catch (e: Throwable) {
+                runCatching { fileStorage.deleteFile(outputPath) }
+                throw e
+            } finally {
+                runCatching { fileStorage.deleteFile(gzPath) }
+            }
+            return
+        }
+        streamResponseToFile(response, fileStorage, outputPath) { _, _ -> }
     }
 
     suspend fun uploadSlotSave(sessionId: String, slot: Int, data: ByteArray, screenshot: ByteArray?, coreName: String = ""): com.spela.client.models.SessionSaveResponse {

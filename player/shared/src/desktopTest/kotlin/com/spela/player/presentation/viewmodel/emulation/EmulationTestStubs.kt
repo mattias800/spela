@@ -427,8 +427,16 @@ class StubSessionRepository : SessionRepository {
         uploadSessionSaveCallCount++
         return uploadSessionSaveResult
     }
-    override suspend fun uploadSessionSaveFromFile(sessionId: String, name: String, savePath: String, saveSize: Long, screenshot: ByteArray?, coreName: String): Result<SaveState> {
+    /** Records the compression= form value received on the last
+     *  uploadSessionSaveFromFile / *AutoSave* / *SlotSave* call. Tests
+     *  assert this to verify SaveManager threads `staged.compression`
+     *  through to the repository (#804 phase 2). */
+    var lastUploadCompression: String? = null
+        private set
+
+    override suspend fun uploadSessionSaveFromFile(sessionId: String, name: String, savePath: String, saveSize: Long, screenshot: ByteArray?, coreName: String, compression: String): Result<SaveState> {
         uploadSessionSaveCallCount++
+        lastUploadCompression = compression
         return uploadSessionSaveResult
     }
     override suspend fun downloadSessionSave(sessionId: String, saveId: String) = Result.success(byteArrayOf())
@@ -436,8 +444,9 @@ class StubSessionRepository : SessionRepository {
         uploadSessionAutoSaveCallCount++
         return Result.success(Unit)
     }
-    override suspend fun uploadSessionAutoSaveFromFile(sessionId: String, savePath: String, saveSize: Long, screenshot: ByteArray?, coreName: String): Result<Unit> {
+    override suspend fun uploadSessionAutoSaveFromFile(sessionId: String, savePath: String, saveSize: Long, screenshot: ByteArray?, coreName: String, compression: String): Result<Unit> {
         uploadSessionAutoSaveCallCount++
+        lastUploadCompression = compression
         return Result.success(Unit)
     }
     override suspend fun downloadSessionAutoSave(sessionId: String): Result<ByteArray> {
@@ -458,9 +467,12 @@ class StubSessionRepository : SessionRepository {
     }
     override suspend fun uploadSlotSave(sessionId: String, slot: Int, data: ByteArray, screenshot: ByteArray?, coreName: String) =
         Result.success(SaveState(id = "1", name = "Slot $slot"))
-    override suspend fun uploadSlotSaveFromFile(sessionId: String, slot: Int, savePath: String, saveSize: Long, screenshot: ByteArray?, coreName: String) =
-        Result.success(SaveState(id = "1", name = "Slot $slot"))
+    override suspend fun uploadSlotSaveFromFile(sessionId: String, slot: Int, savePath: String, saveSize: Long, screenshot: ByteArray?, coreName: String, compression: String): Result<SaveState> {
+        lastUploadCompression = compression
+        return Result.success(SaveState(id = "1", name = "Slot $slot"))
+    }
     override suspend fun downloadSlotSave(sessionId: String, slot: Int) = Result.failure<ByteArray>(Exception("stub"))
+    override suspend fun downloadSlotSaveToFile(sessionId: String, slot: Int, outputPath: String) = Result.failure<Unit>(Exception("stub"))
     override suspend fun createSessionFromSharedSave(gameId: String, saveId: String) =
         Result.success(GameSession(id = "shared-session-1", gameId = gameId, name = "From shared save $saveId"))
     override suspend fun getSessionCheats(sessionId: String) = Result.success(SessionCheatConfig(false, emptyList()))
