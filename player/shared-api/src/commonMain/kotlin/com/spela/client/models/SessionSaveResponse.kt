@@ -23,6 +23,7 @@ import kotlinx.serialization.encoding.*
 /**
  * 
  *
+ * @param compression 
  * @param coreMatch 
  * @param coreName 
  * @param coreSha256 
@@ -45,6 +46,8 @@ import kotlinx.serialization.encoding.*
 @Serializable
 
 data class SessionSaveResponse (
+
+    @SerialName(value = "compression") @Required val compression: kotlin.String,
 
     @SerialName(value = "coreMatch") @Required val coreMatch: kotlin.Boolean?,
 

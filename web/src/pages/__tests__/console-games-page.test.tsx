@@ -72,6 +72,7 @@ const testConsoles: Console[] = [
     logoUrl: "",
     gameCount: 100,
     saveStateSupport: true,
+  saveStatePolicy: "small",
     browserPlayable: false,
     playable: true,
     code: "snes",

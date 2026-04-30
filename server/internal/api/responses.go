@@ -77,6 +77,10 @@ type ConsoleResponse struct {
 	LogoPngURL       string                 `json:"logoPngUrl"`
 	GameCount        int                    `json:"gameCount"`
 	SaveStateSupport bool                   `json:"saveStateSupport"`
+	// Size tier of save states for this console — drives retention,
+	// slot count, and UX affordances on the player. Always one of
+	// "small" | "medium" | "large". See #804 phase 3.
+	SaveStatePolicy  string                 `json:"saveStatePolicy"`
 	BrowserPlayable  bool                   `json:"browserPlayable"`
 	Playable         bool                   `json:"playable"`
 }
@@ -283,9 +287,21 @@ func ToConsoleResponse(c db.Console) ConsoleResponse {
 		LogoPngURL:       "/api/consoles/" + abbr + "/logo.png",
 		GameCount:        c.GameCount,
 		SaveStateSupport: c.SaveStateSupport,
+		SaveStatePolicy:  saveStatePolicyOrDefault(c.SaveStatePolicy),
 		BrowserPlayable:  c.EmulatorJSCore != "",
 		Playable:         c.Playable,
 	}
+}
+
+// saveStatePolicyOrDefault returns the policy as a string, falling back
+// to "small" when the column is empty (pre-#804 rows that haven't been
+// reseeded yet) so the player UI can switch on a known value without
+// tri-state defensiveness. See #804 phase 3.
+func saveStatePolicyOrDefault(p db.SaveStatePolicy) string {
+	if p == "" {
+		return string(db.SaveStatePolicySmall)
+	}
+	return string(p)
 }
 
 // ratingAggregate holds average rating and count for a game.

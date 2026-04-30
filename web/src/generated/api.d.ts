@@ -5852,6 +5852,7 @@ export interface components {
             playable: boolean;
             /** Format: int64 */
             releaseYear: number | null;
+            saveStatePolicy: string;
             saveStateSupport: boolean;
             summary: string | null;
             /** Format: int64 */
@@ -7886,6 +7887,7 @@ export interface components {
              * @example https://example.com/api/schemas/SessionSaveResponse.json
              */
             readonly $schema?: string;
+            compression: string;
             coreMatch: boolean | null;
             coreName: string;
             coreSha256: string;
@@ -15573,6 +15575,8 @@ export interface operations {
         requestBody?: {
             content: {
                 "multipart/form-data": {
+                    /** @description Compression algorithm applied to the save bytes (empty or 'gzip'). Stored opaquely; players use it on download to decide whether to decompress. See #804. */
+                    compression?: string;
                     /** @description Identifier of the libretro core that produced the save. */
                     coreName?: string;
                     /** @description Hex sha256 of the core binary that produced this save state. Optional — the server records it alongside the save for diagnostics and future rollback UX. Invalid values (not 64 hex chars) are silently dropped. See #555 Phase 3. */
@@ -15688,6 +15692,8 @@ export interface operations {
         requestBody?: {
             content: {
                 "multipart/form-data": {
+                    /** @description Compression algorithm applied to the save bytes (empty or 'gzip'). Stored opaquely; players use it on download to decide whether to decompress. See #804. */
+                    compression?: string;
                     /** @description Identifier of the libretro core that produced the save. */
                     coreName?: string;
                     /** @description Hex sha256 of the core binary that produced this save state. Optional — the server records it alongside the save for diagnostics and future rollback UX. Invalid values (not 64 hex chars) are silently dropped. See #555 Phase 3. */
@@ -15775,6 +15781,8 @@ export interface operations {
         requestBody?: {
             content: {
                 "multipart/form-data": {
+                    /** @description Compression algorithm applied to the save bytes (empty or 'gzip'). Stored opaquely; players use it on download to decide whether to decompress. See #804. */
+                    compression?: string;
                     /** @description Identifier of the libretro core that produced the save. */
                     coreName?: string;
                     /** @description Hex sha256 of the core binary that produced this save state. Optional — the server records it alongside the save for diagnostics and future rollback UX. Invalid values (not 64 hex chars) are silently dropped. See #555 Phase 3. */

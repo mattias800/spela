@@ -102,6 +102,7 @@ export function makeConsole(overrides: Partial<Console> = {}): Console {
     logoPngUrl: "",
     gameCount: 0,
     saveStateSupport: true,
+    saveStatePolicy: "small",
     browserPlayable: false,
     playable: true,
     code: "nes",

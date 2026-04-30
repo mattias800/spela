@@ -45,6 +45,7 @@ import kotlinx.serialization.encoding.*
  * @param name 
  * @param playable 
  * @param releaseYear 
+ * @param saveStatePolicy 
  * @param saveStateSupport 
  * @param summary 
  * @param unitsSold 
@@ -93,6 +94,8 @@ data class ConsoleResponse (
     @SerialName(value = "playable") @Required val playable: kotlin.Boolean,
 
     @SerialName(value = "releaseYear") @Required val releaseYear: kotlin.Long?,
+
+    @SerialName(value = "saveStatePolicy") @Required val saveStatePolicy: kotlin.String,
 
     @SerialName(value = "saveStateSupport") @Required val saveStateSupport: kotlin.Boolean,
 

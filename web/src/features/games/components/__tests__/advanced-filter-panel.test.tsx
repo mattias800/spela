@@ -20,6 +20,7 @@ const makeConsole = (abbr: string, name: string): Console => ({
   logoUrl: "",
   gameCount: 10,
   saveStateSupport: true,
+  saveStatePolicy: "small",
   browserPlayable: false,
   playable: true,
   code: abbr,
