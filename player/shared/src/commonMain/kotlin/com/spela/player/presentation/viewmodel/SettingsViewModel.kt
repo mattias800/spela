@@ -43,6 +43,14 @@ data class SettingsState(
     val selectedShader: ShaderPreset = ShaderPreset.NONE,
     val selectedTheme: String = "default-dark",
     val consoleShaders: Map<String, ShaderPreset> = emptyMap(),
+    /**
+     * Per-console save-state opt-out overrides, keyed by lowercased
+     * console abbreviation. Only contains consoles where the user has
+     * made a deliberate choice — absence means "use the tier default"
+     * (small/medium = Enabled, large = AskOnce). The Settings screen
+     * lets the user clear or change these. See #804 phase 4b.
+     */
+    val consoleSaveStatePolicies: Map<String, com.spela.player.domain.model.SaveStateChoice> = emptyMap(),
     val deviceShaderOverrides: Map<String, ShaderPreset> = emptyMap(),
     val consoles: List<Console> = emptyList(),
     val showLogoutConfirm: Boolean = false,
@@ -78,6 +86,15 @@ sealed interface SettingsIntent {
     data class SelectShader(val shader: ShaderPreset) : SettingsIntent
     data class SelectTheme(val theme: String) : SettingsIntent
     data class SelectConsoleShader(val consoleId: String, val shader: ShaderPreset) : SettingsIntent
+    /**
+     * Set a per-console save-state opt-out from the Settings screen.
+     * `choice == null` clears the override so the console reverts to
+     * its tier-driven default. See #804 phase 4b.
+     */
+    data class SetConsoleSaveStatePolicy(
+        val consoleId: String,
+        val choice: com.spela.player.domain.model.SaveStateChoice?,
+    ) : SettingsIntent
     data class SetDeviceOverride(val consoleId: String, val shader: ShaderPreset?) : SettingsIntent
     data class UpdateDeviceName(val name: String) : SettingsIntent
     data object ShowLogoutConfirm : SettingsIntent
@@ -157,6 +174,8 @@ class SettingsViewModel(
             is SettingsIntent.SelectTheme -> selectTheme(intent.theme)
             is SettingsIntent.SelectConsoleShader ->
                 selectConsoleShader(intent.consoleId, intent.shader)
+            is SettingsIntent.SetConsoleSaveStatePolicy ->
+                setConsoleSaveStatePolicy(intent.consoleId, intent.choice)
             is SettingsIntent.SetDeviceOverride ->
                 setDeviceOverride(intent.consoleId, intent.shader)
             is SettingsIntent.UpdateDeviceName -> updateDeviceName(intent.name)
@@ -255,6 +274,7 @@ class SettingsViewModel(
                         selectedShader = prefs.selectedShader,
                         selectedTheme = prefs.selectedTheme,
                         consoleShaders = prefs.consoleShaders,
+                        consoleSaveStatePolicies = prefs.consoleSaveStatePolicies,
                         defaultSecondScreenPage = prefs.defaultSecondScreenPage,
                     )
                 }
@@ -320,6 +340,36 @@ class SettingsViewModel(
         scope.launch(dispatchers.io) {
             preferencesRepository.updatePreferences(defaultSecondScreenPage = page).onFailure {
                 _state.update { it.copy(defaultSecondScreenPage = previous) }
+            }
+        }
+    }
+
+    /**
+     * Upserts (or clears) the per-console save-state opt-out from the
+     * Settings screen. Optimistic update with rollback on API failure
+     * — same pattern as [selectConsoleShader]. The wire format sends
+     * an empty string to clear the row server-side. See #804 phase 4b.
+     */
+    private fun setConsoleSaveStatePolicy(
+        consoleId: String,
+        choice: com.spela.player.domain.model.SaveStateChoice?,
+    ) {
+        val key = consoleId.lowercase()
+        val previous = _state.value.consoleSaveStatePolicies
+        _state.update {
+            it.copy(
+                consoleSaveStatePolicies = if (choice == null) {
+                    it.consoleSaveStatePolicies - key
+                } else {
+                    it.consoleSaveStatePolicies + (key to choice)
+                },
+            )
+        }
+        scope.launch(dispatchers.io) {
+            preferencesRepository.updatePreferences(
+                consoleSaveStatePolicies = mapOf(key to (choice?.apiId ?: "")),
+            ).onFailure {
+                _state.update { it.copy(consoleSaveStatePolicies = previous) }
             }
         }
     }

@@ -37,6 +37,7 @@ import com.spela.player.presentation.ui.feature.settings.SettingsDivider
 import com.spela.player.presentation.ui.feature.settings.SettingsInfoRow
 import com.spela.player.presentation.ui.feature.settings.SettingsSectionHeader
 import com.spela.player.presentation.ui.feature.settings.SettingsToggle
+import com.spela.player.presentation.ui.feature.settings.saveStatePoliciesSectionItems
 import com.spela.player.presentation.ui.feature.settings.controlsDefaultScopeItems
 import com.spela.player.presentation.ui.feature.settings.shaderDefaultScopeItems
 import com.spela.player.presentation.ui.theme.SpColor
@@ -235,6 +236,15 @@ private fun androidx.compose.foundation.lazy.LazyListScope.emulationContent(
                 }
             }
         }
+    }
+
+    // Save state opt-out overrides (only renders when the user has
+    // at least one explicit override; no header otherwise so we don't
+    // clutter the tab for the common case). See #804 phase 4b.
+    if (state.consoleSaveStatePolicies.isNotEmpty()) {
+        item { Spacer(Modifier.height(SpSpacing.Medium)) }
+        item { SettingsSectionHeader(title = "Per-console save state overrides") }
+        saveStatePoliciesSectionItems(state = state, viewModel = viewModel)
     }
 
     // Video Filter
