@@ -94,6 +94,23 @@ type HardwareMaker struct {
 	Consoles  []Console `gorm:"foreignKey:HardwareMakerID" json:"consoles"`
 }
 
+// SaveStatePolicy is the size tier of a console's save states. It
+// drives per-console retention, slot count, and UX affordances —
+// see #804 phase 3. Cores within a tier behave similarly enough that
+// one policy is enough; the tiers are coarse on purpose so the
+// player UI can switch on one value rather than per-console magic.
+//
+//	"small"  — < ~5 MB. Named manual saves, unlimited (or current quota).
+//	"medium" — ~5–30 MB. Slot-based primary; named saves secondary.
+//	"large"  — ~30 MB+. Slots only, compression mandatory, opt-out by default.
+type SaveStatePolicy string
+
+const (
+	SaveStatePolicySmall  SaveStatePolicy = "small"
+	SaveStatePolicyMedium SaveStatePolicy = "medium"
+	SaveStatePolicyLarge  SaveStatePolicy = "large"
+)
+
 // Console represents a detected game console/platform.
 type Console struct {
 	ID             uint           `gorm:"primarykey" json:"id"`
@@ -110,6 +127,14 @@ type Console struct {
 	ColorTheme       string         `gorm:"size:7;default:#6366f1" json:"colorTheme"`
 	Generation       int            `gorm:"default:0" json:"generation"`
 	SaveStateSupport bool           `gorm:"default:true" json:"saveStateSupport"`
+	// Size tier driving retention/slot/UX behaviour for save states on
+	// this console. See [SaveStatePolicy]. The column has NO default
+	// at the schema level — empty is the "needs seeding" sentinel that
+	// SeedConsoles uses to distinguish a fresh row from an admin
+	// override (which it must preserve). The API response falls back
+	// to "small" so clients still see a closed-set value. See #804
+	// phase 3.
+	SaveStatePolicy  SaveStatePolicy `gorm:"type:varchar(16);not null;default:''" json:"saveStatePolicy"`
 	Playable         bool           `gorm:"default:true" json:"playable"`
 	Code             *string        `gorm:"uniqueIndex;size:32" json:"code"`
 	HardwareMakerID  *uint          `json:"hardwareMakerId"`

@@ -283,6 +283,7 @@ describe("GameDetailPage - Regular console shows all sections", () => {
     logoUrl: "",
     gameCount: 50,
     saveStateSupport: true,
+  saveStatePolicy: "small",
     browserPlayable: true,
     playable: true,
     createdAt: "2026-01-01T00:00:00Z",

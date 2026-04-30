@@ -122,6 +122,7 @@ private fun testConsoleResponse(
         playable = true,
         releaseYear = null,
         saveStateSupport = true,
+        saveStatePolicy = "small",
         summary = null,
         unitsSold = null,
         updatedAt = now,
@@ -428,6 +429,7 @@ class GameRepositoryImplTest {
             playable = true,
             releaseYear = 1983L,
             saveStateSupport = true,
+            saveStatePolicy = "small",
             summary = "8-bit classic",
             unitsSold = 61_900_000L,
             updatedAt = now,
@@ -517,6 +519,7 @@ class GameRepositoryImplTest {
             notes = "",
             screenshotUrl = "",
             slot = 0L,
+            compression = "",
         )
         val domain = dto.toDomain()
 

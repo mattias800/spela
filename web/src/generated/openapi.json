@@ -1996,6 +1996,9 @@
               "null"
             ]
           },
+          "saveStatePolicy": {
+            "type": "string"
+          },
           "saveStateSupport": {
             "type": "boolean"
           },
@@ -2040,6 +2043,7 @@
           "logoPngUrl",
           "gameCount",
           "saveStateSupport",
+          "saveStatePolicy",
           "browserPlayable",
           "playable"
         ],
@@ -8012,6 +8016,9 @@
             "readOnly": true,
             "type": "string"
           },
+          "compression": {
+            "type": "string"
+          },
           "coreMatch": {
             "type": [
               "boolean",
@@ -8090,6 +8097,7 @@
           "currentCore",
           "notes",
           "slot",
+          "compression",
           "createdAt",
           "updatedAt"
         ],
@@ -21553,6 +21561,9 @@
           "content": {
             "multipart/form-data": {
               "encoding": {
+                "compression": {
+                  "contentType": "text/plain"
+                },
                 "coreName": {
                   "contentType": "text/plain"
                 },
@@ -21571,6 +21582,10 @@
               },
               "schema": {
                 "properties": {
+                  "compression": {
+                    "description": "Compression algorithm applied to the save bytes (empty or 'gzip'). Stored opaquely; players use it on download to decide whether to decompress. See #804.",
+                    "type": "string"
+                  },
                   "coreName": {
                     "description": "Identifier of the libretro core that produced the save.",
                     "type": "string"
@@ -21696,6 +21711,9 @@
           "content": {
             "multipart/form-data": {
               "encoding": {
+                "compression": {
+                  "contentType": "text/plain"
+                },
                 "coreName": {
                   "contentType": "text/plain"
                 },
@@ -21714,6 +21732,10 @@
               },
               "schema": {
                 "properties": {
+                  "compression": {
+                    "description": "Compression algorithm applied to the save bytes (empty or 'gzip'). Stored opaquely; players use it on download to decide whether to decompress. See #804.",
+                    "type": "string"
+                  },
                   "coreName": {
                     "description": "Identifier of the libretro core that produced the save.",
                     "type": "string"
@@ -21859,6 +21881,9 @@
           "content": {
             "multipart/form-data": {
               "encoding": {
+                "compression": {
+                  "contentType": "text/plain"
+                },
                 "coreName": {
                   "contentType": "text/plain"
                 },
@@ -21877,6 +21902,10 @@
               },
               "schema": {
                 "properties": {
+                  "compression": {
+                    "description": "Compression algorithm applied to the save bytes (empty or 'gzip'). Stored opaquely; players use it on download to decide whether to decompress. See #804.",
+                    "type": "string"
+                  },
                   "coreName": {
                     "description": "Identifier of the libretro core that produced the save.",
                     "type": "string"

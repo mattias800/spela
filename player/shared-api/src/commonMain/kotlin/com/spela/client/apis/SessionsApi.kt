@@ -790,6 +790,7 @@ open class SessionsApi : ApiClient {
      * Upload an auto-save to a session
      * Stores an auto-save for the session and returns the resulting save record. Older auto-saves beyond the retention limit are pruned. Optionally attaches a screenshot.
      * @param id Session ID.
+     * @param compression Compression algorithm applied to the save bytes (empty or &#39;gzip&#39;). Stored opaquely; players use it on download to decide whether to decompress. See #804. (optional)
      * @param coreName Identifier of the libretro core that produced the save. (optional)
      * @param coreSha256 Hex sha256 of the core binary that produced this save state. Optional — the server records it alongside the save for diagnostics and future rollback UX. Invalid values (not 64 hex chars) are silently dropped. See #555 Phase 3. (optional)
      * @param name Display name for the save (defaults to the uploaded filename). (optional)
@@ -798,12 +799,13 @@ open class SessionsApi : ApiClient {
      * @return SessionSaveResponse
      */
     @Suppress("UNCHECKED_CAST")
-    open suspend fun uploadAutoSave(id: kotlin.String, coreName: kotlin.String? = null, coreSha256: kotlin.String? = null, name: kotlin.String? = null, save: io.ktor.client.request.forms.FormPart<io.ktor.client.request.forms.InputProvider>? = null, screenshot: io.ktor.client.request.forms.FormPart<io.ktor.client.request.forms.InputProvider>? = null): HttpResponse<SessionSaveResponse> {
+    open suspend fun uploadAutoSave(id: kotlin.String, compression: kotlin.String? = null, coreName: kotlin.String? = null, coreSha256: kotlin.String? = null, name: kotlin.String? = null, save: io.ktor.client.request.forms.FormPart<io.ktor.client.request.forms.InputProvider>? = null, screenshot: io.ktor.client.request.forms.FormPart<io.ktor.client.request.forms.InputProvider>? = null): HttpResponse<SessionSaveResponse> {
 
         val localVariableAuthNames = listOf<String>()
 
         val localVariableBody = 
             formData {
+                compression?.apply { append("compression", compression) }
                 coreName?.apply { append("coreName", coreName) }
                 coreSha256?.apply { append("coreSha256", coreSha256) }
                 name?.apply { append("name", name) }
@@ -870,6 +872,7 @@ open class SessionsApi : ApiClient {
      * Upload a save state to a session
      * Stores a manual save state for the session and returns the resulting save record. Optionally attaches a screenshot.
      * @param id Session ID.
+     * @param compression Compression algorithm applied to the save bytes (empty or &#39;gzip&#39;). Stored opaquely; players use it on download to decide whether to decompress. See #804. (optional)
      * @param coreName Identifier of the libretro core that produced the save. (optional)
      * @param coreSha256 Hex sha256 of the core binary that produced this save state. Optional — the server records it alongside the save for diagnostics and future rollback UX. Invalid values (not 64 hex chars) are silently dropped. See #555 Phase 3. (optional)
      * @param name Display name for the save (defaults to the uploaded filename). (optional)
@@ -878,12 +881,13 @@ open class SessionsApi : ApiClient {
      * @return SessionSaveResponse
      */
     @Suppress("UNCHECKED_CAST")
-    open suspend fun uploadSessionSave(id: kotlin.String, coreName: kotlin.String? = null, coreSha256: kotlin.String? = null, name: kotlin.String? = null, save: io.ktor.client.request.forms.FormPart<io.ktor.client.request.forms.InputProvider>? = null, screenshot: io.ktor.client.request.forms.FormPart<io.ktor.client.request.forms.InputProvider>? = null): HttpResponse<SessionSaveResponse> {
+    open suspend fun uploadSessionSave(id: kotlin.String, compression: kotlin.String? = null, coreName: kotlin.String? = null, coreSha256: kotlin.String? = null, name: kotlin.String? = null, save: io.ktor.client.request.forms.FormPart<io.ktor.client.request.forms.InputProvider>? = null, screenshot: io.ktor.client.request.forms.FormPart<io.ktor.client.request.forms.InputProvider>? = null): HttpResponse<SessionSaveResponse> {
 
         val localVariableAuthNames = listOf<String>()
 
         val localVariableBody = 
             formData {
+                compression?.apply { append("compression", compression) }
                 coreName?.apply { append("coreName", coreName) }
                 coreSha256?.apply { append("coreSha256", coreSha256) }
                 name?.apply { append("name", name) }
@@ -915,6 +919,7 @@ open class SessionsApi : ApiClient {
      * Stores a save state in the specified slot (1-10). If the slot already has a save, it is replaced.
      * @param id Session ID.
      * @param slot Slot number 1-10.
+     * @param compression Compression algorithm applied to the save bytes (empty or &#39;gzip&#39;). Stored opaquely; players use it on download to decide whether to decompress. See #804. (optional)
      * @param coreName Identifier of the libretro core that produced the save. (optional)
      * @param coreSha256 Hex sha256 of the core binary that produced this save state. Optional — the server records it alongside the save for diagnostics and future rollback UX. Invalid values (not 64 hex chars) are silently dropped. See #555 Phase 3. (optional)
      * @param name Display name for the save (defaults to the uploaded filename). (optional)
@@ -923,12 +928,13 @@ open class SessionsApi : ApiClient {
      * @return SessionSaveResponse
      */
     @Suppress("UNCHECKED_CAST")
-    open suspend fun upsertSlotSave(id: kotlin.String, slot: kotlin.String, coreName: kotlin.String? = null, coreSha256: kotlin.String? = null, name: kotlin.String? = null, save: io.ktor.client.request.forms.FormPart<io.ktor.client.request.forms.InputProvider>? = null, screenshot: io.ktor.client.request.forms.FormPart<io.ktor.client.request.forms.InputProvider>? = null): HttpResponse<SessionSaveResponse> {
+    open suspend fun upsertSlotSave(id: kotlin.String, slot: kotlin.String, compression: kotlin.String? = null, coreName: kotlin.String? = null, coreSha256: kotlin.String? = null, name: kotlin.String? = null, save: io.ktor.client.request.forms.FormPart<io.ktor.client.request.forms.InputProvider>? = null, screenshot: io.ktor.client.request.forms.FormPart<io.ktor.client.request.forms.InputProvider>? = null): HttpResponse<SessionSaveResponse> {
 
         val localVariableAuthNames = listOf<String>()
 
         val localVariableBody = 
             formData {
+                compression?.apply { append("compression", compression) }
                 coreName?.apply { append("coreName", coreName) }
                 coreSha256?.apply { append("coreSha256", coreSha256) }
                 name?.apply { append("name", name) }
