@@ -6,7 +6,6 @@ import com.spela.player.domain.model.ConsoleShowcase
 import com.spela.player.domain.model.Console
 import com.spela.player.domain.model.DeveloperSummary
 import com.spela.player.domain.model.Game
-import com.spela.player.domain.model.GenreCount
 import com.spela.player.presentation.navigation.NavigationIntent
 import com.spela.player.presentation.navigation.SpScreen
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -63,7 +62,6 @@ class ExploreConsoleShowcaseTest {
         essentials = emptyList(),
         hiddenGems = emptyList(),
         launchGames = emptyList(),
-        genreBreakdown = emptyList(),
         topDevelopers = emptyList(),
         recentlyPlayed = emptyList(),
         recentlyAdded = emptyList(),

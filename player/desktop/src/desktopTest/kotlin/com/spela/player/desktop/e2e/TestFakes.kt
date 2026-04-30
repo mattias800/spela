@@ -643,6 +643,23 @@ class FakeLibretroController : LibretroController {
         return true
     }
 
+    // Streaming hooks added with the #798 staging fast-path. The
+    // harness reads the file the FakeSessionRepository wrote and
+    // forwards to unserialize / serialize so loadCallCount and
+    // saveCallCount keep working through the new file-based paths.
+    override fun serializeToFile(path: String): Long? {
+        val data = serialize() ?: return null
+        return runCatching {
+            java.io.File(path).also { it.parentFile?.mkdirs() }.writeBytes(data)
+            data.size.toLong()
+        }.getOrNull()
+    }
+
+    override fun unserializeFromFile(path: String): Boolean {
+        val data = runCatching { java.io.File(path).readBytes() }.getOrNull() ?: return false
+        return unserialize(data)
+    }
+
     override fun setFastForward(enabled: Boolean) {
         isFastForward = enabled
     }
@@ -700,7 +717,13 @@ class FakePreferencesRepository : PreferencesRepository {
     var syncKeyMappingsCalled = false
     var pushKeyMappingsCalled = false
 
-    override suspend fun getPreferences(): Result<UserPreferences> = Result.success(UserPreferences())
+    /** Override the preferences returned by [getPreferences]. Tests
+     *  configure this when they need a non-default preference (e.g.
+     *  PauseHintTest flipping showPerformanceOverlay on so the FPS HUD
+     *  renders). */
+    var preferencesResult: Result<UserPreferences> = Result.success(UserPreferences())
+
+    override suspend fun getPreferences(): Result<UserPreferences> = preferencesResult
     override suspend fun updatePreferences(
         showPerformanceOverlay: Boolean?,
         autoSaveEnabled: Boolean?,
@@ -709,6 +732,8 @@ class FakePreferencesRepository : PreferencesRepository {
         selectedShader: String?,
         selectedTheme: String?,
         consoleShaders: Map<String, String>?,
+        consoleSaveStatePolicies: Map<String, String>?,
+        gameSaveStatePolicies: Map<String, String>?,
         defaultSecondScreenPage: String?,
     ): Result<UserPreferences> = Result.success(UserPreferences())
     override fun getDeviceShaderOverride(consoleId: String): ShaderPreset? = null
@@ -1391,6 +1416,71 @@ class FakeSessionRepository : SessionRepository {
         val key = "$sessionId:$slot"
         return slotSaves[key]?.let { Result.success(it) }
             ?: Result.failure(Exception("No save in slot $slot"))
+    }
+
+    // Streaming variants added in #798 / #804 phase 2 / phase 6 slice 3.
+    // Upload paths read the file from disk (the harness's real FS) and
+    // dispatch to the in-memory variants. Download paths write the
+    // bytes back out so the libretro stub's unserializeFromFile can
+    // re-read them — required for the harness's load-from-auto-save
+    // tests in InGameOverlayTest / SaveLoadStateTest.
+    override suspend fun uploadSessionSaveFromFile(
+        sessionId: String,
+        name: String,
+        savePath: String,
+        saveSize: Long,
+        screenshot: ByteArray?,
+        coreName: String,
+        compression: String,
+    ): Result<SaveState> {
+        val data = runCatching { java.io.File(savePath).readBytes() }.getOrDefault(ByteArray(0))
+        return uploadSessionSave(sessionId, name, data, screenshot, coreName)
+    }
+
+    override suspend fun uploadSessionAutoSaveFromFile(
+        sessionId: String,
+        savePath: String,
+        saveSize: Long,
+        screenshot: ByteArray?,
+        coreName: String,
+        compression: String,
+    ): Result<Unit> {
+        val data = runCatching { java.io.File(savePath).readBytes() }.getOrDefault(ByteArray(0))
+        return uploadSessionAutoSave(sessionId, data, screenshot, coreName)
+    }
+
+    override suspend fun downloadSessionAutoSaveToFile(
+        sessionId: String,
+        outputPath: String,
+    ): Result<Unit> = downloadSessionAutoSave(sessionId).map { bytes ->
+        runCatching {
+            java.io.File(outputPath).also { it.parentFile?.mkdirs() }.writeBytes(bytes)
+        }
+        Unit
+    }
+
+    override suspend fun uploadSlotSaveFromFile(
+        sessionId: String,
+        slot: Int,
+        savePath: String,
+        saveSize: Long,
+        screenshot: ByteArray?,
+        coreName: String,
+        compression: String,
+    ): Result<SaveState> {
+        val data = runCatching { java.io.File(savePath).readBytes() }.getOrDefault(ByteArray(0))
+        return uploadSlotSave(sessionId, slot, data, screenshot, coreName)
+    }
+
+    override suspend fun downloadSlotSaveToFile(
+        sessionId: String,
+        slot: Int,
+        outputPath: String,
+    ): Result<Unit> = downloadSlotSave(sessionId, slot).map { bytes ->
+        runCatching {
+            java.io.File(outputPath).also { it.parentFile?.mkdirs() }.writeBytes(bytes)
+        }
+        Unit
     }
 
     override suspend fun uploadSessionSram(sessionId: String, data: ByteArray, coreName: String): Result<Unit> {
