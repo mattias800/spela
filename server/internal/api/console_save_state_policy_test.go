@@ -1,0 +1,175 @@
+package api
+
+import (
+	"bytes"
+	"encoding/json"
+	"net/http"
+	"net/http/httptest"
+	"testing"
+
+	"github.com/spela/server/internal/db"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+)
+
+// TestNormalizeSaveStateChoice locks the closed-set sanitiser. Anything
+// outside enabled/disabled/ask-once collapses to "" so a typo or future
+// codec doesn't end up in the database with a value the player can't
+// switch on. See #804 phase 4.
+func TestNormalizeSaveStateChoice(t *testing.T) {
+	cases := []struct {
+		name string
+		in   string
+		want db.ConsoleSaveStateChoice
+	}{
+		{"enabled", "enabled", db.ConsoleSaveStateChoiceEnabled},
+		{"disabled", "disabled", db.ConsoleSaveStateChoiceDisabled},
+		{"ask-once", "ask-once", db.ConsoleSaveStateChoiceAskOnce},
+		{"uppercase enabled", "ENABLED", db.ConsoleSaveStateChoiceEnabled},
+		{"mixed case", "Ask-Once", db.ConsoleSaveStateChoiceAskOnce},
+		{"whitespace", "  disabled  ", db.ConsoleSaveStateChoiceDisabled},
+		{"empty", "", ""},
+		{"unknown", "off", ""},
+		{"garbage", "asdf", ""},
+		{"whitespace only", "   ", ""},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			assert.Equal(t, tc.want, normalizeSaveStateChoice(tc.in))
+		})
+	}
+}
+
+// TestUpdatePreferences_SetConsoleSaveStatePolicy upserts a per-console
+// save-state choice and verifies it round-trips via PUT and GET. This
+// is the data shape the player will read in phase 4b.
+func TestUpdatePreferences_SetConsoleSaveStatePolicy(t *testing.T) {
+	_, cfg := setupTestEnv(t)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
+	token := registerAndGetToken(t, router)
+
+	body, _ := json.Marshal(map[string]interface{}{
+		"consoleSaveStatePolicies": map[string]string{"gc": "disabled"},
+	})
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("PUT", "/api/user/preferences", bytes.NewReader(body))
+	req.Header.Set("Authorization", "Bearer "+token)
+	req.Header.Set("Content-Type", "application/json")
+	router.ServeHTTP(w, req)
+	require.Equal(t, http.StatusOK, w.Code)
+
+	var prefs map[string]interface{}
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &prefs))
+	policies, ok := prefs["consoleSaveStatePolicies"].(map[string]interface{})
+	require.True(t, ok, "consoleSaveStatePolicies missing from PUT response")
+	assert.Equal(t, "disabled", policies["gc"])
+
+	// GET round-trip — the stored row survives a fresh fetch.
+	w = httptest.NewRecorder()
+	req = httptest.NewRequest("GET", "/api/user/preferences", nil)
+	req.Header.Set("Authorization", "Bearer "+token)
+	router.ServeHTTP(w, req)
+	require.Equal(t, http.StatusOK, w.Code)
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &prefs))
+	policies = prefs["consoleSaveStatePolicies"].(map[string]interface{})
+	assert.Equal(t, "disabled", policies["gc"])
+}
+
+// TestUpdatePreferences_ClearConsoleSaveStatePolicy verifies that
+// sending an empty string removes the row so the console reverts to
+// its tier-driven default. The player relies on absence-from-map to
+// resolve "use the default" — without this, an opted-out user would
+// be stuck on "disabled" forever once they tried to revert.
+func TestUpdatePreferences_ClearConsoleSaveStatePolicy(t *testing.T) {
+	_, cfg := setupTestEnv(t)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
+	token := registerAndGetToken(t, router)
+
+	// First set disabled.
+	body, _ := json.Marshal(map[string]interface{}{
+		"consoleSaveStatePolicies": map[string]string{"gc": "disabled"},
+	})
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("PUT", "/api/user/preferences", bytes.NewReader(body))
+	req.Header.Set("Authorization", "Bearer "+token)
+	req.Header.Set("Content-Type", "application/json")
+	router.ServeHTTP(w, req)
+	require.Equal(t, http.StatusOK, w.Code)
+
+	// Clear by sending "".
+	body, _ = json.Marshal(map[string]interface{}{
+		"consoleSaveStatePolicies": map[string]string{"gc": ""},
+	})
+	w = httptest.NewRecorder()
+	req = httptest.NewRequest("PUT", "/api/user/preferences", bytes.NewReader(body))
+	req.Header.Set("Authorization", "Bearer "+token)
+	req.Header.Set("Content-Type", "application/json")
+	router.ServeHTTP(w, req)
+	require.Equal(t, http.StatusOK, w.Code)
+
+	var prefs map[string]interface{}
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &prefs))
+	policies := prefs["consoleSaveStatePolicies"].(map[string]interface{})
+	_, exists := policies["gc"]
+	assert.False(t, exists, "policy should be cleared after sending empty string")
+}
+
+// TestUpdatePreferences_SaveStatePolicyUnknownAbbrSilentlySkipped
+// mirrors the ConsoleShaders behaviour: an unknown console abbreviation
+// must not 500 the request, just no-op the row. Lets the player send
+// a bulk sync without enumerating the full server console list.
+func TestUpdatePreferences_SaveStatePolicyUnknownAbbrSilentlySkipped(t *testing.T) {
+	_, cfg := setupTestEnv(t)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
+	token := registerAndGetToken(t, router)
+
+	body, _ := json.Marshal(map[string]interface{}{
+		"consoleSaveStatePolicies": map[string]string{
+			"gc":      "disabled",
+			"bogosys": "enabled",
+		},
+	})
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("PUT", "/api/user/preferences", bytes.NewReader(body))
+	req.Header.Set("Authorization", "Bearer "+token)
+	req.Header.Set("Content-Type", "application/json")
+	router.ServeHTTP(w, req)
+	require.Equal(t, http.StatusOK, w.Code)
+
+	var prefs map[string]interface{}
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &prefs))
+	policies := prefs["consoleSaveStatePolicies"].(map[string]interface{})
+	assert.Equal(t, "disabled", policies["gc"])
+	_, exists := policies["bogosys"]
+	assert.False(t, exists, "bogus console abbreviation must not write a row")
+}
+
+// TestUpdatePreferences_SaveStatePolicyGarbageValueIsRejected verifies
+// the sanitiser drops anything that isn't a known choice — without it
+// the row would carry a value the player would have to defensively
+// switch on.
+func TestUpdatePreferences_SaveStatePolicyGarbageValueIsRejected(t *testing.T) {
+	_, cfg := setupTestEnv(t)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
+	token := registerAndGetToken(t, router)
+
+	body, _ := json.Marshal(map[string]interface{}{
+		"consoleSaveStatePolicies": map[string]string{"gc": "absolutely-not-a-state"},
+	})
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("PUT", "/api/user/preferences", bytes.NewReader(body))
+	req.Header.Set("Authorization", "Bearer "+token)
+	req.Header.Set("Content-Type", "application/json")
+	router.ServeHTTP(w, req)
+	require.Equal(t, http.StatusOK, w.Code)
+
+	var prefs map[string]interface{}
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &prefs))
+	policies := prefs["consoleSaveStatePolicies"].(map[string]interface{})
+	_, exists := policies["gc"]
+	assert.False(t, exists, "garbage value should not be persisted")
+}

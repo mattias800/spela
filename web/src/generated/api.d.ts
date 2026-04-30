@@ -8534,6 +8534,9 @@ export interface components {
             consoleKeyMappings?: {
                 [key: string]: components["schemas"]["ConsoleKeyMappingDTO"];
             };
+            consoleSaveStatePolicies?: {
+                [key: string]: string;
+            };
             consoleShaders?: {
                 [key: string]: string;
             };
@@ -8651,6 +8654,9 @@ export interface components {
             autoUpdateCoresEnabled: boolean;
             consoleKeyMappings: {
                 [key: string]: components["schemas"]["ConsoleKeyMappingDTO"];
+            };
+            consoleSaveStatePolicies: {
+                [key: string]: string;
             };
             consoleShaders: {
                 [key: string]: string;

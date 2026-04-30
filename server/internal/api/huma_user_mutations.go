@@ -240,6 +240,34 @@ func (h *UserHandler) HumaUpdatePreferences(ctx context.Context, in *UpdatePrefe
 		}
 	}
 
+	if req.ConsoleSaveStatePolicies != nil {
+		for consoleAbbr, raw := range req.ConsoleSaveStatePolicies {
+			var console db.Console
+			if err := h.DB.Where("LOWER(abbreviation) = LOWER(?)", consoleAbbr).First(&console).Error; err != nil {
+				continue
+			}
+			choice := normalizeSaveStateChoice(raw)
+			if choice == "" {
+				h.DB.Unscoped().Where("user_id = ? AND console_id = ?", uid, console.ID).
+					Delete(&db.ConsoleSaveStatePolicy{})
+				continue
+			}
+			var existing db.ConsoleSaveStatePolicy
+			result := h.DB.Unscoped().Where("user_id = ? AND console_id = ?", uid, console.ID).First(&existing)
+			if result.Error == nil {
+				existing.Choice = choice
+				existing.DeletedAt = gorm.DeletedAt{}
+				h.DB.Unscoped().Save(&existing)
+			} else {
+				h.DB.Create(&db.ConsoleSaveStatePolicy{
+					UserID:    uid,
+					ConsoleID: console.ID,
+					Choice:    choice,
+				})
+			}
+		}
+	}
+
 	if req.ConsoleKeyMappings != nil {
 		for consoleAbbr, km := range req.ConsoleKeyMappings {
 			var console db.Console
@@ -275,6 +303,7 @@ func (h *UserHandler) HumaUpdatePreferences(ctx context.Context, in *UpdatePrefe
 	}
 
 	consoleShaders := h.buildConsoleShaderMap(uid)
+	consoleSaveStatePolicies := h.buildConsoleSaveStatePolicyMap(uid)
 	consoleKeyMappings := h.buildConsoleKeyMappingMap(uid)
 	customKeyMapping := parseJSONMap(user.CustomKeyMapping)
 
@@ -307,8 +336,9 @@ func (h *UserHandler) HumaUpdatePreferences(ctx context.Context, in *UpdatePrefe
 			SelectedShader:          user.SelectedShader,
 			SelectedTheme:           selectedTheme,
 			DefaultSecondScreenPage: defaultSecondScreenPage,
-			ConsoleShaders:          consoleShaders,
-			SelectedKeyMapping:      selectedKeyMapping,
+			ConsoleShaders:           consoleShaders,
+			ConsoleSaveStatePolicies: consoleSaveStatePolicies,
+			SelectedKeyMapping:       selectedKeyMapping,
 			CustomKeyMapping:        customKeyMapping,
 			ConsoleKeyMappings:      consoleKeyMappings,
 			PreferredRegions:        preferredRegions,

@@ -9860,6 +9860,12 @@
             },
             "type": "object"
           },
+          "consoleSaveStatePolicies": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object"
+          },
           "consoleShaders": {
             "additionalProperties": {
               "type": "string"
@@ -10133,6 +10139,12 @@
             },
             "type": "object"
           },
+          "consoleSaveStatePolicies": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object"
+          },
           "consoleShaders": {
             "additionalProperties": {
               "type": "string"
@@ -10185,6 +10197,7 @@
           "selectedTheme",
           "defaultSecondScreenPage",
           "consoleShaders",
+          "consoleSaveStatePolicies",
           "selectedKeyMapping",
           "customKeyMapping",
           "consoleKeyMappings",

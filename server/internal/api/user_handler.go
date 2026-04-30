@@ -60,6 +60,48 @@ func (h *UserHandler) buildConsoleShaderMap(userID uint) map[string]string {
 	return m
 }
 
+// buildConsoleSaveStatePolicyMap queries all ConsoleSaveStatePolicy rows
+// for the user and returns a map keyed by console abbreviation
+// (lowercase). The map only contains consoles where the user has made
+// a deliberate choice; the absence of a key means the player should
+// fall back to the tier-driven default. See #804 phase 4.
+func (h *UserHandler) buildConsoleSaveStatePolicyMap(userID uint) map[string]string {
+	var prefs []db.ConsoleSaveStatePolicy
+	h.DB.Where("user_id = ?", userID).Find(&prefs)
+
+	consoleIDs := make([]uint, 0, len(prefs))
+	for _, p := range prefs {
+		consoleIDs = append(consoleIDs, p.ConsoleID)
+	}
+	abbrMap := resolveConsoleAbbrs(h.DB, consoleIDs)
+
+	m := make(map[string]string, len(prefs))
+	for _, p := range prefs {
+		if abbr, ok := abbrMap[p.ConsoleID]; ok {
+			m[abbr] = string(p.Choice)
+		}
+	}
+	return m
+}
+
+// normalizeSaveStateChoice clamps the client-supplied opt-out value to
+// the closed set the server stores. Empty / unknown collapses to "" so
+// callers can distinguish "clear the row" (empty) from "valid choice"
+// without trusting arbitrary input. Mirrors sanitizeCompression. See
+// #804 phase 4.
+func normalizeSaveStateChoice(raw string) db.ConsoleSaveStateChoice {
+	switch strings.ToLower(strings.TrimSpace(raw)) {
+	case string(db.ConsoleSaveStateChoiceEnabled):
+		return db.ConsoleSaveStateChoiceEnabled
+	case string(db.ConsoleSaveStateChoiceDisabled):
+		return db.ConsoleSaveStateChoiceDisabled
+	case string(db.ConsoleSaveStateChoiceAskOnce):
+		return db.ConsoleSaveStateChoiceAskOnce
+	default:
+		return ""
+	}
+}
+
 // buildConsoleKeyMappingMap queries all ConsoleKeyMappingPreference rows for the user
 // and returns a map keyed by console abbreviation (lowercase).
 func (h *UserHandler) buildConsoleKeyMappingMap(userID uint) map[string]ConsoleKeyMappingDTO {

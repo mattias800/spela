@@ -9,6 +9,7 @@ function prefs(overrides: Partial<UserPreferences> = {}): UserPreferences {
     autoSaveEnabled: true,
     autoUpdateCoresEnabled: false,
     consoleKeyMappings: {},
+    consoleSaveStatePolicies: {},
     consoleShaders: {},
     customKeyMapping: {},
     defaultSecondScreenPage: "controls",

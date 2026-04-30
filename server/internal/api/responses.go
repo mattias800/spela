@@ -1098,6 +1098,13 @@ type UserPreferencesResponse struct {
 	SelectedTheme           string                          `json:"selectedTheme"`
 	DefaultSecondScreenPage string                          `json:"defaultSecondScreenPage"`
 	ConsoleShaders          map[string]string               `json:"consoleShaders"`
+	// Per-console save-state opt-out choices, keyed by console
+	// abbreviation (lowercase). Values are one of "enabled",
+	// "disabled", "ask-once". The map only contains consoles where
+	// the user has made a deliberate choice; the absence of a key
+	// means "use the tier-driven default" (small/medium → enabled,
+	// large → ask-once). See #804 phase 4.
+	ConsoleSaveStatePolicies map[string]string              `json:"consoleSaveStatePolicies"`
 	SelectedKeyMapping      string                          `json:"selectedKeyMapping"`
 	CustomKeyMapping        map[string]string               `json:"customKeyMapping"`
 	ConsoleKeyMappings      map[string]ConsoleKeyMappingDTO `json:"consoleKeyMappings"`
