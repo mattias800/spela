@@ -50,6 +50,11 @@ fun InGameSlotPickerDialog(
     onSaveToSlot: (Int) -> Unit,
     onLoadFromSlot: (Int) -> Unit,
     onDismiss: () -> Unit,
+    /** Medium tier (10 slots) gets a "Save with name…" link as a
+     *  secondary affordance under the slot grid (#830). Pass null on
+     *  large tier to hide it (slot-only by spec) and on Load mode
+     *  (loading is slot-driven, not name-driven). */
+    onSaveWithName: (() -> Unit)? = null,
 ) {
     val title = when (mode) {
         SlotPickerMode.Save -> "Save to slot"
@@ -127,6 +132,21 @@ fun InGameSlotPickerDialog(
                     .padding(top = SpSpacing.Medium)
                     .fillMaxWidth(),
             )
+
+            // Medium-tier secondary affordance — small text-style
+            // button below the slot grid so it's discoverable without
+            // competing visually with the primary slot row. Only renders
+            // when the caller wants to expose it (large tier passes
+            // null per #804 phase 5 spec). See #830.
+            if (mode == SlotPickerMode.Save && onSaveWithName != null) {
+                SpSecondaryButton(
+                    text = "Save with name…",
+                    onClick = onSaveWithName,
+                    modifier = Modifier
+                        .padding(top = SpSpacing.Medium)
+                        .testTag("in-game-slot-picker-save-with-name"),
+                )
+            }
 
             SpSecondaryButton(
                 text = "Cancel",

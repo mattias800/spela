@@ -633,6 +633,12 @@ class StubPendingSaveUploadRepository :
     private val rows = mutableListOf<com.spela.player.domain.model.PendingSaveUpload>()
     private var nextId = 1L
 
+    /** Captures every row passed to [enqueue], even after the drain
+     *  removes them from the live queue. Lets tests assert the row
+     *  shape (e.g. server-visible name) without setting up an upload
+     *  failure to keep the row alive. See #830. */
+    val enqueueLog: MutableList<com.spela.player.domain.model.PendingSaveUpload> = mutableListOf()
+
     override suspend fun enqueue(
         sessionId: String,
         kind: com.spela.player.domain.model.PendingUploadKind,
@@ -646,23 +652,23 @@ class StubPendingSaveUploadRepository :
         createdAt: Long,
     ): Long {
         val id = nextId++
-        rows.add(
-            com.spela.player.domain.model.PendingSaveUpload(
-                id = id,
-                sessionId = sessionId,
-                kind = kind,
-                slot = slot,
-                name = name,
-                coreName = coreName,
-                compression = compression,
-                filePath = filePath,
-                fileSize = fileSize,
-                screenshotPath = screenshotPath,
-                createdAt = createdAt,
-                retryCount = 0,
-                lastError = null,
-            ),
+        val row = com.spela.player.domain.model.PendingSaveUpload(
+            id = id,
+            sessionId = sessionId,
+            kind = kind,
+            slot = slot,
+            name = name,
+            coreName = coreName,
+            compression = compression,
+            filePath = filePath,
+            fileSize = fileSize,
+            screenshotPath = screenshotPath,
+            createdAt = createdAt,
+            retryCount = 0,
+            lastError = null,
         )
+        rows.add(row)
+        enqueueLog.add(row)
         return id
     }
 

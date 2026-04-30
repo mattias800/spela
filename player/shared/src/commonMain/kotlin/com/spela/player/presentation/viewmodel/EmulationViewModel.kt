@@ -301,6 +301,18 @@ class EmulationViewModel(
                 _state.update { it.copy(slotPickerMode = null) }
             }
 
+            // Named-save link on the slot picker (medium tier only) — #830
+            EmulationIntent.ShowNamedSaveDialog ->
+                _state.update {
+                    it.copy(slotPickerMode = null, showNamedSaveDialog = true)
+                }
+            EmulationIntent.DismissNamedSaveDialog ->
+                _state.update { it.copy(showNamedSaveDialog = false) }
+            is EmulationIntent.SaveWithName -> {
+                _state.update { it.copy(showNamedSaveDialog = false) }
+                saveManager.saveState(intent.name)
+            }
+
             // Rewind
             EmulationIntent.RewindStep -> rewindStep()
             EmulationIntent.ToggleRewind -> toggleRewindEnabled()

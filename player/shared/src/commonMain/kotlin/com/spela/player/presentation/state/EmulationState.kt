@@ -112,6 +112,15 @@ data class EmulationState(
      */
     val slotPickerMode: SlotPickerMode? = null,
     /**
+     * True when the medium-tier "Save with name…" dialog is open
+     * (#830). The dialog is reachable from the bottom of the slot
+     * picker — slot-primary stays the default, named save is the
+     * secondary affordance for "I want a deliberate marker before
+     * the boss fight" cases. Hidden on small (free-form named saves
+     * are already the default) and large (slot-only by spec) tiers.
+     */
+    val showNamedSaveDialog: Boolean = false,
+    /**
      * True when the user is launching a large-tier console game for
      * the first time (no override + tier == large → AskOnce). Drives
      * the first-launch dialog. See #804 phase 4b spec point (b).
