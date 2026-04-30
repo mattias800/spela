@@ -71,6 +71,7 @@ class GameDetailSharedSaveTest {
             challengeRepository = SharedSaveTestChallengeRepository(),
             sharedSessionRepository = SharedSaveTestSharedSessionRepository(),
             gameRepository = testGameRepo,
+            preferencesRepository = com.spela.player.presentation.viewmodel.emulation.StubPreferencesRepository(),
             apiClient = apiClient,
             scrapeService = ScrapeService(apiClient, testDispatchers, scope),
             dispatchers = testDispatchers,

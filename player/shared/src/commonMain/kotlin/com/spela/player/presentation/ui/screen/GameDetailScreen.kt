@@ -202,6 +202,9 @@ fun GameDetailScreen(
                     onNavigateToAchievements = if (state.achievements.isNotEmpty()) {
                         { onNavigateToAchievements?.invoke(gameId) }
                     } else null,
+                    onSetGameSaveStatePolicy = { choice ->
+                        viewModel.onIntent(GameDetailIntent.SetGameSaveStatePolicy(choice))
+                    },
                 )
 
                 // Series & Franchise links
