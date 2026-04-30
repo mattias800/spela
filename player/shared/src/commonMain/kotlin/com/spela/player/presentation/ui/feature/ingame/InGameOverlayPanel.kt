@@ -400,7 +400,7 @@ internal fun shouldShowSaveStateActions(
 ): Boolean = supportsSaveStates && !saveStatesOptedOut
 
 @Composable
-internal fun RowScope.OverlayActionButtons(
+fun RowScope.OverlayActionButtons(
     isFastForward: Boolean,
     supportsSaveStates: Boolean,
     saveStatesOptedOut: Boolean = false,
