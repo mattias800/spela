@@ -12,30 +12,38 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// TestNormalizeSaveStateChoice locks the closed-set sanitiser. Anything
-// outside enabled/disabled/ask-once collapses to "" so a typo or future
-// codec doesn't end up in the database with a value the player can't
-// switch on. See #804 phase 4.
+// TestNormalizeSaveStateChoice locks the closed-set sanitiser. Three
+// distinct outcomes:
+//
+//	valid input   → (choice, false)   upsert
+//	empty/blank   → ("", true)        clear the row
+//	unknown value → ("", false)       no-op (preserve existing override)
+//
+// The empty-vs-unknown split prevents a client typo from silently
+// destroying a valid override. See #804 phase 4 review feedback.
 func TestNormalizeSaveStateChoice(t *testing.T) {
 	cases := []struct {
-		name string
-		in   string
-		want db.ConsoleSaveStateChoice
+		name      string
+		in        string
+		wantChoice db.ConsoleSaveStateChoice
+		wantClear bool
 	}{
-		{"enabled", "enabled", db.ConsoleSaveStateChoiceEnabled},
-		{"disabled", "disabled", db.ConsoleSaveStateChoiceDisabled},
-		{"ask-once", "ask-once", db.ConsoleSaveStateChoiceAskOnce},
-		{"uppercase enabled", "ENABLED", db.ConsoleSaveStateChoiceEnabled},
-		{"mixed case", "Ask-Once", db.ConsoleSaveStateChoiceAskOnce},
-		{"whitespace", "  disabled  ", db.ConsoleSaveStateChoiceDisabled},
-		{"empty", "", ""},
-		{"unknown", "off", ""},
-		{"garbage", "asdf", ""},
-		{"whitespace only", "   ", ""},
+		{"enabled", "enabled", db.ConsoleSaveStateChoiceEnabled, false},
+		{"disabled", "disabled", db.ConsoleSaveStateChoiceDisabled, false},
+		{"ask-once", "ask-once", db.ConsoleSaveStateChoiceAskOnce, false},
+		{"uppercase enabled", "ENABLED", db.ConsoleSaveStateChoiceEnabled, false},
+		{"mixed case", "Ask-Once", db.ConsoleSaveStateChoiceAskOnce, false},
+		{"whitespace", "  disabled  ", db.ConsoleSaveStateChoiceDisabled, false},
+		{"empty clears", "", "", true},
+		{"whitespace only clears", "   ", "", true},
+		{"unknown is no-op", "off", "", false},
+		{"garbage is no-op", "asdf", "", false},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			assert.Equal(t, tc.want, normalizeSaveStateChoice(tc.in))
+			choice, clear := normalizeSaveStateChoice(tc.in)
+			assert.Equal(t, tc.wantChoice, choice)
+			assert.Equal(t, tc.wantClear, clear)
 		})
 	}
 }
@@ -145,6 +153,53 @@ func TestUpdatePreferences_SaveStatePolicyUnknownAbbrSilentlySkipped(t *testing.
 	assert.Equal(t, "disabled", policies["gc"])
 	_, exists := policies["bogosys"]
 	assert.False(t, exists, "bogus console abbreviation must not write a row")
+}
+
+// TestUpdatePreferences_SaveStatePolicyGarbageValuePreservesExistingOverride
+// is the regression test for PR #817 review feedback. A typo in a
+// bulk sync ("absolutely-not-a-state") must NOT destroy the user's
+// existing valid override. Garbage = no-op, only an explicit empty
+// string clears.
+func TestUpdatePreferences_SaveStatePolicyGarbageValuePreservesExistingOverride(t *testing.T) {
+	_, cfg := setupTestEnv(t)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
+	token := registerAndGetToken(t, router)
+
+	// 1. User opts GameCube out.
+	body, _ := json.Marshal(map[string]interface{}{
+		"consoleSaveStatePolicies": map[string]string{"gc": "disabled"},
+	})
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("PUT", "/api/user/preferences", bytes.NewReader(body))
+	req.Header.Set("Authorization", "Bearer "+token)
+	req.Header.Set("Content-Type", "application/json")
+	router.ServeHTTP(w, req)
+	require.Equal(t, http.StatusOK, w.Code)
+
+	// 2. A subsequent sync sends a typo. Pre-fix this would silently
+	//    delete the row.
+	body, _ = json.Marshal(map[string]interface{}{
+		"consoleSaveStatePolicies": map[string]string{"gc": "absolutely-not-a-state"},
+	})
+	w = httptest.NewRecorder()
+	req = httptest.NewRequest("PUT", "/api/user/preferences", bytes.NewReader(body))
+	req.Header.Set("Authorization", "Bearer "+token)
+	req.Header.Set("Content-Type", "application/json")
+	router.ServeHTTP(w, req)
+	require.Equal(t, http.StatusOK, w.Code)
+
+	// 3. The original "disabled" override must still be there.
+	w = httptest.NewRecorder()
+	req = httptest.NewRequest("GET", "/api/user/preferences", nil)
+	req.Header.Set("Authorization", "Bearer "+token)
+	router.ServeHTTP(w, req)
+	require.Equal(t, http.StatusOK, w.Code)
+	var prefs map[string]interface{}
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &prefs))
+	policies := prefs["consoleSaveStatePolicies"].(map[string]interface{})
+	assert.Equal(t, "disabled", policies["gc"],
+		"existing valid override must survive a typo'd sync")
 }
 
 // TestUpdatePreferences_SaveStatePolicyGarbageValueIsRejected verifies

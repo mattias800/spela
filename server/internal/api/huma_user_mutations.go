@@ -246,12 +246,23 @@ func (h *UserHandler) HumaUpdatePreferences(ctx context.Context, in *UpdatePrefe
 			if err := h.DB.Where("LOWER(abbreviation) = LOWER(?)", consoleAbbr).First(&console).Error; err != nil {
 				continue
 			}
-			choice := normalizeSaveStateChoice(raw)
-			if choice == "" {
+			choice, clear := normalizeSaveStateChoice(raw)
+			if clear {
 				h.DB.Unscoped().Where("user_id = ? AND console_id = ?", uid, console.ID).
 					Delete(&db.ConsoleSaveStatePolicy{})
 				continue
 			}
+			if choice == "" {
+				// Garbage value — drop the entry rather than destroy
+				// the user's existing override. Only an explicit empty
+				// string is allowed to clear a row.
+				continue
+			}
+			// Unscoped lookup so a previously soft-deleted row gets
+			// revived in place rather than re-created with a new ID.
+			// This intentionally diverges from the ConsoleShaders
+			// pattern (which uses scoped writes) — we want stable
+			// row IDs for the future audit trail in #804 phase 4b.
 			var existing db.ConsoleSaveStatePolicy
 			result := h.DB.Unscoped().Where("user_id = ? AND console_id = ?", uid, console.ID).First(&existing)
 			if result.Error == nil {

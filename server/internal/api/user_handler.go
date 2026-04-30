@@ -85,20 +85,31 @@ func (h *UserHandler) buildConsoleSaveStatePolicyMap(userID uint) map[string]str
 }
 
 // normalizeSaveStateChoice clamps the client-supplied opt-out value to
-// the closed set the server stores. Empty / unknown collapses to "" so
-// callers can distinguish "clear the row" (empty) from "valid choice"
-// without trusting arbitrary input. Mirrors sanitizeCompression. See
-// #804 phase 4.
-func normalizeSaveStateChoice(raw string) db.ConsoleSaveStateChoice {
-	switch strings.ToLower(strings.TrimSpace(raw)) {
+// the closed set the server stores. Three outcomes:
+//
+//	non-empty choice, clear=false → upsert this value
+//	"", clear=true                → user wants the row deleted
+//	"", clear=false               → unknown / garbage value, no-op
+//
+// Distinguishing the two empty-string outcomes matters: a misbehaving
+// client sending a typo like "DISABLED " (note: that lowercases fine,
+// but other typos don't) must not silently destroy an existing
+// override. Only an explicit empty string means "clear me." See
+// #804 phase 4 review feedback on PR #817.
+func normalizeSaveStateChoice(raw string) (choice db.ConsoleSaveStateChoice, clear bool) {
+	trimmed := strings.TrimSpace(raw)
+	if trimmed == "" {
+		return "", true
+	}
+	switch strings.ToLower(trimmed) {
 	case string(db.ConsoleSaveStateChoiceEnabled):
-		return db.ConsoleSaveStateChoiceEnabled
+		return db.ConsoleSaveStateChoiceEnabled, false
 	case string(db.ConsoleSaveStateChoiceDisabled):
-		return db.ConsoleSaveStateChoiceDisabled
+		return db.ConsoleSaveStateChoiceDisabled, false
 	case string(db.ConsoleSaveStateChoiceAskOnce):
-		return db.ConsoleSaveStateChoiceAskOnce
+		return db.ConsoleSaveStateChoiceAskOnce, false
 	default:
-		return ""
+		return "", false
 	}
 }
 
