@@ -47,6 +47,7 @@ fun com.spela.client.models.ConsoleResponse.toDomain(): Console = Console(
     iconUrl = iconUrl,
     logoUrl = logoPngUrl.ifEmpty { logoUrl },
     saveStateSupport = saveStateSupport,
+    saveStatePolicy = SaveStatePolicyTier.fromApiId(saveStatePolicy),
     browserPlayable = browserPlayable,
     playable = playable,
     generation = generation.toInt(),
@@ -170,6 +171,11 @@ fun com.spela.client.models.UserPreferencesResponse.toDomain(): UserPreferences 
     selectedShader = ShaderPreset.fromApiId(selectedShader),
     selectedTheme = selectedTheme,
     consoleShaders = consoleShaders.mapValues { ShaderPreset.fromApiId(it.value) },
+    consoleSaveStatePolicies = consoleSaveStatePolicies.mapNotNull { (k, v) ->
+        // Drop any entry the server sent that doesn't parse to a known
+        // value rather than crashing the player on a future codec.
+        SaveStateChoice.fromApiId(v)?.let { k.lowercase() to it }
+    }.toMap(),
     selectedKeyMapping = selectedKeyMapping,
     consoleKeyMappings = consoleKeyMappings.mapValues {
         ConsoleKeyMappingPref(
