@@ -2,6 +2,7 @@ package com.spela.player.presentation.viewmodel
 
 import com.spela.player.presentation.viewmodel.emulation.EmulationViewModelTestBuilder
 import com.spela.player.presentation.viewmodel.emulation.StubGameRepository
+import com.spela.player.domain.model.SaveStateChoice
 import com.spela.player.domain.model.ShaderPreset
 import com.spela.player.domain.model.UserPreferences
 import com.spela.player.presentation.intent.EmulationIntent
@@ -80,6 +81,50 @@ class EmulationViewModelGameLifecycleTest {
         vm.onIntent(EmulationIntent.StartGame("game1"))
         builder.advanceTimeBy(100)
         assertTrue(vm.state.value.showPerformanceOverlay)
+    }
+
+    @Test
+    fun startGameSetsSaveStatesOptedOutWhenPreferenceDisabled() = runTest {
+        // Console "nes" → matches the StubGameRepository default detail.
+        // The user has explicitly opted out of save states for that
+        // console; the in-game overlay must hide the Save / Load /
+        // Challenge buttons (#804 phase 4 spec point d).
+        builder.preferencesRepository.preferencesResult = Result.success(
+            UserPreferences(
+                consoleSaveStatePolicies = mapOf("nes" to SaveStateChoice.Disabled),
+            ),
+        )
+        val vm = builder.build()
+        vm.onIntent(EmulationIntent.StartGame("game1"))
+        builder.advanceTimeBy(100)
+        assertTrue(vm.state.value.saveStatesOptedOut)
+    }
+
+    @Test
+    fun startGameKeepsSaveStatesEnabledWhenNoOverride() = runTest {
+        // Default preferences have an empty policy map. The flag must
+        // stay false so the overlay continues to show Save / Load.
+        builder.preferencesRepository.preferencesResult = Result.success(UserPreferences())
+        val vm = builder.build()
+        vm.onIntent(EmulationIntent.StartGame("game1"))
+        builder.advanceTimeBy(100)
+        assertFalse(vm.state.value.saveStatesOptedOut)
+    }
+
+    @Test
+    fun startGameKeepsSaveStatesEnabledWhenOverrideForDifferentConsole() = runTest {
+        // The user opted out of GameCube but is launching an NES game.
+        // Per-console isolation — opt-out for one console must not
+        // leak to another.
+        builder.preferencesRepository.preferencesResult = Result.success(
+            UserPreferences(
+                consoleSaveStatePolicies = mapOf("gc" to SaveStateChoice.Disabled),
+            ),
+        )
+        val vm = builder.build()
+        vm.onIntent(EmulationIntent.StartGame("game1"))
+        builder.advanceTimeBy(100)
+        assertFalse(vm.state.value.saveStatesOptedOut)
     }
 
     @Test

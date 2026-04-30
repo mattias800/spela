@@ -271,6 +271,7 @@ internal fun InGameOverlayPanel(
                         OverlayActionButtons(
                             isFastForward = state.isFastForward,
                             supportsSaveStates = state.supportsSaveStates,
+                            saveStatesOptedOut = state.saveStatesOptedOut,
                             rewindEnabled = state.rewindEnabled,
                             hasCheats = state.hasCheats,
                             isSaveInProgress = state.isSaveInProgress,
@@ -363,10 +364,23 @@ internal fun PerformanceBadge(
     }
 }
 
+/**
+ * Pure resolver for the in-game overlay's save-state action gate.
+ * Extracted so it can be unit-tested without rendering the full
+ * Compose tree — the desktop module's component tests have an
+ * independent compile failure (unrelated to #804) we don't want to
+ * couple to. See [OverlayActionButtons]. #804 phase 4.
+ */
+internal fun shouldShowSaveStateActions(
+    supportsSaveStates: Boolean,
+    saveStatesOptedOut: Boolean,
+): Boolean = supportsSaveStates && !saveStatesOptedOut
+
 @Composable
 internal fun RowScope.OverlayActionButtons(
     isFastForward: Boolean,
     supportsSaveStates: Boolean,
+    saveStatesOptedOut: Boolean = false,
     rewindEnabled: Boolean = false,
     hasCheats: Boolean = false,
     isSaveInProgress: Boolean = false,
@@ -381,7 +395,16 @@ internal fun RowScope.OverlayActionButtons(
     onCheats: () -> Unit = {},
     onControls: () -> Unit,
 ) {
-    if (supportsSaveStates) {
+    // Save / Load / Challenge are all gated on the user's per-console
+    // opt-out. The toggle is read-only at the overlay level on purpose
+    // — flipping mid-session creates ambiguity about in-flight uploads
+    // (#804 phase 4 spec point d). Discovery comes from the Settings
+    // page (separate slice).
+    val saveStatesAvailable = shouldShowSaveStateActions(
+        supportsSaveStates = supportsSaveStates,
+        saveStatesOptedOut = saveStatesOptedOut,
+    )
+    if (saveStatesAvailable) {
         // State-aware Save action: idle / in-progress / just-succeeded /
         // failed (#803). Success briefly flashes a checkmark before
         // returning to idle, so the user catches the confirmation even
@@ -423,7 +446,7 @@ internal fun RowScope.OverlayActionButtons(
         onClick = onToggleFastForward,
         isActive = isFastForward,
     )
-    if (supportsSaveStates) {
+    if (saveStatesAvailable) {
         OverlayAction(label = "Challenge", icon = Icons.Filled.Flag, onClick = onChallenge)
     }
     if (hasCheats) {
