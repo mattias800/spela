@@ -34,6 +34,24 @@ data class User(
 )
 
 @Serializable
+/**
+ * Save-state size tier the server seeded for a console — drives
+ * retention, slot count, and opt-out UX. Loaded from
+ * [ConsoleResponse.saveStatePolicy] which is one of "small" |
+ * "medium" | "large". Unknown values fall back to [Small] so a
+ * future server tier doesn't crash older clients. See #804 phase 3.
+ */
+enum class SaveStatePolicyTier(val apiId: String) {
+    Small("small"),
+    Medium("medium"),
+    Large("large");
+
+    companion object {
+        fun fromApiId(apiId: String?): SaveStatePolicyTier =
+            entries.find { it.apiId == apiId } ?: Small
+    }
+}
+
 data class Console(
     val id: String,
     val name: String,
@@ -46,6 +64,7 @@ data class Console(
     val iconUrl: String = "",
     val logoUrl: String = "",
     val saveStateSupport: Boolean = true,
+    val saveStatePolicy: SaveStatePolicyTier = SaveStatePolicyTier.Small,
     val browserPlayable: Boolean = false,
     val playable: Boolean = true,
     val generation: Int = 0,
@@ -187,6 +206,23 @@ data class ConsoleKeyMappingPref(
     val customMapping: Map<String, String> = emptyMap(),
 )
 
+/**
+ * User's per-console save-state opt-out choice. The map only holds
+ * consoles where the user has made a deliberate choice in
+ * [UserPreferences.consoleSaveStatePolicies]; absence means "use the
+ * tier default" — see [effectiveSaveStateChoice]. See #804 phase 4.
+ */
+enum class SaveStateChoice(val apiId: String) {
+    Enabled("enabled"),
+    Disabled("disabled"),
+    AskOnce("ask-once");
+
+    companion object {
+        fun fromApiId(apiId: String?): SaveStateChoice? =
+            entries.find { it.apiId == apiId }
+    }
+}
+
 data class UserPreferences(
     val showPerformanceOverlay: Boolean = false,
     val autoSaveEnabled: Boolean = true,
@@ -195,10 +231,40 @@ data class UserPreferences(
     val selectedShader: ShaderPreset = ShaderPreset.NONE,
     val selectedTheme: String = "default-dark",
     val consoleShaders: Map<String, ShaderPreset> = emptyMap(),
+    val consoleSaveStatePolicies: Map<String, SaveStateChoice> = emptyMap(),
     val selectedKeyMapping: String = "default",
     val consoleKeyMappings: Map<String, ConsoleKeyMappingPref> = emptyMap(),
     val defaultSecondScreenPage: String = "art",
 )
+
+/**
+ * Resolves the effective save-state choice for [consoleAbbr] given
+ * the console's tier and the user's per-console overrides.
+ *
+ * Precedence (high → low):
+ *
+ *   1. explicit override in [overrides] (key matched case-insensitively)
+ *   2. tier default — small/medium → Enabled, large → AskOnce
+ *
+ * The resolver intentionally returns [SaveStateChoice.AskOnce] for
+ * large-tier consoles with no override so the player can fire the
+ * first-launch prompt; the in-game overlay treats AskOnce the same
+ * as Enabled until that prompt resolves to a deliberate choice. See
+ * #804 phase 4.
+ */
+fun effectiveSaveStateChoice(
+    consoleAbbr: String,
+    tier: SaveStatePolicyTier,
+    overrides: Map<String, SaveStateChoice>,
+): SaveStateChoice {
+    val key = consoleAbbr.lowercase()
+    overrides[key]?.let { return it }
+    return when (tier) {
+        SaveStatePolicyTier.Small,
+        SaveStatePolicyTier.Medium -> SaveStateChoice.Enabled
+        SaveStatePolicyTier.Large -> SaveStateChoice.AskOnce
+    }
+}
 
 data class DownloadedGame(
     val gameId: String,
