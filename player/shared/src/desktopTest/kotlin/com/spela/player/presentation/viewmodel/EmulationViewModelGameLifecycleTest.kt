@@ -3,8 +3,10 @@ package com.spela.player.presentation.viewmodel
 import com.spela.player.presentation.viewmodel.emulation.EmulationViewModelTestBuilder
 import com.spela.player.presentation.viewmodel.emulation.StubGameRepository
 import com.spela.player.domain.model.SaveStateChoice
+import com.spela.player.domain.model.SaveStatePolicyTier
 import com.spela.player.domain.model.ShaderPreset
 import com.spela.player.domain.model.UserPreferences
+import com.spela.player.presentation.state.SlotPickerMode
 import com.spela.player.presentation.intent.EmulationIntent
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -243,6 +245,110 @@ class EmulationViewModelGameLifecycleTest {
         builder.advanceTimeBy(100)
         assertFalse(vm.state.value.saveStatesOptedOut)
     }
+
+    // ── Slot-primary UX (#804 phase 5) ──────────────────────────────────
+
+    @Test
+    fun saveIntentOnLargeTierOpensSlotPickerInsteadOfSaving() = runTest {
+        builder.gameRepository = StubGameRepository(
+            consoleId = "gc",
+            consoleSaveStatePolicy = SaveStatePolicyTier.Large,
+        )
+        // Pre-resolve the AskOnce prompt so it doesn't sit on top
+        // and confuse the test.
+        builder.preferencesRepository.preferencesResult = Result.success(
+            UserPreferences(consoleSaveStatePolicies = mapOf("gc" to SaveStateChoice.Enabled)),
+        )
+        val vm = builder.build()
+        vm.onIntent(EmulationIntent.StartGame("game1"))
+        builder.advanceTimeBy(100)
+        assertEquals(SaveStatePolicyTier.Large, vm.state.value.consoleSaveStatePolicyTier)
+        assertNull(vm.state.value.slotPickerMode)
+
+        vm.onIntent(EmulationIntent.SaveState)
+        builder.advanceTimeBy(100)
+        assertEquals(SlotPickerMode.Save, vm.state.value.slotPickerMode)
+    }
+
+    @Test
+    fun loadIntentOnMediumTierOpensSlotPicker() = runTest {
+        builder.gameRepository = StubGameRepository(
+            consoleId = "psx",
+            consoleSaveStatePolicy = SaveStatePolicyTier.Medium,
+        )
+        val vm = builder.build()
+        vm.onIntent(EmulationIntent.StartGame("game1"))
+        builder.advanceTimeBy(100)
+
+        vm.onIntent(EmulationIntent.LoadState)
+        builder.advanceTimeBy(100)
+        assertEquals(SlotPickerMode.Load, vm.state.value.slotPickerMode)
+    }
+
+    @Test
+    fun saveIntentOnSmallTierKeepsHistoricalNamedSaveBehaviour() = runTest {
+        // Phase 5 must not regress the small-tier UX. Tapping Save on
+        // an NES game still calls SaveManager.saveState() rather than
+        // opening a picker — the picker is the right answer for ~30 MB
+        // states, the wrong answer for ~30 KB ones.
+        builder.gameRepository = StubGameRepository(
+            consoleId = "nes",
+            consoleSaveStatePolicy = SaveStatePolicyTier.Small,
+        )
+        val vm = builder.build()
+        vm.onIntent(EmulationIntent.StartGame("game1"))
+        builder.advanceTimeBy(100)
+
+        vm.onIntent(EmulationIntent.SaveState)
+        builder.advanceTimeBy(100)
+        assertNull(vm.state.value.slotPickerMode)
+    }
+
+    @Test
+    fun pickingSlotFromSavePickerCommitsAndDismisses() = runTest {
+        builder.gameRepository = StubGameRepository(
+            consoleId = "gc",
+            consoleSaveStatePolicy = SaveStatePolicyTier.Large,
+        )
+        builder.preferencesRepository.preferencesResult = Result.success(
+            UserPreferences(consoleSaveStatePolicies = mapOf("gc" to SaveStateChoice.Enabled)),
+        )
+        val vm = builder.build()
+        vm.onIntent(EmulationIntent.StartGame("game1"))
+        builder.advanceTimeBy(100)
+        vm.onIntent(EmulationIntent.SaveState)
+        builder.advanceTimeBy(100)
+        assertEquals(SlotPickerMode.Save, vm.state.value.slotPickerMode)
+
+        vm.onIntent(EmulationIntent.SaveToSlot(3))
+        builder.advanceTimeBy(100)
+        // Picker closes immediately so the user sees the regular
+        // "Saving…" feedback rather than a stuck modal.
+        assertNull(vm.state.value.slotPickerMode)
+        assertEquals(3, vm.state.value.activeSlot)
+    }
+
+    @Test
+    fun dismissSlotPickerClosesWithoutSaving() = runTest {
+        builder.gameRepository = StubGameRepository(
+            consoleId = "gc",
+            consoleSaveStatePolicy = SaveStatePolicyTier.Large,
+        )
+        builder.preferencesRepository.preferencesResult = Result.success(
+            UserPreferences(consoleSaveStatePolicies = mapOf("gc" to SaveStateChoice.Enabled)),
+        )
+        val vm = builder.build()
+        vm.onIntent(EmulationIntent.StartGame("game1"))
+        builder.advanceTimeBy(100)
+        vm.onIntent(EmulationIntent.SaveState)
+        builder.advanceTimeBy(100)
+
+        vm.onIntent(EmulationIntent.DismissSlotPicker)
+        builder.advanceTimeBy(100)
+        assertNull(vm.state.value.slotPickerMode)
+    }
+
+    // ────────────────────────────────────────────────────────────────────
 
     @Test
     fun startGameResolvesShader() = runTest {

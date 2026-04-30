@@ -95,6 +95,9 @@ sealed interface EmulationIntent {
     data class SaveToSlot(val slot: Int) : EmulationIntent
     /** Load state from the given slot (selects it first, then loads). */
     data class LoadFromSlot(val slot: Int) : EmulationIntent
+    /** Dismiss the slot-primary slot picker modal without saving or
+     *  loading. The user is bailing out of the choice. See #804 phase 5. */
+    data object DismissSlotPicker : EmulationIntent
 
     // Rewind
     data object RewindStep : EmulationIntent
