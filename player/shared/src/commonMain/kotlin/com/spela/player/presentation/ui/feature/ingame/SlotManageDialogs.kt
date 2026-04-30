@@ -22,7 +22,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.dp
 import com.spela.player.presentation.state.SaveSlotInfo
 import com.spela.player.presentation.ui.components.SpButton
 import com.spela.player.presentation.ui.components.SpSecondaryButton
