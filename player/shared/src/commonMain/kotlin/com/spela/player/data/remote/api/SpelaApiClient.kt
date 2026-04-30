@@ -1809,7 +1809,7 @@ class SpelaApiClient(
             if (!response.status.isSuccess()) {
                 throw RuntimeException("auto-save download failed: HTTP ${response.status.value}")
             }
-            streamResponseToFile(response, fileStorage, outputPath) { _, _ -> }
+            streamSaveResponseToFile(response, fileStorage, outputPath)
         }
     }
 
@@ -1820,7 +1820,7 @@ class SpelaApiClient(
             if (!response.status.isSuccess()) {
                 throw RuntimeException("session save download failed: HTTP ${response.status.value}")
             }
-            streamResponseToFile(response, fileStorage, outputPath) { _, _ -> }
+            streamSaveResponseToFile(response, fileStorage, outputPath)
         }
     }
 
@@ -1831,8 +1831,38 @@ class SpelaApiClient(
             if (!response.status.isSuccess()) {
                 throw RuntimeException("slot save download failed: HTTP ${response.status.value}")
             }
-            streamResponseToFile(response, fileStorage, outputPath) { _, _ -> }
+            streamSaveResponseToFile(response, fileStorage, outputPath)
         }
+    }
+
+    /**
+     * Stream a save-state response to [outputPath] and decompress it
+     * inline when the server tags the body with `X-Compression: gzip`.
+     * Callers receive a temp file containing raw save bytes regardless
+     * of how the bytes were stored on the server, so the libretro
+     * `unserializeFromFile` step never has to know about compression.
+     * See #804 phase 2.
+     */
+    private suspend fun streamSaveResponseToFile(
+        response: HttpResponse,
+        fileStorage: FileStorage,
+        outputPath: String,
+    ) {
+        val compression = response.headers["X-Compression"]?.lowercase()?.trim().orEmpty()
+        if (compression == "gzip") {
+            // Stream the gzip-encoded body to a sibling and inflate
+            // into outputPath, so the file at outputPath is always
+            // raw save bytes the core can consume directly.
+            val gzPath = "$outputPath.gz.tmp"
+            try {
+                streamResponseToFile(response, fileStorage, gzPath) { _, _ -> }
+                com.spela.player.util.gunzipFile(gzPath, outputPath)
+            } finally {
+                runCatching { fileStorage.deleteFile(gzPath) }
+            }
+            return
+        }
+        streamResponseToFile(response, fileStorage, outputPath) { _, _ -> }
     }
 
     suspend fun uploadSlotSave(sessionId: String, slot: Int, data: ByteArray, screenshot: ByteArray?, coreName: String = ""): com.spela.client.models.SessionSaveResponse {

@@ -3,7 +3,9 @@ package com.spela.player.util
 import kotlinx.coroutines.test.runTest
 import java.io.File
 import java.io.FileInputStream
+import java.io.FileOutputStream
 import java.util.zip.GZIPInputStream
+import java.util.zip.GZIPOutputStream
 import kotlin.test.Test
 import kotlin.test.assertContentEquals
 import kotlin.test.assertTrue
@@ -27,5 +29,35 @@ class GzipFileTest {
 
         val roundTripped = GZIPInputStream(FileInputStream(dst)).use { it.readBytes() }
         assertContentEquals(payload, roundTripped)
+    }
+
+    @Test
+    fun gunzipReversesGzip() = runTest {
+        val raw = File.createTempFile("gz-raw-", ".bin").apply { deleteOnExit() }
+        val gzipped = File.createTempFile("gz-mid-", ".gz").apply { deleteOnExit() }
+        val restored = File.createTempFile("gz-out-", ".bin").apply { deleteOnExit() }
+        val payload = ByteArray(96 * 1024) { (it * 7 % 251).toByte() }
+        raw.writeBytes(payload)
+
+        gzipFile(raw.absolutePath, gzipped.absolutePath)
+        val restoredSize = gunzipFile(gzipped.absolutePath, restored.absolutePath)
+
+        assertTrue(restoredSize == payload.size.toLong())
+        assertContentEquals(payload, restored.readBytes())
+    }
+
+    @Test
+    fun gunzipReadsThirdPartyGzip() = runTest {
+        // Bytes produced outside our pipeline must also inflate cleanly,
+        // since the server may eventually re-encode saves itself.
+        val gzipped = File.createTempFile("gz-third-", ".gz").apply { deleteOnExit() }
+        val restored = File.createTempFile("gz-third-out-", ".bin").apply { deleteOnExit() }
+        val payload = "hello world from elsewhere".repeat(2000).toByteArray()
+        GZIPOutputStream(FileOutputStream(gzipped)).use { it.write(payload) }
+
+        val restoredSize = gunzipFile(gzipped.absolutePath, restored.absolutePath)
+
+        assertTrue(restoredSize == payload.size.toLong())
+        assertContentEquals(payload, restored.readBytes())
     }
 }

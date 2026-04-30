@@ -14,3 +14,15 @@ package com.spela.player.util
  * must not block the save itself). See #804 phase 2.
  */
 expect suspend fun gzipFile(srcPath: String, destPath: String): Long
+
+/**
+ * Inverse of [gzipFile]: read a gzip stream from [srcPath] and write
+ * the inflated bytes to [destPath]. Returns the size of the destination
+ * file in bytes.
+ *
+ * Used by the player-side save-download path when the server's
+ * `X-Compression: gzip` header is present (#804 phase 2). Throws on
+ * any I/O failure — callers treat that as a fatal load error rather
+ * than feeding gzipped bytes to libretro.
+ */
+expect suspend fun gunzipFile(srcPath: String, destPath: String): Long

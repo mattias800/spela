@@ -5,6 +5,7 @@ import java.io.BufferedOutputStream
 import java.io.File
 import java.io.FileInputStream
 import java.io.FileOutputStream
+import java.util.zip.GZIPInputStream
 import java.util.zip.GZIPOutputStream
 
 /**
@@ -20,6 +21,19 @@ actual suspend fun gzipFile(srcPath: String, destPath: String): Long {
             FileOutputStream(destPath).use { out ->
                 GZIPOutputStream(BufferedOutputStream(out)).use { gz ->
                     bin.copyTo(gz)
+                }
+            }
+        }
+    }
+    return File(destPath).length()
+}
+
+actual suspend fun gunzipFile(srcPath: String, destPath: String): Long {
+    FileInputStream(srcPath).use { src ->
+        GZIPInputStream(BufferedInputStream(src)).use { gz ->
+            FileOutputStream(destPath).use { out ->
+                BufferedOutputStream(out).use { bout ->
+                    gz.copyTo(bout)
                 }
             }
         }
