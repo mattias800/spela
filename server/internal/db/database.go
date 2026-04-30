@@ -903,7 +903,7 @@ func SeedConsoles(db *gorm.DB) error {
 		{Name: "PlayStation Vita", Abbreviation: "VITA", Extensions: ".vpk,.mai,.zip", DefaultCore: "", EmulatorJSCore: "", FolderName: "psvita", ColorTheme: "#003087", CoverAspect: "8:11", Generation: 8, SaveStateSupport: false, SaveStatePolicy: SaveStatePolicyMedium, Playable: false},
 		{Name: "PlayStation 4", Abbreviation: "PS4", Extensions: ".pkg", DefaultCore: "", EmulatorJSCore: "", FolderName: "ps4", ColorTheme: "#003087", CoverAspect: "8:11", Generation: 8, SaveStateSupport: false, SaveStatePolicy: SaveStatePolicyLarge, Playable: false},
 		{Name: "Xbox One", Abbreviation: "XONE", Extensions: ".xvd", DefaultCore: "", EmulatorJSCore: "", FolderName: "xboxone", ColorTheme: "#107c10", CoverAspect: "8:11", Generation: 8, SaveStateSupport: false, SaveStatePolicy: SaveStatePolicyLarge, Playable: false},
-		{Name: "Nintendo 3DS", Abbreviation: "3DS", Extensions: ".3ds,.cci,.cia", DefaultCore: "azahar", EmulatorJSCore: "", FolderName: "n3ds", ColorTheme: "#ce181e", Generation: 8, SaveStateSupport: true, SaveStatePolicy: SaveStatePolicyMedium, Playable: true},
+		{Name: "Nintendo 3DS", Abbreviation: "3DS", Extensions: ".3ds,.cci,.cia", DefaultCore: "azahar", EmulatorJSCore: "", FolderName: "n3ds", ColorTheme: "#ce181e", Generation: 8, SaveStateSupport: true, SaveStatePolicy: SaveStatePolicyLarge, Playable: true},
 		// 9th Generation
 		{Name: "Nintendo Switch", Abbreviation: "NSW", Extensions: ".nsp,.xci", DefaultCore: "", EmulatorJSCore: "", FolderName: "switch", ColorTheme: "#e60012", CoverAspect: "8:11", Generation: 9, SaveStateSupport: false, SaveStatePolicy: SaveStatePolicyLarge, Playable: false},
 		{Name: "PlayStation 5", Abbreviation: "PS5", Extensions: ".pkg", DefaultCore: "", EmulatorJSCore: "", FolderName: "ps5", ColorTheme: "#003087", CoverAspect: "8:11", Generation: 9, SaveStateSupport: false, SaveStatePolicy: SaveStatePolicyLarge, Playable: false},
@@ -979,13 +979,14 @@ func SeedConsoles(db *gorm.DB) error {
 				db.Model(&existing).Update("save_state_support", true)
 				slog.Info("backfilled SaveStateSupport", "name", existing.Name)
 			}
-			// Backfill SaveStatePolicy when the seed value diverges. The
-			// column was added in #804 phase 3; pre-#804 rows have an
-			// empty string, which we backfill to the seed's tier so the
-			// player UI can switch on a known value. Treat the seeded
-			// "" (forgot a tier) as a no-op rather than overwriting any
-			// admin-set tier in production.
-			if c.SaveStatePolicy != "" && existing.SaveStatePolicy != c.SaveStatePolicy {
+			// Backfill SaveStatePolicy ONLY when the existing column is
+			// empty (pre-#804 row that predates the column). Any non-
+			// empty value is treated as authoritative — once an admin
+			// overrides a tier (via direct SQL today, future admin UI
+			// later), we must not fight that override on every boot.
+			// The seed's value is the migration default, not a recurring
+			// truth. See #804 phase 3.
+			if c.SaveStatePolicy != "" && existing.SaveStatePolicy == "" {
 				db.Model(&existing).Update("save_state_policy", string(c.SaveStatePolicy))
 				slog.Info("backfilled SaveStatePolicy", "name", existing.Name, "policy", c.SaveStatePolicy)
 			}

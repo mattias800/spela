@@ -128,10 +128,13 @@ type Console struct {
 	Generation       int            `gorm:"default:0" json:"generation"`
 	SaveStateSupport bool           `gorm:"default:true" json:"saveStateSupport"`
 	// Size tier driving retention/slot/UX behaviour for save states on
-	// this console. See [SaveStatePolicy]. The default "small" is safe
-	// for unknown / new consoles — the existing "named saves, unlimited"
-	// UX. Seeded per-console in SeedConsoles. See #804 phase 3.
-	SaveStatePolicy  SaveStatePolicy `gorm:"type:varchar(16);default:small;not null" json:"saveStatePolicy"`
+	// this console. See [SaveStatePolicy]. The column has NO default
+	// at the schema level — empty is the "needs seeding" sentinel that
+	// SeedConsoles uses to distinguish a fresh row from an admin
+	// override (which it must preserve). The API response falls back
+	// to "small" so clients still see a closed-set value. See #804
+	// phase 3.
+	SaveStatePolicy  SaveStatePolicy `gorm:"type:varchar(16);not null;default:''" json:"saveStatePolicy"`
 	Playable         bool           `gorm:"default:true" json:"playable"`
 	Code             *string        `gorm:"uniqueIndex;size:32" json:"code"`
 	HardwareMakerID  *uint          `json:"hardwareMakerId"`
