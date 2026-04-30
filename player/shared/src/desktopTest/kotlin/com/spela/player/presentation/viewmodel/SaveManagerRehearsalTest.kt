@@ -76,6 +76,7 @@ class SaveManagerRehearsalTest {
             scope = scope,
             sessionRepository = sessionRepo,
             fileStorage = TestFileStorage(),
+            pendingUploadRepository = com.spela.player.presentation.viewmodel.emulation.StubPendingSaveUploadRepository(),
         )
         manager.currentSessionId = "s1"
         manager.currentCoreName = "nestopia"
@@ -102,6 +103,7 @@ class SaveManagerRehearsalTest {
             scope = scope,
             sessionRepository = sessionRepo,
             fileStorage = TestFileStorage(),
+            pendingUploadRepository = com.spela.player.presentation.viewmodel.emulation.StubPendingSaveUploadRepository(),
         )
         manager.currentSessionId = "s1"
         manager.currentCoreName = "nestopia"
@@ -310,9 +312,16 @@ class SaveManagerRehearsalTest {
             "saveStateJustSucceeded should auto-clear after the flash window")
     }
 
-    /** Failure path: error sticks until cleared, in-progress drops. */
+    /** Deferred-sync contract (#804 phase 6): a failed upload no
+     *  longer surfaces saveStateError directly — the row stays in
+     *  the persistent queue and is retried opportunistically. The
+     *  user sees "Saved locally · syncing" until a future drain
+     *  succeeds. Slice 4 of phase 6 will add an explicit indicator
+     *  after N failed retries; for slice 2 the contract is "no
+     *  immediate error UI, save is captured."
+     */
     @Test
-    fun saveStateRecordsErrorOnFailure() = runTest {
+    fun saveStateOnUploadFailureKeepsRowQueuedWithoutSurfacingError() = runTest {
         val dispatcher = UnconfinedTestDispatcher(testScheduler)
         val scope = CoroutineScope(dispatcher + Job())
         val fx = makeManagerFixture(scope, dispatcher)
@@ -325,11 +334,11 @@ class SaveManagerRehearsalTest {
         advanceUntilIdle()
 
         assertEquals(false, fx.state.value.isSaveInProgress,
-            "isSaveInProgress should be false after the upload finishes (success or failure)")
-        assertTrue(
-            fx.state.value.saveStateError?.contains("test: 413 too large") == true,
-            "saveStateError should carry the failure message; got '${fx.state.value.saveStateError}'",
-        )
+            "isSaveInProgress should be false after the enqueue completes")
+        assertTrue(fx.state.value.hasPendingUploads,
+            "hasPendingUploads must stay true while the row sits in the queue with a retry counter")
+        assertEquals(null, fx.state.value.saveStateError,
+            "deferred-sync failures stay in the queue rather than surfacing as saveStateError")
     }
 
     /** Regression: if staging the save state throws (rather than

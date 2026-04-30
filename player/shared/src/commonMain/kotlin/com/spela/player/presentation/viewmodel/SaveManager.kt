@@ -89,6 +89,16 @@ class SaveManager(
     private val scope: CoroutineScope,
     private val sessionRepository: SessionRepository,
     private val fileStorage: FileStorage,
+    /**
+     * Persistent FIFO queue used by the deferred-sync path (#804
+     * phase 6). Manual save taps stage to disk, enqueue here, and
+     * return immediately — the user isn't blocked on the network
+     * round-trip. The drain runs opportunistically right after each
+     * enqueue (slice 2); future slices add explicit triggers (game
+     * exit, app pause, network reconnect).
+     */
+    private val pendingUploadRepository:
+        com.spela.player.domain.repository.PendingSaveUploadRepository,
 ) {
     /** The libretro core name used for the current emulation session. */
     var currentCoreName: String = ""
@@ -464,6 +474,16 @@ class SaveManager(
         const val GZIP_MIN_BYTES: Long = 32 * 1024L
     }
 
+    /**
+     * In-memory screenshot bytes keyed by pending-upload row id. We
+     * could persist screenshots to disk for full app-kill durability,
+     * but for slice 2 the screenshot is a polish detail — losing it
+     * after an app kill leaves the save bytes intact, just without a
+     * thumbnail on the saves list. Slice 4 will stage screenshots
+     * properly. See #804 phase 6.
+     */
+    private val pendingScreenshots = mutableMapOf<Long, ByteArray>()
+
     fun saveState() {
         if (_state.value.isChallengeMode) return
         if (_state.value.isHardcoreMode) {
@@ -474,11 +494,12 @@ class SaveManager(
             emitRehearsalBlocked(RehearsalSaveKind.Manual)
             return
         }
-        // Inline button feedback: tap → "Saving…" immediately, even
-        // if the user dismisses the overlay before the toast renders.
-        // Clears any stale error from a prior failed attempt so the
-        // button doesn't read "Save failed" while a fresh save is
-        // in flight (#803).
+        // Inline button feedback: tap → "Saving…" immediately so the
+        // user knows the tap registered. The save flips to
+        // "Saved locally · syncing" the moment the bytes are on disk
+        // and queued (~milliseconds), and to idle once the upload
+        // drain finishes. Clears any stale error from a prior failed
+        // attempt. See #803 + #804 phase 6.
         _state.update {
             it.copy(
                 isSaveInProgress = true,
@@ -487,12 +508,6 @@ class SaveManager(
             )
         }
         scope.launch(dispatchers.io) {
-            // Wrap staging in try/catch so a thrown exception still
-            // clears isSaveInProgress — otherwise the button is stuck
-            // on "Saving…" for the rest of the session. The inner
-            // runCatching in stageSaveToTempFile only covers the
-            // file write, not the controller / FileStorage calls
-            // around it.
             val staged = try {
                 stageSaveToTempFile() ?: run {
                     _state.update { it.copy(isSaveInProgress = false) }
@@ -507,64 +522,145 @@ class SaveManager(
                 }
                 return@launch
             }
-            try {
-                val sessionId = currentSessionId
-                if (sessionId != null) {
-                    val screenshot = screenshotCapture?.captureScreenshot()
-                    sessionRepository.uploadSessionSaveFromFile(
-                        sessionId, "Manual Save", staged.path, staged.size, screenshot, currentCoreName, staged.compression,
-                    ).fold(
-                        onSuccess = {
-                            withContext(dispatchers.main) {
-                                _state.update {
-                                    it.copy(
-                                        statusMessage = "State saved",
-                                        isSaveInProgress = false,
-                                        saveStateJustSucceeded = true,
-                                        secondaryToast = SecondaryToastData(
-                                            message = "Saved to Slot ${it.activeSlot}",
-                                            type = SecondaryToastType.SAVE,
-                                        ),
-                                    )
-                                }
-                            }
-                            refreshSaveSlots()
-                            // Hold the "Saved" checkmark briefly so the
-                            // user catches it even if the toast is
-                            // dismissed first, then drop the flag so
-                            // the button returns to idle. (#803)
-                            scope.launch(dispatchers.io) {
-                                kotlinx.coroutines.delay(SAVE_SUCCESS_FLASH_MS)
-                                withContext(dispatchers.main) {
-                                    _state.update { it.copy(saveStateJustSucceeded = false) }
-                                }
-                            }
-                        },
-                        onFailure = { error ->
-                            withContext(dispatchers.main) {
-                                // saveStateError is the canonical surface for
-                                // manual-save failures (sticky inline label on
-                                // the Save button). Don't *also* fire the
-                                // top-of-screen error toast — duplicate UX.
-                                _state.update {
-                                    it.copy(
-                                        isSaveInProgress = false,
-                                        saveStateError = "Failed to save: ${error.message}",
-                                    )
-                                }
-                            }
-                        },
-                    )
-                } else {
-                    // No session — save state was serialized by the controller
-                    withContext(dispatchers.main) {
-                        _state.update { it.copy(statusMessage = "State saved", isSaveInProgress = false) }
-                    }
-                }
-            } finally {
+            val sessionId = currentSessionId
+            if (sessionId == null) {
+                // No session — save state was serialized by the
+                // controller but we have nothing to upload. Treat as
+                // immediately complete; the staged temp file is
+                // unused.
                 staged.cleanup()
+                withContext(dispatchers.main) {
+                    _state.update { it.copy(statusMessage = "State saved", isSaveInProgress = false) }
+                }
+                return@launch
+            }
+            // Capture the screenshot before enqueueing so the in-memory
+            // bytes are correlated with the queue row by id. The
+            // staging-temp-file path is owned by the queue from this
+            // point forward; the drain worker deletes it on success.
+            val screenshot = screenshotCapture?.captureScreenshot()
+            val rowId = pendingUploadRepository.enqueue(
+                sessionId = sessionId,
+                kind = com.spela.player.domain.model.PendingUploadKind.Manual,
+                slot = null,
+                name = "Manual Save",
+                coreName = currentCoreName,
+                compression = staged.compression,
+                filePath = staged.path,
+                fileSize = staged.size,
+                screenshotPath = null,
+                createdAt = kotlin.time.Clock.System.now().toEpochMilliseconds(),
+            )
+            if (screenshot != null) {
+                pendingScreenshots[rowId] = screenshot
+            }
+            withContext(dispatchers.main) {
+                _state.update {
+                    it.copy(
+                        isSaveInProgress = false,
+                        hasPendingUploads = true,
+                        secondaryToast = SecondaryToastData(
+                            message = "Saved locally — syncing",
+                            type = SecondaryToastType.SAVE,
+                        ),
+                    )
+                }
+            }
+            // Fire-and-forget drain. Slice 3 will hook this same call
+            // to game-exit / app-pause / network-reconnect triggers
+            // for the cases where the immediate-after-enqueue drain
+            // didn't manage to run (e.g. lost connectivity at save
+            // time).
+            launchDrainPendingUploads()
+        }
+    }
+
+    /**
+     * Walks the pending-upload queue oldest-first, uploading each row
+     * via the appropriate session endpoint. Stops on first failure to
+     * avoid an infinite retry storm; retry-counter + last_error are
+     * persisted on the row so the next drain can pick up where this
+     * one left off. Clears [EmulationState.hasPendingUploads] when the
+     * queue empties. See #804 phase 6.
+     */
+    private fun launchDrainPendingUploads() {
+        scope.launch(dispatchers.io) {
+            while (true) {
+                val pending = pendingUploadRepository.getAll()
+                if (pending.isEmpty()) {
+                    withContext(dispatchers.main) {
+                        _state.update {
+                            it.copy(
+                                hasPendingUploads = false,
+                                saveStateJustSucceeded = true,
+                            )
+                        }
+                    }
+                    refreshSaveSlots()
+                    scope.launch(dispatchers.io) {
+                        kotlinx.coroutines.delay(SAVE_SUCCESS_FLASH_MS)
+                        withContext(dispatchers.main) {
+                            _state.update { it.copy(saveStateJustSucceeded = false) }
+                        }
+                    }
+                    return@launch
+                }
+                val row = pending.first()
+                val screenshot = pendingScreenshots[row.id]
+                val result = uploadPendingRow(row, screenshot)
+                if (result.isSuccess) {
+                    pendingUploadRepository.delete(row.id)
+                    pendingScreenshots.remove(row.id)
+                    runCatching { fileStorage.deleteFile(row.filePath) }
+                } else {
+                    val msg = result.exceptionOrNull()?.message ?: "upload failed"
+                    pendingUploadRepository.markRetry(row.id, msg)
+                    println("[SaveManager] drain: row ${row.id} failed: $msg — leaving in queue")
+                    return@launch
+                }
             }
         }
+    }
+
+    /**
+     * Routes a queued row to the correct session endpoint based on
+     * its [com.spela.player.domain.model.PendingUploadKind]. Kept
+     * here rather than on the repository so the SQL layer stays
+     * upload-agnostic.
+     */
+    private suspend fun uploadPendingRow(
+        row: com.spela.player.domain.model.PendingSaveUpload,
+        screenshot: ByteArray?,
+    ): Result<Unit> = when (row.kind) {
+        com.spela.player.domain.model.PendingUploadKind.Manual ->
+            sessionRepository.uploadSessionSaveFromFile(
+                sessionId = row.sessionId,
+                name = row.name,
+                savePath = row.filePath,
+                saveSize = row.fileSize,
+                screenshot = screenshot,
+                coreName = row.coreName,
+                compression = row.compression,
+            ).map { Unit }
+        com.spela.player.domain.model.PendingUploadKind.Auto ->
+            sessionRepository.uploadSessionAutoSaveFromFile(
+                sessionId = row.sessionId,
+                savePath = row.filePath,
+                saveSize = row.fileSize,
+                screenshot = screenshot,
+                coreName = row.coreName,
+                compression = row.compression,
+            )
+        com.spela.player.domain.model.PendingUploadKind.Slot ->
+            sessionRepository.uploadSlotSaveFromFile(
+                sessionId = row.sessionId,
+                slot = row.slot ?: 1,
+                savePath = row.filePath,
+                saveSize = row.fileSize,
+                screenshot = screenshot,
+                coreName = row.coreName,
+                compression = row.compression,
+            ).map { Unit }
     }
 
     /**
@@ -664,7 +760,12 @@ class SaveManager(
             cleanupGz()
             return StagedSave(rawPath, rawSize, "", cleanupRaw)
         }
-        return StagedSave(gzPath, gzSize, "gzip", cleanupBoth)
+        // Gzip succeeded — drop the raw bytes immediately. The
+        // returned StagedSave references one file (the .gz), so the
+        // deferred-upload queue can hand off a single path/cleanup
+        // pair without leaking the raw sibling. See #804 phase 6.
+        cleanupRaw()
+        return StagedSave(gzPath, gzSize, "gzip", cleanupGz)
     }
 
     /**
