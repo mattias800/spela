@@ -447,6 +447,39 @@ type ServerSetting struct {
 	Value string `gorm:"type:text" json:"value"`
 }
 
+// ConsoleSaveStateChoice is the user's per-console save-state opt-out
+// state. Drives whether the in-game overlay shows the save/load
+// buttons or grays them out, and whether the first-launch prompt
+// fires for a large-tier console. See #804 phase 4.
+//
+//	"enabled"  — save states allowed for this console.
+//	"disabled" — save states hidden in the overlay; a tooltip points
+//	             back to Settings.
+//	"ask-once" — fire the first-launch prompt again on the next start.
+//	             The default for large-tier consoles when no row exists.
+type ConsoleSaveStateChoice string
+
+const (
+	ConsoleSaveStateChoiceEnabled  ConsoleSaveStateChoice = "enabled"
+	ConsoleSaveStateChoiceDisabled ConsoleSaveStateChoice = "disabled"
+	ConsoleSaveStateChoiceAskOnce  ConsoleSaveStateChoice = "ask-once"
+)
+
+// ConsoleSaveStatePolicy stores a user's per-console save-state opt-out
+// override. Mirrors the shape of [ConsoleShaderPreference]: a row only
+// exists once the user has made a deliberate choice. The absence of a
+// row resolves to a tier-driven default on the client (small/medium =
+// enabled, large = ask-once). See #804 phase 4.
+type ConsoleSaveStatePolicy struct {
+	ID        uint                   `gorm:"primarykey" json:"id"`
+	CreatedAt time.Time              `json:"createdAt"`
+	UpdatedAt time.Time              `json:"updatedAt"`
+	DeletedAt gorm.DeletedAt         `gorm:"index" json:"-"`
+	UserID    uint                   `gorm:"uniqueIndex:idx_user_console_savestate;not null" json:"userId"`
+	ConsoleID uint                   `gorm:"uniqueIndex:idx_user_console_savestate;not null" json:"consoleId"`
+	Choice    ConsoleSaveStateChoice `gorm:"type:varchar(16);not null" json:"choice"`
+}
+
 // ConsoleShaderPreference stores a user's per-console shader override.
 type ConsoleShaderPreference struct {
 	ID        uint           `gorm:"primarykey" json:"id"`

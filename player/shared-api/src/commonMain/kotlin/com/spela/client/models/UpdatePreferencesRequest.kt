@@ -29,6 +29,7 @@ import kotlinx.serialization.encoding.*
  * @param autoSaveEnabled 
  * @param autoUpdateCoresEnabled 
  * @param consoleKeyMappings 
+ * @param consoleSaveStatePolicies 
  * @param consoleShaders 
  * @param customKeyMapping 
  * @param defaultSecondScreenPage 
@@ -52,6 +53,8 @@ data class UpdatePreferencesRequest (
     @SerialName(value = "autoUpdateCoresEnabled") val autoUpdateCoresEnabled: kotlin.Boolean? = null,
 
     @SerialName(value = "consoleKeyMappings") val consoleKeyMappings: kotlin.collections.Map<kotlin.String, ConsoleKeyMappingDTO>? = null,
+
+    @SerialName(value = "consoleSaveStatePolicies") val consoleSaveStatePolicies: kotlin.collections.Map<kotlin.String, kotlin.String>? = null,
 
     @SerialName(value = "consoleShaders") val consoleShaders: kotlin.collections.Map<kotlin.String, kotlin.String>? = null,
 

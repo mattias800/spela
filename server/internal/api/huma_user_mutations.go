@@ -240,6 +240,45 @@ func (h *UserHandler) HumaUpdatePreferences(ctx context.Context, in *UpdatePrefe
 		}
 	}
 
+	if req.ConsoleSaveStatePolicies != nil {
+		for consoleAbbr, raw := range req.ConsoleSaveStatePolicies {
+			var console db.Console
+			if err := h.DB.Where("LOWER(abbreviation) = LOWER(?)", consoleAbbr).First(&console).Error; err != nil {
+				continue
+			}
+			choice, clear := normalizeSaveStateChoice(raw)
+			if clear {
+				h.DB.Unscoped().Where("user_id = ? AND console_id = ?", uid, console.ID).
+					Delete(&db.ConsoleSaveStatePolicy{})
+				continue
+			}
+			if choice == "" {
+				// Garbage value — drop the entry rather than destroy
+				// the user's existing override. Only an explicit empty
+				// string is allowed to clear a row.
+				continue
+			}
+			// Unscoped lookup so a previously soft-deleted row gets
+			// revived in place rather than re-created with a new ID.
+			// This intentionally diverges from the ConsoleShaders
+			// pattern (which uses scoped writes) — we want stable
+			// row IDs for the future audit trail in #804 phase 4b.
+			var existing db.ConsoleSaveStatePolicy
+			result := h.DB.Unscoped().Where("user_id = ? AND console_id = ?", uid, console.ID).First(&existing)
+			if result.Error == nil {
+				existing.Choice = choice
+				existing.DeletedAt = gorm.DeletedAt{}
+				h.DB.Unscoped().Save(&existing)
+			} else {
+				h.DB.Create(&db.ConsoleSaveStatePolicy{
+					UserID:    uid,
+					ConsoleID: console.ID,
+					Choice:    choice,
+				})
+			}
+		}
+	}
+
 	if req.ConsoleKeyMappings != nil {
 		for consoleAbbr, km := range req.ConsoleKeyMappings {
 			var console db.Console
@@ -275,6 +314,7 @@ func (h *UserHandler) HumaUpdatePreferences(ctx context.Context, in *UpdatePrefe
 	}
 
 	consoleShaders := h.buildConsoleShaderMap(uid)
+	consoleSaveStatePolicies := h.buildConsoleSaveStatePolicyMap(uid)
 	consoleKeyMappings := h.buildConsoleKeyMappingMap(uid)
 	customKeyMapping := parseJSONMap(user.CustomKeyMapping)
 
@@ -307,8 +347,9 @@ func (h *UserHandler) HumaUpdatePreferences(ctx context.Context, in *UpdatePrefe
 			SelectedShader:          user.SelectedShader,
 			SelectedTheme:           selectedTheme,
 			DefaultSecondScreenPage: defaultSecondScreenPage,
-			ConsoleShaders:          consoleShaders,
-			SelectedKeyMapping:      selectedKeyMapping,
+			ConsoleShaders:           consoleShaders,
+			ConsoleSaveStatePolicies: consoleSaveStatePolicies,
+			SelectedKeyMapping:       selectedKeyMapping,
 			CustomKeyMapping:        customKeyMapping,
 			ConsoleKeyMappings:      consoleKeyMappings,
 			PreferredRegions:        preferredRegions,

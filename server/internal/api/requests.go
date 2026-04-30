@@ -34,6 +34,13 @@ type UpdatePreferencesRequest struct {
 	SelectedTheme           *string                         `json:"selectedTheme,omitempty"`
 	DefaultSecondScreenPage *string                         `json:"defaultSecondScreenPage,omitempty"`
 	ConsoleShaders          map[string]string               `json:"consoleShaders,omitempty"`
+	// Per-console save-state opt-out upserts. Keys are console
+	// abbreviations (case-insensitive on the server). Allowed values
+	// are "enabled", "disabled", "ask-once". Sending "" clears the
+	// row so the console reverts to its tier-driven default. Unknown
+	// abbreviations are silently skipped, matching ConsoleShaders.
+	// See #804 phase 4.
+	ConsoleSaveStatePolicies map[string]string              `json:"consoleSaveStatePolicies,omitempty"`
 	SelectedKeyMapping      *string                         `json:"selectedKeyMapping,omitempty"`
 	CustomKeyMapping        map[string]string               `json:"customKeyMapping,omitempty"`
 	ConsoleKeyMappings      map[string]ConsoleKeyMappingDTO `json:"consoleKeyMappings,omitempty"`

@@ -77,6 +77,7 @@ func (h *UserHandler) HumaGetPreferences(ctx context.Context, _ *GetPreferencesI
 	}
 
 	consoleShaders := h.buildConsoleShaderMap(uid)
+	consoleSaveStatePolicies := h.buildConsoleSaveStatePolicyMap(uid)
 	consoleKeyMappings := h.buildConsoleKeyMappingMap(uid)
 	customKeyMapping := parseJSONMap(user.CustomKeyMapping)
 
@@ -109,8 +110,9 @@ func (h *UserHandler) HumaGetPreferences(ctx context.Context, _ *GetPreferencesI
 			SelectedShader:          user.SelectedShader,
 			SelectedTheme:           selectedTheme,
 			DefaultSecondScreenPage: defaultSecondScreenPage,
-			ConsoleShaders:          consoleShaders,
-			SelectedKeyMapping:      selectedKeyMapping,
+			ConsoleShaders:           consoleShaders,
+			ConsoleSaveStatePolicies: consoleSaveStatePolicies,
+			SelectedKeyMapping:       selectedKeyMapping,
 			CustomKeyMapping:        customKeyMapping,
 			ConsoleKeyMappings:      consoleKeyMappings,
 			PreferredRegions:        preferredRegions,
