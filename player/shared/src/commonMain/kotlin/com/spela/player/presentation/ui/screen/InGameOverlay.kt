@@ -201,10 +201,13 @@ fun InGameOverlay(
         )
     }
 
-    // Challenge creation success toast
+    // Challenge creation success toast. 5 s is comfortable read time
+    // and gives Android E2E (`ChallengeCreationTest.createChallengeSuccessfully`)
+    // a usable window to assert the toast text — at 2 s the test
+    // raced cold-container POST latency and missed the toast (#837).
     if (state.challengeCreationSuccess) {
         LaunchedEffect(Unit) {
-            delay(2000)
+            delay(5000)
             viewModel.onIntent(EmulationIntent.DismissChallengeCreation)
         }
         OverlayToast(message = "Challenge created!")
