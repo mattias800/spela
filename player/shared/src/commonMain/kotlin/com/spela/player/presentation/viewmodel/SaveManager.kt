@@ -478,17 +478,17 @@ class SaveManager(
          * state. See #804 phase 2.
          */
         const val GZIP_MIN_BYTES: Long = 32 * 1024L
+
+        /**
+         * Retry count at which a pending upload counts as "stuck"
+         * for the in-game overlay's "Sync paused — N saves waiting"
+         * indicator. Three transient failures is enough to suspect a
+         * server-side issue (quota, 5xx) rather than just packet
+         * loss. See #804 phase 6 slice 4.
+         */
+        const val STUCK_RETRY_THRESHOLD = 3
     }
 
-    /**
-     * In-memory screenshot bytes keyed by pending-upload row id. We
-     * could persist screenshots to disk for full app-kill durability,
-     * but for slice 2 the screenshot is a polish detail — losing it
-     * after an app kill leaves the save bytes intact, just without a
-     * thumbnail on the saves list. Slice 4 will stage screenshots
-     * properly. See #804 phase 6.
-     */
-    private val pendingScreenshots = mutableMapOf<Long, ByteArray>()
 
     /**
      * Serialises drain calls so concurrent triggers (e.g. game-exit
@@ -580,11 +580,19 @@ class SaveManager(
                 }
                 return@launch
             }
-            // Capture the screenshot before enqueueing so the in-memory
-            // bytes are correlated with the queue row by id. The
-            // staging-temp-file path is owned by the queue from this
-            // point forward; the drain worker deletes it on success.
+            // Capture the screenshot and stage it to disk alongside
+            // the save bytes so the queue is fully durable across
+            // app-kill — a force-quit between save and upload no
+            // longer drops the thumbnail. See #804 phase 6 slice 4.
             val screenshot = screenshotCapture?.captureScreenshot()
+            val now = kotlin.time.Clock.System.now().toEpochMilliseconds()
+            val screenshotPath = if (screenshot != null) {
+                runCatching {
+                    val path = "${fileStorage.getSavesDir()}/.tmp-shot-$sessionId-$now.png"
+                    fileStorage.writeFile(path, screenshot)
+                    path
+                }.getOrNull()
+            } else null
             val rowId = pendingUploadRepository.enqueue(
                 sessionId = sessionId,
                 kind = com.spela.player.domain.model.PendingUploadKind.Manual,
@@ -594,12 +602,9 @@ class SaveManager(
                 compression = staged.compression,
                 filePath = staged.path,
                 fileSize = staged.size,
-                screenshotPath = null,
-                createdAt = kotlin.time.Clock.System.now().toEpochMilliseconds(),
+                screenshotPath = screenshotPath,
+                createdAt = now,
             )
-            if (screenshot != null) {
-                pendingScreenshots[rowId] = screenshot
-            }
             withContext(dispatchers.main) {
                 _state.update {
                     it.copy(
@@ -641,12 +646,14 @@ class SaveManager(
             try {
                 while (true) {
                     val pending = pendingUploadRepository.getAll()
+                    publishStuckCount(pending)
                     if (pending.isEmpty()) {
                         withContext(dispatchers.main) {
                             _state.update {
                                 it.copy(
                                     hasPendingUploads = false,
                                     saveStateJustSucceeded = true,
+                                    stuckUploadCount = 0,
                                 )
                             }
                         }
@@ -660,15 +667,23 @@ class SaveManager(
                         return@launch
                     }
                     val row = pending.first()
-                    val screenshot = pendingScreenshots[row.id]
+                    val screenshot: ByteArray? = row.screenshotPath?.let { path ->
+                        runCatching { fileStorage.readFile(path) }.getOrNull()
+                    }
                     val result = uploadPendingRow(row, screenshot)
                     if (result.isSuccess) {
                         pendingUploadRepository.delete(row.id)
-                        pendingScreenshots.remove(row.id)
                         runCatching { fileStorage.deleteFile(row.filePath) }
+                        row.screenshotPath?.let {
+                            runCatching { fileStorage.deleteFile(it) }
+                        }
                     } else {
                         val msg = result.exceptionOrNull()?.message ?: "upload failed"
                         pendingUploadRepository.markRetry(row.id, msg)
+                        // Re-read the queue so the stuck count
+                        // reflects the bumped retry counter on the
+                        // failed row before we exit the drain loop.
+                        publishStuckCount(pendingUploadRepository.getAll())
                         println("[SaveManager] drain: row ${row.id} failed: $msg — leaving in queue")
                         return@launch
                     }
@@ -676,6 +691,23 @@ class SaveManager(
             } finally {
                 drainMutex.unlock()
             }
+        }
+    }
+
+    /**
+     * Pushes the current "stuck" count to [EmulationState] so the
+     * in-game overlay can surface a "Sync paused — N saves waiting"
+     * line. A row is stuck once its retry counter reaches
+     * [STUCK_RETRY_THRESHOLD] — three transient failures is enough
+     * to suspect a server-side issue (quota, 5xx) rather than just
+     * packet loss. See #804 phase 6 slice 4.
+     */
+    private suspend fun publishStuckCount(
+        pending: List<com.spela.player.domain.model.PendingSaveUpload>,
+    ) {
+        val stuck = pending.count { it.retryCount >= STUCK_RETRY_THRESHOLD }
+        withContext(dispatchers.main) {
+            _state.update { it.copy(stuckUploadCount = stuck) }
         }
     }
 

@@ -16,6 +16,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
@@ -151,6 +152,75 @@ class SaveManagerDeferredSyncTest {
 
         assertEquals(0L, fx.pending.count())
         assertEquals(0, fx.sessionRepo.uploadSessionSaveCallCount)
+        assertFalse(fx.state.value.hasPendingUploads)
+    }
+
+    @Test
+    fun stuckUploadCountFlipsOnceAttemptCountReachesThreshold() = runTest {
+        // The threshold is 3; first two failures keep stuckUploadCount=0,
+        // the third pushes it to 1, the indicator surfaces. See #804
+        // phase 6 slice 4.
+        val dispatcher = UnconfinedTestDispatcher(testScheduler)
+        val scope = CoroutineScope(dispatcher + Job())
+        val fx = makeFixture(scope, dispatcher)
+        fx.sessionRepo.uploadSessionSaveResult =
+            Result.failure(RuntimeException("test: 503 unavailable"))
+
+        // Initial save fails — retryCount=1, still under threshold.
+        fx.manager.saveState()
+        advanceUntilIdle()
+        assertEquals(1, fx.pending.getAll().single().retryCount)
+        assertEquals(0, fx.state.value.stuckUploadCount,
+            "one retry isn't enough to call the row stuck — could be packet loss")
+
+        // Second drain — retryCount=2, still under threshold.
+        fx.manager.drainPendingUploads()
+        advanceUntilIdle()
+        assertEquals(2, fx.pending.getAll().single().retryCount)
+        assertEquals(0, fx.state.value.stuckUploadCount)
+
+        // Third drain — retryCount=3, threshold reached, indicator
+        // surfaces.
+        fx.manager.drainPendingUploads()
+        advanceUntilIdle()
+        assertEquals(3, fx.pending.getAll().single().retryCount)
+        assertEquals(1, fx.state.value.stuckUploadCount,
+            "third failure flips the row to stuck so the user gets a 'Sync paused' nudge")
+    }
+
+    @Test
+    fun stuckUploadCountClearsWhenQueueDrains() = runTest {
+        // Verifies the recovery path: a stuck row that finally
+        // uploads (network came back, server quota cleared) flips
+        // the indicator off so the overlay stops nagging the user.
+        val dispatcher = UnconfinedTestDispatcher(testScheduler)
+        val scope = CoroutineScope(dispatcher + Job())
+        val fx = makeFixture(scope, dispatcher)
+
+        // Build the state we want via direct DB writes — three
+        // failed retries on a row sitting in the queue.
+        fx.pending.enqueue(
+            sessionId = "s1",
+            kind = com.spela.player.domain.model.PendingUploadKind.Manual,
+            slot = null,
+            name = "Manual Save",
+            coreName = "nestopia",
+            compression = "",
+            filePath = "/tmp/.tmp-save-s1",
+            fileSize = 1024L,
+            screenshotPath = null,
+            createdAt = 1L,
+        )
+        repeat(3) { fx.pending.markRetry(1L, "stuck") }
+        fx.state.update { it.copy(hasPendingUploads = true, stuckUploadCount = 1) }
+
+        // Now the upload succeeds.
+        fx.manager.drainPendingUploads()
+        advanceUntilIdle()
+
+        assertEquals(0L, fx.pending.count())
+        assertEquals(0, fx.state.value.stuckUploadCount,
+            "queue empty → indicator off")
         assertFalse(fx.state.value.hasPendingUploads)
     }
 

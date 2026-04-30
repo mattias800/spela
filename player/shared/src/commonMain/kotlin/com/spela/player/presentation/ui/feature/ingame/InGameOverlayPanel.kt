@@ -293,6 +293,28 @@ internal fun InGameOverlayPanel(
                         )
                     }
 
+                    // Stuck-uploads banner (#804 phase 6 slice 4).
+                    // Surfaces only when at least one queued save has
+                    // failed STUCK_RETRY_THRESHOLD times so the user
+                    // can tell stuck-on-error apart from
+                    // in-flight-and-slow without digging into logs.
+                    if (state.stuckUploadCount > 0) {
+                        Spacer(Modifier.height(SpSpacing.Small))
+                        val msg = if (state.stuckUploadCount == 1) {
+                            "Sync paused — 1 save waiting"
+                        } else {
+                            "Sync paused — ${state.stuckUploadCount} saves waiting"
+                        }
+                        Text(
+                            text = msg,
+                            style = SpTypography.LabelSmall,
+                            color = SpColor.OnBackgroundSecondary,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .semantics { contentDescription = msg },
+                        )
+                    }
+
                     Spacer(Modifier.height(if (isLandscape) SpSpacing.Medium else SpSpacing.Large))
 
                     // Volume slider

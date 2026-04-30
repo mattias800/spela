@@ -146,6 +146,15 @@ data class EmulationState(
      */
     val hasPendingUploads: Boolean = false,
     /**
+     * Number of pending uploads whose retry count has reached the
+     * "stuck" threshold — failed enough times that they're probably
+     * not just slow. The in-game overlay surfaces a "Sync paused — N
+     * saves waiting" line when this is > 0 so the user can tell
+     * stuck-on-error apart from in-flight-and-slow without having to
+     * dig into logs. See #804 phase 6 slice 4.
+     */
+    val stuckUploadCount: Int = 0,
+    /**
      * Non-blocking warning shown when the session's pinned core
      * version (see `GameSession.pinnedCoreSha256`) is no longer
      * available on the server (pruned from history retention) and
