@@ -171,11 +171,23 @@ class EmulationViewModel(
             EmulationIntent.ResumeGame -> resumeGame()
             EmulationIntent.StopGame -> stopGame()
             EmulationIntent.SaveState -> {
-                if (checkCoreMismatchBeforeSave("manual")) {
+                // Slot-primary UX: medium / large tiers open a slot
+                // picker rather than performing a free-form named
+                // save (#804 phase 5). Small tier keeps the
+                // historical "Save" → manual save behaviour.
+                if (_state.value.consoleSaveStatePolicyTier != com.spela.player.domain.model.SaveStatePolicyTier.Small) {
+                    _state.update { it.copy(slotPickerMode = com.spela.player.presentation.state.SlotPickerMode.Save) }
+                } else if (checkCoreMismatchBeforeSave("manual")) {
                     saveManager.saveState()
                 }
             }
-            EmulationIntent.LoadState -> saveManager.loadState()
+            EmulationIntent.LoadState -> {
+                if (_state.value.consoleSaveStatePolicyTier != com.spela.player.domain.model.SaveStatePolicyTier.Small) {
+                    _state.update { it.copy(slotPickerMode = com.spela.player.presentation.state.SlotPickerMode.Load) }
+                } else {
+                    saveManager.loadState()
+                }
+            }
             EmulationIntent.AcceptSaveStatesForConsole -> resolveSaveStatePrompt(
                 com.spela.player.domain.model.SaveStateChoice.Enabled,
             )
@@ -272,14 +284,21 @@ class EmulationViewModel(
             EmulationIntent.QuickLoad -> quickLoadFromSlot()
             is EmulationIntent.SelectSlot -> _state.update { it.copy(activeSlot = intent.slot) }
             is EmulationIntent.SaveToSlot -> {
-                _state.update { it.copy(activeSlot = intent.slot) }
+                // Picking a slot from the slot-primary modal closes it
+                // before the save kicks off, so the user sees the
+                // overlay's regular "Saving…" feedback rather than a
+                // stuck modal. See #804 phase 5.
+                _state.update { it.copy(activeSlot = intent.slot, slotPickerMode = null) }
                 if (checkCoreMismatchBeforeSave("slot", intent.slot)) {
                     saveManager.saveToSlot(intent.slot)
                 }
             }
             is EmulationIntent.LoadFromSlot -> {
-                _state.update { it.copy(activeSlot = intent.slot) }
+                _state.update { it.copy(activeSlot = intent.slot, slotPickerMode = null) }
                 saveManager.loadFromSlot(intent.slot)
+            }
+            EmulationIntent.DismissSlotPicker -> {
+                _state.update { it.copy(slotPickerMode = null) }
             }
 
             // Rewind
@@ -760,6 +779,7 @@ class EmulationViewModel(
                             showSaveStatePrompt = askOnce,
                             saveStatePromptConsoleAbbr = if (askOnce) detail.game.consoleId else "",
                             saveStatePromptConsoleName = if (askOnce) detail.game.consoleName else "",
+                            consoleSaveStatePolicyTier = detail.game.consoleSaveStatePolicy,
                         )
                     }
                 }

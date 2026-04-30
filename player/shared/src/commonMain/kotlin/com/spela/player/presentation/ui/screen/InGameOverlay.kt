@@ -237,6 +237,26 @@ fun InGameOverlay(
         )
     }
 
+    // Slot-primary save/load picker for medium / large console tiers
+    // (#804 phase 5). Tapping Save or Load on the in-game overlay
+    // sets state.slotPickerMode; this renders the modal in front of
+    // everything else so the user picks a slot rather than performing
+    // a free-form named save.
+    state.slotPickerMode?.let { mode ->
+        val slotCount = when (state.consoleSaveStatePolicyTier) {
+            com.spela.player.domain.model.SaveStatePolicyTier.Large -> 5
+            else -> 10
+        }
+        com.spela.player.presentation.ui.feature.ingame.InGameSlotPickerDialog(
+            mode = mode,
+            slotCount = slotCount,
+            saveSlots = state.saveSlots,
+            onSaveToSlot = { slot -> viewModel.onIntent(EmulationIntent.SaveToSlot(slot)) },
+            onLoadFromSlot = { slot -> viewModel.onIntent(EmulationIntent.LoadFromSlot(slot)) },
+            onDismiss = { viewModel.onIntent(EmulationIntent.DismissSlotPicker) },
+        )
+    }
+
     // Core mismatch dialog
     if (state.showCoreMismatchDialog) {
         CoreMismatchDialog(

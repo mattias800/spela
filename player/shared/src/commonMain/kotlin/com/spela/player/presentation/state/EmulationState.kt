@@ -4,7 +4,15 @@ import com.spela.player.domain.model.AchievementEvent
 import com.spela.player.domain.model.AchievementProgress
 import com.spela.player.domain.model.BiosMissingFile
 import com.spela.player.domain.model.GameAchievement
+import com.spela.player.domain.model.SaveStatePolicyTier
 import com.spela.player.domain.model.ShaderPreset
+
+/**
+ * Mode of the in-game slot-picker modal that the slot-primary UX
+ * (medium / large console tiers) opens when the user taps Save or
+ * Load on the in-game overlay. See #804 phase 5.
+ */
+enum class SlotPickerMode { Save, Load }
 
 /** Input mode tabs available on the secondary screen controls page. */
 enum class ControlTab(val id: String) {
@@ -87,6 +95,22 @@ data class EmulationState(
      * about in-flight uploads, see #804 phase 4 spec point (d).
      */
     val saveStatesOptedOut: Boolean = false,
+    /**
+     * Save-state size tier of the current game's console (small /
+     * medium / large). Drives slot-primary UX on medium/large tiers
+     * (#804 phase 5): tapping Save opens a slot picker rather than
+     * performing a free-form named save. Small-tier UX is unchanged.
+     * Defaults to small so unknown / unset cases keep the historical
+     * behaviour.
+     */
+    val consoleSaveStatePolicyTier: SaveStatePolicyTier = SaveStatePolicyTier.Small,
+    /**
+     * Non-null when the in-game slot picker modal is open. The user
+     * dismisses it via back / scrim tap, or commits by picking a
+     * slot which triggers SaveToSlot or LoadFromSlot. See #804
+     * phase 5.
+     */
+    val slotPickerMode: SlotPickerMode? = null,
     /**
      * True when the user is launching a large-tier console game for
      * the first time (no override + tier == large → AskOnce). Drives
