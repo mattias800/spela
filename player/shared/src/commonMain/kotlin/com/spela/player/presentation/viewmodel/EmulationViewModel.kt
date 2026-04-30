@@ -313,6 +313,38 @@ class EmulationViewModel(
                 saveManager.saveState(intent.name)
             }
 
+            // Slot manage actions (#831)
+            is EmulationIntent.ShowSlotActionsSheet ->
+                _state.update { it.copy(slotActionsSheetSlot = intent.slot) }
+            EmulationIntent.DismissSlotActionsSheet ->
+                _state.update { it.copy(slotActionsSheetSlot = null) }
+            is EmulationIntent.ShowSlotRenameDialog ->
+                _state.update {
+                    it.copy(
+                        slotActionsSheetSlot = null,
+                        slotRenameTarget = intent.slot,
+                    )
+                }
+            EmulationIntent.DismissSlotRenameDialog ->
+                _state.update { it.copy(slotRenameTarget = null) }
+            is EmulationIntent.RenameSlot -> {
+                _state.update { it.copy(slotRenameTarget = null) }
+                saveManager.renameSlot(intent.slot, intent.name)
+            }
+            is EmulationIntent.ShowSlotDeleteConfirm ->
+                _state.update {
+                    it.copy(
+                        slotActionsSheetSlot = null,
+                        slotDeleteConfirmSlot = intent.slot,
+                    )
+                }
+            EmulationIntent.DismissSlotDeleteConfirm ->
+                _state.update { it.copy(slotDeleteConfirmSlot = null) }
+            is EmulationIntent.DeleteSlot -> {
+                _state.update { it.copy(slotDeleteConfirmSlot = null) }
+                saveManager.deleteSlot(intent.slot)
+            }
+
             // Rewind
             EmulationIntent.RewindStep -> rewindStep()
             EmulationIntent.ToggleRewind -> toggleRewindEnabled()

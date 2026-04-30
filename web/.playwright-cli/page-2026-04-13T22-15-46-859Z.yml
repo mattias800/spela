@@ -1,0 +1,298 @@
+- generic [ref=e2]:
+  - generic [ref=e3]:
+    - complementary [ref=e4]:
+      - generic [ref=e5]:
+        - img [ref=e7]
+        - generic [ref=e9]: Spela
+      - button "Open search" [ref=e11] [cursor=pointer]:
+        - img [ref=e12]
+        - generic [ref=e15]: Search...
+        - generic [ref=e16]: ⌘K
+      - navigation [ref=e17]:
+        - generic [ref=e18]:
+          - link "Dashboard" [ref=e19] [cursor=pointer]:
+            - /url: /
+            - img [ref=e20]
+            - generic [ref=e25]: Dashboard
+          - link "Explore" [ref=e26] [cursor=pointer]:
+            - /url: /explore
+            - img [ref=e27]
+            - generic [ref=e30]: Explore
+          - link "Library" [ref=e31] [cursor=pointer]:
+            - /url: /consoles
+            - img [ref=e32]
+            - generic [ref=e34]: Library
+          - link "Stats" [ref=e35] [cursor=pointer]:
+            - /url: /stats
+            - img [ref=e36]
+            - generic [ref=e38]: Stats
+          - link "Top Lists" [ref=e39] [cursor=pointer]:
+            - /url: /top-lists
+            - img [ref=e40]
+            - generic [ref=e46]: Top Lists
+          - link "Activity" [ref=e47] [cursor=pointer]:
+            - /url: /activity
+            - img [ref=e48]
+            - generic [ref=e50]: Activity
+          - link "Challenges" [ref=e51] [cursor=pointer]:
+            - /url: /challenges
+            - img [ref=e52]
+            - generic [ref=e54]: Challenges
+          - link "Shared Sessions" [ref=e55] [cursor=pointer]:
+            - /url: /shared-sessions
+            - img [ref=e56]
+            - generic [ref=e61]: Shared Sessions
+          - link "Netplay" [ref=e62] [cursor=pointer]:
+            - /url: /netplay
+            - img [ref=e63]
+            - generic [ref=e67]: Netplay
+          - link "Preferences" [ref=e68] [cursor=pointer]:
+            - /url: /preferences
+            - img [ref=e69]
+            - generic [ref=e70]: Preferences
+          - link "Storage" [ref=e71] [cursor=pointer]:
+            - /url: /storage
+            - img [ref=e72]
+            - generic [ref=e74]: Storage
+        - generic [ref=e75]:
+          - paragraph [ref=e76]: Content
+          - link "Library Scan" [ref=e77] [cursor=pointer]:
+            - /url: /admin/scan
+            - img [ref=e78]
+            - generic [ref=e85]: Library Scan
+          - link "Upload ROMs" [ref=e86] [cursor=pointer]:
+            - /url: /admin/upload
+            - img [ref=e87]
+            - generic [ref=e90]: Upload ROMs
+          - link "ROM Hacks" [ref=e91] [cursor=pointer]:
+            - /url: /admin/rom-hacks
+            - img [ref=e92]
+            - generic [ref=e94]: ROM Hacks
+          - link "Metadata Fix" [ref=e95] [cursor=pointer]:
+            - /url: /admin/metadata
+            - img [ref=e96]
+            - generic [ref=e101]: Metadata Fix
+          - link "Cheats" [ref=e102] [cursor=pointer]:
+            - /url: /admin/cheats
+            - img [ref=e103]
+            - generic [ref=e105]: Cheats
+          - link "BIOS Files" [ref=e106] [cursor=pointer]:
+            - /url: /admin/bios
+            - img [ref=e107]
+            - generic [ref=e110]: BIOS Files
+        - generic [ref=e111]:
+          - paragraph [ref=e112]: System
+          - link "Users" [ref=e113] [cursor=pointer]:
+            - /url: /admin/users
+            - img [ref=e114]
+            - generic [ref=e119]: Users
+          - link "Settings" [ref=e120] [cursor=pointer]:
+            - /url: /admin/settings
+            - img [ref=e121]
+            - generic [ref=e124]: Settings
+          - link "Core Compatibility" [ref=e125] [cursor=pointer]:
+            - /url: /admin/core-compatibility
+            - img [ref=e126]
+            - generic [ref=e133]: Core Compatibility
+          - link "Security Events" [ref=e134] [cursor=pointer]:
+            - /url: /admin/security-events
+            - img [ref=e135]
+            - generic [ref=e137]: Security Events
+      - generic [ref=e139]:
+        - generic [ref=e140]: A
+        - generic [ref=e141]:
+          - paragraph [ref=e142]: admin
+          - paragraph [ref=e143]: owner
+        - button "Logout" [ref=e144] [cursor=pointer]:
+          - img [ref=e145]
+      - paragraph [ref=e149]: vdev
+    - main [ref=e151]:
+      - generic [ref=e153]:
+        - button "Consoles" [ref=e155] [cursor=pointer]:
+          - img [ref=e156]
+          - text: Consoles
+        - generic [ref=e158]:
+          - generic [ref=e159]:
+            - generic:
+              - img
+            - generic [ref=e160]:
+              - generic [ref=e161]:
+                - img "Super Nintendo" [ref=e162]
+                - generic [ref=e163]:
+                  - generic [ref=e164]: 25 games
+                  - generic [ref=e165]: Nintendo
+                  - generic [ref=e166]: "1990"
+                  - generic [ref=e167]: ROM Cartridge
+                  - generic [ref=e168]:
+                    - img [ref=e169]
+                    - text: Save states
+                  - generic [ref=e171]:
+                    - img [ref=e172]
+                    - text: Browser play
+              - generic [ref=e175]:
+                - link "Browse 25 games" [ref=e176] [cursor=pointer]:
+                  - /url: /consoles/snes/games
+                  - text: Browse 25 games
+                  - img [ref=e177]
+                - button "Scan for new games" [ref=e179]:
+                  - img [ref=e180]
+                  - text: Scan for new games
+          - generic [ref=e184]:
+            - generic [ref=e186]:
+              - img [ref=e187]
+              - heading "Essentials" [level=2] [ref=e193]
+            - list "Essentials" [ref=e195]:
+              - listitem [ref=e196]:
+                - link "Terranigma Add to favorites Add to play later Super Nintendo Terranigma 1995" [ref=e197] [cursor=pointer]:
+                  - /url: /games/681
+                  - generic [ref=e198]:
+                    - img "Terranigma" [ref=e416]
+                    - button "Add to favorites" [ref=e199]:
+                      - img [ref=e200]
+                    - button "Add to play later" [ref=e202]:
+                      - img [ref=e203]
+                    - generic [ref=e207]: Super Nintendo
+                  - generic [ref=e208]:
+                    - heading "Terranigma" [level=3] [ref=e418]
+                    - paragraph [ref=e209]: "1995"
+          - generic "Genre Breakdown" [ref=e210]:
+            - generic [ref=e211]:
+              - generic [ref=e213]:
+                - img [ref=e214]
+                - heading "Genre Breakdown" [level=2] [ref=e219]
+              - generic [ref=e221]:
+                - paragraph [ref=e222]: Role-playing (RPG), Adventure
+                - paragraph [ref=e223]: 1 game
+          - generic "Studios That Defined This Console" [ref=e224]:
+            - generic [ref=e225]:
+              - generic [ref=e227]:
+                - img [ref=e228]
+                - heading "Studios That Defined This Console" [level=2] [ref=e232]
+              - link "Quintet 1 game 89.5" [ref=e234] [cursor=pointer]:
+                - /url: /explore/developers/Quintet
+                - paragraph [ref=e235]: Quintet
+                - paragraph [ref=e236]: 1 game
+                - generic [ref=e237]:
+                  - img [ref=e238]
+                  - text: "89.5"
+          - generic [ref=e240]:
+            - generic [ref=e242]:
+              - img [ref=e243]
+              - heading "Recently Added" [level=2] [ref=e246]
+            - generic [ref=e247]:
+              - button "Scroll Recently Added right" [ref=e420]:
+                - img [ref=e421]
+              - list "Recently Added" [ref=e248]:
+                - listitem [ref=e249]:
+                  - link "Terranigma Add to favorites Add to play later Super Nintendo Terranigma 1995" [ref=e250] [cursor=pointer]:
+                    - /url: /games/681
+                    - generic [ref=e251]:
+                      - img "Terranigma" [ref=e423]
+                      - button "Add to favorites" [ref=e252]:
+                        - img [ref=e253]
+                      - button "Add to play later" [ref=e255]:
+                        - img [ref=e256]
+                      - generic [ref=e260]: Super Nintendo
+                    - generic [ref=e261]:
+                      - heading "Terranigma" [level=3] [ref=e425]
+                      - paragraph [ref=e262]: "1995"
+                - listitem [ref=e263]:
+                  - link "S Add to favorites Add to play later Super Nintendo Super Metroid" [ref=e264] [cursor=pointer]:
+                    - /url: /games/680
+                    - generic [ref=e265]:
+                      - generic [ref=e267]: S
+                      - button "Add to favorites" [ref=e269]:
+                        - img [ref=e270]
+                      - button "Add to play later" [ref=e272]:
+                        - img [ref=e273]
+                      - generic [ref=e277]: Super Nintendo
+                    - heading "Super Metroid" [level=3] [ref=e279]
+                - listitem [ref=e280]:
+                  - link "S Add to favorites Add to play later Super Nintendo Super Mario World 2 - Yoshi's Island" [ref=e281] [cursor=pointer]:
+                    - /url: /games/679
+                    - generic [ref=e282]:
+                      - generic [ref=e284]: S
+                      - button "Add to favorites" [ref=e286]:
+                        - img [ref=e287]
+                      - button "Add to play later" [ref=e289]:
+                        - img [ref=e290]
+                      - generic [ref=e294]: Super Nintendo
+                    - heading "Super Mario World 2 - Yoshi's Island" [level=3] [ref=e296]
+                - listitem [ref=e297]:
+                  - link "S Add to favorites Add to play later Super Nintendo Super Mario World" [ref=e298] [cursor=pointer]:
+                    - /url: /games/678
+                    - generic [ref=e299]:
+                      - generic [ref=e301]: S
+                      - button "Add to favorites" [ref=e303]:
+                        - img [ref=e304]
+                      - button "Add to play later" [ref=e306]:
+                        - img [ref=e307]
+                      - generic [ref=e311]: Super Nintendo
+                    - heading "Super Mario World" [level=3] [ref=e313]
+                - listitem [ref=e314]:
+                  - link "S Add to favorites Add to play later Super Nintendo Super Mario RPG - Legend of the Seven Stars" [ref=e315] [cursor=pointer]:
+                    - /url: /games/677
+                    - generic [ref=e316]:
+                      - generic [ref=e318]: S
+                      - button "Add to favorites" [ref=e320]:
+                        - img [ref=e321]
+                      - button "Add to play later" [ref=e323]:
+                        - img [ref=e324]
+                      - generic [ref=e328]: Super Nintendo
+                    - heading "Super Mario RPG - Legend of the Seven Stars" [level=3] [ref=e330]
+                - listitem [ref=e331]:
+                  - link "S Add to favorites Add to play later Super Nintendo Super Mario Kart" [ref=e332] [cursor=pointer]:
+                    - /url: /games/676
+                    - generic [ref=e333]:
+                      - generic [ref=e335]: S
+                      - button "Add to favorites" [ref=e337]:
+                        - img [ref=e338]
+                      - button "Add to play later" [ref=e340]:
+                        - img [ref=e341]
+                      - generic [ref=e345]: Super Nintendo
+                    - heading "Super Mario Kart" [level=3] [ref=e347]
+                - listitem [ref=e348]:
+                  - link "S Add to favorites Add to play later Super Nintendo Soul Blazer" [ref=e349] [cursor=pointer]:
+                    - /url: /games/675
+                    - generic [ref=e350]:
+                      - generic [ref=e352]: S
+                      - button "Add to favorites" [ref=e354]:
+                        - img [ref=e355]
+                      - button "Add to play later" [ref=e357]:
+                        - img [ref=e358]
+                      - generic [ref=e362]: Super Nintendo
+                    - heading "Soul Blazer" [level=3] [ref=e364]
+                - listitem [ref=e365]:
+                  - link "S Add to favorites Add to play later Super Nintendo Skyblazer" [ref=e366] [cursor=pointer]:
+                    - /url: /games/674
+                    - generic [ref=e367]:
+                      - generic [ref=e369]: S
+                      - button "Add to favorites" [ref=e371]:
+                        - img [ref=e372]
+                      - button "Add to play later" [ref=e374]:
+                        - img [ref=e375]
+                      - generic [ref=e379]: Super Nintendo
+                    - heading "Skyblazer" [level=3] [ref=e381]
+                - listitem [ref=e382]:
+                  - link "S Add to favorites Add to play later Super Nintendo Shadowrun" [ref=e383] [cursor=pointer]:
+                    - /url: /games/673
+                    - generic [ref=e384]:
+                      - generic [ref=e386]: S
+                      - button "Add to favorites" [ref=e388]:
+                        - img [ref=e389]
+                      - button "Add to play later" [ref=e391]:
+                        - img [ref=e392]
+                      - generic [ref=e396]: Super Nintendo
+                    - heading "Shadowrun" [level=3] [ref=e398]
+                - listitem [ref=e399]:
+                  - link "S Add to favorites Add to play later Super Nintendo Secret of Mana" [ref=e400] [cursor=pointer]:
+                    - /url: /games/672
+                    - generic [ref=e401]:
+                      - generic [ref=e403]: S
+                      - button "Add to favorites" [ref=e405]:
+                        - img [ref=e406]
+                      - button "Add to play later" [ref=e408]:
+                        - img [ref=e409]
+                      - generic [ref=e413]: Super Nintendo
+                    - heading "Secret of Mana" [level=3] [ref=e415]
+  - status

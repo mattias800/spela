@@ -1042,6 +1042,58 @@ class SaveManager(
      * Each save state with a non-null slot is mapped to its corresponding slot number.
      * Called on game start and after manual save operations to keep thumbnails fresh.
      */
+    /**
+     * Rename a single slot save. Hits PUT /api/sessions/{id}/saves/{saveId}
+     * with the new name and updates the local saveSlots map optimistically.
+     * Used by the in-game slot manage UI (#831). Failures roll back the
+     * optimistic update — the slot picker will show the old name again so
+     * the user knows the change didn't stick.
+     */
+    fun renameSlot(slot: Int, name: String) {
+        val sessionId = currentSessionId ?: return
+        val current = _state.value.saveSlots
+        val info = current[slot] ?: return
+        val saveId = info.saveId ?: return
+        val previous = info
+        // Optimistic update — flip the local name immediately so the user
+        // sees the rename without waiting for the round-trip.
+        _state.update {
+            it.copy(saveSlots = it.saveSlots + (slot to info.copy(name = name.takeIf { it.isNotBlank() })))
+        }
+        scope.launch(dispatchers.io) {
+            sessionRepository.updateSessionSave(sessionId, saveId, name).onFailure {
+                // Roll back to the previous name.
+                _state.update { state ->
+                    state.copy(saveSlots = state.saveSlots + (slot to previous))
+                }
+            }
+        }
+    }
+
+    /**
+     * Delete a single slot save. Hits DELETE /api/sessions/{id}/saves/{saveId}
+     * and clears the slot from the local map on success. Used by the
+     * in-game slot manage UI (#831). Failures restore the slot.
+     */
+    fun deleteSlot(slot: Int) {
+        val sessionId = currentSessionId ?: return
+        val info = _state.value.saveSlots[slot] ?: return
+        val saveId = info.saveId ?: return
+        val previous = info
+        // Optimistic clear — picker re-renders the cell as empty
+        // immediately. Restored on failure.
+        _state.update {
+            it.copy(saveSlots = it.saveSlots - slot)
+        }
+        scope.launch(dispatchers.io) {
+            sessionRepository.deleteSessionSave(sessionId, saveId).onFailure {
+                _state.update { state ->
+                    state.copy(saveSlots = state.saveSlots + (slot to previous))
+                }
+            }
+        }
+    }
+
     fun refreshSaveSlots() {
         val sessionId = currentSessionId ?: return
         scope.launch(dispatchers.io) {
@@ -1058,6 +1110,8 @@ class SaveManager(
                                 "%02d:%02d".format(local.hour, local.minute)
                             },
                             isFilled = true,
+                            saveId = save.id,
+                            name = save.name.takeIf { it.isNotBlank() },
                         )
                     }
                 }

@@ -1,0 +1,62 @@
+<h2>Developer/Publisher Screen Restructure</h2>
+<p class="subtitle">The current screen has 11 sections in one endless scroll. How should we break it up?</p>
+
+<div class="section">
+  <h3>Current sections (all in one scroll)</h3>
+  <p style="color: #999; font-size: 14px; line-height: 1.8;">
+    1. Hero Banner (logo + name + stats)<br>
+    2. Company Description (about, founded, links)<br>
+    3. At a Glance (stat cards carousel)<br>
+    4. Top Rated Games (horizontal carousel)<br>
+    5. Release Timeline (year-grouped history)<br>
+    6. Rating Distribution (stacked bar chart)<br>
+    7. Genre Breakdown (genre chips + counts)<br>
+    8. Your Stats (personal play stats)<br>
+    9. Games by Platform (full game list grouped by console)<br>
+    10. Publishers (related publishers)<br>
+    11. Related Developers
+  </p>
+</div>
+
+<h3>How should we restructure?</h3>
+<p class="subtitle">Click the approach that feels right</p>
+
+<div class="options">
+  <div class="option" data-choice="a" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>Tabs below the hero</h3>
+      <p>Keep the hero banner always visible. Below it, add tabs: <strong>Overview</strong> (description, at-a-glance, top rated), <strong>Games</strong> (full game list by platform with filters), <strong>Stats</strong> (timeline, rating distribution, genre breakdown, your stats). Related developers/publishers become chips in the hero or overview tab.</p>
+      <div class="pros-cons">
+        <div class="pros"><h4>Pros</h4><ul><li>Quick access to any section</li><li>Games list is its own focused view</li><li>Stats grouped logically</li></ul></div>
+        <div class="cons"><h4>Cons</h4><ul><li>Tabs can feel heavy on mobile/gamepad</li><li>3 tabs might feel like a lot</li></ul></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="b" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>Two screens: Profile + Games</h3>
+      <p>Main screen is a compact <strong>Profile</strong> with hero, description, at-a-glance stats, top rated row, and "View all games" button. Clicking "View all games" navigates to a dedicated <strong>Games</strong> screen with platform filters and the full list. Stats (timeline, rating dist, genre) are folded into the profile as compact cards. Related devs/publishers are chips at the bottom.</p>
+      <div class="pros-cons">
+        <div class="pros"><h4>Pros</h4><ul><li>Clean, focused profile page</li><li>Game list gets a proper filterable screen</li><li>Feels natural — profile → browse games</li></ul></div>
+        <div class="cons"><h4>Cons</h4><ul><li>Extra navigation step to see all games</li></ul></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="c" onclick="toggleSelect(this)">
+    <div class="letter">C</div>
+    <div class="content">
+      <h3>Curated overview + "See more" links</h3>
+      <p>Single scrollable screen but <strong>drastically shorter</strong>. Show only: hero, description, top 4 games as cards, 1-2 key stats inline, and "See all N games →" link. Each "see more" opens a focused subscreen. Think of it like an artist page on Spotify — a curated taste, not a data dump.</p>
+      <div class="pros-cons">
+        <div class="pros"><h4>Pros</h4><ul><li>Feels modern and curated</li><li>No information overload</li><li>Progressively reveals detail</li></ul></div>
+        <div class="cons"><h4>Cons</h4><ul><li>More subscreens to build</li><li>Some users want all data upfront</li></ul></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<p style="color: #888; margin-top: 24px; font-size: 13px;"><strong>My recommendation:</strong> Option B — it's the simplest restructure that solves the scroll problem. The profile stays rich but manageable, and the games list becomes a proper browsing experience with filters. We already have the pattern from the console page (curated overview → filterable game list).</p>

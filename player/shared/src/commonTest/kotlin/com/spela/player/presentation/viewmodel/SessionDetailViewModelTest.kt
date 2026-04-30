@@ -212,6 +212,17 @@ private class FakeSessionRepo : SessionRepository {
     override suspend fun getSessionSaves(sessionId: String): Result<List<SaveState>> =
         Result.success(emptyList())
 
+    override suspend fun updateSessionSave(
+        sessionId: String,
+        saveId: String,
+        name: String,
+    ): Result<SaveState> = Result.failure(UnsupportedOperationException())
+
+    override suspend fun deleteSessionSave(
+        sessionId: String,
+        saveId: String,
+    ): Result<Unit> = Result.success(Unit)
+
     override suspend fun uploadSessionSave(
         sessionId: String,
         name: String,

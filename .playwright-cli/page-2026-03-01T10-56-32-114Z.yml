@@ -1,0 +1,373 @@
+- generic [ref=e2]:
+  - generic [ref=e3]:
+    - complementary [ref=e4]:
+      - generic [ref=e5]:
+        - img [ref=e7]
+        - generic [ref=e9]: Spela
+      - navigation [ref=e10]:
+        - generic [ref=e11]:
+          - link "Dashboard" [ref=e12] [cursor=pointer]:
+            - /url: /
+            - img [ref=e13]
+            - generic [ref=e18]: Dashboard
+          - link "Library" [ref=e19] [cursor=pointer]:
+            - /url: /consoles
+            - img [ref=e20]
+            - generic [ref=e22]: Library
+          - link "Stats" [ref=e23] [cursor=pointer]:
+            - /url: /stats
+            - img [ref=e24]
+            - generic [ref=e26]: Stats
+          - link "Activity" [ref=e27] [cursor=pointer]:
+            - /url: /activity
+            - img [ref=e28]
+            - generic [ref=e30]: Activity
+          - link "Challenges" [ref=e31] [cursor=pointer]:
+            - /url: /challenges
+            - img [ref=e32]
+            - generic [ref=e34]: Challenges
+          - link "Relays" [ref=e35] [cursor=pointer]:
+            - /url: /relays
+            - img [ref=e36]
+            - generic [ref=e41]: Relays
+          - link "Netplay" [ref=e42] [cursor=pointer]:
+            - /url: /netplay
+            - img [ref=e43]
+            - generic [ref=e47]: Netplay
+          - link "Preferences" [ref=e48] [cursor=pointer]:
+            - /url: /preferences
+            - img [ref=e49]
+            - generic [ref=e50]: Preferences
+        - generic [ref=e51]:
+          - paragraph [ref=e52]: Admin
+          - link "Users" [ref=e53] [cursor=pointer]:
+            - /url: /admin/users
+            - img [ref=e54]
+            - generic [ref=e59]: Users
+          - link "Settings" [ref=e60] [cursor=pointer]:
+            - /url: /admin/settings
+            - img [ref=e61]
+            - generic [ref=e64]: Settings
+          - link "BIOS Files Warning" [ref=e65] [cursor=pointer]:
+            - /url: /admin/bios
+            - img [ref=e66]
+            - generic [ref=e69]: BIOS Files
+            - generic "Warning" [ref=e70]
+          - link "Upload ROMs" [ref=e71] [cursor=pointer]:
+            - /url: /admin/upload
+            - img [ref=e72]
+            - generic [ref=e75]: Upload ROMs
+          - link "Library Scan" [ref=e76] [cursor=pointer]:
+            - /url: /admin/scan
+            - img [ref=e77]
+            - generic [ref=e84]: Library Scan
+          - link "Metadata Fix" [ref=e85] [cursor=pointer]:
+            - /url: /admin/metadata
+            - img [ref=e86]
+            - generic [ref=e91]: Metadata Fix
+      - generic [ref=e93]:
+        - generic [ref=e94]: A
+        - generic [ref=e95]:
+          - paragraph [ref=e96]: admin
+          - paragraph [ref=e97]: owner
+        - button "Logout" [ref=e98] [cursor=pointer]:
+          - img [ref=e99]
+    - main [ref=e103]:
+      - generic [ref=e104]:
+        - button "Back to Consoles" [ref=e105] [cursor=pointer]:
+          - img [ref=e106]
+          - text: Back to Consoles
+        - generic [ref=e108]:
+          - generic:
+            - img
+          - generic [ref=e109]:
+            - img "Super Nintendo" [ref=e110]
+            - generic [ref=e111]:
+              - generic [ref=e112]: 23 games
+              - generic [ref=e113]:
+                - img [ref=e114]
+                - text: Save states
+              - generic [ref=e116]:
+                - img [ref=e117]
+                - text: Browser play
+        - generic [ref=e120]:
+          - img
+          - searchbox "Search Super Nintendo games..." [ref=e121]
+        - generic [ref=e122]:
+          - link "Aladdin Add to favorites Add to play later Super Nintendo Aladdin Super Nintendo" [ref=e123] [cursor=pointer]:
+            - /url: /games/80
+            - generic [ref=e124]:
+              - img "Aladdin" [ref=e125]
+              - button "Add to favorites" [ref=e127]:
+                - img [ref=e128]
+              - button "Add to play later" [ref=e130]:
+                - img [ref=e131]
+              - generic [ref=e135]: Super Nintendo
+            - generic [ref=e136]:
+              - heading "Aladdin" [level=3] [ref=e137]
+              - paragraph [ref=e139]: Super Nintendo
+          - link "Castlevania - Dracula X Add to favorites Add to play later Super Nintendo Castlevania - Dracula X Super Nintendo" [ref=e140] [cursor=pointer]:
+            - /url: /games/81
+            - generic [ref=e141]:
+              - img "Castlevania - Dracula X" [ref=e142]
+              - button "Add to favorites" [ref=e144]:
+                - img [ref=e145]
+              - button "Add to play later" [ref=e147]:
+                - img [ref=e148]
+              - generic [ref=e152]: Super Nintendo
+            - generic [ref=e153]:
+              - heading "Castlevania - Dracula X" [level=3] [ref=e154]
+              - paragraph [ref=e156]: Super Nintendo
+          - link "Chrono Trigger Add to favorites Add to play later Super Nintendo Chrono Trigger Super Nintendo" [ref=e157] [cursor=pointer]:
+            - /url: /games/82
+            - generic [ref=e158]:
+              - img "Chrono Trigger" [ref=e159]
+              - button "Add to favorites" [ref=e161]:
+                - img [ref=e162]
+              - button "Add to play later" [ref=e164]:
+                - img [ref=e165]
+              - generic [ref=e169]: Super Nintendo
+            - generic [ref=e170]:
+              - heading "Chrono Trigger" [level=3] [ref=e171]
+              - paragraph [ref=e173]: Super Nintendo
+          - link "Donkey Kong Country Add to favorites Add to play later Super Nintendo Donkey Kong Country Super Nintendo" [ref=e174] [cursor=pointer]:
+            - /url: /games/83
+            - generic [ref=e175]:
+              - img "Donkey Kong Country" [ref=e176]
+              - button "Add to favorites" [ref=e178]:
+                - img [ref=e179]
+              - button "Add to play later" [ref=e181]:
+                - img [ref=e182]
+              - generic [ref=e186]: Super Nintendo
+            - generic [ref=e187]:
+              - heading "Donkey Kong Country" [level=3] [ref=e188]
+              - paragraph [ref=e190]: Super Nintendo
+          - link "Donkey Kong Country 2 - Diddy's Kong Quest Add to favorites Add to play later Super Nintendo Donkey Kong Country 2 - Diddy's Kong Quest Super Nintendo" [ref=e191] [cursor=pointer]:
+            - /url: /games/84
+            - generic [ref=e192]:
+              - img "Donkey Kong Country 2 - Diddy's Kong Quest" [ref=e193]
+              - button "Add to favorites" [ref=e195]:
+                - img [ref=e196]
+              - button "Add to play later" [ref=e198]:
+                - img [ref=e199]
+              - generic [ref=e203]: Super Nintendo
+            - generic [ref=e204]:
+              - heading "Donkey Kong Country 2 - Diddy's Kong Quest" [level=3] [ref=e205]
+              - paragraph [ref=e207]: Super Nintendo
+          - link "Donkey Kong Country 3 - Dixie Kong's Double Trouble! Add to favorites Add to play later Super Nintendo Donkey Kong Country 3 - Dixie Kong's Double Trouble! Super Nintendo" [ref=e208] [cursor=pointer]:
+            - /url: /games/85
+            - generic [ref=e209]:
+              - img "Donkey Kong Country 3 - Dixie Kong's Double Trouble!" [ref=e210]
+              - button "Add to favorites" [ref=e212]:
+                - img [ref=e213]
+              - button "Add to play later" [ref=e215]:
+                - img [ref=e216]
+              - generic [ref=e220]: Super Nintendo
+            - generic [ref=e221]:
+              - heading "Donkey Kong Country 3 - Dixie Kong's Double Trouble!" [level=3] [ref=e222]
+              - paragraph [ref=e224]: Super Nintendo
+          - link "Final Fantasy VI Add to favorites Add to play later Super Nintendo Final Fantasy VI Super Nintendo" [ref=e225] [cursor=pointer]:
+            - /url: /games/86
+            - generic [ref=e226]:
+              - img "Final Fantasy VI" [ref=e482]
+              - button "Add to favorites" [ref=e227]:
+                - img [ref=e228]
+              - button "Add to play later" [ref=e230]:
+                - img [ref=e231]
+              - generic [ref=e235]: Super Nintendo
+            - generic [ref=e236]:
+              - heading "Final Fantasy VI" [level=3] [ref=e237]
+              - paragraph [ref=e239]: Super Nintendo
+          - link "Goof Troop Add to favorites Add to play later Super Nintendo Goof Troop Super Nintendo" [ref=e240] [cursor=pointer]:
+            - /url: /games/87
+            - generic [ref=e241]:
+              - img "Goof Troop" [ref=e484]
+              - button "Add to favorites" [ref=e242]:
+                - img [ref=e243]
+              - button "Add to play later" [ref=e245]:
+                - img [ref=e246]
+              - generic [ref=e250]: Super Nintendo
+            - generic [ref=e251]:
+              - heading "Goof Troop" [level=3] [ref=e252]
+              - paragraph [ref=e254]: Super Nintendo
+          - link "Illusion of Gaia Add to favorites Add to play later Super Nintendo Illusion of Gaia Super Nintendo" [ref=e255] [cursor=pointer]:
+            - /url: /games/88
+            - generic [ref=e256]:
+              - img "Illusion of Gaia" [ref=e486]
+              - button "Add to favorites" [ref=e257]:
+                - img [ref=e258]
+              - button "Add to play later" [ref=e260]:
+                - img [ref=e261]
+              - generic [ref=e265]: Super Nintendo
+            - generic [ref=e266]:
+              - heading "Illusion of Gaia" [level=3] [ref=e267]
+              - paragraph [ref=e269]: Super Nintendo
+          - link "Kirby Super Star Add to favorites Add to play later Super Nintendo Kirby Super Star Super Nintendo" [ref=e270] [cursor=pointer]:
+            - /url: /games/89
+            - generic [ref=e271]:
+              - img "Kirby Super Star" [ref=e488]
+              - button "Add to favorites" [ref=e272]:
+                - img [ref=e273]
+              - button "Add to play later" [ref=e275]:
+                - img [ref=e276]
+              - generic [ref=e280]: Super Nintendo
+            - generic [ref=e281]:
+              - heading "Kirby Super Star" [level=3] [ref=e282]
+              - paragraph [ref=e284]: Super Nintendo
+          - link "Kirby's Avalanche Add to favorites Add to play later Super Nintendo Kirby's Avalanche Super Nintendo" [ref=e285] [cursor=pointer]:
+            - /url: /games/90
+            - generic [ref=e286]:
+              - img "Kirby's Avalanche" [ref=e490]
+              - button "Add to favorites" [ref=e287]:
+                - img [ref=e288]
+              - button "Add to play later" [ref=e290]:
+                - img [ref=e291]
+              - generic [ref=e295]: Super Nintendo
+            - generic [ref=e296]:
+              - heading "Kirby's Avalanche" [level=3] [ref=e297]
+              - paragraph [ref=e299]: Super Nintendo
+          - link "Mickey Mania - The Timeless Adventures of Mickey Mouse Add to favorites Add to play later Super Nintendo Mickey Mania - The Timeless Adventures of Mickey Mouse Super Nintendo" [ref=e300] [cursor=pointer]:
+            - /url: /games/91
+            - generic [ref=e301]:
+              - img "Mickey Mania - The Timeless Adventures of Mickey Mouse" [ref=e492]
+              - button "Add to favorites" [ref=e302]:
+                - img [ref=e303]
+              - button "Add to play later" [ref=e305]:
+                - img [ref=e306]
+              - generic [ref=e310]: Super Nintendo
+            - generic [ref=e311]:
+              - heading "Mickey Mania - The Timeless Adventures of Mickey Mouse" [level=3] [ref=e312]
+              - paragraph [ref=e314]: Super Nintendo
+          - link "Secret of Mana Add to favorites Add to play later Super Nintendo Secret of Mana Super Nintendo" [ref=e315] [cursor=pointer]:
+            - /url: /games/92
+            - generic [ref=e316]:
+              - img "Secret of Mana" [ref=e494]
+              - button "Add to favorites" [ref=e317]:
+                - img [ref=e318]
+              - button "Add to play later" [ref=e320]:
+                - img [ref=e321]
+              - generic [ref=e325]: Super Nintendo
+            - generic [ref=e326]:
+              - heading "Secret of Mana" [level=3] [ref=e327]
+              - paragraph [ref=e329]: Super Nintendo
+          - link "Shadowrun Add to favorites Add to play later Super Nintendo Shadowrun Super Nintendo" [ref=e330] [cursor=pointer]:
+            - /url: /games/93
+            - generic [ref=e331]:
+              - img "Shadowrun" [ref=e496]
+              - button "Add to favorites" [ref=e332]:
+                - img [ref=e333]
+              - button "Add to play later" [ref=e335]:
+                - img [ref=e336]
+              - generic [ref=e340]: Super Nintendo
+            - generic [ref=e341]:
+              - heading "Shadowrun" [level=3] [ref=e342]
+              - paragraph [ref=e344]: Super Nintendo
+          - link "Skyblazer Add to favorites Add to play later Super Nintendo Skyblazer Super Nintendo" [ref=e345] [cursor=pointer]:
+            - /url: /games/94
+            - generic [ref=e346]:
+              - img "Skyblazer" [ref=e498]
+              - button "Add to favorites" [ref=e347]:
+                - img [ref=e348]
+              - button "Add to play later" [ref=e350]:
+                - img [ref=e351]
+              - generic [ref=e355]: Super Nintendo
+            - generic [ref=e356]:
+              - heading "Skyblazer" [level=3] [ref=e357]
+              - paragraph [ref=e359]: Super Nintendo
+          - link "Soul Blazer Add to favorites Add to play later Super Nintendo Soul Blazer Super Nintendo" [ref=e360] [cursor=pointer]:
+            - /url: /games/95
+            - generic [ref=e361]:
+              - img "Soul Blazer" [ref=e500]
+              - button "Add to favorites" [ref=e362]:
+                - img [ref=e363]
+              - button "Add to play later" [ref=e365]:
+                - img [ref=e366]
+              - generic [ref=e370]: Super Nintendo
+            - generic [ref=e371]:
+              - heading "Soul Blazer" [level=3] [ref=e372]
+              - paragraph [ref=e374]: Super Nintendo
+          - link "Super Mario Kart Add to favorites Add to play later Super Nintendo Super Mario Kart Super Nintendo" [ref=e375] [cursor=pointer]:
+            - /url: /games/96
+            - generic [ref=e376]:
+              - img "Super Mario Kart" [ref=e502]
+              - button "Add to favorites" [ref=e377]:
+                - img [ref=e378]
+              - button "Add to play later" [ref=e380]:
+                - img [ref=e381]
+              - generic [ref=e385]: Super Nintendo
+            - generic [ref=e386]:
+              - heading "Super Mario Kart" [level=3] [ref=e387]
+              - paragraph [ref=e389]: Super Nintendo
+          - link "Super Mario RPG - Legend of the Seven Stars Add to favorites Add to play later Super Nintendo Super Mario RPG - Legend of the Seven Stars Super Nintendo" [ref=e390] [cursor=pointer]:
+            - /url: /games/97
+            - generic [ref=e391]:
+              - img "Super Mario RPG - Legend of the Seven Stars" [ref=e504]
+              - button "Add to favorites" [ref=e392]:
+                - img [ref=e393]
+              - button "Add to play later" [ref=e395]:
+                - img [ref=e396]
+              - generic [ref=e400]: Super Nintendo
+            - generic [ref=e401]:
+              - heading "Super Mario RPG - Legend of the Seven Stars" [level=3] [ref=e402]
+              - paragraph [ref=e404]: Super Nintendo
+          - link "Super Mario World Add to favorites Add to play later Super Nintendo Super Mario World Super Nintendo" [ref=e405] [cursor=pointer]:
+            - /url: /games/98
+            - generic [ref=e406]:
+              - img "Super Mario World" [ref=e407]
+              - button "Add to favorites" [ref=e409]:
+                - img [ref=e410]
+              - button "Add to play later" [ref=e412]:
+                - img [ref=e413]
+              - generic [ref=e417]: Super Nintendo
+            - generic [ref=e418]:
+              - heading "Super Mario World" [level=3] [ref=e419]
+              - paragraph [ref=e421]: Super Nintendo
+          - link "Super Mario World 2 - Yoshi's Island Add to favorites Add to play later Super Nintendo Super Mario World 2 - Yoshi's Island Super Nintendo" [ref=e422] [cursor=pointer]:
+            - /url: /games/99
+            - generic [ref=e423]:
+              - img "Super Mario World 2 - Yoshi's Island" [ref=e506]
+              - button "Add to favorites" [ref=e424]:
+                - img [ref=e425]
+              - button "Add to play later" [ref=e427]:
+                - img [ref=e428]
+              - generic [ref=e432]: Super Nintendo
+            - generic [ref=e433]:
+              - heading "Super Mario World 2 - Yoshi's Island" [level=3] [ref=e434]
+              - paragraph [ref=e436]: Super Nintendo
+          - link "Super Metroid Add to favorites Add to play later Super Nintendo Super Metroid Super Nintendo" [ref=e437] [cursor=pointer]:
+            - /url: /games/100
+            - generic [ref=e438]:
+              - img "Super Metroid" [ref=e508]
+              - button "Add to favorites" [ref=e439]:
+                - img [ref=e440]
+              - button "Add to play later" [ref=e442]:
+                - img [ref=e443]
+              - generic [ref=e447]: Super Nintendo
+            - generic [ref=e448]:
+              - heading "Super Metroid" [level=3] [ref=e449]
+              - paragraph [ref=e451]: Super Nintendo
+          - link "Terranigma Add to favorites Add to play later Super Nintendo Terranigma Super Nintendo" [ref=e452] [cursor=pointer]:
+            - /url: /games/101
+            - generic [ref=e453]:
+              - img "Terranigma" [ref=e510]
+              - button "Add to favorites" [ref=e454]:
+                - img [ref=e455]
+              - button "Add to play later" [ref=e457]:
+                - img [ref=e458]
+              - generic [ref=e462]: Super Nintendo
+            - generic [ref=e463]:
+              - heading "Terranigma" [level=3] [ref=e464]
+              - paragraph [ref=e466]: Super Nintendo
+          - link "The Legend of Zelda - A Link to the Past Add to favorites Add to play later Super Nintendo The Legend of Zelda - A Link to the Past Super Nintendo" [ref=e467] [cursor=pointer]:
+            - /url: /games/102
+            - generic [ref=e468]:
+              - img "The Legend of Zelda - A Link to the Past" [ref=e512]
+              - button "Add to favorites" [ref=e469]:
+                - img [ref=e470]
+              - button "Add to play later" [ref=e472]:
+                - img [ref=e473]
+              - generic [ref=e477]: Super Nintendo
+            - generic [ref=e478]:
+              - heading "The Legend of Zelda - A Link to the Past" [level=3] [ref=e479]
+              - paragraph [ref=e481]: Super Nintendo
+  - status

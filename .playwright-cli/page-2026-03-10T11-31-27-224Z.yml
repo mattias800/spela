@@ -1,0 +1,388 @@
+- generic [ref=e2]:
+  - generic [ref=e24]:
+    - complementary [ref=e25]:
+      - generic [ref=e26]:
+        - img [ref=e28]
+        - generic [ref=e30]: Spela
+      - navigation [ref=e31]:
+        - generic [ref=e32]:
+          - link "Dashboard" [ref=e33] [cursor=pointer]:
+            - /url: /
+            - img [ref=e34]
+            - generic [ref=e39]: Dashboard
+          - link "Explore" [ref=e40] [cursor=pointer]:
+            - /url: /explore
+            - img [ref=e41]
+            - generic [ref=e44]: Explore
+          - link "Library" [ref=e45] [cursor=pointer]:
+            - /url: /consoles
+            - img [ref=e46]
+            - generic [ref=e48]: Library
+          - link "Stats" [ref=e49] [cursor=pointer]:
+            - /url: /stats
+            - img [ref=e50]
+            - generic [ref=e52]: Stats
+          - link "Top Lists" [ref=e53] [cursor=pointer]:
+            - /url: /top-lists
+            - img [ref=e54]
+            - generic [ref=e60]: Top Lists
+          - link "Activity" [ref=e61] [cursor=pointer]:
+            - /url: /activity
+            - img [ref=e62]
+            - generic [ref=e64]: Activity
+          - link "Challenges" [ref=e65] [cursor=pointer]:
+            - /url: /challenges
+            - img [ref=e66]
+            - generic [ref=e68]: Challenges
+          - link "Shared Sessions" [ref=e69] [cursor=pointer]:
+            - /url: /shared-sessions
+            - img [ref=e70]
+            - generic [ref=e75]: Shared Sessions
+          - link "Netplay" [ref=e76] [cursor=pointer]:
+            - /url: /netplay
+            - img [ref=e77]
+            - generic [ref=e81]: Netplay
+          - link "Preferences" [ref=e82] [cursor=pointer]:
+            - /url: /preferences
+            - img [ref=e83]
+            - generic [ref=e84]: Preferences
+        - generic [ref=e85]:
+          - paragraph [ref=e86]: Admin
+          - link "Users" [ref=e87] [cursor=pointer]:
+            - /url: /admin/users
+            - img [ref=e88]
+            - generic [ref=e93]: Users
+          - link "Settings" [ref=e94] [cursor=pointer]:
+            - /url: /admin/settings
+            - img [ref=e95]
+            - generic [ref=e98]: Settings
+          - link "BIOS Files Warning" [ref=e99] [cursor=pointer]:
+            - /url: /admin/bios
+            - img [ref=e100]
+            - generic [ref=e103]: BIOS Files
+            - generic "Warning" [ref=e104]
+          - link "Upload ROMs" [ref=e105] [cursor=pointer]:
+            - /url: /admin/upload
+            - img [ref=e106]
+            - generic [ref=e109]: Upload ROMs
+          - link "Library Scan" [ref=e110] [cursor=pointer]:
+            - /url: /admin/scan
+            - img [ref=e111]
+            - generic [ref=e118]: Library Scan
+          - link "Metadata Fix" [ref=e119] [cursor=pointer]:
+            - /url: /admin/metadata
+            - img [ref=e120]
+            - generic [ref=e125]: Metadata Fix
+          - link "Cheats" [ref=e126] [cursor=pointer]:
+            - /url: /admin/cheats
+            - img [ref=e127]
+            - generic [ref=e129]: Cheats
+          - link "Core Compatibility" [ref=e130] [cursor=pointer]:
+            - /url: /admin/core-compatibility
+            - img [ref=e131]
+            - generic [ref=e138]: Core Compatibility
+      - generic [ref=e140]:
+        - generic [ref=e141]: A
+        - generic [ref=e142]:
+          - paragraph [ref=e143]: admin
+          - paragraph [ref=e144]: owner
+        - button "Logout" [ref=e145] [cursor=pointer]:
+          - img [ref=e146]
+      - paragraph [ref=e150]: vdev
+    - main [ref=e152]:
+      - generic [ref=e153]:
+        - generic [ref=e154]:
+          - heading "Welcome back, admin" [level=1] [ref=e155]
+          - paragraph [ref=e156]: Pick up where you left off or discover something new.
+        - alert [ref=e157]:
+          - img [ref=e158]
+          - generic [ref=e160]:
+            - paragraph [ref=e161]: Some consoles are missing required BIOS files. Games may not work correctly.
+            - paragraph [ref=e162]:
+              - link "Go to BIOS Management" [ref=e163] [cursor=pointer]:
+                - /url: /admin/bios
+          - button "Dismiss" [ref=e164] [cursor=pointer]:
+            - img [ref=e165]
+        - generic [ref=e168]:
+          - generic [ref=e169]:
+            - img [ref=e170]
+            - heading "Your Stats" [level=2] [ref=e176]
+          - generic [ref=e177]:
+            - generic [ref=e178]:
+              - paragraph [ref=e179]: 5h 2m
+              - paragraph [ref=e180]: Total play time
+            - generic [ref=e181]:
+              - paragraph [ref=e182]: "15"
+              - paragraph [ref=e183]: Games played
+            - generic [ref=e184]:
+              - paragraph [ref=e185]: 0d
+              - paragraph [ref=e186]: Current streak
+            - link "Aladdin 3h 0m Most played" [ref=e187] [cursor=pointer]:
+              - /url: /games/80
+              - paragraph [ref=e188]: Aladdin
+              - paragraph [ref=e189]: 3h 0m
+              - paragraph [ref=e190]: Most played
+        - generic [ref=e191]:
+          - generic [ref=e192]:
+            - generic [ref=e193]:
+              - img [ref=e194]
+              - heading "Continue Playing" [level=2] [ref=e196]
+            - link "View all" [ref=e197] [cursor=pointer]:
+              - /url: /games
+              - text: View all
+              - img [ref=e198]
+          - generic [ref=e200]:
+            - link "Ice Climber Add to favorites Add to play later Nintendo Entertainment System Ice Climber Nintendo Entertainment System" [ref=e201] [cursor=pointer]:
+              - /url: /games/106
+              - generic [ref=e202]:
+                - img "Ice Climber" [ref=e203]
+                - button "Add to favorites" [ref=e205]:
+                  - img [ref=e206]
+                - button "Add to play later" [ref=e208]:
+                  - img [ref=e209]
+                - generic [ref=e213]: Nintendo Entertainment System
+              - generic [ref=e214]:
+                - heading "Ice Climber" [level=3] [ref=e215]
+                - paragraph [ref=e217]: Nintendo Entertainment System
+            - link "Balloon Fight Add to favorites Add to play later Nintendo Entertainment System Balloon Fight Nintendo Entertainment System" [ref=e218] [cursor=pointer]:
+              - /url: /games/105
+              - generic [ref=e219]:
+                - img "Balloon Fight" [ref=e220]
+                - button "Add to favorites" [ref=e222]:
+                  - img [ref=e223]
+                - button "Add to play later" [ref=e225]:
+                  - img [ref=e226]
+                - generic [ref=e230]: Nintendo Entertainment System
+              - generic [ref=e231]:
+                - heading "Balloon Fight" [level=3] [ref=e232]
+                - paragraph [ref=e234]: Nintendo Entertainment System
+            - link "Super Mario Bros. Add to favorites Add to play later Nintendo Entertainment System Super Mario Bros. Nintendo Entertainment System" [ref=e235] [cursor=pointer]:
+              - /url: /games/75
+              - generic [ref=e236]:
+                - img "Super Mario Bros." [ref=e237]
+                - button "Add to favorites" [ref=e239]:
+                  - img [ref=e240]
+                - button "Add to play later" [ref=e242]:
+                  - img [ref=e243]
+                - generic [ref=e247]: Nintendo Entertainment System
+              - generic [ref=e248]:
+                - heading "Super Mario Bros." [level=3] [ref=e249]
+                - paragraph [ref=e251]: Nintendo Entertainment System
+            - link "Super Mario Bros. 2 Add to favorites Add to play later Nintendo Entertainment System Super Mario Bros. 2 Nintendo Entertainment System" [ref=e252] [cursor=pointer]:
+              - /url: /games/73
+              - generic [ref=e253]:
+                - img "Super Mario Bros. 2" [ref=e254]
+                - button "Add to favorites" [ref=e256]:
+                  - img [ref=e257]
+                - button "Add to play later" [ref=e259]:
+                  - img [ref=e260]
+                - generic [ref=e264]: Nintendo Entertainment System
+              - generic [ref=e265]:
+                - heading "Super Mario Bros. 2" [level=3] [ref=e266]
+                - paragraph [ref=e268]: Nintendo Entertainment System
+            - link "Super Mario Bros. 3 Add to favorites Add to play later Nintendo Entertainment System Super Mario Bros. 3 Nintendo Entertainment System" [ref=e269] [cursor=pointer]:
+              - /url: /games/74
+              - generic [ref=e270]:
+                - img "Super Mario Bros. 3" [ref=e271]
+                - button "Add to favorites" [ref=e273]:
+                  - img [ref=e274]
+                - button "Add to play later" [ref=e276]:
+                  - img [ref=e277]
+                - generic [ref=e281]: Nintendo Entertainment System
+              - generic [ref=e282]:
+                - heading "Super Mario Bros. 3" [level=3] [ref=e283]
+                - paragraph [ref=e285]: Nintendo Entertainment System
+            - link "Aladdin Add to favorites Add to play later Super Nintendo Aladdin Super Nintendo" [ref=e286] [cursor=pointer]:
+              - /url: /games/80
+              - generic [ref=e287]:
+                - img "Aladdin" [ref=e288]
+                - button "Add to favorites" [ref=e290]:
+                  - img [ref=e291]
+                - button "Add to play later" [ref=e293]:
+                  - img [ref=e294]
+                - generic [ref=e298]: Super Nintendo
+              - generic [ref=e299]:
+                - heading "Aladdin" [level=3] [ref=e300]
+                - paragraph [ref=e302]: Super Nintendo
+        - generic [ref=e303]:
+          - generic [ref=e304]:
+            - generic [ref=e305]:
+              - img [ref=e306]
+              - heading "Play Later" [level=2] [ref=e309]
+            - link "View all" [ref=e310] [cursor=pointer]:
+              - /url: /play-later
+              - text: View all
+              - img [ref=e311]
+          - link "Castlevania Add to favorites Nintendo Entertainment System Castlevania Nintendo Entertainment System" [ref=e314] [cursor=pointer]:
+            - /url: /games/68
+            - generic [ref=e315]:
+              - img "Castlevania" [ref=e316]
+              - button "Add to favorites" [ref=e318]:
+                - img [ref=e319]
+              - img [ref=e322]
+              - generic [ref=e326]: Nintendo Entertainment System
+            - generic [ref=e327]:
+              - heading "Castlevania" [level=3] [ref=e328]
+              - paragraph [ref=e330]: Nintendo Entertainment System
+        - generic [ref=e331]:
+          - generic [ref=e332]:
+            - generic [ref=e333]:
+              - img [ref=e334]
+              - heading "Recently Added" [level=2] [ref=e337]
+            - link "View all" [ref=e338] [cursor=pointer]:
+              - /url: /games
+              - text: View all
+              - img [ref=e339]
+          - generic [ref=e341]:
+            - link "Tennis Add to favorites Add to play later Nintendo Entertainment System Tennis Nintendo Entertainment System" [ref=e342] [cursor=pointer]:
+              - /url: /games/110
+              - generic [ref=e343]:
+                - img "Tennis" [ref=e344]
+                - button "Add to favorites" [ref=e346]:
+                  - img [ref=e347]
+                - button "Add to play later" [ref=e349]:
+                  - img [ref=e350]
+                - generic [ref=e354]: Nintendo Entertainment System
+              - generic [ref=e355]:
+                - heading "Tennis" [level=3] [ref=e356]
+                - paragraph [ref=e358]: Nintendo Entertainment System
+            - link "Golf Add to favorites Add to play later Nintendo Entertainment System Golf Nintendo Entertainment System" [ref=e359] [cursor=pointer]:
+              - /url: /games/109
+              - generic [ref=e360]:
+                - img "Golf" [ref=e361]
+                - button "Add to favorites" [ref=e363]:
+                  - img [ref=e364]
+                - button "Add to play later" [ref=e366]:
+                  - img [ref=e367]
+                - generic [ref=e371]: Nintendo Entertainment System
+              - generic [ref=e372]:
+                - heading "Golf" [level=3] [ref=e373]
+                - paragraph [ref=e375]: Nintendo Entertainment System
+            - link "Clu Clu Land Add to favorites Add to play later Nintendo Entertainment System Clu Clu Land Nintendo Entertainment System" [ref=e376] [cursor=pointer]:
+              - /url: /games/108
+              - generic [ref=e377]:
+                - img "Clu Clu Land" [ref=e378]
+                - button "Add to favorites" [ref=e380]:
+                  - img [ref=e381]
+                - button "Add to play later" [ref=e383]:
+                  - img [ref=e384]
+                - generic [ref=e388]: Nintendo Entertainment System
+              - generic [ref=e389]:
+                - heading "Clu Clu Land" [level=3] [ref=e390]
+                - paragraph [ref=e392]: Nintendo Entertainment System
+            - link "Chip 'n Dale - Rescue Rangers Add to favorites Add to play later Nintendo Entertainment System Chip 'n Dale - Rescue Rangers Nintendo Entertainment System" [ref=e393] [cursor=pointer]:
+              - /url: /games/107
+              - generic [ref=e394]:
+                - img "Chip 'n Dale - Rescue Rangers" [ref=e395]
+                - button "Add to favorites" [ref=e397]:
+                  - img [ref=e398]
+                - button "Add to play later" [ref=e400]:
+                  - img [ref=e401]
+                - generic [ref=e405]: Nintendo Entertainment System
+              - generic [ref=e406]:
+                - heading "Chip 'n Dale - Rescue Rangers" [level=3] [ref=e407]
+                - paragraph [ref=e409]: Nintendo Entertainment System
+            - link "Ice Climber Add to favorites Add to play later Nintendo Entertainment System Ice Climber Nintendo Entertainment System" [ref=e410] [cursor=pointer]:
+              - /url: /games/106
+              - generic [ref=e411]:
+                - img "Ice Climber" [ref=e412]
+                - button "Add to favorites" [ref=e414]:
+                  - img [ref=e415]
+                - button "Add to play later" [ref=e417]:
+                  - img [ref=e418]
+                - generic [ref=e422]: Nintendo Entertainment System
+              - generic [ref=e423]:
+                - heading "Ice Climber" [level=3] [ref=e424]
+                - paragraph [ref=e426]: Nintendo Entertainment System
+            - link "Balloon Fight Add to favorites Add to play later Nintendo Entertainment System Balloon Fight Nintendo Entertainment System" [ref=e427] [cursor=pointer]:
+              - /url: /games/105
+              - generic [ref=e428]:
+                - img "Balloon Fight" [ref=e429]
+                - button "Add to favorites" [ref=e431]:
+                  - img [ref=e432]
+                - button "Add to play later" [ref=e434]:
+                  - img [ref=e435]
+                - generic [ref=e439]: Nintendo Entertainment System
+              - generic [ref=e440]:
+                - heading "Balloon Fight" [level=3] [ref=e441]
+                - paragraph [ref=e443]: Nintendo Entertainment System
+        - generic [ref=e444]:
+          - generic [ref=e446]:
+            - generic [ref=e447]:
+              - generic [ref=e448]:
+                - img [ref=e449]
+                - heading "Recent Activity" [level=2] [ref=e451]
+              - link "View all" [ref=e452] [cursor=pointer]:
+                - /url: /activity
+                - text: View all
+                - img [ref=e453]
+            - generic [ref=e455]:
+              - generic [ref=e456]:
+                - generic [ref=e457]:
+                  - generic [ref=e458]: A
+                  - img [ref=e460]
+                - generic [ref=e462]:
+                  - paragraph [ref=e463]:
+                    - link "admin" [ref=e464] [cursor=pointer]:
+                      - /url: /users/1
+                    - text: started playing
+                    - link "Ice Climber" [ref=e465] [cursor=pointer]:
+                      - /url: /games/106
+                  - generic [ref=e467]: 2d ago
+              - generic [ref=e468]:
+                - generic [ref=e469]:
+                  - generic [ref=e470]: A
+                  - img [ref=e472]
+                - generic [ref=e474]:
+                  - paragraph [ref=e475]:
+                    - link "admin" [ref=e476] [cursor=pointer]:
+                      - /url: /users/1
+                    - text: started playing
+                    - link "Ice Climber" [ref=e477] [cursor=pointer]:
+                      - /url: /games/106
+                  - generic [ref=e479]: 2d ago
+              - generic [ref=e480]:
+                - generic [ref=e481]:
+                  - generic [ref=e482]: A
+                  - img [ref=e484]
+                - generic [ref=e486]:
+                  - paragraph [ref=e487]:
+                    - link "admin" [ref=e488] [cursor=pointer]:
+                      - /url: /users/1
+                    - text: started playing
+                    - link "Balloon Fight" [ref=e489] [cursor=pointer]:
+                      - /url: /games/105
+                  - generic [ref=e491]: 3d ago
+              - generic [ref=e492]:
+                - generic [ref=e493]:
+                  - generic [ref=e494]: A
+                  - img [ref=e496]
+                - generic [ref=e498]:
+                  - paragraph [ref=e499]:
+                    - link "admin" [ref=e500] [cursor=pointer]:
+                      - /url: /users/1
+                    - text: started playing
+                    - link "Super Mario Bros." [ref=e501] [cursor=pointer]:
+                      - /url: /games/75
+                  - generic [ref=e503]: 3d ago
+              - generic [ref=e504]:
+                - generic [ref=e505]:
+                  - generic [ref=e506]: A
+                  - img [ref=e508]
+                - generic [ref=e510]:
+                  - paragraph [ref=e511]:
+                    - link "admin" [ref=e512] [cursor=pointer]:
+                      - /url: /users/1
+                    - text: started playing
+                    - link "Super Mario Bros. 2" [ref=e513] [cursor=pointer]:
+                      - /url: /games/73
+                  - generic [ref=e515]: 3d ago
+          - generic [ref=e518]:
+            - generic [ref=e519]:
+              - img [ref=e520]
+              - heading "Online Now" [level=2] [ref=e525]
+            - generic [ref=e526]:
+              - img [ref=e528]
+              - heading "No one online" [level=3] [ref=e533]
+              - paragraph [ref=e534]: Check back later to see who's playing.
+  - status

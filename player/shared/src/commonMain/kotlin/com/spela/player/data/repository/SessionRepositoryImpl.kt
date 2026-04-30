@@ -55,6 +55,21 @@ class SessionRepositoryImpl(
         apiClient.getSessionSaves(sessionId).map { it.toDomain() }
     }
 
+    override suspend fun updateSessionSave(
+        sessionId: String,
+        saveId: String,
+        name: String,
+    ): Result<SaveState> = runCatching {
+        apiClient.updateSessionSave(sessionId, saveId, name).toDomain()
+    }
+
+    override suspend fun deleteSessionSave(
+        sessionId: String,
+        saveId: String,
+    ): Result<Unit> = runCatching {
+        apiClient.deleteSessionSave(sessionId, saveId)
+    }
+
     override suspend fun uploadSessionSave(
         sessionId: String,
         name: String,

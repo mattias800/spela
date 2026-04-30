@@ -1,7 +1,9 @@
 package com.spela.player.presentation.ui.feature.ingame
 
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -55,6 +57,10 @@ fun InGameSlotPickerDialog(
      *  large tier to hide it (slot-only by spec) and on Load mode
      *  (loading is slot-driven, not name-driven). */
     onSaveWithName: (() -> Unit)? = null,
+    /** Long-press on a filled slot cell — opens the slot manage
+     *  bottom sheet (Rename / Delete / Cancel). Hosts that don't
+     *  want the gesture pass null. See #831. */
+    onSlotLongPress: ((Int) -> Unit)? = null,
 ) {
     val title = when (mode) {
         SlotPickerMode.Save -> "Save to slot"
@@ -112,6 +118,13 @@ fun InGameSlotPickerDialog(
                                     SlotPickerMode.Load -> onLoadFromSlot(slot)
                                 }
                             },
+                            // Long-press only matters when the slot is filled —
+                            // empty slots have nothing to rename or delete. The
+                            // child checks slotInfo before invoking the handler
+                            // so the gesture is silently inert on empty cells
+                            // (rather than opening an actions sheet that has
+                            // nothing to do). See #831.
+                            onLongPress = onSlotLongPress,
                         )
                     }
                 }
@@ -159,12 +172,14 @@ fun InGameSlotPickerDialog(
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun SlotPickerCell(
     slot: Int,
     slotInfo: SaveSlotInfo?,
     mode: SlotPickerMode,
     onClick: () -> Unit,
+    onLongPress: ((Int) -> Unit)? = null,
 ) {
     val filled = slotInfo?.isFilled == true
     // Load-from-empty is a no-op so we render those cells as inert
@@ -181,13 +196,30 @@ private fun SlotPickerCell(
         filled -> SpColor.OnPrimary
         else -> SpColor.OnBackground
     }
+    // Only filled slots get a long-press handler — empty slots have
+    // nothing to rename or delete (#831).
+    val longPressHandler: (() -> Unit)? = if (filled && onLongPress != null) {
+        { onLongPress(slot) }
+    } else {
+        null
+    }
+    val cellModifier = Modifier
+        .size(64.dp)
+        .clip(RoundedCornerShape(SpSpacing.RadiusMedium))
+        .background(background)
+        .let { base ->
+            when {
+                !enabled -> base
+                longPressHandler != null -> base.combinedClickable(
+                    onClick = onClick,
+                    onLongClick = longPressHandler,
+                )
+                else -> base.clickable(onClick = onClick)
+            }
+        }
+        .testTag("slot-picker-cell-$slot")
     Box(
-        modifier = Modifier
-            .size(64.dp)
-            .clip(RoundedCornerShape(SpSpacing.RadiusMedium))
-            .background(background)
-            .let { if (enabled) it.clickable(onClick = onClick) else it }
-            .testTag("slot-picker-cell-$slot"),
+        modifier = cellModifier,
         contentAlignment = Alignment.Center,
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {

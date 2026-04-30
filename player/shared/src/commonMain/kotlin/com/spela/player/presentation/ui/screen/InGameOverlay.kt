@@ -269,6 +269,7 @@ fun InGameOverlay(
             onLoadFromSlot = { slot -> viewModel.onIntent(EmulationIntent.LoadFromSlot(slot)) },
             onDismiss = { viewModel.onIntent(EmulationIntent.DismissSlotPicker) },
             onSaveWithName = onSaveWithName,
+            onSlotLongPress = { slot -> viewModel.onIntent(EmulationIntent.ShowSlotActionsSheet(slot)) },
         )
     }
 
@@ -279,6 +280,34 @@ fun InGameOverlay(
         com.spela.player.presentation.ui.feature.ingame.InGameNamedSaveDialog(
             onConfirm = { name -> viewModel.onIntent(EmulationIntent.SaveWithName(name)) },
             onDismiss = { viewModel.onIntent(EmulationIntent.DismissNamedSaveDialog) },
+        )
+    }
+
+    // Slot manage modals (#831). Stack on top of the slot picker so a
+    // long-press doesn't dismiss it — the sheet/dialog hides the picker
+    // behind a scrim while open and dismisses back to it on cancel.
+    state.slotActionsSheetSlot?.let { slot ->
+        com.spela.player.presentation.ui.feature.ingame.InGameSlotActionsSheet(
+            slot = slot,
+            slotInfo = state.saveSlots[slot],
+            onRename = { viewModel.onIntent(EmulationIntent.ShowSlotRenameDialog(slot)) },
+            onDelete = { viewModel.onIntent(EmulationIntent.ShowSlotDeleteConfirm(slot)) },
+            onDismiss = { viewModel.onIntent(EmulationIntent.DismissSlotActionsSheet) },
+        )
+    }
+    state.slotRenameTarget?.let { slot ->
+        com.spela.player.presentation.ui.feature.ingame.InGameSlotRenameDialog(
+            slot = slot,
+            slotInfo = state.saveSlots[slot],
+            onConfirm = { name -> viewModel.onIntent(EmulationIntent.RenameSlot(slot, name)) },
+            onDismiss = { viewModel.onIntent(EmulationIntent.DismissSlotRenameDialog) },
+        )
+    }
+    state.slotDeleteConfirmSlot?.let { slot ->
+        com.spela.player.presentation.ui.feature.ingame.InGameSlotDeleteConfirmDialog(
+            slot = slot,
+            onConfirm = { viewModel.onIntent(EmulationIntent.DeleteSlot(slot)) },
+            onDismiss = { viewModel.onIntent(EmulationIntent.DismissSlotDeleteConfirm) },
         )
     }
 

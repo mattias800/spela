@@ -1,0 +1,62 @@
+<h2>Carousel Card Redesign: Approaches</h2>
+<p class="subtitle">Static height, image-driven width — three ways to structure it</p>
+
+<div class="options">
+  <div class="option" data-choice="a" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>Minimal Change — Update existing components in place</h3>
+      <p>Modify <code>GameCard</code> and each shelf component directly. Change card sizing from fixed-width to fixed-height. Each shelf keeps its own scroll logic.</p>
+      <div class="pros-cons">
+        <div class="pros"><h4>Pros</h4><ul>
+          <li>Smallest diff, least risk</li>
+          <li>No new components to maintain</li>
+        </ul></div>
+        <div class="cons"><h4>Cons</h4><ul>
+          <li>Scroll logic stays duplicated across 13+ shelf components</li>
+          <li>No Design→Content→Role hierarchy for carousels</li>
+          <li>Harder to change carousel behavior later</li>
+        </ul></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="b" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>Recommended — Extract shared ScrollShelf + CarouselGameCard</h3>
+      <p>Create a shared <strong>Design</strong> layer <code>ScrollShelf</code> (scroll container, arrows, scroll state) and a <strong>Content</strong> layer <code>CarouselGameCard</code> (fixed-height card with image-driven width). Existing shelves become thin <strong>Role</strong> wrappers.</p>
+      <div class="pros-cons">
+        <div class="pros"><h4>Pros</h4><ul>
+          <li>Follows Design→Content→Role hierarchy</li>
+          <li>Eliminates duplicated scroll logic (13+ copies → 1)</li>
+          <li>Centralized height constant — easy to tweak</li>
+          <li>Matches the player app's component structure</li>
+        </ul></div>
+        <div class="cons"><h4>Cons</h4><ul>
+          <li>Larger diff — touches many shelf files</li>
+          <li>More up-front work</li>
+        </ul></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="c" onclick="toggleSelect(this)">
+    <div class="letter">C</div>
+    <div class="content">
+      <h3>Full Redesign — New carousel system with virtualization</h3>
+      <p>Build a new carousel system with windowed rendering (only render visible cards), intersection observer-based lazy loading, and full keyboard/gamepad navigation.</p>
+      <div class="pros-cons">
+        <div class="pros"><h4>Pros</h4><ul>
+          <li>Best performance for large lists</li>
+          <li>Gamepad-ready like the player app</li>
+        </ul></div>
+        <div class="cons"><h4>Cons</h4><ul>
+          <li>Way more complexity than needed</li>
+          <li>Variable-width cards make virtualization harder</li>
+          <li>YAGNI — current shelves have ≤20 items</li>
+        </ul></div>
+      </div>
+    </div>
+  </div>
+</div>

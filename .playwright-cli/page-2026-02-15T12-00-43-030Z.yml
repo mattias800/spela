@@ -1,0 +1,169 @@
+- generic [ref=e3]:
+  - complementary [ref=e4]:
+    - generic [ref=e5]:
+      - img [ref=e7]
+      - generic [ref=e9]: Spela
+    - navigation [ref=e10]:
+      - generic [ref=e11]:
+        - link "Dashboard" [ref=e12] [cursor=pointer]:
+          - /url: /
+          - img [ref=e13]
+          - generic [ref=e18]: Dashboard
+        - link "Library" [ref=e19] [cursor=pointer]:
+          - /url: /consoles
+          - img [ref=e20]
+          - generic [ref=e22]: Library
+        - link "Stats" [ref=e23] [cursor=pointer]:
+          - /url: /stats
+          - img [ref=e24]
+          - generic [ref=e26]: Stats
+        - link "Activity" [ref=e27] [cursor=pointer]:
+          - /url: /activity
+          - img [ref=e28]
+          - generic [ref=e30]: Activity
+        - link "Relays" [ref=e31] [cursor=pointer]:
+          - /url: /relays
+          - img [ref=e32]
+          - generic [ref=e37]: Relays
+        - link "Netplay" [ref=e38] [cursor=pointer]:
+          - /url: /netplay
+          - img [ref=e39]
+          - generic [ref=e43]: Netplay
+        - link "Preferences" [ref=e44] [cursor=pointer]:
+          - /url: /preferences
+          - img [ref=e45]
+          - generic [ref=e46]: Preferences
+      - generic [ref=e47]:
+        - paragraph [ref=e48]: Admin
+        - link "Users" [ref=e49] [cursor=pointer]:
+          - /url: /admin/users
+          - img [ref=e50]
+          - generic [ref=e55]: Users
+        - link "Settings" [ref=e56] [cursor=pointer]:
+          - /url: /admin/settings
+          - img [ref=e57]
+          - generic [ref=e60]: Settings
+        - link "Library Scan" [ref=e61] [cursor=pointer]:
+          - /url: /admin/scan
+          - img [ref=e62]
+          - generic [ref=e69]: Library Scan
+        - link "Metadata Fix" [ref=e70] [cursor=pointer]:
+          - /url: /admin/metadata
+          - img [ref=e71]
+          - generic [ref=e76]: Metadata Fix
+    - generic [ref=e78]:
+      - generic [ref=e79]: A
+      - generic [ref=e80]:
+        - paragraph [ref=e81]: admin
+        - paragraph [ref=e82]: owner
+      - button "Logout" [ref=e83] [cursor=pointer]:
+        - img [ref=e84]
+  - main [ref=e88]:
+    - generic [ref=e89]:
+      - generic [ref=e90]:
+        - heading "Welcome back, admin" [level=1] [ref=e91]
+        - paragraph [ref=e92]: Pick up where you left off or discover something new.
+      - generic [ref=e93]:
+        - generic [ref=e94]:
+          - generic [ref=e95]:
+            - img [ref=e96]
+            - heading "Discover" [level=2] [ref=e98]
+          - link "View all" [ref=e99] [cursor=pointer]:
+            - /url: /games
+            - text: View all
+            - img [ref=e100]
+        - generic [ref=e102]:
+          - link "Aladdin Super Nintendo Aladdin Super Nintendo" [ref=e103] [cursor=pointer]:
+            - /url: /games/74
+            - generic [ref=e104]:
+              - img "Aladdin" [ref=e105]
+              - button [ref=e107]:
+                - img [ref=e108]
+              - button [ref=e110]:
+                - img [ref=e111]
+              - generic [ref=e115]: Super Nintendo
+            - generic [ref=e116]:
+              - heading "Aladdin" [level=3] [ref=e117]
+              - paragraph [ref=e119]: Super Nintendo
+          - link "Banjo-Kazooie Nintendo 64 Banjo-Kazooie Nintendo 64" [ref=e120] [cursor=pointer]:
+            - /url: /games/50
+            - generic [ref=e121]:
+              - img "Banjo-Kazooie" [ref=e122]
+              - button [ref=e124]:
+                - img [ref=e125]
+              - button [ref=e127]:
+                - img [ref=e128]
+              - generic [ref=e132]: Nintendo 64
+            - generic [ref=e133]:
+              - heading "Banjo-Kazooie" [level=3] [ref=e134]
+              - paragraph [ref=e136]: Nintendo 64
+          - link "Banjo-Tooie Nintendo 64 Banjo-Tooie Nintendo 64" [ref=e137] [cursor=pointer]:
+            - /url: /games/51
+            - generic [ref=e138]:
+              - img "Banjo-Tooie" [ref=e139]
+              - button [ref=e141]:
+                - img [ref=e142]
+              - button [ref=e144]:
+                - img [ref=e145]
+              - generic [ref=e149]: Nintendo 64
+            - generic [ref=e150]:
+              - heading "Banjo-Tooie" [level=3] [ref=e151]
+              - paragraph [ref=e153]: Nintendo 64
+          - link "Castlevania Nintendo Entertainment System Castlevania Nintendo Entertainment System" [ref=e154] [cursor=pointer]:
+            - /url: /games/64
+            - generic [ref=e155]:
+              - img "Castlevania" [ref=e156]
+              - button [ref=e158]:
+                - img [ref=e159]
+              - button [ref=e161]:
+                - img [ref=e162]
+              - generic [ref=e166]: Nintendo Entertainment System
+            - generic [ref=e167]:
+              - heading "Castlevania" [level=3] [ref=e168]
+              - paragraph [ref=e170]: Nintendo Entertainment System
+          - link "Castlevania - Aria of Sorrow Game Boy Advance Castlevania - Aria of Sorrow Game Boy Advance" [ref=e171] [cursor=pointer]:
+            - /url: /games/1
+            - generic [ref=e172]:
+              - img "Castlevania - Aria of Sorrow" [ref=e173]
+              - button [ref=e175]:
+                - img [ref=e176]
+              - button [ref=e178]:
+                - img [ref=e179]
+              - generic [ref=e183]: Game Boy Advance
+            - generic [ref=e184]:
+              - heading "Castlevania - Aria of Sorrow" [level=3] [ref=e185]
+              - paragraph [ref=e187]: Game Boy Advance
+          - link "Castlevania - Bloodlines Sega Genesis Castlevania - Bloodlines Sega Genesis" [ref=e188] [cursor=pointer]:
+            - /url: /games/35
+            - generic [ref=e189]:
+              - img "Castlevania - Bloodlines" [ref=e190]
+              - button [ref=e192]:
+                - img [ref=e193]
+              - button [ref=e195]:
+                - img [ref=e196]
+              - generic [ref=e200]: Sega Genesis
+            - generic [ref=e201]:
+              - heading "Castlevania - Bloodlines" [level=3] [ref=e202]
+              - paragraph [ref=e204]: Sega Genesis
+      - generic [ref=e205]:
+        - generic [ref=e207]:
+          - generic [ref=e208]:
+            - generic [ref=e209]:
+              - img [ref=e210]
+              - heading "Recent Activity" [level=2] [ref=e212]
+            - link "View all" [ref=e213] [cursor=pointer]:
+              - /url: /activity
+              - text: View all
+              - img [ref=e214]
+          - generic [ref=e216]:
+            - img [ref=e218]
+            - heading "No activity yet" [level=3] [ref=e220]
+            - paragraph [ref=e221]: Activity from you and other players will appear here.
+        - generic [ref=e224]:
+          - generic [ref=e225]:
+            - img [ref=e226]
+            - heading "Online Now" [level=2] [ref=e231]
+          - generic [ref=e232]:
+            - img [ref=e234]
+            - heading "No one online" [level=3] [ref=e239]
+            - paragraph [ref=e240]: Check back later to see who's playing.

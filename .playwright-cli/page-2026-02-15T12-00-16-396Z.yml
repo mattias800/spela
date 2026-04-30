@@ -1,0 +1,160 @@
+- generic [ref=e3]:
+  - complementary [ref=e4]:
+    - generic [ref=e5]:
+      - img [ref=e7]
+      - generic [ref=e9]: Spela
+    - navigation [ref=e10]:
+      - generic [ref=e11]:
+        - link "Dashboard" [ref=e12] [cursor=pointer]:
+          - /url: /
+          - img [ref=e13]
+          - generic [ref=e18]: Dashboard
+        - link "Library" [ref=e19] [cursor=pointer]:
+          - /url: /consoles
+          - img [ref=e20]
+          - generic [ref=e22]: Library
+        - link "Stats" [ref=e23] [cursor=pointer]:
+          - /url: /stats
+          - img [ref=e24]
+          - generic [ref=e26]: Stats
+        - link "Activity" [ref=e27] [cursor=pointer]:
+          - /url: /activity
+          - img [ref=e28]
+          - generic [ref=e30]: Activity
+        - link "Relays" [ref=e31] [cursor=pointer]:
+          - /url: /relays
+          - img [ref=e32]
+          - generic [ref=e37]: Relays
+        - link "Netplay" [ref=e38] [cursor=pointer]:
+          - /url: /netplay
+          - img [ref=e39]
+          - generic [ref=e43]: Netplay
+        - link "Preferences" [ref=e44] [cursor=pointer]:
+          - /url: /preferences
+          - img [ref=e45]
+          - generic [ref=e46]: Preferences
+      - generic [ref=e47]:
+        - paragraph [ref=e48]: Admin
+        - link "Users" [ref=e49] [cursor=pointer]:
+          - /url: /admin/users
+          - img [ref=e50]
+          - generic [ref=e55]: Users
+        - link "Settings" [ref=e56] [cursor=pointer]:
+          - /url: /admin/settings
+          - img [ref=e57]
+          - generic [ref=e60]: Settings
+        - link "Library Scan" [ref=e61] [cursor=pointer]:
+          - /url: /admin/scan
+          - img [ref=e62]
+          - generic [ref=e69]: Library Scan
+        - link "Metadata Fix" [ref=e70] [cursor=pointer]:
+          - /url: /admin/metadata
+          - img [ref=e71]
+          - generic [ref=e76]: Metadata Fix
+    - generic [ref=e78]:
+      - generic [ref=e79]: A
+      - generic [ref=e80]:
+        - paragraph [ref=e81]: admin
+        - paragraph [ref=e82]: owner
+      - button "Logout" [ref=e83] [cursor=pointer]:
+        - img [ref=e84]
+  - main [ref=e88]:
+    - generic [ref=e496]:
+      - button "Back" [ref=e497] [cursor=pointer]:
+        - img [ref=e498]
+        - text: Back
+      - generic [ref=e500]:
+        - img "Chrono Trigger" [ref=e503]
+        - generic [ref=e504]:
+          - generic [ref=e505]:
+            - generic [ref=e506]:
+              - heading "Chrono Trigger" [level=1] [ref=e507]
+              - generic [ref=e509]: Super Nintendo
+            - generic [ref=e510]:
+              - button "Play in Browser" [ref=e511] [cursor=pointer]:
+                - img [ref=e512]
+                - text: Play in Browser
+              - generic [ref=e514]:
+                - button "Scrape Metadata" [ref=e515] [cursor=pointer]:
+                  - img [ref=e516]
+                  - text: Scrape Metadata
+                - button "Favorite" [ref=e521] [cursor=pointer]:
+                  - img [ref=e522]
+                  - text: Favorite
+                - button "Play Later" [ref=e524] [cursor=pointer]:
+                  - img [ref=e525]
+                  - text: Play Later
+                - button "Add to Collection" [ref=e530] [cursor=pointer]:
+                  - img [ref=e531]
+                  - text: Add to Collection
+          - generic [ref=e533]:
+            - generic [ref=e534]:
+              - img [ref=e535]
+              - generic [ref=e540]:
+                - generic [ref=e541]: "Players:"
+                - text: "0"
+            - generic [ref=e542]:
+              - img [ref=e543]
+              - generic [ref=e545]:
+                - generic [ref=e546]: "Size:"
+                - text: 4.0 MB
+            - generic [ref=e547]:
+              - img [ref=e548]
+              - generic [ref=e551]:
+                - generic [ref=e552]: "Play Time:"
+                - text: Not played yet
+      - generic [ref=e553]:
+        - heading "Play Activity" [level=2] [ref=e554]:
+          - img [ref=e555]
+          - text: Play Activity
+        - generic [ref=e557]:
+          - img [ref=e559]
+          - heading "No one has played this yet" [level=3] [ref=e562]
+          - paragraph [ref=e563]: Be the first to play! Launch this game to start tracking your time.
+      - generic [ref=e564]:
+        - generic [ref=e565]:
+          - generic [ref=e566]:
+            - generic [ref=e567]:
+              - img [ref=e568]
+              - heading "Your Rating" [level=3] [ref=e570]
+            - generic [ref=e572]:
+              - button [ref=e573] [cursor=pointer]:
+                - img [ref=e574]
+              - button [ref=e576] [cursor=pointer]:
+                - img [ref=e577]
+              - button [ref=e579] [cursor=pointer]:
+                - img [ref=e580]
+              - button [ref=e582] [cursor=pointer]:
+                - img [ref=e583]
+              - button [ref=e585] [cursor=pointer]:
+                - img [ref=e586]
+          - generic [ref=e588]:
+            - generic [ref=e589]:
+              - img [ref=e590]
+              - heading "Ratings" [level=2] [ref=e592]
+            - generic [ref=e593]:
+              - img [ref=e595]
+              - heading "No ratings yet" [level=3] [ref=e597]
+              - paragraph [ref=e598]: Be the first to rate this game.
+        - generic [ref=e600]:
+          - generic [ref=e601]:
+            - img [ref=e602]
+            - heading "Reviews" [level=2] [ref=e604]
+          - generic [ref=e605]:
+            - img [ref=e607]
+            - heading "No reviews yet" [level=3] [ref=e609]
+            - paragraph [ref=e610]: Rate this game and add a review to share your thoughts.
+      - generic [ref=e611]:
+        - heading "Screenshot" [level=2] [ref=e612]
+        - img "Chrono Trigger screenshot 1" [ref=e615]
+      - generic [ref=e616]:
+        - heading "Save States" [level=2] [ref=e617]
+        - paragraph [ref=e620]: No save states yet. Play the game in the Spela player to create saves.
+      - generic [ref=e621]:
+        - generic [ref=e622]:
+          - img [ref=e623]
+          - heading "Community Saves" [level=2] [ref=e629]
+        - generic [ref=e630]:
+          - img [ref=e632]
+          - heading "No shared saves" [level=3] [ref=e638]
+          - paragraph [ref=e639]: Share your save states so others can enjoy them too.

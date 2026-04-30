@@ -1,0 +1,56 @@
+<h2>Primary Button Style</h2>
+<p class="subtitle">The "Sign In" / "Connect" button — the main call to action. Which treatment?</p>
+
+<div class="cards" style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
+  <div class="card" data-choice="a" onclick="toggleSelect(this)">
+    <div class="card-image" style="background: #0F0F1A; padding: 40px 32px; text-align: center;">
+      <div style="background: linear-gradient(135deg, #6B8DD6, #a855f7, #E056A0); color: white; padding: 14px 32px; border-radius: 12px; font-weight: 700; font-size: 15px; letter-spacing: 0.5px;">Sign In</div>
+      <div style="margin-top: 16px;">
+        <span style="color: #888; font-size: 14px;">Don't have an account? </span><span style="color: #a78bfa; font-size: 14px; cursor: pointer;">Register</span>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>A: Gradient Fill</h3>
+      <p>Solid gradient button using the logo's color palette. Bold, confident, clearly the primary action.</p>
+    </div>
+  </div>
+
+  <div class="card" data-choice="b" onclick="toggleSelect(this)">
+    <div class="card-image" style="background: #0F0F1A; padding: 40px 32px; text-align: center;">
+      <div style="padding: 14px 32px; border-radius: 12px; font-weight: 700; font-size: 15px; letter-spacing: 0.5px; color: white; border: 1px solid transparent; background: linear-gradient(#1a1a2e, #1a1a2e) padding-box, linear-gradient(135deg, #6B8DD6, #a855f7, #E056A0) border-box; box-shadow: 0 0 20px rgba(139,92,246,0.25);">Sign In</div>
+      <div style="margin-top: 16px;">
+        <span style="color: #888; font-size: 14px;">Don't have an account? </span><span style="color: #a78bfa; font-size: 14px; cursor: pointer;">Register</span>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>B: Gradient Outline + Glow</h3>
+      <p>Matches the input style — gradient border with glow. Cohesive with the text fields but less prominent as a CTA.</p>
+    </div>
+  </div>
+
+  <div class="card" data-choice="c" onclick="toggleSelect(this)">
+    <div class="card-image" style="background: #0F0F1A; padding: 40px 32px; text-align: center;">
+      <div style="background: linear-gradient(135deg, #6B8DD6, #a855f7, #E056A0); color: white; padding: 14px 32px; border-radius: 12px; font-weight: 700; font-size: 15px; letter-spacing: 0.5px; box-shadow: 0 0 25px rgba(139,92,246,0.3), 0 0 50px rgba(224,86,160,0.15);">Sign In</div>
+      <div style="margin-top: 16px;">
+        <span style="color: #888; font-size: 14px;">Don't have an account? </span><span style="color: #a78bfa; font-size: 14px; cursor: pointer;">Register</span>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>C: Gradient Fill + Glow</h3>
+      <p>The full treatment — gradient fill with a neon glow aura. Maximum presence. The button feels alive.</p>
+    </div>
+  </div>
+
+  <div class="card" data-choice="d" onclick="toggleSelect(this)">
+    <div class="card-image" style="background: #0F0F1A; padding: 40px 32px; text-align: center;">
+      <div style="background: rgba(139,92,246,0.15); color: #c4b5fd; padding: 14px 32px; border-radius: 12px; font-weight: 700; font-size: 15px; letter-spacing: 0.5px; border: 1px solid rgba(139,92,246,0.3);">Sign In</div>
+      <div style="margin-top: 16px;">
+        <span style="color: #888; font-size: 14px;">Don't have an account? </span><span style="color: #a78bfa; font-size: 14px; cursor: pointer;">Register</span>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>D: Soft Tinted</h3>
+      <p>Understated tinted button with a single accent color. Lets the logo dominate while keeping the button functional.</p>
+    </div>
+  </div>
+</div>

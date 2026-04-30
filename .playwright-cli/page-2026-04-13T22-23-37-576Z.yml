@@ -1,0 +1,636 @@
+- generic [ref=e2]:
+  - generic [ref=e22]:
+    - complementary [ref=e23]:
+      - generic [ref=e24]:
+        - img [ref=e26]
+        - generic [ref=e28]: Spela
+      - button "Open search" [ref=e30] [cursor=pointer]:
+        - img [ref=e31]
+        - generic [ref=e34]: Search...
+        - generic [ref=e35]: ⌘K
+      - navigation [ref=e36]:
+        - generic [ref=e37]:
+          - link "Dashboard" [ref=e38] [cursor=pointer]:
+            - /url: /
+            - img [ref=e39]
+            - generic [ref=e44]: Dashboard
+          - link "Explore" [ref=e45] [cursor=pointer]:
+            - /url: /explore
+            - img [ref=e46]
+            - generic [ref=e49]: Explore
+          - link "Library" [ref=e50] [cursor=pointer]:
+            - /url: /consoles
+            - img [ref=e51]
+            - generic [ref=e53]: Library
+          - link "Stats" [ref=e54] [cursor=pointer]:
+            - /url: /stats
+            - img [ref=e55]
+            - generic [ref=e57]: Stats
+          - link "Top Lists" [ref=e58] [cursor=pointer]:
+            - /url: /top-lists
+            - img [ref=e59]
+            - generic [ref=e65]: Top Lists
+          - link "Activity" [ref=e66] [cursor=pointer]:
+            - /url: /activity
+            - img [ref=e67]
+            - generic [ref=e69]: Activity
+          - link "Challenges" [ref=e70] [cursor=pointer]:
+            - /url: /challenges
+            - img [ref=e71]
+            - generic [ref=e73]: Challenges
+          - link "Shared Sessions" [ref=e74] [cursor=pointer]:
+            - /url: /shared-sessions
+            - img [ref=e75]
+            - generic [ref=e80]: Shared Sessions
+          - link "Netplay" [ref=e81] [cursor=pointer]:
+            - /url: /netplay
+            - img [ref=e82]
+            - generic [ref=e86]: Netplay
+          - link "Preferences" [ref=e87] [cursor=pointer]:
+            - /url: /preferences
+            - img [ref=e88]
+            - generic [ref=e89]: Preferences
+          - link "Storage" [ref=e90] [cursor=pointer]:
+            - /url: /storage
+            - img [ref=e91]
+            - generic [ref=e93]: Storage
+        - generic [ref=e94]:
+          - paragraph [ref=e95]: Content
+          - link "Library Scan" [ref=e96] [cursor=pointer]:
+            - /url: /admin/scan
+            - img [ref=e97]
+            - generic [ref=e104]: Library Scan
+          - link "Upload ROMs" [ref=e105] [cursor=pointer]:
+            - /url: /admin/upload
+            - img [ref=e106]
+            - generic [ref=e109]: Upload ROMs
+          - link "ROM Hacks" [ref=e110] [cursor=pointer]:
+            - /url: /admin/rom-hacks
+            - img [ref=e111]
+            - generic [ref=e113]: ROM Hacks
+          - link "Metadata Fix" [ref=e114] [cursor=pointer]:
+            - /url: /admin/metadata
+            - img [ref=e115]
+            - generic [ref=e120]: Metadata Fix
+          - link "Cheats" [ref=e121] [cursor=pointer]:
+            - /url: /admin/cheats
+            - img [ref=e122]
+            - generic [ref=e124]: Cheats
+          - link "BIOS Files" [ref=e125] [cursor=pointer]:
+            - /url: /admin/bios
+            - img [ref=e126]
+            - generic [ref=e129]: BIOS Files
+        - generic [ref=e130]:
+          - paragraph [ref=e131]: System
+          - link "Users" [ref=e132] [cursor=pointer]:
+            - /url: /admin/users
+            - img [ref=e133]
+            - generic [ref=e138]: Users
+          - link "Settings" [ref=e139] [cursor=pointer]:
+            - /url: /admin/settings
+            - img [ref=e140]
+            - generic [ref=e143]: Settings
+          - link "Core Compatibility" [ref=e144] [cursor=pointer]:
+            - /url: /admin/core-compatibility
+            - img [ref=e145]
+            - generic [ref=e152]: Core Compatibility
+          - link "Security Events" [ref=e153] [cursor=pointer]:
+            - /url: /admin/security-events
+            - img [ref=e154]
+            - generic [ref=e156]: Security Events
+      - generic [ref=e158]:
+        - generic [ref=e159]: A
+        - generic [ref=e160]:
+          - paragraph [ref=e161]: admin
+          - paragraph [ref=e162]: owner
+        - button "Logout" [ref=e163] [cursor=pointer]:
+          - img [ref=e164]
+      - paragraph [ref=e168]: vdev
+    - main [ref=e170]:
+      - generic [ref=e172]:
+        - generic [ref=e173]:
+          - heading "Welcome back, admin" [level=1] [ref=e174]
+          - paragraph [ref=e175]: Pick up where you left off or discover something new.
+        - generic [ref=e176]:
+          - generic [ref=e177]:
+            - generic [ref=e179]:
+              - img [ref=e180]
+              - heading "Your Stats" [level=2] [ref=e186]
+            - generic [ref=e187]:
+              - generic [ref=e188]:
+                - paragraph [ref=e189]: 2h 3m
+                - paragraph [ref=e190]: Total play time
+              - generic [ref=e191]:
+                - paragraph [ref=e192]: "43"
+                - paragraph [ref=e193]: Games played
+              - generic [ref=e194]:
+                - paragraph [ref=e195]: 0d
+                - paragraph [ref=e196]: Current streak
+              - generic [ref=e197]:
+                - paragraph [ref=e198]: "--"
+                - paragraph [ref=e199]: Most played
+          - generic [ref=e200]:
+            - generic [ref=e201]:
+              - generic [ref=e202]:
+                - img [ref=e203]
+                - heading "Top Rated" [level=2] [ref=e205]
+              - link "View all" [ref=e206] [cursor=pointer]:
+                - /url: /top-lists
+                - text: View all
+                - img [ref=e207]
+            - generic [ref=e209]:
+              - button "Scroll Top Rated right" [ref=e210]:
+                - img [ref=e211]
+              - list "Top Rated" [ref=e213]:
+                - listitem [ref=e214]:
+                  - generic [ref=e215]:
+                    - generic [ref=e216]:
+                      - img "The Witness" [ref=e218]
+                      - generic [ref=e219]: Not in library
+                    - generic [ref=e220]:
+                      - paragraph [ref=e221]: The Witness
+                      - paragraph [ref=e222]: Commodore Amiga
+                      - generic [ref=e224]:
+                        - img [ref=e225]
+                        - text: "96"
+                - listitem [ref=e227]:
+                  - link "Super Metroid Super Metroid Super Nintendo 96" [ref=e228] [cursor=pointer]:
+                    - /url: /games/680
+                    - generic [ref=e229]:
+                      - img "Super Metroid" [ref=e232]
+                      - generic [ref=e233]:
+                        - paragraph [ref=e234]: Super Metroid
+                        - paragraph [ref=e235]: Super Nintendo
+                        - generic [ref=e237]:
+                          - img [ref=e238]
+                          - text: "96"
+                - listitem [ref=e240]:
+                  - generic [ref=e241]:
+                    - generic [ref=e242]:
+                      - 'img "The Legend of Zelda: A Link to the Past" [ref=e244]'
+                      - generic [ref=e245]: Not in library
+                    - generic [ref=e246]:
+                      - paragraph [ref=e247]: "The Legend of Zelda: A Link to the Past"
+                      - paragraph [ref=e248]: Super Nintendo
+                      - generic [ref=e250]:
+                        - img [ref=e251]
+                        - text: "96"
+                - listitem [ref=e253]:
+                  - generic [ref=e254]:
+                    - generic [ref=e255]:
+                      - img "Suikoden II" [ref=e257]
+                      - generic [ref=e258]: Not in library
+                    - generic [ref=e259]:
+                      - paragraph [ref=e260]: Suikoden II
+                      - paragraph [ref=e261]: PlayStation
+                      - generic [ref=e263]:
+                        - img [ref=e264]
+                        - text: "96"
+                - listitem [ref=e266]:
+                  - link "Super Mario World Super Mario World Super Nintendo 96" [ref=e267] [cursor=pointer]:
+                    - /url: /games/678
+                    - generic [ref=e268]:
+                      - img "Super Mario World" [ref=e271]
+                      - generic [ref=e272]:
+                        - paragraph [ref=e273]: Super Mario World
+                        - paragraph [ref=e274]: Super Nintendo
+                        - generic [ref=e276]:
+                          - img [ref=e277]
+                          - text: "96"
+                - listitem [ref=e279]:
+                  - generic [ref=e280]:
+                    - generic [ref=e281]:
+                      - 'img "Metal Gear Solid 3: Subsistence" [ref=e283]'
+                      - generic [ref=e284]: Not in library
+                    - generic [ref=e285]:
+                      - paragraph [ref=e286]: "Metal Gear Solid 3: Subsistence"
+                      - paragraph [ref=e287]: PlayStation 2
+                      - generic [ref=e289]:
+                        - img [ref=e290]
+                        - text: "95"
+                - listitem [ref=e292]:
+                  - generic [ref=e293]:
+                    - generic [ref=e294]:
+                      - img "Final Fantasy III" [ref=e296]
+                      - generic [ref=e297]: Not in library
+                    - generic [ref=e298]:
+                      - paragraph [ref=e299]: Final Fantasy III
+                      - paragraph [ref=e300]: Super Nintendo
+                      - generic [ref=e302]:
+                        - img [ref=e303]
+                        - text: "95"
+                - listitem [ref=e305]:
+                  - generic [ref=e306]:
+                    - generic [ref=e307]:
+                      - img "Super Smash Bros. Melee" [ref=e309]
+                      - generic [ref=e310]: Not in library
+                    - generic [ref=e311]:
+                      - paragraph [ref=e312]: Super Smash Bros. Melee
+                      - paragraph [ref=e313]: Nintendo GameCube
+                      - generic [ref=e315]:
+                        - img [ref=e316]
+                        - text: "95"
+                - listitem [ref=e318]:
+                  - generic [ref=e319]:
+                    - generic [ref=e320]:
+                      - 'img "Super Mario World 2: Yoshi''s Island" [ref=e322]'
+                      - generic [ref=e323]: Not in library
+                    - generic [ref=e324]:
+                      - paragraph [ref=e325]: "Super Mario World 2: Yoshi's Island"
+                      - paragraph [ref=e326]: Super Nintendo
+                      - generic [ref=e328]:
+                        - img [ref=e329]
+                        - text: "94"
+                - listitem [ref=e331]:
+                  - generic [ref=e332]:
+                    - generic [ref=e333]:
+                      - img "Super Mario Galaxy" [ref=e335]
+                      - generic [ref=e336]: Not in library
+                    - generic [ref=e337]:
+                      - paragraph [ref=e338]: Super Mario Galaxy
+                      - paragraph [ref=e339]: Nintendo Wii
+                      - generic [ref=e341]:
+                        - img [ref=e342]
+                        - text: "94"
+                - listitem [ref=e344]:
+                  - generic [ref=e345]:
+                    - generic [ref=e346]:
+                      - img "Metroid Prime" [ref=e348]
+                      - generic [ref=e349]: Not in library
+                    - generic [ref=e350]:
+                      - paragraph [ref=e351]: Metroid Prime
+                      - paragraph [ref=e352]: Nintendo GameCube
+                      - generic [ref=e354]:
+                        - img [ref=e355]
+                        - text: "94"
+                - listitem [ref=e357]:
+                  - generic [ref=e358]:
+                    - generic [ref=e359]:
+                      - img "Super Mario Galaxy 2" [ref=e361]
+                      - generic [ref=e362]: Not in library
+                    - generic [ref=e363]:
+                      - paragraph [ref=e364]: Super Mario Galaxy 2
+                      - paragraph [ref=e365]: Nintendo Wii
+                      - generic [ref=e367]:
+                        - img [ref=e368]
+                        - text: "93"
+                - listitem [ref=e370]:
+                  - generic [ref=e371]:
+                    - generic [ref=e372]:
+                      - 'img "Mario & Luigi: Bowser''s Inside Story" [ref=e374]'
+                      - generic [ref=e375]: Not in library
+                    - generic [ref=e376]:
+                      - paragraph [ref=e377]: "Mario & Luigi: Bowser's Inside Story"
+                      - paragraph [ref=e378]: Nintendo DS
+                      - generic [ref=e380]:
+                        - img [ref=e381]
+                        - text: "93"
+                - listitem [ref=e383]:
+                  - generic [ref=e384]:
+                    - generic [ref=e385]:
+                      - img "Ultimate Fighting Championship" [ref=e387]
+                      - generic [ref=e388]: Not in library
+                    - generic [ref=e389]:
+                      - paragraph [ref=e390]: Ultimate Fighting Championship
+                      - paragraph [ref=e391]: Dreamcast
+                      - generic [ref=e393]:
+                        - img [ref=e394]
+                        - text: "92"
+                - listitem [ref=e396]:
+                  - link "Chrono Trigger Chrono Trigger Super Nintendo 92" [ref=e397] [cursor=pointer]:
+                    - /url: /games/660
+                    - generic [ref=e398]:
+                      - img "Chrono Trigger" [ref=e401]
+                      - generic [ref=e402]:
+                        - paragraph [ref=e403]: Chrono Trigger
+                        - paragraph [ref=e404]: Super Nintendo
+                        - generic [ref=e406]:
+                          - img [ref=e407]
+                          - text: "92"
+                - listitem [ref=e409]:
+                  - generic [ref=e410]:
+                    - generic [ref=e411]:
+                      - 'img "Castlevania: Symphony of the Night" [ref=e413]'
+                      - generic [ref=e414]: Not in library
+                    - generic [ref=e415]:
+                      - paragraph [ref=e416]: "Castlevania: Symphony of the Night"
+                      - paragraph [ref=e417]: PlayStation
+                      - generic [ref=e419]:
+                        - img [ref=e420]
+                        - text: "92"
+                - listitem [ref=e422]:
+                  - generic [ref=e423]:
+                    - generic [ref=e424]:
+                      - 'img "Gran Turismo 3: A-Spec" [ref=e426]'
+                      - generic [ref=e427]: Not in library
+                    - generic [ref=e428]:
+                      - paragraph [ref=e429]: "Gran Turismo 3: A-Spec"
+                      - paragraph [ref=e430]: PlayStation 2
+                      - generic [ref=e432]:
+                        - img [ref=e433]
+                        - text: "92"
+                - listitem [ref=e435]:
+                  - generic [ref=e436]:
+                    - generic [ref=e437]:
+                      - img "Unreal Tournament" [ref=e439]
+                      - generic [ref=e440]: Not in library
+                    - generic [ref=e441]:
+                      - paragraph [ref=e442]: Unreal Tournament
+                      - paragraph [ref=e443]: Dreamcast
+                      - generic [ref=e445]:
+                        - img [ref=e446]
+                        - text: "92"
+                - listitem [ref=e448]:
+                  - generic [ref=e449]:
+                    - generic [ref=e450]:
+                      - img "Advance Wars" [ref=e452]
+                      - generic [ref=e453]: Not in library
+                    - generic [ref=e454]:
+                      - paragraph [ref=e455]: Advance Wars
+                      - paragraph [ref=e456]: Game Boy Advance
+                      - generic [ref=e458]:
+                        - img [ref=e459]
+                        - text: "92"
+                - listitem [ref=e461]:
+                  - generic [ref=e462]:
+                    - generic [ref=e463]:
+                      - img "Street Fighter II' Turbo" [ref=e465]
+                      - generic [ref=e466]: Not in library
+                    - generic [ref=e467]:
+                      - paragraph [ref=e468]: Street Fighter II' Turbo
+                      - paragraph [ref=e469]: Super Nintendo
+                      - generic [ref=e471]:
+                        - img [ref=e472]
+                        - text: "92"
+          - generic [ref=e474]:
+            - generic [ref=e475]:
+              - generic [ref=e476]:
+                - img [ref=e477]
+                - heading "Continue Playing" [level=2] [ref=e479]
+              - link "View all" [ref=e480] [cursor=pointer]:
+                - /url: /games
+                - text: View all
+                - img [ref=e481]
+            - list "Continue Playing" [ref=e484]:
+              - listitem [ref=e485]:
+                - link "Amazing Bumpman Add to favorites Add to play later ColecoVision Amazing Bumpman ColecoVision" [ref=e486] [cursor=pointer]:
+                  - /url: /games/381
+                  - generic [ref=e487]:
+                    - img "Amazing Bumpman" [ref=e488]
+                    - button "Add to favorites" [ref=e490]:
+                      - img [ref=e491]
+                    - button "Add to play later" [ref=e493]:
+                      - img [ref=e494]
+                    - generic [ref=e498]: ColecoVision
+                  - generic [ref=e499]:
+                    - heading "Amazing Bumpman" [level=3] [ref=e500]
+                    - paragraph [ref=e502]: ColecoVision
+          - generic [ref=e503]:
+            - generic [ref=e504]:
+              - generic [ref=e505]:
+                - img [ref=e506]
+                - heading "Recently Added" [level=2] [ref=e509]
+              - link "View all" [ref=e510] [cursor=pointer]:
+                - /url: /games
+                - text: View all
+                - img [ref=e511]
+            - generic [ref=e513]:
+              - button "Scroll Recently Added right" [ref=e514]:
+                - img [ref=e515]
+              - list "Recently Added" [ref=e517]:
+                - listitem [ref=e518]:
+                  - link "Super Robot Taisen Compact Add to favorites Add to play later WonderSwan Super Robot Taisen Compact WonderSwan" [ref=e519] [cursor=pointer]:
+                    - /url: /games/685
+                    - generic [ref=e520]:
+                      - img "Super Robot Taisen Compact" [ref=e521]
+                      - button "Add to favorites" [ref=e523]:
+                        - img [ref=e524]
+                      - button "Add to play later" [ref=e526]:
+                        - img [ref=e527]
+                      - generic [ref=e531]: WonderSwan
+                    - generic [ref=e532]:
+                      - heading "Super Robot Taisen Compact" [level=3] [ref=e533]
+                      - paragraph [ref=e535]: WonderSwan
+                - listitem [ref=e536]:
+                  - 'link "Super Mario All-Stars: Limited Edition Add to favorites Add to play later Nintendo Wii Super Mario All-Stars: Limited Edition Nintendo Wii" [ref=e537] [cursor=pointer]':
+                    - /url: /games/684
+                    - generic [ref=e538]:
+                      - 'img "Super Mario All-Stars: Limited Edition" [ref=e539]'
+                      - button "Add to favorites" [ref=e541]:
+                        - img [ref=e542]
+                      - button "Add to play later" [ref=e544]:
+                        - img [ref=e545]
+                      - generic [ref=e549]: Nintendo Wii
+                    - generic [ref=e550]:
+                      - 'heading "Super Mario All-Stars: Limited Edition" [level=3] [ref=e551]'
+                      - paragraph [ref=e553]: Nintendo Wii
+                - listitem [ref=e554]:
+                  - link "V-Tetris Add to favorites Add to play later Virtual Boy V-Tetris Virtual Boy" [ref=e555] [cursor=pointer]:
+                    - /url: /games/683
+                    - generic [ref=e556]:
+                      - img "V-Tetris" [ref=e557]
+                      - button "Add to favorites" [ref=e559]:
+                        - img [ref=e560]
+                      - button "Add to play later" [ref=e562]:
+                        - img [ref=e563]
+                      - generic [ref=e567]: Virtual Boy
+                    - generic [ref=e568]:
+                      - heading "V-Tetris" [level=3] [ref=e569]
+                      - paragraph [ref=e571]: Virtual Boy
+                - listitem [ref=e572]:
+                  - link "Timeball Add to favorites Add to play later TurboGrafx-16 Timeball TurboGrafx-16" [ref=e573] [cursor=pointer]:
+                    - /url: /games/682
+                    - generic [ref=e574]:
+                      - img "Timeball" [ref=e575]
+                      - button "Add to favorites" [ref=e577]:
+                        - img [ref=e578]
+                      - button "Add to play later" [ref=e580]:
+                        - img [ref=e581]
+                      - generic [ref=e585]: TurboGrafx-16
+                    - generic [ref=e586]:
+                      - heading "Timeball" [level=3] [ref=e587]
+                      - paragraph [ref=e589]: TurboGrafx-16
+                - listitem [ref=e590]:
+                  - link "Terranigma Add to favorites Add to play later Super Nintendo Terranigma Super Nintendo" [ref=e591] [cursor=pointer]:
+                    - /url: /games/681
+                    - generic [ref=e592]:
+                      - img "Terranigma" [ref=e593]
+                      - button "Add to favorites" [ref=e595]:
+                        - img [ref=e596]
+                      - button "Add to play later" [ref=e598]:
+                        - img [ref=e599]
+                      - generic [ref=e603]: Super Nintendo
+                    - generic [ref=e604]:
+                      - heading "Terranigma" [level=3] [ref=e605]
+                      - paragraph [ref=e607]: Super Nintendo
+                - listitem [ref=e608]:
+                  - link "S Add to favorites Add to play later Super Nintendo Super Metroid Super Nintendo" [ref=e609] [cursor=pointer]:
+                    - /url: /games/680
+                    - generic [ref=e610]:
+                      - generic [ref=e612]: S
+                      - button "Add to favorites" [ref=e614]:
+                        - img [ref=e615]
+                      - button "Add to play later" [ref=e617]:
+                        - img [ref=e618]
+                      - generic [ref=e622]: Super Nintendo
+                    - generic [ref=e623]:
+                      - heading "Super Metroid" [level=3] [ref=e624]
+                      - paragraph [ref=e626]: Super Nintendo
+                - listitem [ref=e627]:
+                  - link "S Add to favorites Add to play later Super Nintendo Super Mario World 2 - Yoshi's Island Super Nintendo" [ref=e628] [cursor=pointer]:
+                    - /url: /games/679
+                    - generic [ref=e629]:
+                      - generic [ref=e631]: S
+                      - button "Add to favorites" [ref=e633]:
+                        - img [ref=e634]
+                      - button "Add to play later" [ref=e636]:
+                        - img [ref=e637]
+                      - generic [ref=e641]: Super Nintendo
+                    - generic [ref=e642]:
+                      - heading "Super Mario World 2 - Yoshi's Island" [level=3] [ref=e643]
+                      - paragraph [ref=e645]: Super Nintendo
+                - listitem [ref=e646]:
+                  - link "S Add to favorites Add to play later Super Nintendo Super Mario World Super Nintendo" [ref=e647] [cursor=pointer]:
+                    - /url: /games/678
+                    - generic [ref=e648]:
+                      - generic [ref=e650]: S
+                      - button "Add to favorites" [ref=e652]:
+                        - img [ref=e653]
+                      - button "Add to play later" [ref=e655]:
+                        - img [ref=e656]
+                      - generic [ref=e660]: Super Nintendo
+                    - generic [ref=e661]:
+                      - heading "Super Mario World" [level=3] [ref=e662]
+                      - paragraph [ref=e664]: Super Nintendo
+                - listitem [ref=e665]:
+                  - link "S Add to favorites Add to play later Super Nintendo Super Mario RPG - Legend of the Seven Stars Super Nintendo" [ref=e666] [cursor=pointer]:
+                    - /url: /games/677
+                    - generic [ref=e667]:
+                      - generic [ref=e669]: S
+                      - button "Add to favorites" [ref=e671]:
+                        - img [ref=e672]
+                      - button "Add to play later" [ref=e674]:
+                        - img [ref=e675]
+                      - generic [ref=e679]: Super Nintendo
+                    - generic [ref=e680]:
+                      - heading "Super Mario RPG - Legend of the Seven Stars" [level=3] [ref=e681]
+                      - paragraph [ref=e683]: Super Nintendo
+                - listitem [ref=e684]:
+                  - link "S Add to favorites Add to play later Super Nintendo Super Mario Kart Super Nintendo" [ref=e685] [cursor=pointer]:
+                    - /url: /games/676
+                    - generic [ref=e686]:
+                      - generic [ref=e688]: S
+                      - button "Add to favorites" [ref=e690]:
+                        - img [ref=e691]
+                      - button "Add to play later" [ref=e693]:
+                        - img [ref=e694]
+                      - generic [ref=e698]: Super Nintendo
+                    - generic [ref=e699]:
+                      - heading "Super Mario Kart" [level=3] [ref=e700]
+                      - paragraph [ref=e702]: Super Nintendo
+                - listitem [ref=e703]:
+                  - link "S Add to favorites Add to play later Super Nintendo Soul Blazer Super Nintendo" [ref=e704] [cursor=pointer]:
+                    - /url: /games/675
+                    - generic [ref=e705]:
+                      - generic [ref=e707]: S
+                      - button "Add to favorites" [ref=e709]:
+                        - img [ref=e710]
+                      - button "Add to play later" [ref=e712]:
+                        - img [ref=e713]
+                      - generic [ref=e717]: Super Nintendo
+                    - generic [ref=e718]:
+                      - heading "Soul Blazer" [level=3] [ref=e719]
+                      - paragraph [ref=e721]: Super Nintendo
+                - listitem [ref=e722]:
+                  - link "S Add to favorites Add to play later Super Nintendo Skyblazer Super Nintendo" [ref=e723] [cursor=pointer]:
+                    - /url: /games/674
+                    - generic [ref=e724]:
+                      - generic [ref=e726]: S
+                      - button "Add to favorites" [ref=e728]:
+                        - img [ref=e729]
+                      - button "Add to play later" [ref=e731]:
+                        - img [ref=e732]
+                      - generic [ref=e736]: Super Nintendo
+                    - generic [ref=e737]:
+                      - heading "Skyblazer" [level=3] [ref=e738]
+                      - paragraph [ref=e740]: Super Nintendo
+          - generic [ref=e741]:
+            - generic [ref=e743]:
+              - generic [ref=e744]:
+                - generic [ref=e745]:
+                  - img [ref=e746]
+                  - heading "Recent Activity" [level=2] [ref=e748]
+                - link "View all" [ref=e749] [cursor=pointer]:
+                  - /url: /activity
+                  - text: View all
+                  - img [ref=e750]
+              - generic [ref=e752]:
+                - generic [ref=e753]:
+                  - generic [ref=e754]:
+                    - generic [ref=e755]: A
+                    - img [ref=e757]
+                  - generic [ref=e759]:
+                    - paragraph [ref=e760]:
+                      - link "admin" [ref=e761] [cursor=pointer]:
+                        - /url: /users/1
+                      - text: favorited
+                      - link "Amazing Bumpman" [ref=e762] [cursor=pointer]:
+                        - /url: /games/381
+                    - generic [ref=e764]: 17m ago
+                - generic [ref=e765]:
+                  - generic [ref=e766]:
+                    - generic [ref=e767]: A
+                    - img [ref=e769]
+                  - generic [ref=e771]:
+                    - paragraph [ref=e772]:
+                      - link "admin" [ref=e773] [cursor=pointer]:
+                        - /url: /users/1
+                      - text: started playing
+                      - link:
+                        - /url: /games/445
+                    - generic [ref=e775]: Mar 25, 2026
+                - generic [ref=e776]:
+                  - generic [ref=e777]:
+                    - generic [ref=e778]: A
+                    - img [ref=e780]
+                  - generic [ref=e782]:
+                    - paragraph [ref=e783]:
+                      - link "admin" [ref=e784] [cursor=pointer]:
+                        - /url: /users/1
+                      - text: started playing
+                      - link:
+                        - /url: /games/445
+                    - generic [ref=e786]: Mar 25, 2026
+                - generic [ref=e787]:
+                  - generic [ref=e788]:
+                    - generic [ref=e789]: A
+                    - img [ref=e791]
+                  - generic [ref=e793]:
+                    - paragraph [ref=e794]:
+                      - link "admin" [ref=e795] [cursor=pointer]:
+                        - /url: /users/1
+                      - text: started playing
+                      - link:
+                        - /url: /games/445
+                    - generic [ref=e797]: Mar 25, 2026
+                - generic [ref=e798]:
+                  - generic [ref=e799]:
+                    - generic [ref=e800]: A
+                    - img [ref=e802]
+                  - generic [ref=e804]:
+                    - paragraph [ref=e805]:
+                      - link "admin" [ref=e806] [cursor=pointer]:
+                        - /url: /users/1
+                      - text: started playing
+                      - link:
+                        - /url: /games/445
+                    - generic [ref=e808]: Mar 25, 2026
+            - generic [ref=e811]:
+              - generic [ref=e812]:
+                - img [ref=e813]
+                - heading "Online Now" [level=2] [ref=e818]
+              - generic [ref=e819]:
+                - img [ref=e821]
+                - heading "No one online" [level=3] [ref=e826]
+                - paragraph [ref=e827]: Check back later to see who's playing.
+  - status

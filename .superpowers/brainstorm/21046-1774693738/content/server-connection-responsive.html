@@ -1,0 +1,76 @@
+<h2>Responsive Server Connection — Combined Design</h2>
+<p class="subtitle">Mobile gets the centered card. Wider screens add the branding hero on the left.</p>
+
+<div class="split">
+  <div class="mockup">
+    <div class="mockup-header">Mobile / Portrait (&lt;600dp)</div>
+    <div class="mockup-body" style="padding: 0;">
+      <div style="background: linear-gradient(135deg, #0f0f1a 0%, #1a1a2e 50%, #16213e 100%); padding: 40px 20px; min-height: 520px; display: flex; align-items: center; justify-content: center;">
+        <div style="background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 24px; padding: 40px 28px; max-width: 400px; width: 100%; text-align: center;">
+          <div style="width: 64px; height: 64px; border-radius: 16px; background: linear-gradient(135deg, #6366f1, #8b5cf6); margin: 0 auto 12px; display: flex; align-items: center; justify-content: center;">
+            <span style="font-size: 28px; font-weight: 800; color: white;">S</span>
+          </div>
+          <div style="font-size: 24px; font-weight: 700; color: #e2e8f0; margin-bottom: 4px;">Welcome to Spela</div>
+          <div style="font-size: 13px; color: #94a3b8; margin-bottom: 28px;">Connect to your game server to get started</div>
+          <div style="text-align: left; margin-bottom: 14px;">
+            <label style="font-size: 11px; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; display: block; margin-bottom: 5px;">Server Name</label>
+            <div style="background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12); border-radius: 10px; padding: 12px 14px; color: #64748b; font-size: 14px;">My Home Server</div>
+          </div>
+          <div style="text-align: left; margin-bottom: 22px;">
+            <label style="font-size: 11px; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; display: block; margin-bottom: 5px;">Server URL</label>
+            <div style="background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12); border-radius: 10px; padding: 12px 14px; color: #64748b; font-size: 14px;">https://spela.example.com</div>
+          </div>
+          <div style="background: linear-gradient(135deg, #6366f1, #7c3aed); border-radius: 12px; padding: 14px; color: white; font-weight: 600; font-size: 15px;">Connect</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="mockup">
+    <div class="mockup-header">Tablet / Desktop (&gt;600dp)</div>
+    <div class="mockup-body" style="padding: 0;">
+      <div style="background: #0f0f1a; min-height: 520px; display: flex;">
+        <!-- Left: branding hero -->
+        <div style="flex: 1; background: linear-gradient(135deg, #1e1b4b, #312e81, #4c1d95); display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 32px; position: relative; overflow: hidden;">
+          <!-- Subtle pattern overlay -->
+          <div style="position: absolute; inset: 0; opacity: 0.05; background-image: radial-gradient(circle at 25% 25%, white 1px, transparent 1px); background-size: 40px 40px;"></div>
+          <div style="position: relative; z-index: 1; text-align: center;">
+            <div style="width: 80px; height: 80px; border-radius: 20px; background: rgba(255,255,255,0.15); backdrop-filter: blur(10px); margin: 0 auto 20px; display: flex; align-items: center; justify-content: center; border: 1px solid rgba(255,255,255,0.1);">
+              <span style="font-size: 36px; font-weight: 800; color: white;">S</span>
+            </div>
+            <div style="font-size: 36px; font-weight: 800; color: white; margin-bottom: 8px;">Spela</div>
+            <div style="font-size: 14px; color: rgba(255,255,255,0.6); max-width: 220px; line-height: 1.5;">Your personal retro gaming library</div>
+          </div>
+        </div>
+        <!-- Right: form -->
+        <div style="flex: 1; display: flex; align-items: center; justify-content: center; padding: 40px;">
+          <div style="max-width: 360px; width: 100%;">
+            <div style="font-size: 24px; font-weight: 700; color: #e2e8f0; margin-bottom: 4px;">Add Server</div>
+            <div style="font-size: 13px; color: #64748b; margin-bottom: 32px;">Enter your server details to connect</div>
+            <div style="margin-bottom: 16px;">
+              <label style="font-size: 11px; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; display: block; margin-bottom: 6px;">Server Name</label>
+              <div style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.12); border-radius: 10px; padding: 12px 16px; color: #64748b; font-size: 14px;">My Home Server</div>
+            </div>
+            <div style="margin-bottom: 24px;">
+              <label style="font-size: 11px; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; display: block; margin-bottom: 6px;">Server URL</label>
+              <div style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.12); border-radius: 10px; padding: 12px 16px; color: #64748b; font-size: 14px;">https://spela.example.com</div>
+            </div>
+            <div style="background: linear-gradient(135deg, #6366f1, #7c3aed); border-radius: 12px; padding: 14px; color: white; font-weight: 600; font-size: 15px; text-align: center;">Connect</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div style="margin-top: 24px; padding: 20px; border-radius: 12px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08);">
+  <h3 style="margin-top: 0;">Breakpoint: 600dp (same as nav rail)</h3>
+  <ul style="color: #94a3b8; font-size: 14px; line-height: 1.8;">
+    <li><strong>&lt;600dp:</strong> Centered glass card with icon + welcome above the form (Option A)</li>
+    <li><strong>&gt;600dp:</strong> Split layout — branding hero on left, form on right (Option B)</li>
+    <li>Uses <code>BoxWithConstraints</code> — same pattern as the responsive nav rail</li>
+    <li>Branding hero shows app icon, name, and tagline</li>
+    <li>Form side has "Add Server" heading (no icon, since it's on the hero)</li>
+    <li>When saved servers exist, they appear as cards above the "Add Server" form</li>
+  </ul>
+</div>

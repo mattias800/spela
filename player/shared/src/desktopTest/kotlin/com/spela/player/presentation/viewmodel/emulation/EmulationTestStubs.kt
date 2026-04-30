@@ -457,6 +457,28 @@ class StubSessionRepository : SessionRepository {
     }
     override suspend fun deleteSession(sessionId: String) = Result.success(Unit)
     override suspend fun getSessionSaves(sessionId: String) = Result.success(emptyList<SaveState>())
+
+    /** Records the most recent rename / delete calls so #831 tests can
+     *  assert the SaveManager wiring without a real network. */
+    var lastRenameCall: Triple<String, String, String>? = null
+        private set
+    var lastDeleteCall: Pair<String, String>? = null
+        private set
+    /** When set, the next updateSessionSave / deleteSessionSave call
+     *  fails with this exception so the rollback path can be exercised. */
+    var renameFailure: Throwable? = null
+    var deleteFailure: Throwable? = null
+
+    override suspend fun updateSessionSave(sessionId: String, saveId: String, name: String): Result<SaveState> {
+        lastRenameCall = Triple(sessionId, saveId, name)
+        renameFailure?.let { return Result.failure(it) }
+        return Result.success(SaveState(id = saveId, name = name))
+    }
+    override suspend fun deleteSessionSave(sessionId: String, saveId: String): Result<Unit> {
+        lastDeleteCall = sessionId to saveId
+        deleteFailure?.let { return Result.failure(it) }
+        return Result.success(Unit)
+    }
     override suspend fun uploadSessionSave(sessionId: String, name: String, data: ByteArray, screenshot: ByteArray?, coreName: String): Result<SaveState> {
         uploadSessionSaveCallCount++
         return uploadSessionSaveResult

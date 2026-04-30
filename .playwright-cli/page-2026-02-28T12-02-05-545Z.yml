@@ -1,0 +1,56 @@
+- generic [ref=e2]:
+  - navigation [ref=e3]:
+    - link "Om" [ref=e126] [cursor=pointer]:
+      - /url: https://about.google/?fg=1&utm_source=google-SE&utm_medium=referral&utm_campaign=hp-header
+    - link "Store" [ref=e127] [cursor=pointer]:
+      - /url: https://store.google.com/SE?utm_source=hp_header&utm_medium=google_ooo&utm_campaign=GS100042&hl=sv-SE
+    - generic [ref=e7]:
+      - generic [ref=e8]:
+        - link "Gmail" [ref=e128] [cursor=pointer]:
+          - /url: https://mail.google.com/mail/&ogbl
+        - link "Sök efter bilder" [ref=e129] [cursor=pointer]:
+          - /url: https://www.google.com/imghp?hl=sv&ogbl
+          - text: Bilder
+      - button "Googles appar" [ref=e130] [cursor=pointer]:
+        - img [ref=e16]
+      - link "Logga in" [ref=e131] [cursor=pointer]:
+        - /url: https://accounts.google.com/ServiceLogin?hl=sv&passive=true&continue=https://www.google.com/&ec=futura_exp_og_so_72776762_e
+  - img "Google" [ref=e132]
+  - search [ref=e31]:
+    - generic [ref=e33]:
+      - generic [ref=e35]:
+        - img [ref=e39]
+        - combobox "Sök" [ref=e133]
+        - generic [ref=e44]:
+          - button "Inmatningsverktyg" [ref=e134] [cursor=pointer]:
+            - img [ref=e47]
+          - button "Sök med rösten" [ref=e135] [cursor=pointer]:
+            - img [ref=e50]
+          - button "Sök med bild" [ref=e136] [cursor=pointer]:
+            - img [ref=e53]
+      - generic [ref=e56]:
+        - button "Sök på Google" [ref=e137] [cursor=pointer]
+        - button "Jag har tur" [ref=e138] [cursor=pointer]
+  - generic [ref=e61]:
+    - text: "Google på:"
+    - link "English" [ref=e139] [cursor=pointer]:
+      - /url: https://www.google.com/setprefs?sig=0_wVJ6H1KyNHMCo-U1mbJQfJPUqvE%3D&hl=en&source=homepage&sa=X&ved=0ahUKEwin77rykfySAxVWR_EDHcW9OG4Q2ZgBCBc
+  - contentinfo [ref=e64]:
+    - generic [ref=e65]: Sverige
+    - generic [ref=e66]:
+      - generic [ref=e67]:
+        - link "Annonsering" [ref=e140] [cursor=pointer]:
+          - /url: https://www.google.com/intl/sv_se/ads/?subid=ww-ww-et-g-awa-a-g_hpafoot1_1!o2&utm_source=google.com&utm_medium=referral&utm_campaign=google_hpafooter&fg=1
+        - link "Företagslösningar" [ref=e141] [cursor=pointer]:
+          - /url: https://www.google.com/services/?subid=ww-ww-et-g-awa-a-g_hpbfoot1_1!o2&utm_source=google.com&utm_medium=referral&utm_campaign=google_hpbfooter&fg=1
+        - link "Så fungerar Sök" [ref=e142] [cursor=pointer]:
+          - /url: https://google.com/search/howsearchworks/?fg=1
+      - link "Koldioxidneutralt sedan 2007" [ref=e143] [cursor=pointer]:
+        - /url: https://sustainability.google/intl/sv/commitments-europe/?utm_source=googlehpfooter&utm_medium=housepromos&utm_campaign=bottom-footer&utm_content=
+      - generic [ref=e73]:
+        - link "Integritet" [ref=e144] [cursor=pointer]:
+          - /url: https://policies.google.com/privacy?hl=sv&fg=1
+        - link "Villkor" [ref=e145] [cursor=pointer]:
+          - /url: https://policies.google.com/terms?hl=sv&fg=1
+        - button "Inställningar" [ref=e146] [cursor=pointer]:
+          - generic [ref=e80]: Inställningar

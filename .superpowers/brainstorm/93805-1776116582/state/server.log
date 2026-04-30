@@ -1,0 +1,5 @@
+{"type":"server-started","port":50756,"host":"127.0.0.1","url_host":"localhost","url":"http://localhost:50756","screen_dir":"/Users/mattias800/repos/spela/.superpowers/brainstorm/93805-1776116582/content","state_dir":"/Users/mattias800/repos/spela/.superpowers/brainstorm/93805-1776116582/state"}
+{"type":"screen-added","file":"/Users/mattias800/repos/spela/.superpowers/brainstorm/93805-1776116582/content/hero-mobile-layout.html"}
+{"source":"user-event","type":"click","text":"320px wide (mobile)\n    \n    \n      B. Cover Above Info (Centered)\n      On mobile, cover art stacks above the info box, centered. Larger cover (140px+). Info box goes full width.","choice":"b","id":null,"timestamp":1776116653699}
+{"type":"screen-added","file":"/Users/mattias800/repos/spela/.superpowers/brainstorm/93805-1776116582/content/waiting.html"}
+{"type":"server-stopped","reason":"idle timeout"}

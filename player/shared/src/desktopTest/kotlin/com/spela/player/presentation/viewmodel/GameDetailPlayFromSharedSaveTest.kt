@@ -175,6 +175,9 @@ private class FakePlayFromSharedSaveSessionRepository : SessionRepository {
     override suspend fun updateSessionCoreFlags(sessionId: String, userLockedCoreVersion: Boolean?, autoLoadSuppressed: Boolean?, rehearsalCrashPending: Boolean?) = Result.failure<GameSession>(Exception("stub"))
     override suspend fun deleteSession(sessionId: String) = Result.success(Unit)
     override suspend fun getSessionSaves(sessionId: String) = Result.success(emptyList<SaveState>())
+    override suspend fun updateSessionSave(sessionId: String, saveId: String, name: String) =
+        Result.failure<SaveState>(UnsupportedOperationException())
+    override suspend fun deleteSessionSave(sessionId: String, saveId: String) = Result.success(Unit)
     override suspend fun uploadSessionSave(sessionId: String, name: String, data: ByteArray, screenshot: ByteArray?, coreName: String) =
         Result.success(SaveState(id = "1", name = name))
     override suspend fun uploadSessionSaveFromFile(sessionId: String, name: String, savePath: String, saveSize: Long, screenshot: ByteArray?, coreName: String, compression: String) =

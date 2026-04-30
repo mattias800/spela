@@ -50,6 +50,13 @@ data class SaveSlotInfo(
     val screenshotUrl: String? = null,
     val timestamp: String? = null,
     val isFilled: Boolean = false,
+    /** Server save id backing this slot. Null when the slot is empty
+     *  or when the source predates the slot-id wiring (#831). Required
+     *  for the rename / delete actions on the in-game slot picker. */
+    val saveId: String? = null,
+    /** Existing user-supplied save name, if any. Surfaced into the
+     *  rename dialog as the prefill (#831). */
+    val name: String? = null,
 )
 
 /**
@@ -120,6 +127,23 @@ data class EmulationState(
      * are already the default) and large (slot-only by spec) tiers.
      */
     val showNamedSaveDialog: Boolean = false,
+    /**
+     * Non-null when the user long-presses a filled slot cell on the
+     * in-game slot picker. Drives the slot-actions bottom sheet
+     * (Rename / Delete / Cancel). See #831.
+     */
+    val slotActionsSheetSlot: Int? = null,
+    /**
+     * Non-null when the rename dialog is open for the given slot.
+     * Pre-fills with the slot's existing name. See #831.
+     */
+    val slotRenameTarget: Int? = null,
+    /**
+     * Non-null when the delete-confirmation dialog is open for the
+     * given slot. Two-step delete is deliberate — the user can dismiss
+     * before the irreversible call hits the server. See #831.
+     */
+    val slotDeleteConfirmSlot: Int? = null,
     /**
      * True when the user is launching a large-tier console game for
      * the first time (no override + tier == large → AskOnce). Drives

@@ -1,0 +1,65 @@
+<h2>Game Detail Hero: Mobile Layout</h2>
+<p class="subtitle">On mobile, where should the cover art go relative to the info box?</p>
+
+<div class="cards">
+  <div class="card" data-choice="a" onclick="toggleSelect(this)">
+    <div class="card-image" style="padding: 20px; background: #1a1a2e;">
+      <!-- Current: side by side even on mobile -->
+      <div style="display: flex; gap: 12px; align-items: flex-end; background: linear-gradient(to top, rgba(0,0,0,0.8), rgba(30,30,60,0.4)); border-radius: 12px; padding: 16px; min-height: 200px;">
+        <div style="width: 80px; flex-shrink: 0; background: #2a2a4a; border-radius: 8px; aspect-ratio: 3/4; border: 1px solid rgba(255,255,255,0.1);"></div>
+        <div style="flex: 1; background: rgba(0,0,0,0.4); border-radius: 12px; padding: 12px; backdrop-filter: blur(4px);">
+          <div style="height: 14px; width: 70%; background: white; border-radius: 4px; margin-bottom: 8px;"></div>
+          <div style="height: 10px; width: 50%; background: rgba(255,255,255,0.5); border-radius: 4px; margin-bottom: 12px;"></div>
+          <div style="height: 32px; width: 80px; background: #6366f1; border-radius: 8px;"></div>
+        </div>
+      </div>
+      <div style="text-align: center; margin-top: 8px; color: #888; font-size: 12px;">320px wide (mobile)</div>
+    </div>
+    <div class="card-body">
+      <h3>A. Current: Side by Side</h3>
+      <p>Cover art and info box are always horizontal, even on mobile. Cover is tiny (144px) to fit.</p>
+    </div>
+  </div>
+
+  <div class="card" data-choice="b" onclick="toggleSelect(this)">
+    <div class="card-image" style="padding: 20px; background: #1a1a2e;">
+      <!-- Proposed: cover above info box on mobile -->
+      <div style="display: flex; flex-direction: column; align-items: center; gap: 12px; background: linear-gradient(to top, rgba(0,0,0,0.8), rgba(30,30,60,0.4)); border-radius: 12px; padding: 16px; min-height: 200px;">
+        <div style="width: 140px; flex-shrink: 0; background: #2a2a4a; border-radius: 8px; aspect-ratio: 3/4; border: 1px solid rgba(255,255,255,0.1);"></div>
+        <div style="width: 100%; background: rgba(0,0,0,0.4); border-radius: 12px; padding: 12px; backdrop-filter: blur(4px);">
+          <div style="height: 14px; width: 70%; background: white; border-radius: 4px; margin-bottom: 8px;"></div>
+          <div style="height: 10px; width: 50%; background: rgba(255,255,255,0.5); border-radius: 4px; margin-bottom: 12px;"></div>
+          <div style="height: 32px; width: 80px; background: #6366f1; border-radius: 8px;"></div>
+        </div>
+      </div>
+      <div style="text-align: center; margin-top: 8px; color: #888; font-size: 12px;">320px wide (mobile)</div>
+    </div>
+    <div class="card-body">
+      <h3>B. Cover Above Info (Centered)</h3>
+      <p>On mobile, cover art stacks above the info box, centered. Larger cover (140px+). Info box goes full width.</p>
+    </div>
+  </div>
+
+  <div class="card" data-choice="c" onclick="toggleSelect(this)">
+    <div class="card-image" style="padding: 20px; background: #1a1a2e;">
+      <!-- Proposed: cover above but left-aligned -->
+      <div style="display: flex; flex-direction: column; align-items: flex-start; gap: 12px; background: linear-gradient(to top, rgba(0,0,0,0.8), rgba(30,30,60,0.4)); border-radius: 12px; padding: 16px; min-height: 200px;">
+        <div style="width: 120px; flex-shrink: 0; background: #2a2a4a; border-radius: 8px; aspect-ratio: 3/4; border: 1px solid rgba(255,255,255,0.1);"></div>
+        <div style="width: 100%; background: rgba(0,0,0,0.4); border-radius: 12px; padding: 12px; backdrop-filter: blur(4px);">
+          <div style="height: 14px; width: 70%; background: white; border-radius: 4px; margin-bottom: 8px;"></div>
+          <div style="height: 10px; width: 50%; background: rgba(255,255,255,0.5); border-radius: 4px; margin-bottom: 12px;"></div>
+          <div style="height: 32px; width: 80px; background: #6366f1; border-radius: 8px;"></div>
+        </div>
+      </div>
+      <div style="text-align: center; margin-top: 8px; color: #888; font-size: 12px;">320px wide (mobile)</div>
+    </div>
+    <div class="card-body">
+      <h3>C. Cover Above Info (Left-aligned)</h3>
+      <p>Same stacking, but cover art is left-aligned instead of centered. More editorial feel.</p>
+    </div>
+  </div>
+</div>
+
+<div class="section" style="margin-top: 24px;">
+  <p class="subtitle">Note: On desktop (md: breakpoint and up), the layout stays horizontal with a larger cover as it is today — just with the cover size increased from 192px to something bigger. This question is only about the mobile stacking behavior.</p>
+</div>
