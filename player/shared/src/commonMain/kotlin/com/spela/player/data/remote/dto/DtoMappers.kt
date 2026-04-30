@@ -77,6 +77,7 @@ fun GameDto.toDomain(): Game = Game(
     title = title,
     consoleId = consoleId,
     consoleName = consoleName,
+    consoleSaveStatePolicy = SaveStatePolicyTier.fromApiId(consoleSaveStatePolicy),
     coverAspectRatio = coverAspectRatio.toFloat(),
     coverUrl = coverUrl.takeIf { it.isNotEmpty() },
     description = description.takeIf { it.isNotEmpty() },

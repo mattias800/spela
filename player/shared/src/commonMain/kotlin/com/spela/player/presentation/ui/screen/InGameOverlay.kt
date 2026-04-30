@@ -223,6 +223,20 @@ fun InGameOverlay(
         )
     }
 
+    // First-launch save-state opt-in prompt for large-tier consoles
+    // (#804 phase 4b spec point b). Renders before the core-mismatch
+    // dialog so the user makes the higher-level "do I want save
+    // states for this console at all" decision before any save-state
+    // mechanics kick in.
+    if (state.showSaveStatePrompt) {
+        com.spela.player.presentation.ui.feature.ingame.SaveStateOptInDialog(
+            consoleName = state.saveStatePromptConsoleName,
+            onAccept = { viewModel.onIntent(EmulationIntent.AcceptSaveStatesForConsole) },
+            onReject = { viewModel.onIntent(EmulationIntent.RejectSaveStatesForConsole) },
+            onDeferToPerGame = { viewModel.onIntent(EmulationIntent.DeferSaveStateChoiceToPerGame) },
+        )
+    }
+
     // Core mismatch dialog
     if (state.showCoreMismatchDialog) {
         CoreMismatchDialog(

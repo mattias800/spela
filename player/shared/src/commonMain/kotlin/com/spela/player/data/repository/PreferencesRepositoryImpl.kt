@@ -61,6 +61,7 @@ class PreferencesRepositoryImpl(
         selectedShader: String?,
         selectedTheme: String?,
         consoleShaders: Map<String, String>?,
+        consoleSaveStatePolicies: Map<String, String>?,
         defaultSecondScreenPage: String?,
     ): Result<UserPreferences> = runCatching {
         apiClient.updatePreferences(
@@ -72,6 +73,7 @@ class PreferencesRepositoryImpl(
                 selectedShader = selectedShader,
                 selectedTheme = selectedTheme,
                 consoleShaders = consoleShaders,
+                consoleSaveStatePolicies = consoleSaveStatePolicies,
                 defaultSecondScreenPage = defaultSecondScreenPage,
             )
         ).toDomain()

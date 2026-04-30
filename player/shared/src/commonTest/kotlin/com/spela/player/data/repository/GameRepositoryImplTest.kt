@@ -28,6 +28,7 @@ private fun testGameResponse(
         averageRating = 0.0,
         consoleId = consoleId,
         consoleName = consoleName,
+        consoleSaveStatePolicy = "small",
         coverAspectRatio = coverAspectRatio,
         coverUrl = coverUrl,
         createdAt = now,

@@ -99,6 +99,12 @@ type GameResponse struct {
 	UpdatedAt        time.Time      `json:"updatedAt"`
 	ConsoleID        string         `json:"consoleId"`
 	ConsoleName      string         `json:"consoleName"`
+	// Save-state size tier of the game's console — drives the in-game
+	// overlay's first-launch prompt and slot/quota UX. One of "small"
+	// | "medium" | "large". Inherited from Console.SaveStatePolicy
+	// (see #804 phase 3) so the player doesn't need a second
+	// round-trip to render the prompt at game-launch time.
+	ConsoleSaveStatePolicy string  `json:"consoleSaveStatePolicy"`
 	CoverAspectRatio float64        `json:"coverAspectRatio"`
 	Title            string         `json:"title"`
 	FileName       string         `json:"fileName"`
@@ -419,9 +425,11 @@ func toGameResponseWithData(g db.Game, data *userGameData) GameResponse {
 
 	consoleName := ""
 	coverAspectRatio := 0.75
+	consoleSaveStatePolicy := string(db.SaveStatePolicySmall)
 	if g.Console.ID != 0 {
 		consoleName = g.Console.Name
 		coverAspectRatio = parseAspectRatio(g.Console.CoverAspect)
+		consoleSaveStatePolicy = saveStatePolicyOrDefault(g.Console.SaveStatePolicy)
 	}
 
 	coverURL := resolveImageURL(g.CoverURL)
@@ -450,6 +458,7 @@ func toGameResponseWithData(g db.Game, data *userGameData) GameResponse {
 		UpdatedAt:        g.UpdatedAt,
 		ConsoleID:        consoleAbbr,
 		ConsoleName:      consoleName,
+		ConsoleSaveStatePolicy: consoleSaveStatePolicy,
 		CoverAspectRatio: coverAspectRatio,
 		Title:            g.Title,
 		FileName:       g.FileName,

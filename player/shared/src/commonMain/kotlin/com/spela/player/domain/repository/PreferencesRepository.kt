@@ -13,6 +13,13 @@ interface PreferencesRepository {
         selectedShader: String? = null,
         selectedTheme: String? = null,
         consoleShaders: Map<String, String>? = null,
+        /**
+         * Per-console save-state opt-out upserts. Keys are console
+         * abbreviations; values are SaveStateChoice apiIds ("enabled"
+         * | "disabled" | "ask-once") or empty string to clear the
+         * row. See #804 phase 4.
+         */
+        consoleSaveStatePolicies: Map<String, String>? = null,
         defaultSecondScreenPage: String? = null,
     ): Result<UserPreferences>
     fun getDeviceShaderOverride(consoleId: String): ShaderPreset?

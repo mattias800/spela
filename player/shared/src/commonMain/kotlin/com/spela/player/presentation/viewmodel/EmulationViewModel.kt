@@ -176,6 +176,19 @@ class EmulationViewModel(
                 }
             }
             EmulationIntent.LoadState -> saveManager.loadState()
+            EmulationIntent.AcceptSaveStatesForConsole -> resolveSaveStatePrompt(
+                com.spela.player.domain.model.SaveStateChoice.Enabled,
+            )
+            EmulationIntent.RejectSaveStatesForConsole -> resolveSaveStatePrompt(
+                com.spela.player.domain.model.SaveStateChoice.Disabled,
+            )
+            EmulationIntent.DeferSaveStateChoiceToPerGame -> resolveSaveStatePrompt(
+                // Per-game deferral records "enabled" at the console
+                // level so we never re-ask. The user can opt out
+                // individual games from the game-detail toggle (a
+                // future #804 phase 4b slice).
+                com.spela.player.domain.model.SaveStateChoice.Enabled,
+            )
             EmulationIntent.ToggleOverlay -> {
                 val wasShowing = _state.value.showOverlay
                 _state.update { it.copy(showOverlay = !it.showOverlay) }
@@ -715,14 +728,20 @@ class EmulationViewModel(
             getGameDetailUseCase(gameId).onSuccess { detail ->
                 consoleId = detail.game.consoleId
                 consoleName = detail.game.consoleName
-                // Read the user's explicit save-state opt-out for this
-                // console — drives the overlay greying. The toggle is
-                // read-only at this layer; the user changes it from
-                // Settings and the next game launch picks up the new
-                // value. See #804 phase 4.
-                val optedOut = currentPreferences
-                    .consoleSaveStatePolicies[detail.game.consoleId.lowercase()] ==
+                // Resolve the effective save-state choice for the
+                // console. The full resolver picks up tier defaults
+                // (large-tier consoles default to AskOnce) so the
+                // first-launch prompt fires on first GC/Wii/PS2
+                // launch. See #804 phase 4b.
+                val effectiveChoice = com.spela.player.domain.model.effectiveSaveStateChoice(
+                    consoleAbbr = detail.game.consoleId,
+                    tier = detail.game.consoleSaveStatePolicy,
+                    overrides = currentPreferences.consoleSaveStatePolicies,
+                )
+                val optedOut = effectiveChoice ==
                     com.spela.player.domain.model.SaveStateChoice.Disabled
+                val askOnce = effectiveChoice ==
+                    com.spela.player.domain.model.SaveStateChoice.AskOnce
                 withContext(dispatchers.main) {
                     _state.update {
                         it.copy(
@@ -738,6 +757,9 @@ class EmulationViewModel(
                             gameRating = detail.game.igdbCriticsRating,
                             gamePlayers = detail.game.players,
                             saveStatesOptedOut = optedOut,
+                            showSaveStatePrompt = askOnce,
+                            saveStatePromptConsoleAbbr = if (askOnce) detail.game.consoleId else "",
+                            saveStatePromptConsoleName = if (askOnce) detail.game.consoleName else "",
                         )
                     }
                 }
@@ -1193,6 +1215,44 @@ class EmulationViewModel(
     private fun cancelLaunch() {
         pendingLaunch = null
         _syncState.update { null }
+    }
+
+    /**
+     * Records the user's first-launch save-state choice for the
+     * current console and dismisses the prompt. The write happens via
+     * the standard preferences PUT — same surface the Settings page
+     * (future slice) will use, so the two stay in sync. On network
+     * failure we still close the dialog locally and update the in-
+     * memory preferences so the prompt doesn't fire again this
+     * session; the next sync will retry. See #804 phase 4b.
+     */
+    private fun resolveSaveStatePrompt(
+        choice: com.spela.player.domain.model.SaveStateChoice,
+    ) {
+        val abbr = _state.value.saveStatePromptConsoleAbbr.lowercase()
+        if (abbr.isEmpty()) {
+            _state.update { it.copy(showSaveStatePrompt = false) }
+            return
+        }
+        // Update local cache immediately so a re-launch of the same
+        // console doesn't re-fire the prompt before the network
+        // round-trip completes.
+        currentPreferences = currentPreferences.copy(
+            consoleSaveStatePolicies = currentPreferences.consoleSaveStatePolicies + (abbr to choice),
+        )
+        _state.update {
+            it.copy(
+                showSaveStatePrompt = false,
+                saveStatesOptedOut = choice == com.spela.player.domain.model.SaveStateChoice.Disabled,
+            )
+        }
+        scope.launch(dispatchers.io) {
+            runCatching {
+                preferencesRepository.updatePreferences(
+                    consoleSaveStatePolicies = mapOf(abbr to choice.apiId),
+                )
+            }
+        }
     }
 
     private fun pauseGame() {

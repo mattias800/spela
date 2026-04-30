@@ -174,13 +174,24 @@ class StubLibretroControllerWithVariableTracking : LibretroController {
 
 // ── Repository stubs ────────────────────────────────────────────────────────
 
-class StubGameRepository(private val consoleId: String = "nes") : GameRepository {
+class StubGameRepository(
+    private val consoleId: String = "nes",
+    private val consoleName: String = "",
+    private val consoleSaveStatePolicy: com.spela.player.domain.model.SaveStatePolicyTier =
+        com.spela.player.domain.model.SaveStatePolicyTier.Small,
+) : GameRepository {
     override suspend fun getConsoles() = Result.success(emptyList<com.spela.player.domain.model.Console>())
     override suspend fun getGamesForConsole(consoleId: String) = Result.success(emptyList<Game>())
     override suspend fun getAllGames() = Result.success(emptyList<Game>())
     override suspend fun searchGames(query: String, consoleId: String?, sortBy: String?, sortOrder: String?) = Result.success(emptyList<Game>())
     override suspend fun getGameDetail(gameId: String) = Result.success(
-        GameDetail(game = Game(id = gameId, title = "Test Game", consoleId = this.consoleId))
+        GameDetail(game = Game(
+            id = gameId,
+            title = "Test Game",
+            consoleId = this.consoleId,
+            consoleName = this.consoleName,
+            consoleSaveStatePolicy = this.consoleSaveStatePolicy,
+        ))
     )
     override suspend fun getRecentGames() = Result.success(emptyList<Game>())
     override suspend fun getFavoriteGames() = Result.success(emptyList<Game>())
@@ -261,6 +272,13 @@ class StubPreferencesRepository : PreferencesRepository {
     var resolveShaderResult: ShaderPreset = ShaderPreset.NONE
 
     override suspend fun getPreferences() = preferencesResult
+    /** Records the consoleSaveStatePolicies map passed on the most
+     *  recent updatePreferences call so tests can assert the
+     *  EmulationViewModel writes the right console-level choice when
+     *  the user picks a button on the first-launch prompt (#804). */
+    var lastConsoleSaveStatePoliciesUpdate: Map<String, String>? = null
+        private set
+
     override suspend fun updatePreferences(
         showPerformanceOverlay: Boolean?,
         autoSaveEnabled: Boolean?,
@@ -269,8 +287,14 @@ class StubPreferencesRepository : PreferencesRepository {
         selectedShader: String?,
         selectedTheme: String?,
         consoleShaders: Map<String, String>?,
+        consoleSaveStatePolicies: Map<String, String>?,
         defaultSecondScreenPage: String?,
-    ) = Result.success(UserPreferences())
+    ): Result<UserPreferences> {
+        if (consoleSaveStatePolicies != null) {
+            lastConsoleSaveStatePoliciesUpdate = consoleSaveStatePolicies
+        }
+        return Result.success(UserPreferences())
+    }
 
     override fun getDeviceShaderOverride(consoleId: String): ShaderPreset? = null
     override fun setDeviceShaderOverride(consoleId: String, shader: ShaderPreset?) {}

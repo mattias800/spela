@@ -392,6 +392,7 @@ class KeyMappingViewModelTest {
             showPerformanceOverlay: Boolean?, autoSaveEnabled: Boolean?, autoLoadSaveEnabled: Boolean?,
             autoUpdateCoresEnabled: Boolean?,
             selectedShader: String?, selectedTheme: String?, consoleShaders: Map<String, String>?,
+            consoleSaveStatePolicies: Map<String, String>?,
             defaultSecondScreenPage: String?,
         ): Result<UserPreferences> = Result.success(UserPreferences())
         override fun getDeviceShaderOverride(consoleId: String): ShaderPreset? = null

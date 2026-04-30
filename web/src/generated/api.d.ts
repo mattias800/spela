@@ -6556,6 +6556,7 @@ export interface components {
             biosStatus: string;
             consoleId: string;
             consoleName: string;
+            consoleSaveStatePolicy: string;
             coreOverride: string;
             /** Format: double */
             coverAspectRatio: number;

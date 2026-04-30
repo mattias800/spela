@@ -37,6 +37,7 @@ import kotlinx.serialization.encoding.*
  * @param biosStatus 
  * @param consoleId 
  * @param consoleName 
+ * @param consoleSaveStatePolicy 
  * @param coreOverride 
  * @param coverAspectRatio 
  * @param coverUrl 
@@ -108,6 +109,8 @@ data class GameResponse (
     @SerialName(value = "consoleId") @Required val consoleId: kotlin.String,
 
     @SerialName(value = "consoleName") @Required val consoleName: kotlin.String,
+
+    @SerialName(value = "consoleSaveStatePolicy") @Required val consoleSaveStatePolicy: kotlin.String,
 
     @SerialName(value = "coreOverride") @Required val coreOverride: kotlin.String,
 
