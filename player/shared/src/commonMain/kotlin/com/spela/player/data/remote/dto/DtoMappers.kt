@@ -177,6 +177,11 @@ fun com.spela.client.models.UserPreferencesResponse.toDomain(): UserPreferences 
         // value rather than crashing the player on a future codec.
         SaveStateChoice.fromApiId(v)?.let { k.lowercase() to it }
     }.toMap(),
+    gameSaveStatePolicies = gameSaveStatePolicies.mapNotNull { (k, v) ->
+        // Same defensive parsing as console policies — keys are game
+        // IDs (numeric strings), values map to SaveStateChoice.
+        SaveStateChoice.fromApiId(v)?.let { k to it }
+    }.toMap(),
     selectedKeyMapping = selectedKeyMapping,
     consoleKeyMappings = consoleKeyMappings.mapValues {
         ConsoleKeyMappingPref(

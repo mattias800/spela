@@ -74,6 +74,47 @@ class SaveStatePolicyTest {
     }
 
     @Test
+    fun perGameOverrideBeatsConsoleOverride() {
+        // Power-user case from #804 phase 4b spec point (c): user
+        // has Disabled at console level for GameCube, but Enabled for
+        // *this specific game* (Mario Sunshine). The resolver must
+        // honour the per-game choice.
+        val resolved = effectiveSaveStateChoice(
+            consoleAbbr = "GC",
+            tier = SaveStatePolicyTier.Large,
+            overrides = mapOf("gc" to SaveStateChoice.Disabled),
+            gameOverride = SaveStateChoice.Enabled,
+        )
+        assertEquals(SaveStateChoice.Enabled, resolved)
+    }
+
+    @Test
+    fun perGameOverrideBeatsTierDefault() {
+        // No per-console override; tier alone would resolve to
+        // AskOnce for large. The per-game Disabled choice wins.
+        val resolved = effectiveSaveStateChoice(
+            consoleAbbr = "GC",
+            tier = SaveStatePolicyTier.Large,
+            overrides = emptyMap(),
+            gameOverride = SaveStateChoice.Disabled,
+        )
+        assertEquals(SaveStateChoice.Disabled, resolved)
+    }
+
+    @Test
+    fun perGameOverrideNullFallsBackToConsole() {
+        // gameOverride = null is the "no per-game choice for this
+        // game" case — resolver must continue down to per-console.
+        val resolved = effectiveSaveStateChoice(
+            consoleAbbr = "GC",
+            tier = SaveStatePolicyTier.Large,
+            overrides = mapOf("gc" to SaveStateChoice.Enabled),
+            gameOverride = null,
+        )
+        assertEquals(SaveStateChoice.Enabled, resolved)
+    }
+
+    @Test
     fun overrideForOneConsoleDoesNotLeakToOthers() {
         val overrides = mapOf("gc" to SaveStateChoice.Disabled)
         val gc = effectiveSaveStateChoice("GC", SaveStatePolicyTier.Large, overrides)

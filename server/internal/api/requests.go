@@ -41,6 +41,12 @@ type UpdatePreferencesRequest struct {
 	// abbreviations are silently skipped, matching ConsoleShaders.
 	// See #804 phase 4.
 	ConsoleSaveStatePolicies map[string]string              `json:"consoleSaveStatePolicies,omitempty"`
+	// Per-game save-state opt-out upserts keyed by game ID string.
+	// Same sanitiser semantics as ConsoleSaveStatePolicies — empty
+	// string clears the row, unknown values are silently dropped.
+	// Unknown game IDs are skipped (no row written). See #804
+	// phase 4b spec point (c).
+	GameSaveStatePolicies    map[string]string              `json:"gameSaveStatePolicies,omitempty"`
 	SelectedKeyMapping      *string                         `json:"selectedKeyMapping,omitempty"`
 	CustomKeyMapping        map[string]string               `json:"customKeyMapping,omitempty"`
 	ConsoleKeyMappings      map[string]ConsoleKeyMappingDTO `json:"consoleKeyMappings,omitempty"`

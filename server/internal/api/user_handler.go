@@ -5,6 +5,7 @@ import (
 	"net"
 	"net/url"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
@@ -56,6 +57,21 @@ func (h *UserHandler) buildConsoleShaderMap(userID uint) map[string]string {
 		if abbr, ok := abbrMap[p.ConsoleID]; ok {
 			m[abbr] = p.Shader
 		}
+	}
+	return m
+}
+
+// buildGameSaveStatePolicyMap queries the per-user, per-game save-
+// state overrides and returns them keyed by game ID string. Layered
+// on top of the per-console policy — a per-game choice wins over the
+// console-level one in the resolver. See #804 phase 4b spec point (c).
+func (h *UserHandler) buildGameSaveStatePolicyMap(userID uint) map[string]string {
+	var prefs []db.GameSaveStatePolicy
+	h.DB.Where("user_id = ?", userID).Find(&prefs)
+
+	m := make(map[string]string, len(prefs))
+	for _, p := range prefs {
+		m[strconv.FormatUint(uint64(p.GameID), 10)] = string(p.Choice)
 	}
 	return m
 }

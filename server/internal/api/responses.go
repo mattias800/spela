@@ -1114,6 +1114,12 @@ type UserPreferencesResponse struct {
 	// means "use the tier-driven default" (small/medium → enabled,
 	// large → ask-once). See #804 phase 4.
 	ConsoleSaveStatePolicies map[string]string              `json:"consoleSaveStatePolicies"`
+	// Per-game save-state opt-out overrides keyed by game ID
+	// string. Layered on top of consoleSaveStatePolicies — a per-
+	// game choice wins over the console-level one. Only contains
+	// games where the user has made a deliberate per-game choice.
+	// See #804 phase 4b spec point (c).
+	GameSaveStatePolicies    map[string]string              `json:"gameSaveStatePolicies"`
 	SelectedKeyMapping      string                          `json:"selectedKeyMapping"`
 	CustomKeyMapping        map[string]string               `json:"customKeyMapping"`
 	ConsoleKeyMappings      map[string]ConsoleKeyMappingDTO `json:"consoleKeyMappings"`

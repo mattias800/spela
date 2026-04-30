@@ -33,6 +33,7 @@ import kotlinx.serialization.encoding.*
  * @param consoleShaders 
  * @param customKeyMapping 
  * @param defaultSecondScreenPage 
+ * @param gameSaveStatePolicies 
  * @param preferredRegions 
  * @param selectedKeyMapping 
  * @param selectedShader 
@@ -61,6 +62,8 @@ data class UpdatePreferencesRequest (
     @SerialName(value = "customKeyMapping") val customKeyMapping: kotlin.collections.Map<kotlin.String, kotlin.String>? = null,
 
     @SerialName(value = "defaultSecondScreenPage") val defaultSecondScreenPage: kotlin.String? = null,
+
+    @SerialName(value = "gameSaveStatePolicies") val gameSaveStatePolicies: kotlin.collections.Map<kotlin.String, kotlin.String>? = null,
 
     @SerialName(value = "preferredRegions") val preferredRegions: kotlin.collections.List<kotlin.String>? = null,
 

@@ -9885,6 +9885,12 @@
           "defaultSecondScreenPage": {
             "type": "string"
           },
+          "gameSaveStatePolicies": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object"
+          },
           "preferredRegions": {
             "items": {
               "type": "string"
@@ -10164,6 +10170,12 @@
           "defaultSecondScreenPage": {
             "type": "string"
           },
+          "gameSaveStatePolicies": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object"
+          },
           "preferredRegions": {
             "items": {
               "type": "string"
@@ -10202,6 +10214,7 @@
           "defaultSecondScreenPage",
           "consoleShaders",
           "consoleSaveStatePolicies",
+          "gameSaveStatePolicies",
           "selectedKeyMapping",
           "customKeyMapping",
           "consoleKeyMappings",
