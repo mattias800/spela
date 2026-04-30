@@ -78,6 +78,15 @@ data class EmulationState(
     val selectedShader: ShaderPreset = ShaderPreset.NONE,
 
     val supportsSaveStates: Boolean = false,
+    /**
+     * True when the user has explicitly opted out of save states for
+     * this console (`consoleSaveStatePolicies[abbr] == disabled`). The
+     * in-game overlay greys the Save and Load action buttons when set,
+     * with a tooltip pointing back to Settings. The toggle is read-
+     * only here on purpose — flipping mid-session creates ambiguity
+     * about in-flight uploads, see #804 phase 4 spec point (d).
+     */
+    val saveStatesOptedOut: Boolean = false,
     val showExitConfirm: Boolean = false,
     val requestExit: Boolean = false,
     val statusMessage: String? = null,

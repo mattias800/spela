@@ -715,6 +715,14 @@ class EmulationViewModel(
             getGameDetailUseCase(gameId).onSuccess { detail ->
                 consoleId = detail.game.consoleId
                 consoleName = detail.game.consoleName
+                // Read the user's explicit save-state opt-out for this
+                // console — drives the overlay greying. The toggle is
+                // read-only at this layer; the user changes it from
+                // Settings and the next game launch picks up the new
+                // value. See #804 phase 4.
+                val optedOut = currentPreferences
+                    .consoleSaveStatePolicies[detail.game.consoleId.lowercase()] ==
+                    com.spela.player.domain.model.SaveStateChoice.Disabled
                 withContext(dispatchers.main) {
                     _state.update {
                         it.copy(
@@ -729,6 +737,7 @@ class EmulationViewModel(
                             gameGenre = detail.game.genre,
                             gameRating = detail.game.igdbCriticsRating,
                             gamePlayers = detail.game.players,
+                            saveStatesOptedOut = optedOut,
                         )
                     }
                 }
