@@ -1,0 +1,8 @@
+[     205ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://localhost:5173/api/user/preferences:0
+[    1218ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://localhost:5173/api/user/preferences:0
+[   20984ms] [WARNING] WebSocket connection to 'ws://localhost:5173/api/ws?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjEsInVzZXJuYW1lIjoiYWRtaW4iLCJyb2xlIjoib3duZXIiLCJpc3MiOiJzcGVsYSIsImV4cCI6MTc3MTE1NzU3OSwiaWF0IjoxNzcxMTU2Njc5fQ.rnA2WJnC2PdaqSMcCrtMuIWb7yA2RlVXreqUQEtbRng' failed: WebSocket is closed before the connection is established. @ http://localhost:5173/src/hooks/use-websocket.ts:58
+[   20985ms] [WARNING] WebSocket connection to 'ws://localhost:5173/api/ws?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjEsInVzZXJuYW1lIjoiYWRtaW4iLCJyb2xlIjoib3duZXIiLCJpc3MiOiJzcGVsYSIsImV4cCI6MTc3MTE1NzU3OSwiaWF0IjoxNzcxMTU2Njc5fQ.rnA2WJnC2PdaqSMcCrtMuIWb7yA2RlVXreqUQEtbRng' failed: WebSocket is closed before the connection is established. @ http://localhost:5173/src/hooks/use-websocket.ts:31
+[   21018ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:5173/api/relays/invitations/count:0
+[   22024ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:5173/api/relays/invitations/count:0
+[   52034ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:5173/api/relays/invitations/count:0
+[   53039ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:5173/api/relays/invitations/count:0

@@ -530,7 +530,17 @@ class SaveManager(
         }
     }
 
-    fun saveState() {
+    /**
+     * Stage a manual save to disk and enqueue it for deferred upload.
+     *
+     * [name] is the user-visible label that ends up on the
+     * `SessionSaveState` row server-side. Defaults to "Manual Save"
+     * for the historical small-tier flow. Medium-tier consoles can
+     * pass a user-chosen name from the "Save with name…" dialog
+     * (#830) so power users get their pre-boss-fight markers without
+     * the slot grid going stale.
+     */
+    fun saveState(name: String = "Manual Save") {
         if (_state.value.isChallengeMode) return
         if (_state.value.isHardcoreMode) {
             _state.update { it.copy(error = "Save states are disabled in hardcore mode") }
@@ -597,7 +607,11 @@ class SaveManager(
                 sessionId = sessionId,
                 kind = com.spela.player.domain.model.PendingUploadKind.Manual,
                 slot = null,
-                name = "Manual Save",
+                // Caller-supplied label for the save row (#830). Empty /
+                // blank falls back to the historical placeholder so the
+                // server never receives a row with no human-readable
+                // label.
+                name = name.ifBlank { "Manual Save" },
                 coreName = currentCoreName,
                 compression = staged.compression,
                 filePath = staged.path,

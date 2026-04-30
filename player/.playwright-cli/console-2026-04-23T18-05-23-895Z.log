@@ -1,0 +1,29 @@
+[     478ms] [WARNING] WebSocket connection to 'ws://localhost:5173/api/ws?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjEsInVzZXJuYW1lIjoiYWRtaW4iLCJyb2xlIjoib3duZXIiLCJ0b2tlblZlcnNpb24iOjAsImlzcyI6InNwZWxhIiwiZXhwIjoxNzc2OTcxMTE5LCJpYXQiOjE3NzY5Njc1MTl9.jizxALB6qHZuZ8SyuIsuJafWwdvR7QBChUIKgKo9yk0' failed: WebSocket is closed before the connection is established. @ http://localhost:5173/src/hooks/use-websocket.ts:58
+[     480ms] [WARNING] WebSocket connection to 'ws://localhost:5173/api/ws?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjEsInVzZXJuYW1lIjoiYWRtaW4iLCJyb2xlIjoib3duZXIiLCJ0b2tlblZlcnNpb24iOjAsImlzcyI6InNwZWxhIiwiZXhwIjoxNzc2OTcxMTE5LCJpYXQiOjE3NzY5Njc1MTl9.jizxALB6qHZuZ8SyuIsuJafWwdvR7QBChUIKgKo9yk0' failed: WebSocket is closed before the connection is established. @ http://localhost:5173/src/hooks/use-websocket.ts:31
+[ 3603331ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://localhost:5173/api/netplay/invites/count:0
+[ 3603357ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://localhost:5173/api/user/shared-session-invites/count:0
+[ 7205897ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://localhost:5173/api/user/shared-session-invites/count:0
+[ 7205901ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://localhost:5173/api/netplay/invites/count:0
+[10807803ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://localhost:5173/api/user/shared-session-invites/count:0
+[10807804ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://localhost:5173/api/netplay/invites/count:0
+[14409671ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://localhost:5173/api/netplay/invites/count:0
+[14409671ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://localhost:5173/api/user/shared-session-invites/count:0
+[14409676ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://localhost:5173/api/auth/refresh:0
+[14409918ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://localhost:5173/api/user/preferences:0
+[14410927ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://localhost:5173/api/user/preferences:0
+[16062801ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://localhost:5173/api/user/preferences:0
+[16063810ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://localhost:5173/api/user/preferences:0
+[16064176ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://localhost:5173/api/user/preferences:0
+[16065183ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://localhost:5173/api/user/preferences:0
+[64844647ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://localhost:5173/api/user/preferences:0
+[64845656ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://localhost:5173/api/user/preferences:0
+[85285419ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://localhost:5173/api/user/preferences:0
+[85286425ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://localhost:5173/api/user/preferences:0
+[86892256ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://localhost:5173/api/user/preferences:0
+[86893297ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:5173/api/user/preferences:0
+[97711479ms] [ERROR] WebSocket connection to 'ws://localhost:5173/?token=4GJalpMUpxji' failed:  @ http://localhost:5173/@vite/client:744
+[97727732ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://localhost:5173/api/user/preferences:0
+[97728772ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:5173/api/user/preferences:0
+[98364830ms] [ERROR] WebSocket connection to 'ws://localhost:5173/?token=RYRId39SXaYe' failed:  @ http://localhost:5173/@vite/client:744
+[98371806ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://localhost:5173/api/user/preferences:0
+[98372828ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:5173/api/user/preferences:0

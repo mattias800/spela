@@ -1,0 +1,16 @@
+[GET] http://localhost:5173/api/user/preferences => [200] OK
+[GET] http://localhost:5173/api/auth/setup-status => [200] OK
+[GET] http://localhost:5173/api/auth/setup-status => [200] OK
+[GET] http://localhost:5173/api/user/profile => [200] OK
+[GET] http://localhost:5173/api/user/profile => [200] OK
+[GET] http://localhost:5173/api/explore/featured => [200] OK
+[GET] http://localhost:5173/api/explore/rows => [200] OK
+[GET] http://localhost:5173/api/explore/console-highlights => [200] OK
+[GET] http://localhost:5173/api/explore/moods => [200] OK
+[GET] http://localhost:5173/api/explore/for-you => [200] OK
+[GET] http://localhost:5173/api/explore/players-like-you => [200] OK
+[GET] http://localhost:5173/api/user/shared-session-invites/count => [200] OK
+[GET] http://localhost:5173/api/netplay/invites/count => [200] OK
+[GET] http://localhost:5173/api/bios => [200] OK
+[GET] http://localhost:5173/api/admin/igdb/status => [200] OK
+[GET] http://localhost:5173/api/health => [200] OK

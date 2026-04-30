@@ -1,0 +1,308 @@
+- generic [ref=e2]:
+  - generic [ref=e26]:
+    - complementary [ref=e27]:
+      - generic [ref=e28]:
+        - img [ref=e30]
+        - generic [ref=e32]: Spela
+      - navigation [ref=e33]:
+        - generic [ref=e34]:
+          - link "Dashboard" [ref=e35] [cursor=pointer]:
+            - /url: /
+            - img [ref=e36]
+            - generic [ref=e41]: Dashboard
+          - link "Library" [ref=e42] [cursor=pointer]:
+            - /url: /consoles
+            - img [ref=e43]
+            - generic [ref=e45]: Library
+          - link "Stats" [ref=e46] [cursor=pointer]:
+            - /url: /stats
+            - img [ref=e47]
+            - generic [ref=e49]: Stats
+          - link "Activity" [ref=e50] [cursor=pointer]:
+            - /url: /activity
+            - img [ref=e51]
+            - generic [ref=e53]: Activity
+          - link "Challenges" [ref=e54] [cursor=pointer]:
+            - /url: /challenges
+            - img [ref=e55]
+            - generic [ref=e57]: Challenges
+          - link "Relays" [ref=e58] [cursor=pointer]:
+            - /url: /relays
+            - img [ref=e59]
+            - generic [ref=e64]: Relays
+          - link "Netplay" [ref=e65] [cursor=pointer]:
+            - /url: /netplay
+            - img [ref=e66]
+            - generic [ref=e70]: Netplay
+          - link "Preferences" [ref=e71] [cursor=pointer]:
+            - /url: /preferences
+            - img [ref=e72]
+            - generic [ref=e73]: Preferences
+        - generic [ref=e74]:
+          - paragraph [ref=e75]: Admin
+          - link "Users" [ref=e76] [cursor=pointer]:
+            - /url: /admin/users
+            - img [ref=e77]
+            - generic [ref=e82]: Users
+          - link "Settings Warning" [ref=e83] [cursor=pointer]:
+            - /url: /admin/settings
+            - img [ref=e84]
+            - generic [ref=e87]: Settings
+            - generic "Warning" [ref=e88]
+          - link "BIOS Files Warning" [ref=e89] [cursor=pointer]:
+            - /url: /admin/bios
+            - img [ref=e90]
+            - generic [ref=e93]: BIOS Files
+            - generic "Warning" [ref=e94]
+          - link "Upload ROMs" [ref=e95] [cursor=pointer]:
+            - /url: /admin/upload
+            - img [ref=e96]
+            - generic [ref=e99]: Upload ROMs
+          - link "Library Scan" [ref=e100] [cursor=pointer]:
+            - /url: /admin/scan
+            - img [ref=e101]
+            - generic [ref=e108]: Library Scan
+          - link "Metadata Fix" [ref=e109] [cursor=pointer]:
+            - /url: /admin/metadata
+            - img [ref=e110]
+            - generic [ref=e115]: Metadata Fix
+      - generic [ref=e117]:
+        - generic [ref=e118]: A
+        - generic [ref=e119]:
+          - paragraph [ref=e120]: admin
+          - paragraph [ref=e121]: owner
+        - button "Logout" [ref=e122] [cursor=pointer]:
+          - img [ref=e123]
+    - main [ref=e127]:
+      - generic [ref=e128]:
+        - generic [ref=e129]:
+          - heading "Welcome back, admin" [level=1] [ref=e130]
+          - paragraph [ref=e131]: Pick up where you left off or discover something new.
+        - alert [ref=e132]:
+          - img [ref=e133]
+          - generic [ref=e135]:
+            - paragraph [ref=e136]: Some consoles are missing required BIOS files. Games may not work correctly.
+            - paragraph [ref=e137]:
+              - link "Go to BIOS Management" [ref=e138] [cursor=pointer]:
+                - /url: /admin/bios
+          - button "Dismiss" [ref=e139] [cursor=pointer]:
+            - img [ref=e140]
+        - alert [ref=e143]:
+          - img [ref=e144]
+          - generic [ref=e146]:
+            - paragraph [ref=e147]: Game metadata is unavailable. IGDB credentials have not been configured.
+            - paragraph [ref=e148]:
+              - link "Go to Settings" [ref=e149] [cursor=pointer]:
+                - /url: /admin/settings
+          - button "Dismiss" [ref=e150] [cursor=pointer]:
+            - img [ref=e151]
+        - generic [ref=e154]:
+          - generic [ref=e155]:
+            - img [ref=e156]
+            - heading "Your Stats" [level=2] [ref=e162]
+          - generic [ref=e163]:
+            - generic [ref=e164]:
+              - paragraph [ref=e165]: 8m
+              - paragraph [ref=e166]: Total play time
+            - generic [ref=e167]:
+              - paragraph [ref=e168]: "13"
+              - paragraph [ref=e169]: Games played
+            - generic [ref=e170]:
+              - paragraph [ref=e171]: 1d
+              - paragraph [ref=e172]: Current streak
+            - 'link "Castlevania: Bloodlines 1m Most played" [ref=e173] [cursor=pointer]':
+              - /url: /games/35
+              - paragraph [ref=e174]: "Castlevania: Bloodlines"
+              - paragraph [ref=e175]: 1m
+              - paragraph [ref=e176]: Most played
+        - generic [ref=e177]:
+          - generic [ref=e178]:
+            - generic [ref=e179]:
+              - img [ref=e180]
+              - heading "Continue Playing" [level=2] [ref=e182]
+            - link "View all" [ref=e183] [cursor=pointer]:
+              - /url: /games
+              - text: View all
+              - img [ref=e184]
+          - generic [ref=e186]:
+            - link "Metal Gear Solid Add to favorites Add to play later PlayStation Metal Gear Solid 2 Discs PlayStation" [ref=e187] [cursor=pointer]:
+              - /url: /games/195
+              - generic [ref=e188]:
+                - img "Metal Gear Solid" [ref=e189]
+                - button "Add to favorites" [ref=e191]:
+                  - img [ref=e192]
+                - button "Add to play later" [ref=e194]:
+                  - img [ref=e195]
+                - generic [ref=e199]: PlayStation
+              - generic [ref=e200]:
+                - heading "Metal Gear Solid" [level=3] [ref=e201]
+                - generic [ref=e202]: 2 Discs
+                - paragraph [ref=e204]: PlayStation
+            - 'link "Need for Speed: Most Wanted 5-1-0 Add to favorites Add to play later PlayStation Portable Need for Speed: Most Wanted 5-1-0 PlayStation Portable" [ref=e205] [cursor=pointer]':
+              - /url: /games/197
+              - generic [ref=e206]:
+                - 'img "Need for Speed: Most Wanted 5-1-0" [ref=e207]'
+                - button "Add to favorites" [ref=e209]:
+                  - img [ref=e210]
+                - button "Add to play later" [ref=e212]:
+                  - img [ref=e213]
+                - generic [ref=e217]: PlayStation Portable
+              - generic [ref=e218]:
+                - 'heading "Need for Speed: Most Wanted 5-1-0" [level=3] [ref=e219]'
+                - paragraph [ref=e221]: PlayStation Portable
+            - 'link "Castlevania: Bloodlines Add to favorites Add to play later Sega Genesis Castlevania: Bloodlines Sega Genesis" [ref=e222] [cursor=pointer]':
+              - /url: /games/35
+              - generic [ref=e223]:
+                - 'img "Castlevania: Bloodlines" [ref=e224]'
+                - button "Add to favorites" [ref=e226]:
+                  - img [ref=e227]
+                - button "Add to play later" [ref=e229]:
+                  - img [ref=e230]
+                - generic [ref=e234]: Sega Genesis
+              - generic [ref=e235]:
+                - 'heading "Castlevania: Bloodlines" [level=3] [ref=e236]'
+                - paragraph [ref=e238]: Sega Genesis
+            - link "Super Mario 64 Add to favorites Add to play later Nintendo 64 Super Mario 64 Nintendo 64" [ref=e239] [cursor=pointer]:
+              - /url: /games/60
+              - generic [ref=e240]:
+                - img "Super Mario 64" [ref=e241]
+                - button "Add to favorites" [ref=e243]:
+                  - img [ref=e244]
+                - button "Add to play later" [ref=e246]:
+                  - img [ref=e247]
+                - generic [ref=e251]: Nintendo 64
+              - generic [ref=e252]:
+                - heading "Super Mario 64" [level=3] [ref=e253]
+                - paragraph [ref=e255]: Nintendo 64
+            - 'link "Castlevania II: Simon''s Quest Add to favorites Add to play later Nintendo Entertainment System Castlevania II: Simon''s Quest Nintendo Entertainment System" [ref=e256] [cursor=pointer]':
+              - /url: /games/62
+              - generic [ref=e257]:
+                - 'img "Castlevania II: Simon''s Quest" [ref=e258]'
+                - button "Add to favorites" [ref=e260]:
+                  - img [ref=e261]
+                - button "Add to play later" [ref=e263]:
+                  - img [ref=e264]
+                - generic [ref=e268]: Nintendo Entertainment System
+              - generic [ref=e269]:
+                - 'heading "Castlevania II: Simon''s Quest" [level=3] [ref=e270]'
+                - paragraph [ref=e272]: Nintendo Entertainment System
+            - link "Super Mario 64 DS Add to favorites Add to play later Nintendo DS Super Mario 64 DS Nintendo DS" [ref=e273] [cursor=pointer]:
+              - /url: /games/196
+              - generic [ref=e274]:
+                - img "Super Mario 64 DS" [ref=e275]
+                - button "Add to favorites" [ref=e277]:
+                  - img [ref=e278]
+                - button "Add to play later" [ref=e280]:
+                  - img [ref=e281]
+                - generic [ref=e285]: Nintendo DS
+              - generic [ref=e286]:
+                - heading "Super Mario 64 DS" [level=3] [ref=e287]
+                - paragraph [ref=e289]: Nintendo DS
+        - generic [ref=e290]:
+          - generic [ref=e291]:
+            - generic [ref=e292]:
+              - img [ref=e293]
+              - heading "Play Later" [level=2] [ref=e296]
+            - link "View all" [ref=e297] [cursor=pointer]:
+              - /url: /play-later
+              - text: View all
+              - img [ref=e298]
+          - link "Castlevania Add to favorites Nintendo Entertainment System Castlevania Nintendo Entertainment System" [ref=e301] [cursor=pointer]:
+            - /url: /games/64
+            - generic [ref=e302]:
+              - img "Castlevania" [ref=e303]
+              - button "Add to favorites" [ref=e305]:
+                - img [ref=e306]
+              - img [ref=e309]
+              - generic [ref=e313]: Nintendo Entertainment System
+            - generic [ref=e314]:
+              - heading "Castlevania" [level=3] [ref=e315]
+              - paragraph [ref=e317]: Nintendo Entertainment System
+        - generic [ref=e318]:
+          - generic [ref=e320]:
+            - generic [ref=e321]:
+              - generic [ref=e322]:
+                - img [ref=e323]
+                - heading "Recent Activity" [level=2] [ref=e325]
+              - link "View all" [ref=e326] [cursor=pointer]:
+                - /url: /activity
+                - text: View all
+                - img [ref=e327]
+            - generic [ref=e329]:
+              - generic [ref=e330]:
+                - generic [ref=e331]:
+                  - generic [ref=e332]: A
+                  - img [ref=e334]
+                - generic [ref=e336]:
+                  - paragraph [ref=e337]:
+                    - link "admin" [ref=e338] [cursor=pointer]:
+                      - /url: /users/1
+                    - text: started playing
+                    - link "Metal Gear Solid" [ref=e339] [cursor=pointer]:
+                      - /url: /games/195
+                  - generic [ref=e341]: 6m ago
+              - generic [ref=e342]:
+                - generic [ref=e343]:
+                  - generic [ref=e344]: A
+                  - img [ref=e346]
+                - generic [ref=e348]:
+                  - paragraph [ref=e349]:
+                    - link "admin" [ref=e350] [cursor=pointer]:
+                      - /url: /users/1
+                    - text: started playing
+                    - link "Metal Gear Solid" [ref=e351] [cursor=pointer]:
+                      - /url: /games/195
+                  - generic [ref=e353]: 1h ago
+              - generic [ref=e354]:
+                - generic [ref=e355]:
+                  - generic [ref=e356]: A
+                  - img [ref=e358]
+                - generic [ref=e361]:
+                  - paragraph [ref=e362]:
+                    - link "admin" [ref=e363] [cursor=pointer]:
+                      - /url: /users/1
+                    - text: added
+                    - link "Metal Gear Solid" [ref=e364] [cursor=pointer]:
+                      - /url: /games/195
+                    - text: to their Play Later queue
+                  - generic [ref=e366]: 1h ago
+              - generic [ref=e367]:
+                - generic [ref=e368]:
+                  - generic [ref=e369]: A
+                  - img [ref=e371]
+                - generic [ref=e373]:
+                  - paragraph [ref=e374]:
+                    - link "admin" [ref=e375] [cursor=pointer]:
+                      - /url: /users/1
+                    - text: started playing
+                    - link "Metal Gear Solid" [ref=e376] [cursor=pointer]:
+                      - /url: /games/195
+                  - generic [ref=e378]: 1h ago
+              - generic [ref=e379]:
+                - generic [ref=e380]:
+                  - generic [ref=e381]: A
+                  - img [ref=e383]
+                - generic [ref=e385]:
+                  - paragraph [ref=e386]:
+                    - link "admin" [ref=e387] [cursor=pointer]:
+                      - /url: /users/1
+                    - text: started playing
+                    - 'link "Castlevania: Bloodlines" [ref=e388] [cursor=pointer]':
+                      - /url: /games/35
+                  - generic [ref=e390]: 8h ago
+          - generic [ref=e393]:
+            - generic [ref=e394]:
+              - img [ref=e395]
+              - heading "Online Now" [level=2] [ref=e400]
+              - generic [ref=e401]: "1"
+            - generic [ref=e403]:
+              - generic [ref=e405]: A
+              - generic [ref=e407]:
+                - link "admin" [ref=e408] [cursor=pointer]:
+                  - /url: /users/1
+                - link "Metal Gear Solid PlayStation" [ref=e409] [cursor=pointer]:
+                  - /url: /games/195
+                  - img [ref=e410]
+                  - generic [ref=e412]: Metal Gear Solid
+                  - generic [ref=e413]: PlayStation
+  - status

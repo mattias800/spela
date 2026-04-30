@@ -119,6 +119,15 @@ data class EmulationState(
      */
     val slotPickerMode: SlotPickerMode? = null,
     /**
+     * True when the medium-tier "Save with name…" dialog is open
+     * (#830). The dialog is reachable from the bottom of the slot
+     * picker — slot-primary stays the default, named save is the
+     * secondary affordance for "I want a deliberate marker before
+     * the boss fight" cases. Hidden on small (free-form named saves
+     * are already the default) and large (slot-only by spec) tiers.
+     */
+    val showNamedSaveDialog: Boolean = false,
+    /**
      * Non-null when the user long-presses a filled slot cell on the
      * in-game slot picker. Drives the slot-actions bottom sheet
      * (Rename / Delete / Cancel). See #831.

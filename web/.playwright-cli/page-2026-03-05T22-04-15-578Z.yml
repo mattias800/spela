@@ -1,0 +1,1454 @@
+- generic [ref=e2]:
+  - generic [ref=e8]:
+    - complementary [ref=e9]:
+      - generic [ref=e10]:
+        - img [ref=e12]
+        - generic [ref=e14]: Spela
+      - navigation [ref=e15]:
+        - generic [ref=e16]:
+          - link "Dashboard" [ref=e17] [cursor=pointer]:
+            - /url: /
+            - img [ref=e18]
+            - generic [ref=e23]: Dashboard
+          - link "Library" [ref=e24] [cursor=pointer]:
+            - /url: /consoles
+            - img [ref=e25]
+            - generic [ref=e27]: Library
+          - link "Stats" [ref=e28] [cursor=pointer]:
+            - /url: /stats
+            - img [ref=e29]
+            - generic [ref=e31]: Stats
+          - link "Activity" [ref=e32] [cursor=pointer]:
+            - /url: /activity
+            - img [ref=e33]
+            - generic [ref=e35]: Activity
+          - link "Challenges" [ref=e36] [cursor=pointer]:
+            - /url: /challenges
+            - img [ref=e37]
+            - generic [ref=e39]: Challenges
+          - link "Relays" [ref=e40] [cursor=pointer]:
+            - /url: /relays
+            - img [ref=e41]
+            - generic [ref=e46]: Relays
+          - link "Netplay" [ref=e47] [cursor=pointer]:
+            - /url: /netplay
+            - img [ref=e48]
+            - generic [ref=e52]: Netplay
+          - link "Preferences" [ref=e53] [cursor=pointer]:
+            - /url: /preferences
+            - img [ref=e54]
+            - generic [ref=e55]: Preferences
+        - generic [ref=e56]:
+          - paragraph [ref=e57]: Admin
+          - link "Users" [ref=e58] [cursor=pointer]:
+            - /url: /admin/users
+            - img [ref=e59]
+            - generic [ref=e64]: Users
+          - link "Settings" [ref=e65] [cursor=pointer]:
+            - /url: /admin/settings
+            - img [ref=e66]
+            - generic [ref=e69]: Settings
+          - link "BIOS Files Warning" [ref=e70] [cursor=pointer]:
+            - /url: /admin/bios
+            - img [ref=e71]
+            - generic [ref=e74]: BIOS Files
+            - generic "Warning" [ref=e75]
+          - link "Upload ROMs" [ref=e76] [cursor=pointer]:
+            - /url: /admin/upload
+            - img [ref=e77]
+            - generic [ref=e80]: Upload ROMs
+          - link "Library Scan" [ref=e81] [cursor=pointer]:
+            - /url: /admin/scan
+            - img [ref=e82]
+            - generic [ref=e89]: Library Scan
+          - link "Metadata Fix" [ref=e90] [cursor=pointer]:
+            - /url: /admin/metadata
+            - img [ref=e91]
+            - generic [ref=e96]: Metadata Fix
+          - link "Cheats" [ref=e97] [cursor=pointer]:
+            - /url: /admin/cheats
+            - img [ref=e98]
+            - generic [ref=e100]: Cheats
+      - generic [ref=e102]:
+        - generic [ref=e103]: A
+        - generic [ref=e104]:
+          - paragraph [ref=e105]: admin
+          - paragraph [ref=e106]: owner
+        - button "Logout" [ref=e107] [cursor=pointer]:
+          - img [ref=e108]
+      - paragraph [ref=e112]: vdev
+    - main [ref=e114]:
+      - generic [ref=e115]:
+        - button "Super Mario World" [ref=e116] [cursor=pointer]:
+          - img [ref=e117]
+          - text: Super Mario World
+        - generic [ref=e119]:
+          - generic [ref=e120]:
+            - heading "Playthrough 1 Rename session" [level=1] [ref=e121]:
+              - img [ref=e122]
+              - text: Playthrough 1
+              - button "Rename session" [ref=e126] [cursor=pointer]:
+                - img [ref=e127]
+            - generic [ref=e130]:
+              - link "Super Mario World" [ref=e131] [cursor=pointer]:
+                - /url: /games/98
+              - generic [ref=e132]:
+                - img [ref=e133]
+                - text: 5d ago
+              - generic [ref=e136]: 2m
+              - generic [ref=e254]:
+                - img [ref=e255]
+                - text: Cheats
+          - button "Delete" [ref=e137] [cursor=pointer]:
+            - img [ref=e138]
+            - text: Delete
+        - generic [ref=e141]:
+          - generic [ref=e142]:
+            - img [ref=e143]
+            - heading "Save States" [level=2] [ref=e147]
+            - generic [ref=e148]: (6)
+          - generic [ref=e149]:
+            - generic [ref=e150]:
+              - generic [ref=e151]:
+                - paragraph [ref=e152]:
+                  - text: Auto Save
+                  - generic [ref=e153]: Auto
+                - paragraph [ref=e154]: 5d ago · 804.1 KB
+              - generic [ref=e155]:
+                - button "Download save" [ref=e156] [cursor=pointer]:
+                  - img [ref=e157]
+                - button "Delete save" [ref=e160] [cursor=pointer]:
+                  - img [ref=e161]
+            - generic [ref=e164]:
+              - img [ref=e166]
+              - generic [ref=e168]:
+                - paragraph [ref=e169]: Backup (offline) - 2026-02-28 12:10:52
+                - paragraph [ref=e170]: 5d ago · 804.1 KB
+              - generic [ref=e171]:
+                - button "Download save" [ref=e172] [cursor=pointer]:
+                  - img [ref=e173]
+                - button "Delete save" [ref=e176] [cursor=pointer]:
+                  - img [ref=e177]
+            - generic [ref=e180]:
+              - generic [ref=e181]:
+                - paragraph [ref=e182]:
+                  - text: Auto Save
+                  - generic [ref=e183]: Auto
+                - paragraph [ref=e184]: 5d ago · 804.1 KB
+              - generic [ref=e185]:
+                - button "Download save" [ref=e186] [cursor=pointer]:
+                  - img [ref=e187]
+                - button "Delete save" [ref=e190] [cursor=pointer]:
+                  - img [ref=e191]
+            - generic [ref=e194]:
+              - img [ref=e196]
+              - generic [ref=e198]:
+                - paragraph [ref=e199]:
+                  - text: Auto Save
+                  - generic [ref=e200]: Auto
+                - paragraph [ref=e201]: 5d ago · 804.1 KB
+              - generic [ref=e202]:
+                - button "Download save" [ref=e203] [cursor=pointer]:
+                  - img [ref=e204]
+                - button "Delete save" [ref=e207] [cursor=pointer]:
+                  - img [ref=e208]
+            - generic [ref=e211]:
+              - img [ref=e213]
+              - generic [ref=e215]:
+                - paragraph [ref=e216]:
+                  - text: Auto Save
+                  - generic [ref=e217]: Auto
+                - paragraph [ref=e218]: 5d ago · 804.1 KB
+              - generic [ref=e219]:
+                - button "Download save" [ref=e220] [cursor=pointer]:
+                  - img [ref=e221]
+                - button "Delete save" [ref=e224] [cursor=pointer]:
+                  - img [ref=e225]
+            - generic [ref=e228]:
+              - img [ref=e230]
+              - generic [ref=e232]:
+                - paragraph [ref=e233]:
+                  - text: Auto Save
+                  - generic [ref=e234]: Auto
+                - paragraph [ref=e235]: 5d ago · 804.1 KB
+              - generic [ref=e236]:
+                - button "Download save" [ref=e237] [cursor=pointer]:
+                  - img [ref=e238]
+                - button "Delete save" [ref=e241] [cursor=pointer]:
+                  - img [ref=e242]
+        - generic [ref=e245]:
+          - generic [ref=e246]:
+            - generic [ref=e247]:
+              - img [ref=e248]
+              - heading "Cheats" [level=2] [ref=e250]
+            - switch "Enable cheats" [checked] [active] [ref=e252] [cursor=pointer]
+          - generic [ref=e257]:
+            - generic [ref=e258]:
+              - generic [ref=e259]:
+                - img [ref=e260]
+                - textbox "Filter cheats..." [ref=e264]
+              - button "Select All" [ref=e265] [cursor=pointer]
+              - button "Deselect All" [ref=e266] [cursor=pointer]
+            - generic [ref=e267]: 0 of 252 enabled
+            - generic [ref=e268]:
+              - generic [ref=e269] [cursor=pointer]:
+                - switch "Toggle Infinite Maximum Coins" [ref=e270]
+                - generic [ref=e271]:
+                  - paragraph [ref=e272]: Infinite Maximum Coins
+                  - paragraph [ref=e273]: 7E0DBF63
+              - generic [ref=e274] [cursor=pointer]:
+                - switch "Toggle Powerup Always ?? In Level" [ref=e275]
+                - generic [ref=e276]:
+                  - paragraph [ref=e277]: Powerup Always ?? In Level
+                  - paragraph [ref=e278]: "7E001900"
+              - generic [ref=e279] [cursor=pointer]:
+                - switch "Toggle In-level music mod" [ref=e280]
+                - generic [ref=e281]:
+                  - paragraph [ref=e282]: In-level music mod
+                  - paragraph [ref=e283]: 7E0DDA00
+              - generic [ref=e284] [cursor=pointer]:
+                - switch "Toggle Spare Item Type(In-Level)" [ref=e285]
+                - generic [ref=e286]:
+                  - paragraph [ref=e287]: Spare Item Type(In-Level)
+                  - paragraph [ref=e288]: 7E0DC200
+              - generic [ref=e289] [cursor=pointer]:
+                - switch "Toggle Spare Item Type(On Map)" [ref=e290]
+                - generic [ref=e291]:
+                  - paragraph [ref=e292]: Spare Item Type(On Map)
+                  - paragraph [ref=e293]: 7E0DBC00
+              - generic [ref=e294] [cursor=pointer]:
+                - switch "Toggle Infinite 99 Lives" [ref=e295]
+                - generic [ref=e296]:
+                  - paragraph [ref=e297]: Infinite 99 Lives
+                  - paragraph [ref=e298]: 7E0DBE63
+              - generic [ref=e299] [cursor=pointer]:
+                - switch "Toggle Always 999 Time" [ref=e300]
+                - generic [ref=e301]:
+                  - paragraph [ref=e302]: Always 999 Time
+                  - paragraph [ref=e303]: 7E0F3109+7E0F3209+7E0F3309
+              - generic [ref=e304] [cursor=pointer]:
+                - switch "Toggle Always 100 Bonus Points" [ref=e305]
+                - generic [ref=e306]:
+                  - paragraph [ref=e307]: Always 100 Bonus Points
+                  - paragraph [ref=e308]: 7E0F4864
+              - generic [ref=e309] [cursor=pointer]:
+                - switch "Toggle Exit Level, Second Exit" [ref=e310]
+                - generic [ref=e311]:
+                  - paragraph [ref=e312]: Exit Level, Second Exit
+                  - paragraph [ref=e313]: "7E143401"
+              - generic [ref=e314] [cursor=pointer]:
+                - switch "Toggle Exit Level, Normal Exit" [ref=e315]
+                - generic [ref=e316]:
+                  - paragraph [ref=e317]: Exit Level, Normal Exit
+                  - paragraph [ref=e318]: "7E149301"
+              - generic [ref=e319] [cursor=pointer]:
+                - switch "Toggle Disable Mosaic Effect" [ref=e320]
+                - generic [ref=e321]:
+                  - paragraph [ref=e322]: Disable Mosaic Effect
+                  - paragraph [ref=e323]: 7E0DB000
+              - generic [ref=e324] [cursor=pointer]:
+                - switch "Toggle Activates Green Blocks" [ref=e325]
+                - generic [ref=e326]:
+                  - paragraph [ref=e327]: Activates Green Blocks
+                  - paragraph [ref=e328]: 7E1F2701
+              - generic [ref=e329] [cursor=pointer]:
+                - switch "Toggle Activates Yellow Blocks" [ref=e330]
+                - generic [ref=e331]:
+                  - paragraph [ref=e332]: Activates Yellow Blocks
+                  - paragraph [ref=e333]: 7E1F2801
+              - generic [ref=e334] [cursor=pointer]:
+                - switch "Toggle Activates Blue Blocks" [ref=e335]
+                - generic [ref=e336]:
+                  - paragraph [ref=e337]: Activates Blue Blocks
+                  - paragraph [ref=e338]: 7E1F2901
+              - generic [ref=e339] [cursor=pointer]:
+                - switch "Toggle Activates Red Blocks" [ref=e340]
+                - generic [ref=e341]:
+                  - paragraph [ref=e342]: Activates Red Blocks
+                  - paragraph [ref=e343]: 7E1F2A01
+              - generic [ref=e344] [cursor=pointer]:
+                - switch "Toggle Deactivates Green Blocks" [ref=e345]
+                - generic [ref=e346]:
+                  - paragraph [ref=e347]: Deactivates Green Blocks
+                  - paragraph [ref=e348]: 7E1F2700
+              - generic [ref=e349] [cursor=pointer]:
+                - switch "Toggle Deactivates Yellow Blocks" [ref=e350]
+                - generic [ref=e351]:
+                  - paragraph [ref=e352]: Deactivates Yellow Blocks
+                  - paragraph [ref=e353]: 7E1F2800
+              - generic [ref=e354] [cursor=pointer]:
+                - switch "Toggle Deactivates Blue Blocks" [ref=e355]
+                - generic [ref=e356]:
+                  - paragraph [ref=e357]: Deactivates Blue Blocks
+                  - paragraph [ref=e358]: 7E1F2900
+              - generic [ref=e359] [cursor=pointer]:
+                - switch "Toggle Deactivates Red Blocks" [ref=e360]
+                - generic [ref=e361]:
+                  - paragraph [ref=e362]: Deactivates Red Blocks
+                  - paragraph [ref=e363]: 7E1F2A00
+              - generic [ref=e364] [cursor=pointer]:
+                - switch "Toggle Mario On Ice" [ref=e365]
+                - generic [ref=e366]:
+                  - paragraph [ref=e367]: Mario On Ice
+                  - paragraph [ref=e368]: EDA5-0F6F+61A5-040F+61A6-0D6F
+              - generic [ref=e369] [cursor=pointer]:
+                - switch "Toggle Waterworld Mario" [ref=e370]
+                - generic [ref=e371]:
+                  - paragraph [ref=e372]: Waterworld Mario
+                  - paragraph [ref=e373]: EDA5-0F6F+69A5-040F+69A6-0D6F
+              - generic [ref=e374] [cursor=pointer]:
+                - switch "Toggle Reverse Switch Palace Blocks" [ref=e375]
+                - generic [ref=e376]:
+                  - paragraph [ref=e377]: Reverse Switch Palace Blocks
+                  - paragraph [ref=e378]: 2D80-0DE1+ED8B-0D89
+              - generic [ref=e379] [cursor=pointer]:
+                - switch "Toggle Yoshi is Invincible" [ref=e380]
+                - generic [ref=e381]:
+                  - paragraph [ref=e382]: Yoshi is Invincible
+                  - paragraph [ref=e383]: 89E4-AFD9+89C6-D4DB
+              - generic [ref=e384] [cursor=pointer]:
+                - switch "Toggle Infinite Items Yoshi Picks Up" [ref=e385]
+                - generic [ref=e386]:
+                  - paragraph [ref=e387]: Infinite Items Yoshi Picks Up
+                  - paragraph [ref=e388]: 82E9-64A0+82E2-04D0
+              - generic [ref=e389] [cursor=pointer]:
+                - switch "Toggle Infinite Flying Time For Yoshi" [ref=e390]
+                - generic [ref=e391]:
+                  - paragraph [ref=e392]: Infinite Flying Time For Yoshi
+                  - paragraph [ref=e393]: C2EC-0700
+              - generic [ref=e394] [cursor=pointer]:
+                - switch "Toggle Collecting A Yoshi Coin Gives You Yoshi's Wings" [ref=e395]
+                - generic [ref=e396]:
+                  - paragraph [ref=e397]: Collecting A Yoshi Coin Gives You Yoshi's Wings
+                  - paragraph [ref=e398]: B9E5-A4AD+F8E5-A7DD
+              - generic [ref=e399] [cursor=pointer]:
+                - switch "Toggle Multi-Jump and Low Gravity" [ref=e400]
+                - generic [ref=e401]:
+                  - paragraph [ref=e402]: Multi-Jump and Low Gravity
+                  - paragraph [ref=e403]: 336B-D4D0
+              - generic [ref=e404] [cursor=pointer]:
+                - switch "Toggle Shoot Fireballs Straight" [ref=e405]
+                - generic [ref=e406]:
+                  - paragraph [ref=e407]: Shoot Fireballs Straight
+                  - paragraph [ref=e408]: DDEA-6F07+DDB2-AFD8
+              - generic [ref=e409] [cursor=pointer]:
+                - switch "Toggle Power-up Select" [ref=e410]
+                - generic [ref=e411]:
+                  - paragraph [ref=e412]: Power-up Select
+                  - paragraph [ref=e413]: EDA5-0F6F
+              - generic [ref=e414] [cursor=pointer]:
+                - switch "Toggle Warp to Star World" [ref=e415]
+                - generic [ref=e416]:
+                  - paragraph [ref=e417]: Warp to Star World
+                  - paragraph [ref=e418]: EDB7-0FBD
+              - generic [ref=e419] [cursor=pointer]:
+                - switch "Toggle Rapid-Fire Fireballs (Facing Right Only)" [ref=e420]
+                - generic [ref=e421]:
+                  - paragraph [ref=e422]: Rapid-Fire Fireballs (Facing Right Only)
+                  - paragraph [ref=e423]: D5EB-6F07
+              - generic [ref=e424] [cursor=pointer]:
+                - switch "Toggle Stomp 8 Enemies And Get 1-Ups" [ref=e425]
+                - generic [ref=e426]:
+                  - paragraph [ref=e427]: Stomp 8 Enemies And Get 1-Ups
+                  - paragraph [ref=e428]: C23B-AF07
+              - generic [ref=e429] [cursor=pointer]:
+                - 'switch "Toggle Nintendo Debug #2" [ref=e430]'
+                - generic [ref=e431]:
+                  - paragraph [ref=e432]: "Nintendo Debug #2"
+                  - paragraph [ref=e433]: DDA6-DF07
+              - generic [ref=e434] [cursor=pointer]:
+                - switch "Toggle Blocks That Produce A Mushroom When Small & ! Boxes" [ref=e435]
+                - generic [ref=e436]:
+                  - paragraph [ref=e437]: Blocks That Produce A Mushroom When Small & ! Boxes
+                  - paragraph [ref=e438]: 7E0DB4DD
+              - generic [ref=e439] [cursor=pointer]:
+                - switch "Toggle Blocks That Produce A Flower" [ref=e440]
+                - generic [ref=e441]:
+                  - paragraph [ref=e442]: Blocks That Produce A Flower
+                  - paragraph [ref=e443]: 7E0DB4DD
+              - generic [ref=e444] [cursor=pointer]:
+                - switch "Toggle Blocks That Produce A Feather" [ref=e445]
+                - generic [ref=e446]:
+                  - paragraph [ref=e447]: Blocks That Produce A Feather
+                  - paragraph [ref=e448]: 7E0DB4DD
+              - generic [ref=e449] [cursor=pointer]:
+                - switch "Toggle Turn Blocks That Produce A Star" [ref=e450]
+                - generic [ref=e451]:
+                  - paragraph [ref=e452]: Turn Blocks That Produce A Star
+                  - paragraph [ref=e453]: 7E0DB400
+              - generic [ref=e454] [cursor=pointer]:
+                - switch "Toggle Turn Blocks That Produce A 1-Up Mushroom" [ref=e455]
+                - generic [ref=e456]:
+                  - paragraph [ref=e457]: Turn Blocks That Produce A 1-Up Mushroom
+                  - paragraph [ref=e458]: 7E0DB400
+              - generic [ref=e459] [cursor=pointer]:
+                - switch "Toggle Turn Blocks That Produce A Vine" [ref=e460]
+                - generic [ref=e461]:
+                  - paragraph [ref=e462]: Turn Blocks That Produce A Vine
+                  - paragraph [ref=e463]: 7E0DB400
+              - generic [ref=e464] [cursor=pointer]:
+                - switch "Toggle Lakitu's Ammo Modifier" [ref=e465]
+                - generic [ref=e466]:
+                  - paragraph [ref=e467]: Lakitu's Ammo Modifier
+                  - paragraph [ref=e468]: 7E0DB4DD
+              - generic [ref=e469] [cursor=pointer]:
+                - switch "Toggle Lakitu's Ammo Modifier When Silver Pow Switch is Active" [ref=e470]
+                - generic [ref=e471]:
+                  - paragraph [ref=e472]: Lakitu's Ammo Modifier When Silver Pow Switch is Active
+                  - paragraph [ref=e473]: 7E0DB400
+              - generic [ref=e474] [cursor=pointer]:
+                - switch "Toggle What Hatches From Green Eggs If You Don't Have Him" [ref=e475]
+                - generic [ref=e476]:
+                  - paragraph [ref=e477]: What Hatches From Green Eggs If You Don't Have Him
+                  - paragraph [ref=e478]: 7E0DB4DD
+              - generic [ref=e479] [cursor=pointer]:
+                - switch "Toggle What Hatches From Green Eggs If You Already Have Him" [ref=e480]
+                - generic [ref=e481]:
+                  - paragraph [ref=e482]: What Hatches From Green Eggs If You Already Have Him
+                  - paragraph [ref=e483]: 7E0DB400
+              - generic [ref=e484] [cursor=pointer]:
+                - switch "Toggle Item Doesn't Fall From Box When You Get Hit" [ref=e485]
+                - generic [ref=e486]:
+                  - paragraph [ref=e487]: Item Doesn't Fall From Box When You Get Hit
+                  - paragraph [ref=e488]: 6DEE-14DF+D4EE-140F
+              - generic [ref=e489] [cursor=pointer]:
+                - switch "Toggle Start with 1 life instead of 5" [ref=e490]
+                - generic [ref=e491]:
+                  - paragraph [ref=e492]: Start with 1 life instead of 5
+                  - paragraph [ref=e493]: DDB4-6F07
+              - generic [ref=e494] [cursor=pointer]:
+                - switch "Toggle Start with 9 lives" [ref=e495]
+                - generic [ref=e496]:
+                  - paragraph [ref=e497]: Start with 9 lives
+                  - paragraph [ref=e498]: D6B4-6F07
+              - generic [ref=e499] [cursor=pointer]:
+                - switch "Toggle Start with 15 lives" [ref=e500]
+                - generic [ref=e501]:
+                  - paragraph [ref=e502]: Start with 15 lives
+                  - paragraph [ref=e503]: D3B4-6F07
+              - generic [ref=e504] [cursor=pointer]:
+                - switch "Toggle Start with 25 lives" [ref=e505]
+                - generic [ref=e506]:
+                  - paragraph [ref=e507]: Start with 25 lives
+                  - paragraph [ref=e508]: F6B4-6F07
+              - generic [ref=e509] [cursor=pointer]:
+                - switch "Toggle Start with 50 lives" [ref=e510]
+                - generic [ref=e511]:
+                  - paragraph [ref=e512]: Start with 50 lives
+                  - paragraph [ref=e513]: 7FB4-6F07
+              - generic [ref=e514] [cursor=pointer]:
+                - switch "Toggle Start with 99 lives" [ref=e515]
+                - generic [ref=e516]:
+                  - paragraph [ref=e517]: Start with 99 lives
+                  - paragraph [ref=e518]: 14B4-6F07
+              - generic [ref=e519] [cursor=pointer]:
+                - switch "Toggle Infinite lives" [ref=e520]
+                - generic [ref=e521]:
+                  - paragraph [ref=e522]: Infinite lives
+                  - paragraph [ref=e523]: C222-D4DD
+              - generic [ref=e524] [cursor=pointer]:
+                - switch "Toggle Extra life at 5 coins instead of 100" [ref=e525]
+                - generic [ref=e526]:
+                  - paragraph [ref=e527]: Extra life at 5 coins instead of 100
+                  - paragraph [ref=e528]: D964-A7D7+D967-AFA7
+              - generic [ref=e529] [cursor=pointer]:
+                - switch "Toggle Extra life at 10 coins" [ref=e530]
+                - generic [ref=e531]:
+                  - paragraph [ref=e532]: Extra life at 10 coins
+                  - paragraph [ref=e533]: DC64-A7D7+DC67-AFA7
+              - generic [ref=e534] [cursor=pointer]:
+                - switch "Toggle Extra life at 20 coins" [ref=e535]
+                - generic [ref=e536]:
+                  - paragraph [ref=e537]: Extra life at 20 coins
+                  - paragraph [ref=e538]: F064-A7D7+F067-AFA7
+              - generic [ref=e539] [cursor=pointer]:
+                - switch "Toggle Extra life at 50 coins" [ref=e540]
+                - generic [ref=e541]:
+                  - paragraph [ref=e542]: Extra life at 50 coins
+                  - paragraph [ref=e543]: 7464-A7D7+7467-AFA7
+              - generic [ref=e544] [cursor=pointer]:
+                - switch "Toggle Start and stay invincible most of the time" [ref=e545]
+                - generic [ref=e546]:
+                  - paragraph [ref=e547]: Start and stay invincible most of the time
+                  - paragraph [ref=e548]: DD32-6DAD
+              - generic [ref=e549] [cursor=pointer]:
+                - switch "Toggle Stay as Super Mario, Fire Mario or Cape Mario when you get hit" [ref=e550]
+                - generic [ref=e551]:
+                  - paragraph [ref=e552]: Stay as Super Mario, Fire Mario or Cape Mario when you get hit
+                  - paragraph [ref=e553]: CBED-6DDF
+              - generic [ref=e554] [cursor=pointer]:
+                - switch "Toggle Stay as Super Mario, Fire Mario or Cape Mario when you fall and die" [ref=e555]
+                - generic [ref=e556]:
+                  - paragraph [ref=e557]: Stay as Super Mario, Fire Mario or Cape Mario when you fall and die
+                  - paragraph [ref=e558]: CB28-DF6D
+              - generic [ref=e559] [cursor=pointer]:
+                - switch "Toggle Low jump" [ref=e560]
+                - generic [ref=e561]:
+                  - paragraph [ref=e562]: Low jump
+                  - paragraph [ref=e563]: D02C-AF6F
+              - generic [ref=e564] [cursor=pointer]:
+                - switch "Toggle Super jump" [ref=e565]
+                - generic [ref=e566]:
+                  - paragraph [ref=e567]: Super jump
+                  - paragraph [ref=e568]: D42C-AF6F
+              - generic [ref=e569] [cursor=pointer]:
+                - switch "Toggle Mega-jump" [ref=e570]
+                - generic [ref=e571]:
+                  - paragraph [ref=e572]: Mega-jump
+                  - paragraph [ref=e573]: DF2C-AF6F
+              - generic [ref=e574] [cursor=pointer]:
+                - switch "Toggle Infinite time" [ref=e575]
+                - generic [ref=e576]:
+                  - paragraph [ref=e577]: Infinite time
+                  - paragraph [ref=e578]: C264-64D7
+              - generic [ref=e579] [cursor=pointer]:
+                - switch "Toggle Extra life with every dragon coin instead of 5" [ref=e580]
+                - generic [ref=e581]:
+                  - paragraph [ref=e582]: Extra life with every dragon coin instead of 5
+                  - paragraph [ref=e583]: D2E5-A7AD
+              - generic [ref=e584] [cursor=pointer]:
+                - switch "Toggle Start as Super Mario" [ref=e585]
+                - generic [ref=e586]:
+                  - paragraph [ref=e587]: Start as Super Mario
+                  - paragraph [ref=e588]: 31B7-6F07
+              - generic [ref=e589] [cursor=pointer]:
+                - switch "Toggle Start as Cape Mario" [ref=e590]
+                - generic [ref=e591]:
+                  - paragraph [ref=e592]: Start as Cape Mario
+                  - paragraph [ref=e593]: CBB7-6D67+D4B7-6DA7+3CB7-6FD7+69B7-6F07
+              - generic [ref=e594] [cursor=pointer]:
+                - switch "Toggle Start as Fire Mario" [ref=e595]
+                - generic [ref=e596]:
+                  - paragraph [ref=e597]: Start as Fire Mario
+                  - paragraph [ref=e598]: CBB7-6D67+D7B7-6DA7+3CB7-6FD7+69B7-6F07
+              - generic [ref=e599] [cursor=pointer]:
+                - switch "Toggle Little Yoshi grows into big Yoshi after eating just 1 enemy instead of 5" [ref=e600]
+                - generic [ref=e601]:
+                  - paragraph [ref=e602]: Little Yoshi grows into big Yoshi after eating just 1 enemy instead of 5
+                  - paragraph [ref=e603]: DFCE-64A0
+              - generic [ref=e604] [cursor=pointer]:
+                - switch "Toggle Little Yoshi grows into big Yoshi after eating just 2 enemies" [ref=e605]
+                - generic [ref=e606]:
+                  - paragraph [ref=e607]: Little Yoshi grows into big Yoshi after eating just 2 enemies
+                  - paragraph [ref=e608]: D4CE-64A0
+              - generic [ref=e609] [cursor=pointer]:
+                - switch "Toggle Little Yoshi grows into big Yoshi after eating just 3 enemies" [ref=e610]
+                - generic [ref=e611]:
+                  - paragraph [ref=e612]: Little Yoshi grows into big Yoshi after eating just 3 enemies
+                  - paragraph [ref=e613]: D7CE-64A0
+              - generic [ref=e614] [cursor=pointer]:
+                - switch "Toggle Little Yoshi grows into big Yoshi after eating just 4 enemies" [ref=e615]
+                - generic [ref=e616]:
+                  - paragraph [ref=e617]: Little Yoshi grows into big Yoshi after eating just 4 enemies
+                  - paragraph [ref=e618]: D0CE-64A0
+              - generic [ref=e619] [cursor=pointer]:
+                - switch "Toggle Mutli-Jump Spin-Jumps, Hold For Slow Descent" [ref=e620]
+                - generic [ref=e621]:
+                  - paragraph [ref=e622]: Mutli-Jump Spin-Jumps, Hold For Slow Descent
+                  - paragraph [ref=e623]: F53F-6767+DD3F-67A7
+              - generic [ref=e624] [cursor=pointer]:
+                - switch "Toggle Coins Rack Up All The Time" [ref=e625]
+                - generic [ref=e626]:
+                  - paragraph [ref=e627]: Coins Rack Up All The Time
+                  - paragraph [ref=e628]: 4064-ADD7
+              - generic [ref=e629] [cursor=pointer]:
+                - switch "Toggle Get Yoshi Coin Must Of The Time" [ref=e630]
+                - generic [ref=e631]:
+                  - paragraph [ref=e632]: Get Yoshi Coin Must Of The Time
+                  - paragraph [ref=e633]: 40ED-A4AD
+              - generic [ref=e634] [cursor=pointer]:
+                - switch "Toggle Get Coins Must Of The Time" [ref=e635]
+                - generic [ref=e636]:
+                  - paragraph [ref=e637]: Get Coins Must Of The Time
+                  - paragraph [ref=e638]: 6DED-A7AD
+              - generic [ref=e639] [cursor=pointer]:
+                - switch "Toggle Jump In Midair" [ref=e640]
+                - generic [ref=e641]:
+                  - paragraph [ref=e642]: Jump In Midair
+                  - paragraph [ref=e643]: 6D2E-0FDF
+              - generic [ref=e644] [cursor=pointer]:
+                - switch "Toggle Disable Swimming" [ref=e645]
+                - generic [ref=e646]:
+                  - paragraph [ref=e647]: Disable Swimming
+                  - paragraph [ref=e648]: 1031-6DD4+6D30-67A4
+              - generic [ref=e649] [cursor=pointer]:
+                - switch "Toggle Always Shoot Fireballs" [ref=e650]
+                - generic [ref=e651]:
+                  - paragraph [ref=e652]: Always Shoot Fireballs
+                  - paragraph [ref=e653]: 4026-DDAD
+              - generic [ref=e654] [cursor=pointer]:
+                - switch "Toggle Invincible Pits/Lava/Enemies" [ref=e655]
+                - generic [ref=e656]:
+                  - paragraph [ref=e657]: Invincible Pits/Lava/Enemies
+                  - paragraph [ref=e658]: CBED-646F+6DED-64AF+69ED-67DF+52ED-670F+18ED-676F+CECF-0FA1
+              - generic [ref=e659] [cursor=pointer]:
+                - switch "Toggle Walk Through Walls" [ref=e660]
+                - generic [ref=e661]:
+                  - paragraph [ref=e662]: Walk Through Walls
+                  - paragraph [ref=e663]: 1D3F-6D04+C23D-64D4+6D3F-0D67+1D37-6D64
+              - generic [ref=e664] [cursor=pointer]:
+                - switch "Toggle Enemies Die When You Get Close To Them" [ref=e665]
+                - generic [ref=e666]:
+                  - paragraph [ref=e667]: Enemies Die When You Get Close To Them
+                  - paragraph [ref=e668]: 40C7-DDD1+6DC7-DF01+40C7-D761+40C0-DF01
+              - generic [ref=e669] [cursor=pointer]:
+                - switch "Toggle Fireballs Hit Anywhere" [ref=e670]
+                - generic [ref=e671]:
+                  - paragraph [ref=e672]: Fireballs Hit Anywhere
+                  - paragraph [ref=e673]: 40C2-D7A6
+              - generic [ref=e674] [cursor=pointer]:
+                - switch "Toggle Cape Hits Anywhere" [ref=e675]
+                - generic [ref=e676]:
+                  - paragraph [ref=e677]: Cape Hits Anywhere
+                  - paragraph [ref=e678]: 40BE-AD66
+              - generic [ref=e679] [cursor=pointer]:
+                - switch "Toggle Fireballs Turn Most Enemies Into Lives" [ref=e680]
+                - generic [ref=e681]:
+                  - paragraph [ref=e682]: Fireballs Turn Most Enemies Into Lives
+                  - paragraph [ref=e683]: 56C4-0466
+              - generic [ref=e684] [cursor=pointer]:
+                - switch "Toggle Fireballs Turn Most Enemies Into Starman" [ref=e685]
+                - generic [ref=e686]:
+                  - paragraph [ref=e687]: Fireballs Turn Most Enemies Into Starman
+                  - paragraph [ref=e688]: 51C4-0466
+              - generic [ref=e689] [cursor=pointer]:
+                - switch "Toggle Fireballs Turn Most Enemies Into Flowers" [ref=e690]
+                - generic [ref=e691]:
+                  - paragraph [ref=e692]: Fireballs Turn Most Enemies Into Flowers
+                  - paragraph [ref=e693]: 59C4-0466
+              - generic [ref=e694] [cursor=pointer]:
+                - switch "Toggle Grab Key To Finish Level From Anywhere" [ref=e695]
+                - generic [ref=e696]:
+                  - paragraph [ref=e697]: Grab Key To Finish Level From Anywhere
+                  - paragraph [ref=e698]: DD3D-6460
+              - generic [ref=e699] [cursor=pointer]:
+                - switch "Toggle Press L / R To Cycle Items In The Item Box" [ref=e700]
+                - generic [ref=e701]:
+                  - paragraph [ref=e702]: Press L / R To Cycle Items In The Item Box
+                  - paragraph [ref=e703]: F6AE-07A7+A4AD-67D7+D2AD-6707+A4AD-67A7+D2AF-6DD7+D1AF-6D67+17AF-6FD7+CBAF-6F07+DFAF-6F67+62AF-6FA7+A4AF-64D7+D2AF-6407+1DAF-6467
+              - generic [ref=e704] [cursor=pointer]:
+                - switch "Toggle Causes Mario To Jump And Float Until You Let Go Of Jump" [ref=e705]
+                - generic [ref=e706]:
+                  - paragraph [ref=e707]: Causes Mario To Jump And Float Until You Let Go Of Jump
+                  - paragraph [ref=e708]: DD2C-AF6F
+              - generic [ref=e709] [cursor=pointer]:
+                - switch "Toggle Funky Mario" [ref=e710]
+                - generic [ref=e711]:
+                  - paragraph [ref=e712]: Funky Mario
+                  - paragraph [ref=e713]: CBB7-6D67+DEB7-6DA7+3CB7-6FD7+69B7-6F07
+              - generic [ref=e714] [cursor=pointer]:
+                - switch "Toggle Swim In Every Level!" [ref=e715]
+                - generic [ref=e716]:
+                  - paragraph [ref=e717]: Swim In Every Level!
+                  - paragraph [ref=e718]: CBEA-6DAD
+              - generic [ref=e719] [cursor=pointer]:
+                - switch "Toggle Fake Fire Mario" [ref=e720]
+                - generic [ref=e721]:
+                  - paragraph [ref=e722]: Fake Fire Mario
+                  - paragraph [ref=e723]: 7732-6DAD
+              - generic [ref=e724] [cursor=pointer]:
+                - switch "Toggle Nighttime!" [ref=e725]
+                - generic [ref=e726]:
+                  - paragraph [ref=e727]: Nighttime!
+                  - paragraph [ref=e728]: 0DED-AFDF
+              - generic [ref=e729] [cursor=pointer]:
+                - switch "Toggle Fake Invincibility" [ref=e730]
+                - generic [ref=e731]:
+                  - paragraph [ref=e732]: Fake Invincibility
+                  - paragraph [ref=e733]: D032-6DAD
+              - generic [ref=e734] [cursor=pointer]:
+                - switch "Toggle Jackhammer Jump" [ref=e735]
+                - generic [ref=e736]:
+                  - paragraph [ref=e737]: Jackhammer Jump
+                  - paragraph [ref=e738]: 232C-AF6F
+              - generic [ref=e739] [cursor=pointer]:
+                - switch "Toggle Spontaneously Change From Mario To Luigi" [ref=e740]
+                - generic [ref=e741]:
+                  - paragraph [ref=e742]: Spontaneously Change From Mario To Luigi
+                  - paragraph [ref=e743]: FD32-6DAD
+              - generic [ref=e744] [cursor=pointer]:
+                - switch "Toggle If You Hold Down The B Button, You Float Around!" [ref=e745]
+                - generic [ref=e746]:
+                  - paragraph [ref=e747]: If You Hold Down The B Button, You Float Around!
+                  - paragraph [ref=e748]: EE2C-AF6F
+              - generic [ref=e749] [cursor=pointer]:
+                - switch "Toggle Little Yoshie Only Has To Eat 13 Enemies To Get Big" [ref=e750]
+                - generic [ref=e751]:
+                  - paragraph [ref=e752]: Little Yoshie Only Has To Eat 13 Enemies To Get Big
+                  - paragraph [ref=e753]: DECE-64A0
+              - generic [ref=e754] [cursor=pointer]:
+                - switch "Toggle Little Yoshie Only Has To Eat 25 Enemies To Get Big" [ref=e755]
+                - generic [ref=e756]:
+                  - paragraph [ref=e757]: Little Yoshie Only Has To Eat 25 Enemies To Get Big
+                  - paragraph [ref=e758]: F8CE-64A0
+              - generic [ref=e759] [cursor=pointer]:
+                - switch "Toggle Extra Life After Each Coin, Even Yoshi Coins" [ref=e760]
+                - generic [ref=e761]:
+                  - paragraph [ref=e762]: Extra Life After Each Coin, Even Yoshi Coins
+                  - paragraph [ref=e763]: DD64-A7D7+DD67-AFA7
+              - generic [ref=e764] [cursor=pointer]:
+                - switch "Toggle &quot;Gem&quot; Mario" [ref=e765]
+                - generic [ref=e766]:
+                  - paragraph [ref=e767]: "&quot;Gem&quot; Mario"
+                  - paragraph [ref=e768]: 0032-6DAD
+              - generic [ref=e769] [cursor=pointer]:
+                - switch "Toggle If You Die, Restart At The Halfway Point" [ref=e770]
+                - generic [ref=e771]:
+                  - paragraph [ref=e772]: If You Die, Restart At The Halfway Point
+                  - paragraph [ref=e773]: 6267-AF97
+              - generic [ref=e774] [cursor=pointer]:
+                - switch "Toggle As Soon As You Start A Level, You'll Automatically Exit Thru The 2nd Exit" [ref=e775]
+                - generic [ref=e776]:
+                  - paragraph [ref=e777]: As Soon As You Start A Level, You'll Automatically Exit Thru The 2nd Exit
+                  - paragraph [ref=e778]: 62C3-64DF
+              - generic [ref=e779] [cursor=pointer]:
+                - switch "Toggle Activates The Green Blocks In The Level" [ref=e780]
+                - generic [ref=e781]:
+                  - paragraph [ref=e782]: Activates The Green Blocks In The Level
+                  - paragraph [ref=e783]: B286-07E9
+              - generic [ref=e784] [cursor=pointer]:
+                - switch "Toggle Collect 1 Berry For Yoshi To Hatch A Mushroom" [ref=e785]
+                - generic [ref=e786]:
+                  - paragraph [ref=e787]: Collect 1 Berry For Yoshi To Hatch A Mushroom
+                  - paragraph [ref=e788]: DFE3-D7A0
+              - generic [ref=e789] [cursor=pointer]:
+                - switch "Toggle Collect 2 Berries For Yoshi To Hatch A Cloud" [ref=e790]
+                - generic [ref=e791]:
+                  - paragraph [ref=e792]: Collect 2 Berries For Yoshi To Hatch A Cloud
+                  - paragraph [ref=e793]: DBE3-DF00
+              - generic [ref=e794] [cursor=pointer]:
+                - switch "Toggle Continue With A Yoshi If You Die While On One" [ref=e795]
+                - generic [ref=e796]:
+                  - paragraph [ref=e797]: Continue With A Yoshi If You Die While On One
+                  - paragraph [ref=e798]: 62C2-DF0D
+              - generic [ref=e799] [cursor=pointer]:
+                - switch "Toggle Start Most Stages With A Flying Yoshi (Must Have Yoshi Collect A Turtle Shell To Fly)" [ref=e800]
+                - generic [ref=e801]:
+                  - paragraph [ref=e802]: Start Most Stages With A Flying Yoshi (Must Have Yoshi Collect A Turtle Shell To Fly)
+                  - paragraph [ref=e803]: 62C1-ADAB
+              - generic [ref=e804] [cursor=pointer]:
+                - switch "Toggle 4000 Points Kicking An Empty Turtle Shell" [ref=e805]
+                - generic [ref=e806]:
+                  - paragraph [ref=e807]: 4000 Points Kicking An Empty Turtle Shell
+                  - paragraph [ref=e808]: 62C0-AFA1
+              - generic [ref=e809] [cursor=pointer]:
+                - switch "Toggle Nintendo's Debug" [ref=e810]
+                - generic [ref=e811]:
+                  - paragraph [ref=e812]: Nintendo's Debug
+                  - paragraph [ref=e813]: DDC1-64DD+DDC5-6DAD
+              - generic [ref=e814] [cursor=pointer]:
+                - switch "Toggle Enable Item Window's &quot;Goal Point&quot; (Quit)" [ref=e815]
+                - generic [ref=e816]:
+                  - paragraph [ref=e817]: Enable Item Window's &quot;Goal Point&quot; (Quit)
+                  - paragraph [ref=e818]: 7E0D-C2D7
+              - generic [ref=e819] [cursor=pointer]:
+                - switch "Toggle Skip Worlds" [ref=e820]
+                - generic [ref=e821]:
+                  - paragraph [ref=e822]: Skip Worlds
+                  - paragraph [ref=e823]: EECD-AF6F
+              - generic [ref=e824] [cursor=pointer]:
+                - switch "Toggle Black Mario" [ref=e825]
+                - generic [ref=e826]:
+                  - paragraph [ref=e827]: Black Mario
+                  - paragraph [ref=e828]: 9E32-6DAD
+              - generic [ref=e829] [cursor=pointer]:
+                - switch "Toggle No Enemies" [ref=e830]
+                - generic [ref=e831]:
+                  - paragraph [ref=e832]: No Enemies
+                  - paragraph [ref=e833]: 3E32-6DAD
+              - generic [ref=e834] [cursor=pointer]:
+                - switch "Toggle Low Gravity Float" [ref=e835]
+                - generic [ref=e836]:
+                  - paragraph [ref=e837]: Low Gravity Float
+                  - paragraph [ref=e838]: 4D2C-AF0F
+              - generic [ref=e839] [cursor=pointer]:
+                - switch "Toggle Any Yoshi Always Has Wings And Flies Without A Shell" [ref=e840]
+                - generic [ref=e841]:
+                  - paragraph [ref=e842]: Any Yoshi Always Has Wings And Flies Without A Shell
+                  - paragraph [ref=e843]: DDE0-07A0
+              - generic [ref=e844] [cursor=pointer]:
+                - switch "Toggle Lakitu Throws Out An Amazing Flying Hammer Brother" [ref=e845]
+                - generic [ref=e846]:
+                  - paragraph [ref=e847]: Lakitu Throws Out An Amazing Flying Hammer Brother
+                  - paragraph [ref=e848]: B837-6D61+BA37-6F61
+              - generic [ref=e849] [cursor=pointer]:
+                - switch "Toggle Switch F/X On To Activate Infinite P-Switch Time" [ref=e850]
+                - generic [ref=e851]:
+                  - paragraph [ref=e852]: Switch F/X On To Activate Infinite P-Switch Time
+                  - paragraph [ref=e853]: 7E14ADFF
+              - generic [ref=e854] [cursor=pointer]:
+                - switch "Toggle Lives Modifier" [ref=e855]
+                - generic [ref=e856]:
+                  - paragraph [ref=e857]: Lives Modifier
+                  - paragraph [ref=e858]: 7E0DB400
+              - generic [ref=e859] [cursor=pointer]:
+                - switch "Toggle Timer Always 999 Seconds" [ref=e860]
+                - generic [ref=e861]:
+                  - paragraph [ref=e862]: Timer Always 999 Seconds
+                  - paragraph [ref=e863]: 7E0F3009+7E0F3109+7E0F3209+7E0F3309
+              - generic [ref=e864] [cursor=pointer]:
+                - switch "Toggle Extra Item Window Modifier" [ref=e865]
+                - generic [ref=e866]:
+                  - paragraph [ref=e867]: Extra Item Window Modifier
+                  - paragraph [ref=e868]: 7E0DC100
+              - generic [ref=e869] [cursor=pointer]:
+                - switch "Toggle Timer Goes Real Fast" [ref=e870]
+                - generic [ref=e871]:
+                  - paragraph [ref=e872]: Timer Goes Real Fast
+                  - paragraph [ref=e873]: 7E0F3099
+              - generic [ref=e874] [cursor=pointer]:
+                - switch "Toggle Number of Stars Modifier (Player 1)" [ref=e875]
+                - generic [ref=e876]:
+                  - paragraph [ref=e877]: Number of Stars Modifier (Player 1)
+                  - paragraph [ref=e878]: 7E0F4800
+              - generic [ref=e879] [cursor=pointer]:
+                - switch "Toggle Number of Stars Star Modifier (Player 2)" [ref=e880]
+                - generic [ref=e881]:
+                  - paragraph [ref=e882]: Number of Stars Star Modifier (Player 2)
+                  - paragraph [ref=e883]: 7E0F4900
+              - generic [ref=e884] [cursor=pointer]:
+                - switch "Toggle Always Go To Bonus Level" [ref=e885]
+                - generic [ref=e886]:
+                  - paragraph [ref=e887]: Always Go To Bonus Level
+                  - paragraph [ref=e888]: 7E1F1F00
+              - generic [ref=e889] [cursor=pointer]:
+                - switch "Toggle Infinite P-Balloon Time" [ref=e890]
+                - generic [ref=e891]:
+                  - paragraph [ref=e892]: Infinite P-Balloon Time
+                  - paragraph [ref=e893]: 7E1891FF
+              - generic [ref=e894] [cursor=pointer]:
+                - switch "Toggle Collect 1 Yoshi Coin For 1-UP" [ref=e895]
+                - generic [ref=e896]:
+                  - paragraph [ref=e897]: Collect 1 Yoshi Coin For 1-UP
+                  - paragraph [ref=e898]: "7E142005"
+              - generic [ref=e899] [cursor=pointer]:
+                - switch "Toggle Switch F/X On To Levitate" [ref=e900]
+                - generic [ref=e901]:
+                  - paragraph [ref=e902]: Switch F/X On To Levitate
+                  - paragraph [ref=e903]: 7E007DF0
+              - generic [ref=e904] [cursor=pointer]:
+                - switch "Toggle Mario/Luigi Only Face Left" [ref=e905]
+                - generic [ref=e906]:
+                  - paragraph [ref=e907]: Mario/Luigi Only Face Left
+                  - paragraph [ref=e908]: "7E007600"
+              - generic [ref=e909] [cursor=pointer]:
+                - switch "Toggle Mario/Luigi Only Face Right" [ref=e910]
+                - generic [ref=e911]:
+                  - paragraph [ref=e912]: Mario/Luigi Only Face Right
+                  - paragraph [ref=e913]: "7E007601"
+              - generic [ref=e914] [cursor=pointer]:
+                - switch "Toggle Mario/Luigi Are Invisible" [ref=e915]
+                - generic [ref=e916]:
+                  - paragraph [ref=e917]: Mario/Luigi Are Invisible
+                  - paragraph [ref=e918]: 7E00787F
+              - generic [ref=e919] [cursor=pointer]:
+                - switch "Toggle Hyper Mario+Luigi" [ref=e920]
+                - generic [ref=e921]:
+                  - paragraph [ref=e922]: Hyper Mario+Luigi
+                  - paragraph [ref=e923]: "7E149600"
+              - generic [ref=e924] [cursor=pointer]:
+                - switch "Toggle Hyper Yoshi" [ref=e925]
+                - generic [ref=e926]:
+                  - paragraph [ref=e927]: Hyper Yoshi
+                  - paragraph [ref=e928]: "7E157800"
+              - generic [ref=e929] [cursor=pointer]:
+                - switch "Toggle Glide Walk" [ref=e930]
+                - generic [ref=e931]:
+                  - paragraph [ref=e932]: Glide Walk
+                  - paragraph [ref=e933]: "7E149602"
+              - generic [ref=e934] [cursor=pointer]:
+                - switch "Toggle Always Be At Level 1 Yoshi's Island" [ref=e935]
+                - generic [ref=e936]:
+                  - paragraph [ref=e937]: Always Be At Level 1 Yoshi's Island
+                  - paragraph [ref=e938]: 7E13D501
+              - generic [ref=e939] [cursor=pointer]:
+                - switch "Toggle Infinite Jumps" [ref=e940]
+                - generic [ref=e941]:
+                  - paragraph [ref=e942]: Infinite Jumps
+                  - paragraph [ref=e943]: "7E147101"
+              - generic [ref=e944] [cursor=pointer]:
+                - switch "Toggle Enemies Multiplier" [ref=e945]
+                - generic [ref=e946]:
+                  - paragraph [ref=e947]: Enemies Multiplier
+                  - paragraph [ref=e948]: 7E193800+7E193900+7E193A00+7E193B00+7E193C00+7E193D00+7E193E00+7E193F00+7E194000+7E194100+7E194200+7E194300+7E194400+7E194500+7E194600+7E194700+7E194800+7E194900+7E194A00+7E194B00+7E194C00+7E194D00+7E194E00+7E194F00
+              - generic [ref=e949] [cursor=pointer]:
+                - switch "Toggle Start 1 Player Game As Luigi" [ref=e950]
+                - generic [ref=e951]:
+                  - paragraph [ref=e952]: Start 1 Player Game As Luigi
+                  - paragraph [ref=e953]: 7E0DB301
+              - generic [ref=e954] [cursor=pointer]:
+                - switch "Toggle FAKE Infinite Time" [ref=e955]
+                - generic [ref=e956]:
+                  - paragraph [ref=e957]: FAKE Infinite Time
+                  - paragraph [ref=e958]: 7E0F2509+7E0F2609+7E0F2709
+              - generic [ref=e959] [cursor=pointer]:
+                - switch "Toggle Yoshi Coin Modifier" [ref=e960]
+                - generic [ref=e961]:
+                  - paragraph [ref=e962]: Yoshi Coin Modifier
+                  - paragraph [ref=e963]: "7E142200"
+              - generic [ref=e964] [cursor=pointer]:
+                - switch "Toggle Score Modifier (Player 1)" [ref=e965]
+                - generic [ref=e966]:
+                  - paragraph [ref=e967]: Score Modifier (Player 1)
+                  - paragraph [ref=e968]: 7E0F3400+7E0F3500+7E0F3600
+              - generic [ref=e969] [cursor=pointer]:
+                - switch "Toggle Score Modifier (Player 2)" [ref=e970]
+                - generic [ref=e971]:
+                  - paragraph [ref=e972]: Score Modifier (Player 2)
+                  - paragraph [ref=e973]: 7E0F3900
+              - generic [ref=e974] [cursor=pointer]:
+                - switch "Toggle Duck When Jumping" [ref=e975]
+                - generic [ref=e976]:
+                  - paragraph [ref=e977]: Duck When Jumping
+                  - paragraph [ref=e978]: "7E007304"
+              - generic [ref=e979] [cursor=pointer]:
+                - switch "Toggle Mario Animation Modifier" [ref=e980]
+                - generic [ref=e981]:
+                  - paragraph [ref=e982]: Mario Animation Modifier
+                  - paragraph [ref=e983]: 7E13E000
+              - generic [ref=e984] [cursor=pointer]:
+                - switch "Toggle Jump Animation Modifier" [ref=e985]
+                - generic [ref=e986]:
+                  - paragraph [ref=e987]: Jump Animation Modifier
+                  - paragraph [ref=e988]: "7E007200"
+              - generic [ref=e989] [cursor=pointer]:
+                - switch "Toggle Always Have Yoshi" [ref=e990]
+                - generic [ref=e991]:
+                  - paragraph [ref=e992]: Always Have Yoshi
+                  - paragraph [ref=e993]: 7E0DC101
+              - generic [ref=e994] [cursor=pointer]:
+                - switch "Toggle Mega Jump/Float" [ref=e995]
+                - generic [ref=e996]:
+                  - paragraph [ref=e997]: Mega Jump/Float
+                  - paragraph [ref=e998]: 7E0DAA00
+              - generic [ref=e999] [cursor=pointer]:
+                - switch "Toggle Keep Gaining Star Points After Level (Turn Off To Stop)" [ref=e1000]
+                - generic [ref=e1001]:
+                  - paragraph [ref=e1002]: Keep Gaining Star Points After Level (Turn Off To Stop)
+                  - paragraph [ref=e1003]: "7E190002"
+              - generic [ref=e1004] [cursor=pointer]:
+                - switch "Toggle Invincible (Star Effect)" [ref=e1005]
+                - generic [ref=e1006]:
+                  - paragraph [ref=e1007]: Invincible (Star Effect)
+                  - paragraph [ref=e1008]: 7E1490FF
+              - generic [ref=e1009] [cursor=pointer]:
+                - switch "Toggle Invincibility (Uneffected)" [ref=e1010]
+                - generic [ref=e1011]:
+                  - paragraph [ref=e1012]: Invincibility (Uneffected)
+                  - paragraph [ref=e1013]: 7E1497FF
+              - generic [ref=e1014] [cursor=pointer]:
+                - switch "Toggle Jump And You'll Automatically Fly (No Need To Run Anymore, Assuming You Have A Cape!)" [ref=e1015]
+                - generic [ref=e1016]:
+                  - paragraph [ref=e1017]: Jump And You'll Automatically Fly (No Need To Run Anymore, Assuming You Have A Cape!)
+                  - paragraph [ref=e1018]: 7E13E470
+              - generic [ref=e1019] [cursor=pointer]:
+                - switch "Toggle Enable Special Stages Extra Features" [ref=e1020]
+                - generic [ref=e1021]:
+                  - paragraph [ref=e1022]: Enable Special Stages Extra Features
+                  - paragraph [ref=e1023]: 7E1F9283
+              - generic [ref=e1024] [cursor=pointer]:
+                - switch "Toggle Thick Air Cheat" [ref=e1025]
+                - generic [ref=e1026]:
+                  - paragraph [ref=e1027]: Thick Air Cheat
+                  - paragraph [ref=e1028]: "7E147105"
+              - generic [ref=e1029] [cursor=pointer]:
+                - switch "Toggle Lukita's Cloud Never Disappears From Under You (You Must Have One To Begin With)" [ref=e1030]
+                - generic [ref=e1031]:
+                  - paragraph [ref=e1032]: Lukita's Cloud Never Disappears From Under You (You Must Have One To Begin With)
+                  - paragraph [ref=e1033]: 7E18E0FF
+              - generic [ref=e1034] [cursor=pointer]:
+                - switch "Toggle Some Enemies Don't Exist" [ref=e1035]
+                - generic [ref=e1036]:
+                  - paragraph [ref=e1037]: Some Enemies Don't Exist
+                  - paragraph [ref=e1038]: 7E14DCFF
+              - generic [ref=e1039] [cursor=pointer]:
+                - switch "Toggle Some Enemies Don't Exist (Alternate Code)" [ref=e1040]
+                - generic [ref=e1041]:
+                  - paragraph [ref=e1042]: Some Enemies Don't Exist (Alternate Code)
+                  - paragraph [ref=e1043]: 7E14DDFF
+              - generic [ref=e1044] [cursor=pointer]:
+                - switch "Toggle Baby Yoshi Never Stops Eating" [ref=e1045]
+                - generic [ref=e1046]:
+                  - paragraph [ref=e1047]: Baby Yoshi Never Stops Eating
+                  - paragraph [ref=e1048]: "7E157705"
+              - generic [ref=e1049] [cursor=pointer]:
+                - switch "Toggle It Takes 1 Eating To Grow A Small Yoshi Up" [ref=e1050]
+                - generic [ref=e1051]:
+                  - paragraph [ref=e1052]: It Takes 1 Eating To Grow A Small Yoshi Up
+                  - paragraph [ref=e1053]: "7E157704"
+              - generic [ref=e1054] [cursor=pointer]:
+                - switch "Toggle Put Something In Your Yoshi's Mouth And Your Coin Count Will Skyrocket! (Will Never Let Go Of What's In The Mouth Though)" [ref=e1055]
+                - generic [ref=e1056]:
+                  - paragraph [ref=e1057]: Put Something In Your Yoshi's Mouth And Your Coin Count Will Skyrocket! (Will Never Let Go Of What's In The Mouth Though)
+                  - paragraph [ref=e1058]: 7E18AC01
+              - generic [ref=e1059] [cursor=pointer]:
+                - switch "Toggle In The Boss Room, Controls Vertical Angle of The Fireball 1 (In Wendy's Castle)" [ref=e1060]
+                - generic [ref=e1061]:
+                  - paragraph [ref=e1062]: In The Boss Room, Controls Vertical Angle of The Fireball 1 (In Wendy's Castle)
+                  - paragraph [ref=e1063]: 7E00AF00
+              - generic [ref=e1064] [cursor=pointer]:
+                - switch "Toggle In The Boss Room, Controls Vertical Angle of The Fireball 2 (In Wendy's Castle)" [ref=e1065]
+                - generic [ref=e1066]:
+                  - paragraph [ref=e1067]: In The Boss Room, Controls Vertical Angle of The Fireball 2 (In Wendy's Castle)
+                  - paragraph [ref=e1068]: 7E00B100
+              - generic [ref=e1069] [cursor=pointer]:
+                - switch "Toggle Random Box Codes" [ref=e1070]
+                - generic [ref=e1071]:
+                  - paragraph [ref=e1072]: Random Box Codes
+                  - paragraph [ref=e1073]: 7FCAF601+7FCAF701+7FCB1901+7FCCC301+7FCCDA01+7FCE6901
+              - generic [ref=e1074] [cursor=pointer]:
+                - switch "Toggle Infinite Coins From Multiple Coin Boxes" [ref=e1075]
+                - generic [ref=e1076]:
+                  - paragraph [ref=e1077]: Infinite Coins From Multiple Coin Boxes
+                  - paragraph [ref=e1078]: 7E186BFF
+              - generic [ref=e1079] [cursor=pointer]:
+                - switch "Toggle Always On Yoshi In Yoshi's House" [ref=e1080]
+                - generic [ref=e1081]:
+                  - paragraph [ref=e1082]: Always On Yoshi In Yoshi's House
+                  - paragraph [ref=e1083]: 7E00C501
+              - generic [ref=e1084] [cursor=pointer]:
+                - switch "Toggle Always On Yoshi In Yoshi's Island 1" [ref=e1085]
+                - generic [ref=e1086]:
+                  - paragraph [ref=e1087]: Always On Yoshi In Yoshi's Island 1
+                  - paragraph [ref=e1088]: 7E00C801
+              - generic [ref=e1089] [cursor=pointer]:
+                - switch "Toggle Always On Yoshi In Yoshi's Island 2/Yellow Switch Palace Part 1" [ref=e1090]
+                - generic [ref=e1091]:
+                  - paragraph [ref=e1092]: Always On Yoshi In Yoshi's Island 2/Yellow Switch Palace Part 1
+                  - paragraph [ref=e1093]: 7E00CA01
+              - generic [ref=e1094] [cursor=pointer]:
+                - switch "Toggle Always On Yoshi In Yoshi's Island 3" [ref=e1095]
+                - generic [ref=e1096]:
+                  - paragraph [ref=e1097]: Always On Yoshi In Yoshi's Island 3
+                  - paragraph [ref=e1098]: 7E00C601
+              - generic [ref=e1099] [cursor=pointer]:
+                - switch "Toggle Always On Yoshi In Yoshi's Island 4" [ref=e1100]
+                - generic [ref=e1101]:
+                  - paragraph [ref=e1102]: Always On Yoshi In Yoshi's Island 4
+                  - paragraph [ref=e1103]: 7E00C701
+              - generic [ref=e1104] [cursor=pointer]:
+                - switch "Toggle Always On Yoshi In Yellow Switch Palace Part 2" [ref=e1105]
+                - generic [ref=e1106]:
+                  - paragraph [ref=e1107]: Always On Yoshi In Yellow Switch Palace Part 2
+                  - paragraph [ref=e1108]: 7E00CB01
+              - generic [ref=e1109] [cursor=pointer]:
+                - switch "Toggle Seizuring Yoshi!" [ref=e1110]
+                - generic [ref=e1111]:
+                  - paragraph [ref=e1112]: Seizuring Yoshi!
+                  - paragraph [ref=e1113]: 7E18AD01
+              - generic [ref=e1114] [cursor=pointer]:
+                - switch "Toggle Screen Push Modifier" [ref=e1115]
+                - generic [ref=e1116]:
+                  - paragraph [ref=e1117]: Screen Push Modifier
+                  - paragraph [ref=e1118]: 7E007B01
+              - generic [ref=e1119] [cursor=pointer]:
+                - switch "Toggle Halfway Point Crossed" [ref=e1120]
+                - generic [ref=e1121]:
+                  - paragraph [ref=e1122]: Halfway Point Crossed
+                  - paragraph [ref=e1123]: 7E13CE02
+              - generic [ref=e1124] [cursor=pointer]:
+                - switch "Toggle Most Enemies Drop" [ref=e1125]
+                - generic [ref=e1126]:
+                  - paragraph [ref=e1127]: Most Enemies Drop
+                  - paragraph [ref=e1128]: 7E00B055+7E00B155+7E00B255+7E00B355+7E00B455+7E00B555+7E00B655+7E00B755+7E00B855+7E00B955+7E00BA55+7E00BB55+7E00BC55
+              - generic [ref=e1129] [cursor=pointer]:
+                - switch "Toggle Can't Die On Collision" [ref=e1130]
+                - generic [ref=e1131]:
+                  - paragraph [ref=e1132]: Can't Die On Collision
+                  - paragraph [ref=e1133]: "7E007100"
+              - generic [ref=e1134] [cursor=pointer]:
+                - switch "Toggle Any Yoshi Always Has Wings And Flies Without A Shell" [ref=e1135]
+                - generic [ref=e1136]:
+                  - paragraph [ref=e1137]: Any Yoshi Always Has Wings And Flies Without A Shell
+                  - paragraph [ref=e1138]: 7E141E02
+              - generic [ref=e1139] [cursor=pointer]:
+                - switch "Toggle Ronzor 1 Not There" [ref=e1140]
+                - generic [ref=e1141]:
+                  - paragraph [ref=e1142]: Ronzor 1 Not There
+                  - paragraph [ref=e1143]: "7E152001"
+              - generic [ref=e1144] [cursor=pointer]:
+                - switch "Toggle Ronzor 2 Not There" [ref=e1145]
+                - generic [ref=e1146]:
+                  - paragraph [ref=e1147]: Ronzor 2 Not There
+                  - paragraph [ref=e1148]: "7E152101"
+              - generic [ref=e1149] [cursor=pointer]:
+                - switch "Toggle Ronzor 3 Not There" [ref=e1150]
+                - generic [ref=e1151]:
+                  - paragraph [ref=e1152]: Ronzor 3 Not There
+                  - paragraph [ref=e1153]: "7E152201"
+              - generic [ref=e1154] [cursor=pointer]:
+                - switch "Toggle Ronzor 4 Not There" [ref=e1155]
+                - generic [ref=e1156]:
+                  - paragraph [ref=e1157]: Ronzor 4 Not There
+                  - paragraph [ref=e1158]: "7E152301"
+              - generic [ref=e1159] [cursor=pointer]:
+                - switch "Toggle Mario Has A Halo On Map" [ref=e1160]
+                - generic [ref=e1161]:
+                  - paragraph [ref=e1162]: Mario Has A Halo On Map
+                  - paragraph [ref=e1163]: 31B4-6F07
+              - generic [ref=e1164] [cursor=pointer]:
+                - switch "Toggle Time Doesn't Countdown" [ref=e1165]
+                - generic [ref=e1166]:
+                  - paragraph [ref=e1167]: Time Doesn't Countdown
+                  - paragraph [ref=e1168]: 6664-64D7
+              - generic [ref=e1169] [cursor=pointer]:
+                - switch "Toggle Time Never Runs Out" [ref=e1170]
+                - generic [ref=e1171]:
+                  - paragraph [ref=e1172]: Time Never Runs Out
+                  - paragraph [ref=e1173]: BB64-64D7
+              - generic [ref=e1174] [cursor=pointer]:
+                - switch "Toggle Super-Fast Clock" [ref=e1175]
+                - generic [ref=e1176]:
+                  - paragraph [ref=e1177]: Super-Fast Clock
+                  - paragraph [ref=e1178]: AA64-64D7
+              - generic [ref=e1179] [cursor=pointer]:
+                - switch "Toggle Start As Red Spasms Mario" [ref=e1180]
+                - generic [ref=e1181]:
+                  - paragraph [ref=e1182]: Start As Red Spasms Mario
+                  - paragraph [ref=e1183]: 69B7-6F07
+              - generic [ref=e1184] [cursor=pointer]:
+                - switch "Toggle Start Button Has No Effect" [ref=e1185]
+                - generic [ref=e1186]:
+                  - paragraph [ref=e1187]: Start Button Has No Effect
+                  - paragraph [ref=e1188]: CBC4-6DAD
+              - generic [ref=e1189] [cursor=pointer]:
+                - switch "Toggle Start And Select Button Combo Makes The Game Pause Forever" [ref=e1190]
+                - generic [ref=e1191]:
+                  - paragraph [ref=e1192]: Start And Select Button Combo Makes The Game Pause Forever
+                  - paragraph [ref=e1193]: CBC5-6DAD
+              - generic [ref=e1194] [cursor=pointer]:
+                - switch "Toggle Whenever You Land Hard On The Ground Via The Cape, You Die" [ref=e1195]
+                - generic [ref=e1196]:
+                  - paragraph [ref=e1197]: Whenever You Land Hard On The Ground Via The Cape, You Die
+                  - paragraph [ref=e1198]: CBCA-6DAD
+              - generic [ref=e1199] [cursor=pointer]:
+                - switch "Toggle At The Beginning of A Level You Go To The Yoshi Bonus Stage And When You Fall The Level Is Beaten!" [ref=e1200]
+                - generic [ref=e1201]:
+                  - paragraph [ref=e1202]: At The Beginning of A Level You Go To The Yoshi Bonus Stage And When You Fall The Level Is Beaten!
+                  - paragraph [ref=e1203]: 0BCD-AF6F
+              - generic [ref=e1204] [cursor=pointer]:
+                - switch "Toggle Can Repeatedly Hit Some Blocks, Some Coins Don't Disappear When Collected (Switch Off For Some Special Blocks To Work As Normal)" [ref=e1205]
+                - generic [ref=e1206]:
+                  - paragraph [ref=e1207]: Can Repeatedly Hit Some Blocks, Some Coins Don't Disappear When Collected (Switch Off For Some Special Blocks To Work As Normal)
+                  - paragraph [ref=e1208]: 188A-6767
+              - generic [ref=e1209] [cursor=pointer]:
+                - switch "Toggle Die After Losing One Life" [ref=e1210]
+                - generic [ref=e1211]:
+                  - paragraph [ref=e1212]: Die After Losing One Life
+                  - paragraph [ref=e1213]: DE22-D4DD
+              - generic [ref=e1214] [cursor=pointer]:
+                - switch "Toggle Lose Every Life Except One When You Die" [ref=e1215]
+                - generic [ref=e1216]:
+                  - paragraph [ref=e1217]: Lose Every Life Except One When You Die
+                  - paragraph [ref=e1218]: BB22-D4DD
+              - generic [ref=e1219] [cursor=pointer]:
+                - switch "Toggle Says Game Over After Every Life" [ref=e1220]
+                - generic [ref=e1221]:
+                  - paragraph [ref=e1222]: Says Game Over After Every Life
+                  - paragraph [ref=e1223]: C022-D4DD
+              - generic [ref=e1224] [cursor=pointer]:
+                - switch "Toggle Runs Super Fast Without Holding Down Run; Turn Around With Spin Jump" [ref=e1225]
+                - generic [ref=e1226]:
+                  - paragraph [ref=e1227]: Runs Super Fast Without Holding Down Run; Turn Around With Spin Jump
+                  - paragraph [ref=e1228]: EE28-6F6F
+              - generic [ref=e1229] [cursor=pointer]:
+                - switch "Toggle Run Super Fast One Direction; Hard To Control" [ref=e1230]
+                - generic [ref=e1231]:
+                  - paragraph [ref=e1232]: Run Super Fast One Direction; Hard To Control
+                  - paragraph [ref=e1233]: EE2D-AF6F
+              - generic [ref=e1234] [cursor=pointer]:
+                - switch "Toggle Bogus Jump" [ref=e1235]
+                - generic [ref=e1236]:
+                  - paragraph [ref=e1237]: Bogus Jump
+                  - paragraph [ref=e1238]: DE2C-AF6F
+              - generic [ref=e1239] [cursor=pointer]:
+                - switch "Toggle Fiying Ability" [ref=e1240]
+                - generic [ref=e1241]:
+                  - paragraph [ref=e1242]: Fiying Ability
+                  - paragraph [ref=e1243]: CF2C-AF6F
+              - generic [ref=e1244] [cursor=pointer]:
+                - switch "Toggle Skitz Jumps" [ref=e1245]
+                - generic [ref=e1246]:
+                  - paragraph [ref=e1247]: Skitz Jumps
+                  - paragraph [ref=e1248]: 842C-AF6F
+              - generic [ref=e1249] [cursor=pointer]:
+                - switch "Toggle Wierd Jump (Doesn't Work With A Cape)" [ref=e1250]
+                - generic [ref=e1251]:
+                  - paragraph [ref=e1252]: Wierd Jump (Doesn't Work With A Cape)
+                  - paragraph [ref=e1253]: 3D2C-AF6F
+              - generic [ref=e1254] [cursor=pointer]:
+                - switch "Toggle Bunny/Moon Jumps" [ref=e1255]
+                - generic [ref=e1256]:
+                  - paragraph [ref=e1257]: Bunny/Moon Jumps
+                  - paragraph [ref=e1258]: 312C-AF6F
+              - generic [ref=e1259] [cursor=pointer]:
+                - switch "Toggle To-The-Moon Jump, Flying Helicopter Spin" [ref=e1260]
+                - generic [ref=e1261]:
+                  - paragraph [ref=e1262]: To-The-Moon Jump, Flying Helicopter Spin
+                  - paragraph [ref=e1263]: EE2C-AF6F
+              - generic [ref=e1264] [cursor=pointer]:
+                - switch "Toggle You Can Climb And Fall Just Like The Original Except Much Faster" [ref=e1265]
+                - generic [ref=e1266]:
+                  - paragraph [ref=e1267]: You Can Climb And Fall Just Like The Original Except Much Faster
+                  - paragraph [ref=e1268]: E82C-AF64
+              - generic [ref=e1269] [cursor=pointer]:
+                - switch "Toggle Low Gravity In Levels Over Water" [ref=e1270]
+                - generic [ref=e1271]:
+                  - paragraph [ref=e1272]: Low Gravity In Levels Over Water
+                  - paragraph [ref=e1273]: D732-6DAD
+              - generic [ref=e1274] [cursor=pointer]:
+                - switch "Toggle Dragon Coins Change Little Mario Into Luigi" [ref=e1275]
+                - generic [ref=e1276]:
+                  - paragraph [ref=e1277]: Dragon Coins Change Little Mario Into Luigi
+                  - paragraph [ref=e1278]: D332-6DAD
+              - generic [ref=e1279] [cursor=pointer]:
+                - switch "Toggle Black Mario" [ref=e1280]
+                - generic [ref=e1281]:
+                  - paragraph [ref=e1282]: Black Mario
+                  - paragraph [ref=e1283]: 9D32-6DAD
+              - generic [ref=e1284] [cursor=pointer]:
+                - switch "Toggle After You Get A Powerup, Mario's Head Will Always Face Left, Even While Walking/Flying/Jumping Right!!" [ref=e1285]
+                - generic [ref=e1286]:
+                  - paragraph [ref=e1287]: After You Get A Powerup, Mario's Head Will Always Face Left, Even While Walking/Flying/Jumping Right!!
+                  - paragraph [ref=e1288]: 4832-ADAD
+              - generic [ref=e1289] [cursor=pointer]:
+                - switch "Toggle You Can Swim In Every Level" [ref=e1290]
+                - generic [ref=e1291]:
+                  - paragraph [ref=e1292]: You Can Swim In Every Level
+                  - paragraph [ref=e1293]: CBEA-6DAD
+              - generic [ref=e1294] [cursor=pointer]:
+                - switch "Toggle Super Stomp - Run Into Any Enemy From The Side When Small And You Will Be Propelled Upwards And Stomp Them!" [ref=e1295]
+                - generic [ref=e1296]:
+                  - paragraph [ref=e1297]: Super Stomp - Run Into Any Enemy From The Side When Small And You Will Be Propelled Upwards And Stomp Them!
+                  - paragraph [ref=e1298]: CBEF-6F6F
+              - generic [ref=e1299] [cursor=pointer]:
+                - switch "Toggle Shrink/Die Instantly" [ref=e1300]
+                - generic [ref=e1301]:
+                  - paragraph [ref=e1302]: Shrink/Die Instantly
+                  - paragraph [ref=e1303]: CBEF-67AF
+              - generic [ref=e1304] [cursor=pointer]:
+                - switch "Toggle Shrink When Hit Ultra Fast" [ref=e1305]
+                - generic [ref=e1306]:
+                  - paragraph [ref=e1307]: Shrink When Hit Ultra Fast
+                  - paragraph [ref=e1308]: CBE4-6DDF
+              - generic [ref=e1309] [cursor=pointer]:
+                - switch "Toggle Regular Nighttime" [ref=e1310]
+                - generic [ref=e1311]:
+                  - paragraph [ref=e1312]: Regular Nighttime
+                  - paragraph [ref=e1313]: 0DED-AFDF
+              - generic [ref=e1314] [cursor=pointer]:
+                - switch "Toggle No Background" [ref=e1315]
+                - generic [ref=e1316]:
+                  - paragraph [ref=e1317]: No Background
+                  - paragraph [ref=e1318]: 07ED-AFDF
+              - generic [ref=e1319] [cursor=pointer]:
+                - switch "Toggle Nighttime For Pros" [ref=e1320]
+                - generic [ref=e1321]:
+                  - paragraph [ref=e1322]: Nighttime For Pros
+                  - paragraph [ref=e1323]: 00ED-AFDF
+              - generic [ref=e1324] [cursor=pointer]:
+                - switch "Toggle Screen Is Upside Down When You Play" [ref=e1325]
+                - generic [ref=e1326]:
+                  - paragraph [ref=e1327]: Screen Is Upside Down When You Play
+                  - paragraph [ref=e1328]: 9EED-AF6F
+              - generic [ref=e1329] [cursor=pointer]:
+                - switch "Toggle Sickening" [ref=e1330]
+                - generic [ref=e1331]:
+                  - paragraph [ref=e1332]: Sickening
+                  - paragraph [ref=e1333]: 40EC-AFDF
+              - generic [ref=e1334] [cursor=pointer]:
+                - switch "Toggle Always Have A Flying Yoshi" [ref=e1335]
+                - generic [ref=e1336]:
+                  - paragraph [ref=e1337]: Always Have A Flying Yoshi
+                  - paragraph [ref=e1338]: 7E0DFC10
+              - generic [ref=e1339] [cursor=pointer]:
+                - switch "Toggle Press Select To Release An Extra Life From The Power-Up Box" [ref=e1340]
+                - generic [ref=e1341]:
+                  - paragraph [ref=e1342]: Press Select To Release An Extra Life From The Power-Up Box
+                  - paragraph [ref=e1343]: 7E0DFC20
+              - generic [ref=e1344] [cursor=pointer]:
+                - switch "Toggle Get 8000 Points From Each Enemy You Stomp" [ref=e1345]
+                - generic [ref=e1346]:
+                  - paragraph [ref=e1347]: Get 8000 Points From Each Enemy You Stomp
+                  - paragraph [ref=e1348]: "7E169706"
+              - generic [ref=e1349] [cursor=pointer]:
+                - switch "Toggle Get 1-Up From Each Enemy You Stomp" [ref=e1350]
+                - generic [ref=e1351]:
+                  - paragraph [ref=e1352]: Get 1-Up From Each Enemy You Stomp
+                  - paragraph [ref=e1353]: "7E169707"
+              - generic [ref=e1354] [cursor=pointer]:
+                - switch "Toggle Every Berry Makes Yoshi Lay An Egg" [ref=e1355]
+                - generic [ref=e1356]:
+                  - paragraph [ref=e1357]: Every Berry Makes Yoshi Lay An Egg
+                  - paragraph [ref=e1358]: 7E18D409
+              - generic [ref=e1359] [cursor=pointer]:
+                - switch "Toggle Every Pink Berry Makes Yoshi Lay A Cloud Egg" [ref=e1360]
+                - generic [ref=e1361]:
+                  - paragraph [ref=e1362]: Every Pink Berry Makes Yoshi Lay A Cloud Egg
+                  - paragraph [ref=e1363]: 7E18D501
+              - generic [ref=e1364] [cursor=pointer]:
+                - switch "Toggle Start As A Red Faced Mario In Need of A Chiropractor" [ref=e1365]
+                - generic [ref=e1366]:
+                  - paragraph [ref=e1367]: Start As A Red Faced Mario In Need of A Chiropractor
+                  - paragraph [ref=e1368]: CBB7-6D67+D0B7-6DA7+3CB7-6FD7+69B7-6F07
+              - generic [ref=e1369] [cursor=pointer]:
+                - switch "Toggle Start As Sub-Zero Mario - Grab A Mushroom To Become Invincible" [ref=e1370]
+                - generic [ref=e1371]:
+                  - paragraph [ref=e1372]: Start As Sub-Zero Mario - Grab A Mushroom To Become Invincible
+                  - paragraph [ref=e1373]: CBB7-6D67+DBB7-6DA7+3CB7-6FD7+69B7-6F07
+              - generic [ref=e1374] [cursor=pointer]:
+                - switch "Toggle Start As Nodding Mario - Grab A Mushroom To Get 1-Up" [ref=e1375]
+                - generic [ref=e1376]:
+                  - paragraph [ref=e1377]: Start As Nodding Mario - Grab A Mushroom To Get 1-Up
+                  - paragraph [ref=e1378]: CBB7-6D67+FDB7-6DA7+3CB7-6FD7+69B7-6F07
+              - generic [ref=e1379] [cursor=pointer]:
+                - switch "Toggle Start As Mario - Grab A Mushroom And It Turns Into A Pirahna Plant" [ref=e1380]
+                - generic [ref=e1381]:
+                  - paragraph [ref=e1382]: Start As Mario - Grab A Mushroom And It Turns Into A Pirahna Plant
+                  - paragraph [ref=e1383]: CBB7-6D67+47B7-6DA7+3CB7-6FD7+69B7-6F07
+              - generic [ref=e1384] [cursor=pointer]:
+                - switch "Toggle Start As Hovercraft Mario, Get Any Item To Become Invincible" [ref=e1385]
+                - generic [ref=e1386]:
+                  - paragraph [ref=e1387]: Start As Hovercraft Mario, Get Any Item To Become Invincible
+                  - paragraph [ref=e1388]: CBB7-6D67+59B7-6DA7+3CB7-6FD7+69B7-6F07
+              - generic [ref=e1389] [cursor=pointer]:
+                - switch "Toggle Start As Hovercraft Mario, Get Any Item To Put A Shelless Turtle In Reserve" [ref=e1390]
+                - generic [ref=e1391]:
+                  - paragraph [ref=e1392]: Start As Hovercraft Mario, Get Any Item To Put A Shelless Turtle In Reserve
+                  - paragraph [ref=e1393]: CBB7-6D67+55B7-6DA7+3CB7-6FD7+69B7-6F07
+              - generic [ref=e1394] [cursor=pointer]:
+                - switch "Toggle Start As Hovercraft Mario, Get A Mushroom To Turn It Into A Pirahna Plant And Get A Giant Bullet Blob In Reserve" [ref=e1395]
+                - generic [ref=e1396]:
+                  - paragraph [ref=e1397]: Start As Hovercraft Mario, Get A Mushroom To Turn It Into A Pirahna Plant And Get A Giant Bullet Blob In Reserve
+                  - paragraph [ref=e1398]: CBB7-6D67+5BB7-6DA7+3CB7-6FD7+69B7-6F07
+              - generic [ref=e1399] [cursor=pointer]:
+                - switch "Toggle Start As Hovercraft Mario, Get A Mushroom To Put A Flying Key In Reserve" [ref=e1400]
+                - generic [ref=e1401]:
+                  - paragraph [ref=e1402]: Start As Hovercraft Mario, Get A Mushroom To Put A Flying Key In Reserve
+                  - paragraph [ref=e1403]: CBB7-6D67+6DB7-6DA7+3CB7-6FD7+69B7-6F07
+              - generic [ref=e1404] [cursor=pointer]:
+                - switch "Toggle Start As Hovercraft Mario, Or A Mushroom To Turn Invincible And Get A Football Koopa In Reserve" [ref=e1405]
+                - generic [ref=e1406]:
+                  - paragraph [ref=e1407]: Start As Hovercraft Mario, Or A Mushroom To Turn Invincible And Get A Football Koopa In Reserve
+                  - paragraph [ref=e1408]: CBB7-6D67+3CB7-6FD7+69B7-6F07
+              - generic [ref=e1409] [cursor=pointer]:
+                - switch "Toggle Start As Hovercraft Mario, Get A Fire Flower To Put A Magic Squished Dinosaur In Reserve Which Will Let You Clear The Round Instantly If Collected" [ref=e1410]
+                - generic [ref=e1411]:
+                  - paragraph [ref=e1412]: Start As Hovercraft Mario, Get A Fire Flower To Put A Magic Squished Dinosaur In Reserve Which Will Let You Clear The Round Instantly If Collected
+                  - paragraph [ref=e1413]: CBB7-6D67+67B7-6DA7+3CB7-6FD7+69B7-6F07
+              - generic [ref=e1414] [cursor=pointer]:
+                - switch "Toggle Start As Sub-Zero Mario, Get A Fire Flower Or Mushroom To Put A 1-Up Mushroom In Reserve, Use That Or Any Other 1-Up Mushroom To Put A Yoshi In Reserve" [ref=e1415]
+                - generic [ref=e1416]:
+                  - paragraph [ref=e1417]: Start As Sub-Zero Mario, Get A Fire Flower Or Mushroom To Put A 1-Up Mushroom In Reserve, Use That Or Any Other 1-Up Mushroom To Put A Yoshi In Reserve
+                  - paragraph [ref=e1418]: CBB7-6D67+66B7-6DA7+3CB7-6FD7+69B7-6F07
+              - generic [ref=e1419] [cursor=pointer]:
+                - switch "Toggle Start As Mario With A Strange Walk, Get A Mushroom For Yoshi's Thank-You Message" [ref=e1420]
+                - generic [ref=e1421]:
+                  - paragraph [ref=e1422]: Start As Mario With A Strange Walk, Get A Mushroom For Yoshi's Thank-You Message
+                  - paragraph [ref=e1423]: CBB7-6D67+6BB7-6DA7+3CB7-6FD7+69B7-6F07
+              - generic [ref=e1424] [cursor=pointer]:
+                - switch "Toggle Mario Drives Without Benefit of A Car" [ref=e1425]
+                - generic [ref=e1426]:
+                  - paragraph [ref=e1427]: Mario Drives Without Benefit of A Car
+                  - paragraph [ref=e1428]: CBB7-6D67+C9B7-6DA7+3CB7-6FD7+69B7-6F07
+              - generic [ref=e1429] [cursor=pointer]:
+                - switch "Toggle Start As Mario With An Extremely Strange Walk, Get A Fire Flower To Put A Glitched Ghost In Reserve" [ref=e1430]
+                - generic [ref=e1431]:
+                  - paragraph [ref=e1432]: Start As Mario With An Extremely Strange Walk, Get A Fire Flower To Put A Glitched Ghost In Reserve
+                  - paragraph [ref=e1433]: CBB7-6D67+2DB7-6DA7+3CB7-6FD7+69B7-6F07
+              - generic [ref=e1434] [cursor=pointer]:
+                - switch "Toggle Skip Story Intro" [ref=e1435]
+                - generic [ref=e1436]:
+                  - paragraph [ref=e1437]: Skip Story Intro
+                  - paragraph [ref=e1438]: 6DCB-D40D
+              - generic [ref=e1439] [cursor=pointer]:
+                - switch "Toggle Show Save Prompt After Beating Any Level" [ref=e1440]
+                - generic [ref=e1441]:
+                  - paragraph [ref=e1442]: Show Save Prompt After Beating Any Level
+                  - paragraph [ref=e1443]: DD34-6D2F+B066-0D2F
+              - generic [ref=e1444] [cursor=pointer]:
+                - switch "Toggle Walk Behind Scenery" [ref=e1445]
+                - generic [ref=e1446]:
+                  - paragraph [ref=e1447]: Walk Behind Scenery
+                  - paragraph [ref=e1448]: 7E13F902
+              - generic [ref=e1449] [cursor=pointer]:
+                - switch "Toggle Icy Floors" [ref=e1450]
+                - generic [ref=e1451]:
+                  - paragraph [ref=e1452]: Icy Floors
+                  - paragraph [ref=e1453]: "7E008680"
+              - generic [ref=e1454] [cursor=pointer]:
+                - switch "Toggle Yoshi Allowed In Ghost Houses & Castles" [ref=e1455]
+                - generic [ref=e1456]:
+                  - paragraph [ref=e1457]: Yoshi Allowed In Ghost Houses & Castles
+                  - paragraph [ref=e1458]: 7E1B9B00
+              - generic [ref=e1459] [cursor=pointer]:
+                - switch "Toggle Mario is Always Running" [ref=e1460]
+                - generic [ref=e1461]:
+                  - paragraph [ref=e1462]: Mario is Always Running
+                  - paragraph [ref=e1463]: DD2F-A4DF
+              - generic [ref=e1464] [cursor=pointer]:
+                - switch "Toggle Jump in Midair" [ref=e1465]
+                - generic [ref=e1466]:
+                  - paragraph [ref=e1467]: Jump in Midair
+                  - paragraph [ref=e1468]: 6D2E-0FDF
+              - generic [ref=e1469] [cursor=pointer]:
+                - switch "Toggle Disable Swimming" [ref=e1470]
+                - generic [ref=e1471]:
+                  - paragraph [ref=e1472]: Disable Swimming
+                  - paragraph [ref=e1473]: 1031-6DD4+6D30-67A4
+              - generic [ref=e1474] [cursor=pointer]:
+                - switch "Toggle Always Guess Correct At 1up Minigame" [ref=e1475]
+                - generic [ref=e1476]:
+                  - paragraph [ref=e1477]: Always Guess Correct At 1up Minigame
+                  - paragraph [ref=e1478]: 6DE7-6FDD
+              - generic [ref=e1479] [cursor=pointer]:
+                - switch "Toggle Fireballs Pierce Through Enemies" [ref=e1480]
+                - generic [ref=e1481]:
+                  - paragraph [ref=e1482]: Fireballs Pierce Through Enemies
+                  - paragraph [ref=e1483]: C2C3-D466
+              - generic [ref=e1484] [cursor=pointer]:
+                - switch "Toggle Easy Pipes" [ref=e1485]
+                - generic [ref=e1486]:
+                  - paragraph [ref=e1487]: Easy Pipes
+                  - paragraph [ref=e1488]: DFC7-6451+7DC7-6481
+              - generic [ref=e1489] [cursor=pointer]:
+                - switch "Toggle Play As Luigi" [ref=e1490]
+                - generic [ref=e1491]:
+                  - paragraph [ref=e1492]: Play As Luigi
+                  - paragraph [ref=e1493]: CE3F-A4DD+CE6A-A407+8FB2-040D
+              - generic [ref=e1494] [cursor=pointer]:
+                - switch "Toggle One Hit Kills Chargin' Chucks" [ref=e1495]
+                - generic [ref=e1496]:
+                  - paragraph [ref=e1497]: One Hit Kills Chargin' Chucks
+                  - paragraph [ref=e1498]: DDCD-0F06
+              - generic [ref=e1499] [cursor=pointer]:
+                - switch "Toggle Enable Special Stage Mode" [ref=e1500]
+                - generic [ref=e1501]:
+                  - paragraph [ref=e1502]: Enable Special Stage Mode
+                  - paragraph [ref=e1503]: 38BF-6467+F3BF-64A7+CDC5-6DA4+CDC6-0F0C
+              - generic [ref=e1504] [cursor=pointer]:
+                - switch "Toggle Disable Special Stage Mode" [ref=e1505]
+                - generic [ref=e1506]:
+                  - paragraph [ref=e1507]: Disable Special Stage Mode
+                  - paragraph [ref=e1508]: 38BF-6ED7+F3BF-6E07+DDBF-6367
+              - generic [ref=e1509] [cursor=pointer]:
+                - switch "Toggle Enable Special Stage Mode" [ref=e1510]
+                - generic [ref=e1511]:
+                  - paragraph [ref=e1512]: Enable Special Stage Mode
+                  - paragraph [ref=e1513]: 7E1EEB80
+              - generic [ref=e1514] [cursor=pointer]:
+                - switch "Toggle Disable Special Stage Mode" [ref=e1515]
+                - generic [ref=e1516]:
+                  - paragraph [ref=e1517]: Disable Special Stage Mode
+                  - paragraph [ref=e1518]: 7E1EEB00
+              - generic [ref=e1519] [cursor=pointer]:
+                - switch "Toggle Invincibility (mostly)" [ref=e1520]
+                - generic [ref=e1521]:
+                  - paragraph [ref=e1522]: Invincibility (mostly)
+                  - paragraph [ref=e1523]: 6DE8-040F
+              - generic [ref=e1524] [cursor=pointer]:
+                - switch "Toggle Disable X and Y Buttons Running" [ref=e1525]
+                - generic [ref=e1526]:
+                  - paragraph [ref=e1527]: Disable X and Y Buttons Running
+                  - paragraph [ref=e1528]: 6D2F-AFAF
+  - status

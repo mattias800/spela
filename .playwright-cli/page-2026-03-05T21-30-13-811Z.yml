@@ -1,0 +1,1126 @@
+- generic [ref=e2]:
+  - generic [ref=e3]:
+    - complementary [ref=e4]:
+      - generic [ref=e5]:
+        - img [ref=e7]
+        - generic [ref=e9]: Spela
+      - navigation [ref=e10]:
+        - generic [ref=e11]:
+          - link "Dashboard" [ref=e12] [cursor=pointer]:
+            - /url: /
+            - img [ref=e13]
+            - generic [ref=e18]: Dashboard
+          - link "Library" [ref=e19] [cursor=pointer]:
+            - /url: /consoles
+            - img [ref=e20]
+            - generic [ref=e22]: Library
+          - link "Stats" [ref=e23] [cursor=pointer]:
+            - /url: /stats
+            - img [ref=e24]
+            - generic [ref=e26]: Stats
+          - link "Activity" [ref=e27] [cursor=pointer]:
+            - /url: /activity
+            - img [ref=e28]
+            - generic [ref=e30]: Activity
+          - link "Challenges" [ref=e31] [cursor=pointer]:
+            - /url: /challenges
+            - img [ref=e32]
+            - generic [ref=e34]: Challenges
+          - link "Relays" [ref=e35] [cursor=pointer]:
+            - /url: /relays
+            - img [ref=e36]
+            - generic [ref=e41]: Relays
+          - link "Netplay" [ref=e42] [cursor=pointer]:
+            - /url: /netplay
+            - img [ref=e43]
+            - generic [ref=e47]: Netplay
+          - link "Preferences" [ref=e48] [cursor=pointer]:
+            - /url: /preferences
+            - img [ref=e49]
+            - generic [ref=e50]: Preferences
+        - generic [ref=e51]:
+          - paragraph [ref=e52]: Admin
+          - link "Users" [ref=e53] [cursor=pointer]:
+            - /url: /admin/users
+            - img [ref=e54]
+            - generic [ref=e59]: Users
+          - link "Settings" [ref=e60] [cursor=pointer]:
+            - /url: /admin/settings
+            - img [ref=e61]
+            - generic [ref=e64]: Settings
+          - link "BIOS Files Warning" [ref=e65] [cursor=pointer]:
+            - /url: /admin/bios
+            - img [ref=e66]
+            - generic [ref=e69]: BIOS Files
+            - generic "Warning" [ref=e70]
+          - link "Upload ROMs" [ref=e71] [cursor=pointer]:
+            - /url: /admin/upload
+            - img [ref=e72]
+            - generic [ref=e75]: Upload ROMs
+          - link "Library Scan" [ref=e76] [cursor=pointer]:
+            - /url: /admin/scan
+            - img [ref=e77]
+            - generic [ref=e84]: Library Scan
+          - link "Metadata Fix" [ref=e85] [cursor=pointer]:
+            - /url: /admin/metadata
+            - img [ref=e86]
+            - generic [ref=e91]: Metadata Fix
+          - link "Cheats" [ref=e92] [cursor=pointer]:
+            - /url: /admin/cheats
+            - img [ref=e93]
+            - generic [ref=e95]: Cheats
+      - generic [ref=e97]:
+        - generic [ref=e98]: A
+        - generic [ref=e99]:
+          - paragraph [ref=e100]: admin
+          - paragraph [ref=e101]: owner
+        - button "Logout" [ref=e102] [cursor=pointer]:
+          - img [ref=e103]
+      - paragraph [ref=e107]: vdev
+    - main [ref=e109]:
+      - generic [ref=e110]:
+        - button "Back" [ref=e111] [cursor=pointer]:
+          - img [ref=e112]
+          - text: Back
+        - generic [ref=e114]:
+          - generic [ref=e115]:
+            - img "Super Mario World" [ref=e117]
+            - button "Change cover" [ref=e118] [cursor=pointer]:
+              - img [ref=e119]
+              - text: Change cover
+            - generic [ref=e124]:
+              - generic [ref=e125]:
+                - img [ref=e126]
+                - heading "Your Rating" [level=3] [ref=e128]
+              - generic [ref=e130]:
+                - button [ref=e131] [cursor=pointer]:
+                  - img [ref=e132]
+                - button [ref=e134] [cursor=pointer]:
+                  - img [ref=e135]
+                - button [ref=e137] [cursor=pointer]:
+                  - img [ref=e138]
+                - button [ref=e140] [cursor=pointer]:
+                  - img [ref=e141]
+                - button [ref=e143] [cursor=pointer]:
+                  - img [ref=e144]
+          - generic [ref=e146]:
+            - generic [ref=e147]:
+              - generic [ref=e148]:
+                - heading "Super Mario World" [level=1] [ref=e149]
+                - generic [ref=e150]:
+                  - generic [ref=e151]: Super Nintendo
+                  - generic [ref=e152]:
+                    - img [ref=e153]
+                    - text: Verified
+                  - generic [ref=e156]:
+                    - generic [ref=e157]: 🇺🇸
+                    - text: USA
+                  - generic [ref=e158]:
+                    - generic [ref=e159]:
+                      - img [ref=e160]
+                      - img [ref=e162]
+                      - img [ref=e164]
+                      - img [ref=e166]
+                      - img [ref=e168]
+                    - generic [ref=e170]: 10.0/10
+              - generic [ref=e171]:
+                - generic [ref=e172]:
+                  - button "Resume" [ref=e173] [cursor=pointer]:
+                    - img [ref=e174]
+                    - text: Resume
+                  - button "More options" [ref=e178] [cursor=pointer]:
+                    - img [ref=e179]
+                - button "Actions" [ref=e185] [cursor=pointer]:
+                  - img [ref=e186]
+                - generic [ref=e190]:
+                  - img [ref=e191]
+                  - text: 2m
+                - generic [ref=e194]:
+                  - img [ref=e195]
+                  - text: 5d ago
+            - paragraph [ref=e197]: A 2D platformer and first entry on the SNES in the Super Mario franchise, Super Mario World follows Mario as he attempts to defeat Bowser's underlings and rescue Princess Peach from his clutches. The game features a save system, a less linear world map, an expanded movement arsenal and numerous new items for Mario, alongside new approaches to level design and art direction.
+            - generic [ref=e198]:
+              - generic [ref=e199]:
+                - img [ref=e200]
+                - generic [ref=e204]:
+                  - generic [ref=e205]: Developer
+                  - generic [ref=e206]: Nintendo Entertainment Analysis & Development
+              - generic [ref=e207]:
+                - img [ref=e208]
+                - generic [ref=e212]:
+                  - generic [ref=e213]: Publisher
+                  - generic [ref=e214]: Nintendo
+              - generic [ref=e215]:
+                - img [ref=e216]
+                - generic [ref=e218]:
+                  - generic [ref=e219]: Released
+                  - generic [ref=e220]: 1990-11-21
+              - generic [ref=e221]:
+                - img [ref=e222]
+                - generic [ref=e224]:
+                  - generic [ref=e225]: Genre
+                  - generic [ref=e226]: Platform
+              - generic [ref=e227]:
+                - img [ref=e228]
+                - generic [ref=e233]:
+                  - generic [ref=e234]: Players
+                  - generic [ref=e235]: "2"
+              - generic [ref=e236]:
+                - img [ref=e237]
+                - generic [ref=e239]:
+                  - generic [ref=e240]: Size
+                  - generic [ref=e241]: 512.0 KB
+        - generic [ref=e242]:
+          - generic [ref=e243]:
+            - generic [ref=e244]:
+              - img [ref=e245]
+              - heading "Sessions" [level=2] [ref=e249]
+              - generic [ref=e250]: (1)
+            - button "New Session" [ref=e251] [cursor=pointer]:
+              - img [ref=e252]
+              - text: New Session
+          - generic [ref=e254]:
+            - img "Playthrough 1" [ref=e256]
+            - generic [ref=e257]:
+              - link "Playthrough 1" [ref=e258] [cursor=pointer]:
+                - /url: /sessions/5
+              - generic [ref=e259]:
+                - generic [ref=e260]:
+                  - img [ref=e261]
+                  - text: 5d ago
+                - generic [ref=e264]: ·
+                - generic [ref=e265]: 2m
+            - generic [ref=e266]:
+              - button "Rename session" [ref=e267] [cursor=pointer]:
+                - img [ref=e268]
+              - button "Delete session" [ref=e271] [cursor=pointer]:
+                - img [ref=e272]
+            - button "Play" [ref=e275] [cursor=pointer]:
+              - img [ref=e276]
+              - text: Play
+        - generic [ref=e279]:
+          - heading "Play Activity" [level=2] [ref=e280]:
+            - img [ref=e281]
+            - text: Play Activity
+          - generic [ref=e283]:
+            - generic [ref=e284]:
+              - paragraph [ref=e285]: 2m
+              - paragraph [ref=e286]: Your time
+            - generic [ref=e287]:
+              - paragraph [ref=e288]: 5d ago
+              - paragraph [ref=e289]: Last played
+            - generic [ref=e290]:
+              - paragraph [ref=e291]: "1"
+              - paragraph [ref=e292]: player has played
+            - generic [ref=e293]:
+              - paragraph [ref=e294]: 2m
+              - paragraph [ref=e295]: Total time
+          - generic [ref=e296]:
+            - heading "Top Players" [level=3] [ref=e297]
+            - generic [ref=e299]:
+              - generic [ref=e300]: "1"
+              - generic [ref=e301]: A
+              - generic [ref=e302]: admin
+              - generic [ref=e305]: 2m
+        - generic [ref=e306]:
+          - generic [ref=e308]:
+            - generic [ref=e309]:
+              - img [ref=e310]
+              - heading "Ratings" [level=2] [ref=e312]
+            - generic [ref=e313]:
+              - img [ref=e315]
+              - heading "No ratings yet" [level=3] [ref=e317]
+              - paragraph [ref=e318]: Be the first to rate this game.
+          - generic [ref=e320]:
+            - generic [ref=e321]:
+              - img [ref=e322]
+              - heading "Reviews" [level=2] [ref=e324]
+            - generic [ref=e325]:
+              - img [ref=e327]
+              - heading "No reviews yet" [level=3] [ref=e329]
+              - paragraph [ref=e330]: Rate this game and add a review to share your thoughts.
+        - generic [ref=e331]:
+          - heading "Screenshots" [level=2] [ref=e332]
+          - region "Super Mario World screenshots carousel":
+            - generic:
+              - button "Screenshot 1 of 6":
+                - img "Super Mario World screenshot 1"
+              - button "Screenshot 2 of 6":
+                - img "Super Mario World screenshot 2"
+              - button "Screenshot 3 of 6":
+                - img "Super Mario World screenshot 3"
+              - button "Screenshot 4 of 6":
+                - img "Super Mario World screenshot 4"
+              - button "Screenshot 5 of 6":
+                - img "Super Mario World screenshot 5"
+              - button "Screenshot 6 of 6":
+                - img "Super Mario World screenshot 6"
+            - button "Next screenshot" [ref=e333]:
+              - img [ref=e334]
+          - paragraph [ref=e336]: 1 / 6
+        - generic [ref=e337]:
+          - heading "Cheat Codes 252" [level=2] [ref=e339]:
+            - img [ref=e340]
+            - text: Cheat Codes
+            - generic [ref=e342]: "252"
+          - generic [ref=e344]:
+            - generic [ref=e345]:
+              - paragraph [ref=e346]: Infinite Maximum Coins
+              - paragraph [ref=e347]: 7E0DBF63
+            - generic [ref=e348]:
+              - paragraph [ref=e349]: Powerup Always ?? In Level
+              - paragraph [ref=e350]: "7E001900"
+            - generic [ref=e351]:
+              - paragraph [ref=e352]: In-level music mod
+              - paragraph [ref=e353]: 7E0DDA00
+            - generic [ref=e354]:
+              - paragraph [ref=e355]: Spare Item Type(In-Level)
+              - paragraph [ref=e356]: 7E0DC200
+            - generic [ref=e357]:
+              - paragraph [ref=e358]: Spare Item Type(On Map)
+              - paragraph [ref=e359]: 7E0DBC00
+            - generic [ref=e360]:
+              - paragraph [ref=e361]: Infinite 99 Lives
+              - paragraph [ref=e362]: 7E0DBE63
+            - generic [ref=e363]:
+              - paragraph [ref=e364]: Always 999 Time
+              - paragraph [ref=e365]: 7E0F3109+7E0F3209+7E0F3309
+            - generic [ref=e366]:
+              - paragraph [ref=e367]: Always 100 Bonus Points
+              - paragraph [ref=e368]: 7E0F4864
+            - generic [ref=e369]:
+              - paragraph [ref=e370]: Exit Level, Second Exit
+              - paragraph [ref=e371]: "7E143401"
+            - generic [ref=e372]:
+              - paragraph [ref=e373]: Exit Level, Normal Exit
+              - paragraph [ref=e374]: "7E149301"
+            - generic [ref=e375]:
+              - paragraph [ref=e376]: Disable Mosaic Effect
+              - paragraph [ref=e377]: 7E0DB000
+            - generic [ref=e378]:
+              - paragraph [ref=e379]: Activates Green Blocks
+              - paragraph [ref=e380]: 7E1F2701
+            - generic [ref=e381]:
+              - paragraph [ref=e382]: Activates Yellow Blocks
+              - paragraph [ref=e383]: 7E1F2801
+            - generic [ref=e384]:
+              - paragraph [ref=e385]: Activates Blue Blocks
+              - paragraph [ref=e386]: 7E1F2901
+            - generic [ref=e387]:
+              - paragraph [ref=e388]: Activates Red Blocks
+              - paragraph [ref=e389]: 7E1F2A01
+            - generic [ref=e390]:
+              - paragraph [ref=e391]: Deactivates Green Blocks
+              - paragraph [ref=e392]: 7E1F2700
+            - generic [ref=e393]:
+              - paragraph [ref=e394]: Deactivates Yellow Blocks
+              - paragraph [ref=e395]: 7E1F2800
+            - generic [ref=e396]:
+              - paragraph [ref=e397]: Deactivates Blue Blocks
+              - paragraph [ref=e398]: 7E1F2900
+            - generic [ref=e399]:
+              - paragraph [ref=e400]: Deactivates Red Blocks
+              - paragraph [ref=e401]: 7E1F2A00
+            - generic [ref=e402]:
+              - paragraph [ref=e403]: Mario On Ice
+              - paragraph [ref=e404]: EDA5-0F6F+61A5-040F+61A6-0D6F
+            - generic [ref=e405]:
+              - paragraph [ref=e406]: Waterworld Mario
+              - paragraph [ref=e407]: EDA5-0F6F+69A5-040F+69A6-0D6F
+            - generic [ref=e408]:
+              - paragraph [ref=e409]: Reverse Switch Palace Blocks
+              - paragraph [ref=e410]: 2D80-0DE1+ED8B-0D89
+            - generic [ref=e411]:
+              - paragraph [ref=e412]: Yoshi is Invincible
+              - paragraph [ref=e413]: 89E4-AFD9+89C6-D4DB
+            - generic [ref=e414]:
+              - paragraph [ref=e415]: Infinite Items Yoshi Picks Up
+              - paragraph [ref=e416]: 82E9-64A0+82E2-04D0
+            - generic [ref=e417]:
+              - paragraph [ref=e418]: Infinite Flying Time For Yoshi
+              - paragraph [ref=e419]: C2EC-0700
+            - generic [ref=e420]:
+              - paragraph [ref=e421]: Collecting A Yoshi Coin Gives You Yoshi's Wings
+              - paragraph [ref=e422]: B9E5-A4AD+F8E5-A7DD
+            - generic [ref=e423]:
+              - paragraph [ref=e424]: Multi-Jump and Low Gravity
+              - paragraph [ref=e425]: 336B-D4D0
+            - generic [ref=e426]:
+              - paragraph [ref=e427]: Shoot Fireballs Straight
+              - paragraph [ref=e428]: DDEA-6F07+DDB2-AFD8
+            - generic [ref=e429]:
+              - paragraph [ref=e430]: Power-up Select
+              - paragraph [ref=e431]: EDA5-0F6F
+            - generic [ref=e432]:
+              - paragraph [ref=e433]: Warp to Star World
+              - paragraph [ref=e434]: EDB7-0FBD
+            - generic [ref=e435]:
+              - paragraph [ref=e436]: Rapid-Fire Fireballs (Facing Right Only)
+              - paragraph [ref=e437]: D5EB-6F07
+            - generic [ref=e438]:
+              - paragraph [ref=e439]: Stomp 8 Enemies And Get 1-Ups
+              - paragraph [ref=e440]: C23B-AF07
+            - generic [ref=e441]:
+              - paragraph [ref=e442]: "Nintendo Debug #2"
+              - paragraph [ref=e443]: DDA6-DF07
+            - generic [ref=e444]:
+              - paragraph [ref=e445]: Blocks That Produce A Mushroom When Small & ! Boxes
+              - paragraph [ref=e446]: 7E0DB4DD
+            - generic [ref=e447]:
+              - paragraph [ref=e448]: Blocks That Produce A Flower
+              - paragraph [ref=e449]: 7E0DB4DD
+            - generic [ref=e450]:
+              - paragraph [ref=e451]: Blocks That Produce A Feather
+              - paragraph [ref=e452]: 7E0DB4DD
+            - generic [ref=e453]:
+              - paragraph [ref=e454]: Turn Blocks That Produce A Star
+              - paragraph [ref=e455]: 7E0DB400
+            - generic [ref=e456]:
+              - paragraph [ref=e457]: Turn Blocks That Produce A 1-Up Mushroom
+              - paragraph [ref=e458]: 7E0DB400
+            - generic [ref=e459]:
+              - paragraph [ref=e460]: Turn Blocks That Produce A Vine
+              - paragraph [ref=e461]: 7E0DB400
+            - generic [ref=e462]:
+              - paragraph [ref=e463]: Lakitu's Ammo Modifier
+              - paragraph [ref=e464]: 7E0DB4DD
+            - generic [ref=e465]:
+              - paragraph [ref=e466]: Lakitu's Ammo Modifier When Silver Pow Switch is Active
+              - paragraph [ref=e467]: 7E0DB400
+            - generic [ref=e468]:
+              - paragraph [ref=e469]: What Hatches From Green Eggs If You Don't Have Him
+              - paragraph [ref=e470]: 7E0DB4DD
+            - generic [ref=e471]:
+              - paragraph [ref=e472]: What Hatches From Green Eggs If You Already Have Him
+              - paragraph [ref=e473]: 7E0DB400
+            - generic [ref=e474]:
+              - paragraph [ref=e475]: Item Doesn't Fall From Box When You Get Hit
+              - paragraph [ref=e476]: 6DEE-14DF+D4EE-140F
+            - generic [ref=e477]:
+              - paragraph [ref=e478]: Start with 1 life instead of 5
+              - paragraph [ref=e479]: DDB4-6F07
+            - generic [ref=e480]:
+              - paragraph [ref=e481]: Start with 9 lives
+              - paragraph [ref=e482]: D6B4-6F07
+            - generic [ref=e483]:
+              - paragraph [ref=e484]: Start with 15 lives
+              - paragraph [ref=e485]: D3B4-6F07
+            - generic [ref=e486]:
+              - paragraph [ref=e487]: Start with 25 lives
+              - paragraph [ref=e488]: F6B4-6F07
+            - generic [ref=e489]:
+              - paragraph [ref=e490]: Start with 50 lives
+              - paragraph [ref=e491]: 7FB4-6F07
+            - generic [ref=e492]:
+              - paragraph [ref=e493]: Start with 99 lives
+              - paragraph [ref=e494]: 14B4-6F07
+            - generic [ref=e495]:
+              - paragraph [ref=e496]: Infinite lives
+              - paragraph [ref=e497]: C222-D4DD
+            - generic [ref=e498]:
+              - paragraph [ref=e499]: Extra life at 5 coins instead of 100
+              - paragraph [ref=e500]: D964-A7D7+D967-AFA7
+            - generic [ref=e501]:
+              - paragraph [ref=e502]: Extra life at 10 coins
+              - paragraph [ref=e503]: DC64-A7D7+DC67-AFA7
+            - generic [ref=e504]:
+              - paragraph [ref=e505]: Extra life at 20 coins
+              - paragraph [ref=e506]: F064-A7D7+F067-AFA7
+            - generic [ref=e507]:
+              - paragraph [ref=e508]: Extra life at 50 coins
+              - paragraph [ref=e509]: 7464-A7D7+7467-AFA7
+            - generic [ref=e510]:
+              - paragraph [ref=e511]: Start and stay invincible most of the time
+              - paragraph [ref=e512]: DD32-6DAD
+            - generic [ref=e513]:
+              - paragraph [ref=e514]: Stay as Super Mario, Fire Mario or Cape Mario when you get hit
+              - paragraph [ref=e515]: CBED-6DDF
+            - generic [ref=e516]:
+              - paragraph [ref=e517]: Stay as Super Mario, Fire Mario or Cape Mario when you fall and die
+              - paragraph [ref=e518]: CB28-DF6D
+            - generic [ref=e519]:
+              - paragraph [ref=e520]: Low jump
+              - paragraph [ref=e521]: D02C-AF6F
+            - generic [ref=e522]:
+              - paragraph [ref=e523]: Super jump
+              - paragraph [ref=e524]: D42C-AF6F
+            - generic [ref=e525]:
+              - paragraph [ref=e526]: Mega-jump
+              - paragraph [ref=e527]: DF2C-AF6F
+            - generic [ref=e528]:
+              - paragraph [ref=e529]: Infinite time
+              - paragraph [ref=e530]: C264-64D7
+            - generic [ref=e531]:
+              - paragraph [ref=e532]: Extra life with every dragon coin instead of 5
+              - paragraph [ref=e533]: D2E5-A7AD
+            - generic [ref=e534]:
+              - paragraph [ref=e535]: Start as Super Mario
+              - paragraph [ref=e536]: 31B7-6F07
+            - generic [ref=e537]:
+              - paragraph [ref=e538]: Start as Cape Mario
+              - paragraph [ref=e539]: CBB7-6D67+D4B7-6DA7+3CB7-6FD7+69B7-6F07
+            - generic [ref=e540]:
+              - paragraph [ref=e541]: Start as Fire Mario
+              - paragraph [ref=e542]: CBB7-6D67+D7B7-6DA7+3CB7-6FD7+69B7-6F07
+            - generic [ref=e543]:
+              - paragraph [ref=e544]: Little Yoshi grows into big Yoshi after eating just 1 enemy instead of 5
+              - paragraph [ref=e545]: DFCE-64A0
+            - generic [ref=e546]:
+              - paragraph [ref=e547]: Little Yoshi grows into big Yoshi after eating just 2 enemies
+              - paragraph [ref=e548]: D4CE-64A0
+            - generic [ref=e549]:
+              - paragraph [ref=e550]: Little Yoshi grows into big Yoshi after eating just 3 enemies
+              - paragraph [ref=e551]: D7CE-64A0
+            - generic [ref=e552]:
+              - paragraph [ref=e553]: Little Yoshi grows into big Yoshi after eating just 4 enemies
+              - paragraph [ref=e554]: D0CE-64A0
+            - generic [ref=e555]:
+              - paragraph [ref=e556]: Mutli-Jump Spin-Jumps, Hold For Slow Descent
+              - paragraph [ref=e557]: F53F-6767+DD3F-67A7
+            - generic [ref=e558]:
+              - paragraph [ref=e559]: Coins Rack Up All The Time
+              - paragraph [ref=e560]: 4064-ADD7
+            - generic [ref=e561]:
+              - paragraph [ref=e562]: Get Yoshi Coin Must Of The Time
+              - paragraph [ref=e563]: 40ED-A4AD
+            - generic [ref=e564]:
+              - paragraph [ref=e565]: Get Coins Must Of The Time
+              - paragraph [ref=e566]: 6DED-A7AD
+            - generic [ref=e567]:
+              - paragraph [ref=e568]: Jump In Midair
+              - paragraph [ref=e569]: 6D2E-0FDF
+            - generic [ref=e570]:
+              - paragraph [ref=e571]: Disable Swimming
+              - paragraph [ref=e572]: 1031-6DD4+6D30-67A4
+            - generic [ref=e573]:
+              - paragraph [ref=e574]: Always Shoot Fireballs
+              - paragraph [ref=e575]: 4026-DDAD
+            - generic [ref=e576]:
+              - paragraph [ref=e577]: Invincible Pits/Lava/Enemies
+              - paragraph [ref=e578]: CBED-646F+6DED-64AF+69ED-67DF+52ED-670F+18ED-676F+CECF-0FA1
+            - generic [ref=e579]:
+              - paragraph [ref=e580]: Walk Through Walls
+              - paragraph [ref=e581]: 1D3F-6D04+C23D-64D4+6D3F-0D67+1D37-6D64
+            - generic [ref=e582]:
+              - paragraph [ref=e583]: Enemies Die When You Get Close To Them
+              - paragraph [ref=e584]: 40C7-DDD1+6DC7-DF01+40C7-D761+40C0-DF01
+            - generic [ref=e585]:
+              - paragraph [ref=e586]: Fireballs Hit Anywhere
+              - paragraph [ref=e587]: 40C2-D7A6
+            - generic [ref=e588]:
+              - paragraph [ref=e589]: Cape Hits Anywhere
+              - paragraph [ref=e590]: 40BE-AD66
+            - generic [ref=e591]:
+              - paragraph [ref=e592]: Fireballs Turn Most Enemies Into Lives
+              - paragraph [ref=e593]: 56C4-0466
+            - generic [ref=e594]:
+              - paragraph [ref=e595]: Fireballs Turn Most Enemies Into Starman
+              - paragraph [ref=e596]: 51C4-0466
+            - generic [ref=e597]:
+              - paragraph [ref=e598]: Fireballs Turn Most Enemies Into Flowers
+              - paragraph [ref=e599]: 59C4-0466
+            - generic [ref=e600]:
+              - paragraph [ref=e601]: Grab Key To Finish Level From Anywhere
+              - paragraph [ref=e602]: DD3D-6460
+            - generic [ref=e603]:
+              - paragraph [ref=e604]: Press L / R To Cycle Items In The Item Box
+              - paragraph [ref=e605]: F6AE-07A7+A4AD-67D7+D2AD-6707+A4AD-67A7+D2AF-6DD7+D1AF-6D67+17AF-6FD7+CBAF-6F07+DFAF-6F67+62AF-6FA7+A4AF-64D7+D2AF-6407+1DAF-6467
+            - generic [ref=e606]:
+              - paragraph [ref=e607]: Causes Mario To Jump And Float Until You Let Go Of Jump
+              - paragraph [ref=e608]: DD2C-AF6F
+            - generic [ref=e609]:
+              - paragraph [ref=e610]: Funky Mario
+              - paragraph [ref=e611]: CBB7-6D67+DEB7-6DA7+3CB7-6FD7+69B7-6F07
+            - generic [ref=e612]:
+              - paragraph [ref=e613]: Swim In Every Level!
+              - paragraph [ref=e614]: CBEA-6DAD
+            - generic [ref=e615]:
+              - paragraph [ref=e616]: Fake Fire Mario
+              - paragraph [ref=e617]: 7732-6DAD
+            - generic [ref=e618]:
+              - paragraph [ref=e619]: Nighttime!
+              - paragraph [ref=e620]: 0DED-AFDF
+            - generic [ref=e621]:
+              - paragraph [ref=e622]: Fake Invincibility
+              - paragraph [ref=e623]: D032-6DAD
+            - generic [ref=e624]:
+              - paragraph [ref=e625]: Jackhammer Jump
+              - paragraph [ref=e626]: 232C-AF6F
+            - generic [ref=e627]:
+              - paragraph [ref=e628]: Spontaneously Change From Mario To Luigi
+              - paragraph [ref=e629]: FD32-6DAD
+            - generic [ref=e630]:
+              - paragraph [ref=e631]: If You Hold Down The B Button, You Float Around!
+              - paragraph [ref=e632]: EE2C-AF6F
+            - generic [ref=e633]:
+              - paragraph [ref=e634]: Little Yoshie Only Has To Eat 13 Enemies To Get Big
+              - paragraph [ref=e635]: DECE-64A0
+            - generic [ref=e636]:
+              - paragraph [ref=e637]: Little Yoshie Only Has To Eat 25 Enemies To Get Big
+              - paragraph [ref=e638]: F8CE-64A0
+            - generic [ref=e639]:
+              - paragraph [ref=e640]: Extra Life After Each Coin, Even Yoshi Coins
+              - paragraph [ref=e641]: DD64-A7D7+DD67-AFA7
+            - generic [ref=e642]:
+              - paragraph [ref=e643]: "&quot;Gem&quot; Mario"
+              - paragraph [ref=e644]: 0032-6DAD
+            - generic [ref=e645]:
+              - paragraph [ref=e646]: If You Die, Restart At The Halfway Point
+              - paragraph [ref=e647]: 6267-AF97
+            - generic [ref=e648]:
+              - paragraph [ref=e649]: As Soon As You Start A Level, You'll Automatically Exit Thru The 2nd Exit
+              - paragraph [ref=e650]: 62C3-64DF
+            - generic [ref=e651]:
+              - paragraph [ref=e652]: Activates The Green Blocks In The Level
+              - paragraph [ref=e653]: B286-07E9
+            - generic [ref=e654]:
+              - paragraph [ref=e655]: Collect 1 Berry For Yoshi To Hatch A Mushroom
+              - paragraph [ref=e656]: DFE3-D7A0
+            - generic [ref=e657]:
+              - paragraph [ref=e658]: Collect 2 Berries For Yoshi To Hatch A Cloud
+              - paragraph [ref=e659]: DBE3-DF00
+            - generic [ref=e660]:
+              - paragraph [ref=e661]: Continue With A Yoshi If You Die While On One
+              - paragraph [ref=e662]: 62C2-DF0D
+            - generic [ref=e663]:
+              - paragraph [ref=e664]: Start Most Stages With A Flying Yoshi (Must Have Yoshi Collect A Turtle Shell To Fly)
+              - paragraph [ref=e665]: 62C1-ADAB
+            - generic [ref=e666]:
+              - paragraph [ref=e667]: 4000 Points Kicking An Empty Turtle Shell
+              - paragraph [ref=e668]: 62C0-AFA1
+            - generic [ref=e669]:
+              - paragraph [ref=e670]: Nintendo's Debug
+              - paragraph [ref=e671]: DDC1-64DD+DDC5-6DAD
+            - generic [ref=e672]:
+              - paragraph [ref=e673]: Enable Item Window's &quot;Goal Point&quot; (Quit)
+              - paragraph [ref=e674]: 7E0D-C2D7
+            - generic [ref=e675]:
+              - paragraph [ref=e676]: Skip Worlds
+              - paragraph [ref=e677]: EECD-AF6F
+            - generic [ref=e678]:
+              - paragraph [ref=e679]: Black Mario
+              - paragraph [ref=e680]: 9E32-6DAD
+            - generic [ref=e681]:
+              - paragraph [ref=e682]: No Enemies
+              - paragraph [ref=e683]: 3E32-6DAD
+            - generic [ref=e684]:
+              - paragraph [ref=e685]: Low Gravity Float
+              - paragraph [ref=e686]: 4D2C-AF0F
+            - generic [ref=e687]:
+              - paragraph [ref=e688]: Any Yoshi Always Has Wings And Flies Without A Shell
+              - paragraph [ref=e689]: DDE0-07A0
+            - generic [ref=e690]:
+              - paragraph [ref=e691]: Lakitu Throws Out An Amazing Flying Hammer Brother
+              - paragraph [ref=e692]: B837-6D61+BA37-6F61
+            - generic [ref=e693]:
+              - paragraph [ref=e694]: Switch F/X On To Activate Infinite P-Switch Time
+              - paragraph [ref=e695]: 7E14ADFF
+            - generic [ref=e696]:
+              - paragraph [ref=e697]: Lives Modifier
+              - paragraph [ref=e698]: 7E0DB400
+            - generic [ref=e699]:
+              - paragraph [ref=e700]: Timer Always 999 Seconds
+              - paragraph [ref=e701]: 7E0F3009+7E0F3109+7E0F3209+7E0F3309
+            - generic [ref=e702]:
+              - paragraph [ref=e703]: Extra Item Window Modifier
+              - paragraph [ref=e704]: 7E0DC100
+            - generic [ref=e705]:
+              - paragraph [ref=e706]: Timer Goes Real Fast
+              - paragraph [ref=e707]: 7E0F3099
+            - generic [ref=e708]:
+              - paragraph [ref=e709]: Number of Stars Modifier (Player 1)
+              - paragraph [ref=e710]: 7E0F4800
+            - generic [ref=e711]:
+              - paragraph [ref=e712]: Number of Stars Star Modifier (Player 2)
+              - paragraph [ref=e713]: 7E0F4900
+            - generic [ref=e714]:
+              - paragraph [ref=e715]: Always Go To Bonus Level
+              - paragraph [ref=e716]: 7E1F1F00
+            - generic [ref=e717]:
+              - paragraph [ref=e718]: Infinite P-Balloon Time
+              - paragraph [ref=e719]: 7E1891FF
+            - generic [ref=e720]:
+              - paragraph [ref=e721]: Collect 1 Yoshi Coin For 1-UP
+              - paragraph [ref=e722]: "7E142005"
+            - generic [ref=e723]:
+              - paragraph [ref=e724]: Switch F/X On To Levitate
+              - paragraph [ref=e725]: 7E007DF0
+            - generic [ref=e726]:
+              - paragraph [ref=e727]: Mario/Luigi Only Face Left
+              - paragraph [ref=e728]: "7E007600"
+            - generic [ref=e729]:
+              - paragraph [ref=e730]: Mario/Luigi Only Face Right
+              - paragraph [ref=e731]: "7E007601"
+            - generic [ref=e732]:
+              - paragraph [ref=e733]: Mario/Luigi Are Invisible
+              - paragraph [ref=e734]: 7E00787F
+            - generic [ref=e735]:
+              - paragraph [ref=e736]: Hyper Mario+Luigi
+              - paragraph [ref=e737]: "7E149600"
+            - generic [ref=e738]:
+              - paragraph [ref=e739]: Hyper Yoshi
+              - paragraph [ref=e740]: "7E157800"
+            - generic [ref=e741]:
+              - paragraph [ref=e742]: Glide Walk
+              - paragraph [ref=e743]: "7E149602"
+            - generic [ref=e744]:
+              - paragraph [ref=e745]: Always Be At Level 1 Yoshi's Island
+              - paragraph [ref=e746]: 7E13D501
+            - generic [ref=e747]:
+              - paragraph [ref=e748]: Infinite Jumps
+              - paragraph [ref=e749]: "7E147101"
+            - generic [ref=e750]:
+              - paragraph [ref=e751]: Enemies Multiplier
+              - paragraph [ref=e752]: 7E193800+7E193900+7E193A00+7E193B00+7E193C00+7E193D00+7E193E00+7E193F00+7E194000+7E194100+7E194200+7E194300+7E194400+7E194500+7E194600+7E194700+7E194800+7E194900+7E194A00+7E194B00+7E194C00+7E194D00+7E194E00+7E194F00
+            - generic [ref=e753]:
+              - paragraph [ref=e754]: Start 1 Player Game As Luigi
+              - paragraph [ref=e755]: 7E0DB301
+            - generic [ref=e756]:
+              - paragraph [ref=e757]: FAKE Infinite Time
+              - paragraph [ref=e758]: 7E0F2509+7E0F2609+7E0F2709
+            - generic [ref=e759]:
+              - paragraph [ref=e760]: Yoshi Coin Modifier
+              - paragraph [ref=e761]: "7E142200"
+            - generic [ref=e762]:
+              - paragraph [ref=e763]: Score Modifier (Player 1)
+              - paragraph [ref=e764]: 7E0F3400+7E0F3500+7E0F3600
+            - generic [ref=e765]:
+              - paragraph [ref=e766]: Score Modifier (Player 2)
+              - paragraph [ref=e767]: 7E0F3900
+            - generic [ref=e768]:
+              - paragraph [ref=e769]: Duck When Jumping
+              - paragraph [ref=e770]: "7E007304"
+            - generic [ref=e771]:
+              - paragraph [ref=e772]: Mario Animation Modifier
+              - paragraph [ref=e773]: 7E13E000
+            - generic [ref=e774]:
+              - paragraph [ref=e775]: Jump Animation Modifier
+              - paragraph [ref=e776]: "7E007200"
+            - generic [ref=e777]:
+              - paragraph [ref=e778]: Always Have Yoshi
+              - paragraph [ref=e779]: 7E0DC101
+            - generic [ref=e780]:
+              - paragraph [ref=e781]: Mega Jump/Float
+              - paragraph [ref=e782]: 7E0DAA00
+            - generic [ref=e783]:
+              - paragraph [ref=e784]: Keep Gaining Star Points After Level (Turn Off To Stop)
+              - paragraph [ref=e785]: "7E190002"
+            - generic [ref=e786]:
+              - paragraph [ref=e787]: Invincible (Star Effect)
+              - paragraph [ref=e788]: 7E1490FF
+            - generic [ref=e789]:
+              - paragraph [ref=e790]: Invincibility (Uneffected)
+              - paragraph [ref=e791]: 7E1497FF
+            - generic [ref=e792]:
+              - paragraph [ref=e793]: Jump And You'll Automatically Fly (No Need To Run Anymore, Assuming You Have A Cape!)
+              - paragraph [ref=e794]: 7E13E470
+            - generic [ref=e795]:
+              - paragraph [ref=e796]: Enable Special Stages Extra Features
+              - paragraph [ref=e797]: 7E1F9283
+            - generic [ref=e798]:
+              - paragraph [ref=e799]: Thick Air Cheat
+              - paragraph [ref=e800]: "7E147105"
+            - generic [ref=e801]:
+              - paragraph [ref=e802]: Lukita's Cloud Never Disappears From Under You (You Must Have One To Begin With)
+              - paragraph [ref=e803]: 7E18E0FF
+            - generic [ref=e804]:
+              - paragraph [ref=e805]: Some Enemies Don't Exist
+              - paragraph [ref=e806]: 7E14DCFF
+            - generic [ref=e807]:
+              - paragraph [ref=e808]: Some Enemies Don't Exist (Alternate Code)
+              - paragraph [ref=e809]: 7E14DDFF
+            - generic [ref=e810]:
+              - paragraph [ref=e811]: Baby Yoshi Never Stops Eating
+              - paragraph [ref=e812]: "7E157705"
+            - generic [ref=e813]:
+              - paragraph [ref=e814]: It Takes 1 Eating To Grow A Small Yoshi Up
+              - paragraph [ref=e815]: "7E157704"
+            - generic [ref=e816]:
+              - paragraph [ref=e817]: Put Something In Your Yoshi's Mouth And Your Coin Count Will Skyrocket! (Will Never Let Go Of What's In The Mouth Though)
+              - paragraph [ref=e818]: 7E18AC01
+            - generic [ref=e819]:
+              - paragraph [ref=e820]: In The Boss Room, Controls Vertical Angle of The Fireball 1 (In Wendy's Castle)
+              - paragraph [ref=e821]: 7E00AF00
+            - generic [ref=e822]:
+              - paragraph [ref=e823]: In The Boss Room, Controls Vertical Angle of The Fireball 2 (In Wendy's Castle)
+              - paragraph [ref=e824]: 7E00B100
+            - generic [ref=e825]:
+              - paragraph [ref=e826]: Random Box Codes
+              - paragraph [ref=e827]: 7FCAF601+7FCAF701+7FCB1901+7FCCC301+7FCCDA01+7FCE6901
+            - generic [ref=e828]:
+              - paragraph [ref=e829]: Infinite Coins From Multiple Coin Boxes
+              - paragraph [ref=e830]: 7E186BFF
+            - generic [ref=e831]:
+              - paragraph [ref=e832]: Always On Yoshi In Yoshi's House
+              - paragraph [ref=e833]: 7E00C501
+            - generic [ref=e834]:
+              - paragraph [ref=e835]: Always On Yoshi In Yoshi's Island 1
+              - paragraph [ref=e836]: 7E00C801
+            - generic [ref=e837]:
+              - paragraph [ref=e838]: Always On Yoshi In Yoshi's Island 2/Yellow Switch Palace Part 1
+              - paragraph [ref=e839]: 7E00CA01
+            - generic [ref=e840]:
+              - paragraph [ref=e841]: Always On Yoshi In Yoshi's Island 3
+              - paragraph [ref=e842]: 7E00C601
+            - generic [ref=e843]:
+              - paragraph [ref=e844]: Always On Yoshi In Yoshi's Island 4
+              - paragraph [ref=e845]: 7E00C701
+            - generic [ref=e846]:
+              - paragraph [ref=e847]: Always On Yoshi In Yellow Switch Palace Part 2
+              - paragraph [ref=e848]: 7E00CB01
+            - generic [ref=e849]:
+              - paragraph [ref=e850]: Seizuring Yoshi!
+              - paragraph [ref=e851]: 7E18AD01
+            - generic [ref=e852]:
+              - paragraph [ref=e853]: Screen Push Modifier
+              - paragraph [ref=e854]: 7E007B01
+            - generic [ref=e855]:
+              - paragraph [ref=e856]: Halfway Point Crossed
+              - paragraph [ref=e857]: 7E13CE02
+            - generic [ref=e858]:
+              - paragraph [ref=e859]: Most Enemies Drop
+              - paragraph [ref=e860]: 7E00B055+7E00B155+7E00B255+7E00B355+7E00B455+7E00B555+7E00B655+7E00B755+7E00B855+7E00B955+7E00BA55+7E00BB55+7E00BC55
+            - generic [ref=e861]:
+              - paragraph [ref=e862]: Can't Die On Collision
+              - paragraph [ref=e863]: "7E007100"
+            - generic [ref=e864]:
+              - paragraph [ref=e865]: Any Yoshi Always Has Wings And Flies Without A Shell
+              - paragraph [ref=e866]: 7E141E02
+            - generic [ref=e867]:
+              - paragraph [ref=e868]: Ronzor 1 Not There
+              - paragraph [ref=e869]: "7E152001"
+            - generic [ref=e870]:
+              - paragraph [ref=e871]: Ronzor 2 Not There
+              - paragraph [ref=e872]: "7E152101"
+            - generic [ref=e873]:
+              - paragraph [ref=e874]: Ronzor 3 Not There
+              - paragraph [ref=e875]: "7E152201"
+            - generic [ref=e876]:
+              - paragraph [ref=e877]: Ronzor 4 Not There
+              - paragraph [ref=e878]: "7E152301"
+            - generic [ref=e879]:
+              - paragraph [ref=e880]: Mario Has A Halo On Map
+              - paragraph [ref=e881]: 31B4-6F07
+            - generic [ref=e882]:
+              - paragraph [ref=e883]: Time Doesn't Countdown
+              - paragraph [ref=e884]: 6664-64D7
+            - generic [ref=e885]:
+              - paragraph [ref=e886]: Time Never Runs Out
+              - paragraph [ref=e887]: BB64-64D7
+            - generic [ref=e888]:
+              - paragraph [ref=e889]: Super-Fast Clock
+              - paragraph [ref=e890]: AA64-64D7
+            - generic [ref=e891]:
+              - paragraph [ref=e892]: Start As Red Spasms Mario
+              - paragraph [ref=e893]: 69B7-6F07
+            - generic [ref=e894]:
+              - paragraph [ref=e895]: Start Button Has No Effect
+              - paragraph [ref=e896]: CBC4-6DAD
+            - generic [ref=e897]:
+              - paragraph [ref=e898]: Start And Select Button Combo Makes The Game Pause Forever
+              - paragraph [ref=e899]: CBC5-6DAD
+            - generic [ref=e900]:
+              - paragraph [ref=e901]: Whenever You Land Hard On The Ground Via The Cape, You Die
+              - paragraph [ref=e902]: CBCA-6DAD
+            - generic [ref=e903]:
+              - paragraph [ref=e904]: At The Beginning of A Level You Go To The Yoshi Bonus Stage And When You Fall The Level Is Beaten!
+              - paragraph [ref=e905]: 0BCD-AF6F
+            - generic [ref=e906]:
+              - paragraph [ref=e907]: Can Repeatedly Hit Some Blocks, Some Coins Don't Disappear When Collected (Switch Off For Some Special Blocks To Work As Normal)
+              - paragraph [ref=e908]: 188A-6767
+            - generic [ref=e909]:
+              - paragraph [ref=e910]: Die After Losing One Life
+              - paragraph [ref=e911]: DE22-D4DD
+            - generic [ref=e912]:
+              - paragraph [ref=e913]: Lose Every Life Except One When You Die
+              - paragraph [ref=e914]: BB22-D4DD
+            - generic [ref=e915]:
+              - paragraph [ref=e916]: Says Game Over After Every Life
+              - paragraph [ref=e917]: C022-D4DD
+            - generic [ref=e918]:
+              - paragraph [ref=e919]: Runs Super Fast Without Holding Down Run; Turn Around With Spin Jump
+              - paragraph [ref=e920]: EE28-6F6F
+            - generic [ref=e921]:
+              - paragraph [ref=e922]: Run Super Fast One Direction; Hard To Control
+              - paragraph [ref=e923]: EE2D-AF6F
+            - generic [ref=e924]:
+              - paragraph [ref=e925]: Bogus Jump
+              - paragraph [ref=e926]: DE2C-AF6F
+            - generic [ref=e927]:
+              - paragraph [ref=e928]: Fiying Ability
+              - paragraph [ref=e929]: CF2C-AF6F
+            - generic [ref=e930]:
+              - paragraph [ref=e931]: Skitz Jumps
+              - paragraph [ref=e932]: 842C-AF6F
+            - generic [ref=e933]:
+              - paragraph [ref=e934]: Wierd Jump (Doesn't Work With A Cape)
+              - paragraph [ref=e935]: 3D2C-AF6F
+            - generic [ref=e936]:
+              - paragraph [ref=e937]: Bunny/Moon Jumps
+              - paragraph [ref=e938]: 312C-AF6F
+            - generic [ref=e939]:
+              - paragraph [ref=e940]: To-The-Moon Jump, Flying Helicopter Spin
+              - paragraph [ref=e941]: EE2C-AF6F
+            - generic [ref=e942]:
+              - paragraph [ref=e943]: You Can Climb And Fall Just Like The Original Except Much Faster
+              - paragraph [ref=e944]: E82C-AF64
+            - generic [ref=e945]:
+              - paragraph [ref=e946]: Low Gravity In Levels Over Water
+              - paragraph [ref=e947]: D732-6DAD
+            - generic [ref=e948]:
+              - paragraph [ref=e949]: Dragon Coins Change Little Mario Into Luigi
+              - paragraph [ref=e950]: D332-6DAD
+            - generic [ref=e951]:
+              - paragraph [ref=e952]: Black Mario
+              - paragraph [ref=e953]: 9D32-6DAD
+            - generic [ref=e954]:
+              - paragraph [ref=e955]: After You Get A Powerup, Mario's Head Will Always Face Left, Even While Walking/Flying/Jumping Right!!
+              - paragraph [ref=e956]: 4832-ADAD
+            - generic [ref=e957]:
+              - paragraph [ref=e958]: You Can Swim In Every Level
+              - paragraph [ref=e959]: CBEA-6DAD
+            - generic [ref=e960]:
+              - paragraph [ref=e961]: Super Stomp - Run Into Any Enemy From The Side When Small And You Will Be Propelled Upwards And Stomp Them!
+              - paragraph [ref=e962]: CBEF-6F6F
+            - generic [ref=e963]:
+              - paragraph [ref=e964]: Shrink/Die Instantly
+              - paragraph [ref=e965]: CBEF-67AF
+            - generic [ref=e966]:
+              - paragraph [ref=e967]: Shrink When Hit Ultra Fast
+              - paragraph [ref=e968]: CBE4-6DDF
+            - generic [ref=e969]:
+              - paragraph [ref=e970]: Regular Nighttime
+              - paragraph [ref=e971]: 0DED-AFDF
+            - generic [ref=e972]:
+              - paragraph [ref=e973]: No Background
+              - paragraph [ref=e974]: 07ED-AFDF
+            - generic [ref=e975]:
+              - paragraph [ref=e976]: Nighttime For Pros
+              - paragraph [ref=e977]: 00ED-AFDF
+            - generic [ref=e978]:
+              - paragraph [ref=e979]: Screen Is Upside Down When You Play
+              - paragraph [ref=e980]: 9EED-AF6F
+            - generic [ref=e981]:
+              - paragraph [ref=e982]: Sickening
+              - paragraph [ref=e983]: 40EC-AFDF
+            - generic [ref=e984]:
+              - paragraph [ref=e985]: Always Have A Flying Yoshi
+              - paragraph [ref=e986]: 7E0DFC10
+            - generic [ref=e987]:
+              - paragraph [ref=e988]: Press Select To Release An Extra Life From The Power-Up Box
+              - paragraph [ref=e989]: 7E0DFC20
+            - generic [ref=e990]:
+              - paragraph [ref=e991]: Get 8000 Points From Each Enemy You Stomp
+              - paragraph [ref=e992]: "7E169706"
+            - generic [ref=e993]:
+              - paragraph [ref=e994]: Get 1-Up From Each Enemy You Stomp
+              - paragraph [ref=e995]: "7E169707"
+            - generic [ref=e996]:
+              - paragraph [ref=e997]: Every Berry Makes Yoshi Lay An Egg
+              - paragraph [ref=e998]: 7E18D409
+            - generic [ref=e999]:
+              - paragraph [ref=e1000]: Every Pink Berry Makes Yoshi Lay A Cloud Egg
+              - paragraph [ref=e1001]: 7E18D501
+            - generic [ref=e1002]:
+              - paragraph [ref=e1003]: Start As A Red Faced Mario In Need of A Chiropractor
+              - paragraph [ref=e1004]: CBB7-6D67+D0B7-6DA7+3CB7-6FD7+69B7-6F07
+            - generic [ref=e1005]:
+              - paragraph [ref=e1006]: Start As Sub-Zero Mario - Grab A Mushroom To Become Invincible
+              - paragraph [ref=e1007]: CBB7-6D67+DBB7-6DA7+3CB7-6FD7+69B7-6F07
+            - generic [ref=e1008]:
+              - paragraph [ref=e1009]: Start As Nodding Mario - Grab A Mushroom To Get 1-Up
+              - paragraph [ref=e1010]: CBB7-6D67+FDB7-6DA7+3CB7-6FD7+69B7-6F07
+            - generic [ref=e1011]:
+              - paragraph [ref=e1012]: Start As Mario - Grab A Mushroom And It Turns Into A Pirahna Plant
+              - paragraph [ref=e1013]: CBB7-6D67+47B7-6DA7+3CB7-6FD7+69B7-6F07
+            - generic [ref=e1014]:
+              - paragraph [ref=e1015]: Start As Hovercraft Mario, Get Any Item To Become Invincible
+              - paragraph [ref=e1016]: CBB7-6D67+59B7-6DA7+3CB7-6FD7+69B7-6F07
+            - generic [ref=e1017]:
+              - paragraph [ref=e1018]: Start As Hovercraft Mario, Get Any Item To Put A Shelless Turtle In Reserve
+              - paragraph [ref=e1019]: CBB7-6D67+55B7-6DA7+3CB7-6FD7+69B7-6F07
+            - generic [ref=e1020]:
+              - paragraph [ref=e1021]: Start As Hovercraft Mario, Get A Mushroom To Turn It Into A Pirahna Plant And Get A Giant Bullet Blob In Reserve
+              - paragraph [ref=e1022]: CBB7-6D67+5BB7-6DA7+3CB7-6FD7+69B7-6F07
+            - generic [ref=e1023]:
+              - paragraph [ref=e1024]: Start As Hovercraft Mario, Get A Mushroom To Put A Flying Key In Reserve
+              - paragraph [ref=e1025]: CBB7-6D67+6DB7-6DA7+3CB7-6FD7+69B7-6F07
+            - generic [ref=e1026]:
+              - paragraph [ref=e1027]: Start As Hovercraft Mario, Or A Mushroom To Turn Invincible And Get A Football Koopa In Reserve
+              - paragraph [ref=e1028]: CBB7-6D67+3CB7-6FD7+69B7-6F07
+            - generic [ref=e1029]:
+              - paragraph [ref=e1030]: Start As Hovercraft Mario, Get A Fire Flower To Put A Magic Squished Dinosaur In Reserve Which Will Let You Clear The Round Instantly If Collected
+              - paragraph [ref=e1031]: CBB7-6D67+67B7-6DA7+3CB7-6FD7+69B7-6F07
+            - generic [ref=e1032]:
+              - paragraph [ref=e1033]: Start As Sub-Zero Mario, Get A Fire Flower Or Mushroom To Put A 1-Up Mushroom In Reserve, Use That Or Any Other 1-Up Mushroom To Put A Yoshi In Reserve
+              - paragraph [ref=e1034]: CBB7-6D67+66B7-6DA7+3CB7-6FD7+69B7-6F07
+            - generic [ref=e1035]:
+              - paragraph [ref=e1036]: Start As Mario With A Strange Walk, Get A Mushroom For Yoshi's Thank-You Message
+              - paragraph [ref=e1037]: CBB7-6D67+6BB7-6DA7+3CB7-6FD7+69B7-6F07
+            - generic [ref=e1038]:
+              - paragraph [ref=e1039]: Mario Drives Without Benefit of A Car
+              - paragraph [ref=e1040]: CBB7-6D67+C9B7-6DA7+3CB7-6FD7+69B7-6F07
+            - generic [ref=e1041]:
+              - paragraph [ref=e1042]: Start As Mario With An Extremely Strange Walk, Get A Fire Flower To Put A Glitched Ghost In Reserve
+              - paragraph [ref=e1043]: CBB7-6D67+2DB7-6DA7+3CB7-6FD7+69B7-6F07
+            - generic [ref=e1044]:
+              - paragraph [ref=e1045]: Skip Story Intro
+              - paragraph [ref=e1046]: 6DCB-D40D
+            - generic [ref=e1047]:
+              - paragraph [ref=e1048]: Show Save Prompt After Beating Any Level
+              - paragraph [ref=e1049]: DD34-6D2F+B066-0D2F
+            - generic [ref=e1050]:
+              - paragraph [ref=e1051]: Walk Behind Scenery
+              - paragraph [ref=e1052]: 7E13F902
+            - generic [ref=e1053]:
+              - paragraph [ref=e1054]: Icy Floors
+              - paragraph [ref=e1055]: "7E008680"
+            - generic [ref=e1056]:
+              - paragraph [ref=e1057]: Yoshi Allowed In Ghost Houses & Castles
+              - paragraph [ref=e1058]: 7E1B9B00
+            - generic [ref=e1059]:
+              - paragraph [ref=e1060]: Mario is Always Running
+              - paragraph [ref=e1061]: DD2F-A4DF
+            - generic [ref=e1062]:
+              - paragraph [ref=e1063]: Jump in Midair
+              - paragraph [ref=e1064]: 6D2E-0FDF
+            - generic [ref=e1065]:
+              - paragraph [ref=e1066]: Disable Swimming
+              - paragraph [ref=e1067]: 1031-6DD4+6D30-67A4
+            - generic [ref=e1068]:
+              - paragraph [ref=e1069]: Always Guess Correct At 1up Minigame
+              - paragraph [ref=e1070]: 6DE7-6FDD
+            - generic [ref=e1071]:
+              - paragraph [ref=e1072]: Fireballs Pierce Through Enemies
+              - paragraph [ref=e1073]: C2C3-D466
+            - generic [ref=e1074]:
+              - paragraph [ref=e1075]: Easy Pipes
+              - paragraph [ref=e1076]: DFC7-6451+7DC7-6481
+            - generic [ref=e1077]:
+              - paragraph [ref=e1078]: Play As Luigi
+              - paragraph [ref=e1079]: CE3F-A4DD+CE6A-A407+8FB2-040D
+            - generic [ref=e1080]:
+              - paragraph [ref=e1081]: One Hit Kills Chargin' Chucks
+              - paragraph [ref=e1082]: DDCD-0F06
+            - generic [ref=e1083]:
+              - paragraph [ref=e1084]: Enable Special Stage Mode
+              - paragraph [ref=e1085]: 38BF-6467+F3BF-64A7+CDC5-6DA4+CDC6-0F0C
+            - generic [ref=e1086]:
+              - paragraph [ref=e1087]: Disable Special Stage Mode
+              - paragraph [ref=e1088]: 38BF-6ED7+F3BF-6E07+DDBF-6367
+            - generic [ref=e1089]:
+              - paragraph [ref=e1090]: Enable Special Stage Mode
+              - paragraph [ref=e1091]: 7E1EEB80
+            - generic [ref=e1092]:
+              - paragraph [ref=e1093]: Disable Special Stage Mode
+              - paragraph [ref=e1094]: 7E1EEB00
+            - generic [ref=e1095]:
+              - paragraph [ref=e1096]: Invincibility (mostly)
+              - paragraph [ref=e1097]: 6DE8-040F
+            - generic [ref=e1098]:
+              - paragraph [ref=e1099]: Disable X and Y Buttons Running
+              - paragraph [ref=e1100]: 6D2F-AFAF
+        - generic [ref=e1102]:
+          - heading "Save States" [level=2] [ref=e1103]
+          - generic [ref=e1104]:
+            - generic [ref=e1105]:
+              - generic [ref=e1106]:
+                - paragraph [ref=e1107]:
+                  - text: Auto Save
+                  - generic [ref=e1108]: Auto
+                - paragraph [ref=e1109]: 5d ago · 804.1 KB
+              - generic [ref=e1110]:
+                - button "Share save" [ref=e1111] [cursor=pointer]:
+                  - img [ref=e1112]
+                - button "Download save" [ref=e1118] [cursor=pointer]:
+                  - img [ref=e1119]
+                - button "Delete save" [ref=e1122] [cursor=pointer]:
+                  - img [ref=e1123]
+            - generic [ref=e1126]:
+              - generic [ref=e1127]:
+                - paragraph [ref=e1128]: Backup (offline) - 2026-02-28 12:10:52
+                - paragraph [ref=e1129]: 5d ago · 804.1 KB
+              - generic [ref=e1130]:
+                - button "Share save" [ref=e1131] [cursor=pointer]:
+                  - img [ref=e1132]
+                - button "Download save" [ref=e1138] [cursor=pointer]:
+                  - img [ref=e1139]
+                - button "Delete save" [ref=e1142] [cursor=pointer]:
+                  - img [ref=e1143]
+            - generic [ref=e1146]:
+              - generic [ref=e1147]:
+                - paragraph [ref=e1148]:
+                  - text: Auto Save
+                  - generic [ref=e1149]: Auto
+                - paragraph [ref=e1150]: 5d ago · 804.1 KB
+              - generic [ref=e1151]:
+                - button "Share save" [ref=e1152] [cursor=pointer]:
+                  - img [ref=e1153]
+                - button "Download save" [ref=e1159] [cursor=pointer]:
+                  - img [ref=e1160]
+                - button "Delete save" [ref=e1163] [cursor=pointer]:
+                  - img [ref=e1164]
+            - generic [ref=e1167]:
+              - generic [ref=e1168]:
+                - paragraph [ref=e1169]:
+                  - text: Auto Save
+                  - generic [ref=e1170]: Auto
+                - paragraph [ref=e1171]: 5d ago · 804.1 KB
+              - generic [ref=e1172]:
+                - button "Share save" [ref=e1173] [cursor=pointer]:
+                  - img [ref=e1174]
+                - button "Download save" [ref=e1180] [cursor=pointer]:
+                  - img [ref=e1181]
+                - button "Delete save" [ref=e1184] [cursor=pointer]:
+                  - img [ref=e1185]
+            - generic [ref=e1188]:
+              - generic [ref=e1189]:
+                - paragraph [ref=e1190]:
+                  - text: Auto Save
+                  - generic [ref=e1191]: Auto
+                - paragraph [ref=e1192]: 5d ago · 804.1 KB
+              - generic [ref=e1193]:
+                - button "Share save" [ref=e1194] [cursor=pointer]:
+                  - img [ref=e1195]
+                - button "Download save" [ref=e1201] [cursor=pointer]:
+                  - img [ref=e1202]
+                - button "Delete save" [ref=e1205] [cursor=pointer]:
+                  - img [ref=e1206]
+            - generic [ref=e1209]:
+              - generic [ref=e1210]:
+                - paragraph [ref=e1211]:
+                  - text: Auto Save
+                  - generic [ref=e1212]: Auto
+                - paragraph [ref=e1213]: 5d ago · 804.1 KB
+              - generic [ref=e1214]:
+                - button "Share save" [ref=e1215] [cursor=pointer]:
+                  - img [ref=e1216]
+                - button "Download save" [ref=e1222] [cursor=pointer]:
+                  - img [ref=e1223]
+                - button "Delete save" [ref=e1226] [cursor=pointer]:
+                  - img [ref=e1227]
+        - generic [ref=e1230]:
+          - generic [ref=e1232]:
+            - generic [ref=e1233]:
+              - img [ref=e1234]
+              - heading "Community Saves" [level=2] [ref=e1240]
+            - generic [ref=e1241]:
+              - img [ref=e1243]
+              - heading "No shared saves" [level=3] [ref=e1249]
+              - paragraph [ref=e1250]: Share your save states so others can enjoy them too.
+          - generic [ref=e1252]:
+            - generic [ref=e1253]:
+              - generic [ref=e1254]:
+                - img [ref=e1255]
+                - heading "Challenges" [level=2] [ref=e1257]
+              - button "Create Challenge" [ref=e1259] [cursor=pointer]:
+                - img [ref=e1260]
+                - text: Create Challenge
+            - generic [ref=e1261]:
+              - img [ref=e1263]
+              - heading "No challenges yet" [level=3] [ref=e1265]
+              - paragraph [ref=e1266]: Create a challenge from a save state, or try one in the Spela player app!
+              - button "Create Challenge" [ref=e1268] [cursor=pointer]:
+                - img [ref=e1269]
+                - text: Create Challenge
+  - status

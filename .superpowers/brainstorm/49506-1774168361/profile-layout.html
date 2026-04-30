@@ -1,0 +1,78 @@
+<h2>Developer Profile — What to show?</h2>
+<p class="subtitle">The curated overview should give a taste without overwhelming. Which sections earn their spot?</p>
+
+<div class="options" data-multiselect>
+  <div class="option" data-choice="hero" onclick="toggleSelect(this)" style="border-color: #4ade80; background: rgba(74,222,128,0.05);">
+    <div class="letter" style="background: #4ade80; color: #000;">✓</div>
+    <div class="content">
+      <h3>Hero Banner</h3>
+      <p>Company logo, name, game count, avg rating, platform count. Always shown — this is the identity.</p>
+    </div>
+  </div>
+
+  <div class="option" data-choice="about" onclick="toggleSelect(this)">
+    <div class="letter">?</div>
+    <div class="content">
+      <h3>About section</h3>
+      <p>Company description (from IGDB), founded year, country, website/Wikipedia links. Collapsible — 3 lines with "Show more".</p>
+    </div>
+  </div>
+
+  <div class="option" data-choice="top-games" onclick="toggleSelect(this)">
+    <div class="letter">?</div>
+    <div class="content">
+      <h3>Top Games row (4-6 cards)</h3>
+      <p>Horizontal carousel of their highest-rated games. Uses SpGameCard. "See all N games →" link navigates to full game list.</p>
+    </div>
+  </div>
+
+  <div class="option" data-choice="at-a-glance" onclick="toggleSelect(this)">
+    <div class="letter">?</div>
+    <div class="content">
+      <h3>At a Glance stats</h3>
+      <p>Compact stat chips: total games, active years, primary genre, platforms, avg rating. Currently a scrollable row of cards — could be simplified to inline chips.</p>
+    </div>
+  </div>
+
+  <div class="option" data-choice="your-stats" onclick="toggleSelect(this)">
+    <div class="letter">?</div>
+    <div class="content">
+      <h3>Your Stats card</h3>
+      <p>Personal connection: total play time with this developer, games played, favorites. Only shown if the user has actually played their games.</p>
+    </div>
+  </div>
+
+  <div class="option" data-choice="timeline" onclick="toggleSelect(this)">
+    <div class="letter">?</div>
+    <div class="content">
+      <h3>Release Timeline</h3>
+      <p>Year-grouped release history with game thumbnails. Currently quite tall — could show only the latest 2-3 years with "See full timeline →".</p>
+    </div>
+  </div>
+
+  <div class="option" data-choice="rating-dist" onclick="toggleSelect(this)">
+    <div class="letter">?</div>
+    <div class="content">
+      <h3>Rating Distribution chart</h3>
+      <p>Stacked bar showing Excellent/Good/Average/Poor. Compact visualization — takes little space.</p>
+    </div>
+  </div>
+
+  <div class="option" data-choice="genres" onclick="toggleSelect(this)">
+    <div class="letter">?</div>
+    <div class="content">
+      <h3>Genre Breakdown</h3>
+      <p>Genre chips with game counts. Could double as a filter that links to the games list filtered by genre.</p>
+    </div>
+  </div>
+
+  <div class="option" data-choice="related" onclick="toggleSelect(this)">
+    <div class="letter">?</div>
+    <div class="content">
+      <h3>Related Developers / Publishers</h3>
+      <p>Chip links to other developers/publishers. Lightweight — usually just a few names.</p>
+    </div>
+  </div>
+</div>
+
+<p style="color: #888; margin-top: 24px; font-size: 13px;"><strong>Select all sections you want on the curated profile.</strong> Everything NOT selected gets moved to the full games subscreen, dropped entirely, or accessible via "see more" links. The hero is pre-selected (always shown).</p>

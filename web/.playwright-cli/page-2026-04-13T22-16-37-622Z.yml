@@ -1,0 +1,280 @@
+- generic [ref=e2]:
+  - generic [ref=e3]:
+    - complementary [ref=e4]:
+      - generic [ref=e5]:
+        - img [ref=e7]
+        - generic [ref=e9]: Spela
+      - button "Open search" [ref=e11] [cursor=pointer]:
+        - img [ref=e12]
+        - generic [ref=e15]: Search...
+        - generic [ref=e16]: ⌘K
+      - navigation [ref=e17]:
+        - generic [ref=e18]:
+          - link "Dashboard" [ref=e19] [cursor=pointer]:
+            - /url: /
+            - img [ref=e20]
+            - generic [ref=e25]: Dashboard
+          - link "Explore" [ref=e26] [cursor=pointer]:
+            - /url: /explore
+            - img [ref=e27]
+            - generic [ref=e30]: Explore
+          - link "Library" [ref=e31] [cursor=pointer]:
+            - /url: /consoles
+            - img [ref=e32]
+            - generic [ref=e34]: Library
+          - link "Stats" [ref=e35] [cursor=pointer]:
+            - /url: /stats
+            - img [ref=e36]
+            - generic [ref=e38]: Stats
+          - link "Top Lists" [ref=e39] [cursor=pointer]:
+            - /url: /top-lists
+            - img [ref=e40]
+            - generic [ref=e46]: Top Lists
+          - link "Activity" [ref=e47] [cursor=pointer]:
+            - /url: /activity
+            - img [ref=e48]
+            - generic [ref=e50]: Activity
+          - link "Challenges" [ref=e51] [cursor=pointer]:
+            - /url: /challenges
+            - img [ref=e52]
+            - generic [ref=e54]: Challenges
+          - link "Shared Sessions" [ref=e55] [cursor=pointer]:
+            - /url: /shared-sessions
+            - img [ref=e56]
+            - generic [ref=e61]: Shared Sessions
+          - link "Netplay" [ref=e62] [cursor=pointer]:
+            - /url: /netplay
+            - img [ref=e63]
+            - generic [ref=e67]: Netplay
+          - link "Preferences" [ref=e68] [cursor=pointer]:
+            - /url: /preferences
+            - img [ref=e69]
+            - generic [ref=e70]: Preferences
+          - link "Storage" [ref=e71] [cursor=pointer]:
+            - /url: /storage
+            - img [ref=e72]
+            - generic [ref=e74]: Storage
+        - generic [ref=e75]:
+          - paragraph [ref=e76]: Content
+          - link "Library Scan" [ref=e77] [cursor=pointer]:
+            - /url: /admin/scan
+            - img [ref=e78]
+            - generic [ref=e85]: Library Scan
+          - link "Upload ROMs" [ref=e86] [cursor=pointer]:
+            - /url: /admin/upload
+            - img [ref=e87]
+            - generic [ref=e90]: Upload ROMs
+          - link "ROM Hacks" [ref=e91] [cursor=pointer]:
+            - /url: /admin/rom-hacks
+            - img [ref=e92]
+            - generic [ref=e94]: ROM Hacks
+          - link "Metadata Fix" [ref=e95] [cursor=pointer]:
+            - /url: /admin/metadata
+            - img [ref=e96]
+            - generic [ref=e101]: Metadata Fix
+          - link "Cheats" [ref=e102] [cursor=pointer]:
+            - /url: /admin/cheats
+            - img [ref=e103]
+            - generic [ref=e105]: Cheats
+          - link "BIOS Files" [ref=e106] [cursor=pointer]:
+            - /url: /admin/bios
+            - img [ref=e107]
+            - generic [ref=e110]: BIOS Files
+        - generic [ref=e111]:
+          - paragraph [ref=e112]: System
+          - link "Users" [ref=e113] [cursor=pointer]:
+            - /url: /admin/users
+            - img [ref=e114]
+            - generic [ref=e119]: Users
+          - link "Settings" [ref=e120] [cursor=pointer]:
+            - /url: /admin/settings
+            - img [ref=e121]
+            - generic [ref=e124]: Settings
+          - link "Core Compatibility" [ref=e125] [cursor=pointer]:
+            - /url: /admin/core-compatibility
+            - img [ref=e126]
+            - generic [ref=e133]: Core Compatibility
+          - link "Security Events" [ref=e134] [cursor=pointer]:
+            - /url: /admin/security-events
+            - img [ref=e135]
+            - generic [ref=e137]: Security Events
+      - generic [ref=e139]:
+        - generic [ref=e140]: A
+        - generic [ref=e141]:
+          - paragraph [ref=e142]: admin
+          - paragraph [ref=e143]: owner
+        - button "Logout" [ref=e144] [cursor=pointer]:
+          - img [ref=e145]
+      - paragraph [ref=e149]: vdev
+    - main [ref=e151]:
+      - generic [ref=e152]:
+        - generic [ref=e153]:
+          - generic [ref=e157]:
+            - generic [ref=e158]:
+              - img "Terranigma" [ref=e160]
+              - button "Change cover" [ref=e162] [cursor=pointer]:
+                - img [ref=e163]
+                - text: Change cover
+            - generic [ref=e167]:
+              - generic [ref=e168]:
+                - heading "Terranigma" [level=1] [ref=e169]
+                - generic [ref=e170]:
+                  - generic [ref=e171]: Super Nintendo
+                  - button "Unverified" [ref=e173] [cursor=pointer]:
+                    - generic [ref=e174]:
+                      - img [ref=e175]
+                      - text: Unverified
+                  - generic [ref=e177]:
+                    - generic [ref=e178]:
+                      - img [ref=e179]
+                      - img [ref=e181]
+                      - img [ref=e183]
+                      - img [ref=e185]
+                      - img [ref=e187]
+                    - generic [ref=e189]: 9.0/10
+              - generic [ref=e190]:
+                - button "Play in Browser" [ref=e191] [cursor=pointer]:
+                  - img [ref=e192]
+                  - text: Play in Browser
+                - button "Actions" [ref=e196] [cursor=pointer]:
+                  - img [ref=e197]
+                - generic [ref=e202]:
+                  - img [ref=e203]
+                  - text: Not played yet
+          - button "Back" [ref=e207] [cursor=pointer]:
+            - img [ref=e208]
+            - text: Back
+        - generic [ref=e211]:
+          - generic [ref=e212]:
+            - generic [ref=e214]:
+              - generic [ref=e215]:
+                - img [ref=e216]
+                - heading "Your Rating" [level=3] [ref=e218]
+              - generic [ref=e220]:
+                - button [ref=e221] [cursor=pointer]:
+                  - img [ref=e222]
+                - button [ref=e224] [cursor=pointer]:
+                  - img [ref=e225]
+                - button [ref=e227] [cursor=pointer]:
+                  - img [ref=e228]
+                - button [ref=e230] [cursor=pointer]:
+                  - img [ref=e231]
+                - button [ref=e233] [cursor=pointer]:
+                  - img [ref=e234]
+            - generic [ref=e236]:
+              - paragraph [ref=e237]: Terranigma is an action role-playing game for the SNES. It is one of the few games which has never been released in North America. The Game is about a boy named Ark whose fate is to resurrect the earth and to contribute to the evolution of life.
+              - generic [ref=e238]:
+                - generic [ref=e239]:
+                  - img [ref=e240]
+                  - generic [ref=e244]:
+                    - generic [ref=e245]: Developer
+                    - link "Quintet" [ref=e246] [cursor=pointer]:
+                      - /url: /explore/developers/Quintet
+                - generic [ref=e247]:
+                  - img [ref=e248]
+                  - generic [ref=e252]:
+                    - generic [ref=e253]: Publisher
+                    - link "Nintendo" [ref=e254] [cursor=pointer]:
+                      - /url: /explore/publishers/Nintendo
+                - generic [ref=e255]:
+                  - img [ref=e256]
+                  - generic [ref=e258]:
+                    - generic [ref=e259]: Released
+                    - generic [ref=e260]: 1995-10-20
+                - generic [ref=e261]:
+                  - img [ref=e262]
+                  - generic [ref=e264]:
+                    - generic [ref=e265]: Genre
+                    - generic [ref=e266]: Role-playing (RPG), Adventure
+                - generic [ref=e267]:
+                  - img [ref=e268]
+                  - generic [ref=e273]:
+                    - generic [ref=e274]: Players
+                    - generic [ref=e275]: "1"
+                - generic [ref=e276]:
+                  - img [ref=e277]
+                  - generic [ref=e279]:
+                    - generic [ref=e280]: Size
+                    - generic [ref=e281]: 4.0 MB
+          - generic [ref=e282]:
+            - generic [ref=e283]:
+              - generic [ref=e284]:
+                - img [ref=e285]
+                - heading "Sessions" [level=2] [ref=e289]
+              - button "New Session" [ref=e290] [cursor=pointer]:
+                - img [ref=e291]
+                - text: New Session
+            - generic [ref=e292]:
+              - img [ref=e294]
+              - heading "No sessions yet" [level=3] [ref=e298]
+              - paragraph [ref=e299]: Start a new session to track your progress separately.
+          - generic [ref=e301]:
+            - heading "Play Activity" [level=2] [ref=e302]:
+              - img [ref=e303]
+              - text: Play Activity
+            - generic [ref=e305]:
+              - img [ref=e307]
+              - heading "No one has played this yet" [level=3] [ref=e310]
+              - paragraph [ref=e311]: Be the first to play! Launch this game to start tracking your time.
+          - generic [ref=e312]:
+            - generic [ref=e314]:
+              - generic [ref=e315]:
+                - img [ref=e316]
+                - heading "Ratings" [level=2] [ref=e318]
+              - generic [ref=e319]:
+                - img [ref=e321]
+                - heading "No ratings yet" [level=3] [ref=e323]
+                - paragraph [ref=e324]: Be the first to rate this game.
+            - generic [ref=e326]:
+              - generic [ref=e327]:
+                - img [ref=e328]
+                - heading "Reviews" [level=2] [ref=e330]
+              - generic [ref=e331]:
+                - img [ref=e333]
+                - heading "No reviews yet" [level=3] [ref=e335]
+                - paragraph [ref=e336]: Rate this game and add a review to share your thoughts.
+          - generic [ref=e337]:
+            - heading "Screenshots" [level=2] [ref=e338]
+            - region "Terranigma screenshots carousel" [ref=e339]:
+              - generic [ref=e340]:
+                - button "Screenshot 1 of 10" [ref=e341] [cursor=pointer]:
+                  - img "Terranigma screenshot 1" [ref=e342]
+                - button "Screenshot 2 of 10" [ref=e343] [cursor=pointer]:
+                  - img "Terranigma screenshot 2" [ref=e344]
+                - button "Screenshot 3 of 10" [ref=e345] [cursor=pointer]:
+                  - img "Terranigma screenshot 3"
+                - button "Screenshot 4 of 10" [ref=e346] [cursor=pointer]:
+                  - img "Terranigma screenshot 4"
+                - button "Screenshot 5 of 10" [ref=e347] [cursor=pointer]:
+                  - img "Terranigma screenshot 5"
+                - button "Screenshot 6 of 10" [ref=e348] [cursor=pointer]:
+                  - img "Terranigma screenshot 6"
+                - button "Screenshot 7 of 10" [ref=e349] [cursor=pointer]:
+                  - img "Terranigma screenshot 7"
+                - button "Screenshot 8 of 10" [ref=e350] [cursor=pointer]:
+                  - img "Terranigma screenshot 8"
+                - button "Screenshot 9 of 10" [ref=e351] [cursor=pointer]:
+                  - img "Terranigma screenshot 9"
+                - button "Screenshot 10 of 10" [ref=e352] [cursor=pointer]:
+                  - img "Terranigma screenshot 10"
+              - button "Next screenshot" [ref=e353]:
+                - img [ref=e354]
+            - paragraph [ref=e356]: 1 / 10
+          - generic [ref=e357]:
+            - generic [ref=e359]:
+              - generic [ref=e360]:
+                - img [ref=e361]
+                - heading "Community Saves" [level=2] [ref=e367]
+              - generic [ref=e368]:
+                - img [ref=e370]
+                - heading "No shared saves" [level=3] [ref=e376]
+                - paragraph [ref=e377]: Share your save states so others can enjoy them too.
+            - generic [ref=e379]:
+              - generic [ref=e381]:
+                - img [ref=e382]
+                - heading "Challenges" [level=2] [ref=e384]
+              - generic [ref=e385]:
+                - img [ref=e387]
+                - heading "No challenges yet" [level=3] [ref=e389]
+                - paragraph [ref=e390]: Try a challenge in the Spela player app!
+  - status

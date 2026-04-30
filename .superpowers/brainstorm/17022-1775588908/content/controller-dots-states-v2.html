@@ -1,0 +1,143 @@
+<h2>Controller Dot States</h2>
+<p class="subtitle">The three visual states a player dot can be in</p>
+
+<div style="display: flex; gap: 48px; justify-content: center; margin: 40px 0; font-family: system-ui;">
+  <!-- Disconnected -->
+  <div style="display: flex; flex-direction: column; align-items: center; gap: 12px;">
+    <div style="width: 64px; height: 64px; display: flex; align-items: center; justify-content: center; background: #1a1a2e; border-radius: 12px;">
+      <div style="width: 12px; height: 12px; border-radius: 50%; border: 2px solid #444;"></div>
+    </div>
+    <div style="text-align: center;">
+      <div style="color: #fff; font-size: 14px; font-weight: 600;">Disconnected</div>
+      <div style="color: #888; font-size: 12px; margin-top: 4px;">Hollow ring, dim label</div>
+    </div>
+  </div>
+
+  <!-- Connected (idle) -->
+  <div style="display: flex; flex-direction: column; align-items: center; gap: 12px;">
+    <div style="width: 64px; height: 64px; display: flex; align-items: center; justify-content: center; background: #1a1a2e; border-radius: 12px;">
+      <div style="width: 12px; height: 12px; border-radius: 50%; background: #4ade80; box-shadow: 0 0 6px #4ade8066;"></div>
+    </div>
+    <div style="text-align: center;">
+      <div style="color: #fff; font-size: 14px; font-weight: 600;">Connected (idle)</div>
+      <div style="color: #888; font-size: 12px; margin-top: 4px;">Solid green, subtle glow</div>
+    </div>
+  </div>
+
+  <!-- Active (input) -->
+  <div style="display: flex; flex-direction: column; align-items: center; gap: 12px;">
+    <div style="width: 64px; height: 64px; display: flex; align-items: center; justify-content: center; background: #1a1a2e; border-radius: 12px;">
+      <div style="width: 12px; height: 12px; border-radius: 50%; background: #fff; box-shadow: 0 0 10px rgba(255,255,255,0.6), 0 0 20px rgba(255,255,255,0.3);
+        animation: pulse 0.3s ease-out;"></div>
+    </div>
+    <div style="text-align: center;">
+      <div style="color: #fff; font-size: 14px; font-weight: 600;">Active (input)</div>
+      <div style="color: #888; font-size: 12px; margin-top: 4px;">White flash, bright glow<br>fades back to green after ~300ms</div>
+    </div>
+  </div>
+</div>
+
+<style>
+@keyframes pulse {
+  0% { background: #fff; box-shadow: 0 0 10px rgba(255,255,255,0.6), 0 0 20px rgba(255,255,255,0.3); }
+  100% { background: #4ade80; box-shadow: 0 0 6px #4ade8066; }
+}
+</style>
+
+<h2 style="margin-top: 48px;">The Three Indicator Variants</h2>
+<p class="subtitle">Same state, different layouts for different navigation modes</p>
+
+<div style="display: flex; gap: 32px; justify-content: center; flex-wrap: wrap; margin: 32px 0; font-family: system-ui;">
+
+  <!-- Variant 1: Rail card -->
+  <div style="display: flex; flex-direction: column; align-items: center; gap: 12px;">
+    <div style="background: #1a1a2e; border-radius: 8px; padding: 16px; border: 1px solid #2a2a4a; width: 180px;">
+      <div style="padding: 8px 10px; background: rgba(255,255,255,0.05); border-radius: 8px; border: 1px solid rgba(255,255,255,0.08);">
+        <div style="font-size: 10px; color: #888; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px;">Controllers</div>
+        <div style="display: flex; gap: 6px; align-items: center;">
+          <div style="display: flex; align-items: center; gap: 4px;">
+            <div style="width: 8px; height: 8px; border-radius: 50%; background: #fff; box-shadow: 0 0 6px rgba(255,255,255,0.4);"></div>
+            <span style="font-size: 11px; color: #ccc;">P1</span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 4px;">
+            <div style="width: 8px; height: 8px; border-radius: 50%; background: #4ade80; box-shadow: 0 0 4px #4ade8066;"></div>
+            <span style="font-size: 11px; color: #ccc;">P2</span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 4px;">
+            <div style="width: 8px; height: 8px; border-radius: 50%; border: 1px solid #444;"></div>
+            <span style="font-size: 11px; color: #555;">P3</span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 4px;">
+            <div style="width: 8px; height: 8px; border-radius: 50%; border: 1px solid #444;"></div>
+            <span style="font-size: 11px; color: #555;">P4</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div style="text-align: center;">
+      <div style="color: #fff; font-size: 14px; font-weight: 600;">1. Rail Card</div>
+      <div style="color: #888; font-size: 12px;">Desktop/tablet nav rail<br>Clickable → GamepadConfigScreen</div>
+    </div>
+  </div>
+
+  <!-- Variant 2: Pill extension -->
+  <div style="display: flex; flex-direction: column; align-items: center; gap: 12px;">
+    <div style="background: #1a1a2e; border-radius: 8px; padding: 24px 16px; border: 1px solid #2a2a4a;">
+      <div style="display: flex; align-items: center; gap: 8px; background: rgba(0,0,0,0.6); border-radius: 24px; padding: 8px 16px;">
+        <span style="color: #999; font-size: 12px;">L1</span>
+        <div style="display: flex; gap: 16px;">
+          <div style="width: 20px; height: 20px; background: #fff; border-radius: 4px; opacity: 0.9;"></div>
+          <div style="width: 20px; height: 20px; background: #666; border-radius: 4px;"></div>
+          <div style="width: 20px; height: 20px; background: #666; border-radius: 4px;"></div>
+          <div style="width: 20px; height: 20px; background: #666; border-radius: 4px;"></div>
+          <div style="width: 20px; height: 20px; background: #666; border-radius: 4px;"></div>
+          <div style="width: 20px; height: 20px; background: #666; border-radius: 4px;"></div>
+        </div>
+        <span style="color: #999; font-size: 12px;">R1</span>
+        <!-- Separator -->
+        <div style="width: 1px; height: 18px; background: rgba(255,255,255,0.15); margin: 0 2px;"></div>
+        <!-- Dots -->
+        <div style="display: flex; gap: 6px; align-items: center;">
+          <div style="display: flex; flex-direction: column; align-items: center; gap: 2px;">
+            <div style="width: 8px; height: 8px; border-radius: 50%; background: #4ade80; box-shadow: 0 0 4px #4ade8066;"></div>
+            <span style="font-size: 8px; color: #888;">P1</span>
+          </div>
+          <div style="display: flex; flex-direction: column; align-items: center; gap: 2px;">
+            <div style="width: 8px; height: 8px; border-radius: 50%; background: #4ade80; box-shadow: 0 0 4px #4ade8066;"></div>
+            <span style="font-size: 8px; color: #888;">P2</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div style="text-align: center;">
+      <div style="color: #fff; font-size: 14px; font-weight: 600;">2. Pill Extension</div>
+      <div style="color: #888; font-size: 12px;">Gamepad mode<br>Separator + dots after R1</div>
+    </div>
+  </div>
+
+  <!-- Variant 3: Floating mini-pill -->
+  <div style="display: flex; flex-direction: column; align-items: center; gap: 12px;">
+    <div style="background: #1a1a2e; border-radius: 8px; padding: 24px 32px; border: 1px solid #2a2a4a;">
+      <div style="display: flex; align-items: center; gap: 8px; background: rgba(0,0,0,0.6); border-radius: 24px; padding: 8px 14px;">
+        <div style="display: flex; gap: 8px; align-items: center;">
+          <div style="display: flex; flex-direction: column; align-items: center; gap: 2px;">
+            <div style="width: 8px; height: 8px; border-radius: 50%; background: #4ade80; box-shadow: 0 0 4px #4ade8066;"></div>
+            <span style="font-size: 8px; color: #888;">P1</span>
+          </div>
+          <div style="display: flex; flex-direction: column; align-items: center; gap: 2px;">
+            <div style="width: 8px; height: 8px; border-radius: 50%; background: #4ade80; box-shadow: 0 0 4px #4ade8066;"></div>
+            <span style="font-size: 8px; color: #888;">P2</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div style="text-align: center;">
+      <div style="color: #fff; font-size: 14px; font-weight: 600;">3. Floating Mini-Pill</div>
+      <div style="color: #888; font-size: 12px;">Phone with 2+ controllers<br>Top-center, no nav icons</div>
+    </div>
+  </div>
+</div>
+
+<div class="section" style="margin-top: 24px;">
+  <p class="subtitle"><strong>Labels:</strong> All variants use P1, P2, P3, P4 consistently. Rail card shows all 4 slots. Pill variants show only connected ports.</p>
+</div>

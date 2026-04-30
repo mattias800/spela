@@ -243,9 +243,23 @@ fun InGameOverlay(
     // everything else so the user picks a slot rather than performing
     // a free-form named save.
     state.slotPickerMode?.let { mode ->
-        val slotCount = when (state.consoleSaveStatePolicyTier) {
+        val tier = state.consoleSaveStatePolicyTier
+        val slotCount = when (tier) {
             com.spela.player.domain.model.SaveStatePolicyTier.Large -> 5
             else -> 10
+        }
+        // Medium tier (10 slots) gets the "Save with name…" link as a
+        // secondary affordance under the slot grid (#830). Large tier
+        // is slot-only by phase 5 spec — pass null to hide the link.
+        // Small tier never opens the slot picker (named saves are
+        // already its primary metaphor).
+        val onSaveWithName: (() -> Unit)? = if (
+            tier == com.spela.player.domain.model.SaveStatePolicyTier.Medium &&
+            mode == com.spela.player.presentation.state.SlotPickerMode.Save
+        ) {
+            { viewModel.onIntent(EmulationIntent.ShowNamedSaveDialog) }
+        } else {
+            null
         }
         com.spela.player.presentation.ui.feature.ingame.InGameSlotPickerDialog(
             mode = mode,
@@ -254,7 +268,18 @@ fun InGameOverlay(
             onSaveToSlot = { slot -> viewModel.onIntent(EmulationIntent.SaveToSlot(slot)) },
             onLoadFromSlot = { slot -> viewModel.onIntent(EmulationIntent.LoadFromSlot(slot)) },
             onDismiss = { viewModel.onIntent(EmulationIntent.DismissSlotPicker) },
+            onSaveWithName = onSaveWithName,
             onSlotLongPress = { slot -> viewModel.onIntent(EmulationIntent.ShowSlotActionsSheet(slot)) },
+        )
+    }
+
+    // Named-save dialog reachable from the slot picker on medium tier
+    // (#830). Slot-primary stays the default; this is the power-user
+    // marker affordance.
+    if (state.showNamedSaveDialog) {
+        com.spela.player.presentation.ui.feature.ingame.InGameNamedSaveDialog(
+            onConfirm = { name -> viewModel.onIntent(EmulationIntent.SaveWithName(name)) },
+            onDismiss = { viewModel.onIntent(EmulationIntent.DismissNamedSaveDialog) },
         )
     }
 

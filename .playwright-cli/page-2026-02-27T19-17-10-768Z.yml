@@ -1,0 +1,61 @@
+- generic [ref=e2]:
+  - generic [ref=e347]:
+    - generic [ref=e348]:
+      - generic [ref=e349]:
+        - button "Back" [ref=e350] [cursor=pointer]:
+          - img [ref=e351]
+          - text: Back
+        - generic [ref=e353]: Metal Gear Solid
+      - generic [ref=e354]:
+        - button "Save State" [ref=e355] [cursor=pointer]:
+          - img [ref=e356]
+        - button "Load State" [ref=e360] [cursor=pointer]:
+          - img [ref=e361]
+        - button "Fullscreen" [ref=e363] [cursor=pointer]:
+          - img [ref=e364]
+    - iframe [active] [ref=e370]:
+      - generic [active] [ref=f1e2]:
+        - generic:
+          - button "Restart":
+            - img
+            - generic: Restart
+          - button "Pause":
+            - img
+            - generic: Pause
+          - button "Save State":
+            - img
+            - generic: Save State
+          - button "Load State":
+            - img
+            - generic: Load State
+          - button "Control Settings":
+            - img
+            - generic: Control Settings
+          - button "Cheats":
+            - img
+            - generic: Cheats
+          - button "Cache Manager":
+            - img
+            - generic: Cache Manager
+          - button "Export Save File":
+            - img
+            - generic: Export Save File
+          - button "Import Save File":
+            - img
+            - generic: Import Save File
+          - generic:
+            - button "Mute":
+              - img
+              - generic: Mute
+            - slider "Volume": "0.5"
+          - button "Context Menu":
+            - img
+            - generic: Context Menu
+          - generic:
+            - button "Settings":
+              - img
+              - generic: Settings
+          - button "Enter Fullscreen":
+            - img
+            - generic: Enter Fullscreen
+  - status

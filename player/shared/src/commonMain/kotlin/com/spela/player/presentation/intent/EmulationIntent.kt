@@ -98,6 +98,15 @@ sealed interface EmulationIntent {
     /** Dismiss the slot-primary slot picker modal without saving or
      *  loading. The user is bailing out of the choice. See #804 phase 5. */
     data object DismissSlotPicker : EmulationIntent
+    /** Open the medium-tier "Save with name…" dialog from the slot
+     *  picker. Power-user escape hatch for deliberate named saves
+     *  on top of the slot grid. See #830. */
+    data object ShowNamedSaveDialog : EmulationIntent
+    data object DismissNamedSaveDialog : EmulationIntent
+    /** Commit a named save with the user-chosen [name]. Routes
+     *  through the regular SaveManager.saveState() path so the
+     *  deferred-sync queue handles upload + retry. See #830. */
+    data class SaveWithName(val name: String) : EmulationIntent
     /** Long-press on a filled slot cell — opens the actions bottom
      *  sheet (Rename / Delete / Cancel). See #831. */
     data class ShowSlotActionsSheet(val slot: Int) : EmulationIntent

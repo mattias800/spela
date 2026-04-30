@@ -1,0 +1,210 @@
+- generic [ref=e2]:
+  - generic [ref=e3]:
+    - complementary [ref=e4]:
+      - generic [ref=e5]:
+        - img [ref=e7]
+        - generic [ref=e9]: Spela
+      - navigation [ref=e10]:
+        - generic [ref=e11]:
+          - link "Dashboard" [ref=e12] [cursor=pointer]:
+            - /url: /
+            - img [ref=e13]
+            - generic [ref=e18]: Dashboard
+          - link "Library" [ref=e19] [cursor=pointer]:
+            - /url: /consoles
+            - img [ref=e20]
+            - generic [ref=e22]: Library
+          - link "Stats" [ref=e23] [cursor=pointer]:
+            - /url: /stats
+            - img [ref=e24]
+            - generic [ref=e26]: Stats
+          - link "Top Lists" [ref=e27] [cursor=pointer]:
+            - /url: /top-lists
+            - img [ref=e28]
+            - generic [ref=e34]: Top Lists
+          - link "Activity" [ref=e35] [cursor=pointer]:
+            - /url: /activity
+            - img [ref=e36]
+            - generic [ref=e38]: Activity
+          - link "Challenges" [ref=e39] [cursor=pointer]:
+            - /url: /challenges
+            - img [ref=e40]
+            - generic [ref=e42]: Challenges
+          - link "Shared Sessions" [ref=e43] [cursor=pointer]:
+            - /url: /shared-sessions
+            - img [ref=e44]
+            - generic [ref=e49]: Shared Sessions
+          - link "Netplay" [ref=e50] [cursor=pointer]:
+            - /url: /netplay
+            - img [ref=e51]
+            - generic [ref=e55]: Netplay
+          - link "Preferences" [ref=e56] [cursor=pointer]:
+            - /url: /preferences
+            - img [ref=e57]
+            - generic [ref=e58]: Preferences
+        - generic [ref=e59]:
+          - paragraph [ref=e60]: Admin
+          - link "Users" [ref=e61] [cursor=pointer]:
+            - /url: /admin/users
+            - img [ref=e62]
+            - generic [ref=e67]: Users
+          - link "Settings" [ref=e68] [cursor=pointer]:
+            - /url: /admin/settings
+            - img [ref=e69]
+            - generic [ref=e72]: Settings
+          - link "BIOS Files" [ref=e73] [cursor=pointer]:
+            - /url: /admin/bios
+            - img [ref=e74]
+            - generic [ref=e77]: BIOS Files
+          - link "Upload ROMs" [ref=e78] [cursor=pointer]:
+            - /url: /admin/upload
+            - img [ref=e79]
+            - generic [ref=e82]: Upload ROMs
+          - link "Library Scan" [ref=e83] [cursor=pointer]:
+            - /url: /admin/scan
+            - img [ref=e84]
+            - generic [ref=e91]: Library Scan
+          - link "Metadata Fix" [ref=e92] [cursor=pointer]:
+            - /url: /admin/metadata
+            - img [ref=e93]
+            - generic [ref=e98]: Metadata Fix
+          - link "Cheats" [ref=e99] [cursor=pointer]:
+            - /url: /admin/cheats
+            - img [ref=e100]
+            - generic [ref=e102]: Cheats
+      - generic [ref=e104]:
+        - generic [ref=e105]: A
+        - generic [ref=e106]:
+          - paragraph [ref=e107]: admin
+          - paragraph [ref=e108]: owner
+        - button "Logout" [ref=e109] [cursor=pointer]:
+          - img [ref=e110]
+      - paragraph [ref=e114]: vdev
+    - main [ref=e116]:
+      - generic [ref=e117]:
+        - generic [ref=e118]:
+          - heading "Stats" [level=1] [ref=e119]:
+            - img [ref=e120]
+            - text: Stats
+          - paragraph [ref=e122]: See how you stack up against other players.
+        - generic [ref=e123]:
+          - generic [ref=e124]:
+            - img [ref=e125]
+            - heading "Your Activity" [level=2] [ref=e127]
+          - img "Play activity heatmap" [ref=e130]:
+            - generic [ref=e131]: Mar
+            - generic [ref=e132]: Apr
+            - generic [ref=e133]: May
+            - generic [ref=e134]: Jun
+            - generic [ref=e135]: Jul
+            - generic [ref=e136]: Aug
+            - generic [ref=e137]: Sep
+            - generic [ref=e138]: Oct
+            - generic [ref=e139]: Nov
+            - generic [ref=e140]: Dec
+            - generic [ref=e141]: Jan
+            - generic [ref=e142]: Feb
+            - generic [ref=e143]: Mar
+            - generic [ref=e144]: Mon
+            - generic [ref=e145]: Wed
+            - generic [ref=e146]: Fri
+            - generic [ref=e511]: Less
+            - generic [ref=e517]: More
+        - generic [ref=e518]:
+          - generic [ref=e519]:
+            - img [ref=e520]
+            - heading "Hall of Fame" [level=2] [ref=e526]
+          - generic [ref=e527]:
+            - link "1 Aladdin Aladdin Super Nintendo 2h 0m 1 player" [ref=e528] [cursor=pointer]:
+              - /url: /games/80
+              - generic [ref=e529]: "1"
+              - img "Aladdin" [ref=e531]
+              - generic [ref=e532]:
+                - paragraph [ref=e533]: Aladdin
+                - generic [ref=e534]: Super Nintendo
+              - generic [ref=e535]: 2h 0m
+              - generic [ref=e536]: 1 player
+            - link "2 The Legend Of Zelda - The Wind Waker The Legend Of Zelda - The Wind Waker Nintendo GameCube 1h 52m 1 player" [ref=e537] [cursor=pointer]:
+              - /url: /games/36
+              - generic [ref=e538]: "2"
+              - img "The Legend Of Zelda - The Wind Waker" [ref=e540]
+              - generic [ref=e541]:
+                - paragraph [ref=e542]: The Legend Of Zelda - The Wind Waker
+                - generic [ref=e543]: Nintendo GameCube
+              - generic [ref=e544]: 1h 52m
+              - generic [ref=e545]: 1 player
+            - link "3 Super Mario 64 DS Super Mario 64 DS Nintendo DS 3m 1 player" [ref=e546] [cursor=pointer]:
+              - /url: /games/65
+              - generic [ref=e547]: "3"
+              - img "Super Mario 64 DS" [ref=e549]
+              - generic [ref=e550]:
+                - paragraph [ref=e551]: Super Mario 64 DS
+                - generic [ref=e552]: Nintendo DS
+              - generic [ref=e553]: 3m
+              - generic [ref=e554]: 1 player
+            - link "4 Super Mario World Super Mario World Super Nintendo 2m 1 player" [ref=e555] [cursor=pointer]:
+              - /url: /games/98
+              - generic [ref=e556]: "4"
+              - img "Super Mario World" [ref=e558]
+              - generic [ref=e559]:
+                - paragraph [ref=e560]: Super Mario World
+                - generic [ref=e561]: Super Nintendo
+              - generic [ref=e562]: 2m
+              - generic [ref=e563]: 1 player
+            - link "5 SSX SSX PlayStation 2 2m 1 player" [ref=e564] [cursor=pointer]:
+              - /url: /games/78
+              - generic [ref=e565]: "5"
+              - img "SSX" [ref=e567]
+              - generic [ref=e568]:
+                - paragraph [ref=e569]: SSX
+                - generic [ref=e570]: PlayStation 2
+              - generic [ref=e571]: 2m
+              - generic [ref=e572]: 1 player
+            - link "6 Metal Gear Solid Metal Gear Solid PlayStation 1m 1 player" [ref=e573] [cursor=pointer]:
+              - /url: /games/1
+              - generic [ref=e574]: "6"
+              - img "Metal Gear Solid" [ref=e576]
+              - generic [ref=e577]:
+                - paragraph [ref=e578]: Metal Gear Solid
+                - generic [ref=e579]: PlayStation
+              - generic [ref=e580]: 1m
+              - generic [ref=e581]: 1 player
+            - link "7 Tony Hawk's Pro Skater 2 Tony Hawk's Pro Skater 2 Dreamcast < 1 min 1 player" [ref=e582] [cursor=pointer]:
+              - /url: /games/104
+              - generic [ref=e583]: "7"
+              - img "Tony Hawk's Pro Skater 2" [ref=e585]
+              - generic [ref=e586]:
+                - paragraph [ref=e587]: Tony Hawk's Pro Skater 2
+                - generic [ref=e588]: Dreamcast
+              - generic [ref=e589]: < 1 min
+              - generic [ref=e590]: 1 player
+            - link "8 Castlevania Castlevania Nintendo Entertainment System < 1 min 1 player" [ref=e591] [cursor=pointer]:
+              - /url: /games/68
+              - generic [ref=e592]: "8"
+              - img "Castlevania" [ref=e594]
+              - generic [ref=e595]:
+                - paragraph [ref=e596]: Castlevania
+                - generic [ref=e597]: Nintendo Entertainment System
+              - generic [ref=e598]: < 1 min
+              - generic [ref=e599]: 1 player
+            - link "9 Castlevania - Aria of Sorrow Castlevania - Aria of Sorrow Game Boy Advance < 1 min 1 player" [ref=e600] [cursor=pointer]:
+              - /url: /games/2
+              - generic [ref=e601]: "9"
+              - img "Castlevania - Aria of Sorrow" [ref=e603]
+              - generic [ref=e604]:
+                - paragraph [ref=e605]: Castlevania - Aria of Sorrow
+                - generic [ref=e606]: Game Boy Advance
+              - generic [ref=e607]: < 1 min
+              - generic [ref=e608]: 1 player
+        - generic [ref=e609]:
+          - generic [ref=e610]:
+            - img [ref=e611]
+            - heading "Most Active Players" [level=2] [ref=e616]
+          - generic [ref=e618]:
+            - generic [ref=e619]: "1"
+            - generic [ref=e620]: A
+            - generic [ref=e621]: admin
+            - generic [ref=e622]: 4h 0m
+            - generic [ref=e623]: 10 games
+            - generic [ref=e624]: 8h ago
+  - status
