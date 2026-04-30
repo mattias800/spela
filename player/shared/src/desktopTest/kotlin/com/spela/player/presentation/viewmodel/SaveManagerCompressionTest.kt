@@ -103,6 +103,7 @@ class SaveManagerCompressionTest {
             scope = scope,
             sessionRepository = sessionRepo,
             fileStorage = storage,
+            pendingUploadRepository = com.spela.player.presentation.viewmodel.emulation.StubPendingSaveUploadRepository(),
         )
         manager.currentSessionId = "s1"
         manager.currentCoreName = "nestopia"

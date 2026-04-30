@@ -138,6 +138,14 @@ data class EmulationState(
      *  Auto-cleared by SaveManager ~1.5 s after the upload settles. */
     val saveStateJustSucceeded: Boolean = false,
     /**
+     * True when one or more save uploads are sitting in the persistent
+     * pending-upload queue (#804 phase 6). The Save button shows
+     * "Saved locally · syncing" while this is set so the user knows
+     * their save is captured even though the upload hasn't completed
+     * yet. SaveManager flips this off when the queue empties.
+     */
+    val hasPendingUploads: Boolean = false,
+    /**
      * Non-blocking warning shown when the session's pinned core
      * version (see `GameSession.pinnedCoreSha256`) is no longer
      * available on the server (pruned from history retention) and

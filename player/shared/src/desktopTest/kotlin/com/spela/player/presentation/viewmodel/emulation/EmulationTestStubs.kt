@@ -612,6 +612,79 @@ private class StubFileStorage : com.spela.player.util.FileStorage {
     override suspend fun sha256File(path: String): String? = null
 }
 
+/**
+ * In-memory pending-upload queue for SaveManager tests (#804 phase 6).
+ * Mirrors the SQLDelight repo's contract — auto-incremented ids, FIFO
+ * ordering — without standing up a real database.
+ */
+class StubPendingSaveUploadRepository :
+    com.spela.player.domain.repository.PendingSaveUploadRepository {
+
+    private val rows = mutableListOf<com.spela.player.domain.model.PendingSaveUpload>()
+    private var nextId = 1L
+
+    override suspend fun enqueue(
+        sessionId: String,
+        kind: com.spela.player.domain.model.PendingUploadKind,
+        slot: Int?,
+        name: String,
+        coreName: String,
+        compression: String,
+        filePath: String,
+        fileSize: Long,
+        screenshotPath: String?,
+        createdAt: Long,
+    ): Long {
+        val id = nextId++
+        rows.add(
+            com.spela.player.domain.model.PendingSaveUpload(
+                id = id,
+                sessionId = sessionId,
+                kind = kind,
+                slot = slot,
+                name = name,
+                coreName = coreName,
+                compression = compression,
+                filePath = filePath,
+                fileSize = fileSize,
+                screenshotPath = screenshotPath,
+                createdAt = createdAt,
+                retryCount = 0,
+                lastError = null,
+            ),
+        )
+        return id
+    }
+
+    override suspend fun getAll(): List<com.spela.player.domain.model.PendingSaveUpload> =
+        rows.sortedWith(compareBy({ it.createdAt }, { it.id }))
+
+    override suspend fun getForSession(
+        sessionId: String,
+    ): List<com.spela.player.domain.model.PendingSaveUpload> =
+        rows.filter { it.sessionId == sessionId }
+            .sortedWith(compareBy({ it.createdAt }, { it.id }))
+
+    override suspend fun getById(
+        id: Long,
+    ): com.spela.player.domain.model.PendingSaveUpload? =
+        rows.find { it.id == id }
+
+    override suspend fun count(): Long = rows.size.toLong()
+
+    override suspend fun delete(id: Long) {
+        rows.removeAll { it.id == id }
+    }
+
+    override suspend fun markRetry(id: Long, lastError: String?) {
+        val idx = rows.indexOfFirst { it.id == id }
+        if (idx >= 0) {
+            val r = rows[idx]
+            rows[idx] = r.copy(retryCount = r.retryCount + 1, lastError = lastError)
+        }
+    }
+}
+
 // ── ViewModel Builder ───────────────────────────────────────────────────────
 
 /**
@@ -692,6 +765,7 @@ class EmulationViewModelTestBuilder {
             scope = vmScope,
             sessionRepository = sessionRepository,
             fileStorage = StubFileStorage(),
+            pendingUploadRepository = StubPendingSaveUploadRepository(),
         )
         saveManager = saveManagerLocal
         val challengeManager = ChallengeManager(

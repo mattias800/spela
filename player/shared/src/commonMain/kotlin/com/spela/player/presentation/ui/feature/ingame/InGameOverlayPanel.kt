@@ -277,6 +277,7 @@ internal fun InGameOverlayPanel(
                             isSaveInProgress = state.isSaveInProgress,
                             saveStateError = state.saveStateError,
                             saveStateJustSucceeded = state.saveStateJustSucceeded,
+                            hasPendingUploads = state.hasPendingUploads,
                             onSave = { viewModel.onIntent(EmulationIntent.SaveState) },
                             onLoad = { viewModel.onIntent(EmulationIntent.LoadState) },
                             onScreenshot = { viewModel.onIntent(EmulationIntent.TakeScreenshot) },
@@ -386,6 +387,7 @@ internal fun RowScope.OverlayActionButtons(
     isSaveInProgress: Boolean = false,
     saveStateError: String? = null,
     saveStateJustSucceeded: Boolean = false,
+    hasPendingUploads: Boolean = false,
     onSave: () -> Unit,
     onLoad: () -> Unit,
     onScreenshot: () -> Unit,
@@ -416,10 +418,19 @@ internal fun RowScope.OverlayActionButtons(
                 saveLabel = "Saving…"
                 saveIcon = Icons.Filled.Sync
             }
+            hasPendingUploads -> {
+                // The bytes are on disk + queued; the upload runs in
+                // the background. Phase 6 of #804 — the user isn't
+                // blocked on the network round-trip. The label flips
+                // to "Synced" via saveStateJustSucceeded once the
+                // queue empties.
+                saveLabel = "Saved locally · syncing"
+                saveIcon = Icons.Filled.Sync
+            }
             saveStateJustSucceeded -> {
                 // "Synced" rather than just "Saved" — communicates that
                 // the bytes reached the server, not just local. SaveManager
-                // only flips this flag after the upload's onSuccess fires,
+                // only flips this flag after the upload drain settles,
                 // so the label is accurate. (#803)
                 saveLabel = "Synced"
                 saveIcon = Icons.Filled.CloudDone

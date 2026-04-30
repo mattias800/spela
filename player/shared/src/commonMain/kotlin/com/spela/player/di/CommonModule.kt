@@ -183,6 +183,7 @@ val commonModule = module {
             scope = get(),
             sessionRepository = get(),
             fileStorage = get(),
+            pendingUploadRepository = get(),
         )
     }
     single {
