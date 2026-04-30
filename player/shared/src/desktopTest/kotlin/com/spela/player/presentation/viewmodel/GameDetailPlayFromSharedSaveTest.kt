@@ -176,16 +176,16 @@ private class FakePlayFromSharedSaveSessionRepository : SessionRepository {
     override suspend fun getSessionSaves(sessionId: String) = Result.success(emptyList<SaveState>())
     override suspend fun uploadSessionSave(sessionId: String, name: String, data: ByteArray, screenshot: ByteArray?, coreName: String) =
         Result.success(SaveState(id = "1", name = name))
-    override suspend fun uploadSessionSaveFromFile(sessionId: String, name: String, savePath: String, saveSize: Long, screenshot: ByteArray?, coreName: String) =
+    override suspend fun uploadSessionSaveFromFile(sessionId: String, name: String, savePath: String, saveSize: Long, screenshot: ByteArray?, coreName: String, compression: String) =
         Result.success(SaveState(id = "1", name = name))
     override suspend fun downloadSessionSave(sessionId: String, saveId: String) = Result.success(byteArrayOf())
     override suspend fun uploadSessionAutoSave(sessionId: String, data: ByteArray, screenshot: ByteArray?, coreName: String) = Result.success(Unit)
-    override suspend fun uploadSessionAutoSaveFromFile(sessionId: String, savePath: String, saveSize: Long, screenshot: ByteArray?, coreName: String) = Result.success(Unit)
+    override suspend fun uploadSessionAutoSaveFromFile(sessionId: String, savePath: String, saveSize: Long, screenshot: ByteArray?, coreName: String, compression: String) = Result.success(Unit)
     override suspend fun downloadSessionAutoSave(sessionId: String) = Result.failure<ByteArray>(Exception("stub"))
     override suspend fun downloadSessionAutoSaveToFile(sessionId: String, outputPath: String) = Result.failure<Unit>(Exception("stub"))
     override suspend fun uploadSlotSave(sessionId: String, slot: Int, data: ByteArray, screenshot: ByteArray?, coreName: String) =
         Result.success(SaveState(id = "1", name = "Slot $slot"))
-    override suspend fun uploadSlotSaveFromFile(sessionId: String, slot: Int, savePath: String, saveSize: Long, screenshot: ByteArray?, coreName: String) =
+    override suspend fun uploadSlotSaveFromFile(sessionId: String, slot: Int, savePath: String, saveSize: Long, screenshot: ByteArray?, coreName: String, compression: String) =
         Result.success(SaveState(id = "1", name = "Slot $slot"))
     override suspend fun downloadSlotSave(sessionId: String, slot: Int) = Result.failure<ByteArray>(Exception("stub"))
     override suspend fun uploadSessionSram(sessionId: String, data: ByteArray, coreName: String) = Result.success(Unit)

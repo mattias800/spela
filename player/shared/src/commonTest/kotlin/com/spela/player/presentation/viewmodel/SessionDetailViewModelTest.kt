@@ -227,6 +227,7 @@ private class FakeSessionRepo : SessionRepository {
         saveSize: Long,
         screenshot: ByteArray?,
         coreName: String,
+        compression: String,
     ): Result<SaveState> = Result.failure(UnsupportedOperationException("not exercised"))
 
     override suspend fun downloadSessionSave(sessionId: String, saveId: String): Result<ByteArray> =
@@ -245,6 +246,7 @@ private class FakeSessionRepo : SessionRepository {
         saveSize: Long,
         screenshot: ByteArray?,
         coreName: String,
+        compression: String,
     ): Result<Unit> = Result.failure(UnsupportedOperationException("not exercised"))
 
     override suspend fun downloadSessionAutoSave(sessionId: String): Result<ByteArray> =
@@ -268,6 +270,7 @@ private class FakeSessionRepo : SessionRepository {
         saveSize: Long,
         screenshot: ByteArray?,
         coreName: String,
+        compression: String,
     ): Result<SaveState> = Result.failure(UnsupportedOperationException("not exercised"))
 
     override suspend fun downloadSlotSave(sessionId: String, slot: Int): Result<ByteArray> =

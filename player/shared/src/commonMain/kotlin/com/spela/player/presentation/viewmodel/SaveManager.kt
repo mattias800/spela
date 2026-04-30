@@ -420,7 +420,7 @@ class SaveManager(
             if (sessionId != null) {
                 val screenshot = screenshotCapture?.captureScreenshot()
                 val result = sessionRepository.uploadSessionAutoSaveFromFile(
-                    sessionId, staged.path, staged.size, screenshot, currentCoreName,
+                    sessionId, staged.path, staged.size, screenshot, currentCoreName, staged.compression,
                 )
                 if (result.isSuccess) {
                     println("[SaveManager] autoSaveOnStop: upload OK")
@@ -453,6 +453,15 @@ class SaveManager(
         /** How long the "Saved" checkmark stays on the in-game overlay's
          *  Save button after a successful upload (#803). */
         const val SAVE_SUCCESS_FLASH_MS = 1_500L
+
+        /**
+         * Saves smaller than this don't get gzipped — for a few KB of
+         * SRAM-sized state, the deflater frame and CPU spend cost more
+         * than the bandwidth they save. 32 KiB happens to sit between
+         * a fully-loaded NES state (~4-8 KB) and the smallest SNES
+         * state. See #804 phase 2.
+         */
+        const val GZIP_MIN_BYTES: Long = 32 * 1024L
     }
 
     fun saveState() {
@@ -503,7 +512,7 @@ class SaveManager(
                 if (sessionId != null) {
                     val screenshot = screenshotCapture?.captureScreenshot()
                     sessionRepository.uploadSessionSaveFromFile(
-                        sessionId, "Manual Save", staged.path, staged.size, screenshot, currentCoreName,
+                        sessionId, "Manual Save", staged.path, staged.size, screenshot, currentCoreName, staged.compression,
                     ).fold(
                         onSuccess = {
                             withContext(dispatchers.main) {
@@ -573,9 +582,15 @@ class SaveManager(
     /**
      * Result of [stageSaveToTempFile]. The file at [path] is owned by the
      * caller — they must invoke [cleanup] after the upload regardless of
-     * outcome to avoid leaking temp files.
+     * outcome to avoid leaking temp files. [compression] is the codec
+     * applied to the bytes at [path] (`""` raw or `"gzip"`); see #804.
      */
-    private data class StagedSave(val path: String, val size: Long, val cleanup: suspend () -> Unit)
+    private data class StagedSave(
+        val path: String,
+        val size: Long,
+        val compression: String,
+        val cleanup: suspend () -> Unit,
+    )
 
     /**
      * Serialize the current core state to a temp file using the native
@@ -586,24 +601,70 @@ class SaveManager(
      * Returns null when serialization fails. When the controller has no
      * native fast path (desktop / fakes), this still works — it falls
      * back to [serialize] + writeFile so the caller's contract holds.
+     *
+     * After the raw bytes are on disk we gzip them in a sibling file and
+     * upload the compressed copy, tagging it with `compression="gzip"`
+     * (#804 phase 2). Tiny saves below [GZIP_MIN_BYTES] skip gzip — the
+     * deflater's frame overhead can outweigh the saving on a few KB SRAM-
+     * sized states. If gzip itself fails for any reason we fall back to
+     * uploading the uncompressed staging file so a transient I/O error
+     * never blocks a save.
      */
     private suspend fun stageSaveToTempFile(): StagedSave? {
         val tempPath = "${fileStorage.getSavesDir()}/.tmp-save-${currentSessionId ?: "none"}"
-        val cleanup: suspend () -> Unit = { runCatching { fileStorage.deleteFile(tempPath) } }
-        val written = libretroController.serializeToFile(tempPath)
-        if (written != null && written > 0) {
-            return StagedSave(tempPath, written, cleanup)
+        val cleanupRaw: suspend () -> Unit = { runCatching { fileStorage.deleteFile(tempPath) } }
+        val rawSize: Long? = run {
+            val written = libretroController.serializeToFile(tempPath)
+            if (written != null && written > 0) {
+                written
+            } else {
+                // Native fast path unavailable — fall back to in-memory
+                // serialize and write through. On JVM-only platforms
+                // (desktop) this is fine; they have plenty of heap.
+                val bytes = libretroController.serialize() ?: return@run null
+                runCatching {
+                    fileStorage.writeFile(tempPath, bytes)
+                    bytes.size.toLong()
+                }.getOrNull()
+            }
         }
-        // Native fast path unavailable — fall back to in-memory serialize
-        // and write through. On JVM-only platforms (desktop) this is fine;
-        // they have plenty of heap.
-        val bytes = libretroController.serialize() ?: return null
-        return runCatching {
-            fileStorage.writeFile(tempPath, bytes)
-            StagedSave(tempPath, bytes.size.toLong(), cleanup)
-        }.getOrNull().also {
-            if (it == null) cleanup()
+        if (rawSize == null) {
+            cleanupRaw()
+            return null
         }
+        return maybeGzipStaged(tempPath, rawSize, cleanupRaw)
+    }
+
+    /**
+     * Attempts to gzip the staged save at [rawPath]. Returns a [StagedSave]
+     * pointed at the gzipped sibling on success, or one pointed at the
+     * raw file on any failure / when the input is too small to be worth
+     * compressing. The cleanup closure deletes whichever temp files the
+     * pipeline ended up creating.
+     */
+    private suspend fun maybeGzipStaged(
+        rawPath: String,
+        rawSize: Long,
+        cleanupRaw: suspend () -> Unit,
+    ): StagedSave {
+        if (rawSize < GZIP_MIN_BYTES) {
+            return StagedSave(rawPath, rawSize, "", cleanupRaw)
+        }
+        val gzPath = "$rawPath.gz"
+        val cleanupGz: suspend () -> Unit = { runCatching { fileStorage.deleteFile(gzPath) } }
+        val cleanupBoth: suspend () -> Unit = { cleanupRaw(); cleanupGz() }
+        val gzSize = runCatching {
+            com.spela.player.util.gzipFile(rawPath, gzPath)
+        }.getOrElse { e ->
+            println("[SaveManager] gzipFile failed (${e.message}); uploading raw")
+            cleanupGz()
+            return StagedSave(rawPath, rawSize, "", cleanupRaw)
+        }
+        if (gzSize <= 0) {
+            cleanupGz()
+            return StagedSave(rawPath, rawSize, "", cleanupRaw)
+        }
+        return StagedSave(gzPath, gzSize, "gzip", cleanupBoth)
     }
 
     /**
@@ -627,7 +688,7 @@ class SaveManager(
                 if (sessionId != null) {
                     val screenshot = screenshotCapture?.captureScreenshot()
                     sessionRepository.uploadSlotSaveFromFile(
-                        sessionId, slot, staged.path, staged.size, screenshot, currentCoreName,
+                        sessionId, slot, staged.path, staged.size, screenshot, currentCoreName, staged.compression,
                     ).fold(
                         onSuccess = {
                             withContext(dispatchers.main) {

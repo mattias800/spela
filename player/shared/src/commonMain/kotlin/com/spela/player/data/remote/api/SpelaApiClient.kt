@@ -1666,6 +1666,7 @@ class SpelaApiClient(
         saveSize: Long,
         screenshot: ByteArray?,
         coreName: String = "",
+        compression: String = "",
     ): com.spela.client.models.SessionSaveResponse {
         return client.submitFormWithBinaryData(
             url = "$baseUrl/api/sessions/$sessionId/saves",
@@ -1673,6 +1674,9 @@ class SpelaApiClient(
                 append("name", name)
                 if (coreName.isNotEmpty()) {
                     append("coreName", coreName)
+                }
+                if (compression.isNotEmpty()) {
+                    append("compression", compression)
                 }
                 append("save", io.ktor.client.request.forms.ChannelProvider(saveSize) {
                     com.spela.player.util.openFileReadChannel(savePath)
@@ -1696,12 +1700,16 @@ class SpelaApiClient(
         saveSize: Long,
         screenshot: ByteArray?,
         coreName: String = "",
+        compression: String = "",
     ) {
         client.submitFormWithBinaryData(
             url = "$baseUrl/api/sessions/$sessionId/saves/auto",
             formData = formData {
                 if (coreName.isNotEmpty()) {
                     append("coreName", coreName)
+                }
+                if (compression.isNotEmpty()) {
+                    append("compression", compression)
                 }
                 append("save", io.ktor.client.request.forms.ChannelProvider(saveSize) {
                     com.spela.player.util.openFileReadChannel(savePath)
@@ -1726,12 +1734,16 @@ class SpelaApiClient(
         saveSize: Long,
         screenshot: ByteArray?,
         coreName: String = "",
+        compression: String = "",
     ): com.spela.client.models.SessionSaveResponse {
         return client.submitFormWithBinaryData(
             url = "$baseUrl/api/sessions/$sessionId/saves/slot/$slot",
             formData = formData {
                 if (coreName.isNotEmpty()) {
                     append("coreName", coreName)
+                }
+                if (compression.isNotEmpty()) {
+                    append("compression", compression)
                 }
                 append("save", io.ktor.client.request.forms.ChannelProvider(saveSize) {
                     com.spela.player.util.openFileReadChannel(savePath)

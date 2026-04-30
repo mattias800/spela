@@ -72,8 +72,9 @@ class SessionRepositoryImpl(
         saveSize: Long,
         screenshot: ByteArray?,
         coreName: String,
+        compression: String,
     ): Result<SaveState> = runCatching {
-        apiClient.uploadSessionSaveFromFile(sessionId, name, savePath, saveSize, screenshot, coreName).toDomain()
+        apiClient.uploadSessionSaveFromFile(sessionId, name, savePath, saveSize, screenshot, coreName, compression).toDomain()
     }
 
     override suspend fun downloadSessionSave(sessionId: String, saveId: String): Result<ByteArray> = runCatching {
@@ -95,8 +96,9 @@ class SessionRepositoryImpl(
         saveSize: Long,
         screenshot: ByteArray?,
         coreName: String,
+        compression: String,
     ): Result<Unit> = runCatching {
-        apiClient.uploadSessionAutoSaveFromFile(sessionId, savePath, saveSize, screenshot, coreName)
+        apiClient.uploadSessionAutoSaveFromFile(sessionId, savePath, saveSize, screenshot, coreName, compression)
     }
 
     override suspend fun downloadSessionAutoSave(sessionId: String): Result<ByteArray> = runCatching {
@@ -124,8 +126,9 @@ class SessionRepositoryImpl(
         saveSize: Long,
         screenshot: ByteArray?,
         coreName: String,
+        compression: String,
     ): Result<SaveState> = runCatching {
-        apiClient.uploadSlotSaveFromFile(sessionId, slot, savePath, saveSize, screenshot, coreName).toDomain()
+        apiClient.uploadSlotSaveFromFile(sessionId, slot, savePath, saveSize, screenshot, coreName, compression).toDomain()
     }
 
     override suspend fun downloadSlotSave(sessionId: String, slot: Int): Result<ByteArray> = runCatching {
