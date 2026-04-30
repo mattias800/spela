@@ -276,6 +276,9 @@ private class FakeSessionRepo : SessionRepository {
     override suspend fun downloadSlotSave(sessionId: String, slot: Int): Result<ByteArray> =
         Result.failure(UnsupportedOperationException("not exercised"))
 
+    override suspend fun downloadSlotSaveToFile(sessionId: String, slot: Int, outputPath: String): Result<Unit> =
+        Result.failure(UnsupportedOperationException("not exercised"))
+
     override suspend fun uploadSessionSram(sessionId: String, data: ByteArray, coreName: String): Result<Unit> =
         Result.failure(UnsupportedOperationException("not exercised"))
 

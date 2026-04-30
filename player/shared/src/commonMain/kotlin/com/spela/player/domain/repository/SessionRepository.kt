@@ -47,6 +47,11 @@ interface SessionRepository {
     suspend fun uploadSlotSave(sessionId: String, slot: Int, data: ByteArray, screenshot: ByteArray?, coreName: String = ""): Result<SaveState>
     suspend fun uploadSlotSaveFromFile(sessionId: String, slot: Int, savePath: String, saveSize: Long, screenshot: ByteArray?, coreName: String = "", compression: String = ""): Result<SaveState>
     suspend fun downloadSlotSave(sessionId: String, slot: Int): Result<ByteArray>
+    /** Streaming variant of [downloadSlotSave]. Writes the body to
+     *  [outputPath] and inflates inline when the server tags the
+     *  response with `X-Compression: gzip`, so callers can hand the
+     *  file straight to libretro's `unserializeFromFile`. See #804. */
+    suspend fun downloadSlotSaveToFile(sessionId: String, slot: Int, outputPath: String): Result<Unit>
     suspend fun uploadSessionSram(sessionId: String, data: ByteArray, coreName: String = ""): Result<Unit>
     suspend fun downloadSessionSram(sessionId: String): Result<ByteArray>
     suspend fun getSessionCheats(sessionId: String): Result<SessionCheatConfig>

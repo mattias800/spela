@@ -724,6 +724,14 @@ class SaveManager(
     /**
      * Load state from a specific slot. Blocks in challenge/hardcore mode.
      * Uses the slot-specific API endpoint (GET /api/sessions/:id/saves/slot/:slot).
+     *
+     * Streams the body to a temp file and hands it to
+     * [LibretroController.unserializeFromFile]. The streaming path is
+     * what reads the server's `X-Compression: gzip` header and inflates
+     * the body inline (#804 phase 2) — calling the in-memory
+     * `downloadSlotSave` ByteArray API here would feed gzipped bytes
+     * straight to the core for any save uploaded by a #804-aware
+     * client.
      */
     fun loadFromSlot(slot: Int) {
         if (_state.value.isChallengeMode) return
@@ -734,9 +742,11 @@ class SaveManager(
         scope.launch(dispatchers.io) {
             val sessionId = currentSessionId
             if (sessionId != null) {
-                sessionRepository.downloadSlotSave(sessionId, slot).fold(
-                    onSuccess = { saveData ->
-                        libretroController.unserialize(saveData)
+                val tempPath = "${fileStorage.getSavesDir()}/.tmp-load-slot-$slot-$sessionId"
+                sessionRepository.downloadSlotSaveToFile(sessionId, slot, tempPath).fold(
+                    onSuccess = {
+                        libretroController.unserializeFromFile(tempPath)
+                        runCatching { fileStorage.deleteFile(tempPath) }
                         withContext(dispatchers.main) {
                             _state.update {
                                 it.copy(
@@ -750,6 +760,7 @@ class SaveManager(
                         }
                     },
                     onFailure = { error ->
+                        runCatching { fileStorage.deleteFile(tempPath) }
                         withContext(dispatchers.main) {
                             _state.update { it.copy(error = "Failed to load from slot $slot: ${error.message}") }
                         }

@@ -1852,11 +1852,17 @@ class SpelaApiClient(
         if (compression == "gzip") {
             // Stream the gzip-encoded body to a sibling and inflate
             // into outputPath, so the file at outputPath is always
-            // raw save bytes the core can consume directly.
+            // raw save bytes the core can consume directly. If gunzip
+            // throws mid-stream (truncated body, corrupted bytes) we
+            // delete the partial outputPath as well so callers find
+            // a clean "file missing" rather than a silently-bogus one.
             val gzPath = "$outputPath.gz.tmp"
             try {
                 streamResponseToFile(response, fileStorage, gzPath) { _, _ -> }
                 com.spela.player.util.gunzipFile(gzPath, outputPath)
+            } catch (e: Throwable) {
+                runCatching { fileStorage.deleteFile(outputPath) }
+                throw e
             } finally {
                 runCatching { fileStorage.deleteFile(gzPath) }
             }

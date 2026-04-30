@@ -135,6 +135,10 @@ class SessionRepositoryImpl(
         apiClient.downloadSlotSave(sessionId, slot)
     }
 
+    override suspend fun downloadSlotSaveToFile(sessionId: String, slot: Int, outputPath: String): Result<Unit> = runCatching {
+        apiClient.downloadSlotSaveToFile(sessionId, slot, fileStorage, outputPath)
+    }
+
     override suspend fun uploadSessionSram(sessionId: String, data: ByteArray, coreName: String): Result<Unit> = runCatching {
         apiClient.uploadSessionSram(sessionId, data, coreName)
     }

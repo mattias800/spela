@@ -472,6 +472,7 @@ class StubSessionRepository : SessionRepository {
         return Result.success(SaveState(id = "1", name = "Slot $slot"))
     }
     override suspend fun downloadSlotSave(sessionId: String, slot: Int) = Result.failure<ByteArray>(Exception("stub"))
+    override suspend fun downloadSlotSaveToFile(sessionId: String, slot: Int, outputPath: String) = Result.failure<Unit>(Exception("stub"))
     override suspend fun createSessionFromSharedSave(gameId: String, saveId: String) =
         Result.success(GameSession(id = "shared-session-1", gameId = gameId, name = "From shared save $saveId"))
     override suspend fun getSessionCheats(sessionId: String) = Result.success(SessionCheatConfig(false, emptyList()))
