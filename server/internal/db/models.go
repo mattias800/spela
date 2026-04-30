@@ -480,6 +480,25 @@ type ConsoleSaveStatePolicy struct {
 	Choice    ConsoleSaveStateChoice `gorm:"type:varchar(16);not null" json:"choice"`
 }
 
+// GameSaveStatePolicy stores a user's per-game save-state opt-out
+// override that takes precedence over the per-console choice
+// (ConsoleSaveStatePolicy). The "save states on for Mario Sunshine,
+// off for Metroid Prime" case from #804 phase 4b spec point (c).
+//
+// A row only exists once the user has made a deliberate per-game
+// choice. The absence of a row means "use the per-console override
+// (if any), otherwise the tier-driven default" — same precedence
+// as the existing resolver.
+type GameSaveStatePolicy struct {
+	ID        uint                   `gorm:"primarykey" json:"id"`
+	CreatedAt time.Time              `json:"createdAt"`
+	UpdatedAt time.Time              `json:"updatedAt"`
+	DeletedAt gorm.DeletedAt         `gorm:"index" json:"-"`
+	UserID    uint                   `gorm:"uniqueIndex:idx_user_game_savestate;not null" json:"userId"`
+	GameID    uint                   `gorm:"uniqueIndex:idx_user_game_savestate;not null" json:"gameId"`
+	Choice    ConsoleSaveStateChoice `gorm:"type:varchar(16);not null" json:"choice"`
+}
+
 // ConsoleShaderPreference stores a user's per-console shader override.
 type ConsoleShaderPreference struct {
 	ID        uint           `gorm:"primarykey" json:"id"`

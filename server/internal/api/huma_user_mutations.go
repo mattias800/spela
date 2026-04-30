@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
 
 	"github.com/danielgtaylor/huma/v2"
@@ -279,6 +280,44 @@ func (h *UserHandler) HumaUpdatePreferences(ctx context.Context, in *UpdatePrefe
 		}
 	}
 
+	if req.GameSaveStatePolicies != nil {
+		for gameIDStr, raw := range req.GameSaveStatePolicies {
+			gameID, err := strconv.ParseUint(gameIDStr, 10, 64)
+			if err != nil {
+				continue
+			}
+			var game db.Game
+			if err := h.DB.First(&game, gameID).Error; err != nil {
+				continue
+			}
+			choice, clear := normalizeSaveStateChoice(raw)
+			if clear {
+				h.DB.Unscoped().Where("user_id = ? AND game_id = ?", uid, game.ID).
+					Delete(&db.GameSaveStatePolicy{})
+				continue
+			}
+			if choice == "" {
+				// Garbage value — drop the entry rather than destroy
+				// an existing override. Same semantics as
+				// ConsoleSaveStatePolicies.
+				continue
+			}
+			var existing db.GameSaveStatePolicy
+			result := h.DB.Unscoped().Where("user_id = ? AND game_id = ?", uid, game.ID).First(&existing)
+			if result.Error == nil {
+				existing.Choice = choice
+				existing.DeletedAt = gorm.DeletedAt{}
+				h.DB.Unscoped().Save(&existing)
+			} else {
+				h.DB.Create(&db.GameSaveStatePolicy{
+					UserID: uid,
+					GameID: game.ID,
+					Choice: choice,
+				})
+			}
+		}
+	}
+
 	if req.ConsoleKeyMappings != nil {
 		for consoleAbbr, km := range req.ConsoleKeyMappings {
 			var console db.Console
@@ -315,6 +354,7 @@ func (h *UserHandler) HumaUpdatePreferences(ctx context.Context, in *UpdatePrefe
 
 	consoleShaders := h.buildConsoleShaderMap(uid)
 	consoleSaveStatePolicies := h.buildConsoleSaveStatePolicyMap(uid)
+	gameSaveStatePolicies := h.buildGameSaveStatePolicyMap(uid)
 	consoleKeyMappings := h.buildConsoleKeyMappingMap(uid)
 	customKeyMapping := parseJSONMap(user.CustomKeyMapping)
 
@@ -349,6 +389,7 @@ func (h *UserHandler) HumaUpdatePreferences(ctx context.Context, in *UpdatePrefe
 			DefaultSecondScreenPage: defaultSecondScreenPage,
 			ConsoleShaders:           consoleShaders,
 			ConsoleSaveStatePolicies: consoleSaveStatePolicies,
+			GameSaveStatePolicies:    gameSaveStatePolicies,
 			SelectedKeyMapping:       selectedKeyMapping,
 			CustomKeyMapping:        customKeyMapping,
 			ConsoleKeyMappings:      consoleKeyMappings,

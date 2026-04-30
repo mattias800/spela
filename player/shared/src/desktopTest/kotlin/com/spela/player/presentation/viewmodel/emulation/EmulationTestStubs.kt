@@ -288,13 +288,23 @@ class StubPreferencesRepository : PreferencesRepository {
         selectedTheme: String?,
         consoleShaders: Map<String, String>?,
         consoleSaveStatePolicies: Map<String, String>?,
+        gameSaveStatePolicies: Map<String, String>?,
         defaultSecondScreenPage: String?,
     ): Result<UserPreferences> {
         if (consoleSaveStatePolicies != null) {
             lastConsoleSaveStatePoliciesUpdate = consoleSaveStatePolicies
         }
+        if (gameSaveStatePolicies != null) {
+            lastGameSaveStatePoliciesUpdate = gameSaveStatePolicies
+        }
         return Result.success(UserPreferences())
     }
+
+    /** Records the gameSaveStatePolicies map passed on the most
+     *  recent updatePreferences call so tests can assert the per-
+     *  game toggle wiring (#804 phase 4b spec point c). */
+    var lastGameSaveStatePoliciesUpdate: Map<String, String>? = null
+        private set
 
     override fun getDeviceShaderOverride(consoleId: String): ShaderPreset? = null
     override fun setDeviceShaderOverride(consoleId: String, shader: ShaderPreset?) {}

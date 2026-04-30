@@ -20,6 +20,14 @@ interface PreferencesRepository {
          * row. See #804 phase 4.
          */
         consoleSaveStatePolicies: Map<String, String>? = null,
+        /**
+         * Per-game save-state opt-out upserts keyed by game ID
+         * string. Same sanitiser semantics as
+         * [consoleSaveStatePolicies] — empty string clears the row,
+         * unknown values are silently dropped server-side.
+         * See #804 phase 4b spec point (c).
+         */
+        gameSaveStatePolicies: Map<String, String>? = null,
         defaultSecondScreenPage: String? = null,
     ): Result<UserPreferences>
     fun getDeviceShaderOverride(consoleId: String): ShaderPreset?

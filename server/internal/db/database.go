@@ -148,6 +148,7 @@ func Initialize(dbPath string) (*gorm.DB, error) {
 		&ConsoleShaderPreference{},
 		&ConsoleKeyMappingPreference{},
 		&ConsoleSaveStatePolicy{},
+		&GameSaveStatePolicy{},
 		&Device{},
 		&DeviceShaderPreference{},
 		&RetroAchievementCredential{},

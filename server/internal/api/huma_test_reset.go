@@ -113,6 +113,7 @@ func (h *TestHandler) HumaReset(_ context.Context, _ *TestResetInput) (*TestRese
 		// 7. User preferences
 		tx.Unscoped().Where("1 = 1").Delete(&db.ConsoleShaderPreference{})
 		tx.Unscoped().Where("1 = 1").Delete(&db.ConsoleSaveStatePolicy{})
+		tx.Unscoped().Where("1 = 1").Delete(&db.GameSaveStatePolicy{})
 		tx.Unscoped().Where("1 = 1").Delete(&db.ConsoleKeyMappingPreference{})
 		tx.Unscoped().Where("1 = 1").Delete(&db.DeviceShaderPreference{})
 		tx.Unscoped().Where("1 = 1").Delete(&db.Device{})

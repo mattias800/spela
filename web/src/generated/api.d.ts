@@ -8545,6 +8545,9 @@ export interface components {
                 [key: string]: string;
             };
             defaultSecondScreenPage?: string;
+            gameSaveStatePolicies?: {
+                [key: string]: string;
+            };
             preferredRegions?: string[];
             selectedKeyMapping?: string;
             selectedShader?: string;
@@ -8666,6 +8669,9 @@ export interface components {
                 [key: string]: string;
             };
             defaultSecondScreenPage: string;
+            gameSaveStatePolicies: {
+                [key: string]: string;
+            };
             preferredRegions: string[];
             raHardcoreEnabled: boolean;
             raLinked: boolean;

@@ -32,6 +32,7 @@ import kotlinx.serialization.encoding.*
  * @param consoleShaders 
  * @param customKeyMapping 
  * @param defaultSecondScreenPage 
+ * @param gameSaveStatePolicies 
  * @param preferredRegions 
  * @param raHardcoreEnabled 
  * @param raLinked 
@@ -61,6 +62,8 @@ data class UserPreferencesResponse (
     @SerialName(value = "customKeyMapping") @Required val customKeyMapping: kotlin.collections.Map<kotlin.String, kotlin.String>,
 
     @SerialName(value = "defaultSecondScreenPage") @Required val defaultSecondScreenPage: kotlin.String,
+
+    @SerialName(value = "gameSaveStatePolicies") @Required val gameSaveStatePolicies: kotlin.collections.Map<kotlin.String, kotlin.String>,
 
     @SerialName(value = "preferredRegions") @Required val preferredRegions: kotlin.collections.List<kotlin.String>,
 

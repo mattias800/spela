@@ -10,6 +10,7 @@ function prefs(overrides: Partial<UserPreferences> = {}): UserPreferences {
     autoUpdateCoresEnabled: false,
     consoleKeyMappings: {},
     consoleSaveStatePolicies: {},
+    gameSaveStatePolicies: {},
     consoleShaders: {},
     customKeyMapping: {},
     defaultSecondScreenPage: "controls",

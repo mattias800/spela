@@ -237,6 +237,14 @@ data class UserPreferences(
     val selectedTheme: String = "default-dark",
     val consoleShaders: Map<String, ShaderPreset> = emptyMap(),
     val consoleSaveStatePolicies: Map<String, SaveStateChoice> = emptyMap(),
+    /**
+     * Per-game save-state opt-out overrides keyed by game ID string.
+     * Layered on top of [consoleSaveStatePolicies] — a per-game choice
+     * wins over the console-level one. Only contains games where the
+     * user has made a deliberate per-game choice. See #804 phase 4b
+     * spec point (c).
+     */
+    val gameSaveStatePolicies: Map<String, SaveStateChoice> = emptyMap(),
     val selectedKeyMapping: String = "default",
     val consoleKeyMappings: Map<String, ConsoleKeyMappingPref> = emptyMap(),
     val defaultSecondScreenPage: String = "art",
@@ -244,12 +252,15 @@ data class UserPreferences(
 
 /**
  * Resolves the effective save-state choice for [consoleAbbr] given
- * the console's tier and the user's per-console overrides.
+ * the console's tier, the user's per-console overrides, and an
+ * optional per-game override.
  *
  * Precedence (high → low):
  *
- *   1. explicit override in [overrides] (key matched case-insensitively)
- *   2. tier default — small/medium → Enabled, large → AskOnce
+ *   1. per-game override in [gameOverride] (when non-null)
+ *   2. explicit per-console override in [overrides] (case-insensitive
+ *      abbreviation match)
+ *   3. tier default — small/medium → Enabled, large → AskOnce
  *
  * The resolver intentionally returns [SaveStateChoice.AskOnce] for
  * large-tier consoles with no override so the player can fire the
@@ -261,7 +272,9 @@ fun effectiveSaveStateChoice(
     consoleAbbr: String,
     tier: SaveStatePolicyTier,
     overrides: Map<String, SaveStateChoice>,
+    gameOverride: SaveStateChoice? = null,
 ): SaveStateChoice {
+    gameOverride?.let { return it }
     val key = consoleAbbr.lowercase()
     overrides[key]?.let { return it }
     return when (tier) {
