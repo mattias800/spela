@@ -25,6 +25,13 @@ interface SessionRepository {
     ): Result<GameSession>
     suspend fun deleteSession(sessionId: String): Result<Unit>
     suspend fun getSessionSaves(sessionId: String): Result<List<SaveState>>
+    /** Rename a single session save (slot or named). Server returns the
+     *  updated row. Used by the in-game slot manage UI (#831). */
+    suspend fun updateSessionSave(sessionId: String, saveId: String, name: String): Result<SaveState>
+    /** Delete a single session save by id. Server returns 200 with a
+     *  message body on success. Used by the in-game slot manage UI
+     *  (#831) to free a filled slot mid-session. */
+    suspend fun deleteSessionSave(sessionId: String, saveId: String): Result<Unit>
     suspend fun uploadSessionSave(sessionId: String, name: String, data: ByteArray, screenshot: ByteArray?, coreName: String = ""): Result<SaveState>
     /** Streaming variant: reads save bytes from [savePath] without loading
      *  the full state into a JVM ByteArray. Required for cores like

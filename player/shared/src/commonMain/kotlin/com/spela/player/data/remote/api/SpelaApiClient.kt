@@ -1630,6 +1630,22 @@ class SpelaApiClient(
         return sessionsApi.listSessionSaves(sessionId).body()
     }
 
+    suspend fun updateSessionSave(
+        sessionId: String,
+        saveId: String,
+        name: String,
+    ): com.spela.client.models.SessionSaveResponse {
+        return sessionsApi.updateSessionSave(
+            sessionId,
+            saveId,
+            com.spela.client.models.UpdateSessionSaveRequest(name = name),
+        ).body()
+    }
+
+    suspend fun deleteSessionSave(sessionId: String, saveId: String) {
+        sessionsApi.deleteSessionSave(sessionId, saveId)
+    }
+
     suspend fun uploadSessionSave(sessionId: String, name: String, data: ByteArray, screenshot: ByteArray?, coreName: String = ""): com.spela.client.models.SessionSaveResponse {
         return client.submitFormWithBinaryData(
             url = "$baseUrl/api/sessions/$sessionId/saves",

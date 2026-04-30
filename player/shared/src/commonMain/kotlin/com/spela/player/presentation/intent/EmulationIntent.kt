@@ -98,6 +98,24 @@ sealed interface EmulationIntent {
     /** Dismiss the slot-primary slot picker modal without saving or
      *  loading. The user is bailing out of the choice. See #804 phase 5. */
     data object DismissSlotPicker : EmulationIntent
+    /** Long-press on a filled slot cell — opens the actions bottom
+     *  sheet (Rename / Delete / Cancel). See #831. */
+    data class ShowSlotActionsSheet(val slot: Int) : EmulationIntent
+    data object DismissSlotActionsSheet : EmulationIntent
+    /** Open the rename dialog for the slot. Pre-fills with the
+     *  slot's existing name. See #831. */
+    data class ShowSlotRenameDialog(val slot: Int) : EmulationIntent
+    data object DismissSlotRenameDialog : EmulationIntent
+    /** Commit a rename. Optimistically updates the local saveSlots
+     *  map; server is the source of truth on next refresh. See #831. */
+    data class RenameSlot(val slot: Int, val name: String) : EmulationIntent
+    /** Open the delete-confirmation dialog for the slot. The actual
+     *  network call doesn't happen until the user confirms. See #831. */
+    data class ShowSlotDeleteConfirm(val slot: Int) : EmulationIntent
+    data object DismissSlotDeleteConfirm : EmulationIntent
+    /** Confirmed delete — fires the DELETE call and clears the slot
+     *  from the local map on success. See #831. */
+    data class DeleteSlot(val slot: Int) : EmulationIntent
 
     // Rewind
     data object RewindStep : EmulationIntent
