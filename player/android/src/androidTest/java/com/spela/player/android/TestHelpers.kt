@@ -2215,29 +2215,44 @@ fun ComposeRule.navigateToGameAndPlay(preferredGameTitle: String? = "Balloon Fig
     Thread.sleep(500)
     // The Consoles tab restores its last visited screen (e.g. NES detail
     // if a previous test landed there) instead of the consoles list root.
-    // Pop back-stack within the Consoles tab until the NES card testTag
-    // is visible on screen (= we're on the consoles list).
+    // Pop back-stack within the Consoles tab until the NES card is on
+    // screen (= we're on the consoles list). The probe uses Compose's
+    // semantic-tree query, which routes through the test rule's idleness
+    // sync — that *can* hang on never-completing background coroutines
+    // (e.g. a libretro core left warming after the prior test). Bound the
+    // whole phase with a wall-clock deadline so a stuck idleness sync
+    // surfaces a useful error in <60s instead of timing out the entire
+    // gradle test slot. Also bail out early if back-press has popped us
+    // off the app entirely. See issue #835 for the 7-min-hang trace.
+    val landStart = System.currentTimeMillis()
+    val landDeadlineMs = 60_000L
     var landedOnList = false
-    repeat(8) {
+    var pops = 0
+    while (System.currentTimeMillis() - landStart < landDeadlineMs && pops < 8) {
+        val pkg = device.currentPackageName
+        if (pkg != null && pkg != "com.spela.player") {
+            android.util.Log.d(tag, "navigateToGameAndPlay: popped out of Spela (pkg=$pkg); aborting back-loop")
+            break
+        }
         try {
             if (onAllNodes(hasTestTag(nesTag)).fetchSemanticsNodes().isNotEmpty()) {
                 landedOnList = true
-                return@repeat
+                break
             }
         } catch (_: Exception) {}
+        android.util.Log.d(tag, "navigateToGameAndPlay: NES card not visible (pop=$pops, pkg=$pkg); pressing back")
         pressBack()
+        pops++
         Thread.sleep(400)
     }
     if (!landedOnList) {
-        try {
-            pollUntil(timeoutMillis = 5_000L) {
-                try { onAllNodes(hasTestTag(nesTag)).fetchSemanticsNodes().isNotEmpty() }
-                catch (_: Exception) { false }
-            }
-        } catch (_: androidx.compose.ui.test.ComposeTimeoutException) {
-            throw IllegalStateException("Could not reach Consoles list — NES card testTag not visible after Home→Consoles bounce + 8 back presses")
-        }
+        val elapsed = System.currentTimeMillis() - landStart
+        throw IllegalStateException(
+            "Could not reach Consoles list — NES card '$nesTag' not visible after $pops back press(es) " +
+                "(${elapsed}ms elapsed, current package=${device.currentPackageName})"
+        )
     }
+    android.util.Log.d(tag, "navigateToGameAndPlay: landed on Consoles list after $pops pop(s)")
     onAllNodes(hasTestTag(nesTag))[0].performClick()
     waitForIdle()
     Thread.sleep(500)
