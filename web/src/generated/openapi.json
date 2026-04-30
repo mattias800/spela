@@ -4049,6 +4049,9 @@
           "consoleName": {
             "type": "string"
           },
+          "consoleSaveStatePolicy": {
+            "type": "string"
+          },
           "coreOverride": {
             "type": "string"
           },
@@ -4265,6 +4268,7 @@
           "updatedAt",
           "consoleId",
           "consoleName",
+          "consoleSaveStatePolicy",
           "coverAspectRatio",
           "title",
           "fileName",

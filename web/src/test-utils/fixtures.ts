@@ -14,6 +14,7 @@ export function makeGame(overrides: Partial<Game> = {}): Game {
     title: "Test Game",
     consoleId: "nes",
     consoleName: "NES",
+    consoleSaveStatePolicy: "small",
     fileName: "test.nes",
     fileSize: 1024,
     discCount: 1,

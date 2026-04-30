@@ -28,6 +28,16 @@ sealed interface EmulationIntent {
     data object StopGame : EmulationIntent
     data object SaveState : EmulationIntent
     data object LoadState : EmulationIntent
+
+    /** First-launch save-state prompt actions (#804 phase 4b). All
+     *  three buttons write a deliberate console-level choice and
+     *  dismiss the prompt — "Decide per game" picks Enabled at the
+     *  console level so individual games can be opted out from the
+     *  game-detail toggle (a future slice), avoiding leaving the
+     *  console in an indeterminate ask-once state forever. */
+    data object AcceptSaveStatesForConsole : EmulationIntent
+    data object RejectSaveStatesForConsole : EmulationIntent
+    data object DeferSaveStateChoiceToPerGame : EmulationIntent
     data object ToggleOverlay : EmulationIntent
     data object ToggleFastForward : EmulationIntent
     data class SetVolume(val volume: Float) : EmulationIntent

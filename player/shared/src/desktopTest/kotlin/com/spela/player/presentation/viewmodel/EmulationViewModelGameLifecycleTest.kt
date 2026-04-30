@@ -112,6 +112,123 @@ class EmulationViewModelGameLifecycleTest {
     }
 
     @Test
+    fun startGameFiresFirstLaunchPromptForLargeTierWithoutOverride() = runTest {
+        // Large-tier console + no override → AskOnce. The dialog
+        // must appear so the user makes a deliberate choice on the
+        // first GC/Wii/PS2 launch.
+        builder.gameRepository = StubGameRepository(
+            consoleId = "gc",
+            consoleName = "Nintendo GameCube",
+            consoleSaveStatePolicy = com.spela.player.domain.model.SaveStatePolicyTier.Large,
+        )
+        builder.preferencesRepository.preferencesResult = Result.success(UserPreferences())
+        val vm = builder.build()
+        vm.onIntent(EmulationIntent.StartGame("game1"))
+        builder.advanceTimeBy(100)
+        assertTrue(vm.state.value.showSaveStatePrompt)
+        assertEquals("gc", vm.state.value.saveStatePromptConsoleAbbr)
+        assertEquals("Nintendo GameCube", vm.state.value.saveStatePromptConsoleName)
+        assertFalse(vm.state.value.saveStatesOptedOut)
+    }
+
+    @Test
+    fun startGameSkipsFirstLaunchPromptWhenLargeTierAlreadyResolved() = runTest {
+        builder.gameRepository = StubGameRepository(
+            consoleId = "gc",
+            consoleSaveStatePolicy = com.spela.player.domain.model.SaveStatePolicyTier.Large,
+        )
+        builder.preferencesRepository.preferencesResult = Result.success(
+            UserPreferences(
+                consoleSaveStatePolicies = mapOf("gc" to SaveStateChoice.Enabled),
+            ),
+        )
+        val vm = builder.build()
+        vm.onIntent(EmulationIntent.StartGame("game1"))
+        builder.advanceTimeBy(100)
+        assertFalse(vm.state.value.showSaveStatePrompt)
+    }
+
+    @Test
+    fun startGameDoesNotFirePromptForSmallTier() = runTest {
+        // Small/medium tiers default to Enabled, never AskOnce.
+        builder.gameRepository = StubGameRepository(
+            consoleId = "nes",
+            consoleSaveStatePolicy = com.spela.player.domain.model.SaveStatePolicyTier.Small,
+        )
+        val vm = builder.build()
+        vm.onIntent(EmulationIntent.StartGame("game1"))
+        builder.advanceTimeBy(100)
+        assertFalse(vm.state.value.showSaveStatePrompt)
+    }
+
+    @Test
+    fun acceptSaveStatesForConsoleClearsPromptAndWritesEnabled() = runTest {
+        builder.gameRepository = StubGameRepository(
+            consoleId = "gc",
+            consoleSaveStatePolicy = com.spela.player.domain.model.SaveStatePolicyTier.Large,
+        )
+        val vm = builder.build()
+        vm.onIntent(EmulationIntent.StartGame("game1"))
+        builder.advanceTimeBy(100)
+        assertTrue(vm.state.value.showSaveStatePrompt)
+
+        vm.onIntent(EmulationIntent.AcceptSaveStatesForConsole)
+        builder.advanceTimeBy(100)
+        assertFalse(vm.state.value.showSaveStatePrompt)
+        assertFalse(vm.state.value.saveStatesOptedOut)
+        assertEquals(
+            mapOf("gc" to SaveStateChoice.Enabled.apiId),
+            builder.preferencesRepository.lastConsoleSaveStatePoliciesUpdate,
+        )
+    }
+
+    @Test
+    fun rejectSaveStatesForConsoleClearsPromptAndWritesDisabled() = runTest {
+        builder.gameRepository = StubGameRepository(
+            consoleId = "gc",
+            consoleSaveStatePolicy = com.spela.player.domain.model.SaveStatePolicyTier.Large,
+        )
+        val vm = builder.build()
+        vm.onIntent(EmulationIntent.StartGame("game1"))
+        builder.advanceTimeBy(100)
+
+        vm.onIntent(EmulationIntent.RejectSaveStatesForConsole)
+        builder.advanceTimeBy(100)
+        assertFalse(vm.state.value.showSaveStatePrompt)
+        // Reject = Disabled → overlay greying flag must flip too so
+        // the user doesn't see the buttons re-enabled until next launch.
+        assertTrue(vm.state.value.saveStatesOptedOut)
+        assertEquals(
+            mapOf("gc" to SaveStateChoice.Disabled.apiId),
+            builder.preferencesRepository.lastConsoleSaveStatePoliciesUpdate,
+        )
+    }
+
+    @Test
+    fun deferSaveStateChoiceWritesEnabledSoPromptDoesNotReFire() = runTest {
+        // The "Decide per game" button records `enabled` at the
+        // console level; the per-game toggle (future slice) handles
+        // game-by-game work. Without this, the prompt would re-fire
+        // on every launch because the policy stayed at AskOnce.
+        builder.gameRepository = StubGameRepository(
+            consoleId = "gc",
+            consoleSaveStatePolicy = com.spela.player.domain.model.SaveStatePolicyTier.Large,
+        )
+        val vm = builder.build()
+        vm.onIntent(EmulationIntent.StartGame("game1"))
+        builder.advanceTimeBy(100)
+
+        vm.onIntent(EmulationIntent.DeferSaveStateChoiceToPerGame)
+        builder.advanceTimeBy(100)
+        assertFalse(vm.state.value.showSaveStatePrompt)
+        assertFalse(vm.state.value.saveStatesOptedOut)
+        assertEquals(
+            mapOf("gc" to SaveStateChoice.Enabled.apiId),
+            builder.preferencesRepository.lastConsoleSaveStatePoliciesUpdate,
+        )
+    }
+
+    @Test
     fun startGameKeepsSaveStatesEnabledWhenOverrideForDifferentConsole() = runTest {
         // The user opted out of GameCube but is launching an NES game.
         // Per-console isolation — opt-out for one console must not

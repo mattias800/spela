@@ -87,6 +87,16 @@ data class EmulationState(
      * about in-flight uploads, see #804 phase 4 spec point (d).
      */
     val saveStatesOptedOut: Boolean = false,
+    /**
+     * True when the user is launching a large-tier console game for
+     * the first time (no override + tier == large → AskOnce). Drives
+     * the first-launch dialog. See #804 phase 4b spec point (b).
+     */
+    val showSaveStatePrompt: Boolean = false,
+    /** Console abbreviation backing [showSaveStatePrompt] (e.g. "gc"). */
+    val saveStatePromptConsoleAbbr: String = "",
+    /** Display name backing [showSaveStatePrompt] (e.g. "Nintendo GameCube"). */
+    val saveStatePromptConsoleName: String = "",
     val showExitConfirm: Boolean = false,
     val requestExit: Boolean = false,
     val statusMessage: String? = null,

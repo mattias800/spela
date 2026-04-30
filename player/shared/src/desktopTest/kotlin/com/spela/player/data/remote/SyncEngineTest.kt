@@ -167,7 +167,7 @@ class SyncEngineTest {
 
     private class NoOpPreferencesRepository : PreferencesRepository {
         override suspend fun getPreferences() = Result.success(UserPreferences())
-        override suspend fun updatePreferences(showPerformanceOverlay: Boolean?, autoSaveEnabled: Boolean?, autoLoadSaveEnabled: Boolean?, autoUpdateCoresEnabled: Boolean?, selectedShader: String?, selectedTheme: String?, consoleShaders: Map<String, String>?, defaultSecondScreenPage: String?) = Result.success(UserPreferences())
+        override suspend fun updatePreferences(showPerformanceOverlay: Boolean?, autoSaveEnabled: Boolean?, autoLoadSaveEnabled: Boolean?, autoUpdateCoresEnabled: Boolean?, selectedShader: String?, selectedTheme: String?, consoleShaders: Map<String, String>?, consoleSaveStatePolicies: Map<String, String>?, defaultSecondScreenPage: String?) = Result.success(UserPreferences())
         override fun getDeviceShaderOverride(consoleId: String): ShaderPreset? = null
         override fun setDeviceShaderOverride(consoleId: String, shader: ShaderPreset?) {}
         override fun getAllDeviceShaderOverrides() = emptyMap<String, ShaderPreset>()
@@ -210,7 +210,7 @@ class SyncEngineTest {
 
     private class FailingPreferencesRepository : PreferencesRepository {
         override suspend fun getPreferences(): Result<UserPreferences> = throw RuntimeException("Preferences fetch failed")
-        override suspend fun updatePreferences(showPerformanceOverlay: Boolean?, autoSaveEnabled: Boolean?, autoLoadSaveEnabled: Boolean?, autoUpdateCoresEnabled: Boolean?, selectedShader: String?, selectedTheme: String?, consoleShaders: Map<String, String>?, defaultSecondScreenPage: String?) = Result.success(UserPreferences())
+        override suspend fun updatePreferences(showPerformanceOverlay: Boolean?, autoSaveEnabled: Boolean?, autoLoadSaveEnabled: Boolean?, autoUpdateCoresEnabled: Boolean?, selectedShader: String?, selectedTheme: String?, consoleShaders: Map<String, String>?, consoleSaveStatePolicies: Map<String, String>?, defaultSecondScreenPage: String?) = Result.success(UserPreferences())
         override fun getDeviceShaderOverride(consoleId: String): ShaderPreset? = null
         override fun setDeviceShaderOverride(consoleId: String, shader: ShaderPreset?) {}
         override fun getAllDeviceShaderOverrides() = emptyMap<String, ShaderPreset>()
@@ -257,7 +257,7 @@ class SyncEngineTest {
             getPreferencesCalled = true
             return Result.success(UserPreferences())
         }
-        override suspend fun updatePreferences(showPerformanceOverlay: Boolean?, autoSaveEnabled: Boolean?, autoLoadSaveEnabled: Boolean?, autoUpdateCoresEnabled: Boolean?, selectedShader: String?, selectedTheme: String?, consoleShaders: Map<String, String>?, defaultSecondScreenPage: String?) = Result.success(UserPreferences())
+        override suspend fun updatePreferences(showPerformanceOverlay: Boolean?, autoSaveEnabled: Boolean?, autoLoadSaveEnabled: Boolean?, autoUpdateCoresEnabled: Boolean?, selectedShader: String?, selectedTheme: String?, consoleShaders: Map<String, String>?, consoleSaveStatePolicies: Map<String, String>?, defaultSecondScreenPage: String?) = Result.success(UserPreferences())
         override fun getDeviceShaderOverride(consoleId: String): ShaderPreset? = null
         override fun setDeviceShaderOverride(consoleId: String, shader: ShaderPreset?) {}
         override fun getAllDeviceShaderOverrides() = emptyMap<String, ShaderPreset>()

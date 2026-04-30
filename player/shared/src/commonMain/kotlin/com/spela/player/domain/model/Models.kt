@@ -85,6 +85,11 @@ data class Game(
     val title: String,
     val consoleId: String,
     val consoleName: String = "",
+    /** Save-state size tier of the parent console — drives the
+     *  first-launch prompt and slot/quota UX. Stored on the Game
+     *  rather than fetched separately so the player doesn't need a
+     *  second round-trip at game-launch time. See #804 phase 4b. */
+    val consoleSaveStatePolicy: SaveStatePolicyTier = SaveStatePolicyTier.Small,
     val coverAspectRatio: Float = 0.75f,
     val coverUrl: String? = null,
     val description: String? = null,

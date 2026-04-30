@@ -43,7 +43,7 @@ private fun gameJson(
 ): String {
     val screenshots = screenshotUrls?.joinToString(",", "[", "]") { "\"$it\"" } ?: "[]"
     val lastPlayed = lastPlayedAt?.let { "\"$it\"" } ?: "null"
-    return """{"id":"$id","title":"$title","consoleId":"1","consoleName":"NES",""" +
+    return """{"id":"$id","title":"$title","consoleId":"1","consoleName":"NES","consoleSaveStatePolicy":"small",""" +
         """"achievementsWarning":"","ageRatings":[],"averageRating":0,"biosStatus":"",""" +
         """"coreOverride":"","coverAspectRatio":0.75,"coverUrl":"/covers/smb.png",""" +
         """"createdAt":"2024-01-01T00:00:00Z","updatedAt":"2024-01-01T00:00:00Z",""" +
