@@ -30,5 +30,10 @@ object ExpectedSchema {
         ),
         "DeviceSettingEntity" to setOf("key", "value"),
         "CheatEntity" to setOf("id", "game_id", "cheat_index", "description", "code", "enabled", "cached_at"),
+        "PendingSaveUploadEntity" to setOf(
+            "id", "session_id", "kind", "slot", "name", "core_name", "compression",
+            "file_path", "file_size", "screenshot_path", "created_at",
+            "retry_count", "last_error",
+        ),
     )
 }

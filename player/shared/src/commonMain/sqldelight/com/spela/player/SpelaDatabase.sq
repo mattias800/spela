@@ -311,3 +311,66 @@ UPDATE CheatEntity SET enabled = ? WHERE game_id = ?;
 
 deleteGameCheats:
 DELETE FROM CheatEntity WHERE game_id = ?;
+
+-- Pending save-state uploads (#804 phase 6 deferred sync).
+-- Each row tracks a save that has been staged to disk but not yet
+-- uploaded to the server. Uploads happen opportunistically (game
+-- exit, app pause, network reconnect) instead of blocking the user
+-- on every Save tap. Surviving an app kill matters: if the user
+-- saves and force-quits before the upload completes, we replay on
+-- next launch.
+--
+--   kind: "manual" | "auto" | "slot"
+--   slot: NULL when kind != "slot"
+--   compression: "" or "gzip"
+--   screenshot_path: NULL when no screenshot was captured
+CREATE TABLE PendingSaveUploadEntity (
+    id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    session_id TEXT NOT NULL,
+    kind TEXT NOT NULL,
+    slot INTEGER,
+    name TEXT NOT NULL DEFAULT '',
+    core_name TEXT NOT NULL DEFAULT '',
+    compression TEXT NOT NULL DEFAULT '',
+    file_path TEXT NOT NULL,
+    file_size INTEGER NOT NULL,
+    screenshot_path TEXT,
+    created_at INTEGER NOT NULL,
+    retry_count INTEGER NOT NULL DEFAULT 0,
+    last_error TEXT
+);
+
+CREATE INDEX pending_save_upload_session_idx
+    ON PendingSaveUploadEntity(session_id);
+
+enqueuePendingSaveUpload:
+INSERT INTO PendingSaveUploadEntity(
+    session_id, kind, slot, name, core_name, compression,
+    file_path, file_size, screenshot_path, created_at,
+    retry_count, last_error
+)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, NULL);
+
+lastInsertedPendingSaveUploadId:
+SELECT last_insert_rowid();
+
+getAllPendingSaveUploads:
+SELECT * FROM PendingSaveUploadEntity ORDER BY created_at ASC, id ASC;
+
+getPendingSaveUploadsForSession:
+SELECT * FROM PendingSaveUploadEntity WHERE session_id = ?
+ORDER BY created_at ASC, id ASC;
+
+getPendingSaveUploadById:
+SELECT * FROM PendingSaveUploadEntity WHERE id = ?;
+
+countPendingSaveUploads:
+SELECT COUNT(*) FROM PendingSaveUploadEntity;
+
+deletePendingSaveUpload:
+DELETE FROM PendingSaveUploadEntity WHERE id = ?;
+
+incrementPendingSaveUploadRetry:
+UPDATE PendingSaveUploadEntity
+SET retry_count = retry_count + 1, last_error = ?
+WHERE id = ?;

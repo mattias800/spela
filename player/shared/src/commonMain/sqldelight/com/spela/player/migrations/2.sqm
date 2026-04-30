@@ -1,0 +1,20 @@
+-- Migration from schema version 2 to 3: add PendingSaveUploadEntity
+-- table for the deferred-upload queue (#804 phase 6).
+CREATE TABLE PendingSaveUploadEntity (
+    id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    session_id TEXT NOT NULL,
+    kind TEXT NOT NULL,
+    slot INTEGER,
+    name TEXT NOT NULL DEFAULT '',
+    core_name TEXT NOT NULL DEFAULT '',
+    compression TEXT NOT NULL DEFAULT '',
+    file_path TEXT NOT NULL,
+    file_size INTEGER NOT NULL,
+    screenshot_path TEXT,
+    created_at INTEGER NOT NULL,
+    retry_count INTEGER NOT NULL DEFAULT 0,
+    last_error TEXT
+);
+
+CREATE INDEX pending_save_upload_session_idx
+    ON PendingSaveUploadEntity(session_id);
