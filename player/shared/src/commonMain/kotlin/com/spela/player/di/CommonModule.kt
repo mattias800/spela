@@ -184,7 +184,14 @@ val commonModule = module {
             sessionRepository = get(),
             fileStorage = get(),
             pendingUploadRepository = get(),
-        )
+        ).also {
+            // Kick off the network-reconnect collector once the
+            // SaveManager singleton is wired. Tests don't get this
+            // (they construct SaveManager directly) so their
+            // `runTest` scopes still complete cleanly. See #804
+            // phase 6 slice 3.
+            it.startReconnectListener()
+        }
     }
     single {
         ChallengeManager(

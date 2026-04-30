@@ -137,6 +137,55 @@ class SaveManagerDeferredSyncTest {
         assertTrue(fx.state.value.hasPendingUploads)
     }
 
+    @Test
+    fun drainPendingUploadsIsNoOpWhenQueueEmpty() = runTest {
+        val dispatcher = UnconfinedTestDispatcher(testScheduler)
+        val scope = CoroutineScope(dispatcher + Job())
+        val fx = makeFixture(scope, dispatcher)
+
+        // Idempotent: explicit drain call on an empty queue must
+        // not crash, must not invoke the upload endpoint, and must
+        // leave hasPendingUploads at false. See #804 phase 6 slice 3.
+        fx.manager.drainPendingUploads()
+        advanceUntilIdle()
+
+        assertEquals(0L, fx.pending.count())
+        assertEquals(0, fx.sessionRepo.uploadSessionSaveCallCount)
+        assertFalse(fx.state.value.hasPendingUploads)
+    }
+
+    @Test
+    fun drainPendingUploadsRetriesAFailedRowOnNextCall() = runTest {
+        // Simulates the network-reconnect / app-pause / game-exit
+        // path: a previous drain failed (server 503) and left the
+        // row in the queue with retryCount=1. The next drain
+        // (e.g. fired by ConnectivityMonitor.onReconnect once the
+        // network is back) succeeds and drains the row. See #804
+        // phase 6 slice 3.
+        val dispatcher = UnconfinedTestDispatcher(testScheduler)
+        val scope = CoroutineScope(dispatcher + Job())
+        val fx = makeFixture(scope, dispatcher)
+
+        // First save fails so the row stays queued.
+        fx.sessionRepo.uploadSessionSaveResult =
+            Result.failure(RuntimeException("test: 503 unavailable"))
+        fx.manager.saveState()
+        advanceUntilIdle()
+        assertEquals(1L, fx.pending.count())
+
+        // "Network came back" — flip the stub to succeed and call
+        // drain explicitly. This is what slice 3's reconnect /
+        // lifecyclePause / autoSaveOnStop hooks do.
+        fx.sessionRepo.uploadSessionSaveResult =
+            Result.success(com.spela.player.domain.model.SaveState(id = "1", name = "Manual Save"))
+        fx.manager.drainPendingUploads()
+        advanceUntilIdle()
+
+        assertEquals(0L, fx.pending.count(),
+            "the second drain must clear the failed-then-recovered row")
+        assertFalse(fx.state.value.hasPendingUploads)
+    }
+
     /** Minimal FileStorage that no-ops everything — the staging path
      *  in tests goes through `serialize() + writeFile`, both of which
      *  are no-ops on the stub controller, so the staged "file" is

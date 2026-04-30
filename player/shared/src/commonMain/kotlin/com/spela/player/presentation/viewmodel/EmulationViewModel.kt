@@ -1294,6 +1294,12 @@ class EmulationViewModel(
             presenceService.paused = true
             _state.update { it.copy(isLifecyclePaused = true, isPaused = true) }
         }
+        // App-pause drain (#804 phase 6 slice 3 spec point b). The
+        // user is putting the device down (clamshell close, home
+        // button, screen lock) — a good moment to push any pending
+        // saves to the server while we still have network. Idempotent
+        // when the queue is empty.
+        saveManager.drainPendingUploads()
     }
 
     private fun lifecycleResume() {
