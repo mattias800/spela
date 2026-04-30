@@ -17,6 +17,7 @@ import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.withContext
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
@@ -453,6 +454,11 @@ class SaveManager(
         } finally {
             staged.cleanup()
         }
+        // Game-exit drain (#804 phase 6 slice 3 spec point a). The
+        // auto-save itself runs inline above, but any manual saves
+        // queued during gameplay are still on disk waiting for an
+        // opportunity. This is that opportunity.
+        drainPendingUploads()
     }
 
     /**
@@ -483,6 +489,46 @@ class SaveManager(
      * properly. See #804 phase 6.
      */
     private val pendingScreenshots = mutableMapOf<Long, ByteArray>()
+
+    /**
+     * Serialises drain calls so concurrent triggers (e.g. game-exit
+     * + network-reconnect arriving in the same second) don't kick
+     * off two drain loops that both pick up the same row and
+     * upload it twice. tryLock semantics — the second call is a
+     * no-op rather than a wait, because the in-flight drain already
+     * sees any rows the second trigger would have picked up. See
+     * #804 phase 6 slice 3.
+     */
+    private val drainMutex = Mutex()
+
+    /**
+     * Public entry point for the drain triggers (game exit, app
+     * pause, network reconnect, post-enqueue immediate drain).
+     * Idempotent: when the queue is empty the drain coroutine flips
+     * [EmulationState.hasPendingUploads] to false and exits. When a
+     * drain is already in flight, the call is a no-op (the in-flight
+     * drain will pick up any newly-enqueued rows on its next
+     * iteration). See #804 phase 6 slice 3.
+     */
+    fun drainPendingUploads() {
+        launchDrainPendingUploads()
+    }
+
+    /**
+     * Subscribes to [ConnectivityMonitor.onReconnect] and triggers a
+     * drain on every reconnect. Called once by the DI module after
+     * construction; tests don't call this so the long-lived collector
+     * doesn't keep their `runTest` scopes from completing. See #804
+     * phase 6 slice 3 spec point (c).
+     */
+    fun startReconnectListener() {
+        scope.launch(dispatchers.io) {
+            connectivityMonitor.onReconnect.collect {
+                println("[SaveManager] onReconnect — draining pending uploads")
+                drainPendingUploads()
+            }
+        }
+    }
 
     fun saveState() {
         if (_state.value.isChallengeMode) return
@@ -585,39 +631,50 @@ class SaveManager(
      */
     private fun launchDrainPendingUploads() {
         scope.launch(dispatchers.io) {
-            while (true) {
-                val pending = pendingUploadRepository.getAll()
-                if (pending.isEmpty()) {
-                    withContext(dispatchers.main) {
-                        _state.update {
-                            it.copy(
-                                hasPendingUploads = false,
-                                saveStateJustSucceeded = true,
-                            )
-                        }
-                    }
-                    refreshSaveSlots()
-                    scope.launch(dispatchers.io) {
-                        kotlinx.coroutines.delay(SAVE_SUCCESS_FLASH_MS)
+            // tryLock so a redundant trigger (e.g. reconnect arrives
+            // while the post-enqueue drain is still running) is a
+            // cheap no-op instead of a parallel drain that would
+            // race on the same rows.
+            if (!drainMutex.tryLock()) {
+                return@launch
+            }
+            try {
+                while (true) {
+                    val pending = pendingUploadRepository.getAll()
+                    if (pending.isEmpty()) {
                         withContext(dispatchers.main) {
-                            _state.update { it.copy(saveStateJustSucceeded = false) }
+                            _state.update {
+                                it.copy(
+                                    hasPendingUploads = false,
+                                    saveStateJustSucceeded = true,
+                                )
+                            }
                         }
+                        refreshSaveSlots()
+                        scope.launch(dispatchers.io) {
+                            kotlinx.coroutines.delay(SAVE_SUCCESS_FLASH_MS)
+                            withContext(dispatchers.main) {
+                                _state.update { it.copy(saveStateJustSucceeded = false) }
+                            }
+                        }
+                        return@launch
                     }
-                    return@launch
+                    val row = pending.first()
+                    val screenshot = pendingScreenshots[row.id]
+                    val result = uploadPendingRow(row, screenshot)
+                    if (result.isSuccess) {
+                        pendingUploadRepository.delete(row.id)
+                        pendingScreenshots.remove(row.id)
+                        runCatching { fileStorage.deleteFile(row.filePath) }
+                    } else {
+                        val msg = result.exceptionOrNull()?.message ?: "upload failed"
+                        pendingUploadRepository.markRetry(row.id, msg)
+                        println("[SaveManager] drain: row ${row.id} failed: $msg — leaving in queue")
+                        return@launch
+                    }
                 }
-                val row = pending.first()
-                val screenshot = pendingScreenshots[row.id]
-                val result = uploadPendingRow(row, screenshot)
-                if (result.isSuccess) {
-                    pendingUploadRepository.delete(row.id)
-                    pendingScreenshots.remove(row.id)
-                    runCatching { fileStorage.deleteFile(row.filePath) }
-                } else {
-                    val msg = result.exceptionOrNull()?.message ?: "upload failed"
-                    pendingUploadRepository.markRetry(row.id, msg)
-                    println("[SaveManager] drain: row ${row.id} failed: $msg — leaving in queue")
-                    return@launch
-                }
+            } finally {
+                drainMutex.unlock()
             }
         }
     }
