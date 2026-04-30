@@ -1377,6 +1377,37 @@ class FakeSessionRepository : SessionRepository {
     override suspend fun getSessionSaves(sessionId: String): Result<List<SaveState>> =
         Result.success(sessionSaves[sessionId] ?: emptyList())
 
+    /** Records the most recent rename + delete calls so tests can
+     *  assert wiring without a real network. See #831. */
+    var lastRenameCall: Triple<String, String, String>? = null
+        private set
+    var lastDeleteCall: Pair<String, String>? = null
+        private set
+
+    override suspend fun updateSessionSave(
+        sessionId: String,
+        saveId: String,
+        name: String,
+    ): Result<SaveState> {
+        lastRenameCall = Triple(sessionId, saveId, name)
+        val saves = sessionSaves[sessionId] ?: return Result.failure(NoSuchElementException(sessionId))
+        val idx = saves.indexOfFirst { it.id == saveId }
+        if (idx < 0) return Result.failure(NoSuchElementException(saveId))
+        val updated = saves[idx].copy(name = name)
+        sessionSaves[sessionId] = saves.toMutableList().also { it[idx] = updated }
+        return Result.success(updated)
+    }
+
+    override suspend fun deleteSessionSave(
+        sessionId: String,
+        saveId: String,
+    ): Result<Unit> {
+        lastDeleteCall = sessionId to saveId
+        val saves = sessionSaves[sessionId] ?: return Result.success(Unit)
+        sessionSaves[sessionId] = saves.filterNot { it.id == saveId }.toMutableList()
+        return Result.success(Unit)
+    }
+
     override suspend fun uploadSessionSave(sessionId: String, name: String, data: ByteArray, screenshot: ByteArray?, coreName: String): Result<SaveState> {
         val save = SaveState(
             id = ((sessionSaves[sessionId]?.size ?: 0) + 1).toString(),
