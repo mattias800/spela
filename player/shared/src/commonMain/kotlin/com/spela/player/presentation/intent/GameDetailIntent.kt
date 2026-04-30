@@ -9,6 +9,16 @@ sealed interface GameDetailIntent {
     data object DismissDeleteDownloadDialog : GameDetailIntent
     data object ToggleFavorite : GameDetailIntent
     data object TogglePlayLater : GameDetailIntent
+    /**
+     * Set the per-game save-state opt-out (#804 phase 4b spec point c).
+     * `choice == null` clears the override so the game inherits from
+     * the per-console policy. The handler does an optimistic update +
+     * rollback on API failure, mirroring the per-console toggle in
+     * Settings.
+     */
+    data class SetGameSaveStatePolicy(
+        val choice: com.spela.player.domain.model.SaveStateChoice?,
+    ) : GameDetailIntent
     data class RateGame(val rating: Int, val review: String = "") : GameDetailIntent
     data object DeleteRating : GameDetailIntent
     data object LoadSharedSaves : GameDetailIntent

@@ -60,6 +60,12 @@ fun GameInfoContent(
     onNavigateToDeveloper: ((name: String) -> Unit)? = null,
     onNavigateToPublisher: ((name: String) -> Unit)? = null,
     onNavigateToAchievements: (() -> Unit)? = null,
+    /**
+     * Tri-state per-game save-state opt-out callback (#804 phase 4b
+     * spec point c). null = inherit from per-console policy. The
+     * GameSaveStatePolicyToggle composable handles the radio UI.
+     */
+    onSetGameSaveStatePolicy: (com.spela.player.domain.model.SaveStateChoice?) -> Unit = {},
 ) {
     // BIOS warning chip
     if (missingBiosFiles.isNotEmpty()) {
@@ -161,4 +167,14 @@ fun GameInfoContent(
             onNavigateToGame = onNavigateToGame,
         )
     }
+
+    // Per-game save-state opt-out toggle (#804 phase 4b spec point c).
+    // Slotted at the end of the info block, near other game-level
+    // settings — close enough to the play actions to be discoverable
+    // without disrupting the cover/screenshot flow above.
+    Spacer(Modifier.height(SpSpacing.Default))
+    GameSaveStatePolicyToggle(
+        current = state.gameSaveStatePolicy,
+        onChange = onSetGameSaveStatePolicy,
+    )
 }

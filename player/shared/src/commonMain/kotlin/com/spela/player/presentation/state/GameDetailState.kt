@@ -78,6 +78,14 @@ data class GameDetailState(
     // BIOS
     val missingBiosFiles: List<BiosMissingFile> = emptyList(),
 
+    /**
+     * The user's per-game save-state opt-out for this game, or null
+     * when no override exists ("inherit from per-console policy").
+     * Drives the tri-state radio on the game-detail options menu.
+     * See #804 phase 4b spec point (c).
+     */
+    val gameSaveStatePolicy: com.spela.player.domain.model.SaveStateChoice? = null,
+
     // Cheats (used by InGameOverlay, not displayed on game detail)
     val cheats: List<Cheat> = emptyList(),
     val isLoadingCheats: Boolean = false,

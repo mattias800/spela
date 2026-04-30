@@ -45,6 +45,7 @@ class GameDetailViewModel(
     private val challengeRepository: ChallengeRepository,
     private val sharedSessionRepository: SharedSessionRepository,
     private val gameRepository: GameRepository,
+    private val preferencesRepository: com.spela.player.domain.repository.PreferencesRepository,
     private val apiClient: SpelaApiClient,
     private val scrapeService: ScrapeService,
     private val dispatchers: DispatcherProvider,
@@ -90,6 +91,8 @@ class GameDetailViewModel(
             }
             GameDetailIntent.ToggleFavorite -> toggleFavorite()
             GameDetailIntent.TogglePlayLater -> togglePlayLater()
+            is GameDetailIntent.SetGameSaveStatePolicy ->
+                setGameSaveStatePolicy(intent.choice)
             is GameDetailIntent.RateGame -> rateGame(intent.rating, intent.review)
             GameDetailIntent.DeleteRating -> deleteRating()
             GameDetailIntent.LoadSharedSaves -> loadSharedSaves()
@@ -180,6 +183,14 @@ class GameDetailViewModel(
                     val sharedSaves = if (isPlayable) {
                         sharedSaveRepository.getSharedSaves(gameId).getOrDefault(emptyList())
                     } else emptyList()
+                    // Resolve the per-game save-state opt-out by
+                    // looking up the user's preferences. null means
+                    // "no per-game choice — inherit from per-console
+                    // policy". See #804 phase 4b spec point (c).
+                    val perGameChoice = preferencesRepository.getPreferences()
+                        .getOrNull()
+                        ?.gameSaveStatePolicies
+                        ?.get(gameId)
                     _state.update {
                         it.copy(
                             gameDetail = detail,
@@ -188,6 +199,7 @@ class GameDetailViewModel(
                             isGameCached = isCached,
                             myRating = myRating,
                             ratingSummary = summary,
+                            gameSaveStatePolicy = perGameChoice,
                             isLoading = false,
                         )
                     }
@@ -333,6 +345,28 @@ class GameDetailViewModel(
                     _state.update { it.copy(error = error.message) }
                 },
             )
+        }
+    }
+
+    /**
+     * Upserts (or clears) the per-game save-state opt-out for the
+     * current game. Optimistic update with rollback on API failure
+     * — same pattern as togglePlayLater. The wire format sends an
+     * empty string to clear the row server-side. See #804 phase 4b
+     * spec point (c).
+     */
+    private fun setGameSaveStatePolicy(
+        choice: com.spela.player.domain.model.SaveStateChoice?,
+    ) {
+        val gameId = currentGameId ?: return
+        val previous = _state.value.gameSaveStatePolicy
+        _state.update { it.copy(gameSaveStatePolicy = choice) }
+        scope.launch(dispatchers.io) {
+            preferencesRepository.updatePreferences(
+                gameSaveStatePolicies = mapOf(gameId to (choice?.apiId ?: "")),
+            ).onFailure {
+                _state.update { it.copy(gameSaveStatePolicy = previous) }
+            }
         }
     }
 

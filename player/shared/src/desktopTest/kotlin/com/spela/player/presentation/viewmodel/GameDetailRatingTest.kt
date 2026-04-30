@@ -77,6 +77,7 @@ class GameDetailRatingTest {
             challengeRepository = StubChallengeRepository(),
             sharedSessionRepository = StubSharedSessionRepository(),
             gameRepository = fakeGameRepo,
+            preferencesRepository = com.spela.player.presentation.viewmodel.emulation.StubPreferencesRepository(),
             apiClient = apiClient,
             scrapeService = ScrapeService(apiClient, testDispatchers, scope),
             dispatchers = testDispatchers,
@@ -137,6 +138,39 @@ class GameDetailRatingTest {
 
         assertNotNull(vm.state.value.error)
         assertFalse(vm.state.value.isRating)
+    }
+
+    // ── #804 phase 4b spec point (c) — per-game save-state toggle ─────────
+
+    @Test
+    fun setGameSaveStatePolicyOptimisticallyUpdatesStateAndWritesPreference() = runTest(testDispatcher) {
+        val vm = createViewModel()
+        vm.onIntent(GameDetailIntent.LoadGame("1"))
+        advanceUntilIdle()
+        assertNull(vm.state.value.gameSaveStatePolicy,
+            "no per-game choice exists yet — VM should reflect that")
+
+        vm.onIntent(GameDetailIntent.SetGameSaveStatePolicy(SaveStateChoice.Disabled))
+        advanceUntilIdle()
+
+        assertEquals(SaveStateChoice.Disabled, vm.state.value.gameSaveStatePolicy)
+    }
+
+    @Test
+    fun setGameSaveStatePolicyNullClearsTheOverride() = runTest(testDispatcher) {
+        val vm = createViewModel()
+        vm.onIntent(GameDetailIntent.LoadGame("1"))
+        advanceUntilIdle()
+        // Seed an existing override on the VM.
+        vm.onIntent(GameDetailIntent.SetGameSaveStatePolicy(SaveStateChoice.Enabled))
+        advanceUntilIdle()
+        assertEquals(SaveStateChoice.Enabled, vm.state.value.gameSaveStatePolicy)
+
+        // Clear it — should flip back to null in state.
+        vm.onIntent(GameDetailIntent.SetGameSaveStatePolicy(null))
+        advanceUntilIdle()
+        assertNull(vm.state.value.gameSaveStatePolicy,
+            "null choice means 'inherit from per-console policy' — UI shows the radio in the default position")
     }
 }
 
