@@ -147,6 +147,7 @@ class SpelaTestHarness(
         challengeRepository = challengeRepo,
         sharedSessionRepository = sharedSessionRepo,
         gameRepository = gameRepo,
+        preferencesRepository = preferencesRepo,
         apiClient = fakeApiClient,
         scrapeService = scrapeService,
         dispatchers = dispatchers,
@@ -178,6 +179,8 @@ class SpelaTestHarness(
         dispatchers = dispatchers,
         scope = scope,
         sessionRepository = sessionRepo,
+        fileStorage = HarnessFileStorage(),
+        pendingUploadRepository = HarnessPendingSaveUploadRepository(),
     )
     private val challengeManager = ChallengeManager(
         challengeRepository = challengeRepo,
@@ -401,5 +404,99 @@ class SpelaTestHarness(
             ),
         )
         }
+    }
+}
+
+/** Real-FS FileStorage backed by a per-harness temp directory. Used so
+ *  SaveManager's file-streaming load/save paths in #798 / #804 phase 6
+ *  actually round-trip through disk in the harness — without this the
+ *  load tests in InGameOverlayTest / SaveLoadStateTest can't see
+ *  unserialize fire. The temp dir is leaked at test-class scope and
+ *  cleaned up by the JVM's tmp-dir cleaner. */
+private class HarnessFileStorage : com.spela.player.util.FileStorage {
+    private val root: java.io.File = kotlin.io.path.createTempDirectory("spela-harness-").toFile()
+    init { root.deleteOnExit() }
+    override fun getGamesDir(): String = ensure("games")
+    override fun getCoresDir(): String = ensure("cores")
+    override fun getSavesDir(): String = ensure("saves")
+    override fun getBiosDir(): String = ensure("bios")
+    private fun ensure(name: String): String =
+        java.io.File(root, name).apply { mkdirs() }.absolutePath
+    override suspend fun createDirectory(path: String) { java.io.File(path).mkdirs() }
+    override suspend fun writeFile(path: String, data: ByteArray) {
+        val f = java.io.File(path)
+        f.parentFile?.mkdirs()
+        f.writeBytes(data)
+    }
+    override suspend fun readFile(path: String): ByteArray =
+        runCatching { java.io.File(path).readBytes() }.getOrDefault(byteArrayOf())
+    override suspend fun fileExists(path: String): Boolean = java.io.File(path).exists()
+    override suspend fun deleteFile(path: String) { java.io.File(path).delete() }
+    override suspend fun deleteDirectory(path: String) { java.io.File(path).deleteRecursively() }
+    override suspend fun getDirectorySize(path: String): Long = 0
+    override suspend fun writeFileStreaming(
+        path: String,
+        writer: suspend (append: suspend (ByteArray, Int, Int) -> Unit) -> Unit,
+    ) {
+        val f = java.io.File(path)
+        f.parentFile?.mkdirs()
+        val out = f.outputStream()
+        try {
+            writer { bytes, offset, length -> out.write(bytes, offset, length) }
+        } finally {
+            out.close()
+        }
+    }
+    override suspend fun getFileSize(path: String): Long = java.io.File(path).length()
+    override suspend fun listFiles(path: String): List<String> =
+        java.io.File(path).listFiles()?.map { it.absolutePath } ?: emptyList()
+    override suspend fun isDirectory(path: String): Boolean = java.io.File(path).isDirectory
+    override suspend fun zipDirectoryToBytes(dirPath: String): ByteArray? = null
+    override suspend fun unzipBytesToDirectory(data: ByteArray, targetDir: String) {}
+    override suspend fun sha256File(path: String): String? = null
+}
+
+/** In-memory pending-upload queue for the harness. SaveManager
+ *  enqueues here on the deferred-sync path; the harness doesn't
+ *  exercise drain so the queue is essentially write-only in tests. */
+private class HarnessPendingSaveUploadRepository :
+    com.spela.player.domain.repository.PendingSaveUploadRepository {
+    private val rows = mutableListOf<com.spela.player.domain.model.PendingSaveUpload>()
+    private var nextId = 1L
+    override suspend fun enqueue(
+        sessionId: String,
+        kind: com.spela.player.domain.model.PendingUploadKind,
+        slot: Int?,
+        name: String,
+        coreName: String,
+        compression: String,
+        filePath: String,
+        fileSize: Long,
+        screenshotPath: String?,
+        createdAt: Long,
+    ): Long {
+        val id = nextId++
+        rows.add(
+            com.spela.player.domain.model.PendingSaveUpload(
+                id, sessionId, kind, slot, name, coreName, compression,
+                filePath, fileSize, screenshotPath, createdAt, 0, null,
+            ),
+        )
+        return id
+    }
+    override suspend fun getAll() = rows.toList()
+    override suspend fun getForSession(sessionId: String) =
+        rows.filter { it.sessionId == sessionId }
+    override suspend fun getById(id: Long) = rows.find { it.id == id }
+    override suspend fun count(): Long = rows.size.toLong()
+    override suspend fun delete(id: Long) {
+        rows.removeAll { it.id == id }
+    }
+    override suspend fun markRetry(id: Long, lastError: String?) {
+        val idx = rows.indexOfFirst { it.id == id }
+        if (idx >= 0) rows[idx] = rows[idx].copy(
+            retryCount = rows[idx].retryCount + 1,
+            lastError = lastError,
+        )
     }
 }

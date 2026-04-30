@@ -4,7 +4,6 @@ import androidx.compose.ui.test.*
 import com.spela.player.domain.model.ActiveYears
 import com.spela.player.domain.model.CompanyInfo
 import com.spela.player.domain.model.DeveloperDetail
-import com.spela.player.domain.model.DeveloperDetailGenreBreakdown
 import com.spela.player.domain.model.DeveloperDetailPlatformBreakdown
 import com.spela.player.domain.model.DeveloperDetailPublisher
 import com.spela.player.domain.model.DeveloperDetailUserStats
@@ -113,11 +112,6 @@ class ExploreDeveloperTest {
                 genre = "RPG",
                 igdbCriticsRating = 78.0,
             ),
-        ),
-        genreBreakdown = listOf(
-            DeveloperDetailGenreBreakdown(name = "Platformer", gameCount = 4),
-            DeveloperDetailGenreBreakdown(name = "Fighting", gameCount = 3),
-            DeveloperDetailGenreBreakdown(name = "Action", gameCount = 1),
         ),
         platformBreakdown = listOf(
             DeveloperDetailPlatformBreakdown("SNES", "snes", 5),

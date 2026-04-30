@@ -123,6 +123,14 @@ class PauseHintTest {
     @Test
     fun fpsHudVisibleWhenOverlayIsDismissed() = runComposeUiTest {
         val harness = createHarnessWithGameReady()
+        // FpsHud is gated on the user's showPerformanceOverlay
+        // preference (off by default for casual play); flip it on
+        // before navigating so the HUD renders during the test.
+        // See InGameOverlay.kt comment "Off by default since casual
+        // users don't need to see frame timing while playing".
+        harness.preferencesRepo.preferencesResult = Result.success(
+            com.spela.player.domain.model.UserPreferences(showPerformanceOverlay = true),
+        )
 
         setContent { harness.App() }
         advance(harness)
@@ -131,8 +139,8 @@ class PauseHintTest {
         onNodeWithTag("game_detail_play_button").performClick()
         advance(harness)
 
-        // FPS HUD should be visible (the small badge in top-right)
-        // The FPS text node has content description like "X FPS, tap to open game menu"
+        // FPS HUD should be visible (the small badge in top-right).
+        // The FPS text node has content description like "X FPS, tap to open game menu".
         onAllNodes(hasContentDescription("FPS", substring = true))
             .fetchSemanticsNodes()
             .let { nodes ->
