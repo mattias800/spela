@@ -396,7 +396,11 @@ test.describe("Play Later on Game Detail Page", () => {
     await page.goto("/games/1");
 
     // Open the actions menu, then find the Play Later menu item
-    const actionsBtn = page.getByRole("button", { name: "Actions" });
+    // The page-level actions button shares aria-label="Actions" with
+    // session-card actions buttons (which can render after seed data
+    // changes). Pin to the first match so the locator stays
+    // strict-mode safe regardless of which sessions appear.
+    const actionsBtn = page.getByTestId("actions-menu-btn").first();
     await expect(actionsBtn).toBeVisible({ timeout: 10_000 });
     await actionsBtn.click();
 
@@ -412,7 +416,11 @@ test.describe("Play Later on Game Detail Page", () => {
 
     await page.goto("/games/1");
 
-    const actionsBtn = page.getByRole("button", { name: "Actions" });
+    // The page-level actions button shares aria-label="Actions" with
+    // session-card actions buttons (which can render after seed data
+    // changes). Pin to the first match so the locator stays
+    // strict-mode safe regardless of which sessions appear.
+    const actionsBtn = page.getByTestId("actions-menu-btn").first();
     await expect(actionsBtn).toBeVisible({ timeout: 10_000 });
     await actionsBtn.click();
 
@@ -442,7 +450,11 @@ test.describe("Play Later on Game Detail Page", () => {
 
     await page.goto("/games/1");
 
-    const actionsBtn = page.getByRole("button", { name: "Actions" });
+    // The page-level actions button shares aria-label="Actions" with
+    // session-card actions buttons (which can render after seed data
+    // changes). Pin to the first match so the locator stays
+    // strict-mode safe regardless of which sessions appear.
+    const actionsBtn = page.getByTestId("actions-menu-btn").first();
     await expect(actionsBtn).toBeVisible({ timeout: 10_000 });
     await actionsBtn.click();
 
@@ -476,7 +488,11 @@ test.describe("Play Later on Game Detail Page", () => {
 
     await page.goto("/games/1");
 
-    const actionsBtn = page.getByRole("button", { name: "Actions" });
+    // The page-level actions button shares aria-label="Actions" with
+    // session-card actions buttons (which can render after seed data
+    // changes). Pin to the first match so the locator stays
+    // strict-mode safe regardless of which sessions appear.
+    const actionsBtn = page.getByTestId("actions-menu-btn").first();
     await expect(actionsBtn).toBeVisible({ timeout: 10_000 });
     await actionsBtn.click();
 
