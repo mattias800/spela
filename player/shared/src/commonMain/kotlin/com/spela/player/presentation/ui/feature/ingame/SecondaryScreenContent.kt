@@ -104,12 +104,24 @@ fun SecondaryScreenContent(
         label = "burnInAlpha",
     )
 
-    val initialPage = remember(state.defaultSecondScreenPage) {
-        when (state.defaultSecondScreenPage) {
-            "controls" -> PAGE_CONTROLS
-            "dashboard" -> PAGE_DASHBOARD
-            "save_slots" -> PAGE_SAVE_SLOTS
-            else -> PAGE_ART
+    val initialPage = remember(state.defaultSecondScreenPage, state.consoleId) {
+        // Mouse-driven cores (ScummVM today; DOSBox / NDS-with-mouse later)
+        // override the user's default landing page to land on Controls. The
+        // trackpad lives there, the trackpad is the primary input on
+        // single-screen handhelds with no real mouse, and "swipe right
+        // until you find the trackpad" is poor first-launch UX. See #861
+        // — this is the MVP override; the per-device-per-console
+        // "trackpadOnboarded" persistence (silence the override after the
+        // user makes one drag) is filed as follow-up scope.
+        if (state.consoleId.equals("scummvm", ignoreCase = true)) {
+            PAGE_CONTROLS
+        } else {
+            when (state.defaultSecondScreenPage) {
+                "controls" -> PAGE_CONTROLS
+                "dashboard" -> PAGE_DASHBOARD
+                "save_slots" -> PAGE_SAVE_SLOTS
+                else -> PAGE_ART
+            }
         }
     }
     val pagerState = rememberPagerState(
