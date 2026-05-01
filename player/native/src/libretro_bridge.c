@@ -321,6 +321,56 @@ static bool environment_callback(unsigned cmd, void *data) {
                     }
                 }
 
+                /* ScummVM: sensible default gamepad mapping for the audience
+                 * (#859). The core's built-in joypad-to-key defaults are
+                 * tuned for the libretro-scummvm dev environment, not for a
+                 * casual player picking up a handheld to play Monkey Island.
+                 *
+                 * Mapping (per the PO + UX agent synthesis in the issue,
+                 * with shoulders for the primary mouse buttons per the
+                 * project owner's revision):
+                 *
+                 *   L1     → Left mouse button   (most-used in point-and-click)
+                 *   R1     → Right mouse button  (second-most-used)
+                 *   X      → period (skip dialogue / advance text)
+                 *   Y      → F5 (open ScummVM main menu — save/load/options)
+                 *   Start  → space (pause)
+                 *   D-pad  → arrow keys
+                 *
+                 * A and B keep the core defaults (typically Return and
+                 * Escape) — those are sensible for in-game prompts. Select
+                 * stays unbound (reserved for a future virtual-keyboard
+                 * toggle). The right analog stick driving the cursor is
+                 * unchanged — it's a separate code path inside the core,
+                 * not a mapper variable, and feels right today.
+                 *
+                 * Value strings are libretro-scummvm option tokens. If a
+                 * future core build renames any of them this block will
+                 * silently no-op (core_variables_set is a tolerant
+                 * upsert) and we'll see the old behaviour again. */
+                {
+                    const struct retro_variable *v3 = (const struct retro_variable *)data;
+                    bool is_scummvm = false;
+                    for (; v3->key; v3++) {
+                        if (v3->key && strstr(v3->key, "scummvm_mapper_")) {
+                            is_scummvm = true;
+                            break;
+                        }
+                    }
+                    if (is_scummvm) {
+                        LOGI("ScummVM core detected, applying default gamepad mapping (#859)");
+                        core_variables_set("scummvm_mapper_l", "MOUSE_LEFT");
+                        core_variables_set("scummvm_mapper_r", "MOUSE_RIGHT");
+                        core_variables_set("scummvm_mapper_x", "RETROK_PERIOD");
+                        core_variables_set("scummvm_mapper_y", "RETROK_F5");
+                        core_variables_set("scummvm_mapper_start", "RETROK_SPACE");
+                        core_variables_set("scummvm_mapper_up", "RETROK_UP");
+                        core_variables_set("scummvm_mapper_down", "RETROK_DOWN");
+                        core_variables_set("scummvm_mapper_left", "RETROK_LEFT");
+                        core_variables_set("scummvm_mapper_right", "RETROK_RIGHT");
+                    }
+                }
+
                 /* Clear the dirty flag after initial population. The flag is
                  * meant to signal *user-initiated* variable changes (so the
                  * core can re-read its options), but core_variables_set bumps
