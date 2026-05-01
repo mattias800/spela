@@ -37,6 +37,25 @@ interface FileStorage {
     suspend fun extractFirstZipEntryFromFile(zipPath: String, destPath: String)
 
     /**
+     * Tars the contents of [dirPath] (recursively) into [destPath]. The
+     * tar contains entries named relative to [dirPath] — `dirPath/foo/bar`
+     * lands in the tar as `foo/bar`. Streams to disk; the tar isn't
+     * materialized in memory. Used to bundle a libretro save_dir for
+     * upload (#864). Returns the size in bytes of the written tar.
+     * Returns 0 when [dirPath] doesn't exist or is empty.
+     */
+    suspend fun tarDirectoryToFile(dirPath: String, destPath: String): Long
+
+    /**
+     * Extracts a tar file at [tarPath] into [destDir] (recursively).
+     * Companion to [tarDirectoryToFile] for the save_dir bundle download
+     * path (#864). Streams from disk — tar is never fully buffered in
+     * memory. The destination dir is created if missing; existing files
+     * with the same path are overwritten.
+     */
+    suspend fun extractTarFile(tarPath: String, destDir: String)
+
+    /**
      * Streaming SHA-256 of the file at [path], returned as a lowercase hex
      * string. Returns `null` when the path doesn't exist or can't be read —
      * callers treat that as "cannot decide" and should fall back to the

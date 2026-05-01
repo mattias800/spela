@@ -108,6 +108,12 @@ type SessionSlotSaveDownloadInput struct {
 	Slot string `path:"slot" doc:"Save slot number 1-10."`
 }
 
+// SessionSaveDirBundleDownloadInput is the input for GET /api/sessions/{id}/save-dir.
+// Returns the previously-uploaded tarball or 404 if the session has no bundle.
+type SessionSaveDirBundleDownloadInput struct {
+	ID string `path:"id" doc:"Session ID."`
+}
+
 // SessionSRAMDownloadInput is the input for GET /api/sessions/{id}/sram.
 type SessionSRAMDownloadInput struct {
 	ID string `path:"id" doc:"Session ID."`
@@ -264,6 +270,17 @@ func RegisterDownloadRoutes(
 		Middlewares: authedMW,
 		Security:    sec,
 	}, sessionH.HumaDownloadSRAM)
+
+	huma.Register(api, huma.Operation{
+		OperationID: "downloadSessionSaveDirBundle",
+		Method:      http.MethodGet,
+		Path:        "/api/sessions/{id}/save-dir",
+		Summary:     "Download the libretro save_dir tarball for a session",
+		Description: "Owner-only. Responds with application/x-tar containing the save_dir bytes uploaded on the most recent exit. 404 if the session has never had a save_dir bundle. See #864.",
+		Tags:        []string{"sessions"},
+		Middlewares: authedMW,
+		Security:    sec,
+	}, sessionH.HumaDownloadSaveDirBundle)
 
 	huma.Register(api, huma.Operation{
 		OperationID: "downloadSharedSave",
@@ -569,6 +586,27 @@ func (h *SessionHandler) HumaDownloadSlotSave(ctx context.Context, in *SessionSl
 		return nil, huma.Error403Forbidden("file access denied")
 	}
 	return streamSaveFromDisk(save.FilePath, filepath.Base(save.FilePath), save.Compression), nil
+}
+
+// HumaDownloadSaveDirBundle is the huma implementation of GET
+// /api/sessions/{id}/save-dir. Streams the previously-uploaded tarball back to
+// the player. 404 when the session has never had a save_dir bundle (the
+// player treats that as "fresh save_dir, nothing to populate"). See #864.
+func (h *SessionHandler) HumaDownloadSaveDirBundle(ctx context.Context, in *SessionSaveDirBundleDownloadInput) (*huma.StreamResponse, error) {
+	uid := UserIDFromContext(ctx)
+	session, err := h.humaLoadSessionWithOwnerCheck(in.ID, uid)
+	if err != nil {
+		return nil, err
+	}
+
+	var bundle db.SessionSaveDirBundle
+	if err := h.DB.Where("session_id = ?", session.ID).First(&bundle).Error; err != nil {
+		return nil, huma.Error404NotFound("no save_dir bundle found")
+	}
+	if !storage.ValidateROMPath(bundle.FilePath, []string{h.Storage.SaveDir}) {
+		return nil, huma.Error403Forbidden("file access denied")
+	}
+	return streamFileFromDisk(bundle.FilePath, filepath.Base(bundle.FilePath), "application/x-tar"), nil
 }
 
 // HumaDownloadSRAM is the huma implementation of GET /api/sessions/{id}/sram.

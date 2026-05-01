@@ -197,7 +197,7 @@ private class FakeLibretroController : LibretroController {
     var loadCallCount = 0
         private set
 
-    override fun loadCore(corePath: String) {
+    override fun loadCore(corePath: String, saveDir: String?) {
         loadedCore = corePath
     }
 

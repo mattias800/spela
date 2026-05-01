@@ -126,7 +126,7 @@ open class StubLibretroController : LibretroController {
     var setSRAMResult = true
     var loadCoreShouldThrow: Exception? = null
 
-    override fun loadCore(corePath: String) {
+    override fun loadCore(corePath: String, saveDir: String?) {
         loadCoreShouldThrow?.let { throw it }
         loadCoreCallCount++
         lastLoadCorePath = corePath
@@ -158,7 +158,7 @@ open class StubLibretroController : LibretroController {
 
 class StubLibretroControllerWithVariableTracking : LibretroController {
     val coreVariables = mutableMapOf<String, String>()
-    override fun loadCore(corePath: String) {}
+    override fun loadCore(corePath: String, saveDir: String?) {}
     override fun loadGame(gamePath: String) {}
     override fun start() {}
     override fun pause() {}
@@ -522,6 +522,9 @@ class StubSessionRepository : SessionRepository {
         downloadSessionSramCallCount++
         return downloadSessionSramResult
     }
+    override suspend fun uploadSessionSaveDirBundleFromFile(sessionId: String, tarPath: String, tarSize: Long): Result<Unit> = Result.success(Unit)
+    override suspend fun downloadSessionSaveDirBundleToFile(sessionId: String, fileStorage: com.spela.player.util.FileStorage, outputPath: String): Result<Unit> =
+        Result.failure(Exception("no save_dir bundle"))
     override suspend fun uploadSlotSave(sessionId: String, slot: Int, data: ByteArray, screenshot: ByteArray?, coreName: String) =
         Result.success(SaveState(id = "1", name = "Slot $slot"))
     override suspend fun uploadSlotSaveFromFile(sessionId: String, slot: Int, savePath: String, saveSize: Long, screenshot: ByteArray?, coreName: String, compression: String): Result<SaveState> {
@@ -643,6 +646,8 @@ private class StubFileStorage : com.spela.player.util.FileStorage {
     override suspend fun zipDirectoryToBytes(dirPath: String): ByteArray? = null
     override suspend fun unzipBytesToDirectory(data: ByteArray, targetDir: String) {}
     override suspend fun extractFirstZipEntryFromFile(zipPath: String, destPath: String) {}
+    override suspend fun tarDirectoryToFile(dirPath: String, destPath: String): Long = 0L
+    override suspend fun extractTarFile(tarPath: String, destDir: String) {}
     override suspend fun sha256File(path: String): String? = null
 }
 

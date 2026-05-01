@@ -61,6 +61,21 @@ interface SessionRepository {
     suspend fun downloadSlotSaveToFile(sessionId: String, slot: Int, outputPath: String): Result<Unit>
     suspend fun uploadSessionSram(sessionId: String, data: ByteArray, coreName: String = ""): Result<Unit>
     suspend fun downloadSessionSram(sessionId: String): Result<ByteArray>
+
+    /**
+     * Uploads the per-session save_dir tarball to the server (replaces any
+     * previous bundle for this session). Used by cores that write their
+     * own save files to disk (ScummVM, DOSBox). See #864.
+     */
+    suspend fun uploadSessionSaveDirBundleFromFile(sessionId: String, tarPath: String, tarSize: Long): Result<Unit>
+
+    /**
+     * Streams the session's save_dir tarball to [outputPath]. Returns
+     * Result.failure for any non-2xx response — in particular a 404
+     * means the session has never had a bundle (the caller should treat
+     * the local dir as fresh and empty). See #864.
+     */
+    suspend fun downloadSessionSaveDirBundleToFile(sessionId: String, fileStorage: com.spela.player.util.FileStorage, outputPath: String): Result<Unit>
     suspend fun getSessionCheats(sessionId: String): Result<SessionCheatConfig>
     suspend fun updateSessionCheats(sessionId: String, cheatsEnabled: Boolean, enabledIndices: List<Int>): Result<SessionCheatConfig>
     /**

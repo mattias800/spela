@@ -129,6 +129,68 @@ class AndroidFileStorage(private val context: Context) : FileStorage {
         }
     }
 
+    override suspend fun tarDirectoryToFile(dirPath: String, destPath: String): Long =
+        withContext(Dispatchers.IO) {
+            val src = File(dirPath)
+            if (!src.exists() || !src.isDirectory) return@withContext 0L
+            val dest = File(destPath)
+            dest.parentFile?.mkdirs()
+            val files = src.walkTopDown().filter { it.isFile }.toList()
+            if (files.isEmpty()) return@withContext 0L
+            dest.outputStream().buffered().use { out ->
+                for (f in files) {
+                    val rel = f.relativeTo(src).invariantSeparatorsPath
+                    writeUstarHeader(out, rel, f.length())
+                    f.inputStream().use { input -> input.copyTo(out) }
+                    val pad = ((512 - (f.length() % 512)) % 512).toInt()
+                    if (pad > 0) out.write(ByteArray(pad))
+                }
+                // Two zero blocks mark the end of the archive.
+                out.write(ByteArray(1024))
+            }
+            dest.length()
+        }
+
+    override suspend fun extractTarFile(tarPath: String, destDir: String) =
+        withContext(Dispatchers.IO) {
+            val src = File(tarPath)
+            if (!src.exists() || src.length() == 0L) return@withContext
+            val dest = File(destDir)
+            dest.mkdirs()
+            src.inputStream().buffered().use { input ->
+                while (true) {
+                    val header = ByteArray(512)
+                    if (!readFully(input, header)) break
+                    if (header.all { it == 0.toByte() }) break
+                    val name = parseTarString(header, 0, 100)
+                    if (name.isEmpty()) break
+                    val sizeStr = parseTarString(header, 124, 12)
+                    val size = sizeStr.toLongOrNull(8) ?: 0L
+                    if (size > 0) {
+                        val outFile = File(dest, name)
+                        outFile.parentFile?.mkdirs()
+                        outFile.outputStream().buffered().use { out ->
+                            var remaining = size
+                            val buf = ByteArray(64 * 1024)
+                            while (remaining > 0) {
+                                val toRead = minOf(remaining, buf.size.toLong()).toInt()
+                                val read = input.read(buf, 0, toRead)
+                                if (read <= 0) break
+                                out.write(buf, 0, read)
+                                remaining -= read
+                            }
+                        }
+                        // Skip padding to next 512-byte boundary.
+                        val pad = ((512 - (size % 512)) % 512).toInt()
+                        if (pad > 0) {
+                            val skip = ByteArray(pad)
+                            readFully(input, skip)
+                        }
+                    }
+                }
+            }
+        }
+
     override suspend fun sha256File(path: String): String? = withContext(Dispatchers.IO) {
         val file = File(path)
         if (!file.exists() || !file.isFile) return@withContext null
@@ -145,4 +207,67 @@ class AndroidFileStorage(private val context: Context) : FileStorage {
             digest.digest().joinToString("") { "%02x".format(it) }
         }.getOrNull()
     }
+}
+
+/**
+ * Writes a USTAR-format header for a single file entry. Hand-rolled so we
+ * don't pull in Apache Commons Compress just for this; the format is well-
+ * defined (POSIX 1003.1-1988) and the subset we use (regular files only,
+ * no symlinks, no hardlinks, paths ≤ 100 chars) fits in a few lines.
+ *
+ * If [name] exceeds 100 bytes it's truncated — keep paths short. The
+ * fixed-format checksum is computed by summing every byte of the header
+ * with the checksum field treated as eight ASCII spaces, then writing the
+ * sum as a six-digit octal followed by NUL + space.
+ */
+private fun writeUstarHeader(out: java.io.OutputStream, name: String, size: Long) {
+    val hdr = ByteArray(512)
+    val nameBytes = name.encodeToByteArray()
+    val nameLen = minOf(nameBytes.size, 100)
+    System.arraycopy(nameBytes, 0, hdr, 0, nameLen)
+    // 420 dec == 0644 oct (Kotlin has no octal literal). Standard rw-r--r--
+    // permission bits — match what RetroArch writes to its save dir tarballs.
+    putOctal(hdr, 100, 8, 420L)               // mode
+    putOctal(hdr, 108, 8, 0L)                 // uid
+    putOctal(hdr, 116, 8, 0L)                 // gid
+    putOctal(hdr, 124, 12, size)              // size
+    putOctal(hdr, 136, 12, 0L)                // mtime — irrelevant for save bundles, keep stable
+    // checksum field is initially 8 spaces while computing
+    for (i in 148 until 156) hdr[i] = ' '.code.toByte()
+    hdr[156] = '0'.code.toByte()              // typeflag = regular file
+    val ustar = "ustar "
+    val ver = "00"
+    for ((i, c) in ustar.withIndex()) hdr[257 + i] = c.code.toByte()
+    for ((i, c) in ver.withIndex()) hdr[263 + i] = c.code.toByte()
+    var sum = 0
+    for (b in hdr) sum += (b.toInt() and 0xFF)
+    val sumStr = "%06o".format(sum)
+    for ((i, c) in sumStr.withIndex()) hdr[148 + i] = c.code.toByte()
+    hdr[154] = 0
+    hdr[155] = ' '.code.toByte()
+    out.write(hdr)
+}
+
+private fun putOctal(buf: ByteArray, off: Int, len: Int, value: Long) {
+    val s = "%0${len - 1}o".format(value)
+    val bytes = s.encodeToByteArray()
+    val n = minOf(bytes.size, len - 1)
+    System.arraycopy(bytes, 0, buf, off, n)
+    buf[off + len - 1] = 0
+}
+
+private fun parseTarString(buf: ByteArray, off: Int, len: Int): String {
+    var end = off
+    while (end < off + len && buf[end] != 0.toByte()) end++
+    return String(buf, off, end - off).trim()
+}
+
+private fun readFully(input: java.io.InputStream, buf: ByteArray): Boolean {
+    var read = 0
+    while (read < buf.size) {
+        val n = input.read(buf, read, buf.size - read)
+        if (n < 0) return read > 0 && read == buf.size
+        read += n
+    }
+    return true
 }

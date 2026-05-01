@@ -1829,6 +1829,42 @@ class SpelaApiClient(
         }
     }
 
+    /**
+     * Uploads the per-session save_dir tarball, atomically replacing any
+     * prior bundle. Streams the file from disk via ChannelProvider so the
+     * tar is never fully materialised in memory. See #864.
+     */
+    suspend fun uploadSessionSaveDirBundleFromFile(sessionId: String, tarPath: String, tarSize: Long) {
+        client.submitFormWithBinaryData(
+            url = "$baseUrl/api/sessions/$sessionId/save-dir",
+            formData = formData {
+                append("file", io.ktor.client.request.forms.ChannelProvider(tarSize) {
+                    com.spela.player.util.openFileReadChannel(tarPath)
+                }, Headers.build {
+                    append(HttpHeaders.ContentDisposition, "filename=\"save-dir.tar\"")
+                    append(HttpHeaders.ContentType, "application/x-tar")
+                })
+            }
+        )
+    }
+
+    /**
+     * Streams the session's save_dir tarball to [outputPath]. Throws on
+     * non-2xx responses; in particular a 404 means the session has never
+     * had a save_dir bundle and the caller should treat the local dir as
+     * fresh-empty rather than failing the launch. See #864.
+     */
+    suspend fun downloadSessionSaveDirBundleToFile(sessionId: String, fileStorage: FileStorage, outputPath: String) {
+        client.prepareGet("$baseUrl/api/sessions/$sessionId/save-dir") {
+            timeout { requestTimeoutMillis = Long.MAX_VALUE }
+        }.execute { response ->
+            if (!response.status.isSuccess()) {
+                throw RuntimeException("save_dir bundle download failed: HTTP ${response.status.value}")
+            }
+            streamSaveResponseToFile(response, fileStorage, outputPath)
+        }
+    }
+
     suspend fun downloadSessionSaveToFile(sessionId: String, saveId: String, fileStorage: FileStorage, outputPath: String) {
         client.prepareGet("$baseUrl/api/sessions/$sessionId/saves/$saveId") {
             timeout { requestTimeoutMillis = Long.MAX_VALUE }

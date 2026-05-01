@@ -471,6 +471,13 @@ func (s *Storage) SessionSRAMPath(sessionID uint, filename string) string {
 	return filepath.Join(s.SaveDir, "sessions", fmt.Sprintf("session_%d", sessionID), "sram", safe)
 }
 
+// SessionSaveDirBundlePath returns the filesystem path for a session's save_dir
+// tarball. There's only ever one bundle per session; the filename is a stable
+// constant so successive uploads atomically replace the prior bytes.
+func (s *Storage) SessionSaveDirBundlePath(sessionID uint) string {
+	return filepath.Join(s.SaveDir, "sessions", fmt.Sprintf("session_%d", sessionID), "save_dir", "bundle.tar")
+}
+
 // SessionScreenshotPath returns the filesystem path for a session screenshot.
 func (s *Storage) SessionScreenshotPath(sessionID uint, filename string) string {
 	safe := sanitizeFilename(filename)
@@ -508,6 +515,51 @@ func (s *Storage) WriteSessionSave(sessionID uint, filename string, data io.Read
 		return "", 0, fmt.Errorf("writing session save file: %w", err)
 	}
 
+	return path, n, nil
+}
+
+// WriteSessionSaveDirBundle stores a session's save_dir tarball, replacing
+// any prior bundle atomically: write to a `.tmp` sibling and rename on
+// success so a partial / interrupted upload never overwrites a known-good
+// bundle. See #864.
+func (s *Storage) WriteSessionSaveDirBundle(sessionID uint, data io.Reader) (string, int64, error) {
+	path := s.SessionSaveDirBundlePath(sessionID)
+
+	absPath, err := filepath.Abs(path)
+	if err != nil {
+		return "", 0, fmt.Errorf("resolving session save_dir bundle path: %w", err)
+	}
+	absSaveDir, err := filepath.Abs(s.SaveDir)
+	if err != nil {
+		return "", 0, fmt.Errorf("resolving save dir: %w", err)
+	}
+	if !strings.HasPrefix(absPath, absSaveDir+string(filepath.Separator)) {
+		return "", 0, fmt.Errorf("invalid session save_dir bundle path: outside save directory")
+	}
+
+	if err := os.MkdirAll(filepath.Dir(path), 0700); err != nil {
+		return "", 0, fmt.Errorf("creating session save_dir bundle directory: %w", err)
+	}
+
+	tmpPath := path + ".tmp"
+	f, err := os.Create(tmpPath)
+	if err != nil {
+		return "", 0, fmt.Errorf("creating session save_dir bundle tmp file: %w", err)
+	}
+	n, err := io.Copy(f, data)
+	closeErr := f.Close()
+	if err != nil {
+		_ = os.Remove(tmpPath)
+		return "", 0, fmt.Errorf("writing session save_dir bundle: %w", err)
+	}
+	if closeErr != nil {
+		_ = os.Remove(tmpPath)
+		return "", 0, fmt.Errorf("closing session save_dir bundle tmp file: %w", closeErr)
+	}
+	if err := os.Rename(tmpPath, path); err != nil {
+		_ = os.Remove(tmpPath)
+		return "", 0, fmt.Errorf("replacing session save_dir bundle: %w", err)
+	}
 	return path, n, nil
 }
 

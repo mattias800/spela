@@ -114,9 +114,9 @@ class AndroidLibretroController(
     /* Handler for posting state updates to the main thread (avoids Compose multithreading crash) */
     private val mainHandler = Handler(Looper.getMainLooper())
 
-    override fun loadCore(corePath: String) {
+    override fun loadCore(corePath: String, saveDir: String?) {
         jni.nativeSetSystemDir(fileStorage.getBiosDir())
-        jni.nativeSetSaveDir(fileStorage.getSavesDir())
+        jni.nativeSetSaveDir(saveDir ?: fileStorage.getSavesDir())
 
         if (!jni.nativeLoadCore(corePath)) {
             throw RuntimeException("Failed to load core: $corePath")

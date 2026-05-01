@@ -32,7 +32,7 @@ class DesktopAudioPlayerTest {
         private var _sampleRate = 44100.0
         var audioBufferData: ShortArray? = ShortArray(1024) { (it % 32767).toShort() }
 
-        override fun loadCore(corePath: String) {}
+        override fun loadCore(corePath: String, saveDir: String?) {}
         override fun loadGame(gamePath: String) {}
         override fun start() {}
         override fun pause() {}

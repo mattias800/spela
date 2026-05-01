@@ -80,6 +80,26 @@ type SessionSRAMUploadOutput struct {
 	Body   db.SessionSaveData
 }
 
+// SessionSaveDirBundleUploadBody is the multipart body for POST
+// /api/sessions/{id}/save-dir. Wraps a single tarball of the libretro save_dir
+// contents — see #864 for rationale.
+type SessionSaveDirBundleUploadBody struct {
+	File huma.FormFile `form:"file" required:"false" contentType:"application/x-tar" doc:"Tarball of the libretro save_dir contents."`
+}
+
+// SessionSaveDirBundleUploadInput wraps the path parameter and multipart body.
+type SessionSaveDirBundleUploadInput struct {
+	ID      string `path:"id" doc:"Session ID."`
+	RawBody huma.MultipartFormFiles[SessionSaveDirBundleUploadBody]
+}
+
+// SessionSaveDirBundleUploadOutput uses the same dynamic-status pattern as
+// the SRAM upload — 201 first time, 200 on overwrite.
+type SessionSaveDirBundleUploadOutput struct {
+	Status int
+	Body   db.SessionSaveDirBundle
+}
+
 // --- Registration ------------------------------------------------------------
 
 // RegisterSessionSaveUploadRoutes wires the four session multipart upload
@@ -152,6 +172,18 @@ func RegisterSessionSaveUploadRoutes(
 		Security:     sec,
 		MaxBodyBytes: maxSaveUploadBytes(),
 	}, h.HumaUploadSRAM)
+
+	huma.Register(api, huma.Operation{
+		OperationID:  "uploadSaveDirBundle",
+		Method:       http.MethodPost,
+		Path:         "/api/sessions/{id}/save-dir",
+		Summary:      "Upload the libretro save_dir tarball for a session",
+		Description:  "Stores or replaces the session's save_dir bundle. Used by cores that write their own save files to disk (e.g. ScummVM, DOSBox). Atomic full replacement — the bytes downloaded on resume are exactly the bytes uploaded on the most recent exit. Returns 201 on first upload, 200 on overwrite. See #864.",
+		Tags:         []string{"sessions"},
+		Middlewares:  uploadMW,
+		Security:     sec,
+		MaxBodyBytes: maxSaveUploadBytes(),
+	}, h.HumaUploadSaveDirBundle)
 }
 
 // --- Helper ------------------------------------------------------------------
@@ -378,6 +410,56 @@ func (h *SessionHandler) HumaUpsertSlotSave(ctx context.Context, in *SessionSlot
 	return &SessionSaveUploadOutput{
 		Body: h.toSaveResponse(rec, h.getRecommendedCoreName(session.GameID)),
 	}, nil
+}
+
+// HumaUploadSaveDirBundle is the huma implementation of POST
+// /api/sessions/{id}/save-dir. Stores the tarball, atomically replacing any
+// prior bundle. See #864.
+func (h *SessionHandler) HumaUploadSaveDirBundle(ctx context.Context, in *SessionSaveDirBundleUploadInput) (*SessionSaveDirBundleUploadOutput, error) {
+	uid := UserIDFromContext(ctx)
+	session, err := h.humaLoadSessionWithOwnerCheck(in.ID, uid)
+	if err != nil {
+		return nil, err
+	}
+	if err := h.humaCheckSharedSessionTurn(session.ID, uid); err != nil {
+		return nil, err
+	}
+
+	body := in.RawBody.Data()
+	file := body.File
+	if !file.IsSet {
+		return nil, huma.Error400BadRequest("file required")
+	}
+	defer file.Close()
+
+	if err := checkStorageQuota(h.DB, uid, file.Size); err != nil {
+		return nil, huma.Error413RequestEntityTooLarge("storage quota exceeded")
+	}
+
+	path, size, err := h.Storage.WriteSessionSaveDirBundle(session.ID, file)
+	if err != nil {
+		return nil, huma.Error500InternalServerError("failed to save save_dir bundle")
+	}
+
+	var existing db.SessionSaveDirBundle
+	result := h.DB.Where("session_id = ?", session.ID).First(&existing)
+	if result.Error == gorm.ErrRecordNotFound {
+		rec := db.SessionSaveDirBundle{
+			SessionID: session.ID,
+			FilePath:  path,
+			FileSize:  size,
+		}
+		if err := h.DB.Create(&rec).Error; err != nil {
+			return nil, huma.Error500InternalServerError("failed to create save_dir bundle record")
+		}
+		return &SessionSaveDirBundleUploadOutput{Status: http.StatusCreated, Body: rec}, nil
+	}
+	existing.FilePath = path
+	existing.FileSize = size
+	if err := h.DB.Save(&existing).Error; err != nil {
+		return nil, huma.Error500InternalServerError("failed to update save_dir bundle record")
+	}
+	return &SessionSaveDirBundleUploadOutput{Status: http.StatusOK, Body: existing}, nil
 }
 
 // HumaUploadSRAM is the huma implementation of POST /api/sessions/{id}/sram.

@@ -66,7 +66,7 @@ class InputLagMeasurementTest {
         var isRunning = false
             private set
 
-        override fun loadCore(corePath: String) {}
+        override fun loadCore(corePath: String, saveDir: String?) {}
         override fun loadGame(gamePath: String) {}
         override fun start() { isRunning = true }
         override fun pause() {}
