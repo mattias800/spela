@@ -12,11 +12,18 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccessTime
 import androidx.compose.material.icons.filled.EmojiEvents
 import androidx.compose.material.icons.filled.History
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -79,8 +86,15 @@ fun GameHeroContent(
     onNavigateToAchievements: () -> Unit = {},
     onAdminScrape: (() -> Unit)? = null,
     onAdminRefreshAchievements: (() -> Unit)? = null,
+    /**
+     * Per-game save-state policy override. The control lives behind a
+     * gear icon in this hero action row → Game settings sheet (#855),
+     * not inline in the info column where it used to be.
+     */
+    onSetGameSaveStatePolicy: (com.spela.player.domain.model.SaveStateChoice?) -> Unit = {},
 ) {
     val supportsNetplay = game.playable && game.consoleId.lowercase() in NETPLAY_SUPPORTED_CONSOLES
+    var showGameSettingsSheet by remember { mutableStateOf(false) }
 
     Column(
         verticalArrangement = Arrangement.spacedBy(SpSpacing.Medium),
@@ -235,6 +249,20 @@ fun GameHeroContent(
                 isAdminActionLoading = state.isAdminActionLoading,
             )
 
+            // Game settings — currently only the per-game save-state
+            // policy override (#855). Lives behind a gear icon, not
+            // inline, so the rare-use override doesn't compete with
+            // Play / Resume for vertical real-estate. Future per-game
+            // policies (shader, core, input remap) can land in the
+            // same sheet without re-litigating placement.
+            com.spela.player.presentation.ui.components.SpIconButton(
+                icon = Icons.Filled.Settings,
+                contentDescription = "Game settings",
+                onClick = { showGameSettingsSheet = true },
+                onGradient = true,
+                modifier = Modifier.testTag("game_detail_settings_button"),
+            )
+
             // Playtime + last played grouped so they wrap together
             if (game.totalPlayTime > 0 || game.lastPlayedAt != null) {
                 Row(horizontalArrangement = Arrangement.spacedBy(SpSpacing.Small)) {
@@ -331,6 +359,25 @@ fun GameHeroContent(
                 }
             }
         }
+    }
+
+    if (showGameSettingsSheet) {
+        AlertDialog(
+            onDismissRequest = { showGameSettingsSheet = false },
+            title = { Text("Game settings") },
+            text = {
+                GameSaveStatePolicyToggle(
+                    current = state.gameSaveStatePolicy,
+                    onChange = onSetGameSaveStatePolicy,
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = { showGameSettingsSheet = false }) {
+                    Text("Done")
+                }
+            },
+            modifier = Modifier.testTag("game_detail_settings_sheet"),
+        )
     }
 }
 
