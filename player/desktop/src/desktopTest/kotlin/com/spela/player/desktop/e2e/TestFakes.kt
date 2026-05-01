@@ -512,6 +512,8 @@ class FakeDownloadRepository : DownloadRepository {
         _downloadedGames.value = emptyList()
     }
 
+    override suspend fun scanForOrphanedDownloads() {}
+
     fun preCacheGame(gameId: String) {
         cachedGames.add(gameId)
     }

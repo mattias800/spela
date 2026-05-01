@@ -239,6 +239,7 @@ private class StubDownloadRepository : DownloadRepository {
     override suspend fun deleteLocalGame(gameId: String) {}
     override suspend fun getCacheSize(): Long = 0
     override suspend fun clearCache() {}
+    override suspend fun scanForOrphanedDownloads() {}
 }
 
 private class StubSharedSaveRepository : SharedSaveRepository {

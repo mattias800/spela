@@ -71,6 +71,7 @@ fun App() {
     val topListsViewModel: TopListsViewModel = koinInject()
     val gamepadConfigViewModel: GamepadConfigViewModel = koinInject()
     val scrapeService: ScrapeService = koinInject()
+    val downloadRepository: com.spela.player.domain.repository.DownloadRepository = koinInject()
 
     SpelaApp(
         SpelaAppDependencies(
@@ -104,6 +105,7 @@ fun App() {
             topListsViewModel = topListsViewModel,
             gamepadConfigViewModel = gamepadConfigViewModel,
             scrapeService = scrapeService,
+            downloadRepository = downloadRepository,
         ),
     )
 }

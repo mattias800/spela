@@ -138,6 +138,7 @@ fun SpelaApp(deps: SpelaAppDependencies) = with(deps) {
             isAuthenticated = isAuthenticated,
             navigationEventBus = navigationEventBus,
             navigationViewModel = navigationViewModel,
+            downloadRepository = downloadRepository,
         )
 
         val isGamepadScreen = navState.currentScreen !is SpScreen.ServerConnection &&

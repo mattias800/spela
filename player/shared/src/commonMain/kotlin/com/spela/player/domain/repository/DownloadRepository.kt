@@ -15,4 +15,12 @@ interface DownloadRepository {
     suspend fun deleteLocalGame(gameId: String)
     suspend fun getCacheSize(): Long
     suspend fun clearCache()
+
+    /**
+     * Walks the games directory and removes any per-game subdirectory
+     * that has no row in the local downloads table. Cleans up partial
+     * files left behind by app/process death mid-download. Idempotent.
+     * Should be called once at app launch. See #845.
+     */
+    suspend fun scanForOrphanedDownloads()
 }

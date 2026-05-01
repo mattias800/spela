@@ -3,6 +3,7 @@ package com.spela.player.presentation.ui
 import com.spela.player.data.remote.ConnectivityMonitor
 import com.spela.player.data.remote.PresenceService
 import com.spela.player.data.remote.ScrapeService
+import com.spela.player.domain.repository.DownloadRepository
 import com.spela.player.libretro.GamepadPortManager
 import com.spela.player.presentation.navigation.NavigationEventBus
 import com.spela.player.presentation.navigation.NavigationViewModel
@@ -76,6 +77,7 @@ data class SpelaAppDependencies(
     val secondaryDisplay: PlatformSecondaryDisplay,
     val presenceService: PresenceService,
     val connectivityMonitor: ConnectivityMonitor,
+    val downloadRepository: DownloadRepository,
 
     // ── Optional slots ──────────────────────────────────────────
     // These matched `= null` defaults on the original `SpelaApp`
