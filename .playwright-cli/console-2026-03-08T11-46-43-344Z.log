@@ -1,4 +1,0 @@
-Total messages: 2 (Errors: 2, Warnings: 0)
-
-[ERROR] Failed to load resource: the server responded with a status of 401 () @ https://spela.tacoduck.party/api/user/preferences:0
-[ERROR] Failed to load resource: the server responded with a status of 401 () @ https://spela.tacoduck.party/api/user/preferences:0

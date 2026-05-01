@@ -6,8 +6,17 @@
 # Worktrees
 .worktrees/
 
-# Go
-server/.playwright-cli/
+# playwright-cli skill scratch (logs + page snapshots from browser
+# sessions; never committed). Catches the root, web/, server/, and
+# player/ copies.
+.playwright-cli/
+
+# JVM crash logs (transient, dropped next to the run that crashed)
+hs_err_pid*.log
+
+# Editor / tooling .bak sidecars (e.g. *.kt.bak left behind by
+# refactors and search-and-replace tools)
+*.bak
 
 # Database
 server/spela.db
