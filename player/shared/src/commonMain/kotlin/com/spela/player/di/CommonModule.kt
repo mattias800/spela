@@ -68,6 +68,7 @@ val commonModule = module {
     single<GameStatsRepository> { GameStatsRepositoryImpl(get()) }
     single<CheatRepository> { CheatRepositoryImpl(get(), get()) }
     single<PendingSaveUploadRepository> { PendingSaveUploadRepositoryImpl(get()) }
+    single<OnboardingRepository> { OnboardingRepositoryImpl(get()) }
     single<SessionRepository> { SessionRepositoryImpl(get(), get()) }
     single<ExploreRepository> { ExploreRepositoryImpl(get()) }
     single<SearchRepository> { SearchRepositoryImpl(get(), get()) }
@@ -235,6 +236,7 @@ val commonModule = module {
             biosRepository = get(),
             cheatRepository = get(),
             gameStatsRepository = get(),
+            onboardingRepository = get(),
         )
     }
 
