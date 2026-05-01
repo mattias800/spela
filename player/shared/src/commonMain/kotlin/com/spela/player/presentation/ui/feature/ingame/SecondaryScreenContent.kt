@@ -18,7 +18,9 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -295,28 +297,49 @@ fun SecondaryScreenContent(
                             )
                         }
                         PAGE_SAVE_SLOTS -> {
-                            // Page-3 content adapts based on whether the active core
-                            // supports libretro save states. Cores like ScummVM and
-                            // DOSBox declare savestate=false in their info file —
-                            // their save_dir is the persistence layer instead, and
-                            // the slot picker is meaningless. Show an honest empty
-                            // state rather than a dead picker. See #863.
-                            if (state.supportsSaveStates) {
-                                SecondarySaveSlotsPage(
-                                    activeSlot = state.activeSlot,
-                                    saveSlots = state.saveSlots,
-                                    onSelectSlot = { slot ->
-                                        viewModel.onIntent(EmulationIntent.SelectSlot(slot))
-                                    },
-                                    onSaveToSlot = { slot ->
-                                        viewModel.onIntent(EmulationIntent.SaveToSlot(slot))
-                                    },
-                                    onLoadFromSlot = { slot ->
-                                        viewModel.onIntent(EmulationIntent.LoadFromSlot(slot))
-                                    },
-                                )
-                            } else {
-                                SecondarySaveStatesUnsupportedPage()
+                            // Page-3 content adapts based on the active core
+                            // (#863):
+                            //   1. Save states supported → existing slot picker.
+                            //   2. ScummVM (no libretro save states, but it
+                            //      has a rich in-game F5/F7/F8 menu) → tools
+                            //      page that fires those keycodes.
+                            //   3. Other cores without save states → honest
+                            //      "save states not available" explainer.
+                            when {
+                                state.supportsSaveStates -> {
+                                    SecondarySaveSlotsPage(
+                                        activeSlot = state.activeSlot,
+                                        saveSlots = state.saveSlots,
+                                        onSelectSlot = { slot ->
+                                            viewModel.onIntent(EmulationIntent.SelectSlot(slot))
+                                        },
+                                        onSaveToSlot = { slot ->
+                                            viewModel.onIntent(EmulationIntent.SaveToSlot(slot))
+                                        },
+                                        onLoadFromSlot = { slot ->
+                                            viewModel.onIntent(EmulationIntent.LoadFromSlot(slot))
+                                        },
+                                    )
+                                }
+                                state.consoleId.equals("scummvm", ignoreCase = true) -> {
+                                    SecondaryScummVmToolsPage(
+                                        onMenu = {
+                                            controller.setKeyboardKey(286, true)  // RETROK_F5
+                                            controller.setKeyboardKey(286, false)
+                                        },
+                                        onQuickLoad = {
+                                            controller.setKeyboardKey(288, true)  // RETROK_F7
+                                            controller.setKeyboardKey(288, false)
+                                        },
+                                        onQuickSave = {
+                                            controller.setKeyboardKey(289, true)  // RETROK_F8
+                                            controller.setKeyboardKey(289, false)
+                                        },
+                                    )
+                                }
+                                else -> {
+                                    SecondarySaveStatesUnsupportedPage()
+                                }
                             }
                         }
                     }
@@ -533,6 +556,86 @@ private fun formatPauseDuration(totalSeconds: Long): String {
  * Horizontal row of page indicator dots. Active page dot uses [SpColor.Primary],
  * inactive dots use [SpColor.OnBackgroundTertiary] at reduced alpha.
  */
+/**
+ * Save Slots page replacement for ScummVM (#863 state 3). Replaces
+ * the libretro slot picker (which doesn't apply — ScummVM declares
+ * savestate=false) with three quick-tap tiles for the most-used
+ * ScummVM keyboard shortcuts:
+ *
+ *   F5  — Open ScummVM main menu (full save / load / options / quit)
+ *   F7  — Quick load
+ *   F8  — Quick save
+ *
+ * The tiles fire RETROK_F5/F7/F8 via the libretro keyboard pipeline.
+ * The keyboard plumbing is the same one used by the gamepad mapper
+ * defaults from #859 — for a user with a gamepad, Y / L1 / R1 already
+ * fire these. The tiles are for pure-touch users without a gamepad.
+ */
+@Composable
+private fun SecondaryScummVmToolsPage(
+    onMenu: () -> Unit,
+    onQuickLoad: () -> Unit,
+    onQuickSave: () -> Unit,
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(SpSpacing.Default),
+        verticalArrangement = Arrangement.spacedBy(SpSpacing.Default),
+    ) {
+        Text(
+            text = "ScummVM tools",
+            style = SpTypography.TitleMedium,
+            color = SpColor.OnBackground,
+        )
+        ScummVmToolTile(
+            label = "Menu",
+            description = "Save, load, options, quit",
+            onClick = onMenu,
+        )
+        ScummVmToolTile(
+            label = "Quick load",
+            description = "Load the auto-save",
+            onClick = onQuickLoad,
+        )
+        ScummVmToolTile(
+            label = "Quick save",
+            description = "Save over the auto-save",
+            onClick = onQuickSave,
+        )
+    }
+}
+
+@Composable
+private fun ScummVmToolTile(
+    label: String,
+    description: String,
+    onClick: () -> Unit,
+) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(SpSpacing.RadiusMedium))
+            .background(SpColor.SurfaceVariant)
+            .clickable(onClick = onClick)
+            .padding(SpSpacing.Default)
+            .semantics { contentDescription = "$label: $description" },
+    ) {
+        Column(verticalArrangement = Arrangement.spacedBy(SpSpacing.XSmall)) {
+            Text(
+                text = label,
+                style = SpTypography.TitleSmall,
+                color = SpColor.OnBackground,
+            )
+            Text(
+                text = description,
+                style = SpTypography.BodySmall,
+                color = SpColor.OnBackgroundSecondary,
+            )
+        }
+    }
+}
+
 /**
  * Empty-state for the Save Slots page when the active core declares
  * `savestate = "false"` (ScummVM, DOSBox, ~60 others). The slot picker
