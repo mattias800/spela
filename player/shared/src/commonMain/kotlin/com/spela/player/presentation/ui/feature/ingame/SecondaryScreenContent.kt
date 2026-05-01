@@ -19,6 +19,7 @@ import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -61,8 +62,10 @@ private const val PAGE_CONTROLS = 1
 private const val PAGE_DASHBOARD = 2
 private const val PAGE_SAVE_SLOTS = 3
 private val GRADIENT_LINE_HEIGHT = 2.dp
-private val DOT_SIZE = 6.dp
+private val DOT_SIZE_INACTIVE = 6.dp
+private val DOT_SIZE_ACTIVE = 8.dp
 private val DOT_SPACING = 4.dp
+private const val ACTIVE_PAGE_LABEL_HOLD_MS = 2000L
 private val PAGE_NAMES = arrayOf("Art", "Controls", "Dashboard", "Save Slots")
 
 /**
@@ -572,11 +575,39 @@ private fun SecondarySaveStatesUnsupportedPage() {
     }
 }
 
+/**
+ * Page indicator at the bottom of the secondary-screen pager. Two
+ * upgrades from the original dot strip (#861):
+ *
+ * 1. Active dot is 8dp / inactive 6dp (was uniformly 6dp at low alpha).
+ *    The size delta makes the active page readable at arm's length
+ *    while a game plays on the primary screen.
+ * 2. On page change the active dot expands into a labelled pill
+ *    ("Art", "Controls", "Dashboard", "Saves"), holds for 2s, then
+ *    collapses back to a dot. Tells the user "this strip is named
+ *    and interactive" without permanent label clutter.
+ *
+ * The pill is visual-only (it doesn't intercept clicks) and the
+ * inactive dots stay dot-shaped throughout — only the active one
+ * ever expands.
+ */
 @Composable
 private fun PageIndicatorDots(
     pagerState: PagerState,
     pageCount: Int,
 ) {
+    val currentPage = pagerState.currentPage
+    var showActiveLabel by remember { mutableStateOf(false) }
+    LaunchedEffect(currentPage) {
+        // Show the labelled pill briefly on every page change. The
+        // very-first composition also fires this so the user sees the
+        // initial page's name once, which is part of the "this is a
+        // pager" signal.
+        showActiveLabel = true
+        delay(ACTIVE_PAGE_LABEL_HOLD_MS)
+        showActiveLabel = false
+    }
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -585,21 +616,51 @@ private fun PageIndicatorDots(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         repeat(pageCount) { index ->
-            val isActive = pagerState.currentPage == index
-            val color = if (isActive) SpColor.Primary else SpColor.OnBackgroundTertiary.copy(alpha = 0.4f)
+            val isActive = currentPage == index
+            val color = if (isActive) {
+                SpColor.Primary
+            } else {
+                SpColor.OnBackgroundTertiary.copy(alpha = 0.55f)
+            }
             if (index > 0) {
                 Spacer(Modifier.width(DOT_SPACING))
             }
             val pageName = PAGE_NAMES.getOrElse(index) { "Page" }
-            Box(
-                modifier = Modifier
-                    .size(DOT_SIZE)
-                    .clip(CircleShape)
-                    .background(color)
-                    .semantics {
-                        contentDescription = if (isActive) "$pageName, ${index + 1} of $pageCount, active" else "$pageName, ${index + 1} of $pageCount"
-                    },
-            )
+            if (isActive && showActiveLabel) {
+                // Pill: rounded rect with the page name inside,
+                // tinted with the same Primary as the active dot so
+                // the visual continuity reads as "the dot grew a
+                // label" rather than "a separate widget appeared".
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(50))
+                        .background(color)
+                        .padding(horizontal = SpSpacing.Small, vertical = 2.dp)
+                        .semantics {
+                            contentDescription = "$pageName, ${index + 1} of $pageCount, active"
+                        },
+                ) {
+                    Text(
+                        text = pageName,
+                        style = SpTypography.LabelSmall,
+                        color = SpColor.OnBackground,
+                    )
+                }
+            } else {
+                Box(
+                    modifier = Modifier
+                        .size(if (isActive) DOT_SIZE_ACTIVE else DOT_SIZE_INACTIVE)
+                        .clip(CircleShape)
+                        .background(color)
+                        .semantics {
+                            contentDescription = if (isActive) {
+                                "$pageName, ${index + 1} of $pageCount, active"
+                            } else {
+                                "$pageName, ${index + 1} of $pageCount"
+                            }
+                        },
+                )
+            }
         }
     }
 }
