@@ -300,6 +300,9 @@ class AndroidLibretroController(
         jni.nativeSetInputMouse(port, dx, dy, left, right)
     }
 
+    override fun getVideoWidth(): Int = jni.nativeGetVideoWidth()
+    override fun getVideoHeight(): Int = jni.nativeGetVideoHeight()
+
     override fun setKeyboardKey(key: Int, pressed: Boolean) {
         jni.nativeSetInputKeyboard(key, pressed)
     }

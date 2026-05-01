@@ -33,16 +33,18 @@ import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.ui.theme.SpTypography
 
 /**
- * Multiplier applied to raw secondary-screen pointer deltas before
- * they're handed to the core. The previous value (1.5) made the cursor
- * fly across the screen on tiny finger movements, especially against
- * 320×240 cores like ScummVM where every screen pixel maps to a large
- * core-space delta. 0.4 is the empirically-chosen default for the
- * AYN Thor's secondary-screen pixel density: a slow finger swipe
- * across the trackpad traverses a 320×240 viewport about once. A
- * user-tunable slider is filed as a follow-up — see #858.
+ * Sensitivity multiplier applied AFTER deltas have been mapped from
+ * trackpad-pixel space into game-pixel space. With the resolution-
+ * stable scaling (#858), 1.0 means "swipe across the trackpad
+ * traverses the game viewport once." 0.5 means "about half a viewport
+ * per swipe" — enough overhead for precision clicking on inventory
+ * items without making cross-screen moves require multiple swipes.
+ *
+ * No user-tunable slider — casual users don't want to configure
+ * this; we want a default that just works. If the value turns out
+ * wrong, file a follow-up issue with the right number.
  */
-private const val TRACKPAD_SENSITIVITY = 0.4f
+private const val TRACKPAD_SENSITIVITY = 0.5f
 private const val TAP_TIMEOUT_MS = 200L
 private const val TAP_MOVEMENT_THRESHOLD = 10f
 
@@ -52,11 +54,21 @@ private const val TAP_MOVEMENT_THRESHOLD = 10f
  * Provides relative-mode mouse input: dragging moves the cursor
  * relative to the current position. Includes dedicated left/right
  * click buttons and tap gesture shortcuts.
+ *
+ * @param gameWidth Current core framebuffer width in pixels. Used to
+ *   scale finger deltas into game-pixel deltas so perceived cursor
+ *   speed stays constant regardless of the core's native resolution
+ *   (320×200 ScummVM vs 1024×768 DOSBox). Pass 0 to fall back to a
+ *   pixel-pass-through (legacy behaviour). See #858.
+ * @param gameHeight Current core framebuffer height in pixels. Same
+ *   role as gameWidth on the Y axis.
  */
 @Composable
 fun SecondaryTrackpadTab(
     onMouseMove: (dx: Float, dy: Float) -> Unit,
     onMouseButton: (left: Boolean, right: Boolean) -> Unit,
+    gameWidth: Int = 0,
+    gameHeight: Int = 0,
     modifier: Modifier = Modifier,
 ) {
     var leftPressed by remember { mutableStateOf(false) }
@@ -70,6 +82,8 @@ fun SecondaryTrackpadTab(
         // Trackpad area
         TrackpadSurface(
             onMouseMove = onMouseMove,
+            gameWidth = gameWidth,
+            gameHeight = gameHeight,
             onTap = {
                 // Single-finger tap = left click
                 onMouseButton(true, false)
@@ -121,6 +135,8 @@ private fun TrackpadSurface(
     onTap: () -> Unit,
     onTwoFingerTap: () -> Unit,
     isButtonHeld: Boolean,
+    gameWidth: Int = 0,
+    gameHeight: Int = 0,
     modifier: Modifier = Modifier,
 ) {
     Box(
@@ -128,7 +144,22 @@ private fun TrackpadSurface(
             .clip(RoundedCornerShape(12.dp))
             .background(SpColor.SurfaceVariant.copy(alpha = 0.3f))
             .border(1.dp, SpColor.OnBackgroundTertiary.copy(alpha = 0.2f), RoundedCornerShape(12.dp))
-            .pointerInput(isButtonHeld) {
+            .pointerInput(isButtonHeld, gameWidth, gameHeight) {
+                // Compute the resolution-stable pixels-per-pixel ratio once
+                // per gesture. Trackpad-pixel deltas get multiplied into
+                // game-pixel deltas, so a ⅓-of-trackpad swipe always covers
+                // ⅓ of the game viewport regardless of the core's native
+                // resolution. See #858.
+                val scaleX = if (gameWidth > 0 && size.width > 0) {
+                    gameWidth.toFloat() / size.width
+                } else {
+                    1f
+                }
+                val scaleY = if (gameHeight > 0 && size.height > 0) {
+                    gameHeight.toFloat() / size.height
+                } else {
+                    1f
+                }
                 awaitEachGesture {
                     val firstDown = awaitFirstDown(requireUnconsumed = false)
                     firstDown.consume()
@@ -159,8 +190,8 @@ private fun TrackpadSurface(
 
                         if (activePointers.size == 1) {
                             val current = activePointers.first()
-                            val dx = (current.position.x - prevPosition.x) * TRACKPAD_SENSITIVITY
-                            val dy = (current.position.y - prevPosition.y) * TRACKPAD_SENSITIVITY
+                            val dx = (current.position.x - prevPosition.x) * scaleX * TRACKPAD_SENSITIVITY
+                            val dy = (current.position.y - prevPosition.y) * scaleY * TRACKPAD_SENSITIVITY
                             totalDx += dx
                             totalDy += dy
                             prevPosition = current.position

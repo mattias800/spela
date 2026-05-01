@@ -46,6 +46,11 @@ fun SecondaryControlsPage(
     onKeyUp: (Int) -> Unit,
     onMouseMove: (dx: Float, dy: Float) -> Unit,
     onMouseButton: (left: Boolean, right: Boolean) -> Unit,
+    /** Current core framebuffer size — passed to the trackpad so it can
+     *  scale finger deltas to game-pixel deltas without the perceived
+     *  cursor speed depending on the core's native resolution (#858). */
+    gameWidth: Int = 0,
+    gameHeight: Int = 0,
     modifier: Modifier = Modifier,
 ) {
     Column(
@@ -75,6 +80,8 @@ fun SecondaryControlsPage(
             ControlTab.TRACKPAD -> SecondaryTrackpadTab(
                 onMouseMove = onMouseMove,
                 onMouseButton = onMouseButton,
+                gameWidth = gameWidth,
+                gameHeight = gameHeight,
                 modifier = Modifier.weight(1f),
             )
         }

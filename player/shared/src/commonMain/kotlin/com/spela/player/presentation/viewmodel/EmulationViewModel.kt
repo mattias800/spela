@@ -1975,6 +1975,16 @@ interface LibretroController {
      *  true so platforms / fakes that don't track this don't block. */
     fun firstFrameRun(): Boolean = true
 
+    /** Current core framebuffer width in pixels, or 0 if unavailable.
+     *  Used by the secondary-screen trackpad to scale finger deltas
+     *  into core-pixel deltas, so perceived cursor speed stays
+     *  constant across cores with different native resolutions
+     *  (320×200 ScummVM vs 1024×768 DOS). See #858. */
+    fun getVideoWidth(): Int = 0
+
+    /** Current core framebuffer height in pixels, or 0 if unavailable. */
+    fun getVideoHeight(): Int = 0
+
     /** Set pointer/touch state for the given port (used for DS touch screen). */
     fun setPointer(port: Int, x: Int, y: Int, pressed: Boolean) {}
 
