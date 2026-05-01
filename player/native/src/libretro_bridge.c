@@ -321,6 +321,20 @@ static bool environment_callback(unsigned cmd, void *data) {
                     }
                 }
 
+                /* Clear the dirty flag after initial population. The flag is
+                 * meant to signal *user-initiated* variable changes (so the
+                 * core can re-read its options), but core_variables_set bumps
+                 * it on every insert — including the 36 initial defaults the
+                 * core itself just declared via SET_VARIABLES. Leaving it
+                 * true causes retro_run's first frame to call back into
+                 * GET_VARIABLE_UPDATE, get true, and trigger an options-
+                 * reload before the core's engine thread has finished
+                 * initialising state like _graphicsManager. ScummVM crashes
+                 * deterministically here (#852) because refreshRetroSettings
+                 * dereferences a NULL graphics manager. Other cores tolerate
+                 * the spurious reload; ScummVM does not.
+                 */
+                core_variables_dirty = false;
             }
             return true;
         }
