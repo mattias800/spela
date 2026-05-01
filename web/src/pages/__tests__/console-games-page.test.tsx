@@ -77,6 +77,7 @@ const testConsoles: Console[] = [
     playable: true,
     code: "snes",
     emulatorJsCore: "",
+    webEmulator: "",
     logoPngUrl: "",
     maker: { code: "", name: "" },
     mediaType: { code: "", name: "", category: { code: "", name: "" } },

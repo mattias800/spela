@@ -2018,6 +2018,9 @@
           "updatedAt": {
             "format": "date-time",
             "type": "string"
+          },
+          "webEmulator": {
+            "type": "string"
           }
         },
         "required": [
@@ -2035,6 +2038,7 @@
           "extensions",
           "defaultCore",
           "emulatorJsCore",
+          "webEmulator",
           "coverAspectRatio",
           "colorTheme",
           "generation",

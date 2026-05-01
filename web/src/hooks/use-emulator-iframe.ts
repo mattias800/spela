@@ -103,6 +103,8 @@ export function useEmulatorIframe(options: EmulatorIframeOptions = {}) {
       saveStateData?: string;
       biosUrls?: string[];
       preferences: EmulatorPreferences;
+      webEmulator?: "scummvm";
+      scummvmGameId?: string;
     }) => {
       setStatus("loading");
       setError(null);

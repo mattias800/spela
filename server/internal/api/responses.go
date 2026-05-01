@@ -69,6 +69,10 @@ type ConsoleResponse struct {
 	Extensions       []string               `json:"extensions"`
 	DefaultCore      string                 `json:"defaultCore"`
 	EmulatorJSCore   string                 `json:"emulatorJsCore"`
+	// WebEmulator routes the play page to a custom in-browser shell
+	// when EmulatorJS doesn't ship a core for this console. Currently
+	// `"scummvm"` (chkuendig WASM build) or empty. See #794.
+	WebEmulator      string                 `json:"webEmulator"`
 	CoverAspectRatio float64                `json:"coverAspectRatio"`
 	ColorTheme       string                 `json:"colorTheme"`
 	Generation       int                    `json:"generation"`
@@ -285,6 +289,7 @@ func ToConsoleResponse(c db.Console) ConsoleResponse {
 		Extensions:       exts,
 		DefaultCore:      c.DefaultCore,
 		EmulatorJSCore:   c.EmulatorJSCore,
+		WebEmulator:      c.WebEmulator,
 		CoverAspectRatio: ratio,
 		ColorTheme:       c.ColorTheme,
 		Generation:       c.Generation,
@@ -294,7 +299,11 @@ func ToConsoleResponse(c db.Console) ConsoleResponse {
 		GameCount:        c.GameCount,
 		SaveStateSupport: c.SaveStateSupport,
 		SaveStatePolicy:  saveStatePolicyOrDefault(c.SaveStatePolicy),
-		BrowserPlayable:  c.EmulatorJSCore != "",
+		// BrowserPlayable: console can be played in a browser tab. True
+		// for any EmulatorJS-supported core, plus any console with a
+		// custom web-emulator shell (e.g. ScummVM via chkuendig WASM —
+		// #794).
+		BrowserPlayable:  c.EmulatorJSCore != "" || c.WebEmulator != "",
 		Playable:         c.Playable,
 	}
 }

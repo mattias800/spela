@@ -937,7 +937,7 @@ func SeedConsoles(db *gorm.DB) error {
 		// Arcade (generation = 101)
 		{Name: "Arcade", Abbreviation: "ARCADE", Extensions: ".zip", DefaultCore: "mame2003_plus", EmulatorJSCore: "fbneo", FolderName: "arcade", ColorTheme: "#ff4444", Generation: 101, SaveStateSupport: true, SaveStatePolicy: SaveStatePolicySmall, Playable: true},
 		// ScummVM (generation = 100, alongside home computers)
-		{Name: "ScummVM", Abbreviation: "SCUMMVM", Extensions: ".scummvm", DefaultCore: "scummvm", EmulatorJSCore: "", FolderName: "scummvm", ColorTheme: "#6b8e23", CoverAspect: "5:7", Generation: 100, SaveStateSupport: false, SaveStatePolicy: SaveStatePolicySmall, Playable: true},
+		{Name: "ScummVM", Abbreviation: "SCUMMVM", Extensions: ".scummvm", DefaultCore: "scummvm", EmulatorJSCore: "", WebEmulator: "scummvm", FolderName: "scummvm", ColorTheme: "#6b8e23", CoverAspect: "5:7", Generation: 100, SaveStateSupport: true, SaveStatePolicy: SaveStatePolicySmall, Playable: true},
 	}
 
 	for _, c := range consoles {
@@ -964,6 +964,10 @@ func SeedConsoles(db *gorm.DB) error {
 			if c.EmulatorJSCore != "" && existing.EmulatorJSCore != c.EmulatorJSCore {
 				db.Model(&existing).Update("emulator_js_core", c.EmulatorJSCore)
 				slog.Info("backfilled EmulatorJSCore", "name", existing.Name, "old", existing.EmulatorJSCore, "new", c.EmulatorJSCore)
+			}
+			if c.WebEmulator != "" && existing.WebEmulator != c.WebEmulator {
+				db.Model(&existing).Update("web_emulator", c.WebEmulator)
+				slog.Info("backfilled WebEmulator", "name", existing.Name, "old", existing.WebEmulator, "new", c.WebEmulator)
 			}
 			if c.DefaultCore != "" && existing.DefaultCore != c.DefaultCore {
 				db.Model(&existing).Update("default_core", c.DefaultCore)

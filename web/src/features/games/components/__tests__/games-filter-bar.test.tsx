@@ -21,6 +21,7 @@ const makeConsole = (abbr: string, name: string): Console => ({
   playable: true,
   code: abbr,
   emulatorJsCore: "",
+    webEmulator: "",
   logoPngUrl: "",
   maker: { code: "", name: "" },
   mediaType: { code: "", name: "", category: { code: "", name: "" } },

@@ -17,6 +17,19 @@ export interface InitEmulatorMessage {
   saveStateData?: string; // base64-encoded save state to auto-load
   biosUrls?: string[]; // authenticated URLs for BIOS files
   preferences: EmulatorPreferences;
+  /**
+   * Custom in-browser emulator engine when EmulatorJS doesn't support
+   * the console. Currently `"scummvm"` (chkuendig WASM build) or
+   * undefined for the standard EmulatorJS path. See #794.
+   */
+  webEmulator?: "scummvm";
+  /**
+   * ScummVM target identifier (`monkey`, `tentacle`, `sky`, …) — the
+   * gameid ScummVM itself recognises, distinct from Spela's game UUID.
+   * Read from the `.scummvm` marker file's basename. Required when
+   * `webEmulator === "scummvm"`. See #794.
+   */
+  scummvmGameId?: string;
 }
 
 export interface RequestSaveStateMessage {

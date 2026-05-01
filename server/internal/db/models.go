@@ -122,6 +122,16 @@ type Console struct {
 	Extensions     string         `gorm:"size:255;not null" json:"extensions"` // comma-separated
 	DefaultCore    string         `gorm:"size:128" json:"defaultCore"`
 	EmulatorJSCore string         `gorm:"size:64" json:"emulatorJsCore"`
+	// WebEmulator names a custom in-browser emulator shell for this
+	// console — used when no EmulatorJS core exists. Currently the only
+	// value is `"scummvm"`, which routes the play page to
+	// `/scummvm.html` (chkuendig's WASM build) instead of
+	// `/emulator.html`. Empty means the console has no web-player
+	// support outside the standard EmulatorJS path.
+	//
+	// CLAUDE.md rule #4 ("libretro only") explicitly carves out
+	// ScummVM here because no libretro WASM core exists. See #794.
+	WebEmulator    string         `gorm:"size:32" json:"webEmulator"`
 	FolderName     string         `gorm:"size:64" json:"folderName"`
 	CoverAspect    string         `gorm:"size:16;default:3:4" json:"coverAspect"`
 	ColorTheme       string         `gorm:"size:7;default:#6366f1" json:"colorTheme"`

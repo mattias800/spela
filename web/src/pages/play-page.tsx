@@ -31,14 +31,25 @@ import {
   type CoreMismatchChoice,
 } from "@/features/play/components/core-mismatch-modal";
 /**
- * Iframe URL — `?mockEmulator=true` on the play page swaps the real
- * EmulatorJS iframe for `/emulator-mock.html`, a deterministic stub
- * used by Playwright tests. Production builds never set the flag,
- * but the mock html ships in `public/` so tests can opt in without
- * a separate build.
+ * Iframe URL — branches on the console's emulator engine and the
+ * `?mockEmulator=true` test flag.
+ *
+ * - `webEmulator === "scummvm"` → `/scummvm.html` (chkuendig WASM,
+ *   #794)
+ * - otherwise → `/emulator.html` (EmulatorJS, the historical default)
+ *
+ * `?mockEmulator=true` on the play page swaps either real shell for
+ * `/emulator-mock.html`, a deterministic stub used by Playwright
+ * tests. Production builds never set the flag, but the mock html
+ * ships in `public/` so tests can opt in without a separate build.
  */
-function resolveEmulatorSrc(useMock: boolean): string {
-  return useMock ? "/emulator-mock.html" : "/emulator.html";
+function resolveEmulatorSrc(useMock: boolean, webEmulator: string | null): string {
+  if (useMock) return "/emulator-mock.html";
+  // ScummVM shell lives under /scummvm/ so the runtime artefacts
+  // (scummvm.js, scummvm.wasm, shell.js) resolve via relative URLs
+  // without needing a <base> tag inside the iframe document.
+  if (webEmulator === "scummvm") return "/scummvm/scummvm.html";
+  return "/emulator.html";
 }
 
 export function PlayPage() {
@@ -48,7 +59,6 @@ export function PlayPage() {
   const { toast } = useToast();
   const [searchParams] = useSearchParams();
   const useMockEmulator = searchParams.get("mockEmulator") === "true";
-  const emulatorSrc = resolveEmulatorSrc(useMockEmulator);
 
   const isFreshStart = sessionIdParam === "new";
   const [createdSessionId, setCreatedSessionId] = useState<string | undefined>();
@@ -100,10 +110,15 @@ export function PlayPage() {
   const coreMismatchChoiceRef = useRef<CoreMismatchChoice | null>(null);
   const sessionStartRef = useRef<number>(Date.now());
 
-  // Resolve the EmulatorJS core identifier for this game's console
+  // Resolve the EmulatorJS core identifier for this game's console.
+  // ScummVM has no EmulatorJS core; it gets routed to /scummvm.html
+  // via consoleInfo.webEmulator instead — see resolveEmulatorSrc above
+  // and #794. Either path makes the game playable in the browser.
   const consoleInfo = consoles?.find((c) => c.id === game?.consoleId);
   const emulatorJsCore = consoleInfo?.emulatorJsCore || null;
-  const isSupported = !!emulatorJsCore;
+  const webEmulator = consoleInfo?.webEmulator || null;
+  const isSupported = !!emulatorJsCore || webEmulator === "scummvm";
+  const emulatorSrc = resolveEmulatorSrc(useMockEmulator, webEmulator);
 
   const emulatorPrefs = useResolvedGamePreferences({
     preferences,
@@ -178,6 +193,7 @@ export function PlayPage() {
     gameId: game?.id,
     isSupported,
     emulatorJsCore,
+    webEmulator: webEmulator === "scummvm" ? "scummvm" : null,
     autoSaveInfoLoading,
     game,
     isFreshStart,

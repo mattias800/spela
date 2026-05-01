@@ -24,6 +24,8 @@ interface EmulatorApi {
     saveStateData?: string;
     biosUrls?: string[];
     preferences: EmulatorPreferences;
+    webEmulator?: "scummvm";
+    scummvmGameId?: string;
   }) => void;
 }
 
@@ -33,6 +35,13 @@ interface UseEmulatorInitArgs {
   gameId: string | undefined;
   isSupported: boolean;
   emulatorJsCore: string | null;
+  /**
+   * Custom-shell engine, e.g. `"scummvm"`. When set, the init flow
+   * skips the EmulatorJS-specific bits (BIOS, multi-disc bundling,
+   * core mismatch) and posts a minimal init message with the ROM URL
+   * + ScummVM game id. See #794.
+   */
+  webEmulator: "scummvm" | null;
   autoSaveInfoLoading: boolean;
 
   // Data read freshly on each run.
@@ -92,6 +101,7 @@ export function useEmulatorInit({
   gameId,
   isSupported,
   emulatorJsCore,
+  webEmulator,
   autoSaveInfoLoading,
   game,
   isFreshStart,
@@ -109,9 +119,39 @@ export function useEmulatorInit({
   onDiscSwitchSettled,
 }: UseEmulatorInitArgs): void {
   useEffect(() => {
-    if (!iframeLoaded || !game || !isSupported || !emulatorJsCore) return;
+    if (!iframeLoaded || !game || !isSupported) return;
     // Wait for auto-save info to settle before initializing (avoids double-init)
     if (!isFreshStart && autoSaveInfoLoading) return;
+
+    // ScummVM short-path (#794). Skip the EmulatorJS multi-disc /
+    // BIOS / core-mismatch flow entirely — the chkuendig WASM shell
+    // expects a tar download URL and a ScummVM target id (the
+    // basename of the `.scummvm` marker, e.g. `monkey`, `tentacle`,
+    // `sky`).
+    if (webEmulator === "scummvm") {
+      const token = api.getAccessToken();
+      const tokenSuffix = token
+        ? `?token=${encodeURIComponent(token)}`
+        : "";
+      // Standard tar download endpoint serves every file in the game
+      // directory, including the .scummvm marker. The iframe shell
+      // untars into Emscripten's MEMFS and points ScummVM at it.
+      const romUrl = `/api/games/${game.id}/download/${encodeURIComponent(game.fileName)}${tokenSuffix}`;
+      // Convention: `<scummvmGameId>.scummvm` (e.g. `monkey1.scummvm`).
+      // Strip the extension to get the gameid ScummVM recognises.
+      const scummvmGameId = game.fileName.replace(/\.scummvm$/i, "");
+      emulator.initEmulator({
+        romUrl,
+        core: "scummvm",
+        gameName: game.title,
+        preferences: emulatorPrefs,
+        webEmulator: "scummvm",
+        scummvmGameId,
+      });
+      return;
+    }
+
+    if (!emulatorJsCore) return;
 
     // Disc switch flow: reload with combined bundle + save state + target disc
     if (pendingDiscSwitchRef.current && pendingDiscSwitchRef.current.saveData) {
@@ -212,5 +252,5 @@ export function useEmulatorInit({
 
     init();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [iframeLoaded, gameId, isSupported, emulatorJsCore, autoSaveInfoLoading]);
+  }, [iframeLoaded, gameId, isSupported, emulatorJsCore, webEmulator, autoSaveInfoLoading]);
 }

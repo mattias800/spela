@@ -5859,6 +5859,7 @@ export interface components {
             unitsSold: number | null;
             /** Format: date-time */
             updatedAt: string;
+            webEmulator: string;
         };
         ConsoleShowcaseResponse: {
             /**
