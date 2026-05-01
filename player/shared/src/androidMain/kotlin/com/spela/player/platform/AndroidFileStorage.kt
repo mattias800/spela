@@ -106,6 +106,29 @@ class AndroidFileStorage(private val context: Context) : FileStorage {
         }
     }
 
+    override suspend fun extractFirstZipEntryFromFile(zipPath: String, destPath: String) {
+        withContext(Dispatchers.IO) {
+            val src = File(zipPath)
+            val dest = File(destPath)
+            dest.parentFile?.mkdirs()
+            // Use ZipFile rather than ZipInputStream so we don't have to
+            // walk the archive sequentially — buildbot cores are stored
+            // uncompressed, so ZipFile lets us copy the entry's
+            // InputStream straight to the destination FileOutputStream
+            // with a small buffer (java.io.InputStream.copyTo defaults
+            // to 8 KB), keeping the heap allocation bounded.
+            java.util.zip.ZipFile(src).use { zf ->
+                val entry = zf.entries().asSequence().firstOrNull()
+                    ?: throw IllegalStateException("ZIP archive is empty: $zipPath")
+                zf.getInputStream(entry).use { input ->
+                    dest.outputStream().use { output ->
+                        input.copyTo(output)
+                    }
+                }
+            }
+        }
+    }
+
     override suspend fun sha256File(path: String): String? = withContext(Dispatchers.IO) {
         val file = File(path)
         if (!file.exists() || !file.isFile) return@withContext null

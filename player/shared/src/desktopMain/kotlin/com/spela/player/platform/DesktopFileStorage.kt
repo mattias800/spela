@@ -113,6 +113,27 @@ class DesktopFileStorage : FileStorage {
         }
     }
 
+    override suspend fun extractFirstZipEntryFromFile(zipPath: String, destPath: String) {
+        withContext(Dispatchers.IO) {
+            val src = File(zipPath)
+            val dest = File(destPath)
+            dest.parentFile?.mkdirs()
+            // See AndroidFileStorage for rationale — the ZipFile +
+            // streamed copy keeps the heap allocation bounded so the
+            // largest libretro cores (#849, scummvm ~134 MB) don't OOM
+            // when buffered as a ByteArray.
+            java.util.zip.ZipFile(src).use { zf ->
+                val entry = zf.entries().asSequence().firstOrNull()
+                    ?: throw IllegalStateException("ZIP archive is empty: $zipPath")
+                zf.getInputStream(entry).use { input ->
+                    dest.outputStream().use { output ->
+                        input.copyTo(output)
+                    }
+                }
+            }
+        }
+    }
+
     override suspend fun sha256File(path: String): String? = withContext(Dispatchers.IO) {
         val file = File(path)
         if (!file.exists() || !file.isFile) return@withContext null

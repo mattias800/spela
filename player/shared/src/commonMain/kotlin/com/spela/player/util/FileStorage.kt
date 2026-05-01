@@ -27,6 +27,16 @@ interface FileStorage {
     suspend fun unzipBytesToDirectory(data: ByteArray, targetDir: String)
 
     /**
+     * Streams the first entry of the zip at [zipPath] to [destPath]
+     * without buffering the entire payload in memory. Used for the
+     * libretro core download path: buildbot serves each core as a
+     * `.so.zip` (one entry, no compression on the .so itself), and
+     * the largest cores (e.g. scummvm at ~134 MB) overflow the
+     * default Android heap when buffered as a `ByteArray`. See #849.
+     */
+    suspend fun extractFirstZipEntryFromFile(zipPath: String, destPath: String)
+
+    /**
      * Streaming SHA-256 of the file at [path], returned as a lowercase hex
      * string. Returns `null` when the path doesn't exist or can't be read —
      * callers treat that as "cannot decide" and should fall back to the
