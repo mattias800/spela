@@ -31,6 +31,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.graphicsLayer
@@ -275,19 +276,29 @@ fun SecondaryScreenContent(
                             )
                         }
                         PAGE_SAVE_SLOTS -> {
-                            SecondarySaveSlotsPage(
-                                activeSlot = state.activeSlot,
-                                saveSlots = state.saveSlots,
-                                onSelectSlot = { slot ->
-                                    viewModel.onIntent(EmulationIntent.SelectSlot(slot))
-                                },
-                                onSaveToSlot = { slot ->
-                                    viewModel.onIntent(EmulationIntent.SaveToSlot(slot))
-                                },
-                                onLoadFromSlot = { slot ->
-                                    viewModel.onIntent(EmulationIntent.LoadFromSlot(slot))
-                                },
-                            )
+                            // Page-3 content adapts based on whether the active core
+                            // supports libretro save states. Cores like ScummVM and
+                            // DOSBox declare savestate=false in their info file —
+                            // their save_dir is the persistence layer instead, and
+                            // the slot picker is meaningless. Show an honest empty
+                            // state rather than a dead picker. See #863.
+                            if (state.supportsSaveStates) {
+                                SecondarySaveSlotsPage(
+                                    activeSlot = state.activeSlot,
+                                    saveSlots = state.saveSlots,
+                                    onSelectSlot = { slot ->
+                                        viewModel.onIntent(EmulationIntent.SelectSlot(slot))
+                                    },
+                                    onSaveToSlot = { slot ->
+                                        viewModel.onIntent(EmulationIntent.SaveToSlot(slot))
+                                    },
+                                    onLoadFromSlot = { slot ->
+                                        viewModel.onIntent(EmulationIntent.LoadFromSlot(slot))
+                                    },
+                                )
+                            } else {
+                                SecondarySaveStatesUnsupportedPage()
+                            }
                         }
                     }
                 }
@@ -503,6 +514,45 @@ private fun formatPauseDuration(totalSeconds: Long): String {
  * Horizontal row of page indicator dots. Active page dot uses [SpColor.Primary],
  * inactive dots use [SpColor.OnBackgroundTertiary] at reduced alpha.
  */
+/**
+ * Empty-state for the Save Slots page when the active core declares
+ * `savestate = "false"` (ScummVM, DOSBox, ~60 others). The slot picker
+ * doesn't apply — those cores persist via their own on-disk save_dir,
+ * which Spela now bundles per-session (#864). Show the user honestly
+ * that libretro save states aren't a thing here, rather than a dead
+ * grid of empty slots. See #863.
+ *
+ * State 4 ("terminal-unsupported") of the resolution order in #863.
+ * States 2 (user opted out) and 3 (ScummVM Tools page) are filed as
+ * follow-ups — this MVP just covers the unconditional case.
+ */
+@Composable
+private fun SecondarySaveStatesUnsupportedPage() {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(SpSpacing.Default),
+        contentAlignment = Alignment.Center,
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(SpSpacing.Small),
+        ) {
+            Text(
+                text = "Save states not available",
+                style = SpTypography.TitleMedium,
+                color = SpColor.OnBackground,
+            )
+            Text(
+                text = "This core writes its saves to disk through the game's own menu (try F5 in-game). They're preserved across sessions by Spela.",
+                style = SpTypography.BodyMedium,
+                color = SpColor.OnBackgroundSecondary,
+                textAlign = TextAlign.Center,
+            )
+        }
+    }
+}
+
 @Composable
 private fun PageIndicatorDots(
     pagerState: PagerState,
