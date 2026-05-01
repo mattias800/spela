@@ -26,11 +26,16 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asComposeImageBitmap
 import androidx.compose.ui.graphics.drawscope.DrawScope
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
+import androidx.compose.ui.input.pointer.PointerEventType
+import androidx.compose.ui.input.pointer.isPrimaryPressed
+import androidx.compose.ui.input.pointer.isSecondaryPressed
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
@@ -124,6 +129,56 @@ fun DesktopEmulationSurface(
                 .background(Color.Black)
                 .focusRequester(focusRequester)
                 .focusable()
+                .pointerInput(controller) {
+                    // Forward Compose pointer events to the libretro
+                    // RETRO_DEVICE_MOUSE pipeline (#857). Mirror of the
+                    // MetalOffscreenSurface block — same scaling logic
+                    // but reads frame size via controller.getVideoWidth/
+                    // getVideoHeight since this surface doesn't keep a
+                    // RenderedFrame snapshot around.
+                    awaitPointerEventScope {
+                        var prev: Offset? = null
+                        var leftHeld = false
+                        var rightHeld = false
+                        while (true) {
+                            val event = awaitPointerEvent()
+                            val change = event.changes.firstOrNull() ?: continue
+                            val frameW = controller.getVideoWidth()
+                            val frameH = controller.getVideoHeight()
+                            val canvasW = size.width.toFloat()
+                            val canvasH = size.height.toFloat()
+                            val scaleX = if (frameW > 0 && canvasW > 0f) frameW.toFloat() / canvasW else 1f
+                            val scaleY = if (frameH > 0 && canvasH > 0f) frameH.toFloat() / canvasH else 1f
+                            when (event.type) {
+                                PointerEventType.Move -> {
+                                    val p = prev
+                                    if (p != null) {
+                                        val dx = ((change.position.x - p.x) * scaleX).toInt().coerceIn(Short.MIN_VALUE.toInt(), Short.MAX_VALUE.toInt()).toShort()
+                                        val dy = ((change.position.y - p.y) * scaleY).toInt().coerceIn(Short.MIN_VALUE.toInt(), Short.MAX_VALUE.toInt()).toShort()
+                                        if (dx != 0.toShort() || dy != 0.toShort()) {
+                                            controller.setMouse(0, dx, dy, leftHeld, rightHeld)
+                                        }
+                                    }
+                                    prev = change.position
+                                }
+                                PointerEventType.Press -> {
+                                    leftHeld = event.buttons.isPrimaryPressed
+                                    rightHeld = event.buttons.isSecondaryPressed
+                                    controller.setMouse(0, 0, 0, leftHeld, rightHeld)
+                                    prev = change.position
+                                }
+                                PointerEventType.Release -> {
+                                    leftHeld = event.buttons.isPrimaryPressed
+                                    rightHeld = event.buttons.isSecondaryPressed
+                                    controller.setMouse(0, 0, 0, leftHeld, rightHeld)
+                                }
+                                PointerEventType.Enter, PointerEventType.Exit -> {
+                                    prev = null
+                                }
+                            }
+                        }
+                    }
+                }
                 .onPreviewKeyEvent { event ->
                     // Handle Escape key to toggle overlay
                     if (event.key == Key.Escape && event.type == KeyEventType.KeyDown) {
