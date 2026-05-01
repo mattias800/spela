@@ -1118,6 +1118,40 @@ JNI_FUNC(void, nativeDeinit)(JNIEnv *env, jobject thiz) {
         sp_dlclose(g_core.handle);
         g_core.handle = NULL;
     }
+
+    /* Clear every retro_* function pointer in g_core. After dlclose the
+     * code those pointers reference is unmapped, but the bytes in the
+     * pointer slots still look non-NULL — every JNI entry that guards
+     * with "if (g_core.retro_xxx)" then dereferences garbage. Pre-fix,
+     * this surfaced as a crash at nativeSetControllerPortDevice when
+     * the user exited a ScummVM game and started a new one in the same
+     * process: the game-launch path calls setControllerPortDevice(0,
+     * MOUSE) BEFORE the next core's loadCore rebuilds these slots. See
+     * the #852 follow-up. */
+    g_core.retro_init = NULL;
+    g_core.retro_deinit = NULL;
+    g_core.retro_api_version = NULL;
+    g_core.retro_get_system_info = NULL;
+    g_core.retro_get_system_av_info = NULL;
+    g_core.retro_set_environment = NULL;
+    g_core.retro_set_video_refresh = NULL;
+    g_core.retro_set_audio_sample = NULL;
+    g_core.retro_set_audio_sample_batch = NULL;
+    g_core.retro_set_input_poll = NULL;
+    g_core.retro_set_input_state = NULL;
+    g_core.retro_set_controller_port_device = NULL;
+    g_core.retro_reset = NULL;
+    g_core.retro_run = NULL;
+    g_core.retro_load_game = NULL;
+    g_core.retro_unload_game = NULL;
+    g_core.retro_serialize_size = NULL;
+    g_core.retro_serialize = NULL;
+    g_core.retro_unserialize = NULL;
+    g_core.retro_get_memory_data = NULL;
+    g_core.retro_get_memory_size = NULL;
+    g_core.retro_cheat_reset = NULL;
+    g_core.retro_cheat_set = NULL;
+
     LOGI("Core deinitialized");
 }
 
