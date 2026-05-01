@@ -141,6 +141,9 @@ fun GameDetailScreen(
                     onNavigateToAchievements = { onNavigateToAchievements?.invoke(gameId) },
                     onAdminScrape = if (state.isAdmin) {{ viewModel.onIntent(GameDetailIntent.AdminScrapeGame) }} else null,
                     onAdminRefreshAchievements = if (state.isAdmin) {{ viewModel.onIntent(GameDetailIntent.AdminRefreshAchievements) }} else null,
+                    onSetGameSaveStatePolicy = { choice ->
+                        viewModel.onIntent(GameDetailIntent.SetGameSaveStatePolicy(choice))
+                    },
                 )
             },
             coverArt = { modifier, isPortrait ->
@@ -202,9 +205,6 @@ fun GameDetailScreen(
                     onNavigateToAchievements = if (state.achievements.isNotEmpty()) {
                         { onNavigateToAchievements?.invoke(gameId) }
                     } else null,
-                    onSetGameSaveStatePolicy = { choice ->
-                        viewModel.onIntent(GameDetailIntent.SetGameSaveStatePolicy(choice))
-                    },
                 )
 
                 // Series & Franchise links
