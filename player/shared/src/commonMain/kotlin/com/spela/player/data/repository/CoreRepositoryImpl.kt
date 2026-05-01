@@ -16,6 +16,8 @@ import io.ktor.client.plugins.*
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
 import io.ktor.http.*
+import io.ktor.utils.io.*
+import io.ktor.utils.io.core.*
 
 class CoreRepositoryImpl(
     private val apiClient: SpelaApiClient,
@@ -42,20 +44,41 @@ class CoreRepositoryImpl(
     override suspend fun downloadCore(coreName: String, customDownloadUrl: String?, onProgress: (Float) -> Unit): Result<String> = runCatching {
         val fileName = coreFileName(coreName)
         val destPath = fileStorage.getCoresDir() + "/$fileName"
+        val tempZipPath = "$destPath.zip.tmp"
         val url = if (!customDownloadUrl.isNullOrBlank()) resolveDownloadUrl(customDownloadUrl) else buildbotCoreUrl(coreName)
         println("[CoreRepo] downloadCore($coreName) → $url")
 
-        val response: HttpResponse = httpClient.get(url) {
-            onDownload { bytesSentTotal, contentLength ->
-                if (contentLength != null && contentLength > 0) onProgress(bytesSentTotal.toFloat() / contentLength)
+        // Stream the response to a temp .zip on disk and unzip from
+        // there, never holding the full payload in memory. The largest
+        // libretro cores (scummvm ~134 MB) overflow Android's default
+        // heap (~87 MB free) when the response body is materialised as
+        // a ByteArray. See #849.
+        try {
+            httpClient.prepareGet(url) {
+                onDownload { bytesSentTotal, contentLength ->
+                    if (contentLength != null && contentLength > 0) onProgress(bytesSentTotal.toFloat() / contentLength)
+                }
+            }.execute { response ->
+                if (!response.status.isSuccess()) {
+                    throw RuntimeException("Core download failed: HTTP ${response.status.value} from $url")
+                }
+                val channel = response.bodyAsChannel()
+                fileStorage.writeFileStreaming(tempZipPath) { append ->
+                    val buffer = ByteArray(64 * 1024)
+                    while (true) {
+                        val read = channel.readAvailable(buffer, 0, buffer.size)
+                        if (read == -1) break
+                        append(buffer, 0, read)
+                    }
+                }
             }
+            fileStorage.extractFirstZipEntryFromFile(tempZipPath, destPath)
+        } finally {
+            // Best-effort cleanup of the temp .zip. If the download
+            // throws mid-flight the partial file would otherwise sit
+            // in cores/ until the next download for the same core.
+            runCatching { fileStorage.deleteFile(tempZipPath) }
         }
-        if (!response.status.isSuccess()) {
-            throw RuntimeException("Core download failed: HTTP ${response.status.value} from $url")
-        }
-        val zipData: ByteArray = response.body()
-        val coreData = extractFirstZipEntry(zipData)
-        fileStorage.writeFile(destPath, coreData)
         destPath
     }
 

@@ -279,6 +279,7 @@ class SaveManagerDeferredSyncTest {
         override suspend fun isDirectory(path: String): Boolean = false
         override suspend fun zipDirectoryToBytes(dirPath: String): ByteArray? = null
         override suspend fun unzipBytesToDirectory(data: ByteArray, targetDir: String) {}
+        override suspend fun extractFirstZipEntryFromFile(zipPath: String, destPath: String) {}
         override suspend fun sha256File(path: String): String? = null
     }
 }
