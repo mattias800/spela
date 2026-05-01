@@ -31,7 +31,12 @@
 (function () {
   "use strict";
 
-  const SCUMMVM_DATA_BASE_URL = "https://scummvm.kuendig.io/data/";
+  // Dev-mode points at the vite proxy at /scummvm-data/, which
+  // forwards same-origin to the upstream chkuendig CDN. The iframe
+  // CAN'T hit `https://scummvm.kuendig.io/data/` directly because of
+  // CORS. Production swaps this for a mirrored static tree; see
+  // VENDOR.md.
+  const SCUMMVM_DATA_BASE_URL = "/scummvm-data/";
   const STATUS_EL = document.getElementById("status");
   const STATUS_TEXT_EL = document.getElementById("status-text");
   const PROGRESS_FILL_EL = document.getElementById("progress-fill");
@@ -226,30 +231,80 @@
    *
    * Called once before scummvm.js is loaded.
    */
+  /**
+   * Path rewriter shared between the fetch and XHR interceptors. The
+   * chkuendig build uses BOTH:
+   *   - fetch() for the WASM binary
+   *   - XMLHttpRequest (synchronous, Asyncify-driven) for engine data
+   *     and plugin .so files served from /data/
+   * Anything that resolves to `data/<x>` gets redirected to chkuendig's
+   * CDN. https://... URLs pass through.
+   */
+  function rewriteUrl(url) {
+    if (!url || typeof url !== "string") return url;
+    if (/^https?:\/\//i.test(url)) return url;
+    // Look for a `data/...` segment anywhere in the path. The upstream
+    // build resolves data references against the iframe's base URL,
+    // which produces variants like:
+    //   data/index.json
+    //   /data/plugins/libsci.so
+    //   /scummvm/data/plugins/libsci.so      ← page-relative resolution
+    //   /scummvm//data/plugins/libsci.so     ← double-slash artefact
+    // All of them mean "fetch from the chkuendig data tree." Match the
+    // first `data/` segment after collapsing leading slashes / duplicate
+    // slashes / `./` prefix.
+    const collapsed = url.replace(/\/+/g, "/").replace(/^\.\//, "");
+    const idx = collapsed.indexOf("/data/");
+    if (idx >= 0) {
+      return SCUMMVM_DATA_BASE_URL + collapsed.slice(idx + "/data/".length);
+    }
+    if (collapsed.startsWith("data/")) {
+      return SCUMMVM_DATA_BASE_URL + collapsed.slice("data/".length);
+    }
+    return url;
+  }
+
   function installFetchInterceptor() {
     const originalFetch = window.fetch.bind(window);
     window.fetch = function (input, init) {
       let url;
+      let rewritten;
       if (typeof input === "string") {
         url = input;
+        rewritten = rewriteUrl(url);
+        if (rewritten !== url) {
+          return originalFetch(rewritten, init);
+        }
       } else if (input && typeof input.url === "string") {
-        url = input.url;
-      } else {
-        return originalFetch(input, init);
-      }
-
-      // Redirect /data/ and ./data/ and bare data/<...> to upstream
-      // CDN. `https?://` URLs go through unchanged.
-      if (/^https?:\/\//i.test(url)) {
-        return originalFetch(input, init);
-      }
-      const cleaned = url.replace(/^\.\//, "").replace(/^\//, "");
-      if (cleaned.startsWith("data/")) {
-        const upstream = SCUMMVM_DATA_BASE_URL + cleaned.slice("data/".length);
-        return originalFetch(upstream, init);
+        rewritten = rewriteUrl(input.url);
+        if (rewritten !== input.url) {
+          return originalFetch(rewritten, init);
+        }
       }
       return originalFetch(input, init);
     };
+
+    // Wrap XMLHttpRequest.open so the synchronous-XHR-via-Asyncify
+    // path used by ScummVM's HTTP-backed VFS hits the same upstream
+    // CDN. Without this, /data/plugins/libagi.so etc. 404 against
+    // our origin and the engine never loads.
+    const OriginalXHR = window.XMLHttpRequest;
+    function PatchedXHR() {
+      const xhr = new OriginalXHR();
+      const originalOpen = xhr.open.bind(xhr);
+      xhr.open = function (method, url, async, user, password) {
+        const rewritten = rewriteUrl(url);
+        return originalOpen(method, rewritten, async, user, password);
+      };
+      return xhr;
+    }
+    PatchedXHR.prototype = OriginalXHR.prototype;
+    PatchedXHR.UNSENT = OriginalXHR.UNSENT;
+    PatchedXHR.OPENED = OriginalXHR.OPENED;
+    PatchedXHR.HEADERS_RECEIVED = OriginalXHR.HEADERS_RECEIVED;
+    PatchedXHR.LOADING = OriginalXHR.LOADING;
+    PatchedXHR.DONE = OriginalXHR.DONE;
+    window.XMLHttpRequest = PatchedXHR;
   }
 
   let initFired = false;
@@ -261,9 +316,9 @@
     }
     initFired = true;
 
-    const { romUrl, scummvmGameId, gameName } = message;
-    if (!romUrl || !scummvmGameId) {
-      postError("init missing romUrl/scummvmGameId");
+    const { romUrl, scummvmGameId: providedGameId, gameName } = message;
+    if (!romUrl) {
+      postError("init missing romUrl");
       return;
     }
     document.title = gameName ? gameName + " — Spela" : "Spela ScummVM";
@@ -288,17 +343,49 @@
       return;
     }
 
+    // Resolve the ScummVM gameid. The .scummvm marker file's CONTENTS
+    // is the canonical id ScummVM recognises (e.g. "monkey", "tentacle",
+    // "sky"). The Spela seed README is explicit that the filename is
+    // just a local label — `monkey1.scummvm` can contain `monkey`. Read
+    // the marker if present; fall back to the provided id (which is
+    // the filename basename) only if no marker exists.
+    let scummvmGameId = providedGameId || "";
+    const decoder = new TextDecoder("utf-8");
+    for (const entry of entries) {
+      if (entry.type !== "file") continue;
+      if (!/\.scummvm$/i.test(entry.name)) continue;
+      const text = decoder.decode(entry.data).trim();
+      if (text) {
+        scummvmGameId = text;
+        break;
+      }
+    }
+    if (!scummvmGameId) {
+      postError("could not resolve ScummVM game id from .scummvm marker");
+      return;
+    }
+
     setStatus("Mounting game files…");
     installFetchInterceptor();
+
+    // The upstream chkuendig pre-script (inlined into scummvm.js)
+    // resets Module["arguments"] = [] very early — anything we set on
+    // Module.arguments before loading the script gets stomped. Their
+    // pre-script then reads window.location.hash and pushes each
+    // space-separated token onto arguments. So we set the hash here
+    // and let their pre-script do the work. Bypasses the launcher and
+    // boots straight into the game.
+    window.location.hash =
+      "#--path=/games/" + scummvmGameId + " " + scummvmGameId;
 
     // Build the Module object before scummvm.js loads. Emscripten's
     // generated code uses the existing global Module if present,
     // and we set it up so:
     //   - preRun mounts the game files we already have in memory
-    //   - arguments tells ScummVM which game to launch
     //   - canvas points at our visible <canvas>
     //   - print/printErr forward to console
-    //   - locateFile + onRuntimeInitialized hook lifecycle events
+    //   - onRuntimeInitialized hooks the lifecycle event back to the
+    //     parent
     window.Module = {
       arguments: ["--path=/games/" + scummvmGameId, scummvmGameId],
       canvas: CANVAS_EL,
@@ -317,19 +404,18 @@
             throw err;
           }
 
-          // Mount IDBFS for /home/web_user so saves persist across
-          // sessions on the same browser. Sync from disk on boot.
+          // Save persistence (IDBFS at /home/web_user) is wired up
+          // in #794 phase 3 — see the issue's "Save state model"
+          // section. Phase 1 mounts /home/web_user as MEMFS so the
+          // ScummVM launcher / config writes don't crash, but saves
+          // disappear on reload. Acceptable trade-off for an
+          // experiment that's primarily testing whether the engine
+          // boots at all.
           try {
             const FS = window.Module.FS;
             FS.mkdirTree("/home/web_user");
-            FS.mount(window.Module.IDBFS, {}, "/home/web_user");
-            FS.syncfs(true, function (err) {
-              if (err) {
-                console.warn("[scummvm-shell] IDBFS sync (boot) failed:", err);
-              }
-            });
           } catch (err) {
-            console.warn("[scummvm-shell] IDBFS mount failed:", err);
+            console.warn("[scummvm-shell] /home/web_user mkdir failed:", err);
           }
         },
       ],

@@ -1,0 +1,92 @@
+<!doctype html>
+<!--
+  ScummVM iframe probe — manual exploratory page used by Playwright
+  while developing /scummvm/scummvm.html. Loads the shell in an iframe,
+  surfaces postMessage events on the page, and lets us trigger init
+  with a chosen game URL. Not used by production code; safe to delete
+  if/when the experiment graduates.
+-->
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>ScummVM probe</title>
+    <style>
+      body { font-family: system-ui, sans-serif; margin: 24px; color: #eee; background: #16191d; }
+      pre { background: #0d0f12; padding: 12px; border-radius: 4px; max-height: 60vh; overflow: auto; }
+      iframe { border: 1px solid #333; width: 720px; height: 480px; }
+      button, input { font-size: 14px; padding: 6px 10px; }
+      input { width: 380px; background: #20242a; color: #eee; border: 1px solid #333; }
+      .row { margin: 8px 0; }
+      h2 { margin-top: 24px; }
+    </style>
+  </head>
+  <body>
+    <h1>ScummVM iframe probe</h1>
+
+    <div class="row">
+      <label>romUrl: <input id="rom-url" value="" /></label>
+    </div>
+    <div class="row">
+      <label>scummvmGameId: <input id="scummvm-id" value="sq2" /></label>
+    </div>
+    <div class="row">
+      <button id="send-init">Send init</button>
+      <button id="reload-iframe">Reload iframe</button>
+    </div>
+
+    <iframe id="frame" src="/scummvm/scummvm.html"></iframe>
+
+    <h2>Events from iframe</h2>
+    <pre id="log"></pre>
+
+    <script>
+      const logEl = document.getElementById("log");
+      const frame = document.getElementById("frame");
+      const events = [];
+
+      function append(line) {
+        events.push(line);
+        logEl.textContent = events.join("\n");
+      }
+
+      window.addEventListener("message", function (event) {
+        if (event.source !== frame.contentWindow) return;
+        try {
+          append(JSON.stringify(event.data));
+        } catch (err) {
+          append("(unstringifiable) " + String(event.data));
+        }
+      });
+
+      document.getElementById("send-init").addEventListener("click", function () {
+        const romUrl = document.getElementById("rom-url").value.trim();
+        const scummvmGameId = document.getElementById("scummvm-id").value.trim();
+        frame.contentWindow.postMessage(
+          {
+            type: "init",
+            romUrl,
+            scummvmGameId,
+            core: "scummvm",
+            gameName: scummvmGameId,
+            preferences: {
+              shader: "",
+              showPerformanceOverlay: false,
+            },
+            webEmulator: "scummvm",
+          },
+          "*",
+        );
+        append("(parent → iframe) init " + scummvmGameId);
+      });
+
+      document.getElementById("reload-iframe").addEventListener("click", function () {
+        events.length = 0;
+        logEl.textContent = "";
+        frame.src = frame.src;
+      });
+
+      // Expose a hook for Playwright/tests to read events.
+      window.__scummvmProbe = { events: events };
+    </script>
+  </body>
+</html>

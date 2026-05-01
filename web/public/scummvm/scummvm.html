@@ -64,6 +64,25 @@
     </div>
 
     <!--
+      The upstream chkuendig pre-script (inlined into scummvm.js)
+      expects these element IDs to exist so its progress bar code
+      doesn't crash when scummvm.wasm starts loading. We don't use
+      the upstream UI — these nodes stay hidden and exist only to
+      satisfy the dependency. shell.js drives our own #status above.
+    -->
+    <div id="download-modal" style="display: none">
+      <div id="download-modal-title"><h3></h3></div>
+      <div id="download-modal-content">
+        <div id="download-modal-progress">
+          <div id="download-modal-progress-fill"></div>
+        </div>
+        <p id="download-modal-progress-text"></p>
+        <p id="download-modal-speed-text"></p>
+      </div>
+    </div>
+    <textarea id="output" style="display: none"></textarea>
+
+    <!--
       Spela ScummVM iframe shell — wraps chkuendig's WASM build with
       the parent ↔ iframe postMessage protocol used by the rest of
       the play page (see web/src/lib/emulator-protocol.ts). This file

@@ -245,6 +245,34 @@ export default defineConfig({
         changeOrigin: true,
         ws: true,
       },
+      // Dev-only proxy for the chkuendig ScummVM data tree (engine .dat
+      // files + plugin .so files). Browser CORS blocks the iframe from
+      // hitting the upstream CDN cross-origin; routing through vite
+      // strips Origin and forwards same-origin to the iframe. Production
+      // wires this differently — either the data tree is mirrored under
+      // /scummvm/data/ or served by the spela backend. See #794 +
+      // web/public/scummvm/VENDOR.md.
+      //
+      // Two routes intentionally cover both URL shapes the upstream
+      // build emits:
+      //   /scummvm/data/<x>  — page-relative resolution from the iframe
+      //   /scummvm-data/<x>  — bare alias for absolute /data/<x>
+      //                         requests after our shell rewrites them
+      // Both forward to scummvm.kuendig.io/data.
+      "/scummvm-data": {
+        target: "https://scummvm.kuendig.io",
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/scummvm-data/, "/data"),
+      },
+      // Regex key: vite treats keys starting with `^` as RegExp. Match
+      // both `/scummvm/data/...` and `/scummvm//data/...` (the double-
+      // slash artefact appears when the upstream build resolves a bare
+      // `/data/...` against the iframe's base URL `/scummvm/`).
+      "^/scummvm/+data/.*": {
+        target: "https://scummvm.kuendig.io",
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/scummvm\/+data/, "/data"),
+      },
     },
   },
   test: {
