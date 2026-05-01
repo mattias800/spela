@@ -408,6 +408,94 @@ class SaveManager(
     }
 
     /**
+     * Pulls the session's save_dir bundle from the server and untars it
+     * into [destDir]. Called by the emulation start flow before loadCore
+     * so cores that scan their save_dir on init (ScummVM, DOSBox) see
+     * their previously-saved files. Best-effort: any failure leaves the
+     * dir in whatever state it's in (typically empty for a fresh session
+     * or a session whose previous run wrote nothing). See #864.
+     */
+    /**
+     * Returns the on-disk save_dir path for the given [sessionId] (creating
+     * the directory if missing) or null when no session is active. Used by
+     * the emulation start flow to compute the path that's passed to
+     * [LibretroController.loadCore]. See #864.
+     */
+    suspend fun getSessionSaveDir(sessionId: String?): String? {
+        if (sessionId == null) return null
+        val path = "${fileStorage.getSavesDir()}/sessions/$sessionId"
+        fileStorage.createDirectory(path)
+        return path
+    }
+
+    suspend fun populateSessionSaveDir(sessionId: String?, destDir: String) {
+        if (sessionId == null) return
+        val tarPath = "${fileStorage.getSavesDir()}/.tmp-savedir-load-$sessionId.tar"
+        try {
+            val result = sessionRepository.downloadSessionSaveDirBundleToFile(
+                sessionId, fileStorage, tarPath,
+            )
+            if (result.isFailure) {
+                val msg = result.exceptionOrNull()?.message ?: ""
+                if (msg.contains("404")) {
+                    println("[SaveManager] populateSessionSaveDir: no bundle yet for session $sessionId")
+                } else {
+                    println("[SaveManager] populateSessionSaveDir: download failed: $msg")
+                }
+                return
+            }
+            val tarSize = runCatching { fileStorage.getFileSize(tarPath) }.getOrDefault(0L)
+            if (tarSize <= 0L) {
+                println("[SaveManager] populateSessionSaveDir: empty bundle for session $sessionId, leaving dir as-is")
+                return
+            }
+            try {
+                fileStorage.extractTarFile(tarPath, destDir)
+                println("[SaveManager] populateSessionSaveDir: extracted ${tarSize}B bundle into $destDir")
+            } catch (e: Exception) {
+                println("[SaveManager] populateSessionSaveDir: extract failed: ${e.message}")
+            }
+        } finally {
+            runCatching { fileStorage.deleteFile(tarPath) }
+        }
+    }
+
+    /**
+     * Tars the session's on-disk save_dir and uploads the bundle to the
+     * server, atomically replacing any previous bundle. Called by the
+     * emulation stop flow after the libretro auto-save has been written.
+     * Best-effort: a failure leaves the local dir intact (it's the source
+     * of truth on this device until the next successful upload). See #864.
+     */
+    private suspend fun saveDirOnStop(sessionId: String) {
+        val srcDir = "${fileStorage.getSavesDir()}/sessions/$sessionId"
+        val tarPath = "${fileStorage.getSavesDir()}/.tmp-savedir-upload-$sessionId.tar"
+        try {
+            val tarSize = try {
+                fileStorage.tarDirectoryToFile(srcDir, tarPath)
+            } catch (e: Exception) {
+                println("[SaveManager] saveDirOnStop: tar failed: ${e.message}")
+                return
+            }
+            if (tarSize <= 0L) {
+                println("[SaveManager] saveDirOnStop: empty dir, nothing to upload for session $sessionId")
+                return
+            }
+            val result = sessionRepository.uploadSessionSaveDirBundleFromFile(
+                sessionId, tarPath, tarSize,
+            )
+            if (result.isSuccess) {
+                println("[SaveManager] saveDirOnStop: uploaded ${tarSize}B bundle for session $sessionId")
+            } else {
+                val msg = result.exceptionOrNull()?.message ?: "unknown"
+                println("[SaveManager] saveDirOnStop: upload failed: $msg")
+            }
+        } finally {
+            runCatching { fileStorage.deleteFile(tarPath) }
+        }
+    }
+
+    /**
      * Auto-save on stop (if enabled and not in challenge mode).
      * Always serializes via the libretro controller; uploads to session when available.
      * Called from within an IO coroutine.
@@ -423,6 +511,12 @@ class SaveManager(
             null
         } ?: run {
             println("[SaveManager] autoSaveOnStop: stageSaveToTempFile returned null")
+            // Some cores (ScummVM, DOSBox) declare savestate=false and
+            // return null here. They still need their on-disk save_dir
+            // bundle uploaded, so don't bail before saveDirOnStop. See
+            // #864 — save_dir is the parallel persistent path that's
+            // independent of the libretro memory snapshot.
+            currentSessionId?.let { saveDirOnStop(it) }
             return
         }
         println("[SaveManager] autoSaveOnStop: staged ${staged.size} bytes at ${staged.path}, uploading…")
@@ -459,6 +553,12 @@ class SaveManager(
         // queued during gameplay are still on disk waiting for an
         // opportunity. This is that opportunity.
         drainPendingUploads()
+
+        // Per-session save_dir bundle (#864). Done after the libretro
+        // auto-save so the in-memory snapshot wins if both succeed —
+        // some cores write to BOTH (DOSBox writes config to save_dir
+        // but its memory state lives in the libretro state).
+        currentSessionId?.let { saveDirOnStop(it) }
     }
 
     /**

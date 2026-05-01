@@ -116,6 +116,22 @@ class SessionRepositoryImpl(
         apiClient.uploadSessionAutoSaveFromFile(sessionId, savePath, saveSize, screenshot, coreName, compression)
     }
 
+    override suspend fun uploadSessionSaveDirBundleFromFile(
+        sessionId: String,
+        tarPath: String,
+        tarSize: Long,
+    ): Result<Unit> = runCatching {
+        apiClient.uploadSessionSaveDirBundleFromFile(sessionId, tarPath, tarSize)
+    }
+
+    override suspend fun downloadSessionSaveDirBundleToFile(
+        sessionId: String,
+        fileStorage: com.spela.player.util.FileStorage,
+        outputPath: String,
+    ): Result<Unit> = runCatching {
+        apiClient.downloadSessionSaveDirBundleToFile(sessionId, fileStorage, outputPath)
+    }
+
     override suspend fun downloadSessionAutoSave(sessionId: String): Result<ByteArray> = runCatching {
         apiClient.downloadSessionAutoSave(sessionId)
     }

@@ -89,9 +89,9 @@ class DesktopLibretroController(
     var latestRenderedFrame: RenderedFrame? = null
         private set
 
-    override fun loadCore(corePath: String) {
+    override fun loadCore(corePath: String, saveDir: String?) {
         jni.nativeSetSystemDir(fileStorage.getBiosDir())
-        jni.nativeSetSaveDir(fileStorage.getSavesDir())
+        jni.nativeSetSaveDir(saveDir ?: fileStorage.getSavesDir())
 
         if (!jni.nativeLoadCore(corePath)) {
             throw RuntimeException("Failed to load core: $corePath")

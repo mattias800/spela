@@ -195,6 +195,8 @@ private class FakePlayFromSharedSaveSessionRepository : SessionRepository {
     override suspend fun downloadSlotSaveToFile(sessionId: String, slot: Int, outputPath: String) = Result.failure<Unit>(Exception("stub"))
     override suspend fun uploadSessionSram(sessionId: String, data: ByteArray, coreName: String) = Result.success(Unit)
     override suspend fun downloadSessionSram(sessionId: String) = Result.failure<ByteArray>(Exception("stub"))
+    override suspend fun uploadSessionSaveDirBundleFromFile(sessionId: String, tarPath: String, tarSize: Long): Result<Unit> = Result.success(Unit)
+    override suspend fun downloadSessionSaveDirBundleToFile(sessionId: String, fileStorage: com.spela.player.util.FileStorage, outputPath: String): Result<Unit> = Result.failure(Exception("stub"))
     override suspend fun getSessionCheats(sessionId: String) = Result.success(SessionCheatConfig(false, emptyList()))
     override suspend fun updateSessionCheats(sessionId: String, cheatsEnabled: Boolean, enabledIndices: List<Int>) =
         Result.success(SessionCheatConfig(cheatsEnabled, enabledIndices))

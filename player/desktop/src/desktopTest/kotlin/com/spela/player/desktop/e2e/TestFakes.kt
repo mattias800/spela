@@ -606,7 +606,7 @@ class FakeLibretroController : LibretroController {
     var loadCallCount = 0
         private set
 
-    override fun loadCore(corePath: String) {
+    override fun loadCore(corePath: String, saveDir: String?) {
         loadedCore = corePath
     }
 
@@ -713,6 +713,8 @@ class FakeFileStorage : FileStorage {
     override suspend fun zipDirectoryToBytes(dirPath: String): ByteArray? = null
     override suspend fun unzipBytesToDirectory(data: ByteArray, targetDir: String) {}
     override suspend fun extractFirstZipEntryFromFile(zipPath: String, destPath: String) {}
+    override suspend fun tarDirectoryToFile(dirPath: String, destPath: String): Long = 0L
+    override suspend fun extractTarFile(tarPath: String, destDir: String) {}
     override suspend fun sha256File(path: String): String? = null
 }
 
@@ -1525,6 +1527,12 @@ class FakeSessionRepository : SessionRepository {
     override suspend fun downloadSessionSram(sessionId: String): Result<ByteArray> =
         sram[sessionId]?.let { Result.success(it) }
             ?: Result.failure(Exception("No SRAM"))
+
+    override suspend fun uploadSessionSaveDirBundleFromFile(sessionId: String, tarPath: String, tarSize: Long): Result<Unit> =
+        Result.success(Unit)
+
+    override suspend fun downloadSessionSaveDirBundleToFile(sessionId: String, fileStorage: com.spela.player.util.FileStorage, outputPath: String): Result<Unit> =
+        Result.failure(Exception("no save_dir bundle"))
 
     override suspend fun getSessionCheats(sessionId: String): Result<SessionCheatConfig> =
         Result.success(sessionCheats[sessionId] ?: SessionCheatConfig(cheatsEnabled = false, enabledIndices = emptyList()))

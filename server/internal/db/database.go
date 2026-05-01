@@ -181,6 +181,7 @@ func Initialize(dbPath string) (*gorm.DB, error) {
 		&GameSession{},
 		&SessionSaveState{},
 		&SessionSaveData{},
+		&SessionSaveDirBundle{},
 		&SessionCheatSetting{},
 		&DailyPlayActivity{},
 		&GameArtwork{},

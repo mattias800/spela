@@ -689,6 +689,11 @@ func (h *SessionHandler) HumaDeleteSession(ctx context.Context, in *DeleteSessio
 	}
 	h.DB.Where("session_id = ?", session.ID).Delete(&db.SessionSaveData{})
 
+	// SaveDir bundles (#864): the row pairs 1:1 with the session.
+	// On-disk file lives under session_X/save_dir/ which is cleaned up by
+	// the DeleteSessionDir call below — no per-file delete needed here.
+	h.DB.Where("session_id = ?", session.ID).Delete(&db.SessionSaveDirBundle{})
+
 	h.Storage.DeleteSessionDir(session.ID)
 	h.DB.Delete(&session)
 

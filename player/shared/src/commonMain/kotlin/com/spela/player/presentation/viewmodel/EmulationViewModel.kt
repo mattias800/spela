@@ -1096,8 +1096,21 @@ class EmulationViewModel(
                             libretroController.setCoreVariable("desmume_pointer_mouse", "enabled")
                         }
 
-                        println("[Emulation] About to loadCore($corePath)")
-                        libretroController.loadCore(corePath)
+                        // Per-session save_dir: cores that write their saves to disk
+                        // (ScummVM, DOSBox) get their own subdirectory under
+                        // saves/sessions/{sessionId}/. SRAM cores don't touch the
+                        // save_dir — for them the per-session path is empty
+                        // throughout the session, which is harmless. We download
+                        // the previous bundle (if any) and untar it into the dir
+                        // before loadCore so the core sees its prior saves on
+                        // resume. See #864.
+                        val sessionSaveDir = saveManager.getSessionSaveDir(saveManager.currentSessionId)
+                        if (sessionSaveDir != null) {
+                            saveManager.populateSessionSaveDir(saveManager.currentSessionId, sessionSaveDir)
+                        }
+
+                        println("[Emulation] About to loadCore($corePath, saveDir=$sessionSaveDir)")
+                        libretroController.loadCore(corePath, sessionSaveDir)
                         println("[Emulation] loadCore returned")
 
                         // On Android emulators (SwiftShader), paraLLEl-RDP Vulkan crashes
@@ -1921,7 +1934,14 @@ private fun coreDeclaresNoSaveStates(resolvedCoreName: String): Boolean {
  * Implemented on Android (via JNI/NDK) and Desktop (via JNI).
  */
 interface LibretroController {
-    fun loadCore(corePath: String)
+    /**
+     * Loads the libretro core at [corePath]. [saveDir] overrides the default
+     * libretro save directory; pass the per-session path for cores that
+     * write their saves to disk (ScummVM, DOSBox), or null to use the
+     * platform default. The save_dir is honoured via
+     * `RETRO_ENVIRONMENT_GET_SAVE_DIRECTORY`. See #864.
+     */
+    fun loadCore(corePath: String, saveDir: String? = null)
     fun loadGame(gamePath: String)
     fun start()
     fun pause()

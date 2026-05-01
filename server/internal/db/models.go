@@ -993,6 +993,25 @@ type SessionSaveData struct {
 	FileSize  int64          `json:"fileSize"`
 }
 
+// SessionSaveDirBundle is a tarball of the libretro save_dir contents for a
+// session. It carries on-disk save data that the core writes directly (e.g.
+// ScummVM's per-game save files, DOSBox config tweaks), as a counterpart to
+// SessionSaveData (SRAM) and SessionSaveState (libretro memory snapshots).
+//
+// One row per session — full atomic replace on each upload, no per-file
+// addressing. The tarball has a 256 MB upload cap (same as save states), and
+// is downloaded + extracted into the player's per-session save_dir before
+// loadCore on every launch. See #864.
+type SessionSaveDirBundle struct {
+	ID        uint           `gorm:"primarykey" json:"id"`
+	CreatedAt time.Time      `json:"createdAt"`
+	UpdatedAt time.Time      `json:"updatedAt"`
+	DeletedAt gorm.DeletedAt `gorm:"index" json:"-"`
+	SessionID uint           `gorm:"uniqueIndex;not null" json:"sessionId"`
+	FilePath  string         `gorm:"size:1024;not null" json:"-"`
+	FileSize  int64          `json:"fileSize"`
+}
+
 // SessionCheatSetting stores per-cheat enable/disable state within a game session.
 type SessionCheatSetting struct {
 	ID         uint      `gorm:"primarykey" json:"id"`

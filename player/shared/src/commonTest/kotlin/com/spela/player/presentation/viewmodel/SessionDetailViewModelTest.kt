@@ -296,6 +296,12 @@ private class FakeSessionRepo : SessionRepository {
     override suspend fun downloadSessionSram(sessionId: String): Result<ByteArray> =
         Result.failure(UnsupportedOperationException("not exercised"))
 
+    override suspend fun uploadSessionSaveDirBundleFromFile(sessionId: String, tarPath: String, tarSize: Long): Result<Unit> =
+        Result.success(Unit)
+
+    override suspend fun downloadSessionSaveDirBundleToFile(sessionId: String, fileStorage: com.spela.player.util.FileStorage, outputPath: String): Result<Unit> =
+        Result.failure(Exception("no save_dir bundle"))
+
     override suspend fun getSessionCheats(sessionId: String): Result<SessionCheatConfig> =
         Result.success(SessionCheatConfig(cheatsEnabled = false, enabledIndices = emptyList()))
 

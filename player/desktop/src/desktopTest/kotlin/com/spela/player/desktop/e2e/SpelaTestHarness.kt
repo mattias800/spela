@@ -455,6 +455,8 @@ private class HarnessFileStorage : com.spela.player.util.FileStorage {
     override suspend fun zipDirectoryToBytes(dirPath: String): ByteArray? = null
     override suspend fun unzipBytesToDirectory(data: ByteArray, targetDir: String) {}
     override suspend fun extractFirstZipEntryFromFile(zipPath: String, destPath: String) {}
+    override suspend fun tarDirectoryToFile(dirPath: String, destPath: String): Long = 0L
+    override suspend fun extractTarFile(tarPath: String, destDir: String) {}
     override suspend fun sha256File(path: String): String? = null
 }
 
