@@ -4,6 +4,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import com.spela.player.data.remote.PresenceService
 import com.spela.player.data.remote.ScrapeService
+import com.spela.player.domain.repository.DownloadRepository
 import com.spela.player.presentation.ui.components.ScrapeUpdates
 import com.spela.player.presentation.navigation.NavigationEvent
 import com.spela.player.presentation.navigation.NavigationEventBus
@@ -33,10 +34,24 @@ fun SpelaAppEffects(
     isAuthenticated: Boolean,
     navigationEventBus: NavigationEventBus?,
     navigationViewModel: NavigationViewModel,
+    downloadRepository: DownloadRepository,
 ) {
     LaunchedEffect(scrapeService) {
         scrapeService?.scrapedCovers?.collect { (gameId, coverUrl) ->
             ScrapeUpdates.onCoverUpdated(gameId, coverUrl)
+        }
+    }
+
+    // Sweep partial download artifacts left over from a previous app
+    // launch (process death, force-stop, OOM kill mid-download). Walks
+    // the games directory once at composition start and removes any
+    // per-game directory not in the local downloads table. Idempotent.
+    // See #845.
+    LaunchedEffect(downloadRepository) {
+        try {
+            downloadRepository.scanForOrphanedDownloads()
+        } catch (e: Exception) {
+            println("[Download] orphan scan failed at startup: ${e.message}")
         }
     }
 

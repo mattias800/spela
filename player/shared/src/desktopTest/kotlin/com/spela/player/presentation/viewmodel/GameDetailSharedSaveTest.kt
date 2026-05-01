@@ -238,6 +238,7 @@ private class TestDownloadRepository : DownloadRepository {
     override suspend fun deleteLocalGame(gameId: String) {}
     override suspend fun getCacheSize(): Long = 0
     override suspend fun clearCache() {}
+    override suspend fun scanForOrphanedDownloads() {}
 }
 
 private class TestCollectionRepository : CollectionRepository {

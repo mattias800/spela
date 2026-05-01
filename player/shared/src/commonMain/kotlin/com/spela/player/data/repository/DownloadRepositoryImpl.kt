@@ -8,10 +8,13 @@ import com.spela.player.domain.model.DownloadState
 import com.spela.player.domain.model.DownloadedGame
 import com.spela.player.domain.repository.DownloadRepository
 import com.spela.player.util.FileStorage
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
+import kotlin.coroutines.coroutineContext
 
 class DownloadRepositoryImpl(
     private val apiClient: SpelaApiClient,
@@ -28,6 +31,15 @@ class DownloadRepositoryImpl(
      *  fresh. See [SpeedTracker] and #801. */
     private val speedTrackers = mutableMapOf<String, SpeedTracker>()
 
+    /** Tracks the in-flight coroutine [Job] for each active download so
+     *  [cancelDownload] can actually interrupt it (the call originates
+     *  from a different scope than the one that started [downloadGame],
+     *  so we can't reach the job via [coroutineContext]). The map only
+     *  holds entries while a download is between QUEUED and a terminal
+     *  state — every code path that exits [downloadGame] removes its
+     *  entry in a finally block. See #845. */
+    private val activeJobs = mutableMapOf<String, Job>()
+
     private fun recordSpeed(gameId: String, bytesDownloaded: Long): Long =
         speedTrackers.getOrPut(gameId) { SpeedTracker() }.record(bytesDownloaded)
 
@@ -37,6 +49,46 @@ class DownloadRepositoryImpl(
 
     init {
         refreshDownloadedGames()
+    }
+
+    /**
+     * Walks `getGamesDir()` and deletes any per-game directory that has
+     * no row in the `downloads` table. These are orphans from process
+     * death, force-stop, or crashes that aborted [downloadGame] before
+     * the [DownloadEntity] insert ran — without this scan they'd sit on
+     * disk forever (no UI surface lists them, and the user has no
+     * "phantom partial" to discover).
+     *
+     * Idempotent: running this twice in a row produces the same result.
+     * Should be called exactly once at app launch from the DI graph.
+     * See #845.
+     */
+    override suspend fun scanForOrphanedDownloads() {
+        val gamesDir = fileStorage.getGamesDir()
+        if (!fileStorage.fileExists(gamesDir)) return
+        val tracked = database.spelaDatabaseQueries.getAllDownloads()
+            .executeAsList().map { it.game_id }.toSet()
+        val onDisk = try {
+            fileStorage.listFiles(gamesDir)
+        } catch (e: Exception) {
+            println("[Download] scanForOrphanedDownloads: listFiles failed: ${e.message}")
+            return
+        }
+        for (gameId in onDisk) {
+            if (gameId !in tracked) {
+                val orphan = "$gamesDir/$gameId"
+                println("[Download] scanForOrphanedDownloads: removing orphan $orphan")
+                try {
+                    if (fileStorage.isDirectory(orphan)) {
+                        fileStorage.deleteDirectory(orphan)
+                    } else {
+                        fileStorage.deleteFile(orphan)
+                    }
+                } catch (e: Exception) {
+                    println("[Download] scanForOrphanedDownloads: failed to delete $orphan: ${e.message}")
+                }
+            }
+        }
     }
 
     private fun refreshDownloadedGames() {
@@ -66,42 +118,57 @@ class DownloadRepositoryImpl(
 
     override fun observeDownloadedGames(): Flow<List<DownloadedGame>> = _downloadedGames
 
-    override suspend fun downloadGame(gameId: String, gameTitle: String): Result<String> = runCatching {
-        downloads.update { it + (gameId to DownloadProgress(gameId, gameTitle, DownloadState.QUEUED)) }
-        downloads.update { it + (gameId to DownloadProgress(gameId, gameTitle, DownloadState.DOWNLOADING)) }
+    override suspend fun downloadGame(gameId: String, gameTitle: String): Result<String> {
+        // Capture the caller's Job so cancelDownload can interrupt it.
+        // The download work below runs on the SAME coroutine, so cancelling
+        // this Job is what actually aborts the in-flight HTTP fetch.
+        activeJobs[gameId] = coroutineContext[Job]!!
+        return runCatching {
+            downloads.update { it + (gameId to DownloadProgress(gameId, gameTitle, DownloadState.QUEUED)) }
+            downloads.update { it + (gameId to DownloadProgress(gameId, gameTitle, DownloadState.DOWNLOADING)) }
 
-        // Check if this is a multi-disc game by fetching game detail
-        val gameDetail = apiClient.getGameDetail(gameId)
-        println("[Download] Game detail: fileName=${gameDetail.fileName} fileSize=${gameDetail.fileSize} discCount=${gameDetail.discCount}")
+            // Check if this is a multi-disc game by fetching game detail
+            val gameDetail = apiClient.getGameDetail(gameId)
+            println("[Download] Game detail: fileName=${gameDetail.fileName} fileSize=${gameDetail.fileSize} discCount=${gameDetail.discCount}")
 
-        val discs = gameDetail.discs
-        if (gameDetail.discCount >= 2) {
-            downloadMultiDiscGame(gameId, gameTitle, gameDetail)
-        } else if (discs.isNotEmpty() && discs.size == 1) {
-            // Single disc with disc record — use disc endpoint (handles .cue tar bundles)
-            downloadSingleDiscWithDiscRecord(gameId, gameTitle, gameDetail)
-        } else if (isTarBundledByServer(gameDetail.fileName)) {
-            // Server packages these as a tar of the directory:
-            //   - .cue / .gdi without disc records (old DB entries)
-            //   - .scummvm (entire directory bundled)
-            // The game endpoint returns application/x-tar with no Content-Length,
-            // so we stream-extract instead of comparing bytes against game.fileSize
-            // (which is the on-disk size of the .scummvm marker file or .cue file
-            // alone — much smaller than the tar).
-            downloadTarBundledGameFromGameEndpoint(gameId, gameTitle, gameDetail.fileSize)
-        } else {
-            downloadSingleDiscGame(gameId, gameTitle, gameDetail.fileName, gameDetail.fileSize)
-        }
-    }.onSuccess { path ->
-        val fileSize = try { fileStorage.getDirectorySize(fileStorage.getGamesDir() + "/$gameId") } catch (_: Exception) { 0L }
-        val now = kotlin.time.Clock.System.now().toEpochMilliseconds()
-        database.spelaDatabaseQueries.insertDownload(gameId, path, fileSize, now)
-        refreshDownloadedGames()
-    }.onFailure {
-        cleanupPartialDownload(gameId)
-        resetSpeed(gameId)
-        downloads.update {
-            it + (gameId to DownloadProgress(gameId, gameTitle, DownloadState.FAILED))
+            val discs = gameDetail.discs
+            if (gameDetail.discCount >= 2) {
+                downloadMultiDiscGame(gameId, gameTitle, gameDetail)
+            } else if (discs.isNotEmpty() && discs.size == 1) {
+                // Single disc with disc record — use disc endpoint (handles .cue tar bundles)
+                downloadSingleDiscWithDiscRecord(gameId, gameTitle, gameDetail)
+            } else if (isTarBundledByServer(gameDetail.fileName)) {
+                // Server packages these as a tar of the directory:
+                //   - .cue / .gdi without disc records (old DB entries)
+                //   - .scummvm (entire directory bundled)
+                // The game endpoint returns application/x-tar with no Content-Length,
+                // so we stream-extract instead of comparing bytes against game.fileSize
+                // (which is the on-disk size of the .scummvm marker file or .cue file
+                // alone — much smaller than the tar).
+                downloadTarBundledGameFromGameEndpoint(gameId, gameTitle, gameDetail.fileSize)
+            } else {
+                downloadSingleDiscGame(gameId, gameTitle, gameDetail.fileName, gameDetail.fileSize)
+            }
+        }.onSuccess { path ->
+            val fileSize = try { fileStorage.getDirectorySize(fileStorage.getGamesDir() + "/$gameId") } catch (_: Exception) { 0L }
+            val now = kotlin.time.Clock.System.now().toEpochMilliseconds()
+            database.spelaDatabaseQueries.insertDownload(gameId, path, fileSize, now)
+            refreshDownloadedGames()
+            activeJobs.remove(gameId)
+        }.onFailure { error ->
+            activeJobs.remove(gameId)
+            cleanupPartialDownload(gameId)
+            resetSpeed(gameId)
+            // User-initiated cancel surfaces as CancellationException via runCatching.
+            // Treat it as IDLE rather than FAILED so the UI doesn't show an error
+            // toast for an action the user just took intentionally.
+            if (error is CancellationException) {
+                downloads.update { it - gameId }
+                throw error
+            }
+            downloads.update {
+                it + (gameId to DownloadProgress(gameId, gameTitle, DownloadState.FAILED))
+            }
         }
     }
 
@@ -326,19 +393,32 @@ class DownloadRepositoryImpl(
     }
 
     private suspend fun cleanupPartialDownload(gameId: String) {
+        val gameDir = fileStorage.getGamesDir() + "/$gameId"
         try {
-            val gameDir = fileStorage.getGamesDir() + "/$gameId"
             if (fileStorage.isDirectory(gameDir)) {
                 fileStorage.deleteDirectory(gameDir)
             } else if (fileStorage.fileExists(gameDir)) {
                 fileStorage.deleteFile(gameDir)
             }
-        } catch (_: Exception) {
-            // Best effort cleanup
+        } catch (e: Exception) {
+            // Surface the failure so silent disk-space leaks are visible in
+            // logcat. Cleanup is best-effort because this runs from
+            // failure / cancel paths where we can't propagate further;
+            // the next download for the same gameId will overwrite via
+            // createDirectory, so the leak is bounded to that game's id.
+            println("[Download] cleanupPartialDownload($gameId): failed to delete $gameDir: ${e.message}")
         }
     }
 
     override suspend fun cancelDownload(gameId: String) {
+        // Cancel the in-flight job (if any). This propagates CancellationException
+        // through the runCatching block in downloadGame, which then runs
+        // cleanupPartialDownload via the onFailure branch — so disk space is
+        // reclaimed automatically. cancelDownload itself doesn't need to call
+        // cleanup directly.
+        activeJobs.remove(gameId)?.cancel(CancellationException("download cancelled by user"))
+        // Defensive: if the job already completed (or never started), drop the
+        // in-memory progress entry and tracker manually.
         downloads.update { it - gameId }
         // Drop the tracker too so a cancel-then-restart starts with a fresh
         // window. Without this the old samples briefly inflate the reported

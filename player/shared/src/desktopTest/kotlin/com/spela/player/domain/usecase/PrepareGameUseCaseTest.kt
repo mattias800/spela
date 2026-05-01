@@ -454,6 +454,7 @@ private class FakeDownloadRepository : DownloadRepository {
     override suspend fun deleteLocalGame(gameId: String) {}
     override suspend fun getCacheSize() = 0L
     override suspend fun clearCache() {}
+    override suspend fun scanForOrphanedDownloads() {}
 }
 
 /**

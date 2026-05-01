@@ -396,6 +396,7 @@ class SpelaTestHarness(
                 secondaryDisplay = secondaryDisplay,
                 presenceService = presenceService,
                 connectivityMonitor = connectivityMonitor,
+                downloadRepository = downloadRepo,
                 sessionDetailViewModel = sessionDetailViewModel,
                 topListsViewModel = topListsViewModel,
                 exploreViewModel = exploreViewModel,
