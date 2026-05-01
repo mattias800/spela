@@ -191,10 +191,15 @@ class AppLaunchAndConnectionTest {
         // Should show error
         onNodeWithText("Could not connect to server. Check the URL and try again.").assertIsDisplayed()
 
-        // Fix the validation result and retry
+        // Fix the validation result and retry. `advanceFully` (not the
+        // standard `advance`) for the same reason as
+        // [addServerValidatesAndSavesOnSuccess]: the success retry path
+        // runs validateServer → addServer → state-flow re-emission →
+        // form auto-close, and the standard 4-iteration helper was
+        // borderline under parallel-fork CPU contention.
         harness.serverRepo.validateServerResult = true
         onNodeWithText("Connect").performClick()
-        advance(harness)
+        advanceFully(harness)
 
         // Server should now be added and form closed
         onNodeWithText("My Server").assertIsDisplayed()
