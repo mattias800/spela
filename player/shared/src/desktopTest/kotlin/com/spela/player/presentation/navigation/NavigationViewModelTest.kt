@@ -147,6 +147,67 @@ class NavigationViewModelTest {
     }
 
     @Test
+    fun reTapActiveTabPopsStackToRootWhenDeep() = runTest(testDispatcher) {
+        // Universal tab convention (#846): tapping a tab the user is
+        // already on resets that tab's stack to its root. Without this
+        // the gesture is a silent no-op and the user is stuck in deep
+        // navigation with no obvious way back besides repeated GoBack.
+        val vm = createViewModel()
+        advanceUntilIdle()
+
+        vm.onIntent(NavigationIntent.SwitchTab(SpScreen.Consoles))
+        vm.onIntent(NavigationIntent.NavigateTo(SpScreen.Console("snes")))
+        vm.onIntent(NavigationIntent.NavigateTo(SpScreen.GameDetail("17")))
+        assertEquals(SpScreen.GameDetail("17"), vm.state.value.currentScreen)
+
+        vm.onIntent(NavigationIntent.SwitchTab(SpScreen.Consoles))
+
+        assertEquals(BottomNavTab.CONSOLES, vm.state.value.activeTab)
+        assertEquals(SpScreen.Consoles, vm.state.value.currentScreen)
+        // The pop should look like a GoBack to the screen-transition
+        // animation, not a tab-switch — the user hasn't switched tabs.
+        assertTrue(vm.state.value.isGoingBack, "active-tab re-tap renders as a back transition")
+        assertFalse(vm.state.value.isTabSwitch, "active-tab re-tap is not a tab switch")
+    }
+
+    @Test
+    fun reTapActiveTabAtRootIsNoOp() = runTest(testDispatcher) {
+        // Edge case from the issue's design: when the stack is already
+        // a single root entry, the re-tap should not emit a GoBack
+        // animation or otherwise produce observable change.
+        val vm = createViewModel()
+        advanceUntilIdle()
+
+        vm.onIntent(NavigationIntent.SwitchTab(SpScreen.Consoles))
+        val before = vm.state.value
+
+        vm.onIntent(NavigationIntent.SwitchTab(SpScreen.Consoles))
+
+        assertEquals(before, vm.state.value, "no state change when active tab is already at its root")
+    }
+
+    @Test
+    fun reTapActiveTabPopsOnlyThatTabsStack() = runTest(testDispatcher) {
+        // Each tab maintains its own independent stack — re-tapping the
+        // active tab must not disturb other tabs' stacks. Regression
+        // protection for the SwitchTab branch I just changed.
+        val vm = createViewModel()
+        advanceUntilIdle()
+
+        vm.onIntent(NavigationIntent.NavigateTo(SpScreen.GameDetail("home-deep")))
+        vm.onIntent(NavigationIntent.SwitchTab(SpScreen.Consoles))
+        vm.onIntent(NavigationIntent.NavigateTo(SpScreen.Console("gba")))
+
+        // Re-tap Consoles → only the Consoles stack pops.
+        vm.onIntent(NavigationIntent.SwitchTab(SpScreen.Consoles))
+        assertEquals(SpScreen.Consoles, vm.state.value.currentScreen)
+
+        // Switching to Home shows the still-deep Home stack untouched.
+        vm.onIntent(NavigationIntent.SwitchTab(SpScreen.Home))
+        assertEquals(SpScreen.GameDetail("home-deep"), vm.state.value.currentScreen)
+    }
+
+    @Test
     fun activeTabStaysCorrectThroughDeepNavigation() = runTest(testDispatcher) {
         val vm = createViewModel()
         advanceUntilIdle()
