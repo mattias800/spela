@@ -108,44 +108,78 @@ our iframe pointing at our own game data. If that works → our shell
 or proxy is the issue. If that also fails → some browser-level thing
 about the sandboxed iframe context.
 
-### Update: even upstream can't launch a game
+### Update 1: tested upstream's "Beneath a Steel Sky" → also fails
 
-Tested `https://scummvm.kuendig.io/` directly in Playwright: launcher
-shows ~25 games (Beneath a Steel Sky, Curse of Monkey Island, etc.)
-populated from a baked-in `scummvm.ini`. Pressing **Start** on
-Beneath a Steel Sky → upstream produces *"Error running game: Path
-does not exist"*. Neither `#sky`, `#bass`, nor any other URL-hash
-gameid auto-launches a working game on their site either.
+Initial test on `https://scummvm.kuendig.io/` clicking **Start** on
+Beneath a Steel Sky → *"Error running game: Path does not exist"*.
+Hypothesised that upstream's deployment doesn't run games either.
 
-Implication: the deployed scummvm.kuendig.io is essentially a
-"ScummVM-in-WASM lives, here's the launcher" demo. It is **not** a
-working game-launching deployment. Their build relies on a
-ScummvmFS HTTP-on-demand mount at `/games/<id>/` that's set up by
-their build but never populated with real game data on the live
-site.
+### Update 2: that was wrong — upstream DOES launch games
 
-Our experiment is **structurally further along** in one important
-way: we successfully extract Spela's `.scummvm` tar download into
-MEMFS at `/games/<id>/` BEFORE launching, so by the time ScummVM
-tries `--path=/games/sq2`, the path actually exists. That's why our
-error is *"Could not find suitable engine plugin"* (deeper into the
-launch flow) while theirs is *"Path does not exist"* (earlier).
+Re-tested with **Full Throttle (Demo/Windows/English)**. **It runs
+end-to-end** — the iconic desert-highway opening renders, no console
+errors. So the working state of the upstream deployment is real;
+my first sample was a poor pick (Beneath a Steel Sky's bundled data
+is broken, but Full Throttle's isn't).
 
-So we already won the path-mounting battle. The remaining wall is
-just the dlopen / `PLUGIN_getVersion` symbol resolution. Reasonable
-next steps:
+### The actual root cause: static-vs-dynamic engine linkage
 
-1. File an upstream issue at chkuendig/scummvm asking how plugin
-   dlopen is supposed to work. The deployed build doesn't exercise
-   it (their bundled paths are broken), so the plugin loading
-   pipeline may be partially broken upstream and just hidden.
-2. Try statically linked engines instead of dynamic plugins. Build
-   with `--disable-plugins` (or whatever the equivalent is on their
-   build script) so plugins are linked into scummvm.wasm directly.
-   Larger WASM (~80–120 MB) but skips dlopen entirely.
-3. As a last resort, compile the libretro `scummvm` core to WASM
-   ourselves and graft it into EmulatorJS — the path the umbrella
-   issue called out as "a separate, multi-week project."
+Critical evidence in the upstream debug log around the Full Throttle
+launch:
+
+```
+[LOG]  User picked target 'ft-demo' (engine ID 'scumm', game ID 'ft')...
+[DEBUG] Starting fetch #26 ... ft-dos-demo-en/index.json ...
+[DEBUG] Starting fetch #27 ... ft-dos-demo-en/FT.000 ...
+[DEBUG] Starting fetch #32 ... ft-dos-demo-en/FT.001 ...
+```
+
+**No `/data/plugins/lib*.so` fetches happen at any point.** The
+build statically links the SCUMM engine into `scummvm.wasm`, so
+launching a SCUMM game (Full Throttle, Curse of Monkey Island, Day
+of the Tentacle, …) never touches dlopen.
+
+Our experiment with `sq2` (AGI engine) hit the dlopen path because
+AGI is **not** statically linked. The build's `data/plugins/index.json`
+lists every engine as a dynamic plugin, but the actual runtime
+behaviour is: try static first; if no static engine claims the game
+ID, fall back to dlopening every plugin to ask. That fallback is
+what's broken in this build — `_PLUGIN_getVersion` symbol resolution
+fails for every `.so`. Same wall would hit upstream if they tried to
+launch BASS (Sky engine), Lure of the Temptress (Lure engine), etc.
+(That's likely why those entries are greyed out in their launcher —
+they know dlopen is broken.)
+
+### What this means for #794
+
+**Our shell is functionally complete for the SCUMM engine.** Any
+LucasArts adventure (Maniac Mansion, Day of the Tentacle, Sam &
+Max, Full Throttle, The Dig, Curse of Monkey Island, Indiana Jones,
+…) should launch end-to-end with no further changes — the path-mount
+via tar works, scummvm.wasm boots, the SCUMM engine is statically
+linked, no dlopen needed.
+
+To verify: stage a SCUMM-engine `.scummvm` game in
+`testdata/roms/scummvm/<id>/` (e.g. download chkuendig's bundled
+Full Throttle demo from `https://scummvm-data.kuendig.io/ft-dos-demo-en/`,
+package as a tar, drop in testdata, scan), then launch via the
+play page. Spela's testdata currently only has non-SCUMM games (sq2
+AGI, kyra3 Kyra, dw2 Tinsel, etc.) — none of which are statically
+linked.
+
+To support all engines (the eventual goal), three options:
+
+1. **Rebuild scummvm.wasm with `--disable-plugins`** so all engines
+   are static. Output ~80–120 MB but eliminates dlopen entirely.
+   Reproducible via the upstream build pipeline (`dists/emscripten/build.sh`)
+   with that flag. Multi-hour build.
+2. **File an upstream issue** asking why dlopen's `PLUGIN_getVersion`
+   resolution fails. The same issue affects them — if they've worked
+   around it for SCUMM but not for the other dynamic engines, they
+   probably know about it.
+3. **Compile libretro `scummvm` core to WASM** and graft into
+   EmulatorJS — the multi-week path the umbrella called out. Avoids
+   the chkuendig build entirely.
 
 ## The init / arguments timing issue
 
