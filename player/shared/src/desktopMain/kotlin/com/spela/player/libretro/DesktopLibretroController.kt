@@ -181,8 +181,8 @@ class DesktopLibretroController(
     }
 
     fun getVideoFrame(): ByteArray? = jni.nativeGetVideoFrame()
-    fun getVideoWidth(): Int = jni.nativeGetVideoWidth()
-    fun getVideoHeight(): Int = jni.nativeGetVideoHeight()
+    override fun getVideoWidth(): Int = jni.nativeGetVideoWidth()
+    override fun getVideoHeight(): Int = jni.nativeGetVideoHeight()
     fun getPixelFormat(): Int = jni.nativeGetPixelFormat()
     fun getAudioBuffer(): ShortArray? = jni.nativeGetAudioBuffer()
     fun getSampleRate(): Double = jni.nativeGetSampleRate()

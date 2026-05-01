@@ -243,6 +243,13 @@ fun SecondaryScreenContent(
                                 onMouseButton = { left, right ->
                                     controller.setMouse(0, 0, 0, left, right)
                                 },
+                                // Resolution-stable cursor speed: pass the
+                                // core's framebuffer width/height so a
+                                // ⅓-of-trackpad swipe traverses ⅓ of the
+                                // game viewport regardless of native res.
+                                // See #858.
+                                gameWidth = controller.getVideoWidth(),
+                                gameHeight = controller.getVideoHeight(),
                             )
                         }
                         PAGE_DASHBOARD -> {
