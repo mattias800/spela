@@ -70,6 +70,14 @@ class EmulationViewModel(
     private val biosRepository: BiosRepository? = null,
     private val cheatRepository: CheatRepository? = null,
     private val gameStatsRepository: GameStatsRepository? = null,
+    /**
+     * Optional onboarding-hints repository (#861). When present, the
+     * VM gates the ScummVM-lands-on-Controls override on the user
+     * NOT having dismissed the trackpad-dragged hint, and dispatches
+     * the dismissal on first drag. Optional so test fakes that don't
+     * exercise onboarding don't have to wire it up.
+     */
+    private val onboardingRepository: com.spela.player.domain.repository.OnboardingRepository? = null,
 ) {
     val state: StateFlow<EmulationState> = _state.asStateFlow()
 
@@ -427,6 +435,31 @@ class EmulationViewModel(
                 }
             EmulationIntent.RehearsalCrashStartFresh -> rehearsalCrashStartFresh()
             EmulationIntent.RehearsalCrashDismiss -> rehearsalCrashDismiss()
+
+            EmulationIntent.MarkScummVmTrackpadOnboarded -> markScummVmTrackpadOnboarded()
+        }
+    }
+
+    /**
+     * #861 — first trackpad drag in a ScummVM session marks the hint
+     * as dismissed so subsequent ScummVM launches stop overriding the
+     * user's saved default secondary-screen page. Fire-and-forget on
+     * IO; failure is silently swallowed because the worst case is the
+     * override fires once more next launch.
+     */
+    private fun markScummVmTrackpadOnboarded() {
+        val current = _state.value
+        if (current.scummvmTrackpadOnboarded) return
+        _state.update { it.copy(scummvmTrackpadOnboarded = true) }
+        val repo = onboardingRepository ?: return
+        scope.launch(dispatchers.io) {
+            try {
+                repo.markDismissed(
+                    com.spela.player.domain.repository.OnboardingHintKeys.SCUMMVM_TRACKPAD_DRAGGED,
+                )
+            } catch (_: Throwable) {
+                // Best effort.
+            }
         }
     }
 
@@ -777,6 +810,23 @@ class EmulationViewModel(
             stopJob = null
             libretroController.stop()
             println("[Emulation] Previous emulation stopped (if any)")
+
+            // #861 — hydrate the per-launch onboarded snapshot before
+            // the secondary-screen pager composes. If the user has
+            // already produced a trackpad drag in a prior ScummVM
+            // session, SecondaryScreenContent skips the
+            // lands-on-Controls override and respects their saved
+            // default page.
+            val onboardedSnapshot = onboardingRepository?.let { repo ->
+                try {
+                    repo.isDismissed(
+                        com.spela.player.domain.repository.OnboardingHintKeys.SCUMMVM_TRACKPAD_DRAGGED,
+                    )
+                } catch (_: Throwable) {
+                    false
+                }
+            } ?: false
+            _state.update { it.copy(scummvmTrackpadOnboarded = onboardedSnapshot) }
 
             // Fetch user preferences (fallback to defaults on error)
             println("[Emulation] Fetching preferences")

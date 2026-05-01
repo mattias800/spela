@@ -281,4 +281,13 @@ sealed interface EmulationIntent {
      * the next session launch will re-enter the upgrade decision flow.
      */
     data object RehearsalCrashDismiss : EmulationIntent
+
+    /**
+     * Fired the first time the user produces a drag on the
+     * secondary-screen trackpad while a ScummVM game is running.
+     * Marks the trackpad-onboarded hint as dismissed so the
+     * secondary screen stops overriding the user's default landing
+     * page on subsequent ScummVM launches. See #861.
+     */
+    data object MarkScummVmTrackpadOnboarded : EmulationIntent
 }

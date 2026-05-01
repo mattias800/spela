@@ -1,0 +1,9 @@
+-- Migration from schema version 3 to 4: add OnboardingHintEntity table
+-- so device-local "user dismissed this hint" rows survive across launches
+-- without forcing the override path. Generic by design — keyed on a
+-- dotted-namespace string so future hints (BIOS prompts, save-state
+-- intro tooltips, etc.) can reuse the same table. See #861.
+CREATE TABLE OnboardingHintEntity (
+    hint_key      TEXT NOT NULL PRIMARY KEY,
+    dismissed_at  INTEGER NOT NULL
+);

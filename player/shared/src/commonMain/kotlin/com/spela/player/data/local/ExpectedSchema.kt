@@ -35,5 +35,6 @@ object ExpectedSchema {
             "file_path", "file_size", "screenshot_path", "created_at",
             "retry_count", "last_error",
         ),
+        "OnboardingHintEntity" to setOf("hint_key", "dismissed_at"),
     )
 }

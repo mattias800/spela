@@ -109,16 +109,14 @@ fun SecondaryScreenContent(
         label = "burnInAlpha",
     )
 
-    val initialPage = remember(state.defaultSecondScreenPage, state.consoleId) {
+    val initialPage = remember(state.defaultSecondScreenPage, state.consoleId, state.scummvmTrackpadOnboarded) {
         // Mouse-driven cores (ScummVM today; DOSBox / NDS-with-mouse later)
-        // override the user's default landing page to land on Controls. The
-        // trackpad lives there, the trackpad is the primary input on
-        // single-screen handhelds with no real mouse, and "swipe right
-        // until you find the trackpad" is poor first-launch UX. See #861
-        // — this is the MVP override; the per-device-per-console
-        // "trackpadOnboarded" persistence (silence the override after the
-        // user makes one drag) is filed as follow-up scope.
-        if (state.consoleId.equals("scummvm", ignoreCase = true)) {
+        // land on Controls *only* until the user has produced their first
+        // trackpad drag. After that, the OnboardingRepository row makes
+        // the override silent and the user's saved default page wins. See
+        // #861.
+        val isScummvm = state.consoleId.equals("scummvm", ignoreCase = true)
+        if (isScummvm && !state.scummvmTrackpadOnboarded) {
             PAGE_CONTROLS
         } else {
             when (state.defaultSecondScreenPage) {
@@ -243,6 +241,15 @@ fun SecondaryScreenContent(
                                 },
                                 onMouseMove = { dx, dy ->
                                     controller.setMouse(0, dx.toInt().toShort(), dy.toInt().toShort(), false, false)
+                                    // #861 — first ScummVM trackpad drag of any
+                                    // session dismisses the override hint, so
+                                    // future ScummVM launches respect the
+                                    // user's saved default page.
+                                    if (state.consoleId.equals("scummvm", ignoreCase = true) &&
+                                        !state.scummvmTrackpadOnboarded
+                                    ) {
+                                        viewModel.onIntent(EmulationIntent.MarkScummVmTrackpadOnboarded)
+                                    }
                                 },
                                 onMouseButton = { left, right ->
                                     controller.setMouse(0, 0, 0, left, right)

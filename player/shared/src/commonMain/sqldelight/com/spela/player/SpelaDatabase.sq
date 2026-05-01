@@ -374,3 +374,35 @@ incrementPendingSaveUploadRetry:
 UPDATE PendingSaveUploadEntity
 SET retry_count = retry_count + 1, last_error = ?
 WHERE id = ?;
+
+
+-- Onboarding hints (#861).
+--
+-- Generic device-local "the user has seen and dismissed this hint" tracker.
+-- Examples of keys: "scummvm.trackpad.dragged" (silence the secondary-screen
+-- ScummVM trackpad-onboarding override after the user makes one drag), future
+-- "secondary.swipe.hint", "core.upgrade.chip", etc.
+--
+-- Absence of a row means "the user has not seen / dismissed this hint yet."
+-- Storing the dismissal timestamp lets future code reset hints if their copy
+-- changes substantially (rev-the-key pattern), or expire stale dismissals.
+--
+-- Device-local: hints relate to local-device affordances (which screen is
+-- which, where physical controls are). They don't sync across devices.
+CREATE TABLE OnboardingHintEntity (
+    hint_key      TEXT NOT NULL PRIMARY KEY,
+    dismissed_at  INTEGER NOT NULL
+);
+
+isOnboardingHintDismissed:
+SELECT COUNT(*) FROM OnboardingHintEntity WHERE hint_key = ?;
+
+markOnboardingHintDismissed:
+INSERT OR REPLACE INTO OnboardingHintEntity(hint_key, dismissed_at)
+VALUES (?, ?);
+
+clearOnboardingHint:
+DELETE FROM OnboardingHintEntity WHERE hint_key = ?;
+
+clearAllOnboardingHints:
+DELETE FROM OnboardingHintEntity;

@@ -289,6 +289,17 @@ data class EmulationState(
     /** Default second screen page from user preferences. */
     val defaultSecondScreenPage: String = "art",
 
+    /**
+     * Set when the user has produced at least one drag on the
+     * secondary-screen trackpad while a ScummVM game was running on
+     * any past launch. While false, the secondary-screen pager
+     * overrides the user's defaultSecondScreenPage and lands on
+     * Controls so the trackpad is the first thing the user sees on a
+     * mouse-driven core. Persisted via OnboardingRepository — see
+     * #861 OnboardingHintKeys.SCUMMVM_TRACKPAD_DRAGGED.
+     */
+    val scummvmTrackpadOnboarded: Boolean = false,
+
     /** Cheats */
     val hasCheats: Boolean = false,
     val enabledCheatCount: Int = 0,
