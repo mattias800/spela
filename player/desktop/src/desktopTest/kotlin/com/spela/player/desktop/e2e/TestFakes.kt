@@ -69,6 +69,16 @@ private fun ComposeUiTest.advanceN(harness: SpelaTestHarness, iterations: Int) {
         harness.testDispatcher.scheduler.advanceTimeBy(1_000)
         harness.testDispatcher.scheduler.runCurrent()
         mainClock.advanceTimeBy(1_000)
+        // Compose's recomposer runs on the main clock, and recomposition
+        // can spawn fresh coroutines via LaunchedEffect / produceState /
+        // collectAsState.  Those land back on the test dispatcher, so we
+        // drain it once more *after* the main-clock tick to settle the
+        // composition→state→composition feedback loop within a single
+        // iteration. Without this second drain, state-flow reactor chains
+        // (e.g. validateServer → addServer → form auto-close) are
+        // borderline-stable under parallel-fork CPU contention even at 6
+        // iterations.
+        harness.testDispatcher.scheduler.runCurrent()
         waitForIdle()
     }
     mainClock.autoAdvance = true
