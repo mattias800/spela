@@ -25,11 +25,16 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.FilterQuality
 import androidx.compose.ui.graphics.asComposeImageBitmap
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
+import androidx.compose.ui.input.pointer.PointerEventType
+import androidx.compose.ui.input.pointer.isPrimaryPressed
+import androidx.compose.ui.input.pointer.isSecondaryPressed
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
@@ -104,6 +109,63 @@ fun MetalOffscreenSurface(
             modifier = Modifier
                 .fillMaxSize()
                 .background(Color.Black)
+                .pointerInput(controller) {
+                    // Forward Compose pointer events to the libretro
+                    // RETRO_DEVICE_MOUSE pipeline (#857). The native
+                    // ingest + JNI binding + setMouse setter all
+                    // existed; what was missing was the UI layer
+                    // calling them. ScummVM and other mouse-driven
+                    // cores receive nothing without this block.
+                    //
+                    // Deltas are scaled from canvas-pixel space to
+                    // core-framebuffer-pixel space so cursor speed
+                    // feels correct regardless of how the user
+                    // resized the window.
+                    awaitPointerEventScope {
+                        var prev: Offset? = null
+                        var leftHeld = false
+                        var rightHeld = false
+                        while (true) {
+                            val event = awaitPointerEvent()
+                            val change = event.changes.firstOrNull() ?: continue
+                            val frame = controller.latestRenderedFrame
+                            val canvasW = size.width.toFloat()
+                            val canvasH = size.height.toFloat()
+                            val scaleX = if (frame != null && canvasW > 0f) frame.width.toFloat() / canvasW else 1f
+                            val scaleY = if (frame != null && canvasH > 0f) frame.height.toFloat() / canvasH else 1f
+                            when (event.type) {
+                                PointerEventType.Move -> {
+                                    val p = prev
+                                    if (p != null) {
+                                        val dx = ((change.position.x - p.x) * scaleX).toInt().coerceIn(Short.MIN_VALUE.toInt(), Short.MAX_VALUE.toInt()).toShort()
+                                        val dy = ((change.position.y - p.y) * scaleY).toInt().coerceIn(Short.MIN_VALUE.toInt(), Short.MAX_VALUE.toInt()).toShort()
+                                        if (dx != 0.toShort() || dy != 0.toShort()) {
+                                            controller.setMouse(0, dx, dy, leftHeld, rightHeld)
+                                        }
+                                    }
+                                    prev = change.position
+                                }
+                                PointerEventType.Press -> {
+                                    leftHeld = event.buttons.isPrimaryPressed
+                                    rightHeld = event.buttons.isSecondaryPressed
+                                    controller.setMouse(0, 0, 0, leftHeld, rightHeld)
+                                    prev = change.position
+                                }
+                                PointerEventType.Release -> {
+                                    leftHeld = event.buttons.isPrimaryPressed
+                                    rightHeld = event.buttons.isSecondaryPressed
+                                    controller.setMouse(0, 0, 0, leftHeld, rightHeld)
+                                }
+                                PointerEventType.Enter, PointerEventType.Exit -> {
+                                    // Reset on enter so the first delta after
+                                    // re-entering the canvas isn't a giant jump
+                                    // from wherever the cursor was off-canvas.
+                                    prev = null
+                                }
+                            }
+                        }
+                    }
+                }
                 .onSizeChanged { size ->
                     // Report canvas size to GPU renderer so shaders render
                     // at display resolution instead of a static multiplier
