@@ -24,12 +24,28 @@ import com.spela.player.presentation.ui.gamepad.gamepadFocusable
 import com.spela.player.presentation.ui.theme.SpColor
 
 /**
+ * Visual variant for [SpIconButton]. Most call sites want [Filled]
+ * (a chip-shaped icon button that's visually distinct from
+ * surrounding content). Use [Transparent] when the icon is part of
+ * a row whose background already gives it a visual frame —
+ * particularly inline overflow / kebab buttons inside list rows
+ * (#854) where a chip would compete with the row affordance.
+ */
+enum class SpIconButtonVariant {
+    /** Default — circular SurfaceVariant background, icon tinted OnSurface. */
+    Filled,
+    /** Transparent background, icon tinted OnSurface — looks like just an icon. */
+    Transparent,
+}
+
+/**
  * A circular icon button used in top bars and action areas.
  *
  * @param icon The icon to display
  * @param contentDescription Accessibility description for the button
  * @param onClick Called when the button is clicked
  * @param modifier Modifier for the root Box
+ * @param variant Background style — see [SpIconButtonVariant]
  * @param badge Optional composable rendered as a badge overlay (e.g. notification dot)
  */
 @Composable
@@ -39,9 +55,15 @@ fun SpIconButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     onGradient: Boolean = false,
+    variant: SpIconButtonVariant = SpIconButtonVariant.Filled,
     badge: @Composable (BoxScope.() -> Unit)? = null,
 ) {
     val interactionSource = remember { MutableInteractionSource() }
+    val background = when (variant) {
+        SpIconButtonVariant.Transparent -> Color.Transparent
+        SpIconButtonVariant.Filled ->
+            if (onGradient) Color.Black.copy(alpha = 0.30f) else SpColor.SurfaceVariant
+    }
     // Merge descendants on the outer Box so a caller-supplied testTag /
     // contentDescription on `modifier` ends up on the same merged node as
     // the inner Box's click action. Without this, a test that finds the
@@ -52,7 +74,7 @@ fun SpIconButton(
             modifier = Modifier
                 .size(40.dp)
                 .clip(CircleShape)
-                .background(if (onGradient) Color.Black.copy(alpha = 0.30f) else SpColor.SurfaceVariant)
+                .background(background)
                 .clickable(interactionSource = interactionSource, indication = null, onClick = onClick)
                 .gamepadFocusable(shape = CircleShape, interactionSource = interactionSource)
                 .semantics {

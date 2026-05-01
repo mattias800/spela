@@ -42,6 +42,7 @@ import androidx.compose.ui.unit.dp
 import com.spela.player.domain.model.GameSession
 import com.spela.player.presentation.ui.components.SpAvatar
 import com.spela.player.presentation.ui.components.SpIconButton
+import com.spela.player.presentation.ui.components.SpIconButtonVariant
 import com.spela.player.presentation.ui.components.SpSecondaryButton
 import com.spela.player.presentation.ui.components.SpChip
 import com.spela.player.presentation.ui.components.SpStatusChip
@@ -345,7 +346,7 @@ private fun SessionItem(
                 )
             }
 
-            Row {
+            Row(verticalAlignment = Alignment.CenterVertically) {
                 // Session-level actions go into a single `…` overflow menu.
                 // Rename/Delete/Clone are all secondary — only Play is
                 // surfaced as a primary button in this row. Clone in
@@ -353,10 +354,15 @@ private fun SessionItem(
                 // a menu, never as its own CTA.
                 Box {
                     var showActionsMenu by remember { mutableStateOf(false) }
+                    // Transparent variant so the kebab reads as just an icon
+                    // on the row background, not a chip-on-a-chip — matches
+                    // the visual treatment of the Play button next to it.
+                    // See #854.
                     SpIconButton(
                         icon = Icons.Filled.MoreVert,
                         contentDescription = "Session actions",
                         onClick = { showActionsMenu = true },
+                        variant = SpIconButtonVariant.Transparent,
                         modifier = Modifier.testTag("session_actions_menu_${session.id}"),
                     )
                     DropdownMenu(
