@@ -5,10 +5,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.KeyboardActions
-import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -24,8 +20,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.input.PasswordVisualTransformation
-import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
@@ -56,7 +50,12 @@ fun SpTextField(
         var isFocused by remember { mutableStateOf(false) }
         val showGlow = isFocused && enabled && !isError && errorMessage == null
 
-        OutlinedTextField(
+        // The actual text-input widget is platform-specific so Android
+        // can fall back to AndroidView+EditText with the right
+        // IME_FLAG_NO_EXTRACT_UI / IME_FLAG_NO_FULLSCREEN flags set
+        // on EditorInfo (Compose Multiplatform doesn't expose those
+        // flags through KeyboardOptions). See PlatformTextFieldCore.
+        PlatformTextFieldCore(
             value = value,
             onValueChange = onValueChange,
             modifier = Modifier
@@ -82,58 +81,18 @@ fun SpTextField(
                     1.5.dp, spelaBrandGradient(), RoundedCornerShape(SpSpacing.RadiusLarge)
                 ) else Modifier),
             enabled = enabled,
+            isPassword = isPassword,
+            isError = isError || errorMessage != null,
             singleLine = singleLine,
             minLines = minLines,
             maxLines = maxLines,
-            label = if (label.isNotEmpty()) {
-                { Text(label, style = SpTypography.LabelMedium) }
-            } else null,
-            placeholder = if (placeholder.isNotEmpty()) {
-                {
-                    Text(
-                        placeholder,
-                        style = SpTypography.BodyMedium,
-                        color = SpColor.OnBackgroundTertiary,
-                    )
-                }
-            } else null,
-            visualTransformation = if (isPassword) PasswordVisualTransformation() else VisualTransformation.None,
-            keyboardOptions = KeyboardOptions(
-                keyboardType = if (isPassword) KeyboardType.Password else keyboardType,
-                imeAction = imeAction,
-                // Android only: tell the IME not to go fullscreen in
-                // landscape. Without this, Gboard (and many OEM keyboards)
-                // occlude the whole screen with an "extract view" whenever
-                // a text field has focus in a short-height window —
-                // unusable on gaming handhelds like the AYN Thor, and it
-                // also hides the UI from UiAutomator, which is why any
-                // Android E2E test that typed into a field would appear
-                // to hang at a black screen. No-op on other platforms.
-                platformImeOptions = noFullscreenImeOptions(),
-            ),
-            keyboardActions = KeyboardActions(onAny = { onImeAction() }),
-            isError = isError || errorMessage != null,
+            label = label,
+            placeholder = placeholder,
+            keyboardType = keyboardType,
+            imeAction = imeAction,
+            onImeAction = onImeAction,
             leadingIcon = leadingIcon,
             trailingIcon = trailingIcon,
-            shape = RoundedCornerShape(SpSpacing.RadiusLarge),
-            colors = OutlinedTextFieldDefaults.colors(
-                focusedTextColor = SpColor.OnBackground,
-                unfocusedTextColor = SpColor.OnBackground,
-                focusedBorderColor = Color.Transparent,
-                unfocusedBorderColor = Color.White.copy(alpha = 0.15f),
-                errorBorderColor = SpColor.Error,
-                focusedLabelColor = SpColor.AccentPurple,
-                unfocusedLabelColor = SpColor.OnBackgroundSecondary,
-                cursorColor = SpColor.AccentPurple,
-                focusedContainerColor = Color.Transparent,
-                unfocusedContainerColor = Color.Transparent,
-                errorContainerColor = Color.Transparent,
-                disabledContainerColor = Color.Transparent,
-                disabledBorderColor = Color.White.copy(alpha = 0.06f),
-                disabledTextColor = SpColor.OnBackgroundTertiary,
-                disabledLabelColor = SpColor.OnBackgroundTertiary,
-            ),
-            textStyle = SpTypography.BodyMedium,
         )
 
         if (errorMessage != null) {
