@@ -32,7 +32,17 @@ import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.ui.theme.SpTypography
 
-private const val TRACKPAD_SENSITIVITY = 1.5f
+/**
+ * Multiplier applied to raw secondary-screen pointer deltas before
+ * they're handed to the core. The previous value (1.5) made the cursor
+ * fly across the screen on tiny finger movements, especially against
+ * 320×240 cores like ScummVM where every screen pixel maps to a large
+ * core-space delta. 0.4 is the empirically-chosen default for the
+ * AYN Thor's secondary-screen pixel density: a slow finger swipe
+ * across the trackpad traverses a 320×240 viewport about once. A
+ * user-tunable slider is filed as a follow-up — see #858.
+ */
+private const val TRACKPAD_SENSITIVITY = 0.4f
 private const val TAP_TIMEOUT_MS = 200L
 private const val TAP_MOVEMENT_THRESHOLD = 10f
 
