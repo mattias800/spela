@@ -1191,7 +1191,26 @@ class EmulationViewModel(
                             kotlinx.coroutines.delay(2000)
                         }
                         println("[Emulation] Core ready, checking save state support")
-                        val saveStatesSupported = if (hwRender) true else libretroController.supportsSaveStates()
+                        val saveStatesSupported = when {
+                            // Some cores declare no save-state support in their
+                            // libretro-info file (savestate = "false"). retro_
+                            // serialize_size() may still return non-zero garbage,
+                            // and retro_serialize() then writes a buffer that
+                            // retro_unserialize() crashes on resume. ScummVM is
+                            // the canonical case (~60 other cores have the same
+                            // declaration — see libretro-info repo). Until we
+                            // ship and parse those .info files alongside the
+                            // .so, hard-code the cores we currently expose.
+                            coreDeclaresNoSaveStates(resolvedCoreName) -> false
+                            // PR #297: some GL HW render cores (PPSSPP) crashed
+                            // when retro_serialize_size was called before the
+                            // engine fully booted. The firstFrameRun() readiness
+                            // wait above mitigates that, but we keep the
+                            // optimistic shortcut for cores that DO support
+                            // save states to avoid re-introducing #297.
+                            hwRender -> true
+                            else -> libretroController.supportsSaveStates()
+                        }
                         println("[Emulation] saveStatesSupported=$saveStatesSupported")
                         withContext(dispatchers.main) {
                             _state.update { it.copy(supportsSaveStates = saveStatesSupported) }
@@ -1200,9 +1219,14 @@ class EmulationViewModel(
                         // Deferred auto-load for HW render cores (e.g. Dolphin).
                         // These cores boot asynchronously and crash if retro_unserialize
                         // is called before their GPU thread is fully initialized.
-                        println("[Emulation] Deferred auto-load check: hwRender=$hwRender autoLoad=${currentPreferences.autoLoadSaveEnabled} skipAutoLoad=$skipAutoLoad challengeId=$challengeId sharedSessionId=$sharedSessionId")
+                        println("[Emulation] Deferred auto-load check: hwRender=$hwRender autoLoad=${currentPreferences.autoLoadSaveEnabled} skipAutoLoad=$skipAutoLoad challengeId=$challengeId sharedSessionId=$sharedSessionId saveStatesSupported=$saveStatesSupported")
                         if (hwRender && currentPreferences.autoLoadSaveEnabled && !skipAutoLoad
                             && challengeId == null && sharedSessionId == null
+                            // Don't try to auto-load on cores that don't support
+                            // save states. Existing rows from before the support
+                            // probe was correct may contain garbage that crashes
+                            // retro_unserialize. See #852.
+                            && saveStatesSupported
                         ) {
                             handleAutoLoadResult(saveManager.autoLoadSaveState(gameId))
                         }
@@ -1862,6 +1886,34 @@ class EmulationViewModel(
         secondaryDisplay.dismiss()
         _state.update { it.copy(secondaryDisplayActive = false) }
     }
+}
+
+/**
+ * Cores whose libretro-info files declare `savestate = "false"`. The
+ * canonical signal is the .info file shipped by libretro-info, but we
+ * don't currently bundle those alongside the .so — until we do, this
+ * is the conservative override.
+ *
+ * Adding a name here means the in-game overlay's save-state controls
+ * disappear and `autoSaveOnStop` becomes a no-op for that core. Don't
+ * add cores that genuinely support save-states even if buggy — that
+ * loses functionality. Only add cores whose retro_serialize / retro_
+ * unserialize have known crash behaviour. See #852.
+ */
+private val CORES_WITHOUT_SAVE_STATE_SUPPORT = setOf(
+    "scummvm",
+)
+
+private fun coreDeclaresNoSaveStates(resolvedCoreName: String): Boolean {
+    // resolvedCoreName comes from the .so/.dylib filename minus extension:
+    //   Android  → "scummvm_libretro_android"
+    //   macOS    → "scummvm_libretro"
+    //   Linux    → "scummvm_libretro"
+    //   Windows  → "scummvm_libretro"
+    // Match the leading core name segment so a single entry covers all
+    // platform variants.
+    val baseName = resolvedCoreName.substringBefore("_libretro")
+    return baseName in CORES_WITHOUT_SAVE_STATE_SUPPORT
 }
 
 /**
