@@ -80,10 +80,15 @@ class DownloadRepositoryImpl(
         } else if (discs.isNotEmpty() && discs.size == 1) {
             // Single disc with disc record — use disc endpoint (handles .cue tar bundles)
             downloadSingleDiscWithDiscRecord(gameId, gameTitle, gameDetail)
-        } else if (gameDetail.fileName.endsWith(".cue", ignoreCase = true) ||
-            gameDetail.fileName.endsWith(".gdi", ignoreCase = true)) {
-            // .cue/.gdi without disc records (old DB entry) — game endpoint returns tar
-            downloadCueGameFromGameEndpoint(gameId, gameTitle, gameDetail.fileName, gameDetail.fileSize)
+        } else if (isTarBundledByServer(gameDetail.fileName)) {
+            // Server packages these as a tar of the directory:
+            //   - .cue / .gdi without disc records (old DB entries)
+            //   - .scummvm (entire directory bundled)
+            // The game endpoint returns application/x-tar with no Content-Length,
+            // so we stream-extract instead of comparing bytes against game.fileSize
+            // (which is the on-disk size of the .scummvm marker file or .cue file
+            // alone — much smaller than the tar).
+            downloadTarBundledGameFromGameEndpoint(gameId, gameTitle, gameDetail.fileSize)
         } else {
             downloadSingleDiscGame(gameId, gameTitle, gameDetail.fileName, gameDetail.fileSize)
         }
@@ -98,6 +103,19 @@ class DownloadRepositoryImpl(
         downloads.update {
             it + (gameId to DownloadProgress(gameId, gameTitle, DownloadState.FAILED))
         }
+    }
+
+    /**
+     * Mirrors the server's packaging decision in
+     * `huma_downloads.go::HumaDownloadGame`: extensions that the server
+     * always bundles as an uncompressed tar on `/api/games/{id}/download`.
+     * Keep this list in sync with the server's `if HasSuffix` checks.
+     */
+    private fun isTarBundledByServer(fileName: String): Boolean {
+        val lower = fileName.lowercase()
+        return lower.endsWith(".scummvm") ||
+            lower.endsWith(".cue") ||
+            lower.endsWith(".gdi")
     }
 
     private suspend fun downloadSingleDiscGame(
@@ -193,13 +211,22 @@ class DownloadRepositoryImpl(
     }
 
     /**
-     * Downloads a .cue game that has no disc records (old DB entry).
-     * The game download endpoint now returns a tar bundle for .cue files.
+     * Downloads a game whose payload from `/api/games/{id}/download` is a tar
+     * archive rather than the raw ROM bytes. Two cases hit this path:
+     *   - `.cue` / `.gdi` games that have no disc records (old DB entry).
+     *   - `.scummvm` games — the server tars the whole game directory so the
+     *     player ends up with all the engine data files, not just the empty
+     *     `*.scummvm` marker.
+     *
+     * Streams the tar straight to disk via `downloadGameAndExtract` (extracts
+     * file-by-file as the response arrives), then reports COMPLETED. There is
+     * no `actualSize == expectedSize` check because the wire bytes are the
+     * uncompressed tar (with 512-byte headers and per-file padding), which
+     * never matches `game.fileSize` (the size of the entry file alone).
      */
-    private suspend fun downloadCueGameFromGameEndpoint(
+    private suspend fun downloadTarBundledGameFromGameEndpoint(
         gameId: String,
         gameTitle: String,
-        fileName: String,
         expectedSize: Long,
     ): String {
         val gameDir = fileStorage.getGamesDir() + "/$gameId"
@@ -336,13 +363,21 @@ class DownloadRepositoryImpl(
         if (fileStorage.isDirectory(gameDir)) {
             val files = fileStorage.listFiles(gameDir)
             println("[Download] getLocalGamePath: gameDir=$gameDir isDir=true files=$files")
-            // Prefer .cue/.gdi files — the emulator expects the entry file path to find companions
+            // Pick the entry file the libretro core expects. Multi-file games
+            // tar-bundle their companions next to a small "entry" file:
+            //   - ScummVM: `*.scummvm` marker — core reads engine/data ID from it
+            //   - PS1 / Saturn: `.cue` / `.gdi` — core reads track list from it
+            // Score files so the entry rank wins regardless of tar order:
+            //   3 = .scummvm, 2 = .cue/.gdi, 1 = anything else.
             val gameFile = files.filter { it != "game.m3u" }
-                .sortedByDescending {
-                    it.endsWith(".cue", ignoreCase = true) ||
-                        it.endsWith(".gdi", ignoreCase = true)
+                .maxByOrNull { name ->
+                    when {
+                        name.endsWith(".scummvm", ignoreCase = true) -> 3
+                        name.endsWith(".cue", ignoreCase = true) ||
+                            name.endsWith(".gdi", ignoreCase = true) -> 2
+                        else -> 1
+                    }
                 }
-                .firstOrNull()
             if (gameFile != null) return "$gameDir/$gameFile"
         } else {
             val exists = fileStorage.fileExists(gameDir)
