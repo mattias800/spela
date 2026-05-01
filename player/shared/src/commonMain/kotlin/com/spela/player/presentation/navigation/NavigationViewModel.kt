@@ -96,11 +96,29 @@ class NavigationViewModel(
             is NavigationIntent.SwitchTab -> {
                 val targetTab = tabForRootScreen(intent.screen) ?: BottomNavTab.HOME
                 _state.update { current ->
-                    current.copy(
-                        activeTab = targetTab,
-                        isGoingBack = false,
-                        isTabSwitch = true,
-                    )
+                    if (targetTab == current.activeTab) {
+                        // Re-tap on the active tab. Universal "take me back to
+                        // the root of this section" gesture (matches iOS, X,
+                        // Bluesky, Instagram). Pop this tab's stack to its
+                        // root unless it's already there — see #846.
+                        val rootStack = listOf(intent.screen)
+                        val currentStack = current.tabStacks[targetTab]
+                        if (currentStack == rootStack) {
+                            current
+                        } else {
+                            current.copy(
+                                tabStacks = current.tabStacks + (targetTab to rootStack),
+                                isGoingBack = true,
+                                isTabSwitch = false,
+                            )
+                        }
+                    } else {
+                        current.copy(
+                            activeTab = targetTab,
+                            isGoingBack = false,
+                            isTabSwitch = true,
+                        )
+                    }
                 }
             }
 
