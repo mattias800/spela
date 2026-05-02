@@ -187,10 +187,9 @@ class GameDetailViewModel(
                     // looking up the user's preferences. null means
                     // "no per-game choice — inherit from per-console
                     // policy". See #804 phase 4b spec point (c).
-                    val perGameChoice = preferencesRepository.getPreferences()
-                        .getOrNull()
-                        ?.gameSaveStatePolicies
-                        ?.get(gameId)
+                    val prefs = preferencesRepository.getPreferences().getOrNull()
+                    val perGameChoice = prefs?.gameSaveStatePolicies?.get(gameId)
+                    val perConsolePolicies = prefs?.consoleSaveStatePolicies ?: emptyMap()
                     _state.update {
                         it.copy(
                             gameDetail = detail,
@@ -200,6 +199,10 @@ class GameDetailViewModel(
                             myRating = myRating,
                             ratingSummary = summary,
                             gameSaveStatePolicy = perGameChoice,
+                            // Snapshot per-console policies so the hero
+                            // label resolver in GameDetailState.playSemantics
+                            // doesn't need access to UserPreferences. See #884.
+                            userConsoleSaveStatePolicies = perConsolePolicies,
                             isLoading = false,
                         )
                     }

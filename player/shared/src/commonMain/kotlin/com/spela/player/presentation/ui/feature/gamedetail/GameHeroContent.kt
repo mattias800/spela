@@ -195,8 +195,20 @@ fun GameHeroContent(
                     }
                     val hasRequiredBiosMissing = missingBiosFiles.any { it.required }
                     val isSyncing = syncState != null
+                    // Three-state label per #884: NoSession → "Play",
+                    // ResumesFromSaveState → "Resume" (auto-load on
+                    // launch), LaunchesFresh → "Continue" (session
+                    // exists but engine starts at title screen, e.g.
+                    // ScummVM or user opted out of save states).
+                    // The single-source-of-truth resolver lives in
+                    // GameDetailState.playSemantics.
+                    val playLabel = when (state.playSemantics) {
+                        com.spela.player.domain.model.PlaySemantics.NoSession -> "Play"
+                        com.spela.player.domain.model.PlaySemantics.ResumesFromSaveState -> "Resume"
+                        com.spela.player.domain.model.PlaySemantics.LaunchesFresh -> "Continue"
+                    }
                     SpSplitButton(
-                        text = if (hasSaves) "Resume" else "Play",
+                        text = playLabel,
                         onClick = { onPlay(gameId) },
                         modifier = Modifier
                             .autoFocus()

@@ -17,9 +17,13 @@ import com.spela.player.domain.model.GameStats
 import com.spela.player.domain.model.RatingSummary
 import com.spela.player.domain.model.SharedSession
 import com.spela.player.domain.model.SharedSaveState
+import com.spela.player.domain.model.PlaySemantics
+import com.spela.player.domain.model.SaveStateChoice
 import com.spela.player.domain.model.SimilarGame
 import com.spela.player.domain.model.Cheat
 import com.spela.player.domain.model.GameSession
+import com.spela.player.domain.model.effectiveSaveStateChoice
+import com.spela.player.domain.model.resolvePlaySemantics
 
 enum class AchievementsViewMode { GRID, TIMELINE, LEADERBOARD }
 
@@ -86,6 +90,15 @@ data class GameDetailState(
      */
     val gameSaveStatePolicy: com.spela.player.domain.model.SaveStateChoice? = null,
 
+    /**
+     * The user's per-console save-state opt-outs, mirrored from
+     * [com.spela.player.domain.model.UserPreferences.consoleSaveStatePolicies].
+     * Snapshotted into state so [playSemantics] can resolve the hero
+     * label without round-tripping through the preferences repository
+     * on every recomposition. See #884.
+     */
+    val userConsoleSaveStatePolicies: Map<String, SaveStateChoice> = emptyMap(),
+
     // Cheats (used by InGameOverlay, not displayed on game detail)
     val cheats: List<Cheat> = emptyList(),
     val isLoadingCheats: Boolean = false,
@@ -99,4 +112,29 @@ data class GameDetailState(
     // Series & Franchise links
     val gameSeries: List<GameSeriesLink> = emptyList(),
     val gameFranchises: List<GameFranchiseLink> = emptyList(),
-)
+) {
+    /**
+     * Hero label semantics derived from the loaded console + sessions
+     * + user save-state preferences. Recomputed on every read; the
+     * inputs are tiny so allocation pressure is negligible. See #884.
+     *
+     * NoSession when no detail / no console is loaded yet, so callers
+     * get a stable default-safe value during the initial loading spin.
+     */
+    val playSemantics: PlaySemantics
+        get() {
+            val detail = gameDetail ?: return PlaySemantics.NoSession
+            val console = console ?: return PlaySemantics.NoSession
+            val effective = effectiveSaveStateChoice(
+                consoleAbbr = detail.game.consoleId,
+                tier = detail.game.consoleSaveStatePolicy,
+                overrides = userConsoleSaveStatePolicies,
+                gameOverride = gameSaveStatePolicy,
+            )
+            return resolvePlaySemantics(
+                hasSession = sessions.isNotEmpty(),
+                consoleSaveStateSupport = console.saveStateSupport,
+                effectiveChoice = effective,
+            )
+        }
+}
