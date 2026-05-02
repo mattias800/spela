@@ -10,7 +10,25 @@ interface SharedSessionRepository {
     suspend fun getSharedSession(sharedSessionId: String): Result<SharedSessionDetail>
     suspend fun getSharedSessionInvitations(): Result<List<SharedSessionInvitation>>
     suspend fun getPendingInvitationCount(): Result<Int>
-    suspend fun createSharedSession(name: String, gameId: String, description: String = ""): Result<SharedSessionDetail>
+    /**
+     * Creates a shared session for [gameId]. When [sourceSessionId] is
+     * non-null, the server seeds the new shared session's save state
+     * with a copy of that local session's most-recent save — i.e.
+     * "share THIS playthrough's progress" rather than starting from
+     * scratch. The caller must own the source session and the source
+     * must belong to the same game. See #885.
+     *
+     * [description] is currently ignored on the wire (the server
+     * request only takes name + gameId + sourceSessionId), but the
+     * parameter is kept on the API for callers that want to surface
+     * descriptions in the future without another signature churn.
+     */
+    suspend fun createSharedSession(
+        name: String,
+        gameId: String,
+        description: String = "",
+        sourceSessionId: Long? = null,
+    ): Result<SharedSessionDetail>
     suspend fun deleteSharedSession(sharedSessionId: String): Result<Unit>
     suspend fun inviteUser(sharedSessionId: String, username: String): Result<Unit>
     suspend fun acceptInvitation(invitationId: String): Result<Unit>

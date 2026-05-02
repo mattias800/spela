@@ -208,6 +208,12 @@ type UpdateSessionCheatsRequest struct {
 type CreateSharedSessionRequest struct {
 	GameID string `json:"gameId,omitempty" required:"false"`
 	Name   string `json:"name,omitempty" required:"false"`
+	// SourceSessionID, when set, seeds the new shared session with a
+	// copy of that local session's most recent save state — i.e.
+	// "share THIS playthrough's progress, not a fresh start." The
+	// caller must own the source session. The source session's GameID
+	// must match GameID in this request. See #885.
+	SourceSessionID *uint `json:"sourceSessionId,omitempty" required:"false"`
 }
 
 // UpdateSharedSessionRequest is the body for PUT /api/shared-sessions/:id.

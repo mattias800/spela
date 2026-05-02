@@ -23,6 +23,7 @@ import com.spela.client.models.HumaError
 import com.spela.client.models.MessageResponse
 import com.spela.client.models.SessionCheatsResponse
 import com.spela.client.models.SessionSaveData
+import com.spela.client.models.SessionSaveDirBundle
 import com.spela.client.models.SessionSaveResponse
 import com.spela.client.models.UpdateSessionCheatsRequest
 import com.spela.client.models.UpdateSessionPlayTimeRequest
@@ -342,6 +343,38 @@ open class SessionsApi : ApiClient {
         val localVariableConfig = RequestConfig<kotlin.Any?>(
             RequestMethod.GET,
             "/api/sessions/{id}/saves/{saveId}".replace("{" + "id" + "}", "$id").replace("{" + "saveId" + "}", "$saveId"),
+            query = localVariableQuery,
+            headers = localVariableHeaders,
+            requiresAuthentication = false,
+        )
+
+        return request(
+            localVariableConfig,
+            localVariableBody,
+            localVariableAuthNames
+        ).wrap()
+    }
+
+
+    /**
+     * Download the libretro save_dir tarball for a session
+     * Owner-only. Responds with application/x-tar containing the save_dir bytes uploaded on the most recent exit. 404 if the session has never had a save_dir bundle. See #864.
+     * @param id Session ID.
+     * @return void
+     */
+    open suspend fun downloadSessionSaveDirBundle(id: kotlin.String): HttpResponse<Unit> {
+
+        val localVariableAuthNames = listOf<String>()
+
+        val localVariableBody = 
+            io.ktor.client.utils.EmptyContent
+
+        val localVariableQuery = mutableMapOf<String, List<String>>()
+        val localVariableHeaders = mutableMapOf<String, String>()
+
+        val localVariableConfig = RequestConfig<kotlin.Any?>(
+            RequestMethod.GET,
+            "/api/sessions/{id}/save-dir".replace("{" + "id" + "}", "$id"),
             query = localVariableQuery,
             headers = localVariableHeaders,
             requiresAuthentication = false,
@@ -855,6 +888,42 @@ open class SessionsApi : ApiClient {
         val localVariableConfig = RequestConfig<kotlin.Any?>(
             RequestMethod.POST,
             "/api/sessions/{id}/sram".replace("{" + "id" + "}", "$id"),
+            query = localVariableQuery,
+            headers = localVariableHeaders,
+            requiresAuthentication = false,
+        )
+
+        return multipartFormRequest(
+            localVariableConfig,
+            localVariableBody,
+            localVariableAuthNames
+        ).wrap()
+    }
+
+
+    /**
+     * Upload the libretro save_dir tarball for a session
+     * Stores or replaces the session&#39;s save_dir bundle. Used by cores that write their own save files to disk (e.g. ScummVM, DOSBox). Atomic full replacement — the bytes downloaded on resume are exactly the bytes uploaded on the most recent exit. Returns 201 on first upload, 200 on overwrite. See #864.
+     * @param id Session ID.
+     * @param file Tarball of the libretro save_dir contents. (optional)
+     * @return SessionSaveDirBundle
+     */
+    @Suppress("UNCHECKED_CAST")
+    open suspend fun uploadSaveDirBundle(id: kotlin.String, file: io.ktor.client.request.forms.FormPart<io.ktor.client.request.forms.InputProvider>? = null): HttpResponse<SessionSaveDirBundle> {
+
+        val localVariableAuthNames = listOf<String>()
+
+        val localVariableBody = 
+            formData {
+                file?.apply { append(file) }
+            }
+
+        val localVariableQuery = mutableMapOf<String, List<String>>()
+        val localVariableHeaders = mutableMapOf<String, String>()
+
+        val localVariableConfig = RequestConfig<kotlin.Any?>(
+            RequestMethod.POST,
+            "/api/sessions/{id}/save-dir".replace("{" + "id" + "}", "$id"),
             query = localVariableQuery,
             headers = localVariableHeaders,
             requiresAuthentication = false,

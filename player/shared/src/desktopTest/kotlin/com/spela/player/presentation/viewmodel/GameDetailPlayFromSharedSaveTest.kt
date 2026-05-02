@@ -299,7 +299,7 @@ private class PlayFromSharedSaveTestSharedSessionRepository : SharedSessionRepos
     override suspend fun getSharedSession(sharedSessionId: String) = Result.failure<SharedSessionDetail>(Exception("stub"))
     override suspend fun getSharedSessionInvitations() = Result.success(emptyList<SharedSessionInvitation>())
     override suspend fun getPendingInvitationCount() = Result.success(0)
-    override suspend fun createSharedSession(name: String, gameId: String, description: String) = Result.failure<SharedSessionDetail>(Exception("stub"))
+    override suspend fun createSharedSession(name: String, gameId: String, description: String, sourceSessionId: Long?) = Result.failure<SharedSessionDetail>(Exception("stub"))
     override suspend fun deleteSharedSession(sharedSessionId: String) = Result.success(Unit)
     override suspend fun inviteUser(sharedSessionId: String, username: String) = Result.success(Unit)
     override suspend fun acceptInvitation(invitationId: String) = Result.success(Unit)

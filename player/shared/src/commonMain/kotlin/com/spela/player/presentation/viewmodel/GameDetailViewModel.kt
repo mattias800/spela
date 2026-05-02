@@ -133,9 +133,67 @@ class GameDetailViewModel(
             is GameDetailIntent.DeleteSession -> sessionManager.deleteSession(intent.sessionId)
             is GameDetailIntent.CloneSession -> sessionManager.cloneSession(intent.sessionId, intent.name, intent.saveId)
 
+            // Share session — #885
+            is GameDetailIntent.ShowShareSessionDialog ->
+                _state.update { it.copy(shareSessionDialogSourceId = intent.sourceSessionId) }
+            GameDetailIntent.DismissShareSessionDialog ->
+                _state.update { it.copy(shareSessionDialogSourceId = null, isCreatingSharedSession = false) }
+            is GameDetailIntent.CreateSharedSessionFromSession ->
+                createSharedSessionFromSession(intent.sourceSessionId, intent.name, intent.description)
+            GameDetailIntent.ConsumeShareSessionCreatedNavigation ->
+                _state.update { it.copy(shareSessionCreatedId = null) }
+
             // Admin actions
             GameDetailIntent.AdminScrapeGame -> adminScrapeGame()
             GameDetailIntent.AdminRefreshAchievements -> adminRefreshAchievements()
+        }
+    }
+
+    /**
+     * Create a shared session seeded from [sourceSessionIdString]'s
+     * latest save (#885). Drives state.isCreatingSharedSession during
+     * the in-flight POST so the dialog can disable inputs, and on
+     * success populates state.shareSessionCreatedId so the screen can
+     * navigate to the new shared session's detail with the invite
+     * sheet auto-opened.
+     */
+    private fun createSharedSessionFromSession(
+        sourceSessionIdString: String,
+        name: String,
+        description: String,
+    ) {
+        val gameId = currentGameId ?: return
+        val sourceId = sourceSessionIdString.toLongOrNull() ?: run {
+            _state.update { it.copy(error = "Invalid session id") }
+            return
+        }
+        _state.update { it.copy(isCreatingSharedSession = true) }
+        scope.launch(dispatchers.io) {
+            sharedSessionRepository.createSharedSession(
+                name = name,
+                gameId = gameId,
+                description = description,
+                sourceSessionId = sourceId,
+            ).fold(
+                onSuccess = { detail ->
+                    _state.update {
+                        it.copy(
+                            isCreatingSharedSession = false,
+                            shareSessionDialogSourceId = null,
+                            shareSessionCreatedId = detail.id,
+                            successMessage = "Shared session created",
+                        )
+                    }
+                },
+                onFailure = { error ->
+                    _state.update {
+                        it.copy(
+                            isCreatingSharedSession = false,
+                            error = error.message ?: "Failed to create shared session",
+                        )
+                    }
+                },
+            )
         }
     }
 

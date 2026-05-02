@@ -109,6 +109,17 @@ data class GameDetailState(
     val isPlayingFromSharedSave: Boolean = false,
     val playFromSharedSaveSessionId: String? = null,
 
+    // #885 — share-session dialog state.
+    //
+    // shareSessionDialogSourceId is non-null while the dialog is open;
+    // isCreatingSharedSession is set during the in-flight POST so the
+    // dialog disables inputs; shareSessionCreatedId is set after a
+    // successful create so the screen navigates to the new shared
+    // session's detail with the invite sheet auto-opened.
+    val shareSessionDialogSourceId: String? = null,
+    val isCreatingSharedSession: Boolean = false,
+    val shareSessionCreatedId: String? = null,
+
     // Series & Franchise links
     val gameSeries: List<GameSeriesLink> = emptyList(),
     val gameFranchises: List<GameFranchiseLink> = emptyList(),

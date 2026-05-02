@@ -18,6 +18,7 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.People
+import androidx.compose.material.icons.filled.PersonAdd
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.outlined.Gamepad
 import androidx.compose.material3.AlertDialog
@@ -71,6 +72,22 @@ internal fun SessionsSection(
      * Session Detail screen's save rows, not in this list.
      */
     onCloneSession: (sessionId: String, name: String?, saveId: Long?) -> Unit,
+    /**
+     * #885 — opens the share-session dialog seeded from this session.
+     * The handler is wired by GameDetailScreen to dispatch
+     * [GameDetailIntent.ShowShareSessionDialog] only when
+     * [shareEnabled] is true; if the host doesn't pass a callback,
+     * the menu item is hidden entirely.
+     */
+    onShareSession: ((GameSession) -> Unit)? = null,
+    /**
+     * #885 — capability gate. True when save-state-based sharing
+     * makes sense for this game (console supports save states AND
+     * the user hasn't opted out per #804). False on ScummVM, demo
+     * cores, or user-disabled consoles. When false the share menu
+     * item is hidden entirely — no disabled+tooltip noise.
+     */
+    shareEnabled: Boolean = false,
     onSessionSelected: ((GameSession) -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
@@ -116,6 +133,11 @@ internal fun SessionsSection(
                 onRename = { showRenameDialog = session },
                 onDelete = { showDeleteDialog = session },
                 onClone = { showCloneDialog = session },
+                onShare = if (shareEnabled && onShareSession != null) {
+                    { onShareSession.invoke(session) }
+                } else {
+                    null
+                },
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(vertical = SpSpacing.XXSmall),
@@ -266,6 +288,12 @@ private fun SessionItem(
     onRename: () -> Unit,
     onDelete: () -> Unit,
     onClone: () -> Unit,
+    /**
+     * #885 — null when sharing isn't available for this row (capability
+     * gated upstream). When non-null, an extra "Share session…" menu
+     * item appears between Clone and Rename and invokes this on click.
+     */
+    onShare: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
     val isMultiplayer = session.memberCount > 1
@@ -380,6 +408,25 @@ private fun SessionItem(
                             },
                             modifier = Modifier.testTag("session_action_clone_${session.id}"),
                         )
+                        // #885 — Share session… below Clone, between
+                        // CRUD-on-the-row items and Rename. Only
+                        // present when the host wired a callback
+                        // (capability-gated upstream on PlaySemantics
+                        // .ResumesFromSaveState — i.e. there's a
+                        // save to share).
+                        if (onShare != null) {
+                            DropdownMenuItem(
+                                text = { Text("Share session…", style = SpTypography.BodyMedium) },
+                                leadingIcon = {
+                                    Icon(Icons.Filled.PersonAdd, contentDescription = null)
+                                },
+                                onClick = {
+                                    showActionsMenu = false
+                                    onShare()
+                                },
+                                modifier = Modifier.testTag("session_action_share_${session.id}"),
+                            )
+                        }
                         DropdownMenuItem(
                             text = { Text("Rename", style = SpTypography.BodyMedium) },
                             leadingIcon = {

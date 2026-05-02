@@ -230,7 +230,12 @@ class FakeSharedSessionRepo : SharedSessionRepository {
         if (shouldFail) Result.failure(Exception("Network error")) else Result.success(invitations)
     override suspend fun getPendingInvitationCount(): Result<Int> =
         if (shouldFail) Result.failure(Exception("Network error")) else Result.success(invitations.size)
-    override suspend fun createSharedSession(name: String, gameId: String, description: String): Result<SharedSessionDetail> =
+    override suspend fun createSharedSession(
+        name: String,
+        gameId: String,
+        description: String,
+        sourceSessionId: Long?,
+    ): Result<SharedSessionDetail> =
         if (shouldFail) Result.failure(Exception("Network error"))
         else Result.success(SharedSessionDetail(id = "new", name = name, gameId = gameId, ownerId = "1"))
     override suspend fun deleteSharedSession(sharedSessionId: String): Result<Unit> =

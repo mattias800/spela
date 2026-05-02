@@ -2,6 +2,8 @@ package api
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"net/http"
 	"strconv"
 	"strings"
@@ -603,6 +605,28 @@ func (h *SharedSessionHandler) HumaCreateSharedSession(ctx context.Context, in *
 	}
 	if err := h.DB.Create(&ss).Error; err != nil {
 		return nil, huma.Error500InternalServerError("failed to create shared session")
+	}
+
+	// #885 — when the caller passed a SourceSessionID, seed the new
+	// session's save state from that local session's most recent
+	// save. Otherwise the new session starts blank like before.
+	//
+	// Validation rules:
+	//   - the caller must own the source session (no cross-account
+	//     copying)
+	//   - the source session must belong to the same game (no
+	//     accidentally seeding "Sonic" with a "Mario" save)
+	//
+	// Failures here roll back the SharedSession + GameSession we just
+	// wrote so the user doesn't end up with a half-formed shared
+	// session that has no save and is impossible to "share THIS
+	// playthrough" through.
+	if req.SourceSessionID != nil {
+		if err := h.copySessionSaveStateForShare(uid, uint(gid), *req.SourceSessionID, session.ID); err != nil {
+			h.DB.Delete(&ss)
+			h.DB.Delete(&session)
+			return nil, err
+		}
 	}
 
 	member := db.SharedSessionMember{
@@ -1253,3 +1277,84 @@ var (
 type turnError struct{ msg string }
 
 func (e *turnError) Error() string { return e.msg }
+
+// copySessionSaveStateForShare seeds the new shared-session GameSession
+// (newSessionID) with a copy of [sourceSessionID]'s most-recent save
+// state. Validates that the caller owns the source session and that
+// the source's GameID matches [gameID]. The copy creates a new file
+// on disk under the new session's storage path and a new
+// SessionSaveState row pointing at it.
+//
+// Returns a 4xx huma error for validation failures (callers can
+// surface them directly to the client) or 500 for IO / DB failures.
+// On any error, callers should roll back the parent SharedSession
+// rows — see the call site in HumaCreateSharedSession.
+//
+// See #885.
+func (h *SharedSessionHandler) copySessionSaveStateForShare(callerUID, gameID, sourceSessionID, newSessionID uint) error {
+	var src db.GameSession
+	if err := h.DB.First(&src, sourceSessionID).Error; err != nil {
+		return huma.Error404NotFound("source session not found")
+	}
+	if src.OwnerID != callerUID {
+		return huma.Error403Forbidden("source session belongs to another user")
+	}
+	if src.GameID != gameID {
+		return huma.Error400BadRequest("source session belongs to a different game")
+	}
+
+	// Pick the most-recent save: prefer IsCurrent, then by CreatedAt.
+	// If the source has no save state at all, fall through and leave
+	// the new session blank — the user got no progress yet, so this
+	// is just a fresh-start shared session for the same game.
+	var srcSave db.SessionSaveState
+	err := h.DB.
+		Where("session_id = ?", sourceSessionID).
+		Order("is_current DESC, created_at DESC").
+		First(&srcSave).Error
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil
+	}
+	if err != nil {
+		return huma.Error500InternalServerError("failed to read source session save state")
+	}
+
+	// Stream the source bytes into a new save under the new session's
+	// (caller, game) storage namespace. Filename includes the new
+	// session id so concurrent shares from the same game don't
+	// collide.
+	srcFile, err := h.Storage.ReadSave(srcSave.FilePath)
+	if err != nil {
+		return huma.Error500InternalServerError("failed to open source save state")
+	}
+	defer srcFile.Close()
+
+	newFilename := fmt.Sprintf("session_%d_share_%d.state", newSessionID, time.Now().UnixNano())
+	size, err := h.Storage.WriteSave(callerUID, gameID, newFilename, srcFile)
+	if err != nil {
+		return huma.Error500InternalServerError("failed to write copied save state")
+	}
+
+	newSave := db.SessionSaveState{
+		SessionID:     newSessionID,
+		UserID:        callerUID,
+		Name:          srcSave.Name,
+		FilePath:      h.Storage.SaveStatePath(callerUID, gameID, newFilename),
+		FileSize:      size,
+		ScreenshotURL: srcSave.ScreenshotURL,
+		IsAuto:        srcSave.IsAuto,
+		IsCurrent:     true,
+		CoreName:      srcSave.CoreName,
+		CoreSha256:    srcSave.CoreSha256,
+		Notes:         srcSave.Notes,
+		Slot:          srcSave.Slot,
+		Compression:   srcSave.Compression,
+	}
+	if err := h.DB.Create(&newSave).Error; err != nil {
+		// Best-effort cleanup of the file we just wrote so we don't
+		// leak orphan bytes on disk.
+		_ = h.Storage.DeleteSave(newSave.FilePath)
+		return huma.Error500InternalServerError("failed to record copied save state")
+	}
+	return nil
+}
