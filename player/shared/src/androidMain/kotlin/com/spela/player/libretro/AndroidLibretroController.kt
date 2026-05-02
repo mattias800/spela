@@ -10,6 +10,7 @@ import com.spela.player.netplay.NetplayInputBuffer
 import com.spela.player.netplay.NetplayTransport
 import com.spela.player.presentation.viewmodel.LibretroController
 import com.spela.player.util.FileStorage
+import java.util.concurrent.CountDownLatch
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -67,6 +68,13 @@ class AndroidLibretroController(
     var vulkanSurfaceView: SurfaceView? = null
 
     private var emulationThread: Thread? = null
+    /**
+     * Latch the emulation thread counts down once
+     * nativeUnloadGame + nativeDeinit have completed. stop() waits on
+     * this instead of joining the thread, because the thread itself
+     * never exits — see #907.
+     */
+    private var teardownDoneLatch: CountDownLatch? = null
     private var targetFps = 60.0
 
     /* Frame timing for performance stats */
@@ -141,6 +149,8 @@ class AndroidLibretroController(
         lastPhysicalInputNanos = 0L
 
         val isNetplay = netplayTransport != null
+        val latch = CountDownLatch(1)
+        teardownDoneLatch = latch
         emulationThread = Thread({
             startAudio()
             if (isNetplay) {
@@ -151,13 +161,11 @@ class AndroidLibretroController(
             // Libretro contract (RetroArch's runloop_event_deinit_core,
             // see #724 research): retro_unload_game and retro_deinit must
             // run on the same thread that called retro_run. Calling them
-            // from stop()'s caller thread after thread.join() leaves
-            // cores like Play! PS2 and mupen64plus_next confused — the
-            // EGL "current context" is wrong, and worker threads inside
-            // the core look for synchronization with a thread that's
-            // gone. Run them here, as the emulation thread's last act
-            // before exiting; stop() picks up the join and finishes the
-            // GPU teardown afterwards.
+            // from stop()'s caller thread leaves cores like Play! PS2
+            // and mupen64plus_next confused — the EGL "current context"
+            // is wrong, and worker threads inside the core look for
+            // synchronization with a thread that's gone. Run them here,
+            // as the emulation thread's last act.
             try {
                 jni.nativeUnloadGame()
                 Log.i(TAG, "emulation thread: nativeUnloadGame complete")
@@ -169,6 +177,28 @@ class AndroidLibretroController(
                 Log.i(TAG, "emulation thread: nativeDeinit complete")
             } catch (t: Throwable) {
                 Log.e(TAG, "nativeDeinit on emulation thread failed", t)
+            }
+            // Signal stop() that teardown is done — it can proceed
+            // with frontend-side cleanup (audio, GPU, bitmaps).
+            latch.countDown()
+
+            // #907 — DO NOT exit this thread. PPSSPP's context_destroy
+            // poisons Adreno's per-thread EGL binding; pthread_exit's
+            // automatic eglReleaseThread (run by the EGL TLS
+            // destructor) tries to clean up that binding and crashes
+            // inside libGLESv2_adreno via a null vtable dispatch.
+            // Park the thread forever — no exit means no
+            // eglReleaseThread, no crash. The OS reclaims the stack
+            // when the process exits. Each game launch creates a
+            // new SpelaEmulation thread; old ones accumulate parked
+            // (one EGL binding + ~1MB stack each) but the trade-off
+            // is tolerable vs. a guaranteed crash on every exit.
+            try {
+                while (true) {
+                    Thread.sleep(Long.MAX_VALUE)
+                }
+            } catch (_: InterruptedException) {
+                // Allow process-shutdown signals to break the park.
             }
         }, "SpelaEmulation").apply {
             priority = Thread.MAX_PRIORITY
@@ -195,14 +225,18 @@ class AndroidLibretroController(
             req.latch.countDown()
         }
         netplayTransport?.disconnect()
-        // The emulation thread runs nativeUnloadGame + nativeDeinit as
-        // its final acts before exiting (see start()'s thread body). We
-        // wait for it to finish, then take down our frontend-side GPU
-        // resources. No timeout — heavy cores can spend tens of seconds
-        // in retro_unload_game / retro_deinit on slow devices.
-        emulationThread?.join()
-        Log.i(TAG, "emulation thread joined (libretro teardown complete)")
+        // The emulation thread runs nativeUnloadGame + nativeDeinit and
+        // signals teardownDoneLatch. We wait on the LATCH (not on the
+        // thread itself) — the thread parks forever after teardown to
+        // avoid the Adreno crash described in #907. No timeout — heavy
+        // cores can spend tens of seconds in retro_unload_game /
+        // retro_deinit on slow devices.
+        teardownDoneLatch?.await()
+        Log.i(TAG, "libretro teardown complete (thread parked)")
+        // Drop our reference; the thread is parked but still alive.
+        // The OS reclaims its stack when the process exits.
         emulationThread = null
+        teardownDoneLatch = null
         audioPlayer?.stop()
         audioPlayer = null
         clearNetplayMode()
