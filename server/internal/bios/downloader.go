@@ -217,7 +217,7 @@ func DownloadMissing(biosDir, baseURL string, onProgress func(DownloadProgress))
 				}
 				continue
 			}
-			if err := extractZipBundle(tmpPath, extractRoot); err != nil {
+			if err := extractZipBundle(tmpPath, extractRoot, entry.StripPrefix); err != nil {
 				// Best-effort cleanup of any partial files written
 				// before the failure so the bundle isn't half-
 				// installed. We don't try to undo every extracted
@@ -298,11 +298,18 @@ func StartAutoDownload(biosDir string, database *gorm.DB) {
 // preserving the archive's relative directory structure. Used by the
 // Bundle path in [DownloadMissing] (#911).
 //
+// When stripPrefix is non-empty, archive entries that start with that
+// prefix have it removed before being joined onto destDir; entries
+// that don't start with the prefix are skipped. Used to drop a
+// wrapper directory baked into archives like the libretro PPSSPP
+// buildbot zip (rooted at `PPSSPP/`) so its contents land at
+// `<destDir>/...` rather than `<destDir>/PPSSPP/...`.
+//
 // Refuses to write outside destDir (defends against zip-slip — an
 // archive entry whose name resolves to "../etc/passwd" can't escape
 // the BIOS dir). Symlinks inside the archive are skipped, not
 // followed, for the same reason.
-func extractZipBundle(archivePath, destDir string) error {
+func extractZipBundle(archivePath, destDir, stripPrefix string) error {
 	r, err := zip.OpenReader(archivePath)
 	if err != nil {
 		return fmt.Errorf("opening archive: %w", err)
@@ -320,7 +327,22 @@ func extractZipBundle(archivePath, destDir string) error {
 			return fmt.Errorf("archive entry has unsafe path: %q", zf.Name)
 		}
 
-		target := filepath.Join(destDir, filepath.FromSlash(zf.Name))
+		name := zf.Name
+		if stripPrefix != "" {
+			if !strings.HasPrefix(name, stripPrefix) {
+				// Archive contains files outside the wrapper we
+				// expect — skip rather than spilling them next to
+				// SubDir.
+				continue
+			}
+			name = strings.TrimPrefix(name, stripPrefix)
+			if name == "" {
+				// The prefix directory entry itself.
+				continue
+			}
+		}
+
+		target := filepath.Join(destDir, filepath.FromSlash(name))
 		absTarget, err := filepath.Abs(target)
 		if err != nil {
 			return fmt.Errorf("resolving target: %w", err)
