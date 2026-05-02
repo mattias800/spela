@@ -88,6 +88,7 @@ class LibretroJni {
     external fun nativeGpuSetSourceRect(x: Int, y: Int, w: Int, h: Int)
     external fun nativeIsHwRenderEnabled(): Boolean
     external fun nativeIsVulkanHwRender(): Boolean
+    external fun nativeGetCoreLibraryName(): String
 
     /* Cheats */
     external fun nativeCheatReset()

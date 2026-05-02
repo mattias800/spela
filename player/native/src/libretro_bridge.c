@@ -285,6 +285,22 @@ static bool environment_callback(unsigned cmd, void *data) {
                 }
 
 #ifdef __ANDROID__
+                /* PSP (PPSSPP) backend selection on Android: force
+                 * Vulkan to sidestep the Adreno EGL TLS bug
+                 * (#907 / #916) — see GET_PREFERRED_HW_RENDER. */
+                {
+                    const struct retro_variable *v3 = (const struct retro_variable *)data;
+                    for (; v3->key; v3++) {
+                        if (v3->key && strstr(v3->key, "ppsspp_backend")) {
+                            LOGI("PPSSPP detected, forcing Vulkan backend on Android (#916)");
+                            core_variables_set("ppsspp_backend", "Vulkan");
+                            break;
+                        }
+                    }
+                }
+#endif
+
+#ifdef __ANDROID__
                 /* PS1 (Beetle PSX HW) renderer selection on Android:
                  * Force OpenGL (GLES) renderer to avoid Granite Vulkan crashes
                  * on Adreno GPUs. The GLES HW renderer uses the same proven
@@ -461,11 +477,33 @@ static bool environment_callback(unsigned cmd, void *data) {
 
         case RETRO_ENVIRONMENT_GET_PREFERRED_HW_RENDER: {
             /* Tell cores which HW render context we prefer.
-             * Prefer Vulkan for Dolphin (GameCube/Wii) on all platforms — it
-             * provides zero-copy compositing via VkImage (macOS via MoltenVK).
+             * Prefer Vulkan for:
+             *  - Dolphin (GameCube/Wii) — zero-copy compositing via VkImage
+             *  - PPSSPP (PSP) on Android — sidesteps the Adreno EGL TLS
+             *    bug (#907 / #916) where pthread_exit's automatic
+             *    eglReleaseThread crashes after PPSSPP's GLES
+             *    context_destroy. Vulkan doesn't use EGL.
+             *
+             * For PPSSPP we also disable the Vulkan extension filter that
+             * normally hides VK_EXT_subgroup_size_control from cores
+             * (originally added for Granite/paraLLEl-RDP on N64). PPSSPP
+             * needs it for its presentation pipeline.
+             *
              * Other cores: GLES3 on Android, OpenGL Core on desktop. */
-            if (g_core.system_info.library_name &&
-                strstr(g_core.system_info.library_name, "dolphin") != NULL) {
+            const char *libname = g_core.system_info.library_name;
+            bool prefer_vulkan = libname && strstr(libname, "dolphin") != NULL;
+#ifdef __ANDROID__
+            if (libname && strstr(libname, "PPSSPP") != NULL) {
+                prefer_vulkan = true;
+                /* The setter writes to a file-scope global the wrappers
+                 * read from, so it works even if g_gpu_renderer is
+                 * still NULL at this point (GET_PREFERRED_HW_RENDER
+                 * fires during retro_load_game / retro_init, before
+                 * the GPU renderer has been instantiated on Android). */
+                gpu_renderer_set_extension_filter_enabled(g_gpu_renderer, false);
+            }
+#endif
+            if (prefer_vulkan) {
                 *(unsigned *)data = RETRO_HW_CONTEXT_VULKAN;
             } else {
 #ifdef __ANDROID__
@@ -475,7 +513,7 @@ static bool environment_callback(unsigned cmd, void *data) {
 #endif
             }
             LOGI("Reporting preferred HW render: %u (core: %s)", *(unsigned *)data,
-                 g_core.system_info.library_name ? g_core.system_info.library_name : "unknown");
+                 libname ? libname : "unknown");
             return true;
         }
 
@@ -1157,6 +1195,13 @@ JNI_FUNC(void, nativeDeinit)(JNIEnv *env, jobject thiz) {
 
     /* Step 3: retro_deinit */
     if (g_core.initialized) {
+        /* Cores like Play! flush a final frame from inside retro_deinit
+         * (CGSH_OpenGL_Libretro::Release → MailBox flush → FlipImpl →
+         * video_cb), and the data they pass references GS-handler
+         * state that's already partially released. Drop frames from
+         * here on so video_refresh_callback's memcpy doesn't deref
+         * freed memory. (#916) */
+        video_set_shutting_down();
         g_core.retro_deinit();
         g_core.initialized = false;
     }
@@ -1871,6 +1916,11 @@ JNI_FUNC(jboolean, nativeIsVulkanHwRender)(JNIEnv *env, jobject thiz) {
     return (g_core.hw_render_enabled &&
             g_core.hw_render_callback.context_type == RETRO_HW_CONTEXT_VULKAN)
         ? JNI_TRUE : JNI_FALSE;
+}
+
+JNI_FUNC(jstring, nativeGetCoreLibraryName)(JNIEnv *env, jobject thiz) {
+    const char *name = g_core.system_info.library_name;
+    return (*env)->NewStringUTF(env, name ? name : "");
 }
 
 JNI_FUNC(void, nativeGpuSetSourceRect)(JNIEnv *env, jobject thiz,

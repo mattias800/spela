@@ -65,6 +65,12 @@ struct retro_hw_render_context_negotiation_interface_vulkan;
 void gpu_renderer_set_vk_negotiation(gpu_renderer_t *r,
     const struct retro_hw_render_context_negotiation_interface_vulkan *iface);
 
+/* Hide problematic Vulkan device extensions from the core during enumeration.
+ * Default is on — VK_EXT_subgroup_size_control crashes Granite (paraLLEl-RDP
+ * for N64) on Adreno. Cores that need the extension (PPSSPP — investigating
+ * for #916) flip this off. */
+void gpu_renderer_set_extension_filter_enabled(gpu_renderer_t *r, bool enabled);
+
 /* Reinitialize Vulkan context (instance, device, pipelines) in-place.
  * Used when the core provides a v2 negotiation interface after the renderer
  * was already initialized — tears down and recreates with negotiation. */

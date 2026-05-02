@@ -405,6 +405,32 @@ class AndroidLibretroController(
         var fpsCounter = 0
         var fpsTimer = System.nanoTime()
 
+        // #916 — PPSSPP libretro Vulkan deadlocks on the FIRST retro_run
+        // if BootState is still Booting (PSP_InitUpdate returns Booting →
+        // ctx->SwapBuffers() → vk_libretro_wait_for_presentation() blocks
+        // forever on chain.condVar because chain.current_index == -1 and
+        // no rendering has happened yet). The fix upstream needs to make
+        // wait_for_presentation skip the wait if no present has happened
+        // since swapchain creation; until that lands, wait here for the
+        // loader thread to finish CPU_Init (which sets g_bootState =
+        // Complete) before letting retro_run see Booting.
+        //
+        // RetroArch's frame loop has enough natural slack between
+        // retro_load_game and the first retro_run to avoid this; ours
+        // doesn't. 5s covers CPU_Init for typical PSP ISOs (1-1.5GB) on
+        // device storage. Doesn't slow down GLES PSP or non-Vulkan cores.
+        if (jni.nativeIsVulkanHwRender() &&
+            jni.nativeGetCoreLibraryName().contains("PPSSPP")) {
+            Log.i(TAG, "PSP+Vulkan: holding retro_run for 2s while loader thread finishes (#916)")
+            try {
+                Thread.sleep(2000)
+            } catch (_: InterruptedException) {
+                // Allow stop() to break out early.
+                return
+            }
+            Log.i(TAG, "PSP+Vulkan: pre-run wait complete, starting retro_run loop")
+        }
+
         while (running) {
             // Process pending emulation-thread requests (serialize, unserialize, etc.).
             // Must run here (same thread as retro_run) because some cores

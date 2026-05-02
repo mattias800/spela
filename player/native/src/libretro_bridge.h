@@ -19,6 +19,11 @@ typedef struct hw_gl_context hw_gl_context_t;
 /* Video subsystem (libretro_video.c) */
 void video_init(void);
 void video_deinit(void);
+/* Drop subsequent video_refresh_callback invocations. Set just before
+ * retro_deinit so frames the core flushes during shutdown (e.g. Play!
+ * libretro's MailBox flush in CGSH_OpenGL_Libretro::Release) don't
+ * dereference data that's already partially torn down. (#916) */
+void video_set_shutting_down(void);
 void video_set_pixel_format(unsigned format);
 void video_refresh_callback(const void *data, unsigned width, unsigned height, size_t pitch);
 unsigned video_get_width(void);
