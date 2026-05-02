@@ -1,6 +1,7 @@
 package bios
 
 import (
+	"archive/zip"
 	"crypto/md5"
 	"encoding/hex"
 	"fmt"
@@ -9,6 +10,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/spela/server/internal/db"
@@ -188,17 +190,62 @@ func DownloadMissing(biosDir, baseURL string, onProgress func(DownloadProgress))
 			continue
 		}
 
-		// Rename to final path
-		if err := os.Rename(tmpPath, destPath); err != nil {
-			os.Remove(tmpPath)
-			progress.Status = "failed"
-			progress.Error = fmt.Sprintf("renaming temp file: %v", err)
-			result.Failed++
-			result.Errors = append(result.Errors, fmt.Sprintf("%s: %s", entry.FileName, progress.Error))
-			if onProgress != nil {
-				onProgress(progress)
+		// Bundle entries (#911): the bytes we just downloaded are a
+		// .zip archive — extract every file into <biosDir>/<SubDir>/
+		// then delete the archive. The sentinel file at destPath is
+		// expected to be one of the extracted files; the next pass of
+		// the "is installed" check uses os.Stat(destPath) to detect
+		// the bundle as installed. Failure rolls back the partial
+		// extraction so a half-extracted bundle doesn't get treated
+		// as installed on next launch.
+		if entry.Bundle {
+			extractRoot := biosDir
+			if entry.SubDir != "" {
+				extractRoot = filepath.Join(biosDir, entry.SubDir)
 			}
-			continue
+			if err := os.MkdirAll(extractRoot, 0755); err != nil {
+				os.Remove(tmpPath)
+				progress.Status = "failed"
+				progress.Error = fmt.Sprintf("creating bundle target: %v", err)
+				result.Failed++
+				result.Errors = append(result.Errors, fmt.Sprintf("%s: %s", entry.FileName, progress.Error))
+				if onProgress != nil {
+					onProgress(progress)
+				}
+				continue
+			}
+			if err := extractZipBundle(tmpPath, extractRoot); err != nil {
+				// Best-effort cleanup of any partial files written
+				// before the failure so the bundle isn't half-
+				// installed. We don't try to undo every extracted
+				// path — just remove the sentinel if it landed,
+				// which forces a re-download next attempt.
+				os.Remove(destPath)
+				os.Remove(tmpPath)
+				progress.Status = "failed"
+				progress.Error = fmt.Sprintf("extracting bundle: %v", err)
+				result.Failed++
+				result.Errors = append(result.Errors, fmt.Sprintf("%s: %s", entry.FileName, progress.Error))
+				if onProgress != nil {
+					onProgress(progress)
+				}
+				continue
+			}
+			// Archive is no longer needed.
+			os.Remove(tmpPath)
+		} else {
+			// Rename to final path (single-file entry)
+			if err := os.Rename(tmpPath, destPath); err != nil {
+				os.Remove(tmpPath)
+				progress.Status = "failed"
+				progress.Error = fmt.Sprintf("renaming temp file: %v", err)
+				result.Failed++
+				result.Errors = append(result.Errors, fmt.Sprintf("%s: %s", entry.FileName, progress.Error))
+				if onProgress != nil {
+					onProgress(progress)
+				}
+				continue
+			}
 		}
 
 		progress.Status = "downloaded"
@@ -242,4 +289,75 @@ func StartAutoDownload(biosDir string, database *gorm.DB) {
 			}
 		}
 	}()
+}
+
+// extractZipBundle extracts every file in [archivePath] into [destDir],
+// preserving the archive's relative directory structure. Used by the
+// Bundle path in [DownloadMissing] (#911).
+//
+// Refuses to write outside destDir (defends against zip-slip — an
+// archive entry whose name resolves to "../etc/passwd" can't escape
+// the BIOS dir). Symlinks inside the archive are skipped, not
+// followed, for the same reason.
+func extractZipBundle(archivePath, destDir string) error {
+	r, err := zip.OpenReader(archivePath)
+	if err != nil {
+		return fmt.Errorf("opening archive: %w", err)
+	}
+	defer r.Close()
+
+	absDest, err := filepath.Abs(destDir)
+	if err != nil {
+		return fmt.Errorf("resolving dest dir: %w", err)
+	}
+
+	for _, zf := range r.File {
+		// Reject absolute paths and traversal.
+		if filepath.IsAbs(zf.Name) || strings.Contains(zf.Name, "..") {
+			return fmt.Errorf("archive entry has unsafe path: %q", zf.Name)
+		}
+
+		target := filepath.Join(destDir, filepath.FromSlash(zf.Name))
+		absTarget, err := filepath.Abs(target)
+		if err != nil {
+			return fmt.Errorf("resolving target: %w", err)
+		}
+		if !strings.HasPrefix(absTarget, absDest+string(filepath.Separator)) && absTarget != absDest {
+			return fmt.Errorf("archive entry escapes target dir: %q", zf.Name)
+		}
+
+		// Skip symlinks and other non-regular file types.
+		if zf.Mode()&os.ModeSymlink != 0 {
+			continue
+		}
+
+		if zf.FileInfo().IsDir() {
+			if err := os.MkdirAll(target, 0755); err != nil {
+				return fmt.Errorf("mkdir %s: %w", target, err)
+			}
+			continue
+		}
+
+		if err := os.MkdirAll(filepath.Dir(target), 0755); err != nil {
+			return fmt.Errorf("mkdir parent of %s: %w", target, err)
+		}
+
+		out, err := os.OpenFile(target, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0644)
+		if err != nil {
+			return fmt.Errorf("creating %s: %w", target, err)
+		}
+		in, err := zf.Open()
+		if err != nil {
+			out.Close()
+			return fmt.Errorf("opening archive entry %s: %w", zf.Name, err)
+		}
+		if _, err := io.Copy(out, in); err != nil {
+			out.Close()
+			in.Close()
+			return fmt.Errorf("writing %s: %w", target, err)
+		}
+		out.Close()
+		in.Close()
+	}
+	return nil
 }

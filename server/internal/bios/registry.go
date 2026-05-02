@@ -11,6 +11,23 @@ type Entry struct {
 	Required    bool   // true if the console cannot function without it
 	OverrideURL string // if set, download from this URL instead of the default repo
 	SubDir      string // subdirectory within system_dir, e.g. "same_cdi/bios" (empty = flat)
+
+	// Bundle indicates that OverrideURL points at a .zip archive
+	// containing a directory tree rather than a single file. When
+	// true, the downloader fetches the archive, extracts every file
+	// into <biosDir>/<SubDir>/, then deletes the archive. FileName is
+	// interpreted as a *sentinel path* (relative to SubDir) used to
+	// detect whether the bundle has been installed — pick a file
+	// that's guaranteed to exist after extraction (e.g. for PPSSPP,
+	// "flash0/font/jpn0.pgf" or similar).
+	//
+	// Bundle entries skip MD5 validation on the archive bytes (the
+	// archive's own integrity is checked by the unzip step; the
+	// extracted files don't have individual MD5 checks). Set MD5 on
+	// a bundle entry only if you've pinned the archive's hash.
+	//
+	// See #911 for the PPSSPP flash0/lang/assets driver.
+	Bundle bool
 }
 
 // FilePath returns the path of this entry relative to the BIOS directory,
