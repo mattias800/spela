@@ -28,6 +28,18 @@ type Entry struct {
 	//
 	// See #911 for the PPSSPP flash0/lang/assets driver.
 	Bundle bool
+
+	// StripPrefix, when non-empty on a Bundle entry, drops that
+	// leading path prefix from each archive entry before joining
+	// it onto the extract root. Used for archives whose contents
+	// already sit under a wrapper directory matching SubDir — the
+	// libretro PPSSPP buildbot zip is rooted at `PPSSPP/`, and
+	// our SubDir is also `PPSSPP`, so without stripping we'd get
+	// `<biosDir>/PPSSPP/PPSSPP/...`. Archive entries that don't
+	// start with the prefix are skipped (a defensive choice — an
+	// archive with mixed contents would otherwise leak files
+	// outside SubDir).
+	StripPrefix string
 }
 
 // FilePath returns the path of this entry relative to the BIOS directory,
@@ -146,11 +158,13 @@ var registry = []Entry{
 	//     compat.ini, etc. — runtime assets the core looks up
 	//
 	// Source: libretro's buildbot publishes a single canonical zip at
-	// `https://buildbot.libretro.com/assets/system/PPSSPP.zip` (this is
-	// what RetroArch's "Core System Files Downloader" pulls). Archive
-	// is rooted at `PPSSPP/`, so SubDir is left empty and FileName
-	// names the sentinel path relative to biosDir — extraction lays
-	// the tree at `<biosDir>/PPSSPP/...` directly.
+	// `https://buildbot.libretro.com/assets/system/PPSSPP.zip` (this
+	// is what RetroArch's "Core System Files Downloader" pulls).
+	// Archive contents are rooted at `PPSSPP/`, which already matches
+	// the SubDir we want to extract into; StripPrefix drops the
+	// wrapper so we don't end up at `<biosDir>/PPSSPP/PPSSPP/...`.
+	// Sentinel is the atlas file, which lands at
+	// `<biosDir>/PPSSPP/ppge_atlas.zim` after extraction.
 	//
 	// MD5 is intentionally unset on bundle entries: the archive's
 	// contents shift between PPSSPP releases (font tweaks, new
@@ -159,7 +173,7 @@ var registry = []Entry{
 	// the unzip step.
 	//
 	// Closes #911.
-	{ConsoleID: "psp", FileName: "PPSSPP/ppge_atlas.zim", Description: "PPSSPP system assets (atlas, fonts, lang)", Required: true, OverrideURL: "https://buildbot.libretro.com/assets/system/PPSSPP.zip", Bundle: true},
+	{ConsoleID: "psp", FileName: "ppge_atlas.zim", Description: "PPSSPP system assets (atlas, fonts, lang)", Required: true, SubDir: "PPSSPP", OverrideURL: "https://buildbot.libretro.com/assets/system/PPSSPP.zip", Bundle: true, StripPrefix: "PPSSPP/"},
 
 	// Magnavox Odyssey 2 / Philips Videopac (O2) — o2em_libretro.info.
 	// o2rom.bin is required by the core to boot any cartridge; the

@@ -336,7 +336,7 @@ func TestDownloadMissing_BundleSkipsWhenSentinelPresent(t *testing.T) {
 // so SubDir is left empty and FileName is the sentinel path relative
 // to biosDir (e.g. "PPSSPP/ppge_atlas.zim"). This exercise covers the
 // .tmp-parent mkdir for FileName-with-slashes + SubDir="".
-func TestDownloadMissing_BundleArchiveWithTopLevelDir(t *testing.T) {
+func TestDownloadMissing_BundleStripsArchivePrefix(t *testing.T) {
 	biosDir := t.TempDir()
 	// Sentinel must be > 1KB to survive the downloader's
 	// partial-download heuristic on the second pass; pad it.
@@ -356,11 +356,13 @@ func TestDownloadMissing_BundleArchiveWithTopLevelDir(t *testing.T) {
 	registry = []Entry{
 		{
 			ConsoleID:   "psp",
-			FileName:    "PPSSPP/ppge_atlas.zim",
-			Description: "PPSSPP bundle (top-level dir)",
+			FileName:    "ppge_atlas.zim",
+			Description: "PPSSPP bundle (StripPrefix)",
 			Required:    true,
+			SubDir:      "PPSSPP",
 			OverrideURL: server.URL,
 			Bundle:      true,
+			StripPrefix: "PPSSPP/",
 		},
 	}
 	defer func() { registry = origRegistry }()
@@ -369,6 +371,9 @@ func TestDownloadMissing_BundleArchiveWithTopLevelDir(t *testing.T) {
 	assert.Equal(t, 1, result.Downloaded)
 	assert.Equal(t, 0, result.Failed, "errors: %v", result.Errors)
 
+	// Each archive entry's PPSSPP/ wrapper is stripped, then placed
+	// under SubDir — net result is the same `<biosDir>/PPSSPP/...`
+	// layout, but FileName stays clean and the Stat path matches.
 	for _, rel := range []string{
 		"PPSSPP/ppge_atlas.zim",
 		"PPSSPP/flash0/font/ltn0.pgf",
@@ -379,10 +384,60 @@ func TestDownloadMissing_BundleArchiveWithTopLevelDir(t *testing.T) {
 		require.NoError(t, err, "expected extracted file at %s", path)
 	}
 
+	// No PPSSPP/PPSSPP doubled directory.
+	_, err := os.Stat(filepath.Join(biosDir, "PPSSPP", "PPSSPP"))
+	assert.True(t, os.IsNotExist(err), "stripPrefix must not leave a doubled wrapper")
+
 	// Sentinel is one of the extracted files, so a second pass skips.
 	result2 := DownloadMissing(biosDir, "http://unused", nil)
 	assert.Equal(t, 1, result2.Skipped)
 	assert.Equal(t, 0, result2.Downloaded)
+}
+
+// Archive entries that don't start with StripPrefix are skipped — a
+// defensive choice so a mis-sourced archive can't spill files
+// outside SubDir.
+func TestDownloadMissing_BundleStripPrefixSkipsNonMatching(t *testing.T) {
+	biosDir := t.TempDir()
+	zipBytes := makeZipBytes(t, map[string][]byte{
+		"PPSSPP/ppge_atlas.zim": bytes.Repeat([]byte{0xAB}, 2048),
+		"unrelated/secret.txt":  []byte("should not land"),
+	})
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Write(zipBytes)
+	}))
+	defer server.Close()
+
+	origRegistry := make([]Entry, len(registry))
+	copy(origRegistry, registry)
+	registry = []Entry{
+		{
+			ConsoleID:   "psp",
+			FileName:    "ppge_atlas.zim",
+			Description: "PPSSPP bundle",
+			Required:    true,
+			SubDir:      "PPSSPP",
+			OverrideURL: server.URL,
+			Bundle:      true,
+			StripPrefix: "PPSSPP/",
+		},
+	}
+	defer func() { registry = origRegistry }()
+
+	result := DownloadMissing(biosDir, "http://unused", nil)
+	assert.Equal(t, 1, result.Downloaded)
+	assert.Equal(t, 0, result.Failed, "errors: %v", result.Errors)
+
+	_, err := os.Stat(filepath.Join(biosDir, "PPSSPP", "ppge_atlas.zim"))
+	require.NoError(t, err)
+
+	// The non-prefixed entry is dropped on the floor — never written
+	// anywhere on disk.
+	_, err = os.Stat(filepath.Join(biosDir, "unrelated", "secret.txt"))
+	assert.True(t, os.IsNotExist(err))
+	_, err = os.Stat(filepath.Join(biosDir, "PPSSPP", "unrelated", "secret.txt"))
+	assert.True(t, os.IsNotExist(err))
 }
 
 func TestDownloadMissing_BundleRefusesZipSlip(t *testing.T) {

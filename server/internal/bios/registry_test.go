@@ -134,18 +134,19 @@ func TestFds_DisksysMD5(t *testing.T) {
 }
 
 // PSP — system assets are delivered as a single libretro buildbot
-// archive that extracts a `PPSSPP/` tree (atlas + flash0/font + lang/
-// + vfpu/ + fonts + ini) into biosDir. The sentinel is the atlas
-// file inside the bundle. See #911.
+// archive (`PPSSPP/` wrapper containing atlas + flash0/font + lang/
+// + vfpu/ + fonts + ini). The wrapper matches our SubDir, so
+// StripPrefix drops it during extraction; FileName names a clean
+// sentinel that bios.ByFileName() can match for upload routing.
+// See #911.
 func TestPsp_AssetsBundle(t *testing.T) {
 	for _, e := range ByConsole("psp") {
-		if e.FileName == "PPSSPP/ppge_atlas.zim" {
+		if e.FileName == "ppge_atlas.zim" {
 			assert.True(t, e.Required, "PSP assets bundle must be required")
 			assert.True(t, e.Bundle, "PSP entry must be a Bundle")
 			assert.Equal(t, "https://buildbot.libretro.com/assets/system/PPSSPP.zip", e.OverrideURL)
-			// SubDir intentionally empty — archive's own top-level
-			// `PPSSPP/` matches the desired layout in biosDir.
-			assert.Equal(t, "", e.SubDir)
+			assert.Equal(t, "PPSSPP", e.SubDir)
+			assert.Equal(t, "PPSSPP/", e.StripPrefix)
 			return
 		}
 	}

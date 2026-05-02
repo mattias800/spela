@@ -213,6 +213,56 @@ func TestListBiosFiles_ConsoleSummary_NotRequired(t *testing.T) {
 	assert.False(t, gbaConsole.BiosRequired)
 }
 
+// #911 regression — PSP entry is a Bundle with SubDir="PPSSPP" and
+// StripPrefix; the sentinel lands at <biosDir>/PPSSPP/ppge_atlas.zim
+// after the buildbot archive is extracted. Earlier shapes that put
+// the path inside FileName ("PPSSPP/ppge_atlas.zim" with empty
+// SubDir) tripped the listing endpoint into reporting "missing" even
+// when the file was on disk — the flat-dir lookup missed it and the
+// Stat fallback was gated on SubDir!="". Lock the present-status
+// behaviour for the canonical PSP entry shape.
+func TestListBiosFiles_BundleEntry_PresentUnderSubDir(t *testing.T) {
+	store, database, router := setupBiosTestEnv(t)
+	token := createBiosTestUser(t, database, "user")
+
+	pspDir := filepath.Join(store.BiosDir, "PPSSPP")
+	require.NoError(t, os.MkdirAll(pspDir, 0755))
+	// Sentinel must be > 1KB so the size heuristic doesn't flag it.
+	require.NoError(t, os.WriteFile(filepath.Join(pspDir, "ppge_atlas.zim"), bytes.Repeat([]byte{0xAB}, 2048), 0644))
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/bios", nil)
+	req.Header.Set("Authorization", "Bearer "+token)
+	router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var resp BiosListResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+
+	var psp *BiosFileResponse
+	for i, f := range resp.Files {
+		if f.Name == "ppge_atlas.zim" && f.ConsoleID != nil && *f.ConsoleID == "psp" {
+			psp = &resp.Files[i]
+			break
+		}
+	}
+	require.NotNil(t, psp, "PSP bundle entry should appear in /api/bios with FileName=ppge_atlas.zim")
+	assert.NotEqual(t, "missing", psp.Status, "sentinel under SubDir must not be reported as missing")
+	assert.Equal(t, "PPSSPP", psp.SubDir)
+
+	var pspConsole *ConsoleBiosStatus
+	for i, cs := range resp.Consoles {
+		if cs.ConsoleID == "psp" {
+			pspConsole = &resp.Consoles[i]
+			break
+		}
+	}
+	require.NotNil(t, pspConsole)
+	assert.Equal(t, 1, pspConsole.RequiredPresent, "PSP required count should report 1/1 with sentinel on disk")
+	assert.Equal(t, 1, pspConsole.RequiredTotal)
+}
+
 func TestListBiosFiles_RequiresAuth(t *testing.T) {
 	_, _, router := setupBiosTestEnv(t)
 
