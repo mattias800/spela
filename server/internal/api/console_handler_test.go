@@ -994,3 +994,63 @@ func TestGetTopRatedGlobal_DeduplicatePrefersLocalLibraryMatch(t *testing.T) {
 	// Should have a localGameId because the SNES version matches a library game
 	assert.NotNil(t, result[0].LocalGameId, "should prefer the console entry that has a local library match")
 }
+
+// #888 — child consoles without their own logo asset fall back to
+// the parent platform's logo. Avoids the placeholder/blank state in
+// the player app when the child asset hasn't been shipped yet.
+func TestGetConsoleLogo_ParentFallback(t *testing.T) {
+	_, cfg := setupTestEnv(t)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
+
+	tests := []struct {
+		name        string
+		childAbbr   string
+		parentAbbr  string
+		contentType string
+	}{
+		{"Amiga Demos falls back to Amiga (svg)", "ademo", "amiga", "image/svg+xml"},
+		{"DOS Demos falls back to DOS (svg)", "ddemo", "dos", "image/svg+xml"},
+		{"Amiga Demos falls back to Amiga (png)", "ademo", "amiga", "image/png"},
+		{"DOS Demos falls back to DOS (png)", "ddemo", "dos", "image/png"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			suffix := "/logo"
+			if tt.contentType == "image/png" {
+				suffix = "/logo.png"
+			}
+
+			// Fetch the parent's bytes for byte-equality.
+			pw := httptest.NewRecorder()
+			preq := httptest.NewRequest("GET", "/api/consoles/"+tt.parentAbbr+suffix, nil)
+			router.ServeHTTP(pw, preq)
+			require.Equal(t, http.StatusOK, pw.Code, "parent logo must be available")
+			parentBody := pw.Body.Bytes()
+			require.NotEmpty(t, parentBody)
+
+			// Fetch the child's bytes — must succeed and equal parent.
+			cw := httptest.NewRecorder()
+			creq := httptest.NewRequest("GET", "/api/consoles/"+tt.childAbbr+suffix, nil)
+			router.ServeHTTP(cw, creq)
+			assert.Equal(t, http.StatusOK, cw.Code, "child logo should fall back, not 404")
+			assert.Equal(t, tt.contentType, cw.Header().Get("Content-Type"))
+			assert.Equal(t, parentBody, cw.Body.Bytes(), "child should serve identical bytes to parent")
+		})
+	}
+}
+
+// Consoles with no fallback configured AND no asset still 404 — the
+// fallback map is opt-in, not a generic catch-all.
+func TestGetConsoleLogo_NoFallbackStill404s(t *testing.T) {
+	_, cfg := setupTestEnv(t)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
+
+	// ARCADE has no parent platform; the issue notes it needs a fresh
+	// asset and remains 404 until one is shipped.
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/consoles/arcade/logo", nil)
+	router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusNotFound, w.Code)
+}
