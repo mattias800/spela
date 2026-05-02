@@ -155,7 +155,20 @@ void hw_gl_deinit(hw_gl_context_t *ctx) {
     if (!ctx || !ctx->initialized) return;
 
     if (ctx->egl_display != EGL_NO_DISPLAY) {
-        eglMakeCurrent(ctx->egl_display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
+        /* #907 — DO NOT call eglMakeCurrent(EGL_NO_CONTEXT). After a
+         * core's context_destroy callback runs (PPSSPP and other GLES
+         * HW-render cores spin up worker threads that bind/release
+         * EGL on their own), Adreno's driver-side "currently-bound
+         * context" cache is inconsistent. Calling release crashes
+         * inside libGLESv2_adreno via a null vtable dispatch — the
+         * exact tombstone pattern we hit twice while iterating on
+         * this fix. eglDestroyContext on a still-current context is
+         * well-defined per EGL spec (mark for deletion, free on
+         * release or thread exit); the emulation thread exits within
+         * seconds, so we're not leaking persistently.
+         *
+         * Surface destroy is independent and stays. Context destroy
+         * relies on the spec's mark-for-deletion semantics. */
         if (ctx->egl_surface != EGL_NO_SURFACE) {
             eglDestroySurface(ctx->egl_display, ctx->egl_surface);
             ctx->egl_surface = EGL_NO_SURFACE;
