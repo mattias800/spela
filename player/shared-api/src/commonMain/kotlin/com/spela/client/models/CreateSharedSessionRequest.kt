@@ -26,6 +26,7 @@ import kotlinx.serialization.encoding.*
  * @param dollarSchema A URL to the JSON Schema for this object.
  * @param gameId 
  * @param name 
+ * @param sourceSessionId 
  */
 @Serializable
 
@@ -36,7 +37,9 @@ data class CreateSharedSessionRequest (
 
     @SerialName(value = "gameId") val gameId: kotlin.String? = null,
 
-    @SerialName(value = "name") val name: kotlin.String? = null
+    @SerialName(value = "name") val name: kotlin.String? = null,
+
+    @SerialName(value = "sourceSessionId") val sourceSessionId: kotlin.Long? = null
 
 ) {
 

@@ -2495,6 +2495,11 @@
           },
           "name": {
             "type": "string"
+          },
+          "sourceSessionId": {
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
           }
         },
         "type": "object"
@@ -7971,6 +7976,50 @@
             "description": "A URL to the JSON Schema for this object.",
             "examples": [
               "https://example.com/api/schemas/SessionSaveData.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "fileSize": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "id": {
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "sessionId": {
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "createdAt",
+          "updatedAt",
+          "sessionId",
+          "fileSize"
+        ],
+        "type": "object"
+      },
+      "SessionSaveDirBundle": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "https://example.com/api/schemas/SessionSaveDirBundle.json"
             ],
             "format": "uri",
             "readOnly": true,
@@ -21469,6 +21518,118 @@
           }
         ],
         "summary": "Record play time for a session",
+        "tags": [
+          "sessions"
+        ]
+      }
+    },
+    "/api/sessions/{id}/save-dir": {
+      "get": {
+        "description": "Owner-only. Responds with application/x-tar containing the save_dir bytes uploaded on the most recent exit. 404 if the session has never had a save_dir bundle. See #864.",
+        "operationId": "downloadSessionSaveDirBundle",
+        "parameters": [
+          {
+            "description": "Session ID.",
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "description": "Session ID.",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HumaError"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Download the libretro save_dir tarball for a session",
+        "tags": [
+          "sessions"
+        ]
+      },
+      "post": {
+        "description": "Stores or replaces the session's save_dir bundle. Used by cores that write their own save files to disk (e.g. ScummVM, DOSBox). Atomic full replacement — the bytes downloaded on resume are exactly the bytes uploaded on the most recent exit. Returns 201 on first upload, 200 on overwrite. See #864.",
+        "operationId": "uploadSaveDirBundle",
+        "parameters": [
+          {
+            "description": "Session ID.",
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "description": "Session ID.",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "encoding": {
+                "file": {
+                  "contentType": "application/x-tar"
+                }
+              },
+              "schema": {
+                "properties": {
+                  "file": {
+                    "contentEncoding": "binary",
+                    "contentMediaType": "application/octet-stream",
+                    "description": "Tarball of the libretro save_dir contents.",
+                    "format": "binary",
+                    "type": "string"
+                  }
+                },
+                "type": "object"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionSaveDirBundle"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HumaError"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Upload the libretro save_dir tarball for a session",
         "tags": [
           "sessions"
         ]

@@ -244,6 +244,17 @@ fun GameDetailScreen(
                         onCloneSession = { sessionId, name, saveId ->
                             viewModel.onIntent(GameDetailIntent.CloneSession(sessionId, name, saveId))
                         },
+                        // #885 — gate Share session… on the same
+                        // PlaySemantics resolver as the hero label
+                        // (#884). Sharing only makes sense when save
+                        // state will actually transfer; ScummVM /
+                        // demo cores / user-disabled consoles never
+                        // see the menu item.
+                        onShareSession = { session ->
+                            viewModel.onIntent(GameDetailIntent.ShowShareSessionDialog(session.id))
+                        },
+                        shareEnabled = state.playSemantics ==
+                            com.spela.player.domain.model.PlaySemantics.ResumesFromSaveState,
                         onSessionSelected = onNavigateToSession?.let { nav ->
                             { session -> nav(session.id) }
                         },
@@ -433,6 +444,38 @@ fun GameDetailScreen(
                 },
                 onDismiss = { viewModel.onIntent(GameDetailIntent.DismissCreateChallengeDialog) },
             )
+        }
+
+        // #885 — Share session dialog. Visible when the user picked
+        // "Share session…" from a session row's overflow menu.
+        state.shareSessionDialogSourceId?.let { sourceId ->
+            val sourceSession = state.sessions.firstOrNull { it.id == sourceId }
+            com.spela.player.presentation.ui.feature.gamedetail.ShareSessionDialog(
+                gameTitle = game.title,
+                sourceSessionName = sourceSession?.name ?: "this session",
+                isSubmitting = state.isCreatingSharedSession,
+                onSubmit = { name, description ->
+                    viewModel.onIntent(
+                        GameDetailIntent.CreateSharedSessionFromSession(
+                            sourceSessionId = sourceId,
+                            name = name,
+                            description = description,
+                        )
+                    )
+                },
+                onDismiss = { viewModel.onIntent(GameDetailIntent.DismissShareSessionDialog) },
+            )
+        }
+
+        // #885 — after a successful create, navigate the user into
+        // the new shared session's detail screen so they can invite
+        // members. Consume the navigation so re-recompositions don't
+        // re-fire it.
+        state.shareSessionCreatedId?.let { newSharedSessionId ->
+            androidx.compose.runtime.LaunchedEffect(newSharedSessionId) {
+                onNavigateToSharedSession?.invoke(newSharedSessionId)
+                viewModel.onIntent(GameDetailIntent.ConsumeShareSessionCreatedNavigation)
+            }
         }
 
         // Collection picker dialog

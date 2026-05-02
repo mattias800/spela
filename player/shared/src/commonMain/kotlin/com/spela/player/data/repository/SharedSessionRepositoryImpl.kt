@@ -30,12 +30,25 @@ class SharedSessionRepositoryImpl(
         apiClient.getPendingInvitationCount().count.toInt()
     }
 
-    override suspend fun createSharedSession(name: String, gameId: String, description: String): Result<SharedSessionDetail> =
+    override suspend fun createSharedSession(
+        name: String,
+        gameId: String,
+        description: String,
+        sourceSessionId: Long?,
+    ): Result<SharedSessionDetail> =
         runCatching {
             // description is retained on the repository API for backwards
             // compatibility but is not sent — the server's
-            // CreateSharedSessionRequest only accepts name + gameId.
-            apiClient.createSharedSession(CreateSharedSessionRequest(name = name, gameId = gameId)).toDomain()
+            // CreateSharedSessionRequest only accepts name + gameId +
+            // sourceSessionId. See #885 for the source-session seeding
+            // semantics.
+            apiClient.createSharedSession(
+                CreateSharedSessionRequest(
+                    name = name,
+                    gameId = gameId,
+                    sourceSessionId = sourceSessionId,
+                ),
+            ).toDomain()
         }
 
     override suspend fun deleteSharedSession(sharedSessionId: String): Result<Unit> = runCatching {

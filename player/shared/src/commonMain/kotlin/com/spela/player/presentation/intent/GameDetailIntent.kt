@@ -74,4 +74,25 @@ sealed interface GameDetailIntent {
      * for the most-recent save, or pass a specific save id for US-3.
      */
     data class CloneSession(val sessionId: String, val name: String? = null, val saveId: Long? = null) : GameDetailIntent
+
+    // Share session — start a new shared session seeded from this
+    // local session's most-recent save state. The dialog opens
+    // capability-gated on PlaySemantics.ResumesFromSaveState (i.e.
+    // there's a save to share). See #885.
+    /** Open the "Share session" dialog for the given source session. */
+    data class ShowShareSessionDialog(val sourceSessionId: String) : GameDetailIntent
+    data object DismissShareSessionDialog : GameDetailIntent
+    /**
+     * Submit the dialog. The handler creates the shared session via
+     * the server's sourceSessionId path, then sets
+     * [com.spela.player.presentation.state.GameDetailState.shareSessionCreatedId]
+     * so the screen can navigate to the new shared session's detail
+     * with the invite sheet auto-opened.
+     */
+    data class CreateSharedSessionFromSession(
+        val sourceSessionId: String,
+        val name: String,
+        val description: String = "",
+    ) : GameDetailIntent
+    data object ConsumeShareSessionCreatedNavigation : GameDetailIntent
 }

@@ -834,7 +834,12 @@ class FakeSharedSessionRepository : SharedSessionRepository {
         Result.success(invitations)
     override suspend fun getPendingInvitationCount(): Result<Int> =
         Result.success(invitations.size)
-    override suspend fun createSharedSession(name: String, gameId: String, description: String): Result<SharedSessionDetail> =
+    override suspend fun createSharedSession(
+        name: String,
+        gameId: String,
+        description: String,
+        sourceSessionId: Long?,
+    ): Result<SharedSessionDetail> =
         Result.success(SharedSessionDetail(id = "new-ss", name = name, gameId = gameId, ownerId = "1", ownerUsername = "player"))
     override suspend fun deleteSharedSession(sharedSessionId: String): Result<Unit> =
         Result.success(Unit)
