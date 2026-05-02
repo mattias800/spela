@@ -22,7 +22,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
@@ -301,16 +300,12 @@ private fun HeroSlide(
                     horizontalAlignment = Alignment.End,
                     verticalArrangement = Arrangement.spacedBy(SpSpacing.Small),
                 ) {
+                    // Text-only by design (#886): the play arrow icon
+                    // misrepresents the action — this button navigates
+                    // to game-detail, it does not start emulation.
                     SpButton(
                         text = "View Game",
                         onClick = onGameSelected,
-                        leadingIcon = {
-                            Icon(
-                                imageVector = Icons.Filled.PlayArrow,
-                                contentDescription = null,
-                                modifier = Modifier.size(SpSpacing.IconDefault),
-                            )
-                        },
                     )
                     HeroBadges(game)
                 }
