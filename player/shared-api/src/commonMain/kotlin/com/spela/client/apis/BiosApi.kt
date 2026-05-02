@@ -111,6 +111,38 @@ open class BiosApi : ApiClient {
 
 
     /**
+     * Download a BIOS bundle archive
+     * Streams a zip of `&lt;biosDir&gt;/&lt;SubDir&gt;/` for a Bundle registry entry. Clients unzip on the device. 404 when the entry isn&#39;t a Bundle or the SubDir hasn&#39;t been populated yet on the server. See #911.
+     * @param filename Sentinel filename of the bundle entry (matches registry FileName).
+     * @return void
+     */
+    open suspend fun downloadBiosArchive(filename: kotlin.String): HttpResponse<Unit> {
+
+        val localVariableAuthNames = listOf<String>()
+
+        val localVariableBody = 
+            io.ktor.client.utils.EmptyContent
+
+        val localVariableQuery = mutableMapOf<String, List<String>>()
+        val localVariableHeaders = mutableMapOf<String, String>()
+
+        val localVariableConfig = RequestConfig<kotlin.Any?>(
+            RequestMethod.GET,
+            "/api/bios/archive/{filename}".replace("{" + "filename" + "}", "$filename"),
+            query = localVariableQuery,
+            headers = localVariableHeaders,
+            requiresAuthentication = false,
+        )
+
+        return request(
+            localVariableConfig,
+            localVariableBody,
+            localVariableAuthNames
+        ).wrap()
+    }
+
+
+    /**
      * List BIOS files
      * Returns registry-driven BIOS file status plus per-console summaries.
      * @return BiosListResponse

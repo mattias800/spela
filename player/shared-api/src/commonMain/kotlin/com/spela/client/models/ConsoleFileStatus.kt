@@ -23,6 +23,7 @@ import kotlinx.serialization.encoding.*
 /**
  * 
  *
+ * @param bundle 
  * @param description 
  * @param fileName 
  * @param md5 
@@ -33,6 +34,8 @@ import kotlinx.serialization.encoding.*
 @Serializable
 
 data class ConsoleFileStatus (
+
+    @SerialName(value = "bundle") @Required val bundle: kotlin.Boolean,
 
     @SerialName(value = "description") @Required val description: kotlin.String,
 

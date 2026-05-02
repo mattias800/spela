@@ -1,6 +1,7 @@
 package api
 
 import (
+	"archive/zip"
 	"bytes"
 	"crypto/md5"
 	"encoding/hex"
@@ -261,6 +262,67 @@ func TestListBiosFiles_BundleEntry_PresentUnderSubDir(t *testing.T) {
 	require.NotNil(t, pspConsole)
 	assert.Equal(t, 1, pspConsole.RequiredPresent, "PSP required count should report 1/1 with sentinel on disk")
 	assert.Equal(t, 1, pspConsole.RequiredTotal)
+}
+
+// #911 — clients downloading a Bundle entry fetch a zip of the
+// SubDir tree rather than a single file. Build the SubDir on disk,
+// hit the archive endpoint, assert the response is a valid zip
+// containing the files we placed.
+func TestDownloadBiosArchive_StreamsZipOfSubDir(t *testing.T) {
+	store, database, router := setupBiosTestEnv(t)
+	token := createBiosTestUser(t, database, "user")
+
+	pspDir := filepath.Join(store.BiosDir, "PPSSPP")
+	require.NoError(t, os.MkdirAll(filepath.Join(pspDir, "flash0", "font"), 0755))
+	require.NoError(t, os.WriteFile(filepath.Join(pspDir, "ppge_atlas.zim"), bytes.Repeat([]byte{0xAB}, 2048), 0644))
+	require.NoError(t, os.WriteFile(filepath.Join(pspDir, "flash0", "font", "ltn0.pgf"), []byte("font-data"), 0644))
+	require.NoError(t, os.WriteFile(filepath.Join(pspDir, "Roboto_Condensed-Regular.ttf"), bytes.Repeat([]byte{0xCD}, 1024), 0644))
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/bios/archive/ppge_atlas.zim", nil)
+	req.Header.Set("Authorization", "Bearer "+token)
+	router.ServeHTTP(w, req)
+
+	require.Equal(t, http.StatusOK, w.Code, "body=%s", w.Body.String())
+	assert.Equal(t, "application/zip", w.Header().Get("Content-Type"))
+
+	zr, err := zip.NewReader(bytes.NewReader(w.Body.Bytes()), int64(w.Body.Len()))
+	require.NoError(t, err)
+
+	got := make(map[string]int)
+	for _, f := range zr.File {
+		got[f.Name] = int(f.UncompressedSize64)
+	}
+	assert.Equal(t, 2048, got["ppge_atlas.zim"])
+	assert.Equal(t, len("font-data"), got["flash0/font/ltn0.pgf"])
+	assert.Equal(t, 1024, got["Roboto_Condensed-Regular.ttf"])
+}
+
+func TestDownloadBiosArchive_404WhenNotBundle(t *testing.T) {
+	_, database, router := setupBiosTestEnv(t)
+	token := createBiosTestUser(t, database, "user")
+
+	w := httptest.NewRecorder()
+	// scph5501 is a single-file PSX BIOS, not a bundle.
+	req := httptest.NewRequest("GET", "/api/bios/archive/scph5501.bin", nil)
+	req.Header.Set("Authorization", "Bearer "+token)
+	router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusNotFound, w.Code)
+}
+
+func TestDownloadBiosArchive_404WhenSubDirMissing(t *testing.T) {
+	_, database, router := setupBiosTestEnv(t)
+	token := createBiosTestUser(t, database, "user")
+
+	// PSP entry is a bundle but the SubDir hasn't been populated on this
+	// fresh test env — the endpoint should 404, not 500 or empty zip.
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/bios/archive/ppge_atlas.zim", nil)
+	req.Header.Set("Authorization", "Bearer "+token)
+	router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusNotFound, w.Code)
 }
 
 func TestListBiosFiles_RequiresAuth(t *testing.T) {

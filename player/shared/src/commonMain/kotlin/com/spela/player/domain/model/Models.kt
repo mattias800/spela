@@ -908,4 +908,5 @@ data class BiosMissingFile(
     val description: String,
     val required: Boolean,
     val subDir: String? = null,
+    val bundle: Boolean = false,
 )

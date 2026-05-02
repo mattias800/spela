@@ -144,6 +144,7 @@ func (h *BiosHandler) HumaListBiosFiles(_ context.Context, _ *ListBiosFilesInput
 				Description: &desc,
 				Required:    e.Required,
 				Status:      "missing",
+				Bundle:      e.Bundle,
 			})
 			continue
 		}
@@ -172,6 +173,7 @@ func (h *BiosHandler) HumaListBiosFiles(_ context.Context, _ *ListBiosFilesInput
 			Description: &desc,
 			Required:    e.Required,
 			Status:      status,
+			Bundle:      e.Bundle,
 		})
 	}
 
@@ -256,6 +258,7 @@ func (h *BiosHandler) HumaListBiosFiles(_ context.Context, _ *ListBiosFilesInput
 				MD5:         e.MD5,
 				Status:      status,
 				SubDir:      e.SubDir,
+				Bundle:      e.Bundle,
 			})
 		}
 

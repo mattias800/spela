@@ -23,6 +23,7 @@ import kotlinx.serialization.encoding.*
 /**
  * 
  *
+ * @param bundle 
  * @param consoleId 
  * @param consoleName 
  * @param description 
@@ -38,6 +39,8 @@ import kotlinx.serialization.encoding.*
 @Serializable
 
 data class BiosFileResponse (
+
+    @SerialName(value = "bundle") @Required val bundle: kotlin.Boolean,
 
     @SerialName(value = "consoleId") @Required val consoleId: kotlin.String?,
 
