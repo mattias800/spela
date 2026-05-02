@@ -73,12 +73,28 @@ private fun DrawScope.drawScaledBitmap(
     val srcHeight = if (isDualScreenSplit && splitY > 0) splitY else bitmap.height
     val srcOffset = IntOffset.Zero
 
+    // The core reports a display aspect ratio for the *full* frame
+    // (both DS screens stacked = 256×384, DAR ≈ 0.667). When we crop
+    // to the top half (splitY = 192), feeding that full-frame DAR
+    // into computeScaledFrame produces a wrong-aspect destination —
+    // it derives `displayWidth = srcHeight × DAR` from the cropped
+    // height, giving a tall narrow shape (128×192) instead of the
+    // correct 256×192. The visible result is the top screen
+    // horizontally squashed / vertically stretched. Compensate by
+    // scaling the DAR up by the inverse of the crop ratio so the
+    // arithmetic lands on the cropped source's true aspect. See #887.
+    val effectiveDar = if (isDualScreenSplit && splitY > 0 && displayAspectRatio > 0f) {
+        displayAspectRatio * (bitmap.height.toFloat() / splitY)
+    } else {
+        displayAspectRatio
+    }
+
     val scaled = computeScaledFrame(
         srcWidth = srcWidth,
         srcHeight = srcHeight,
         canvasWidth = size.width,
         canvasHeight = size.height,
-        displayAspectRatio = displayAspectRatio,
+        displayAspectRatio = effectiveDar,
     )
 
     val dstOffset = IntOffset(scaled.offsetX, scaled.offsetY)
