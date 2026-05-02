@@ -43,6 +43,14 @@ static struct {
 
     /* GPU renderer (NULL = software path) */
     gpu_renderer_t *gpu_renderer;
+
+    /* When true, video_refresh_callback returns early. Set before
+     * retro_deinit so a core that flushes a final frame during its
+     * own shutdown (Play! libretro is the canonical case — its
+     * MailBox flush calls FlipImpl → video_cb on data the GS handler
+     * has already partially released) doesn't crash inside our
+     * memcpy. (#916) */
+    bool shutting_down;
 } video_state = {0};
 
 void video_init(void) {
@@ -52,7 +60,12 @@ void video_init(void) {
     video_state.height = 0;
     video_state.pitch = 0;
     video_state.pixel_format = RETRO_PIXEL_FORMAT_0RGB1555; /* default */
+    video_state.shutting_down = false;
     /* gpu_renderer is not touched here -- managed externally */
+}
+
+void video_set_shutting_down(void) {
+    video_state.shutting_down = true;
 }
 
 void video_deinit(void) {
@@ -92,6 +105,8 @@ gpu_renderer_t *video_get_gpu_renderer(void) {
  */
 void video_refresh_callback(const void *data, unsigned width, unsigned height, size_t pitch) {
     if (!data) return;
+    /* See video_state.shutting_down. */
+    if (video_state.shutting_down) return;
 
     if (data == RETRO_HW_FRAME_BUFFER_VALID && g_core.hw_render_enabled) {
         /*

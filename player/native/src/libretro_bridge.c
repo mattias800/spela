@@ -1195,6 +1195,13 @@ JNI_FUNC(void, nativeDeinit)(JNIEnv *env, jobject thiz) {
 
     /* Step 3: retro_deinit */
     if (g_core.initialized) {
+        /* Cores like Play! flush a final frame from inside retro_deinit
+         * (CGSH_OpenGL_Libretro::Release → MailBox flush → FlipImpl →
+         * video_cb), and the data they pass references GS-handler
+         * state that's already partially released. Drop frames from
+         * here on so video_refresh_callback's memcpy doesn't deref
+         * freed memory. (#916) */
+        video_set_shutting_down();
         g_core.retro_deinit();
         g_core.initialized = false;
     }
