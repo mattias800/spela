@@ -100,6 +100,11 @@
  * in HW render callbacks instead of the handle parameter. */
 static struct gpu_renderer *g_hw_renderer = NULL;
 
+/* Mirror of r->extension_filter_enabled for the static wrapper functions
+ * (which have no access to the gpu_renderer instance). Set via
+ * gpu_renderer_set_extension_filter_enabled. */
+static bool g_extension_filter_enabled = true;
+
 /* Push constant data passed to vertex + fragment shaders.
  * Layout must match GLSL push_constant block exactly (std430 alignment).
  * vec2 requires 8-byte alignment, so pad after flip_y. */
@@ -208,6 +213,12 @@ struct gpu_renderer {
     /* Context negotiation (set by core before device creation) */
     const struct retro_hw_render_context_negotiation_interface_vulkan *vk_negotiation;
 
+    /* When true (default), wrapped_vkEnumerateDeviceExtensionProperties
+     * hides extensions in `filtered_extensions[]` from the core.
+     * Cores that need a filtered extension (e.g. PPSSPP — see #916)
+     * disable this via gpu_renderer_set_extension_filter_enabled. */
+    bool extension_filter_enabled;
+
     /* Vulkan HW render state (Phase 4) */
     bool hw_render_active;
     bool hw_offscreen_frame_ready; /* offscreen HW frame readback is valid */
@@ -282,28 +293,46 @@ gpu_renderer_t *gpu_renderer_create(int backend) {
     if (!r) return NULL;
     r->backend = backend;
     r->current_shader = GPU_SHADER_NONE;
+    r->extension_filter_enabled = true;
     return r;
+}
+
+void gpu_renderer_set_extension_filter_enabled(gpu_renderer_t *r, bool enabled) {
+    if (r) r->extension_filter_enabled = enabled;
+    g_extension_filter_enabled = enabled;
+    VK_LOGI("Extension filter for problematic Vulkan extensions: %s",
+            enabled ? "enabled" : "disabled");
 }
 
 void gpu_renderer_destroy(gpu_renderer_t *r) {
     if (!r) return;
     if (g_hw_renderer == r) g_hw_renderer = NULL;
-    if (r->device) {
-        vkDeviceWaitIdle(r->device);
-    }
-    gpu_renderer_deinit_surface(r);
 
-    if (r->device) {
-        if (r->vk_negotiation && r->vk_negotiation->destroy_device) {
-            r->vk_negotiation->destroy_device();
+    /* When a core used the negotiation interface to create the
+     * VkInstance/VkDevice (PPSSPP, Dolphin), it owns those handles
+     * and destroys them as part of retro_deinit — which already ran
+     * on the emulation thread before we got here. The instance/
+     * device pointers we cached are now dangling; calling any
+     * vkXxx on them crashes the driver. Skip ALL Vulkan teardown
+     * in this case and let process exit reclaim resources.
+     *
+     * The native_window is still ours and gets released below. (#916) */
+    bool negotiation_owns_device = (r->vk_negotiation != NULL);
+
+    if (!negotiation_owns_device) {
+        if (r->device) {
+            vkDeviceWaitIdle(r->device);
         }
-        vkDestroyDevice(r->device, NULL);
-    }
-    if (r->surface) {
-        vkDestroySurfaceKHR(r->instance, r->surface, NULL);
-    }
-    if (r->instance) {
-        vkDestroyInstance(r->instance, NULL);
+        gpu_renderer_deinit_surface(r);
+        if (r->device) {
+            vkDestroyDevice(r->device, NULL);
+        }
+        if (r->surface) {
+            vkDestroySurfaceKHR(r->instance, r->surface, NULL);
+        }
+        if (r->instance) {
+            vkDestroyInstance(r->instance, NULL);
+        }
     }
 #ifdef __ANDROID__
     if (r->native_window) {
@@ -863,11 +892,15 @@ static void hw_vulkan_wait_sync_index(void *handle) {
     (void)handle;
     gpu_renderer_t *r = g_hw_renderer;
     if (!r || !r->device) return;
+    /* Short timeout — fence is signaled by gpu_renderer_hw_render_frame
+     * (our compositor), which only runs AFTER PPSSPP submits a frame.
+     * UINT64_MAX deadlocks because PPSSPP can't submit until this
+     * returns. 2s+ caused visible stutter (every cycle paid the
+     * timeout). 100ms breaks ties fast — if the previous frame's GPU
+     * work isn't done by now we're already lagging anyway. */
     VkResult wr = vkWaitForFences(r->device, 1, &r->in_flight_fences[r->current_frame],
-                    VK_TRUE, (uint64_t)2000000000); /* 2s timeout */
-    if (wr == VK_TIMEOUT) {
-        VK_LOGE("wait_sync_index: TIMEOUT on fence slot %u", r->current_frame);
-    } else if (wr != VK_SUCCESS) {
+                    VK_TRUE, (uint64_t)100000000); /* 100ms */
+    if (wr != VK_SUCCESS && wr != VK_TIMEOUT) {
         VK_LOGE("wait_sync_index: fence wait error %d slot %u", wr, r->current_frame);
     }
 }
@@ -2291,6 +2324,11 @@ static VKAPI_ATTR VkResult VKAPI_CALL wrapped_vkEnumerateDeviceExtensionProperti
     if (result != VK_SUCCESS || !pProperties)
         return result;
 
+    /* Skip filtering when the active core has been marked as needing the
+     * normally-hidden extensions (e.g. PPSSPP — see #916). */
+    if (!g_extension_filter_enabled)
+        return result;
+
     /* Filter out problematic extensions */
     uint32_t write_idx = 0;
     for (uint32_t i = 0; i < *pPropertyCount; i++) {
@@ -2445,6 +2483,30 @@ static VKAPI_ATTR VkResult VKAPI_CALL stub_vkQueuePresentKHR(
     return VK_SUCCESS;
 }
 
+/* #916 — Wrapped vkGetPhysicalDeviceSurfaceCapabilitiesKHR that calls the
+ * real driver, then overrides currentTransform to IDENTITY before
+ * returning. Cores that consult this (PPSSPP libretro Vulkan, in particular)
+ * use currentTransform to decide their swapchain pre-rotation; on Android
+ * the Adreno driver reports ROTATE_90 for our landscape SurfaceView,
+ * which makes PPSSPP rotate its rendered frame 90° — visible as a 180°
+ * rotation after Android's display compositor finishes. We want to
+ * present landscape, unrotated, and our gpu_renderer's own swapchain
+ * uses IDENTITY for the same reason (see create_swapchain comment).
+ */
+static VKAPI_ATTR VkResult VKAPI_CALL wrapped_vkGetPhysicalDeviceSurfaceCapabilitiesKHR(
+    VkPhysicalDevice physicalDevice, VkSurfaceKHR surface,
+    VkSurfaceCapabilitiesKHR *pSurfaceCapabilities)
+{
+    VkResult res = vkGetPhysicalDeviceSurfaceCapabilitiesKHR(
+        physicalDevice, surface, pSurfaceCapabilities);
+    if (res == VK_SUCCESS && pSurfaceCapabilities) {
+        if (pSurfaceCapabilities->supportedTransforms & VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR) {
+            pSurfaceCapabilities->currentTransform = VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR;
+        }
+    }
+    return res;
+}
+
 /* Forward declaration — defined below but needed by wrapped_vkGetInstanceProcAddr */
 static VKAPI_ATTR PFN_vkVoidFunction VKAPI_CALL wrapped_vkGetDeviceProcAddr(
     VkDevice device, const char *pName);
@@ -2467,6 +2529,9 @@ static VKAPI_ATTR PFN_vkVoidFunction VKAPI_CALL wrapped_vkGetInstanceProcAddr(
 {
     if (strcmp(pName, "vkEnumerateDeviceExtensionProperties") == 0) {
         return (PFN_vkVoidFunction)wrapped_vkEnumerateDeviceExtensionProperties;
+    }
+    if (strcmp(pName, "vkGetPhysicalDeviceSurfaceCapabilitiesKHR") == 0) {
+        return (PFN_vkVoidFunction)wrapped_vkGetPhysicalDeviceSurfaceCapabilitiesKHR;
     }
     if (strcmp(pName, "vkGetDeviceProcAddr") == 0) {
         return (PFN_vkVoidFunction)wrapped_vkGetDeviceProcAddr;
