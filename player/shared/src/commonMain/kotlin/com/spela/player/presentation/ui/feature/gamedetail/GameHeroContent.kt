@@ -319,8 +319,18 @@ fun GameHeroContent(
             else -> null
         }
         if (statusText != null) {
+            // fillMaxWidth + widthIn cap the column at 320dp wide and
+            // give it a stable measured width every recomposition.
+            // Without fillMaxWidth, the column's intrinsic width tracks
+            // the widest child (the bar's bytes-downloaded / speed text
+            // row), which changes with every progress emission and
+            // ripples into the bar's fillMaxWidth — contributing to the
+            // #894 reflow-per-frame symptom on top of the bar-height
+            // latch fix in SpDownloadProgressBar.
             Column(
-                modifier = Modifier.widthIn(max = 320.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .widthIn(max = 320.dp),
                 verticalArrangement = Arrangement.spacedBy(SpSpacing.XSmall),
             ) {
                 Row(
