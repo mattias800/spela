@@ -183,9 +183,16 @@ fun GameHeroContent(
 
                         }
                         if (hasSaves && onPlayFresh != null) {
+                            // Renamed from "New Game" to disambiguate
+                            // from the top-button label which now also
+                            // says "New game" when no session exists
+                            // (#900). The fresh-playthrough action
+                            // wants distinct phrasing — "Start fresh
+                            // playthrough" reads as a deliberate
+                            // override of the existing save state.
                             add(SpSplitButtonMenuItem(
-                                label = "New Game",
-                                description = "Start a separate playthrough from scratch",
+                                label = "Start fresh playthrough",
+                                description = "Keep your existing saves, start a separate playthrough from scratch",
                             ) { onPlayFresh(gameId) })
                         }
                         if (onCreateNetplay != null && supportsNetplay) {
@@ -195,15 +202,18 @@ fun GameHeroContent(
                     }
                     val hasRequiredBiosMissing = missingBiosFiles.any { it.required }
                     val isSyncing = syncState != null
-                    // Three-state label per #884: NoSession → "Play",
-                    // ResumesFromSaveState → "Resume" (auto-load on
-                    // launch), LaunchesFresh → "Continue" (session
-                    // exists but engine starts at title screen, e.g.
-                    // ScummVM or user opted out of save states).
+                    // Three-state label per #884 / #900:
+                    //   NoSession → "New game" (no save to pick up
+                    //     from — the user is starting fresh)
+                    //   ResumesFromSaveState → "Resume" (auto-load
+                    //     on launch — user lands mid-frame)
+                    //   LaunchesFresh → "Continue" (session exists
+                    //     but engine starts at title screen, e.g.
+                    //     ScummVM or user opted out of save states)
                     // The single-source-of-truth resolver lives in
                     // GameDetailState.playSemantics.
                     val playLabel = when (state.playSemantics) {
-                        com.spela.player.domain.model.PlaySemantics.NoSession -> "Play"
+                        com.spela.player.domain.model.PlaySemantics.NoSession -> "New game"
                         com.spela.player.domain.model.PlaySemantics.ResumesFromSaveState -> "Resume"
                         com.spela.player.domain.model.PlaySemantics.LaunchesFresh -> "Continue"
                     }

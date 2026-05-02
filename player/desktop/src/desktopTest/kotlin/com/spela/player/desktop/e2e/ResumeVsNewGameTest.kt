@@ -16,12 +16,14 @@ import kotlin.test.assertTrue
 /**
  * E2E tests for the resume-vs-new-game split button menu on the game detail screen.
  *
- * When a game has existing sessions (saves), the split button should show:
+ * When a game has existing sessions (saves), the split button shows:
  * - Primary button: "Resume" (loads last save)
  * - Menu item: "Continue from Title Screen" (skips auto-load, reuses session)
- * - Menu item: "New Game" (skips auto-load, forces new session)
+ * - Menu item: "Start fresh playthrough" (skips auto-load, forces new session — was
+ *   "New Game" before #900; renamed to disambiguate from the top-button label
+ *   which now also says "New game" when no session exists)
  *
- * When no sessions exist, only "Play" and "Delete Download" appear.
+ * When no sessions exist, only "New game" and "Delete Download" appear.
  */
 @OptIn(ExperimentalCoroutinesApi::class, ExperimentalTestApi::class)
 class ResumeVsNewGameTest {
@@ -95,7 +97,7 @@ class ResumeVsNewGameTest {
         advanceQuick(harness)
 
         // "New Game" should be visible
-        onNodeWithText("New Game").assertIsDisplayed()
+        onNodeWithText("Start fresh playthrough").assertIsDisplayed()
     }
 
     @Test
@@ -112,7 +114,7 @@ class ResumeVsNewGameTest {
         advanceQuick(harness)
 
         // "New Game" should NOT exist
-        onNodeWithText("New Game").assertDoesNotExist()
+        onNodeWithText("Start fresh playthrough").assertDoesNotExist()
     }
 
     // ---- Primary button label changes ----
@@ -131,7 +133,7 @@ class ResumeVsNewGameTest {
     }
 
     @Test
-    fun primaryButtonShowsPlayWhenNoSaves() = runComposeUiTest {
+    fun primaryButtonShowsNewGameWhenNoSaves() = runComposeUiTest {
         val harness = createLoggedInHarness()
         harness.downloadRepo.preCacheGame("1")
         // No sessions
@@ -139,8 +141,12 @@ class ResumeVsNewGameTest {
         setContent { harness.App() }
         navigateToGameDetail(harness, "1")
 
-        // Primary button should read "Play"
-        onNodeWithText("Play").assertIsDisplayed()
+        // Primary button should read "New game" (was "Play" before #900;
+        // we say "New game" so the user knows there's no save state to
+        // resume — same verb as the menu's fresh-playthrough action,
+        // matching honestly because the action IS the same when no
+        // session exists yet).
+        onNodeWithText("New game").assertIsDisplayed()
     }
 
     // ---- Intent dispatch verification ----
@@ -190,7 +196,7 @@ class ResumeVsNewGameTest {
         // Open menu and click "New Game"
         onNodeWithContentDescription("More options").performClick()
         advanceQuick(harness)
-        onNodeWithText("New Game").performClick()
+        onNodeWithText("Start fresh playthrough").performClick()
         advance(harness)
 
         // Should dispatch PrepareLaunch with skipAutoLoad=true, forceNewSession=true
@@ -260,7 +266,7 @@ class ResumeVsNewGameTest {
         advanceQuick(harness)
 
         // The subtitle description should be visible
-        onNodeWithText("Start a separate playthrough from scratch").assertIsDisplayed()
+        onNodeWithText("Keep your existing saves, start a separate playthrough from scratch").assertIsDisplayed()
     }
 
     // ---- Delete Download still present ----
