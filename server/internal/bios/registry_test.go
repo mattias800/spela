@@ -57,10 +57,11 @@ func TestByConsole(t *testing.T) {
 		{"Saturn has 2 entries", "sat", 2},
 		{"Dreamcast has 2 entries", "dc", 2},
 		{"NDS has 3 entries", "nds", 3},
-		// Newly registered missing-BIOS consoles — see #889 / #890 / #891.
+		// Newly registered missing-BIOS consoles — see #889 / #890 / #891 / #906.
 		{"FDS has 1 entry (disksys.rom)", "fds", 1},
 		{"Odyssey 2 has 4 entries", "o2", 4},
 		{"Channel F has 3 entries", "chaf", 3},
+		{"PSP has 1 entry (ppge_atlas.zim)", "psp", 1},
 		{"Unknown console returns empty", "unknown", 0},
 	}
 	for _, tt := range tests {
@@ -80,7 +81,7 @@ func TestConsoleIDs(t *testing.T) {
 	for _, id := range ids {
 		idSet[id] = true
 	}
-	for _, expected := range []string{"psx", "sat", "scd", "dc", "gba", "nds", "pce", "pcecd", "neogeo", "neocd", "lynx", "3do", "amiga", "pcfx", "cv", "cdi", "fds", "o2", "chaf"} {
+	for _, expected := range []string{"psx", "sat", "scd", "dc", "gba", "nds", "pce", "pcecd", "neogeo", "neocd", "lynx", "3do", "amiga", "pcfx", "cv", "cdi", "fds", "o2", "chaf", "psp"} {
 		assert.True(t, idSet[expected], "expected console %s in registry", expected)
 	}
 }
@@ -130,6 +131,21 @@ func TestFds_DisksysMD5(t *testing.T) {
 		}
 	}
 	t.Fatal("fds/disksys.rom not found")
+}
+
+// PSP — ppge_atlas.zim is required and must land in the PPSSPP/
+// subdir for the libretro core to find it. Lock the published MD5.
+// See #906.
+func TestPsp_PpgeAtlasZim(t *testing.T) {
+	for _, e := range ByConsole("psp") {
+		if e.FileName == "ppge_atlas.zim" {
+			assert.True(t, e.Required, "ppge_atlas.zim must be required")
+			assert.Equal(t, "866855cc330b9b95cc69135fb7b41d38", e.MD5)
+			assert.Equal(t, "PPSSPP", e.SubDir)
+			return
+		}
+	}
+	t.Fatal("psp/ppge_atlas.zim not found")
 }
 
 func TestRepoFolder(t *testing.T) {
