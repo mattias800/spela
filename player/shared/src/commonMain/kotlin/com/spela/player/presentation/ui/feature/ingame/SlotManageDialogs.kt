@@ -50,9 +50,15 @@ fun InGameSlotActionsSheet(
     val title = buildString {
         append("Slot ")
         append(slot)
-        if (!slotInfo?.name.isNullOrBlank()) {
+        // `slotInfo?.name.isNullOrBlank()` returns false either when
+        // slotInfo itself is null OR when its name is null/blank — so
+        // smart-casting slotInfo to non-null inside the negated branch
+        // is guaranteed by the previous expression already. Explicit
+        // null-check eliminates the !! the compiler was complaining
+        // about while keeping the same evaluation order.
+        if (slotInfo != null && !slotInfo.name.isNullOrBlank()) {
             append(" — ")
-            append(slotInfo!!.name)
+            append(slotInfo.name)
         } else if (slotInfo?.timestamp != null) {
             append(" — ")
             append(slotInfo.timestamp)
