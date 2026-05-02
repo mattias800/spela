@@ -923,13 +923,21 @@ func SeedConsoles(db *gorm.DB) error {
 		{Name: "Nintendo Game & Watch", Abbreviation: "GW", Extensions: ".mgw", DefaultCore: "gw", EmulatorJSCore: "", FolderName: "gameandwatch", ColorTheme: "#c0392b", CoverAspect: "1:1", Generation: 1, SaveStateSupport: true, SaveStatePolicy: SaveStatePolicySmall, Playable: true},
 		// Home Computers (generation = 100)
 		{Name: "Atari 8-bit", Abbreviation: "A800", Extensions: ".a52,.atr,.atx,.bas,.bin,.car,.cas,.com,.rom,.xex,.xfd", DefaultCore: "atari800", EmulatorJSCore: "", FolderName: "atari800", ColorTheme: "#8b4513", Generation: 100, SaveStateSupport: true, SaveStatePolicy: SaveStatePolicySmall, Playable: true},
-		{Name: "Atari ST", Abbreviation: "ATARIST", Extensions: ".st,.stx,.msa,.dim,.ipf,.m3u", DefaultCore: "hatari", EmulatorJSCore: "", FolderName: "atarist", ColorTheme: "#8b4513", Generation: 100, SaveStateSupport: true, SaveStatePolicy: SaveStatePolicySmall, Playable: true},
+		// Atari ST: .ipf intentionally excluded — same proprietary
+		// CAPSImg requirement as Amiga; the Hatari core can be built
+		// with CAPSImg, but our distribution doesn't include it. See #892.
+		{Name: "Atari ST", Abbreviation: "ATARIST", Extensions: ".st,.stx,.msa,.dim,.m3u", DefaultCore: "hatari", EmulatorJSCore: "", FolderName: "atarist", ColorTheme: "#8b4513", Generation: 100, SaveStateSupport: true, SaveStatePolicy: SaveStatePolicySmall, Playable: true},
 		{Name: "Commodore 64", Abbreviation: "C64", Extensions: ".d64,.t64,.prg,.crt,.tap", DefaultCore: "vice_x64sc", EmulatorJSCore: "vice_x64sc", FolderName: "c64", ColorTheme: "#6c5eb5", Generation: 100, SaveStateSupport: true, SaveStatePolicy: SaveStatePolicySmall, Playable: true},
 		{Name: "Commodore 128", Abbreviation: "C128", Extensions: ".d64,.d71,.d81,.t64,.prg,.crt", DefaultCore: "vice_x128", EmulatorJSCore: "vice_x128", FolderName: "c128", ColorTheme: "#6c5eb5", Generation: 100, SaveStateSupport: true, SaveStatePolicy: SaveStatePolicySmall, Playable: true},
 		{Name: "Commodore PET", Abbreviation: "PET", Extensions: ".prg,.d64,.t64", DefaultCore: "vice_xpet", EmulatorJSCore: "vice_xpet", FolderName: "pet", ColorTheme: "#6c5eb5", Generation: 100, SaveStateSupport: true, SaveStatePolicy: SaveStatePolicySmall, Playable: true},
 		{Name: "Commodore Plus/4", Abbreviation: "PLUS4", Extensions: ".prg,.d64,.t64", DefaultCore: "vice_xplus4", EmulatorJSCore: "vice_xplus4", FolderName: "plus4", ColorTheme: "#6c5eb5", Generation: 100, SaveStateSupport: true, SaveStatePolicy: SaveStatePolicySmall, Playable: true},
 		{Name: "Commodore VIC-20", Abbreviation: "VIC20", Extensions: ".prg,.d64,.t64,.crt", DefaultCore: "vice_xvic", EmulatorJSCore: "vice_xvic", FolderName: "vic20", ColorTheme: "#6c5eb5", Generation: 100, SaveStateSupport: true, SaveStatePolicy: SaveStatePolicySmall, Playable: true},
-		{Name: "Commodore Amiga", Abbreviation: "AMIGA", Extensions: ".adf,.hdf,.lha,.ipf,.dms,.zip", DefaultCore: "puae", EmulatorJSCore: "puae", FolderName: "amiga", ColorTheme: "#6c5eb5", Generation: 100, SaveStateSupport: true, SaveStatePolicy: SaveStatePolicySmall, Playable: true},
+		// Amiga: .ipf intentionally excluded — IPF support requires the
+		// proprietary CAPSImg library that our PUAE builds don't ship.
+		// Indexing IPF files surfaces them in the library and they fail
+		// silently at launch (Kickstart boots, no game disk loads).
+		// Users with .ipf files should convert to .adf or remove. See #892.
+		{Name: "Commodore Amiga", Abbreviation: "AMIGA", Extensions: ".adf,.hdf,.lha,.dms,.zip", DefaultCore: "puae", EmulatorJSCore: "puae", FolderName: "amiga", ColorTheme: "#6c5eb5", Generation: 100, SaveStateSupport: true, SaveStatePolicy: SaveStatePolicySmall, Playable: true},
 		{Name: "Amiga Demos", Abbreviation: "ADEMO", Extensions: ".adf,.hdf,.lha,.dms,.zip", DefaultCore: "puae", EmulatorJSCore: "puae", FolderName: "amiga-demos", ColorTheme: "#8b7fc7", Generation: 100, SaveStateSupport: false, SaveStatePolicy: SaveStatePolicySmall, Playable: true},
 		{Name: "DOS", Abbreviation: "DOS", Extensions: ".zip,.dosz,.conf", DefaultCore: "dosbox_pure", EmulatorJSCore: "dosbox_pure", FolderName: "dos", ColorTheme: "#000000", Generation: 100, SaveStateSupport: true, SaveStatePolicy: SaveStatePolicySmall, Playable: true},
 		{Name: "DOS Demos", Abbreviation: "DDEMO", Extensions: ".zip,.dosz,.conf", DefaultCore: "dosbox_pure", EmulatorJSCore: "dosbox_pure", FolderName: "dos-demos", ColorTheme: "#333333", Generation: 100, SaveStateSupport: false, SaveStatePolicy: SaveStatePolicySmall, Playable: true},

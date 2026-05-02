@@ -192,7 +192,11 @@ var RomExtensions = map[string]bool{
 	".col": true,
 	".d64": true, ".d71": true, ".d81": true, ".t64": true, ".prg": true, ".crt": true, ".tap": true,
 	".conf": true, ".dosz": true,
-	".adf": true, ".hdf": true, ".lha": true, ".ipf": true, ".dms": true,
+	// .ipf intentionally excluded — proprietary CAPSImg requirement
+	// (#892). PUAE/Hatari builds without CAPSImg silently fail to load
+	// IPF disks; better to skip indexing them than to surface a broken
+	// library entry.
+	".adf": true, ".hdf": true, ".lha": true, ".dms": true,
 	".min": true,
 	".j64": true, ".jag": true,
 	".32x": true,
@@ -331,9 +335,9 @@ var discPattern = regexp.MustCompile(`(?i)[\(\[]\s*(?:disc|disk|cd)\s*(\d+)\s*[\
 // extension, so we anchor on `<space><LETTER><end>` (the extension is
 // stripped before this is matched). Captures the letter in group 1.
 //
-// Only checked for .adf / .ipf files (Amiga floppy formats); other
-// consoles' ROM names occasionally end in a letter for legitimate
-// non-disc reasons.
+// Only checked for .adf files (Amiga floppy format); other consoles'
+// ROM names occasionally end in a letter for legitimate non-disc
+// reasons. .ipf files are no longer indexed (see #892).
 var amigaDiscPattern = regexp.MustCompile(`\s([A-Z])$`)
 
 // trackPattern matches CD audio track markers in filenames, e.g. "(Track 06)", "(Track 1)".
@@ -973,7 +977,7 @@ func (s *Scanner) scanMultiDisc(dir string, consoleMap map[string]*db.Console, f
 			baseTitle := stripDiscMarker(nameNoExt)
 			key := discGroupKey{Dir: parentDir, Title: baseTitle}
 			discGroups[key] = append(discGroups[key], path)
-		} else if (ext == ".adf" || ext == ".ipf") && amigaDiscPattern.MatchString(strings.TrimSuffix(info.Name(), ext)) {
+		} else if ext == ".adf" && amigaDiscPattern.MatchString(strings.TrimSuffix(info.Name(), ext)) {
 			// Amiga floppy convention: "Title (Pub) A.adf" / "Title (Pub) B.adf" — letter suffix.
 			parentDir := filepath.Dir(path)
 			nameNoExt := strings.TrimSuffix(info.Name(), filepath.Ext(info.Name()))
