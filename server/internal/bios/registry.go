@@ -111,6 +111,32 @@ var registry = []Entry{
 	{ConsoleID: "cdi", FileName: "cdimono2.zip", Description: "CD-i Mono-II BIOS", MD5: "", Required: false, OverrideURL: "https://archive.org/download/MAME208RomsOnlyMerged/cdimono2.zip", SubDir: "same_cdi/bios"},
 	{ConsoleID: "cdi", FileName: "cdibios.zip", Description: "CD-i BIOS (generic)", MD5: "", Required: false, OverrideURL: "https://archive.org/download/MAME208RomsOnlyMerged/cdibios.zip", SubDir: "same_cdi/bios"},
 
+	// Famicom Disk System (FDS) — nestopia_libretro.info. NES proper
+	// doesn't need a BIOS, but disksys.rom is mandatory for any .fds
+	// disk image to boot. Without this entry registered, the missing-
+	// BIOS UI couldn't fire and FDS launches surfaced a generic
+	// "Failed to start emulation" error (#891).
+	{ConsoleID: "fds", FileName: "disksys.rom", Description: "Famicom Disk System BIOS", MD5: "ca30b50f880eb660a320674ed365ef7a", Required: true},
+
+	// Magnavox Odyssey 2 / Philips Videopac (O2) — o2em_libretro.info.
+	// o2rom.bin is required by the core to boot any cartridge; the
+	// other three are regional / variant BIOSes the core can use when
+	// present. MD5s are not published in o2em_libretro.info — match
+	// only by filename. See #889.
+	{ConsoleID: "o2", FileName: "o2rom.bin", Description: "Odyssey 2 BIOS (US, G7000)", MD5: "", Required: true},
+	{ConsoleID: "o2", FileName: "c52.bin", Description: "Videopac French BIOS (G7000)", MD5: "", Required: false},
+	{ConsoleID: "o2", FileName: "g7400.bin", Description: "Videopac+ European BIOS (G7400)", MD5: "", Required: false},
+	{ConsoleID: "o2", FileName: "jopac.bin", Description: "JOPAC BIOS (G7400 variant)", MD5: "", Required: false},
+
+	// Fairchild Channel F (CHAF) — freechaf_libretro.info. Both
+	// sl31253.bin and sl31254.bin are required — Channel F can't
+	// start without either chip ROM, and the symptom on
+	// missing-BIOS-without-registry-entry is a silent black screen
+	// (no error, no missing-BIOS prompt). See #890.
+	{ConsoleID: "chaf", FileName: "sl31253.bin", Description: "Channel F system ROM 1 (chip 1)", MD5: "", Required: true},
+	{ConsoleID: "chaf", FileName: "sl31254.bin", Description: "Channel F system ROM 2 (chip 2)", MD5: "", Required: true},
+	{ConsoleID: "chaf", FileName: "sl90025.bin", Description: "Channel F II system ROM", MD5: "", Required: false},
+
 	// ScummVM — Roland MT-32 / CM-32L MIDI ROMs. The libretro scummvm core
 	// hardcodes its "extrapath" to <system_dir>/scummvm/extra/, so that's
 	// where ScummVM picks up these ROMs to enable MT-32 sound emulation
