@@ -43,6 +43,12 @@ interface GameHeroProps {
   achievementCount?: number;
   achievementUnlocked?: number;
   biosMissing?: boolean;
+  /**
+   * Three-state hero label per #900 — "New game" / "Resume" / "Continue".
+   * Resolved by the host page from sessions + console saveStateSupport
+   * + user save-state policy via `lib/play-semantics`.
+   */
+  playLabel?: string;
   onPlay: () => void;
   onScrape: () => void;
   onRefreshAchievements?: () => void;
@@ -67,6 +73,7 @@ export function GameHero({
   achievementCount,
   achievementUnlocked,
   biosMissing,
+  playLabel,
   onPlay,
   onScrape,
   onRefreshAchievements,
@@ -287,13 +294,13 @@ export function GameHero({
                     biosMissing
                       ? "Missing required BIOS files"
                       : canPlayInBrowser
-                        ? "Play in Browser"
+                        ? "Play in browser"
                         : `${game.consoleName} is not supported for browser play`
                   }
                   data-testid="play-in-browser-btn"
                 >
                   <Play className="h-5 w-5" />
-                  Play in Browser
+                  {playLabel ?? "New game"}
                 </Button>
               ) : (
                 <Button

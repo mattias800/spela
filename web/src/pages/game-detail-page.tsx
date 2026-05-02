@@ -33,6 +33,13 @@ import { SharedSavesList } from "@/features/game-detail/components/shared-saves-
 import { GameActiveSharedSessions } from "@/features/shared-sessions/components/game-active-shared-sessions";
 import { GameSessions } from "@/features/sessions/components/game-sessions";
 import { useGameSessions } from "@/hooks/use-sessions";
+import { useUserPreferences } from "@/hooks/use-preferences";
+import {
+  effectiveSaveStateChoice,
+  playSemanticsLabel,
+  resolvePlaySemantics,
+  type SaveStateChoice,
+} from "@/lib/play-semantics";
 import { GameChallenges } from "@/features/challenges/components/game-challenges";
 import {
   useGameAchievements,
@@ -139,6 +146,7 @@ export function GameDetailPage() {
 
   const { data: biosData } = useBiosStatus();
   const { data: sessions } = useGameSessions(id ?? "");
+  const { data: userPreferences } = useUserPreferences();
   const { data: gameAchievements } = useGameAchievements(id);
   const { data: achievementProgress } = useGameAchievementProgress(id);
   const { data: gameSeries } = useGameSeries(id);
@@ -151,6 +159,34 @@ export function GameDetailPage() {
     ? achievementProgress.length
     : undefined;
   const isDemo = consoleInfo?.abbreviation === "ADEMO" || consoleInfo?.abbreviation === "DDEMO";
+
+  // #900 — three-state hero label parity with the player app. Mirror
+  // the same resolver inputs (sessions + console saveStateSupport +
+  // user save-state policy). Resolves to "New game" when no session,
+  // "Resume" when a save will auto-load, "Continue" when a session
+  // exists but engine starts at the title screen (ScummVM, demo
+  // cores, or user-disabled).
+  const playLabel = (() => {
+    const consoleAbbr = consoleInfo?.abbreviation ?? "";
+    const consolePolicies =
+      (userPreferences?.consoleSaveStatePolicies as
+        | Record<string, SaveStateChoice>
+        | undefined) ?? {};
+    const gameOverride = (userPreferences?.gameSaveStatePolicies?.[
+      game?.id ?? ""
+    ] ?? null) as SaveStateChoice | null;
+    const effective = effectiveSaveStateChoice(
+      consoleAbbr,
+      consolePolicies,
+      gameOverride,
+    );
+    const semantics = resolvePlaySemantics({
+      hasSession: (sessions?.length ?? 0) > 0,
+      consoleSaveStateSupport: consoleInfo?.saveStateSupport ?? false,
+      effectiveChoice: effective,
+    });
+    return playSemanticsLabel(semantics);
+  })();
   const [showCollectionPicker, setShowCollectionPicker] = useState(false);
   const [showScrapeMatch, setShowScrapeMatch] = useState(false);
   const [showReplaceRom, setShowReplaceRom] = useState(false);
@@ -223,6 +259,7 @@ export function GameDetailPage() {
         achievementCount={achievementCount}
         achievementUnlocked={achievementUnlocked}
         biosMissing={showBiosWarning}
+        playLabel={playLabel}
         onPlay={() => navigate(`/games/${game.id}/play/${sessions && sessions.length > 0 ? sessions[0].id : "new"}`)}
         onScrape={() => scrapeGame.mutate(game.id)}
         onRefreshAchievements={() => refreshAchievements.mutate(game.id)}
