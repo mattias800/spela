@@ -96,6 +96,15 @@ fun GameHeroContent(
     val supportsNetplay = game.playable && game.consoleId.lowercase() in NETPLAY_SUPPORTED_CONSOLES
     var showGameSettingsSheet by remember { mutableStateOf(false) }
 
+    // #893: hoist the busy state so the size hint can sit outside the
+    // FlowRow that hosts the Download button. Keeping the size hint
+    // inside a wrapping Column inside the row used to push the button
+    // upward — FlowRow's CenterVertically alignment centres the *whole
+    // child* (button + size hint) against the row's tallest item, so
+    // the button drifted off-axis from the "..." actions menu.
+    val isActivelyDownloading = state.downloadProgress?.state == DownloadState.DOWNLOADING
+    val isBusy = state.isDownloading || isActivelyDownloading
+
     Column(
         verticalArrangement = Arrangement.spacedBy(SpSpacing.Medium),
     ) {
@@ -153,7 +162,11 @@ fun GameHeroContent(
             }
         }
 
-        // Action buttons: Play/Download + Actions menu + playtime
+        // Action buttons + size hint. Wrapping inner Column keeps the
+        // hint visually tied to the Download button while the FlowRow
+        // itself only contains same-height button-shaped items so
+        // CenterVertically alignment is honest. See #893.
+        Column(verticalArrangement = Arrangement.spacedBy(SpSpacing.XSmall)) {
         FlowRow(
             horizontalArrangement = Arrangement.spacedBy(SpSpacing.Small),
             verticalArrangement = Arrangement.spacedBy(SpSpacing.Medium),
@@ -202,39 +215,20 @@ fun GameHeroContent(
                     )
                 }
             } else {
-                val isActivelyDownloading = state.downloadProgress?.state == DownloadState.DOWNLOADING
-                val isBusy = state.isDownloading || isActivelyDownloading
                 val menuItems = buildList {
                     if (onCreateNetplay != null && supportsNetplay) {
                         add(SpSplitButtonMenuItem("Netplay") { onCreateNetplay(gameId) })
                     }
                 }
-                Column(verticalArrangement = Arrangement.spacedBy(SpSpacing.XSmall)) {
-                    SpSplitButton(
-                        text = if (isBusy) "Downloading..." else "Download",
-                        onClick = onDownloadGame,
-                        modifier = Modifier.testTag("game_detail_download_button"),
-                        isLoading = isBusy,
-                        enabled = !isBusy,
-                        menuItems = menuItems,
-                        onGradient = true,
-                    )
-                    // Size hint under the button — answers "is this 5 MB or
-                    // 5 GB?" before the user commits, without scrolling
-                    // down to the metadata table. Hidden during the active
-                    // download because SpDownloadProgressBar already shows
-                    // the downloaded / total byte counter (#801).
-                    if (!isBusy && game.fileSize > 0) {
-                        Text(
-                            text = formatBytes(game.fileSize),
-                            style = SpTypography.LabelSmall,
-                            color = SpColor.OnGradientSecondary,
-                            modifier = Modifier
-                                .testTag("game_detail_download_size")
-                                .align(Alignment.CenterHorizontally),
-                        )
-                    }
-                }
+                SpSplitButton(
+                    text = if (isBusy) "Downloading..." else "Download",
+                    onClick = onDownloadGame,
+                    modifier = Modifier.testTag("game_detail_download_button"),
+                    isLoading = isBusy,
+                    enabled = !isBusy,
+                    menuItems = menuItems,
+                    onGradient = true,
+                )
             }
 
             GameActionsMenu(
@@ -298,6 +292,22 @@ fun GameHeroContent(
                         }
                     }
                 }
+            }
+        }
+            // Size hint under the action row — answers "is this 5 MB
+            // or 5 GB?" before the user commits, without scrolling
+            // down to the metadata table. Hidden during the active
+            // download because SpDownloadProgressBar already shows
+            // the downloaded / total byte counter. Lives outside the
+            // FlowRow so its presence doesn't push the Download button
+            // off vertical centre with the "..." actions menu (#893).
+            if (!state.isGameCached && !isBusy && game.fileSize > 0) {
+                Text(
+                    text = formatBytes(game.fileSize),
+                    style = SpTypography.LabelSmall,
+                    color = SpColor.OnGradientSecondary,
+                    modifier = Modifier.testTag("game_detail_download_size"),
+                )
             }
         }
 
