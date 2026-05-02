@@ -1071,6 +1071,15 @@ JNI_FUNC(void, nativeUnloadGame)(JNIEnv *env, jobject thiz) {
         if (g_core.hw_render_callback.context_destroy) {
             hw_gl_make_current(g_core.hw_gl_ctx);
             g_core.hw_render_callback.context_destroy();
+            /* #907 — release the context immediately while EGL is in a
+             * known-clean state. PPSSPP's context_destroy spins up
+             * worker threads that do their own EGL bind/release
+             * dances; releasing here, on the emulation thread, before
+             * we hand off to hw_gl_destroy avoids a stage where the
+             * driver's "currently-bound context" pointer references a
+             * partially-released context (the trigger for the Adreno
+             * SIGSEGV at hw_gl_deinit's eglMakeCurrent). */
+            hw_gl_release_current(g_core.hw_gl_ctx);
         }
         hw_gl_destroy(g_core.hw_gl_ctx);
         g_core.hw_gl_ctx = NULL;
@@ -1128,6 +1137,11 @@ JNI_FUNC(void, nativeDeinit)(JNIEnv *env, jobject thiz) {
         if (g_core.hw_render_callback.context_destroy) {
             g_core.hw_render_callback.context_destroy();
         }
+        /* #907 — same release-while-clean pattern as nativeUnloadGame's
+         * GL teardown path. Adreno's GLES driver crashes if we let
+         * hw_gl_deinit's eglMakeCurrent see a context whose state was
+         * partially torn down by the core's worker threads. */
+        hw_gl_release_current(g_core.hw_gl_ctx);
     }
 
     /* Step 2: retro_unload_game */

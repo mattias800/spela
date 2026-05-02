@@ -155,7 +155,19 @@ void hw_gl_deinit(hw_gl_context_t *ctx) {
     if (!ctx || !ctx->initialized) return;
 
     if (ctx->egl_display != EGL_NO_DISPLAY) {
-        eglMakeCurrent(ctx->egl_display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
+        /* #907 — only release-from-current if our context is *still*
+         * the bound one on this thread. PPSSPP and similar HW-render
+         * cores spin up worker threads inside their context_destroy
+         * callback that do their own EGL bind/release dances; by the
+         * time we get here, the driver's "currently-bound context"
+         * tracking can be inconsistent. On Adreno, calling
+         * eglMakeCurrent(EGL_NO_CONTEXT) in that state crashes inside
+         * the GLES driver via a null vtable dispatch (pc=0 in the
+         * tombstone). When the context isn't bound to us, the call
+         * is also unnecessary — skip it. */
+        if (eglGetCurrentContext() == ctx->egl_context && ctx->egl_context != EGL_NO_CONTEXT) {
+            eglMakeCurrent(ctx->egl_display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
+        }
         if (ctx->egl_surface != EGL_NO_SURFACE) {
             eglDestroySurface(ctx->egl_display, ctx->egl_surface);
             ctx->egl_surface = EGL_NO_SURFACE;
