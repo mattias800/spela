@@ -118,6 +118,23 @@ var registry = []Entry{
 	// "Failed to start emulation" error (#891).
 	{ConsoleID: "fds", FileName: "disksys.rom", Description: "Famicom Disk System BIOS", MD5: "ca30b50f880eb660a320674ed365ef7a", Required: true},
 
+	// PlayStation Portable (PSP) — ppsspp_libretro.info.
+	//
+	// PPSSPP needs `ppge_atlas.zim` under `<system_dir>/PPSSPP/` to
+	// render its own UI overlays; the canonical MD5 is published in
+	// the libretro core-info notes for this core. Without it games
+	// often launch but the in-engine UI / pause overlay shows
+	// missing glyphs.
+	//
+	// PPSSPP also wants a `flash0/` directory of system fonts and a
+	// `lang/` directory of UI localisation files under the same
+	// `PPSSPP/` parent. Those are directory trees rather than single
+	// files, so they don't fit the current per-file registry shape;
+	// tracked separately in #906 follow-up so a future
+	// "bundle / extract" path can drop them in cleanly without
+	// turning every font into its own row.
+	{ConsoleID: "psp", FileName: "ppge_atlas.zim", Description: "PPSSPP Data ROM (UI atlas)", MD5: "866855cc330b9b95cc69135fb7b41d38", Required: true, SubDir: "PPSSPP"},
+
 	// Magnavox Odyssey 2 / Philips Videopac (O2) — o2em_libretro.info.
 	// o2rom.bin is required by the core to boot any cartridge; the
 	// other three are regional / variant BIOSes the core can use when
