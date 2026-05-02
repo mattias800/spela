@@ -696,6 +696,21 @@ func (h *ConsoleHandler) HumaGetConsoleIcon(_ context.Context, in *ConsoleAssetI
 	return streamBytesInline(data, "image/png"), nil
 }
 
+// consoleLogoFallbacks maps a console abbreviation (lowercase) to the
+// abbreviation of the parent platform whose logo should be served when
+// the child console has no dedicated asset yet. Demo-scene consoles
+// inherit their parent platform's logo by default — Amiga Demos uses
+// the Amiga logo, DOS Demos uses the DOS logo. Adding a row here only
+// affects consoles that don't have their own SVG / PNG in the embedded
+// asset dirs; once an asset is shipped for the child, it wins.
+//
+// Future child consoles get a sensible default with one map entry.
+// See #888.
+var consoleLogoFallbacks = map[string]string{
+	"ademo": "amiga",
+	"ddemo": "dos",
+}
+
 // HumaGetConsoleLogo is the huma implementation of GET /api/consoles/{id}/logo.
 // Inlines CSS styles in the SVG so renderers without CSS support (e.g. Coil
 // on JVM) display colors correctly — same post-processing as the gin version.
@@ -704,8 +719,17 @@ func (h *ConsoleHandler) HumaGetConsoleLogo(_ context.Context, in *ConsoleAssetI
 	if err := h.DB.Where("LOWER(abbreviation) = LOWER(?) OR code = ?", in.ID, in.ID).First(&console).Error; err != nil {
 		return nil, huma.Error404NotFound("console not found")
 	}
-	filename := strings.ToLower(console.Abbreviation) + ".svg"
-	data, err := consoleLogos.ReadFile("static/console-logos/" + filename)
+	abbr := strings.ToLower(console.Abbreviation)
+	data, err := consoleLogos.ReadFile("static/console-logos/" + abbr + ".svg")
+	if err != nil {
+		// Fall back to a parent-platform logo when registered (#888).
+		if parent, ok := consoleLogoFallbacks[abbr]; ok {
+			if pdata, perr := consoleLogos.ReadFile("static/console-logos/" + parent + ".svg"); perr == nil {
+				data = pdata
+				err = nil
+			}
+		}
+	}
 	if err != nil {
 		return nil, huma.Error404NotFound("logo not available for this console")
 	}
@@ -720,8 +744,17 @@ func (h *ConsoleHandler) HumaGetConsoleLogoPng(_ context.Context, in *ConsoleAss
 	if err := h.DB.Where("LOWER(abbreviation) = LOWER(?) OR code = ?", in.ID, in.ID).First(&console).Error; err != nil {
 		return nil, huma.Error404NotFound("console not found")
 	}
-	filename := strings.ToLower(console.Abbreviation) + ".png"
-	data, err := consoleLogosPng.ReadFile("static/console-logos-png/" + filename)
+	abbr := strings.ToLower(console.Abbreviation)
+	data, err := consoleLogosPng.ReadFile("static/console-logos-png/" + abbr + ".png")
+	if err != nil {
+		// Same parent-platform fallback as the SVG variant (#888).
+		if parent, ok := consoleLogoFallbacks[abbr]; ok {
+			if pdata, perr := consoleLogosPng.ReadFile("static/console-logos-png/" + parent + ".png"); perr == nil {
+				data = pdata
+				err = nil
+			}
+		}
+	}
 	if err != nil {
 		return nil, huma.Error404NotFound("logo not available for this console")
 	}
