@@ -88,6 +88,36 @@ fine when they're naturally bundled.
 Drive-by fixes without an issue link are tracking debt — file a one-line issue
 even for small things so the change is discoverable later.
 
+## Updating Issues With Findings
+
+Every time you make material progress on an issue — whether that's diagnosing
+the root cause, ruling out a hypothesis, picking an implementation approach,
+or shipping a fix — add a comment to the issue summarising what you learned.
+Future agents (and your future self) read the issue thread to understand what
+has and hasn't been tried.
+
+**When to comment on an issue:**
+- After diagnosing the root cause: explain what you found and how you found it
+- After ruling out an approach: what you tried, what happened, why it didn't
+  work, and what that implies for the remaining options
+- After shipping a fix: link the merging PR, summarise the implementation, and
+  note any limitations or follow-ups
+- After discovering a new dimension to the problem (e.g. "this also affects X"):
+  edit the issue body or post a comment so it's visible at a glance
+
+**Comment shape:**
+- Lead with the headline (what you learned, what you shipped, or what you ruled
+  out) — readers should be able to skim
+- Include concrete evidence: relevant log lines, file paths, commit SHAs
+- Reference the linked PR(s) by number when they exist
+- For ruled-out approaches: include enough detail (what was tried, what
+  happened) that the next agent doesn't repeat the same spike
+
+**Closing an issue:** when the merging PR uses `Closes #N` in its body,
+GitHub auto-closes on merge. Still post a closing comment if the implementation
+diverged from the issue's original framing — explain what shipped and why it
+differs, so the closed-issue thread reflects reality.
+
 ## PR Review Gate
 
 Before presenting any PR to the user for manual testing or merge approval,
