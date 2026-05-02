@@ -137,20 +137,29 @@ var registry = []Entry{
 
 	// PlayStation Portable (PSP) — ppsspp_libretro.info.
 	//
-	// PPSSPP needs `ppge_atlas.zim` under `<system_dir>/PPSSPP/` to
-	// render its own UI overlays; the canonical MD5 is published in
-	// the libretro core-info notes for this core. Without it games
-	// often launch but the in-engine UI / pause overlay shows
-	// missing glyphs.
+	// PPSSPP wants a directory tree under `<system_dir>/PPSSPP/`:
+	//   - `ppge_atlas.zim` — UI overlay atlas (without it, in-engine
+	//     pause / settings overlays render missing glyphs)
+	//   - `flash0/` — PSP system fonts (every game with text uses these)
+	//   - `lang/` — UI localisation strings
+	//   - `vfpu/`, `shaders/`, atlas .zim/.meta pairs, gamecontrollerdb,
+	//     compat.ini, etc. — runtime assets the core looks up
 	//
-	// PPSSPP also wants a `flash0/` directory of system fonts and a
-	// `lang/` directory of UI localisation files under the same
-	// `PPSSPP/` parent. Those are directory trees rather than single
-	// files, so they don't fit the current per-file registry shape;
-	// tracked separately in #906 follow-up so a future
-	// "bundle / extract" path can drop them in cleanly without
-	// turning every font into its own row.
-	{ConsoleID: "psp", FileName: "ppge_atlas.zim", Description: "PPSSPP Data ROM (UI atlas)", MD5: "866855cc330b9b95cc69135fb7b41d38", Required: true, SubDir: "PPSSPP"},
+	// Source: libretro's buildbot publishes a single canonical zip at
+	// `https://buildbot.libretro.com/assets/system/PPSSPP.zip` (this is
+	// what RetroArch's "Core System Files Downloader" pulls). Archive
+	// is rooted at `PPSSPP/`, so SubDir is left empty and FileName
+	// names the sentinel path relative to biosDir — extraction lays
+	// the tree at `<biosDir>/PPSSPP/...` directly.
+	//
+	// MD5 is intentionally unset on bundle entries: the archive's
+	// contents shift between PPSSPP releases (font tweaks, new
+	// languages); pinning the hash would lock us to one buildbot
+	// snapshot. The archive's own integrity is implicitly checked by
+	// the unzip step.
+	//
+	// Closes #911.
+	{ConsoleID: "psp", FileName: "PPSSPP/ppge_atlas.zim", Description: "PPSSPP system assets (atlas, fonts, lang)", Required: true, OverrideURL: "https://buildbot.libretro.com/assets/system/PPSSPP.zip", Bundle: true},
 
 	// Magnavox Odyssey 2 / Philips Videopac (O2) — o2em_libretro.info.
 	// o2rom.bin is required by the core to boot any cartridge; the

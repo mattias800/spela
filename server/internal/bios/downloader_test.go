@@ -331,6 +331,60 @@ func TestDownloadMissing_BundleSkipsWhenSentinelPresent(t *testing.T) {
 	assert.Equal(t, 0, calls, "should not hit the URL when sentinel is present")
 }
 
+// #911 — the real PPSSPP buildbot archive has every entry rooted under
+// `PPSSPP/`. The intended layout in biosDir is `<biosDir>/PPSSPP/...`,
+// so SubDir is left empty and FileName is the sentinel path relative
+// to biosDir (e.g. "PPSSPP/ppge_atlas.zim"). This exercise covers the
+// .tmp-parent mkdir for FileName-with-slashes + SubDir="".
+func TestDownloadMissing_BundleArchiveWithTopLevelDir(t *testing.T) {
+	biosDir := t.TempDir()
+	// Sentinel must be > 1KB to survive the downloader's
+	// partial-download heuristic on the second pass; pad it.
+	zipBytes := makeZipBytes(t, map[string][]byte{
+		"PPSSPP/ppge_atlas.zim":       bytes.Repeat([]byte{0xAB}, 2048),
+		"PPSSPP/flash0/font/ltn0.pgf": []byte("latin-bytes"),
+		"PPSSPP/lang/en_US.ini":       []byte("ui-strings"),
+	})
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Write(zipBytes)
+	}))
+	defer server.Close()
+
+	origRegistry := make([]Entry, len(registry))
+	copy(origRegistry, registry)
+	registry = []Entry{
+		{
+			ConsoleID:   "psp",
+			FileName:    "PPSSPP/ppge_atlas.zim",
+			Description: "PPSSPP bundle (top-level dir)",
+			Required:    true,
+			OverrideURL: server.URL,
+			Bundle:      true,
+		},
+	}
+	defer func() { registry = origRegistry }()
+
+	result := DownloadMissing(biosDir, "http://unused", nil)
+	assert.Equal(t, 1, result.Downloaded)
+	assert.Equal(t, 0, result.Failed, "errors: %v", result.Errors)
+
+	for _, rel := range []string{
+		"PPSSPP/ppge_atlas.zim",
+		"PPSSPP/flash0/font/ltn0.pgf",
+		"PPSSPP/lang/en_US.ini",
+	} {
+		path := filepath.Join(biosDir, filepath.FromSlash(rel))
+		_, err := os.Stat(path)
+		require.NoError(t, err, "expected extracted file at %s", path)
+	}
+
+	// Sentinel is one of the extracted files, so a second pass skips.
+	result2 := DownloadMissing(biosDir, "http://unused", nil)
+	assert.Equal(t, 1, result2.Skipped)
+	assert.Equal(t, 0, result2.Downloaded)
+}
+
 func TestDownloadMissing_BundleRefusesZipSlip(t *testing.T) {
 	biosDir := t.TempDir()
 	// Malicious archive — entry name escapes the dest dir.

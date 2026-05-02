@@ -128,19 +128,22 @@ func DownloadMissing(biosDir, baseURL string, onProgress func(DownloadProgress))
 			continue
 		}
 
-		// Ensure subdirectory exists for entries that need it
-		if entry.SubDir != "" {
-			if err := os.MkdirAll(filepath.Dir(destPath), 0755); err != nil {
-				resp.Body.Close()
-				progress.Status = "failed"
-				progress.Error = fmt.Sprintf("creating subdirectory: %v", err)
-				result.Failed++
-				result.Errors = append(result.Errors, fmt.Sprintf("%s: %s", entry.FileName, progress.Error))
-				if onProgress != nil {
-					onProgress(progress)
-				}
-				continue
+		// Ensure the destination's parent directory exists. SubDir-style
+		// entries need this for `<biosDir>/<SubDir>/`; Bundle entries
+		// where FileName itself contains a relative path (e.g. the
+		// PPSSPP buildbot archive's `PPSSPP/ppge_atlas.zim` sentinel)
+		// also need it. Unconditional MkdirAll is harmless when the
+		// parent is already biosDir.
+		if err := os.MkdirAll(filepath.Dir(destPath), 0755); err != nil {
+			resp.Body.Close()
+			progress.Status = "failed"
+			progress.Error = fmt.Sprintf("creating destination directory: %v", err)
+			result.Failed++
+			result.Errors = append(result.Errors, fmt.Sprintf("%s: %s", entry.FileName, progress.Error))
+			if onProgress != nil {
+				onProgress(progress)
 			}
+			continue
 		}
 
 		// Write to .tmp file first

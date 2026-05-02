@@ -133,19 +133,23 @@ func TestFds_DisksysMD5(t *testing.T) {
 	t.Fatal("fds/disksys.rom not found")
 }
 
-// PSP — ppge_atlas.zim is required and must land in the PPSSPP/
-// subdir for the libretro core to find it. Lock the published MD5.
-// See #906.
-func TestPsp_PpgeAtlasZim(t *testing.T) {
+// PSP — system assets are delivered as a single libretro buildbot
+// archive that extracts a `PPSSPP/` tree (atlas + flash0/font + lang/
+// + vfpu/ + fonts + ini) into biosDir. The sentinel is the atlas
+// file inside the bundle. See #911.
+func TestPsp_AssetsBundle(t *testing.T) {
 	for _, e := range ByConsole("psp") {
-		if e.FileName == "ppge_atlas.zim" {
-			assert.True(t, e.Required, "ppge_atlas.zim must be required")
-			assert.Equal(t, "866855cc330b9b95cc69135fb7b41d38", e.MD5)
-			assert.Equal(t, "PPSSPP", e.SubDir)
+		if e.FileName == "PPSSPP/ppge_atlas.zim" {
+			assert.True(t, e.Required, "PSP assets bundle must be required")
+			assert.True(t, e.Bundle, "PSP entry must be a Bundle")
+			assert.Equal(t, "https://buildbot.libretro.com/assets/system/PPSSPP.zip", e.OverrideURL)
+			// SubDir intentionally empty — archive's own top-level
+			// `PPSSPP/` matches the desired layout in biosDir.
+			assert.Equal(t, "", e.SubDir)
 			return
 		}
 	}
-	t.Fatal("psp/ppge_atlas.zim not found")
+	t.Fatal("psp assets bundle not found")
 }
 
 func TestRepoFolder(t *testing.T) {
