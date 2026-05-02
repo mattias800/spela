@@ -147,4 +147,74 @@ class EmulationScalingTest {
         assertTrue(result.offsetX >= 0)
         assertTrue(result.offsetY >= 0)
     }
+
+    // ── #887 — DS top-screen split (cropped DAR) ──
+    //
+    // The DS reports a full-frame DAR on a 256×384 stacked source
+    // (≈0.667). When the secondary-display Android path crops to the
+    // top half (splitY = 192), the call site multiplies the DAR by
+    // bitmap.height / splitY = 2 to compensate. These tests exercise
+    // the resulting (srcHeight, effectiveDar) input to computeScaledFrame.
+
+    @Test
+    fun `DS full frame stacked - both screens render at 4 to 3 stacked`() {
+        // Regression-protect the existing behaviour when split is OFF.
+        // Source 256×384, DAR ≈ 0.667 (256 wide / 384 tall) — the core
+        // reports the stacked-screens aspect, and the renderer should
+        // fit both screens on a 1920×1080 canvas without distortion.
+        val result = computeScaledFrame(
+            srcWidth = 256, srcHeight = 384,
+            canvasWidth = 1920f, canvasHeight = 1080f,
+            displayAspectRatio = 256f / 384f,
+        )
+        // Display dimensions: 384 × 0.667 = 256 wide, 384 tall.
+        // Scale: min(1920/256, 1080/384) = min(7.5, 2.8125) = 2.8125.
+        // Scaled: 256 × 2.8125 = 720, 384 × 2.8125 = 1080.
+        assertEquals(720, result.width)
+        assertEquals(1080, result.height)
+        assertEquals(600, result.offsetX) // (1920 - 720) / 2
+        assertEquals(0, result.offsetY)
+    }
+
+    @Test
+    fun `DS top screen cropped - effective DAR yields 4 to 3 not stretched`() {
+        // Source 256×192 (top screen only). Full-frame DAR was 0.667;
+        // the call site compensates by multiplying by 384/192 = 2,
+        // giving effectiveDar ≈ 1.333. computeScaledFrame should now
+        // produce a 4:3 destination (1440×1080 on a 1920×1080 canvas)
+        // — letterboxed on the sides, not vertically stretched.
+        val effectiveDar = (256f / 384f) * (384f / 192f) // = 256/192 = 1.333
+        val result = computeScaledFrame(
+            srcWidth = 256, srcHeight = 192,
+            canvasWidth = 1920f, canvasHeight = 1080f,
+            displayAspectRatio = effectiveDar,
+        )
+        // Display dimensions: 192 × 1.333 = 256 wide, 192 tall.
+        // Scale: min(1920/256, 1080/192) = min(7.5, 5.625) = 5.625.
+        // Scaled: 256 × 5.625 = 1440, 192 × 5.625 = 1080.
+        assertEquals(1440, result.width)
+        assertEquals(1080, result.height)
+        assertEquals(240, result.offsetX) // (1920 - 1440) / 2
+        assertEquals(0, result.offsetY)
+    }
+
+    @Test
+    fun `3DS top screen cropped at native 5 to 3 aspect`() {
+        // Forward-protection: a future 3DS-style core reporting non-
+        // square pixels for the top screen alone (e.g. 400×240, 5:3
+        // DAR with the top-half crop trick) should also land on the
+        // right destination.
+        val result = computeScaledFrame(
+            srcWidth = 400, srcHeight = 240,
+            canvasWidth = 1920f, canvasHeight = 1080f,
+            displayAspectRatio = 5f / 3f,
+        )
+        // Display dimensions: 240 × (5/3) = 400 wide, 240 tall.
+        // Scale: min(1920/400, 1080/240) = min(4.8, 4.5) = 4.5.
+        // Scaled: 400 × 4.5 = 1800, 240 × 4.5 = 1080.
+        assertEquals(1800, result.width)
+        assertEquals(1080, result.height)
+        assertEquals(60, result.offsetX) // (1920 - 1800) / 2
+        assertEquals(0, result.offsetY)
+    }
 }
