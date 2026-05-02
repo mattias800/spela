@@ -824,6 +824,18 @@ class SpelaApiClient(
         return biosApi.downloadBios(filename).response.body<ByteArray>()
     }
 
+    /**
+     * Fetches a Bundle BIOS entry's archive — a zip of the
+     * `<biosDir>/<SubDir>/` tree on the server. Used by
+     * BiosRepository when a registry entry is flagged
+     * `bundle = true` (e.g. PPSSPP system assets — flash0 + lang +
+     * fonts + atlases). Caller unzips the bytes into the local
+     * `<biosDir>/<SubDir>/` to mirror the server's layout. See #911.
+     */
+    suspend fun downloadBiosArchive(filename: String): ByteArray {
+        return biosApi.downloadBiosArchive(filename).response.body<ByteArray>()
+    }
+
     // Cores
 
     suspend fun getAvailableCores(): List<com.spela.client.models.Core> {

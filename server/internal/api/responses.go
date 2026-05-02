@@ -1367,6 +1367,15 @@ type BiosFileResponse struct {
 	Description *string `json:"description"`
 	Required    bool    `json:"required"`
 	Status      string  `json:"status"` // "valid", "present", "invalid", "missing"
+
+	// Bundle marks an entry whose payload on the server is a directory
+	// tree (e.g. PPSSPP system assets — flash0/lang/atlases/fonts).
+	// Clients can't fetch this with the per-file
+	// `GET /api/bios/{filename}` endpoint; they call
+	// `GET /api/bios/archive/{filename}` instead, which returns a zip
+	// of `<biosDir>/<SubDir>/` for the entry to be extracted on the
+	// device. See #911.
+	Bundle bool `json:"bundle"`
 }
 
 // ConsoleFileStatus represents a single BIOS file within a console summary.
@@ -1375,8 +1384,9 @@ type ConsoleFileStatus struct {
 	Description string `json:"description"`
 	Required    bool   `json:"required"`
 	MD5         string `json:"md5"`
-	Status      string `json:"status"`           // "valid", "present", "invalid", "missing"
+	Status      string `json:"status"` // "valid", "present", "invalid", "missing"
 	SubDir      string `json:"subDir"` // subdirectory within system_dir
+	Bundle      bool   `json:"bundle"` // payload is an extracted directory tree, not a single file (#911)
 }
 
 // ConsoleBiosStatus represents the BIOS status summary for one console.

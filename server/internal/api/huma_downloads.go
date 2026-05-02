@@ -1,6 +1,7 @@
 package api
 
 import (
+	"archive/zip"
 	"context"
 	"fmt"
 	"io"
@@ -63,6 +64,60 @@ func streamSaveFromDisk(absPath, downloadName, compression string) *huma.StreamR
 	}
 }
 
+// streamBundleAsZip walks rootDir and streams a zip of every regular
+// file under it (paths inside the zip are relative to rootDir, with
+// forward slashes). Used by the BIOS bundle download endpoint (#911)
+// to ship a Bundle entry's extracted directory tree as a single
+// archive the client can unzip on its end.
+//
+// We re-zip on every request rather than caching: the bundle is small
+// (PPSSPP is ~10MB raw, ~zip), single-digit clients per server, and
+// the alternative (keep the originally-fetched archive on disk
+// alongside the extracted tree) doubles disk usage and adds a
+// staleness window when the bundle is re-downloaded.
+func streamBundleAsZip(rootDir, downloadFileName string) *huma.StreamResponse {
+	return &huma.StreamResponse{
+		Body: func(hctx huma.Context) {
+			hctx.SetHeader("Content-Type", "application/zip")
+			hctx.SetHeader("Content-Disposition", fmt.Sprintf("attachment; filename=%q", downloadFileName+".zip"))
+
+			zw := zip.NewWriter(hctx.BodyWriter())
+			defer zw.Close()
+
+			err := filepath.WalkDir(rootDir, func(path string, d fs.DirEntry, walkErr error) error {
+				if walkErr != nil {
+					return walkErr
+				}
+				if d.IsDir() {
+					return nil
+				}
+				if !d.Type().IsRegular() {
+					return nil
+				}
+				rel, err := filepath.Rel(rootDir, path)
+				if err != nil {
+					return err
+				}
+				zipName := filepath.ToSlash(rel)
+				zfw, err := zw.Create(zipName)
+				if err != nil {
+					return err
+				}
+				f, err := os.Open(path)
+				if err != nil {
+					return err
+				}
+				defer f.Close()
+				_, err = io.Copy(zfw, f)
+				return err
+			})
+			if err != nil {
+				slog.Warn("bundle stream walk failed", "root", rootDir, "err", err)
+			}
+		},
+	}
+}
+
 // streamBytesInline returns a huma.StreamResponse that writes the given bytes
 // inline (no Content-Disposition — the browser renders them directly,
 // typical for console icons / logos). Used by endpoints that serve embedded
@@ -89,6 +144,14 @@ type CoreDownloadInput struct {
 // BiosDownloadInput is the input for GET /api/bios/{filename}.
 type BiosDownloadInput struct {
 	Filename string `path:"filename" doc:"BIOS file name."`
+}
+
+// BiosArchiveDownloadInput is the input for GET /api/bios/archive/{filename}.
+// Filename matches the registry entry's FileName for a Bundle entry; the
+// server returns a zip of `<biosDir>/<SubDir>/` so the client can extract
+// the directory tree on the device.
+type BiosArchiveDownloadInput struct {
+	Filename string `path:"filename" doc:"Sentinel filename of the bundle entry (matches registry FileName)."`
 }
 
 // SessionSaveDownloadInput is the input for GET /api/sessions/{id}/saves/{saveId}.
@@ -226,6 +289,17 @@ func RegisterDownloadRoutes(
 		Middlewares: authedMW,
 		Security:    sec,
 	}, biosH.HumaDownloadBios)
+
+	huma.Register(api, huma.Operation{
+		OperationID: "downloadBiosArchive",
+		Method:      http.MethodGet,
+		Path:        "/api/bios/archive/{filename}",
+		Summary:     "Download a BIOS bundle archive",
+		Description: "Streams a zip of `<biosDir>/<SubDir>/` for a Bundle registry entry. Clients unzip on the device. 404 when the entry isn't a Bundle or the SubDir hasn't been populated yet on the server. See #911.",
+		Tags:        []string{"bios"},
+		Middlewares: authedMW,
+		Security:    sec,
+	}, biosH.HumaDownloadBiosArchive)
 
 	huma.Register(api, huma.Operation{
 		OperationID: "downloadSessionSave",
@@ -478,6 +552,56 @@ func (h *CoreHandler) HumaDownloadCore(_ context.Context, in *CoreDownloadInput)
 	h.ensureCoreMetadata(&core, corePath)
 
 	return streamFileFromDisk(corePath, core.Name+"_libretro"+ext, "application/octet-stream"), nil
+}
+
+// HumaDownloadBiosArchive is the huma implementation of
+// GET /api/bios/archive/{filename}. For a Bundle registry entry whose
+// FileName matches the path parameter, it streams a zip of the
+// `<biosDir>/<SubDir>/` tree so the client can extract on the device.
+// 404 when the entry isn't a Bundle, the registry doesn't know it, or
+// the SubDir on disk is empty (i.e. the bundle hasn't been
+// downloaded/extracted yet on the server).
+func (h *BiosHandler) HumaDownloadBiosArchive(_ context.Context, in *BiosArchiveDownloadInput) (*huma.StreamResponse, error) {
+	matches := bios.ByFileName(in.Filename)
+	var entry *bios.Entry
+	for i := range matches {
+		if matches[i].Bundle {
+			cp := matches[i]
+			entry = &cp
+			break
+		}
+	}
+	if entry == nil {
+		return nil, huma.Error404NotFound("no bundle entry registered for this filename")
+	}
+
+	subDir := entry.SubDir
+	if subDir == "" {
+		// Defensive — every current Bundle entry sets SubDir, but if
+		// one didn't we'd be exposing the entire BIOS dir which we
+		// never want to do.
+		return nil, huma.Error404NotFound("bundle entry has no SubDir")
+	}
+
+	rootDir := filepath.Join(h.Storage.BiosDir, filepath.FromSlash(subDir))
+	info, err := os.Stat(rootDir)
+	if err != nil || !info.IsDir() {
+		return nil, huma.Error404NotFound("bundle not extracted on server")
+	}
+
+	absRoot, err := filepath.Abs(rootDir)
+	if err != nil {
+		return nil, huma.Error500InternalServerError("internal error")
+	}
+	absBios, err := filepath.Abs(h.Storage.BiosDir)
+	if err != nil {
+		return nil, huma.Error500InternalServerError("internal error")
+	}
+	if !strings.HasPrefix(absRoot, absBios+string(filepath.Separator)) {
+		return nil, huma.Error403Forbidden("access denied")
+	}
+
+	return streamBundleAsZip(absRoot, in.Filename), nil
 }
 
 // HumaDownloadBios is the huma implementation of GET /api/bios/{filename}.

@@ -1033,6 +1033,9 @@
             "readOnly": true,
             "type": "string"
           },
+          "bundle": {
+            "type": "boolean"
+          },
           "consoleId": {
             "type": [
               "string",
@@ -1084,7 +1087,8 @@
           "consoleName",
           "description",
           "required",
-          "status"
+          "status",
+          "bundle"
         ],
         "type": "object"
       },
@@ -1814,6 +1818,9 @@
       "ConsoleFileStatus": {
         "additionalProperties": false,
         "properties": {
+          "bundle": {
+            "type": "boolean"
+          },
           "description": {
             "type": "string"
           },
@@ -1839,7 +1846,8 @@
           "required",
           "md5",
           "status",
-          "subDir"
+          "subDir",
+          "bundle"
         ],
         "type": "object"
       },
@@ -13819,6 +13827,48 @@
           }
         ],
         "summary": "List BIOS files",
+        "tags": [
+          "bios"
+        ]
+      }
+    },
+    "/api/bios/archive/{filename}": {
+      "get": {
+        "description": "Streams a zip of `\u003cbiosDir\u003e/\u003cSubDir\u003e/` for a Bundle registry entry. Clients unzip on the device. 404 when the entry isn't a Bundle or the SubDir hasn't been populated yet on the server. See #911.",
+        "operationId": "downloadBiosArchive",
+        "parameters": [
+          {
+            "description": "Sentinel filename of the bundle entry (matches registry FileName).",
+            "in": "path",
+            "name": "filename",
+            "required": true,
+            "schema": {
+              "description": "Sentinel filename of the bundle entry (matches registry FileName).",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HumaError"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Download a BIOS bundle archive",
         "tags": [
           "bios"
         ]
