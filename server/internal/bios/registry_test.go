@@ -57,6 +57,10 @@ func TestByConsole(t *testing.T) {
 		{"Saturn has 2 entries", "sat", 2},
 		{"Dreamcast has 2 entries", "dc", 2},
 		{"NDS has 3 entries", "nds", 3},
+		// Newly registered missing-BIOS consoles — see #889 / #890 / #891.
+		{"FDS has 1 entry (disksys.rom)", "fds", 1},
+		{"Odyssey 2 has 4 entries", "o2", 4},
+		{"Channel F has 3 entries", "chaf", 3},
 		{"Unknown console returns empty", "unknown", 0},
 	}
 	for _, tt := range tests {
@@ -76,9 +80,56 @@ func TestConsoleIDs(t *testing.T) {
 	for _, id := range ids {
 		idSet[id] = true
 	}
-	for _, expected := range []string{"psx", "sat", "scd", "dc", "gba", "nds", "pce", "pcecd", "neogeo", "neocd", "lynx", "3do", "amiga", "pcfx", "cv", "cdi"} {
+	for _, expected := range []string{"psx", "sat", "scd", "dc", "gba", "nds", "pce", "pcecd", "neogeo", "neocd", "lynx", "3do", "amiga", "pcfx", "cv", "cdi", "fds", "o2", "chaf"} {
 		assert.True(t, idSet[expected], "expected console %s in registry", expected)
 	}
+}
+
+// Regression — #889 / #890 / #891. Newly registered consoles must
+// flag their core-mandatory ROMs as Required so the missing-BIOS UI
+// fires; without this the player surfaces a generic emulation error
+// (FDS, O2) or a silent black screen (Channel F) instead.
+func TestNewlyRegisteredConsoles_RequiredFlags(t *testing.T) {
+	tests := []struct {
+		consoleID    string
+		fileName     string
+		wantRequired bool
+	}{
+		{"fds", "disksys.rom", true},
+		{"o2", "o2rom.bin", true},
+		{"o2", "c52.bin", false},
+		{"o2", "g7400.bin", false},
+		{"o2", "jopac.bin", false},
+		{"chaf", "sl31253.bin", true},
+		{"chaf", "sl31254.bin", true},
+		{"chaf", "sl90025.bin", false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.consoleID+"/"+tt.fileName, func(t *testing.T) {
+			var match *Entry
+			for _, e := range ByConsole(tt.consoleID) {
+				if e.FileName == tt.fileName {
+					cp := e
+					match = &cp
+					break
+				}
+			}
+			if assert.NotNil(t, match, "registry must contain %s/%s", tt.consoleID, tt.fileName) {
+				assert.Equal(t, tt.wantRequired, match.Required)
+			}
+		})
+	}
+}
+
+// FDS publishes a known MD5 in nestopia_libretro.info; lock it.
+func TestFds_DisksysMD5(t *testing.T) {
+	for _, e := range ByConsole("fds") {
+		if e.FileName == "disksys.rom" {
+			assert.Equal(t, "ca30b50f880eb660a320674ed365ef7a", e.MD5)
+			return
+		}
+	}
+	t.Fatal("fds/disksys.rom not found")
 }
 
 func TestRepoFolder(t *testing.T) {
