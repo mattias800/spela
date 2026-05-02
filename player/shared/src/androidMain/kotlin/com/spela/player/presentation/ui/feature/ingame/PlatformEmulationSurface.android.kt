@@ -1,6 +1,8 @@
 package com.spela.player.presentation.ui.feature.ingame
 
+import android.util.Log
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
@@ -32,6 +34,25 @@ actual fun PlatformEmulationSurface(
         gpuActive
     } else {
         hwRenderEnabled || gpuActive
+    }
+
+    // #895 — log the surface-path decision whenever the inputs flip.
+    // This is the data point the issue specifically calls out for
+    // diagnosing the PSP black-screen / garbled-audio / exit-crash
+    // regression: black screen on a HW-render core almost always
+    // means we ended up on the EmulationSurface (Canvas/CPU) path
+    // because gpuActive flipped false. Pair these lines with the
+    // existing "Vulkan GPU renderer initialized" / "Vulkan GPU init
+    // failed" markers from VulkanEmulationSurface.kt to trace where
+    // the handshake breaks.
+    LaunchedEffect(hwRenderEnabled, gpuActive, isDualScreenSplit, useVulkanSurface, isEmu) {
+        Log.i(
+            "PlatformEmulationSurface",
+            "[#895] surface decision: hwRenderEnabled=$hwRenderEnabled gpuActive=$gpuActive " +
+                "isDualScreenSplit=$isDualScreenSplit isEmu=$isEmu " +
+                "→ useVulkanSurface=$useVulkanSurface " +
+                "(canvas-path=${!useVulkanSurface || isDualScreenSplit})",
+        )
     }
 
     // Set flag so emulation loop populates frameBitmap via CPU readback
