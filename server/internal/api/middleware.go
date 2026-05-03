@@ -53,8 +53,13 @@ func maxSaveStorageBytes() int64 {
 // checkStorageQuota verifies that adding additionalBytes would not exceed the user's quota.
 func checkStorageQuota(database *gorm.DB, userID uint, additionalBytes int64) error {
 	var totalBytes int64
-	database.Model(&db.SessionSaveState{}).Where("user_id = ?", userID).
-		Select("COALESCE(SUM(file_size), 0)").Scan(&totalBytes)
+	// Surface DB errors instead of silently treating them as totalBytes=0,
+	// which would let an unbounded payload through whenever the DB is
+	// momentarily unavailable. Prefer to fail closed.
+	if err := database.Model(&db.SessionSaveState{}).Where("user_id = ?", userID).
+		Select("COALESCE(SUM(file_size), 0)").Scan(&totalBytes).Error; err != nil {
+		return fmt.Errorf("checking storage quota: %w", err)
+	}
 	if totalBytes+additionalBytes > maxSaveStorageBytes() {
 		return fmt.Errorf("storage quota exceeded")
 	}
