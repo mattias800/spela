@@ -131,6 +131,15 @@ func Initialize(dbPath string) (*gorm.DB, error) {
 		}
 	}
 
+	// Dedupe pre-existing rows that would violate uniqueness constraints
+	// added by AutoMigrate below. Without this, AutoMigrate's CREATE
+	// UNIQUE INDEX would fail on existing installations that already
+	// have duplicates. See #970 (consoles.abbreviation), #973
+	// (play_history.user_id+game_id).
+	if err := dedupePreMigration(db); err != nil {
+		return nil, fmt.Errorf("dedupe pre-migration: %w", err)
+	}
+
 	slog.Info("running database migrations")
 	err = db.AutoMigrate(
 		&User{},
@@ -289,6 +298,94 @@ func Initialize(dbPath string) (*gorm.DB, error) {
 // converted by stripping the matching gameDirs prefix. If no prefix matches
 // (e.g. SPELA_GAME_DIRS changed), it falls back to detecting a known console
 // FolderName in the path segments.
+// dedupePreMigration removes rows that would violate uniqueness
+// constraints added by the model schema. Runs before AutoMigrate so
+// existing installations don't fail on `CREATE UNIQUE INDEX`.
+//
+// Idempotent: a fresh DB has no rows, so the queries are no-ops; a DB
+// that's already been deduped has no duplicates left for the queries
+// to find. Safe to call on every startup.
+func dedupePreMigration(database *gorm.DB) error {
+	// PlayHistory: at most one row per (user_id, game_id). Where
+	// duplicates exist, sum playtime into the earliest row, take the
+	// latest LastPlayed, and delete the rest. See #973.
+	if database.Migrator().HasTable(&PlayHistory{}) {
+		var groups []struct {
+			UserID uint
+			GameID uint
+			Count  int
+		}
+		err := database.Model(&PlayHistory{}).
+			Select("user_id, game_id, COUNT(*) as count").
+			Where("deleted_at IS NULL").
+			Group("user_id, game_id").
+			Having("COUNT(*) > 1").
+			Find(&groups).Error
+		if err != nil {
+			return fmt.Errorf("scan play_history dupes: %w", err)
+		}
+		for _, g := range groups {
+			var rows []PlayHistory
+			if err := database.Where("user_id = ? AND game_id = ?", g.UserID, g.GameID).
+				Order("created_at ASC").Find(&rows).Error; err != nil {
+				return fmt.Errorf("load play_history dupes: %w", err)
+			}
+			if len(rows) <= 1 {
+				continue
+			}
+			keeper := rows[0]
+			for _, dup := range rows[1:] {
+				keeper.PlayTime += dup.PlayTime
+				if dup.LastPlayed.After(keeper.LastPlayed) {
+					keeper.LastPlayed = dup.LastPlayed
+				}
+				if err := database.Delete(&dup).Error; err != nil {
+					return fmt.Errorf("delete play_history dupe id=%d: %w", dup.ID, err)
+				}
+			}
+			if err := database.Save(&keeper).Error; err != nil {
+				return fmt.Errorf("save merged play_history: %w", err)
+			}
+			slog.Info("merged duplicate play_history rows",
+				"userId", g.UserID, "gameId", g.GameID, "merged", len(rows)-1)
+		}
+	}
+
+	// Console: at most one row per abbreviation. Multiple rows with the
+	// same abbreviation are a bug — keep the lowest-id row, delete the
+	// rest. See #970.
+	if database.Migrator().HasTable(&Console{}) {
+		var dupes []struct {
+			Abbreviation string
+			Count        int
+		}
+		err := database.Model(&Console{}).
+			Select("abbreviation, COUNT(*) as count").
+			Where("deleted_at IS NULL").
+			Group("abbreviation").
+			Having("COUNT(*) > 1").
+			Find(&dupes).Error
+		if err != nil {
+			return fmt.Errorf("scan console dupes: %w", err)
+		}
+		for _, d := range dupes {
+			var rows []Console
+			if err := database.Where("abbreviation = ?", d.Abbreviation).
+				Order("id ASC").Find(&rows).Error; err != nil {
+				return fmt.Errorf("load console dupes: %w", err)
+			}
+			for _, dup := range rows[1:] {
+				if err := database.Delete(&dup).Error; err != nil {
+					return fmt.Errorf("delete duplicate console id=%d: %w", dup.ID, err)
+				}
+				slog.Warn("deleted duplicate console row", "abbreviation", d.Abbreviation, "id", dup.ID)
+			}
+		}
+	}
+
+	return nil
+}
+
 func MigrateToRelativePaths(database *gorm.DB, gameDirs []string) error {
 	// Load console folder names for fallback detection
 	var consoles []Console
