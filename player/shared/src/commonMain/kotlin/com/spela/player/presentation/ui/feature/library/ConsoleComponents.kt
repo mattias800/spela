@@ -623,12 +623,16 @@ private fun ConsoleHeroBannerContent(
                         verticalArrangement = Arrangement.spacedBy(SpSpacing.Small),
                         horizontalAlignment = Alignment.End,
                     ) {
+                        // Both banner action buttons use the tinted-on-
+                        // gradient treatment so they read as siblings of
+                        // the hero badges (white tint + thin white border)
+                        // instead of competing with the gradient via the
+                        // brand-gradient + neon glow. See #930.
                         if (onConsoleSettings != null) {
                             SpButton(
                                 text = "Console settings",
                                 onClick = onConsoleSettings,
-                                style = SpButtonStyle.Outlined,
-                                onGradient = true,
+                                style = SpButtonStyle.Tinted,
                                 modifier = Modifier.autoFocus(),
                                 leadingIcon = {
                                     Icon(
@@ -643,8 +647,7 @@ private fun ConsoleHeroBannerContent(
                             SpButton(
                                 text = "Browse games",
                                 onClick = onBrowseGames,
-                                style = SpButtonStyle.Secondary,
-                                onGradient = true,
+                                style = SpButtonStyle.Tinted,
                                 modifier = Modifier.testTag(
                                     com.spela.player.presentation.ui.TestTags
                                         .consoleBrowseGames(console.id),
