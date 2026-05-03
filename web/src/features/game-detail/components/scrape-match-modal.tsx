@@ -96,7 +96,7 @@ function ScrapeMatchContent({
   return (
     <div data-comp="ScrapeMatchContent" className="space-y-4">
       {fileName && (
-        <p className="text-sm text-surface-400 truncate" title={fileName}>
+        <p className="text-sm text-tertiary truncate" title={fileName}>
           ROM: <span className="text-surface-200 font-mono">{fileName}</span>
         </p>
       )}
@@ -133,8 +133,8 @@ function ScrapeMatchContent({
 
           {!isLoading && !isError && results && results.length === 0 && (
             <div className="flex flex-col items-center py-8">
-              <Search className="h-8 w-8 text-surface-600 mb-2" />
-              <p className="text-sm text-surface-400">
+              <Search className="h-8 w-8 text-disabled mb-2" />
+              <p className="text-sm text-tertiary">
                 No results found on IGDB
               </p>
             </div>
@@ -156,7 +156,7 @@ function ScrapeMatchContent({
             ))}
 
           {debouncedQuery.length < 2 && !isLoading && (
-            <p className="py-8 text-sm text-surface-500 text-center">
+            <p className="py-8 text-sm text-tertiary text-center">
               Type at least 2 characters to search
             </p>
           )}
@@ -215,19 +215,19 @@ function IgdbResultItem({
             <Loader2 className="h-4 w-4 text-brand-400 animate-spin flex-shrink-0" />
           )}
         </div>
-        <div className="flex items-center gap-2 text-xs text-surface-400">
+        <div className="flex items-center gap-2 text-xs text-tertiary">
           {result.releaseYear && <span>{result.releaseYear}</span>}
           {result.developer && (
             <>
               {result.releaseYear && (
-                <span className="text-surface-600">&middot;</span>
+                <span className="text-disabled">&middot;</span>
               )}
               <span className="truncate">{result.developer}</span>
             </>
           )}
         </div>
         {result.summary && (
-          <p className="text-xs text-surface-500 line-clamp-2">
+          <p className="text-xs text-tertiary line-clamp-2">
             {result.summary}
           </p>
         )}

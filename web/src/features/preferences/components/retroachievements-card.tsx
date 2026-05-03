@@ -77,7 +77,7 @@ export function RetroAchievementsCard() {
                 <p className="text-sm font-medium text-surface-200">
                   Linked Account
                 </p>
-                <p className="text-xs text-surface-400">{status.username}</p>
+                <p className="text-xs text-tertiary">{status.username}</p>
               </div>
               <Button
                 variant="danger"
@@ -94,7 +94,7 @@ export function RetroAchievementsCard() {
                 <p className="text-sm font-medium text-surface-200 group-hover:text-surface-100 transition-colors">
                   Hardcore Mode
                 </p>
-                <p className="text-xs text-surface-500">
+                <p className="text-xs text-tertiary">
                   Disable save states and cheats for official leaderboard
                   eligibility
                 </p>
@@ -124,7 +124,7 @@ export function RetroAchievementsCard() {
               />
             </div>
             {linkError && <p className="text-sm text-danger-500">{linkError}</p>}
-            <p className="text-xs text-surface-500">
+            <p className="text-xs text-tertiary">
               Your password is only used to obtain a token and is never stored.
             </p>
             <Button

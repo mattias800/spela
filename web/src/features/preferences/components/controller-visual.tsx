@@ -7,7 +7,7 @@ interface ControllerVisualProps {
 function KeyBadge({ label, keyName }: { label: string; keyName: string }) {
   return (
     <div data-comp="KeyBadge" className="flex items-center gap-2">
-      <span className="text-xs text-surface-400 w-20 text-right">{label}</span>
+      <span className="text-xs text-tertiary w-20 text-right">{label}</span>
       <span className="inline-flex items-center justify-center min-w-[2rem] px-1.5 py-0.5 rounded bg-surface-800 border border-surface-700 text-xs font-mono text-surface-200">
         {formatKeyName(keyName)}
       </span>
@@ -37,7 +37,7 @@ export function ControllerVisual({ mapping }: ControllerVisualProps) {
       <div className="flex justify-between items-center px-4">
         {/* D-pad */}
         <div className="flex flex-col items-center gap-0.5">
-          <span className="text-[10px] uppercase tracking-wider text-surface-500 mb-1">
+          <span className="text-[10px] uppercase tracking-wider text-secondary mb-1">
             D-Pad
           </span>
           <div className="grid grid-cols-3 gap-0.5 w-24">
@@ -65,7 +65,7 @@ export function ControllerVisual({ mapping }: ControllerVisualProps) {
         <div className="flex flex-col items-center gap-2">
           <div className="flex gap-3">
             <div className="text-center">
-              <span className="text-[10px] uppercase tracking-wider text-surface-500 block mb-1">
+              <span className="text-[10px] uppercase tracking-wider text-secondary block mb-1">
                 Select
               </span>
               <span className="inline-flex items-center justify-center min-w-[2.5rem] px-1.5 py-1 rounded bg-surface-800 border border-surface-700 text-xs font-mono text-surface-200">
@@ -73,7 +73,7 @@ export function ControllerVisual({ mapping }: ControllerVisualProps) {
               </span>
             </div>
             <div className="text-center">
-              <span className="text-[10px] uppercase tracking-wider text-surface-500 block mb-1">
+              <span className="text-[10px] uppercase tracking-wider text-secondary block mb-1">
                 Start
               </span>
               <span className="inline-flex items-center justify-center min-w-[2.5rem] px-1.5 py-1 rounded bg-surface-800 border border-surface-700 text-xs font-mono text-surface-200">
@@ -85,7 +85,7 @@ export function ControllerVisual({ mapping }: ControllerVisualProps) {
 
         {/* Face buttons */}
         <div className="flex flex-col items-center gap-0.5">
-          <span className="text-[10px] uppercase tracking-wider text-surface-500 mb-1">
+          <span className="text-[10px] uppercase tracking-wider text-secondary mb-1">
             Face
           </span>
           <div className="grid grid-cols-3 gap-0.5 w-24">

@@ -4,8 +4,11 @@
   --color-surface-100: #2d2d44;
   --color-surface-200: #3d3d5c;
   --color-surface-300: #6b6b8a;
-  --color-surface-400: #9090a8;
-  --color-surface-500: #b0b0c4;
+  /* Retuned for unmigrated text-surface-400/500 call sites — see
+   * default-light.css and #919. Original values were 3.2:1 / 2.4:1
+   * on the cream body bg and failed WCAG AA. */
+  --color-surface-400: #5a5a72; /* was #9090a8 */
+  --color-surface-500: #3d3d5c; /* was #b0b0c4 */
   --color-surface-600: #d4d4e0;
   --color-surface-700: #e8e8f0;
   --color-surface-800: #f2f0eb;
@@ -37,4 +40,11 @@
   --color-success-500: #43b047;
   --color-warning-500: #f5c722;
   --color-danger-500: #e52521;
+
+  /* Semantic text-emphasis tokens — see comment in index.css. Tuned
+   * for the cream body bg (#faf8f4). */
+  --color-text-primary: #2d2d44;
+  --color-text-secondary: #3d3d5c;
+  --color-text-tertiary: #5a5a72;
+  --color-text-disabled: #9090a8;
 }

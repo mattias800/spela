@@ -73,13 +73,13 @@ export function VideoFiltersCard({
                   <table className="w-full">
                     <thead>
                       <tr className="border-b border-surface-800">
-                        <th className="text-left px-3 py-2 text-xs font-semibold uppercase tracking-wider text-surface-400">
+                        <th className="text-left px-3 py-2 text-xs font-semibold uppercase tracking-wider text-secondary">
                           Console
                         </th>
-                        <th className="text-left px-3 py-2 text-xs font-semibold uppercase tracking-wider text-surface-400">
+                        <th className="text-left px-3 py-2 text-xs font-semibold uppercase tracking-wider text-secondary">
                           Shader
                         </th>
-                        <th className="text-left px-3 py-2 text-xs font-semibold uppercase tracking-wider text-surface-400">
+                        <th className="text-left px-3 py-2 text-xs font-semibold uppercase tracking-wider text-secondary">
                           Preview
                         </th>
                       </tr>

@@ -57,7 +57,7 @@ export function ThemeCard({
                   <p className="text-sm font-medium text-surface-100">
                     {option.label}
                   </p>
-                  <p className="text-xs text-surface-500">
+                  <p className="text-xs text-tertiary">
                     {option.description}
                   </p>
                 </button>
