@@ -1200,6 +1200,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/bios/archive/{filename}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Download a BIOS bundle archive
+         * @description Streams a zip of `<biosDir>/<SubDir>/` for a Bundle registry entry. Clients unzip on the device. 404 when the entry isn't a Bundle or the SubDir hasn't been populated yet on the server. See #911.
+         */
+        get: operations["downloadBiosArchive"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/bios/{filename}": {
         parameters: {
             query?: never;
@@ -3653,6 +3673,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/sessions/{id}/save-dir": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Download the libretro save_dir tarball for a session
+         * @description Owner-only. Responds with application/x-tar containing the save_dir bytes uploaded on the most recent exit. 404 if the session has never had a save_dir bundle. See #864.
+         */
+        get: operations["downloadSessionSaveDirBundle"];
+        put?: never;
+        /**
+         * Upload the libretro save_dir tarball for a session
+         * @description Stores or replaces the session's save_dir bundle. Used by cores that write their own save files to disk (e.g. ScummVM, DOSBox). Atomic full replacement — the bytes downloaded on resume are exactly the bytes uploaded on the most recent exit. Returns 201 on first upload, 200 on overwrite. See #864.
+         */
+        post: operations["uploadSaveDirBundle"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/sessions/{id}/saves": {
         parameters: {
             query?: never;
@@ -5531,6 +5575,7 @@ export interface components {
              * @example https://example.com/api/schemas/BiosFileResponse.json
              */
             readonly $schema?: string;
+            bundle: boolean;
             consoleId: string | null;
             consoleName: string | null;
             description: string | null;
@@ -5794,6 +5839,7 @@ export interface components {
             status: string;
         };
         ConsoleFileStatus: {
+            bundle: boolean;
             description: string;
             fileName: string;
             md5: string;
@@ -6024,6 +6070,8 @@ export interface components {
             readonly $schema?: string;
             gameId?: string;
             name?: string;
+            /** Format: int64 */
+            sourceSessionId?: number;
         };
         CultClassicGame: {
             /** Format: double */
@@ -7203,8 +7251,7 @@ export interface components {
             count: number;
         };
         PlayStatsEntry: {
-            /** Format: int64 */
-            gameId: number;
+            gameId: string;
             lastPlayedAt: string;
             /** Format: int64 */
             playTime: number;
@@ -7868,6 +7915,24 @@ export interface components {
              * Format: uri
              * @description A URL to the JSON Schema for this object.
              * @example https://example.com/api/schemas/SessionSaveData.json
+             */
+            readonly $schema?: string;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: int64 */
+            fileSize: number;
+            /** Format: int64 */
+            id: number;
+            /** Format: int64 */
+            sessionId: number;
+            /** Format: date-time */
+            updatedAt: string;
+        };
+        SessionSaveDirBundle: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/api/schemas/SessionSaveDirBundle.json
              */
             readonly $schema?: string;
             /** Format: date-time */
@@ -10941,6 +11006,36 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["BiosListResponse"];
                 };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HumaError"];
+                };
+            };
+        };
+    };
+    downloadBiosArchive: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Sentinel filename of the bundle entry (matches registry FileName). */
+                filename: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Error */
             default: {
@@ -15530,6 +15625,78 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["MessageResponse"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HumaError"];
+                };
+            };
+        };
+    };
+    downloadSessionSaveDirBundle: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Session ID. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HumaError"];
+                };
+            };
+        };
+    };
+    uploadSaveDirBundle: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Session ID. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "multipart/form-data": {
+                    /**
+                     * Format: binary
+                     * @description Tarball of the libretro save_dir contents.
+                     */
+                    file?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SessionSaveDirBundle"];
                 };
             };
             /** @description Error */

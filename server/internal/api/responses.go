@@ -1149,13 +1149,17 @@ type UserStatsResponse struct {
 	GamesPlayed        int64         `json:"gamesPlayed"`
 	CurrentStreak      int           `json:"currentStreak"`
 	LongestStreak      int           `json:"longestStreak"`
-	// MostPlayedGame is genuinely nullable (no game played yet → nil).
-	// Pre-#967 this was `omitempty` which made the wire shape "key
-	// absent on null", inconsistent with sibling LastPlayedAt below
-	// (which correctly emits `"lastPlayedAt": null`). Clients now see
-	// `"mostPlayedGame": null` on absence, matching the rest of the
-	// response.
-	MostPlayedGame     *GameResponse `json:"mostPlayedGame"`
+	// `omitempty` here is the same Huma 2.37 `$ref + nullable:true`
+	// panic workaround used on `GameResponse.parentGame` and
+	// `OnlineUserResponse.currentGame`. Without it, removing the
+	// `omitempty` makes Huma emit the field as `$ref: GameResponse`
+	// (required, non-null) — but the server emits `null` for users
+	// who haven't played anything yet, which the generated Kotlin
+	// client then refuses to deserialise. We accept the absent-key
+	// shape (vs the null-value shape of sibling LastPlayedAt) as the
+	// price of compatible client codegen, until upstream Huma is
+	// fixed. TODO(#969): re-audit on every Huma upgrade.
+	MostPlayedGame     *GameResponse `json:"mostPlayedGame,omitempty"`
 	MostPlayedGameTime int64         `json:"mostPlayedGameTime"`
 	LastPlayedAt       *time.Time    `json:"lastPlayedAt"`
 }
