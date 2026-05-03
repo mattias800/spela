@@ -1,10 +1,6 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { typedApi, unwrap } from "@/lib/api-client";
 import { useWebSocketEvent } from "@/hooks/use-websocket";
-import type {
-  ActivityEvent,
-  ActivityFeedResponse,
-} from "@/types/api";
 
 export function useOnlineUsers() {
   return useQuery({
@@ -52,18 +48,12 @@ export function useRecentPartners() {
 export function useActivityRealtime() {
   const queryClient = useQueryClient();
 
-  useWebSocketEvent("activity_new", (payload: ActivityEvent) => {
-    queryClient.setQueryData<ActivityFeedResponse>(
-      ["social", "activity", 1, 20],
-      (old) => {
-        if (!old) return old;
-        return {
-          ...old,
-          data: [payload, ...(old.data ?? [])],
-          total: old.total + 1,
-        };
-      },
-    );
+  useWebSocketEvent("activity_new", () => {
+    // Invalidate every activity feed cache regardless of (page, pageSize) —
+    // the previous setQueryData targeted only ["social", "activity", 1, 20]
+    // and silently dropped realtime updates for any caller that passed a
+    // different pageSize (e.g. the home dashboard's maxItems=5 feed).
+    queryClient.invalidateQueries({ queryKey: ["social", "activity"] });
   });
 
   useWebSocketEvent("online_status", () => {
