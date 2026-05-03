@@ -34,8 +34,8 @@ export interface ScanProgressState {
   dismiss: () => void;
 }
 
-export function useScanProgress(): ScanProgressState {
-  const { data: initialStatus } = useScanStatus();
+export function useScanProgress(enabled: boolean = true): ScanProgressState {
+  const { data: initialStatus } = useScanStatus(enabled);
   const queryClient = useQueryClient();
 
   const [phase, setPhase] = useState<ScanPhase>("idle");

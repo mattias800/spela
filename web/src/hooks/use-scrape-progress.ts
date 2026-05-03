@@ -40,8 +40,8 @@ export interface ScrapeProgressState {
   dismiss: () => void;
 }
 
-export function useScrapeProgress(): ScrapeProgressState {
-  const { data: initialStatus } = useScrapeStatus();
+export function useScrapeProgress(enabled: boolean = true): ScrapeProgressState {
+  const { data: initialStatus } = useScrapeStatus(enabled);
 
   const [phase, setPhase] = useState<ScrapePhase>("idle");
   const [current, setCurrent] = useState(0);

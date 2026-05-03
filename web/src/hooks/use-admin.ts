@@ -261,19 +261,34 @@ export function useTestIgdbCredentials() {
   });
 }
 
-export function useScrapeStatus() {
+/**
+ * Admin-only polling hooks. Both gate `enabled` on the `enabled`
+ * parameter so non-admin components or unmounted/background tabs
+ * don't fire 3s/req for the lifetime of the component. `staleTime`
+ * is set just under the polling interval so a window-focus refetch
+ * inside one cycle doesn't double-fire on top of the scheduled
+ * request. `refetchIntervalInBackground: false` keeps the timer
+ * paused while the tab is inactive. See #959.
+ */
+export function useScrapeStatus(enabled: boolean = true) {
   return useQuery({
     queryKey: ["admin", "scrape-status"],
     queryFn: () => unwrap(typedApi.GET("/api/admin/scrape/status")),
-    refetchInterval: 3000, // Poll every 3s to catch status changes
+    refetchInterval: 3000,
+    refetchIntervalInBackground: false,
+    staleTime: 2500,
+    enabled,
   });
 }
 
-export function useScanStatus() {
+export function useScanStatus(enabled: boolean = true) {
   return useQuery({
     queryKey: ["admin", "scan-status"],
     queryFn: () => unwrap(typedApi.GET("/api/admin/games/scan/status")),
     refetchInterval: 3000,
+    refetchIntervalInBackground: false,
+    staleTime: 2500,
+    enabled,
   });
 }
 
