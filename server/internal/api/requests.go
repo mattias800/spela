@@ -30,9 +30,9 @@ type UpdatePreferencesRequest struct {
 	AutoSaveEnabled         *bool                           `json:"autoSaveEnabled,omitempty"`
 	AutoLoadSaveEnabled     *bool                           `json:"autoLoadSaveEnabled,omitempty"`
 	AutoUpdateCoresEnabled  *bool                           `json:"autoUpdateCoresEnabled,omitempty"`
-	SelectedShader          *string                         `json:"selectedShader,omitempty"`
-	SelectedTheme           *string                         `json:"selectedTheme,omitempty"`
-	DefaultSecondScreenPage *string                         `json:"defaultSecondScreenPage,omitempty"`
+	SelectedShader          *string                         `json:"selectedShader,omitempty" maxLength:"128"`
+	SelectedTheme           *string                         `json:"selectedTheme,omitempty" maxLength:"128"`
+	DefaultSecondScreenPage *string                         `json:"defaultSecondScreenPage,omitempty" maxLength:"128"`
 	ConsoleShaders          map[string]string               `json:"consoleShaders,omitempty"`
 	// Per-console save-state opt-out upserts. Keys are console
 	// abbreviations (case-insensitive on the server). Allowed values
@@ -47,7 +47,7 @@ type UpdatePreferencesRequest struct {
 	// Unknown game IDs are skipped (no row written). See #804
 	// phase 4b spec point (c).
 	GameSaveStatePolicies    map[string]string              `json:"gameSaveStatePolicies,omitempty"`
-	SelectedKeyMapping      *string                         `json:"selectedKeyMapping,omitempty"`
+	SelectedKeyMapping      *string                         `json:"selectedKeyMapping,omitempty" maxLength:"128"`
 	CustomKeyMapping        map[string]string               `json:"customKeyMapping,omitempty"`
 	ConsoleKeyMappings      map[string]ConsoleKeyMappingDTO `json:"consoleKeyMappings,omitempty"`
 	PreferredRegions        *[]string                       `json:"preferredRegions,omitempty"`
@@ -69,7 +69,7 @@ type UpdateGameKeyMappingRequest struct {
 // and reserved-name allocation. Length and password strength still apply.
 type AdminCreateUserRequest struct {
 	Username string      `json:"username" minLength:"3" maxLength:"64" doc:"New account username (3-64 characters)."`
-	Email    string      `json:"email" minLength:"1" doc:"New account email."`
+	Email    string      `json:"email" minLength:"1" maxLength:"254" doc:"New account email (RFC 5321 cap)."`
 	Password string      `json:"password" minLength:"8" maxLength:"72" doc:"New account password (8-72 characters)."`
 	Role     db.UserRole `json:"role,omitempty"`
 }
@@ -77,8 +77,8 @@ type AdminCreateUserRequest struct {
 // AdminUpdateUserRequest is the body for PUT /api/admin/users/:id.
 type AdminUpdateUserRequest struct {
 	Role            db.UserRole `json:"role,omitempty"`
-	Email           string      `json:"email,omitempty"`
-	Password        string      `json:"password,omitempty"`
+	Email           string      `json:"email,omitempty" maxLength:"254"`
+	Password        string      `json:"password,omitempty" maxLength:"72"`
 	Disabled        *bool       `json:"disabled,omitempty"`
 	PendingApproval *bool       `json:"pendingApproval,omitempty"`
 }
