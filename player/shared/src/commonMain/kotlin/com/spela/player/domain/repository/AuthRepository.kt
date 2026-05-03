@@ -11,5 +11,12 @@ interface AuthRepository {
     suspend fun getStoredTokens(): AuthTokens?
     suspend fun storeTokens(tokens: AuthTokens)
     suspend fun clearTokens()
+    /**
+     * Calls POST /api/auth/logout on the server, blacklisting the access token
+     * and revoking refresh tokens. Failures are surfaced as Result.failure but
+     * callers should still proceed to clearTokens locally — a sign-out must
+     * never get stuck on a network error.
+     */
+    suspend fun logout(): Result<Unit>
     fun isLoggedIn(): Boolean
 }

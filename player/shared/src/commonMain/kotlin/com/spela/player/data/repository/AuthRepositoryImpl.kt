@@ -80,6 +80,10 @@ class AuthRepositoryImpl(
         queries.deleteTokens()
     }
 
+    override suspend fun logout(): Result<Unit> = runCatching {
+        apiClient.logout()
+    }
+
     override fun isLoggedIn(): Boolean = tokenManager.hasTokens()
 
     private suspend fun persistTokens(tokens: AuthTokens) {

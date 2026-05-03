@@ -246,6 +246,10 @@ class SpelaApiClient(
         return userApi.getUserProfile().body()
     }
 
+    suspend fun logout() {
+        authApi.authLogout().body()
+    }
+
     // Consoles & Games
 
     suspend fun getConsoles(): List<com.spela.client.models.ConsoleResponse> {

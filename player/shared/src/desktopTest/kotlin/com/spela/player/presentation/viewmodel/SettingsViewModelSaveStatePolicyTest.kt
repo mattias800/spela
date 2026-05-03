@@ -188,6 +188,7 @@ class SettingsViewModelSaveStatePolicyTest {
         override suspend fun getStoredTokens(): AuthTokens? = null
         override suspend fun storeTokens(tokens: AuthTokens) {}
         override suspend fun clearTokens() {}
+        override suspend fun logout(): Result<Unit> = Result.success(Unit)
         override fun isLoggedIn(): Boolean = false
     }
 }

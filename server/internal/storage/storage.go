@@ -484,7 +484,9 @@ func (s *Storage) SessionScreenshotPath(sessionID uint, filename string) string 
 	return filepath.Join(s.SaveDir, "sessions", fmt.Sprintf("session_%d", sessionID), "screenshots", safe)
 }
 
-// WriteSessionSave stores a session save state file.
+// WriteSessionSave stores a session save state file. Writes go to a `.tmp`
+// sibling and atomically rename on success, so an interrupted upload cannot
+// leave a partial file in place of a known-good save state.
 func (s *Storage) WriteSessionSave(sessionID uint, filename string, data io.Reader) (string, int64, error) {
 	path := s.SessionSaveStatePath(sessionID, filename)
 
@@ -504,17 +506,25 @@ func (s *Storage) WriteSessionSave(sessionID uint, filename string, data io.Read
 		return "", 0, fmt.Errorf("creating session save directory: %w", err)
 	}
 
-	f, err := os.Create(path)
+	tmpPath := path + ".tmp"
+	f, err := os.Create(tmpPath)
 	if err != nil {
-		return "", 0, fmt.Errorf("creating session save file: %w", err)
+		return "", 0, fmt.Errorf("creating session save tmp file: %w", err)
 	}
-	defer f.Close()
-
 	n, err := io.Copy(f, data)
+	closeErr := f.Close()
 	if err != nil {
+		_ = os.Remove(tmpPath)
 		return "", 0, fmt.Errorf("writing session save file: %w", err)
 	}
-
+	if closeErr != nil {
+		_ = os.Remove(tmpPath)
+		return "", 0, fmt.Errorf("closing session save tmp file: %w", closeErr)
+	}
+	if err := os.Rename(tmpPath, path); err != nil {
+		_ = os.Remove(tmpPath)
+		return "", 0, fmt.Errorf("replacing session save file: %w", err)
+	}
 	return path, n, nil
 }
 
@@ -563,7 +573,9 @@ func (s *Storage) WriteSessionSaveDirBundle(sessionID uint, data io.Reader) (str
 	return path, n, nil
 }
 
-// WriteSessionSRAM stores a session SRAM/save data file.
+// WriteSessionSRAM stores a session SRAM/save data file. Writes go to a
+// `.tmp` sibling and atomically rename on success, so an interrupted upload
+// cannot leave a partial file in place of a known-good SRAM image.
 func (s *Storage) WriteSessionSRAM(sessionID uint, filename string, data io.Reader) (string, int64, error) {
 	path := s.SessionSRAMPath(sessionID, filename)
 
@@ -583,17 +595,25 @@ func (s *Storage) WriteSessionSRAM(sessionID uint, filename string, data io.Read
 		return "", 0, fmt.Errorf("creating session SRAM directory: %w", err)
 	}
 
-	f, err := os.Create(path)
+	tmpPath := path + ".tmp"
+	f, err := os.Create(tmpPath)
 	if err != nil {
-		return "", 0, fmt.Errorf("creating session SRAM file: %w", err)
+		return "", 0, fmt.Errorf("creating session SRAM tmp file: %w", err)
 	}
-	defer f.Close()
-
 	n, err := io.Copy(f, data)
+	closeErr := f.Close()
 	if err != nil {
+		_ = os.Remove(tmpPath)
 		return "", 0, fmt.Errorf("writing session SRAM file: %w", err)
 	}
-
+	if closeErr != nil {
+		_ = os.Remove(tmpPath)
+		return "", 0, fmt.Errorf("closing session SRAM tmp file: %w", closeErr)
+	}
+	if err := os.Rename(tmpPath, path); err != nil {
+		_ = os.Remove(tmpPath)
+		return "", 0, fmt.Errorf("replacing session SRAM file: %w", err)
+	}
 	return path, n, nil
 }
 
