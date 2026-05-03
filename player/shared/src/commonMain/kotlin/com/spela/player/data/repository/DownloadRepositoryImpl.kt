@@ -45,6 +45,33 @@ class DownloadRepositoryImpl(
 
     private fun resetSpeed(gameId: String) {
         speedTrackers.remove(gameId)
+        // Reset the monotonic high-water mark together with the speed
+        // tracker — both have the same lifecycle (cleared whenever a
+        // download terminates: completed, failed, or cancelled).
+        resetMonotonic(gameId)
+    }
+
+    /*
+     * High-water mark per active download — defends against ANY future
+     * unit mismatch making the bar visibly retreat. The unit fix in
+     * #931 (logical-bytes tar parser + X-Logical-Size header) removes
+     * the known sources of backward jumps, but a monotonic clamp here
+     * is cheap insurance against regressions.
+     *
+     * Reset in cleanupPartialDownload() and on COMPLETED so the next
+     * download for the same game starts at 0.
+     */
+    private val lastEmittedBytes = mutableMapOf<String, Long>()
+
+    private fun monotonicBytes(gameId: String, candidate: Long): Long {
+        val prev = lastEmittedBytes[gameId] ?: 0L
+        val next = maxOf(prev, candidate)
+        lastEmittedBytes[gameId] = next
+        return next
+    }
+
+    private fun resetMonotonic(gameId: String) {
+        lastEmittedBytes.remove(gameId)
     }
 
     init {
@@ -207,9 +234,10 @@ class DownloadRepositoryImpl(
             // compressed size while downloaded bytes count decompressed data,
             // causing the progress bar to jump past 100%.
             val reportedTotal = if (expectedSize > 0) expectedSize else (total ?: -1)
-            val speed = recordSpeed(gameId, downloaded)
+            val monotonic = monotonicBytes(gameId, downloaded)
+            val speed = recordSpeed(gameId, monotonic)
             downloads.update {
-                it + (gameId to DownloadProgress(gameId, gameTitle, DownloadState.DOWNLOADING, downloaded, reportedTotal, bytesPerSecond = speed))
+                it + (gameId to DownloadProgress(gameId, gameTitle, DownloadState.DOWNLOADING, monotonic, reportedTotal, bytesPerSecond = speed))
             }
         }
 
@@ -250,12 +278,16 @@ class DownloadRepositoryImpl(
 
         if (disc.fileName.endsWith(".cue", ignoreCase = true) ||
             disc.fileName.endsWith(".gdi", ignoreCase = true)) {
-            // Tar archive (cue+bin or gdi+tracks) — stream-extract directly to disk
+            // Tar archive (cue+bin or gdi+tracks) — stream-extract directly to disk.
+            // Prefer the server-supplied X-Logical-Size total over the DB
+            // disc.fileSize: same units (logical bytes) but the server
+            // measures the actual files in the archive. See #931.
             apiClient.downloadDiscAndExtract(gameId, disc.discNumber.toInt(), fileStorage, gameDir) { downloaded, total ->
-                val reportedTotal = if (disc.fileSize > 0) disc.fileSize else (total ?: -1)
-                val speed = recordSpeed(gameId, downloaded)
+                val reportedTotal = total ?: if (disc.fileSize > 0) disc.fileSize else -1L
+                val monotonic = monotonicBytes(gameId, downloaded)
+                val speed = recordSpeed(gameId, monotonic)
                 downloads.update {
-                    it + (gameId to DownloadProgress(gameId, gameTitle, DownloadState.DOWNLOADING, downloaded, reportedTotal, bytesPerSecond = speed))
+                    it + (gameId to DownloadProgress(gameId, gameTitle, DownloadState.DOWNLOADING, monotonic, reportedTotal, bytesPerSecond = speed))
                 }
             }
         } else {
@@ -263,9 +295,10 @@ class DownloadRepositoryImpl(
             val discPath = "$gameDir/${disc.fileName}"
             apiClient.downloadDiscToFile(gameId, disc.discNumber.toInt(), fileStorage, discPath) { downloaded, total ->
                 val reportedTotal = if (disc.fileSize > 0) disc.fileSize else (total ?: -1)
-                val speed = recordSpeed(gameId, downloaded)
+                val monotonic = monotonicBytes(gameId, downloaded)
+                val speed = recordSpeed(gameId, monotonic)
                 downloads.update {
-                    it + (gameId to DownloadProgress(gameId, gameTitle, DownloadState.DOWNLOADING, downloaded, reportedTotal, bytesPerSecond = speed))
+                    it + (gameId to DownloadProgress(gameId, gameTitle, DownloadState.DOWNLOADING, monotonic, reportedTotal, bytesPerSecond = speed))
                 }
             }
         }
@@ -286,10 +319,15 @@ class DownloadRepositoryImpl(
      *     `*.scummvm` marker.
      *
      * Streams the tar straight to disk via `downloadGameAndExtract` (extracts
-     * file-by-file as the response arrives), then reports COMPLETED. There is
-     * no `actualSize == expectedSize` check because the wire bytes are the
-     * uncompressed tar (with 512-byte headers and per-file padding), which
-     * never matches `game.fileSize` (the size of the entry file alone).
+     * file-by-file as the response arrives), then reports COMPLETED.
+     *
+     * Total source: prefer the server-supplied total (X-Logical-Size header,
+     * sum of post-extract file sizes — see #931 / streamArchiveTar). For
+     * ScummVM games game.fileSize is the size of the marker file alone
+     * (often a few hundred bytes), so falling back to it would peg the bar
+     * at 100% on the first emission. Falls back to game.fileSize only if
+     * the server didn't supply X-Logical-Size — keeps an old-server client
+     * functional.
      */
     private suspend fun downloadTarBundledGameFromGameEndpoint(
         gameId: String,
@@ -302,17 +340,24 @@ class DownloadRepositoryImpl(
         }
         fileStorage.createDirectory(gameDir)
 
+        var lastTotal = -1L
         apiClient.downloadGameAndExtract(gameId, fileStorage, gameDir) { downloaded, total ->
-            val reportedTotal = if (expectedSize > 0) expectedSize else (total ?: -1)
-            val speed = recordSpeed(gameId, downloaded)
+            val reportedTotal = total ?: if (expectedSize > 0) expectedSize else -1L
+            lastTotal = reportedTotal
+            val monotonic = monotonicBytes(gameId, downloaded)
+            val speed = recordSpeed(gameId, monotonic)
             downloads.update {
-                it + (gameId to DownloadProgress(gameId, gameTitle, DownloadState.DOWNLOADING, downloaded, reportedTotal, bytesPerSecond = speed))
+                it + (gameId to DownloadProgress(gameId, gameTitle, DownloadState.DOWNLOADING, monotonic, reportedTotal, bytesPerSecond = speed))
             }
         }
 
+        // Use whichever total the bar saw last — that's what the user
+        // watched the progress fill toward, so completing to the same
+        // number is monotonic.
+        val finalTotal = if (lastTotal > 0) lastTotal else expectedSize
         resetSpeed(gameId)
         downloads.update {
-            it + (gameId to DownloadProgress(gameId, gameTitle, DownloadState.COMPLETED, expectedSize, expectedSize))
+            it + (gameId to DownloadProgress(gameId, gameTitle, DownloadState.COMPLETED, finalTotal, finalTotal))
         }
         return gameDir
     }
@@ -342,9 +387,13 @@ class DownloadRepositoryImpl(
 
             if (disc.fileName.endsWith(".cue", ignoreCase = true) ||
                 disc.fileName.endsWith(".gdi", ignoreCase = true)) {
-                // Tar archive (cue+bin or gdi+tracks) - stream-extract directly to disk
+                // Tar archive (cue+bin or gdi+tracks) - stream-extract directly to disk.
+                // Both discOffset (sum of disc.fileSize) and downloaded (from
+                // the tar parser, post-#931) are in logical bytes — same unit
+                // as totalSize, so the running sum no longer jumps backward
+                // at disc boundaries.
                 apiClient.downloadDiscAndExtract(gameId, disc.discNumber.toInt(), fileStorage, gameDir) { downloaded, total ->
-                    val totalDownloaded = discOffset + downloaded
+                    val totalDownloaded = monotonicBytes(gameId, discOffset + downloaded)
                     val speed = recordSpeed(gameId, totalDownloaded)
                     downloads.update {
                         it + (gameId to DownloadProgress(
@@ -359,7 +408,7 @@ class DownloadRepositoryImpl(
                 // Single file (ISO/CHD/CSO) - stream to disk
                 val discPath = "$gameDir/${disc.fileName}"
                 apiClient.downloadDiscToFile(gameId, disc.discNumber.toInt(), fileStorage, discPath) { downloaded, total ->
-                    val totalDownloaded = discOffset + downloaded
+                    val totalDownloaded = monotonicBytes(gameId, discOffset + downloaded)
                     val speed = recordSpeed(gameId, totalDownloaded)
                     downloads.update {
                         it + (gameId to DownloadProgress(
