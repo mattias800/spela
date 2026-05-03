@@ -36,6 +36,7 @@ import androidx.compose.ui.unit.dp
 import com.spela.player.domain.model.BiosMissingFile
 import com.spela.player.domain.model.DownloadState
 import com.spela.player.domain.model.Game
+import com.spela.player.domain.model.INSTANT_DOWNLOAD_THRESHOLD_BYTES
 import com.spela.player.domain.model.NETPLAY_SUPPORTED_CONSOLES
 import com.spela.player.presentation.state.GameDetailState
 import com.spela.player.presentation.state.GameSyncState
@@ -77,6 +78,18 @@ fun GameHeroContent(
     onPlayFresh: ((String) -> Unit)?,
     onPlayFromTitleScreen: ((String) -> Unit)? = null,
     onDownloadGame: () -> Unit,
+    /**
+     * Sub-threshold instant-download flow (#932). Wired by the screen
+     * to dispatch GameDetailIntent.DownloadGameAndPlay. Tap on the
+     * Play/Resume/Continue button for a small uncached game routes
+     * here instead of onDownloadGame, so the user experiences a
+     * single-click launch.
+     *
+     * No default: the wrong fallback would silently drop the
+     * auto-launch behaviour without a compile error. Caller must
+     * supply an explicit handler.
+     */
+    onDownloadAndPlay: () -> Unit,
     onToggleFavorite: () -> Unit,
     onTogglePlayLater: () -> Unit,
     onAddToCollection: () -> Unit,
@@ -104,6 +117,18 @@ fun GameHeroContent(
     // the button drifted off-axis from the "..." actions menu.
     val isActivelyDownloading = state.downloadProgress?.state == DownloadState.DOWNLOADING
     val isBusy = state.isDownloading || isActivelyDownloading
+
+    // #932: a sub-threshold uncached game shows the cached-style
+    // Play/Resume/Continue button. Tap kicks off a silent
+    // download-then-launch via the ViewModel. Once we exit the silent
+    // window (state.isInstantDownload flips false), we fall back to
+    // the regular Download button + progress bar for the rest of the
+    // wait so the user knows something is happening.
+    val isInstantDownloadCandidate =
+        !state.isGameCached &&
+            game.fileSize in 1..<INSTANT_DOWNLOAD_THRESHOLD_BYTES
+    val showCachedStyleButton = state.isGameCached ||
+        (isInstantDownloadCandidate && (!state.isDownloading || state.isInstantDownload))
 
     Column(
         verticalArrangement = Arrangement.spacedBy(SpSpacing.Medium),
@@ -172,7 +197,7 @@ fun GameHeroContent(
             verticalArrangement = Arrangement.spacedBy(SpSpacing.Medium),
             itemVerticalAlignment = Alignment.CenterVertically,
         ) {
-            if (state.isGameCached) {
+            if (showCachedStyleButton) {
                 if (game.playable) {
                     val menuItems = buildList {
                         if (hasSaves && onPlayFromTitleScreen != null) {
@@ -198,7 +223,12 @@ fun GameHeroContent(
                         if (onCreateNetplay != null && supportsNetplay) {
                             add(SpSplitButtonMenuItem("Netplay") { onCreateNetplay(gameId) })
                         }
-                        add(SpSplitButtonMenuItem("Delete Download") { onDeleteLocalGame() })
+                        // Delete Download only meaningful when the
+                        // game is actually downloaded — skip on the
+                        // instant-download silent-Play path (#932).
+                        if (state.isGameCached) {
+                            add(SpSplitButtonMenuItem("Delete Download") { onDeleteLocalGame() })
+                        }
                     }
                     val hasRequiredBiosMissing = missingBiosFiles.any { it.required }
                     val isSyncing = syncState != null
@@ -217,9 +247,24 @@ fun GameHeroContent(
                         com.spela.player.domain.model.PlaySemantics.ResumesFromSaveState -> "Resume"
                         com.spela.player.domain.model.PlaySemantics.LaunchesFresh -> "Continue"
                     }
+                    // Click target depends on whether the game is
+                    // already on disk. Cached → direct play. Uncached
+                    // (only reachable here when isInstantDownload-
+                    // Candidate is true) → silent download-then-
+                    // launch via the ViewModel; the screen
+                    // LaunchedEffect will call onPlay once download
+                    // succeeds. The ViewModel additionally gates the
+                    // auto-launch on its own size check so this
+                    // routing can't be inadvertently broken from
+                    // elsewhere. #932.
+                    val playOnClick: () -> Unit = if (state.isGameCached) {
+                        { onPlay(gameId) }
+                    } else {
+                        onDownloadAndPlay
+                    }
                     SpSplitButton(
                         text = playLabel,
-                        onClick = { onPlay(gameId) },
+                        onClick = playOnClick,
                         modifier = Modifier
                             .autoFocus()
                             .testTag("game_detail_play_button"),
@@ -339,11 +384,16 @@ fun GameHeroContent(
         // state.isDownloading (not on dp.state) so a single in-flight
         // progress event doesn't flip the indicator on/off and reflow
         // the page each frame (#797).
+        // #932: hide download status text + bar during the silent
+        // window of an instant-download. After the 750 ms fallback,
+        // state.isInstantDownload flips false and the regular UI
+        // takes over.
+        val showDownloadStatus = state.isDownloading && !state.isInstantDownload
         val statusText = when {
             state.isScraping -> "Scraping…"
             state.isScrapeQueued -> "Scrape queued"
             syncState != null && !syncState.isTimedOut -> syncState.message
-            state.isDownloading -> {
+            showDownloadStatus -> {
                 val p = state.downloadProgress
                 if (p != null && p.totalDiscs > 1) "Downloading disc ${p.currentDisc}/${p.totalDiscs}…"
                 else "Downloading…"
@@ -371,7 +421,7 @@ fun GameHeroContent(
                 ) {
                     // Show spinner for non-download statuses (scraping, sync).
                     // Downloads already have a spinner in the button.
-                    if (!state.isDownloading) {
+                    if (!showDownloadStatus) {
                         CircularProgressIndicator(
                             modifier = Modifier.size(14.dp),
                             strokeWidth = 2.dp,
@@ -388,7 +438,7 @@ fun GameHeroContent(
                 // Latched on isDownloading. The dp object's individual
                 // values (progress, bytes) still update continuously —
                 // only the show/hide decision is held stable.
-                if (state.isDownloading) {
+                if (showDownloadStatus) {
                     val dp = state.downloadProgress
                     SpDownloadProgressBar(
                         progress = dp?.progress ?: -1f,

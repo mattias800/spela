@@ -23,7 +23,10 @@ import com.spela.player.domain.repository.GameStatsRepository
 import com.spela.player.presentation.intent.GameDetailIntent
 import com.spela.player.presentation.state.GameDetailState
 import com.spela.player.util.DispatcherProvider
+import com.spela.player.domain.model.INSTANT_DOWNLOAD_FALLBACK_DELAY_MS
+import com.spela.player.domain.model.INSTANT_DOWNLOAD_THRESHOLD_BYTES
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -81,6 +84,8 @@ class GameDetailViewModel(
         when (intent) {
             is GameDetailIntent.LoadGame -> loadGame(intent.gameId)
             GameDetailIntent.DownloadGame -> downloadGame()
+            GameDetailIntent.DownloadGameAndPlay -> downloadGameAndPlay()
+            GameDetailIntent.ConsumeAutoLaunch -> _state.update { it.copy(pendingAutoLaunch = false) }
             GameDetailIntent.PlayGame -> { /* Handled by UI navigation to emulation screen */ }
             GameDetailIntent.DeleteLocalGame -> deleteLocalGame()
             GameDetailIntent.ShowDeleteDownloadDialog -> _state.update {
@@ -376,6 +381,78 @@ class GameDetailViewModel(
                 },
                 onFailure = { error ->
                     _state.update { it.copy(error = error.message, isDownloading = false) }
+                },
+            )
+        }
+    }
+
+    /**
+     * Sub-threshold download-then-launch flow (#932). Tap on the
+     * Play/Resume/Continue button for a small uncached game lands
+     * here. The download is suppressed-progress for the first
+     * INSTANT_DOWNLOAD_FALLBACK_DELAY_MS; if it doesn't finish in
+     * that window, we drop back to the regular progress UI so the
+     * user isn't staring at a silent spinner. On success we raise
+     * `pendingAutoLaunch` and the screen invokes its onPlay handler.
+     *
+     * The size guard duplicates the GameHeroContent check defensively
+     * — if a caller dispatches this for an above-threshold game (or
+     * one with unknown size), we just behave like a normal download.
+     */
+    private fun downloadGameAndPlay() {
+        val gameId = currentGameId ?: return
+        val gameTitle = _state.value.gameDetail?.game?.title ?: ""
+        val fileSize = _state.value.gameDetail?.game?.fileSize ?: 0L
+        val isInstant = fileSize in 1..<INSTANT_DOWNLOAD_THRESHOLD_BYTES
+
+        _state.update {
+            it.copy(isDownloading = true, isInstantDownload = isInstant)
+        }
+
+        if (isInstant) {
+            scope.launch(dispatchers.default) {
+                delay(INSTANT_DOWNLOAD_FALLBACK_DELAY_MS)
+                // If the download is still in flight after the silent
+                // window, surface the regular progress UI. Idempotent:
+                // post-completion this branch updates a no-op.
+                if (_state.value.isDownloading) {
+                    _state.update { it.copy(isInstantDownload = false) }
+                }
+            }
+        }
+
+        scope.launch(dispatchers.io) {
+            downloadRepository.downloadGame(gameId, gameTitle).fold(
+                onSuccess = {
+                    // Auto-launch is gated on `isInstant` so an
+                    // above-threshold game never silently fires the
+                    // play handler when it finally completes (e.g. a
+                    // 2 GB ROM after a 30-minute download — the user
+                    // has likely walked away and would be surprised
+                    // to land in the emulator). Above-threshold games
+                    // would normally not reach this codepath at all
+                    // (the UI routes them to the regular Download
+                    // button), but defending here means future
+                    // routing changes can't accidentally enable the
+                    // surprise-launch.
+                    _state.update {
+                        it.copy(
+                            isGameCached = true,
+                            isDownloading = false,
+                            isInstantDownload = false,
+                            pendingAutoLaunch = isInstant,
+                        )
+                    }
+                    currentGameId?.let { loadCheats(it) }
+                },
+                onFailure = { error ->
+                    _state.update {
+                        it.copy(
+                            error = error.message,
+                            isDownloading = false,
+                            isInstantDownload = false,
+                        )
+                    }
                 },
             )
         }

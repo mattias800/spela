@@ -35,6 +35,20 @@ data class GameDetailState(
     val isGameCached: Boolean = false,
     val isLoading: Boolean = false,
     val isDownloading: Boolean = false,
+    /**
+     * True while a sub-threshold download (kicked off by
+     * DownloadGameAndPlay) is still inside the silent window
+     * [INSTANT_DOWNLOAD_FALLBACK_DELAY_MS]. Suppresses the progress
+     * bar and "Downloading…" status so the click feels like an
+     * instant launch on fast connections. See #932.
+     */
+    val isInstantDownload: Boolean = false,
+    /**
+     * Set to true when DownloadGameAndPlay finishes successfully.
+     * The screen observes this and invokes its onPlay handler, then
+     * dispatches ConsumeAutoLaunch to clear the flag. See #932.
+     */
+    val pendingAutoLaunch: Boolean = false,
     val isScraping: Boolean = false,
     val isScrapeQueued: Boolean = false,
     val isSharing: Boolean = false,
