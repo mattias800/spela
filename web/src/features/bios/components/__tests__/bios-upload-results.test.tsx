@@ -19,6 +19,7 @@ function makeBiosFile(overrides: Partial<BiosFile> = {}): BiosFile {
     status: "valid",
     expectedMd5: "",
     subDir: "",
+    bundle: false,
     ...overrides,
   };
 }
