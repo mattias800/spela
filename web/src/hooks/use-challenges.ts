@@ -179,6 +179,7 @@ export function useDeleteChallenge() {
 }
 
 export function useStartAttempt() {
+  const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (challengeId: string) => {
       const data = await unwrap(
@@ -187,6 +188,13 @@ export function useStartAttempt() {
         }),
       );
       return data;
+    },
+    onSuccess: (_, challengeId) => {
+      // Match useCompleteAttempt's invalidation set so the UI moves out
+      // of the pre-attempt state immediately instead of waiting for the
+      // next background refetch.
+      queryClient.invalidateQueries({ queryKey: ["challenge", challengeId, "my-attempts"] });
+      queryClient.invalidateQueries({ queryKey: ["challenge", challengeId] });
     },
   });
 }
@@ -222,6 +230,7 @@ export function useCompleteAttempt() {
 }
 
 export function useAbandonAttempt() {
+  const queryClient = useQueryClient();
   return useMutation({
     mutationFn: ({
       challengeId,
@@ -235,6 +244,10 @@ export function useAbandonAttempt() {
           params: { path: { id: challengeId, aid: attemptId } },
         }),
       ),
+    onSuccess: (_, { challengeId }) => {
+      queryClient.invalidateQueries({ queryKey: ["challenge", challengeId, "my-attempts"] });
+      queryClient.invalidateQueries({ queryKey: ["challenge", challengeId] });
+    },
   });
 }
 
