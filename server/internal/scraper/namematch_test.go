@@ -484,6 +484,67 @@ func TestFindBestMatch_PrefersUSAOverJapan(t *testing.T) {
 	}
 }
 
+// TestFindBestMatch_RegionBeatsPriority pins the #937 fix. Pre-fix,
+// findBestMatch ranked entries by priority before consulting region
+// preference, so a Japan-only entry with the cleanest filename
+// (priority 0 — single paren group, no date, no tags) beat any
+// USA/World entry that happened to have a more elaborate filename
+// (priority 2 — multi-region tag like "(USA, Europe, Korea)").
+//
+// The actual libretro thumbnails repo for Ice Climber on NES contains
+// exactly this shape — a clean "Ice Climber (Japan).png" sitting next
+// to a multi-region "Ice Climber (USA, Europe, Korea) (En).png". The
+// user reported seeing Japanese box art for the USA primary game; this
+// test reproduces it on the entries actually present upstream and
+// asserts the fix picks the USA entry.
+func TestFindBestMatch_RegionBeatsPriority(t *testing.T) {
+	entry := func(raw string) nameEntry {
+		return nameEntry{
+			Raw:        raw,
+			Normalized: normalizeName(raw),
+			Priority:   computePriority(raw),
+		}
+	}
+	// A representative slice of the actual Ice Climber libretro entries
+	// (verified via the libretro-thumbnails NES repo). Includes the
+	// problematic mix: Japan-only at clean priority 0, USA at priority
+	// 2, and TOSEC-style dated entries at priority 3.
+	entries := []nameEntry{
+		entry("Ice Climber (Japan)"),
+		entry("Ice Climber (Japan) (En)"),
+		entry("Ice Climber (USA) (e-Reader Edition)"),
+		entry("Ice Climber (USA, Europe, Korea) (En)"),
+		entry("Ice Climber (1985-01-30)(Nintendo)(EU-JP)"),
+		entry("Ice Climber (1985-10)(Nintendo)(US)"),
+		entry("Ice Climber (1988-11-18)(Nintendo)(JP)[h][FDS to NES]"),
+	}
+
+	// Sanity check the priorities so this test still asserts what we
+	// think it asserts if computePriority changes.
+	if got := entries[0].Priority; got != 0 {
+		t.Fatalf("Ice Climber (Japan) should be priority 0, got %d", got)
+	}
+	if got := entries[3].Priority; got != 2 {
+		t.Fatalf("Ice Climber (USA, Europe, Korea) (En) should be priority 2, got %d", got)
+	}
+
+	normalized := normalizeName("Ice Climber")
+	match, _, found := findBestMatch(normalized, entries, 0.88)
+	if !found {
+		t.Fatalf("expected a match for Ice Climber, got none")
+	}
+	// Any USA/World-tagged entry is acceptable. The bug was picking a
+	// Japan-only entry; we just don't want that.
+	if hasPreferredRegion(match.Raw) {
+		return
+	}
+	t.Errorf(
+		"findBestMatch picked %q (priority %d) — expected a USA/World "+
+			"entry; preferred-region tie-break must beat priority",
+		match.Raw, match.Priority,
+	)
+}
+
 func TestFindBestMatch_EmptyInputs(t *testing.T) {
 	_, _, found := findBestMatch("", []nameEntry{{Raw: "test", Normalized: "test"}}, 0.88)
 	if found {
