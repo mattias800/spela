@@ -192,6 +192,8 @@ export function usePendingNetplayInviteCount() {
     queryKey: ["netplay", "invites", "count"],
     queryFn: () => unwrap(typedApi.GET("/api/netplay/invites/count")),
     refetchInterval: 30000,
+    // Don't poll a backgrounded tab — convention from #959.
+    refetchIntervalInBackground: false,
   });
 }
 
