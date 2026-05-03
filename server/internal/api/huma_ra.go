@@ -3,6 +3,7 @@ package api
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"log/slog"
 	"net/http"
 	"path/filepath"
@@ -291,8 +292,17 @@ func (h *RAHandler) HumaLinkRAAccount(ctx context.Context, in *LinkRAAccountInpu
 
 	token, err := h.RAClient.LoginWithPassword(req.Username, req.Password)
 	if err != nil {
-		slog.Warn("RA login failed", "user_id", uid, "error", err)
-		return nil, huma.Error401Unauthorized("RetroAchievements login failed: invalid credentials")
+		// Distinguish "RA said your password is wrong" (401) from
+		// "RA is unreachable / returning 5xx / DNS-broken" (502). Pre-#964
+		// this collapsed to 401 in all cases, telling users their
+		// credentials were wrong during an RA outage — some would change
+		// their password in a panic.
+		if errors.Is(err, retroachievements.ErrInvalidRACredentials) {
+			slog.Warn("RA login rejected credentials", "user_id", uid)
+			return nil, huma.Error401Unauthorized("RetroAchievements login failed: invalid credentials")
+		}
+		slog.Error("RA login upstream failure", "user_id", uid, "error", err)
+		return nil, huma.NewError(http.StatusBadGateway, "RetroAchievements is unreachable. Please try again later.")
 	}
 
 	encryptedToken, err := auth.Encrypt(token, h.EncryptionKey)

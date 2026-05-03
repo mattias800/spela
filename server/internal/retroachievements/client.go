@@ -4,6 +4,7 @@ import (
 	"crypto/md5"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -183,7 +184,21 @@ func (c *RAClient) GetGameExtended(apiKey string, raGameID uint) (*GameInfo, err
 	return gameInfo, nil
 }
 
+// ErrInvalidRACredentials is returned by LoginWithPassword when the RA
+// API confirms the username/password combination is wrong (Success=false
+// with a credentials-related error message). Callers can check with
+// errors.Is to distinguish authentication failures from infrastructure
+// failures (network, DNS, RA outage) so the user sees the right error.
+// See #964.
+var ErrInvalidRACredentials = errors.New("invalid RetroAchievements credentials")
+
 // LoginWithPassword calls the RA API to exchange username+password for a token.
+//
+// Returns ErrInvalidRACredentials (wrapped via fmt.Errorf %w) when the
+// upstream API explicitly rejects the credentials. Returns plain wrapped
+// errors for everything else (network/DNS/TLS/upstream 5xx), so callers
+// can branch on errors.Is(err, ErrInvalidRACredentials) to decide
+// between 401 (auth) and 502 (upstream).
 func (c *RAClient) LoginWithPassword(username, password string) (string, error) {
 	params := url.Values{
 		"r": {"login"},
@@ -220,7 +235,9 @@ func (c *RAClient) LoginWithPassword(username, password string) (string, error) 
 		if errMsg == "" {
 			errMsg = "invalid credentials"
 		}
-		return "", fmt.Errorf("RA login failed: %s", errMsg)
+		// Wrap with ErrInvalidRACredentials so the handler can return
+		// 401 here vs 502 for infrastructure failures. See #964.
+		return "", fmt.Errorf("RA login failed (%s): %w", errMsg, ErrInvalidRACredentials)
 	}
 
 	if result.Token == "" {
