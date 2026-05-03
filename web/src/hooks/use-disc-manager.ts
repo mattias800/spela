@@ -200,7 +200,10 @@ export function useDiscManager({
   const retryDisc = useCallback(
     (discNumber: number) => {
       if (!game) return;
-      downloadSingleDisc(game.id, discNumber);
+      // Pass the same abort signal the background loop uses so a
+      // user-initiated retry that's still mid-flight when the
+      // component unmounts gets cancelled too.
+      downloadSingleDisc(game.id, discNumber, abortControllerRef.current?.signal);
     },
     [game?.id],
   );
