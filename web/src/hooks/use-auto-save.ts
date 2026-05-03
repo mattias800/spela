@@ -32,13 +32,4 @@ export function useAutoSave({
       }
     };
   }, [emulatorStatus, autoSaveEnabled, requestAutoSave]);
-
-  // Cleanup on unmount
-  useEffect(() => {
-    return () => {
-      if (autoSaveIntervalRef.current) {
-        clearInterval(autoSaveIntervalRef.current);
-      }
-    };
-  }, []);
 }
