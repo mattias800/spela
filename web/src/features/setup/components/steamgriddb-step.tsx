@@ -12,6 +12,7 @@ export function SteamGridDBStep({ onSkip, onSave }: SteamGridDBStepProps) {
   const { data: status, isLoading } = useSteamGridDBStatus();
   const [apiKey, setApiKey] = useState("");
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [instructionsExpanded, setInstructionsExpanded] = useState(true);
   const updateSettings = useUpdateSettings();
 
@@ -45,14 +46,22 @@ export function SteamGridDBStep({ onSkip, onSave }: SteamGridDBStepProps) {
 
   async function handleSaveAndContinue() {
     setSaving(true);
+    setError(null);
     try {
       await updateSettings.mutateAsync({
         steamgriddb_api_key: apiKey,
       });
       onSave();
-    } catch {
-      // Silently continue — the key will be validated when artwork is fetched
-      onSave();
+    } catch (err) {
+      // Surface the error and stay on this step. Silently advancing here
+      // would let the wizard finish with the API key never persisted —
+      // the user would think setup completed but artwork fetches would
+      // all fail later.
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Failed to save API key. Try again or skip this step.",
+      );
     } finally {
       setSaving(false);
     }
@@ -108,8 +117,17 @@ export function SteamGridDBStep({ onSkip, onSave }: SteamGridDBStepProps) {
         type="password"
         placeholder="SteamGridDB API Key"
         value={apiKey}
-        onChange={(e) => setApiKey(e.target.value)}
+        onChange={(e) => {
+          setApiKey(e.target.value);
+          if (error) setError(null);
+        }}
       />
+
+      {error && (
+        <div className="rounded-xl bg-error-500/10 border border-error-500/30 px-4 py-3">
+          <p className="text-sm text-error-500">{error}</p>
+        </div>
+      )}
 
       <div className="flex items-center justify-between pt-2">
         <Button variant="secondary" onClick={onSkip}>
