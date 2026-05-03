@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Plus } from "lucide-react";
 import { PageLayout, SectionList } from "@/components/layout";
-import { Button, StateTabNav, StateTabItem } from "@/components/ui";
+import { Button, StateTabNav, StateTabItem, useToast } from "@/components/ui";
 import {
   useAdminUsers,
   useAdminStats,
@@ -27,6 +27,7 @@ export function AdminUsersPage() {
   const { data: deletedUsers, isLoading: isLoadingDeleted } = useDeletedUsers();
   const { user: currentUser } = useAuth();
   const { mutate: updateUser } = useUpdateUser();
+  const { toast } = useToast();
 
   const [tab, setTab] = useState<Tab>("active");
   const [editingUser, setEditingUser] = useState<User | null>(null);
@@ -38,7 +39,17 @@ export function AdminUsersPage() {
   const [showCreate, setShowCreate] = useState(false);
 
   function handleApprove(user: User) {
-    updateUser({ id: user.id, data: { pendingApproval: false } });
+    updateUser(
+      { id: user.id, data: { pendingApproval: false } },
+      {
+        onSuccess: () => toast("success", `${user.username} approved`),
+        onError: (err) =>
+          toast(
+            "error",
+            err instanceof Error ? err.message : "Approval failed",
+          ),
+      },
+    );
   }
 
   const deletedCount = deletedUsers?.length ?? 0;
