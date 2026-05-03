@@ -25,6 +25,14 @@ export function useSaveQueue({
   const [isSaving, setIsSaving] = useState(false);
   const saveQueueRef = useRef<SaveQueueItem[]>([]);
   const retryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Stash callbacks in refs so processQueue can stay stable across the
+  // recursive calls. Without this, every parent re-render with new inline
+  // lambdas would rebuild processQueue, and a recursion taken between
+  // upload start and recursion completion could fire a stale callback.
+  const onSaveSuccessRef = useRef(onSaveSuccess);
+  const onSaveErrorRef = useRef(onSaveError);
+  onSaveSuccessRef.current = onSaveSuccess;
+  onSaveErrorRef.current = onSaveError;
 
   const processQueue = useCallback(async () => {
     if (saveQueueRef.current.length === 0) {
@@ -70,14 +78,14 @@ export function useSaveQueue({
       }
 
       saveQueueRef.current.shift();
-      onSaveSuccess?.(item.isAuto);
+      onSaveSuccessRef.current?.(item.isAuto);
 
       processQueue();
     } catch {
       item.retries++;
       if (item.retries >= MAX_RETRIES) {
         saveQueueRef.current.shift();
-        onSaveError?.(`Save failed after ${MAX_RETRIES} attempts`, item.isAuto);
+        onSaveErrorRef.current?.(`Save failed after ${MAX_RETRIES} attempts`, item.isAuto);
         processQueue();
       } else {
         retryTimerRef.current = setTimeout(() => {
@@ -85,7 +93,7 @@ export function useSaveQueue({
         }, RETRY_DELAY_MS);
       }
     }
-  }, [onSaveSuccess, onSaveError]);
+  }, []);
 
   const enqueueSave = useCallback(
     (sessionId: string, data: string, isAuto: boolean, name?: string, screenshot?: string) => {
