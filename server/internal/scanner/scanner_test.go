@@ -377,11 +377,27 @@ func TestParseM3U(t *testing.T) {
 	content := "disc1.cue\n\ndisc2.cue\n# comment\n"
 	require.NoError(t, os.WriteFile(m3uPath, []byte(content), 0644))
 
-	paths, err := parseM3U(m3uPath)
+	paths, err := parseM3U(m3uPath, []string{dir})
 	require.NoError(t, err)
 	assert.Len(t, paths, 2)
 	assert.Equal(t, filepath.Join(dir, "disc1.cue"), paths[0])
 	assert.Equal(t, filepath.Join(dir, "disc2.cue"), paths[1])
+}
+
+func TestParseM3UDropsEntriesOutsideAllowedDirs(t *testing.T) {
+	dir := t.TempDir()
+	outside := t.TempDir()
+	require.NoError(t, os.WriteFile(filepath.Join(outside, "evil.cue"), []byte("FILE \"evil.bin\" BINARY\n"), 0644))
+	m3uPath := filepath.Join(dir, "game.m3u")
+	// Mix a legitimate relative entry with an absolute path that escapes
+	// the allowed dirs and a "../" relative escape attempt.
+	content := "disc1.cue\n" + filepath.Join(outside, "evil.cue") + "\n../../etc/passwd\n"
+	require.NoError(t, os.WriteFile(m3uPath, []byte(content), 0644))
+
+	paths, err := parseM3U(m3uPath, []string{dir})
+	require.NoError(t, err)
+	require.Len(t, paths, 1, "only the in-dir entry should be retained")
+	assert.Equal(t, filepath.Join(dir, "disc1.cue"), paths[0])
 }
 
 func TestDiscPattern(t *testing.T) {
