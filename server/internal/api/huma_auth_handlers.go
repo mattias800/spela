@@ -117,11 +117,15 @@ type SetupStatusOutput struct {
 }
 
 // AuthLogoutInput captures the Authorization header so the handler can
-// blacklist the bearer access token. The header is optional — clients can
-// also pass the token via ?token= as a fallback (matches the gin handler).
+// blacklist the bearer access token. The historical gin handler also
+// accepted ?token= as a fallback; that fallback was removed in #977
+// because reverse proxies (nginx, HAProxy, Caddy) log the full URL and
+// the access token would land in their access logs in cleartext.
+// Logout is always invoked programmatically — there is no <img>/<video>
+// constraint that would prevent a client setting the Authorization
+// header on a POST.
 type AuthLogoutInput struct {
 	Authorization string `header:"Authorization" doc:"Bearer access token to blacklist."`
-	TokenQuery    string `query:"token" doc:"Fallback access token to blacklist when no Authorization header is sent."`
 }
 
 // AuthLogoutResponse mirrors the historical gin response body.
@@ -673,9 +677,6 @@ func (h *AuthHandler) HumaLogout(ctx context.Context, in *AuthLogoutInput) (*Aut
 		if len(parts) == 2 && parts[0] == "Bearer" {
 			token = parts[1]
 		}
-	}
-	if token == "" {
-		token = in.TokenQuery
 	}
 
 	if token != "" {
