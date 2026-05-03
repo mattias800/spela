@@ -7,7 +7,35 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"golang.org/x/crypto/bcrypt"
 )
+
+// TestBcryptCostIsAtLeast12 pins the cost factor used by HashPassword.
+// The matching dummyBcryptHash in api/auth_handler.go is generated at
+// auth.BcryptCost so the timing-protection check on login takes the
+// same wall time for valid and invalid usernames. Lowering the cost
+// re-opens the timing-based username enumeration described in #976:
+// each cost level below 12 halves bcrypt's work, making the dummy
+// comparison measurably faster than a real one and leaking whether
+// the username exists.
+func TestBcryptCostIsAtLeast12(t *testing.T) {
+	assert.GreaterOrEqual(t, BcryptCost, 12,
+		"BcryptCost must stay at 12 (OWASP minimum is 10; 12 is the value the dummy "+
+			"hash generation in api.dummyBcryptHash relies on for timing parity — see #976)")
+}
+
+// TestHashPasswordUsesBcryptCost confirms HashPassword actually uses
+// the BcryptCost constant and not a different hardcoded value. Catches
+// the regression where someone updates the constant but forgets the
+// call site.
+func TestHashPasswordUsesBcryptCost(t *testing.T) {
+	hash, err := HashPassword("probe")
+	require.NoError(t, err)
+	cost, err := bcrypt.Cost([]byte(hash))
+	require.NoError(t, err)
+	assert.Equal(t, BcryptCost, cost,
+		"HashPassword's bcrypt cost must match the exported BcryptCost constant")
+}
 
 func TestHashPassword(t *testing.T) {
 	hash, err := HashPassword("testpassword123")
