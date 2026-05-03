@@ -29,7 +29,10 @@ const testJWTSecret = "test-secret-key"
 
 func setupTestEnv(t *testing.T) (*gorm.DB, *Config) {
 	t.Helper()
-	database, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{
+	// _foreign_keys=1 mirrors the production DSN (database.go) so the
+	// CASCADE / SET NULL constraints on user-owned tables (#971) are
+	// enforced under tests.
+	database, err := gorm.Open(sqlite.Open(":memory:?_foreign_keys=1"), &gorm.Config{
 		Logger: logger.Default.LogMode(logger.Silent),
 	})
 	require.NoError(t, err)

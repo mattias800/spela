@@ -281,7 +281,7 @@ type Favorite struct {
 	CreatedAt time.Time      `json:"createdAt"`
 	DeletedAt gorm.DeletedAt `gorm:"index" json:"-"`
 	UserID    uint           `gorm:"uniqueIndex:idx_user_game;not null" json:"userId"`
-	User      User           `gorm:"foreignKey:UserID" json:"-"`
+	User      User           `gorm:"foreignKey:UserID;constraint:OnDelete:CASCADE" json:"-"`
 	GameID    uint           `gorm:"uniqueIndex:idx_user_game;not null" json:"gameId"`
 	Game      Game           `gorm:"foreignKey:GameID" json:"game"`
 }
@@ -298,7 +298,7 @@ type PlayHistory struct {
 	UpdatedAt time.Time      `json:"updatedAt"`
 	DeletedAt gorm.DeletedAt `gorm:"index" json:"-"`
 	UserID    uint           `gorm:"uniqueIndex:idx_user_game_play_history;not null" json:"userId"`
-	User      User           `gorm:"foreignKey:UserID" json:"-"`
+	User      User           `gorm:"foreignKey:UserID;constraint:OnDelete:CASCADE" json:"-"`
 	// Standalone index on GameID — the composite uniqueIndex above has
 	// (UserID, GameID) so SQLite cannot use it for queries that filter
 	// by GameID alone (GET /api/games/{id}/stats and the top-player JOIN
@@ -313,6 +313,7 @@ type PlayHistory struct {
 type DailyPlayActivity struct {
 	ID       uint      `gorm:"primarykey" json:"id"`
 	UserID   uint      `gorm:"uniqueIndex:idx_daily_play_user_date;not null" json:"userId"`
+	User     User      `gorm:"foreignKey:UserID;constraint:OnDelete:CASCADE" json:"-"`
 	Date     time.Time `gorm:"uniqueIndex:idx_daily_play_user_date;not null;type:date" json:"date"`
 	PlayTime int64     `json:"playTime"` // seconds added on this day
 }
@@ -323,7 +324,7 @@ type RefreshToken struct {
 	CreatedAt   time.Time
 	DeletedAt   gorm.DeletedAt `gorm:"index"`
 	UserID      uint           `gorm:"index;not null"`
-	User        User           `gorm:"foreignKey:UserID"`
+	User        User           `gorm:"foreignKey:UserID;constraint:OnDelete:CASCADE"`
 	Token       string         `gorm:"uniqueIndex;size:512;not null"`
 	ExpiresAt   time.Time      `gorm:"not null;index"`
 	TokenFamily string         `gorm:"size:64;index"` // groups related tokens for replay detection
@@ -458,6 +459,10 @@ type SystemEvent struct {
 	Username      string              `gorm:"size:128;index"`
 	UsernameLower string              `gorm:"size:128;index"`
 	UserID        *uint               `gorm:"index"`
+	// SET NULL not CASCADE: SystemEvent is the audit log. Deleting a
+	// user must not erase the record of what they did. We keep the
+	// event row and null the FK so nothing dangles.
+	User          *User               `gorm:"foreignKey:UserID;constraint:OnDelete:SET NULL"`
 	IP            string              `gorm:"size:64;index"`
 	Path          string              `gorm:"size:256"`
 	Metadata      string              `gorm:"type:text"`
@@ -499,6 +504,7 @@ type ConsoleSaveStatePolicy struct {
 	UpdatedAt time.Time              `json:"updatedAt"`
 	DeletedAt gorm.DeletedAt         `gorm:"index" json:"-"`
 	UserID    uint                   `gorm:"uniqueIndex:idx_user_console_savestate;not null" json:"userId"`
+	User      User                   `gorm:"foreignKey:UserID;constraint:OnDelete:CASCADE" json:"-"`
 	ConsoleID uint                   `gorm:"uniqueIndex:idx_user_console_savestate;not null" json:"consoleId"`
 	Choice    ConsoleSaveStateChoice `gorm:"type:varchar(16);not null" json:"choice"`
 }
@@ -518,6 +524,7 @@ type GameSaveStatePolicy struct {
 	UpdatedAt time.Time              `json:"updatedAt"`
 	DeletedAt gorm.DeletedAt         `gorm:"index" json:"-"`
 	UserID    uint                   `gorm:"uniqueIndex:idx_user_game_savestate;not null" json:"userId"`
+	User      User                   `gorm:"foreignKey:UserID;constraint:OnDelete:CASCADE" json:"-"`
 	GameID    uint                   `gorm:"uniqueIndex:idx_user_game_savestate;not null" json:"gameId"`
 	Choice    ConsoleSaveStateChoice `gorm:"type:varchar(16);not null" json:"choice"`
 }
@@ -529,6 +536,7 @@ type ConsoleShaderPreference struct {
 	UpdatedAt time.Time      `json:"updatedAt"`
 	DeletedAt gorm.DeletedAt `gorm:"index" json:"-"`
 	UserID    uint           `gorm:"uniqueIndex:idx_user_console_shader;not null" json:"userId"`
+	User      User           `gorm:"foreignKey:UserID;constraint:OnDelete:CASCADE" json:"-"`
 	ConsoleID uint           `gorm:"uniqueIndex:idx_user_console_shader;not null" json:"consoleId"`
 	Shader    string         `gorm:"size:64;not null" json:"shader"`
 }
@@ -540,6 +548,7 @@ type ConsoleKeyMappingPreference struct {
 	UpdatedAt       time.Time      `json:"updatedAt"`
 	DeletedAt       gorm.DeletedAt `gorm:"index" json:"-"`
 	UserID          uint           `gorm:"uniqueIndex:idx_user_console_keymapping;not null" json:"userId"`
+	User            User           `gorm:"foreignKey:UserID;constraint:OnDelete:CASCADE" json:"-"`
 	ConsoleID       uint           `gorm:"uniqueIndex:idx_user_console_keymapping;not null" json:"consoleId"`
 	SelectedMapping string         `gorm:"size:64;not null" json:"selectedMapping"`
 	CustomMapping   string         `gorm:"type:text" json:"customMapping"` // JSON
@@ -552,6 +561,7 @@ type Device struct {
 	UpdatedAt  time.Time      `json:"updatedAt"`
 	DeletedAt  gorm.DeletedAt `gorm:"index" json:"-"`
 	UserID     uint           `gorm:"index;not null" json:"userId"`
+	User       User           `gorm:"foreignKey:UserID;constraint:OnDelete:CASCADE" json:"-"`
 	DeviceUUID string         `gorm:"uniqueIndex;size:64;not null" json:"deviceUuid"`
 	Name       string         `gorm:"size:128;not null" json:"name"`
 	Platform   string         `gorm:"size:32;not null" json:"platform"` // "android", "macos", "linux", "windows"
@@ -576,6 +586,7 @@ type RetroAchievementCredential struct {
 	UpdatedAt       time.Time      `json:"updatedAt"`
 	DeletedAt       gorm.DeletedAt `gorm:"index" json:"-"`
 	UserID          uint           `gorm:"uniqueIndex;not null" json:"userId"`
+	User            User           `gorm:"foreignKey:UserID;constraint:OnDelete:CASCADE" json:"-"`
 	RAUsername      string         `gorm:"size:128;not null" json:"raUsername"`
 	RAToken         string         `gorm:"size:512;not null" json:"-"`
 	HardcoreEnabled bool           `gorm:"default:false" json:"hardcoreEnabled"`
@@ -603,6 +614,7 @@ type UserAchievementProgress struct {
 	UpdatedAt        time.Time      `json:"updatedAt"`
 	DeletedAt        gorm.DeletedAt `gorm:"index" json:"-"`
 	UserID           uint           `gorm:"uniqueIndex:idx_user_achievement;not null" json:"userId"`
+	User             User           `gorm:"foreignKey:UserID;constraint:OnDelete:CASCADE" json:"-"`
 	AchievementRAID  uint           `gorm:"uniqueIndex:idx_user_achievement;not null" json:"achievementRaId"`
 	RAGameID         uint           `gorm:"index;not null" json:"raGameId"`
 	UnlockedAt       time.Time      `json:"unlockedAt"`
@@ -617,7 +629,7 @@ type SharedSaveState struct {
 	UpdatedAt     time.Time      `json:"updatedAt"`
 	DeletedAt     gorm.DeletedAt `gorm:"index" json:"-"`
 	UserID        uint           `gorm:"index;not null" json:"userId"`
-	User          User           `gorm:"foreignKey:UserID" json:"-"`
+	User          User           `gorm:"foreignKey:UserID;constraint:OnDelete:CASCADE" json:"-"`
 	GameID        uint           `gorm:"index;not null" json:"gameId"`
 	Game          Game           `gorm:"foreignKey:GameID" json:"-"`
 	Name          string         `gorm:"size:255;not null" json:"name"`
@@ -635,7 +647,7 @@ type GameRating struct {
 	UpdatedAt time.Time      `json:"updatedAt"`
 	DeletedAt gorm.DeletedAt `gorm:"index" json:"-"`
 	UserID    uint           `gorm:"uniqueIndex:idx_user_game_rating;not null" json:"userId"`
-	User      User           `gorm:"foreignKey:UserID" json:"-"`
+	User      User           `gorm:"foreignKey:UserID;constraint:OnDelete:CASCADE" json:"-"`
 	GameID    uint           `gorm:"uniqueIndex:idx_user_game_rating;not null;index" json:"gameId"`
 	Game      Game           `gorm:"foreignKey:GameID" json:"-"`
 	Rating    int            `gorm:"not null" json:"rating"` // 1-5
@@ -648,7 +660,7 @@ type ActivityEvent struct {
 	CreatedAt time.Time      `json:"createdAt"`
 	DeletedAt gorm.DeletedAt `gorm:"index" json:"-"`
 	UserID    uint           `gorm:"index;not null" json:"userId"`
-	User      User           `gorm:"foreignKey:UserID" json:"-"`
+	User      User           `gorm:"foreignKey:UserID;constraint:OnDelete:CASCADE" json:"-"`
 	EventType string         `gorm:"size:64;not null;index" json:"eventType"` // started_playing, favorited_game, rated_game, shared_save
 	GameID    uint           `gorm:"index" json:"gameId"`
 	Game      Game           `gorm:"foreignKey:GameID" json:"-"`
@@ -662,7 +674,7 @@ type GameCollection struct {
 	UpdatedAt   time.Time      `json:"updatedAt"`
 	DeletedAt   gorm.DeletedAt `gorm:"index" json:"-"`
 	UserID      uint           `gorm:"index;not null" json:"userId"`
-	User        User           `gorm:"foreignKey:UserID" json:"-"`
+	User        User           `gorm:"foreignKey:UserID;constraint:OnDelete:CASCADE" json:"-"`
 	Name        string         `gorm:"size:255;not null" json:"name"`
 	Description string         `gorm:"type:text" json:"description"`
 	IsPublic    bool           `gorm:"default:false" json:"isPublic"`
@@ -686,7 +698,7 @@ type PlayLaterItem struct {
 	CreatedAt time.Time      `json:"createdAt"`
 	DeletedAt gorm.DeletedAt `gorm:"index" json:"-"`
 	UserID    uint           `gorm:"uniqueIndex:idx_play_later_user_game;not null" json:"userId"`
-	User      User           `gorm:"foreignKey:UserID" json:"-"`
+	User      User           `gorm:"foreignKey:UserID;constraint:OnDelete:CASCADE" json:"-"`
 	GameID    uint           `gorm:"uniqueIndex:idx_play_later_user_game;not null" json:"gameId"`
 	Game      Game           `gorm:"foreignKey:GameID" json:"game"`
 	Position  int            `gorm:"not null;default:0" json:"position"`
@@ -721,7 +733,7 @@ type SharedSessionMember struct {
 	SharedSessionID uint           `gorm:"uniqueIndex:idx_shared_session_user;not null" json:"sharedSessionId"`
 	SharedSession   SharedSession  `gorm:"foreignKey:SharedSessionID" json:"-"`
 	UserID          uint           `gorm:"uniqueIndex:idx_shared_session_user;not null" json:"userId"`
-	User            User           `gorm:"foreignKey:UserID" json:"-"`
+	User            User           `gorm:"foreignKey:UserID;constraint:OnDelete:CASCADE" json:"-"`
 	Role            string         `gorm:"size:16;default:member;not null" json:"role"` // "owner", "member"
 	JoinedAt        time.Time      `json:"joinedAt"`
 }
@@ -734,9 +746,9 @@ type SharedSessionInvite struct {
 	SharedSessionID uint           `gorm:"uniqueIndex:idx_shared_session_invitee;not null" json:"sharedSessionId"`
 	SharedSession   SharedSession  `gorm:"foreignKey:SharedSessionID" json:"-"`
 	InviterID       uint           `gorm:"not null" json:"inviterId"`
-	Inviter         User           `gorm:"foreignKey:InviterID" json:"-"`
+	Inviter         User           `gorm:"foreignKey:InviterID;constraint:OnDelete:CASCADE" json:"-"`
 	InviteeID       uint           `gorm:"uniqueIndex:idx_shared_session_invitee;not null" json:"inviteeId"`
-	Invitee         User           `gorm:"foreignKey:InviteeID" json:"-"`
+	Invitee         User           `gorm:"foreignKey:InviteeID;constraint:OnDelete:CASCADE" json:"-"`
 	Status          string         `gorm:"size:32;default:pending;not null" json:"status"` // "pending", "accepted", "declined"
 }
 
@@ -749,7 +761,7 @@ type SharedSessionSave struct {
 	SharedSessionID uint           `gorm:"index;not null" json:"sharedSessionId"`
 	SharedSession   SharedSession  `gorm:"foreignKey:SharedSessionID" json:"-"`
 	UserID          uint           `gorm:"not null" json:"userId"`
-	User            User           `gorm:"foreignKey:UserID" json:"-"`
+	User            User           `gorm:"foreignKey:UserID;constraint:OnDelete:CASCADE" json:"-"`
 	Name            string         `gorm:"size:255;not null" json:"name"`
 	FilePath        string         `gorm:"size:1024;not null" json:"-"`
 	FileSize        int64          `json:"fileSize"`
@@ -764,9 +776,9 @@ type NetplaySession struct {
 	UpdatedAt    time.Time      `json:"updatedAt"`
 	DeletedAt    gorm.DeletedAt `gorm:"index" json:"-"`
 	HostUserID   uint           `gorm:"index;not null" json:"hostUserId"`
-	HostUser     User           `gorm:"foreignKey:HostUserID" json:"-"`
+	HostUser     User           `gorm:"foreignKey:HostUserID;constraint:OnDelete:CASCADE" json:"-"`
 	ClientUserID *uint          `gorm:"index" json:"clientUserId"`
-	ClientUser   User           `gorm:"foreignKey:ClientUserID" json:"-"`
+	ClientUser   User           `gorm:"foreignKey:ClientUserID;constraint:OnDelete:SET NULL" json:"-"`
 	GameID       uint           `gorm:"index;not null" json:"gameId"`
 	Game         Game           `gorm:"foreignKey:GameID" json:"-"`
 	Status       string         `gorm:"size:32;default:waiting;not null" json:"status"` // "waiting", "in_progress", "ended"
@@ -825,7 +837,7 @@ type ChallengeAttempt struct {
 	ChallengeID uint           `gorm:"index:idx_challenge_attempt;not null" json:"challengeId"`
 	Challenge   Challenge      `gorm:"foreignKey:ChallengeID" json:"-"`
 	UserID      uint           `gorm:"index:idx_challenge_attempt;not null" json:"userId"`
-	User        User           `gorm:"foreignKey:UserID" json:"-"`
+	User        User           `gorm:"foreignKey:UserID;constraint:OnDelete:CASCADE" json:"-"`
 	Status      string         `gorm:"size:32;not null;default:in_progress" json:"status"` // "in_progress", "completed", "abandoned"
 	StartedAt   time.Time      `gorm:"not null" json:"startedAt"`
 	CompletedAt *time.Time     `json:"completedAt"`
@@ -837,6 +849,7 @@ type ChallengeAttempt struct {
 type GameKeyMappingPreference struct {
 	gorm.Model
 	UserID        uint   `json:"userId" gorm:"not null;uniqueIndex:idx_user_game_keymapping"`
+	User          User   `json:"-" gorm:"foreignKey:UserID;constraint:OnDelete:CASCADE"`
 	GameID        uint   `json:"gameId" gorm:"not null;uniqueIndex:idx_user_game_keymapping"`
 	CustomMapping string `json:"customMapping" gorm:"type:text"` // JSON string of map[string]string
 }
@@ -980,7 +993,7 @@ type SessionSaveState struct {
 	DeletedAt     gorm.DeletedAt `gorm:"index" json:"-"`
 	SessionID     uint           `gorm:"index;not null" json:"sessionId"`
 	UserID        uint           `gorm:"index;not null" json:"userId"`
-	User          User           `gorm:"foreignKey:UserID" json:"-"`
+	User          User           `gorm:"foreignKey:UserID;constraint:OnDelete:CASCADE" json:"-"`
 	Name          string         `gorm:"size:255;not null" json:"name"`
 	FilePath      string         `gorm:"size:1024;not null" json:"-"`
 	FileSize      int64          `json:"fileSize"`
@@ -1176,6 +1189,7 @@ type SavedSearch struct {
 	UpdatedAt time.Time      `json:"updatedAt"`
 	DeletedAt gorm.DeletedAt `gorm:"index" json:"-"`
 	UserID    uint           `gorm:"index;not null" json:"userId"`
+	User      User           `gorm:"foreignKey:UserID;constraint:OnDelete:CASCADE" json:"-"`
 	Name      string         `gorm:"size:255;not null" json:"name"`
 	Filters   string         `gorm:"type:text;not null" json:"filters"` // JSON-encoded filter params
 }
@@ -1184,6 +1198,7 @@ type SavedSearch struct {
 type UserAchievementShowcase struct {
 	ID              uint      `gorm:"primarykey" json:"id"`
 	UserID          uint      `gorm:"uniqueIndex:idx_user_achievement_showcase;not null" json:"userId"`
+	User            User      `gorm:"foreignKey:UserID;constraint:OnDelete:CASCADE" json:"-"`
 	AchievementRAID uint      `gorm:"uniqueIndex:idx_user_achievement_showcase;not null" json:"achievementRaId"`
 	RAGameID        uint      `gorm:"not null" json:"raGameId"`
 	ShowcaseOrder   int       `gorm:"not null" json:"showcaseOrder"`

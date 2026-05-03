@@ -88,7 +88,13 @@ func Initialize(dbPath string) (*gorm.DB, error) {
 		return nil, err
 	}
 
-	db, err := gorm.Open(sqlite.Open(dbPath), &gorm.Config{
+	// _foreign_keys=1 enables FK constraint enforcement for every
+	// connection in the pool. SQLite has FK constraints disabled by
+	// default for backwards compatibility — without this, our
+	// OnDelete:CASCADE / SET NULL declarations on user-owned tables
+	// (#971) would have no effect.
+	dsn := dbPath + "?_foreign_keys=1"
+	db, err := gorm.Open(sqlite.Open(dsn), &gorm.Config{
 		Logger: logger.Default.LogMode(logger.Warn),
 	})
 	if err != nil {
