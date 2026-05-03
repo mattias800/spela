@@ -84,6 +84,16 @@ object SpColor {
     val DownloadComplete = Success
     val DownloadFailed = Error
 
+    // On-gradient surface tokens — for badges, buttons, and other
+    // controls that sit on top of the colorful console banner gradient.
+    // Centralised so the badges in ConsoleComponents.kt, the Tinted
+    // SpButton style, and any future controls (SpSplitButton on
+    // gradient, ScreenshotLightbox nav, ...) reference one source of
+    // truth. See #930.
+    val OnGradientFill = Color.White.copy(alpha = 0.10f)
+    val OnGradientFillHover = Color.White.copy(alpha = 0.16f)
+    val OnGradientBorder = Color.White.copy(alpha = 0.20f)
+
     // Console brand colors
     val ConsoleNes = Color(0xFFE60012)
     val ConsoleSnes = Color(0xFF7B7BB0)

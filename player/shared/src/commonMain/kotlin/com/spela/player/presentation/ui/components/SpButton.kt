@@ -37,7 +37,7 @@ import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.ui.theme.SpTypography
 import com.spela.player.presentation.ui.theme.spelaBrandGradient
 
-enum class SpButtonStyle { Primary, Secondary, Outlined, Ghost }
+enum class SpButtonStyle { Primary, Secondary, Outlined, Ghost, Tinted }
 
 @Composable
 fun SpButton(
@@ -148,6 +148,38 @@ fun SpButton(
                     contentColor = Color.White,
                     disabledContentColor = SpColor.OnBackgroundTertiary,
                 ),
+                contentPadding = if (isIconOnly) iconOnlyPadding else defaultPadding,
+            ) {
+                ButtonContent(text, isLoading, leadingIcon, Color.White)
+            }
+        }
+
+        SpButtonStyle.Tinted -> {
+            // Tinted-on-gradient — for buttons sitting on top of the
+            // colorful console banner gradient. Uses the same white-
+            // tint + thin-white-border treatment as the hero badges
+            // so the buttons read as related controls instead of
+            // competing with the gradient via neon glow. See #930.
+            Button(
+                onClick = { if (!isLoading) onClick() },
+                modifier = modifier
+                    .heightIn(min = 48.dp)
+                    .border(
+                        1.dp,
+                        if (enabled) SpColor.OnGradientBorder else SpColor.Divider,
+                        shape,
+                    )
+                    .then(focusMods),
+                enabled = enabled,
+                shape = shape,
+                interactionSource = interactionSource,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = SpColor.OnGradientFill,
+                    contentColor = Color.White,
+                    disabledContainerColor = SpColor.OnGradientFill,
+                    disabledContentColor = SpColor.OnBackgroundTertiary,
+                ),
+                elevation = ButtonDefaults.buttonElevation(0.dp, 0.dp, 0.dp, 0.dp, 0.dp),
                 contentPadding = if (isIconOnly) iconOnlyPadding else defaultPadding,
             ) {
                 ButtonContent(text, isLoading, leadingIcon, Color.White)
