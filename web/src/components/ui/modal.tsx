@@ -8,6 +8,14 @@ interface ModalProps {
   title?: string;
   children: ReactNode;
   className?: string;
+  /**
+   * Override the body container's classes. Default is `p-6`. Pass `p-0`
+   * (and apply your own padding inside) when the body should render
+   * edge-to-edge — e.g. a scrollable list whose scrollbar should sit at
+   * the modal's outer rounded edge. Avoids the negative-margin escape
+   * hatch that the project rule forbids.
+   */
+  bodyClassName?: string;
   size?: "sm" | "md" | "lg" | "xl";
 }
 
@@ -24,6 +32,7 @@ export function Modal({
   title,
   children,
   className,
+  bodyClassName = "p-6",
   size = "md",
 }: ModalProps) {
   const overlayRef = useRef<HTMLDivElement>(null);
@@ -83,7 +92,7 @@ export function Modal({
             </button>
           </div>
         )}
-        <div className="p-6">{children}</div>
+        <div className={bodyClassName}>{children}</div>
       </div>
     </div>
   );
