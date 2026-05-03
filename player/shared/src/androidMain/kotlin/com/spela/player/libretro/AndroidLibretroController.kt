@@ -158,6 +158,21 @@ class AndroidLibretroController(
             } else {
                 runEmulationLoop()
             }
+            // #907 + #926 — capture the park-required state BEFORE
+            // nativeDeinit clears the bridge's core state. Only PSP-
+            // on-GLES (PPSSPP's context_destroy poisons Adreno's
+            // per-thread EGL TLS so pthread_exit's eglReleaseThread
+            // crashes) needs the parked-thread workaround. Vulkan PSP
+            // doesn't use EGL, and other GLES cores haven't been
+            // observed to trigger the corruption. Querying after
+            // nativeDeinit returns garbage — capture once now.
+            val needsPark = try {
+                jni.nativeGetCoreLibraryName().contains("PPSSPP") &&
+                    !jni.nativeIsVulkanHwRender()
+            } catch (_: Throwable) {
+                false
+            }
+
             // Libretro contract (RetroArch's runloop_event_deinit_core,
             // see #724 research): retro_unload_game and retro_deinit must
             // run on the same thread that called retro_run. Calling them
@@ -182,23 +197,29 @@ class AndroidLibretroController(
             // with frontend-side cleanup (audio, GPU, bitmaps).
             latch.countDown()
 
-            // #907 — DO NOT exit this thread. PPSSPP's context_destroy
-            // poisons Adreno's per-thread EGL binding; pthread_exit's
-            // automatic eglReleaseThread (run by the EGL TLS
-            // destructor) tries to clean up that binding and crashes
-            // inside libGLESv2_adreno via a null vtable dispatch.
-            // Park the thread forever — no exit means no
-            // eglReleaseThread, no crash. The OS reclaims the stack
-            // when the process exits. Each game launch creates a
-            // new SpelaEmulation thread; old ones accumulate parked
-            // (one EGL binding + ~1MB stack each) but the trade-off
-            // is tolerable vs. a guaranteed crash on every exit.
-            try {
-                while (true) {
-                    Thread.sleep(Long.MAX_VALUE)
+            if (needsPark) {
+                // #907 — PPSSPP's context_destroy poisons Adreno's
+                // per-thread EGL binding; pthread_exit's automatic
+                // eglReleaseThread (run by the EGL TLS destructor)
+                // tries to clean up that binding and crashes inside
+                // libGLESv2_adreno via a null vtable dispatch. Park
+                // the thread forever — no exit means no
+                // eglReleaseThread, no crash. The OS reclaims the
+                // stack when the process exits. With the GLES PSP
+                // path retired (#916, see Vulkan migration), this
+                // branch is the safety net for if a future user ends
+                // up here via some fallback. Other cores exit
+                // normally — see #926.
+                Log.i(TAG, "PSP+GLES: parking emulation thread (#907 fallback)")
+                try {
+                    while (true) {
+                        Thread.sleep(Long.MAX_VALUE)
+                    }
+                } catch (_: InterruptedException) {
+                    // Allow process-shutdown signals to break the park.
                 }
-            } catch (_: InterruptedException) {
-                // Allow process-shutdown signals to break the park.
+            } else {
+                Log.i(TAG, "emulation thread: exiting normally")
             }
         }, "SpelaEmulation").apply {
             priority = Thread.MAX_PRIORITY
@@ -227,14 +248,17 @@ class AndroidLibretroController(
         netplayTransport?.disconnect()
         // The emulation thread runs nativeUnloadGame + nativeDeinit and
         // signals teardownDoneLatch. We wait on the LATCH (not on the
-        // thread itself) — the thread parks forever after teardown to
-        // avoid the Adreno crash described in #907. No timeout — heavy
-        // cores can spend tens of seconds in retro_unload_game /
-        // retro_deinit on slow devices.
+        // thread itself) — for PSP-on-GLES the thread parks forever
+        // after teardown to avoid the Adreno crash described in #907;
+        // every other path exits normally (see #926). The latch fires
+        // before either branch so this wait works for both. No timeout
+        // — heavy cores can spend tens of seconds in retro_unload_game
+        // / retro_deinit on slow devices.
         teardownDoneLatch?.await()
-        Log.i(TAG, "libretro teardown complete (thread parked)")
-        // Drop our reference; the thread is parked but still alive.
-        // The OS reclaims its stack when the process exits.
+        Log.i(TAG, "libretro teardown complete")
+        // Drop our reference. If the thread parked, it stays alive
+        // until process exit (~1MB stack leak); if it exited normally
+        // the OS already reclaimed it.
         emulationThread = null
         teardownDoneLatch = null
         audioPlayer?.stop()
