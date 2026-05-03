@@ -463,7 +463,7 @@ func (h *AuthHandler) HumaRegister(ctx context.Context, in *AuthRegisterInput) (
 		}, nil
 	}
 
-	accessToken, err := auth.GenerateAccessToken(user.ID, user.Username, string(user.Role), h.JWTSecret)
+	accessToken, err := auth.GenerateAccessToken(user.ID, user.Username, string(user.Role), h.JWTSecret, user.TokenVersion)
 	if err != nil {
 		return nil, huma.NewError(http.StatusInternalServerError, "Account created but sign-in failed. Please sign in manually.")
 	}
@@ -539,6 +539,12 @@ func (h *AuthHandler) HumaRefresh(_ context.Context, in *AuthRefreshInput) (*Aut
 		return nil, huma.NewError(http.StatusForbidden, "Your account has been disabled. Please contact an administrator.")
 	}
 
+	if user.PendingApproval {
+		h.DB.Where("token_family = ? AND user_id = ?", rt.TokenFamily, rt.UserID).
+			Delete(&db.RefreshToken{})
+		return nil, huma.NewError(http.StatusForbidden, "Your account is pending admin approval.")
+	}
+
 	accessToken, err := auth.GenerateAccessToken(user.ID, user.Username, string(user.Role), h.JWTSecret, user.TokenVersion)
 	if err != nil {
 		return nil, huma.NewError(http.StatusInternalServerError, "Session refresh failed. Please sign in again.")
@@ -612,7 +618,7 @@ func (h *AuthHandler) HumaSetup(_ context.Context, in *AuthSetupInput) (*AuthSet
 		return nil, txErr
 	}
 
-	accessToken, err := auth.GenerateAccessToken(user.ID, user.Username, string(user.Role), h.JWTSecret)
+	accessToken, err := auth.GenerateAccessToken(user.ID, user.Username, string(user.Role), h.JWTSecret, user.TokenVersion)
 	if err != nil {
 		return nil, huma.NewError(http.StatusInternalServerError, "Setup failed. Please try again.")
 	}

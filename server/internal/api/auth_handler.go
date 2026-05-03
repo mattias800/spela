@@ -16,7 +16,12 @@ import (
 // generateTokenFamily creates a random token family ID for refresh token replay detection.
 func generateTokenFamily() string {
 	b := make([]byte, 16)
-	rand.Read(b)
+	if _, err := rand.Read(b); err != nil {
+		// crypto/rand from /dev/urandom never errors on Linux. Sandboxed
+		// environments where it can fail leave us with no safe fallback —
+		// a zero-filled family ID would silently break replay protection.
+		panic("crypto/rand: " + err.Error())
+	}
 	return hex.EncodeToString(b)
 }
 
