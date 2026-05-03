@@ -190,7 +190,7 @@ class GameDetailInstantDownloadTest {
     }
 
     @Test
-    fun aboveThresholdDownload_neverEntersSilentFlow() = runTest(testDispatcher) {
+    fun aboveThresholdDownload_neverEntersSilentFlow_andDoesNotAutoLaunch() = runTest(testDispatcher) {
         // 32 MB — above the 16 MB threshold.
         fakeGameRepo.fileSize = INSTANT_DOWNLOAD_THRESHOLD_BYTES + 1024
         val vm = createViewModel()
@@ -209,11 +209,36 @@ class GameDetailInstantDownloadTest {
         fakeDownloadRepo.completeDownload(Result.success("/fake"))
         advanceUntilIdle()
 
-        // Note: pendingAutoLaunch still fires for above-threshold —
-        // the user dispatched DownloadGameAndPlay, so the launch is
-        // expected once the download finishes. The visual difference
-        // is only in whether the progress bar was visible.
-        assertTrue(vm.state.value.pendingAutoLaunch)
+        // pendingAutoLaunch must NOT fire for above-threshold games:
+        // a long download (e.g. 2 GB / 30 minutes) shouldn't drop the
+        // user into the emulator on completion if they've walked
+        // away. The UI routes above-threshold uncached games to the
+        // regular Download button, but the VM defends here too so
+        // future routing changes can't enable the surprise-launch.
+        assertFalse(
+            vm.state.value.pendingAutoLaunch,
+            "above-threshold downloads must not auto-launch on completion",
+        )
+        assertTrue(vm.state.value.isGameCached)
+    }
+
+    @Test
+    fun subThresholdDownload_failure_doesNotRaiseAutoLaunch() = runTest(testDispatcher) {
+        fakeGameRepo.fileSize = 1024 * 1024
+        val vm = createViewModel()
+        vm.onIntent(GameDetailIntent.LoadGame("1"))
+        advanceUntilIdle()
+
+        vm.onIntent(GameDetailIntent.DownloadGameAndPlay)
+        fakeDownloadRepo.completeDownload(Result.failure(RuntimeException("network")))
+        advanceUntilIdle()
+
+        assertFalse(vm.state.value.isDownloading)
+        assertFalse(vm.state.value.isInstantDownload)
+        assertFalse(
+            vm.state.value.pendingAutoLaunch,
+            "failed download must never trigger auto-launch",
+        )
     }
 
     @Test

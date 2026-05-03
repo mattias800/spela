@@ -84,8 +84,12 @@ fun GameHeroContent(
      * Play/Resume/Continue button for a small uncached game routes
      * here instead of onDownloadGame, so the user experiences a
      * single-click launch.
+     *
+     * No default: the wrong fallback would silently drop the
+     * auto-launch behaviour without a compile error. Caller must
+     * supply an explicit handler.
      */
-    onDownloadAndPlay: () -> Unit = onDownloadGame,
+    onDownloadAndPlay: () -> Unit,
     onToggleFavorite: () -> Unit,
     onTogglePlayLater: () -> Unit,
     onAddToCollection: () -> Unit,
@@ -245,9 +249,14 @@ fun GameHeroContent(
                     }
                     // Click target depends on whether the game is
                     // already on disk. Cached → direct play. Uncached
-                    // sub-threshold → silent download-then-launch via
-                    // the ViewModel; the screen LaunchedEffect will
-                    // call onPlay once download succeeds. #932.
+                    // (only reachable here when isInstantDownload-
+                    // Candidate is true) → silent download-then-
+                    // launch via the ViewModel; the screen
+                    // LaunchedEffect will call onPlay once download
+                    // succeeds. The ViewModel additionally gates the
+                    // auto-launch on its own size check so this
+                    // routing can't be inadvertently broken from
+                    // elsewhere. #932.
                     val playOnClick: () -> Unit = if (state.isGameCached) {
                         { onPlay(gameId) }
                     } else {

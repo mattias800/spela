@@ -424,12 +424,23 @@ class GameDetailViewModel(
         scope.launch(dispatchers.io) {
             downloadRepository.downloadGame(gameId, gameTitle).fold(
                 onSuccess = {
+                    // Auto-launch is gated on `isInstant` so an
+                    // above-threshold game never silently fires the
+                    // play handler when it finally completes (e.g. a
+                    // 2 GB ROM after a 30-minute download — the user
+                    // has likely walked away and would be surprised
+                    // to land in the emulator). Above-threshold games
+                    // would normally not reach this codepath at all
+                    // (the UI routes them to the regular Download
+                    // button), but defending here means future
+                    // routing changes can't accidentally enable the
+                    // surprise-launch.
                     _state.update {
                         it.copy(
                             isGameCached = true,
                             isDownloading = false,
                             isInstantDownload = false,
-                            pendingAutoLaunch = true,
+                            pendingAutoLaunch = isInstant,
                         )
                     }
                     currentGameId?.let { loadCheats(it) }
