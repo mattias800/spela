@@ -523,8 +523,18 @@ func (h *RomHackHandler) HumaCreateRomHack(_ context.Context, in *AdminCreateRom
 		return nil, huma.NewError(http.StatusConflict, "a ROM file with this name already exists: "+patchedFileName)
 	}
 
-	if err := os.WriteFile(targetPath, patchedData, 0644); err != nil {
-		slog.Warn("failed to write patched ROM", "path", targetPath, "error", err)
+	// Atomic write: a server crash between os.WriteFile starting and
+	// completing would otherwise leave a partial ROM at targetPath, and
+	// the next admin request for the same name hits the os.Stat conflict
+	// check above and gets locked into 409 Conflict permanently.
+	tmpPath := targetPath + ".tmp"
+	if err := os.WriteFile(tmpPath, patchedData, 0644); err != nil {
+		slog.Warn("failed to write patched ROM tmp file", "path", tmpPath, "error", err)
+		return nil, huma.NewError(http.StatusInternalServerError, "failed to write patched ROM file")
+	}
+	if err := os.Rename(tmpPath, targetPath); err != nil {
+		_ = os.Remove(tmpPath)
+		slog.Warn("failed to rename patched ROM into place", "path", targetPath, "error", err)
 		return nil, huma.NewError(http.StatusInternalServerError, "failed to write patched ROM file")
 	}
 
