@@ -226,6 +226,26 @@ func TestDownloadable_IncludesOverrideURLEntries(t *testing.T) {
 	}
 }
 
+// TestCDIMono1_PointsAtCompleteSet locks in the MD5 of the cdimono1.zip
+// download. The Mono-I BIOS needs 5 files: 3 main BIOS dumps plus the
+// SERVO and SLAVE microcontroller ROMs. Earlier we shipped a 3-file zip
+// from Abdess/retrobios; SAME_CDI loaded it but couldn't initialise the
+// hardware so games like Myst showed only a black screen (#939). Pinning
+// the MD5 forces stale 3-file zips to be re-downloaded.
+func TestCDIMono1_PointsAtCompleteSet(t *testing.T) {
+	matches := ByFileName("cdimono1.zip")
+	if assert.Len(t, matches, 1) {
+		e := matches[0]
+		assert.Equal(t, "cdi", e.ConsoleID)
+		assert.True(t, e.Required, "cdimono1 is required for CD-i emulation")
+		assert.Equal(t, "cfca9b8a96ed810bb3cd5ac11d7d1dda", e.MD5,
+			"MD5 must match the 5-file (BIOS + SERVO + SLAVE) zip; if this trips, "+
+				"verify the new zip contains zx405037p_*.7201 and zx405042p_*.7206 chip ROMs")
+		assert.NotEmpty(t, e.OverrideURL, "must have a download URL")
+		assert.Equal(t, "same_cdi/bios", e.SubDir)
+	}
+}
+
 func TestRegistryEntries_HaveRequiredFields(t *testing.T) {
 	for _, e := range All() {
 		assert.NotEmpty(t, e.ConsoleID, "ConsoleID must not be empty")
