@@ -490,8 +490,12 @@ data class SharedSessionInvitation(
     val gameTitle: String = "",
     val gameCoverUrl: String? = null,
     val gameConsoleName: String = "",
+    val inviterId: String = "",
     val inviterUsername: String = "",
     val inviterAvatarUrl: String? = null,
+    val inviteeId: String = "",
+    val inviteeUsername: String = "",
+    val status: String = "",
     val createdAt: String = "",
 )
 

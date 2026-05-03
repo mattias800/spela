@@ -47,6 +47,11 @@ sealed interface EmulationIntent {
     data object DismissExitConfirm : EmulationIntent
     data object ConfirmExit : EmulationIntent
     data object DismissStatus : EmulationIntent
+    /**
+     * Clears [com.spela.player.presentation.state.EmulationState.error]
+     * after the in-game overlay's error toast auto-dismisses. See #962.
+     */
+    data object DismissError : EmulationIntent
     data object ClearExitRequest : EmulationIntent
 
     // Lifecycle pause/resume (e.g. clamshell close on Android)

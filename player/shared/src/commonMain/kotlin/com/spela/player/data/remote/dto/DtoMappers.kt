@@ -347,10 +347,16 @@ fun com.spela.client.models.SharedSessionInviteResponse.toDomain(): SharedSessio
     id = id,
     sharedSessionId = sharedSessionId,
     sharedSessionName = sharedSessionName,
+    gameId = gameId,
     gameTitle = gameTitle,
-    // gameId / gameCoverUrl / gameConsoleName / inviterAvatarUrl are not sent —
-    // domain defaults apply.
+    gameCoverUrl = gameCoverUrl.takeIf { it.isNotEmpty() },
+    gameConsoleName = consoleName,
+    inviterId = inviterId,
     inviterUsername = inviterUsername,
+    inviterAvatarUrl = inviterAvatarUrl.takeIf { it.isNotEmpty() },
+    inviteeId = inviteeId,
+    inviteeUsername = inviteeUsername,
+    status = status,
     createdAt = createdAt.toString(),
 )
 

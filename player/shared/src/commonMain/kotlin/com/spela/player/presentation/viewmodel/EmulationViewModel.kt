@@ -240,6 +240,7 @@ class EmulationViewModel(
                 stopGame()
             }
             EmulationIntent.DismissStatus -> _state.update { it.copy(statusMessage = null) }
+            EmulationIntent.DismissError -> _state.update { it.copy(error = null) }
             EmulationIntent.ClearExitRequest -> _state.update { it.copy(requestExit = false) }
 
             EmulationIntent.LifecyclePause -> lifecyclePause()

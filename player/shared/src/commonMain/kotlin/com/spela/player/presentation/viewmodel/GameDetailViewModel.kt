@@ -101,7 +101,7 @@ class GameDetailViewModel(
             is GameDetailIntent.RateGame -> rateGame(intent.rating, intent.review)
             GameDetailIntent.DeleteRating -> deleteRating()
             GameDetailIntent.LoadSharedSaves -> loadSharedSaves()
-            is GameDetailIntent.ShareSave -> shareSave(intent.saveId, intent.name, intent.description)
+            is GameDetailIntent.ShareSave -> shareSave(intent.sessionId, intent.saveId, intent.name, intent.description)
             is GameDetailIntent.DownloadSharedSave -> downloadSharedSave(intent.saveId)
             is GameDetailIntent.DeleteSharedSave -> deleteSharedSave(intent.saveId)
             is GameDetailIntent.PlayFromSharedSave -> playFromSharedSave(intent.saveId)
@@ -589,17 +589,24 @@ class GameDetailViewModel(
         }
     }
 
-    private fun shareSave(saveId: String, name: String, description: String) {
+    private fun shareSave(sessionId: String, saveId: String, name: String, description: String) {
         val gameId = currentGameId ?: return
         _state.update { it.copy(isSharing = true) }
         scope.launch(dispatchers.io) {
-            // Use session repository to get save data
+            // Resolve the save's actual bytes via the session repo.
+            // Pre-#979 this method passed ByteArray(0) unconditionally —
+            // every "share save" upload was a zero-byte payload — and
+            // the test fake masked the bug by accepting any bytes.
             val repo = sessionRepository
             if (repo == null) {
                 _state.update { it.copy(error = "Sessions not available", isSharing = false) }
                 return@launch
             }
-            sharedSaveRepository.shareSave(gameId, name, description, ByteArray(0)).fold(
+            val saveBytes = repo.downloadSessionSave(sessionId, saveId).getOrElse { error ->
+                _state.update { it.copy(error = "Failed to load save: ${error.message}", isSharing = false) }
+                return@launch
+            }
+            sharedSaveRepository.shareSave(gameId, name, description, saveBytes).fold(
                 onSuccess = { shared ->
                     _state.update {
                         it.copy(

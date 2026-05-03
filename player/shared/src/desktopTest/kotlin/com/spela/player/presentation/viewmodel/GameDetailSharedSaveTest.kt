@@ -137,12 +137,16 @@ class GameDetailSharedSaveTest {
         advanceUntilIdle()
         assertEquals(0, vm.state.value.sharedSaves.size)
 
-        vm.onIntent(GameDetailIntent.ShareSave("save1", "My Save", "Beat level 3"))
+        vm.onIntent(GameDetailIntent.ShareSave("session1", "save1", "My Save", "Beat level 3"))
         advanceUntilIdle()
 
         assertFalse(vm.state.value.isSharing)
         assertEquals(1, vm.state.value.sharedSaves.size)
         assertEquals("My Save", vm.state.value.sharedSaves[0].name)
+        // #979 — uploaded payload must be the actual save bytes, not
+        // ByteArray(0). The fake session repo returns 1024 bytes; the
+        // fake shared-save repo records what it received as fileSize.
+        assertEquals(1024L, vm.state.value.sharedSaves[0].fileSize)
     }
 
     @Test
@@ -152,7 +156,7 @@ class GameDetailSharedSaveTest {
         vm.onIntent(GameDetailIntent.LoadGame("1"))
         advanceUntilIdle()
 
-        vm.onIntent(GameDetailIntent.ShareSave("save1", "My Save", "desc"))
+        vm.onIntent(GameDetailIntent.ShareSave("session1", "save1", "My Save", "desc"))
         advanceUntilIdle()
 
         assertNotNull(vm.state.value.error)

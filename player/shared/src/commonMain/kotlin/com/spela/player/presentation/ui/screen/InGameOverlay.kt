@@ -169,6 +169,20 @@ fun InGameOverlay(
         OverlayToast(message = message)
     }
 
+    // #962: SaveManager raises critical save errors via state.error
+    // (auto-save quota exceeded, slot save/load failures, hardcore-
+    // mode save block). Pre-fix nothing read state.error in this
+    // overlay, so the user lost their save silently. Mirror state.error
+    // through the same toast surface as statusMessage so the message
+    // actually reaches the screen.
+    state.error?.let { error ->
+        LaunchedEffect(error) {
+            delay(4000) // longer than status — these are real failures
+            viewModel.onIntent(EmulationIntent.DismissError)
+        }
+        OverlayToast(message = error)
+    }
+
     // Challenge timer HUD (visible during challenge gameplay, top left)
     if (state.isChallengeMode && state.isRunning && !state.showOverlay) {
         ChallengeTimerHud(challengeElapsedMs = state.challengeElapsedMs)

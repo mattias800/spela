@@ -496,7 +496,13 @@ class StubSessionRepository : SessionRepository {
         lastUploadCompression = compression
         return uploadSessionSaveResult
     }
-    override suspend fun downloadSessionSave(sessionId: String, saveId: String) = Result.success(byteArrayOf())
+    /**
+     * Returns 1024-byte payload by default — non-empty so tests that
+     * upload these bytes (e.g. ShareSave in #979) can assert that the
+     * actual data, not an empty placeholder, was forwarded.
+     */
+    var downloadedSaveBytes: ByteArray = ByteArray(1024)
+    override suspend fun downloadSessionSave(sessionId: String, saveId: String) = Result.success(downloadedSaveBytes)
     override suspend fun uploadSessionAutoSave(sessionId: String, data: ByteArray, screenshot: ByteArray?, coreName: String): Result<Unit> {
         uploadSessionAutoSaveCallCount++
         return Result.success(Unit)
