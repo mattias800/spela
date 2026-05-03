@@ -22,6 +22,10 @@ Think of it as your own personal Steam for retro games.
 </p>
 
 <p align="center">
+  <img src="docs/screenshots/explore.png" alt="Explore page with personalized recommendations" width="720" />
+</p>
+
+<p align="center">
   <img src="docs/screenshots/games.png" alt="SNES games with cover art" width="355" />
   <img src="docs/screenshots/game-detail.png" alt="Game detail page" width="355" />
 </p>
