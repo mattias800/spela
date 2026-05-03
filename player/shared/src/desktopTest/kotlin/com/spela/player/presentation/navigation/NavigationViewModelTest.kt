@@ -418,10 +418,10 @@ class NavigationViewModelTest {
         override suspend fun getServers(): List<ServerConnection> = emptyList()
         override suspend fun getActiveServer(): ServerConnection? = null
         override suspend fun addServer(name: String, url: String): ServerConnection =
-            throw UnsupportedOperationException()
-        override suspend fun removeServer(id: String) = throw UnsupportedOperationException()
-        override suspend fun setActiveServer(id: String) = throw UnsupportedOperationException()
-        override suspend fun validateServer(url: String): Boolean = throw UnsupportedOperationException()
+            error("NoSessionServerRepository: addServer not used in this test")
+        override suspend fun removeServer(id: String) {}
+        override suspend fun setActiveServer(id: String) {}
+        override suspend fun validateServer(url: String): Boolean = false
     }
 
     private class NoSessionAuthRepository : AuthRepository {
