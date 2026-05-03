@@ -41,6 +41,15 @@ func toPublicProfileGame(g db.Game, playTime int64) PublicProfileGame {
 // so the call site is compile-checked against the expected shape. Pass nil
 // for events that carry no metadata. The wire format is the JSON-encoded
 // struct — unchanged from the prior map[string]interface{} representation.
+// activityGameIDString renders an ActivityEvent's optional GameID for the
+// response DTO. Returns "" when nil so consumers can detect "no game".
+func activityGameIDString(gid *uint) string {
+	if gid == nil {
+		return ""
+	}
+	return strconv.FormatUint(uint64(*gid), 10)
+}
+
 func CreateActivityEvent(database *gorm.DB, hub *ws.Hub, userID uint, eventType string, gameID uint, metadata any) {
 	metadataJSON := ""
 	// metadataMap is the broadcast-response shape (matches the persisted JSON
@@ -56,10 +65,17 @@ func CreateActivityEvent(database *gorm.DB, hub *ws.Hub, userID uint, eventType 
 		}
 	}
 
+	// Convert gameID 0 → nil so events like 'created_collection' write
+	// SQL NULL instead of 0 (which fails the FK constraint after #971).
+	var gid *uint
+	if gameID != 0 {
+		g := gameID
+		gid = &g
+	}
 	event := db.ActivityEvent{
 		UserID:    userID,
 		EventType: eventType,
-		GameID:    gameID,
+		GameID:    gid,
 		Metadata:  metadataJSON,
 	}
 
@@ -91,7 +107,7 @@ func CreateActivityEvent(database *gorm.DB, hub *ws.Hub, userID uint, eventType 
 		UserID:       strconv.FormatUint(uint64(userID), 10),
 		Username:     user.Username,
 		AvatarURL:    user.AvatarURL,
-		GameID:       strconv.FormatUint(uint64(gameID), 10),
+		GameID:       activityGameIDString(gid),
 		GameTitle:    game.Title,
 		GameCoverURL: coverURL,
 		ConsoleName:  consoleName,

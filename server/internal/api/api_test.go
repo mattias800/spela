@@ -29,7 +29,10 @@ const testJWTSecret = "test-secret-key"
 
 func setupTestEnv(t *testing.T) (*gorm.DB, *Config) {
 	t.Helper()
-	database, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{
+	// _foreign_keys=1 mirrors the production DSN (database.go) so the
+	// CASCADE / SET NULL constraints on user-owned tables (#971) are
+	// enforced under tests.
+	database, err := gorm.Open(sqlite.Open(":memory:?_foreign_keys=1"), &gorm.Config{
 		Logger: logger.Default.LogMode(logger.Silent),
 	})
 	require.NoError(t, err)
@@ -1475,7 +1478,7 @@ func TestGetActivityFeed_Pagination(t *testing.T) {
 		database.Create(&db.ActivityEvent{
 			UserID:    user.ID,
 			EventType: "started_playing",
-			GameID:    game.ID,
+			GameID:    &game.ID,
 		})
 	}
 
@@ -1526,7 +1529,9 @@ func TestCreateActivityEvent_BroadcastsWebSocket(t *testing.T) {
 	database.Where("user_id = ?", user.ID).Find(&events)
 	assert.Len(t, events, 1)
 	assert.Equal(t, "started_playing", events[0].EventType)
-	assert.Equal(t, game.ID, events[0].GameID)
+	if assert.NotNil(t, events[0].GameID, "GameID should be set for started_playing") {
+		assert.Equal(t, game.ID, *events[0].GameID)
+	}
 }
 
 func TestOnlineUserTracking(t *testing.T) {

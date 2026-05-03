@@ -213,6 +213,52 @@ func TestHardDeleteUser_NotFound(t *testing.T) {
 	assert.Equal(t, http.StatusNotFound, w.Code)
 }
 
+// TestUserFKCascadeOnRawDelete verifies that #971's CASCADE FK constraints
+// fire at the SQL level on a fresh install, independent of the explicit
+// HumaHardDeleteUser cleanup. The test sidesteps the handler entirely:
+// it inserts child rows, calls a raw DELETE on the user, and checks the
+// children are gone. This proves new installs are safe even via paths
+// that don't route through the handler (e.g. an admin running a manual
+// SQL delete, or a future endpoint that forgets the explicit cleanup).
+func TestUserFKCascadeOnRawDelete(t *testing.T) {
+	_, cfg := setupTestEnv(t)
+	database := cfg.DB
+
+	user := db.User{
+		Username:     "cascade-target",
+		Email:        "cascade@test.com",
+		PasswordHash: "unused",
+		Role:         "user",
+	}
+	require.NoError(t, database.Create(&user).Error)
+
+	// Need a Console + Game to satisfy GameID FKs on Favorite / PlayHistory.
+	console := db.Console{Name: "TestConsole", Abbreviation: "TC", FolderName: "tc"}
+	require.NoError(t, database.Create(&console).Error)
+	game := db.Game{Title: "TestGame", ConsoleID: console.ID, FilePath: "tc/test.rom"}
+	require.NoError(t, database.Create(&game).Error)
+
+	// Insert a sample of child rows from CASCADE-tagged tables.
+	require.NoError(t, database.Create(&db.Favorite{UserID: user.ID, GameID: game.ID}).Error)
+	require.NoError(t, database.Create(&db.PlayHistory{UserID: user.ID, GameID: game.ID, LastPlayed: time.Now()}).Error)
+	require.NoError(t, database.Create(&db.SavedSearch{UserID: user.ID, Name: "x", Filters: "{}"}).Error)
+	require.NoError(t, database.Create(&db.DailyPlayActivity{UserID: user.ID, Date: time.Now(), PlayTime: 60}).Error)
+
+	// Hard DELETE bypassing soft-delete (Unscoped) — exercises the FK
+	// constraint, not the handler's explicit child cleanup.
+	require.NoError(t, database.Unscoped().Delete(&user).Error)
+
+	var count int64
+	database.Unscoped().Model(&db.Favorite{}).Where("user_id = ?", user.ID).Count(&count)
+	assert.Equal(t, int64(0), count, "Favorite should cascade-delete on user delete")
+	database.Unscoped().Model(&db.PlayHistory{}).Where("user_id = ?", user.ID).Count(&count)
+	assert.Equal(t, int64(0), count, "PlayHistory should cascade-delete on user delete")
+	database.Unscoped().Model(&db.SavedSearch{}).Where("user_id = ?", user.ID).Count(&count)
+	assert.Equal(t, int64(0), count, "SavedSearch should cascade-delete on user delete")
+	database.Unscoped().Model(&db.DailyPlayActivity{}).Where("user_id = ?", user.ID).Count(&count)
+	assert.Equal(t, int64(0), count, "DailyPlayActivity should cascade-delete on user delete")
+}
+
 func TestHardDeleteUser_NonAdmin_Returns403(t *testing.T) {
 	database, cfg := setupTestEnv(t)
 	router, cleanup := NewRouter(*cfg)

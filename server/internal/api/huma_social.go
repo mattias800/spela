@@ -142,7 +142,7 @@ func (h *SocialHandler) HumaGetActivityFeed(_ context.Context, in *GetActivityFe
 			UserID:       strconv.FormatUint(uint64(e.UserID), 10),
 			Username:     e.User.Username,
 			AvatarURL:    e.User.AvatarURL,
-			GameID:       strconv.FormatUint(uint64(e.GameID), 10),
+			GameID:       activityGameIDString(e.GameID),
 			GameTitle:    e.Game.Title,
 			GameCoverURL: coverURL,
 			ConsoleName:  consoleName,
