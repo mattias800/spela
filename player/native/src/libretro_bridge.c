@@ -853,6 +853,11 @@ JNI_FUNC(jboolean, nativeLoadCore)(JNIEnv *env, jobject thiz, jstring corePath) 
     }
 
     const char *path = (*env)->GetStringUTFChars(env, corePath, NULL);
+    if (!path) {
+        /* GetStringUTFChars returns NULL on OOM; passing NULL to dlopen
+         * is platform-defined (Android may crash). Fail closed. */
+        return JNI_FALSE;
+    }
     int result = core_load(path);
     (*env)->ReleaseStringUTFChars(env, corePath, path);
     return result == 0 ? JNI_TRUE : JNI_FALSE;
@@ -885,6 +890,11 @@ JNI_FUNC(jboolean, nativeLoadGame)(JNIEnv *env, jobject thiz, jstring gamePath) 
     if (!g_core.handle || !g_core.initialized) return JNI_FALSE;
 
     const char *path = (*env)->GetStringUTFChars(env, gamePath, NULL);
+    if (!path) {
+        /* GetStringUTFChars returns NULL on OOM. Bail rather than calling
+         * fopen(NULL) / passing NULL into retro_load_game. */
+        return JNI_FALSE;
+    }
 
     struct retro_game_info game_info = {0};
     game_info.path = path;
@@ -902,7 +912,19 @@ JNI_FUNC(jboolean, nativeLoadGame)(JNIEnv *env, jobject thiz, jstring gamePath) 
 
             void *buf = malloc(game_info.size);
             if (buf) {
-                fread(buf, 1, game_info.size, f);
+                /* Verify fread fully populated the buffer. A short read
+                 * (truncated download, transient I/O error) would otherwise
+                 * silently pass a partial buffer to retro_load_game and the
+                 * core would interpret the tail as garbage memory. */
+                size_t read_bytes = fread(buf, 1, game_info.size, f);
+                if (read_bytes != game_info.size) {
+                    LOGE("Short read from ROM: got %zu of %zu bytes",
+                         read_bytes, game_info.size);
+                    free(buf);
+                    fclose(f);
+                    (*env)->ReleaseStringUTFChars(env, gamePath, path);
+                    return JNI_FALSE;
+                }
                 game_info.data = buf;
             }
             fclose(f);
