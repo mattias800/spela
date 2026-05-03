@@ -425,16 +425,17 @@ class NavigationViewModelTest {
     }
 
     private class NoSessionAuthRepository : AuthRepository {
+        private fun unsupported(): NotImplementedError = NotImplementedError("NoSessionAuthRepository: not used in this test")
         override suspend fun login(serverUrl: String, username: String, password: String): Result<AuthTokens> =
-            throw UnsupportedOperationException()
+            Result.failure(unsupported())
         override suspend fun register(serverUrl: String, username: String, email: String, password: String): Result<AuthTokens> =
-            throw UnsupportedOperationException()
+            Result.failure(unsupported())
         override suspend fun refreshToken(serverUrl: String, refreshToken: String): Result<AuthTokens> =
-            throw UnsupportedOperationException()
-        override suspend fun getCurrentUser(): Result<User> = throw UnsupportedOperationException()
+            Result.failure(unsupported())
+        override suspend fun getCurrentUser(): Result<User> = Result.failure(unsupported())
         override suspend fun getStoredTokens(): AuthTokens? = null
-        override suspend fun storeTokens(tokens: AuthTokens) = throw UnsupportedOperationException()
-        override suspend fun clearTokens() = throw UnsupportedOperationException()
+        override suspend fun storeTokens(tokens: AuthTokens) {}
+        override suspend fun clearTokens() {}
         override fun isLoggedIn(): Boolean = false
     }
 
