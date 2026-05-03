@@ -32,12 +32,28 @@ type DownloadProgress struct {
 	Total     int    `json:"total"`
 }
 
+// DownloadError is one entry in a DownloadResult's error list. Carries the
+// fields a system-event recorder or admin UI needs without the caller
+// having to re-parse a free-form string. See StartAutoDownload + #918.
+type DownloadError struct {
+	FileName  string
+	ConsoleID string
+	URL       string
+	Error     string
+}
+
+// String renders the error in the historical "filename: error" form so
+// callers that just want the human-readable summary still work.
+func (e DownloadError) String() string {
+	return fmt.Sprintf("%s: %s", e.FileName, e.Error)
+}
+
 // DownloadResult summarises a completed DownloadMissing run.
 type DownloadResult struct {
 	Downloaded int
 	Skipped    int
 	Failed     int
-	Errors     []string
+	Errors     []DownloadError
 }
 
 // DownloadMissing downloads all BIOS files that are missing from biosDir.
@@ -109,7 +125,12 @@ func DownloadMissing(biosDir, baseURL string, onProgress func(DownloadProgress))
 			progress.Status = "failed"
 			progress.Error = fmt.Sprintf("HTTP request failed: %v", err)
 			result.Failed++
-			result.Errors = append(result.Errors, fmt.Sprintf("%s: %s", entry.FileName, progress.Error))
+			result.Errors = append(result.Errors, DownloadError{
+				FileName:  entry.FileName,
+				ConsoleID: entry.ConsoleID,
+				URL:       url,
+				Error:     progress.Error,
+			})
 			if onProgress != nil {
 				onProgress(progress)
 			}
@@ -121,7 +142,12 @@ func DownloadMissing(biosDir, baseURL string, onProgress func(DownloadProgress))
 			progress.Status = "failed"
 			progress.Error = fmt.Sprintf("HTTP %d", resp.StatusCode)
 			result.Failed++
-			result.Errors = append(result.Errors, fmt.Sprintf("%s: %s", entry.FileName, progress.Error))
+			result.Errors = append(result.Errors, DownloadError{
+				FileName:  entry.FileName,
+				ConsoleID: entry.ConsoleID,
+				URL:       url,
+				Error:     progress.Error,
+			})
 			if onProgress != nil {
 				onProgress(progress)
 			}
@@ -139,7 +165,12 @@ func DownloadMissing(biosDir, baseURL string, onProgress func(DownloadProgress))
 			progress.Status = "failed"
 			progress.Error = fmt.Sprintf("creating destination directory: %v", err)
 			result.Failed++
-			result.Errors = append(result.Errors, fmt.Sprintf("%s: %s", entry.FileName, progress.Error))
+			result.Errors = append(result.Errors, DownloadError{
+				FileName:  entry.FileName,
+				ConsoleID: entry.ConsoleID,
+				URL:       url,
+				Error:     progress.Error,
+			})
 			if onProgress != nil {
 				onProgress(progress)
 			}
@@ -154,7 +185,12 @@ func DownloadMissing(biosDir, baseURL string, onProgress func(DownloadProgress))
 			progress.Status = "failed"
 			progress.Error = fmt.Sprintf("creating temp file: %v", err)
 			result.Failed++
-			result.Errors = append(result.Errors, fmt.Sprintf("%s: %s", entry.FileName, progress.Error))
+			result.Errors = append(result.Errors, DownloadError{
+				FileName:  entry.FileName,
+				ConsoleID: entry.ConsoleID,
+				URL:       url,
+				Error:     progress.Error,
+			})
 			if onProgress != nil {
 				onProgress(progress)
 			}
@@ -172,7 +208,12 @@ func DownloadMissing(biosDir, baseURL string, onProgress func(DownloadProgress))
 			progress.Status = "failed"
 			progress.Error = fmt.Sprintf("downloading: %v", copyErr)
 			result.Failed++
-			result.Errors = append(result.Errors, fmt.Sprintf("%s: %s", entry.FileName, progress.Error))
+			result.Errors = append(result.Errors, DownloadError{
+				FileName:  entry.FileName,
+				ConsoleID: entry.ConsoleID,
+				URL:       url,
+				Error:     progress.Error,
+			})
 			if onProgress != nil {
 				onProgress(progress)
 			}
@@ -186,7 +227,12 @@ func DownloadMissing(biosDir, baseURL string, onProgress func(DownloadProgress))
 			progress.Status = "failed"
 			progress.Error = fmt.Sprintf("MD5 mismatch: expected %s, got %s", entry.MD5, actualMD5)
 			result.Failed++
-			result.Errors = append(result.Errors, fmt.Sprintf("%s: %s", entry.FileName, progress.Error))
+			result.Errors = append(result.Errors, DownloadError{
+				FileName:  entry.FileName,
+				ConsoleID: entry.ConsoleID,
+				URL:       url,
+				Error:     progress.Error,
+			})
 			if onProgress != nil {
 				onProgress(progress)
 			}
@@ -211,7 +257,12 @@ func DownloadMissing(biosDir, baseURL string, onProgress func(DownloadProgress))
 				progress.Status = "failed"
 				progress.Error = fmt.Sprintf("creating bundle target: %v", err)
 				result.Failed++
-				result.Errors = append(result.Errors, fmt.Sprintf("%s: %s", entry.FileName, progress.Error))
+				result.Errors = append(result.Errors, DownloadError{
+				FileName:  entry.FileName,
+				ConsoleID: entry.ConsoleID,
+				URL:       url,
+				Error:     progress.Error,
+			})
 				if onProgress != nil {
 					onProgress(progress)
 				}
@@ -228,7 +279,12 @@ func DownloadMissing(biosDir, baseURL string, onProgress func(DownloadProgress))
 				progress.Status = "failed"
 				progress.Error = fmt.Sprintf("extracting bundle: %v", err)
 				result.Failed++
-				result.Errors = append(result.Errors, fmt.Sprintf("%s: %s", entry.FileName, progress.Error))
+				result.Errors = append(result.Errors, DownloadError{
+				FileName:  entry.FileName,
+				ConsoleID: entry.ConsoleID,
+				URL:       url,
+				Error:     progress.Error,
+			})
 				if onProgress != nil {
 					onProgress(progress)
 				}
@@ -243,7 +299,12 @@ func DownloadMissing(biosDir, baseURL string, onProgress func(DownloadProgress))
 				progress.Status = "failed"
 				progress.Error = fmt.Sprintf("renaming temp file: %v", err)
 				result.Failed++
-				result.Errors = append(result.Errors, fmt.Sprintf("%s: %s", entry.FileName, progress.Error))
+				result.Errors = append(result.Errors, DownloadError{
+				FileName:  entry.FileName,
+				ConsoleID: entry.ConsoleID,
+				URL:       url,
+				Error:     progress.Error,
+			})
 				if onProgress != nil {
 					onProgress(progress)
 				}
@@ -286,10 +347,17 @@ func StartAutoDownload(biosDir string, database *gorm.DB) {
 			"skipped", result.Skipped,
 			"failed", result.Failed,
 		)
-		if len(result.Errors) > 0 {
-			for _, e := range result.Errors {
-				slog.Warn("BIOS download error", "detail", e)
-			}
+		for _, e := range result.Errors {
+			slog.Warn("BIOS download error", "detail", e.String())
+			db.RecordOperationalEvent(database, db.SystemEventInput{
+				EventType: db.SystemEventBIOSDownloadFailed,
+				Metadata: db.BIOSDownloadFailedMetadata{
+					FileName:  e.FileName,
+					ConsoleID: e.ConsoleID,
+					URL:       e.URL,
+					Error:     e.Error,
+				},
+			})
 		}
 	}()
 }

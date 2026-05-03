@@ -362,6 +362,12 @@ const (
 	// buildbot poll. Metadata carries old_sha256 and new_sha256 so the
 	// audit trail shows which version replaced which. See #555 Phase 2.
 	SystemEventCoreUpdated = "core_updated"
+	// Emitted by the BIOS auto-downloader when an entry fails to fetch
+	// or extract — HTTP error, non-200 status, MD5 mismatch, archive
+	// extraction failure, filesystem error. Lets admins notice when
+	// upstream sources go down or shift without tailing container
+	// logs. See #918.
+	SystemEventBIOSDownloadFailed = "bios_download_failed"
 )
 
 // AllSystemEventTypes is the canonical catalog of system event type strings.
@@ -383,6 +389,7 @@ var AllSystemEventTypes = []string{
 	SystemEventAPICredentialsInvalid,
 	SystemEventEmulatorJSLoadFailed,
 	SystemEventCoreUpdated,
+	SystemEventBIOSDownloadFailed,
 }
 
 // SystemEventTypeCategory maps each event type to its category code. Used by
@@ -404,6 +411,7 @@ var SystemEventTypeCategory = map[string]string{
 	SystemEventAPICredentialsInvalid:   CategoryOperational,
 	SystemEventEmulatorJSLoadFailed:    CategoryOperational,
 	SystemEventCoreUpdated:             CategoryOperational,
+	SystemEventBIOSDownloadFailed:      CategoryOperational,
 }
 
 // SystemEvent records an admin-only audit entry for an authentication,

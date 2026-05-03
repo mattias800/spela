@@ -63,7 +63,9 @@ export type OperationalEventType =
   | "scraper_repeated_errors"
   | "rom_file_missing"
   | "api_credentials_invalid"
-  | "emulatorjs_load_failed";
+  | "emulatorjs_load_failed"
+  | "core_updated"
+  | "bios_download_failed";
 
 export type SystemEventType = SecurityEventType | OperationalEventType;
 

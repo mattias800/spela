@@ -114,7 +114,8 @@ func eventTypeShouldDedup(eventType string) bool {
 		SystemEventRACircuitBreakerTripped,
 		SystemEventScraperRepeatedErrors,
 		SystemEventROMFileMissing,
-		SystemEventAPICredentialsInvalid:
+		SystemEventAPICredentialsInvalid,
+		SystemEventBIOSDownloadFailed:
 		return true
 	}
 	return false

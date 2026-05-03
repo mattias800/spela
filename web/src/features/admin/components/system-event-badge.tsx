@@ -9,6 +9,8 @@ import {
   Cpu,
   FileWarning,
   KeySquare,
+  Download,
+  RefreshCw,
   type LucideIcon,
 } from "lucide-react";
 import { Badge } from "@/components/ui";
@@ -107,6 +109,18 @@ export const SYSTEM_EVENT_META: Record<SystemEventType, EventMeta> = {
     variant: "danger",
     icon: AlertTriangle,
     severity: "alert",
+  },
+  core_updated: {
+    label: "Core Updated",
+    variant: "default",
+    icon: RefreshCw,
+    severity: "info",
+  },
+  bios_download_failed: {
+    label: "BIOS Download Failed",
+    variant: "warning",
+    icon: Download,
+    severity: "notice",
   },
 };
 
