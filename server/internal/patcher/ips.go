@@ -131,6 +131,17 @@ func applyIPS32(romData, patchData []byte) ([]byte, error) {
 
 		// Check for EEOF marker
 		if string(patchData[pos:pos+4]) == ips32EOF {
+			// Optional truncation marker (4 bytes after EEOF, big-endian).
+			// Mirrors applyIPSStandard's handling — without this, patches
+			// that include the marker leave the ROM longer than intended,
+			// which some emulators tolerate and others crash on.
+			pos += 4
+			if pos+4 <= len(patchData) {
+				truncSize := int(binary.BigEndian.Uint32(patchData[pos : pos+4]))
+				if truncSize < len(result) {
+					result = result[:truncSize]
+				}
+			}
 			break
 		}
 
