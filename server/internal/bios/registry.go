@@ -155,7 +155,11 @@ var registry = []Entry{
 	// disk image to boot. Without this entry registered, the missing-
 	// BIOS UI couldn't fire and FDS launches surfaced a generic
 	// "Failed to start emulation" error (#891).
-	{ConsoleID: "fds", FileName: "disksys.rom", Description: "Famicom Disk System BIOS", MD5: "ca30b50f880eb660a320674ed365ef7a", Required: true},
+	//
+	// Source URL was missing originally (#891 only added the entry, not
+	// a download path) — caught by the Required→Downloadable invariant
+	// test added alongside the #934/#935 fixes.
+	{ConsoleID: "fds", FileName: "disksys.rom", Description: "Famicom Disk System BIOS", MD5: "ca30b50f880eb660a320674ed365ef7a", Required: true, OverrideURL: "https://github.com/Abdess/retrobios/raw/main/bios/Nintendo/Famicom%20Disk%20System/disksys.rom"},
 
 	// PlayStation Portable (PSP) — ppsspp_libretro.info.
 	//
@@ -188,21 +192,49 @@ var registry = []Entry{
 	// Magnavox Odyssey 2 / Philips Videopac (O2) — o2em_libretro.info.
 	// o2rom.bin is required by the core to boot any cartridge; the
 	// other three are regional / variant BIOSes the core can use when
-	// present. MD5s are not published in o2em_libretro.info — match
-	// only by filename. See #889.
-	{ConsoleID: "o2", FileName: "o2rom.bin", Description: "Odyssey 2 BIOS (US, G7000)", MD5: "", Required: true},
-	{ConsoleID: "o2", FileName: "c52.bin", Description: "Videopac French BIOS (G7000)", MD5: "", Required: false},
-	{ConsoleID: "o2", FileName: "g7400.bin", Description: "Videopac+ European BIOS (G7400)", MD5: "", Required: false},
-	{ConsoleID: "o2", FileName: "jopac.bin", Description: "JOPAC BIOS (G7400 variant)", MD5: "", Required: false},
+	// present. MD5s are from o2em_libretro.info's notes block (the
+	// canonical libretro reference). #889 added the entries; #934
+	// wired up the source URLs and pinned the MD5s.
+	//
+	// Source: archive.org's MAME 0.221 merged ROM dump. The MAME zip
+	// stores the US BIOS as o2bios.rom (root) — we fetch that file
+	// and save it under the libretro-expected name o2rom.bin. Variant
+	// BIOSes live under per-machine subdirs.
+	{ConsoleID: "o2", FileName: "o2rom.bin", Description: "Odyssey 2 BIOS (US, G7000)", MD5: "562d5ebf9e030a40d6fabfc2f33139fd", Required: true, OverrideURL: "https://archive.org/download/mame-0.221-roms-merged/odyssey2.zip/o2bios.rom"},
+	{ConsoleID: "o2", FileName: "c52.bin", Description: "Videopac French BIOS (G7000)", MD5: "f1071cdb0b6b10dde94d3bc8a6146387", Required: false, OverrideURL: "https://archive.org/download/mame-0.221-roms-merged/odyssey2.zip/videopac%2Fc52.bin"},
+	{ConsoleID: "o2", FileName: "g7400.bin", Description: "Videopac+ European BIOS (G7400)", MD5: "c500ff71236068e0dc0d0603d265ae76", Required: false, OverrideURL: "https://archive.org/download/mame-0.221-roms-merged/odyssey2.zip/g7400%2Fg7400.bin"},
+	{ConsoleID: "o2", FileName: "jopac.bin", Description: "JOPAC BIOS (G7400 variant)", MD5: "279008e4a0db2dc5f1c048853b033828", Required: false, OverrideURL: "https://archive.org/download/mame-0.221-roms-merged/odyssey2.zip/jopac%2Fjopac.bin"},
 
 	// Fairchild Channel F (CHAF) — freechaf_libretro.info. Both
 	// sl31253.bin and sl31254.bin are required — Channel F can't
 	// start without either chip ROM, and the symptom on
 	// missing-BIOS-without-registry-entry is a silent black screen
-	// (no error, no missing-BIOS prompt). See #890.
-	{ConsoleID: "chaf", FileName: "sl31253.bin", Description: "Channel F system ROM 1 (chip 1)", MD5: "", Required: true},
-	{ConsoleID: "chaf", FileName: "sl31254.bin", Description: "Channel F system ROM 2 (chip 2)", MD5: "", Required: true},
-	{ConsoleID: "chaf", FileName: "sl90025.bin", Description: "Channel F II system ROM", MD5: "", Required: false},
+	// (no error, no missing-BIOS prompt). sl90025.bin is technically
+	// optional: per the freechaf core notes, when present it
+	// supersedes sl31253.bin. #890 added the entries; #934 wired
+	// up the source URLs.
+	//
+	// Source: archive.org's MAME 0.221 merged dump. The MAME zip
+	// names the chip ROMs with .rom extension; libretro expects
+	// .bin. Same content (MD5 verified), the downloader saves under
+	// FileName so the rename happens transparently.
+	{ConsoleID: "chaf", FileName: "sl31253.bin", Description: "Channel F system ROM 1 (chip 1)", MD5: "ac9804d4c0e9d07e33472e3726ed15c3", Required: true, OverrideURL: "https://archive.org/download/mame-0.221-roms-merged/channelf.zip/sl31253.rom"},
+	{ConsoleID: "chaf", FileName: "sl31254.bin", Description: "Channel F system ROM 2 (chip 2)", MD5: "da98f4bb3242ab80d76629021bb27585", Required: true, OverrideURL: "https://archive.org/download/mame-0.221-roms-merged/channelf.zip/sl31254.rom"},
+	{ConsoleID: "chaf", FileName: "sl90025.bin", Description: "Channel F II system ROM", MD5: "95d339631d867c8f1d15a5f2ec26069d", Required: false, OverrideURL: "https://archive.org/download/mame-0.221-roms-merged/channelf.zip/sl90025.rom"},
+
+	// Mattel Intellivision (INTV) — freeintv_libretro.info. Both
+	// exec.bin (Executive ROM, 8KB) and grom.bin (Graphics ROM, 2KB)
+	// are required — FreeIntv silently fails to boot any cartridge
+	// without either, with no error surfaced to the player. ivoice.bin
+	// is the SP0256-012 voice synthesis ROM, only used by ~10
+	// Intellivoice-enabled titles (B-17 Bomber, Bomb Squad, ...);
+	// optional, omitted here because retrobios does not host it.
+	// MD5s are from freeintv_libretro.info's notes block. #935.
+	//
+	// Source: Abdess/retrobios — the canonical libretro mirror that
+	// already hosts our ColecoVision and CD-i fallback BIOS files.
+	{ConsoleID: "intv", FileName: "exec.bin", Description: "Intellivision Executive ROM", MD5: "62e761035cb657903761800f4437b8af", Required: true, OverrideURL: "https://github.com/Abdess/retrobios/raw/main/bios/Mattel/Intellivision/exec.bin"},
+	{ConsoleID: "intv", FileName: "grom.bin", Description: "Intellivision Graphics ROM", MD5: "0cd5946c6473e42e8e4c2137785e427f", Required: true, OverrideURL: "https://github.com/Abdess/retrobios/raw/main/bios/Mattel/Intellivision/grom.bin"},
 
 	// ScummVM — Roland MT-32 / CM-32L MIDI ROMs. The libretro scummvm core
 	// hardcodes its "extrapath" to <system_dir>/scummvm/extra/, so that's
