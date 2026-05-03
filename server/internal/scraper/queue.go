@@ -306,9 +306,13 @@ func (q *ScrapeQueue) MergeGames(jobID uint, gameIDs []uint) (int, error) {
 		return 0, nil
 	}
 
+	// Include in_progress as well as pending — an item the worker has
+	// already dequeued but not yet finished must not be re-enqueued, or
+	// the game gets scraped twice and TotalItems over-counts so the job
+	// never reaches completion (CompletedItems + FailedItems >= TotalItems).
 	var existingGameIDs []uint
 	if err := q.db.Model(&db.ScrapeQueueItem{}).
-		Where("job_id = ? AND status = ? AND game_id IN ?", jobID, "pending", gameIDs).
+		Where("job_id = ? AND status IN ? AND game_id IN ?", jobID, []string{"pending", "in_progress"}, gameIDs).
 		Pluck("game_id", &existingGameIDs).Error; err != nil {
 		return 0, fmt.Errorf("querying existing items: %w", err)
 	}

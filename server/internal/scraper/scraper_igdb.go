@@ -14,6 +14,7 @@ import (
 	"github.com/spela/server/internal/igdb"
 	"github.com/spela/server/internal/scanner"
 	"github.com/spela/server/internal/storage"
+	"gorm.io/gorm"
 )
 
 // ScrapeGame fetches metadata from IGDB (if configured) and images from IGDB/LibRetro.
@@ -45,8 +46,19 @@ func (s *Scraper) ScrapeGame(game *db.Game) error {
 		game.ScreenshotURL = ""
 		game.LibRetroCoverURL = ""
 		game.IGDBCoverURL = ""
-		// Clear IGDB-sourced scalar metadata so new match can overwrite
+		// Clear IGDB-sourced scalar metadata so a new match can overwrite.
+		// applyIGDBMatch uses `if field == ""` guards on the text fields, so
+		// any field still populated by a previous scrape would be retained
+		// even when the new match is for a different game (CRC rename) —
+		// resulting in mismatched description/developer/etc. paired with the
+		// new title. Resetting all IGDB-sourced fields keeps records coherent.
+		game.Description = ""
 		game.Storyline = ""
+		game.Developer = ""
+		game.Publisher = ""
+		game.Genre = ""
+		game.GameModes = ""
+		game.Players = 0
 		game.TotalRating = 0
 		game.TotalRatingCount = 0
 		game.IGDBUserRating = 0
@@ -519,30 +531,37 @@ func (s *Scraper) applyIGDBMatch(game *db.Game, console db.Console, match igdb.G
 		}
 	}
 
-	// Regional release dates — batch upsert in one transaction
+	// Regional release dates — batch upsert in one transaction. Use the
+	// GORM helper so an error in any FirstOrCreate triggers automatic
+	// rollback; the previous bare Begin/Commit pattern with no error checks
+	// or deferred Rollback could leak a SQLite write connection on commit
+	// failure, eventually starving the worker pool.
 	if len(match.ReleaseDates) > 0 {
-		rdTx := s.DB.Begin()
-		for _, rd := range match.ReleaseDates {
-			regionName := igdb.RegionName(rd.Region)
-			if regionName == "" || rd.Date == 0 {
-				continue
+		_ = s.DB.Transaction(func(tx *gorm.DB) error {
+			for _, rd := range match.ReleaseDates {
+				regionName := igdb.RegionName(rd.Region)
+				if regionName == "" || rd.Date == 0 {
+					continue
+				}
+				t := time.Unix(rd.Date, 0)
+				platformName := ""
+				if rd.Platform != nil {
+					platformName = rd.Platform.Name
+				}
+				releaseDate := db.GameReleaseDate{
+					GameID:   game.ID,
+					Region:   regionName,
+					Date:     t.Format("2006-01-02"),
+					Platform: platformName,
+				}
+				if err := tx.Where("game_id = ? AND region = ?", game.ID, regionName).
+					Assign(releaseDate).
+					FirstOrCreate(&releaseDate).Error; err != nil {
+					return err
+				}
 			}
-			t := time.Unix(rd.Date, 0)
-			platformName := ""
-			if rd.Platform != nil {
-				platformName = rd.Platform.Name
-			}
-			releaseDate := db.GameReleaseDate{
-				GameID:   game.ID,
-				Region:   regionName,
-				Date:     t.Format("2006-01-02"),
-				Platform: platformName,
-			}
-			rdTx.Where("game_id = ? AND region = ?", game.ID, regionName).
-				Assign(releaseDate).
-				FirstOrCreate(&releaseDate)
-		}
-		rdTx.Commit()
+			return nil
+		})
 	}
 
 	// Download cover art and screenshots concurrently.

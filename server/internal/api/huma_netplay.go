@@ -507,12 +507,25 @@ func (h *NetplayHandler) humaLoadNetplaySession(id string) (db.NetplaySession, e
 }
 
 // HumaGetNetplaySession is the huma handler for GET /api/netplay/sessions/{id}.
-func (h *NetplayHandler) HumaGetNetplaySession(_ context.Context, in *GetNetplaySessionInput) (*GetNetplaySessionOutput, error) {
+func (h *NetplayHandler) HumaGetNetplaySession(ctx context.Context, in *GetNetplaySessionInput) (*GetNetplaySessionOutput, error) {
+	uid := UserIDFromContext(ctx)
 	session, err := h.humaLoadNetplaySession(in.ID)
 	if err != nil {
 		return nil, err
 	}
-	return &GetNetplaySessionOutput{Body: h.toSessionResponse(session)}, nil
+	isHost := session.HostUserID == uid
+	isClient := session.ClientUserID != nil && *session.ClientUserID == uid
+	if !isHost && !isClient {
+		return nil, huma.Error403Forbidden("not a participant of this session")
+	}
+	resp := h.toSessionResponse(session)
+	// Only the host should see the invite code; clients (and anyone else)
+	// don't need it after they've joined, and exposing it would let any
+	// participant share it with non-invited users.
+	if !isHost {
+		resp.InviteCode = ""
+	}
+	return &GetNetplaySessionOutput{Body: resp}, nil
 }
 
 // HumaDeleteNetplaySession is the huma handler for DELETE /api/netplay/sessions/{id}.
@@ -715,12 +728,29 @@ func (h *NetplayHandler) HumaAcceptNetplayInviteByCode(ctx context.Context, in *
 		return nil, huma.Error500InternalServerError("failed to accept invite")
 	}
 
+	// Fill the session slot — same atomic update pattern as
+	// HumaJoinNetplayByInviteCode. Without this the session stays in
+	// 'waiting' with no client set and the host never sees the invitee
+	// arrive (the notification-accept and code-join flows must reach the
+	// same end state).
+	now := time.Now()
+	result := h.DB.Model(&db.NetplaySession{}).
+		Where("id = ? AND client_user_id IS NULL AND status = ?", invite.NetplaySessionID, "waiting").
+		Updates(map[string]interface{}{
+			"client_user_id": uid,
+			"status":         "in_progress",
+			"started_at":     now,
+		})
+	if result.RowsAffected == 0 {
+		return nil, huma.Error409Conflict("this session already has two players")
+	}
+
 	h.DB.Model(&db.NetplayInvite{}).
 		Where("netplay_session_id = ? AND id != ? AND status = ?", invite.NetplaySessionID, invite.ID, "pending").
 		Update("status", "expired")
 
 	h.DB.Preload("Inviter").Preload("Invitee").
-		Preload("NetplaySession").Preload("NetplaySession.HostUser").
+		Preload("NetplaySession").Preload("NetplaySession.HostUser").Preload("NetplaySession.ClientUser").
 		Preload("NetplaySession.Game").Preload("NetplaySession.Game.Console").
 		First(&invite, invite.ID)
 
@@ -728,6 +758,7 @@ func (h *NetplayHandler) HumaAcceptNetplayInviteByCode(ctx context.Context, in *
 
 	if h.Hub != nil {
 		h.Hub.Broadcast(ws.Event{Type: ws.EventNetplayInviteAccepted, Payload: resp})
+		h.Hub.Broadcast(ws.Event{Type: ws.EventNetplayPlayerJoined, Payload: h.toSessionResponse(invite.NetplaySession)})
 	}
 
 	return &AcceptNetplayInviteByCodeOutput{Body: resp}, nil
