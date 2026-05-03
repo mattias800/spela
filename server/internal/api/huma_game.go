@@ -243,15 +243,24 @@ func (h *GameHandler) HumaListGames(ctx context.Context, in *ListGamesInput) (*L
 	}
 	if consoles != "" {
 		abbrs := strings.Split(consoles, ",")
-		var consoleIDs []uint
+		// Resolve all abbreviations in one query rather than one per item.
+		// Previously a request like ?consoles=snes,nes,gba issued one
+		// First() round-trip per entry — a multi-console filter on a
+		// large library could fire 5+ queries before the main games
+		// query even started.
+		lowerAbbrs := make([]string, 0, len(abbrs))
 		for _, abbr := range abbrs {
-			abbr = strings.TrimSpace(abbr)
-			if abbr == "" {
-				continue
+			trimmed := strings.TrimSpace(abbr)
+			if trimmed != "" {
+				lowerAbbrs = append(lowerAbbrs, strings.ToLower(trimmed))
 			}
-			var console db.Console
-			if err := h.DB.Where("LOWER(abbreviation) = LOWER(?)", abbr).First(&console).Error; err == nil {
-				consoleIDs = append(consoleIDs, console.ID)
+		}
+		var consoleIDs []uint
+		if len(lowerAbbrs) > 0 {
+			var resolved []db.Console
+			h.DB.Where("LOWER(abbreviation) IN ?", lowerAbbrs).Find(&resolved)
+			for _, c := range resolved {
+				consoleIDs = append(consoleIDs, c.ID)
 			}
 		}
 		if len(consoleIDs) == 0 {
