@@ -1579,12 +1579,14 @@ JNI_FUNC(jstring, nativeGetCoreName)(JNIEnv *env, jobject thiz) {
 
 JNI_FUNC(void, nativeSetSystemDir)(JNIEnv *env, jobject thiz, jstring dir) {
     const char *path = (*env)->GetStringUTFChars(env, dir, NULL);
+    if (!path) return; /* GetStringUTFChars NULL on OOM — leave system_dir as-is */
     strncpy(g_core.system_dir, path, sizeof(g_core.system_dir) - 1);
     (*env)->ReleaseStringUTFChars(env, dir, path);
 }
 
 JNI_FUNC(void, nativeSetSaveDir)(JNIEnv *env, jobject thiz, jstring dir) {
     const char *path = (*env)->GetStringUTFChars(env, dir, NULL);
+    if (!path) return; /* GetStringUTFChars NULL on OOM — leave save_dir as-is */
     strncpy(g_core.save_dir, path, sizeof(g_core.save_dir) - 1);
     (*env)->ReleaseStringUTFChars(env, dir, path);
 }
@@ -1623,7 +1625,12 @@ JNI_FUNC(jboolean, nativeSetSRAM)(JNIEnv *env, jobject thiz, jbyteArray data) {
 
 JNI_FUNC(void, nativeSetCoreVariable)(JNIEnv *env, jobject thiz, jstring key, jstring value) {
     const char *k = (*env)->GetStringUTFChars(env, key, NULL);
+    if (!k) return;
     const char *v = (*env)->GetStringUTFChars(env, value, NULL);
+    if (!v) {
+        (*env)->ReleaseStringUTFChars(env, key, k);
+        return;
+    }
     core_variables_set(k, v);
     (*env)->ReleaseStringUTFChars(env, key, k);
     (*env)->ReleaseStringUTFChars(env, value, v);
@@ -1964,6 +1971,7 @@ JNI_FUNC(void, nativeCheatSet)(JNIEnv *env, jobject thiz,
                                 jint index, jboolean enabled, jstring code) {
     if (!g_core.retro_cheat_set) return;
     const char *codeStr = (*env)->GetStringUTFChars(env, code, NULL);
+    if (!codeStr) return; /* GetStringUTFChars NULL on OOM */
     g_core.retro_cheat_set((unsigned)index, enabled == JNI_TRUE, codeStr);
     (*env)->ReleaseStringUTFChars(env, code, codeStr);
 }
