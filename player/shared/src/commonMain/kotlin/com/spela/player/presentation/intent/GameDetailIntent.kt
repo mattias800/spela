@@ -35,7 +35,18 @@ sealed interface GameDetailIntent {
     data class RateGame(val rating: Int, val review: String = "") : GameDetailIntent
     data object DeleteRating : GameDetailIntent
     data object LoadSharedSaves : GameDetailIntent
-    data class ShareSave(val saveId: String, val name: String, val description: String) : GameDetailIntent
+    /**
+     * Upload a session save to the public shared-saves library.
+     * Pre-#979 this intent only carried [saveId] and the VM uploaded
+     * an empty ByteArray placeholder; [sessionId] is required to
+     * resolve the actual bytes via SessionRepository.downloadSessionSave.
+     */
+    data class ShareSave(
+        val sessionId: String,
+        val saveId: String,
+        val name: String,
+        val description: String,
+    ) : GameDetailIntent
     data class DownloadSharedSave(val saveId: String) : GameDetailIntent
     data class DeleteSharedSave(val saveId: String) : GameDetailIntent
     data class PlayFromSharedSave(val saveId: String) : GameDetailIntent
