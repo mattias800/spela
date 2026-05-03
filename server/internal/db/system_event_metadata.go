@@ -62,3 +62,13 @@ type EmulatorJSLoadFailedMetadata struct {
 	GameID string `json:"gameId"`
 	Core   string `json:"core"`
 }
+
+// BIOSDownloadFailedMetadata is the metadata shape for the
+// SystemEventBIOSDownloadFailed event. Emitted by the BIOS auto-downloader
+// for each registry entry that fails to fetch or extract.
+type BIOSDownloadFailedMetadata struct {
+	FileName  string `json:"fileName"`
+	ConsoleID string `json:"consoleId"`
+	URL       string `json:"url"`
+	Error     string `json:"error"`
+}

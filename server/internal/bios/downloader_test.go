@@ -111,7 +111,7 @@ func TestDownloadMissing_MD5Mismatch(t *testing.T) {
 	assert.Equal(t, 0, result.Skipped)
 	assert.Equal(t, 1, result.Failed)
 	assert.Len(t, result.Errors, 1)
-	assert.Contains(t, result.Errors[0], "MD5 mismatch")
+	assert.Contains(t, result.Errors[0].Error, "MD5 mismatch")
 
 	// Temp file should have been cleaned up, no file on disk
 	_, err := os.Stat(filepath.Join(biosDir, "bad_md5.bin"))
@@ -131,7 +131,7 @@ func TestDownloadMissing_ServerError(t *testing.T) {
 	origRegistry := make([]Entry, len(registry))
 	copy(origRegistry, registry)
 	registry = []Entry{
-		{ConsoleID: "gba", FileName: "missing_remote.bin", Description: "Not Found", MD5: "abc", Required: true},
+		{ConsoleID: "gba", FileName: "missing_remote.bin", Description: "Not Found", MD5: "abc", Required: true, OverrideURL: server.URL + "/gba/missing_remote.bin"},
 	}
 	defer func() { registry = origRegistry }()
 
@@ -139,7 +139,17 @@ func TestDownloadMissing_ServerError(t *testing.T) {
 
 	assert.Equal(t, 0, result.Downloaded)
 	assert.Equal(t, 1, result.Failed)
-	assert.Contains(t, result.Errors[0], "HTTP 404")
+	require.Len(t, result.Errors, 1)
+	// #918 — the typed DownloadError carries every field the system-event
+	// recorder needs (filename, console, url, error message) so callers
+	// don't have to re-parse a free-form string.
+	assert.Equal(t, "missing_remote.bin", result.Errors[0].FileName)
+	assert.Equal(t, "gba", result.Errors[0].ConsoleID)
+	assert.Equal(t, server.URL+"/gba/missing_remote.bin", result.Errors[0].URL)
+	assert.Contains(t, result.Errors[0].Error, "HTTP 404")
+	// String() form is the historical "filename: error" rendering used
+	// by callers that just want a human-readable summary.
+	assert.Equal(t, "missing_remote.bin: HTTP 404", result.Errors[0].String())
 }
 
 func TestDownloadMissing_EmptyMD5Accepted(t *testing.T) {
@@ -471,5 +481,5 @@ func TestDownloadMissing_BundleRefusesZipSlip(t *testing.T) {
 	assert.Equal(t, 1, result.Failed)
 	assert.Equal(t, 0, result.Downloaded)
 	require.NotEmpty(t, result.Errors)
-	assert.Contains(t, result.Errors[0], "unsafe path")
+	assert.Contains(t, result.Errors[0].Error, "unsafe path")
 }
