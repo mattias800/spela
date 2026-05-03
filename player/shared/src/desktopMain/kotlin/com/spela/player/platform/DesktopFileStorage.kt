@@ -4,6 +4,8 @@ import com.spela.player.util.FileStorage
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
+import java.nio.file.Files
+import java.nio.file.StandardCopyOption
 
 class DesktopFileStorage : FileStorage {
 
@@ -32,6 +34,19 @@ class DesktopFileStorage : FileStorage {
         val file = File(path)
         file.parentFile?.mkdirs()
         file.writeBytes(data)
+    }
+
+    override suspend fun atomicWriteFile(path: String, data: ByteArray) = withContext(Dispatchers.IO) {
+        val target = File(path)
+        target.parentFile?.mkdirs()
+        val tmp = File(path + ".tmp")
+        tmp.writeBytes(data)
+        // Files.move with ATOMIC_MOVE + REPLACE_EXISTING gives a POSIX-style
+        // atomic rename when supported by the filesystem; the existing
+        // contents at [path] are never observable in a partially-written
+        // state by a concurrent reader.
+        Files.move(tmp.toPath(), target.toPath(), StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING)
+        Unit
     }
 
     override suspend fun readFile(path: String): ByteArray = withContext(Dispatchers.IO) {

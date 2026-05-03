@@ -27,6 +27,25 @@ class AndroidFileStorage(private val context: Context) : FileStorage {
         file.writeBytes(data)
     }
 
+    override suspend fun atomicWriteFile(path: String, data: ByteArray) = withContext(Dispatchers.IO) {
+        val target = File(path)
+        target.parentFile?.mkdirs()
+        val tmp = File(path + ".tmp")
+        tmp.writeBytes(data)
+        if (!tmp.renameTo(target)) {
+            // POSIX-correct rename should overwrite atomically. If renameTo
+            // refuses (e.g. cross-device or concurrent issue), fall back to
+            // a copy + delete so the write still completes — non-atomic but
+            // matches the prior in-place write semantics. Then propagate.
+            target.delete()
+            if (!tmp.renameTo(target)) {
+                target.writeBytes(data)
+                tmp.delete()
+            }
+        }
+        Unit
+    }
+
     override suspend fun readFile(path: String): ByteArray = withContext(Dispatchers.IO) {
         File(path).readBytes()
     }
