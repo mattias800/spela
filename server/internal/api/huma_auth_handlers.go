@@ -371,7 +371,14 @@ func (h *AuthHandler) HumaLogin(ctx context.Context, in *AuthLoginInput) (*AuthL
 		ExpiresAt:   time.Now().Add(auth.RefreshTokenDuration),
 		TokenFamily: generateTokenFamily(),
 	}
-	h.DB.Create(&rt)
+	if err := h.DB.Create(&rt).Error; err != nil {
+		// Pre-#961 this error was discarded — login returned 200 with
+		// tokens, but the refresh row never made it to the DB, so the
+		// first /api/auth/refresh call 401s and the user is silently
+		// logged out as soon as the access token TTL expires.
+		slog.Error("failed to persist refresh token on login", "user_id", user.ID, "error", err)
+		return nil, huma.NewError(http.StatusInternalServerError, "Sign in failed. Please try again.")
+	}
 
 	return &AuthLoginOutput{Body: AuthLoginResponse{
 		AccessToken:  accessToken,
@@ -472,7 +479,10 @@ func (h *AuthHandler) HumaRegister(ctx context.Context, in *AuthRegisterInput) (
 		ExpiresAt:   time.Now().Add(auth.RefreshTokenDuration),
 		TokenFamily: generateTokenFamily(),
 	}
-	h.DB.Create(&rt)
+	if err := h.DB.Create(&rt).Error; err != nil {
+		slog.Error("failed to persist refresh token on register", "user_id", user.ID, "error", err)
+		return nil, huma.NewError(http.StatusInternalServerError, "Account created but sign-in failed. Please sign in manually.")
+	}
 
 	userResp := ToUserResponse(user)
 	return &AuthRegisterOutput{
@@ -618,7 +628,10 @@ func (h *AuthHandler) HumaSetup(_ context.Context, in *AuthSetupInput) (*AuthSet
 		ExpiresAt:   time.Now().Add(auth.RefreshTokenDuration),
 		TokenFamily: generateTokenFamily(),
 	}
-	h.DB.Create(&rt)
+	if err := h.DB.Create(&rt).Error; err != nil {
+		slog.Error("failed to persist refresh token on setup", "user_id", user.ID, "error", err)
+		return nil, huma.NewError(http.StatusInternalServerError, "Setup failed. Please try again.")
+	}
 
 	return &AuthSetupOutput{Body: AuthLoginResponse{
 		AccessToken:  accessToken,

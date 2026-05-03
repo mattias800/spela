@@ -232,6 +232,7 @@ export type SeriesGameResponse = Schemas["SeriesGameResponse"];
 export type SeriesListResponse = Schemas["SeriesListResponse"];
 export type SessionCheatsResponse = Schemas["SessionCheatsResponse"];
 export type SessionSaveData = Schemas["SessionSaveData"];
+export type SessionSaveDirBundle = Schemas["SessionSaveDirBundle"];
 export type SessionSaveResponse = Schemas["SessionSaveResponse"];
 export type SessionStorageConsoleBreakdown = Schemas["SessionStorageConsoleBreakdown"];
 export type SetGameCoverRequest = Schemas["SetGameCoverRequest"];

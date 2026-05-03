@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"strconv"
 	"testing"
 	"time"
 
@@ -52,15 +53,17 @@ func TestGetPlayStats_ReturnsPlayHistory(t *testing.T) {
 
 	assert.Len(t, result, 2)
 
-	statsMap := make(map[uint]PlayStatsEntry)
+	statsMap := make(map[string]PlayStatsEntry)
 	for _, s := range result {
 		statsMap[s.GameID] = s
 	}
 
-	assert.Equal(t, int64(3600), statsMap[game1.ID].PlayTime)
-	assert.Equal(t, int64(120), statsMap[game2.ID].PlayTime)
-	assert.NotEmpty(t, statsMap[game1.ID].LastPlayedAt)
-	assert.NotEmpty(t, statsMap[game2.ID].LastPlayedAt)
+	game1Key := strconv.FormatUint(uint64(game1.ID), 10)
+	game2Key := strconv.FormatUint(uint64(game2.ID), 10)
+	assert.Equal(t, int64(3600), statsMap[game1Key].PlayTime)
+	assert.Equal(t, int64(120), statsMap[game2Key].PlayTime)
+	assert.NotEmpty(t, statsMap[game1Key].LastPlayedAt)
+	assert.NotEmpty(t, statsMap[game2Key].LastPlayedAt)
 }
 
 func TestGetPlayStats_EmptyWhenNoHistory(t *testing.T) {

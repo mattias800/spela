@@ -154,6 +154,11 @@ type GameResponse struct {
 	// every game that isn't a ROM hack. Generated Kotlin clients then
 	// reject the entire response on parse. Marking the JSON field optional
 	// matches reality: `parentGame` is genuinely absent for most games.
+	//
+	// TODO(#969): remove `omitempty` once Huma supports `nullable:"true"`
+	// on `$ref` fields without panicking. Track upstream at
+	// https://github.com/danielgtaylor/huma — file a discussion if no
+	// existing issue covers this. Re-audit on every Huma upgrade.
 	ParentGame     *ParentGameResponse  `json:"parentGame,omitempty"`
 	RomHacks       []RomHackGameResponse `json:"romHacks"`
 	HeroURL        string         `json:"heroUrl"`
@@ -716,6 +721,7 @@ type OnlineUserResponse struct {
 	// `omitempty` for the same reason as `GameResponse.parentGame`:
 	// Huma 2.37 can't emit nullable `$ref` and the field is genuinely
 	// absent when the user isn't currently playing.
+	// TODO(#969): re-audit on every Huma upgrade.
 	CurrentGame *OnlineUserGameResponse `json:"currentGame,omitempty"`
 }
 
@@ -734,6 +740,8 @@ type PublicProfileResponse struct {
 	AvatarURL     string                  `json:"avatarUrl"`
 	MemberSince   time.Time               `json:"memberSince"`
 	IsOnline      bool                    `json:"isOnline"`
+	// TODO(#969): re-audit on every Huma upgrade — same `$ref` panic
+	// workaround as GameResponse.parentGame.
 	CurrentGame   *OnlineUserGameResponse `json:"currentGame,omitempty"`
 	TotalPlayTime int64                   `json:"totalPlayTime"`
 	GamesPlayed   int64                   `json:"gamesPlayed"`
@@ -1141,14 +1149,30 @@ type UserStatsResponse struct {
 	GamesPlayed        int64         `json:"gamesPlayed"`
 	CurrentStreak      int           `json:"currentStreak"`
 	LongestStreak      int           `json:"longestStreak"`
+	// `omitempty` here is the same Huma 2.37 `$ref + nullable:true`
+	// panic workaround used on `GameResponse.parentGame` and
+	// `OnlineUserResponse.currentGame`. Without it, removing the
+	// `omitempty` makes Huma emit the field as `$ref: GameResponse`
+	// (required, non-null) — but the server emits `null` for users
+	// who haven't played anything yet, which the generated Kotlin
+	// client then refuses to deserialise. We accept the absent-key
+	// shape (vs the null-value shape of sibling LastPlayedAt) as the
+	// price of compatible client codegen, until upstream Huma is
+	// fixed. TODO(#969): re-audit on every Huma upgrade.
 	MostPlayedGame     *GameResponse `json:"mostPlayedGame,omitempty"`
 	MostPlayedGameTime int64         `json:"mostPlayedGameTime"`
 	LastPlayedAt       *time.Time    `json:"lastPlayedAt"`
 }
 
 // PlayStatsEntry is a single entry in the play stats (per-game history) response.
+//
+// GameID is serialised as a string to match every other game-id field
+// in the API surface (GameResponse.ID, ActivityEventResponse.GameID,
+// SessionSaveResponse.GameID, etc.). Pre-#966 it was a bare `uint`
+// emitted as a JSON integer, which broke any client that joined this
+// entry to other game objects keyed by string id.
 type PlayStatsEntry struct {
-	GameID       uint   `json:"gameId"`
+	GameID       string `json:"gameId"`
 	PlayTime     int64  `json:"playTime"`
 	LastPlayedAt string `json:"lastPlayedAt"`
 }

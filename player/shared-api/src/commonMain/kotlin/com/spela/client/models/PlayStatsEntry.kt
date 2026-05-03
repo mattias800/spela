@@ -31,7 +31,7 @@ import kotlinx.serialization.encoding.*
 
 data class PlayStatsEntry (
 
-    @SerialName(value = "gameId") @Required val gameId: kotlin.Long,
+    @SerialName(value = "gameId") @Required val gameId: kotlin.String,
 
     @SerialName(value = "lastPlayedAt") @Required val lastPlayedAt: kotlin.String,
 

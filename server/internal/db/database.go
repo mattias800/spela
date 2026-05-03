@@ -131,6 +131,15 @@ func Initialize(dbPath string) (*gorm.DB, error) {
 		}
 	}
 
+	// Dedupe pre-existing rows that would violate uniqueness constraints
+	// added by AutoMigrate below. Without this, AutoMigrate's CREATE
+	// UNIQUE INDEX would fail on existing installations that already
+	// have duplicates. See #970 (consoles.abbreviation), #973
+	// (play_history.user_id+game_id).
+	if err := dedupePreMigration(db); err != nil {
+		return nil, fmt.Errorf("dedupe pre-migration: %w", err)
+	}
+
 	slog.Info("running database migrations")
 	err = db.AutoMigrate(
 		&User{},
@@ -289,6 +298,94 @@ func Initialize(dbPath string) (*gorm.DB, error) {
 // converted by stripping the matching gameDirs prefix. If no prefix matches
 // (e.g. SPELA_GAME_DIRS changed), it falls back to detecting a known console
 // FolderName in the path segments.
+// dedupePreMigration removes rows that would violate uniqueness
+// constraints added by the model schema. Runs before AutoMigrate so
+// existing installations don't fail on `CREATE UNIQUE INDEX`.
+//
+// Idempotent: a fresh DB has no rows, so the queries are no-ops; a DB
+// that's already been deduped has no duplicates left for the queries
+// to find. Safe to call on every startup.
+func dedupePreMigration(database *gorm.DB) error {
+	// PlayHistory: at most one row per (user_id, game_id). Where
+	// duplicates exist, sum playtime into the earliest row, take the
+	// latest LastPlayed, and delete the rest. See #973.
+	if database.Migrator().HasTable(&PlayHistory{}) {
+		var groups []struct {
+			UserID uint
+			GameID uint
+			Count  int
+		}
+		err := database.Model(&PlayHistory{}).
+			Select("user_id, game_id, COUNT(*) as count").
+			Where("deleted_at IS NULL").
+			Group("user_id, game_id").
+			Having("COUNT(*) > 1").
+			Find(&groups).Error
+		if err != nil {
+			return fmt.Errorf("scan play_history dupes: %w", err)
+		}
+		for _, g := range groups {
+			var rows []PlayHistory
+			if err := database.Where("user_id = ? AND game_id = ?", g.UserID, g.GameID).
+				Order("created_at ASC").Find(&rows).Error; err != nil {
+				return fmt.Errorf("load play_history dupes: %w", err)
+			}
+			if len(rows) <= 1 {
+				continue
+			}
+			keeper := rows[0]
+			for _, dup := range rows[1:] {
+				keeper.PlayTime += dup.PlayTime
+				if dup.LastPlayed.After(keeper.LastPlayed) {
+					keeper.LastPlayed = dup.LastPlayed
+				}
+				if err := database.Delete(&dup).Error; err != nil {
+					return fmt.Errorf("delete play_history dupe id=%d: %w", dup.ID, err)
+				}
+			}
+			if err := database.Save(&keeper).Error; err != nil {
+				return fmt.Errorf("save merged play_history: %w", err)
+			}
+			slog.Info("merged duplicate play_history rows",
+				"userId", g.UserID, "gameId", g.GameID, "merged", len(rows)-1)
+		}
+	}
+
+	// Console: at most one row per abbreviation. Multiple rows with the
+	// same abbreviation are a bug — keep the lowest-id row, delete the
+	// rest. See #970.
+	if database.Migrator().HasTable(&Console{}) {
+		var dupes []struct {
+			Abbreviation string
+			Count        int
+		}
+		err := database.Model(&Console{}).
+			Select("abbreviation, COUNT(*) as count").
+			Where("deleted_at IS NULL").
+			Group("abbreviation").
+			Having("COUNT(*) > 1").
+			Find(&dupes).Error
+		if err != nil {
+			return fmt.Errorf("scan console dupes: %w", err)
+		}
+		for _, d := range dupes {
+			var rows []Console
+			if err := database.Where("abbreviation = ?", d.Abbreviation).
+				Order("id ASC").Find(&rows).Error; err != nil {
+				return fmt.Errorf("load console dupes: %w", err)
+			}
+			for _, dup := range rows[1:] {
+				if err := database.Delete(&dup).Error; err != nil {
+					return fmt.Errorf("delete duplicate console id=%d: %w", dup.ID, err)
+				}
+				slog.Warn("deleted duplicate console row", "abbreviation", d.Abbreviation, "id", dup.ID)
+			}
+		}
+	}
+
+	return nil
+}
+
 func MigrateToRelativePaths(database *gorm.DB, gameDirs []string) error {
 	// Load console folder names for fallback detection
 	var consoles []Console
@@ -852,6 +949,16 @@ func MigrateSharedSessions(database *gorm.DB) error {
 	return nil
 }
 
+// consoleNameMigrations maps historical seed names that we want to rename
+// to their canonical new names. Used by SeedConsoles to safely backfill a
+// rename without clobbering admin customisations: a backfill only fires
+// when the existing DB value is a key in this map AND maps to the new
+// seed value. Add a new entry here whenever the canonical name in the
+// SeedConsoles list changes. See #974.
+var consoleNameMigrations = map[string]string{
+	"Neo Geo Pocket": "Neo Geo Pocket / Color",
+}
+
 // SeedConsoles inserts the default console definitions if they don't exist.
 // For existing consoles, it backfills the EmulatorJSCore field if empty.
 func SeedConsoles(db *gorm.DB) error {
@@ -965,10 +1072,18 @@ func SeedConsoles(db *gorm.DB) error {
 			}
 			slog.Info("seeded console", "name", c.Name)
 		} else {
-			// Backfill name changes (e.g., "Neo Geo Pocket" → "Neo Geo Pocket / Color")
+			// Backfill renames only when the existing name is a known
+			// historical seed value — never overwrite an admin
+			// customisation. Pre-#974 this fired any time the DB
+			// differed from the seed, so an admin who renamed a
+			// console via the admin UI saw their change silently
+			// reverted on the next restart, violating the f(f(x))=f(x)
+			// rule (a customisation is valid starting state).
 			if c.Name != "" && existing.Name != c.Name {
-				db.Model(&existing).Update("name", c.Name)
-				slog.Info("backfilled Name", "old", existing.Name, "new", c.Name)
+				if knownPrev, ok := consoleNameMigrations[existing.Name]; ok && knownPrev == c.Name {
+					db.Model(&existing).Update("name", c.Name)
+					slog.Info("migrated Name", "old", existing.Name, "new", c.Name)
+				}
 			}
 			if c.EmulatorJSCore != "" && existing.EmulatorJSCore != c.EmulatorJSCore {
 				db.Model(&existing).Update("emulator_js_core", c.EmulatorJSCore)
@@ -1120,16 +1235,26 @@ func SeedCores(db *gorm.DB) error {
 	return nil
 }
 
+// scrapeResultsMigratedKey is the ServerSetting sentinel that marks
+// MigrateScrapeResults as fully completed. Pre-#972 the migration
+// gated on `count > 0` in game_scrape_results, which was unsafe: a
+// crash partway through (OOM on a 50k-game library, deploy
+// interruption) left games in unprocessed batches without rows, and
+// the next restart saw count > 0 and skipped the rest permanently.
+const scrapeResultsMigratedKey = "scrape_results_migrated"
+
 // MigrateScrapeResults backfills GameScrapeResult rows from the legacy
 // ScraperID / ScrapeAttempts fields already present on each Game row.
-// It is idempotent: if any rows already exist the function returns immediately.
+// Idempotent: gated on a ServerSetting sentinel so re-runs are no-ops
+// after the first successful completion. Crash-safe: the sentinel is
+// only written after the full loop completes, so a crash mid-loop
+// just resumes from where it left off on the next start (the
+// OnConflict{DoNothing:true} on inserts makes re-processing of
+// already-done rows a no-op).
 func MigrateScrapeResults(database *gorm.DB) error {
-	var count int64
-	if err := database.Model(&GameScrapeResult{}).Count(&count).Error; err != nil {
-		return fmt.Errorf("counting existing scrape results: %w", err)
-	}
-	if count > 0 {
-		slog.Info("skipping scrape-result migration: rows already present", "count", count)
+	var sentinel ServerSetting
+	if err := database.Where("key = ?", scrapeResultsMigratedKey).First(&sentinel).Error; err == nil {
+		// Sentinel present → migration already completed.
 		return nil
 	}
 
@@ -1205,6 +1330,14 @@ func MigrateScrapeResults(database *gorm.DB) error {
 	}
 
 	slog.Info("scrape-result migration completed", "rows_inserted", totalInserted)
+
+	// Write sentinel only after the full loop completes. Idempotent:
+	// the ServerSetting primary key is the unique key, so re-creating
+	// the same row is a no-op (or fails harmlessly on a duplicate
+	// insert; we ignore the error).
+	if err := database.Save(&ServerSetting{Key: scrapeResultsMigratedKey, Value: "true"}).Error; err != nil {
+		slog.Warn("failed to write scrape-results-migrated sentinel — migration will retry on next start (no harm)", "error", err)
+	}
 	return nil
 }
 

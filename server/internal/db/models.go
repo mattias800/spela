@@ -118,7 +118,13 @@ type Console struct {
 	UpdatedAt      time.Time      `json:"updatedAt"`
 	DeletedAt      gorm.DeletedAt `gorm:"index" json:"-"`
 	Name           string         `gorm:"uniqueIndex;size:128;not null" json:"name"`
-	Abbreviation   string         `gorm:"size:16;not null" json:"abbreviation"`
+	// Abbreviation is the canonical short identifier (e.g. "NES", "SNES",
+	// "PS2"). Every seed function and backfill loop in database.go uses
+	// `WHERE abbreviation = ?` as the lookup key, so the schema must
+	// enforce uniqueness — otherwise a race or bug could insert two
+	// rows for the same abbreviation and subsequent `First()` calls
+	// would silently pick whichever SQLite returns first. See #970.
+	Abbreviation   string         `gorm:"uniqueIndex;size:16;not null" json:"abbreviation"`
 	Extensions     string         `gorm:"size:255;not null" json:"extensions"` // comma-separated
 	DefaultCore    string         `gorm:"size:128" json:"defaultCore"`
 	EmulatorJSCore string         `gorm:"size:64" json:"emulatorJsCore"`
@@ -280,15 +286,20 @@ type Favorite struct {
 	Game      Game           `gorm:"foreignKey:GameID" json:"game"`
 }
 
-// PlayHistory records when a user plays a game.
+// PlayHistory records when a user plays a game. There must be at most
+// one row per (user, game) — `mergeGameData` and the various
+// "total play time" / "last played" aggregations all assume this. The
+// composite uniqueIndex enforces it at the schema level so application
+// bugs or races (concurrent session ends, retry-on-partial-failure)
+// can't insert duplicates that silently distort aggregations. See #973.
 type PlayHistory struct {
 	ID        uint           `gorm:"primarykey" json:"id"`
 	CreatedAt time.Time      `json:"createdAt"`
 	UpdatedAt time.Time      `json:"updatedAt"`
 	DeletedAt gorm.DeletedAt `gorm:"index" json:"-"`
-	UserID    uint           `gorm:"index;not null" json:"userId"`
+	UserID    uint           `gorm:"uniqueIndex:idx_user_game_play_history;not null" json:"userId"`
 	User      User           `gorm:"foreignKey:UserID" json:"-"`
-	GameID    uint           `gorm:"index;not null" json:"gameId"`
+	GameID    uint           `gorm:"uniqueIndex:idx_user_game_play_history;not null" json:"gameId"`
 	Game      Game           `gorm:"foreignKey:GameID" json:"game"`
 	LastPlayed time.Time     `json:"lastPlayed"`
 	PlayTime   int64         `json:"playTime"` // seconds

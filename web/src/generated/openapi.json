@@ -5991,9 +5991,7 @@
         "additionalProperties": false,
         "properties": {
           "gameId": {
-            "format": "int64",
-            "minimum": 0,
-            "type": "integer"
+            "type": "string"
           },
           "lastPlayedAt": {
             "type": "string"
