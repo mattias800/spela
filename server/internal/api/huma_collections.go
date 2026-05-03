@@ -416,8 +416,19 @@ func (h *CollectionHandler) HumaDeleteCollection(ctx context.Context, in *Delete
 		return nil, huma.Error403Forbidden("not authorized")
 	}
 
-	h.DB.Where("collection_id = ?", cid).Delete(&db.CollectionItem{})
-	h.DB.Delete(&collection)
+	// Wrap both deletes in a transaction. Without it, an error between
+	// the two statements (process killed, DB error mid-request) would
+	// leave the GameCollection row alive but with all its items gone —
+	// a permanently empty, undeletable-via-normal-means orphan. Surface
+	// errors instead of silently discarding them.
+	if err := h.DB.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Where("collection_id = ?", cid).Delete(&db.CollectionItem{}).Error; err != nil {
+			return err
+		}
+		return tx.Delete(&collection).Error
+	}); err != nil {
+		return nil, huma.Error500InternalServerError("failed to delete collection")
+	}
 
 	return &DeleteCollectionOutput{Body: MessageResponse{Message: "collection deleted"}}, nil
 }
