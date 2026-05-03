@@ -135,6 +135,43 @@ before the PR is considered ready.
 If either agent requests changes, fix them before passing the PR to the user.
 This gate applies to all PRs, not just team-built features.
 
+### Reviewer prompt template
+
+Generic "review this code" prompts produce shallow generic output. The
+reviewer agent finds real bugs when the prompt is **focused**. Use this
+template for every dispatch:
+
+1. **What changed.** One paragraph summary of the PR's intent and which
+   issue it closes. Saves the reviewer from re-deriving context.
+2. **File list with line ranges** of the meaningful changes. Don't make
+   the reviewer browse — point at the diff.
+3. **Numbered concerns to check.** 3-7 specific questions tailored to
+   the change shape. Examples that produced real findings:
+   - "Are there races between the timer coroutine and the success
+     handler? Could the timer fire AFTER success and overwrite
+     fresh state?"
+   - "Does the `LaunchedEffect` have a window where `onPlay` fires
+     more than once across recompositions?"
+   - "Is the default parameter value `onX = onY` semantically
+     correct, or a silent footgun for future callers?"
+4. **Confidence threshold.** Always: "report only issues with
+   confidence ≥ 80% — nitpicks are noise."
+5. **Output format.** Always: "markdown comment suitable for posting
+   on the PR, with line references."
+
+### When the gate explicitly applies
+
+The gate is mandatory; here's the trigger list so it's hard to skip:
+
+- Any change to a `*ViewModel.kt` or `*Repository.kt`
+- Any new server endpoint, DB migration, or BIOS-registry entry
+- Any change to authentication, save-state, download, or netplay flows
+- Any new shared UI component (`Sp*`), or change to an existing one
+- Any change > 200 lines of non-test code
+
+For trivial edits (typo fixes, dependency bumps, comment-only changes)
+the gate can be skipped — but the bar is high. When in doubt, dispatch.
+
 ## Design System Enforcement
 
 The **Design System Principles** in `AGENT_TEAM.md` are mandatory for all UI
