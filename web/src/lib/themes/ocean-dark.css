@@ -37,4 +37,11 @@
   --color-success-500: #00c896;
   --color-warning-500: #f5b742;
   --color-danger-500: #ff6b6b;
+
+  /* Semantic text-emphasis tokens — see comment in index.css. Tuned
+   * for the dark navy body bg (#04111f). */
+  --color-text-primary: #b3d9f2;
+  --color-text-secondary: #80bfe0;
+  --color-text-tertiary: #5599c4;
+  --color-text-disabled: #3a7da8;
 }

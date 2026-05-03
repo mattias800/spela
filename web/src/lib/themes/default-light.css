@@ -4,8 +4,14 @@
   --color-surface-100: #212529;
   --color-surface-200: #343a40;
   --color-surface-300: #495057;
-  --color-surface-400: #868e96;
-  --color-surface-500: #adb5bd;
+  /* surface-400 / surface-500 are widely abused as "muted helper text"
+   * across ~1000 call sites authored for dark mode (where these are
+   * light-grey on dark bg). Retuned for default-light to slate-600 /
+   * slate-700 so they pass WCAG AA on white as a safety net for
+   * unmigrated sites. New code should prefer the semantic
+   * text-secondary / text-tertiary tokens. See #919. */
+  --color-surface-400: #64748b;
+  --color-surface-500: #475569;
   --color-surface-600: #ced4da;
   --color-surface-700: #dee2e6;
   --color-surface-800: #f1f3f5;
@@ -17,15 +23,24 @@
   --color-accent-500: #006080;
   --color-accent-600: #004060;
   --color-card-bg: #ffffff;
-  --color-card-border: #e9ecef;
+  /* slate-300 — visible card edge on white (was #e9ecef, 1.18:1) */
+  --color-card-border: #cbd5e1;
   --color-nav-bg: #f1f3f5;
   --color-nav-text: #495057;
   --color-nav-active: #0081b3;
   --color-heading: #212529;
   --color-body: #f8f9fa;
   --color-body-text: #212529;
-  --color-muted: #868e96;
+  /* was #868e96 (3.36:1, fails AA body); now slate-600 (7.55:1, AAA) */
+  --color-muted: #475569;
   --color-success-500: #16a34a;
   --color-warning-500: #d97706;
   --color-danger-500: #dc2626;
+
+  /* Semantic text-emphasis tokens — see comment in index.css. UX-tuned
+   * for white background. */
+  --color-text-primary: #212529; /* 16.1:1 — AAA */
+  --color-text-secondary: #475569; /* slate-600, 7.55:1 — AAA */
+  --color-text-tertiary: #64748b; /* slate-500, 4.85:1 — AA body */
+  --color-text-disabled: #94a3b8; /* slate-400, 2.95:1 — large-only */
 }

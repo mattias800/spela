@@ -32,7 +32,7 @@ export function CustomKeyMappingEditor({
     <div data-comp="CustomKeyMappingEditor" className="space-y-4">
       {groups.map((group) => (
         <div key={group.label}>
-          <p className="text-xs font-semibold uppercase tracking-wider text-surface-400 mb-2">
+          <p className="text-xs font-semibold uppercase tracking-wider text-secondary mb-2">
             {group.label}
           </p>
           <div className="grid grid-cols-2 gap-x-6 gap-y-1.5">

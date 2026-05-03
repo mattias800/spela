@@ -82,7 +82,7 @@ export function EmulationSettingsCard({
                   <p className="text-sm font-medium text-surface-200 group-hover:text-surface-100 transition-colors">
                     {label}
                   </p>
-                  <p className="text-xs text-surface-500">{description}</p>
+                  <p className="text-xs text-tertiary">{description}</p>
                 </div>
                 <Switch
                   checked={preferences?.[key] ?? false}

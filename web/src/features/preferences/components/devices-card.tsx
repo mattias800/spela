@@ -88,7 +88,7 @@ export function DevicesCard({
                 >
                   <div className="flex items-center gap-3 px-4 py-3">
                     <div className="h-9 w-9 rounded-lg bg-surface-800 flex items-center justify-center">
-                      <PlatformIcon className="h-4 w-4 text-surface-400" />
+                      <PlatformIcon className="h-4 w-4 text-tertiary" />
                     </div>
                     <div className="flex-1 min-w-0">
                       {isEditing ? (
@@ -125,7 +125,7 @@ export function DevicesCard({
                           </p>
                           <div className="flex items-center gap-2">
                             <Badge variant="default">{device.platform}</Badge>
-                            <span className="text-xs text-surface-500">
+                            <span className="text-xs text-tertiary">
                               Last seen {formatRelativeTime(device.lastSeenAt)}
                             </span>
                           </div>
@@ -172,7 +172,7 @@ export function DevicesCard({
 
                   {isExpanded && consoles && consoles.length > 0 && (
                     <div className="border-t border-surface-800 px-4 py-3">
-                      <p className="text-xs font-semibold uppercase tracking-wider text-surface-400 mb-2">
+                      <p className="text-xs font-semibold uppercase tracking-wider text-secondary mb-2">
                         Device Shader Overrides
                       </p>
                       <div className="space-y-2">
