@@ -69,6 +69,15 @@ class SpelaApiClient(
 
         install(Logging) {
             level = LogLevel.HEADERS
+            // Redact the Authorization header from logs (#975).
+            // LogLevel.HEADERS dumps every request/response header by
+            // default, including `Authorization: Bearer <token>`. On
+            // Android these go to logcat (readable by any READ_LOGS-
+            // permission app and any rooted device); on desktop they
+            // hit stdout/stderr. Sanitising means logs still show
+            // header NAMES (useful for debugging) but the bearer
+            // token's value is replaced by a placeholder.
+            sanitizeHeader { header -> header == HttpHeaders.Authorization }
         }
 
         install(Auth) {
