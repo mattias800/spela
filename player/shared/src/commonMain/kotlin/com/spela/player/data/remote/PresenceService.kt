@@ -27,8 +27,15 @@ class PresenceService(
     private val scope: CoroutineScope,
     private val scrapeService: ScrapeService? = null,
 ) {
+    // Cross-dispatcher: startHeartbeat/stopHeartbeat run on the main
+    // dispatcher while the heartbeat loop body reads currentGameId from
+    // dispatchers.io. Without @Volatile a write on one thread is not
+    // guaranteed to be visible to the other.
+    @Volatile
     private var wsJob: Job? = null
+    @Volatile
     private var heartbeatJob: Job? = null
+    @Volatile
     private var currentGameId: String? = null
 
     @Volatile
