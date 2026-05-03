@@ -134,9 +134,19 @@ var registry = []Entry{
 	{ConsoleID: "cv", FileName: "colecovision.rom", Description: "ColecoVision BIOS", MD5: "2c66f5911e5b42b8ebe113403548eee7", Required: true, OverrideURL: "https://raw.githubusercontent.com/Abdess/retrobios/main/bios/Coleco/ColecoVision/BIOS.col"},
 
 	// Philips CD-i (CDI) — same_cdi_libretro.info (MAME-based, needs subdirectory)
-	// cdimono1 requires 5 files including servo/slave MCU ROMs (added in MAME 0.222).
-	// The MAME 0.208 archive only has 3 files — use retrobios which has the complete set.
-	{ConsoleID: "cdi", FileName: "cdimono1.zip", Description: "CD-i Mono-I BIOS", MD5: "", Required: true, OverrideURL: "https://github.com/Abdess/retrobios/raw/main/bios/Philips/CD-i/cdimono1.zip", SubDir: "same_cdi/bios"},
+	// cdimono1 must contain 5 files: 3 main BIOS .rom dumps plus the
+	// SERVO and SLAVE MC68HC705C8A microcontroller ROMs (added to MAME
+	// in 0.222). Without the 8KB chip ROMs SAME_CDI loads but stays on
+	// a black screen — the core can't initialise the disc-drive servo
+	// or the front-panel slave processor, so games like Myst never
+	// reach the title screen (#939).
+	//
+	// The Abdess/retrobios mirror only has the 3 main .rom files. The
+	// MAME 0.221 merged archive predates 0.222 so it's also incomplete.
+	// archive.org's user-uploaded `cdimono1` item has the full 5-file
+	// torrentzipped set; pinning the MD5 ensures any older 3-file zip
+	// already cached on a server gets re-downloaded.
+	{ConsoleID: "cdi", FileName: "cdimono1.zip", Description: "CD-i Mono-I BIOS", MD5: "cfca9b8a96ed810bb3cd5ac11d7d1dda", Required: true, OverrideURL: "https://archive.org/download/cdimono1/cdimono1.zip", SubDir: "same_cdi/bios"},
 	{ConsoleID: "cdi", FileName: "cdimono2.zip", Description: "CD-i Mono-II BIOS", MD5: "", Required: false, OverrideURL: "https://archive.org/download/MAME208RomsOnlyMerged/cdimono2.zip", SubDir: "same_cdi/bios"},
 	{ConsoleID: "cdi", FileName: "cdibios.zip", Description: "CD-i BIOS (generic)", MD5: "", Required: false, OverrideURL: "https://archive.org/download/MAME208RomsOnlyMerged/cdibios.zip", SubDir: "same_cdi/bios"},
 
