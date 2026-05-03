@@ -142,7 +142,7 @@ policy on what goes where.
 
 **Owns:** `player/android/src/androidTest/`
 
-**Running E2E tests:** See `E2E.md` for full instructions. Use `player/run-e2e.sh` to run the suite. Check if a physical Android device is connected via `adb devices` — if available, use it (it's faster and more reliable). If no device is connected, fall back to an Android emulator.
+**Running E2E tests:** See `docs/e2e-testing.md` for full instructions. Use `player/run-e2e.sh` to run the suite. Check if a physical Android device is connected via `adb devices` — if available, use it (it's faster and more reliable). If no device is connected, fall back to an Android emulator.
 
 **Responsibilities:**
 - Write integration smoke tests for critical flows (login → browse → detail → play)

@@ -6,9 +6,9 @@ This guide covers building Spela from source and running it locally for developm
 
 | Tool | Version | Purpose |
 |------|---------|---------|
-| Go | 1.22+ | Backend server |
+| Go | 1.25+ | Backend server (production Dockerfile pins `golang:1.25-alpine`) |
 | Node.js | 20+ | Web frontend |
-| JDK | 17+ | Player app (Kotlin Multiplatform) |
+| JDK | 17+ | Player app (Kotlin Multiplatform; `jvmTarget = 17`) |
 | Docker | Latest | E2E test environment, deployment |
 
 ## Quick Start
@@ -76,8 +76,8 @@ See [TESTING.md](../TESTING.md) for the full testing guide. Quick reference:
 
 ## Useful Links
 
-- [ARCHITECTURE.md](../ARCHITECTURE.md) — System design and API endpoints
+- [ARCHITECTURE.md](../ARCHITECTURE.md) — System design and component overview
 - [TESTING.md](../TESTING.md) — Full testing guide
-- [E2E.md](../E2E.md) — Android E2E test setup
+- [docs/e2e-testing.md](e2e-testing.md) — Comprehensive E2E guide (web, Android, desktop)
 - [DEPLOY.md](DEPLOY.md) — Production deployment
 - [CONTRIBUTING.md](../CONTRIBUTING.md) — Code style and PR guidelines

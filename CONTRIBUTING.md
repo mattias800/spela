@@ -49,13 +49,9 @@ One logical change per commit.
 
 ## Testing
 
-A feature is **not done** until all tests pass. See [TESTING.md](TESTING.md) for the full testing guide.
+A feature is **not done** until all tests pass. Run the **full** test suite, not just your new tests — catching regressions early is critical.
 
-- **Backend:** `cd server && go test ./...`
-- **Web:** `cd web && npx vitest run` (unit) and `npx playwright test` (E2E)
-- **Player:** `cd player && ./run-desktop-tests.sh` (primary UI tests) and `./run-e2e.sh` (Android smoke tests)
-
-Run the **full** test suite, not just the new tests. Catching regressions early is critical.
+See [TESTING.md](TESTING.md) for the full testing guide (commands, durations, prerequisites). The Web E2E tests in particular need a running Docker environment — TESTING.md has the exact bring-up sequence.
 
 ## Pull Requests
 

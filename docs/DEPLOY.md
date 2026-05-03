@@ -77,9 +77,9 @@ cd spela
 ./setup.sh > .env
 ```
 
-The wizard prompts for your hostname, games path, BIOS path (optional), and ScreenScraper credentials (optional). JWT and TURN secrets are generated automatically. The resulting `.env` file is printed to stdout -- the redirect writes it to `.env`.
+The wizard prompts for your hostname, games path, BIOS path (optional), and IGDB API credentials (optional, for metadata scraping). JWT and TURN secrets are generated automatically. The resulting `.env` file is printed to stdout -- the redirect writes it to `.env`.
 
-If you prefer to review the output first, run `./setup.sh` without the redirect, then copy-paste into `.env`.
+If you prefer to review the output first, run `./setup.sh` without the redirect, then copy-paste into `.env`. For a non-interactive flow with random secrets and placeholder paths you'll edit by hand, use `./generate-secrets.sh > .env` instead.
 
 ### 3. Deploy
 
@@ -89,6 +89,14 @@ docker compose -f docker-compose.qa.yml up -d --build
 
 Spela is now running on port 8080.
 
+### 4. First-time setup
+
+1. Open `http://your-server:8080` in a browser
+2. Register the first user account — this account becomes the **server owner** (highest role; can promote / demote / delete other admins)
+3. Subsequent registrations are pending admin approval — register your friends and approve them from the admin user list
+4. Go to the admin panel and trigger a library scan
+5. Spela will find your ROMs and start scraping metadata (cover art, descriptions)
+
 ### Updating to the latest version
 
 ```bash
@@ -96,13 +104,6 @@ Spela is now running on port 8080.
 ```
 
 This pulls the latest code from GitHub, rebuilds the containers, and restarts. Your database, saves, and settings are preserved.
-
-### 5. First-time setup
-
-1. Open `http://your-server:8080` in a browser
-2. Register the first user account -- this account becomes the admin
-3. Go to the admin panel and trigger a library scan
-4. Spela will find your ROMs and start scraping metadata (cover art, descriptions)
 
 ## Deploy with Portainer
 
@@ -128,10 +129,8 @@ In the stack's **Environment variables** section, add:
 | `TURN_SECRET` | Yes | TURN server shared secret. Generate with: `openssl rand -base64 48` |
 | `TURN_HOST` | Yes | Your public domain (e.g. `spela.example.com`) |
 | `SPELA_GAMES_PATH` | Yes | Host path to your ROM directory (e.g. `/data/spela/games`) |
-| `SPELA_SCRAPER_DEV_ID` | No | ScreenScraper developer ID (for metadata) |
-| `SPELA_SCRAPER_DEV_PASS` | No | ScreenScraper developer password |
-| `SPELA_SCRAPER_USER` | No | ScreenScraper username |
-| `SPELA_SCRAPER_USER_PASS` | No | ScreenScraper user password |
+| `SPELA_IGDB_CLIENT_ID` | No | IGDB / Twitch API client ID (for metadata scraping) |
+| `SPELA_IGDB_CLIENT_SECRET` | No | IGDB / Twitch API client secret |
 | `TURN_EXTERNAL_IP` | No | Public IP if behind NAT (coturn usually auto-detects) |
 
 ### 3. Deploy
@@ -295,13 +294,32 @@ docker compose -f docker-compose.qa.yml up -d
 
 ## Metadata Scraping
 
-Spela can automatically fetch cover art, descriptions, screenshots, and ratings from [ScreenScraper](https://www.screenscraper.fr/).
+Spela uses three independent metadata sources, each optional and each owning a different slice of the game presentation:
 
-1. Create a free account at [screenscraper.fr](https://www.screenscraper.fr/)
-2. Add your credentials to `.env` or Portainer environment variables
-3. Trigger a scrape from the admin panel in the web UI
+| Source | Provides | Credentials |
+|--------|----------|-------------|
+| [libretro-thumbnails](https://github.com/libretro-thumbnails/libretro-thumbnails) | Box art (the primary cover image) | None — works out of the box |
+| [IGDB](https://www.igdb.com/) | Titles, descriptions, ratings, release dates, developer/publisher info, in-game screenshots | Twitch developer credentials (free) |
+| [SteamGridDB](https://www.steamgriddb.com/) | Hero banner artwork shown at the top of the game / console pages | Free SteamGridDB API key |
 
-Scraping is rate-limited by ScreenScraper's API. Large libraries may take a while on the first scrape.
+The scraper falls back gracefully when sources are unconfigured: with no IGDB credentials you still get cover art (libretro-thumbnails) but no descriptions or screenshots; with no SteamGridDB key you still get the rest but no hero banners. Game files are detected and playable without any of the three.
+
+When both libretro-thumbnails and IGDB return a cover, **libretro-thumbnails wins** (closer-cropped, more consistent box art). Admins can override the choice per-game from the cover-art selector in the admin game-detail page; manual overrides survive re-scrapes.
+
+### Setting up IGDB
+
+1. Create a free Twitch account at [twitch.tv](https://www.twitch.tv/) — IGDB is owned by Twitch and reuses the Twitch developer console for API credentials
+2. Register an application at [dev.twitch.tv/console](https://dev.twitch.tv/console/apps) and copy the **Client ID** and generate a **Client Secret**
+3. Set `SPELA_IGDB_CLIENT_ID` and `SPELA_IGDB_CLIENT_SECRET` in `.env` or Portainer environment variables (or use the in-app Setup wizard / admin Settings panel)
+4. Trigger a scrape from the admin panel in the web UI
+
+Scraping respects IGDB's rate limit (4 req/sec); large libraries may take a while on the first scrape. Spela's scraper backs off automatically on HTTP 429 responses.
+
+### Setting up SteamGridDB
+
+1. Sign in at [steamgriddb.com](https://www.steamgriddb.com/) and request an API key from your profile
+2. Configure the key in the admin **Settings** panel (or via `SPELA_STEAMGRIDDB_API_KEY` env var) — the in-app Setup wizard prompts for it as well
+3. Re-scrape or trigger an artwork refresh from a console / game admin page
 
 ## Environment Variable Reference
 
@@ -317,10 +335,8 @@ Scraping is rate-limited by ScreenScraper's API. Large libraries may take a whil
 | `SPELA_CORE_DIR` | `/app/cores` | libretro core storage directory |
 | `SPELA_IMAGE_DIR` | `/app/images` | Scraped image storage directory |
 | `SPELA_CORS_ORIGINS` | `*` | Comma-separated allowed CORS origins |
-| `SPELA_SCRAPER_DEV_ID` | | ScreenScraper developer ID |
-| `SPELA_SCRAPER_DEV_PASS` | | ScreenScraper developer password |
-| `SPELA_SCRAPER_USER` | | ScreenScraper username |
-| `SPELA_SCRAPER_USER_PASS` | | ScreenScraper user password |
+| `SPELA_IGDB_CLIENT_ID` | | IGDB / Twitch API client ID (metadata scraping) |
+| `SPELA_IGDB_CLIENT_SECRET` | | IGDB / Twitch API client secret |
 | `GIN_MODE` | `release` | Gin framework mode (`debug` or `release`) |
 
 ### TURN Server
@@ -343,9 +359,10 @@ Scraping is rate-limited by ScreenScraper's API. Large libraries may take a whil
 
 ### Metadata not loading
 
-- Verify ScreenScraper credentials are set
+- Verify `SPELA_IGDB_CLIENT_ID` and `SPELA_IGDB_CLIENT_SECRET` are set
 - Check server logs: `docker logs spela-1`
-- ScreenScraper has rate limits -- large libraries may take multiple scraping passes
+- IGDB has a 4 req/sec rate limit — large libraries take a while on the first scrape; the scraper backs off automatically on HTTP 429
+- Box art comes from the libretro-thumbnails collection independently of IGDB; see "Cover art is missing for some games" if specific games are missing thumbnails but have descriptions
 
 ### WebSocket connection issues
 
