@@ -387,6 +387,7 @@ func (h *SessionHandler) HumaUpsertSlotSave(ctx context.Context, in *SessionSlot
 		}
 		h.DB.Create(&rec)
 	} else {
+		oldPath := rec.FilePath
 		rec.FilePath = path
 		rec.FileSize = size
 		rec.ScreenshotURL = screenshotURL
@@ -394,6 +395,12 @@ func (h *SessionHandler) HumaUpsertSlotSave(ctx context.Context, in *SessionSlot
 		rec.CoreSha256 = sanitizeCoreSha256(body.CoreSha256)
 		rec.Compression = sanitizeCompression(body.Compression)
 		h.DB.Save(&rec)
+		// Delete the old slot-save file once the new one is committed in the
+		// DB. Without this, every slot overwrite leaks one file on disk and
+		// eventually exhausts the user's storage quota.
+		if oldPath != "" && oldPath != path {
+			_ = h.Storage.DeleteSave(oldPath)
+		}
 	}
 
 	now := time.Now()
