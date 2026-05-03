@@ -283,7 +283,7 @@ class GameListViewModel(
             val current = _state.value
             searchGamesUseCase(
                 query = current.searchQuery,
-                consoleId = current.selectedConsoleFilter,
+                consoleId = current.effectiveConsoleId,
                 sortBy = current.sortBy,
                 sortOrder = current.sortOrder,
             ).fold(
@@ -328,7 +328,7 @@ class GameListViewModel(
             if (repo != null) {
                 repo.searchGamesPaginated(
                     query = current.searchQuery,
-                    consoleId = current.selectedConsoleFilter,
+                    consoleId = current.effectiveConsoleId,
                     sortBy = current.sortBy,
                     sortOrder = current.sortOrder,
                     page = 1,
@@ -353,7 +353,7 @@ class GameListViewModel(
             } else {
                 searchGamesUseCase(
                     query = current.searchQuery,
-                    consoleId = current.selectedConsoleFilter,
+                    consoleId = current.effectiveConsoleId,
                     sortBy = current.sortBy,
                     sortOrder = current.sortOrder,
                 ).fold(
@@ -384,7 +384,7 @@ class GameListViewModel(
         scope.launch(dispatchers.io) {
             repo.searchGamesPaginated(
                 query = current.searchQuery,
-                consoleId = current.selectedConsoleFilter,
+                consoleId = current.effectiveConsoleId,
                 sortBy = current.sortBy,
                 sortOrder = current.sortOrder,
                 page = current.currentPage + 1,

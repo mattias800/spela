@@ -133,6 +133,35 @@ class GameListViewModelTest {
         assertEquals("Super Mario Bros.", state.games[0].title)
     }
 
+    // #941 — searching from a console-scoped flow must only return
+    // games for that console. Pre-fix, the search call site used
+    // `selectedConsoleFilter` (set only by FilterByConsole) instead of
+    // `selectedConsoleId` (set by SelectConsole), so the API was
+    // queried with consoleId=null and returned matches from every
+    // console. Now both fields collapse to `effectiveConsoleId`.
+    @Test
+    fun searchScopesToActiveConsoleAfterSelect() = runTest(testDispatcher) {
+        val vm = createViewModel()
+        // Land on the NES per-console screen (sets selectedConsoleId=nes)
+        vm.onIntent(GameListIntent.SelectConsole("nes"))
+        advanceUntilIdle()
+        // Search for a substring that matches games on multiple consoles.
+        // The fake repo has SNES "Chrono Trigger"; "o" matches both
+        // "The Legend of Zelda" (nes) and "Chrono Trigger" (snes).
+        vm.onIntent(GameListIntent.Search("o"))
+        advanceUntilIdle()
+
+        val state = vm.state.value
+        assertEquals("o", state.searchQuery)
+        assertTrue(state.games.isNotEmpty(), "search should return some matches")
+        for (g in state.games) {
+            assertEquals(
+                "nes", g.consoleId,
+                "search from NES screen returned a game from console=${g.consoleId} (${g.title})",
+            )
+        }
+    }
+
     @Test
     fun errorStateOnFailure() = runTest(testDispatcher) {
         fakeGameRepo.shouldFail = true
@@ -209,7 +238,10 @@ class FakeGameRepository : GameRepository {
 
     override suspend fun searchGames(query: String, consoleId: String?, sortBy: String?, sortOrder: String?): Result<List<Game>> {
         return if (shouldFail) Result.failure(Exception("Network error"))
-        else Result.success(games.filter { it.title.contains(query, ignoreCase = true) })
+        else Result.success(
+            games.filter { it.title.contains(query, ignoreCase = true) }
+                .filter { consoleId == null || it.consoleId == consoleId },
+        )
     }
 
     override suspend fun searchGamesPaginated(
