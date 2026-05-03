@@ -87,10 +87,14 @@ fun GameDetailScreen(
         viewModel.onIntent(GameDetailIntent.LoadGame(gameId))
     }
 
-    // Navigate to play when a session is created from a shared save
+    // Navigate to play when a session is created from a shared save.
+    // Mark the ID consumed immediately after dispatching navigation so a
+    // later recomposition with the same state value doesn't re-fire and
+    // push a duplicate emulation screen onto the back-stack.
     LaunchedEffect(state.playFromSharedSaveSessionId) {
         val sessionId = state.playFromSharedSaveSessionId ?: return@LaunchedEffect
         onPlaySession?.invoke(gameId, sessionId)
+        viewModel.onIntent(GameDetailIntent.ConsumePlayFromSharedSaveNavigation)
     }
 
     // #932: instant-download flow finished — drive the play handler
