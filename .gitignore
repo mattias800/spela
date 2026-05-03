@@ -86,3 +86,8 @@ testdata/
 .DS_Store
 Thumbs.db
 .audit-reviews/
+
+# Ad-hoc UI review screenshots (created during agent / manual review; never
+# meant to ship — 21 of these slipped into commit 0b941dd8 and were removed
+# in a follow-up cleanup. Keep this rule so it doesn't happen again.)
+ui-review-*.png
