@@ -6,9 +6,9 @@ This guide covers building Spela from source and running it locally for developm
 
 | Tool | Version | Purpose |
 |------|---------|---------|
-| Go | 1.22+ | Backend server |
+| Go | 1.25+ | Backend server (production Dockerfile pins `golang:1.25-alpine`) |
 | Node.js | 20+ | Web frontend |
-| JDK | 17+ | Player app (Kotlin Multiplatform) |
+| JDK | 17+ | Player app (Kotlin Multiplatform; `jvmTarget = 17`) |
 | Docker | Latest | E2E test environment, deployment |
 
 ## Quick Start
