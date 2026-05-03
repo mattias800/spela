@@ -205,7 +205,11 @@ export function useDeleteUser() {
       );
     },
     onSuccess: () => {
+      // Both lists need to refresh: the user disappears from "active" and
+      // appears in "deleted". Invalidating only the parent key would leave
+      // the Deleted Users tab stale until a background refetch.
       queryClient.invalidateQueries({ queryKey: ["admin", "users"] });
+      queryClient.invalidateQueries({ queryKey: ["admin", "users", "deleted"] });
     },
   });
 }

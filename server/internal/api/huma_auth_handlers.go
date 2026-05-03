@@ -31,7 +31,7 @@ type AuthLoginRequest struct {
 // email; min=8, max=72 for password).
 type AuthRegisterRequest struct {
 	Username string `json:"username" minLength:"3" maxLength:"64" pattern:"^[a-zA-Z0-9]+$" doc:"New account username (3-64 alphanumeric characters)."`
-	Email    string `json:"email" format:"email" doc:"New account email."`
+	Email    string `json:"email" format:"email" maxLength:"254" doc:"New account email (RFC 5321 cap)."`
 	Password string `json:"password" minLength:"8" maxLength:"72" doc:"New account password (8-72 characters)."`
 }
 
