@@ -1009,9 +1009,47 @@ func (h *AdminHandler) HumaHardDeleteUser(ctx context.Context, in *HardDeleteUse
 
 		tx.Unscoped().Where("user_id = ?", uid).Delete(&db.RetroAchievementCredential{})
 		tx.Unscoped().Where("user_id = ?", uid).Delete(&db.UserAchievementProgress{})
+		tx.Unscoped().Where("user_id = ?", uid).Delete(&db.UserAchievementShowcase{})
 
 		tx.Unscoped().Where("user_id = ?", uid).Delete(&db.ChallengeAttempt{})
 
+		// Tables that were leaving orphans on hard-delete (#971):
+		tx.Unscoped().Where("user_id = ?", uid).Delete(&db.DailyPlayActivity{})
+		tx.Unscoped().Where("user_id = ?", uid).Delete(&db.SavedSearch{})
+
+		// Sessions hosted by the deleted user — clean up the SharedSession
+		// rows the user owns and any save data attached to them. The
+		// SharedSessionMember/Invite cleanup below covers the deleted
+		// user's membership in OTHER hosts' sessions.
+		var hostedSessions []db.SharedSession
+		tx.Unscoped().Where("user_id = ?", uid).Find(&hostedSessions)
+		for _, s := range hostedSessions {
+			var saves []db.SharedSessionSave
+			tx.Unscoped().Where("shared_session_id = ?", s.ID).Find(&saves)
+			for _, save := range saves {
+				if h.Storage != nil && save.FilePath != "" {
+					_ = h.Storage.DeleteSave(save.FilePath)
+				}
+			}
+			tx.Unscoped().Where("shared_session_id = ?", s.ID).Delete(&db.SharedSessionSave{})
+			tx.Unscoped().Where("shared_session_id = ?", s.ID).Delete(&db.SharedSessionMember{})
+			tx.Unscoped().Where("shared_session_id = ?", s.ID).Delete(&db.SharedSessionInvite{})
+		}
+		tx.Unscoped().Where("user_id = ?", uid).Delete(&db.SharedSession{})
+
+		// SessionSaveState rows owned by the user (auto-saves, slot saves
+		// from sessions). The on-disk files are removed after the DB rows
+		// to avoid removing a path that's still referenced.
+		var sessionSaves []db.SessionSaveState
+		tx.Unscoped().Where("user_id = ?", uid).Find(&sessionSaves)
+		for _, ss := range sessionSaves {
+			if h.Storage != nil && ss.FilePath != "" {
+				_ = h.Storage.DeleteSave(ss.FilePath)
+			}
+		}
+		tx.Unscoped().Where("user_id = ?", uid).Delete(&db.SessionSaveState{})
+
+		// Membership / invites in OTHER users' shared sessions.
 		tx.Unscoped().Where("user_id = ?", uid).Delete(&db.SharedSessionMember{})
 		tx.Unscoped().Where("inviter_id = ? OR invitee_id = ?", uid, uid).Delete(&db.SharedSessionInvite{})
 
