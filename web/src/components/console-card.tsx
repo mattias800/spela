@@ -1,14 +1,22 @@
 import { Link } from "react-router-dom";
-import { Check, Globe } from "lucide-react";
+import { AlertTriangle, Check, Globe } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { getConsoleStyle } from "@/lib/console-metadata";
 import type { Console } from "@/types/api";
 
 interface ConsoleCardProps {
   console: Console;
+  /**
+   * Render an amber ⚠ in the top-right indicator group when the
+   * console has missing required BIOS files. Mirrors the player app's
+   * `ConsoleComponents.kt` behaviour so both clients show the same
+   * "this console can't play games yet" cue at-a-glance, before the
+   * detail-page banner. See #933.
+   */
+  hasMissingBios?: boolean;
 }
 
-export function ConsoleCard({ console: c }: ConsoleCardProps) {
+export function ConsoleCard({ console: c, hasMissingBios = false }: ConsoleCardProps) {
   const style = getConsoleStyle(c.abbreviation);
 
   return (
@@ -40,8 +48,18 @@ export function ConsoleCard({ console: c }: ConsoleCardProps) {
         </div>
 
         {/* Feature indicators */}
-        {(c.saveStateSupport || c.browserPlayable) && (
+        {(hasMissingBios || c.saveStateSupport || c.browserPlayable) && (
           <div className="absolute top-2 right-2 flex gap-1">
+            {hasMissingBios && (
+              <div
+                data-testid="console-card-bios-warning"
+                className="flex h-6 w-6 items-center justify-center rounded-full bg-black/40 backdrop-blur-sm"
+                title={`BIOS missing for ${c.name}`}
+                aria-label={`BIOS missing for ${c.name}`}
+              >
+                <AlertTriangle className="h-3.5 w-3.5 text-amber-400" />
+              </div>
+            )}
             {c.saveStateSupport && (
               <div className="flex h-6 w-6 items-center justify-center rounded-full bg-black/40 backdrop-blur-sm" title="Save states supported">
                 <Check className="h-3.5 w-3.5 text-emerald-400" />
