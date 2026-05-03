@@ -4,6 +4,7 @@ import com.spela.player.domain.repository.GameRepository
 import com.spela.player.domain.repository.PreferencesRepository
 import com.spela.player.util.DispatcherProvider
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -25,14 +26,23 @@ class SyncEngine(
 ) {
     private val _syncState = MutableStateFlow(SyncState())
     val syncState: StateFlow<SyncState> = _syncState.asStateFlow()
+    private var collectJob: Job? = null
 
     fun start() {
-        // Observe reconnection events
-        scope.launch(dispatchers.io) {
+        // Observe reconnection events. Cancel any previous collector
+        // first so re-calling start (server switch, re-login) doesn't
+        // stack collectors and fire syncAll N times per reconnect.
+        collectJob?.cancel()
+        collectJob = scope.launch(dispatchers.io) {
             connectivityMonitor.onReconnect.collect {
                 syncAll()
             }
         }
+    }
+
+    fun stop() {
+        collectJob?.cancel()
+        collectJob = null
     }
 
     suspend fun syncAll() {

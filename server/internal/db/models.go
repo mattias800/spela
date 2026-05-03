@@ -299,7 +299,11 @@ type PlayHistory struct {
 	DeletedAt gorm.DeletedAt `gorm:"index" json:"-"`
 	UserID    uint           `gorm:"uniqueIndex:idx_user_game_play_history;not null" json:"userId"`
 	User      User           `gorm:"foreignKey:UserID" json:"-"`
-	GameID    uint           `gorm:"uniqueIndex:idx_user_game_play_history;not null" json:"gameId"`
+	// Standalone index on GameID — the composite uniqueIndex above has
+	// (UserID, GameID) so SQLite cannot use it for queries that filter
+	// by GameID alone (GET /api/games/{id}/stats and the top-player JOIN
+	// were full-scanning play_histories).
+	GameID    uint           `gorm:"uniqueIndex:idx_user_game_play_history;not null;index:idx_play_history_game" json:"gameId"`
 	Game      Game           `gorm:"foreignKey:GameID" json:"game"`
 	LastPlayed time.Time     `json:"lastPlayed"`
 	PlayTime   int64         `json:"playTime"` // seconds

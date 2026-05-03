@@ -205,13 +205,25 @@ func (h *ConsoleHandler) HumaListConsoles(_ context.Context, _ *ListConsolesInpu
 		return nil, huma.Error500InternalServerError("failed to fetch consoles")
 	}
 
-	// Attach game counts (only primary, non-pre-release games — matches what users see)
+	// Attach game counts (only primary, non-pre-release games — matches what users see).
+	// One GROUP BY query instead of N COUNT queries — on a 40-console install this turns
+	// 41 round-trips into 2.
+	type countRow struct {
+		ConsoleID uint
+		Cnt       int64
+	}
+	var rows []countRow
+	h.DB.Model(&db.Game{}).
+		Select("console_id, COUNT(*) AS cnt").
+		Where("is_primary = ? AND is_pre_release = ?", true, false).
+		Group("console_id").
+		Scan(&rows)
+	counts := make(map[uint]int64, len(rows))
+	for _, r := range rows {
+		counts[r.ConsoleID] = r.Cnt
+	}
 	for i := range consoles {
-		var count int64
-		h.DB.Model(&db.Game{}).
-			Where("console_id = ? AND is_primary = ? AND is_pre_release = ?", consoles[i].ID, true, false).
-			Count(&count)
-		consoles[i].GameCount = int(count)
+		consoles[i].GameCount = int(counts[consoles[i].ID])
 	}
 
 	// Only return consoles that have at least one game

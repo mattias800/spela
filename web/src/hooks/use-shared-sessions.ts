@@ -75,6 +75,8 @@ export function usePendingInvitationCount() {
     queryFn: () =>
       unwrap(typedApi.GET("/api/user/shared-session-invites/count")),
     refetchInterval: 30000,
+    // Don't poll a backgrounded tab — convention from #959.
+    refetchIntervalInBackground: false,
   });
 }
 

@@ -19,6 +19,7 @@ export function UserRating({ gameId }: UserRatingProps) {
   const currentReview = myRating?.review ?? "";
 
   const handleRate = (rating: number) => {
+    if (rateGame.isPending) return;
     rateGame.mutate({
       gameId,
       rating,
@@ -28,6 +29,7 @@ export function UserRating({ gameId }: UserRatingProps) {
 
   const handleSubmitReview = () => {
     if (currentRating === 0) return;
+    if (rateGame.isPending) return;
     rateGame.mutate({
       gameId,
       rating: currentRating,
@@ -37,6 +39,7 @@ export function UserRating({ gameId }: UserRatingProps) {
   };
 
   const handleDelete = () => {
+    if (deleteRating.isPending) return;
     deleteRating.mutate(gameId);
     setReview("");
     setShowReviewInput(false);
@@ -95,7 +98,12 @@ export function UserRating({ gameId }: UserRatingProps) {
             rows={3}
           />
           <div className="flex gap-2">
-            <Button size="sm" onClick={handleSubmitReview}>
+            <Button
+              size="sm"
+              onClick={handleSubmitReview}
+              loading={rateGame.isPending}
+              disabled={rateGame.isPending}
+            >
               Save Review
             </Button>
             <Button

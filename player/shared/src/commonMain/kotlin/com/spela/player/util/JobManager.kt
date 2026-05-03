@@ -17,6 +17,15 @@ import kotlin.coroutines.EmptyCoroutineContext
  * `ExploreViewModel`. Lives in `util/` so other ViewModels with
  * the same pattern (NetplayManager, achievement loaders, etc.) can
  * adopt it.
+ *
+ * Thread safety: ExploreViewModel.load() fires 13 parallel
+ * `jobs.launch(...)` calls on `dispatchers.io`. The previous
+ * `mutableMapOf` was a plain HashMap and not safe for concurrent
+ * mutation — corrupted entries or lost cancellations were possible.
+ * All public methods now serialise through a synchronized() block
+ * over the map; the lambda body of [launch] still runs in the caller's
+ * coroutine context (the lock only covers the map mutation itself).
+ * See #1044 for the broader cross-thread audit.
  */
 class JobManager(private val scope: CoroutineScope) {
     private val jobs = mutableMapOf<String, Job>()
@@ -26,6 +35,7 @@ class JobManager(private val scope: CoroutineScope) {
      * under the same key. [context] is forwarded to the underlying
      * `scope.launch` (e.g. `dispatchers.io`).
      */
+    @Synchronized
     fun launch(
         key: String,
         context: CoroutineContext = EmptyCoroutineContext,
@@ -36,6 +46,7 @@ class JobManager(private val scope: CoroutineScope) {
     }
 
     /** Cancel the job under [key] if any; no-op otherwise. */
+    @Synchronized
     fun cancel(key: String) {
         jobs.remove(key)?.cancel()
     }
@@ -45,9 +56,11 @@ class JobManager(private val scope: CoroutineScope) {
      * running. Used by callers that want to skip re-entrant work
      * (e.g. "if featured load is already in flight, don't restart").
      */
+    @Synchronized
     fun isActive(key: String): Boolean = jobs[key]?.isActive == true
 
     /** Cancel every job currently tracked. Call from VM cleanup. */
+    @Synchronized
     fun cancelAll() {
         jobs.values.forEach { it.cancel() }
         jobs.clear()

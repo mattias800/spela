@@ -7,6 +7,9 @@ export function useOnlineUsers() {
     queryKey: ["social", "online"],
     queryFn: () => unwrap(typedApi.GET("/api/social/online")),
     refetchInterval: 30000,
+    // Don't burn quota when the tab is backgrounded — same convention
+    // as the admin polling hooks (see #959).
+    refetchIntervalInBackground: false,
   });
 }
 
@@ -35,6 +38,9 @@ export function useSearchUsers(
           params: { query: { q: query, page, pageSize } },
         }),
       ),
+    // Don't fire a search request before the user types — convention
+    // matches useGame/useConsoleGames/useSession's enabled gates.
+    enabled: query.length >= 1,
   });
 }
 

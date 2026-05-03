@@ -25,7 +25,13 @@ export function ScrapeMatchModal({
   onClose,
 }: ScrapeMatchModalProps) {
   return (
-    <Modal open={open} onClose={onClose} title="Fix Scrape Match" size="lg">
+    <Modal
+      open={open}
+      onClose={onClose}
+      title="Fix Scrape Match"
+      size="lg"
+      bodyClassName="px-6 pb-6 pt-4"
+    >
       {open && (
         <ScrapeMatchContent
           key={`${gameId}-${currentTitle}`}
@@ -118,7 +124,7 @@ function ScrapeMatchContent({
         </div>
       ) : (
         <div
-          className="max-h-96 overflow-y-auto -mx-6 px-6 space-y-1"
+          className="max-h-96 overflow-y-auto space-y-1"
           data-testid="igdb-search-results"
         >
           {isLoading && debouncedQuery.length >= 2 && (
