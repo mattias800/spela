@@ -320,10 +320,25 @@ func findBestMatch(normalizedQuery string, entries []nameEntry, threshold float6
 			continue
 		}
 
-		// Tie-breaking: higher score > lower priority > preferred region
-		if score > bestScore ||
-			(score == bestScore && e.Priority < bestEntry.Priority) ||
-			(score == bestScore && e.Priority == bestEntry.Priority && hasPreferredRegion(e.Raw) && !hasPreferredRegion(bestEntry.Raw)) {
+		// Tie-breaking, in order of decreasing weight:
+		//   1. Higher score wins.
+		//   2. Same score: preferred region (USA/World) wins.
+		//   3. Same score AND same region preference: lower priority
+		//      (cleaner filename) wins.
+		//
+		// Region trumps priority because for box art, getting the right
+		// region matters more than filename "cleanliness". Without this,
+		// a Japan-only entry like `Ice Climber (Japan).png` (priority 0
+		// — single paren group, no date, no tags) beats a USA-region
+		// entry like `Ice Climber (USA, Europe, Korea) (En).png`
+		// (priority 2 — two paren groups), and the user gets a Japanese
+		// cover for a USA game. See #937.
+		ePref := hasPreferredRegion(e.Raw)
+		bestPref := hasPreferredRegion(bestEntry.Raw)
+		shouldReplace := score > bestScore ||
+			(score == bestScore && ePref && !bestPref) ||
+			(score == bestScore && ePref == bestPref && e.Priority < bestEntry.Priority)
+		if shouldReplace {
 			bestEntry = e
 			bestScore = score
 			found = true
