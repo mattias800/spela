@@ -31,6 +31,8 @@ export function StarRating({
       className="inline-flex items-center gap-0.5"
       onMouseLeave={() => interactive && setHovered(0)}
       data-testid="star-rating"
+      role="group"
+      aria-label={interactive ? "Rate this game" : `Rated ${value} out of 5 stars`}
     >
       {[1, 2, 3, 4, 5].map((star) => (
         <button
@@ -46,6 +48,11 @@ export function StarRating({
           onMouseEnter={() => interactive && setHovered(star)}
           onClick={() => interactive && onChange(star)}
           data-testid={`star-${star}`}
+          aria-label={
+            interactive
+              ? `Rate ${star} out of 5 stars`
+              : `${star} out of 5 stars`
+          }
         >
           <Star
             className={cn(
