@@ -537,7 +537,7 @@ func (s *Scraper) applyIGDBMatch(game *db.Game, console db.Console, match igdb.G
 	// or deferred Rollback could leak a SQLite write connection on commit
 	// failure, eventually starving the worker pool.
 	if len(match.ReleaseDates) > 0 {
-		_ = s.DB.Transaction(func(tx *gorm.DB) error {
+		if err := s.DB.Transaction(func(tx *gorm.DB) error {
 			for _, rd := range match.ReleaseDates {
 				regionName := igdb.RegionName(rd.Region)
 				if regionName == "" || rd.Date == 0 {
@@ -561,7 +561,9 @@ func (s *Scraper) applyIGDBMatch(game *db.Game, console db.Console, match igdb.G
 				}
 			}
 			return nil
-		})
+		}); err != nil {
+			slog.Warn("failed to upsert IGDB release dates", "game", game.Title, "game_id", game.ID, "error", err)
+		}
 	}
 
 	// Download cover art and screenshots concurrently.

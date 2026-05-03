@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 	"net/http"
 	"strconv"
@@ -723,26 +724,38 @@ func (h *NetplayHandler) HumaAcceptNetplayInviteByCode(ctx context.Context, in *
 		return nil, huma.Error400BadRequest("session is no longer accepting players")
 	}
 
-	invite.Status = "accepted"
-	if err := h.DB.Save(&invite).Error; err != nil {
-		return nil, huma.Error500InternalServerError("failed to accept invite")
-	}
-
-	// Fill the session slot — same atomic update pattern as
-	// HumaJoinNetplayByInviteCode. Without this the session stays in
-	// 'waiting' with no client set and the host never sees the invitee
-	// arrive (the notification-accept and code-join flows must reach the
-	// same end state).
+	// Mark the invite accepted AND fill the session slot in one transaction.
+	// If the slot-fill fails (someone joined first via the code-join flow),
+	// the invite-status update is rolled back so a retry can still succeed.
 	now := time.Now()
-	result := h.DB.Model(&db.NetplaySession{}).
-		Where("id = ? AND client_user_id IS NULL AND status = ?", invite.NetplaySessionID, "waiting").
-		Updates(map[string]interface{}{
-			"client_user_id": uid,
-			"status":         "in_progress",
-			"started_at":     now,
-		})
-	if result.RowsAffected == 0 {
+	var slotTaken bool
+	txErr := h.DB.Transaction(func(tx *gorm.DB) error {
+		invite.Status = "accepted"
+		if err := tx.Save(&invite).Error; err != nil {
+			return err
+		}
+		// Same atomic slot-fill pattern as HumaJoinNetplayByInviteCode.
+		result := tx.Model(&db.NetplaySession{}).
+			Where("id = ? AND client_user_id IS NULL AND status = ?", invite.NetplaySessionID, "waiting").
+			Updates(map[string]interface{}{
+				"client_user_id": uid,
+				"status":         "in_progress",
+				"started_at":     now,
+			})
+		if result.Error != nil {
+			return result.Error
+		}
+		if result.RowsAffected == 0 {
+			slotTaken = true
+			return fmt.Errorf("session already has two players")
+		}
+		return nil
+	})
+	if slotTaken {
 		return nil, huma.Error409Conflict("this session already has two players")
+	}
+	if txErr != nil {
+		return nil, huma.Error500InternalServerError("failed to accept invite")
 	}
 
 	h.DB.Model(&db.NetplayInvite{}).
