@@ -1921,13 +1921,22 @@ JNI_FUNC(jlong, nativeGpuRenderToBgra)(JNIEnv *env, jobject thiz, jbyteArray out
     if (!g_gpu_renderer || !outData) return 0;
 
     jsize capacity = (*env)->GetArrayLength(env, outData);
-    jbyte *data = (*env)->GetPrimitiveArrayCritical(env, outData, NULL);
+
+    /* Use GetByteArrayElements rather than GetPrimitiveArrayCritical: the
+     * GPU readback inside gpu_renderer_render_to_bgra performs Vulkan
+     * command submission and a fence wait — multi-millisecond GPU work.
+     * Holding a critical section across that suspends the GC for the
+     * full duration and is a known source of Android ANR / GC stalls.
+     * GetByteArrayElements may copy on some JVM implementations, but the
+     * frame buffer is bounded in size and GC progress matters more than
+     * one extra memcpy here. See #1043. */
+    jbyte *data = (*env)->GetByteArrayElements(env, outData, NULL);
     if (!data) return 0;
 
     unsigned w = 0, h = 0;
     size_t written = gpu_renderer_render_to_bgra(g_gpu_renderer, data, (size_t)capacity, &w, &h);
 
-    (*env)->ReleasePrimitiveArrayCritical(env, outData, data, 0);
+    (*env)->ReleaseByteArrayElements(env, outData, data, 0);
     if (written == 0) return 0;
     /* Pack width (high 32 bits) and height (low 32 bits) into a jlong */
     return ((jlong)w << 32) | (jlong)h;
