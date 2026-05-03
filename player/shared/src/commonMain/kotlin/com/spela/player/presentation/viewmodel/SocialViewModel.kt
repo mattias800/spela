@@ -14,6 +14,7 @@ import com.spela.player.presentation.intent.SocialIntent
 import com.spela.player.presentation.state.SocialState
 import com.spela.player.util.DispatcherProvider
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -34,6 +35,7 @@ class SocialViewModel(
 ) {
     private val _state = MutableStateFlow(SocialState())
     val state: StateFlow<SocialState> = _state.asStateFlow()
+    private var profileJob: Job? = null
 
     fun onIntent(intent: SocialIntent) {
         when (intent) {
@@ -143,39 +145,45 @@ class SocialViewModel(
     }
 
     private fun loadPublicProfile(userId: String) {
+        // Cancel any in-flight load for the previous profile so its
+        // _state.update calls don't land after the screen has reset to a
+        // different profile and clobber the new data.
+        profileJob?.cancel()
         _state.update { it.copy(isLoadingProfile = true, publicProfile = null, heatmapData = emptyList(), showcaseAchievements = emptyList(), isOwnProfile = false) }
-        // Detect own profile
-        scope.launch(dispatchers.io) {
-            authRepository.getCurrentUser().onSuccess { user ->
-                _state.update { it.copy(isOwnProfile = user.id == userId) }
+        profileJob = scope.launch(dispatchers.io) {
+            // Detect own profile
+            launch {
+                authRepository.getCurrentUser().onSuccess { user ->
+                    _state.update { it.copy(isOwnProfile = user.id == userId) }
+                }
             }
-        }
-        scope.launch(dispatchers.io) {
-            getPublicProfileUseCase(userId).fold(
-                onSuccess = { profile ->
-                    _state.update { it.copy(publicProfile = profile, isLoadingProfile = false) }
-                },
-                onFailure = { error ->
-                    _state.update { it.copy(error = error.message, isLoadingProfile = false) }
-                },
-            )
-        }
-        // Load heatmap data in parallel — best effort, non-critical
-        scope.launch(dispatchers.io) {
-            try {
-                val entries = getPlayHeatmapUseCase(userId).getOrDefault(emptyList())
-                _state.update { it.copy(heatmapData = entries) }
-            } catch (_: Exception) {
-                // Best effort — heatmap is non-critical
+            launch {
+                getPublicProfileUseCase(userId).fold(
+                    onSuccess = { profile ->
+                        _state.update { it.copy(publicProfile = profile, isLoadingProfile = false) }
+                    },
+                    onFailure = { error ->
+                        _state.update { it.copy(error = error.message, isLoadingProfile = false) }
+                    },
+                )
             }
-        }
-        // Load achievement showcase in parallel — best effort, non-critical
-        scope.launch(dispatchers.io) {
-            try {
-                val entries = getPublicShowcaseUseCase(userId).getOrDefault(emptyList())
-                _state.update { it.copy(showcaseAchievements = entries) }
-            } catch (_: Exception) {
-                // Best effort — showcase is non-critical
+            // Load heatmap data in parallel — best effort, non-critical
+            launch {
+                try {
+                    val entries = getPlayHeatmapUseCase(userId).getOrDefault(emptyList())
+                    _state.update { it.copy(heatmapData = entries) }
+                } catch (_: Exception) {
+                    // Best effort — heatmap is non-critical
+                }
+            }
+            // Load achievement showcase in parallel — best effort, non-critical
+            launch {
+                try {
+                    val entries = getPublicShowcaseUseCase(userId).getOrDefault(emptyList())
+                    _state.update { it.copy(showcaseAchievements = entries) }
+                } catch (_: Exception) {
+                    // Best effort — showcase is non-critical
+                }
             }
         }
     }
