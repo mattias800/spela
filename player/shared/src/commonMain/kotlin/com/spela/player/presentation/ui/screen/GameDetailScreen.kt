@@ -93,6 +93,15 @@ fun GameDetailScreen(
         onPlaySession?.invoke(gameId, sessionId)
     }
 
+    // #932: instant-download flow finished — drive the play handler
+    // and clear the flag. No-op if pendingAutoLaunch is false.
+    LaunchedEffect(state.pendingAutoLaunch) {
+        if (state.pendingAutoLaunch) {
+            onPlay(gameId)
+            viewModel.onIntent(GameDetailIntent.ConsumeAutoLaunch)
+        }
+    }
+
     if (state.isLoading && state.gameDetail == null) {
         GameDetailSkeleton(onBack = onBack)
         return
@@ -132,6 +141,7 @@ fun GameDetailScreen(
                     onPlayFresh = onPlayFresh,
                     onPlayFromTitleScreen = onPlayFromTitleScreen,
                     onDownloadGame = { viewModel.onIntent(GameDetailIntent.DownloadGame) },
+                    onDownloadAndPlay = { viewModel.onIntent(GameDetailIntent.DownloadGameAndPlay) },
                     onToggleFavorite = { viewModel.onIntent(GameDetailIntent.ToggleFavorite) },
                     onTogglePlayLater = { viewModel.onIntent(GameDetailIntent.TogglePlayLater) },
                     onAddToCollection = { viewModel.onIntent(GameDetailIntent.ShowAddToCollectionDialog) },

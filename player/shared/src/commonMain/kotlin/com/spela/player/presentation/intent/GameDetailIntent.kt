@@ -3,6 +3,19 @@ package com.spela.player.presentation.intent
 sealed interface GameDetailIntent {
     data class LoadGame(val gameId: String) : GameDetailIntent
     data object DownloadGame : GameDetailIntent
+    /**
+     * Silent download-then-launch path for sub-threshold games. The
+     * ViewModel kicks off the download, suppresses progress UI for
+     * the first 750 ms, and on success raises [pendingAutoLaunch] so
+     * the screen invokes its onPlay handler. See #932.
+     */
+    data object DownloadGameAndPlay : GameDetailIntent
+    /**
+     * Screen-side acknowledgement that the auto-launch signal was
+     * consumed. Clears [GameDetailState.pendingAutoLaunch] so the
+     * effect doesn't re-fire on recomposition.
+     */
+    data object ConsumeAutoLaunch : GameDetailIntent
     data object PlayGame : GameDetailIntent
     data object DeleteLocalGame : GameDetailIntent
     data object ShowDeleteDownloadDialog : GameDetailIntent
