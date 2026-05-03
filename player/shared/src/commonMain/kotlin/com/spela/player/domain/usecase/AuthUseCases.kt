@@ -11,7 +11,6 @@ class LoginUseCase(
 ) {
     suspend operator fun invoke(serverUrl: String, username: String, password: String): Result<AuthTokens> {
         return authRepository.login(serverUrl, username, password).onSuccess {
-            authRepository.storeTokens(it)
             deviceManager.registerWithServer()
         }
     }
@@ -23,7 +22,6 @@ class RegisterUseCase(
 ) {
     suspend operator fun invoke(serverUrl: String, username: String, email: String, password: String): Result<AuthTokens> {
         return authRepository.register(serverUrl, username, email, password).onSuccess {
-            authRepository.storeTokens(it)
             deviceManager.registerWithServer()
         }
     }
@@ -35,6 +33,10 @@ class GetCurrentUserUseCase(private val authRepository: AuthRepository) {
 
 class LogoutUseCase(private val authRepository: AuthRepository) {
     suspend operator fun invoke() {
+        // Best-effort server-side revocation: blacklist access token and
+        // delete refresh tokens. We swallow the network error and always
+        // clear local state — a sign-out must never get stuck.
+        authRepository.logout()
         authRepository.clearTokens()
     }
 }

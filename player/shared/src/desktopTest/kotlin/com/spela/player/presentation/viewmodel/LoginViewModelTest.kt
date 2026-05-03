@@ -234,5 +234,6 @@ class FakeAuthRepository : AuthRepository {
     override suspend fun getStoredTokens(): AuthTokens? = stored
     override suspend fun storeTokens(tokens: AuthTokens) { stored = tokens }
     override suspend fun clearTokens() { stored = null; loggedIn = false }
+    override suspend fun logout(): Result<Unit> = Result.success(Unit)
     override fun isLoggedIn(): Boolean = loggedIn
 }

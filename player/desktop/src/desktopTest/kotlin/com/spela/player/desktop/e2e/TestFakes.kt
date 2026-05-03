@@ -229,6 +229,8 @@ class FakeAuthRepository : AuthRepository {
         tokens = null
     }
 
+    override suspend fun logout(): Result<Unit> = Result.success(Unit)
+
     override fun isLoggedIn(): Boolean = tokens != null
 
     fun preSetTokens(accessToken: String = "test-access", refreshToken: String = "test-refresh") {

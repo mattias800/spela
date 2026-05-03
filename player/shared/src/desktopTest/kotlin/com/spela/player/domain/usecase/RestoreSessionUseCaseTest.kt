@@ -192,6 +192,7 @@ class RestoreSessionUseCaseTest {
         override suspend fun clearTokens() {
             clearTokensCalled = true
         }
+        override suspend fun logout(): Result<Unit> = Result.success(Unit)
         override fun isLoggedIn(): Boolean = storedTokens != null
     }
 }
