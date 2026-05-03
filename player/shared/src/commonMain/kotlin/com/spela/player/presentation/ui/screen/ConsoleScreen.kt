@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Settings
@@ -99,6 +100,13 @@ fun ConsoleScreen(
             .take(5)
     }
 
+    // Per-console favorites — state.favoriteGames is global across the
+    // user; filter to this console here so the section only shows games
+    // for the platform the user is browsing. See #942.
+    val consoleFavorites = remember(state.favoriteGames, consoleId) {
+        state.favoriteGames.filter { it.consoleId == consoleId }
+    }
+
     // Darkened version of the console's brand gradient for the full-screen background
     val screenGradientColors = if (console != null) {
         val (from, to) = getConsoleGradient(console.abbreviation, console.colorTheme)
@@ -146,6 +154,23 @@ fun ConsoleScreen(
                         ) {
                             ContinuePlayingRow(
                                 games = continuePlayingGames,
+                                onGameSelected = onGameSelected,
+                            )
+                        }
+                    }
+
+                    // Favorites for this console (#942) — sits with the
+                    // "what the user has touched" cluster, above the
+                    // BIOS warning and the discovery sections below.
+                    if (consoleFavorites.isNotEmpty()) {
+                        SpTitledSection(
+                            title = "Favorites",
+                            icon = Icons.Filled.Favorite,
+                            edgeToEdgeContent = true,
+                            modifier = Modifier.rememberFocus("section_favorites"),
+                        ) {
+                            ContinuePlayingRow(
+                                games = consoleFavorites,
                                 onGameSelected = onGameSelected,
                             )
                         }

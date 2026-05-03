@@ -139,6 +139,23 @@ class GameListViewModelTest {
     // `selectedConsoleId` (set by SelectConsole), so the API was
     // queried with consoleId=null and returned matches from every
     // console. Now both fields collapse to `effectiveConsoleId`.
+    // #942 — landing on a console screen via SelectConsole (e.g. via a
+    // deep link or from the main shelf) must populate state.favoriteGames
+    // so the per-console Favorites section can render. Pre-fix, favorites
+    // were only loaded by LoadDashboard, so the section was always empty
+    // unless the user came through the dashboard first.
+    @Test
+    fun selectConsoleLoadsFavorites() = runTest(testDispatcher) {
+        fakeGameRepo.favorites = fakeGameRepo.allGames.filter { it.consoleId == "nes" }
+        val vm = createViewModel()
+        vm.onIntent(GameListIntent.SelectConsole("nes"))
+        advanceUntilIdle()
+
+        val state = vm.state.value
+        assertTrue(state.favoriteGames.isNotEmpty(), "favorites should populate after SelectConsole")
+        assertEquals(2, state.favoriteGames.size, "fake repo has 2 NES favorites")
+    }
+
     @Test
     fun searchScopesToActiveConsoleAfterSelect() = runTest(testDispatcher) {
         val vm = createViewModel()
@@ -194,6 +211,9 @@ class FakeGameRepository : GameRepository {
         Console("nes", "NES", "NES", 10),
         Console("snes", "SNES", "SNES", 5),
     )
+
+    val allGames: List<Game>
+        get() = games
 
     private val games = listOf(
         Game("1", "Super Mario Bros.", "nes", "NES", fileSize = 40960, fileName = "smb.nes"),
@@ -269,8 +289,11 @@ class FakeGameRepository : GameRepository {
         return Result.success(games.take(1))
     }
 
+    var favorites: List<Game> = emptyList()
+
     override suspend fun getFavoriteGames(): Result<List<Game>> {
-        return Result.success(emptyList())
+        return if (shouldFail) Result.failure(Exception("Network error"))
+        else Result.success(favorites)
     }
 
     override suspend fun addFavorite(gameId: String): Result<Unit> = Result.success(Unit)

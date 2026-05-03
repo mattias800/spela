@@ -272,6 +272,14 @@ class GameListViewModel(
                 )
             }
         }
+        // Load favorites in parallel — needed for the per-console
+        // Favorites section. The list is global; ConsoleScreen filters
+        // by consoleId. Best-effort: failures don't surface so the
+        // section just stays hidden. See #942.
+        scope.launch(dispatchers.io) {
+            val favorites = getFavoriteGamesUseCase().getOrDefault(emptyList())
+            _state.update { it.copy(favoriteGames = favorites) }
+        }
     }
 
     private fun searchGames(query: String) {
