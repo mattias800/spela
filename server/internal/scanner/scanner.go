@@ -500,7 +500,40 @@ type ScanResult struct {
 
 // parseM3U reads an .m3u file and returns resolved file paths.
 // Blank lines and lines starting with # are skipped.
-func parseM3U(m3uPath string) ([]string, error) {
+// pathInsideAllowedDirs reports whether [target] (already cleaned) is
+// contained within any of [allowedDirs]. Uses filepath.Rel rather than
+// storage.ValidateROMPath because the latter calls EvalSymlinks on the
+// target — and m3u entries can legitimately reference files that don't
+// yet exist on disk (e.g. mid-scan with companion .bin files), in which
+// case EvalSymlinks falls back to the unresolved path while the dir is
+// resolved, yielding false negatives on platforms where the temp/games
+// path passes through a symlink (macOS /var → /private/var).
+func pathInsideAllowedDirs(target string, allowedDirs []string) bool {
+	for _, dir := range allowedDirs {
+		absDir, err := filepath.Abs(dir)
+		if err != nil {
+			continue
+		}
+		absTarget, err := filepath.Abs(target)
+		if err != nil {
+			continue
+		}
+		rel, err := filepath.Rel(absDir, absTarget)
+		if err != nil {
+			continue
+		}
+		if rel == "." || (!strings.HasPrefix(rel, "..") && !filepath.IsAbs(rel)) {
+			return true
+		}
+	}
+	return false
+}
+
+// parseM3U reads an .m3u file and returns resolved file paths.
+// Entries that resolve outside [allowedDirs] are dropped with a warning so
+// a crafted .m3u (e.g. containing "../../etc/passwd") cannot smuggle paths
+// outside the configured game directories into the scanner output.
+func parseM3U(m3uPath string, allowedDirs []string) ([]string, error) {
 	f, err := os.Open(m3uPath)
 	if err != nil {
 		return nil, fmt.Errorf("opening .m3u file: %w", err)
@@ -519,7 +552,12 @@ func parseM3U(m3uPath string) ([]string, error) {
 		if !filepath.IsAbs(resolved) {
 			resolved = filepath.Join(dir, resolved)
 		}
-		paths = append(paths, filepath.Clean(resolved))
+		cleaned := filepath.Clean(resolved)
+		if len(allowedDirs) > 0 && !pathInsideAllowedDirs(cleaned, allowedDirs) {
+			slog.Warn(".m3u entry resolves outside game directories, skipping", "m3u", m3uPath, "entry", cleaned)
+			continue
+		}
+		paths = append(paths, cleaned)
 	}
 	if err := scanner.Err(); err != nil {
 		return nil, fmt.Errorf("reading .m3u file: %w", err)
@@ -863,7 +901,7 @@ func (s *Scanner) scanScummVMGames(result *ScanResult, foundPaths map[string]boo
 			continue
 		}
 
-		filepath.WalkDir(scummRoot, func(path string, d fs.DirEntry, err error) error {
+		if walkErr := filepath.WalkDir(scummRoot, func(path string, d fs.DirEntry, err error) error {
 			if err != nil || d.IsDir() {
 				return nil
 			}
@@ -927,7 +965,9 @@ func (s *Scanner) scanScummVMGames(result *ScanResult, foundPaths map[string]boo
 			}
 			slog.Info("found ScummVM game", "title", title, "path", relPath)
 			return nil
-		})
+		}); walkErr != nil {
+			slog.Warn("ScummVM walk error", "dir", scummRoot, "error", walkErr)
+		}
 	}
 	return nil
 }
@@ -994,7 +1034,7 @@ func (s *Scanner) scanMultiDisc(dir string, consoleMap map[string]*db.Console, f
 
 	// Process .m3u files first
 	for _, m3uPath := range m3uFiles {
-		discFiles, err := parseM3U(m3uPath)
+		discFiles, err := parseM3U(m3uPath, s.GameDirs)
 		if err != nil {
 			slog.Warn("failed to parse .m3u", "path", m3uPath, "error", err)
 			continue

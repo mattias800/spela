@@ -248,6 +248,13 @@ data class EmulationState(
     val showChallengeCreation: Boolean = false,
     val isCreatingChallenge: Boolean = false,
     val challengeCreationSuccess: Boolean = false,
+    /**
+     * Increments each time a challenge is successfully created. The toast's
+     * dismiss LaunchedEffect keys on this so a second creation within the
+     * 5s window of the first restarts the timer instead of letting the
+     * original 5s timer dismiss the second toast prematurely (#1019).
+     */
+    val challengeCreationSuccessCount: Int = 0,
     val showGiveUpConfirm: Boolean = false,
     val challengeCompletedAttempt: com.spela.player.domain.model.ChallengeAttempt? = null,
 

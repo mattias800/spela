@@ -42,6 +42,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -128,19 +129,21 @@ fun HomeScreen(
     if (sawLoading && !state.isLoading) hasInitiallyLoaded = true
 
     LaunchedEffect(Unit) {
-        println("[HomeScreen] LaunchedEffect(Unit) fired — loading dashboard")
         viewModel.onIntent(GameListIntent.LoadDashboard)
         socialViewModel.onIntent(SocialIntent.RefreshAll)
         settingsViewModel?.onIntent(SettingsIntent.LoadSettings)
     }
 
-    // Retry if dashboard loaded empty (server may still be scanning on startup)
+    // Retry once if the first dashboard fetch returns empty (server may still
+    // be scanning on startup). The hasRetried guard prevents an infinite loop
+    // on a permanently-empty library — without it, every load->isLoading=true
+    // ->isLoading=false->isEmpty=true edge would retrigger this effect.
     val isEmpty = state.consoles.isEmpty() && state.recentGames.isEmpty() && !state.isLoading
+    var hasRetried by remember { mutableStateOf(false) }
     LaunchedEffect(isEmpty) {
-        if (isEmpty) {
-            println("[HomeScreen] Dashboard empty, retrying in 3s (consoles=${state.consoles.size}, recent=${state.recentGames.size}, loading=${state.isLoading})")
+        if (isEmpty && !hasRetried) {
+            hasRetried = true
             kotlinx.coroutines.delay(3000)
-            println("[HomeScreen] Retrying dashboard load")
             viewModel.onIntent(GameListIntent.LoadDashboard)
             socialViewModel.onIntent(SocialIntent.RefreshAll)
         }
@@ -494,7 +497,11 @@ private fun DeviceNameBanner(
     deviceName: String,
     onSave: (String) -> Unit,
 ) {
-    var nameInput by remember { mutableStateOf("") }
+    // rememberSaveable: the banner lives inside an AnimatedVisibility that
+    // can exit and re-enter the composition (and on Android, config changes
+    // reset remember state). Saving across these transitions preserves typed
+    // text instead of dropping it on, e.g., orientation change.
+    var nameInput by rememberSaveable { mutableStateOf("") }
 
     AnimatedVisibility(
         visible = deviceName.isBlank(),

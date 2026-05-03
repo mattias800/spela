@@ -253,11 +253,19 @@ func (h *BiosHandler) HumaUploadBiosFile(_ context.Context, in *AdminUploadBiosI
 		match := matches[0]
 		if match.SubDir != "" {
 			subDirPath := match.FilePath(h.Storage.BiosDir)
-			if err := os.MkdirAll(filepath.Dir(subDirPath), 0755); err == nil {
-				if err := os.Rename(safePath, subDirPath); err == nil {
-					safePath = subDirPath
-				}
+			if err := os.MkdirAll(filepath.Dir(subDirPath), 0755); err != nil {
+				_ = os.Remove(safePath)
+				return nil, huma.Error500InternalServerError("failed to create BIOS subdirectory: " + err.Error())
 			}
+			if err := os.Rename(safePath, subDirPath); err != nil {
+				// Cross-device or other rename failure leaves the file at
+				// safePath (top-level BIOS dir) where libretro cores can't
+				// find it. Surface the error rather than silently misplacing
+				// the upload.
+				_ = os.Remove(safePath)
+				return nil, huma.Error500InternalServerError("failed to move BIOS file to subdirectory: " + err.Error())
+			}
+			safePath = subDirPath
 		}
 		consoleName := names[match.ConsoleID]
 		consoleID := match.ConsoleID
@@ -515,8 +523,18 @@ func (h *RomHackHandler) HumaCreateRomHack(_ context.Context, in *AdminCreateRom
 		return nil, huma.NewError(http.StatusConflict, "a ROM file with this name already exists: "+patchedFileName)
 	}
 
-	if err := os.WriteFile(targetPath, patchedData, 0644); err != nil {
-		slog.Warn("failed to write patched ROM", "path", targetPath, "error", err)
+	// Atomic write: a server crash between os.WriteFile starting and
+	// completing would otherwise leave a partial ROM at targetPath, and
+	// the next admin request for the same name hits the os.Stat conflict
+	// check above and gets locked into 409 Conflict permanently.
+	tmpPath := targetPath + ".tmp"
+	if err := os.WriteFile(tmpPath, patchedData, 0644); err != nil {
+		slog.Warn("failed to write patched ROM tmp file", "path", tmpPath, "error", err)
+		return nil, huma.NewError(http.StatusInternalServerError, "failed to write patched ROM file")
+	}
+	if err := os.Rename(tmpPath, targetPath); err != nil {
+		_ = os.Remove(tmpPath)
+		slog.Warn("failed to rename patched ROM into place", "path", targetPath, "error", err)
 		return nil, huma.NewError(http.StatusInternalServerError, "failed to write patched ROM file")
 	}
 

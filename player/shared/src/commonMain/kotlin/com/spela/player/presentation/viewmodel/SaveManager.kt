@@ -1094,10 +1094,14 @@ class SaveManager(
                         runCatching { fileStorage.deleteFile(tempPath) }
                         withContext(dispatchers.main) {
                             _state.update {
+                                // The "Load" button (no slot selected) loads
+                                // the auto-save endpoint, not a slot — so the
+                                // toast must say so. Slot-based loads use
+                                // loadFromSlot() instead. See #996.
                                 it.copy(
                                     statusMessage = "State loaded",
                                     secondaryToast = SecondaryToastData(
-                                        message = "Loaded Slot ${it.activeSlot}",
+                                        message = "Auto-save loaded",
                                         type = SecondaryToastType.LOAD,
                                     ),
                                 )

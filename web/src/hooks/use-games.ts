@@ -97,6 +97,7 @@ export function useToggleFavorite() {
 }
 
 export function useScrapeIfNeeded() {
+  const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (gameId: string) =>
       unwrap(
@@ -104,6 +105,13 @@ export function useScrapeIfNeeded() {
           params: { path: { id: gameId } },
         }),
       ),
+    onSuccess: (_, gameId) => {
+      // Refresh the game record so scrapeAttempts moves off 0 and the
+      // page-level useEffect that triggers this mutation no longer
+      // fires on subsequent renders. Without this the effect can
+      // re-call the endpoint indefinitely while the server is slow.
+      queryClient.invalidateQueries({ queryKey: ["game", gameId] });
+    },
   });
 }
 

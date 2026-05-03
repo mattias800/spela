@@ -59,20 +59,35 @@ export function useDiscManager({
     );
   }, [game?.id, isMultiDisc]);
 
+  // AbortController for the in-flight disc download so an unmount cancels
+  // the fetch + stream reader instead of letting them keep consuming
+  // network and calling setState on an unmounted component.
+  const abortControllerRef = useRef<AbortController | null>(null);
+
   // Start background downloading when game starts playing
   useEffect(() => {
     if (!isMultiDisc || emulatorStatus !== "playing" || !game?.discs) return;
     if (downloadingRef.current) return;
 
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
     downloadingRef.current = true;
-    downloadDiscsSequentially(game.id, game.discs.length);
+    downloadDiscsSequentially(game.id, game.discs.length, controller.signal);
 
     return () => {
       downloadingRef.current = false;
+      controller.abort();
+      if (abortControllerRef.current === controller) {
+        abortControllerRef.current = null;
+      }
     };
   }, [isMultiDisc, emulatorStatus, game?.id]);
 
-  async function downloadSingleDisc(gameId: string, discNumber: number) {
+  async function downloadSingleDisc(
+    gameId: string,
+    discNumber: number,
+    signal?: AbortSignal,
+  ) {
     setDiscStates((prev) =>
       prev.map((d) =>
         d.discNumber === discNumber
@@ -88,7 +103,7 @@ export function useDiscManager({
         : "";
       const url = `/api/games/${gameId}/discs/${discNumber}/download?format=zip${tokenParam}`;
 
-      const response = await fetch(url);
+      const response = await fetch(url, { signal });
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}`);
       }
@@ -141,6 +156,13 @@ export function useDiscManager({
         ),
       );
     } catch (err) {
+      // AbortError is expected on unmount — don't surface as a download error.
+      if (
+        err instanceof DOMException &&
+        err.name === "AbortError"
+      ) {
+        return;
+      }
       const message =
         err instanceof Error ? err.message : "Download failed";
       setDiscStates((prev) =>
@@ -155,9 +177,11 @@ export function useDiscManager({
   async function downloadDiscsSequentially(
     gameId: string,
     discCount: number,
+    signal?: AbortSignal,
   ) {
     for (let i = 1; i <= discCount; i++) {
       if (!downloadingRef.current) break;
+      if (signal?.aborted) break;
       // Don't re-download a disc that already finished during a
       // previous pass. `emulatorStatus` flips through "saving" →
       // "playing" during a disc switch (requestSaveState), which
@@ -169,14 +193,17 @@ export function useDiscManager({
         (d) => d.discNumber === i,
       );
       if (current?.status === "ready" && current.data) continue;
-      await downloadSingleDisc(gameId, i);
+      await downloadSingleDisc(gameId, i, signal);
     }
   }
 
   const retryDisc = useCallback(
     (discNumber: number) => {
       if (!game) return;
-      downloadSingleDisc(game.id, discNumber);
+      // Pass the same abort signal the background loop uses so a
+      // user-initiated retry that's still mid-flight when the
+      // component unmounts gets cancelled too.
+      downloadSingleDisc(game.id, discNumber, abortControllerRef.current?.signal);
     },
     [game?.id],
   );

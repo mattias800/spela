@@ -102,8 +102,8 @@ function CollectionPickerModal({
   }
 
   return (
-    <Modal open={open} onClose={onClose} title="Add to Collection" size="sm">
-      <div className="max-h-64 overflow-y-auto -mx-6 -mb-6 px-6 pb-6">
+    <Modal open={open} onClose={onClose} title="Add to Collection" size="sm" bodyClassName="px-6 pb-6 pt-0">
+      <div className="max-h-64 overflow-y-auto">
         {collections.length === 0 ? (
           <p className="py-4 text-sm text-surface-500 text-center">
             No collections yet. Create one first.

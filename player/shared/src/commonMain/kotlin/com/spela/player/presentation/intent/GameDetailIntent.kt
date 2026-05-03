@@ -119,4 +119,11 @@ sealed interface GameDetailIntent {
         val description: String = "",
     ) : GameDetailIntent
     data object ConsumeShareSessionCreatedNavigation : GameDetailIntent
+    /**
+     * Marks playFromSharedSaveSessionId as consumed after the screen has
+     * dispatched the navigation. Without this, recomposition can re-fire
+     * the LaunchedEffect and push duplicate emulation screens onto the
+     * back-stack.
+     */
+    data object ConsumePlayFromSharedSaveNavigation : GameDetailIntent
 }

@@ -158,6 +158,8 @@ class GameDetailViewModel(
                 createSharedSessionFromSession(intent.sourceSessionId, intent.name, intent.description)
             GameDetailIntent.ConsumeShareSessionCreatedNavigation ->
                 _state.update { it.copy(shareSessionCreatedId = null) }
+            GameDetailIntent.ConsumePlayFromSharedSaveNavigation ->
+                _state.update { it.copy(playFromSharedSaveSessionId = null) }
 
             // Admin actions
             GameDetailIntent.AdminScrapeGame -> adminScrapeGame()
