@@ -949,6 +949,16 @@ func MigrateSharedSessions(database *gorm.DB) error {
 	return nil
 }
 
+// consoleNameMigrations maps historical seed names that we want to rename
+// to their canonical new names. Used by SeedConsoles to safely backfill a
+// rename without clobbering admin customisations: a backfill only fires
+// when the existing DB value is a key in this map AND maps to the new
+// seed value. Add a new entry here whenever the canonical name in the
+// SeedConsoles list changes. See #974.
+var consoleNameMigrations = map[string]string{
+	"Neo Geo Pocket": "Neo Geo Pocket / Color",
+}
+
 // SeedConsoles inserts the default console definitions if they don't exist.
 // For existing consoles, it backfills the EmulatorJSCore field if empty.
 func SeedConsoles(db *gorm.DB) error {
@@ -1062,10 +1072,18 @@ func SeedConsoles(db *gorm.DB) error {
 			}
 			slog.Info("seeded console", "name", c.Name)
 		} else {
-			// Backfill name changes (e.g., "Neo Geo Pocket" → "Neo Geo Pocket / Color")
+			// Backfill renames only when the existing name is a known
+			// historical seed value — never overwrite an admin
+			// customisation. Pre-#974 this fired any time the DB
+			// differed from the seed, so an admin who renamed a
+			// console via the admin UI saw their change silently
+			// reverted on the next restart, violating the f(f(x))=f(x)
+			// rule (a customisation is valid starting state).
 			if c.Name != "" && existing.Name != c.Name {
-				db.Model(&existing).Update("name", c.Name)
-				slog.Info("backfilled Name", "old", existing.Name, "new", c.Name)
+				if knownPrev, ok := consoleNameMigrations[existing.Name]; ok && knownPrev == c.Name {
+					db.Model(&existing).Update("name", c.Name)
+					slog.Info("migrated Name", "old", existing.Name, "new", c.Name)
+				}
 			}
 			if c.EmulatorJSCore != "" && existing.EmulatorJSCore != c.EmulatorJSCore {
 				db.Model(&existing).Update("emulator_js_core", c.EmulatorJSCore)
@@ -1217,16 +1235,26 @@ func SeedCores(db *gorm.DB) error {
 	return nil
 }
 
+// scrapeResultsMigratedKey is the ServerSetting sentinel that marks
+// MigrateScrapeResults as fully completed. Pre-#972 the migration
+// gated on `count > 0` in game_scrape_results, which was unsafe: a
+// crash partway through (OOM on a 50k-game library, deploy
+// interruption) left games in unprocessed batches without rows, and
+// the next restart saw count > 0 and skipped the rest permanently.
+const scrapeResultsMigratedKey = "scrape_results_migrated"
+
 // MigrateScrapeResults backfills GameScrapeResult rows from the legacy
 // ScraperID / ScrapeAttempts fields already present on each Game row.
-// It is idempotent: if any rows already exist the function returns immediately.
+// Idempotent: gated on a ServerSetting sentinel so re-runs are no-ops
+// after the first successful completion. Crash-safe: the sentinel is
+// only written after the full loop completes, so a crash mid-loop
+// just resumes from where it left off on the next start (the
+// OnConflict{DoNothing:true} on inserts makes re-processing of
+// already-done rows a no-op).
 func MigrateScrapeResults(database *gorm.DB) error {
-	var count int64
-	if err := database.Model(&GameScrapeResult{}).Count(&count).Error; err != nil {
-		return fmt.Errorf("counting existing scrape results: %w", err)
-	}
-	if count > 0 {
-		slog.Info("skipping scrape-result migration: rows already present", "count", count)
+	var sentinel ServerSetting
+	if err := database.Where("key = ?", scrapeResultsMigratedKey).First(&sentinel).Error; err == nil {
+		// Sentinel present → migration already completed.
 		return nil
 	}
 
@@ -1302,6 +1330,14 @@ func MigrateScrapeResults(database *gorm.DB) error {
 	}
 
 	slog.Info("scrape-result migration completed", "rows_inserted", totalInserted)
+
+	// Write sentinel only after the full loop completes. Idempotent:
+	// the ServerSetting primary key is the unique key, so re-creating
+	// the same row is a no-op (or fails harmlessly on a duplicate
+	// insert; we ignore the error).
+	if err := database.Save(&ServerSetting{Key: scrapeResultsMigratedKey, Value: "true"}).Error; err != nil {
+		slog.Warn("failed to write scrape-results-migrated sentinel — migration will retry on next start (no harm)", "error", err)
+	}
 	return nil
 }
 
