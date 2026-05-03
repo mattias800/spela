@@ -260,10 +260,28 @@ object DefaultKeyMappings {
         ) + leftStickButtons,
     )
 
+    // Atari 7800 — prosystem_libretro. The 7800 controller has only
+    // Fire 1 (B) and Fire 2 (A); Reset / Pause / Select / Difficulty
+    // are hardware switches on the console itself. The prosystem core
+    // wires those switches to JOYPAD_Y / JOYPAD_X / JOYPAD_L / JOYPAD_R
+    // when the layout exposes them, so the user can accidentally reset
+    // the system mid-game by pressing Y. Keeping the layout limited to
+    // dpad + B + A means the keymap UI hides those buttons and the
+    // default profile leaves them unbound. See #936.
+    val ATARI7800 = ConsoleButtonLayout(
+        consoleId = "a78",
+        displayName = "Atari 7800",
+        buttons = dpadButtons + listOf(
+            ButtonInfo(LibretroButtons.B, "Fire 1"),
+            ButtonInfo(LibretroButtons.A, "Fire 2"),
+            ButtonInfo(LibretroButtons.START, "Pause"),
+        ),
+    )
+
     /** All known console layouts, indexed by console ID. */
     val allLayouts: Map<String, ConsoleButtonLayout> = listOf(
         NES, SNES, N64, GENESIS, GAMEBOY, GBA, PSX, PSP, NDS,
-        THREEDS, DREAMCAST, SATURN, GC,
+        THREEDS, DREAMCAST, SATURN, GC, ATARI7800,
     ).associateBy { it.consoleId }
 
     /**
