@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 	"sort"
+	"strconv"
 	"time"
 
 	"github.com/danielgtaylor/huma/v2"
@@ -344,7 +345,7 @@ func (h *UserHandler) HumaGetPlayStats(ctx context.Context, _ *GetPlayStatsInput
 			continue
 		}
 		result = append(result, PlayStatsEntry{
-			GameID:       ph.GameID,
+			GameID:       strconv.FormatUint(uint64(ph.GameID), 10),
 			PlayTime:     ph.PlayTime,
 			LastPlayedAt: ph.LastPlayed.Format(time.RFC3339),
 		})
