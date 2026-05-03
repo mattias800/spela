@@ -1725,26 +1725,32 @@ func TestSharedSession_MigrateSharedSessions(t *testing.T) {
 	game := db.Game{ConsoleID: console.ID, Title: "Migration Game", FileName: "test.nes", FilePath: "/tmp/migrate.nes", FileSize: 100}
 	database.Create(&game)
 
+	// Create the owner user — pre-#971 the test could insert SharedSession
+	// with a synthetic OwnerID=1 because FK constraints weren't enforced.
+	// With foreign_keys=ON the user must exist for the FK to succeed.
+	owner := db.User{Username: "migrate-owner", Email: "owner@migrate.test", PasswordHash: "x", Role: "user"}
+	require.NoError(t, database.Create(&owner).Error)
+
 	// Manually create a shared session without a session (simulating pre-migration data)
 	ssModel := db.SharedSession{
-		OwnerID: 1,
+		OwnerID: owner.ID,
 		GameID:  game.ID,
 		Name:    "Old Session",
 		Status:  "active",
 	}
-	database.Create(&ssModel)
+	require.NoError(t, database.Create(&ssModel).Error)
 	assert.Nil(t, ssModel.SessionID)
 
 	// Create a shared session save
 	ssSave := db.SharedSessionSave{
 		SharedSessionID:  ssModel.ID,
-		UserID:   1,
+		UserID:   owner.ID,
 		Name:     "Old Save",
 		FilePath: "/tmp/old-save.sav",
 		FileSize: 100,
 		IsAuto:   false,
 	}
-	database.Create(&ssSave)
+	require.NoError(t, database.Create(&ssSave).Error)
 
 	// Run migration
 	err := db.MigrateSharedSessions(database)

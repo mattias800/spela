@@ -662,8 +662,13 @@ type ActivityEvent struct {
 	UserID    uint           `gorm:"index;not null" json:"userId"`
 	User      User           `gorm:"foreignKey:UserID;constraint:OnDelete:CASCADE" json:"-"`
 	EventType string         `gorm:"size:64;not null;index" json:"eventType"` // started_playing, favorited_game, rated_game, shared_save
-	GameID    uint           `gorm:"index" json:"gameId"`
-	Game      Game           `gorm:"foreignKey:GameID" json:"-"`
+	// GameID is nullable: events like 'created_collection' don't have a
+	// game. Pre-#971 the column was non-null uint with the zero value 0
+	// stored, but with FK enforcement enabled the FK to games(id=0)
+	// fails. SET NULL on Game so deleting a game preserves the activity
+	// row but disconnects the FK.
+	GameID    *uint          `gorm:"index" json:"gameId"`
+	Game      Game           `gorm:"foreignKey:GameID;constraint:OnDelete:SET NULL" json:"-"`
 	Metadata  string         `gorm:"type:text" json:"metadata"` // JSON
 }
 
@@ -711,7 +716,7 @@ type SharedSession struct {
 	UpdatedAt    time.Time              `json:"updatedAt"`
 	DeletedAt    gorm.DeletedAt         `gorm:"index" json:"-"`
 	OwnerID      uint                   `gorm:"index;not null" json:"ownerId"`
-	Owner        User                   `gorm:"foreignKey:OwnerID" json:"-"`
+	Owner        User                   `gorm:"foreignKey:OwnerID;constraint:OnDelete:CASCADE" json:"-"`
 	GameID       uint                   `gorm:"index;not null" json:"gameId"`
 	Game         Game                   `gorm:"foreignKey:GameID" json:"-"`
 	Name         string                 `gorm:"size:255;not null" json:"name"`
