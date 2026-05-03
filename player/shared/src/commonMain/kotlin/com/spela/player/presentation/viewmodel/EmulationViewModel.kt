@@ -87,6 +87,14 @@ class EmulationViewModel(
     private val _launchReady = MutableSharedFlow<PendingLaunch>(replay = 0, extraBufferCapacity = 1)
     val launchReady: SharedFlow<PendingLaunch> = _launchReady.asSharedFlow()
 
+    /**
+     * Cross-dispatcher: written from the main-thread intent dispatcher in
+     * `prepareLaunch`, read from a coroutine on dispatchers.io that emits
+     * `_launchReady`, and also cleared from main in `cancelLaunch`. Without
+     * `@Volatile` the IO thread can see a stale value or miss a `cancelLaunch`
+     * null-out, leading to a dropped or ghost launch on rapid double-tap.
+     */
+    @Volatile
     private var pendingLaunch: PendingLaunch? = null
 
     /**
@@ -124,6 +132,16 @@ class EmulationViewModel(
     private var currentPreferences = UserPreferences()
     private var sessionTimerJob: Job? = null
     private var stopJob: Job? = null
+    private var achievementCollectorJob: Job? = null
+
+    /**
+     * Cross-dispatcher: written from the main-thread intent dispatcher when
+     * the user taps "Try Anyway" on the BIOS dialog, read from a coroutine
+     * on dispatchers.io inside the launch flow. Without `@Volatile` the IO
+     * thread can see a stale `false` and re-show the dialog. Same reason
+     * as [pendingCoreDecisionStart].
+     */
+    @Volatile
     private var skipBiosCheck = false
 
     init {
@@ -1488,6 +1506,12 @@ class EmulationViewModel(
         challengeManager.cleanup()
         netplayManager.cleanup()
         presenceService.stopHeartbeat()
+        // Pause the core *before* the IO coroutine starts capturing memory.
+        // Some stopGame call sites (e.g. ConfirmExit, ConfirmNetplayLeave)
+        // do not pause first, so the frame loop could still be advancing
+        // while saveSramOnStop / serialize were reading core memory. Pausing
+        // here is idempotent — already-paused cores remain paused.
+        libretroController.pause()
         stopJob = scope.launch(dispatchers.io) {
             val currentState = _state.value
             val sharedSessionId = currentState.sharedSessionId
@@ -1546,6 +1570,8 @@ class EmulationViewModel(
             if (current?.gameId == stoppingGameId) null else current
         }
 
+        achievementCollectorJob?.cancel()
+        achievementCollectorJob = null
         try {
             achievementsController.deinit()
         } catch (_: Exception) {
@@ -1792,6 +1818,12 @@ class EmulationViewModel(
         // Fetch achievement list + progress from server for the tracker panel
         fetchAchievements(gameId)
 
+        // Cancel any prior collector before starting a new one — initAchievements
+        // is called once per game launch, and without this each restart leaks
+        // a collector, multiplying achievement toasts and unlock counters.
+        achievementCollectorJob?.cancel()
+        achievementCollectorJob = null
+
         scope.launch(dispatchers.io) {
             achievementsRepository.getRAToken().onSuccess { credentials ->
                 achievementsController.init()
@@ -1811,7 +1843,7 @@ class EmulationViewModel(
                 achievementsController.loadGame(gameId)
 
                 // Collect achievement events for UI + track session unlocks
-                scope.launch(dispatchers.default) {
+                achievementCollectorJob = scope.launch(dispatchers.default) {
                     achievementsController.events.collect { event ->
                         withContext(dispatchers.main) {
                             _state.update { state ->
