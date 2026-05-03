@@ -18,6 +18,7 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
@@ -345,6 +346,16 @@ class SaveManager(
      */
     suspend fun autoLoadSaveState(gameId: String): AutoLoadResult {
         val sessionId = currentSessionId ?: return AutoLoadResult.NoSave
+
+        // Wait for any in-flight drain from the previous game to complete
+        // before downloading the auto-save. Without this, when the new game
+        // reuses the same session ID (ensureSession's "reuse most recent"
+        // path), the drain's upload of the old game's final save can race
+        // with this download — the user could resume from a stale state and
+        // the drain's upload could then overwrite the server's auto-save
+        // with an older snapshot, silently losing forward progress on the
+        // next launch. See #997.
+        drainMutex.withLock { /* await drain completion */ }
 
         println("[SaveManager] autoLoadSaveState: checking session $sessionId for core compatibility")
 
