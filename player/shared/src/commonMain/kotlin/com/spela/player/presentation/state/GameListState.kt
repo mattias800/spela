@@ -42,4 +42,17 @@ data class GameListState(
     val hasMorePages: Boolean = false,
     val isLoadingMore: Boolean = false,
     val hideBetas: Boolean = true,
-)
+) {
+    /**
+     * Resolves the two console-id fields into the one queries should
+     * scope to. Prefers `selectedConsoleId` (set when the user lands
+     * on a per-console screen) over `selectedConsoleFilter` (set by
+     * an explicit FilterByConsole intent in cross-console list views).
+     *
+     * Why: pre-#941, search/reload/pagination always used
+     * selectedConsoleFilter, which was null in console-scoped flows,
+     * so the API returned cross-console matches.
+     */
+    val effectiveConsoleId: String?
+        get() = selectedConsoleId ?: selectedConsoleFilter
+}

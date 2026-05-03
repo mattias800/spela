@@ -16,7 +16,6 @@ import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.SwapVert
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -30,12 +29,11 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import com.spela.player.presentation.intent.GameListIntent
@@ -88,25 +86,14 @@ fun ConsoleGamesScreen(
     val console = state.consoles.firstOrNull { it.id == consoleId }
     val consoleName = console?.name ?: "Games"
 
-    var isSearchVisible by rememberSaveable { mutableStateOf(false) }
     var showSortMenu by remember { mutableStateOf(false) }
-    val focusRequester = remember { FocusRequester() }
+    val keyboardController = LocalSoftwareKeyboardController.current
+    val focusManager = LocalFocusManager.current
 
-    PlatformBackHandler {
-        if (isSearchVisible) {
-            viewModel.onIntent(GameListIntent.Search(""))
-            isSearchVisible = false
-        } else {
-            onBack()
-        }
-    }
+    PlatformBackHandler { onBack() }
 
     LaunchedEffect(consoleId) {
         viewModel.onIntent(GameListIntent.SelectConsole(consoleId))
-    }
-
-    LaunchedEffect(isSearchVisible) {
-        if (isSearchVisible) focusRequester.requestFocus()
     }
 
     // Client-side sort
@@ -151,29 +138,33 @@ fun ConsoleGamesScreen(
                 horizontalArrangement = Arrangement.spacedBy(SpSpacing.Default),
                 verticalArrangement = Arrangement.spacedBy(SpSpacing.GridSpacing),
             ) {
-                // Search field
+                // Search field — always visible. The IME Search action
+                // dismisses the keyboard (#941); the trailing X button
+                // clears the query.
                 item(span = { GridItemSpan(maxLineSpan) }) {
-                    if (isSearchVisible) {
-                        SpSearchField(
-                            value = state.searchQuery,
-                            onValueChange = { viewModel.onIntent(GameListIntent.Search(it)) },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(vertical = SpSpacing.Small)
-                                .focusRequester(focusRequester),
-                            placeholder = "Search $consoleName games...",
-                            trailingIcon = {
+                    SpSearchField(
+                        value = state.searchQuery,
+                        onValueChange = { viewModel.onIntent(GameListIntent.Search(it)) },
+                        onSearch = {
+                            keyboardController?.hide()
+                            focusManager.clearFocus()
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = SpSpacing.Small),
+                        placeholder = "Search $consoleName games...",
+                        trailingIcon = if (state.searchQuery.isNotEmpty()) {
+                            {
                                 SpIconButton(
                                     icon = Icons.Filled.Close,
-                                    contentDescription = "Close search",
+                                    contentDescription = "Clear search",
                                     onClick = {
                                         viewModel.onIntent(GameListIntent.Search(""))
-                                        isSearchVisible = false
                                     },
                                 )
-                            },
-                        )
-                    }
+                            }
+                        } else null,
+                    )
                 }
 
                 // Games heading + sort
@@ -262,21 +253,7 @@ fun ConsoleGamesScreen(
             SpTopBar(
                 title = "$consoleName Games",
                 showBack = true,
-                onBack = {
-                    if (isSearchVisible) {
-                        viewModel.onIntent(GameListIntent.Search(""))
-                        isSearchVisible = false
-                    } else {
-                        onBack()
-                    }
-                },
-                actions = {
-                    SpIconButton(
-                        icon = Icons.Filled.Search,
-                        contentDescription = "Search games",
-                        onClick = { isSearchVisible = !isSearchVisible },
-                    )
-                },
+                onBack = onBack,
             )
         }
 
