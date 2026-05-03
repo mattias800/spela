@@ -287,6 +287,43 @@ class KeyMappingRepositoryImplTest {
     }
 
     @Test
+    fun gameBoyDefaultsAreUnrotated() = runTest {
+        // #938 — pre-fix, GB / GBC / NES / GG / SMS rotated face buttons
+        // so GB B mapped to libretro_Y's platform key (the "left"
+        // diamond position) and GB A mapped to libretro_B's key. On
+        // Xbox-style pads that pushed GB B to the physical left,
+        // diagonally across the diamond from GB A — the opposite of
+        // ergonomic. The unrotated mapping puts GB B at the physical
+        // bottom and GB A at the physical right, matching RetroArch's
+        // 2-button-console default.
+        val platformWithFaceButtons = mapOf(
+            LibretroButtons.UP to 100,
+            LibretroButtons.DOWN to 101,
+            LibretroButtons.LEFT to 102,
+            LibretroButtons.RIGHT to 103,
+            LibretroButtons.A to 200,         // physical right
+            LibretroButtons.B to 201,         // physical bottom
+            LibretroButtons.X to 202,
+            LibretroButtons.Y to 203,
+            LibretroButtons.START to 210,
+            LibretroButtons.SELECT to 211,
+        )
+        val repo = KeyMappingRepositoryImpl(database, platformWithFaceButtons)
+
+        for (consoleId in listOf("gb", "gbc", "nes", "gg", "sms")) {
+            val effective = repo.getEffectiveMapping(consoleId)
+            assertEquals(
+                201, effective[LibretroButtons.B],
+                "[$consoleId] B must keep the platform's bottom-position key (no rotation)",
+            )
+            assertEquals(
+                200, effective[LibretroButtons.A],
+                "[$consoleId] A must keep the platform's right-position key (no rotation)",
+            )
+        }
+    }
+
+    @Test
     fun atari7800DefaultsExcludeUnsafeButtons() = runTest {
         // #936 — the prosystem core wires the Atari 7800's hardware
         // switches (Reset, Pause, Difficulty, ...) onto JOYPAD_Y / X /

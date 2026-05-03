@@ -8,7 +8,6 @@ import com.spela.player.domain.model.KeyMappingProfile
 import com.spela.player.domain.model.detectDevicePreset
 import com.spela.player.domain.model.getPlatformPresets
 import com.spela.player.domain.repository.KeyMappingRepository
-import com.spela.player.presentation.viewmodel.LibretroButtons
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
 
@@ -71,56 +70,27 @@ class KeyMappingRepositoryImpl(
     }
 
     /**
-     * Returns the platform default mapping, adjusted for the console type.
+     * Returns the platform default mapping, filtered to the libretro
+     * buttons the console's layout actually exposes. Anything outside
+     * the layout stays unbound — pressing a physical button mapped to
+     * an off-layout libretro id does nothing, instead of silently
+     * triggering a system switch the core wires onto an unused slot
+     * (e.g. prosystem mapping JOYPAD_Y to RESET on the Atari 7800,
+     * #936).
      *
-     * For 2-button systems (NES, Game Boy, Game Gear, Master System), the face
-     * buttons are shifted so the bottom-left pair (Y + B on Nintendo controllers,
-     * X + A on Xbox controllers) maps to the system's two action buttons. This
-     * feels more natural than using the bottom-right pair.
+     * No 2-button-console rotation: the previous logic (#938 root
+     * cause) tried to swap GB B / A onto the "bottom-left pair" but
+     * worked in libretro-id space, which on Xbox-style pads put GB B
+     * across the diamond from GB A — the opposite of ergonomic. The
+     * unrotated platform mapping puts GB B on the physical bottom and
+     * GB A on the physical right (Xbox A / B; SNES B / A on Switch),
+     * matching RetroArch defaults and user muscle memory. See #938.
      */
     private fun getDefaultsForConsole(consoleId: String): Map<Int, Int> {
-        // Filter the platform mapping down to the console's layout — any
-        // libretro button the layout doesn't expose stays unbound. This
-        // matters for consoles whose libretro core wires unsafe system
-        // switches (reset, difficulty, ...) onto unused JOYPAD slots:
-        // without filtering, the user's physical Y / X / L / R / etc.
-        // would silently fire those switches mid-game. See #936 for the
-        // Atari 7800 (prosystem) case.
         val layout = DefaultKeyMappings.allLayouts[consoleId.lowercase()]
-        val mapping = if (layout != null) {
-            val allowed = layout.buttons.map { it.retroButtonId }.toSet()
-            platformDefaultMapping.filterKeys { it in allowed }
-        } else {
-            platformDefaultMapping
-        }
-
-        if (consoleId.lowercase() !in twoButtonConsoles) return mapping
-
-        // Rotate face buttons so the left+bottom pair maps to B+A:
-        //   B → left button (was Y's key)
-        //   A → bottom button (was B's key)
-        //   Y → top button (was X's key, unused by core)
-        //   X → right button (was A's key, unused by core)
-        val bKey = platformDefaultMapping[LibretroButtons.B]    // bottom
-        val yKey = platformDefaultMapping[LibretroButtons.Y]    // left
-        val aKey = platformDefaultMapping[LibretroButtons.A]    // right
-        val xKey = platformDefaultMapping[LibretroButtons.X]    // top
-        if (bKey == null || yKey == null || aKey == null || xKey == null) {
-            return platformDefaultMapping
-        }
-
-        return buildMap {
-            putAll(platformDefaultMapping)
-            put(LibretroButtons.B, yKey)   // B → left
-            put(LibretroButtons.A, bKey)   // A → bottom
-            put(LibretroButtons.Y, xKey)   // Y → top (unused)
-            put(LibretroButtons.X, aKey)   // X → right (unused)
-        }
-    }
-
-    companion object {
-        /** Console IDs for systems with only 2 action buttons (B + A). */
-        private val twoButtonConsoles = setOf("nes", "gb", "gbc", "gg", "sms")
+            ?: return platformDefaultMapping
+        val allowed = layout.buttons.map { it.retroButtonId }.toSet()
+        return platformDefaultMapping.filterKeys { it in allowed }
     }
 
     override fun getDefaultMapping(): Map<Int, Int> = platformDefaultMapping
