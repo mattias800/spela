@@ -221,17 +221,21 @@ const (
 
 func (c *NetplayClient) netplayReadPump(hub *NetplayHub, room *NetplayRoom) {
 	defer func() {
-		remaining := room.removeClient(c.UserID)
-		if remaining == 0 {
+		// Broadcast peer_left BEFORE removing the client, so the message
+		// reaches every other connected peer regardless of how the
+		// concurrent removeClient calls interleave. Previously the order
+		// was removeClient -> if remaining > 0 broadcast, which meant two
+		// near-simultaneous disconnects could both observe remaining == 0
+		// (each saw the other already gone) and skip the notification,
+		// leaving the surviving peer (if any reconnected) unaware.
+		leaveMsg, _ := json.Marshal(NetplayOutMessage{
+			Type:     "peer_left",
+			SenderID: c.UserID,
+			Data:     nil,
+		})
+		room.broadcastExcept(leaveMsg, c.UserID, websocket.TextMessage)
+		if room.removeClient(c.UserID) == 0 {
 			hub.removeRoom(c.SessionID)
-		} else {
-			// Notify others that this peer left
-			leaveMsg, _ := json.Marshal(NetplayOutMessage{
-				Type:     "peer_left",
-				SenderID: c.UserID,
-				Data:     nil,
-			})
-			room.broadcastExcept(leaveMsg, c.UserID, websocket.TextMessage)
 		}
 		c.Conn.Close()
 		slog.Info("netplay client disconnected", "sessionId", c.SessionID, "userId", c.UserID)

@@ -210,8 +210,14 @@ class NetplayManager(
     /**
      * Cancel all netplay/shared-session-related jobs and disconnect transport.
      * Called from stopGame().
+     *
+     * Order matters: clearNetplayMode() runs first to unblock the libretro
+     * core's lockstep loop (which may be waiting on the next input frame).
+     * Disconnecting the transport before clearing the mode could leave the
+     * emulator thread stuck waiting for an input that will never arrive.
      */
     fun cleanup() {
+        libretroController.clearNetplayMode()
         sharedSessionHeartbeatJob?.cancel()
         sharedSessionHeartbeatJob = null
         netplayInputCollectorJob?.cancel()
@@ -220,6 +226,5 @@ class NetplayManager(
         netplayControlCollectorJob = null
         netplayTransport?.disconnect()
         netplayTransport = null
-        libretroController.clearNetplayMode()
     }
 }
