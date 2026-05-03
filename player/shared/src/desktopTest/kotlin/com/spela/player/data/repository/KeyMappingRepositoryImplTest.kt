@@ -287,6 +287,46 @@ class KeyMappingRepositoryImplTest {
     }
 
     @Test
+    fun atari7800DefaultsExcludeUnsafeButtons() = runTest {
+        // #936 — the prosystem core wires the Atari 7800's hardware
+        // switches (Reset, Pause, Difficulty, ...) onto JOYPAD_Y / X /
+        // L / R / etc. when those slots are bound. The default profile
+        // for "a78" must leave those slots unbound so that pressing
+        // Y / X / L / R during gameplay does nothing.
+        val platformWithFullFaceButtons = mapOf(
+            LibretroButtons.UP to 100,
+            LibretroButtons.DOWN to 101,
+            LibretroButtons.LEFT to 102,
+            LibretroButtons.RIGHT to 103,
+            LibretroButtons.A to 200,
+            LibretroButtons.B to 201,
+            LibretroButtons.X to 202,
+            LibretroButtons.Y to 203,
+            LibretroButtons.L to 204,
+            LibretroButtons.R to 205,
+            LibretroButtons.START to 210,
+            LibretroButtons.SELECT to 211,
+        )
+        val repo = KeyMappingRepositoryImpl(database, platformWithFullFaceButtons)
+
+        val effective = repo.getEffectiveMapping("a78")
+
+        // Allowed: dpad + B + A + Start (per ATARI7800 layout)
+        assertEquals(100, effective[LibretroButtons.UP])
+        assertEquals(200, effective[LibretroButtons.A])
+        assertEquals(201, effective[LibretroButtons.B])
+        assertEquals(210, effective[LibretroButtons.START])
+
+        // Forbidden: every libretro id the prosystem core uses for
+        // system switches must be unmapped.
+        assertNull(effective[LibretroButtons.Y], "Y must be unbound — prosystem maps it to RESET")
+        assertNull(effective[LibretroButtons.X], "X must be unbound on a78")
+        assertNull(effective[LibretroButtons.L], "L must be unbound on a78")
+        assertNull(effective[LibretroButtons.R], "R must be unbound on a78")
+        assertNull(effective[LibretroButtons.SELECT], "SELECT must be unbound on a78")
+    }
+
+    @Test
     fun applyPresetWritesToGlobalDefault() = runTest {
         val repo = createRepo()
         val presets = repo.getAvailablePresets()

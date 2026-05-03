@@ -2,6 +2,7 @@ package com.spela.player.data.repository
 
 import com.spela.player.data.local.SpelaDatabase
 import com.spela.player.domain.model.DEFAULT_CONSOLE_ID
+import com.spela.player.domain.model.DefaultKeyMappings
 import com.spela.player.domain.model.KeyMappingPreset
 import com.spela.player.domain.model.KeyMappingProfile
 import com.spela.player.domain.model.detectDevicePreset
@@ -78,7 +79,22 @@ class KeyMappingRepositoryImpl(
      * feels more natural than using the bottom-right pair.
      */
     private fun getDefaultsForConsole(consoleId: String): Map<Int, Int> {
-        if (consoleId.lowercase() !in twoButtonConsoles) return platformDefaultMapping
+        // Filter the platform mapping down to the console's layout — any
+        // libretro button the layout doesn't expose stays unbound. This
+        // matters for consoles whose libretro core wires unsafe system
+        // switches (reset, difficulty, ...) onto unused JOYPAD slots:
+        // without filtering, the user's physical Y / X / L / R / etc.
+        // would silently fire those switches mid-game. See #936 for the
+        // Atari 7800 (prosystem) case.
+        val layout = DefaultKeyMappings.allLayouts[consoleId.lowercase()]
+        val mapping = if (layout != null) {
+            val allowed = layout.buttons.map { it.retroButtonId }.toSet()
+            platformDefaultMapping.filterKeys { it in allowed }
+        } else {
+            platformDefaultMapping
+        }
+
+        if (consoleId.lowercase() !in twoButtonConsoles) return mapping
 
         // Rotate face buttons so the left+bottom pair maps to B+A:
         //   B → left button (was Y's key)
