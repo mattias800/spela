@@ -144,6 +144,7 @@ export function IgdbStep({ onSkip, onSave }: IgdbStepProps) {
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <Input
+          id="igdb-client-id"
           label="Client ID"
           placeholder="Twitch Client ID"
           value={clientId}
@@ -153,6 +154,7 @@ export function IgdbStep({ onSkip, onSave }: IgdbStepProps) {
           }}
         />
         <Input
+          id="igdb-client-secret"
           label="Client Secret"
           type="password"
           placeholder="Twitch Client Secret"
