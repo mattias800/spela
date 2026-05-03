@@ -91,3 +91,21 @@ Thumbs.db
 # meant to ship — 21 of these slipped into commit 0b941dd8 and were removed
 # in a follow-up cleanup. Keep this rule so it doesn't happen again.)
 ui-review-*.png
+
+# Agent scratch directories — ad-hoc planning/brainstorming output from
+# the agent toolchain (superpowers visual-companion HTML, autonomous
+# decisions logs, single-issue working notes). The dot prefix already
+# means "scratch, don't ship"; the entries are here because 136 such
+# files had silently slipped into git and got removed in a single sweep.
+# Code is the source of truth for shipped features; if you want a spec,
+# write it under docs/.
+.plan/
+.plans/
+.superpowers/
+.ui-agent-plan.md
+
+# Feature specs / phased user stories — useful during dev, but the
+# running code is the source of truth once a feature ships. Keep these
+# untracked; copy anything still load-bearing into docs/notes/ instead.
+design-proposals/
+docs/superpowers/

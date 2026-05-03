@@ -1,8 +1,0 @@
-{"type":"server-started","port":51907,"host":"127.0.0.1","url_host":"localhost","url":"http://localhost:51907","screen_dir":"/Users/mattias800/repos/spela/.superpowers/brainstorm/21046-1774693738/content","state_dir":"/Users/mattias800/repos/spela/.superpowers/brainstorm/21046-1774693738/state"}
-{"type":"screen-added","file":"/Users/mattias800/repos/spela/.superpowers/brainstorm/21046-1774693738/content/server-connection-designs.html"}
-{"type":"screen-added","file":"/Users/mattias800/repos/spela/.superpowers/brainstorm/21046-1774693738/content/server-connection-responsive.html"}
-{"type":"screen-added","file":"/Users/mattias800/repos/spela/.superpowers/brainstorm/21046-1774693738/content/server-connection-handheld.html"}
-{"type":"screen-added","file":"/Users/mattias800/repos/spela/.superpowers/brainstorm/21046-1774693738/content/server-connection-colors.html"}
-{"type":"screen-added","file":"/Users/mattias800/repos/spela/.superpowers/brainstorm/21046-1774693738/content/server-connection-snes-colors.html"}
-{"type":"screen-added","file":"/Users/mattias800/repos/spela/.superpowers/brainstorm/21046-1774693738/content/waiting.html"}
-{"type":"server-stopped","reason":"idle timeout"}
