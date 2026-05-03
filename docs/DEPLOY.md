@@ -294,16 +294,32 @@ docker compose -f docker-compose.qa.yml up -d
 
 ## Metadata Scraping
 
-Spela fetches game metadata (titles, descriptions, ratings, release dates, developer/publisher info) from [IGDB](https://www.igdb.com/) and box art / screenshots from the [libretro-thumbnails](https://github.com/libretro-thumbnails/libretro-thumbnails) collection.
+Spela uses three independent metadata sources, each optional and each owning a different slice of the game presentation:
 
-1. Create a free Twitch account at [twitch.tv](https://www.twitch.tv/) (IGDB is owned by Twitch and uses the Twitch developer console for API credentials)
+| Source | Provides | Credentials |
+|--------|----------|-------------|
+| [libretro-thumbnails](https://github.com/libretro-thumbnails/libretro-thumbnails) | Box art (the primary cover image) | None — works out of the box |
+| [IGDB](https://www.igdb.com/) | Titles, descriptions, ratings, release dates, developer/publisher info, in-game screenshots | Twitch developer credentials (free) |
+| [SteamGridDB](https://www.steamgriddb.com/) | Hero banner artwork shown at the top of the game / console pages | Free SteamGridDB API key |
+
+The scraper falls back gracefully when sources are unconfigured: with no IGDB credentials you still get cover art (libretro-thumbnails) but no descriptions or screenshots; with no SteamGridDB key you still get the rest but no hero banners. Game files are detected and playable without any of the three.
+
+When both libretro-thumbnails and IGDB return a cover, **libretro-thumbnails wins** (closer-cropped, more consistent box art). Admins can override the choice per-game from the cover-art selector in the admin game-detail page; manual overrides survive re-scrapes.
+
+### Setting up IGDB
+
+1. Create a free Twitch account at [twitch.tv](https://www.twitch.tv/) — IGDB is owned by Twitch and reuses the Twitch developer console for API credentials
 2. Register an application at [dev.twitch.tv/console](https://dev.twitch.tv/console/apps) and copy the **Client ID** and generate a **Client Secret**
-3. Set `SPELA_IGDB_CLIENT_ID` and `SPELA_IGDB_CLIENT_SECRET` in `.env` or Portainer environment variables
+3. Set `SPELA_IGDB_CLIENT_ID` and `SPELA_IGDB_CLIENT_SECRET` in `.env` or Portainer environment variables (or use the in-app Setup wizard / admin Settings panel)
 4. Trigger a scrape from the admin panel in the web UI
 
 Scraping respects IGDB's rate limit (4 req/sec); large libraries may take a while on the first scrape. Spela's scraper backs off automatically on HTTP 429 responses.
 
-You can run Spela without IGDB credentials — game files are still detected and playable, but with no covers or descriptions until you add credentials and re-scrape.
+### Setting up SteamGridDB
+
+1. Sign in at [steamgriddb.com](https://www.steamgriddb.com/) and request an API key from your profile
+2. Configure the key in the admin **Settings** panel (or via `SPELA_STEAMGRIDDB_API_KEY` env var) — the in-app Setup wizard prompts for it as well
+3. Re-scrape or trigger an artwork refresh from a console / game admin page
 
 ## Environment Variable Reference
 

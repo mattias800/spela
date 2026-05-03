@@ -14,8 +14,8 @@ A Steam-like experience for retro games. Host your game library on a server, man
 #### Key Features
 - Automatic game detection: scans configured directories for ROMs
 - Identifies console/platform by file extension and directory structure
-- Metadata scraping from public databases (IGDB and LibRetro Thumbnails)
-- User management with roles (admin, user)
+- Metadata scraping from three independent optional sources: libretro-thumbnails (box art), IGDB (titles, descriptions, ratings, screenshots), and SteamGridDB (hero banner artwork)
+- User management with roles (owner, admin, user). First registered user becomes the owner; subsequent registrations are pending admin approval.
 - Save state & save game sync per user per game
 - Cover art, screenshots, and game info storage
 - REST API for all operations
@@ -40,39 +40,20 @@ A Steam-like experience for retro games. Host your game library on a server, man
     └── Mario Kart 64.z64
 ```
 
-#### API Endpoints (Core)
-```
-POST   /api/auth/login
-POST   /api/auth/register
-POST   /api/auth/refresh
-GET    /api/consoles                    # List detected consoles
-GET    /api/consoles/:id/games          # List games for console
-GET    /api/games                       # List all games (with filters)
-GET    /api/games/:id                   # Game details + metadata
-GET    /api/games/:id/download          # Download ROM file
-POST   /api/games/:id/metadata          # Update metadata manually
-POST   /api/games/scan                  # Trigger library scan
-GET    /api/games/:id/saves             # List save states for user
-POST   /api/games/:id/saves             # Upload save state
-GET    /api/games/:id/saves/:saveId     # Download save state
-DELETE /api/games/:id/saves/:saveId     # Delete save state
-POST   /api/games/:id/saves/auto        # Upload auto-save
-GET    /api/games/:id/saves/auto        # Get latest auto-save
-GET    /api/games/:id/core              # Get recommended libretro core
-GET    /api/cores                       # List available cores
-GET    /api/cores/:id/download          # Download core for platform
-GET    /api/user/profile                # Current user profile
-PUT    /api/user/profile                # Update profile
-GET    /api/user/recent                 # Recently played games
-GET    /api/user/favorites              # Favorite games
-POST   /api/user/favorites/:gameId      # Add favorite
-DELETE /api/user/favorites/:gameId      # Remove favorite
-GET    /api/admin/users                 # Admin: list users
-PUT    /api/admin/users/:id             # Admin: update user
-GET    /api/admin/settings              # Admin: server settings
-PUT    /api/admin/settings              # Admin: update settings
-POST   /api/admin/scrape                # Admin: trigger metadata scrape
-```
+#### API Endpoints
+
+The server exposes ~150 endpoints under `/api/*` covering auth, games, consoles, saves, achievements, social (favorites, ratings, collections, activity feed), netplay sessions, shared sessions (relay turn-based multiplayer), challenges, admin operations (user management, library scan, scrape queue), BIOS upload, and the scrape pipeline.
+
+The **live, complete spec** is served by the running server:
+
+| Path | Format |
+|------|--------|
+| `/api/openapi` | OpenAPI 3.1 JSON |
+| `/api/docs` | Swagger UI for interactive browsing |
+
+For an offline copy, run `cd server && go run ./cmd/dump-openapi /tmp/openapi.json` (or `cd web && npm run openapi:dump` which writes to `web/src/generated/openapi.json`). The web client and Kotlin player client are generated from this dump — keeping the doc here in sync with the code is the build's responsibility, not this file's.
+
+A handwritten endpoint list used to live here but drifted out of date. Don't rebuild it — point readers at `/api/docs`.
 
 ### 2. Web Frontend (React + TypeScript)
 - **Build**: Vite
@@ -160,7 +141,7 @@ Some cores have internal renderer selection via core variables (separate from th
 
 ### 4. Supported Platforms/Consoles
 
-See the [Supported Consoles](README.md#supported-consoles) table in README.md for the full list of 36 supported systems.
+See the [Supported Consoles](README.md#supported-consoles) table in README.md for the full list (59 playable systems plus scaffolding for newer-gen consoles that aren't yet playable).
 
 ### 5. Console/Platform Mapping
 Each console has:
@@ -181,12 +162,12 @@ Each console has:
 ## Tech Stack Summary
 | Component | Technology |
 |-----------|-----------|
-| Backend | Go 1.22+, Gin, GORM, SQLite |
-| Web Frontend | React 19, TypeScript, Vite, Tailwind CSS |
-| Player App | Kotlin Multiplatform, Compose Multiplatform |
-| Emulation | libretro (cores loaded dynamically) |
-| Auth | JWT with refresh tokens |
-| Real-time | WebSocket |
+| Backend | Go 1.25+, Gin, GORM, SQLite, Huma 2 (OpenAPI-driven handlers) |
+| Web Frontend | React 19, TypeScript, Vite, Tailwind CSS, TanStack Query, React Router 7 |
+| Player App | Kotlin Multiplatform, Compose Multiplatform, Ktor, SQLDelight, Koin, Coil |
+| Emulation | libretro (cores loaded dynamically); EmulatorJS in the browser |
+| Auth | JWT access tokens (1h) + rotating refresh tokens (90d) with token-family replay detection |
+| Real-time | WebSocket (Hub for fan-out + per-session rooms for netplay relay) |
 
 ## Project Structure
 ```
