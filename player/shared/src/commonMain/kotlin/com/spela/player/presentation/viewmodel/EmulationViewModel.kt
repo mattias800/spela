@@ -159,6 +159,14 @@ class EmulationViewModel(
                             } else {
                                 gamepadPortManager.loadAllMappings(consoleId)
                             }
+                        } catch (e: kotlinx.coroutines.CancellationException) {
+                            // Re-throw so cooperative cancellation works.
+                            // Pre-#963 the broad `catch (_: Exception)` below
+                            // silently swallowed CancellationException too,
+                            // hanging anything waiting on this coroutine to
+                            // terminate cleanly when the parent scope was
+                            // cancelled (e.g. on Android lifecycle destroy).
+                            throw e
                         } catch (_: Exception) {
                             // Best effort - defaults will be used
                         }

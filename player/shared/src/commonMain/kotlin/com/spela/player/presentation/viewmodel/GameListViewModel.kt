@@ -287,18 +287,30 @@ class GameListViewModel(
         searchJob?.cancel()
         searchJob = scope.launch(dispatchers.io) {
             delay(300) // debounce
+            // Capture the query that was current at dispatch time so a
+            // late-arriving prior coroutine that survived the debounce
+            // window doesn't run the API call with a NEWER query that's
+            // since landed in state. Then verify after the delay that
+            // we're still relevant before firing the network call —
+            // and one more time before applying results, so search
+            // results from a previous query can't overwrite fresh
+            // loadGamesForConsole results. See #958.
+            val captured = _state.value.searchQuery
+            if (captured != query) return@launch
             _state.update { it.copy(isLoading = true) }
             val current = _state.value
             searchGamesUseCase(
-                query = current.searchQuery,
+                query = captured,
                 consoleId = current.effectiveConsoleId,
                 sortBy = current.sortBy,
                 sortOrder = current.sortOrder,
             ).fold(
                 onSuccess = { games ->
+                    if (_state.value.searchQuery != captured) return@fold
                     _state.update { it.copy(games = games, isLoading = false) }
                 },
                 onFailure = { error ->
+                    if (_state.value.searchQuery != captured) return@fold
                     _state.update { it.copy(error = error.message, isLoading = false) }
                 },
             )

@@ -26,6 +26,7 @@ import com.spela.player.util.DispatcherProvider
 import com.spela.player.domain.model.INSTANT_DOWNLOAD_FALLBACK_DELAY_MS
 import com.spela.player.domain.model.INSTANT_DOWNLOAD_THRESHOLD_BYTES
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -62,6 +63,16 @@ class GameDetailViewModel(
     val state: StateFlow<GameDetailState> = _state.asStateFlow()
 
     private var currentGameId: String? = null
+
+    // Per-game collector jobs. Cancelled and re-launched on every
+    // loadGame so navigating away and back (or to a different game)
+    // doesn't leak collectors. Pre-#956 these were unbounded `scope.
+    // launch { collect { ... } }` calls — each loadGame multiplied
+    // the active collectors, so after two visits two writers raced
+    // on state.downloadProgress and two reloads fired on every
+    // scrape-done event.
+    private var downloadObserveJob: Job? = null
+    private var scrapeObserveJobs: List<Job> = emptyList()
 
     // Session + achievement CRUD extracted into their own managers
     // (#691). Each shares this VM's `_state` so updates land
@@ -234,6 +245,13 @@ class GameDetailViewModel(
         currentGameId = gameId
         _state.update { GameDetailState(isLoading = true) }
 
+        // Cancel any observers from a previous loadGame call (a
+        // back-and-forth nav, or a switch to a different game) so
+        // we don't accumulate concurrent collectors. See #956.
+        downloadObserveJob?.cancel()
+        scrapeObserveJobs.forEach { it.cancel() }
+        scrapeObserveJobs = emptyList()
+
         scope.launch(dispatchers.io) {
             getGameDetailUseCase(gameId).fold(
                 onSuccess = { detail ->
@@ -295,7 +313,7 @@ class GameDetailViewModel(
             )
         }
 
-        scope.launch(dispatchers.io) {
+        downloadObserveJob = scope.launch(dispatchers.io) {
             downloadRepository.observeDownload(gameId).collect { progress ->
                 _state.update { it.copy(downloadProgress = progress) }
             }
@@ -329,21 +347,21 @@ class GameDetailViewModel(
 
     private fun observeScrapeStatus(gameId: String) {
         // Track scraping state from WebSocket events
-        scope.launch(dispatchers.io) {
+        val scrapingJob = scope.launch(dispatchers.io) {
             scrapeService.scrapingGameIds.collect { scrapingIds ->
                 _state.update { it.copy(isScraping = gameId in scrapingIds) }
             }
         }
         // Track queued state — game has a pending ScrapeQueueItem the
         // worker hasn't picked up yet. Drives the "Scrape queued" hint.
-        scope.launch(dispatchers.io) {
+        val queuedJob = scope.launch(dispatchers.io) {
             scrapeService.queuedGameIds.collect { queuedIds ->
                 _state.update { it.copy(isScrapeQueued = gameId in queuedIds) }
             }
         }
 
         // Reload game data when scraping finishes
-        scope.launch(dispatchers.io) {
+        val doneJob = scope.launch(dispatchers.io) {
             scrapeService.gameScrapeDone.collect { doneGameId ->
                 if (doneGameId == gameId) {
                     getGameDetailUseCase(gameId).fold(
@@ -355,6 +373,8 @@ class GameDetailViewModel(
                 }
             }
         }
+
+        scrapeObserveJobs = listOf(scrapingJob, queuedJob, doneJob)
     }
 
     private fun scrapeAndRefresh(gameId: String) {

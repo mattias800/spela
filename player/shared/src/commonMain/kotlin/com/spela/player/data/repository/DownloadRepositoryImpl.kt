@@ -40,15 +40,28 @@ class DownloadRepositoryImpl(
      *  entry in a finally block. See #845. */
     private val activeJobs = mutableMapOf<String, Job>()
 
+    // The speedTrackers / activeJobs / lastEmittedBytes maps are
+    // accessed concurrently from progress callbacks invoked on the
+    // IO dispatcher's thread pool — multiple simultaneous downloads
+    // race on every map mutation. Pre-#957 these were unsynchronized
+    // mutableMapOf and could throw ConcurrentModificationException
+    // or silently lose writes (the lost-write on lastEmittedBytes
+    // directly broke the monotonic guard from #931).
+    //
+    // @Synchronized provides a per-instance monitor — every helper
+    // below acquires it before touching any map, and that's enough
+    // because no helper holds the lock across a suspension point.
+    @Synchronized
     private fun recordSpeed(gameId: String, bytesDownloaded: Long): Long =
         speedTrackers.getOrPut(gameId) { SpeedTracker() }.record(bytesDownloaded)
 
+    @Synchronized
     private fun resetSpeed(gameId: String) {
         speedTrackers.remove(gameId)
         // Reset the monotonic high-water mark together with the speed
         // tracker — both have the same lifecycle (cleared whenever a
         // download terminates: completed, failed, or cancelled).
-        resetMonotonic(gameId)
+        lastEmittedBytes.remove(gameId)
     }
 
     /*
@@ -63,6 +76,7 @@ class DownloadRepositoryImpl(
      */
     private val lastEmittedBytes = mutableMapOf<String, Long>()
 
+    @Synchronized
     private fun monotonicBytes(gameId: String, candidate: Long): Long {
         val prev = lastEmittedBytes[gameId] ?: 0L
         val next = maxOf(prev, candidate)
@@ -70,8 +84,14 @@ class DownloadRepositoryImpl(
         return next
     }
 
-    private fun resetMonotonic(gameId: String) {
-        lastEmittedBytes.remove(gameId)
+    @Synchronized
+    private fun setActiveJob(gameId: String, job: Job) {
+        activeJobs[gameId] = job
+    }
+
+    @Synchronized
+    private fun takeActiveJob(gameId: String): Job? {
+        return activeJobs.remove(gameId)
     }
 
     init {
@@ -149,7 +169,7 @@ class DownloadRepositoryImpl(
         // Capture the caller's Job so cancelDownload can interrupt it.
         // The download work below runs on the SAME coroutine, so cancelling
         // this Job is what actually aborts the in-flight HTTP fetch.
-        activeJobs[gameId] = coroutineContext[Job]!!
+        setActiveJob(gameId, coroutineContext[Job]!!)
         return runCatching {
             downloads.update { it + (gameId to DownloadProgress(gameId, gameTitle, DownloadState.QUEUED)) }
             downloads.update { it + (gameId to DownloadProgress(gameId, gameTitle, DownloadState.DOWNLOADING)) }
@@ -181,9 +201,9 @@ class DownloadRepositoryImpl(
             val now = kotlin.time.Clock.System.now().toEpochMilliseconds()
             database.spelaDatabaseQueries.insertDownload(gameId, path, fileSize, now)
             refreshDownloadedGames()
-            activeJobs.remove(gameId)
+            takeActiveJob(gameId)
         }.onFailure { error ->
-            activeJobs.remove(gameId)
+            takeActiveJob(gameId)
             cleanupPartialDownload(gameId)
             resetSpeed(gameId)
             // User-initiated cancel surfaces as CancellationException via runCatching.
@@ -465,7 +485,7 @@ class DownloadRepositoryImpl(
         // cleanupPartialDownload via the onFailure branch — so disk space is
         // reclaimed automatically. cancelDownload itself doesn't need to call
         // cleanup directly.
-        activeJobs.remove(gameId)?.cancel(CancellationException("download cancelled by user"))
+        takeActiveJob(gameId)?.cancel(CancellationException("download cancelled by user"))
         // Defensive: if the job already completed (or never started), drop the
         // in-memory progress entry and tracker manually.
         downloads.update { it - gameId }
