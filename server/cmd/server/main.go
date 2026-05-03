@@ -29,10 +29,15 @@ import (
 var version = "dev"
 
 func main() {
-	// Start pprof profiling server on :6060
+	// Start pprof profiling server bound to localhost only.
+	// pprof exposes heap dumps, goroutine stacks, CPU profiles — i.e. the
+	// full memory contents of the running process, including JWT secrets
+	// and session tokens. The previous ":6060" bind exposed all of this
+	// to any peer on the same network on a self-hosted instance.
 	go func() {
-		slog.Info("pprof profiling server started on :6060")
-		if err := http.ListenAndServe(":6060", nil); err != nil {
+		addr := "127.0.0.1:6060"
+		slog.Info("pprof profiling server started", "addr", addr)
+		if err := http.ListenAndServe(addr, nil); err != nil {
 			slog.Warn("pprof server failed", "error", err)
 		}
 	}()
