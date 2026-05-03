@@ -37,7 +37,6 @@ typedef struct {
 /* Module state */
 static struct {
     rc_client_t *client;
-    JNIEnv *jni_env;
     jobject jni_thiz;
     jclass jni_class;
     jmethodID on_achievement_event_method;
@@ -47,6 +46,42 @@ static struct {
 } ach_state = {0};
 
 static pending_request_t pending_requests[MAX_PENDING_REQUESTS];
+
+/*
+ * Get a JNIEnv* for the current thread by attaching to the JVM.
+ * Sets [*needs_detach] to true iff the thread was newly attached and
+ * the caller must DetachCurrentThread before returning.
+ *
+ * rc_server_call and rc_event_handler are invoked from the emulation
+ * thread (rc_client_do_frame), not the Kotlin thread that called
+ * achievements_init. JNIEnv is strictly thread-local, so a cached
+ * JNIEnv* from init time is invalid here — the previous code crashed
+ * on strict JVMs and was undefined behaviour everywhere else (#1040).
+ */
+static JNIEnv *attach_thread_env(bool *needs_detach) {
+    extern JavaVM *g_jvm;
+    *needs_detach = false;
+    if (!g_jvm) return NULL;
+    JNIEnv *env = NULL;
+    int status = (*g_jvm)->GetEnv(g_jvm, (void **)&env, JNI_VERSION_1_6);
+    if (status == JNI_EDETACHED) {
+        if ((*g_jvm)->AttachCurrentThread(g_jvm, (void **)&env, NULL) != JNI_OK) {
+            return NULL;
+        }
+        *needs_detach = true;
+    } else if (status != JNI_OK) {
+        return NULL;
+    }
+    return env;
+}
+
+static void detach_thread_env_if_needed(bool needs_detach) {
+    if (!needs_detach) return;
+    extern JavaVM *g_jvm;
+    if (g_jvm) {
+        (*g_jvm)->DetachCurrentThread(g_jvm);
+    }
+}
 
 /* --- rcheevos callbacks --- */
 
@@ -80,7 +115,7 @@ static void rc_server_call(const rc_api_request_t *request, rc_client_server_cal
                             void *callback_data, rc_client_t *client) {
     (void)client;
 
-    if (!ach_state.initialized || !ach_state.jni_env) {
+    if (!ach_state.initialized) {
         ACH_LOGE("Server call requested but achievements not initialized");
         rc_api_server_response_t response = {0};
         response.http_status_code = 0;
@@ -105,13 +140,22 @@ static void rc_server_call(const rc_api_request_t *request, rc_client_server_cal
         return;
     }
 
+    bool needs_detach = false;
+    JNIEnv *env = attach_thread_env(&needs_detach);
+    if (!env) {
+        ACH_LOGE("Failed to attach thread for JNI in rc_server_call");
+        rc_api_server_response_t response = {0};
+        response.http_status_code = 0;
+        callback(&response, callback_data);
+        return;
+    }
+
     int request_id = ++ach_state.next_request_id;
     pending_requests[slot].request_id = request_id;
     pending_requests[slot].callback = callback;
     pending_requests[slot].callback_data = callback_data;
     pending_requests[slot].active = true;
 
-    JNIEnv *env = ach_state.jni_env;
     jstring url_jstr = (*env)->NewStringUTF(env, request->url ? request->url : "");
     jstring post_data_jstr = request->post_data
         ? (*env)->NewStringUTF(env, request->post_data)
@@ -124,6 +168,7 @@ static void rc_server_call(const rc_api_request_t *request, rc_client_server_cal
     if (post_data_jstr) {
         (*env)->DeleteLocalRef(env, post_data_jstr);
     }
+    detach_thread_env_if_needed(needs_detach);
 }
 
 /*
@@ -133,9 +178,12 @@ static void rc_server_call(const rc_api_request_t *request, rc_client_server_cal
 static void rc_event_handler(const rc_client_event_t *event, rc_client_t *client) {
     (void)client;
 
-    if (!ach_state.initialized || !ach_state.jni_env) return;
+    if (!ach_state.initialized) return;
 
-    JNIEnv *env = ach_state.jni_env;
+    bool needs_detach = false;
+    JNIEnv *env = attach_thread_env(&needs_detach);
+    if (!env) return;
+
     jint event_type = (jint)event->type;
     jlong achievement_id = 0;
     jstring title_jstr = NULL;
@@ -158,6 +206,7 @@ static void rc_event_handler(const rc_client_event_t *event, rc_client_t *client
 
     if (title_jstr) (*env)->DeleteLocalRef(env, title_jstr);
     if (desc_jstr) (*env)->DeleteLocalRef(env, desc_jstr);
+    detach_thread_env_if_needed(needs_detach);
 }
 
 /* --- Login/load callbacks --- */
@@ -195,7 +244,6 @@ void achievements_init(JNIEnv *env, jobject thiz) {
     memset(&ach_state, 0, sizeof(ach_state));
     memset(pending_requests, 0, sizeof(pending_requests));
 
-    ach_state.jni_env = env;
     ach_state.jni_thiz = (*env)->NewGlobalRef(env, thiz);
 
     jclass cls = (*env)->GetObjectClass(env, thiz);
