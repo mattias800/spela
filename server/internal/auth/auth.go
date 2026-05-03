@@ -29,13 +29,21 @@ type Claims struct {
 // Passwords longer than this are silently truncated by bcrypt.
 const MaxBcryptPasswordLen = 72
 
+// BcryptCost is the cost factor used for production password hashes.
+// 12 is comfortably above OWASP's minimum (10) and sized for ~250 ms
+// hash time on modern server CPUs. Exported so the timing-protection
+// dummy hash in api.dummyBcryptHash can be generated at the same cost
+// — keeping login response times for valid and invalid usernames
+// indistinguishable. See #976.
+const BcryptCost = 12
+
 // HashPassword hashes a password using bcrypt. Returns an error if the
 // password exceeds bcrypt's 72-byte limit.
 func HashPassword(password string) (string, error) {
 	if len(password) > MaxBcryptPasswordLen {
 		return "", fmt.Errorf("password exceeds maximum length of %d bytes", MaxBcryptPasswordLen)
 	}
-	bytes, err := bcrypt.GenerateFromPassword([]byte(password), 12)
+	bytes, err := bcrypt.GenerateFromPassword([]byte(password), BcryptCost)
 	if err != nil {
 		return "", fmt.Errorf("hashing password: %w", err)
 	}

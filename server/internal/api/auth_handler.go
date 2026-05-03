@@ -7,7 +7,9 @@ import (
 	"log/slog"
 	"time"
 
+	"github.com/spela/server/internal/auth"
 	"github.com/spela/server/internal/db"
+	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 )
 
@@ -20,13 +22,32 @@ func generateTokenFamily() string {
 
 const (
 	maxLoginAttempts = 5
-
-	// dummyBcryptHash is a pre-computed bcrypt hash used when a login attempt
-	// targets a non-existent username. Running bcrypt.CompareHashAndPassword
-	// against this hash ensures the response time is indistinguishable from a
-	// real password check, preventing timing-based username enumeration.
-	dummyBcryptHash = "$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy"
 )
+
+// dummyBcryptHash is generated at startup at the same cost factor used
+// by HashPassword (auth.BcryptCost). Running bcrypt.CompareHashAndPassword
+// against this hash makes the response time for a non-existent username
+// indistinguishable from a real password check.
+//
+// Pre-#976 this was a hardcoded constant at cost 10 while real passwords
+// hash at cost 12 — each bcrypt cost level doubles work, so cost 12 is
+// ~4× slower than cost 10. That discrepancy let an attacker measure
+// response times to enumerate usernames despite the dummy-hash defence.
+// Generating at startup keeps the dummy and real costs aligned for free
+// when the real cost factor changes.
+var dummyBcryptHash string
+
+func init() {
+	b, err := bcrypt.GenerateFromPassword([]byte("dummy-timing-protection"), auth.BcryptCost)
+	if err != nil {
+		// bcrypt.GenerateFromPassword only fails on invalid cost; we
+		// control auth.BcryptCost so this can't fire in practice.
+		// Panic so a misconfiguration is loud rather than silently
+		// degrading enumeration protection.
+		panic("dummyBcryptHash init: " + err.Error())
+	}
+	dummyBcryptHash = string(b)
+}
 
 // hashUsername returns a SHA-256 hex digest of the username so raw usernames
 // are never stored in the login_attempts table.
