@@ -209,6 +209,10 @@ func TestDownloadable_IncludesOverrideURLEntries(t *testing.T) {
 		"neocd":  {"neocdz.zip", "neocd.zip"},
 		"amiga":  {"kick34005.A500", "kick40068.A1200", "kick40060.CD32"},
 		"cdi":    {"cdimono1.zip", "cdimono2.zip", "cdibios.zip"},
+		"o2":     {"o2rom.bin", "c52.bin", "g7400.bin", "jopac.bin"},
+		"chaf":   {"sl31253.bin", "sl31254.bin", "sl90025.bin"},
+		"intv":   {"exec.bin", "grom.bin"},
+		"fds":    {"disksys.rom"},
 	}
 
 	found := make(map[string]bool)
@@ -243,6 +247,31 @@ func TestCDIMono1_PointsAtCompleteSet(t *testing.T) {
 				"verify the new zip contains zx405037p_*.7201 and zx405042p_*.7206 chip ROMs")
 		assert.NotEmpty(t, e.OverrideURL, "must have a download URL")
 		assert.Equal(t, "same_cdi/bios", e.SubDir)
+	}
+}
+
+// TestRequiredEntries_AreDownloadable enforces that every Required:true
+// registry entry can actually be auto-downloaded — i.e. the entry has
+// either an OverrideURL or its console has a repoFolders mapping. This
+// is the safety net for #934 / #935: in both cases a Required:true
+// entry was registered but had no source URL and wasn't in repoFolders,
+// so Downloadable() filtered it out and the file was never fetched.
+// The user-visible symptom was a permanent "BIOS missing" warning
+// (chaf/o2) or a silent black screen with no UI feedback (intv).
+func TestRequiredEntries_AreDownloadable(t *testing.T) {
+	downloadable := make(map[string]bool)
+	for _, e := range Downloadable() {
+		downloadable[e.ConsoleID+"/"+e.FileName] = true
+	}
+	for _, e := range All() {
+		if !e.Required {
+			continue
+		}
+		key := e.ConsoleID + "/" + e.FileName
+		assert.True(t, downloadable[key],
+			"required BIOS %s must be in Downloadable() — set OverrideURL on the entry "+
+				"or add repoFolders[%q]; otherwise the auto-downloader will never fetch it",
+			key, e.ConsoleID)
 	}
 }
 
