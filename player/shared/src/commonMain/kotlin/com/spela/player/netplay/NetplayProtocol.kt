@@ -8,6 +8,18 @@ object NetplayProtocol {
     const val MSG_STATE_CHUNK: Byte = 0x01
     const val MSG_INPUT_FRAME: Byte = 0x02
     const val MSG_DESYNC_CHECK: Byte = 0x03
+    /** Client → host signal: client has subscribed to remoteBinary and is ready
+     * to receive state chunks. The host waits for this before sending state to
+     * close the race where the host's chunks would otherwise arrive before the
+     * client started collecting (silently dropped). See #1006. */
+    const val MSG_CLIENT_READY: Byte = 0x04
+    private val CLIENT_READY_PAYLOAD = byteArrayOf(MSG_CLIENT_READY)
+
+    /** Returns the single-byte client-ready signal. */
+    fun encodeClientReady(): ByteArray = CLIENT_READY_PAYLOAD.copyOf()
+
+    /** True if [data] is the client-ready signal. */
+    fun isClientReady(data: ByteArray): Boolean = data.size == 1 && data[0] == MSG_CLIENT_READY
 
     private const val INPUT_FRAME_SIZE = 12
     private const val DESYNC_CHECK_SIZE = 9
