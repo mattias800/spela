@@ -18,6 +18,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withTimeoutOrNull
 
 /**
@@ -108,19 +109,31 @@ class NetplayManager(
         // Connect to the WebSocket
         transport.connect()
 
-        // Small delay to let the WebSocket connection establish
-        delay(500)
-
         val inputBuffer = NetplayInputBuffer()
 
-        // Initial state sync: host serializes and sends, client waits to receive
+        // Initial state sync: host waits for the client's READY signal before
+        // sending state chunks, client signals ready before subscribing to
+        // chunks. The previous fixed 500ms delay was a race — chunks arriving
+        // before the client started collecting transport.remoteBinary were
+        // silently dropped, leading to a desync at game start. See #1006.
         if (isHost) {
-            val stateData = libretroController.serialize()
-            if (stateData != null) {
-                sendStateChunks(transport, stateData)
+            // Wait for the client to signal it's ready (or timeout after 10s).
+            val clientReady = withTimeoutOrNull(10_000) {
+                transport.remoteBinary.first { com.spela.player.netplay.NetplayProtocol.isClientReady(it.data) }
+                true
+            }
+            if (clientReady != null) {
+                val stateData = libretroController.serialize()
+                if (stateData != null) {
+                    sendStateChunks(transport, stateData)
+                }
             }
         } else {
-            // Client waits for state chunks from host
+            // Send the ready signal first, THEN start collecting state chunks.
+            // sendBinary is fire-and-forget but the WebSocket library queues
+            // messages until the connection is open, so this is safe to send
+            // immediately after connect().
+            transport.sendBinary(com.spela.player.netplay.NetplayProtocol.encodeClientReady())
             val stateData = receiveStateChunks(transport)
             if (stateData != null) {
                 libretroController.unserialize(stateData)
