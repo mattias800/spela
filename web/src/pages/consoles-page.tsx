@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import { Gamepad2 } from "lucide-react";
 import { ConsoleCard } from "@/components/console-card";
 import { ConsoleCardSkeleton, EmptyState } from "@/components/ui";
+import { useBiosStatus } from "@/hooks/use-bios";
 import { useConsoles } from "@/hooks/use-consoles";
 import type { Console } from "@/types/api";
 import { PageLayout, SectionList } from "@/components/layout";
@@ -58,10 +59,24 @@ function groupByGeneration(
 
 export function ConsolesPage() {
   const { data: consoles, isLoading } = useConsoles();
+  const { data: biosData } = useBiosStatus();
   const groups = useMemo(
     () => (consoles ? groupByGeneration(consoles) : []),
     [consoles],
   );
+
+  // Set of consoleIds for which a required BIOS file is missing on disk.
+  // Mirrors the player app's `state.consolesWithMissingBios` so both
+  // clients flag the same consoles. See #933.
+  const consolesWithMissingBios = useMemo(() => {
+    const set = new Set<string>();
+    for (const bc of biosData?.consoles ?? []) {
+      if (bc.status === "missing" && bc.biosRequired) {
+        set.add(bc.consoleId);
+      }
+    }
+    return set;
+  }, [biosData]);
 
   return (
     <PageLayout title="Consoles" subtitle="Browse your game library by platform.">
@@ -94,7 +109,11 @@ export function ConsolesPage() {
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
                 {group.consoles.map((c) => (
-                  <ConsoleCard key={c.id} console={c} />
+                  <ConsoleCard
+                    key={c.id}
+                    console={c}
+                    hasMissingBios={consolesWithMissingBios.has(c.id)}
+                  />
                 ))}
               </div>
             </section>
