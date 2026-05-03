@@ -11,7 +11,11 @@ class SaveDataRepositoryImpl(
         val dir = "${fileStorage.getSavesDir()}/sram/$gameId"
         val path = "$dir/active.srm"
         fileStorage.createDirectory(dir)
-        fileStorage.writeFile(path, data)
+        // Atomic write: temp-file + rename. A process kill mid-write
+        // (Android OOM, rotation crash) no longer leaves a truncated
+        // active.srm that loadLocalSRAM would feed to the core as
+        // corrupt save data. See #994.
+        fileStorage.atomicWriteFile(path, data)
     }
 
     override suspend fun loadLocalSRAM(gameId: String): ByteArray? {

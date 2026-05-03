@@ -2,14 +2,22 @@ package scraper
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"time"
 
 	"github.com/spela/server/internal/db"
+	"github.com/spela/server/internal/igdb"
 	ws "github.com/spela/server/internal/websocket"
 	"gorm.io/gorm"
 )
+
+// igdbRateLimitBackoff is the cooldown applied after an IGDB 429 response.
+// IGDB's documented rate limit is 4 req/sec with a hard cap on bursts; a
+// 60-second cooldown gives the window time to reset and prevents the worker
+// from burning through the remaining queue on fast-fail retries.
+const igdbRateLimitBackoff = 60 * time.Second
 
 // ScrapeWorker processes items from the scrape queue in the background.
 type ScrapeWorker struct {
@@ -152,6 +160,16 @@ func (w *ScrapeWorker) processItem(ctx context.Context, item *db.ScrapeQueueItem
 				jobDone, _ := w.queue.MarkFailed(item, err.Error())
 				w.broadcastProgress(item, &game, false, jobDone)
 				w.broadcastScrapeStatus(game.ID, "idle")
+				// On IGDB rate-limit, sleep before processing the next item
+				// so the rate-limit window can reset. Without this, a 429
+				// storm fast-fails every remaining item in the queue.
+				if errors.Is(err, igdb.ErrRateLimit) {
+					slog.Warn("scrape worker: IGDB rate limit hit, backing off", "duration", igdbRateLimitBackoff)
+					select {
+					case <-ctx.Done():
+					case <-time.After(igdbRateLimitBackoff):
+					}
+				}
 				return
 			}
 			w.scraperConsecutiveFailures = 0

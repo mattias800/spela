@@ -2,6 +2,7 @@ package igdb
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"log/slog"
@@ -12,6 +13,11 @@ import (
 	"sync"
 	"time"
 )
+
+// ErrRateLimit is returned (wrapped) when the IGDB API responds with HTTP 429.
+// Callers should detect via errors.Is and apply a backoff before retrying so
+// the rate-limit window can reset.
+var ErrRateLimit = errors.New("igdb: rate limit")
 
 // API base URLs (variables for testability).
 var (
@@ -525,6 +531,9 @@ func (c *Client) SearchGame(name string, platformIDs []int) ([]Game, error) {
 
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
+		if resp.StatusCode == http.StatusTooManyRequests {
+			return nil, fmt.Errorf("IGDB API returned %d: %s: %w", resp.StatusCode, string(body), ErrRateLimit)
+		}
 		return nil, fmt.Errorf("IGDB API returned %d: %s", resp.StatusCode, string(body))
 	}
 
@@ -589,6 +598,9 @@ func (c *Client) SearchGameExact(name string, platformIDs []int) ([]Game, error)
 
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
+		if resp.StatusCode == http.StatusTooManyRequests {
+			return nil, fmt.Errorf("IGDB API returned %d: %s: %w", resp.StatusCode, string(body), ErrRateLimit)
+		}
 		return nil, fmt.Errorf("IGDB API returned %d: %s", resp.StatusCode, string(body))
 	}
 
@@ -643,6 +655,9 @@ func (c *Client) GetGameByID(igdbID int) (*Game, error) {
 
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
+		if resp.StatusCode == http.StatusTooManyRequests {
+			return nil, fmt.Errorf("IGDB API returned %d: %s: %w", resp.StatusCode, string(body), ErrRateLimit)
+		}
 		return nil, fmt.Errorf("IGDB API returned %d: %s", resp.StatusCode, string(body))
 	}
 
@@ -695,6 +710,9 @@ func (c *Client) GetTimeToBeat(igdbGameID int) (*TimeToBeat, error) {
 
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
+		if resp.StatusCode == http.StatusTooManyRequests {
+			return nil, fmt.Errorf("IGDB API returned %d: %s: %w", resp.StatusCode, string(body), ErrRateLimit)
+		}
 		return nil, fmt.Errorf("IGDB API returned %d: %s", resp.StatusCode, string(body))
 	}
 
@@ -770,6 +788,9 @@ func (c *Client) GetTopGames(platformIDs []int, limit int) ([]TopGame, error) {
 
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
+		if resp.StatusCode == http.StatusTooManyRequests {
+			return nil, fmt.Errorf("IGDB API returned %d: %s: %w", resp.StatusCode, string(body), ErrRateLimit)
+		}
 		return nil, fmt.Errorf("IGDB API returned %d: %s", resp.StatusCode, string(body))
 	}
 
@@ -827,6 +848,9 @@ func (c *Client) GetSimilarGames(igdbGameID int) ([]SimilarGame, error) {
 
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
+		if resp.StatusCode == http.StatusTooManyRequests {
+			return nil, fmt.Errorf("IGDB API returned %d: %s: %w", resp.StatusCode, string(body), ErrRateLimit)
+		}
 		return nil, fmt.Errorf("IGDB API returned %d: %s", resp.StatusCode, string(body))
 	}
 
@@ -878,6 +902,9 @@ func (c *Client) GetSimilarGames(igdbGameID int) ([]SimilarGame, error) {
 
 	if resp2.StatusCode != http.StatusOK {
 		body2, _ := io.ReadAll(resp2.Body)
+		if resp2.StatusCode == http.StatusTooManyRequests {
+			return nil, fmt.Errorf("IGDB API returned %d: %s: %w", resp2.StatusCode, string(body2), ErrRateLimit)
+		}
 		return nil, fmt.Errorf("IGDB API returned %d: %s", resp2.StatusCode, string(body2))
 	}
 
@@ -947,6 +974,9 @@ func (c *Client) GetCompanyByID(igdbID int) (*CompanyDetail, error) {
 
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
+		if resp.StatusCode == http.StatusTooManyRequests {
+			return nil, fmt.Errorf("IGDB API returned %d: %s: %w", resp.StatusCode, string(body), ErrRateLimit)
+		}
 		return nil, fmt.Errorf("IGDB API returned %d: %s", resp.StatusCode, string(body))
 	}
 
@@ -1039,6 +1069,9 @@ func (c *Client) SearchCompanyByName(name string) (*CompanyDetail, error) {
 
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
+		if resp.StatusCode == http.StatusTooManyRequests {
+			return nil, fmt.Errorf("IGDB API returned %d: %s: %w", resp.StatusCode, string(body), ErrRateLimit)
+		}
 		return nil, fmt.Errorf("IGDB API returned %d: %s", resp.StatusCode, string(body))
 	}
 
@@ -1262,6 +1295,9 @@ func (c *Client) GetGameEnrichment(igdbID int) (*GameEnrichment, error) {
 
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
+		if resp.StatusCode == http.StatusTooManyRequests {
+			return nil, fmt.Errorf("IGDB API returned %d: %s: %w", resp.StatusCode, string(body), ErrRateLimit)
+		}
 		return nil, fmt.Errorf("IGDB API returned %d: %s", resp.StatusCode, string(body))
 	}
 
@@ -1381,6 +1417,9 @@ func (c *Client) GetCollection(collectionID int) (*CollectionData, error) {
 
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
+		if resp.StatusCode == http.StatusTooManyRequests {
+			return nil, fmt.Errorf("IGDB API returned %d: %s: %w", resp.StatusCode, string(body), ErrRateLimit)
+		}
 		return nil, fmt.Errorf("IGDB API returned %d: %s", resp.StatusCode, string(body))
 	}
 
@@ -1436,6 +1475,9 @@ func (c *Client) GetFranchise(franchiseID int) (*FranchiseData, error) {
 
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
+		if resp.StatusCode == http.StatusTooManyRequests {
+			return nil, fmt.Errorf("IGDB API returned %d: %s: %w", resp.StatusCode, string(body), ErrRateLimit)
+		}
 		return nil, fmt.Errorf("IGDB API returned %d: %s", resp.StatusCode, string(body))
 	}
 

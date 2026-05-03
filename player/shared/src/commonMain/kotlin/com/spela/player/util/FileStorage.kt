@@ -11,6 +11,21 @@ interface FileStorage {
     fun getBiosDir(): String
     suspend fun createDirectory(path: String)
     suspend fun writeFile(path: String, data: ByteArray)
+    /**
+     * Writes [data] to a temporary sibling file then atomically renames it
+     * into place at [path]. If the process is killed mid-write (Android OOM,
+     * desktop crash, signal), the existing file at [path] is left untouched
+     * — the next read sees the prior known-good content rather than a
+     * truncated partial write. Used for SRAM and save state writes (#994).
+     *
+     * Default falls back to non-atomic [writeFile]; production platform
+     * implementations (AndroidFileStorage, DesktopFileStorage) override this
+     * with a tmp-write + atomic-rename. Test stubs that don't care about
+     * crash safety can keep the default.
+     */
+    suspend fun atomicWriteFile(path: String, data: ByteArray) {
+        writeFile(path, data)
+    }
     suspend fun readFile(path: String): ByteArray
     suspend fun fileExists(path: String): Boolean
     suspend fun deleteFile(path: String)
