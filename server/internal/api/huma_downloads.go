@@ -1065,11 +1065,26 @@ func (h *GameHandler) HumaDownloadDisc(_ context.Context, in *GameDiscDownloadIn
 // streamArchiveTar returns a StreamResponse that writes an uncompressed tar
 // of the given files. Errors during streaming are logged but not surfaced —
 // once headers are sent the response body is one-way.
+//
+// Sets X-Logical-Size to the sum of file sizes inside the tar (not the
+// over-the-wire byte count, which includes 512-byte tar headers and
+// per-file padding). The player app uses this value as the
+// authoritative download-progress total; without it, the client has to
+// fall back to game.fileSize, which for ScummVM and old .cue/.gdi
+// records is the marker file size — orders of magnitude smaller than
+// the real download. See #931.
 func streamArchiveTar(files []string, downloadName, contextName string) *huma.StreamResponse {
 	return &huma.StreamResponse{
 		Body: func(hctx huma.Context) {
+			var totalLogical int64
+			for _, f := range files {
+				if info, err := os.Stat(f); err == nil {
+					totalLogical += info.Size()
+				}
+			}
 			hctx.SetHeader("Content-Type", "application/x-tar")
 			hctx.SetHeader("Content-Disposition", fmt.Sprintf("attachment; filename=%q", downloadName))
+			hctx.SetHeader("X-Logical-Size", strconv.FormatInt(totalLogical, 10))
 			if err := serveTar(hctx.BodyWriter(), files); err != nil {
 				slog.Warn("error streaming tar", "context", contextName, "error", err)
 			}

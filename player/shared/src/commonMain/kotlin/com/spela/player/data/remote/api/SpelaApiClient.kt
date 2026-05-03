@@ -1458,6 +1458,24 @@ class SpelaApiClient(
 
     /**
      * Extracts files from a tar archive response, streaming directly to disk.
+     *
+     * Progress is reported in **logical bytes** — the running sum of
+     * `fileSize` from each tar entry, NOT the over-the-wire byte count.
+     * The wire stream includes 512-byte tar headers and per-file
+     * padding-to-512 that aren't useful to the user. Logical bytes
+     * match what `disc.fileSize` / `gameDetail.fileSize` represent on
+     * the server side, so the caller can compute progress fractions
+     * with both numerator and denominator in the same unit.
+     *
+     * Total: prefers the server's `X-Logical-Size` header (sum of
+     * post-extract file sizes — see `streamArchiveTar` in
+     * server/internal/api/huma_downloads.go) over `Content-Length`
+     * (which is the over-the-wire size and would make the bar overshoot
+     * 1.0 on the last frame). Falls back to `Content-Length` so older
+     * servers still produce a usable, if slightly off, progress bar.
+     *
+     * See #931 for the full root-cause analysis (mixed-units bar jumps
+     * for multi-disc games and 100%-on-frame-1 for ScummVM tars).
      */
     private suspend fun extractTarFromResponse(
         response: HttpResponse,
@@ -1465,17 +1483,17 @@ class SpelaApiClient(
         outputDir: String,
         onProgress: (Long, Long?) -> Unit,
     ) {
-        val totalBytes = response.contentLength()
+        val totalLogical = response.headers["X-Logical-Size"]?.toLongOrNull()
+            ?: response.contentLength()
         val channel = response.bodyAsChannel()
-        var downloaded = 0L
+        var logicalDownloaded = 0L
 
         // Tar format: 512-byte header, file data (padded to 512), repeat
         while (true) {
-            // Read 512-byte tar header
+            // Read 512-byte tar header. No progress emit — the header
+            // is wire overhead, not logical content.
             val header = ByteArray(512)
             channel.readFully(header, 0, 512)
-            downloaded += 512
-            onProgress(downloaded, totalBytes)
 
             // End-of-archive: all-zero block
             if (header.all { it == 0.toByte() }) break
@@ -1490,7 +1508,9 @@ class SpelaApiClient(
             val fileSize = sizeStr.toLongOrNull(8) ?: 0L
 
             if (fileSize > 0) {
-                // Stream file content directly to disk
+                // Stream file content directly to disk. Each chunk read
+                // contributes to logicalDownloaded — these are real
+                // user-visible bytes that end up on disk.
                 val filePath = "$outputDir/$name"
                 fileStorage.writeFileStreaming(filePath) { append ->
                     var remaining = fileSize
@@ -1501,16 +1521,16 @@ class SpelaApiClient(
                         if (bytesRead == -1) break
                         append(buffer, 0, bytesRead)
                         remaining -= bytesRead
-                        downloaded += bytesRead
-                        onProgress(downloaded, totalBytes)
+                        logicalDownloaded += bytesRead
+                        onProgress(logicalDownloaded, totalLogical)
                     }
                 }
-                // Skip padding to next 512-byte boundary
+                // Skip padding to next 512-byte boundary. Wire bytes
+                // again — silently consumed, no progress emit.
                 val padding = ((512 - (fileSize % 512)) % 512).toInt()
                 if (padding > 0) {
                     val skip = ByteArray(padding)
                     channel.readFully(skip, 0, padding)
-                    downloaded += padding
                 }
             }
         }
