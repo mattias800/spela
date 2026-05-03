@@ -76,8 +76,8 @@ See [TESTING.md](../TESTING.md) for the full testing guide. Quick reference:
 
 ## Useful Links
 
-- [ARCHITECTURE.md](../ARCHITECTURE.md) — System design and API endpoints
+- [ARCHITECTURE.md](../ARCHITECTURE.md) — System design and component overview
 - [TESTING.md](../TESTING.md) — Full testing guide
-- [E2E.md](../E2E.md) — Android E2E test setup
+- [docs/e2e-testing.md](e2e-testing.md) — Comprehensive E2E guide (web, Android, desktop)
 - [DEPLOY.md](DEPLOY.md) — Production deployment
 - [CONTRIBUTING.md](../CONTRIBUTING.md) — Code style and PR guidelines

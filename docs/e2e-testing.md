@@ -419,3 +419,41 @@ Fix: `lsof -i :8080` — kill any `server` process that isn't Docker.
 | `server/internal/api/test_handler.go` | Server-side reset endpoint |
 | `server/cmd/seed/main.go` | Database seeding logic |
 | `testdata/roms/` | Test ROM files (not in git) |
+
+## Android E2E — Landscape Handhelds (AYN Thor, Odin 2, etc.)
+
+The reference Android test device is a landscape gaming handheld (1920×1080).
+The on-screen keyboard covers the entire screen on these devices, so test
+flows must include `hideKeyboard` after every `inputText` step or the next
+assertion won't find any visible UI.
+
+When running tests against a portrait emulator, switch the emulator to
+landscape to match the handheld layout:
+
+```bash
+adb -s emulator-5554 shell settings put system accelerometer_rotation 0
+adb -s emulator-5554 shell settings put system user_rotation 1
+```
+
+`user_rotation 1` = landscape (90° counter-clockwise); `user_rotation 0` =
+portrait. Apply this *after* the emulator boots, before running tests.
+
+### Touch input on clamshell devices
+
+Some landscape handhelds (AYN Thor) are clamshells — when closed, the
+touchscreen digitizer is off and `adb shell input tap` is a no-op. Touch
+input only works when the device is open. For automated runs, use
+gamepad / DPAD navigation instead:
+
+| Keycode | Action |
+|---------|--------|
+| `KEYCODE_BUTTON_R1` / `KEYCODE_BUTTON_L1` | Cycle bottom-nav tabs (Home, Consoles, Collections, Activity, Settings) |
+| `KEYCODE_DPAD_UP/DOWN/LEFT/RIGHT` | Move focus within a screen |
+| `KEYCODE_BUTTON_A` | Confirm / select |
+| `KEYCODE_BACK` | Back |
+
+The bottom tab bar is hidden when a controller is connected — use L1/R1.
+
+Gamepad button correctness (BUTTON_A, BUTTON_B, L1/R1) requires manual QA
+with a physical controller; D-pad navigation tests use the standard Android
+DPAD keycodes via UiAutomator.
