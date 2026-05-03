@@ -863,7 +863,7 @@ func (s *Scanner) scanScummVMGames(result *ScanResult, foundPaths map[string]boo
 			continue
 		}
 
-		filepath.WalkDir(scummRoot, func(path string, d fs.DirEntry, err error) error {
+		if walkErr := filepath.WalkDir(scummRoot, func(path string, d fs.DirEntry, err error) error {
 			if err != nil || d.IsDir() {
 				return nil
 			}
@@ -927,7 +927,9 @@ func (s *Scanner) scanScummVMGames(result *ScanResult, foundPaths map[string]boo
 			}
 			slog.Info("found ScummVM game", "title", title, "path", relPath)
 			return nil
-		})
+		}); walkErr != nil {
+			slog.Warn("ScummVM walk error", "dir", scummRoot, "error", walkErr)
+		}
 	}
 	return nil
 }
