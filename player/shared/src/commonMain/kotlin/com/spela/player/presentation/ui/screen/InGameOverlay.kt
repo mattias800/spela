@@ -220,7 +220,11 @@ fun InGameOverlay(
     // a usable window to assert the toast text — at 2 s the test
     // raced cold-container POST latency and missed the toast (#837).
     if (state.challengeCreationSuccess) {
-        LaunchedEffect(Unit) {
+        // Key on the success counter so a second challenge creation within
+        // the 5s window of the first re-launches the dismiss timer. Keying
+        // on Unit (or just the boolean flag) would leave the original
+        // timer pointing at the second toast and dismiss it prematurely.
+        LaunchedEffect(state.challengeCreationSuccessCount) {
             delay(5000)
             viewModel.onIntent(EmulationIntent.DismissChallengeCreation)
         }

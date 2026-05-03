@@ -120,6 +120,7 @@ class ChallengeManager(
                                 showChallengeCreation = false,
                                 isCreatingChallenge = false,
                                 challengeCreationSuccess = true,
+                                challengeCreationSuccessCount = it.challengeCreationSuccessCount + 1,
                                 statusMessage = "Challenge created!",
                             )
                         }
