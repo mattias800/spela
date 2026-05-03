@@ -929,18 +929,36 @@ class FakeGameStatsRepository : GameStatsRepository {
 class FakeSocialRepository : SocialRepository {
     var onlineUsers: List<OnlineUser> = emptyList()
     var activityEvents: List<ActivityEvent> = emptyList()
+    var publicProfileResult: Result<com.spela.player.domain.model.PublicProfile>? = null
+    var heatmapEntries: List<com.spela.player.domain.model.HeatmapEntry> = emptyList()
+    var publicShowcase: List<com.spela.player.domain.model.ShowcaseAchievement> = emptyList()
+    var unlockedAchievements: List<com.spela.player.domain.model.UnlockedAchievement> = emptyList()
 
     override suspend fun getOnlineUsers(): Result<List<OnlineUser>> = Result.success(onlineUsers)
     override suspend fun getActivityFeed(page: Int, pageSize: Int): Result<List<ActivityEvent>> =
         Result.success(activityEvents)
     override suspend fun getPublicProfile(userId: String): Result<com.spela.player.domain.model.PublicProfile> =
-        Result.failure(Exception("Not implemented in fake"))
+        publicProfileResult ?: Result.success(
+            com.spela.player.domain.model.PublicProfile(
+                id = userId,
+                username = "fake-user-$userId",
+                avatarUrl = null,
+                memberSince = "2024-01-01",
+                isOnline = false,
+                currentGame = null,
+                totalPlayTime = 0,
+                gamesPlayed = 0,
+                favoriteGames = emptyList(),
+                recentGames = emptyList(),
+                topGames = emptyList(),
+            ),
+        )
     override suspend fun getPlayHeatmap(userId: String): Result<List<com.spela.player.domain.model.HeatmapEntry>> =
-        Result.success(emptyList())
+        Result.success(heatmapEntries)
     override suspend fun getPublicShowcase(userId: String): Result<List<com.spela.player.domain.model.ShowcaseAchievement>> =
-        Result.success(emptyList())
+        Result.success(publicShowcase)
     override suspend fun getUnlockedAchievements(): Result<List<com.spela.player.domain.model.UnlockedAchievement>> =
-        Result.success(emptyList())
+        Result.success(unlockedAchievements)
     override suspend fun updateShowcase(achievements: List<com.spela.player.domain.model.ShowcaseAchievement>): Result<List<com.spela.player.domain.model.ShowcaseAchievement>> =
         Result.success(achievements)
 }

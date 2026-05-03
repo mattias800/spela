@@ -34,8 +34,8 @@ export interface ScanProgressState {
   dismiss: () => void;
 }
 
-export function useScanProgress(): ScanProgressState {
-  const { data: initialStatus } = useScanStatus();
+export function useScanProgress(enabled: boolean = true): ScanProgressState {
+  const { data: initialStatus } = useScanStatus(enabled);
   const queryClient = useQueryClient();
 
   const [phase, setPhase] = useState<ScanPhase>("idle");
@@ -44,20 +44,22 @@ export function useScanProgress(): ScanProgressState {
   const [total, setTotal] = useState(0);
   const [result, setResult] = useState<ScanCompletePayload | null>(null);
   const [error, setError] = useState<string | null>(null);
-  // Sync from polled status — this runs on every status refetch (3s interval).
-  // Allows the UI to pick up status after page refresh or WebSocket disconnect.
+  // Sync from polled status — runs on every refetch (3s interval) so the UI
+  // recovers after page refresh or WebSocket disconnect. The `complete`/`error`
+  // early return prevents the (lagging) poll response from clobbering a
+  // terminal phase the WebSocket has already set.
   useEffect(() => {
     if (!initialStatus) return;
+    if (phase === "complete" || phase === "error") return;
     if (initialStatus.active) {
       setPhase("active");
       setMessage(initialStatus.message || "Scanning...");
       setCurrent(initialStatus.current);
       setTotal(initialStatus.total);
     } else if (phase === "active") {
-      // Status went from active to inactive — scan finished while we were polling
       setPhase("idle");
     }
-  }, [initialStatus]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [initialStatus, phase]);
 
   useWebSocketEvent(
     "scan_started",

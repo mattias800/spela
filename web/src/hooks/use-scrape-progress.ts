@@ -40,8 +40,8 @@ export interface ScrapeProgressState {
   dismiss: () => void;
 }
 
-export function useScrapeProgress(): ScrapeProgressState {
-  const { data: initialStatus } = useScrapeStatus();
+export function useScrapeProgress(enabled: boolean = true): ScrapeProgressState {
+  const { data: initialStatus } = useScrapeStatus(enabled);
 
   const [phase, setPhase] = useState<ScrapePhase>("idle");
   const [current, setCurrent] = useState(0);
@@ -54,12 +54,15 @@ export function useScrapeProgress(): ScrapeProgressState {
   const [failures, setFailures] = useState(0);
   const [verified, setVerified] = useState(0);
   const [error, setError] = useState<string | null>(null);
-  // Sync from polled status — this runs on every status refetch (3s interval).
-  // Allows the UI to pick up status after page refresh or WebSocket disconnect.
-  // gameId/gameName/consoleName/consoleAbbr only arrive via the WebSocket
-  // scrape_progress event; the polled status endpoint only exposes counters.
+  // Sync from polled status — runs on every refetch (3s interval) so the UI
+  // recovers after page refresh or WebSocket disconnect. gameId/gameName/
+  // consoleName/consoleAbbr only arrive via the WebSocket scrape_progress
+  // event; the polled status endpoint only exposes counters. The
+  // `complete`/`error` early return prevents the (lagging) poll response from
+  // clobbering a terminal phase the WebSocket has already set.
   useEffect(() => {
     if (!initialStatus) return;
+    if (phase === "complete" || phase === "error") return;
     if (initialStatus.active) {
       setPhase("active");
       setCurrent(initialStatus.current);
@@ -68,10 +71,9 @@ export function useScrapeProgress(): ScrapeProgressState {
       setFailures(initialStatus.failures);
       setVerified(initialStatus.verified);
     } else if (phase === "active") {
-      // Status went from active to inactive — scrape finished while we were polling
       setPhase("idle");
     }
-  }, [initialStatus]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [initialStatus, phase]);
 
   useWebSocketEvent(
     "scrape_started",

@@ -418,23 +418,24 @@ class NavigationViewModelTest {
         override suspend fun getServers(): List<ServerConnection> = emptyList()
         override suspend fun getActiveServer(): ServerConnection? = null
         override suspend fun addServer(name: String, url: String): ServerConnection =
-            throw UnsupportedOperationException()
-        override suspend fun removeServer(id: String) = throw UnsupportedOperationException()
-        override suspend fun setActiveServer(id: String) = throw UnsupportedOperationException()
-        override suspend fun validateServer(url: String): Boolean = throw UnsupportedOperationException()
+            error("NoSessionServerRepository: addServer not used in this test")
+        override suspend fun removeServer(id: String) {}
+        override suspend fun setActiveServer(id: String) {}
+        override suspend fun validateServer(url: String): Boolean = false
     }
 
     private class NoSessionAuthRepository : AuthRepository {
+        private fun unsupported(): NotImplementedError = NotImplementedError("NoSessionAuthRepository: not used in this test")
         override suspend fun login(serverUrl: String, username: String, password: String): Result<AuthTokens> =
-            throw UnsupportedOperationException()
+            Result.failure(unsupported())
         override suspend fun register(serverUrl: String, username: String, email: String, password: String): Result<AuthTokens> =
-            throw UnsupportedOperationException()
+            Result.failure(unsupported())
         override suspend fun refreshToken(serverUrl: String, refreshToken: String): Result<AuthTokens> =
-            throw UnsupportedOperationException()
-        override suspend fun getCurrentUser(): Result<User> = throw UnsupportedOperationException()
+            Result.failure(unsupported())
+        override suspend fun getCurrentUser(): Result<User> = Result.failure(unsupported())
         override suspend fun getStoredTokens(): AuthTokens? = null
-        override suspend fun storeTokens(tokens: AuthTokens) = throw UnsupportedOperationException()
-        override suspend fun clearTokens() = throw UnsupportedOperationException()
+        override suspend fun storeTokens(tokens: AuthTokens) {}
+        override suspend fun clearTokens() {}
         override fun isLoggedIn(): Boolean = false
     }
 
