@@ -32,15 +32,48 @@ fi
 # Opt-out with --skip-reset when iterating fast on a single test and you
 # know the state is already clean (e.g. you just ran a reset five minutes
 # ago). Default is always: reset before every run.
+#
+# --emulator overrides ADB_SERIAL with the first running emulator
+# (emulator-NNNN) so the suite runs against the seeded `spela-test` AVD
+# instead of the AYN Thor — single-display, no Screen-2 routing, safer
+# for daily-driver hardware. See docs/e2e-testing.md for the AVD setup.
 RESET_BACKEND=true
+USE_EMULATOR=false
 ARGS=()
 for arg in "$@"; do
   case "$arg" in
     --skip-reset) RESET_BACKEND=false ;;
+    --emulator) USE_EMULATOR=true ;;
     *) ARGS+=("$arg") ;;
   esac
 done
 set -- "${ARGS[@]+"${ARGS[@]}"}"
+
+if [ "$USE_EMULATOR" = true ]; then
+  EMU_SERIAL=$(adb devices | awk '/^emulator-[0-9]+/ && $2 == "device" {print $1; exit}')
+  if [ -z "$EMU_SERIAL" ]; then
+    echo "Error: --emulator passed but no running emulator found." >&2
+    echo "Start the spela-test AVD first:" >&2
+    echo "  emulator -avd spela-test -no-snapshot-load &" >&2
+    exit 1
+  fi
+  ADB_SERIAL="$EMU_SERIAL"
+  DEVICE_PIN=""  # emulator AVD has no PIN
+  echo "── Targeting emulator: $ADB_SERIAL (overrides ADB_SERIAL from .env) ──"
+
+  # Pre-confirm Android's "use full screen" / immersive mode dialog. On a
+  # fresh AVD the system pops a confirmation overlay the first time the
+  # app goes immersive, which silently blocks all UiAutomator input.
+  adb -s "$ADB_SERIAL" shell settings put secure immersive_mode_confirmations confirmed >/dev/null 2>&1 || true
+
+  # Disable system animations to reduce Choreographer pressure. Compose
+  # animations are independent of these (gated by LocalAnimationsEnabled
+  # which the test mode already flips to false), but every bit helps on
+  # a slower-than-physical emulator.
+  adb -s "$ADB_SERIAL" shell settings put global window_animation_scale 0 >/dev/null 2>&1 || true
+  adb -s "$ADB_SERIAL" shell settings put global transition_animation_scale 0 >/dev/null 2>&1 || true
+  adb -s "$ADB_SERIAL" shell settings put global animator_duration_scale 0 >/dev/null 2>&1 || true
+fi
 
 if [ "$RESET_BACKEND" = true ]; then
   echo "── Resetting backend (docker compose down -v) ──"
