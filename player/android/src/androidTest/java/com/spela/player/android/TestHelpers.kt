@@ -27,6 +27,7 @@ import androidx.compose.ui.test.performImeAction
 import androidx.compose.ui.test.performTextInput
 import androidx.test.ext.junit.rules.ActivityScenarioRule
 import androidx.test.platform.app.InstrumentationRegistry
+import androidx.test.uiautomator.By
 import androidx.test.uiautomator.UiDevice
 import androidx.test.uiautomator.UiSelector
 import com.spela.player.di.commonModule
@@ -486,6 +487,11 @@ fun ComposeRule.assertVisible(label: String) {
     val device = uiDevice()
     val ok = device.findObject(UiSelector().textContains(label)).exists() ||
         device.findObject(UiSelector().descriptionContains(label)).exists() ||
+        // SpTextField renders its `label` as the Android EditText hint
+        // (PR #847 wraps a real EditText in AndroidView). Hints aren't
+        // covered by getText() / contentDescription, so UiSelector misses
+        // them — fall back to By.hint() (UiAutomator 2.2+, API 26+).
+        device.findObjects(By.hint(label)).isNotEmpty() ||
         composeHasText(label) ||
         composeHasDescription(label)
     check(ok) { "Expected '$label' to be visible (text or description), but not found" }
