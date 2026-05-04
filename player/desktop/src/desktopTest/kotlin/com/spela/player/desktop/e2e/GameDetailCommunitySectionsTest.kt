@@ -98,8 +98,10 @@ class GameDetailCommunitySectionsTest {
         onNodeWithText("SpeedKing").performClick()
         advance(harness)
 
-        // UserProfile screen should be shown (profile fails to load in fake repo, shows fallback)
-        onNodeWithText("Profile not found").assertIsDisplayed()
+        // UserProfile screen should be shown — assert by the screen's
+        // root testTag so we don't depend on whether the fake repo
+        // returns a profile or a fallback.
+        onNodeWithTag("user_profile_screen").assertIsDisplayed()
     }
 
     @Test

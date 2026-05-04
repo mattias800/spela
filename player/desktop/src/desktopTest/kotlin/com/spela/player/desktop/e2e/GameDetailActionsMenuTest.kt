@@ -37,7 +37,10 @@ class GameDetailActionsMenuTest {
         val harness = createLoggedInHarness()
 
         setContent { harness.App() }
-        navigateToGameDetail(harness, "1")
+        // Game id="6" (FF6) is > 16 MB so it follows the legacy
+        // Download-button path (#932 routes sub-threshold games to a
+        // silent instant-download Play button instead).
+        navigateToGameDetail(harness, "6")
 
         onNodeWithTag("game_detail_download_button").assertIsDisplayed()
     }

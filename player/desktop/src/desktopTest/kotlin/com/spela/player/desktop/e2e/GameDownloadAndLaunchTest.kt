@@ -20,10 +20,12 @@ class GameDownloadAndLaunchTest {
     fun downloadGameThenShowPlayButton() = runComposeUiTest {
         val harness = SpelaTestHarness(StandardTestDispatcher())
 
-        // Start at game detail for Castlevania (not cached)
+        // Start at game detail for FF6 (id="6", > 16 MB, not cached). This
+        // is the legacy Download-button path; sub-threshold games take the
+        // silent instant-download Play-button path instead (#932).
         harness.navigationViewModel.onIntent(NavigationIntent.NavigateTo(SpScreen.Home))
         harness.navigationViewModel.onIntent(
-            NavigationIntent.NavigateTo(SpScreen.GameDetail("1"))
+            NavigationIntent.NavigateTo(SpScreen.GameDetail("6"))
         )
 
         setContent { harness.App() }

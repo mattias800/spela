@@ -341,6 +341,24 @@ class FakeGameRepository : GameRepository {
             fileName = "supermetroid.sfc",
             scrapeAttempts = 1,
         ),
+        // 24 MB — above INSTANT_DOWNLOAD_THRESHOLD_BYTES (16 MB), so the
+        // GameDetail UI shows the legacy Download button rather than the
+        // silent-instant-download Play button (#932). Tests that need to
+        // exercise the download-then-play path navigate to this id.
+        Game(
+            id = "6",
+            title = "Final Fantasy VI",
+            consoleId = "snes",
+            consoleName = "SNES",
+            description = "An epic 16-bit RPG about an empire and a magical girl.",
+            developer = "Square",
+            publisher = "Square",
+            releaseDate = "1994",
+            genre = "RPG",
+            fileSize = 25_165_824,
+            fileName = "ff6.sfc",
+            scrapeAttempts = 1,
+        ),
     )
 
     override suspend fun getConsoles(): Result<List<Console>> {
