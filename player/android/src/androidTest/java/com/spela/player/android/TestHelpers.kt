@@ -5,6 +5,7 @@ import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.hasScrollToNodeAction
+import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
@@ -1276,27 +1277,50 @@ internal fun ComposeRule.addServerAndLogin(username: String, password: String) {
         isOnServerConnectionScreen()
     }
 
-    // UiAutomator has a multi-second delay before Compose elements appear in the
-    // accessibility tree. Use Compose APIs directly for all form interactions.
-    val device = uiDevice()
     val hasServer = try {
         onAllNodesWithText(SERVER_NAME, substring = true)
             .fetchSemanticsNodes().isNotEmpty()
     } catch (_: Exception) { false }
 
     if (!hasServer) {
-        // The form auto-opens via LaunchedEffect(servers, isLoading) AFTER
-        // LoadServers completes. LaunchedEffect is a coroutine — waitForIdle()
-        // returns before it fires. Need Thread.sleep to let the coroutine execute,
-        // trigger ToggleAddServer, and recompose with the form visible.
-        Thread.sleep(5_000)
+        // ServerConnectionScreen auto-opens the Add Server form via a
+        // LaunchedEffect when the server list loads empty. Coroutine timing
+        // can be flaky (especially on AYN Thor), so wait for either the
+        // form input OR the toggle button to appear, then click the toggle
+        // ourselves if the form didn't auto-open. Either way we end up
+        // with the form visible — no Thread.sleep needed.
+        pollUntil(timeoutMillis = TIMEOUT_LONG) {
+            inputOrToggleVisible()
+        }
+        if (!serverNameInputVisible()) {
+            onNodeWithTag(TestTags.SERVER_ADD_TOGGLE_BUTTON).performClick()
+            pollUntil(timeoutMillis = TIMEOUT_MEDIUM) { serverNameInputVisible() }
+        }
 
-        onNode(hasText("Server Name") and hasSetTextAction())
-            .performTextInput(SERVER_NAME)
-        onNode(hasText("Server URL") and hasSetTextAction())
-            .performTextInput(SERVER_URL)
-        onNode(hasText("Server URL") and hasSetTextAction())
-            .performImeAction()
+        // SpTextField wraps a real Android EditText via AndroidView (PR #847,
+        // landscape keyboard fix), so the input is invisible to Compose UI
+        // Test's hasSetTextAction matcher. Drive the EditTexts via UiAutomator
+        // instead — they're the only EditText widgets on this screen.
+        val device = uiDevice()
+        val nameField = device.findObject(
+            UiSelector().className("android.widget.EditText").instance(0),
+        )
+        check(nameField.waitForExists(TIMEOUT_MEDIUM)) {
+            "Server Name EditText never appeared on server-connection screen"
+        }
+        nameField.setText(SERVER_NAME)
+
+        val urlField = device.findObject(
+            UiSelector().className("android.widget.EditText").instance(1),
+        )
+        check(urlField.exists()) {
+            "Server URL EditText not found after typing server name"
+        }
+        urlField.setText(SERVER_URL)
+
+        // Tap the Connect button to submit (testTag is on the Compose
+        // wrapper around SpButton, which IS a real Compose node).
+        onNodeWithTag(TestTags.SERVER_CONNECT_BUTTON).performClick()
         Thread.sleep(2_000)
     }
 
@@ -1309,6 +1333,17 @@ internal fun ComposeRule.addServerAndLogin(username: String, password: String) {
     doLogin(username, password)
 }
 
+private fun ComposeRule.serverNameInputVisible(): Boolean = try {
+    onAllNodesWithTag(TestTags.SERVER_NAME_INPUT).fetchSemanticsNodes().isNotEmpty()
+} catch (_: Exception) { false }
+
+private fun ComposeRule.serverAddToggleVisible(): Boolean = try {
+    onAllNodesWithTag(TestTags.SERVER_ADD_TOGGLE_BUTTON).fetchSemanticsNodes().isNotEmpty()
+} catch (_: Exception) { false }
+
+private fun ComposeRule.inputOrToggleVisible(): Boolean =
+    serverNameInputVisible() || serverAddToggleVisible()
+
 private fun ComposeRule.doLogin(username: String, password: String) {
     val device = uiDevice()
 
@@ -1318,26 +1353,28 @@ private fun ComposeRule.doLogin(username: String, password: String) {
             device.findObject(UiSelector().textContains("Sign In")).exists()
     }
 
-    // Enter credentials with timing logs to diagnose idle blocking
+    // Login fields are SpTextField → PlatformTextFieldCore → AndroidView →
+    // real Android EditText (PR #847, landscape keyboard fix). Compose UI
+    // Test's hasSetTextAction can't see them, so drive via UiAutomator.
     var t = System.currentTimeMillis()
-    onNode(hasText("Username") and hasSetTextAction())
-        .performTextClearance()
-    android.util.Log.d("E2E_TIMING", "clearUsername: ${System.currentTimeMillis()-t}ms")
+    val usernameField = device.findObject(
+        UiSelector().className("android.widget.EditText").instance(0),
+    )
+    check(usernameField.waitForExists(TIMEOUT_MEDIUM)) {
+        "Username EditText never appeared on login screen"
+    }
+    usernameField.setText(username)
+    android.util.Log.d("E2E_TIMING", "setUsername: ${System.currentTimeMillis()-t}ms")
 
     t = System.currentTimeMillis()
-    onNode(hasText("Username") and hasSetTextAction())
-        .performTextInput(username)
-    android.util.Log.d("E2E_TIMING", "inputUsername: ${System.currentTimeMillis()-t}ms")
-
-    t = System.currentTimeMillis()
-    onNode(hasText("Password") and hasSetTextAction())
-        .performTextClearance()
-    android.util.Log.d("E2E_TIMING", "clearPassword: ${System.currentTimeMillis()-t}ms")
-
-    t = System.currentTimeMillis()
-    onNode(hasText("Password") and hasSetTextAction())
-        .performTextInput(password)
-    android.util.Log.d("E2E_TIMING", "inputPassword: ${System.currentTimeMillis()-t}ms")
+    val passwordField = device.findObject(
+        UiSelector().className("android.widget.EditText").instance(1),
+    )
+    check(passwordField.exists()) {
+        "Password EditText not found after typing username"
+    }
+    passwordField.setText(password)
+    android.util.Log.d("E2E_TIMING", "setPassword: ${System.currentTimeMillis()-t}ms")
 
     // Tap Sign In and wait for home. The server's first /api/auth/login
     // call after `docker compose up` can hit the OkHttp socket timeout
