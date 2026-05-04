@@ -1,16 +1,12 @@
 package com.spela.player.android
 
-import androidx.compose.ui.test.hasSetTextAction
-import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
-import androidx.compose.ui.test.performTextClearance
 import androidx.compose.ui.test.performScrollTo
-import androidx.compose.ui.test.performTextInput
 import com.spela.player.presentation.ui.TestTags
 import org.junit.Test
 
@@ -56,12 +52,10 @@ class CollectionsTest : BaseE2ETest() {
         rule.waitForIdle()
         rule.waitForText("Create Collection", timeout = 5_000)
 
-        rule.onNode(hasText("Name") and hasSetTextAction())
-            .performTextInput(name)
+        rule.typeIntoFieldByLabel("Name", name)
 
         if (description != null) {
-            rule.onNode(hasText("Description") and hasSetTextAction())
-                .performTextInput(description)
+            rule.typeIntoFieldByLabel("Description", description)
         }
 
         if (isPublic) {
@@ -254,10 +248,7 @@ class CollectionsTest : BaseE2ETest() {
         rule.waitForText("Edit Collection", timeout = 5_000)
 
         // Clear the name field and type the new name
-        rule.onNode(hasText("Name") and hasSetTextAction())
-            .performTextClearance()
-        rule.onNode(hasText("Name") and hasSetTextAction())
-            .performTextInput(editedName)
+        rule.typeIntoFieldByLabel("Name", editedName, clearFirst = true)
 
         // Save
         rule.onNodeWithText("Save").performClick()
