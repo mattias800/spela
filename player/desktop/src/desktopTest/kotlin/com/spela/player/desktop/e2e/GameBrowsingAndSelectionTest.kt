@@ -100,8 +100,11 @@ class GameBrowsingAndSelectionTest {
 
         setContent { harness.App() }
 
+        // Game id="6" (FF6) is > 16 MB so it follows the legacy
+        // Download-button path. Sub-threshold games trigger the silent
+        // instant-download flow (#932) and show the Play button instead.
         harness.navigationViewModel.onIntent(
-            NavigationIntent.NavigateTo(SpScreen.GameDetail("1"))
+            NavigationIntent.NavigateTo(SpScreen.GameDetail("6"))
         )
         advance(harness)
 
