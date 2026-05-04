@@ -48,7 +48,7 @@ Think of it as your own personal Steam for retro games.
 - **One library, every device** -- your games, saves, and progress sync across Android, Windows, macOS, and Linux
 - **Play in seconds** -- browse your collection with cover art, pick a game, and you're playing. No fiddling with cores or configs
 - **Self-hosted** -- your server, your data. Runs on a Raspberry Pi, a NAS, or a VPS. No cloud dependency
-- **Multiplayer** -- play with friends via real-time netplay or async turn-based relay sessions
+- **Multiplayer** -- play with friends online, live or by taking turns
 - **Beautiful** -- dark-themed UI designed for browsing large game libraries visually
 
 ## Features
@@ -72,9 +72,8 @@ Think of it as your own personal Steam for retro games.
 
 | Feature | Description |
 |---------|-------------|
-| **Real-Time Netplay** | Two-player online multiplayer with lockstep input sync. Share a 6-character invite code and play together |
-| **Relay Sessions** | Asynchronous turn-based multiplayer -- take turns playing and pass the save to your friend |
-| **Relay Invitations** | Invite friends to join relay sessions with turn management and timeout protection |
+| **Real-Time Netplay** | Play live with a friend over the internet. Share an invite code and you're in |
+| **Shared Sessions** | Take turns asynchronously -- pass the game to a friend and pick up where they left off |
 
 ### Social
 

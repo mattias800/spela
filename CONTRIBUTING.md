@@ -40,7 +40,7 @@ Use [conventional commits](https://www.conventionalcommits.org/):
 feat: add save state sharing
 fix: prevent crash on empty game library
 docs: update deployment guide
-test: add relay session E2E tests
+test: add shared session E2E tests
 refactor: extract metadata scraper interface
 chore: bump Go to 1.22
 ```
