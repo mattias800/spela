@@ -193,11 +193,16 @@ if [ -n "$PREV_A11Y" ] && [ "$PREV_A11Y" != "null" ]; then
 fi
 
 # ── Keep screen on during tests ──
-# The Gradle build can take 1-2 minutes. Without this, physical devices go back
-# to sleep before the test APK is installed, causing the Activity to pause immediately.
+# The Gradle build can take 1-2 minutes and the full suite can run 30+
+# minutes on AYN Thor. Use 2 hours so we never hit the timeout mid-run.
+# Also enable stay_on_while_plugged_in (bitmask 7 = AC|USB|WIRELESS) so
+# the screen stays on indefinitely while the device is on USB power —
+# defensive against any single test class running long.
 PREV_TIMEOUT=$(adb -s "$ADB_SERIAL" shell settings get system screen_off_timeout 2>/dev/null || echo "")
-adb -s "$ADB_SERIAL" shell settings put system screen_off_timeout 600000
-echo "Screen timeout set to 10 minutes for test duration."
+PREV_STAY_ON=$(adb -s "$ADB_SERIAL" shell settings get global stay_on_while_plugged_in 2>/dev/null || echo "")
+adb -s "$ADB_SERIAL" shell settings put system screen_off_timeout 7200000
+adb -s "$ADB_SERIAL" shell settings put global stay_on_while_plugged_in 7
+echo "Screen timeout set to 2 hours and stay-on-while-plugged-in enabled."
 adb -s "$ADB_SERIAL" shell input keyevent KEYCODE_WAKEUP
 
 # ── Preferred launch display ──
@@ -253,6 +258,10 @@ cleanup_after_tests() {
   if [ -n "$PREV_TIMEOUT" ] && [ "$PREV_TIMEOUT" != "null" ]; then
     adb -s "$ADB_SERIAL" shell settings put system screen_off_timeout "$PREV_TIMEOUT" 2>/dev/null || true
     echo "Screen timeout restored to ${PREV_TIMEOUT}ms."
+  fi
+  if [ -n "$PREV_STAY_ON" ] && [ "$PREV_STAY_ON" != "null" ]; then
+    adb -s "$ADB_SERIAL" shell settings put global stay_on_while_plugged_in "$PREV_STAY_ON" 2>/dev/null || true
+    echo "stay_on_while_plugged_in restored to ${PREV_STAY_ON}."
   fi
   if [ -n "$PREV_A11Y" ] && [ "$PREV_A11Y" != "null" ]; then
     adb -s "$ADB_SERIAL" shell "settings put secure enabled_accessibility_services '$PREV_A11Y'" 2>/dev/null || true

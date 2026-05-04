@@ -1,12 +1,9 @@
 package com.spela.player.android
 
-import androidx.compose.ui.test.hasSetTextAction
-import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
-import androidx.compose.ui.test.performTextInput
 import org.junit.Test
 
 class SessionTest : BaseE2ETest() {
@@ -91,11 +88,9 @@ class SessionTest : BaseE2ETest() {
         // Login (tests landscape scrollability)
         rule.waitForText("Username", timeout = 15_000)
 
-        rule.onNode(hasText("Username") and hasSetTextAction())
-            .performTextInput("player")
+        rule.typeIntoFieldByLabel("Username", "player")
 
-        rule.onNode(hasText("Password") and hasSetTextAction())
-            .performTextInput("player123")
+        rule.typeIntoFieldByLabel("Password", "player123")
 
         rule.onNodeWithText("Sign In").performScrollTo()
         rule.onNodeWithText("Sign In").performClick()

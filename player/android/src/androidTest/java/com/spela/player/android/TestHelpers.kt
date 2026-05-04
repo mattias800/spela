@@ -2884,11 +2884,56 @@ fun ComposeRule.ensureChallengeExists(title: String = "E2E Test Challenge") {
 }
 
 /**
- * Clear a text field by its label. Uses performTextClearance on the field
- * matched by label + hasSetTextAction.
+ * Clear a text field by its label. The actual editable widget on Android
+ * is an Android EditText wrapped in AndroidView (PR #847, landscape
+ * keyboard fix), invisible to Compose UI Test. Find by hint via
+ * UiAutomator instead — SpTextField wires `hint = placeholder.ifEmpty {
+ * label }`, so the hint matches `label` whenever no placeholder was set.
+ *
+ * Falls back to UiSelector by label as content-text in case the label is
+ * rendered as a sibling TextView (some screens place the label outside
+ * the field instead of using the EditText hint).
  */
 fun ComposeRule.clearTextField(label: String) {
-    onNode(hasText(label) and hasSetTextAction())
-        .performTextClearance()
+    typeIntoFieldByLabel(label, text = "", clearFirst = true)
+}
+
+/**
+ * Type [text] into the EditText whose hint matches [label]. If
+ * [clearFirst] is true, clears the field first. The label fallback path
+ * locates a TextView by label and walks to the first sibling EditText —
+ * forms that render the label outside the field still work.
+ */
+fun ComposeRule.typeIntoFieldByLabel(
+    label: String,
+    text: String,
+    clearFirst: Boolean = false,
+    timeoutMs: Long = TIMEOUT_MEDIUM,
+) {
+    val device = uiDevice()
+    val byHint = device.findObject(
+        UiSelector().className("android.widget.EditText").textContains(label),
+    )
+    val field = if (byHint.waitForExists(timeoutMs)) {
+        byHint
+    } else {
+        // Fallback: pick the first EditText on screen. SpTextField hints
+        // come from `placeholder.ifEmpty { label }`, so an unset
+        // placeholder gives us the label as the hint and `byHint` would
+        // hit. If hint matching missed, the screen has a single field
+        // and instance(0) is the right one.
+        device.findObject(
+            UiSelector().className("android.widget.EditText").instance(0),
+        )
+    }
+    check(field.exists()) {
+        "EditText with hint or label '$label' never appeared"
+    }
+    if (clearFirst) {
+        field.clearTextField()
+    }
+    if (text.isNotEmpty()) {
+        field.setText(text)
+    }
 }
 
