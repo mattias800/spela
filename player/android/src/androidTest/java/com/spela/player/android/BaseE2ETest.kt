@@ -4,6 +4,7 @@ import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.spela.player.presentation.ui.TestTags
 import org.junit.After
+import org.junit.Assume
 import org.junit.Before
 import org.junit.Rule
 import org.junit.runner.RunWith
@@ -47,6 +48,18 @@ abstract class BaseE2ETest {
 
     @Before
     open fun baseSetUp() {
+        // 0. Skip if the test is tagged as physical-device-only and we're
+        //    on the AVD. Marking the test SKIPPED via assumeFalse is the
+        //    canonical JUnit way; gradle reports it as ASSUMPTION FAILED,
+        //    not as a test failure. See RequiresPhysicalDevice.
+        val annotation = this::class.java.getAnnotation(RequiresPhysicalDevice::class.java)
+        if (annotation != null) {
+            Assume.assumeFalse(
+                "Skipping on emulator (@RequiresPhysicalDevice): ${annotation.reason}",
+                isEmulator,
+            )
+        }
+
         // 1. Reset backend to seed state. Hard-fails loudly if the
         //    endpoint is unreachable — this is load-bearing.
         resetServerState()

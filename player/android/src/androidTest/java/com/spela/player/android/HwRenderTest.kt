@@ -23,6 +23,7 @@ import org.junit.runners.MethodSorters
  * Alphabetical ordering ensures the multi-session test runs first (fresh state).
  */
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
+@RequiresPhysicalDevice(reason = "Exercises N64 + Angrylion HW renderer; emulator GPU + dlopen lifecycle aren't representative")
 class HwRenderTest : BaseE2ETest() {
 
     // N64 core shutdown is slower than NES: auto-save serialization +

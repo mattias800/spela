@@ -15,6 +15,7 @@ import org.junit.Test
  * Prerequisites:
  * - Server running with seeded data (player/player123 user, Castlevania game)
  */
+@RequiresPhysicalDevice(reason = "Requires completed challenge attempts to populate the leaderboard; gameplay-bound")
 class ChallengeLeaderboardTest : BaseE2ETest() {
 
     // ── US-6 AC: Leaderboard visible on challenge detail ──

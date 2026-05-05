@@ -51,7 +51,7 @@ typealias ComposeRule = AndroidComposeTestRule<ActivityScenarioRule<MainActivity
 // emulators. Used to scale timeouts — the emulator runs Compose at
 // wall-clock pace, so recomposition / first-frame / Coil image load is
 // ~2-3x slower than on a physical device.
-private val isEmulator: Boolean =
+internal val isEmulator: Boolean =
     android.os.Build.PRODUCT?.contains("sdk") == true ||
         android.os.Build.PRODUCT?.contains("emulator") == true ||
         android.os.Build.FINGERPRINT?.contains("generic") == true

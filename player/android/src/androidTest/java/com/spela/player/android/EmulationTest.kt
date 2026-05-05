@@ -5,6 +5,7 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import org.junit.Test
 
+@RequiresPhysicalDevice(reason = "Pure libretro emulation lifecycle suite — boots NES games and asserts on render/save/exit timing")
 class EmulationTest : BaseE2ETest() {
 
     private fun setupGame() {

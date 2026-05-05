@@ -1,0 +1,127 @@
+name: Android E2E
+
+# Runs the Android instrumented suite on a GitHub-hosted Linux runner via
+# an x86_64 Android emulator. Tagged @RequiresPhysicalDevice tests are
+# auto-skipped (BaseE2ETest does the assumeFalse).
+#
+# Public repos get unlimited Linux runner minutes and the runner has KVM
+# enabled, so the AVD boots hardware-accelerated. Total wall-clock is
+# typically ~25-35min per run.
+#
+# Security: this workflow doesn't interpolate any github.event.* or
+# github.head_ref inputs into shell commands — those are the standard
+# workflow-injection vectors. The only ${{ github.ref }} use is in
+# concurrency.group / cache-read-only, both safe contexts (not eval'd
+# as shell).
+
+on:
+  push:
+    branches: [master]
+    paths-ignore:
+      - '**.md'
+      - 'LICENSE'
+      - '.plans/**'
+      - 'design-proposals/**'
+  pull_request:
+    branches: [master]
+    paths-ignore:
+      - '**.md'
+      - 'LICENSE'
+      - '.plans/**'
+      - 'design-proposals/**'
+
+# Cancel any in-progress run for the same branch when a new push lands —
+# the suite is long enough that running stale commits wastes minutes.
+concurrency:
+  group: android-e2e-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  android-e2e:
+    name: Android E2E (emulator)
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v3
+        with:
+          cache-read-only: ${{ github.ref != 'refs/heads/master' }}
+
+      # KVM lets the x86_64 emulator boot hardware-accelerated. The
+      # Ubuntu runner has /dev/kvm available but root-owned by default;
+      # add a udev rule so the runner user can access it.
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' \
+            | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      # Start the e2e backend BEFORE the emulator step so the long-
+      # running emulator-runner action can run the test script directly
+      # against a healthy backend on `localhost:8080`.
+      - name: Start backend (docker compose)
+        run: docker compose -f docker-compose.e2e.yml up -d --build --wait
+
+      # AVD cache: the system image + AVD snapshot are ~5GB; caching
+      # them shaves 3-5min per run. The reactivecircus action handles
+      # creation if missing.
+      - name: AVD cache
+        uses: actions/cache@v4
+        id: avd-cache
+        with:
+          path: |
+            ~/.android/avd/*
+            ~/.android/adb*
+          key: avd-api35-x86_64
+
+      - name: Create AVD snapshot (cache miss)
+        if: steps.avd-cache.outputs.cache-hit != 'true'
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          arch: x86_64
+          target: google_apis
+          force-avd-creation: false
+          emulator-options: -no-window -no-snapshot-save -no-boot-anim -gpu swiftshader_indirect -noaudio
+          disable-animations: true
+          script: echo "AVD snapshot generated."
+
+      - name: Run Android E2E
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          arch: x86_64
+          target: google_apis
+          force-avd-creation: false
+          emulator-options: -no-window -no-snapshot-save -no-boot-anim -gpu swiftshader_indirect -noaudio
+          disable-animations: true
+          script: |
+            adb shell wm density 280
+            cd player && ./run-e2e.sh --emulator --skip-reset
+
+      - name: Upload failure artifacts
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-e2e-failures
+          path: player/build/test-failures/
+          if-no-files-found: ignore
+          retention-days: 14
+
+      - name: Backend logs on failure
+        if: failure()
+        run: |
+          echo "── docker compose ps ──"
+          docker compose -f docker-compose.e2e.yml ps || true
+          echo "── spela-server logs (last 200 lines) ──"
+          docker compose -f docker-compose.e2e.yml logs --tail=200 server || true

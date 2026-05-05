@@ -21,6 +21,7 @@ import org.junit.Test
  * detected. On a non-gamepad emulator (the recommended setup per
  * docs/e2e-testing.md), all tests run.
  */
+@RequiresPhysicalDevice(reason = "Touch controls overlay requires libretro game running with on-screen D-pad rendered; the emulator's UiAutomator missed the D-pad nodes")
 class TouchControlsTest : BaseE2ETest() {
 
     @Before

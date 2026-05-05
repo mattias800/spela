@@ -16,6 +16,7 @@ import org.junit.Test
  * Prerequisites:
  * - Server running with seeded data (player/player123 user, Castlevania game)
  */
+@RequiresPhysicalDevice(reason = "ensureChallengeExists launches a game in-overlay to seed the challenge — gameplay path doesn't reach 'Game running' on emulator")
 class ChallengeBrowsingTest : BaseE2ETest() {
 
     // ── US-3 AC: Challenges section on game detail screen ──

@@ -16,6 +16,7 @@ import org.junit.Test
  *
  * Also serves as regression checks for existing features that challenges touch.
  */
+@RequiresPhysicalDevice(reason = "End-to-end challenge creation + completion + activity feed; multi-step gameplay")
 class ChallengeIntegrationTest : BaseE2ETest() {
 
     // ── Activity feed: challenge_completed event ──
