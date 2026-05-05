@@ -103,8 +103,17 @@ else
 fi
 
 echo "── Ensuring backend is up (docker compose up -d --build --wait) ──"
-docker compose -f "$E2E_COMPOSE" up -d --build --wait
-echo "Backend up and healthy."
+# If the backend is already up and healthy (CI brought it up in a
+# previous step, or a local dev is iterating), skip the rebuild +
+# recreate. Recreating against an already-running container races on
+# port 8080 — the new container fails to bind, the old one persists,
+# the script proceeds against an unstable backend.
+if curl -fs --max-time 2 http://localhost:8080/api/health >/dev/null 2>&1; then
+  echo "Backend already healthy — skipping up to avoid port-race on container recreate."
+else
+  docker compose -f "$E2E_COMPOSE" up -d --build --wait
+  echo "Backend up and healthy."
+fi
 
 # ── Wait for the seed scan to finish ──
 # `docker compose --wait` only checks the /api/health endpoint. The
