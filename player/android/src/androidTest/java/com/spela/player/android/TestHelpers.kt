@@ -1342,14 +1342,22 @@ internal fun ComposeRule.addServerAndLogin(username: String, password: String) {
         }
         nameField.setText(SERVER_NAME)
 
+        // Dismiss the soft keyboard before looking for the URL field.
+        // On the GitHub Actions x86_64 AVD the on-screen keyboard covers
+        // the URL row; the form is in a LazyColumn that doesn't compose
+        // off-screen items, so UiAutomator never sees the second
+        // EditText until the keyboard goes away. KEYCODE_BACK hides the
+        // IME by default on Android 13+ and doesn't propagate to the
+        // activity (no risk of navigating away).
+        if (device.findObject(UiSelector().packageName("com.google.android.inputmethod.latin")).exists() ||
+            isEmulator) {
+            device.pressBack()
+            Thread.sleep(300)
+        }
+
         val urlField = device.findObject(
             UiSelector().className("android.widget.EditText").instance(1),
         )
-        // waitForExists, not exists — on the GitHub Actions AVD the
-        // accessibility tree hasn't always re-settled by the time we
-        // probe for the second field after typing into the first
-        // (keyboard recompose, focus advancement). Local AYN Thor +
-        // local AVD don't show this race; CI does.
         check(urlField.waitForExists(TIMEOUT_MEDIUM)) {
             "Server URL EditText never appeared after typing server name"
         }
@@ -1403,12 +1411,18 @@ private fun ComposeRule.doLogin(username: String, password: String) {
     usernameField.setText(username)
     android.util.Log.d("E2E_TIMING", "setUsername: ${System.currentTimeMillis()-t}ms")
 
+    // Hide the soft keyboard so the password field below isn't off-
+    // screen (and thus dropped from the LazyColumn / accessibility
+    // tree). Same pattern as addServerAndLogin — emulator-only.
+    if (isEmulator) {
+        device.pressBack()
+        Thread.sleep(300)
+    }
+
     t = System.currentTimeMillis()
     val passwordField = device.findObject(
         UiSelector().className("android.widget.EditText").instance(1),
     )
-    // waitForExists, not exists — same accessibility-tree race as the
-    // server-URL field in addServerAndLogin. CI emulators show it.
     check(passwordField.waitForExists(TIMEOUT_MEDIUM)) {
         "Password EditText never appeared after typing username"
     }
