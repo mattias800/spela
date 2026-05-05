@@ -46,10 +46,25 @@ typealias ComposeRule = AndroidComposeTestRule<ActivityScenarioRule<MainActivity
 // still schedules Choreographer callbacks for recomposition/layout, keeping the
 // main looper non-idle briefly. A 1-second timeout lets these one-shot operations
 // complete while preventing long hangs from any remaining continuous activity.
+// Emulator detection: Build.PRODUCT looks like "sdk_gphone64_arm64" on
+// the AVD and "thor" on the AYN Thor; FINGERPRINT contains "generic" on
+// emulators. Used to scale timeouts — the emulator runs Compose at
+// wall-clock pace, so recomposition / first-frame / Coil image load is
+// ~2-3x slower than on a physical device.
+private val isEmulator: Boolean =
+    android.os.Build.PRODUCT?.contains("sdk") == true ||
+        android.os.Build.PRODUCT?.contains("emulator") == true ||
+        android.os.Build.FINGERPRINT?.contains("generic") == true
+
+private val timeoutMultiplier: Long = if (isEmulator) 3L else 1L
+
 private val testConfigured = run {
-    // 3s gives Coil AsyncImage loading time to settle (console icons, cover art)
-    IdlingPolicies.setMasterPolicyTimeout(3, TimeUnit.SECONDS)
-    IdlingPolicies.setIdlingResourceTimeout(3, TimeUnit.SECONDS)
+    // 3s on physical, 9s on emulator: Coil AsyncImage settle time scales
+    // with frame budget; emulator runs Compose at wall-clock pace, so
+    // recomposition + image load can take 2-3x longer than on the AYN Thor.
+    val idleSeconds = if (isEmulator) 9L else 3L
+    IdlingPolicies.setMasterPolicyTimeout(idleSeconds, TimeUnit.SECONDS)
+    IdlingPolicies.setIdlingResourceTimeout(idleSeconds, TimeUnit.SECONDS)
     MainActivity.isTestMode = true
     true
 }
@@ -151,10 +166,18 @@ internal const val PLAYER_PASSWORD = "player123"
 private const val ADMIN_USERNAME = "admin"
 private const val ADMIN_PASSWORD = "admin123"
 
+// Timeouts are physical-device baselines. The wait helpers (waitForText
+// etc.) apply timeoutMultiplier internally, so a `timeout = 15_000`
+// passed in a test becomes 45_000 on the emulator. This keeps callers
+// honest about the wait length they expect on real hardware while
+// auto-scaling for the slower frame budget on the AVD.
 private const val TIMEOUT_SHORT = 5_000L
 private const val TIMEOUT_MEDIUM = 10_000L
 private const val TIMEOUT_LONG = 15_000L
 private const val TIMEOUT_EXTRA_LONG = 30_000L
+
+/** Apply the per-environment timeout multiplier (3x on emulator, 1x on physical). */
+private fun Long.scaledTimeout(): Long = this * timeoutMultiplier
 
 /** Tracks challenges created in this JVM process to skip expensive re-creation. */
 private val challengesCreated = mutableSetOf<String>()
@@ -263,7 +286,8 @@ private fun uiDevice(): UiDevice =
  * idle synchronization. Uses Thread.sleep polling.
  */
 fun ComposeRule.pollUntil(timeoutMillis: Long = 1000L, condition: () -> Boolean) {
-    val deadline = System.currentTimeMillis() + timeoutMillis
+    val scaled = timeoutMillis.scaledTimeout()
+    val deadline = System.currentTimeMillis() + scaled
     var lastException: Throwable? = null
     while (System.currentTimeMillis() < deadline) {
         try {
@@ -275,7 +299,7 @@ fun ComposeRule.pollUntil(timeoutMillis: Long = 1000L, condition: () -> Boolean)
     }
     throw androidx.compose.ui.test.ComposeTimeoutException(
         buildString {
-            append("Condition still not satisfied after ${timeoutMillis}ms.\n")
+            append("Condition still not satisfied after ${scaled}ms.\n")
             append(lastObservedSnapshot())
             if (lastException != null) {
                 append("\nLast condition exception: ")
@@ -353,7 +377,7 @@ private fun collectAllNodes(
 
 fun ComposeRule.waitForCoreIdle(timeout: Long = 10_000) {
     val device = uiDevice()
-    val deadline = System.currentTimeMillis() + timeout
+    val deadline = System.currentTimeMillis() + timeout.scaledTimeout()
     while (System.currentTimeMillis() < deadline) {
         // UiAutomator path
         if (device.findObject(UiSelector().descriptionContains("Core idle")).exists()) return
@@ -372,7 +396,7 @@ fun ComposeRule.waitForCoreIdle(timeout: Long = 10_000) {
 fun ComposeRule.waitForText(text: String, timeout: Long = TIMEOUT_MEDIUM) {
     // With isTestMode=true (animations disabled), Compose APIs are fast (~700ms).
     // Use Compose semantic tree (reliable) with UiAutomator fallback.
-    val deadline = System.currentTimeMillis() + timeout
+    val deadline = System.currentTimeMillis() + timeout.scaledTimeout()
     while (System.currentTimeMillis() < deadline) {
         // Fast: UiAutomator check
         if (uiDevice().findObject(UiSelector().textContains(text)).exists()) return
@@ -387,7 +411,7 @@ fun ComposeRule.waitForText(text: String, timeout: Long = TIMEOUT_MEDIUM) {
 }
 
 fun ComposeRule.waitForContentDescription(desc: String, timeout: Long = TIMEOUT_MEDIUM) {
-    val deadline = System.currentTimeMillis() + timeout
+    val deadline = System.currentTimeMillis() + timeout.scaledTimeout()
     while (System.currentTimeMillis() < deadline) {
         if (uiDevice().findObject(UiSelector().descriptionContains(desc)).exists()) return
         try {
@@ -415,7 +439,7 @@ fun ComposeRule.waitForContentDescription(desc: String, timeout: Long = TIMEOUT_
  */
 fun ComposeRule.waitForGameRunning(timeout: Long = TIMEOUT_LONG) {
     val device = uiDevice()
-    val deadline = System.currentTimeMillis() + timeout
+    val deadline = System.currentTimeMillis() + timeout.scaledTimeout()
     var iter = 0
     while (System.currentTimeMillis() < deadline) {
         iter++
@@ -447,10 +471,11 @@ fun ComposeRule.waitForGameRunning(timeout: Long = TIMEOUT_LONG) {
 }
 
 fun ComposeRule.waitForTextNotVisible(text: String, timeout: Long = TIMEOUT_SHORT) {
+    val scaled = timeout.scaledTimeout()
     val obj = uiDevice().findObject(UiSelector().textContains(text))
     if (obj.exists()) {
-        check(obj.waitUntilGone(timeout)) {
-            "waitForTextNotVisible('$text'): still visible after ${timeout}ms"
+        check(obj.waitUntilGone(scaled)) {
+            "waitForTextNotVisible('$text'): still visible after ${scaled}ms"
         }
     }
 }
@@ -631,7 +656,8 @@ internal fun ComposeRule.isOnHomeScreen(): Boolean {
  * "Core idle") that UiAutomator can't see in the accessibility tree. */
 fun ComposeRule.waitForVisible(label: String, timeout: Long = TIMEOUT_MEDIUM) {
     val device = uiDevice()
-    val deadline = System.currentTimeMillis() + timeout
+    val scaled = timeout.scaledTimeout()
+    val deadline = System.currentTimeMillis() + scaled
     while (System.currentTimeMillis() < deadline) {
         // Fast: UiAutomator (no Espresso idle dependency)
         if (device.findObject(UiSelector().textContains(label)).exists() ||
@@ -648,14 +674,14 @@ fun ComposeRule.waitForVisible(label: String, timeout: Long = TIMEOUT_MEDIUM) {
         Thread.sleep(100)
     }
     throw androidx.compose.ui.test.ComposeTimeoutException(
-        "waitForVisible('$label'): not found within $timeout ms"
+        "waitForVisible('$label'): not found within $scaled ms"
     )
 }
 
 /** Wait until label is NOT visible in either text or content description (UiAutomator). */
 fun ComposeRule.waitForNotVisible(label: String, timeout: Long = TIMEOUT_SHORT) {
     val device = uiDevice()
-    val deadline = System.currentTimeMillis() + timeout
+    val deadline = System.currentTimeMillis() + timeout.scaledTimeout()
     while (System.currentTimeMillis() < deadline) {
         val hasText = device.findObject(UiSelector().textContains(label)).exists()
         val hasDesc = device.findObject(UiSelector().descriptionContains(label)).exists()
@@ -744,7 +770,7 @@ fun ComposeRule.tapOnTag(tag: String, fallbackLabel: String? = null) {
  * [tapOnTag].
  */
 fun ComposeRule.waitForTag(tag: String, timeout: Long = TIMEOUT_MEDIUM) {
-    pollUntil(timeoutMillis = timeout) {
+    pollUntil(timeoutMillis = timeout.scaledTimeout()) {
         onAllNodesWithTag(tag, useUnmergedTree = true)
             .fetchSemanticsNodes().isNotEmpty()
     }
@@ -2837,8 +2863,11 @@ fun ComposeRule.createChallengeFromOverlay(title: String = "E2E Test Challenge")
 
     // Game resumes after the success toast auto-dismisses (~2s delay
     // in InGameOverlay) plus another frame for emulation to restart.
-    // The 1dp "Game running" semantic marker is the canonical signal.
-    waitForVisible("Game running", timeout = 10_000)
+    // Use waitForGameRunning rather than a bare waitForVisible — it has
+    // a logcat-based fallback for "libretroController.start() returned",
+    // which is more reliable on a slow emulator where the 1dp Compose
+    // marker may flicker faster than the test polls.
+    waitForGameRunning()
 }
 
 /**
