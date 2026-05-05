@@ -1344,24 +1344,48 @@ internal fun ComposeRule.addServerAndLogin(username: String, password: String) {
 
         // Dismiss the soft keyboard before looking for the URL field.
         // On the GitHub Actions x86_64 AVD the on-screen keyboard covers
-        // the URL row; the form is in a LazyColumn that doesn't compose
-        // off-screen items, so UiAutomator never sees the second
-        // EditText until the keyboard goes away. KEYCODE_BACK hides the
-        // IME by default on Android 13+ and doesn't propagate to the
-        // activity (no risk of navigating away).
-        if (device.findObject(UiSelector().packageName("com.google.android.inputmethod.latin")).exists() ||
-            isEmulator) {
+        // the URL row, the LazyColumn doesn't compose off-screen items,
+        // and UiAutomator can't see the second EditText.
+        if (isEmulator) {
             device.pressBack()
             Thread.sleep(300)
         }
 
+        // Find the URL field by HINT, not by .instance(1). On the AVD an
+        // autofill suggestion strip can introduce a phantom EditText
+        // that takes index 1, OR the URL row is still off-screen even
+        // after the keyboard hides. UiSelector doesn't have hint(), so
+        // use By.hint() — that matches AccessibilityNodeInfo.getHintText
+        // (API 26+). The hint comes from PlatformTextFieldCore.android
+        // setting `hint = placeholder.ifEmpty { label }`, so the URL
+        // field's hint is "https://spela.example.com".
         val urlField = device.findObject(
             UiSelector().className("android.widget.EditText").instance(1),
         )
-        check(urlField.waitForExists(TIMEOUT_MEDIUM)) {
-            "Server URL EditText never appeared after typing server name"
+        if (!urlField.waitForExists(TIMEOUT_MEDIUM)) {
+            // Diagnostic dump so the next CI failure tells us the actual
+            // hierarchy, not just "didn't find it".
+            try {
+                val dumpFile = java.io.File("/sdcard/server-connect-fail.xml")
+                device.dumpWindowHierarchy(dumpFile)
+                android.util.Log.e(
+                    "E2E_SETUP",
+                    "URL field probe failed; UI dump at ${dumpFile.absolutePath}",
+                )
+            } catch (_: Throwable) {}
+
+            // Fallback: find by hint via By.hint (UiAutomator2 API).
+            val byHint = device.findObjects(
+                androidx.test.uiautomator.By.hint("spela.example.com"),
+            )
+            check(byHint.isNotEmpty()) {
+                "Server URL EditText not found by hint either — " +
+                    "form layout has changed or AVD has zero EditTexts visible"
+            }
+            byHint[0].setText(SERVER_URL)
+        } else {
+            urlField.setText(SERVER_URL)
         }
-        urlField.setText(SERVER_URL)
 
         // Tap the Connect button to submit (testTag is on the Compose
         // wrapper around SpButton, which IS a real Compose node).
