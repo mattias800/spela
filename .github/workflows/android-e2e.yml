@@ -106,21 +106,25 @@ jobs:
           emulator-options: -no-window -no-snapshot-save -no-boot-anim -gpu swiftshader_indirect -noaudio
           disable-animations: true
           script: |
+            # The reactivecircus action's `script:` runs from its own
+            # working directory, NOT the repo checkout root. cd-ing to
+            # `player` from there resolved to the wrong path; the bare
+            # `./run-e2e.sh` then matched the repo-root web E2E script
+            # instead of the player Android one. Use $GITHUB_WORKSPACE
+            # to anchor explicitly.
             adb shell wm density 280
-            cd player
+            cd "$GITHUB_WORKSPACE/player"
             # Capture exit code via || so the diagnostic pull below runs
-            # even when ./run-e2e.sh exits non-zero (which is the case
-            # we actually care about).
+            # even when ./run-e2e.sh exits non-zero.
             TEST_EXIT=0
             ./run-e2e.sh --emulator --skip-reset || TEST_EXIT=$?
             # Pull diagnostic dumps off the device BEFORE the action
-            # tears down the emulator (post-step). The helper writes a
-            # UI-tree dump to /sdcard/server-connect-fail.xml when the
-            # URL-field probe misses; without this pull it dies with
-            # the AVD.
-            mkdir -p ../diag
-            adb pull /sdcard/server-connect-fail.xml ../diag/ 2>/dev/null || true
-            adb pull /sdcard/spela-test-failures ../diag/ 2>/dev/null || true
+            # tears down the emulator. The helper writes a UI-tree dump
+            # to /sdcard/server-connect-fail.xml when the URL-field
+            # probe misses; without this pull it dies with the AVD.
+            mkdir -p "$GITHUB_WORKSPACE/diag"
+            adb pull /sdcard/server-connect-fail.xml "$GITHUB_WORKSPACE/diag/" 2>/dev/null || true
+            adb pull /sdcard/spela-test-failures "$GITHUB_WORKSPACE/diag/" 2>/dev/null || true
             exit "$TEST_EXIT"
 
       - name: Upload failure artifacts
