@@ -1345,8 +1345,13 @@ internal fun ComposeRule.addServerAndLogin(username: String, password: String) {
         val urlField = device.findObject(
             UiSelector().className("android.widget.EditText").instance(1),
         )
-        check(urlField.exists()) {
-            "Server URL EditText not found after typing server name"
+        // waitForExists, not exists — on the GitHub Actions AVD the
+        // accessibility tree hasn't always re-settled by the time we
+        // probe for the second field after typing into the first
+        // (keyboard recompose, focus advancement). Local AYN Thor +
+        // local AVD don't show this race; CI does.
+        check(urlField.waitForExists(TIMEOUT_MEDIUM)) {
+            "Server URL EditText never appeared after typing server name"
         }
         urlField.setText(SERVER_URL)
 
@@ -1402,8 +1407,10 @@ private fun ComposeRule.doLogin(username: String, password: String) {
     val passwordField = device.findObject(
         UiSelector().className("android.widget.EditText").instance(1),
     )
-    check(passwordField.exists()) {
-        "Password EditText not found after typing username"
+    // waitForExists, not exists — same accessibility-tree race as the
+    // server-URL field in addServerAndLogin. CI emulators show it.
+    check(passwordField.waitForExists(TIMEOUT_MEDIUM)) {
+        "Password EditText never appeared after typing username"
     }
     passwordField.setText(password)
     android.util.Log.d("E2E_TIMING", "setPassword: ${System.currentTimeMillis()-t}ms")
