@@ -6,12 +6,30 @@ REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 E2E_COMPOSE="$REPO_ROOT/docker-compose.e2e.yml"
 ENV_FILE="$SCRIPT_DIR/.env"
 
-if [ ! -f "$ENV_FILE" ]; then
-  echo "Error: $ENV_FILE not found. Create it with ADB_SERIAL and DEVICE_PIN."
-  exit 1
-fi
+# Detect --emulator early so we know whether .env is required. On the
+# emulator path ADB_SERIAL is overridden to the running emulator and
+# DEVICE_PIN is cleared, so the .env file isn't needed at all — that's
+# the path GitHub Actions takes (no .env in the runner workspace).
+USE_EMULATOR=false
+for arg in "$@"; do
+  case "$arg" in
+    --emulator) USE_EMULATOR=true ;;
+  esac
+done
 
-source "$ENV_FILE"
+if [ ! -f "$ENV_FILE" ]; then
+  if [ "$USE_EMULATOR" = false ]; then
+    echo "Error: $ENV_FILE not found. Create it with ADB_SERIAL and DEVICE_PIN."
+    echo "(Or pass --emulator to target a running emulator instead.)"
+    exit 1
+  fi
+  # Emulator path with no .env — set safe defaults; the --emulator
+  # branch below overrides ADB_SERIAL and clears DEVICE_PIN anyway.
+  ADB_SERIAL=""
+  DEVICE_PIN=""
+else
+  source "$ENV_FILE"
+fi
 
 # Also pull in the repo-root .env if present — that's where SPELA_IGDB_*
 # credentials live (docker-compose reads it automatically; the bash
@@ -38,12 +56,14 @@ fi
 # instead of the AYN Thor — single-display, no Screen-2 routing, safer
 # for daily-driver hardware. See docs/e2e-testing.md for the AVD setup.
 RESET_BACKEND=true
-USE_EMULATOR=false
+# USE_EMULATOR was parsed up top (before the .env requirement check) so
+# we don't fail on missing .env in the emulator/CI path. Re-parse here
+# only to strip the flag from POSITIONAL_ARGS and pick up --skip-reset.
 ARGS=()
 for arg in "$@"; do
   case "$arg" in
     --skip-reset) RESET_BACKEND=false ;;
-    --emulator) USE_EMULATOR=true ;;
+    --emulator) ;; # already parsed; consume so it doesn't reach gradle
     *) ARGS+=("$arg") ;;
   esac
 done
