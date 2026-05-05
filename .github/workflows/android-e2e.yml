@@ -107,14 +107,30 @@ jobs:
           disable-animations: true
           script: |
             adb shell wm density 280
-            cd player && ./run-e2e.sh --emulator --skip-reset
+            cd player
+            # Capture exit code via || so the diagnostic pull below runs
+            # even when ./run-e2e.sh exits non-zero (which is the case
+            # we actually care about).
+            TEST_EXIT=0
+            ./run-e2e.sh --emulator --skip-reset || TEST_EXIT=$?
+            # Pull diagnostic dumps off the device BEFORE the action
+            # tears down the emulator (post-step). The helper writes a
+            # UI-tree dump to /sdcard/server-connect-fail.xml when the
+            # URL-field probe misses; without this pull it dies with
+            # the AVD.
+            mkdir -p ../diag
+            adb pull /sdcard/server-connect-fail.xml ../diag/ 2>/dev/null || true
+            adb pull /sdcard/spela-test-failures ../diag/ 2>/dev/null || true
+            exit "$TEST_EXIT"
 
       - name: Upload failure artifacts
         if: failure()
         uses: actions/upload-artifact@v4
         with:
           name: android-e2e-failures
-          path: player/build/test-failures/
+          path: |
+            player/build/test-failures/
+            diag/
           if-no-files-found: ignore
           retention-days: 14
 
