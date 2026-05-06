@@ -1508,16 +1508,28 @@ fun ComposeRule.navigateToAnyNesGame(): String {
     // ConsoleScreen renders "Top Rated" only if state.topRatedGames
     // is non-empty (a small library has none), and "All Games" only
     // when game count ≤ 15. Don't anchor on a section header — wait
-    // for the game's own title text to render, then tap it.
+    // for the game's own title text to render.
     waitForText(title, TIMEOUT_LONG)
-    val gameNode = device.findObject(UiSelector().textContains(title))
-    check(gameNode.exists()) { "Game '$title' was visible in waitForText but not findable by UiAutomator" }
-    gameNode.click()
+
+    // Click via Compose semantics, NOT UiAutomator on the text node:
+    // the SpGridGameCard's title is a non-clickable Text inside a
+    // clickable card. UiAutomator's `findObject(text).click()` dispatches
+    // a synthetic touch at the text's bounds — on the GHA AVD that
+    // doesn't reliably propagate to the parent's clickable handler.
+    // Compose UI Test's `hasClickAction() and hasAnyDescendant(hasText)`
+    // matches the merged-semantics card itself and fires its OnClick
+    // directly.
+    onAllNodes(
+        androidx.compose.ui.test.hasClickAction() and
+            androidx.compose.ui.test.hasAnyDescendant(androidx.compose.ui.test.hasText(title, substring = true))
+    )[0].performClick()
 
     pollUntil(timeoutMillis = TIMEOUT_LONG) {
         device.findObject(UiSelector().textContains("Download")).exists() ||
             device.findObject(UiSelector().textContains("Play")).exists() ||
-            device.findObject(UiSelector().textContains("Resume")).exists()
+            device.findObject(UiSelector().textContains("Resume")).exists() ||
+            device.findObject(UiSelector().textContains("Open")).exists() ||
+            device.findObject(UiSelector().textContains("Add to Library")).exists()
     }
     return title
 }
