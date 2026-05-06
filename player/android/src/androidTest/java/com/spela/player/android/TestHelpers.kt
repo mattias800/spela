@@ -2582,7 +2582,8 @@ fun ComposeRule.navigateToSettings() {
     // so we're hitting the live composition's clickable handler.
     tapOnTag(TestTags.NAV_SETTINGS, fallbackLabel = "Settings")
     val device = uiDevice()
-    val deadline = System.currentTimeMillis() + TIMEOUT_LONG
+    val totalTimeout = TIMEOUT_LONG.scaledTimeout()
+    val deadline = System.currentTimeMillis() + totalTimeout
     var lastTapAt = System.currentTimeMillis()
     var triedUiAutomatorTap = false
     while (System.currentTimeMillis() < deadline) {
@@ -2611,7 +2612,7 @@ fun ComposeRule.navigateToSettings() {
             }
         }
     }
-    error("navigateToSettings: SETTINGS_CATEGORY_GENERAL never appeared within ${TIMEOUT_LONG}ms")
+    error("navigateToSettings: SETTINGS_CATEGORY_GENERAL never appeared within ${totalTimeout}ms")
 }
 
 /**
