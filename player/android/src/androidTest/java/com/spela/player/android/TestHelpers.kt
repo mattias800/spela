@@ -1511,17 +1511,18 @@ fun ComposeRule.navigateToAnyNesGame(): String {
     // for the game's own title text to render.
     waitForText(title, TIMEOUT_LONG)
 
-    // Click via Compose semantics, NOT UiAutomator on the text node:
-    // the SpGridGameCard's title is a non-clickable Text inside a
-    // clickable card. UiAutomator's `findObject(text).click()` dispatches
-    // a synthetic touch at the text's bounds — on the GHA AVD that
-    // doesn't reliably propagate to the parent's clickable handler.
-    // Compose UI Test's `hasClickAction() and hasAnyDescendant(hasText)`
-    // matches the merged-semantics card itself and fires its OnClick
-    // directly.
+    // Click via Compose semantics on the card's merged contentDescription.
+    // `SpGameCard` (the role component behind SpGridGameCard) overrides
+    // its merged semantics with `contentDescription = "$title, $subtitle"`
+    // and `role = Button` — so the card's child Text("nestest") is NOT
+    // a descendant of the merged tree, which is why a
+    // `hasClickAction() and hasAnyDescendant(hasText(title))` matcher
+    // returns 0 nodes (the previous attempt). Match the card directly
+    // via `hasContentDescription(title, substring = true)` — the
+    // merged contentDescription always contains the title.
     onAllNodes(
         androidx.compose.ui.test.hasClickAction() and
-            androidx.compose.ui.test.hasAnyDescendant(androidx.compose.ui.test.hasText(title, substring = true))
+            androidx.compose.ui.test.hasContentDescription(title, substring = true)
     )[0].performClick()
 
     pollUntil(timeoutMillis = TIMEOUT_LONG) {
