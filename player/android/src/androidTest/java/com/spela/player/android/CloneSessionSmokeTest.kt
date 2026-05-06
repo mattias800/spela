@@ -48,12 +48,20 @@ class CloneSessionSmokeTest : BaseE2ETest() {
         val bootstrapToken = loginViaApi(PLAYER_USERNAME, PLAYER_PASSWORD)
             ?: throw AssertionError("Player login via API failed — is the backend up on $SERVER_URL?")
 
+        // The hardcoded id 126 was Castlevania in the local seed, but
+        // CI only has the public-domain `nestest.nes` (different id).
+        // Discover an available game at runtime so the test runs in
+        // either environment.
+        val gameId = firstAvailableGameId(bootstrapToken)
+            ?: throw AssertionError("No games available on backend — check seed data")
+        android.util.Log.i(LOG_TAG, "Using gameId=$gameId for clone test")
+
         // Use a run-unique suffix so the test is idempotent across retries.
         val suffix = System.currentTimeMillis().toString().takeLast(6)
         val sourceName = "QA-Clone-Source-$suffix"
 
-        val sourceId = createSessionViaApi(bootstrapToken, GAME_ID_CASTLEVANIA, sourceName)
-            ?: throw AssertionError("Failed to seed source session via API")
+        val sourceId = createSessionViaApi(bootstrapToken, gameId, sourceName)
+            ?: throw AssertionError("Failed to seed source session via API (gameId=$gameId)")
         android.util.Log.i(LOG_TAG, "Seeded source session id=$sourceId name='$sourceName'")
 
         var cloneId: String? = null
@@ -97,19 +105,19 @@ class CloneSessionSmokeTest : BaseE2ETest() {
             check(cloned.name == expectedCopyName) {
                 "Expected cloned name='$expectedCopyName' but got '${cloned.name}'"
             }
-            check(cloned.gameId == GAME_ID_CASTLEVANIA) {
-                "Clone attached to wrong game id: '${cloned.gameId}' (expected $GAME_ID_CASTLEVANIA)"
+            check(cloned.gameId == gameId) {
+                "Clone attached to wrong game id: '${cloned.gameId}' (expected $gameId)"
             }
 
             // ── Server-side persistence cross-check via an independent
             //    HTTP call. A bug where the Kotlin client returns a
             //    synthetic response without the server actually writing
             //    would be caught here. ──
-            val listAfter = listSessionsViaApi(bootstrapToken, GAME_ID_CASTLEVANIA)
+            val listAfter = listSessionsViaApi(bootstrapToken, gameId)
                 ?: throw AssertionError("Could not list sessions after clone")
             val persisted = listAfter.firstOrNull { it.first == cloneId }
                 ?: throw AssertionError(
-                    "Cloned session id=$cloneId not present in server's session list for game $GAME_ID_CASTLEVANIA"
+                    "Cloned session id=$cloneId not present in server's session list for game $gameId"
                 )
             check(persisted.second == expectedCopyName) {
                 "Server returned stale/mismatched name for clone: '${persisted.second}'"
@@ -145,6 +153,33 @@ class CloneSessionSmokeTest : BaseE2ETest() {
     //    Used for bootstrap/teardown and for the independent server-side
     //    persistence cross-check — NOT for the primary integration assert,
     //    which goes through the production Koin-bound repository above. ──
+
+    /**
+     * Pull the first game id off `GET /api/games`. The clone test
+     * doesn't care which game it points at — only that the
+     * referenced id exists. The local seed has Castlevania, the CI
+     * runner has only `nestest.nes`; resolving dynamically lets the
+     * test work in both environments.
+     */
+    private fun firstAvailableGameId(token: String): String? {
+        return try {
+            val conn = (URL("$SERVER_URL/api/games?pageSize=1").openConnection() as HttpURLConnection).apply {
+                requestMethod = "GET"
+                setRequestProperty("Authorization", "Bearer $token")
+            }
+            if (conn.responseCode != 200) {
+                android.util.Log.w(LOG_TAG, "firstAvailableGameId HTTP ${conn.responseCode}")
+                return null
+            }
+            val body = conn.inputStream.bufferedReader().use { it.readText() }
+            conn.disconnect()
+            // Each GameResponse has an `id` field — take the first.
+            Regex("\"id\"\\s*:\\s*\"([^\"]+)\"").find(body)?.groupValues?.get(1)
+        } catch (e: Exception) {
+            android.util.Log.w(LOG_TAG, "firstAvailableGameId failed: ${e.message}")
+            null
+        }
+    }
 
     private fun loginViaApi(username: String, password: String): String? {
         return try {
@@ -259,7 +294,6 @@ class CloneSessionSmokeTest : BaseE2ETest() {
         private const val PLAYER_USERNAME = "player"
         private const val PLAYER_PASSWORD = "player123"
         // Castlevania (NES) — stable id in the e2e seed data.
-        private const val GAME_ID_CASTLEVANIA = "126"
         private const val LOG_TAG = "CloneSessionSmoke"
     }
 }
