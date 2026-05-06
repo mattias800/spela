@@ -1321,61 +1321,12 @@ internal fun ComposeRule.addServerAndLogin(username: String, password: String) {
             .fetchSemanticsNodes().isNotEmpty()
     } catch (_: Exception) { false }
 
-    // Backdoor: instead of driving the Add-Server UI (form input,
-    // validation HTTP call, button click — three places where the
-    // GHA emulator races), grab the production ServerRepository via
-    // Koin and add the server directly to the SQLDelight DB. The
-    // ServerConnectionViewModel collects servers as a flow, so the
-    // server card appears in the UI as soon as the DB is updated —
-    // and the form auto-collapses on the same recomposition.
-    //
-    // This still exercises the integration paths the Android suite
-    // is meant to cover (real auth login, real session/clone API),
-    // it just doesn't exercise the UI-form-validation handshake
-    // (which is also covered by desktop tests — see CLAUDE.md
-    // "Player App Testing Strategy").
     if (!hasServer) {
-        runCatching {
-            val koin = org.koin.mp.KoinPlatformTools.defaultContext().get()
-            val serverRepo = koin.get<com.spela.player.domain.repository.ServerRepository>()
-            kotlinx.coroutines.runBlocking {
-                val added = serverRepo.addServer(SERVER_NAME, SERVER_URL)
-                serverRepo.setActiveServer(added.id)
-            }
-            android.util.Log.i("E2E_SETUP", "Backdoor: added server '$SERVER_NAME' at $SERVER_URL via ServerRepository")
-            // The ServerConnectionViewModel is a Koin `factory` (a
-            // new instance per get()), and it only loads servers
-            // once in init — it doesn't observe the repo as a flow.
-            // So we can't nudge "the" VM from out here. Instead,
-            // bypass that screen entirely: the NavigationViewModel
-            // is `single`, and tapping a server card on the
-            // ServerConnectionScreen normally fires NavigateTo(Login)
-            // anyway, so dispatch that intent ourselves.
-            val navVm = koin.get<com.spela.player.presentation.navigation.NavigationViewModel>()
-            navVm.onIntent(
-                com.spela.player.presentation.navigation.NavigationIntent.NavigateTo(
-                    com.spela.player.presentation.navigation.SpScreen.Login,
-                ),
-            )
-            android.util.Log.i("E2E_SETUP", "Backdoor: dispatched NavigateTo(Login)")
-        }.onFailure { e ->
-            android.util.Log.e("E2E_SETUP", "Backdoor addServer failed: ${e::class.simpleName}: ${e.message}")
-        }
-    }
-
-    // Ignored: the rest of the UI-driven add-server flow. It's left
-    // in place behind a `false` guard so the diagnostics history is
-    // still readable in git blame; the original flow drove the form
-    // EditTexts via UiAutomator and tapped Connect, but on the
-    // 320x640 GHA emulator that path consistently failed at the
-    // form-not-closing stage.
-    if (false) {
         // ServerConnectionScreen auto-opens the Add Server form via a
         // LaunchedEffect when the server list loads empty. Coroutine timing
         // can be flaky (especially on AYN Thor), so wait for either the
         // form input OR the toggle button to appear, then click the toggle
-        // ourselves if the form didn't auto-open. Either way we end up
-        // with the form visible — no Thread.sleep needed.
+        // ourselves if the form didn't auto-open.
         pollUntil(timeoutMillis = TIMEOUT_LONG) {
             inputOrToggleVisible()
         }
@@ -1386,8 +1337,7 @@ internal fun ComposeRule.addServerAndLogin(username: String, password: String) {
 
         // SpTextField wraps a real Android EditText via AndroidView (PR #847,
         // landscape keyboard fix), so the input is invisible to Compose UI
-        // Test's hasSetTextAction matcher. Drive the EditTexts via UiAutomator
-        // instead — they're the only EditText widgets on this screen.
+        // Test's hasSetTextAction matcher. Drive the EditTexts via UiAutomator.
         val device = uiDevice()
         val nameField = device.findObject(
             UiSelector().className("android.widget.EditText").instance(0),
@@ -1399,165 +1349,50 @@ internal fun ComposeRule.addServerAndLogin(username: String, password: String) {
         // NOTE: don't pressBack here. UiAutomator's setText uses an
         // accessibility action, which doesn't open the soft keyboard,
         // so there's no keyboard to hide. pressBack with no keyboard
-        // up navigates AWAY from the Spela activity to the launcher,
-        // which is exactly what the diagnostic dump showed when this
-        // method was failing in CI (currentPackage=…nexuslauncher).
+        // up navigates AWAY from the Spela activity to the launcher.
 
-        // The form is inside a LazyColumn, and on small displays
-        // (notably the 320x640 GH Actions emulator) the URL row sits
-        // below the fold — its underlying EditText isn't in the
-        // accessibility tree until it scrolls into view, so
-        // UiAutomator's `findObject(EditText.instance(1))` never
-        // matches. Scroll to the SERVER_URL_INPUT testTag first; the
-        // outer Compose node carries the tag even though the inner
-        // widget is an AndroidView'd EditText.
+        // The form is inside a LazyColumn, and on tall narrow viewports
+        // the URL row can sit below the fold. Scroll to the
+        // SERVER_URL_INPUT testTag first; the outer Compose node carries
+        // the tag even though the inner widget is an AndroidView'd
+        // EditText.
         runCatching {
             onAllNodesWithTag(TestTags.SERVER_URL_INPUT, useUnmergedTree = true)[0]
                 .performScrollTo()
             waitForIdle()
         }
 
-        // Find the URL field by HINT, not by .instance(1). On the AVD an
-        // autofill suggestion strip can introduce a phantom EditText
-        // that takes index 1, OR the URL row is still off-screen even
-        // after the keyboard hides. UiSelector doesn't have hint(), so
-        // use By.hint() — that matches AccessibilityNodeInfo.getHintText
-        // (API 26+). The hint comes from PlatformTextFieldCore.android
-        // setting `hint = placeholder.ifEmpty { label }`, so the URL
-        // field's hint is "https://spela.example.com".
         val urlField = device.findObject(
             UiSelector().className("android.widget.EditText").instance(1),
         )
-        if (!urlField.waitForExists(TIMEOUT_MEDIUM)) {
-            // Diagnostic dump. logcat-only is invisible in GH Actions
-            // CI (gradle's connectedDebugAndroidTest doesn't forward
-            // test-process stdout/stderr), so we both Log.e AND
-            // accumulate into a String that becomes part of the
-            // assertion failure message — gradle DOES print throwable
-            // messages to its stdout.
-            val diag = StringBuilder("\n── URL field probe failed; UI dump ──\n")
-            fun log(msg: String) {
-                android.util.Log.e("E2E_SETUP", msg)
-                diag.append(msg).append('\n')
-            }
-            try { log("currentPackage=${uiDevice().currentPackageName}") } catch (_: Throwable) {}
-            try {
-                val all = device.findObjects(androidx.test.uiautomator.By.clazz("android.widget.EditText"))
-                log("EditText count visible = ${all.size}")
-                all.forEachIndexed { i, obj ->
-                    val txt = runCatching { obj.text }.getOrDefault("?")
-                    val hint = runCatching { obj.hint }.getOrDefault("?")
-                    val res = runCatching { obj.resourceName }.getOrDefault("?")
-                    val visible = runCatching { obj.visibleBounds }.getOrDefault(null)
-                    log("EditText[$i] text='$txt' hint='$hint' res='$res' bounds=$visible")
-                }
-            } catch (e: Throwable) {
-                log("EditText dump failed: ${e.message}")
-            }
-            try {
-                val server = device.findObjects(androidx.test.uiautomator.By.textContains("Server"))
-                log("Nodes containing 'Server': ${server.size}")
-                server.take(20).forEachIndexed { i, obj ->
-                    val txt = runCatching { obj.text }.getOrDefault("?")
-                    val cls = runCatching { obj.className }.getOrDefault("?")
-                    log("Server-node[$i] class=$cls text='$txt'")
-                }
-            } catch (_: Throwable) {}
-            try {
-                val mFocus = device.executeShellCommand("dumpsys window | grep mCurrentFocus")
-                log("dumpsys: $mFocus")
-            } catch (_: Throwable) {}
-
-            // Fallback: find by hint via By.hint (UiAutomator2 API).
-            val byHint = device.findObjects(
-                androidx.test.uiautomator.By.hint("spela.example.com"),
-            )
-            log("By.hint('spela.example.com') matched ${byHint.size} nodes")
-            check(byHint.isNotEmpty()) {
-                "Server URL EditText not found by hint either.${diag}"
-            }
-            byHint[0].setText(SERVER_URL)
-        } else {
-            urlField.setText(SERVER_URL)
+        check(urlField.waitForExists(TIMEOUT_MEDIUM)) {
+            "Server URL EditText never appeared on server-connection screen"
         }
+        urlField.setText(SERVER_URL)
 
-        // Pre-click diagnostics — confirm both EditTexts have the expected
-        // text, since the form-still-open failure mode could be caused by
-        // setText not propagating to Compose state on the GHA emulator.
-        run {
-            val device2 = uiDevice()
-            val all = device2.findObjects(androidx.test.uiautomator.By.clazz("android.widget.EditText"))
-            android.util.Log.i("E2E_SETUP", "Pre-Connect EditText count=${all.size}")
-            all.forEachIndexed { i, obj ->
-                val txt = runCatching { obj.text }.getOrDefault("?")
-                val hint = runCatching { obj.hint }.getOrDefault("?")
-                android.util.Log.i("E2E_SETUP", "Pre-Connect EditText[$i] text='$txt' hint='$hint'")
-            }
-        }
-
-        // Tap the Connect button to submit (testTag is on the Compose
-        // wrapper around SpButton, which IS a real Compose node).
+        // Tap the Connect button to submit.
         onNodeWithTag(TestTags.SERVER_CONNECT_BUTTON).performClick()
-        android.util.Log.i("E2E_SETUP", "Tapped SERVER_CONNECT_BUTTON")
 
-        // Wait for the form to actually go away (validation finished
-        // and server was added). A bare 2s sleep raced server-side
-        // validation on the GHA emulator: the EditText still contained
-        // "Local" via UiAutomator, so waitForText() succeeded, but
-        // Compose's tree had no Text "Local" yet (only the AndroidView'd
-        // EditText, invisible to onNodeWithText) — onNodeWithText().
-        // performClick() then failed with "Expected 1 node but found 0".
-        try {
-            pollUntil(timeoutMillis = TIMEOUT_LONG) { !serverNameInputVisible() }
-        } catch (e: Throwable) {
-            // Form never closed — capture state to help diagnose.
-            val device2 = uiDevice()
-            android.util.Log.e("E2E_SETUP", "── Form never closed after Connect ──")
-            android.util.Log.e("E2E_SETUP", "currentPackage=${device2.currentPackageName}")
-            try {
-                val all = device2.findObjects(androidx.test.uiautomator.By.clazz("android.widget.EditText"))
-                android.util.Log.e("E2E_SETUP", "Post-fail EditText count=${all.size}")
-                all.forEachIndexed { i, obj ->
-                    val txt = runCatching { obj.text }.getOrDefault("?")
-                    android.util.Log.e("E2E_SETUP", "Post-fail EditText[$i] text='$txt'")
-                }
-            } catch (_: Throwable) {}
-            try {
-                val anyText = device2.findObjects(androidx.test.uiautomator.By.clazz("android.widget.TextView"))
-                android.util.Log.e("E2E_SETUP", "Post-fail TextView count=${anyText.size}")
-                anyText.take(20).forEachIndexed { i, obj ->
-                    val txt = runCatching { obj.text }.getOrDefault("?")
-                    android.util.Log.e("E2E_SETUP", "Post-fail TextView[$i] text='$txt'")
-                }
-            } catch (_: Throwable) {}
-            throw e
-        }
+        // Wait for the form to close — the SERVER_NAME_INPUT testTag
+        // disappearing is the real signal that validation succeeded
+        // and the server was added.
+        pollUntil(timeoutMillis = TIMEOUT_LONG) { !serverNameInputVisible() }
     }
 
-    // Login backdoor — same pattern, same reason. The login form's
-    // SpTextField → AndroidView'd EditText fields don't always
-    // surface in the GHA emulator's accessibility tree, and
-    // doLogin's UiAutomator probe times out waiting on
-    // EditText.instance(0). Hit AuthRepository directly + dispatch
-    // NavigationIntent.ResetToHome (the same intent LoginScreen
-    // fires from onLoginSuccess in ScreenRouter).
-    runCatching {
-        val koin = org.koin.mp.KoinPlatformTools.defaultContext().get()
-        val authRepo = koin.get<com.spela.player.domain.repository.AuthRepository>()
-        kotlinx.coroutines.runBlocking {
-            val result = authRepo.login(SERVER_URL, username, password)
-            val tokens = result.getOrNull()
-                ?: error("Backdoor login failed: ${result.exceptionOrNull()?.message}")
-            authRepo.storeTokens(tokens)
-        }
-        android.util.Log.i("E2E_SETUP", "Backdoor: logged in as '$username' via AuthRepository")
-        val navVm = koin.get<com.spela.player.presentation.navigation.NavigationViewModel>()
-        navVm.onIntent(com.spela.player.presentation.navigation.NavigationIntent.ResetToHome)
-        android.util.Log.i("E2E_SETUP", "Backdoor: dispatched ResetToHome")
-    }.onFailure { e ->
-        android.util.Log.e("E2E_SETUP", "Backdoor login failed: ${e::class.simpleName}: ${e.message}")
-        throw e
+    // Tap the server card. SpActionCard sets `contentDescription =
+    // server.name`, so a UiAutomator description match consistently
+    // lands on a real touch handler.
+    val device = uiDevice()
+    val serverCard = device.findObject(UiSelector().description(SERVER_NAME))
+    if (!serverCard.waitForExists(TIMEOUT_MEDIUM.scaledTimeout())) {
+        onNodeWithText(SERVER_NAME).performClick()
+    } else {
+        serverCard.click()
     }
+    Thread.sleep(500)
+
+    // Login
+    doLogin(username, password)
 }
 
 private fun ComposeRule.serverNameInputVisible(): Boolean = try {

@@ -5,7 +5,6 @@ import androidx.compose.ui.test.onAllNodesWithText
 import com.spela.player.presentation.ui.TestTags
 import org.junit.Test
 
-@RequiresPhysicalDevice(reason = "Drives navigateToCastlevania (CI seed only ships nestest.nes) and the GameActionsMenu UI which depends on small-viewport-unfriendly Compose taps")
 class PlayLaterTest : BaseE2ETest() {
 
     /**
@@ -62,7 +61,10 @@ class PlayLaterTest : BaseE2ETest() {
 
     @Test
     fun addToPlayLaterFromGameDetail() {
-        rule.navigateToCastlevania()
+        // Local seed has Castlevania; CI ships nestest. The Play
+        // Later toggle is game-agnostic, so navigate to whichever
+        // NES game is available.
+        rule.navigateToAnyNesGame()
         setPlayLater(desiredInQueue = false)
         // Now flip it to "in queue".
         setPlayLater(desiredInQueue = true)

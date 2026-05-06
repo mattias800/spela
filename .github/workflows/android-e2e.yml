@@ -106,6 +106,15 @@ jobs:
           emulator-options: -no-window -no-snapshot-save -no-boot-anim -gpu swiftshader_indirect -noaudio
           disable-animations: true
           script: |
+            # Bump the AVD viewport to a phone-class size so SpTextField
+            # (AndroidView'd EditText) inputs and bottom-nav targets fit
+            # without scrolling the form below the fold. Default AVD
+            # viewport is ~320x640 with density 280 — too small for the
+            # add-server form's two stacked text fields + Connect button.
+            # 720x1280 @ density 280 is a generic phone-portrait that
+            # matches the assumptions the shared composables were
+            # designed against.
+            adb shell wm size 720x1280
             adb shell wm density 280
             # Clear logcat before the run so the post-failure capture
             # only contains entries from this test session.

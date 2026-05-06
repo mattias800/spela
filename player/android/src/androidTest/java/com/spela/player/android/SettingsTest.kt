@@ -11,7 +11,6 @@ import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.uiautomator.UiDevice
 import org.junit.Test
 
-@RequiresPhysicalDevice(reason = "Settings sub-screens, list-detail navigation and per-console shader rows depend on Compose UI taps that don't dispatch reliably on the GHA AVD's small viewport — covered by desktop E2E tests")
 class SettingsTest : BaseE2ETest() {
 
     /** Scroll down in the LazyColumn until a node with the given contentDescription appears. */

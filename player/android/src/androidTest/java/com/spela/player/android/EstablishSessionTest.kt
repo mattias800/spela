@@ -10,22 +10,10 @@ import org.junit.Test
  * contract because the whole point of this test is the pre-login
  * UX.
  */
-@RequiresPhysicalDevice(reason = "Drives the UI add-server + login flow — SpTextField → AndroidView'd EditText doesn't surface reliably on the GHA AVD's small viewport. Covered by desktop tests.")
 class EstablishSessionTest : BaseE2ETest() {
 
     @Before
     override fun baseSetUp() {
-        // The class-level @RequiresPhysicalDevice gate from
-        // BaseE2ETest.baseSetUp() is bypassed because we override
-        // without super() — re-check it inline.
-        val annotation = this::class.java.getAnnotation(RequiresPhysicalDevice::class.java)
-        if (annotation != null) {
-            org.junit.Assume.assumeFalse(
-                "Skipping on emulator (@RequiresPhysicalDevice): ${annotation.reason}",
-                isEmulator,
-            )
-        }
-
         // Still reset the backend — user-generated data from prior
         // tests must not influence the login flow.
         resetServerState()
