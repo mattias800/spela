@@ -1544,13 +1544,35 @@ fun ComposeRule.navigateToAnyNesGame(): String {
             androidx.compose.ui.test.hasContentDescription(title, substring = true)
     )[0].performClick()
     android.util.Log.d(tag, "navigateToAnyNesGame: card click fired, polling action button")
-
-    pollUntil(timeoutMillis = TIMEOUT_LONG) {
-        device.findObject(UiSelector().textContains("Download")).exists() ||
-            device.findObject(UiSelector().textContains("Play")).exists() ||
-            device.findObject(UiSelector().textContains("Resume")).exists() ||
-            device.findObject(UiSelector().textContains("Open")).exists() ||
-            device.findObject(UiSelector().textContains("Add to Library")).exists()
+    // Game detail's primary action button is one of:
+    //   game_detail_play_button (testTag) — for in-library games (label
+    //     "New game" / "Resume" / "Continue" depending on session state)
+    //   game_detail_download_button (testTag) — for not-yet-downloaded
+    //     games (label "Download" or "Downloading...")
+    // Anchor on the testTag set, not the text — labels vary by state
+    // and CI's nestest probably shows "Download".
+    try {
+        pollUntil(timeoutMillis = TIMEOUT_LONG) {
+            try {
+                onAllNodesWithTag("game_detail_play_button", useUnmergedTree = true)
+                    .fetchSemanticsNodes().isNotEmpty() ||
+                    onAllNodesWithTag("game_detail_download_button", useUnmergedTree = true)
+                        .fetchSemanticsNodes().isNotEmpty()
+            } catch (_: Exception) { false }
+        }
+        android.util.Log.d(tag, "navigateToAnyNesGame: action button found, returning")
+    } catch (e: Throwable) {
+        android.util.Log.e(tag, "navigateToAnyNesGame: action button never appeared")
+        try {
+            android.util.Log.e(tag, "currentPackage=${device.currentPackageName}")
+            val texts = device.findObjects(androidx.test.uiautomator.By.clazz("android.widget.TextView"))
+            android.util.Log.e(tag, "TextView count=${texts.size}")
+            texts.take(20).forEachIndexed { i, obj ->
+                val txt = runCatching { obj.text }.getOrDefault("?")
+                android.util.Log.e(tag, "TextView[$i]='$txt'")
+            }
+        } catch (_: Throwable) {}
+        throw e
     }
     return title
 }
