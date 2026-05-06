@@ -1163,7 +1163,17 @@ internal fun ComposeRule.navigateBackToHome() {
  * one-shot "are we there yet" assertion.
  */
 fun ComposeRule.assertOnHome() {
-    if (isOnHomeScreen()) return
+    // Brief retry — isOnHomeScreen() can transiently return false right
+    // after ensureLoggedIn finishes a backend-reset → re-login cycle:
+    // the activity has reached Home but the SCREEN_HOME contentDescription
+    // / "Spela" brand mark race a recomposition pass. ensureLoggedIn's own
+    // pollUntil loop is what gets us on Home, so a short retry here just
+    // smooths the handoff.
+    val deadline = System.currentTimeMillis() + 5_000L.scaledTimeout()
+    while (System.currentTimeMillis() < deadline) {
+        if (isOnHomeScreen()) return
+        Thread.sleep(150)
+    }
     val indicators = buildList {
         if (isOnServerConnectionScreen()) add("server-connection")
         if (isOnLoginScreen()) add("login")
