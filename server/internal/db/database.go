@@ -986,7 +986,17 @@ func SeedConsoles(db *gorm.DB) error {
 		{Name: "Neo Geo", Abbreviation: "NEOGEO", Extensions: ".zip", DefaultCore: "fbneo", EmulatorJSCore: "fbneo", FolderName: "neogeo", ColorTheme: "#ffcc00", Generation: 4, SaveStateSupport: true, SaveStatePolicy: SaveStatePolicySmall, Playable: true},
 		{Name: "Neo Geo CD", Abbreviation: "NEOCD", Extensions: ".chd,.cue,.iso", DefaultCore: "neocd", EmulatorJSCore: "", FolderName: "neogeocd", ColorTheme: "#ffcc00", Generation: 4, SaveStateSupport: true, SaveStatePolicy: SaveStatePolicySmall, Playable: true},
 		{Name: "Atari Lynx", Abbreviation: "LYNX", Extensions: ".lnx,.lyx", DefaultCore: "handy", EmulatorJSCore: "handy", FolderName: "atarilynx", ColorTheme: "#8b4513", CoverAspect: "1:1", Generation: 4, SaveStateSupport: true, SaveStatePolicy: SaveStatePolicySmall, Playable: true},
-		{Name: "Sega CD", Abbreviation: "SCD", Extensions: ".iso,.bin,.cue,.m3u", DefaultCore: "clownmdemu", EmulatorJSCore: "segaCD", FolderName: "segacd", ColorTheme: "#1a1a1a", Generation: 4, SaveStateSupport: true, SaveStatePolicy: SaveStatePolicySmall, Playable: true},
+		// #943: ClownMDEmu's Sega CD support is incomplete — the BIOS
+		// boot path enters an infinite loop on `UNRECOGNISED BIOS CALL
+		// 0x08 / 0x87` because their CDBIOS handlers aren't implemented
+		// yet, so every Sega CD title hangs on the BIOS region screen.
+		// Genesis Plus GX has complete CDBIOS / CDC / CDD / sub-CPU /
+		// PRG-RAM emulation and uses the same BIOS file naming we ship
+		// (`bios_CD_U.bin` / `bios_CD_E.bin` / `bios_CD_J.bin`, see
+		// internal/bios/registry.go). ClownMDEmu remains in SeedCores
+		// as a non-default option so users can opt in once upstream
+		// catches up.
+		{Name: "Sega CD", Abbreviation: "SCD", Extensions: ".iso,.bin,.cue,.m3u", DefaultCore: "genesis_plus_gx", EmulatorJSCore: "segaCD", FolderName: "segacd", ColorTheme: "#1a1a1a", Generation: 4, SaveStateSupport: true, SaveStatePolicy: SaveStatePolicySmall, Playable: true},
 		{Name: "Philips CD-i", Abbreviation: "CDI", Extensions: ".chd,.cue,.iso", DefaultCore: "same_cdi", EmulatorJSCore: "same_cdi", FolderName: "cdi", ColorTheme: "#006633", Generation: 4, SaveStateSupport: true, SaveStatePolicy: SaveStatePolicySmall, Playable: true},
 		// 5th Generation
 		{Name: "PlayStation", Abbreviation: "PSX", Extensions: ".bin,.cue,.iso,.pbp,.m3u", DefaultCore: "beetle_psx_hw", EmulatorJSCore: "mednafen_psx_hw", FolderName: "psx", ColorTheme: "#003087", CoverAspect: "1:1", Generation: 5, SaveStateSupport: true, SaveStatePolicy: SaveStatePolicyMedium, Playable: true},
