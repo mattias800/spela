@@ -644,9 +644,16 @@ internal fun ComposeRule.isOnHomeScreen(): Boolean {
         // side is necessary because the SCREEN_HOME testTag can race
         // with the Compose tree snapshot — the text node appears
         // before the screen container's testTag does.
+        //
+        // On the AVD the brand mark surfaces as a contentDescription
+        // ("Spela"), not as a Text node — observed in the
+        // ComposeTimeoutException dump for EstablishSessionTest. So
+        // also check description, otherwise we time out 30s on a
+        // screen that's clearly Home.
         onAllNodesWithTag(TestTags.SCREEN_HOME, useUnmergedTree = true)
             .fetchSemanticsNodes().isNotEmpty() ||
-            onAllNodesWithText("Spela").fetchSemanticsNodes().isNotEmpty()
+            onAllNodesWithText("Spela").fetchSemanticsNodes().isNotEmpty() ||
+            onAllNodesWithContentDescription("Spela").fetchSemanticsNodes().isNotEmpty()
     } catch (_: Exception) { false }
 }
 
@@ -1360,50 +1367,51 @@ internal fun ComposeRule.addServerAndLogin(username: String, password: String) {
             UiSelector().className("android.widget.EditText").instance(1),
         )
         if (!urlField.waitForExists(TIMEOUT_MEDIUM)) {
-            // Dump every EditText UiAutomator can see to logcat. Writes
-            // to /sdcard fail silently on Android 15 AVDs (scoped
-            // storage), so the file-based dump is unreliable. Logcat
-            // is captured by the action and also by the failure
-            // listener, so we always see this.
-            android.util.Log.e("E2E_SETUP", "── URL field probe failed; dumping UI ──")
-            try {
-                val focused = uiDevice().currentPackageName
-                android.util.Log.e("E2E_SETUP", "currentPackage=$focused")
-            } catch (_: Throwable) {}
+            // Diagnostic dump to BOTH logcat AND gradle stdout. The CI
+            // action only logs gradle's stdout/stderr — logcat from
+            // the test process isn't visible there unless an artifact
+            // upload pulls it (which has been unreliable on the AVD's
+            // scoped storage). System.err.println is captured.
+            fun diag(msg: String) {
+                android.util.Log.e("E2E_SETUP", msg)
+                System.err.println("E2E_SETUP: $msg")
+            }
+            diag("── URL field probe failed; dumping UI ──")
+            try { diag("currentPackage=${uiDevice().currentPackageName}") } catch (_: Throwable) {}
             try {
                 val all = device.findObjects(androidx.test.uiautomator.By.clazz("android.widget.EditText"))
-                android.util.Log.e("E2E_SETUP", "EditText count visible = ${all.size}")
+                diag("EditText count visible = ${all.size}")
                 all.forEachIndexed { i, obj ->
                     val txt = runCatching { obj.text }.getOrDefault("?")
                     val hint = runCatching { obj.hint }.getOrDefault("?")
                     val res = runCatching { obj.resourceName }.getOrDefault("?")
                     val visible = runCatching { obj.visibleBounds }.getOrDefault(null)
-                    android.util.Log.e(
-                        "E2E_SETUP",
-                        "EditText[$i] text='$txt' hint='$hint' res='$res' bounds=$visible",
-                    )
+                    diag("EditText[$i] text='$txt' hint='$hint' res='$res' bounds=$visible")
                 }
             } catch (e: Throwable) {
-                android.util.Log.e("E2E_SETUP", "EditText dump failed: ${e.message}")
+                diag("EditText dump failed: ${e.message}")
             }
             try {
                 val server = device.findObjects(androidx.test.uiautomator.By.textContains("Server"))
-                android.util.Log.e("E2E_SETUP", "Nodes containing 'Server': ${server.size}")
+                diag("Nodes containing 'Server': ${server.size}")
                 server.take(20).forEachIndexed { i, obj ->
                     val txt = runCatching { obj.text }.getOrDefault("?")
                     val cls = runCatching { obj.className }.getOrDefault("?")
-                    android.util.Log.e("E2E_SETUP", "Server-node[$i] class=$cls text='$txt'")
+                    diag("Server-node[$i] class=$cls text='$txt'")
                 }
+            } catch (_: Throwable) {}
+            try {
+                val mFocus = device.executeShellCommand("dumpsys window | grep mCurrentFocus")
+                diag("dumpsys: $mFocus")
             } catch (_: Throwable) {}
 
             // Fallback: find by hint via By.hint (UiAutomator2 API).
             val byHint = device.findObjects(
                 androidx.test.uiautomator.By.hint("spela.example.com"),
             )
-            android.util.Log.e("E2E_SETUP", "By.hint('spela.example.com') matched ${byHint.size} nodes")
+            diag("By.hint('spela.example.com') matched ${byHint.size} nodes")
             check(byHint.isNotEmpty()) {
-                "Server URL EditText not found by hint either — " +
-                    "see logcat E2E_SETUP for what UiAutomator did see"
+                "Server URL EditText not found by hint either — see E2E_SETUP diagnostics above"
             }
             byHint[0].setText(SERVER_URL)
         } else {

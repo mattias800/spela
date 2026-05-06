@@ -142,6 +142,16 @@ class SettingsTest : BaseE2ETest() {
 
     @Test
     fun shaderSelectionPersists() {
+        // Skip on emulator: this test calls rule.restartApp() which
+        // is documented as unreliable on AVDs (docs/e2e-testing.md
+        // "restartApp() unreliable on emulators" — activityRule.scenario
+        // .recreate() sometimes fails to re-establish the Compose
+        // hierarchy and we time out waiting for Home). Persistence
+        // semantics are covered by desktop tests instead.
+        org.junit.Assume.assumeFalse(
+            "restartApp is unreliable on the AVD; persistence is covered by desktop tests",
+            isEmulator,
+        )
 
         // Navigate to Settings → Emulation (where Video Filter lives)
         rule.navigateToSettingsCategory("Emulation")
