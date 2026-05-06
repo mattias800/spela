@@ -1526,12 +1526,18 @@ fun ComposeRule.navigateToAnyNesGame(): String {
  * Pull the first NES game's title from `GET /api/games?consoleId=nes`.
  * Used to dynamically discover whichever NES game happens to be in
  * the running backend's seed (Castlevania locally, nestest in CI).
+ *
+ * `/api/games` requires auth, so log in as the player first to get
+ * a bearer token. This runs in the test process; the app's session
+ * is irrelevant.
  */
 private fun firstNesGameTitleViaApi(): String? {
+    val token = quickPlayerLogin() ?: return null
     return try {
         val url = java.net.URL("http://127.0.0.1:8080/api/games?consoleId=nes&pageSize=1")
         val conn = url.openConnection() as java.net.HttpURLConnection
         conn.requestMethod = "GET"
+        conn.setRequestProperty("Authorization", "Bearer $token")
         conn.connectTimeout = 3_000
         conn.readTimeout = 5_000
         if (conn.responseCode != 200) {
@@ -1543,6 +1549,28 @@ private fun firstNesGameTitleViaApi(): String? {
         Regex("\"title\"\\s*:\\s*\"([^\"]+)\"").find(body)?.groupValues?.get(1)
     } catch (e: Exception) {
         android.util.Log.w("E2E_SETUP", "firstNesGameTitleViaApi failed: ${e.message}")
+        null
+    }
+}
+
+private fun quickPlayerLogin(): String? {
+    return try {
+        val url = java.net.URL("http://127.0.0.1:8080/api/auth/login")
+        val conn = url.openConnection() as java.net.HttpURLConnection
+        conn.requestMethod = "POST"
+        conn.setRequestProperty("Content-Type", "application/json")
+        conn.connectTimeout = 3_000
+        conn.readTimeout = 5_000
+        conn.doOutput = true
+        conn.outputStream.use {
+            it.write("""{"username":"player","password":"player123"}""".toByteArray())
+        }
+        if (conn.responseCode != 200) return null
+        val body = conn.inputStream.bufferedReader().use { it.readText() }
+        conn.disconnect()
+        Regex("\"accessToken\"\\s*:\\s*\"([^\"]+)\"").find(body)?.groupValues?.get(1)
+    } catch (e: Exception) {
+        android.util.Log.w("E2E_SETUP", "quickPlayerLogin failed: ${e.message}")
         null
     }
 }
