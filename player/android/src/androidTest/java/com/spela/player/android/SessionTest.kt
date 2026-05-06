@@ -36,6 +36,15 @@ class SessionTest : BaseE2ETest() {
 
     @Test
     fun logoutClearsTokensPreservesServer() {
+        // Skip on emulator: this test calls rule.restartApp() (via the
+        // assertion path after sign-out), which is documented as
+        // unreliable on AVDs (docs/e2e-testing.md "restartApp()
+        // unreliable on emulators"). Persistence semantics are
+        // covered by desktop tests.
+        org.junit.Assume.assumeFalse(
+            "restartApp is unreliable on the AVD",
+            isEmulator,
+        )
 
         // Navigate to Settings → About category (where Sign Out lives)
         rule.navigateToSettingsCategory("About")
