@@ -107,6 +107,9 @@ jobs:
           disable-animations: true
           script: |
             adb shell wm density 280
+            # Clear logcat before the run so the post-failure capture
+            # only contains entries from this test session.
+            adb logcat -c || true
             # reactivecircus' `script:` runs each line as a separate
             # `/usr/bin/sh -c <line>`, so `cd` and shell variables
             # don't persist across lines. Wrap everything in one
@@ -114,7 +117,12 @@ jobs:
             # GitHub Actions context `${{ github.workspace }}` so
             # the path is resolved at YAML parse time, not from a
             # subshell env var that may or may not propagate.
-            bash -c 'cd "${{ github.workspace }}/player" && (./run-e2e.sh --emulator --skip-reset; r=$?; mkdir -p "${{ github.workspace }}/diag"; adb pull /sdcard/server-connect-fail.xml "${{ github.workspace }}/diag/" 2>/dev/null || true; adb pull /sdcard/spela-test-failures "${{ github.workspace }}/diag/" 2>/dev/null || true; exit $r)'
+            #
+            # On failure, dump the E2E_SETUP and Spela* logcat tags
+            # straight to stdout. Gradle's connectedDebugAndroidTest
+            # doesn't forward the test process's stderr, so this is
+            # the only reliable channel for in-test diagnostics in CI.
+            bash -c 'cd "${{ github.workspace }}/player" && (./run-e2e.sh --emulator --skip-reset; r=$?; if [ "$r" -ne 0 ]; then echo "── logcat dump (E2E_SETUP, E2E_NAV, Spela) ──"; adb logcat -d -s E2E_SETUP:V E2E_NAV:V Spela:V SpelaTest:V 2>/dev/null | tail -500 || true; fi; mkdir -p "${{ github.workspace }}/diag"; adb pull /sdcard/server-connect-fail.xml "${{ github.workspace }}/diag/" 2>/dev/null || true; adb pull /sdcard/spela-test-failures "${{ github.workspace }}/diag/" 2>/dev/null || true; exit $r)'
 
       - name: Upload failure artifacts
         if: failure()
