@@ -82,7 +82,7 @@ export function ConsolesPage() {
     <PageLayout title="Consoles" subtitle="Browse your game library by platform.">
       <SectionList>
       {isLoading ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-5">
           {Array.from({ length: 8 }, (_, i) => (
             <ConsoleCardSkeleton key={i} />
           ))}
@@ -107,7 +107,7 @@ export function ConsolesPage() {
                   </span>
                 )}
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-5">
                 {group.consoles.map((c) => (
                   <ConsoleCard
                     key={c.id}
