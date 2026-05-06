@@ -51,7 +51,7 @@ typealias ComposeRule = AndroidComposeTestRule<ActivityScenarioRule<MainActivity
 // emulators. Used to scale timeouts — the emulator runs Compose at
 // wall-clock pace, so recomposition / first-frame / Coil image load is
 // ~2-3x slower than on a physical device.
-private val isEmulator: Boolean =
+internal val isEmulator: Boolean =
     android.os.Build.PRODUCT?.contains("sdk") == true ||
         android.os.Build.PRODUCT?.contains("emulator") == true ||
         android.os.Build.FINGERPRINT?.contains("generic") == true
@@ -644,9 +644,16 @@ internal fun ComposeRule.isOnHomeScreen(): Boolean {
         // side is necessary because the SCREEN_HOME testTag can race
         // with the Compose tree snapshot — the text node appears
         // before the screen container's testTag does.
+        //
+        // On the AVD the brand mark surfaces as a contentDescription
+        // ("Spela"), not as a Text node — observed in the
+        // ComposeTimeoutException dump for EstablishSessionTest. So
+        // also check description, otherwise we time out 30s on a
+        // screen that's clearly Home.
         onAllNodesWithTag(TestTags.SCREEN_HOME, useUnmergedTree = true)
             .fetchSemanticsNodes().isNotEmpty() ||
-            onAllNodesWithText("Spela").fetchSemanticsNodes().isNotEmpty()
+            onAllNodesWithText("Spela").fetchSemanticsNodes().isNotEmpty() ||
+            onAllNodesWithContentDescription("Spela").fetchSemanticsNodes().isNotEmpty()
     } catch (_: Exception) { false }
 }
 
@@ -1156,7 +1163,17 @@ internal fun ComposeRule.navigateBackToHome() {
  * one-shot "are we there yet" assertion.
  */
 fun ComposeRule.assertOnHome() {
-    if (isOnHomeScreen()) return
+    // Brief retry — isOnHomeScreen() can transiently return false right
+    // after ensureLoggedIn finishes a backend-reset → re-login cycle:
+    // the activity has reached Home but the SCREEN_HOME contentDescription
+    // / "Spela" brand mark race a recomposition pass. ensureLoggedIn's own
+    // pollUntil loop is what gets us on Home, so a short retry here just
+    // smooths the handoff.
+    val deadline = System.currentTimeMillis() + 5_000L.scaledTimeout()
+    while (System.currentTimeMillis() < deadline) {
+        if (isOnHomeScreen()) return
+        Thread.sleep(150)
+    }
     val indicators = buildList {
         if (isOnServerConnectionScreen()) add("server-connection")
         if (isOnLoginScreen()) add("login")
@@ -1319,8 +1336,7 @@ internal fun ComposeRule.addServerAndLogin(username: String, password: String) {
         // LaunchedEffect when the server list loads empty. Coroutine timing
         // can be flaky (especially on AYN Thor), so wait for either the
         // form input OR the toggle button to appear, then click the toggle
-        // ourselves if the form didn't auto-open. Either way we end up
-        // with the form visible — no Thread.sleep needed.
+        // ourselves if the form didn't auto-open.
         pollUntil(timeoutMillis = TIMEOUT_LONG) {
             inputOrToggleVisible()
         }
@@ -1331,8 +1347,7 @@ internal fun ComposeRule.addServerAndLogin(username: String, password: String) {
 
         // SpTextField wraps a real Android EditText via AndroidView (PR #847,
         // landscape keyboard fix), so the input is invisible to Compose UI
-        // Test's hasSetTextAction matcher. Drive the EditTexts via UiAutomator
-        // instead — they're the only EditText widgets on this screen.
+        // Test's hasSetTextAction matcher. Drive the EditTexts via UiAutomator.
         val device = uiDevice()
         val nameField = device.findObject(
             UiSelector().className("android.widget.EditText").instance(0),
@@ -1341,24 +1356,49 @@ internal fun ComposeRule.addServerAndLogin(username: String, password: String) {
             "Server Name EditText never appeared on server-connection screen"
         }
         nameField.setText(SERVER_NAME)
+        // NOTE: don't pressBack here. UiAutomator's setText uses an
+        // accessibility action, which doesn't open the soft keyboard,
+        // so there's no keyboard to hide. pressBack with no keyboard
+        // up navigates AWAY from the Spela activity to the launcher.
+
+        // The form is inside a LazyColumn, and on tall narrow viewports
+        // the URL row can sit below the fold. Scroll to the
+        // SERVER_URL_INPUT testTag first; the outer Compose node carries
+        // the tag even though the inner widget is an AndroidView'd
+        // EditText.
+        runCatching {
+            onAllNodesWithTag(TestTags.SERVER_URL_INPUT, useUnmergedTree = true)[0]
+                .performScrollTo()
+            waitForIdle()
+        }
 
         val urlField = device.findObject(
             UiSelector().className("android.widget.EditText").instance(1),
         )
-        check(urlField.exists()) {
-            "Server URL EditText not found after typing server name"
+        check(urlField.waitForExists(TIMEOUT_MEDIUM)) {
+            "Server URL EditText never appeared on server-connection screen"
         }
         urlField.setText(SERVER_URL)
 
-        // Tap the Connect button to submit (testTag is on the Compose
-        // wrapper around SpButton, which IS a real Compose node).
+        // Tap the Connect button to submit.
         onNodeWithTag(TestTags.SERVER_CONNECT_BUTTON).performClick()
-        Thread.sleep(2_000)
+
+        // Wait for the form to close — the SERVER_NAME_INPUT testTag
+        // disappearing is the real signal that validation succeeded
+        // and the server was added.
+        pollUntil(timeoutMillis = TIMEOUT_LONG) { !serverNameInputVisible() }
     }
 
-    // Tap server card to connect (Compose API — fast with isTestMode)
-    waitForText(SERVER_NAME, TIMEOUT_MEDIUM)
-    onNodeWithText(SERVER_NAME).performClick()
+    // Tap the server card. SpActionCard sets `contentDescription =
+    // server.name`, so a UiAutomator description match consistently
+    // lands on a real touch handler.
+    val device = uiDevice()
+    val serverCard = device.findObject(UiSelector().description(SERVER_NAME))
+    if (!serverCard.waitForExists(TIMEOUT_MEDIUM.scaledTimeout())) {
+        onNodeWithText(SERVER_NAME).performClick()
+    } else {
+        serverCard.click()
+    }
     Thread.sleep(500)
 
     // Login
@@ -1397,13 +1437,16 @@ private fun ComposeRule.doLogin(username: String, password: String) {
     }
     usernameField.setText(username)
     android.util.Log.d("E2E_TIMING", "setUsername: ${System.currentTimeMillis()-t}ms")
+    // NOTE: don't pressBack — see addServerAndLogin for the rationale.
+    // UiAutomator setText uses accessibility actions, no keyboard to
+    // dismiss, pressBack would exit the activity.
 
     t = System.currentTimeMillis()
     val passwordField = device.findObject(
         UiSelector().className("android.widget.EditText").instance(1),
     )
-    check(passwordField.exists()) {
-        "Password EditText not found after typing username"
+    check(passwordField.waitForExists(TIMEOUT_MEDIUM)) {
+        "Password EditText never appeared after typing username"
     }
     passwordField.setText(password)
     android.util.Log.d("E2E_TIMING", "setPassword: ${System.currentTimeMillis()-t}ms")
@@ -1448,50 +1491,143 @@ fun ComposeRule.navigateToCastlevania() {
  * Returns the game title for later assertions.
  */
 fun ComposeRule.navigateToAnyNesGame(): String {
+    val tag = "E2E_NAV"
+    android.util.Log.d(tag, "navigateToAnyNesGame: start")
+    // Discover an actual NES game title from the backend instead of
+    // guessing from a list of common names — local seed has commercial
+    // ROMs (Castlevania etc.), CI seed only has nestest.nes. Either
+    // way, we ask the server what game IDs and titles are available
+    // so we can drive the UI to a real one.
+    val title = firstNesGameTitleViaApi()
+        ?: throw IllegalStateException(
+            "No NES game found via /api/games?consoleId=nes — check seed data"
+        )
+    android.util.Log.d(tag, "navigateToAnyNesGame: title='$title'")
+
     val device = uiDevice()
 
     // Navigate to Consoles tab
+    android.util.Log.d(tag, "navigateToAnyNesGame: tap Consoles")
     tapOn("Consoles")
+    android.util.Log.d(tag, "navigateToAnyNesGame: wait NES desc")
     waitForContentDescription("Nintendo Entertainment System", TIMEOUT_EXTRA_LONG)
 
-    // Tap the NES console card
-    scrollToAndTapMatchingBoth("Nintendo Entertainment System", "games")
+    // Tap the NES console card via stable testTag (text-pair matcher
+    // was broken by the card-layout refresh).
+    android.util.Log.d(tag, "navigateToAnyNesGame: scroll-tap NES card")
+    val nesCardTag = com.spela.player.presentation.ui.TestTags.consoleCard("nes")
+    scrollToAndTapTag(nesCardTag, maxSwipes = 12)
 
     // Wait for console game list screen
+    android.util.Log.d(tag, "navigateToAnyNesGame: wait Console settings desc")
     waitForContentDescription("Console settings", TIMEOUT_EXTRA_LONG)
 
-    // Find the first game card by looking for "Download" or any game with a cover
-    // The Top Rated section shows games. Tap the first one visible.
-    Thread.sleep(2_000) // Let game list load
-    waitForText("Top Rated", TIMEOUT_LONG)
+    // ConsoleScreen renders "Top Rated" only if state.topRatedGames
+    // is non-empty (a small library has none), and "All Games" only
+    // when game count ≤ 15. Don't anchor on a section header — wait
+    // for the game's own title text to render.
+    android.util.Log.d(tag, "navigateToAnyNesGame: waitForText '$title'")
+    waitForText(title, TIMEOUT_LONG)
 
-    // Find any game card by looking for nodes that have both a title and the console name
-    // Just tap the first game we find after "Top Rated"
-    val device2 = uiDevice()
-    // Swipe right in the Top Rated carousel to see games, then tap the first one
-    tapOn("Top Rated") // This might tap the section header — OK, it scrolls to it
-
-    // Wait a moment for carousel to render, then tap on any visible game
-    Thread.sleep(1_000)
-
-    // Find the first clickable game by trying common NES game names
-    val commonGames = listOf("Super Mario Bros.", "Castlevania", "Mega Man", "Zelda", "Metroid",
-        "Contra", "Ninja Gaiden", "Double Dragon", "Kirby", "Punch-Out")
-    for (name in commonGames) {
-        val gameNode = device2.findObject(UiSelector().textContains(name))
-        if (gameNode.exists()) {
-            gameNode.click()
-            Thread.sleep(500)
-            // Wait for game detail
-            pollUntil(timeoutMillis = TIMEOUT_LONG) {
-                device2.findObject(UiSelector().textContains("Download")).exists() ||
-                    device2.findObject(UiSelector().textContains("Play")).exists() ||
-                    device2.findObject(UiSelector().textContains("Resume")).exists()
-            }
-            return name
+    // Click via Compose semantics on the card's merged contentDescription.
+    // `SpGameCard` (the role component behind SpGridGameCard) overrides
+    // its merged semantics with `contentDescription = "$title, $subtitle"`
+    // and `role = Button` — so the card's child Text("nestest") is NOT
+    // a descendant of the merged tree, which is why a
+    // `hasClickAction() and hasAnyDescendant(hasText(title))` matcher
+    // returns 0 nodes (the previous attempt). Match the card directly
+    // via `hasContentDescription(title, substring = true)` — the
+    // merged contentDescription always contains the title.
+    android.util.Log.d(tag, "navigateToAnyNesGame: click card by contentDesc")
+    onAllNodes(
+        androidx.compose.ui.test.hasClickAction() and
+            androidx.compose.ui.test.hasContentDescription(title, substring = true)
+    )[0].performClick()
+    android.util.Log.d(tag, "navigateToAnyNesGame: card click fired, polling action button")
+    // Game detail's primary action button is one of:
+    //   game_detail_play_button (testTag) — for in-library games (label
+    //     "New game" / "Resume" / "Continue" depending on session state)
+    //   game_detail_download_button (testTag) — for not-yet-downloaded
+    //     games (label "Download" or "Downloading...")
+    // Anchor on the testTag set, not the text — labels vary by state
+    // and CI's nestest probably shows "Download".
+    try {
+        pollUntil(timeoutMillis = TIMEOUT_LONG) {
+            try {
+                onAllNodesWithTag("game_detail_play_button", useUnmergedTree = true)
+                    .fetchSemanticsNodes().isNotEmpty() ||
+                    onAllNodesWithTag("game_detail_download_button", useUnmergedTree = true)
+                        .fetchSemanticsNodes().isNotEmpty()
+            } catch (_: Exception) { false }
         }
+        android.util.Log.d(tag, "navigateToAnyNesGame: action button found, returning")
+    } catch (e: Throwable) {
+        android.util.Log.e(tag, "navigateToAnyNesGame: action button never appeared")
+        try {
+            android.util.Log.e(tag, "currentPackage=${device.currentPackageName}")
+            val texts = device.findObjects(androidx.test.uiautomator.By.clazz("android.widget.TextView"))
+            android.util.Log.e(tag, "TextView count=${texts.size}")
+            texts.take(20).forEachIndexed { i, obj ->
+                val txt = runCatching { obj.text }.getOrDefault("?")
+                android.util.Log.e(tag, "TextView[$i]='$txt'")
+            }
+        } catch (_: Throwable) {}
+        throw e
     }
-    throw IllegalStateException("No NES game found from common game list")
+    return title
+}
+
+/**
+ * Pull the first NES game's title from `GET /api/games?consoleId=nes`.
+ * Used to dynamically discover whichever NES game happens to be in
+ * the running backend's seed (Castlevania locally, nestest in CI).
+ *
+ * `/api/games` requires auth, so log in as the player first to get
+ * a bearer token. This runs in the test process; the app's session
+ * is irrelevant.
+ */
+private fun firstNesGameTitleViaApi(): String? {
+    val token = quickPlayerLogin() ?: return null
+    return try {
+        val url = java.net.URL("http://127.0.0.1:8080/api/games?consoleId=nes&pageSize=1")
+        val conn = url.openConnection() as java.net.HttpURLConnection
+        conn.requestMethod = "GET"
+        conn.setRequestProperty("Authorization", "Bearer $token")
+        conn.connectTimeout = 3_000
+        conn.readTimeout = 5_000
+        if (conn.responseCode != 200) {
+            android.util.Log.w("E2E_SETUP", "firstNesGameTitleViaApi HTTP ${conn.responseCode}")
+            return null
+        }
+        val body = conn.inputStream.bufferedReader().use { it.readText() }
+        conn.disconnect()
+        Regex("\"title\"\\s*:\\s*\"([^\"]+)\"").find(body)?.groupValues?.get(1)
+    } catch (e: Exception) {
+        android.util.Log.w("E2E_SETUP", "firstNesGameTitleViaApi failed: ${e.message}")
+        null
+    }
+}
+
+private fun quickPlayerLogin(): String? {
+    return try {
+        val url = java.net.URL("http://127.0.0.1:8080/api/auth/login")
+        val conn = url.openConnection() as java.net.HttpURLConnection
+        conn.requestMethod = "POST"
+        conn.setRequestProperty("Content-Type", "application/json")
+        conn.connectTimeout = 3_000
+        conn.readTimeout = 5_000
+        conn.doOutput = true
+        conn.outputStream.use {
+            it.write("""{"username":"player","password":"player123"}""".toByteArray())
+        }
+        if (conn.responseCode != 200) return null
+        val body = conn.inputStream.bufferedReader().use { it.readText() }
+        conn.disconnect()
+        Regex("\"accessToken\"\\s*:\\s*\"([^\"]+)\"").find(body)?.groupValues?.get(1)
+    } catch (e: Exception) {
+        android.util.Log.w("E2E_SETUP", "quickPlayerLogin failed: ${e.message}")
+        null
+    }
 }
 
 /**
@@ -1533,27 +1669,17 @@ fun ComposeRule.navigateToGameByTitle(gameTitle: String) {
 
     // Tap the NES console card via its stable testTag — robust
     // against card layout/copy changes (a recent UI tweak broke the
-    // old "Nintendo Entertainment System" + "games" pair matcher).
+    // old "Nintendo Entertainment System" + "games" pair matcher;
+    // the text-pair fallback is dead, so don't bother with it).
+    //
+    // The Consoles list is a LazyColumn — items below the fold are
+    // NOT in the semantics tree until we swipe to render them. Don't
+    // poll the tree without scrolling first (a 320x640 GHA AVD will
+    // never see the NES card on the initial render). `scrollToAndTapTag`
+    // handles the scroll loop itself.
     android.util.Log.d(tag, "Step 3: Tapping NES card (testTag console_card_nes)")
     val nesCardTag = com.spela.player.presentation.ui.TestTags.consoleCard("nes")
-    // Poll for the tag — Compose's accessibility tree can briefly be
-    // unavailable right after a tab switch (AppNotIdleException).
-    val tagDeadline = System.currentTimeMillis() + 8_000
-    var tagPresent = false
-    while (System.currentTimeMillis() < tagDeadline) {
-        tagPresent = try {
-            onAllNodesWithTag(nesCardTag, useUnmergedTree = true)
-                .fetchSemanticsNodes().isNotEmpty()
-        } catch (_: Exception) { false }
-        if (tagPresent) break
-        Thread.sleep(250)
-    }
-    if (tagPresent) {
-        scrollToAndTapTag(nesCardTag, maxSwipes = 10)
-    } else {
-        android.util.Log.d(tag, "Step 3: NES tag not found, falling back to text-pair matcher")
-        scrollToAndTapMatchingBoth("Nintendo Entertainment System", "games")
-    }
+    scrollToAndTapTag(nesCardTag, maxSwipes = 12)
     android.util.Log.d(tag, "Step 3: NES card tapped, waiting for console screen")
 
     // Verify we navigated to the console screen
@@ -2511,9 +2637,11 @@ fun ComposeRule.navigateToSettings() {
     // so we're hitting the live composition's clickable handler.
     tapOnTag(TestTags.NAV_SETTINGS, fallbackLabel = "Settings")
     val device = uiDevice()
-    val deadline = System.currentTimeMillis() + TIMEOUT_LONG
+    val totalTimeout = TIMEOUT_LONG.scaledTimeout()
+    val deadline = System.currentTimeMillis() + totalTimeout
     var lastTapAt = System.currentTimeMillis()
     var triedUiAutomatorTap = false
+    var pressBackAttempts = 0
     while (System.currentTimeMillis() < deadline) {
         try {
             if (onAllNodesWithTag(TestTags.SETTINGS_CATEGORY_GENERAL, useUnmergedTree = true)
@@ -2526,6 +2654,18 @@ fun ComposeRule.navigateToSettings() {
         if (elapsed > 3_000 && System.currentTimeMillis() - lastTapAt > 1_500) {
             tapOnTag(TestTags.NAV_SETTINGS, fallbackLabel = "Settings")
             lastTapAt = System.currentTimeMillis()
+        }
+        // After 5s, try pressing back. The Settings tab preserves its
+        // back-stack across tab switches, so if a previous test left
+        // a deep sub-screen (ConsoleSettings, list-detail showingDetail
+        // pane) at the top of the stack, re-tapping NAV_SETTINGS just
+        // restores us to that sub-screen — SETTINGS_CATEGORY_GENERAL
+        // is on the category-list root one or two levels back.
+        if (elapsed > 5_000 && pressBackAttempts < 3) {
+            pressBackAttempts++
+            android.util.Log.d("E2E_NAV", "navigateToSettings: pressing back to pop sub-screen ($pressBackAttempts/3)")
+            runCatching { pressBack() }
+            Thread.sleep(400)
         }
         // After 7s, also try a physical UiAutomator touch on the
         // "Settings" content-description node. Compose's
@@ -2540,7 +2680,7 @@ fun ComposeRule.navigateToSettings() {
             }
         }
     }
-    error("navigateToSettings: SETTINGS_CATEGORY_GENERAL never appeared within ${TIMEOUT_LONG}ms")
+    error("navigateToSettings: SETTINGS_CATEGORY_GENERAL never appeared within ${totalTimeout}ms")
 }
 
 /**

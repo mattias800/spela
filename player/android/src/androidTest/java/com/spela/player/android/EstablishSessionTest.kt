@@ -35,17 +35,11 @@ class EstablishSessionTest : BaseE2ETest() {
         // add server → log in → land on Home.
         rule.addServerAndLogin(PLAYER_USERNAME, PLAYER_PASSWORD)
 
-        // Verify Home via any of the several indicators the screen
-        // may show depending on whether the user has play history.
+        // Verify Home via the canonical helper, which checks both the
+        // SCREEN_HOME testTag, the "Spela" brand mark text, and (newly)
+        // the "Spela" contentDescription that the AVD surfaces.
         rule.pollUntil(timeoutMillis = 8_000L) {
-            rule.onAllNodesWithText("Spela")
-                .fetchSemanticsNodes().isNotEmpty() ||
-                rule.onAllNodesWithText("Your library is empty", substring = true)
-                    .fetchSemanticsNodes().isNotEmpty() ||
-                rule.onAllNodesWithText("Top Rated", substring = true)
-                    .fetchSemanticsNodes().isNotEmpty() ||
-                rule.onAllNodesWithText("Continue Playing", substring = true)
-                    .fetchSemanticsNodes().isNotEmpty()
+            try { rule.isOnHomeScreen() } catch (_: Exception) { false }
         }
     }
 }

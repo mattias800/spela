@@ -1,0 +1,163 @@
+name: Android E2E
+
+# Runs the Android instrumented suite on a GitHub-hosted Linux runner via
+# an x86_64 Android emulator. Tagged @RequiresPhysicalDevice tests are
+# auto-skipped (BaseE2ETest does the assumeFalse).
+#
+# Public repos get unlimited Linux runner minutes and the runner has KVM
+# enabled, so the AVD boots hardware-accelerated. Total wall-clock is
+# typically ~25-35min per run.
+#
+# Security: this workflow doesn't interpolate any github.event.* or
+# github.head_ref inputs into shell commands — those are the standard
+# workflow-injection vectors. The only ${{ github.ref }} use is in
+# concurrency.group / cache-read-only, both safe contexts (not eval'd
+# as shell).
+
+on:
+  # Always run on master pushes — last gate before a release.
+  push:
+    branches: [master]
+  # PR runs are pure opt-in: only when the `android-e2e` label is
+  # added (or already present at PR open / sync). The full suite is
+  # ~17-20 min; running it for every web/docs PR would burn minutes
+  # for no signal.
+  pull_request:
+    branches: [master]
+    types: [opened, synchronize, reopened, labeled]
+  # Daily — catches infra/dependency drift not tied to any specific
+  # commit (libretro buildbot binaries, emulator image, action
+  # versions). 04:07 UTC ≈ off-peak across timezones.
+  schedule:
+    - cron: '7 4 * * *'
+  # Manual escape hatch for "just run it" cases.
+  workflow_dispatch:
+
+# Cancel any in-progress run for the same branch when a new push lands —
+# the suite is long enough that running stale commits wastes minutes.
+concurrency:
+  group: android-e2e-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  android-e2e:
+    name: Android E2E (emulator)
+    # Non-PR triggers (push to master, schedule, workflow_dispatch)
+    # always run. PR triggers run only when the `android-e2e` label
+    # is on the PR — `labeled` events also satisfy this, so adding
+    # the label to a PR triggers the workflow without a no-op commit.
+    if: |
+      github.event_name != 'pull_request' ||
+      contains(github.event.pull_request.labels.*.name, 'android-e2e')
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v3
+        with:
+          cache-read-only: ${{ github.ref != 'refs/heads/master' }}
+
+      # KVM lets the x86_64 emulator boot hardware-accelerated. The
+      # Ubuntu runner has /dev/kvm available but root-owned by default;
+      # add a udev rule so the runner user can access it.
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' \
+            | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      # Start the e2e backend BEFORE the emulator step so the long-
+      # running emulator-runner action can run the test script directly
+      # against a healthy backend on `localhost:8080`.
+      - name: Start backend (docker compose)
+        run: docker compose -f docker-compose.e2e.yml up -d --build --wait
+
+      # AVD cache: the system image + AVD snapshot are ~5GB; caching
+      # them shaves 3-5min per run. The reactivecircus action handles
+      # creation if missing.
+      - name: AVD cache
+        uses: actions/cache@v4
+        id: avd-cache
+        with:
+          path: |
+            ~/.android/avd/*
+            ~/.android/adb*
+          key: avd-api35-x86_64
+
+      - name: Create AVD snapshot (cache miss)
+        if: steps.avd-cache.outputs.cache-hit != 'true'
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          arch: x86_64
+          target: google_apis
+          force-avd-creation: false
+          emulator-options: -no-window -no-snapshot-save -no-boot-anim -gpu swiftshader_indirect -noaudio
+          disable-animations: true
+          script: echo "AVD snapshot generated."
+
+      - name: Run Android E2E
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          arch: x86_64
+          target: google_apis
+          force-avd-creation: false
+          emulator-options: -no-window -no-snapshot-save -no-boot-anim -gpu swiftshader_indirect -noaudio
+          disable-animations: true
+          script: |
+            # Bump the AVD viewport to a phone-class size so SpTextField
+            # (AndroidView'd EditText) inputs and bottom-nav targets fit
+            # without scrolling the form below the fold. Default AVD
+            # viewport is ~320x640 with density 280 — too small for the
+            # add-server form's two stacked text fields + Connect button.
+            # 720x1280 @ density 280 is a generic phone-portrait that
+            # matches the assumptions the shared composables were
+            # designed against.
+            adb shell wm size 720x1280
+            adb shell wm density 280
+            # Clear logcat before the run so the post-failure capture
+            # only contains entries from this test session.
+            adb logcat -c || true
+            # reactivecircus' `script:` runs each line as a separate
+            # `/usr/bin/sh -c <line>`, so `cd` and shell variables
+            # don't persist across lines. Wrap everything in one
+            # `bash -c` so cd + TEST_EXIT survive — and use the
+            # GitHub Actions context `${{ github.workspace }}` so
+            # the path is resolved at YAML parse time, not from a
+            # subshell env var that may or may not propagate.
+            #
+            # On failure, dump the E2E_SETUP and Spela* logcat tags
+            # straight to stdout. Gradle's connectedDebugAndroidTest
+            # doesn't forward the test process's stderr, so this is
+            # the only reliable channel for in-test diagnostics in CI.
+            bash -c 'cd "${{ github.workspace }}/player" && (./run-e2e.sh --emulator --skip-reset; r=$?; if [ "$r" -ne 0 ]; then echo "── logcat dump (E2E_SETUP, E2E_NAV, Spela tags) ──"; adb logcat -d -s E2E_SETUP:V E2E_NAV:V Spela:V SpelaTest:V CloneSessionSmoke:V CoreFlagsSmoke:V 2>/dev/null | tail -500 || true; echo "── logcat dump (HTTP/exceptions, last 800 lines) ──"; adb logcat -d -v threadtime 2>/dev/null | grep -E "OkHttp|System.err|FATAL|AndroidRuntime|com.spela|ktor|NetworkSecurityConfig|UnknownHostException|ConnectException|SocketTimeout" | tail -800 || true; fi; mkdir -p "${{ github.workspace }}/diag"; adb pull /sdcard/server-connect-fail.xml "${{ github.workspace }}/diag/" 2>/dev/null || true; adb pull /sdcard/spela-test-failures "${{ github.workspace }}/diag/" 2>/dev/null || true; exit $r)'
+
+      - name: Upload failure artifacts
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-e2e-failures
+          path: |
+            player/build/test-failures/
+            diag/
+          if-no-files-found: ignore
+          retention-days: 14
+
+      - name: Backend logs on failure
+        if: failure()
+        run: |
+          echo "── docker compose ps ──"
+          docker compose -f docker-compose.e2e.yml ps || true
+          echo "── spela-server logs (last 1500 lines) ──"
+          docker compose -f docker-compose.e2e.yml logs --tail=1500 server || true

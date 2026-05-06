@@ -19,6 +19,7 @@ import org.junit.Test
  * - Server running with seeded data (player/player123 user, Castlevania game)
  * - Device connected and unlocked
  */
+@RequiresPhysicalDevice(reason = "Creates challenge from in-game overlay; libretro game must be running with save-state available")
 class ChallengeCreationTest : BaseE2ETest() {
 
     private fun setupGame() {

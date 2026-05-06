@@ -13,6 +13,11 @@ services:
       - "8080:8080"
     volumes:
       - ./testdata/roms:/app/games:ro
+      # Public-domain test ROMs that ship with the repo so CI runners
+      # (which don't have testdata/) can seed a non-empty library.
+      # Local devs with their own testdata/ get both — PD ROMs show up
+      # alongside their library. See testdata-public/ATTRIBUTION.md.
+      - ./testdata-public:/app/games-public:ro
       - e2e-saves:/app/saves
       - e2e-cores:/app/cores
       - e2e-images:/app/images
@@ -32,7 +37,7 @@ services:
       - SPELA_PORT=8080
       - SPELA_DB_PATH=/app/data/spela.db
       - SPELA_JWT_SECRET=e2e-test-secret-that-is-at-least-32-chars-long
-      - SPELA_GAME_DIRS=/app/games
+      - SPELA_GAME_DIRS=/app/games,/app/games-public
       - SPELA_IMAGE_DIR=/app/images
       - SPELA_CORS_ORIGINS=http://localhost:5173
       - SPELA_SEED=true

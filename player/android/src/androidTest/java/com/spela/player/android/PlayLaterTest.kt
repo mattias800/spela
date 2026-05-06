@@ -61,7 +61,10 @@ class PlayLaterTest : BaseE2ETest() {
 
     @Test
     fun addToPlayLaterFromGameDetail() {
-        rule.navigateToCastlevania()
+        // Local seed has Castlevania; CI ships nestest. The Play
+        // Later toggle is game-agnostic, so navigate to whichever
+        // NES game is available.
+        rule.navigateToAnyNesGame()
         setPlayLater(desiredInQueue = false)
         // Now flip it to "in queue".
         setPlayLater(desiredInQueue = true)

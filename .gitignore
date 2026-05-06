@@ -78,6 +78,11 @@ player/local.properties
 
 # Test ROMs (not for distribution)
 testdata/
+# …but DO ship the small set of public-domain / freely-redistributable
+# ROMs under testdata-public/ — they're what the GitHub Actions Android
+# E2E workflow uses to seed the library, since CI doesn't have access
+# to the user's local testdata/. See testdata-public/ATTRIBUTION.md.
+!testdata-public/
 
 # E2E test cache
 .e2e-cache/

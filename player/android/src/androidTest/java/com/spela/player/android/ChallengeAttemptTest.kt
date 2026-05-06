@@ -26,6 +26,7 @@ import org.junit.Test
  * - Server running with seeded data (player/player123 user, Castlevania game)
  * - Castlevania game available and downloadable
  */
+@RequiresPhysicalDevice(reason = "Requires libretro game launch + save-state load; emulator timing exceeds even 3x-scaled wait helpers")
 class ChallengeAttemptTest : BaseE2ETest() {
 
     companion object {

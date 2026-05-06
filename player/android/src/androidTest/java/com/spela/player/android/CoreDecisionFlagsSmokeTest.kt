@@ -37,10 +37,18 @@ class CoreDecisionFlagsSmokeTest : BaseE2ETest() {
         val bootstrapToken = loginViaApi(PLAYER_USERNAME, PLAYER_PASSWORD)
             ?: throw AssertionError("Player login via API failed — is the backend up on $SERVER_URL?")
 
+        // Discover an available game id at runtime — local seed has
+        // Castlevania (id 126), CI's testdata-public ships only
+        // nestest.nes (a different id). The flag round-trip cares
+        // about session lifecycle, not which game it points at.
+        val gameId = firstAvailableGameId(bootstrapToken)
+            ?: throw AssertionError("No games available on backend — check seed data")
+        android.util.Log.i(LOG_TAG, "Using gameId=$gameId for core-flags test")
+
         val suffix = System.currentTimeMillis().toString().takeLast(6)
         val sourceName = "QA-CoreFlags-$suffix"
-        val sessionId = createSessionViaApi(bootstrapToken, GAME_ID_CASTLEVANIA, sourceName)
-            ?: throw AssertionError("Failed to seed session via API")
+        val sessionId = createSessionViaApi(bootstrapToken, gameId, sourceName)
+            ?: throw AssertionError("Failed to seed session via API (gameId=$gameId)")
         android.util.Log.i(LOG_TAG, "Seeded session id=$sessionId name='$sourceName'")
 
         try {
@@ -185,6 +193,25 @@ class CoreDecisionFlagsSmokeTest : BaseE2ETest() {
 
     // ── HTTP helpers ──
 
+    private fun firstAvailableGameId(token: String): String? {
+        return try {
+            val conn = (URL("$SERVER_URL/api/games?pageSize=1").openConnection() as HttpURLConnection).apply {
+                requestMethod = "GET"
+                setRequestProperty("Authorization", "Bearer $token")
+            }
+            if (conn.responseCode != 200) {
+                android.util.Log.w(LOG_TAG, "firstAvailableGameId HTTP ${conn.responseCode}")
+                return null
+            }
+            val body = conn.inputStream.bufferedReader().use { it.readText() }
+            conn.disconnect()
+            Regex("\"id\"\\s*:\\s*\"([^\"]+)\"").find(body)?.groupValues?.get(1)
+        } catch (e: Exception) {
+            android.util.Log.w(LOG_TAG, "firstAvailableGameId failed: ${e.message}")
+            null
+        }
+    }
+
     private fun loginViaApi(username: String, password: String): String? {
         return try {
             val conn = (URL("$SERVER_URL/api/auth/login").openConnection() as HttpURLConnection).apply {
@@ -261,7 +288,6 @@ class CoreDecisionFlagsSmokeTest : BaseE2ETest() {
         private const val SERVER_URL = "http://127.0.0.1:8080"
         private const val PLAYER_USERNAME = "player"
         private const val PLAYER_PASSWORD = "player123"
-        private const val GAME_ID_CASTLEVANIA = "126"
         private const val LOG_TAG = "CoreFlagsSmoke"
     }
 }

@@ -8,10 +8,12 @@ class NavigationTest : BaseE2ETest() {
 
     @Test
     fun backStackNavigation() {
-        // Drive Home → Consoles → NES → Castlevania detail via the canonical
-        // helper (handles the shelves-with-Browse-button layout). Then verify
-        // back-stack navigation returns us through the same screens.
-        rule.navigateToCastlevania()
+        // Drive Home → Consoles → NES → game detail via the canonical
+        // helper. The local seed has Castlevania; the CI runner only
+        // ships nestest. `navigateToAnyNesGame` finds whichever NES
+        // game is available — back-stack navigation doesn't care
+        // which.
+        rule.navigateToAnyNesGame()
 
         // Verify game detail rendered — wait for an action button.
         rule.pollUntil(timeoutMillis = 15_000) {

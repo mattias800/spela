@@ -20,6 +20,7 @@ import org.junit.Test
  * - Server running with seeded data (player/player123 and admin/admin123 users)
  * - Device connected and unlocked
  */
+@RequiresPhysicalDevice(reason = "Some flows tap play-from-collection which boots libretro; emulator gameplay timing breaks the wait")
 class CollectionsTest : BaseE2ETest() {
 
     // ── Navigation helpers ──

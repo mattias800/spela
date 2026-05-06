@@ -23,6 +23,7 @@ import org.junit.Test
  * Skip the whole class on multi-display setups. Single-display
  * emulators and phones run all three tests normally.
  */
+@RequiresPhysicalDevice(reason = "Exercises Android KeyEvent injection from a gamepad source; the AVD has no virtual gamepad input device")
 class GamepadNavigationTest : BaseE2ETest() {
 
     @Before
