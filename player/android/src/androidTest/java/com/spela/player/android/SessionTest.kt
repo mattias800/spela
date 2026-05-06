@@ -6,6 +6,7 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import org.junit.Test
 
+@RequiresPhysicalDevice(reason = "Sign-out flow + restartApp + login form drive UI taps and ActivityScenario.recreate() — both paths are unreliable on the GHA AVD; persistence is covered by desktop tests")
 class SessionTest : BaseE2ETest() {
 
     /** Tap the confirm button in the sign-out dialog and wait for server connection screen. */

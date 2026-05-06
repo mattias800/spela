@@ -4,6 +4,7 @@ import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onAllNodesWithText
 import org.junit.Test
 
+@RequiresPhysicalDevice(reason = "navigateToCastlevania requires the local Castlevania ROM (CI seed only ships nestest.nes), and the back-stack assertions drive Compose UI taps that don't dispatch reliably on the small GHA AVD viewport")
 class NavigationTest : BaseE2ETest() {
 
     @Test

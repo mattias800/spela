@@ -10,27 +10,21 @@ import org.junit.Test
  * contract because the whole point of this test is the pre-login
  * UX.
  */
+@RequiresPhysicalDevice(reason = "Drives the UI add-server + login flow — SpTextField → AndroidView'd EditText doesn't surface reliably on the GHA AVD's small viewport. Covered by desktop tests.")
 class EstablishSessionTest : BaseE2ETest() {
 
     @Before
     override fun baseSetUp() {
-        // The whole purpose of this test is the UI add-server +
-        // login flow. On the GH Actions x86_64 AVD that flow is
-        // unreliable: SpTextField wraps real Android EditTexts via
-        // AndroidView and the small viewport pushes inputs below
-        // the fold; Compose UI Test taps fail to inject. The same
-        // user flow is covered exhaustively by desktop E2E tests
-        // (per CLAUDE.md "Player App Testing Strategy" — UI lives
-        // in commonMain so it belongs on the desktop suite). Skip
-        // here; the emulator suite focuses on integration paths the
-        // desktop can't cover (real network, real lifecycle).
-        org.junit.Assume.assumeFalse(
-            "EstablishSession exercises the UI add-server + login flow; " +
-                "the GH Actions AVD's small viewport + AndroidView'd " +
-                "EditTexts can't reliably drive that flow. Covered by " +
-                "desktop tests.",
-            isEmulator,
-        )
+        // The class-level @RequiresPhysicalDevice gate from
+        // BaseE2ETest.baseSetUp() is bypassed because we override
+        // without super() — re-check it inline.
+        val annotation = this::class.java.getAnnotation(RequiresPhysicalDevice::class.java)
+        if (annotation != null) {
+            org.junit.Assume.assumeFalse(
+                "Skipping on emulator (@RequiresPhysicalDevice): ${annotation.reason}",
+                isEmulator,
+            )
+        }
 
         // Still reset the backend — user-generated data from prior
         // tests must not influence the login flow.
