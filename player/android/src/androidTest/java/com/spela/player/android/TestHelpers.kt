@@ -1343,6 +1343,21 @@ internal fun ComposeRule.addServerAndLogin(username: String, password: String) {
                 serverRepo.setActiveServer(added.id)
             }
             android.util.Log.i("E2E_SETUP", "Backdoor: added server '$SERVER_NAME' at $SERVER_URL via ServerRepository")
+            // The ServerConnectionViewModel is a Koin `factory` (a
+            // new instance per get()), and it only loads servers
+            // once in init — it doesn't observe the repo as a flow.
+            // So we can't nudge "the" VM from out here. Instead,
+            // bypass that screen entirely: the NavigationViewModel
+            // is `single`, and tapping a server card on the
+            // ServerConnectionScreen normally fires NavigateTo(Login)
+            // anyway, so dispatch that intent ourselves.
+            val navVm = koin.get<com.spela.player.presentation.navigation.NavigationViewModel>()
+            navVm.onIntent(
+                com.spela.player.presentation.navigation.NavigationIntent.NavigateTo(
+                    com.spela.player.presentation.navigation.SpScreen.Login,
+                ),
+            )
+            android.util.Log.i("E2E_SETUP", "Backdoor: dispatched NavigateTo(Login)")
         }.onFailure { e ->
             android.util.Log.e("E2E_SETUP", "Backdoor addServer failed: ${e::class.simpleName}: ${e.message}")
         }
@@ -1519,21 +1534,12 @@ internal fun ComposeRule.addServerAndLogin(username: String, password: String) {
         }
     }
 
-    // Tap server card to connect. Use UiAutomator's description match
-    // (the SpActionCard sets `contentDescription = server.name`) — the
-    // Compose Text inside the card is also tagged but UiAutomator's
-    // path is what consistently lands on a real touch handler in the
-    // accessibility tree, even on the emulator's small viewport.
-    val device = uiDevice()
-    val serverCard = device.findObject(UiSelector().description(SERVER_NAME))
-    if (!serverCard.waitForExists(TIMEOUT_MEDIUM.scaledTimeout())) {
-        // Compose fallback — surface a useful error if neither path
-        // sees the card.
-        onNodeWithText(SERVER_NAME).performClick()
-    } else {
-        serverCard.click()
-    }
-    Thread.sleep(500)
+    // Wait for the login screen to appear. The backdoor above
+    // dispatched NavigateTo(Login) directly, and the legacy
+    // `if (false)` UI path would have ended on the same screen via
+    // SelectServer → NavigateTo(Login). In both cases doLogin() is
+    // what does the actual signin work.
+    pollUntil(timeoutMillis = TIMEOUT_LONG) { isOnLoginScreen() }
 
     // Login
     doLogin(username, password)
