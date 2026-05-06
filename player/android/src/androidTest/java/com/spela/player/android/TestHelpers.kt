@@ -1481,50 +1481,70 @@ fun ComposeRule.navigateToCastlevania() {
  * Returns the game title for later assertions.
  */
 fun ComposeRule.navigateToAnyNesGame(): String {
+    // Discover an actual NES game title from the backend instead of
+    // guessing from a list of common names — local seed has commercial
+    // ROMs (Castlevania etc.), CI seed only has nestest.nes. Either
+    // way, we ask the server what game IDs and titles are available
+    // so we can drive the UI to a real one.
+    val title = firstNesGameTitleViaApi()
+        ?: throw IllegalStateException(
+            "No NES game found via /api/games?consoleId=nes — check seed data"
+        )
+
     val device = uiDevice()
 
     // Navigate to Consoles tab
     tapOn("Consoles")
     waitForContentDescription("Nintendo Entertainment System", TIMEOUT_EXTRA_LONG)
 
-    // Tap the NES console card
-    scrollToAndTapMatchingBoth("Nintendo Entertainment System", "games")
+    // Tap the NES console card via stable testTag (text-pair matcher
+    // was broken by the card-layout refresh).
+    val nesCardTag = com.spela.player.presentation.ui.TestTags.consoleCard("nes")
+    scrollToAndTapTag(nesCardTag, maxSwipes = 12)
 
     // Wait for console game list screen
     waitForContentDescription("Console settings", TIMEOUT_EXTRA_LONG)
 
-    // Find the first game card by looking for "Download" or any game with a cover
-    // The Top Rated section shows games. Tap the first one visible.
-    Thread.sleep(2_000) // Let game list load
-    waitForText("Top Rated", TIMEOUT_LONG)
+    // ConsoleScreen renders "Top Rated" only if state.topRatedGames
+    // is non-empty (a small library has none), and "All Games" only
+    // when game count ≤ 15. Don't anchor on a section header — wait
+    // for the game's own title text to render, then tap it.
+    waitForText(title, TIMEOUT_LONG)
+    val gameNode = device.findObject(UiSelector().textContains(title))
+    check(gameNode.exists()) { "Game '$title' was visible in waitForText but not findable by UiAutomator" }
+    gameNode.click()
 
-    // Find any game card by looking for nodes that have both a title and the console name
-    // Just tap the first game we find after "Top Rated"
-    val device2 = uiDevice()
-    // Swipe right in the Top Rated carousel to see games, then tap the first one
-    tapOn("Top Rated") // This might tap the section header — OK, it scrolls to it
-
-    // Wait a moment for carousel to render, then tap on any visible game
-    Thread.sleep(1_000)
-
-    // Find the first clickable game by trying common NES game names
-    val commonGames = listOf("Super Mario Bros.", "Castlevania", "Mega Man", "Zelda", "Metroid",
-        "Contra", "Ninja Gaiden", "Double Dragon", "Kirby", "Punch-Out")
-    for (name in commonGames) {
-        val gameNode = device2.findObject(UiSelector().textContains(name))
-        if (gameNode.exists()) {
-            gameNode.click()
-            Thread.sleep(500)
-            // Wait for game detail
-            pollUntil(timeoutMillis = TIMEOUT_LONG) {
-                device2.findObject(UiSelector().textContains("Download")).exists() ||
-                    device2.findObject(UiSelector().textContains("Play")).exists() ||
-                    device2.findObject(UiSelector().textContains("Resume")).exists()
-            }
-            return name
-        }
+    pollUntil(timeoutMillis = TIMEOUT_LONG) {
+        device.findObject(UiSelector().textContains("Download")).exists() ||
+            device.findObject(UiSelector().textContains("Play")).exists() ||
+            device.findObject(UiSelector().textContains("Resume")).exists()
     }
-    throw IllegalStateException("No NES game found from common game list")
+    return title
+}
+
+/**
+ * Pull the first NES game's title from `GET /api/games?consoleId=nes`.
+ * Used to dynamically discover whichever NES game happens to be in
+ * the running backend's seed (Castlevania locally, nestest in CI).
+ */
+private fun firstNesGameTitleViaApi(): String? {
+    return try {
+        val url = java.net.URL("http://127.0.0.1:8080/api/games?consoleId=nes&pageSize=1")
+        val conn = url.openConnection() as java.net.HttpURLConnection
+        conn.requestMethod = "GET"
+        conn.connectTimeout = 3_000
+        conn.readTimeout = 5_000
+        if (conn.responseCode != 200) {
+            android.util.Log.w("E2E_SETUP", "firstNesGameTitleViaApi HTTP ${conn.responseCode}")
+            return null
+        }
+        val body = conn.inputStream.bufferedReader().use { it.readText() }
+        conn.disconnect()
+        Regex("\"title\"\\s*:\\s*\"([^\"]+)\"").find(body)?.groupValues?.get(1)
+    } catch (e: Exception) {
+        android.util.Log.w("E2E_SETUP", "firstNesGameTitleViaApi failed: ${e.message}")
+        null
+    }
 }
 
 /**
