@@ -33,6 +33,16 @@ size_t video_get_frame_buffer_size(void);
 unsigned video_get_pixel_format(void);
 void video_set_gpu_renderer(gpu_renderer_t *renderer);
 gpu_renderer_t *video_get_gpu_renderer(void);
+/* #1044: cross-thread state guard. JNI bridge holds these around the
+ * get_frame_buffer + size + memcpy triple in nativeGetVideoFrame /
+ * nativeFillVideoFrame. The `_unlocked` accessors are for use inside
+ * an already-held lock — see libretro_video.c file comment. */
+void video_lock(void);
+void video_unlock(void);
+unsigned video_get_width_unlocked(void);
+unsigned video_get_height_unlocked(void);
+size_t video_get_frame_buffer_size_unlocked(void);
+unsigned video_get_pixel_format_unlocked(void);
 
 /* Audio subsystem (libretro_audio.c) */
 void audio_init(double sample_rate);
@@ -46,6 +56,14 @@ size_t audio_resample(double ratio);
 const int16_t *audio_get_resampled_buffer(void);
 size_t audio_get_resampled_frames(void);
 void audio_resampler_reset(void);
+/* #1044: cross-thread state guard. JNI bridge holds these around the
+ * get-frames + memcpy + clear triple; emulation thread takes the lock
+ * inside audio_sample[_batch]_callback. The `_unlocked` variants are for
+ * use inside an already-held lock — see libretro_audio.c file comment. */
+void audio_lock(void);
+void audio_unlock(void);
+size_t audio_get_buffer_frames_unlocked(void);
+void audio_clear_buffer_unlocked(void);
 
 /* Input subsystem (libretro_input.c) */
 void input_init(void);

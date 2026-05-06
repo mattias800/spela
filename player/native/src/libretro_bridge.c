@@ -1456,25 +1456,54 @@ JNI_FUNC(jboolean, nativeUnserialize)(JNIEnv *env, jobject thiz, jbyteArray data
 }
 
 JNI_FUNC(jbyteArray, nativeGetVideoFrame)(JNIEnv *env, jobject thiz) {
-    const void *buffer = video_get_frame_buffer();
-    size_t size = video_get_frame_buffer_size();
-    if (!buffer || size == 0) return NULL;
+    /* #1044: hold video_lock for the read-pointer + size + memcpy
+     * triple so the emulation thread's video_refresh_callback (which
+     * may realloc frame_buffer on dimension change) cannot interleave
+     * and leave the JNI side reading a freed pointer.
+     *
+     * NewByteArray is called BEFORE acquiring the lock — JNI primitive
+     * allocation can block on the GC, and blocking the GC while the
+     * emulation thread is parked on video_lock would deadlock if the
+     * GC needs to enter native frames the emulation thread holds. */
+    video_lock();
+    size_t size = video_get_frame_buffer_size_unlocked();
+    if (size == 0) {
+        video_unlock();
+        return NULL;
+    }
+    video_unlock();
 
     jbyteArray result = (*env)->NewByteArray(env, (jsize)size);
-    if (result) {
-        (*env)->SetByteArrayRegion(env, result, 0, (jsize)size, (const jbyte *)buffer);
+    if (!result) return NULL;
+
+    video_lock();
+    /* Re-check under the lock: the writer may have shrunk the buffer
+     * between our pre-alloc size sample and the lock acquisition. */
+    size_t cur_size = video_get_frame_buffer_size_unlocked();
+    const void *buffer = video_get_frame_buffer();
+    if (buffer && cur_size > 0) {
+        jsize copyLen = (jsize)cur_size < (jsize)size ? (jsize)cur_size : (jsize)size;
+        (*env)->SetByteArrayRegion(env, result, 0, copyLen, (const jbyte *)buffer);
     }
+    video_unlock();
     return result;
 }
 
 JNI_FUNC(jint, nativeFillVideoFrame)(JNIEnv *env, jobject thiz, jbyteArray out) {
-    const void *buffer = video_get_frame_buffer();
-    size_t size = video_get_frame_buffer_size();
-    if (!buffer || size == 0) return 0;
-
     jsize arrayLen = (*env)->GetArrayLength(env, out);
+    if (arrayLen <= 0) return 0;
+
+    /* #1044: see nativeGetVideoFrame for the lock rationale. */
+    video_lock();
+    const void *buffer = video_get_frame_buffer();
+    size_t size = video_get_frame_buffer_size_unlocked();
+    if (!buffer || size == 0) {
+        video_unlock();
+        return 0;
+    }
     jsize copyLen = (jsize)size < arrayLen ? (jsize)size : arrayLen;
     (*env)->SetByteArrayRegion(env, out, 0, copyLen, (const jbyte *)buffer);
+    video_unlock();
     return (jint)copyLen;
 }
 
@@ -1491,41 +1520,80 @@ JNI_FUNC(jint, nativeGetPixelFormat)(JNIEnv *env, jobject thiz) {
 }
 
 JNI_FUNC(jshortArray, nativeGetAudioBuffer)(JNIEnv *env, jobject thiz) {
-    const int16_t *buffer = audio_get_buffer();
-    size_t frames = audio_get_buffer_frames();
-    if (!buffer || frames == 0) return NULL;
+    /* #1044: hold audio_lock across the get_frames + memcpy + clear
+     * triple so the emulation thread's audio_sample[_batch]_callback
+     * cannot interleave and have its samples either overwritten by the
+     * clear (missed-increment race) or read partially (torn write_pos).
+     *
+     * NewShortArray is allocated OUTSIDE the lock to avoid blocking
+     * the GC while the emulation thread is parked on audio_lock. We
+     * sample the frame count with the lock, drop the lock for the
+     * allocation, then reacquire and re-sample under the lock. */
+    audio_lock();
+    size_t frames = audio_get_buffer_frames_unlocked();
+    audio_unlock();
+    if (frames == 0) return NULL;
 
     size_t samples = frames * 2; /* stereo */
     jshortArray result = (*env)->NewShortArray(env, (jsize)samples);
-    if (result) {
-        (*env)->SetShortArrayRegion(env, result, 0, (jsize)samples, buffer);
+    if (!result) return NULL;
+
+    audio_lock();
+    /* Re-sample under the lock: the writer may have added more frames
+     * between our first read and now. Copy at least the original count
+     * (the array we allocated). */
+    const int16_t *buffer = audio_get_buffer();
+    size_t cur_frames = audio_get_buffer_frames_unlocked();
+    size_t to_copy = cur_frames < frames ? cur_frames : frames;
+    if (buffer && to_copy > 0) {
+        (*env)->SetShortArrayRegion(env, result, 0, (jsize)(to_copy * 2), buffer);
     }
-    audio_clear_buffer();
+    audio_clear_buffer_unlocked();
+    audio_unlock();
     return result;
 }
 
 JNI_FUNC(jint, nativeFillAudioBuffer)(JNIEnv *env, jobject thiz, jshortArray out) {
-    const int16_t *buffer = audio_get_buffer();
-    size_t frames = audio_get_buffer_frames();
-    if (!buffer || frames == 0) return 0;
-
-    size_t samples = frames * 2; /* stereo */
     jsize arrayLen = (*env)->GetArrayLength(env, out);
+    if (arrayLen <= 0) return 0;
+
+    /* #1044: see nativeGetAudioBuffer for the lock rationale. */
+    audio_lock();
+    const int16_t *buffer = audio_get_buffer();
+    size_t frames = audio_get_buffer_frames_unlocked();
+    if (!buffer || frames == 0) {
+        audio_unlock();
+        return 0;
+    }
+    size_t samples = frames * 2; /* stereo */
     jsize copyLen = (jsize)samples < arrayLen ? (jsize)samples : arrayLen;
     (*env)->SetShortArrayRegion(env, out, 0, copyLen, buffer);
-    audio_clear_buffer();
+    audio_clear_buffer_unlocked();
+    audio_unlock();
     return (jint)copyLen;
 }
 
 JNI_FUNC(jint, nativeResampleAudio)(JNIEnv *env, jobject thiz,
                                      jshortArray out, jdouble ratio) {
+    /* audio_resample takes audio_lock internally and consumes write_pos
+     * + populates resampled_buffer atomically. We then need a second
+     * acquisition to read out the resampled data. The window between
+     * the two acquisitions is safe because the emulation thread can
+     * only ADD to a fresh buffer (write_pos was reset to 0); it cannot
+     * touch resampled_buffer. */
     size_t frames = audio_resample(ratio);
     if (frames == 0) return 0;
-    const int16_t *buf = audio_get_resampled_buffer();
+
     jsize samples = (jsize)(frames * 2);
     jsize arrayLen = (*env)->GetArrayLength(env, out);
     jsize copyLen = samples < arrayLen ? samples : arrayLen;
-    (*env)->SetShortArrayRegion(env, out, 0, copyLen, buf);
+
+    audio_lock();
+    const int16_t *buf = audio_get_resampled_buffer();
+    if (buf && copyLen > 0) {
+        (*env)->SetShortArrayRegion(env, out, 0, copyLen, buf);
+    }
+    audio_unlock();
     return (jint)copyLen;
 }
 

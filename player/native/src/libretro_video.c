@@ -51,9 +51,38 @@ static struct {
      * has already partially released) doesn't crash inside our
      * memcpy. (#916) */
     bool shutting_down;
+
+    /* #1044: cross-thread state guard.
+     *
+     * Writer = emulation thread inside video_refresh_callback. It can
+     * realloc(frame_buffer) on dimension change, then memcpy the new
+     * frame into it.
+     *
+     * Reader = render thread via the JNI bridge: nativeGetVideoFrame /
+     * nativeFillVideoFrame call video_get_frame_buffer + size, then
+     * SetByteArrayRegion to copy out.
+     *
+     * Without sync, a realloc on the writer side while the reader is
+     * mid-memcpy returns a dangling pointer. The reader also sees torn
+     * width/height pairs across the dimension-change frame.
+     *
+     * The mutex covers every video_state mutation and every read. The
+     * JNI bridge holds it across the get_buffer + size + memcpy triple
+     * via video_lock/video_unlock. */
+    sp_mutex_t lock;
+    bool       lock_initialized;
 } video_state = {0};
 
 void video_init(void) {
+    /* Preserve the lock across re-init: a core teardown + relaunch
+     * doesn't necessarily call video_deinit between. Lazy create on
+     * the first init. */
+    bool had_lock = video_state.lock_initialized;
+    sp_mutex_t saved_lock;
+    if (had_lock) {
+        saved_lock = video_state.lock;
+    }
+
     video_state.frame_buffer = NULL;
     video_state.frame_buffer_size = 0;
     video_state.width = 0;
@@ -62,6 +91,13 @@ void video_init(void) {
     video_state.pixel_format = RETRO_PIXEL_FORMAT_0RGB1555; /* default */
     video_state.shutting_down = false;
     /* gpu_renderer is not touched here -- managed externally */
+
+    if (had_lock) {
+        video_state.lock = saved_lock;
+        video_state.lock_initialized = true;
+    } else if (sp_mutex_init(&video_state.lock) == 0) {
+        video_state.lock_initialized = true;
+    }
 }
 
 void video_set_shutting_down(void) {
@@ -69,6 +105,9 @@ void video_set_shutting_down(void) {
 }
 
 void video_deinit(void) {
+    if (video_state.lock_initialized) {
+        sp_mutex_lock(&video_state.lock);
+    }
     if (video_state.frame_buffer) {
         free(video_state.frame_buffer);
         video_state.frame_buffer = NULL;
@@ -77,18 +116,49 @@ void video_deinit(void) {
     video_state.width = 0;
     video_state.height = 0;
     /* gpu_renderer is not destroyed here -- managed externally */
+    if (video_state.lock_initialized) {
+        sp_mutex_unlock(&video_state.lock);
+        sp_mutex_destroy(&video_state.lock);
+        video_state.lock_initialized = false;
+    }
+}
+
+/* #1044: lock primitives exposed for the JNI bridge so it can hold the
+ * video mutex across the get_frame_buffer + size + memcpy triple in
+ * nativeGetVideoFrame / nativeFillVideoFrame. */
+void video_lock(void) {
+    if (video_state.lock_initialized) {
+        sp_mutex_lock(&video_state.lock);
+    }
+}
+
+void video_unlock(void) {
+    if (video_state.lock_initialized) {
+        sp_mutex_unlock(&video_state.lock);
+    }
 }
 
 void video_set_pixel_format(unsigned format) {
+    video_lock();
     video_state.pixel_format = format;
+    video_unlock();
 }
 
 void video_set_gpu_renderer(gpu_renderer_t *renderer) {
+    /* Writer crosses the JNI thread / emulation thread boundary
+     * (Kotlin GPU surface lifecycle vs core's video_refresh_callback),
+     * so the pointer write must be locked even though it's a single
+     * machine-word store. */
+    video_lock();
     video_state.gpu_renderer = renderer;
+    video_unlock();
 }
 
 gpu_renderer_t *video_get_gpu_renderer(void) {
-    return video_state.gpu_renderer;
+    video_lock();
+    gpu_renderer_t *r = video_state.gpu_renderer;
+    video_unlock();
+    return r;
 }
 
 /*
@@ -108,6 +178,17 @@ void video_refresh_callback(const void *data, unsigned width, unsigned height, s
     /* See video_state.shutting_down. */
     if (video_state.shutting_down) return;
 
+    /* #1044: hold the lock across the entire callback. This serialises:
+     *  - dimension fields (width / height / pitch / pixel_format) that
+     *    JNI readers consume to allocate output buffers,
+     *  - frame_buffer realloc + memcpy, which would otherwise return a
+     *    dangling pointer to a reader that called video_get_frame_buffer
+     *    just before the realloc.
+     * GPU paths (Vulkan / Metal) only mutate width / height under the
+     * lock; the GPU staging buffer they write into is the renderer's
+     * own and is synchronised internally. */
+    video_lock();
+
     if (data == RETRO_HW_FRAME_BUFFER_VALID && g_core.hw_render_enabled) {
         /*
          * Vulkan HW render path (e.g. Dolphin): core rendered to its own VkImage.
@@ -124,6 +205,7 @@ void video_refresh_callback(const void *data, unsigned width, unsigned height, s
             video_state.width = width;
             video_state.height = height;
             gpu_renderer_hw_render_frame(video_state.gpu_renderer, width, height);
+            video_unlock();
             return;
         }
         /* GLES HW render path: readback from pbuffer, upload through Vulkan pipeline.
@@ -133,7 +215,10 @@ void video_refresh_callback(const void *data, unsigned width, unsigned height, s
             size_t needed = (size_t)width * height * 4;
             if (needed > video_state.frame_buffer_size) {
                 void *new_buf = realloc(video_state.frame_buffer, needed);
-                if (!new_buf) return;
+                if (!new_buf) {
+                    video_unlock();
+                    return;
+                }
                 video_state.frame_buffer = new_buf;
                 video_state.frame_buffer_size = needed;
             }
@@ -155,12 +240,14 @@ void video_refresh_callback(const void *data, unsigned width, unsigned height, s
 
             /* Resize pbuffer for next frame if core reported different dimensions */
             hw_gl_resize_fbo(g_core.hw_gl_ctx, width, height);
+            video_unlock();
             return;
         }
         /* HW frame but no active renderer — drop the frame. Falling through to
          * the software path would dereference RETRO_HW_FRAME_BUFFER_VALID as a
          * pointer, causing a SIGSEGV. This happens when the GPU surface is
          * suspended (e.g. clamshell close) while the core is still running. */
+        video_unlock();
         return;
     }
 
@@ -178,6 +265,7 @@ void video_refresh_callback(const void *data, unsigned width, unsigned height, s
     if (video_state.gpu_renderer && gpu_renderer_is_active(video_state.gpu_renderer)) {
         gpu_renderer_upload_frame(video_state.gpu_renderer, data,
             width, height, pitch, video_state.pixel_format);
+        video_unlock();
         return;
     }
 
@@ -199,7 +287,10 @@ void video_refresh_callback(const void *data, unsigned width, unsigned height, s
 
     if (needed != video_state.frame_buffer_size) {
         void *new_buf = realloc(video_state.frame_buffer, needed);
-        if (!new_buf) return;
+        if (!new_buf) {
+            video_unlock();
+            return;
+        }
         video_state.frame_buffer = new_buf;
         video_state.frame_buffer_size = needed;
     }
@@ -214,24 +305,50 @@ void video_refresh_callback(const void *data, unsigned width, unsigned height, s
         src += pitch;
         dst += row_bytes;
     }
+
+    video_unlock();
 }
 
 unsigned video_get_width(void) {
-    return video_state.width;
+    video_lock();
+    unsigned w = video_state.width;
+    video_unlock();
+    return w;
 }
 
 unsigned video_get_height(void) {
-    return video_state.height;
+    video_lock();
+    unsigned h = video_state.height;
+    video_unlock();
+    return h;
 }
 
+/* Pointer accessor: the buffer is a heap allocation that the writer can
+ * realloc on dimension change, so reading the buffer's *contents* through
+ * this pointer requires holding video_lock. The JNI bridge does so via
+ * video_lock() / video_unlock() around the whole read+copy. */
 const void *video_get_frame_buffer(void) {
     return video_state.frame_buffer;
 }
 
 size_t video_get_frame_buffer_size(void) {
-    return video_state.frame_buffer_size;
+    video_lock();
+    size_t s = video_state.frame_buffer_size;
+    video_unlock();
+    return s;
 }
 
 unsigned video_get_pixel_format(void) {
-    return video_state.pixel_format;
+    video_lock();
+    unsigned f = video_state.pixel_format;
+    video_unlock();
+    return f;
 }
+
+/* Caller-locked accessors for use by the JNI bridge when it has already
+ * acquired video_lock — avoids a second acquisition per JNI call and
+ * keeps width/height/pitch consistent with the buffer pointer. */
+unsigned video_get_width_unlocked(void) { return video_state.width; }
+unsigned video_get_height_unlocked(void) { return video_state.height; }
+size_t video_get_frame_buffer_size_unlocked(void) { return video_state.frame_buffer_size; }
+unsigned video_get_pixel_format_unlocked(void) { return video_state.pixel_format; }
