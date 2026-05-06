@@ -1491,6 +1491,8 @@ fun ComposeRule.navigateToCastlevania() {
  * Returns the game title for later assertions.
  */
 fun ComposeRule.navigateToAnyNesGame(): String {
+    val tag = "E2E_NAV"
+    android.util.Log.d(tag, "navigateToAnyNesGame: start")
     // Discover an actual NES game title from the backend instead of
     // guessing from a list of common names — local seed has commercial
     // ROMs (Castlevania etc.), CI seed only has nestest.nes. Either
@@ -1500,25 +1502,31 @@ fun ComposeRule.navigateToAnyNesGame(): String {
         ?: throw IllegalStateException(
             "No NES game found via /api/games?consoleId=nes — check seed data"
         )
+    android.util.Log.d(tag, "navigateToAnyNesGame: title='$title'")
 
     val device = uiDevice()
 
     // Navigate to Consoles tab
+    android.util.Log.d(tag, "navigateToAnyNesGame: tap Consoles")
     tapOn("Consoles")
+    android.util.Log.d(tag, "navigateToAnyNesGame: wait NES desc")
     waitForContentDescription("Nintendo Entertainment System", TIMEOUT_EXTRA_LONG)
 
     // Tap the NES console card via stable testTag (text-pair matcher
     // was broken by the card-layout refresh).
+    android.util.Log.d(tag, "navigateToAnyNesGame: scroll-tap NES card")
     val nesCardTag = com.spela.player.presentation.ui.TestTags.consoleCard("nes")
     scrollToAndTapTag(nesCardTag, maxSwipes = 12)
 
     // Wait for console game list screen
+    android.util.Log.d(tag, "navigateToAnyNesGame: wait Console settings desc")
     waitForContentDescription("Console settings", TIMEOUT_EXTRA_LONG)
 
     // ConsoleScreen renders "Top Rated" only if state.topRatedGames
     // is non-empty (a small library has none), and "All Games" only
     // when game count ≤ 15. Don't anchor on a section header — wait
     // for the game's own title text to render.
+    android.util.Log.d(tag, "navigateToAnyNesGame: waitForText '$title'")
     waitForText(title, TIMEOUT_LONG)
 
     // Click via Compose semantics on the card's merged contentDescription.
@@ -1530,10 +1538,12 @@ fun ComposeRule.navigateToAnyNesGame(): String {
     // returns 0 nodes (the previous attempt). Match the card directly
     // via `hasContentDescription(title, substring = true)` — the
     // merged contentDescription always contains the title.
+    android.util.Log.d(tag, "navigateToAnyNesGame: click card by contentDesc")
     onAllNodes(
         androidx.compose.ui.test.hasClickAction() and
             androidx.compose.ui.test.hasContentDescription(title, substring = true)
     )[0].performClick()
+    android.util.Log.d(tag, "navigateToAnyNesGame: card click fired, polling action button")
 
     pollUntil(timeoutMillis = TIMEOUT_LONG) {
         device.findObject(UiSelector().textContains("Download")).exists() ||
