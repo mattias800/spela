@@ -1355,6 +1355,20 @@ internal fun ComposeRule.addServerAndLogin(username: String, password: String) {
         // which is exactly what the diagnostic dump showed when this
         // method was failing in CI (currentPackage=…nexuslauncher).
 
+        // The form is inside a LazyColumn, and on small displays
+        // (notably the 320x640 GH Actions emulator) the URL row sits
+        // below the fold — its underlying EditText isn't in the
+        // accessibility tree until it scrolls into view, so
+        // UiAutomator's `findObject(EditText.instance(1))` never
+        // matches. Scroll to the SERVER_URL_INPUT testTag first; the
+        // outer Compose node carries the tag even though the inner
+        // widget is an AndroidView'd EditText.
+        runCatching {
+            onAllNodesWithTag(TestTags.SERVER_URL_INPUT, useUnmergedTree = true)[0]
+                .performScrollTo()
+            waitForIdle()
+        }
+
         // Find the URL field by HINT, not by .instance(1). On the AVD an
         // autofill suggestion strip can introduce a phantom EditText
         // that takes index 1, OR the URL row is still off-screen even
