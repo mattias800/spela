@@ -66,7 +66,16 @@ export function PageLayout({
           )}
         </div>
       )}
-      <div className="p-6">
+      {/*
+       * #1071: cap the padded content area at the 2xl breakpoint
+       * (1536 px) and centre it. On laptop / standard desktop
+       * (≤1536 px) this is a no-op — content fills the viewport as
+       * before. On ultrawide / 4K it stops cards from ballooning
+       * into 800-px-wide near-empty rectangles. The hero / header
+       * surface above stays full-width on purpose so banners flush
+       * to the edges.
+       */}
+      <div className="p-6 mx-auto w-full max-w-screen-2xl">
         {backButtonVariant === "standard" && (
           <div className="mb-6">
             <BackButton onClick={handleBack} data-testid="page-back-button">{backLabel}</BackButton>
