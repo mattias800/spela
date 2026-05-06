@@ -1433,9 +1433,24 @@ internal fun ComposeRule.addServerAndLogin(username: String, password: String) {
             urlField.setText(SERVER_URL)
         }
 
+        // Pre-click diagnostics — confirm both EditTexts have the expected
+        // text, since the form-still-open failure mode could be caused by
+        // setText not propagating to Compose state on the GHA emulator.
+        run {
+            val device2 = uiDevice()
+            val all = device2.findObjects(androidx.test.uiautomator.By.clazz("android.widget.EditText"))
+            android.util.Log.i("E2E_SETUP", "Pre-Connect EditText count=${all.size}")
+            all.forEachIndexed { i, obj ->
+                val txt = runCatching { obj.text }.getOrDefault("?")
+                val hint = runCatching { obj.hint }.getOrDefault("?")
+                android.util.Log.i("E2E_SETUP", "Pre-Connect EditText[$i] text='$txt' hint='$hint'")
+            }
+        }
+
         // Tap the Connect button to submit (testTag is on the Compose
         // wrapper around SpButton, which IS a real Compose node).
         onNodeWithTag(TestTags.SERVER_CONNECT_BUTTON).performClick()
+        android.util.Log.i("E2E_SETUP", "Tapped SERVER_CONNECT_BUTTON")
 
         // Wait for the form to actually go away (validation finished
         // and server was added). A bare 2s sleep raced server-side
@@ -1444,7 +1459,31 @@ internal fun ComposeRule.addServerAndLogin(username: String, password: String) {
         // Compose's tree had no Text "Local" yet (only the AndroidView'd
         // EditText, invisible to onNodeWithText) — onNodeWithText().
         // performClick() then failed with "Expected 1 node but found 0".
-        pollUntil(timeoutMillis = TIMEOUT_LONG) { !serverNameInputVisible() }
+        try {
+            pollUntil(timeoutMillis = TIMEOUT_LONG) { !serverNameInputVisible() }
+        } catch (e: Throwable) {
+            // Form never closed — capture state to help diagnose.
+            val device2 = uiDevice()
+            android.util.Log.e("E2E_SETUP", "── Form never closed after Connect ──")
+            android.util.Log.e("E2E_SETUP", "currentPackage=${device2.currentPackageName}")
+            try {
+                val all = device2.findObjects(androidx.test.uiautomator.By.clazz("android.widget.EditText"))
+                android.util.Log.e("E2E_SETUP", "Post-fail EditText count=${all.size}")
+                all.forEachIndexed { i, obj ->
+                    val txt = runCatching { obj.text }.getOrDefault("?")
+                    android.util.Log.e("E2E_SETUP", "Post-fail EditText[$i] text='$txt'")
+                }
+            } catch (_: Throwable) {}
+            try {
+                val anyText = device2.findObjects(androidx.test.uiautomator.By.clazz("android.widget.TextView"))
+                android.util.Log.e("E2E_SETUP", "Post-fail TextView count=${anyText.size}")
+                anyText.take(20).forEachIndexed { i, obj ->
+                    val txt = runCatching { obj.text }.getOrDefault("?")
+                    android.util.Log.e("E2E_SETUP", "Post-fail TextView[$i] text='$txt'")
+                }
+            } catch (_: Throwable) {}
+            throw e
+        }
     }
 
     // Tap server card to connect. Use UiAutomator's description match
