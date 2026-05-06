@@ -1159,6 +1159,13 @@ type UserStatsResponse struct {
 	// shape (vs the null-value shape of sibling LastPlayedAt) as the
 	// price of compatible client codegen, until upstream Huma is
 	// fixed. TODO(#969): re-audit on every Huma upgrade.
+	//
+	// Re-audited and verified in #967 (closed): any `*T` `$ref` field
+	// hits this constraint regardless of whether it's embedded or
+	// top-level — the position of the field doesn't change Huma's
+	// schema emission. Confirmed by removing `omitempty` and dumping
+	// the OpenAPI: `mostPlayedGame` came out as a bare `$ref` listed
+	// in `required`, with no `nullable` / `type: [..., "null"]`.
 	MostPlayedGame     *GameResponse `json:"mostPlayedGame,omitempty"`
 	MostPlayedGameTime int64         `json:"mostPlayedGameTime"`
 	LastPlayedAt       *time.Time    `json:"lastPlayedAt"`
