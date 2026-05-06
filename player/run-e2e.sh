@@ -218,7 +218,11 @@ ADB_SERIAL="$ADB_SERIAL" "$SCRIPT_DIR/scripts/cache-cores.sh" nestopia mupen64pl
 
 # ── Unlock device if locked ──
 
-LOCKED=$(adb -s "$ADB_SERIAL" shell dumpsys window | grep mInputRestricted | head -1)
+# `|| true` — `grep` returns 1 when there's no `mInputRestricted` line
+# (e.g. fresh GHA emulator with no lock screen), and combined with
+# `set -o pipefail` that fails the whole assignment, killing the script
+# under `set -e`. Treat "no match" as "not locked".
+LOCKED=$(adb -s "$ADB_SERIAL" shell dumpsys window | grep mInputRestricted | head -1 || true)
 if echo "$LOCKED" | grep -q "true"; then
   echo "Device is locked — unlocking..."
   adb -s "$ADB_SERIAL" shell input keyevent KEYCODE_WAKEUP
