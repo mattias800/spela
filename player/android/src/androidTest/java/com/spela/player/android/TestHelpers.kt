@@ -1436,12 +1436,31 @@ internal fun ComposeRule.addServerAndLogin(username: String, password: String) {
         // Tap the Connect button to submit (testTag is on the Compose
         // wrapper around SpButton, which IS a real Compose node).
         onNodeWithTag(TestTags.SERVER_CONNECT_BUTTON).performClick()
-        Thread.sleep(2_000)
+
+        // Wait for the form to actually go away (validation finished
+        // and server was added). A bare 2s sleep raced server-side
+        // validation on the GHA emulator: the EditText still contained
+        // "Local" via UiAutomator, so waitForText() succeeded, but
+        // Compose's tree had no Text "Local" yet (only the AndroidView'd
+        // EditText, invisible to onNodeWithText) — onNodeWithText().
+        // performClick() then failed with "Expected 1 node but found 0".
+        pollUntil(timeoutMillis = TIMEOUT_LONG) { !serverNameInputVisible() }
     }
 
-    // Tap server card to connect (Compose API — fast with isTestMode)
-    waitForText(SERVER_NAME, TIMEOUT_MEDIUM)
-    onNodeWithText(SERVER_NAME).performClick()
+    // Tap server card to connect. Use UiAutomator's description match
+    // (the SpActionCard sets `contentDescription = server.name`) — the
+    // Compose Text inside the card is also tagged but UiAutomator's
+    // path is what consistently lands on a real touch handler in the
+    // accessibility tree, even on the emulator's small viewport.
+    val device = uiDevice()
+    val serverCard = device.findObject(UiSelector().description(SERVER_NAME))
+    if (!serverCard.waitForExists(TIMEOUT_MEDIUM.scaledTimeout())) {
+        // Compose fallback — surface a useful error if neither path
+        // sees the card.
+        onNodeWithText(SERVER_NAME).performClick()
+    } else {
+        serverCard.click()
+    }
     Thread.sleep(500)
 
     // Login
