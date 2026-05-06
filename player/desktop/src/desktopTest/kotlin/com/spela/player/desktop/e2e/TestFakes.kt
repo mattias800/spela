@@ -27,7 +27,6 @@ import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.test.TestDispatcher
 import com.spela.player.presentation.navigation.NavigationIntent
 import com.spela.player.presentation.navigation.SpScreen
@@ -789,14 +788,32 @@ class FakePreferencesRepository : PreferencesRepository {
 }
 
 class FakeAchievementsRepository : AchievementsRepository {
-    override suspend fun getRAStatus(): Result<RAStatus> = Result.success(RAStatus())
-    override suspend fun linkRA(username: String, password: String): Result<RAStatus> = Result.success(RAStatus())
+    // Default: RA not linked (matches a fresh player install). Tests
+    // that need the achievement event collector active set this to
+    // Result.success(RACredentials(...)) before launching a game.
+    var raTokenResult: Result<RACredentials> = Result.failure(Exception("Not linked"))
+    var raStatus: RAStatus = RAStatus()
+
+    override suspend fun getRAStatus(): Result<RAStatus> = Result.success(raStatus)
+    override suspend fun linkRA(username: String, password: String): Result<RAStatus> = Result.success(raStatus)
     override suspend fun unlinkRA(): Result<Unit> = Result.success(Unit)
-    override suspend fun getRAToken(): Result<RACredentials> = Result.failure(Exception("Not linked"))
-    override suspend fun updateRASettings(hardcoreEnabled: Boolean): Result<RAStatus> = Result.success(RAStatus())
+    override suspend fun getRAToken(): Result<RACredentials> = raTokenResult
+    override suspend fun updateRASettings(hardcoreEnabled: Boolean): Result<RAStatus> = Result.success(raStatus)
 }
 
 class FakeAchievementsController : com.spela.player.domain.controller.AchievementsController {
+    // Replay = 0 so tests don't see stale events from a prior game; replayed
+    // events would re-fire the popup mid-test. extraBufferCapacity is enough
+    // for the longest plausible burst (game-completed + a couple of stacked
+    // unlocks in quick succession).
+    private val _events = MutableSharedFlow<AchievementEvent>(extraBufferCapacity = 16)
+    override val events: Flow<AchievementEvent> = _events.asSharedFlow()
+
+    /** Test hook: emit an achievement event onto the controller's flow. */
+    fun emitEvent(event: AchievementEvent) {
+        _events.tryEmit(event)
+    }
+
     override fun init() {}
     override fun deinit() {}
     override fun login(username: String, token: String) {}
@@ -804,7 +821,6 @@ class FakeAchievementsController : com.spela.player.domain.controller.Achievemen
     override fun doFrame() {}
     override val isHardcore: Boolean = false
     override fun setHardcore(enabled: Boolean) {}
-    override val events: Flow<AchievementEvent> = flow {}
     override fun httpComplete(requestId: Int, responseCode: Int, responseBody: ByteArray) {}
 }
 
