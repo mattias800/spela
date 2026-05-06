@@ -84,6 +84,32 @@ private val HeroTextPrimary    = Color.White.copy(alpha = 0.90f)
 private val HeroTextSecondary  = Color.White.copy(alpha = 0.70f)
 private val HeroBadgeBackground = Color.White.copy(alpha = 0.10f)
 
+// #1082: Per-card width cap. With the fixed 120 dp card height, anything
+// past ~340 dp degrades the design's intended 1.9:1 aspect ratio into a
+// thin strip. Keeps the card content (140 dp watermark icon, 0.65-width
+// logo, bottom-left metadata) coherent on all viewports — same visual
+// weight at 1920 dp and at 700 dp tablets, just more cards per row.
+internal val ConsoleCardMaxWidth = 340.dp
+
+/**
+ * #1082: Column count for the consoles grid given the available container
+ * width. Extracted so the breakpoint logic is unit-testable without
+ * spinning up Compose UI.
+ *
+ * Pairs with [ConsoleCardMaxWidth] — the breakpoints aim to keep density
+ * up at standard desktop widths (1100+ → 4 cols, 1500+ → 5 cols), and
+ * the per-card width cap then stops cards from stretching past the
+ * design's intended ~340 dp width when the row's available width
+ * exceeds `cols × 340 dp`.
+ */
+internal fun consoleColumnsForWidth(width: androidx.compose.ui.unit.Dp): Int = when {
+    width >= 1500.dp -> 5
+    width >= 1100.dp -> 4
+    width >= 700.dp  -> 3
+    width >= 400.dp  -> 2
+    else             -> 1
+}
+
 private fun generationLabel(generation: Int): String = when (generation) {
     2 -> "2nd Generation · 1976–1992"
     3 -> "3rd Generation · 1983–1992"
@@ -131,11 +157,23 @@ internal fun ConsolesGrid(
                     horizontalArrangement = Arrangement.spacedBy(SpSpacing.Medium),
                 ) {
                     rowConsoles.forEach { console ->
+                        // #1082: weight allocates equal share, then widthIn
+                        // clamps the result so cards never stretch past their
+                        // intended visual weight on wide windows. Beyond the
+                        // cap, leftover row width distributes via the existing
+                        // weight(1f) Spacer logic below for partial last rows.
                         val cardModifier = if (isFirstCard) {
                             isFirstCard = false
-                            Modifier.weight(1f).autoFocus().rememberFocus(console.id)
+                            Modifier
+                                .weight(1f)
+                                .widthIn(max = ConsoleCardMaxWidth)
+                                .autoFocus()
+                                .rememberFocus(console.id)
                         } else {
-                            Modifier.weight(1f).rememberFocus(console.id)
+                            Modifier
+                                .weight(1f)
+                                .widthIn(max = ConsoleCardMaxWidth)
+                                .rememberFocus(console.id)
                         }
                         ConsoleCard(
                             console = console,
