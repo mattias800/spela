@@ -2641,6 +2641,7 @@ fun ComposeRule.navigateToSettings() {
     val deadline = System.currentTimeMillis() + totalTimeout
     var lastTapAt = System.currentTimeMillis()
     var triedUiAutomatorTap = false
+    var pressBackAttempts = 0
     while (System.currentTimeMillis() < deadline) {
         try {
             if (onAllNodesWithTag(TestTags.SETTINGS_CATEGORY_GENERAL, useUnmergedTree = true)
@@ -2653,6 +2654,18 @@ fun ComposeRule.navigateToSettings() {
         if (elapsed > 3_000 && System.currentTimeMillis() - lastTapAt > 1_500) {
             tapOnTag(TestTags.NAV_SETTINGS, fallbackLabel = "Settings")
             lastTapAt = System.currentTimeMillis()
+        }
+        // After 5s, try pressing back. The Settings tab preserves its
+        // back-stack across tab switches, so if a previous test left
+        // a deep sub-screen (ConsoleSettings, list-detail showingDetail
+        // pane) at the top of the stack, re-tapping NAV_SETTINGS just
+        // restores us to that sub-screen — SETTINGS_CATEGORY_GENERAL
+        // is on the category-list root one or two levels back.
+        if (elapsed > 5_000 && pressBackAttempts < 3) {
+            pressBackAttempts++
+            android.util.Log.d("E2E_NAV", "navigateToSettings: pressing back to pop sub-screen ($pressBackAttempts/3)")
+            runCatching { pressBack() }
+            Thread.sleep(400)
         }
         // After 7s, also try a physical UiAutomator touch on the
         // "Settings" content-description node. Compose's
