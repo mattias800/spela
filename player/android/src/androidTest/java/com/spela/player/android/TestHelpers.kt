@@ -1367,51 +1367,52 @@ internal fun ComposeRule.addServerAndLogin(username: String, password: String) {
             UiSelector().className("android.widget.EditText").instance(1),
         )
         if (!urlField.waitForExists(TIMEOUT_MEDIUM)) {
-            // Diagnostic dump to BOTH logcat AND gradle stdout. The CI
-            // action only logs gradle's stdout/stderr — logcat from
-            // the test process isn't visible there unless an artifact
-            // upload pulls it (which has been unreliable on the AVD's
-            // scoped storage). System.err.println is captured.
-            fun diag(msg: String) {
+            // Diagnostic dump. logcat-only is invisible in GH Actions
+            // CI (gradle's connectedDebugAndroidTest doesn't forward
+            // test-process stdout/stderr), so we both Log.e AND
+            // accumulate into a String that becomes part of the
+            // assertion failure message — gradle DOES print throwable
+            // messages to its stdout.
+            val diag = StringBuilder("\n── URL field probe failed; UI dump ──\n")
+            fun log(msg: String) {
                 android.util.Log.e("E2E_SETUP", msg)
-                System.err.println("E2E_SETUP: $msg")
+                diag.append(msg).append('\n')
             }
-            diag("── URL field probe failed; dumping UI ──")
-            try { diag("currentPackage=${uiDevice().currentPackageName}") } catch (_: Throwable) {}
+            try { log("currentPackage=${uiDevice().currentPackageName}") } catch (_: Throwable) {}
             try {
                 val all = device.findObjects(androidx.test.uiautomator.By.clazz("android.widget.EditText"))
-                diag("EditText count visible = ${all.size}")
+                log("EditText count visible = ${all.size}")
                 all.forEachIndexed { i, obj ->
                     val txt = runCatching { obj.text }.getOrDefault("?")
                     val hint = runCatching { obj.hint }.getOrDefault("?")
                     val res = runCatching { obj.resourceName }.getOrDefault("?")
                     val visible = runCatching { obj.visibleBounds }.getOrDefault(null)
-                    diag("EditText[$i] text='$txt' hint='$hint' res='$res' bounds=$visible")
+                    log("EditText[$i] text='$txt' hint='$hint' res='$res' bounds=$visible")
                 }
             } catch (e: Throwable) {
-                diag("EditText dump failed: ${e.message}")
+                log("EditText dump failed: ${e.message}")
             }
             try {
                 val server = device.findObjects(androidx.test.uiautomator.By.textContains("Server"))
-                diag("Nodes containing 'Server': ${server.size}")
+                log("Nodes containing 'Server': ${server.size}")
                 server.take(20).forEachIndexed { i, obj ->
                     val txt = runCatching { obj.text }.getOrDefault("?")
                     val cls = runCatching { obj.className }.getOrDefault("?")
-                    diag("Server-node[$i] class=$cls text='$txt'")
+                    log("Server-node[$i] class=$cls text='$txt'")
                 }
             } catch (_: Throwable) {}
             try {
                 val mFocus = device.executeShellCommand("dumpsys window | grep mCurrentFocus")
-                diag("dumpsys: $mFocus")
+                log("dumpsys: $mFocus")
             } catch (_: Throwable) {}
 
             // Fallback: find by hint via By.hint (UiAutomator2 API).
             val byHint = device.findObjects(
                 androidx.test.uiautomator.By.hint("spela.example.com"),
             )
-            diag("By.hint('spela.example.com') matched ${byHint.size} nodes")
+            log("By.hint('spela.example.com') matched ${byHint.size} nodes")
             check(byHint.isNotEmpty()) {
-                "Server URL EditText not found by hint either — see E2E_SETUP diagnostics above"
+                "Server URL EditText not found by hint either.${diag}"
             }
             byHint[0].setText(SERVER_URL)
         } else {
