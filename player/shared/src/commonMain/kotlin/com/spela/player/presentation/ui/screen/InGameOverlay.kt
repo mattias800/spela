@@ -31,6 +31,7 @@ import com.spela.player.presentation.ui.feature.ingame.NetplayPauseOverlay
 import com.spela.player.presentation.ui.feature.ingame.NetplaySessionExpiredOverlay
 import com.spela.player.presentation.ui.feature.ingame.OverlayConfirmDialog
 import com.spela.player.presentation.ui.feature.ingame.OverlayToast
+import com.spela.player.presentation.ui.components.AchievementPopup
 import com.spela.player.presentation.intent.KeyMappingIntent
 import com.spela.player.presentation.ui.components.SpSecondaryButton
 import com.spela.player.presentation.ui.components.SpCountdownOverlay
@@ -54,6 +55,28 @@ fun InGameOverlay(
     val state by viewModel.state.collectAsState()
     val continueFocusRequester = remember { FocusRequester() }
     val hasGamepadConfig = gamepadConfigViewModel != null
+
+    // #1087: top-anchored achievement banner on the primary in-game
+    // surface. Reads `state.achievementEvent`, which the VM pumps from
+    // the RetroAchievements controller during initAchievements; before
+    // this mount, the popup primitive existed but was never wired up —
+    // only the secondary-screen celebration fired, and the user is
+    // usually looking at the primary surface during gameplay. Auto-
+    // dismiss + slide animation belong to AchievementPopup itself.
+    //
+    // Rendered first so every later overlay (pause menu, dialogs,
+    // sheets) renders on top of the banner — i.e. opening the pause
+    // menu while a banner is on screen hides the banner until the
+    // menu closes (or until the 4 s timer expires).
+    Box(
+        modifier = Modifier.fillMaxSize(),
+        contentAlignment = Alignment.TopCenter,
+    ) {
+        AchievementPopup(
+            event = state.achievementEvent,
+            onDismiss = { viewModel.onIntent(EmulationIntent.DismissAchievement) },
+        )
+    }
 
     AnimatedVisibility(
         visible = state.showOverlay,

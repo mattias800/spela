@@ -168,6 +168,13 @@ class SpelaTestHarness(
     val keyMappingRepo = FakeKeyMappingRepository()
     val gamepadPortManager = GamepadPortManager(keyMappingRepo, scope)
 
+    // Achievement fakes are exposed so tests can drive the popup wiring:
+    // set `achievementsRepo.raTokenResult = Result.success(...)` to enable
+    // the VM's event collector at game launch, then call
+    // `achievementsCtrl.emitEvent(...)` to fire an unlock.
+    val achievementsRepo = FakeAchievementsRepository()
+    val achievementsCtrl = FakeAchievementsController()
+
     private val emulationState = MutableStateFlow(EmulationState())
 
     private val saveManager = SaveManager(
@@ -204,8 +211,8 @@ class SpelaTestHarness(
         prepareGameUseCase = PrepareGameUseCase(downloadRepo, coreRepo),
         getGameDetailUseCase = GetGameDetailUseCase(gameRepo),
         preferencesRepository = preferencesRepo,
-        achievementsRepository = FakeAchievementsRepository(),
-        achievementsController = FakeAchievementsController(),
+        achievementsRepository = achievementsRepo,
+        achievementsController = achievementsCtrl,
         libretroController = libretroController,
         secondaryDisplay = secondaryDisplay,
         presenceService = presenceService,
