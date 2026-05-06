@@ -1341,15 +1341,12 @@ internal fun ComposeRule.addServerAndLogin(username: String, password: String) {
             "Server Name EditText never appeared on server-connection screen"
         }
         nameField.setText(SERVER_NAME)
-
-        // Dismiss the soft keyboard before looking for the URL field.
-        // On the GitHub Actions x86_64 AVD the on-screen keyboard covers
-        // the URL row, the LazyColumn doesn't compose off-screen items,
-        // and UiAutomator can't see the second EditText.
-        if (isEmulator) {
-            device.pressBack()
-            Thread.sleep(300)
-        }
+        // NOTE: don't pressBack here. UiAutomator's setText uses an
+        // accessibility action, which doesn't open the soft keyboard,
+        // so there's no keyboard to hide. pressBack with no keyboard
+        // up navigates AWAY from the Spela activity to the launcher,
+        // which is exactly what the diagnostic dump showed when this
+        // method was failing in CI (currentPackage=…nexuslauncher).
 
         // Find the URL field by HINT, not by .instance(1). On the AVD an
         // autofill suggestion strip can introduce a phantom EditText
@@ -1363,24 +1360,50 @@ internal fun ComposeRule.addServerAndLogin(username: String, password: String) {
             UiSelector().className("android.widget.EditText").instance(1),
         )
         if (!urlField.waitForExists(TIMEOUT_MEDIUM)) {
-            // Diagnostic dump so the next CI failure tells us the actual
-            // hierarchy, not just "didn't find it".
+            // Dump every EditText UiAutomator can see to logcat. Writes
+            // to /sdcard fail silently on Android 15 AVDs (scoped
+            // storage), so the file-based dump is unreliable. Logcat
+            // is captured by the action and also by the failure
+            // listener, so we always see this.
+            android.util.Log.e("E2E_SETUP", "── URL field probe failed; dumping UI ──")
             try {
-                val dumpFile = java.io.File("/sdcard/server-connect-fail.xml")
-                device.dumpWindowHierarchy(dumpFile)
-                android.util.Log.e(
-                    "E2E_SETUP",
-                    "URL field probe failed; UI dump at ${dumpFile.absolutePath}",
-                )
+                val focused = uiDevice().currentPackageName
+                android.util.Log.e("E2E_SETUP", "currentPackage=$focused")
+            } catch (_: Throwable) {}
+            try {
+                val all = device.findObjects(androidx.test.uiautomator.By.clazz("android.widget.EditText"))
+                android.util.Log.e("E2E_SETUP", "EditText count visible = ${all.size}")
+                all.forEachIndexed { i, obj ->
+                    val txt = runCatching { obj.text }.getOrDefault("?")
+                    val hint = runCatching { obj.hint }.getOrDefault("?")
+                    val res = runCatching { obj.resourceName }.getOrDefault("?")
+                    val visible = runCatching { obj.visibleBounds }.getOrDefault(null)
+                    android.util.Log.e(
+                        "E2E_SETUP",
+                        "EditText[$i] text='$txt' hint='$hint' res='$res' bounds=$visible",
+                    )
+                }
+            } catch (e: Throwable) {
+                android.util.Log.e("E2E_SETUP", "EditText dump failed: ${e.message}")
+            }
+            try {
+                val server = device.findObjects(androidx.test.uiautomator.By.textContains("Server"))
+                android.util.Log.e("E2E_SETUP", "Nodes containing 'Server': ${server.size}")
+                server.take(20).forEachIndexed { i, obj ->
+                    val txt = runCatching { obj.text }.getOrDefault("?")
+                    val cls = runCatching { obj.className }.getOrDefault("?")
+                    android.util.Log.e("E2E_SETUP", "Server-node[$i] class=$cls text='$txt'")
+                }
             } catch (_: Throwable) {}
 
             // Fallback: find by hint via By.hint (UiAutomator2 API).
             val byHint = device.findObjects(
                 androidx.test.uiautomator.By.hint("spela.example.com"),
             )
+            android.util.Log.e("E2E_SETUP", "By.hint('spela.example.com') matched ${byHint.size} nodes")
             check(byHint.isNotEmpty()) {
                 "Server URL EditText not found by hint either — " +
-                    "form layout has changed or AVD has zero EditTexts visible"
+                    "see logcat E2E_SETUP for what UiAutomator did see"
             }
             byHint[0].setText(SERVER_URL)
         } else {
@@ -1434,14 +1457,9 @@ private fun ComposeRule.doLogin(username: String, password: String) {
     }
     usernameField.setText(username)
     android.util.Log.d("E2E_TIMING", "setUsername: ${System.currentTimeMillis()-t}ms")
-
-    // Hide the soft keyboard so the password field below isn't off-
-    // screen (and thus dropped from the LazyColumn / accessibility
-    // tree). Same pattern as addServerAndLogin — emulator-only.
-    if (isEmulator) {
-        device.pressBack()
-        Thread.sleep(300)
-    }
+    // NOTE: don't pressBack — see addServerAndLogin for the rationale.
+    // UiAutomator setText uses accessibility actions, no keyboard to
+    // dismiss, pressBack would exit the activity.
 
     t = System.currentTimeMillis()
     val passwordField = device.findObject(
