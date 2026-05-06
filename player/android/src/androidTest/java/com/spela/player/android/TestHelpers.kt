@@ -1534,15 +1534,30 @@ internal fun ComposeRule.addServerAndLogin(username: String, password: String) {
         }
     }
 
-    // Wait for the login screen to appear. The backdoor above
-    // dispatched NavigateTo(Login) directly, and the legacy
-    // `if (false)` UI path would have ended on the same screen via
-    // SelectServer → NavigateTo(Login). In both cases doLogin() is
-    // what does the actual signin work.
-    pollUntil(timeoutMillis = TIMEOUT_LONG) { isOnLoginScreen() }
-
-    // Login
-    doLogin(username, password)
+    // Login backdoor — same pattern, same reason. The login form's
+    // SpTextField → AndroidView'd EditText fields don't always
+    // surface in the GHA emulator's accessibility tree, and
+    // doLogin's UiAutomator probe times out waiting on
+    // EditText.instance(0). Hit AuthRepository directly + dispatch
+    // NavigationIntent.ResetToHome (the same intent LoginScreen
+    // fires from onLoginSuccess in ScreenRouter).
+    runCatching {
+        val koin = org.koin.mp.KoinPlatformTools.defaultContext().get()
+        val authRepo = koin.get<com.spela.player.domain.repository.AuthRepository>()
+        kotlinx.coroutines.runBlocking {
+            val result = authRepo.login(SERVER_URL, username, password)
+            val tokens = result.getOrNull()
+                ?: error("Backdoor login failed: ${result.exceptionOrNull()?.message}")
+            authRepo.storeTokens(tokens)
+        }
+        android.util.Log.i("E2E_SETUP", "Backdoor: logged in as '$username' via AuthRepository")
+        val navVm = koin.get<com.spela.player.presentation.navigation.NavigationViewModel>()
+        navVm.onIntent(com.spela.player.presentation.navigation.NavigationIntent.ResetToHome)
+        android.util.Log.i("E2E_SETUP", "Backdoor: dispatched ResetToHome")
+    }.onFailure { e ->
+        android.util.Log.e("E2E_SETUP", "Backdoor login failed: ${e::class.simpleName}: ${e.message}")
+        throw e
+    }
 }
 
 private fun ComposeRule.serverNameInputVisible(): Boolean = try {
