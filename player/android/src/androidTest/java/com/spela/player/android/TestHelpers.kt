@@ -1604,27 +1604,17 @@ fun ComposeRule.navigateToGameByTitle(gameTitle: String) {
 
     // Tap the NES console card via its stable testTag — robust
     // against card layout/copy changes (a recent UI tweak broke the
-    // old "Nintendo Entertainment System" + "games" pair matcher).
+    // old "Nintendo Entertainment System" + "games" pair matcher;
+    // the text-pair fallback is dead, so don't bother with it).
+    //
+    // The Consoles list is a LazyColumn — items below the fold are
+    // NOT in the semantics tree until we swipe to render them. Don't
+    // poll the tree without scrolling first (a 320x640 GHA AVD will
+    // never see the NES card on the initial render). `scrollToAndTapTag`
+    // handles the scroll loop itself.
     android.util.Log.d(tag, "Step 3: Tapping NES card (testTag console_card_nes)")
     val nesCardTag = com.spela.player.presentation.ui.TestTags.consoleCard("nes")
-    // Poll for the tag — Compose's accessibility tree can briefly be
-    // unavailable right after a tab switch (AppNotIdleException).
-    val tagDeadline = System.currentTimeMillis() + 8_000
-    var tagPresent = false
-    while (System.currentTimeMillis() < tagDeadline) {
-        tagPresent = try {
-            onAllNodesWithTag(nesCardTag, useUnmergedTree = true)
-                .fetchSemanticsNodes().isNotEmpty()
-        } catch (_: Exception) { false }
-        if (tagPresent) break
-        Thread.sleep(250)
-    }
-    if (tagPresent) {
-        scrollToAndTapTag(nesCardTag, maxSwipes = 10)
-    } else {
-        android.util.Log.d(tag, "Step 3: NES tag not found, falling back to text-pair matcher")
-        scrollToAndTapMatchingBoth("Nintendo Entertainment System", "games")
-    }
+    scrollToAndTapTag(nesCardTag, maxSwipes = 12)
     android.util.Log.d(tag, "Step 3: NES card tapped, waiting for console screen")
 
     // Verify we navigated to the console screen
