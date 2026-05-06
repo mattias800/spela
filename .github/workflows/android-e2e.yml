@@ -18,10 +18,10 @@ on:
   # Always run on master pushes — last gate before a release.
   push:
     branches: [master]
-  # PR runs are gated by the `decide` job below: only fires when the
-  # diff actually touches code that could break Android E2E, OR the
-  # PR has the `android-e2e` label (opt-in for cross-cutting work
-  # whose Android impact isn't path-obvious).
+  # PR runs are pure opt-in: only when the `android-e2e` label is
+  # added (or already present at PR open / sync). The full suite is
+  # ~17-20 min; running it for every web/docs PR would burn minutes
+  # for no signal.
   pull_request:
     branches: [master]
     types: [opened, synchronize, reopened, labeled]
@@ -40,67 +40,15 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  # Cheap gating job: decide whether the expensive emulator job
-  # actually needs to run for this trigger.
-  #
-  # Always run for: push to master, schedule, workflow_dispatch.
-  # For pull_request: run only if the PR has the `android-e2e` label
-  # OR the diff touches Android-relevant paths (player code, server
-  # API/cmd, the e2e compose file, this workflow file).
-  decide:
-    name: Decide whether to run
-    runs-on: ubuntu-latest
-    timeout-minutes: 2
-    outputs:
-      run: ${{ steps.gate.outputs.run }}
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          # Fetch depth 2 lets us diff base..head for synchronize
-          # events without pulling the whole history.
-          fetch-depth: 2
-      - id: gate
-        env:
-          EVENT_NAME: ${{ github.event_name }}
-          # Labels JSON is safe to pass via env — no shell interpolation.
-          LABELS_JSON: ${{ toJson(github.event.pull_request.labels) }}
-          BASE_SHA: ${{ github.event.pull_request.base.sha }}
-          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
-        run: |
-          set -euo pipefail
-          # Non-PR triggers always run.
-          if [ "$EVENT_NAME" != "pull_request" ]; then
-            echo "Trigger: $EVENT_NAME — always run."
-            echo "run=true" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-          # Opt-in label.
-          if echo "$LABELS_JSON" | grep -q '"name":"android-e2e"'; then
-            echo "Label 'android-e2e' present — running."
-            echo "run=true" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-          # Path filter. We don't try to enumerate every transitively
-          # affected path — these top-level prefixes are the things
-          # whose changes actually surface on the Android suite.
-          # Web-only / docs-only / .plans-only PRs fall through to
-          # `run=false`.
-          changed=$(git diff --name-only "$BASE_SHA" "$HEAD_SHA" || true)
-          echo "── Changed files ──"
-          echo "$changed"
-          if echo "$changed" | grep -E '^(player/|server/internal/api/|server/internal/db/|server/cmd/|docker-compose\.e2e\.yml|\.github/workflows/android-e2e\.yml)' > /dev/null; then
-            echo "Path filter matched — running."
-            echo "run=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "Path filter did NOT match and 'android-e2e' label absent — skipping."
-            echo "Add the 'android-e2e' label to this PR if you want to force a run."
-            echo "run=false" >> "$GITHUB_OUTPUT"
-          fi
-
   android-e2e:
     name: Android E2E (emulator)
-    needs: decide
-    if: needs.decide.outputs.run == 'true'
+    # Non-PR triggers (push to master, schedule, workflow_dispatch)
+    # always run. PR triggers run only when the `android-e2e` label
+    # is on the PR — `labeled` events also satisfy this, so adding
+    # the label to a PR triggers the workflow without a no-op commit.
+    if: |
+      github.event_name != 'pull_request' ||
+      contains(github.event.pull_request.labels.*.name, 'android-e2e')
     runs-on: ubuntu-latest
     timeout-minutes: 60
 
