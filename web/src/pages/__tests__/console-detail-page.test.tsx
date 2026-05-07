@@ -115,12 +115,17 @@ describe("ConsoleDetailPage", () => {
       expect(screen.getByText("100 games")).toBeInTheDocument();
     });
 
-    it("renders browse games link in the banner", () => {
+    it("renders the terminal Browse-all CTA below the curated shelves (#1095)", () => {
+      // Pre-#1095 the Browse link lived in the banner's bottom-right
+      // corner with test ID `banner-browse-games`. The hero banner is
+      // now pure identity; the Browse-all CTA moves to a terminal
+      // "Library" section below the showcase shelves with the new
+      // test ID `browse-all-games-cta`.
       renderPage();
-      const bannerLink = screen.getByTestId("banner-browse-games");
-      expect(bannerLink).toBeInTheDocument();
-      expect(bannerLink).toHaveTextContent("Browse 100 games");
-      expect(bannerLink).toHaveAttribute("href", "/consoles/snes/games");
+      const cta = screen.getByTestId("browse-all-games-cta");
+      expect(cta).toBeInTheDocument();
+      expect(cta).toHaveTextContent("Browse all 100 Super Nintendo games");
+      expect(cta).toHaveAttribute("href", "/consoles/snes/games");
     });
 
     it("does not render inline search input", () => {
@@ -202,7 +207,10 @@ describe("ConsoleDetailPage", () => {
 
     it("does not render browse all games link", () => {
       renderPage();
-      expect(screen.queryByTestId("banner-browse-games")).not.toBeInTheDocument();
+      // #1095: banner is now pure identity, Browse-all CTA only renders
+      // on libraries with >24 games (the small-library / empty branches
+      // stay free of it). New test ID is `browse-all-games-cta`.
+      expect(screen.queryByTestId("browse-all-games-cta")).not.toBeInTheDocument();
     });
 
     it("shows loading skeletons while data is loading", () => {
@@ -279,7 +287,10 @@ describe("ConsoleDetailPage", () => {
 
     it("does not render browse all games link", () => {
       renderPage();
-      expect(screen.queryByTestId("banner-browse-games")).not.toBeInTheDocument();
+      // #1095: banner is now pure identity, Browse-all CTA only renders
+      // on libraries with >24 games (the small-library / empty branches
+      // stay free of it). New test ID is `browse-all-games-cta`.
+      expect(screen.queryByTestId("browse-all-games-cta")).not.toBeInTheDocument();
     });
   });
 });
