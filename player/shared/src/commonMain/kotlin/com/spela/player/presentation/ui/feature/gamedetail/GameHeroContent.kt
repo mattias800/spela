@@ -240,13 +240,14 @@ fun GameHeroContent(
                     //   LaunchesFresh → "Continue" (session exists
                     //     but engine starts at title screen, e.g.
                     //     ScummVM or user opted out of save states)
-                    // The single-source-of-truth resolver lives in
-                    // GameDetailState.playSemantics.
-                    val playLabel = when (state.playSemantics) {
-                        com.spela.player.domain.model.PlaySemantics.NoSession -> "New game"
-                        com.spela.player.domain.model.PlaySemantics.ResumesFromSaveState -> "Resume"
-                        com.spela.player.domain.model.PlaySemantics.LaunchesFresh -> "Continue"
-                    }
+                    // Suffix "— {h m}" when the targeted session has a
+                    // meaningful play time (≥ 60 s). Resolver is pure —
+                    // unit-tested in PlayCtaLabelTest. See #1098 and
+                    // [gameDetailPlayLabel].
+                    val playLabel = gameDetailPlayLabel(
+                        semantics = state.playSemantics,
+                        sessionPlayTimeSeconds = state.sessions.firstOrNull()?.totalPlayTime ?: 0L,
+                    )
                     // Click target depends on whether the game is
                     // already on disk. Cached → direct play. Uncached
                     // (only reachable here when isInstantDownload-
