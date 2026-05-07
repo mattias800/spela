@@ -201,7 +201,7 @@ export function GameHero({
 
       {/* Content — in-flow so it sizes the wrapper. Dropdowns aren't
           clipped because no ancestor has overflow-hidden. */}
-      <div className="relative z-10 flex flex-col items-center md:flex-row md:items-end min-h-[320px] md:min-h-[400px] p-6 md:p-8 gap-6 md:gap-8">
+      <div className="relative z-10 flex flex-col items-center md:flex-row md:items-end min-h-[440px] md:min-h-[560px] p-6 md:p-10 gap-6 md:gap-8">
         {/* Cover art */}
           <div className="flex-shrink-0 self-center md:self-end">
             <div className="rounded-xl overflow-hidden bg-surface-900/80 border border-white/10 shadow-2xl backdrop-blur-sm">
@@ -209,14 +209,14 @@ export function GameHero({
                 <AreaSizedImage
                   src={game.coverUrl}
                   alt={game.title}
-                  targetArea={55000}
-                  maxHeight={360}
-                  maxWidth={320}
-                  minHeight={160}
+                  targetArea={120000}
+                  maxHeight={520}
+                  maxWidth={420}
+                  minHeight={220}
                   className="rounded-xl"
                 />
               ) : (
-                <div className="w-48 flex items-center justify-center bg-surface-800" style={{ aspectRatio: "3/4" }}>
+                <div className="w-64 flex items-center justify-center bg-surface-800" style={{ aspectRatio: "3/4" }}>
                   <span className="text-3xl font-bold text-surface-600">{game.title.charAt(0).toUpperCase()}</span>
                 </div>
               )}
