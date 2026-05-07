@@ -39,12 +39,27 @@ describe("TimeToBeatCard", () => {
     expect(screen.getByTestId("time-to-beat-card")).toBeInTheDocument();
   });
 
-  it('displays "How Long to Beat" heading', () => {
+  it('displays "Time to Beat" heading', () => {
     const game = makeGame({ timeToBeatNormally: hrs(10) });
     render(<TimeToBeatCard game={game} />);
     expect(
-      screen.getByRole("heading", { name: /How Long to Beat/i, level: 3 }),
+      screen.getByRole("heading", { name: /Time to Beat/i, level: 3 }),
     ).toBeInTheDocument();
+  });
+
+  it("does not render progress bars (#1099)", () => {
+    const game = makeGame({
+      timeToBeatHastily: hrs(10),
+      timeToBeatNormally: hrs(25),
+      timeToBeatCompletely: hrs(50),
+    });
+    const { container } = render(<TimeToBeatCard game={game} />);
+    // Pre-#1099: each tier had a bg-brand-400 / bg-amber-400 / bg-purple-400
+    // bar element. The compact redesign drops bars entirely.
+    expect(container.querySelectorAll("progress").length).toBe(0);
+    expect(container.querySelector("[class*='bg-brand-400']")).toBeNull();
+    expect(container.querySelector("[class*='bg-amber-400']")).toBeNull();
+    expect(container.querySelector("[class*='bg-purple-400']")).toBeNull();
   });
 
   it("converts seconds to hours and shows correct labels", () => {
@@ -65,7 +80,10 @@ describe("TimeToBeatCard", () => {
     expect(screen.getByText("50 hrs")).toBeInTheDocument();
   });
 
-  it("only shows tiers with non-zero values", () => {
+  it("renders all three tier labels even when some values are missing (#1099)", () => {
+    // Pre-#1099 tests asserted that zero-tiers were absent from the DOM
+    // (`.filter((t) => t.hours > 0)`). The compact redesign keeps the grid
+    // rhythm by rendering placeholder "—" cards for missing tiers.
     const game = makeGame({
       timeToBeatHastily: 0,
       timeToBeatNormally: hrs(15),
@@ -73,9 +91,29 @@ describe("TimeToBeatCard", () => {
     });
     render(<TimeToBeatCard game={game} />);
 
-    expect(screen.queryByText("Main Story")).not.toBeInTheDocument();
+    expect(screen.getByText("Main Story")).toBeInTheDocument();
     expect(screen.getByText("Main + Extras")).toBeInTheDocument();
     expect(screen.getByText("Completionist")).toBeInTheDocument();
+    // Missing tier shows the em-dash placeholder, not a value.
+    expect(screen.getByText("—")).toBeInTheDocument();
+    expect(screen.getByText("15 hrs")).toBeInTheDocument();
+    expect(screen.getByText("40 hrs")).toBeInTheDocument();
+  });
+
+  it("attaches an explanatory tooltip to each tier card (#1099)", () => {
+    const game = makeGame({
+      timeToBeatHastily: hrs(10),
+      timeToBeatNormally: hrs(25),
+      timeToBeatCompletely: hrs(50),
+    });
+    const { container } = render(<TimeToBeatCard game={game} />);
+    // Per-tier disambiguation moved from inline icons (#1099 dropped them)
+    // to a hover tooltip. Three tiers → three tooltips.
+    const tierCards = container.querySelectorAll("[title]");
+    expect(tierCards.length).toBe(3);
+    expect(tierCards[0].getAttribute("title")).toMatch(/main story/i);
+    expect(tierCards[1].getAttribute("title")).toMatch(/side content/i);
+    expect(tierCards[2].getAttribute("title")).toMatch(/100% completion/i);
   });
 
   it("formats fractional hours correctly", () => {

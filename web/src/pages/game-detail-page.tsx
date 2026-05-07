@@ -296,8 +296,12 @@ export function GameDetailPage() {
 
       {/* Rating + description + metadata */}
       <div className="flex gap-6">
-        <div className="flex-shrink-0">
+        <div className="flex-shrink-0 space-y-3">
           <UserRating gameId={game.id} />
+          {/* #1099 — paired directly with UserRating; shared chrome
+              (rounded-xl bg-surface-800/30 p-4). Was a sibling block
+              in the page flow far below; now a compact 3-up grid. */}
+          {!isDemo && <TimeToBeatCard game={game} />}
         </div>
         <div className="flex-1 min-w-0 space-y-4">
           {game.description && (
@@ -431,8 +435,6 @@ export function GameDetailPage() {
           ))}
         </div>
       )}
-
-      {!isDemo && <TimeToBeatCard game={game} />}
 
       {!isDemo && <GameSessions gameId={game.id} gameTitle={game.title} />}
 

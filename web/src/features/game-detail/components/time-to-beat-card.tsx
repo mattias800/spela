@@ -1,80 +1,60 @@
-import { Clock, Zap, Gamepad2, Trophy } from "lucide-react";
-import { Section } from "@/components/ui";
+import { Clock } from "lucide-react";
 import type { Game } from "@/types/api";
 
 interface TimeToBeatCardProps {
   game: Game;
 }
 
+interface Tier {
+  label: string;
+  hours: number;
+  tooltip: string;
+}
+
 export function TimeToBeatCard({ game }: TimeToBeatCardProps) {
-  // Backend stores time-to-beat in seconds (from IGDB API)
   const hastily = (game.timeToBeatHastily ?? 0) / 3600;
   const normally = (game.timeToBeatNormally ?? 0) / 3600;
   const completely = (game.timeToBeatCompletely ?? 0) / 3600;
 
   if (!hastily && !normally && !completely) return null;
 
-  const maxHours = Math.max(hastily, normally, completely);
-
-  const tiers = [
-    {
-      label: "Main Story",
-      hours: hastily,
-      icon: Zap,
-      barClass: "bg-brand-400",
-      iconClass: "text-brand-400",
-      textClass: "text-brand-300",
-    },
-    {
-      label: "Main + Extras",
-      hours: normally,
-      icon: Gamepad2,
-      barClass: "bg-amber-400",
-      iconClass: "text-amber-400",
-      textClass: "text-amber-300",
-    },
-    {
-      label: "Completionist",
-      hours: completely,
-      icon: Trophy,
-      barClass: "bg-purple-400",
-      iconClass: "text-purple-400",
-      textClass: "text-purple-300",
-    },
-  ].filter((t) => t.hours > 0);
+  const tiers: Tier[] = [
+    { label: "Main Story", hours: hastily, tooltip: "Time to finish the main story" },
+    { label: "Main + Extras", hours: normally, tooltip: "Main story plus side content" },
+    { label: "Completionist", hours: completely, tooltip: "Everything — 100% completion" },
+  ];
 
   return (
-    <Section className="p-6" data-testid="time-to-beat-card">
-      <div className="flex items-center gap-2.5 mb-5">
-        <Clock className="h-5 w-5 text-brand-400" />
-        <h3 className="text-lg font-bold text-surface-100">How Long to Beat</h3>
+    <div
+      data-comp="TimeToBeatCard"
+      data-testid="time-to-beat-card"
+      className="rounded-xl bg-surface-800/30 p-4"
+    >
+      <div className="flex items-center gap-2.5 mb-3">
+        <Clock className="h-4 w-4 text-surface-500" />
+        <h3 className="text-sm font-semibold text-surface-200">Time to Beat</h3>
       </div>
-      <div className="space-y-4">
-        {tiers.map((tier) => {
-          const Icon = tier.icon;
-          const pct = maxHours > 0 ? (tier.hours / maxHours) * 100 : 0;
-          return (
-            <div key={tier.label}>
-              <div className="flex items-center justify-between mb-1.5">
-                <div className="flex items-center gap-2">
-                  <Icon className={`h-4 w-4 ${tier.iconClass}`} />
-                  <span className="text-sm font-medium text-surface-200">{tier.label}</span>
-                </div>
-                <span className={`text-sm font-bold tabular-nums ${tier.textClass}`}>
-                  {formatHours(tier.hours)}
-                </span>
-              </div>
-              <div className="h-2 w-full rounded-full bg-surface-800/80 overflow-hidden">
-                <div
-                  className={`h-full rounded-full ${tier.barClass} transition-all duration-700 ease-out`}
-                  style={{ width: `${Math.max(pct, 4)}%`, opacity: 0.85 }}
-                />
-              </div>
+      <div className="grid grid-cols-3 gap-2">
+        {tiers.map((tier) => (
+          <div
+            key={tier.label}
+            className="rounded-lg bg-surface-900/50 px-2.5 py-2"
+            title={tier.tooltip}
+          >
+            <div className="text-[10px] uppercase tracking-wide text-surface-500 truncate">
+              {tier.label}
             </div>
-          );
-        })}
+            <div className="text-base font-semibold text-surface-100 tabular-nums mt-0.5">
+              {tier.hours > 0 ? (
+                formatHours(tier.hours)
+              ) : (
+                <span className="text-surface-600">—</span>
+              )}
+            </div>
+          </div>
+        ))}
       </div>
-    </Section>
+    </div>
   );
 }
 
