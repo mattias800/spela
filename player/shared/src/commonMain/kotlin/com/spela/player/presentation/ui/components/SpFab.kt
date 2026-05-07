@@ -41,7 +41,7 @@ fun SpFab(
             .clip(CircleShape)
             .background(Color.White.copy(alpha = 0.15f))
             .clickable(onClick = onClick)
-            .gamepadFocusable(shape = CircleShape, scaleOnFocus = true)
+            .gamepadFocusable(shape = CircleShape, scaleOnFocus = true, addFocusable = false)
             .semantics {
                 contentDescription = description
                 role = Role.Button

@@ -104,7 +104,11 @@ fun SpCard(
                         interactionSource = interactionSource,
                         indication = null,
                         onClick = onClick,
-                    ).gamepadFocusable(shape = shape, interactionSource = interactionSource)
+                    ).gamepadFocusable(
+                        shape = shape,
+                        interactionSource = interactionSource,
+                        addFocusable = false,
+                    )
                 } else Modifier
             )
     ) {
@@ -157,7 +161,11 @@ fun SpInnerCard(
                     interactionSource = interactionSource,
                     indication = null,
                     onClick = onClick,
-                ).gamepadFocusable(shape = shape, interactionSource = interactionSource) else Modifier
+                ).gamepadFocusable(
+                    shape = shape,
+                    interactionSource = interactionSource,
+                    addFocusable = false,
+                ) else Modifier
             )
     ) {
         content()
@@ -185,7 +193,11 @@ fun SpGradientCard(
                     interactionSource = interactionSource,
                     indication = null,
                     onClick = onClick,
-                ).gamepadFocusable(shape = shape, interactionSource = interactionSource) else Modifier
+                ).gamepadFocusable(
+                    shape = shape,
+                    interactionSource = interactionSource,
+                    addFocusable = false,
+                ) else Modifier
             )
     ) {
         content()
