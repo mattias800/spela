@@ -170,10 +170,18 @@ class FakeAuthRepository : AuthRepository {
     var shouldFail = false
     var registeredUsers = mutableMapOf("player" to "player123")
     private var tokens: AuthTokens? = null
+    /** Role returned by getCurrentUser(). Set to "admin" or "owner" for admin tests. */
+    var userRole: String = "player"
 
     /** Pre-set tokens so getCurrentUser() returns success without calling login(). */
     fun simulateLoggedIn() {
         tokens = AuthTokens("test-access-token", "test-refresh-token")
+    }
+
+    /** Pre-set tokens and role so admin-only UI elements are visible in tests. */
+    fun simulateAdminLoggedIn() {
+        tokens = AuthTokens("test-access-token", "test-refresh-token")
+        userRole = "admin"
     }
 
     override suspend fun login(
@@ -212,7 +220,7 @@ class FakeAuthRepository : AuthRepository {
 
     override suspend fun getCurrentUser(): Result<User> {
         return if (tokens != null) {
-            Result.success(User("1", "player", "player@test.com", "player"))
+            Result.success(User("1", "player", "player@test.com", userRole))
         } else {
             Result.failure(Exception("Not logged in"))
         }

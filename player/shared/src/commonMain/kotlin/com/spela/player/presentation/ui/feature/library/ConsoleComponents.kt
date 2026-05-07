@@ -35,7 +35,6 @@ import com.spela.player.presentation.ui.gamepad.rememberFocusMemoryState
 import com.spela.player.presentation.ui.gamepad.gamepadFocusable
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.Language
@@ -410,59 +409,17 @@ internal fun ConsolesSkeletonGrid(
 internal fun ConsoleHeroBanner(
     console: Console,
     modifier: Modifier = Modifier,
-    onBrowseGames: (() -> Unit)? = null,
-    onConsoleSettings: (() -> Unit)? = null,
 ) {
-    BoxWithConstraints(modifier = modifier.fillMaxWidth()) {
-        val showButtonsBelow = maxWidth < 700.dp
-        Column {
-            ConsoleHeroBannerContent(
-                console = console,
-                onBrowseGames = onBrowseGames,
-                onConsoleSettings = onConsoleSettings,
-                showButtons = !showButtonsBelow,
-            )
-            if (showButtonsBelow && (onBrowseGames != null || onConsoleSettings != null)) {
-                Spacer(Modifier.height(SpSpacing.Medium))
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(SpSpacing.Small),
-                ) {
-                    if (onConsoleSettings != null) {
-                        SpButton(
-                            text = "Settings",
-                            onClick = onConsoleSettings,
-                            style = SpButtonStyle.Outlined,
-                            modifier = Modifier.weight(1f).autoFocus(),
-                            leadingIcon = {
-                                Icon(
-                                    Icons.Filled.Settings,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(16.dp),
-                                )
-                            },
-                        )
-                    }
-                    if (onBrowseGames != null) {
-                        SpButton(
-                            text = "Browse",
-                            onClick = onBrowseGames,
-                            style = SpButtonStyle.Secondary,
-                            modifier = Modifier.weight(1f),
-                        )
-                    }
-                }
-            }
-        }
-    }
+    ConsoleHeroBannerContent(
+        console = console,
+        modifier = modifier.fillMaxWidth(),
+    )
 }
 
 @Composable
 private fun ConsoleHeroBannerContent(
     console: Console,
-    onBrowseGames: (() -> Unit)? = null,
-    onConsoleSettings: (() -> Unit)? = null,
-    showButtons: Boolean = true,
+    modifier: Modifier = Modifier,
 ) {
     val shape = RoundedCornerShape(SpSpacing.CardCornerRadius)
 
@@ -481,8 +438,7 @@ private fun ConsoleHeroBannerContent(
     )
 
     Box(
-        modifier = Modifier
-            .fillMaxWidth()
+        modifier = modifier
             .height(200.dp)
             .focusGroup()
             .clip(shape)
@@ -654,46 +610,6 @@ private fun ConsoleHeroBannerContent(
                     }
                 }
 
-                // Bottom-right: action buttons (only when parent says so)
-                if (showButtons && (onBrowseGames != null || onConsoleSettings != null)) {
-                    Column(
-                        modifier = Modifier.align(Alignment.BottomEnd),
-                        verticalArrangement = Arrangement.spacedBy(SpSpacing.Small),
-                        horizontalAlignment = Alignment.End,
-                    ) {
-                        // Both banner action buttons use the tinted-on-
-                        // gradient treatment so they read as siblings of
-                        // the hero badges (white tint + thin white border)
-                        // instead of competing with the gradient via the
-                        // brand-gradient + neon glow. See #930.
-                        if (onConsoleSettings != null) {
-                            SpButton(
-                                text = "Console settings",
-                                onClick = onConsoleSettings,
-                                style = SpButtonStyle.Tinted,
-                                modifier = Modifier.autoFocus(),
-                                leadingIcon = {
-                                    Icon(
-                                        Icons.Filled.Settings,
-                                        contentDescription = null,
-                                        modifier = Modifier.size(16.dp),
-                                    )
-                                },
-                            )
-                        }
-                        if (onBrowseGames != null) {
-                            SpButton(
-                                text = "Browse games",
-                                onClick = onBrowseGames,
-                                style = SpButtonStyle.Tinted,
-                                modifier = Modifier.testTag(
-                                    com.spela.player.presentation.ui.TestTags
-                                        .consoleBrowseGames(console.id),
-                                ),
-                            )
-                        }
-                    }
-                }
             }
         }
     }

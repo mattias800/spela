@@ -129,6 +129,7 @@ class SpelaTestHarness(
         dispatchers = dispatchers,
         scope = scope,
         biosRepository = biosRepo,
+        authRepository = authRepo,
     )
     val sharedSessionRepo = FakeSharedSessionRepository()
 

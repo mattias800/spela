@@ -10,19 +10,28 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.LibraryBooks
 import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.Text
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
@@ -61,8 +70,11 @@ import androidx.compose.runtime.CompositionLocalProvider
 import com.spela.player.presentation.ui.gamepad.LocalFocusMemory
 import com.spela.player.presentation.ui.gamepad.rememberFocus
 import com.spela.player.presentation.ui.gamepad.rememberFocusMemoryState
+import com.spela.player.presentation.ui.components.SpButton
+import com.spela.player.presentation.ui.components.SpButtonStyle
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
+import com.spela.player.presentation.ui.theme.SpTypography
 import com.spela.player.presentation.viewmodel.ExploreViewModel
 import com.spela.player.presentation.viewmodel.GameListViewModel
 
@@ -127,13 +139,9 @@ fun ConsoleScreen(
                 SpScrollableContent {
                     SpScreenTopSpacer()
                     SpMainContentPadding {
-                    // Console hero banner — inside padding
+                    // Console hero banner — pure identity, no action buttons
                     if (console != null) {
-                        ConsoleHeroBanner(
-                            console = console,
-                            onBrowseGames = if (state.games.size > 15) onBrowseAllGames else null,
-                            onConsoleSettings = onNavigateToConsoleSettings,
-                        )
+                        ConsoleHeroBanner(console = console)
                     }
 
                     val focusMemory = rememberFocusMemoryState()
@@ -213,7 +221,6 @@ fun ConsoleScreen(
                     }
 
                     // All Games — inline grid at bottom for small libraries (≤15 games)
-                    // For larger libraries, the "Browse games" button is in the hero banner
                     if (state.games.isNotEmpty() && state.games.size <= 15) {
                         SpTitledSection(
                             title = "All Games",
@@ -233,6 +240,26 @@ fun ConsoleScreen(
                                         )
                                     }
                                 },
+                            )
+                        }
+                    }
+
+                    // Terminal browse section for larger libraries (>15 games)
+                    if (state.games.size > 15) {
+                        SpTitledSection(
+                            title = "Library",
+                            icon = Icons.AutoMirrored.Filled.LibraryBooks,
+                            modifier = Modifier
+                                .rememberFocus("section_library")
+                                .testTag(TestTags.CONSOLE_BROWSE_ALL_SECTION),
+                        ) {
+                            SpButton(
+                                text = "Browse all ${state.games.size} $consoleName games",
+                                onClick = onBrowseAllGames,
+                                style = SpButtonStyle.Secondary,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .testTag(TestTags.CONSOLE_BROWSE_ALL_CTA),
                             )
                         }
                     }
@@ -276,12 +303,43 @@ fun ConsoleScreen(
                     }
                 } else null,
                 actions = {
-                    SpIconButton(
-                        icon = Icons.Filled.Settings,
-                        contentDescription = "Console settings",
-                        onGradient = true,
-                        onClick = onNavigateToConsoleSettings,
-                    )
+                    if (state.isAdmin) {
+                        var adminMenuExpanded by remember { mutableStateOf(false) }
+                        Box {
+                            SpIconButton(
+                                icon = Icons.Filled.MoreVert,
+                                contentDescription = "Console options",
+                                onGradient = true,
+                                onClick = { adminMenuExpanded = true },
+                                modifier = Modifier.testTag(TestTags.CONSOLE_ADMIN_MENU_BUTTON),
+                            )
+                            DropdownMenu(
+                                expanded = adminMenuExpanded,
+                                onDismissRequest = { adminMenuExpanded = false },
+                            ) {
+                                DropdownMenuItem(
+                                    text = {
+                                        Text(
+                                            text = "Console settings",
+                                            style = SpTypography.BodyMedium,
+                                        )
+                                    },
+                                    leadingIcon = {
+                                        Icon(
+                                            imageVector = Icons.Filled.Settings,
+                                            contentDescription = null,
+                                            modifier = Modifier.size(20.dp),
+                                        )
+                                    },
+                                    onClick = {
+                                        adminMenuExpanded = false
+                                        onNavigateToConsoleSettings()
+                                    },
+                                    modifier = Modifier.testTag(TestTags.CONSOLE_ADMIN_MENU_SETTINGS),
+                                )
+                            }
+                        }
+                    }
                 },
             )
 
