@@ -1,68 +1,38 @@
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Gamepad2 } from "lucide-react";
 import { ConsoleCard } from "@/components/console-card";
-import { ConsoleCardSkeleton, EmptyState } from "@/components/ui";
+import { Chip, ConsoleCardSkeleton, EmptyState } from "@/components/ui";
 import { useBiosStatus } from "@/hooks/use-bios";
 import { useConsoles } from "@/hooks/use-consoles";
-import type { Console } from "@/types/api";
 import { PageLayout, SectionList } from "@/components/layout";
+import {
+  type ConsoleGrouping,
+  groupConsoles,
+} from "@/lib/console-grouping";
 
-interface GenerationInfo {
-  label: string;
-  years: string;
-}
+const STORAGE_KEY = "consoleListGrouping";
 
-function generationInfo(generation: number): GenerationInfo {
-  switch (generation) {
-    case 2:
-      return { label: "2nd Generation", years: "1976–1982" };
-    case 3:
-      return { label: "3rd Generation", years: "1983–1987" };
-    case 4:
-      return { label: "4th Generation", years: "1987–1993" };
-    case 5:
-      return { label: "5th Generation", years: "1993–1998" };
-    case 6:
-      return { label: "6th Generation", years: "1998–2005" };
-    case 7:
-      return { label: "7th Generation", years: "2005–2012" };
-    case 8:
-      return { label: "8th Generation", years: "2012–2020" };
-    case 9:
-      return { label: "9th Generation", years: "2020–present" };
-    case 100:
-      return { label: "Home Computers", years: "1977–1995" };
-    case 101:
-      return { label: "Arcade", years: "1971–present" };
-    default:
-      return { label: "Other", years: "" };
-  }
-}
-
-function groupByGeneration(
-  consoles: Console[],
-): { generation: number; info: GenerationInfo; consoles: Console[] }[] {
-  const map = new Map<number, Console[]>();
-  for (const c of consoles) {
-    const gen = c.generation || 0;
-    if (!map.has(gen)) map.set(gen, []);
-    map.get(gen)!.push(c);
-  }
-  return Array.from(map.entries())
-    .sort(([a], [b]) => a - b)
-    .map(([gen, items]) => ({
-      generation: gen,
-      info: generationInfo(gen),
-      consoles: items,
-    }));
+function readGroupingPreference(): ConsoleGrouping {
+  if (typeof window === "undefined") return "generation";
+  const v = window.localStorage.getItem(STORAGE_KEY);
+  return v === "manufacturer" ? "manufacturer" : "generation";
 }
 
 export function ConsolesPage() {
   const { data: consoles, isLoading } = useConsoles();
   const { data: biosData } = useBiosStatus();
+  const [grouping, setGrouping] = useState<ConsoleGrouping>(
+    readGroupingPreference,
+  );
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    window.localStorage.setItem(STORAGE_KEY, grouping);
+  }, [grouping]);
+
   const groups = useMemo(
-    () => (consoles ? groupByGeneration(consoles) : []),
-    [consoles],
+    () => (consoles ? groupConsoles(consoles, grouping) : []),
+    [consoles, grouping],
   );
 
   // Set of consoleIds for which a required BIOS file is missing on disk.
@@ -95,13 +65,34 @@ export function ConsolesPage() {
         />
       ) : (
         <div className="space-y-8">
+          <div
+            data-testid="console-grouping-toggle"
+            className="flex items-center gap-2"
+            role="group"
+            aria-label="Console grouping"
+          >
+            <Chip
+              data-testid="console-grouping-generation"
+              selected={grouping === "generation"}
+              onClick={() => setGrouping("generation")}
+            >
+              By generation
+            </Chip>
+            <Chip
+              data-testid="console-grouping-manufacturer"
+              selected={grouping === "manufacturer"}
+              onClick={() => setGrouping("manufacturer")}
+            >
+              By manufacturer
+            </Chip>
+          </div>
           {groups.map((group) => (
-            <section key={group.generation}>
+            <section key={group.key}>
               <div className="flex items-baseline gap-3 mb-4">
                 <h2 className="text-lg font-semibold text-surface-200">
-                  {group.info.label}
+                  {group.kind === "generation" ? group.info.label : group.makerName}
                 </h2>
-                {group.info.years && (
+                {group.kind === "generation" && group.info.years && (
                   <span className="text-sm text-surface-500">
                     {group.info.years}
                   </span>
