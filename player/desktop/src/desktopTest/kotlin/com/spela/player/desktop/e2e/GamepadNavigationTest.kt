@@ -116,10 +116,32 @@ class GamepadNavigationTest {
         val nesCard = onNodeWithContentDescription("Nintendo Entertainment System, 3 games")
         nesCard.assertIsFocused()
 
-        // Press Up — nothing above, focus should stay
+        // #1106 — the consoles tab now hosts a By-generation /
+        // By-manufacturer toggle directly above the grid. DPad-up
+        // from the first card may either move focus to the toggle
+        // (new boundary) or stay on the card if spatial navigation
+        // doesn't cross the section header. Either way is acceptable;
+        // what we still must assert is that focus does NOT wrap to
+        // the bottom of the screen (e.g. nav tabs).
+        // #1106 — the consoles tab now hosts a By-generation /
+        // By-manufacturer toggle row directly above the grid. DPad-up
+        // from a card may land on either chip depending on spatial
+        // search; what we still must assert is that focus does NOT
+        // wrap (e.g. into bottom nav tabs) — it stays inside the tab
+        // content. Either NES, the generation chip, or the
+        // manufacturer chip is acceptable.
         nesCard.performKeyInput { pressKey(Key.DirectionUp) }
         advanceQuick(harness)
-        nesCard.assertIsFocused()
+        val nesFocused = try { nesCard.assertIsFocused(); true } catch (_: AssertionError) { false }
+        val genToggleFocused = try {
+            onNodeWithTag("console-grouping-generation").assertIsFocused(); true
+        } catch (_: AssertionError) { false }
+        val mfgToggleFocused = try {
+            onNodeWithTag("console-grouping-manufacturer").assertIsFocused(); true
+        } catch (_: AssertionError) { false }
+        assert(nesFocused || genToggleFocused || mfgToggleFocused) {
+            "Expected focus to stay on NES card or move to either grouping toggle chip"
+        }
     }
 
     @Test
