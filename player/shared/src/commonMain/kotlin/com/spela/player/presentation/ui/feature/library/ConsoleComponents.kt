@@ -109,28 +109,15 @@ internal fun consoleColumnsForWidth(width: androidx.compose.ui.unit.Dp): Int = w
     else             -> 1
 }
 
-private fun generationLabel(generation: Int): String = when (generation) {
-    2 -> "2nd Generation · 1976–1992"
-    3 -> "3rd Generation · 1983–1992"
-    4 -> "4th Generation · 1987–1996"
-    5 -> "5th Generation · 1993–2006"
-    6 -> "6th Generation · 1998–2007"
-    7 -> "7th Generation · 2004–2013"
-    8 -> "8th Generation · 2011–2020"
-    9 -> "9th Generation · 2017–present"
-    100 -> "Home Computers · 1977–1995"
-    101 -> "Arcade · 1971–present"
-    else -> "Other"
-}
-
 @Composable
 internal fun ConsolesGrid(
     consoles: List<Console>,
     onConsoleSelected: (String) -> Unit,
     consolesWithMissingBios: Set<String> = emptySet(),
     columnsPerRow: Int = 2,
+    grouping: ConsoleGrouping = ConsoleGrouping.Generation,
 ) {
-    val grouped = consoles.groupBy { it.generation }.toSortedMap()
+    val sections = groupConsoles(consoles, grouping)
     val focusMemory = rememberFocusMemoryState()
 
     var isFirstCard = true
@@ -140,17 +127,17 @@ internal fun ConsolesGrid(
         modifier = Modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(SpSpacing.Medium),
     ) {
-        grouped.entries.forEachIndexed { index, (generation, groupConsoles) ->
+        sections.forEachIndexed { index, section ->
             if (index > 0) {
                 Spacer(Modifier.height(SpSpacing.Medium))
             }
             Text(
-                text = generationLabel(generation),
+                text = section.title,
                 style = SpTypography.TitleMedium,
                 fontWeight = FontWeight.SemiBold,
                 color = Color.White.copy(alpha = 0.85f),
             )
-            groupConsoles.chunked(columnsPerRow).forEach { rowConsoles ->
+            section.consoles.chunked(columnsPerRow).forEach { rowConsoles ->
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(SpSpacing.Medium),
