@@ -207,17 +207,24 @@ fun GamepadHandler(
  * @param shape Shape for the focus ring outline.
  * @param scaleOnFocus Whether to scale up slightly when focused.
  * @param interactionSource Optional shared interaction source for the focusable modifier.
+ * @param addFocusable Whether to attach `.focusable()`. Set to `false` when the
+ *   parent already supplies focusability — typically a `.clickable(...)` earlier
+ *   in the modifier chain or a Material `Button`. Stacking a second focus target
+ *   (the default) on top of an already-focusable parent on desktop swallows the
+ *   first mouse click as a focus-acquisition event so the click never reaches
+ *   the underlying handler. See #1096.
  */
 fun Modifier.gamepadFocusable(
     shape: Shape = RoundedCornerShape(12.dp),
     scaleOnFocus: Boolean = false,
     interactionSource: MutableInteractionSource? = null,
+    addFocusable: Boolean = true,
 ): Modifier = composed {
     val source = interactionSource ?: remember { MutableInteractionSource() }
     this
         .centerOnFocus(interactionSource = source)
         .spFocusRing(shape = shape, scaleOnFocus = scaleOnFocus, interactionSource = source)
-        .focusable(interactionSource = source)
+        .let { if (addFocusable) it.focusable(interactionSource = source) else it }
 }
 
 /**

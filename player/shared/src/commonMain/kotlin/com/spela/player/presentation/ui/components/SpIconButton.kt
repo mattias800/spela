@@ -76,7 +76,7 @@ fun SpIconButton(
                 .clip(CircleShape)
                 .background(background)
                 .clickable(interactionSource = interactionSource, indication = null, onClick = onClick)
-                .gamepadFocusable(shape = CircleShape, interactionSource = interactionSource)
+                .gamepadFocusable(shape = CircleShape, interactionSource = interactionSource, addFocusable = false)
                 .semantics {
                     this.contentDescription = contentDescription
                     this.role = Role.Button
