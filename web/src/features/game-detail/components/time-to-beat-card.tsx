@@ -19,9 +19,9 @@ export function TimeToBeatCard({ game }: TimeToBeatCardProps) {
   if (!hastily && !normally && !completely) return null;
 
   const tiers: Tier[] = [
-    { label: "Main Story", hours: hastily, tooltip: "Time to finish the main story" },
-    { label: "Main + Extras", hours: normally, tooltip: "Main story plus side content" },
-    { label: "Completionist", hours: completely, tooltip: "Everything — 100% completion" },
+    { label: "Main", hours: hastily, tooltip: "Time to finish the main story" },
+    { label: "Extras", hours: normally, tooltip: "Main story plus side content" },
+    { label: "All", hours: completely, tooltip: "Everything — 100% completion" },
   ];
 
   return (
@@ -31,7 +31,7 @@ export function TimeToBeatCard({ game }: TimeToBeatCardProps) {
       className="rounded-xl bg-surface-800/30 p-4"
     >
       <div className="flex items-center gap-2.5 mb-3">
-        <Clock className="h-4 w-4 text-surface-500" />
+        <Clock className="h-4 w-4 text-brand-400" />
         <h3 className="text-sm font-semibold text-surface-200">Time to Beat</h3>
       </div>
       <div className="grid grid-cols-3 gap-2">
@@ -59,8 +59,7 @@ export function TimeToBeatCard({ game }: TimeToBeatCardProps) {
 }
 
 function formatHours(hours: number): string {
-  if (hours < 1) return "<1 hr";
-  if (hours === 1) return "1 hr";
-  if (hours === Math.floor(hours)) return `${hours} hrs`;
-  return `${hours.toFixed(1)} hrs`;
+  if (hours < 1) return "<1h";
+  if (hours === Math.floor(hours)) return `${hours}h`;
+  return `${hours.toFixed(1)}h`;
 }

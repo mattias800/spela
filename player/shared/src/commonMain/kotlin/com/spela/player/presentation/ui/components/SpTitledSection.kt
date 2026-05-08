@@ -73,10 +73,16 @@ fun SpTitledSection(
                 horizontalArrangement = Arrangement.spacedBy(SpSpacing.Small),
             ) {
                 if (icon != null) {
+                    // #1110 — accent tint to match the docstring contract
+                    // ("icon displayed before the title in accent color").
+                    // Was Color.White.copy(alpha = 0.55f), which read as a
+                    // disabled / muted icon — the parallel of the web bug
+                    // where TitledSection icons mistakenly came through
+                    // uncoloured. Aligns with the web side's `text-brand-400`.
                     Icon(
                         imageVector = icon,
                         contentDescription = null,
-                        tint = Color.White.copy(alpha = 0.55f),
+                        tint = SpColor.Primary,
                         modifier = Modifier.size(SpSpacing.IconDefault),
                     )
                 }
