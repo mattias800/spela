@@ -29,17 +29,23 @@ class GamepadNavigationTest {
     }
 
     @Test
-    fun bottomNavTabsReceiveFocusOnClick() = runComposeUiTest {
+    fun homeScreenAcquiresFocusOnEntry() = runComposeUiTest {
+        // Each screen's leaf-level focus restorer (e.g. SpCarousel's
+        // memoryKey + isDefaultFocusGroup) takes ownership of focus on
+        // entry. The bottom-nav tab is just the trigger; the screen
+        // content is what should actually be focused so d-pad navigation
+        // works without an extra keypress.
         val harness = createLoggedInHarness()
         setContent { harness.App() }
         advance(harness)
 
         onNodeWithContentDescription("Home").assertIsDisplayed()
-
-        // Clicking the already-active Home tab should give it focus
-        onNodeWithContentDescription("Home").performClick()
-        advanceQuick(harness)
-        onNodeWithContentDescription("Home").assertIsFocused()
+        // After arriving at Home, something on the screen must hold focus
+        // so arrow keys / d-pad work immediately.
+        val focusedCount = onAllNodes(isFocused()).fetchSemanticsNodes().size
+        assert(focusedCount > 0) {
+            "Expected at least one focused node after arriving at Home, got $focusedCount"
+        }
     }
 
     @Test

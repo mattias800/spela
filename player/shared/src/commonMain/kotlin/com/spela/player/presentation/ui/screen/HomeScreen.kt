@@ -64,10 +64,7 @@ import com.spela.player.presentation.ui.components.SpEmptyStates
 import com.spela.player.presentation.ui.components.SpMainContentPadding
 import com.spela.player.presentation.ui.components.SpScreen
 import com.spela.player.presentation.ui.components.SpScrollableContent
-import com.spela.player.presentation.ui.gamepad.autoFocus
-import com.spela.player.presentation.ui.gamepad.LocalActiveCarouselKey
 import com.spela.player.presentation.ui.gamepad.LocalFocusMemory
-import com.spela.player.presentation.ui.gamepad.rememberActiveCarouselKeyState
 import com.spela.player.presentation.ui.gamepad.rememberFocus
 import com.spela.player.presentation.ui.gamepad.rememberFocusMemoryState
 import androidx.compose.runtime.CompositionLocalProvider
@@ -193,13 +190,9 @@ fun HomeScreen(
                         }
                     } else {
                         val focusMemory = rememberFocusMemoryState()
-                        val activeCarousel = rememberActiveCarouselKeyState()
                         SpScrollableContent {
                         SpMainContentPadding {
-                        CompositionLocalProvider(
-                            LocalFocusMemory provides focusMemory,
-                            LocalActiveCarouselKey provides activeCarousel,
-                        ) {
+                        CompositionLocalProvider(LocalFocusMemory provides focusMemory) {
                         SpSectionList(
                             modifier = Modifier.fillMaxSize(),
                         ) {
@@ -228,7 +221,6 @@ fun HomeScreen(
                                     icon = Icons.Filled.Search,
                                     contentDescription = "Search",
                                     onClick = onSearchSelected,
-                                    modifier = Modifier.autoFocus(),
                                 )
                                 if (hasActiveDownloads) {
                                     SpIconButton(
@@ -295,6 +287,7 @@ fun HomeScreen(
                                     ContinuePlayingRow(
                                         games = state.recentGames.take(6),
                                         onGameSelected = onGameSelected,
+                                        isDefaultFocusGroup = true,
                                     )
                                 }
                             }

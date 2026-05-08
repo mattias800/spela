@@ -50,7 +50,7 @@ import com.spela.player.presentation.ui.components.SpSplitButton
 import com.spela.player.presentation.ui.components.SpSplitButtonMenuItem
 import com.spela.player.presentation.ui.components.social.formatRelativeTime
 import com.spela.player.presentation.ui.feature.library.getConsoleColor
-import com.spela.player.presentation.ui.gamepad.autoFocus
+import com.spela.player.presentation.ui.gamepad.focusRestoreItem
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.ui.theme.SpTypography
@@ -267,7 +267,10 @@ fun GameHeroContent(
                         text = playLabel,
                         onClick = playOnClick,
                         modifier = Modifier
-                            .autoFocus()
+                            .focusRestoreItem(
+                                key = "game_detail_play",
+                                isDefault = true,
+                            )
                             .testTag("game_detail_play_button"),
                         enabled = !hasRequiredBiosMissing && !isSyncing,
                         isLoading = false,

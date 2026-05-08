@@ -26,12 +26,16 @@ class HomeContinuePlayingFocusRestoreTest {
         val harness = SpelaTestHarness(StandardTestDispatcher())
         harness.authRepo.preSetTokens()
         harness.deviceManager.setDeviceName("Test Device")
-        harness.gameRepo.recentGamesOverride = listOf(
+        val recents = listOf(
             game(id = "g1", title = "Castlevania"),
             game(id = "g2", title = "Super Mario Bros."),
             game(id = "g3", title = "Super Mario World"),
             game(id = "g4", title = "Mega Man 2"),
         )
+        harness.gameRepo.recentGamesOverride = recents
+        // Mirror into `games` so getGameDetail can find them — needed when
+        // tests forward-navigate to GameDetail.
+        harness.gameRepo.games = recents
         harness.navigationViewModel.onIntent(NavigationIntent.NavigateTo(SpScreen.Home))
         return harness
     }
@@ -50,7 +54,10 @@ class HomeContinuePlayingFocusRestoreTest {
         publisher = "Test",
         releaseDate = "1990",
         genre = "Action",
-        fileSize = 0,
+        // Non-zero file size so GameDetail's hero shows the Play split-button
+        // (showCachedStyleButton requires either cached or instant-download-
+        // candidate; we hit the latter at any non-zero size below the threshold).
+        fileSize = 1024,
         fileName = "$id.smc",
         scrapeAttempts = 1,
         isFavorite = isFavorite,
@@ -82,6 +89,50 @@ class HomeContinuePlayingFocusRestoreTest {
         advance(harness)
 
         // The same card must regain focus.
+        onNodeWithContentDescription(target).assert(isFocused())
+    }
+
+    /**
+     * Real-world repro: animations ENABLED + keyboard-only navigation.
+     * Mirrors the exact user path:
+     *   1. Press Right arrow until Super Mario World is focused.
+     *   2. Press Enter to open game detail.
+     *   3. Press Escape to go back.
+     *   4. Super Mario World must be focused again.
+     *
+     * Animations on is critical — the back transition runs AnimatedContent,
+     * and the outgoing GameDetail is still composed/focused while Home's
+     * focus restorer fires. Tests with `animationsEnabled = false` silently
+     * miss timing bugs in this window.
+     */
+    @Test
+    fun continuePlaying_focusRestoredAfterKeyboardEnterEscape() = runComposeUiTest {
+        val harness = createHarness()
+        setContent { harness.App(animationsEnabled = true) }
+        advance(harness)
+
+        val target = "Super Mario World, SNES"
+        // Castlevania is item 0 (the screen-default focus). Press Right
+        // twice to land on Super Mario World (item 2 in the test data).
+        onRoot().performKeyInput {
+            pressKey(androidx.compose.ui.input.key.Key.DirectionRight)
+            pressKey(androidx.compose.ui.input.key.Key.DirectionRight)
+        }
+        advanceQuick(harness)
+        onNodeWithContentDescription(target).assert(isFocused())
+
+        // Press Enter to navigate forward (clickable's keyboard activation).
+        onRoot().performKeyInput {
+            pressKey(androidx.compose.ui.input.key.Key.Enter)
+        }
+        advanceFully(harness)
+
+        // Press Escape to go back (handled by the GamepadHandler wrapper).
+        onRoot().performKeyInput {
+            pressKey(androidx.compose.ui.input.key.Key.Escape)
+        }
+        advanceFully(harness)
+
         onNodeWithContentDescription(target).assert(isFocused())
     }
 

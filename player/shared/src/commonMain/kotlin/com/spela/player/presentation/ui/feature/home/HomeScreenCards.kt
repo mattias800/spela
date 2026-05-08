@@ -36,11 +36,13 @@ import com.spela.player.util.formatPlayTime
 internal fun ContinuePlayingRow(
     games: List<Game>,
     onGameSelected: (String) -> Unit,
+    isDefaultFocusGroup: Boolean = false,
 ) {
     SpCarousel(
         itemCount = games.size,
         memoryKey = "home_continue_playing",
         itemKey = { games[it].id },
+        isDefaultFocusGroup = isDefaultFocusGroup,
     ) { index, focusRequester ->
         Box(modifier = Modifier.focusRequester(focusRequester)) {
             ContinuePlayingCard(

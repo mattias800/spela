@@ -33,7 +33,6 @@ val LocalIsForwardNavigation = compositionLocalOf { false }
  */
 fun Modifier.autoFocus(): Modifier = composed {
     val isForward = LocalIsForwardNavigation.current
-    val isGamepad = LocalInputMode.current == InputMode.GAMEPAD
     // Tab-switches via L1/R1 are not forward navigations (no back stack
     // entry) but also not back navigations. Treat them like forward
     // navigations for focus purposes — the destination screen has no
@@ -41,7 +40,7 @@ fun Modifier.autoFocus(): Modifier = composed {
     // place initial focus on a useful element.
     val isTabSwitch = LocalIsTabSwitch.current
 
-    if ((isForward || isTabSwitch) && isGamepad) {
+    if (isForward || isTabSwitch) {
         val focusRequester = remember { FocusRequester() }
         LaunchedEffect(Unit) {
             // Wait for AnimatedContent exit transition to complete
