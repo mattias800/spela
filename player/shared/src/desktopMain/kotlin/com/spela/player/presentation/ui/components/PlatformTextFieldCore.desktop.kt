@@ -17,6 +17,29 @@ import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.ui.theme.SpTypography
 
+/**
+ * Desktop actual for [PlatformTextFieldCore].
+ *
+ * Desktop has no fullscreen-IME problem — soft keyboards aren't a
+ * thing here in the same way they are on Android — so this is just
+ * a thin styling wrapper around Material 3's `OutlinedTextField`. We
+ * delegate everything (floating label, container, cursor, label
+ * colours, error state, IME action plumbing) to OutlinedTextField
+ * and only override colour tokens to match the design system.
+ *
+ * Border styling on focus: `focusedBorderColor = Color.Transparent`.
+ * That's intentional — when the field is focused, the [SpTextField]
+ * wrapper draws its multi-colour brand-gradient ring on top of this
+ * field. Leaving the OutlinedTextField's own focused border visible
+ * would compete with the gradient, so we hide it and let the wrapper's
+ * ring be the entire focused-edge treatment. Unfocused border is a
+ * subtle low-alpha white that reads as a faint outline on dark
+ * backgrounds.
+ *
+ * If the Android implementation evolves, mirror visual changes here so
+ * desktop and Android stay in lockstep — the screens use [SpTextField]
+ * and shouldn't have to know which platform they're running on.
+ */
 @Composable
 actual fun PlatformTextFieldCore(
     value: String,
