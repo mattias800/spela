@@ -48,7 +48,10 @@ import com.spela.player.presentation.ui.components.SpScreenTopSpacer
 import com.spela.player.presentation.ui.components.SpTopBar
 import com.spela.player.presentation.ui.gamepad.InputMode
 import com.spela.player.presentation.ui.gamepad.LocalInputMode
-import com.spela.player.presentation.ui.gamepad.autoFocus
+import com.spela.player.presentation.ui.gamepad.LocalFocusMemory
+import com.spela.player.presentation.ui.gamepad.focusRestoreItem
+import com.spela.player.presentation.ui.gamepad.rememberFocusMemoryState
+import androidx.compose.runtime.CompositionLocalProvider
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.ui.theme.SpTypography
@@ -72,8 +75,10 @@ fun ExploreMoodScreen(
     }
 
     val isGamepad = LocalInputMode.current == InputMode.GAMEPAD
+    val focusMemory = rememberFocusMemoryState()
 
     SpScreen(modifier = Modifier.testTag("explore_mood_screen")) {
+        CompositionLocalProvider(LocalFocusMemory provides focusMemory) {
         Column(
             modifier = Modifier
                 .fillMaxSize(),
@@ -165,7 +170,10 @@ fun ExploreMoodScreen(
                         ) { game ->
                             val itemModifier = Modifier
                                 .padding(horizontal = SpSpacing.ScreenHorizontal)
-                                .let { if (game == state.games.firstOrNull()) it.autoFocus() else it }
+                                .focusRestoreItem(
+                                    key = "mood_${moodId}_${game.id}",
+                                    isDefault = game == state.games.firstOrNull(),
+                                )
                             MoodGameItem(
                                 game = game,
                                 onClick = { onGameSelected(game.id) },
@@ -203,6 +211,7 @@ fun ExploreMoodScreen(
             onDismiss = { viewModel.dismissMoodDetailError() },
             modifier = Modifier.align(Alignment.BottomCenter),
         )
+        } // CompositionLocalProvider
     }
 }
 

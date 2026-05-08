@@ -46,7 +46,10 @@ import com.spela.player.presentation.ui.components.SpScreenTopSpacer
 import com.spela.player.presentation.ui.components.SpTopBar
 import com.spela.player.presentation.ui.gamepad.InputMode
 import com.spela.player.presentation.ui.gamepad.LocalInputMode
-import com.spela.player.presentation.ui.gamepad.autoFocus
+import com.spela.player.presentation.ui.gamepad.LocalFocusMemory
+import com.spela.player.presentation.ui.gamepad.focusRestoreItem
+import com.spela.player.presentation.ui.gamepad.rememberFocusMemoryState
+import androidx.compose.runtime.CompositionLocalProvider
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.ui.theme.SpTypography
@@ -70,8 +73,10 @@ fun ExploreKeywordScreen(
     }
 
     val isGamepad = LocalInputMode.current == InputMode.GAMEPAD
+    val focusMemory = rememberFocusMemoryState()
 
     SpScreen(modifier = Modifier.testTag("explore_keyword_screen")) {
+        CompositionLocalProvider(LocalFocusMemory provides focusMemory) {
         Column(
             modifier = Modifier
                 .fillMaxSize(),
@@ -131,7 +136,10 @@ fun ExploreKeywordScreen(
                             KeywordGameCard(
                                 game = game,
                                 onClick = { onGameSelected(game.id) },
-                                modifier = if (game == state.games.firstOrNull()) Modifier.autoFocus() else Modifier,
+                                modifier = Modifier.focusRestoreItem(
+                                    key = "keyword_${keywordId}_${game.id}",
+                                    isDefault = game == state.games.firstOrNull(),
+                                ),
                             )
                         }
                     }
@@ -151,6 +159,7 @@ fun ExploreKeywordScreen(
             onDismiss = { viewModel.dismissKeywordDetailError() },
             modifier = Modifier.align(Alignment.BottomCenter),
         )
+        } // CompositionLocalProvider
     }
 }
 

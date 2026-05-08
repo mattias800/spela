@@ -48,7 +48,7 @@ import com.spela.player.presentation.ui.gamepad.InputMode
 import com.spela.player.presentation.ui.gamepad.LocalInputMode
 import com.spela.player.presentation.ui.gamepad.autoFocus
 import com.spela.player.presentation.ui.gamepad.LocalFocusMemory
-import com.spela.player.presentation.ui.gamepad.rememberFocus
+import com.spela.player.presentation.ui.gamepad.focusRestoreItem
 import com.spela.player.presentation.ui.gamepad.rememberFocusMemoryState
 import androidx.compose.runtime.CompositionLocalProvider
 import com.spela.player.presentation.ui.theme.SpColor
@@ -149,7 +149,7 @@ fun DownloadsScreen(
                         download = download,
                         isCancelling = download.gameId in state.cancellingGameIds,
                         onCancel = { viewModel.onIntent(DownloadsIntent.CancelDownload(download.gameId)) },
-                        modifier = Modifier.rememberFocus("download_${download.gameId}"),
+                        modifier = Modifier.focusRestoreItem(key ="download_${download.gameId}"),
                     )
                 }
             }
@@ -170,7 +170,7 @@ fun DownloadsScreen(
                         game = game,
                         onClick = { onGameClick(game.gameId) },
                         onDelete = { viewModel.onIntent(DownloadsIntent.DeleteLocalGame(game.gameId)) },
-                        modifier = Modifier.rememberFocus("downloaded_${game.gameId}"),
+                        modifier = Modifier.focusRestoreItem(key ="downloaded_${game.gameId}"),
                     )
                 }
             }

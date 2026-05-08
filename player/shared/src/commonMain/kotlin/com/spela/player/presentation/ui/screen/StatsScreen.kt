@@ -35,9 +35,8 @@ import com.spela.player.presentation.ui.components.SpTopBar
 import com.spela.player.presentation.ui.components.PlatformBackHandler
 import com.spela.player.presentation.ui.gamepad.InputMode
 import com.spela.player.presentation.ui.gamepad.LocalInputMode
-import com.spela.player.presentation.ui.gamepad.autoFocus
 import com.spela.player.presentation.ui.gamepad.LocalFocusMemory
-import com.spela.player.presentation.ui.gamepad.rememberFocus
+import com.spela.player.presentation.ui.gamepad.focusRestoreItem
 import com.spela.player.presentation.ui.gamepad.rememberFocusMemoryState
 import androidx.compose.runtime.CompositionLocalProvider
 import com.spela.player.presentation.ui.theme.SpSpacing
@@ -138,8 +137,11 @@ fun StatsScreen(
                                         rank = index + 1,
                                         item = item,
                                         onClick = { onGameSelected(item.game.id) },
-                                        modifier = (if (index == 0) Modifier.autoFocus() else Modifier)
-                                            .rememberFocus("game_${item.game.id}")
+                                        modifier = Modifier
+                                            .focusRestoreItem(
+                                                key = "game_${item.game.id}",
+                                                isDefault = index == 0,
+                                            )
                                             .padding(horizontal = SpSpacing.ScreenHorizontal, vertical = SpSpacing.XSmall),
                                     )
                                 }
@@ -167,7 +169,8 @@ fun StatsScreen(
                                         rank = index + 1,
                                         item = item,
                                         onClick = { onUserSelected(item.userId) },
-                                        modifier = Modifier.rememberFocus("player_${item.userId}")
+                                        modifier = Modifier
+                                            .focusRestoreItem(key = "player_${item.userId}")
                                             .padding(horizontal = SpSpacing.ScreenHorizontal, vertical = SpSpacing.XSmall),
                                     )
                                 }

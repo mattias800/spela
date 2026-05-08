@@ -52,9 +52,8 @@ import com.spela.player.presentation.ui.components.SpTopBar
 import com.spela.player.presentation.ui.components.PlatformBackHandler
 import com.spela.player.presentation.ui.gamepad.InputMode
 import com.spela.player.presentation.ui.gamepad.LocalInputMode
-import com.spela.player.presentation.ui.gamepad.autoFocus
 import com.spela.player.presentation.ui.gamepad.LocalFocusMemory
-import com.spela.player.presentation.ui.gamepad.rememberFocus
+import com.spela.player.presentation.ui.gamepad.focusRestoreItem
 import com.spela.player.presentation.ui.gamepad.rememberFocusMemoryState
 import androidx.compose.runtime.CompositionLocalProvider
 import com.spela.player.presentation.ui.theme.SpColor
@@ -147,8 +146,10 @@ fun SharedSessionsScreen(
                                         onReject = { viewModel.onIntent(SharedSessionIntent.RejectInvitation(invitation.id)) },
                                         modifier = Modifier
                                             .padding(horizontal = SpSpacing.ScreenHorizontal)
-                                            .then(if (invitation == state.invitations.firstOrNull()) Modifier.autoFocus() else Modifier)
-                                            .rememberFocus("invite_${invitation.id}"),
+                                            .focusRestoreItem(
+                                                key = "invite_${invitation.id}",
+                                                isDefault = invitation == state.invitations.firstOrNull(),
+                                            ),
                                     )
                                 }
                                 item {
@@ -174,8 +175,11 @@ fun SharedSessionsScreen(
                                         onClick = { onSharedSessionSelected(sharedSession.id) },
                                         modifier = Modifier
                                             .padding(horizontal = SpSpacing.ScreenHorizontal)
-                                            .then(if (state.invitations.isEmpty() && sharedSession == state.sharedSessions.firstOrNull()) Modifier.autoFocus() else Modifier)
-                                            .rememberFocus("shared_${sharedSession.id}"),
+                                            .focusRestoreItem(
+                                                key = "shared_${sharedSession.id}",
+                                                isDefault = state.invitations.isEmpty() &&
+                                                    sharedSession == state.sharedSessions.firstOrNull(),
+                                            ),
                                     )
                                 }
                             }

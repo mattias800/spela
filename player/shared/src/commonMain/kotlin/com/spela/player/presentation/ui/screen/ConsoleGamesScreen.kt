@@ -52,7 +52,7 @@ import com.spela.player.presentation.ui.feature.library.GameGridItem
 import com.spela.player.presentation.ui.gamepad.InputMode
 import com.spela.player.presentation.ui.gamepad.LocalInputMode
 import com.spela.player.presentation.ui.gamepad.LocalFocusMemory
-import com.spela.player.presentation.ui.gamepad.rememberFocus
+import com.spela.player.presentation.ui.gamepad.focusRestoreItem
 import com.spela.player.presentation.ui.gamepad.rememberFocusMemoryState
 import androidx.compose.runtime.CompositionLocalProvider
 import com.spela.player.presentation.ui.theme.LocalTitleBarInset
@@ -238,7 +238,10 @@ fun ConsoleGamesScreen(
                             game = game,
                             onClick = { onGameSelected(game.id) },
                             onRequestScrape = { viewModel.requestScrapeIfNeeded(it) },
-                            modifier = Modifier.rememberFocus(game.id),
+                            modifier = Modifier.focusRestoreItem(
+                                key = game.id,
+                                isDefault = game == sortedGames.firstOrNull(),
+                            ),
                         )
                     }
                 }
