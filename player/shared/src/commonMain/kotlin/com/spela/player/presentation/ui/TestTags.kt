@@ -62,6 +62,12 @@ object TestTags {
     fun consoleCard(consoleId: String) = "console_card_$consoleId"
     fun consoleBrowseGames(consoleId: String) = "console_browse_games_$consoleId"
 
+    // Console detail — terminal browse section and admin overflow menu
+    const val CONSOLE_BROWSE_ALL_SECTION = "console_browse_all_section"
+    const val CONSOLE_BROWSE_ALL_CTA = "console_browse_all_cta"
+    const val CONSOLE_ADMIN_MENU_BUTTON = "console_admin_menu_button"
+    const val CONSOLE_ADMIN_MENU_SETTINGS = "console_admin_menu_settings"
+
     // Game detail — primary CTA changes label between Play / Resume / Download
     // depending on save + cache state. Tests should target the tag, not the
     // visible label, since a Continue/Resume copy change shouldn't fail tests.

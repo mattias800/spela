@@ -13,6 +13,7 @@ enum class ViewMode {
 }
 
 data class GameListState(
+    val isAdmin: Boolean = false,
     val consoles: List<Console> = emptyList(),
     val games: List<Game> = emptyList(),
     val recentGames: List<Game> = emptyList(),

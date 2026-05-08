@@ -3,6 +3,7 @@ package com.spela.player.presentation.viewmodel
 import com.spela.player.data.remote.ScrapeService
 import com.spela.player.data.repository.BiosRepository
 import com.spela.player.domain.model.Game
+import com.spela.player.domain.repository.AuthRepository
 import com.spela.player.domain.repository.ChallengeRepository
 import com.spela.player.domain.repository.GameRepository
 import com.spela.player.domain.usecase.*
@@ -36,6 +37,7 @@ class GameListViewModel(
     private val dispatchers: DispatcherProvider,
     private val scope: CoroutineScope,
     private val biosRepository: BiosRepository? = null,
+    private val authRepository: AuthRepository? = null,
 ) {
     private val _state = MutableStateFlow(GameListState())
     val state: StateFlow<GameListState> = _state.asStateFlow()
@@ -45,6 +47,14 @@ class GameListViewModel(
     private var consoleGamesJob: Job? = null
 
     init {
+        // Load admin status once on startup
+        scope.launch(dispatchers.io) {
+            val isAdmin = authRepository?.getCurrentUser()
+                ?.map { it.role == "admin" || it.role == "owner" }
+                ?.getOrDefault(false) ?: false
+            _state.update { it.copy(isAdmin = isAdmin) }
+        }
+
         // Observe scrape completions and update cover art in game lists
         scope.launch(dispatchers.io) {
             scrapeService.scrapedCovers.collect { (gameId, coverUrl) ->

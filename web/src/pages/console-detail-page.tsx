@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useNavigate } from "react-router-dom";
 import {
   Library,
   FolderSearch,
@@ -12,8 +12,10 @@ import {
   EmptyState,
   GameCardSkeleton,
   SearchInput,
+  ActionsMenu,
+  BackButton,
 } from "@/components/ui";
-import { PageLayout, SectionList } from "@/components/layout";
+import { PageLayout, SectionList, TitledSection } from "@/components/layout";
 import { useConsoles } from "@/hooks/use-consoles";
 import { useGames, useToggleFavorite } from "@/hooks/use-games";
 import { useTogglePlayLater } from "@/hooks/use-play-later";
@@ -33,9 +35,11 @@ import {
 } from "@/features/explore/components/console-showcase-sections";
 
 const SMALL_LIBRARY_THRESHOLD = 24;
+const BROWSE_CTA_THRESHOLD = 15;
 
 export function ConsoleDetailPage() {
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
   const { data: consoles } = useConsoles();
   const { toggle: handleToggleFavorite } = useToggleFavorite();
   const { toggle: handleTogglePlayLater } = useTogglePlayLater();
@@ -77,36 +81,45 @@ export function ConsoleDetailPage() {
       ?.filter((f) => f.status === "missing" && f.required)
       .map((f) => f.fileName) ?? [];
 
+  const adminMenuItems = isAdmin
+    ? [
+        {
+          label: "Scan for new games",
+          icon: <FolderSearch className="h-4 w-4" />,
+          onClick: () =>
+            scanLibrary.mutate(
+              { console: consoleAbbr },
+              {
+                onSuccess: () =>
+                  toast("info", `Scan started for ${consoleName}.`),
+                onError: (err) =>
+                  toast(
+                    "error",
+                    err instanceof Error ? err.message : "Scan failed",
+                  ),
+              },
+            ),
+          loading: scanLibrary.isPending,
+        },
+      ]
+    : [];
+
   return (
-    <PageLayout backButtonVariant="standard" backTo="/consoles" backLabel="Consoles">
+    <PageLayout>
       <SectionList>
 
-      {/* Console hero banner */}
-      <ConsoleHeroBanner
-        console={console}
-        actions={
-          <>
-            {gameCount > SMALL_LIBRARY_THRESHOLD && (
-              <Link
-                to={`/consoles/${id}/games`}
-                className="inline-flex items-center gap-2 rounded-lg bg-white/10 backdrop-blur-sm px-4 py-2 text-sm font-medium text-white hover:bg-white/20 transition-colors"
-                data-testid="banner-browse-games"
-              >
-                Browse {gameCount} games
-                <ArrowRight className="h-4 w-4" />
-              </Link>
-            )}
-            {isAdmin && (
-              <ScanButton
-                consoleAbbr={consoleAbbr}
-                consoleName={consoleName}
-                scanLibrary={scanLibrary}
-                toast={toast}
-              />
-            )}
-          </>
-        }
-      />
+      {/* Page header: back button + admin overflow menu */}
+      <div className="flex items-center justify-between">
+        <BackButton onClick={() => navigate("/consoles")} data-testid="page-back-button">
+          Consoles
+        </BackButton>
+        {adminMenuItems.length > 0 && (
+          <ActionsMenu items={adminMenuItems} />
+        )}
+      </div>
+
+      {/* Console hero banner — pure identity, no action buttons */}
+      <ConsoleHeroBanner console={console} />
 
       {/* BIOS warning */}
       {showBiosWarning && (
@@ -174,7 +187,7 @@ export function ConsoleDetailPage() {
           )}
         </>
       ) : (
-        /* Large library: showcase sections */
+        /* Large library: showcase sections + terminal browse CTA */
         <>
           <ConsoleRecentlyPlayed consoleId={id!} />
           <ConsoleEssentials consoleId={id!} />
@@ -182,47 +195,24 @@ export function ConsoleDetailPage() {
           <ConsoleHiddenGems consoleId={id!} />
           <ConsoleTopDevelopers consoleId={id!} />
           <ConsoleRecentlyAdded consoleId={id!} />
+          {gameCount > BROWSE_CTA_THRESHOLD && (
+            <TitledSection title="Library" icon={Library}>
+              <Link
+                to={`/consoles/${id}/games`}
+                className="flex items-center justify-between w-full rounded-xl bg-white/[0.03] border border-white/[0.06] px-5 py-4 text-surface-100 hover:bg-white/[0.06] transition-colors group"
+                data-testid="browse-all-games-cta"
+              >
+                <span className="text-base font-medium">
+                  Browse all {gameCount} {consoleName} games
+                </span>
+                <ArrowRight className="h-5 w-5 text-surface-400 group-hover:text-surface-200 transition-colors" />
+              </Link>
+            </TitledSection>
+          )}
         </>
       )}
     </SectionList>
     </PageLayout>
-  );
-}
-
-function ScanButton({
-  consoleAbbr,
-  consoleName,
-  scanLibrary,
-  toast,
-}: {
-  consoleAbbr: string;
-  consoleName: string;
-  scanLibrary: ReturnType<typeof useScanLibrary>;
-  toast: ReturnType<typeof useToast>["toast"];
-}) {
-  return (
-    <button data-comp="ScanButton"
-      className="inline-flex items-center gap-2 rounded-lg bg-white/10 backdrop-blur-sm px-4 py-2 text-sm font-medium text-white hover:bg-white/20 transition-colors disabled:opacity-50"
-      disabled={scanLibrary.isPending}
-      data-testid="scan-button"
-      onClick={() =>
-        scanLibrary.mutate(
-          { console: consoleAbbr },
-          {
-            onSuccess: () =>
-              toast("info", `Scan started for ${consoleName}.`),
-            onError: (err) =>
-              toast(
-                "error",
-                err instanceof Error ? err.message : "Scan failed",
-              ),
-          },
-        )
-      }
-    >
-      <FolderSearch className="h-4 w-4" />
-      Scan for new games
-    </button>
   );
 }
 
