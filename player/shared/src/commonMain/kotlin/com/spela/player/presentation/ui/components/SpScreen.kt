@@ -2,6 +2,7 @@ package com.spela.player.presentation.ui.components
 
 import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.focusGroup
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
@@ -19,6 +20,9 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.compositionLocalOf
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.ui.theme.spScreenBackground
 
@@ -61,10 +65,32 @@ fun SpScreen(
         Modifier.spScreenBackground()
     }
 
+    val focusManager = LocalFocusManager.current
+    val keyboardController = LocalSoftwareKeyboardController.current
     Box(
         modifier = modifier
             .fillMaxSize()
-            .then(backgroundModifier),
+            .then(backgroundModifier)
+            // Tap-outside-to-dismiss handler. `detectTapGestures` runs in
+            // the bubble phase (PointerEventPass.Main), so any tap that
+            // hits an inner `Modifier.clickable` / interactive composable
+            // is consumed before reaching us — this only fires for taps
+            // on bare screen background. The two effects together give
+            // every screen the "click anywhere outside the form to
+            // dismiss the keyboard" behaviour without per-screen wiring:
+            //
+            //   1. `keyboardController?.hide()` — Compose's cross-platform
+            //      "hide IME" call (no-op on platforms without an IME).
+            //   2. `focusManager.clearFocus()` — drops focus from the
+            //      currently focused text field so it visibly de-focuses
+            //      and the AndroidView+EditText path stops requesting
+            //      input.
+            .pointerInput(Unit) {
+                detectTapGestures(onTap = {
+                    keyboardController?.hide()
+                    focusManager.clearFocus()
+                })
+            },
         content = content,
     )
 }
