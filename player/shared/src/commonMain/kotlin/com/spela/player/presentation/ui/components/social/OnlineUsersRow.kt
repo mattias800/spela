@@ -38,6 +38,8 @@ fun OnlineUsersRow(
     SpCarousel(
         itemCount = users.size,
         modifier = modifier,
+        memoryKey = "home_online_users",
+        itemKey = { users[it].id },
     ) { index, focusRequester ->
         OnlineUserItem(
             user = users[index],

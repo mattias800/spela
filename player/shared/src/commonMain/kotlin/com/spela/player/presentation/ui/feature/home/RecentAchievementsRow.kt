@@ -42,6 +42,8 @@ internal fun RecentAchievementsRow(
     SpCarousel(
         itemCount = items.size,
         modifier = modifier,
+        memoryKey = "home_recent_achievements",
+        itemKey = { items[it].achievementRaId.toString() },
     ) { index, focusRequester ->
         AchievementCard(
             achievement = items[index],

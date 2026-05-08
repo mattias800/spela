@@ -37,7 +37,11 @@ internal fun ContinuePlayingRow(
     games: List<Game>,
     onGameSelected: (String) -> Unit,
 ) {
-    SpCarousel(itemCount = games.size) { index, focusRequester ->
+    SpCarousel(
+        itemCount = games.size,
+        memoryKey = "home_continue_playing",
+        itemKey = { games[it].id },
+    ) { index, focusRequester ->
         Box(modifier = Modifier.focusRequester(focusRequester)) {
             ContinuePlayingCard(
                 game = games[index],
@@ -78,7 +82,11 @@ internal fun GameCarouselRow(
     onGameSelected: (String) -> Unit,
     keyPrefix: String = "carousel",
 ) {
-    SpCarousel(itemCount = games.size) { index, focusRequester ->
+    SpCarousel(
+        itemCount = games.size,
+        memoryKey = keyPrefix,
+        itemKey = { games[it].id },
+    ) { index, focusRequester ->
         Box(modifier = Modifier.focusRequester(focusRequester)) {
             GameCoverCard(
                 game = games[index],

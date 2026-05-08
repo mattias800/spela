@@ -65,7 +65,9 @@ import com.spela.player.presentation.ui.components.SpMainContentPadding
 import com.spela.player.presentation.ui.components.SpScreen
 import com.spela.player.presentation.ui.components.SpScrollableContent
 import com.spela.player.presentation.ui.gamepad.autoFocus
+import com.spela.player.presentation.ui.gamepad.LocalActiveCarouselKey
 import com.spela.player.presentation.ui.gamepad.LocalFocusMemory
+import com.spela.player.presentation.ui.gamepad.rememberActiveCarouselKeyState
 import com.spela.player.presentation.ui.gamepad.rememberFocus
 import com.spela.player.presentation.ui.gamepad.rememberFocusMemoryState
 import androidx.compose.runtime.CompositionLocalProvider
@@ -191,9 +193,13 @@ fun HomeScreen(
                         }
                     } else {
                         val focusMemory = rememberFocusMemoryState()
+                        val activeCarousel = rememberActiveCarouselKeyState()
                         SpScrollableContent {
                         SpMainContentPadding {
-                        CompositionLocalProvider(LocalFocusMemory provides focusMemory) {
+                        CompositionLocalProvider(
+                            LocalFocusMemory provides focusMemory,
+                            LocalActiveCarouselKey provides activeCarousel,
+                        ) {
                         SpSectionList(
                             modifier = Modifier.fillMaxSize(),
                         ) {

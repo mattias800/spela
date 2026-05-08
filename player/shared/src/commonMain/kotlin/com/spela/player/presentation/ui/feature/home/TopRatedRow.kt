@@ -14,7 +14,11 @@ internal fun TopRatedRow(
     games: List<TopRatedGame>,
     onGameSelected: (String) -> Unit,
 ) {
-    SpCarousel(itemCount = games.size) { index, focusRequester ->
+    SpCarousel(
+        itemCount = games.size,
+        memoryKey = "home_top_rated",
+        itemKey = { games[it].localGameId ?: games[it].name },
+    ) { index, focusRequester ->
         val game = games[index]
         Box(modifier = Modifier.focusRequester(focusRequester)) {
             TopRatedCard(
