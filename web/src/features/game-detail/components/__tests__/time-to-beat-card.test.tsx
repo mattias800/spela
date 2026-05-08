@@ -62,7 +62,19 @@ describe("TimeToBeatCard", () => {
     expect(container.querySelector("[class*='bg-purple-400']")).toBeNull();
   });
 
-  it("converts seconds to hours and shows correct labels", () => {
+  it("renders the Clock header icon in the standard section colour (#1110)", () => {
+    // The Time-to-Beat card pairs visually with UserRating; both use
+    // `text-brand-400` on their lucide header icon. TitledSection
+    // enforces the same colour for sections elsewhere on the page,
+    // so this test pins the convention from outside the component.
+    const game = makeGame({ timeToBeatNormally: hrs(10) });
+    const { container } = render(<TimeToBeatCard game={game} />);
+    const headerIcon = container.querySelector(".lucide-clock");
+    expect(headerIcon).not.toBeNull();
+    expect(headerIcon?.getAttribute("class")).toMatch(/text-brand-400/);
+  });
+
+  it("converts seconds to hours and shows correct labels (#1110: Main / Extras / All, Xh)", () => {
     const game = makeGame({
       timeToBeatHastily: hrs(10),
       timeToBeatNormally: hrs(25),
@@ -70,14 +82,20 @@ describe("TimeToBeatCard", () => {
     });
     render(<TimeToBeatCard game={game} />);
 
-    expect(screen.getByText("Main Story")).toBeInTheDocument();
-    expect(screen.getByText("10 hrs")).toBeInTheDocument();
+    // #1110 — labels shortened so the 3-up grid fits comfortably at 1280 px:
+    //   "Main Story"     → "Main"
+    //   "Main + Extras"  → "Extras"
+    //   "Completionist"  → "All"
+    // Tooltips still carry the full disambiguation ("Time to finish the
+    // main story" etc.) — see the tooltip test below.
+    expect(screen.getByText("Main")).toBeInTheDocument();
+    expect(screen.getByText("10h")).toBeInTheDocument();
 
-    expect(screen.getByText("Main + Extras")).toBeInTheDocument();
-    expect(screen.getByText("25 hrs")).toBeInTheDocument();
+    expect(screen.getByText("Extras")).toBeInTheDocument();
+    expect(screen.getByText("25h")).toBeInTheDocument();
 
-    expect(screen.getByText("Completionist")).toBeInTheDocument();
-    expect(screen.getByText("50 hrs")).toBeInTheDocument();
+    expect(screen.getByText("All")).toBeInTheDocument();
+    expect(screen.getByText("50h")).toBeInTheDocument();
   });
 
   it("renders all three tier labels even when some values are missing (#1099)", () => {
@@ -91,13 +109,13 @@ describe("TimeToBeatCard", () => {
     });
     render(<TimeToBeatCard game={game} />);
 
-    expect(screen.getByText("Main Story")).toBeInTheDocument();
-    expect(screen.getByText("Main + Extras")).toBeInTheDocument();
-    expect(screen.getByText("Completionist")).toBeInTheDocument();
+    expect(screen.getByText("Main")).toBeInTheDocument();
+    expect(screen.getByText("Extras")).toBeInTheDocument();
+    expect(screen.getByText("All")).toBeInTheDocument();
     // Missing tier shows the em-dash placeholder, not a value.
     expect(screen.getByText("—")).toBeInTheDocument();
-    expect(screen.getByText("15 hrs")).toBeInTheDocument();
-    expect(screen.getByText("40 hrs")).toBeInTheDocument();
+    expect(screen.getByText("15h")).toBeInTheDocument();
+    expect(screen.getByText("40h")).toBeInTheDocument();
   });
 
   it("attaches an explanatory tooltip to each tier card (#1099)", () => {
@@ -116,7 +134,7 @@ describe("TimeToBeatCard", () => {
     expect(tierCards[2].getAttribute("title")).toMatch(/100% completion/i);
   });
 
-  it("formats fractional hours correctly", () => {
+  it("formats fractional hours correctly (#1110: 5.5h)", () => {
     // 5.5 hours = 19800 seconds
     const game = makeGame({
       timeToBeatHastily: 19800,
@@ -124,10 +142,10 @@ describe("TimeToBeatCard", () => {
       timeToBeatCompletely: 0,
     });
     render(<TimeToBeatCard game={game} />);
-    expect(screen.getByText("5.5 hrs")).toBeInTheDocument();
+    expect(screen.getByText("5.5h")).toBeInTheDocument();
   });
 
-  it('formats sub-hour values as "<1 hr"', () => {
+  it('formats sub-hour values as "<1h" (#1110)', () => {
     // 30 minutes = 1800 seconds
     const game = makeGame({
       timeToBeatHastily: 1800,
@@ -135,27 +153,27 @@ describe("TimeToBeatCard", () => {
       timeToBeatCompletely: 0,
     });
     render(<TimeToBeatCard game={game} />);
-    expect(screen.getByText("<1 hr")).toBeInTheDocument();
+    expect(screen.getByText("<1h")).toBeInTheDocument();
   });
 
-  it('formats exactly 1 hour as "1 hr"', () => {
+  it('formats exactly 1 hour as "1h" (#1110)', () => {
     const game = makeGame({
       timeToBeatHastily: hrs(1),
       timeToBeatNormally: 0,
       timeToBeatCompletely: 0,
     });
     render(<TimeToBeatCard game={game} />);
-    expect(screen.getByText("1 hr")).toBeInTheDocument();
+    expect(screen.getByText("1h")).toBeInTheDocument();
   });
 
-  it("handles the bug case: 7200 seconds = 2 hrs, not 7200 hrs", () => {
+  it("handles the bug case: 7200 seconds = 2h, not 7200h", () => {
     const game = makeGame({
       timeToBeatHastily: 0,
       timeToBeatNormally: 7200,
       timeToBeatCompletely: 0,
     });
     render(<TimeToBeatCard game={game} />);
-    expect(screen.getByText("2 hrs")).toBeInTheDocument();
-    expect(screen.queryByText("7200 hrs")).not.toBeInTheDocument();
+    expect(screen.getByText("2h")).toBeInTheDocument();
+    expect(screen.queryByText("7200h")).not.toBeInTheDocument();
   });
 });
