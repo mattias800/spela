@@ -89,11 +89,11 @@ fun GameDetailLayout(
 
         if (isLandscape) {
             val isSmallLandscape = maxHeight < 500.dp
-            // #1097 — bumped from 200/256 dp so the cover reads cinematic
-            // on standard desktop / tablet windows. The compact branch
-            // (AYN Thor in landscape, ~700 dp tall) keeps a smaller
-            // value so vertical real estate isn't eaten by the hero.
-            val coverWidth = if (isSmallLandscape) 280.dp else 380.dp
+            // #1109 — middle ground between #1097's bigger sizes and the
+            // pre-#1097 originals. Closer to original than to #1097.
+            // Compact branch (AYN Thor in landscape, ~700 dp tall) stays
+            // conservative so vertical real estate isn't eaten by the hero.
+            val coverWidth = if (isSmallLandscape) 240.dp else 320.dp
             LandscapeLayout(
                 coverWidth = coverWidth,
                 isCompact = isSmallLandscape,
@@ -136,9 +136,10 @@ private fun LandscapeLayout(
     fullWidthSections: @Composable () -> Unit,
 ) {
     val verticalPad = if (isCompact) SpSpacing.Medium else SpSpacing.XLarge
-    // #1097 — banner sized to host the bigger cover (max-height 280/360 dp
-    // depending on isCompact) plus top/bottom padding.
-    val coverMaxHeight = if (isCompact) 280.dp else 360.dp
+    // #1109 — banner sized to host the cover (max-height 240/300 dp
+    // depending on isCompact) plus top/bottom padding. Middle ground
+    // between #1097 (280/360) and pre-#1097 (200 fixed).
+    val coverMaxHeight = if (isCompact) 240.dp else 300.dp
     val bannerHeight = coverMaxHeight + SpSpacing.TopBarHeight + SpSpacing.Large
 
     Box(modifier = Modifier.fillMaxSize()) {
@@ -368,12 +369,14 @@ private fun PortraitLayout(
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.spacedBy(SpSpacing.Medium),
                     ) {
-                        // Cover art centered. #1097 — bumped from 250 dp
-                        // for a more cinematic hero on portrait viewports.
+                        // Cover art centered. #1109 — middle ground
+                        // (290 dp) between pre-#1097 (250 dp) and #1097
+                        // (340 dp), closer to the smaller side per user
+                        // feedback that 340 was too dominant.
                         val coverShape = RoundedCornerShape(SpSpacing.CardCornerRadius)
                         Box(
                             modifier = Modifier
-                                .widthIn(max = 340.dp)
+                                .widthIn(max = 290.dp)
                                 .shadow(12.dp, coverShape)
                                 .clip(coverShape)
                                 .border(2.dp, Color.White.copy(alpha = 0.15f), coverShape),
