@@ -82,6 +82,15 @@ class SpelaApiClient(
 
         install(Auth) {
             bearer {
+                // Read straight from TokenManager on every request. Without
+                // this, Ktor caches the result of loadTokens — and if any
+                // background service (ConnectivityMonitor.healthCheck,
+                // PresenceService) fires a request before login, the null
+                // tokens get cached and never refresh on subsequent
+                // post-login calls, producing a 401 storm with no
+                // /api/auth/refresh attempts (#1146).
+                cacheTokens = false
+
                 loadTokens {
                     tokenManager.toBearerTokens()
                 }
