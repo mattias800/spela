@@ -30,7 +30,7 @@ import androidx.compose.foundation.interaction.collectIsHoveredAsState
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.runtime.CompositionLocalProvider
 import com.spela.player.presentation.ui.gamepad.LocalFocusMemory
-import com.spela.player.presentation.ui.gamepad.rememberFocus
+import com.spela.player.presentation.ui.gamepad.focusRestoreItem
 import com.spela.player.presentation.ui.gamepad.rememberFocusMemoryState
 import com.spela.player.presentation.ui.gamepad.gamepadFocusable
 import androidx.compose.material.icons.Icons
@@ -70,7 +70,6 @@ import com.spela.player.presentation.ui.components.SpAreaSizedImage
 import com.spela.player.presentation.ui.components.SpButton
 import com.spela.player.presentation.ui.components.SpButtonStyle
 import com.spela.player.presentation.ui.components.SpShimmer
-import com.spela.player.presentation.ui.gamepad.autoFocus
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.ui.theme.SpTypography
@@ -148,19 +147,15 @@ internal fun ConsolesGrid(
                         // intended visual weight on wide windows. Beyond the
                         // cap, leftover row width distributes via the existing
                         // weight(1f) Spacer logic below for partial last rows.
-                        val cardModifier = if (isFirstCard) {
-                            isFirstCard = false
-                            Modifier
-                                .weight(1f)
-                                .widthIn(max = ConsoleCardMaxWidth)
-                                .autoFocus()
-                                .rememberFocus(console.id)
-                        } else {
-                            Modifier
-                                .weight(1f)
-                                .widthIn(max = ConsoleCardMaxWidth)
-                                .rememberFocus(console.id)
-                        }
+                        val isFirst = isFirstCard
+                        if (isFirstCard) isFirstCard = false
+                        val cardModifier = Modifier
+                            .weight(1f)
+                            .widthIn(max = ConsoleCardMaxWidth)
+                            .focusRestoreItem(
+                                key = console.id,
+                                isDefault = isFirst,
+                            )
                         ConsoleCard(
                             console = console,
                             onClick = { onConsoleSelected(console.id) },
