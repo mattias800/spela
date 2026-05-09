@@ -15,7 +15,9 @@ name: Android E2E
 # as shell).
 
 on:
-  # Always run on master pushes — last gate before a release.
+  # Always run on master pushes. The release workflow's
+  # wait-for-android-e2e job polls this run on the same SHA and
+  # refuses to publish if it failed — see release.yml.
   push:
     branches: [master]
   # PR runs are pure opt-in: only when the `android-e2e` label is

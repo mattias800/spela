@@ -402,6 +402,66 @@ jobs:
           name: spela-linux-appimage-aarch64
           path: player/desktop/build/appimage/Spela-aarch64.AppImage
 
+  # ── Android E2E gate ───────────────────────────────────────────
+  #
+  # Android E2E runs in a separate workflow, triggered by master pushes.
+  # The release flow needs to wait for that run on the same SHA and
+  # refuse to publish if it failed — otherwise a regression that the
+  # unit test suite doesn't catch (e.g. the AnimatedContent /
+  # Compose-vs-UiAutomator race documented in CLAUDE.md) ships
+  # unnoticed. Polls the GitHub API for up to 35 minutes — covers the
+  # typical 25-30 min E2E runtime plus queue time — then fails the
+  # release on timeout.
+  #
+  # Inputs are all GitHub-controlled (RELEASE_TAG comes from a tag
+  # push or workflow_dispatch admin input; SHA is derived from
+  # git rev-parse). Shell uses env: vars with double quotes — no
+  # workflow-injection surface.
+  wait-for-android-e2e:
+    name: Wait for Android E2E
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ env.RELEASE_TAG }}
+      - name: Resolve tag commit SHA
+        id: sha
+        run: |
+          SHA=$(git rev-parse HEAD)
+          echo "sha=$SHA" >> "$GITHUB_OUTPUT"
+          echo "Waiting for Android E2E on $SHA"
+      - name: Poll android-e2e workflow
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          SHA: ${{ steps.sha.outputs.sha }}
+        run: |
+          # 70 iterations * 30s = 35 minutes
+          for i in $(seq 1 70); do
+            run=$(gh api "repos/${REPO}/actions/workflows/android-e2e.yml/runs?head_sha=${SHA}&per_page=1" \
+              --jq '.workflow_runs[0] // empty')
+            if [ -z "$run" ]; then
+              echo "[$i/70] no android-e2e run found yet for ${SHA}"
+              sleep 30
+              continue
+            fi
+            status=$(echo "$run" | jq -r '.status')
+            conclusion=$(echo "$run" | jq -r '.conclusion // "in_progress"')
+            url=$(echo "$run" | jq -r '.html_url')
+            echo "[$i/70] status=$status conclusion=$conclusion url=$url"
+            if [ "$status" = "completed" ]; then
+              if [ "$conclusion" = "success" ]; then
+                echo "android-e2e passed — release may proceed"
+                exit 0
+              fi
+              echo "android-e2e finished with conclusion=$conclusion — refusing to release"
+              exit 1
+            fi
+            sleep 30
+          done
+          echo "timed out after 35min waiting for android-e2e on ${SHA}"
+          exit 1
+
   # ── GitHub Release ─────────────────────────────────────────────
 
   create-release:
@@ -413,6 +473,7 @@ jobs:
       - build-appimage
       - build-flatpak
       - build-linux-arm64
+      - wait-for-android-e2e
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
