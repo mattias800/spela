@@ -46,11 +46,36 @@ var privateNetworks = func() []*net.IPNet {
 	return nets
 }()
 
+// allowPrivateForTest, when true, makes IsPrivateURL return false for
+// private addresses. Used only by tests that spin up httptest servers
+// bound to 127.0.0.1 — production code never flips this. Set via
+// SetAllowPrivateForTest from a _test.go file.
+var allowPrivateForTest bool
+
+// SetAllowPrivateForTest is a test-only escape hatch that bypasses the
+// private-IP block list for the duration of a test. Production code
+// must not call this.
+func SetAllowPrivateForTest(v bool) { allowPrivateForTest = v }
+
 // IsPrivateURL reports whether rawURL points at a private/internal IP. A
 // scheme other than http/https, an unparseable URL, or an unresolvable host
 // is treated as private (fail-closed). Returns the parsed URL on success
 // for callers that want to do additional checks.
 func IsPrivateURL(rawURL string) bool {
+	if allowPrivateForTest {
+		// Still keep scheme + host validation so test code is exercised
+		// against the real shape of the function.
+		if u, err := url.Parse(rawURL); err == nil {
+			if u.Scheme != "http" && u.Scheme != "https" {
+				return true
+			}
+			if u.Hostname() == "" {
+				return true
+			}
+			return false
+		}
+		return true
+	}
 	u, err := url.Parse(rawURL)
 	if err != nil {
 		return true
