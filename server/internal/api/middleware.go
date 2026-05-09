@@ -66,6 +66,44 @@ func checkStorageQuota(database *gorm.DB, userID uint, additionalBytes int64) er
 	return nil
 }
 
+// pathAllowsQueryToken reports whether a request path is allowed to fall
+// back to `?token=<jwt>` for authentication. Issue #1117: applying the
+// query-token fallback to every protected route leaks JWTs into reverse-
+// proxy logs, browser history, Referer headers, etc. The fallback is only
+// needed where browsers cannot set Authorization headers — WebSocket
+// upgrades and asset URLs loaded by <img>/<audio>/<video>.
+func pathAllowsQueryToken(path string) bool {
+	switch {
+	case path == "/api/ws":
+		return true
+	case strings.HasPrefix(path, "/api/netplay/sessions/") && strings.HasSuffix(path, "/ws"):
+		return true
+	case strings.HasPrefix(path, "/api/images/save-screenshots/"):
+		return true
+	case strings.HasPrefix(path, "/api/bios/"):
+		return true
+	case strings.HasPrefix(path, "/api/cores/") && strings.Contains(path, "/download"):
+		return true
+	case strings.HasPrefix(path, "/api/games/") && strings.Contains(path, "/download"):
+		return true
+	case strings.HasPrefix(path, "/api/games/") && strings.Contains(path, "/discs/") && strings.HasSuffix(path, "/download"):
+		return true
+	case strings.HasPrefix(path, "/api/games/") && strings.Contains(path, "/shared-saves/") && strings.HasSuffix(path, "/download"):
+		return true
+	case strings.HasPrefix(path, "/api/sessions/") && strings.Contains(path, "/saves"):
+		return true
+	case strings.HasPrefix(path, "/api/sessions/") && strings.HasSuffix(path, "/sram"):
+		return true
+	case strings.HasPrefix(path, "/api/sessions/") && strings.HasSuffix(path, "/save-dir"):
+		return true
+	case strings.HasPrefix(path, "/api/shared-sessions/") && strings.Contains(path, "/saves"):
+		return true
+	case strings.HasPrefix(path, "/api/challenges/") && (strings.HasSuffix(path, "/save/download") || strings.HasSuffix(path, "/screenshot")):
+		return true
+	}
+	return false
+}
+
 // AuthMiddleware validates JWT tokens on protected routes and rejects disabled users.
 func AuthMiddleware(jwtSecret string, database *gorm.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
@@ -78,10 +116,12 @@ func AuthMiddleware(jwtSecret string, database *gorm.DB) gin.HandlerFunc {
 			}
 		}
 
-		// Fall back to query parameter for WebSocket upgrades and file
-		// downloads (EmulatorJS, <img>/<audio>/<video> tags cannot set
-		// Authorization headers when loading resources by URL).
-		if token == "" {
+		// Fall back to query parameter only on routes where browsers
+		// genuinely can't set the Authorization header (WS upgrades,
+		// asset URLs loaded by <img>/<audio>/<video>, file downloads).
+		// Restricting the fallback prevents JWTs leaking into proxy
+		// access logs / Referer headers from JSON endpoints (#1117).
+		if token == "" && pathAllowsQueryToken(c.Request.URL.Path) {
 			token = c.Query("token")
 		}
 

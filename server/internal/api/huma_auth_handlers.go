@@ -698,6 +698,18 @@ func (h *AuthHandler) HumaLogout(ctx context.Context, in *AuthLogoutInput) (*Aut
 		}
 	}
 
+	// Issue #1117: a client that authenticated this request via the
+	// query-token fallback (still allowed on a small allowlist of
+	// download/WS routes) won't have an Authorization header. Fall back
+	// to the gin context query so its access token still gets
+	// blacklisted on logout — otherwise the leaked token remains valid
+	// for its remaining TTL even after the user explicitly logged out.
+	if token == "" {
+		if g := ginContextFromCtx(ctx); g != nil {
+			token = g.Query("token")
+		}
+	}
+
 	if token != "" {
 		if claims, err := auth.ValidateAccessToken(token, h.JWTSecret); err == nil && claims.ExpiresAt != nil {
 			hash := sha256.Sum256([]byte(token))
