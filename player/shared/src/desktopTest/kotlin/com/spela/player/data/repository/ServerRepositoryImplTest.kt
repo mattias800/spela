@@ -2,6 +2,10 @@ package com.spela.player.data.repository
 
 import app.cash.sqldelight.driver.jdbc.sqlite.JdbcSqliteDriver
 import com.spela.player.data.local.SpelaDatabase
+import com.spela.player.data.remote.api.SpelaApiClient
+import com.spela.player.data.remote.interceptor.TokenManager
+// TokenManager is exposed from the AuthInterceptor file alongside the
+// interceptor itself.
 import io.ktor.client.engine.HttpClientEngine
 import io.ktor.client.engine.HttpClientEngineConfig
 import io.ktor.client.engine.HttpClientEngineFactory
@@ -38,7 +42,15 @@ class ServerRepositoryImplDbTest {
     }
 
     private fun createRepo(): ServerRepositoryImpl {
-        return ServerRepositoryImpl(database, stubEngineFactory)
+        // SpelaApiClient is invoked from setActiveServer/addServer to keep
+        // the shared baseUrl in sync with the active server (#1146). Use
+        // a real instance with the stub engine so the setBaseUrl side
+        // effect is exercised without making real HTTP calls.
+        val apiClient = SpelaApiClient(
+            engineFactory = stubEngineFactory,
+            tokenManager = TokenManager(),
+        )
+        return ServerRepositoryImpl(database, stubEngineFactory, apiClient)
     }
 
     @Test
