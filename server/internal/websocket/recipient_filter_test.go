@@ -12,6 +12,14 @@ import (
 // non-empty RecipientUserIDs is delivered only to clients whose UserID
 // matches, leaving the existing fan-out unchanged for events without
 // recipients.
+//
+// Implementation note: register fires an online_status broadcast for
+// every client. Those events race with the test's drain loop on CI —
+// previous "wait then drain" approach was flaky because the broadcast
+// goroutine hadn't always delivered the online_status messages by the
+// time the loop ran. The collect step now filters by event type, so
+// online_status events are tolerated regardless of their delivery
+// timing and only the targeted "private_test" events are counted.
 func TestBroadcast_RecipientFilter(t *testing.T) {
 	hub := NewHub(nil)
 	go hub.Run()
@@ -20,7 +28,7 @@ func TestBroadcast_RecipientFilter(t *testing.T) {
 	make := func(uid uint) *Client {
 		return &Client{
 			Hub:    hub,
-			Send:   make(chan []byte, 4),
+			Send:   make(chan []byte, 16),
 			UserID: uid,
 		}
 	}
@@ -33,8 +41,7 @@ func TestBroadcast_RecipientFilter(t *testing.T) {
 	hub.register <- b
 	hub.register <- c
 
-	// Wait briefly for register to settle and for the implicit
-	// online-status broadcast to drain.
+	// Wait until all three clients are registered.
 	deadline := time.Now().Add(500 * time.Millisecond)
 	for time.Now().Before(deadline) {
 		hub.mu.Lock()
@@ -45,16 +52,6 @@ func TestBroadcast_RecipientFilter(t *testing.T) {
 		}
 		time.Sleep(5 * time.Millisecond)
 	}
-	for _, cli := range []*Client{a, b, c} {
-	drain:
-		for {
-			select {
-			case <-cli.Send:
-			default:
-				break drain
-			}
-		}
-	}
 
 	// Targeted event — only users 1 and 3 should receive it.
 	hub.Broadcast(Event{
@@ -63,15 +60,23 @@ func TestBroadcast_RecipientFilter(t *testing.T) {
 		RecipientUserIDs: []uint{1, 3},
 	})
 
-	collect := func(cli *Client) []string {
+	// Collect drains the client's Send channel for a short window and
+	// keeps only the events whose `type` matches `wantType`. This
+	// sidesteps the online_status race entirely.
+	collect := func(cli *Client, wantType string) []string {
 		var got []string
-		t := time.NewTimer(100 * time.Millisecond)
+		t := time.NewTimer(200 * time.Millisecond)
 		defer t.Stop()
 	loop:
 		for {
 			select {
 			case msg := <-cli.Send:
-				got = append(got, string(msg))
+				var env struct {
+					Type string `json:"type"`
+				}
+				if err := json.Unmarshal(msg, &env); err == nil && env.Type == wantType {
+					got = append(got, string(msg))
+				}
 			case <-t.C:
 				break loop
 			}
@@ -79,9 +84,9 @@ func TestBroadcast_RecipientFilter(t *testing.T) {
 		return got
 	}
 
-	aMsgs := collect(a)
-	bMsgs := collect(b)
-	cMsgs := collect(c)
+	aMsgs := collect(a, "private_test")
+	bMsgs := collect(b, "private_test")
+	cMsgs := collect(c, "private_test")
 
 	assert.Len(t, aMsgs, 1, "user 1 should receive the targeted event")
 	assert.Empty(t, bMsgs, "user 2 should NOT receive the targeted event")
