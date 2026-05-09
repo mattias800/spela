@@ -37,6 +37,8 @@ fun OnThisDaySection(
     SpCarousel(
         itemCount = games.size,
         modifier = modifier.testTag("on_this_day_row"),
+        memoryKey = "explore_on_this_day",
+        itemKey = { games[it].id },
     ) { index, focusRequester ->
         val game = games[index]
         Column(
@@ -77,6 +79,8 @@ fun AnniversariesSection(
     SpCarousel(
         itemCount = anniversaries.size,
         modifier = modifier.testTag("anniversaries_row"),
+        memoryKey = "explore_anniversaries",
+        itemKey = { anniversaries[it].game.id },
     ) { index, focusRequester ->
         val item = anniversaries[index]
         Column(

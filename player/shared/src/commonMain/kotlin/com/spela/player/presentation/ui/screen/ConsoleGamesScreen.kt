@@ -52,7 +52,7 @@ import com.spela.player.presentation.ui.feature.library.GameGridItem
 import com.spela.player.presentation.ui.gamepad.InputMode
 import com.spela.player.presentation.ui.gamepad.LocalInputMode
 import com.spela.player.presentation.ui.gamepad.LocalFocusMemory
-import com.spela.player.presentation.ui.gamepad.rememberFocus
+import com.spela.player.presentation.ui.gamepad.focusRestoreItem
 import com.spela.player.presentation.ui.gamepad.rememberFocusMemoryState
 import androidx.compose.runtime.CompositionLocalProvider
 import com.spela.player.presentation.ui.theme.LocalTitleBarInset
@@ -96,6 +96,14 @@ fun ConsoleGamesScreen(
         viewModel.onIntent(GameListIntent.SelectConsole(consoleId))
     }
 
+    // Track initial vs. refresh loading so cold load shows a real
+    // placeholder instead of the pull-to-refresh spinner. See #1135.
+    val hasDataOnMount = state.games.isNotEmpty()
+    var sawLoading by remember(consoleId) { mutableStateOf(false) }
+    var hasInitiallyLoaded by remember(consoleId) { mutableStateOf(hasDataOnMount) }
+    if (state.isLoading) sawLoading = true
+    if (sawLoading && !state.isLoading) hasInitiallyLoaded = true
+
     // Client-side sort
     val sortedGames = remember(state.games, state.sortBy, state.sortOrder, state.searchQuery) {
         val filtered = if (state.searchQuery.length >= 2) {
@@ -120,6 +128,16 @@ fun ConsoleGamesScreen(
     val focusMemory = rememberFocusMemoryState()
 
     SpScreen(modifier = Modifier.testTag("console_games_screen")) {
+        if (!hasInitiallyLoaded) {
+            // Cold load: centered loader, no PullToRefreshBox spinner above. See #1135.
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center,
+            ) {
+                SpLoadingIndicator(message = "Loading games...")
+            }
+            return@SpScreen
+        }
         PullToRefreshBox(
             isRefreshing = state.isLoading,
             onRefresh = { viewModel.onIntent(GameListIntent.SelectConsole(consoleId)) },
@@ -238,7 +256,10 @@ fun ConsoleGamesScreen(
                             game = game,
                             onClick = { onGameSelected(game.id) },
                             onRequestScrape = { viewModel.requestScrapeIfNeeded(it) },
-                            modifier = Modifier.rememberFocus(game.id),
+                            modifier = Modifier.focusRestoreItem(
+                                key = game.id,
+                                isDefault = game == sortedGames.firstOrNull(),
+                            ),
                         )
                     }
                 }

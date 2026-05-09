@@ -33,7 +33,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.compose.runtime.CompositionLocalProvider
 import com.spela.player.presentation.ui.gamepad.LocalFocusMemory
-import com.spela.player.presentation.ui.gamepad.rememberFocus
+import com.spela.player.presentation.ui.gamepad.focusRestoreItem
 import com.spela.player.presentation.ui.gamepad.rememberFocusMemoryState
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
@@ -89,7 +89,8 @@ fun SettingsCategoryList(
         item { Spacer(Modifier.height(SpSpacing.Small)) }
 
         // Category items
-        items(SettingsCategory.entries.toList()) { category ->
+        val categories = SettingsCategory.entries.toList()
+        items(categories) { category ->
             val isSelected = category == selectedCategory
             val bgColor = if (isSelected) SpColor.Primary.copy(alpha = 0.15f) else Color.Transparent
             val textColor = if (isSelected) SpColor.PrimaryLight else SpColor.OnBackground
@@ -97,7 +98,10 @@ fun SettingsCategoryList(
             Row(
                 modifier = Modifier
                     .testTag(category.testTag)
-                    .rememberFocus(category.name)
+                    .focusRestoreItem(
+                        key = "settings_category_${category.name}",
+                        isDefault = category == categories.firstOrNull(),
+                    )
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(8.dp))
                     .background(bgColor)

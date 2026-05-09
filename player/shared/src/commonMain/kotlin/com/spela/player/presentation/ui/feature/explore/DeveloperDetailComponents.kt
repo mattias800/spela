@@ -319,6 +319,8 @@ internal fun DeveloperTopRatedRow(
     SpCarousel(
         itemCount = topGames.size,
         modifier = modifier,
+        memoryKey = "explore_developer_top_rated",
+        itemKey = { topGames[it].id },
     ) { index, focusRequester ->
         Box(modifier = Modifier.focusRequester(focusRequester)) {
             DeveloperTopRatedCard(

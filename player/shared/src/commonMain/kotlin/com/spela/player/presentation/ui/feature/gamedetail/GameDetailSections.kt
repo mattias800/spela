@@ -47,7 +47,11 @@ fun ScreenshotsSection(screenshots: List<String>) {
         icon = Icons.Filled.CameraAlt,
         edgeToEdgeContent = true,
     ) {
-    SpCarousel(itemCount = screenshots.size) { index, focusRequester ->
+    SpCarousel(
+        itemCount = screenshots.size,
+        memoryKey = "game_detail_screenshots",
+        itemKey = { screenshots[it] },
+    ) { index, focusRequester ->
         SpInnerCard(
             modifier = Modifier
                 .focusRequester(focusRequester)

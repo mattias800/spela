@@ -13,7 +13,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import com.spela.player.presentation.ui.components.SpLazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.grid.itemsIndexed
+import androidx.compose.runtime.CompositionLocalProvider
+import com.spela.player.presentation.ui.gamepad.LocalFocusMemory
+import com.spela.player.presentation.ui.gamepad.focusRestoreItem
+import com.spela.player.presentation.ui.gamepad.rememberFocusMemoryState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
@@ -75,6 +79,9 @@ fun CollectionDetailScreen(
         }
     }
 
+    val focusMemory = rememberFocusMemoryState()
+
+    CompositionLocalProvider(LocalFocusMemory provides focusMemory) {
     Box(modifier = Modifier.fillMaxSize()) {
         Column(
             modifier = Modifier
@@ -109,7 +116,7 @@ fun CollectionDetailScreen(
                     SpLoadingIndicator(message = "Loading collection...")
                 }
             } else if (state.selectedDetail != null) {
-                val detail = state.selectedDetail ?: return
+                val detail = state.selectedDetail ?: return@CompositionLocalProvider
                 var searchQuery by rememberSaveable { mutableStateOf("") }
                 val showSearch = detail.games.size > 5
                 val filteredGames = if (searchQuery.isBlank()) {
@@ -177,7 +184,7 @@ fun CollectionDetailScreen(
                             }
                         }
                     } else {
-                        items(filteredGames, key = { it.id }) { game ->
+                        itemsIndexed(filteredGames, key = { _, g -> g.id }) { index, game ->
                             CollectionGameGridItem(
                                 game = game,
                                 onClick = { onGameSelected(game.id) },
@@ -189,6 +196,10 @@ fun CollectionDetailScreen(
                                     }
                                 } else null,
                                 onRequestScrape = { viewModel.requestScrapeIfNeeded(it) },
+                                modifier = Modifier.focusRestoreItem(
+                                    key = "collection_game_${game.id}",
+                                    isDefault = index == 0,
+                                ),
                             )
                         }
                     }
@@ -256,6 +267,7 @@ fun CollectionDetailScreen(
             modifier = Modifier.align(Alignment.BottomCenter),
         )
     }
+    } // CompositionLocalProvider
 }
 
 @Composable
@@ -264,8 +276,9 @@ private fun CollectionGameGridItem(
     onClick: () -> Unit,
     onRemove: (() -> Unit)?,
     onRequestScrape: ((Game) -> Unit)? = null,
+    modifier: Modifier = Modifier,
 ) {
-    Box {
+    Box(modifier = modifier) {
         GameGridItem(game = game, onClick = onClick, onRequestScrape = onRequestScrape)
         if (onRemove != null) {
             SpIconButton(

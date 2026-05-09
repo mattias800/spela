@@ -14,7 +14,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Edit
@@ -69,7 +69,10 @@ import com.spela.player.presentation.ui.feature.library.darken
 import com.spela.player.presentation.ui.feature.library.getConsoleGradient
 import com.spela.player.presentation.ui.gamepad.InputMode
 import com.spela.player.presentation.ui.gamepad.LocalInputMode
-import com.spela.player.presentation.ui.gamepad.autoFocus
+import com.spela.player.presentation.ui.gamepad.LocalFocusMemory
+import com.spela.player.presentation.ui.gamepad.focusRestoreItem
+import com.spela.player.presentation.ui.gamepad.rememberFocusMemoryState
+import androidx.compose.runtime.CompositionLocalProvider
 import com.spela.player.presentation.ui.feature.sessiondetail.SessionCheatsSection
 import com.spela.player.presentation.ui.feature.sessiondetail.SessionCoreLockChip
 import com.spela.player.presentation.ui.components.SpPlayInfo
@@ -132,8 +135,10 @@ fun SessionDetailScreen(
     }
 
     val isGamepad = LocalInputMode.current == InputMode.GAMEPAD
+    val focusMemory = rememberFocusMemoryState()
 
     SpScreen(gradientColors = backgroundColors) {
+        CompositionLocalProvider(LocalFocusMemory provides focusMemory) {
         Column(
             modifier = Modifier
                 .fillMaxSize(),
@@ -228,10 +233,10 @@ fun SessionDetailScreen(
                                 )
                             }
                         } else {
-                            items(
+                            itemsIndexed(
                                 state.saves,
-                                key = { "save-${it.id}" },
-                            ) { save ->
+                                key = { _, s -> "save-${s.id}" },
+                            ) { _, save ->
                                 SessionSaveItem(
                                     save = save,
                                     onCloneFromSave = { cloneFromSaveId = save.id },
@@ -240,6 +245,9 @@ fun SessionDetailScreen(
                                         .padding(
                                             horizontal = SpSpacing.ScreenHorizontal,
                                             vertical = SpSpacing.XSmall,
+                                        )
+                                        .focusRestoreItem(
+                                            key = "session_save_${save.id}",
                                         ),
                                 )
                             }
@@ -506,6 +514,7 @@ fun SessionDetailScreen(
             onDismiss = { viewModel.onIntent(SessionDetailIntent.DismissSuccess) },
             modifier = Modifier.align(Alignment.BottomCenter),
         )
+        } // CompositionLocalProvider
     }
 }
 
@@ -607,7 +616,12 @@ private fun SessionDetailHeader(
             SpButton(
                 text = "Play",
                 onClick = onPlay,
-                modifier = Modifier.autoFocus().testTag("session_detail_play_button"),
+                modifier = Modifier
+                    .focusRestoreItem(
+                        key = "session_detail_play",
+                        isDefault = true,
+                    )
+                    .testTag("session_detail_play_button"),
                 leadingIcon = {
                     Icon(
                         imageVector = Icons.Filled.PlayArrow,

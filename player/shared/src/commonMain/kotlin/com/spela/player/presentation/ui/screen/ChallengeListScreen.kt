@@ -26,9 +26,8 @@ import com.spela.player.presentation.ui.components.challenge.SpChallengeCard
 import com.spela.player.presentation.ui.components.challenge.SpChallengeCardSkeleton
 import com.spela.player.presentation.ui.gamepad.InputMode
 import com.spela.player.presentation.ui.gamepad.LocalInputMode
-import com.spela.player.presentation.ui.gamepad.autoFocus
 import com.spela.player.presentation.ui.gamepad.LocalFocusMemory
-import com.spela.player.presentation.ui.gamepad.rememberFocus
+import com.spela.player.presentation.ui.gamepad.focusRestoreItem
 import com.spela.player.presentation.ui.gamepad.rememberFocusMemoryState
 import androidx.compose.runtime.CompositionLocalProvider
 import com.spela.player.presentation.ui.theme.SpSpacing
@@ -109,8 +108,10 @@ fun ChallengeListScreen(
                             SpChallengeCard(
                                 challenge = challenge,
                                 onClick = { onChallengeSelected(challenge.id) },
-                                modifier = (if (challenge == state.gameChallenges.firstOrNull()) Modifier.autoFocus() else Modifier)
-                                    .rememberFocus(challenge.id),
+                                modifier = Modifier.focusRestoreItem(
+                                    key = challenge.id,
+                                    isDefault = challenge == state.gameChallenges.firstOrNull(),
+                                ),
                             )
                         }
                     }

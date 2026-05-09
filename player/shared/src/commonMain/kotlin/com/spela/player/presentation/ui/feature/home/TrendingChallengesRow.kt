@@ -18,6 +18,8 @@ internal fun TrendingChallengesRow(
     SpCarousel(
         itemCount = challenges.size,
         modifier = modifier,
+        memoryKey = "home_trending_challenges",
+        itemKey = { challenges[it].id },
     ) { index, focusRequester ->
         val challenge = challenges[index]
         SpChallengeCard(

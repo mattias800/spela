@@ -375,9 +375,9 @@ class SpelaTestHarness(
     )
 
     @Composable
-    fun App() {
+    fun App(animationsEnabled: Boolean = false) {
         androidx.compose.runtime.CompositionLocalProvider(
-            com.spela.player.presentation.ui.components.LocalAnimationsEnabled provides false,
+            com.spela.player.presentation.ui.components.LocalAnimationsEnabled provides animationsEnabled,
         ) {
         SpelaApp(
             SpelaAppDependencies(

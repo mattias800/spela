@@ -45,6 +45,8 @@ internal fun EasyToCompleteSection(
     SpCarousel(
         itemCount = games.size,
         modifier = modifier.testTag("easy_to_complete_row"),
+        memoryKey = "explore_easy_to_complete",
+        itemKey = { games[it].game.id },
     ) { index, focusRequester ->
         val item = games[index]
         Column(
@@ -81,6 +83,8 @@ internal fun HardestGamesSection(
     SpCarousel(
         itemCount = games.size,
         modifier = modifier.testTag("hardest_games_row"),
+        memoryKey = "explore_hardest_games",
+        itemKey = { games[it].game.id },
     ) { index, focusRequester ->
         val item = games[index]
         Column(
@@ -117,6 +121,8 @@ internal fun AlmostDoneSection(
     SpCarousel(
         itemCount = games.size,
         modifier = modifier.testTag("almost_done_row"),
+        memoryKey = "explore_almost_done",
+        itemKey = { games[it].game.id },
     ) { index, focusRequester ->
         val item = games[index]
         Column(
@@ -163,6 +169,8 @@ internal fun FreshChallengesSection(
     SpCarousel(
         itemCount = games.size,
         modifier = modifier.testTag("fresh_challenges_row"),
+        memoryKey = "explore_fresh_challenges",
+        itemKey = { games[it].game.id },
     ) { index, focusRequester ->
         val item = games[index]
         Column(
@@ -198,6 +206,8 @@ internal fun ActiveChallengesSection(
     SpCarousel(
         itemCount = challenges.size,
         modifier = modifier.testTag("active_challenges_row"),
+        memoryKey = "explore_active_challenges",
+        itemKey = { challenges[it].id },
     ) { index, focusRequester ->
         val ch = challenges[index]
         Column(

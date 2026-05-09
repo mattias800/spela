@@ -517,6 +517,7 @@ fun ExploreScreen(
                                     GameShelf(
                                         games = row.games,
                                         onGameSelected = onGameSelected,
+                                        memoryKey = "explore_row_${row.id}",
                                     )
                                 }
                             }

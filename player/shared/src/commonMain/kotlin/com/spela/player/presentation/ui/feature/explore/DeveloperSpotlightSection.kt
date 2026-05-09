@@ -155,6 +155,8 @@ fun DeveloperSpotlightSection(
             SpCarousel(
                 itemCount = spotlight.topGames.size,
                 modifier = Modifier.testTag("developer_spotlight_games"),
+                memoryKey = "explore_developer_spotlight",
+                itemKey = { spotlight.topGames[it].id },
             ) { index, focusRequester ->
                 Box(modifier = Modifier.focusRequester(focusRequester)) {
                     SpotlightGameCard(

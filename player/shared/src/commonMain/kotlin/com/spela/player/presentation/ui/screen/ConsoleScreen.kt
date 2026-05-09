@@ -105,6 +105,16 @@ fun ConsoleScreen(
         exploreViewModel?.loadConsoleShowcase(consoleId)
     }
 
+    // Track whether initial load has finished so we can render a real
+    // skeleton on cold load instead of the pull-to-refresh spinner. The
+    // spinner is only appropriate for refresh of already-loaded data.
+    // See #1135.
+    val hasDataOnMount = state.games.isNotEmpty()
+    var sawLoading by remember(consoleId) { mutableStateOf(false) }
+    var hasInitiallyLoaded by remember(consoleId) { mutableStateOf(hasDataOnMount) }
+    if (state.isLoading) sawLoading = true
+    if (sawLoading && !state.isLoading) hasInitiallyLoaded = true
+
     val continuePlayingGames = remember(state.games) {
         state.games
             .filter { it.lastPlayedAt != null }
@@ -131,6 +141,23 @@ fun ConsoleScreen(
         gradientColors = screenGradientColors,
         modifier = Modifier.semantics { contentDescription = TestTags.SCREEN_CONSOLE },
     ) {
+            if (!hasInitiallyLoaded) {
+                // Cold load: full-screen skeleton, no PullToRefreshBox spinner.
+                // See #1135.
+                SpScrollableContent {
+                    SpScreenTopSpacer()
+                    SpMainContentPadding {
+                        if (console != null) {
+                            ConsoleHeroBanner(console = console)
+                        }
+                        SpSectionList {
+                            ConsoleScreenSkeleton()
+                        }
+                    }
+                }
+                return@SpScreen
+            }
+
             PullToRefreshBox(
                 isRefreshing = state.isLoading,
                 onRefresh = { viewModel.onIntent(GameListIntent.SelectConsole(consoleId)) },
@@ -147,10 +174,6 @@ fun ConsoleScreen(
                     val focusMemory = rememberFocusMemoryState()
                     CompositionLocalProvider(LocalFocusMemory provides focusMemory) {
                     SpSectionList {
-                    // Shimmer loading skeleton when switching consoles
-                    if (state.isLoading && state.games.isEmpty()) {
-                        ConsoleScreenSkeleton()
-                    }
 
                     // Continue Playing (most relevant — always first)
                     if (continuePlayingGames.isNotEmpty()) {

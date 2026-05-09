@@ -49,7 +49,10 @@ import com.spela.player.presentation.ui.components.SpScreenTopSpacer
 import com.spela.player.presentation.ui.components.SpTopBar
 import com.spela.player.presentation.ui.gamepad.InputMode
 import com.spela.player.presentation.ui.gamepad.LocalInputMode
-import com.spela.player.presentation.ui.gamepad.autoFocus
+import com.spela.player.presentation.ui.gamepad.LocalFocusMemory
+import com.spela.player.presentation.ui.gamepad.focusRestoreItem
+import com.spela.player.presentation.ui.gamepad.rememberFocusMemoryState
+import androidx.compose.runtime.CompositionLocalProvider
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.ui.theme.SpTypography
@@ -72,8 +75,10 @@ fun ExploreGalleryScreen(
     }
 
     val isGamepad = LocalInputMode.current == InputMode.GAMEPAD
+    val focusMemory = rememberFocusMemoryState()
 
     SpScreen(modifier = Modifier.testTag("gallery_screen")) {
+        CompositionLocalProvider(LocalFocusMemory provides focusMemory) {
         Column(
             modifier = Modifier
                 .fillMaxSize(),
@@ -144,7 +149,10 @@ fun ExploreGalleryScreen(
                             ScreenshotGridCard(
                                 screenshot = screenshot,
                                 onClick = { onGameSelected(screenshot.gameId) },
-                                modifier = if (screenshot == state.screenshots.firstOrNull()) Modifier.autoFocus() else Modifier,
+                                modifier = Modifier.focusRestoreItem(
+                                    key = "gallery_${screenshot.gameId}_${screenshot.url}",
+                                    isDefault = screenshot == state.screenshots.firstOrNull(),
+                                ),
                             )
                         }
                     }
@@ -178,6 +186,7 @@ fun ExploreGalleryScreen(
             onDismiss = { viewModel.dismissScreenshotGalleryError() },
             modifier = Modifier.align(Alignment.BottomCenter),
         )
+        } // CompositionLocalProvider
     }
 }
 

@@ -175,6 +175,7 @@ Do not guess at the problem — instrument the code, read the logs, and let the 
 ## Architecture Decisions
 - See ARCHITECTURE.md for full technical architecture
 - See `player/LAYOUT.md` for the player app's shared layout composable system (SpScreen, SpMainContentPadding, SpSectionList, etc.). All screens must use these — no custom padding or scroll code.
+- See `player/GAMEPAD_NAVIGATION.md` for the player app's focus system. **Required reading before touching any focus / autoFocus / focusRestoreItem / rememberFocus / LocalFocusMemory call** — it documents non-obvious invariants (capture-once-on-mount, FocusRequester sharing, the AnimatedContent re-fire bug, default-focus / restore semantics) that break in subtle ways if you "simplify" them.
 - SQLite as default database (self-hosted friendly)
 - JWT authentication with refresh token rotation
 - REST API + WebSocket for real-time events

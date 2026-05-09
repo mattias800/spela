@@ -31,6 +31,8 @@ fun MoodPicker(
     SpCarousel(
         itemCount = moods.size,
         modifier = modifier.testTag("mood_picker"),
+        memoryKey = "explore_mood_picker",
+        itemKey = { moods[it].id },
     ) { index, focusRequester ->
         val item = moods[index]
         Box(modifier = Modifier.focusRequester(focusRequester)) {

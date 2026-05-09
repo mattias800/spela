@@ -24,7 +24,11 @@ internal fun SimilarGamesSection(
         icon = Icons.Outlined.Explore,
         edgeToEdgeContent = true,
     ) {
-        SpCarousel(itemCount = games.size) { index, focusRequester ->
+        SpCarousel(
+            itemCount = games.size,
+            memoryKey = "game_detail_similar",
+            itemKey = { games[it].localGameId ?: games[it].name },
+        ) { index, focusRequester ->
             val game = games[index]
             Box(modifier = Modifier.focusRequester(focusRequester)) {
                 SimilarGameCard(

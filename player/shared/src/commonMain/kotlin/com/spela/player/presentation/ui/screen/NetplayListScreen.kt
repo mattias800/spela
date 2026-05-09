@@ -12,7 +12,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Text
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
@@ -53,7 +53,7 @@ import com.spela.player.presentation.ui.gamepad.InputMode
 import com.spela.player.presentation.ui.gamepad.LocalInputMode
 import com.spela.player.presentation.ui.gamepad.autoFocus
 import com.spela.player.presentation.ui.gamepad.LocalFocusMemory
-import com.spela.player.presentation.ui.gamepad.rememberFocus
+import com.spela.player.presentation.ui.gamepad.focusRestoreItem
 import com.spela.player.presentation.ui.gamepad.rememberFocusMemoryState
 import androidx.compose.runtime.CompositionLocalProvider
 import com.spela.player.presentation.ui.theme.SpColor
@@ -148,16 +148,19 @@ fun NetplayListScreen(
                                 }
                             }
                         } else {
-                            items(
+                            itemsIndexed(
                                 state.sessions,
-                                key = { "session-${it.id}" },
-                            ) { session ->
+                                key = { _, session -> "session-${session.id}" },
+                            ) { index, session ->
                                 NetplaySessionItem(
                                     session = session,
                                     onClick = { onSessionSelected(session.id) },
                                     modifier = Modifier
                                         .padding(horizontal = SpSpacing.ScreenHorizontal)
-                                        .rememberFocus("session_${session.id}"),
+                                        .focusRestoreItem(
+                                            key = "session_${session.id}",
+                                            isDefault = index == 0,
+                                        ),
                                 )
                             }
                         }

@@ -191,3 +191,272 @@ Each of the 6 tabs maintains its own `List<SpScreen>` back stack.
 2. Add `spFocusRing(shape)` for visual focus indication
 3. Use white-based colors for focus indicators (no theme colors)
 4. Test with d-pad navigation, not just touch/mouse
+
+---
+
+# Focus Memory and Restoration
+
+This section documents the focus restoration system — the rules that
+keep focus continuous as the user navigates forward and back between
+screens, and what to do when adding a new screen or focusable widget.
+
+## The Problem
+
+Compose's focus model is per-composition. Every time a screen is
+disposed and re-mounted (forward/back navigation, tab switch), focus
+state is lost: nothing is focused, and the user has no way to navigate
+with keyboard or d-pad until they Tab/click somewhere.
+
+Worse, `Modifier.focusRequester(...)` only accepts requests for layout
+nodes that are themselves focusable. Calling `requestFocus()` on a
+non-focusable container often throws or silently no-ops, and the
+behavior has changed across Compose versions.
+
+A naïve "request focus on the first card after a delay" approach also
+breaks because:
+
+- Multiple containers race when they each schedule their own
+  `LaunchedEffect(delay) { requestFocus() }` — the last to fire wins,
+  not the most-recently-focused one.
+- During an `AnimatedContent` back transition, the **outgoing** screen
+  is still composed for the duration of the slide. Its focus restorer
+  re-evaluates as `LocalIsForwardNavigation` flips to `false`, and a
+  newly-true `shouldRestore` re-fires `requestFocus()`, stealing focus
+  back from the destination screen.
+
+## The Solution: One Primitive
+
+Everything funnels through one modifier:
+
+```kotlin
+fun Modifier.focusRestoreItem(
+    key: String,
+    isDefault: Boolean = false,
+    requester: FocusRequester? = null,
+): Modifier
+```
+
+It does three things:
+
+1. **Save**: when this element (or any descendant) gains focus, writes
+   `key` into the enclosing `LocalFocusMemory` scope.
+2. **Restore**: on screen entry (back-nav or tab-switch), if the
+   scope's saved value matches `key`, requests focus on this element
+   after a brief layout-settle delay (~120 ms).
+3. **Default focus**: when `isDefault = true` and the scope is empty
+   (first-ever entry to the screen), claims focus on this element
+   instead — the "sensible default focus" behavior the user expects.
+
+There's exactly one saved key per scope, so by construction only the
+most-recently-focused element restores. Sibling elements keep no state
+to race over.
+
+### Critical: capture-once-on-mount
+
+The firing decision is captured exactly once at first composition, via
+`remember { ... }`:
+
+```kotlin
+val initialAction = remember {
+    when {
+        scope.value == key && !isForward -> Action.Restore
+        scope.value.isEmpty() && isDefault -> Action.Default
+        else -> Action.None
+    }
+}
+```
+
+If we re-evaluated `shouldRestore` on every recomposition, an
+**outgoing** screen during an AnimatedContent transition would see
+`isForward` flip from `true` to `false`, satisfy `shouldRestore`,
+re-enter the `LaunchedEffect`, and fire `requestFocus()` a second time
+— stealing focus from the destination screen. This bug is invisible in
+test mode (animations disabled) and was the root cause of the "focus
+restored, then immediately lost" symptom; do not "simplify" the
+`remember { }` away.
+
+## Per-Screen Scope: `LocalFocusMemory`
+
+Each screen that wants focus restoration provides its own scope at the
+root:
+
+```kotlin
+@Composable
+fun MyScreen(...) {
+    val focusMemory = rememberFocusMemoryState()
+    CompositionLocalProvider(LocalFocusMemory provides focusMemory) {
+        // screen content
+    }
+}
+```
+
+`rememberFocusMemoryState()` returns a `MutableState<String>` backed
+by `rememberSaveable`, so the saved key survives screen disposal
+across forward+back nav (via the per-route `SaveableStateHolder` in
+`SpelaApp.kt`).
+
+One scope per screen is the intended granularity. Multiple carousels,
+grids, or buttons within the same screen share the same scope — that's
+why "active carousel last focused" naturally wins over siblings on
+back-nav, with no separate gating CompositionLocal.
+
+## Carousels: SpCarousel
+
+`SpCarousel` opts into the system via two parameters:
+
+```kotlin
+SpCarousel(
+    itemCount = games.size,
+    memoryKey = "home_continue_playing",
+    itemKey = { games[it].id },
+    isDefaultFocusGroup = true, // optional, only one per screen
+) { index, focusRequester ->
+    // content
+}
+```
+
+Internally, the carousel applies `focusRestoreItem("$memoryKey/${itemKey(i)}")`
+to each item's outer Box, with `isDefault = isDefaultFocusGroup && i == 0`.
+Item-level focus is restored to the same game on back-nav, even if the
+underlying list reordered.
+
+`isDefaultFocusGroup` should be set on **at most one** SpCarousel per
+screen — this is the carousel that "owns" first-entry focus. On the
+Home screen this is Continue Playing.
+
+## Section-Level Fallback: `Modifier.rememberFocus`
+
+```kotlin
+SpTitledSection(
+    title = "Continue Playing",
+    modifier = Modifier.rememberFocus("section_continue_playing"),
+) { ... }
+```
+
+A restoration-only fallback for section containers. It does NOT save
+its key when descendants gain focus — that role belongs to the
+leaf-level `focusRestoreItem` calls (or `SpCarousel`'s internal use of
+it). Without this asymmetry, the section's `onFocusChanged` would fire
+last in the propagation order and clobber the more-specific item key
+that an item just wrote.
+
+In practice, `rememberFocus` only matters when a section contains
+focusable elements that don't themselves use `focusRestoreItem` — it
+gives back-nav something to land on (the section's first focusable
+descendant) when no item key matches.
+
+## Default Focus on Forward Entry: `Modifier.autoFocus`
+
+```kotlin
+modifier = Modifier.autoFocus()
+```
+
+A legacy single-element modifier. Fires once on forward navigation OR
+tab switch, on screen mount. Use it for a single primary action button
+on screens that don't have a clear "first item" (e.g. the Play button
+on a session-detail screen, the Search input on the Global Search
+screen). Do not combine with `focusRestoreItem(isDefault = true)` on
+the same screen — they will race.
+
+`autoFocus` is no longer gated by gamepad mode (it now fires for
+keyboard users on desktop too).
+
+## What to Do for a New Screen
+
+For most screens, follow the recipe:
+
+1. **Provide `LocalFocusMemory`** at the screen root.
+2. **For each list/grid item**, apply
+   `Modifier.focusRestoreItem(key = "<screen>_<itemId>", isDefault = (item == list.firstOrNull()))`.
+3. **For SpCarousels**, pass `memoryKey` + `itemKey` (and
+   `isDefaultFocusGroup = true` on at most one carousel per screen).
+4. **For static-button screens** (no list), use `Modifier.autoFocus()`
+   on the primary action.
+5. Section containers that sit above SpCarousels can keep
+   `Modifier.rememberFocus("section_xyz")` as a fallback; new screens
+   typically don't need it.
+
+Do **not** combine `autoFocus()` with `focusRestoreItem(isDefault = true)`
+on the same screen. Pick one source of default focus.
+
+## Testing
+
+The Compose-multiplatform `runComposeUiTest` harness defaults to
+`LocalAnimationsEnabled = false` — `AnimatedContent` is bypassed and
+screen swaps are instantaneous. Many focus-timing bugs (most notably
+the LaunchedEffect re-fire described above) are silently masked in
+this mode.
+
+For tests that need to catch timing-sensitive focus bugs:
+
+```kotlin
+setContent { harness.App(animationsEnabled = true) }
+```
+
+The reference test is `HomeContinuePlayingFocusRestoreTest
+.continuePlaying_focusRestoredAfterKeyboardEnterEscape` — it walks the
+exact user path (Right keys to a non-first item, Enter to forward,
+Escape to back) with animations enabled, and asserts the saved item
+regains focus.
+
+Two coverage gaps to know about:
+
+- Some screens render no focusable items in the harness because they
+  depend on data that the fake repos don't seed (e.g. GameDetail's
+  Play button only appears when the game is cached or instant-download
+  eligible). Tests that need that behavior must seed `gameRepo.games`
+  with a non-zero `fileSize`.
+- Lazy lists (LazyVerticalGrid, LazyColumn) dispose off-screen items.
+  `performClick` on a card scrolled past the viewport edge will
+  silently no-op because the card isn't in the semantics tree at that
+  moment.
+
+## Pitfalls
+
+- **Don't share a `FocusRequester` between two layout nodes.** If both
+  the carousel content and its outer Box attach the same requester,
+  `requestFocus()` becomes ambiguous and silently no-ops in some cases
+  (notably during AnimatedContent transitions). `focusRestoreItem`
+  always uses its own internal requester unless you explicitly pass
+  one (and you almost never should).
+- **Don't put `Modifier.rememberFocus` on a section AND
+  `Modifier.focusRestoreItem(isDefault = true)` on a child** — both
+  will fire and race. The carousel's own `isDefaultFocusGroup = true`
+  handles this when the section content is a carousel.
+- **Don't add `removeState(...)` calls anywhere** — `SpelaApp` already
+  manages saveable-state cleanup at the right moments (forward push
+  removes the destination's preserved state; back-nav preserves both
+  source and destination).
+- **Don't catch-and-ignore exceptions from `requestFocus()` without a
+  re-validation step.** The current implementation re-reads
+  `scope.value` after the delay so a faster sibling or a user action
+  during the 120 ms window wins over us; preserve that pattern when
+  modifying the primitive.
+- **Don't gate `focusRestoreItem` on `LocalInputMode`.** The whole
+  system was already gamepad-gated before this rewrite and broke for
+  keyboard users on desktop. Behavior is input-mode-agnostic by
+  design.
+
+## Cold-Load Skeleton vs. Pull-to-Refresh
+
+Tangentially related (#1135): screens that render a `PullToRefreshBox`
+should NOT use it for the cold-load state. The PullToRefreshBox
+spinner only makes sense for refreshing already-loaded data; a fresh
+screen should show a skeleton or centered loader.
+
+Pattern (already used by `HomeScreen`, `ConsoleScreen`,
+`ConsoleGamesScreen`):
+
+```kotlin
+val hasDataOnMount = state.list.isNotEmpty()
+var sawLoading by remember(routeKey) { mutableStateOf(false) }
+var hasInitiallyLoaded by remember(routeKey) { mutableStateOf(hasDataOnMount) }
+if (state.isLoading) sawLoading = true
+if (sawLoading && !state.isLoading) hasInitiallyLoaded = true
+
+if (!hasInitiallyLoaded) {
+    // Skeleton or centered loader, NO PullToRefreshBox
+    return@SpScreen
+}
+PullToRefreshBox(isRefreshing = state.isLoading, ...) { ... }
+```

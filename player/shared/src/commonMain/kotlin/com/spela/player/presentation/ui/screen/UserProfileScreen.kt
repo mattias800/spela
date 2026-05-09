@@ -54,6 +54,7 @@ import com.spela.player.presentation.ui.gamepad.InputMode
 import com.spela.player.presentation.ui.gamepad.LocalInputMode
 import com.spela.player.presentation.ui.gamepad.autoFocus
 import com.spela.player.presentation.ui.gamepad.LocalFocusMemory
+import com.spela.player.presentation.ui.gamepad.focusRestoreItem
 import com.spela.player.presentation.ui.gamepad.rememberFocus
 import com.spela.player.presentation.ui.gamepad.rememberFocusMemoryState
 import androidx.compose.runtime.CompositionLocalProvider
@@ -329,11 +330,15 @@ private fun ProfileContent(
                 Column(
                     verticalArrangement = Arrangement.spacedBy(SpSpacing.XSmall),
                 ) {
-                    profile.topGames.forEach { game ->
+                    profile.topGames.forEachIndexed { index, game ->
                         ProfileGameItem(
                             game = game,
                             showPlayTime = true,
                             onClick = { onGameSelected(game.id) },
+                            modifier = Modifier.focusRestoreItem(
+                                key = "profile_most_played_${game.id}",
+                                isDefault = index == 0,
+                            ),
                         )
                     }
                 }
@@ -355,6 +360,9 @@ private fun ProfileContent(
                             game = game,
                             showPlayTime = false,
                             onClick = { onGameSelected(game.id) },
+                            modifier = Modifier.focusRestoreItem(
+                                key = "profile_favorites_${game.id}",
+                            ),
                         )
                     }
                 }
@@ -376,6 +384,9 @@ private fun ProfileContent(
                             game = game,
                             showPlayTime = true,
                             onClick = { onGameSelected(game.id) },
+                            modifier = Modifier.focusRestoreItem(
+                                key = "profile_recent_${game.id}",
+                            ),
                         )
                     }
                 }
@@ -418,8 +429,10 @@ private fun ProfileGameItem(
     game: PublicProfileGame,
     showPlayTime: Boolean,
     onClick: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     SpWideGameCard(
+        modifier = modifier,
         title = game.title,
         subtitle = game.consoleName,
         coverUrl = game.coverUrl,

@@ -96,7 +96,11 @@ private fun ForYouRowSection(
         Spacer(Modifier.height(SpSpacing.Medium))
 
         // Horizontal game shelf
-        SpCarousel(itemCount = row.games.size) { index, focusRequester ->
+        SpCarousel(
+            itemCount = row.games.size,
+            memoryKey = "explore_foryou_${row.type}",
+            itemKey = { row.games[it].id },
+        ) { index, focusRequester ->
             Box(modifier = Modifier.focusRequester(focusRequester)) {
                 ForYouGameCard(
                     game = row.games[index],

@@ -24,6 +24,7 @@ import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInParent
+import com.spela.player.presentation.ui.gamepad.focusRestoreItem
 import com.spela.player.presentation.ui.theme.SpSpacing
 
 /**
@@ -34,11 +35,27 @@ import com.spela.player.presentation.ui.theme.SpSpacing
  * - Stops at first and last item.
  * - Focused item is scrolled to the horizontal center of the carousel.
  * - Focus index syncs automatically when entering from any direction.
+ *
+ * @param memoryKey Optional unique group key. When set together with
+ *   [itemKey], each item participates in screen-scoped focus restoration
+ *   via `focusRestoreItem("$memoryKey/$itemKey")`. The enclosing screen
+ *   must provide [com.spela.player.presentation.ui.gamepad.LocalFocusMemory]
+ *   for restoration to take effect.
+ * @param itemKey Optional stable per-item key (e.g. game id). Combined
+ *   with [memoryKey] into the per-item focus-restore key so the saved
+ *   item can be matched even if the underlying list reorders.
+ * @param isDefaultFocusGroup When true, item 0 of this carousel is the
+ *   screen's default focus on first entry (when nothing else is saved).
+ *   Apply to the *first* meaningful carousel on a screen — never more
+ *   than one per screen.
  */
 @Composable
 fun SpCarousel(
     itemCount: Int,
     modifier: Modifier = Modifier,
+    memoryKey: String? = null,
+    itemKey: ((index: Int) -> String)? = null,
+    isDefaultFocusGroup: Boolean = false,
     content: @Composable (index: Int, focusRequester: FocusRequester) -> Unit,
 ) {
     val scrollState = rememberScrollState()
@@ -105,6 +122,10 @@ fun SpCarousel(
         horizontalArrangement = Arrangement.spacedBy(SpSpacing.Medium),
     ) {
         for (i in 0 until itemCount) {
+            val restoreKey = if (memoryKey != null && itemKey != null) {
+                "$memoryKey/${itemKey(i)}"
+            } else null
+
             Box(
                 modifier = Modifier
                     .onGloballyPositioned { coordinates ->
@@ -114,6 +135,22 @@ fun SpCarousel(
                     .onFocusChanged { state ->
                         if (state.hasFocus) {
                             focusedIndex = i
+                        }
+                    }
+                    .let { base ->
+                        if (restoreKey != null) {
+                            // Don't share `requesters[i]` here — it's already
+                            // attached by the content lambda below to the inner
+                            // focusable target. focusRestoreItem owns its own
+                            // requester on the outer Box; calling requestFocus
+                            // there propagates down to the first focusable
+                            // descendant (the card).
+                            base.focusRestoreItem(
+                                key = restoreKey,
+                                isDefault = isDefaultFocusGroup && i == 0,
+                            )
+                        } else {
+                            base
                         }
                     }
             ) {

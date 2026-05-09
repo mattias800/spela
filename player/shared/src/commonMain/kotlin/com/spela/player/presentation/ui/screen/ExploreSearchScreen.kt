@@ -13,7 +13,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.grid.GridCells
 import com.spela.player.presentation.ui.components.SpLazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.grid.itemsIndexed
+import androidx.compose.runtime.CompositionLocalProvider
+import com.spela.player.presentation.ui.gamepad.LocalFocusMemory
+import com.spela.player.presentation.ui.gamepad.focusRestoreItem
+import com.spela.player.presentation.ui.gamepad.rememberFocusMemoryState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material.icons.filled.Search
@@ -71,8 +75,10 @@ fun ExploreSearchScreen(
     }
 
     val isGamepad = LocalInputMode.current == InputMode.GAMEPAD
+    val focusMemory = rememberFocusMemoryState()
 
     SpScreen(modifier = Modifier.testTag("explore_search_screen")) {
+        CompositionLocalProvider(LocalFocusMemory provides focusMemory) {
         Column(
             modifier = Modifier
                 .fillMaxSize(),
@@ -183,10 +189,14 @@ fun ExploreSearchScreen(
                         horizontalArrangement = Arrangement.spacedBy(SpSpacing.GridSpacing),
                         verticalArrangement = Arrangement.spacedBy(SpSpacing.GridSpacing),
                     ) {
-                        items(searchState.results, key = { it.id }) { game ->
+                        itemsIndexed(searchState.results, key = { _, g -> g.id }) { index, game ->
                             SearchResultGameCard(
                                 game = game,
                                 onClick = { onGameSelected(game.id) },
+                                modifier = Modifier.focusRestoreItem(
+                                    key = "explore_search_${game.id}",
+                                    isDefault = index == 0,
+                                ),
                             )
                         }
                     }
@@ -207,6 +217,7 @@ fun ExploreSearchScreen(
             onDismiss = { viewModel.dismissSearchError() },
             modifier = Modifier.align(Alignment.BottomCenter),
         )
+        } // CompositionLocalProvider
     }
 }
 
@@ -214,9 +225,10 @@ fun ExploreSearchScreen(
 private fun SearchResultGameCard(
     game: Game,
     onClick: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     SpCard(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .testTag("search_result_game_${game.id}")
             .semantics {

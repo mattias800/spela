@@ -60,7 +60,7 @@ import com.spela.player.presentation.ui.gamepad.InputMode
 import com.spela.player.presentation.ui.gamepad.LocalInputMode
 import com.spela.player.presentation.ui.gamepad.autoFocus
 import com.spela.player.presentation.ui.gamepad.LocalFocusMemory
-import com.spela.player.presentation.ui.gamepad.rememberFocus
+import com.spela.player.presentation.ui.gamepad.focusRestoreItem
 import com.spela.player.presentation.ui.gamepad.rememberFocusMemoryState
 import androidx.compose.runtime.CompositionLocalProvider
 import com.spela.player.presentation.ui.theme.SpSpacing
@@ -191,13 +191,16 @@ fun TopListsScreen(
                                     itemsIndexed(
                                         state.games,
                                         key = { _, item -> "toplist-${item.gameId}" },
-                                    ) { _, item ->
+                                    ) { index, item ->
                                         TopListGameItem(
                                             game = item,
                                             onClick = { onGameSelected(item.gameId) },
                                             modifier = Modifier
                                                 .padding(horizontal = SpSpacing.ScreenHorizontal)
-                                                .rememberFocus("toplist_${item.gameId}"),
+                                                .focusRestoreItem(
+                                                    key = "toplist_${item.gameId}",
+                                                    isDefault = index == 0,
+                                                ),
                                         )
                                     }
                                 }
@@ -210,13 +213,16 @@ fun TopListsScreen(
                                     itemsIndexed(
                                         state.longestGames,
                                         key = { _, item -> "longest-${item.gameId}" },
-                                    ) { _, item ->
+                                    ) { index, item ->
                                         LongestGameItem(
                                             game = item,
                                             onClick = { onGameSelected(item.gameId) },
                                             modifier = Modifier
                                                 .padding(horizontal = SpSpacing.ScreenHorizontal)
-                                                .rememberFocus("longest_${item.gameId}"),
+                                                .focusRestoreItem(
+                                                    key = "longest_${item.gameId}",
+                                                    isDefault = index == 0,
+                                                ),
                                         )
                                     }
                                 }

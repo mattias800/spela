@@ -47,6 +47,9 @@ import com.spela.player.presentation.ui.components.SpTitledSection
 import com.spela.player.presentation.ui.components.SpTopBar
 import com.spela.player.presentation.ui.components.PlatformBackHandler
 import com.spela.player.presentation.ui.components.social.StarRatingRow
+import com.spela.player.presentation.ui.gamepad.LocalFocusMemory
+import com.spela.player.presentation.ui.gamepad.rememberFocusMemoryState
+import androidx.compose.runtime.CompositionLocalProvider
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpTypography
 import com.spela.player.presentation.viewmodel.GameDetailViewModel
@@ -121,6 +124,8 @@ fun GameDetailScreen(
         listOf(from.darken(0.65f), to.darken(0.65f))
     }
 
+    val focusMemory = rememberFocusMemoryState()
+    CompositionLocalProvider(LocalFocusMemory provides focusMemory) {
     BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
         val isPortraitScreen = maxWidth <= maxHeight
         GameDetailLayout(
@@ -534,5 +539,6 @@ fun GameDetailScreen(
             onDismiss = { viewModel.onIntent(GameDetailIntent.DismissError) },
             modifier = Modifier.align(Alignment.BottomCenter),
         )
+    }
     }
 }
