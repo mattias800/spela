@@ -1,6 +1,7 @@
 package com.spela.player.android
 
 import androidx.compose.ui.test.onAllNodesWithText
+import org.junit.Assume
 import org.junit.Before
 import org.junit.Test
 
@@ -30,6 +31,19 @@ class EstablishSessionTest : BaseE2ETest() {
 
     @Before
     override fun baseSetUp() {
+        // The class-level @RequiresPhysicalDevice is honoured by
+        // BaseE2ETest.baseSetUp(), but this override doesn't call
+        // super (it has its own setup), so we re-apply the same
+        // skip check here. Without this the annotation is silently
+        // ignored.
+        val annotation = this::class.java.getAnnotation(RequiresPhysicalDevice::class.java)
+        if (annotation != null) {
+            Assume.assumeFalse(
+                "Skipping on emulator (@RequiresPhysicalDevice): ${annotation.reason}",
+                isEmulator,
+            )
+        }
+
         // Still reset the backend — user-generated data from prior
         // tests must not influence the login flow.
         resetServerState()
