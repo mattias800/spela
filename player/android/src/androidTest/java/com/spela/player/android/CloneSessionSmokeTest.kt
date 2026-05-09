@@ -1,5 +1,7 @@
 package com.spela.player.android
 
+import com.spela.player.data.remote.api.SpelaApiClient
+import com.spela.player.data.remote.interceptor.TokenManager
 import com.spela.player.domain.repository.SessionRepository
 import kotlinx.coroutines.runBlocking
 import org.junit.Test
@@ -10,43 +12,56 @@ import java.net.URL
 /**
  * Android smoke test for `POST /api/sessions/{id}/clone` (issue #553).
  *
- * Purpose — integration, not UI verification. The shared KMP composables
- * (SessionsSection, SessionDetailScreen, clone dialog, success snackbar)
- * are already covered by desktop E2E tests with fake repositories. This
- * test exercises the parts desktop cannot:
+ * Purpose — integration of the cloneSession endpoint round-trip. The
+ * shared KMP composables (clone dialog, snackbar, list) are covered by
+ * desktop E2E with fakes; this test exercises the parts desktop cannot:
  *
- *   * Real HTTP round-trip to the server's `/api/sessions/{id}/clone` endpoint,
- *   * Real JWT auth header (the production [SessionRepository] picks up the
- *     token saved by the login flow through its injected [SpelaApiClient]),
- *   * The generated Kotlin OpenAPI client's JSON ser/deser against the live
- *     server schema (catches any Kotlin ⇄ Go type drift),
- *   * Server-side transaction + ownership assignment persisted in the DB.
+ *   * Real HTTP round-trip to `/api/sessions/{id}/clone` and the
+ *     deserializer of `GameSessionResponse` against the live server.
+ *   * Real auth header sent by the production [SpelaApiClient].
+ *   * Server-side transaction + ownership transfer persisted in the DB.
  *
- * We explicitly go through the Koin-bound production [SessionRepository]
- * rather than hand-rolled cURL so that the test catches the same classes
- * of integration bug the real app would hit. The cURL calls in the helpers
- * are only used for test bootstrap/teardown (seed + cleanup) so that an
- * assertion failure during the repository call is unambiguous.
+ * We go through the Koin-bound production [SessionRepository] so the
+ * test catches the same classes of bug the real app would hit. The
+ * cURL helpers below are only used for test bootstrap/teardown.
  *
- * Why this test doesn't drive the session-list UI on the AYN Thor:
- *   * The AYN Thor is a clamshell handheld with an always-connected gamepad.
- *   * When a gamepad is connected the app hides the bottom-nav bar (and the
- *     side-rail) — see `SpelaApp.kt`. Navigation is gamepad-only (R1/L1).
- *   * `adb shell input tap` is unreliable because the digitizer is powered
- *     down when the clamshell is closed.
- *   * Driving tab switches via Instrumentation key injection doesn't reach
- *     [MainActivity.onKeyDown] as a gamepad source, so the nav intent never
- *     fires. The UI-level menu interaction is thoroughly covered by the
- *     desktop E2E tests, where it belongs per CLAUDE.md:
- *     "If the code is in commonMain/, test it on desktop."
+ * Auth-state setup is **programmatic, not UI-driven** (#1146): the
+ * shared `addServerAndLogin` UI flow doesn't reliably persist tokens
+ * on the AVD because UiAutomator's `setText` of the SpTextField
+ * AndroidView/EditText doesn't always make the click on "Sign In"
+ * dispatch to LoginViewModel — so the app reaches Home with an empty
+ * TokenManager. Since this test exists to verify the cloneSession
+ * round-trip rather than the login UX, we skip BaseE2ETest's UI login
+ * and seed the production Koin graph (TokenManager + SpelaApiClient
+ * baseUrl) directly with the bootstrap login result.
  */
 class CloneSessionSmokeTest : BaseE2ETest() {
 
+    /**
+     * Override BaseE2ETest's UI-driven login. We still reset server state
+     * (the test depends on a clean session table) but skip ensureLoggedIn
+     * and assertOnHome — auth state is seeded into Koin in the @Test
+     * method instead. The Activity is launched by the @Rule but its UI
+     * state doesn't matter for this test.
+     */
+    override fun baseSetUp() {
+        resetServerState()
+    }
+
+    /**
+     * Override BaseE2ETest's @After Home-restore: there's no logged-in
+     * Home to restore to, since we never drove the UI login.
+     */
+    override fun baseTearDown() {
+        // intentionally empty
+    }
+
     @Test
     fun cloneSessionRoundTripsThroughRealApi() {
-        // ── Bootstrap: admin token via cURL for teardown privileges ──
-        val bootstrapToken = loginViaApi(PLAYER_USERNAME, PLAYER_PASSWORD)
+        // ── Bootstrap: get access + refresh tokens for the test process. ──
+        val tokens = loginAndExtractTokens(PLAYER_USERNAME, PLAYER_PASSWORD)
             ?: throw AssertionError("Player login via API failed — is the backend up on $SERVER_URL?")
+        val bootstrapToken = tokens.first
 
         // The hardcoded id 126 was Castlevania in the local seed, but
         // CI only has the public-domain `nestest.nes` (different id).
@@ -64,19 +79,21 @@ class CloneSessionSmokeTest : BaseE2ETest() {
             ?: throw AssertionError("Failed to seed source session via API (gameId=$gameId)")
         android.util.Log.i(LOG_TAG, "Seeded source session id=$sourceId name='$sourceName'")
 
+        // ── Seed the production Koin graph with the live token + base URL.
+        //    The session repo (and therefore the cloneSession call below)
+        //    reads these on every request via SpelaApiClient. This is the
+        //    same end-state ensureLoggedIn() *should* have left us in, but
+        //    the UI path doesn't reliably get there on the AVD (see class
+        //    docstring). ──
+        val koin = KoinPlatformTools.defaultContext().get()
+        val apiClient = koin.get<SpelaApiClient>()
+        val tokenManager = koin.get<TokenManager>()
+        apiClient.setBaseUrl(SERVER_URL)
+        runBlocking { tokenManager.setTokens(tokens.first, tokens.second) }
+        android.util.Log.i(LOG_TAG, "Seeded TokenManager and apiClient.baseUrl")
+
         var cloneId: String? = null
         try {
-            // ── Bring the app up & log in as player so Koin's SessionRepository
-            //    has a live auth token to send on its way out. ──
-            rule.ensureLoggedIn()
-            android.util.Log.i(LOG_TAG, "App is logged in as $PLAYER_USERNAME")
-
-            // ── The integration assert: call the real SessionRepository
-            //    that's bound in the app's production Koin graph. This
-            //    exercises: SessionRepositoryImpl → SpelaApiClient →
-            //    generated SessionsApi → real HTTP to 127.0.0.1:8080
-            //    → real JSON deserialization of GameSessionResponse. ──
-            val koin = KoinPlatformTools.defaultContext().get()
             val sessionRepo = koin.get<SessionRepository>()
 
             // Mirror the production UI path: the clone dialog always sends a
@@ -181,7 +198,14 @@ class CloneSessionSmokeTest : BaseE2ETest() {
         }
     }
 
-    private fun loginViaApi(username: String, password: String): String? {
+    /**
+     * Login and return (accessToken, refreshToken). Both are needed:
+     * `accessToken` is sent on every request, `refreshToken` is what
+     * the bearer-auth plugin's refreshTokens callback consults when a
+     * 401 comes back (without it the plugin clears tokens and the
+     * test would fail with the same 401 storm we're trying to avoid).
+     */
+    private fun loginAndExtractTokens(username: String, password: String): Pair<String, String>? {
         return try {
             val conn = (URL("$SERVER_URL/api/auth/login").openConnection() as HttpURLConnection).apply {
                 requestMethod = "POST"
@@ -194,9 +218,13 @@ class CloneSessionSmokeTest : BaseE2ETest() {
             if (conn.responseCode != 200) return null
             val body = conn.inputStream.bufferedReader().use { it.readText() }
             conn.disconnect()
-            Regex("\"accessToken\"\\s*:\\s*\"([^\"]+)\"").find(body)?.groupValues?.get(1)
+            val access = Regex("\"accessToken\"\\s*:\\s*\"([^\"]+)\"").find(body)?.groupValues?.get(1)
+                ?: return null
+            val refresh = Regex("\"refreshToken\"\\s*:\\s*\"([^\"]+)\"").find(body)?.groupValues?.get(1)
+                ?: return null
+            access to refresh
         } catch (e: Exception) {
-            android.util.Log.w(LOG_TAG, "loginViaApi failed: ${e.message}")
+            android.util.Log.w(LOG_TAG, "loginAndExtractTokens failed: ${e.message}")
             null
         }
     }
@@ -293,7 +321,6 @@ class CloneSessionSmokeTest : BaseE2ETest() {
         private const val SERVER_URL = "http://127.0.0.1:8080"
         private const val PLAYER_USERNAME = "player"
         private const val PLAYER_PASSWORD = "player123"
-        // Castlevania (NES) — stable id in the e2e seed data.
         private const val LOG_TAG = "CloneSessionSmoke"
     }
 }

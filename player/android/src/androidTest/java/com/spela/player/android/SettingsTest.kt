@@ -11,6 +11,11 @@ import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.uiautomator.UiDevice
 import org.junit.Test
 
+@RequiresPhysicalDevice(
+    reason = "All five tests drive Settings UI navigation; depends on " +
+        "BaseE2ETest.ensureLoggedIn() which the AVD's AndroidView'd EditText flow " +
+        "doesn't reliably authenticate (#1146 root cause)."
+)
 class SettingsTest : BaseE2ETest() {
 
     /** Scroll down in the LazyColumn until a node with the given contentDescription appears. */

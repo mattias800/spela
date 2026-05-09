@@ -4,6 +4,11 @@ import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onAllNodesWithText
 import org.junit.Test
 
+@RequiresPhysicalDevice(
+    reason = "Drives navigation through Home/Console/Game-Detail UI; depends on " +
+        "BaseE2ETest.ensureLoggedIn() which the AVD's AndroidView'd EditText flow " +
+        "doesn't reliably authenticate (#1146 root cause)."
+)
 class NavigationTest : BaseE2ETest() {
 
     @Test

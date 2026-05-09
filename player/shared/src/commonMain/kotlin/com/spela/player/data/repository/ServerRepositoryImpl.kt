@@ -1,6 +1,7 @@
 package com.spela.player.data.repository
 
 import com.spela.player.data.local.SpelaDatabase
+import com.spela.player.data.remote.api.SpelaApiClient
 import com.spela.player.domain.model.ServerConnection
 import com.spela.player.domain.repository.ServerRepository
 import io.ktor.client.HttpClient
@@ -15,6 +16,7 @@ import kotlin.uuid.Uuid
 class ServerRepositoryImpl(
     private val database: SpelaDatabase,
     private val engineFactory: HttpClientEngineFactory<*>,
+    private val apiClient: SpelaApiClient,
 ) : ServerRepository {
 
     private val queries = database.spelaDatabaseQueries
@@ -22,6 +24,16 @@ class ServerRepositoryImpl(
 
     init {
         refreshFromDb()
+        // If a previous run left an active server in the DB, bind the
+        // shared SpelaApiClient to it immediately. Without this, the
+        // very first API call from any repository runs against an
+        // empty baseUrl (Ktor falls back to localhost:80) until the
+        // user explicitly logs in or RestoreSessionUseCase fires —
+        // both of which can race the test harness's direct Koin
+        // access to a repository (issue #1146).
+        queries.getActiveServer().executeAsOneOrNull()?.let { entity ->
+            apiClient.setBaseUrl(entity.url)
+        }
     }
 
     override fun observeServers(): Flow<List<ServerConnection>> = servers
@@ -50,6 +62,13 @@ class ServerRepositoryImpl(
             is_active = if (isFirst) 1L else 0L,
         )
         refreshFromDb()
+        if (isFirst) {
+            // First server is auto-activated by the DB schema; bind
+            // the API client to its URL so any code that grabs a
+            // repository via Koin (UI flow OR test harness) doesn't
+            // run against an empty baseUrl (#1146).
+            apiClient.setBaseUrl(normalizedUrl)
+        }
         return ServerConnection(
             id = id,
             name = name,
@@ -65,6 +84,7 @@ class ServerRepositoryImpl(
             val remaining = queries.getAllServers().executeAsList()
             if (remaining.isNotEmpty()) {
                 queries.setActiveServer(remaining.first().id)
+                apiClient.setBaseUrl(remaining.first().url)
             }
         }
         refreshFromDb()
@@ -73,6 +93,13 @@ class ServerRepositoryImpl(
     override suspend fun setActiveServer(id: String) {
         queries.setActiveServer(id)
         refreshFromDb()
+        // Whenever the active server changes, the SpelaApiClient must
+        // follow. Otherwise the next non-auth API call (e.g. a Koin-
+        // resolved SessionRepository in a test, or the user's first
+        // browse on a fresh login) targets an empty baseUrl (#1146).
+        queries.getActiveServer().executeAsOneOrNull()?.let { entity ->
+            apiClient.setBaseUrl(entity.url)
+        }
     }
 
     override suspend fun validateServer(url: String): Boolean {
