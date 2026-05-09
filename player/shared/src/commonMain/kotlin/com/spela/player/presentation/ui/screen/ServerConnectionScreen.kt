@@ -18,12 +18,13 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
@@ -137,14 +138,16 @@ private fun MobileLayout(
 ) {
     val state by viewModel.state.collectAsState()
 
-    SpGradientBackground(contentAlignment = Alignment.Center) {
+    SpGradientBackground {
         Column(
             modifier = Modifier
-                .widthIn(max = 400.dp)
-                .fillMaxWidth()
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .imePadding()
                 .padding(horizontal = SpSpacing.XLarge),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
+            Spacer(Modifier.height(SpSpacing.XLarge))
             AppIcon(size = 192.dp, radius = 16.dp)
             Spacer(Modifier.height(SpSpacing.Small))
             Text(
@@ -217,6 +220,8 @@ private fun SplitLayout(
                     modifier = Modifier
                         .widthIn(max = 380.dp)
                         .fillMaxWidth()
+                        .verticalScroll(rememberScrollState())
+                        .imePadding()
                         .padding(horizontal = SpSpacing.XLarge),
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
@@ -247,11 +252,15 @@ private fun ServerListOrForm(
 ) {
     val state by viewModel.state.collectAsState()
 
-    LazyColumn(
+    // Use Column rather than LazyColumn so this composable can be embedded
+    // inside an outer verticalScroll (the layouts wrap us in one to keep the
+    // form visible above the IME). Server lists are always short — handful
+    // of items at most — so eager rendering is fine.
+    Column(
         modifier = if (fullWidth) Modifier.fillMaxWidth() else Modifier,
         verticalArrangement = Arrangement.spacedBy(SpSpacing.Medium),
     ) {
-        items(state.servers) { server ->
+        state.servers.forEach { server ->
             val gradientBrush = spelaBrandGradient()
             SpActionCard(
                 onClick = {
@@ -311,7 +320,7 @@ private fun ServerListOrForm(
             }
         }
 
-        item {
+        run {
             val animEnabled = com.spela.player.presentation.ui.components.LocalAnimationsEnabled.current
             AnimatedVisibility(
                 visible = state.isAddingServer,
