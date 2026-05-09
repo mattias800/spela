@@ -98,6 +98,39 @@ cd player
 - **Cascading test failures** → A failed `restartApp()` can leave the app in a broken state, causing subsequent tests to fail. Tests are designed to recover via `ensureLoggedIn()` but this doesn't always work after a stuck Activity recreation.
 - **Continuous Compose animations** → The neon UI has continuous animations (gradient glow, ambient blobs). `IdlingPolicies.setMasterPolicyTimeout(10s)` is set as mitigation. System animation scale = 0 doesn't help because Compose animations are independent of system settings.
 
+#### Iterating on a single Android E2E test
+
+The full `run-e2e.sh` invocation tears down the docker volumes, rebuilds the
+backend image, uninstalls + reinstalls the APK, and runs every test class.
+End-to-end that's ~25 min — fine for CI, brutal for iterating on one bug.
+
+Use `player/scripts/e2e-android-quick.sh` to keep the backend + AVD warm
+between iterations. After a one-time setup, each test cycle is ~2 min:
+
+```bash
+# One-time per machine (once per dev session):
+emulator -avd spela-test -no-snapshot-load &
+docker compose -f docker-compose.e2e.yml up -d --build --wait
+
+# Iterate on a single class as many times as needed:
+./player/scripts/e2e-android-quick.sh CloneSessionSmokeTest
+# (FQCN also works: com.spela.player.android.CloneSessionSmokeTest)
+```
+
+The wrapper validates both prereqs up-front, then delegates to
+`run-e2e.sh --emulator --skip-reset <class>` so the heavy lifting (adb
+reverse, animation disable, core pre-cache, failure diagnostics) stays
+in one place. Backend state is preserved across iterations because the
+`--skip-reset` flag avoids `docker compose down -v` — the trade-off is
+that you must call `POST /api/test/reset` from any test that needs a
+clean DB (`BaseE2ETest.@Before` already does).
+
+If you want to log diagnostic data from `commonMain` and have it surface
+in the workflow's failure dump, use `spelaLog(tag, message)` from
+`com.spela.player.util` rather than `println`. On Android it routes to
+`Log.i("Spela", ...)`, which the dump's `-s Spela:V` filter explicitly
+includes; `println` (tag `System.out`) is silently dropped.
+
 ### Test Tag Convention (Player App)
 
 Screen-level and element-level test tags are defined in `player/shared/src/commonMain/kotlin/com/spela/player/presentation/ui/TestTags.kt`. Both the composables and the test suites reference these constants, so tests don't break when display text changes.
