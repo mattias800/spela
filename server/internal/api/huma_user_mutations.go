@@ -132,6 +132,7 @@ func (h *UserHandler) HumaUpdateProfile(ctx context.Context, in *UpdateProfileIn
 
 	req := in.Body
 
+	emailChanged := false
 	if req.Email != "" {
 		if req.CurrentPassword == "" {
 			return nil, huma.Error400BadRequest("current password is required to change email")
@@ -146,6 +147,9 @@ func (h *UserHandler) HumaUpdateProfile(ctx context.Context, in *UpdateProfileIn
 			// registered by issuing PUT /api/user/profile against
 			// a long list of candidates.
 			return nil, huma.Error409Conflict("could not update profile")
+		}
+		if user.Email != req.Email {
+			emailChanged = true
 		}
 		user.Email = req.Email
 	}
@@ -163,8 +167,23 @@ func (h *UserHandler) HumaUpdateProfile(ctx context.Context, in *UpdateProfileIn
 		user.AvatarURL = req.AvatarURL
 	}
 
+	// Issue #1133: a successful email change is recovery-channel-class
+	// state — bump TokenVersion (invalidating other access tokens) and
+	// revoke all refresh tokens, mirroring HumaChangePassword. Without
+	// this, a thief who briefly held the password (now rotated by the
+	// real owner) could keep a stolen access token alive for its full
+	// TTL while pivoting recovery to their own email if email-based
+	// password reset ships later.
+	if emailChanged {
+		user.TokenVersion++
+	}
+
 	if err := h.DB.Save(&user).Error; err != nil {
 		return nil, huma.Error500InternalServerError("failed to update profile")
+	}
+
+	if emailChanged {
+		h.DB.Where("user_id = ?", user.ID).Delete(&db.RefreshToken{})
 	}
 
 	return &UpdateProfileOutput{Body: ToUserResponse(user)}, nil
