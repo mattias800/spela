@@ -1,5 +1,7 @@
 package com.spela.player.android
 
+import com.spela.player.data.remote.api.SpelaApiClient
+import com.spela.player.data.remote.interceptor.TokenManager
 import com.spela.player.domain.repository.SessionRepository
 import kotlinx.coroutines.runBlocking
 import org.junit.Test
@@ -32,10 +34,26 @@ import java.net.URL
  */
 class CoreDecisionFlagsSmokeTest : BaseE2ETest() {
 
+    /**
+     * Skip the UI-driven login (see CloneSessionSmokeTest for the same
+     * pattern + rationale, #1146). This test exists to verify the
+     * core-flags PUT round-trip, not the login UX. We seed Koin's
+     * TokenManager + SpelaApiClient directly from the bootstrap login
+     * result instead.
+     */
+    override fun baseSetUp() {
+        resetServerState()
+    }
+
+    override fun baseTearDown() {
+        // intentionally empty
+    }
+
     @Test
     fun coreDecisionFlagsRoundTripThroughRealApi() {
-        val bootstrapToken = loginViaApi(PLAYER_USERNAME, PLAYER_PASSWORD)
+        val tokens = loginAndExtractTokens(PLAYER_USERNAME, PLAYER_PASSWORD)
             ?: throw AssertionError("Player login via API failed — is the backend up on $SERVER_URL?")
+        val bootstrapToken = tokens.first
 
         // Discover an available game id at runtime — local seed has
         // Castlevania (id 126), CI's testdata-public ships only
@@ -51,11 +69,16 @@ class CoreDecisionFlagsSmokeTest : BaseE2ETest() {
             ?: throw AssertionError("Failed to seed session via API (gameId=$gameId)")
         android.util.Log.i(LOG_TAG, "Seeded session id=$sessionId name='$sourceName'")
 
-        try {
-            rule.ensureLoggedIn()
-            android.util.Log.i(LOG_TAG, "App logged in as $PLAYER_USERNAME")
+        // Seed Koin with live token + base URL — the UI flow can't be
+        // relied on (#1146).
+        val koin = KoinPlatformTools.defaultContext().get()
+        val apiClient = koin.get<SpelaApiClient>()
+        val tokenManager = koin.get<TokenManager>()
+        apiClient.setBaseUrl(SERVER_URL)
+        runBlocking { tokenManager.setTokens(tokens.first, tokens.second) }
+        android.util.Log.i(LOG_TAG, "Seeded TokenManager and apiClient.baseUrl")
 
-            val koin = KoinPlatformTools.defaultContext().get()
+        try {
             val sessionRepo = koin.get<SessionRepository>()
 
             // ── Lock the session (Sheet A → Lock or session-detail chip click) ──
@@ -212,7 +235,7 @@ class CoreDecisionFlagsSmokeTest : BaseE2ETest() {
         }
     }
 
-    private fun loginViaApi(username: String, password: String): String? {
+    private fun loginAndExtractTokens(username: String, password: String): Pair<String, String>? {
         return try {
             val conn = (URL("$SERVER_URL/api/auth/login").openConnection() as HttpURLConnection).apply {
                 requestMethod = "POST"
@@ -225,9 +248,13 @@ class CoreDecisionFlagsSmokeTest : BaseE2ETest() {
             if (conn.responseCode != 200) return null
             val body = conn.inputStream.bufferedReader().use { it.readText() }
             conn.disconnect()
-            Regex("\"accessToken\"\\s*:\\s*\"([^\"]+)\"").find(body)?.groupValues?.get(1)
+            val access = Regex("\"accessToken\"\\s*:\\s*\"([^\"]+)\"").find(body)?.groupValues?.get(1)
+                ?: return null
+            val refresh = Regex("\"refreshToken\"\\s*:\\s*\"([^\"]+)\"").find(body)?.groupValues?.get(1)
+                ?: return null
+            access to refresh
         } catch (e: Exception) {
-            android.util.Log.w(LOG_TAG, "loginViaApi failed: ${e.message}")
+            android.util.Log.w(LOG_TAG, "loginAndExtractTokens failed: ${e.message}")
             null
         }
     }
