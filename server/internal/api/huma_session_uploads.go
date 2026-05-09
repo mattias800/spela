@@ -344,6 +344,14 @@ func (h *SessionHandler) HumaUpsertSlotSave(ctx context.Context, in *SessionSlot
 	if err != nil {
 		return nil, err
 	}
+	// Issue #1128: parity with HumaUploadSessionSave / HumaUploadAutoSave
+	// — if a shared session backs this game session, the caller must
+	// hold the turn before they can write a slot. Without this gate, the
+	// session owner could overwrite slots while a co-op partner held the
+	// turn, polluting the shared playthrough save bank.
+	if err := h.humaCheckSharedSessionTurn(session.ID, uid); err != nil {
+		return nil, err
+	}
 
 	slotNum, err := strconv.Atoi(in.Slot)
 	if err != nil || slotNum < 1 || slotNum > 10 {
