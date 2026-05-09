@@ -1,6 +1,7 @@
 package com.spela.player.presentation.ui.feature.search
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -19,6 +20,7 @@ import com.spela.player.domain.model.GlobalSearchResult
 import com.spela.player.domain.model.SearchCategory
 import com.spela.player.domain.model.SearchSuggestion
 import com.spela.player.presentation.ui.components.SpShimmer
+import com.spela.player.presentation.ui.gamepad.focusRestoreItem
 import com.spela.player.presentation.ui.theme.SpSpacing
 
 private object SearchCategoryNames {
@@ -229,6 +231,12 @@ fun SearchResultsList(
 /**
  * Adds a search section (header + items) to the LazyColumn if the category
  * has results. Handles expand/collapse resolution via [resolveCategory].
+ *
+ * Each result row is wrapped in a [Box] carrying [Modifier.focusRestoreItem]
+ * so back-navigation lands on the same row the user activated (issue #1137).
+ * The first item of every section sets `isDefault = true`; only the first
+ * to fire actually claims focus, so the games-section's first row wins
+ * when present and the next non-empty section takes over otherwise.
  */
 private fun <T> LazyListScope.searchSection(
     name: String,
@@ -259,7 +267,14 @@ private fun <T> LazyListScope.searchSection(
         count = resolved.results.size,
         key = { itemKey(resolved.results[it]) },
     ) { index ->
-        itemContent(resolved.results[index])
+        Box(
+            modifier = Modifier.focusRestoreItem(
+                key = "global_search_${itemKey(resolved.results[index])}",
+                isDefault = index == 0,
+            ),
+        ) {
+            itemContent(resolved.results[index])
+        }
     }
 }
 
