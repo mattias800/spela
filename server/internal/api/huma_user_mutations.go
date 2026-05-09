@@ -415,6 +415,11 @@ func (h *UserHandler) HumaChangePassword(ctx context.Context, in *ChangePassword
 		return nil, huma.Error401Unauthorized("incorrect current password")
 	}
 
+	// Issue #1131(A): refuse common passwords on change too.
+	if isCommonPassword(req.NewPassword) {
+		return nil, huma.Error400BadRequest("that password is on a known-common-password list; please choose something else")
+	}
+
 	hash, err := auth.HashPassword(req.NewPassword)
 	if err != nil {
 		return nil, huma.Error500InternalServerError("failed to hash password")

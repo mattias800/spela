@@ -393,6 +393,12 @@ func (h *AuthHandler) HumaLogin(ctx context.Context, in *AuthLoginInput) (*AuthL
 func (h *AuthHandler) HumaRegister(ctx context.Context, in *AuthRegisterInput) (*AuthRegisterOutput, error) {
 	req := in.Body
 
+	// Issue #1131(A): refuse the most-common / most-leaked passwords.
+	// Length already enforced via the schema tag.
+	if isCommonPassword(req.Password) {
+		return nil, huma.NewError(http.StatusBadRequest, "That password is on a known-common-password list. Please choose something else.")
+	}
+
 	hash, err := auth.HashPassword(req.Password)
 	if err != nil {
 		return nil, huma.NewError(http.StatusInternalServerError, "Registration failed. Please try again.")
