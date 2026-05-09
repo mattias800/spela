@@ -49,8 +49,11 @@ import com.spela.player.presentation.ui.components.SpScreen
 import com.spela.player.presentation.ui.components.SpScreenTopSpacer
 import com.spela.player.presentation.ui.components.SpTopBar
 import com.spela.player.presentation.ui.components.PlatformBackHandler
+import androidx.compose.runtime.CompositionLocalProvider
 import com.spela.player.presentation.ui.gamepad.InputMode
+import com.spela.player.presentation.ui.gamepad.LocalFocusMemory
 import com.spela.player.presentation.ui.gamepad.LocalInputMode
+import com.spela.player.presentation.ui.gamepad.rememberFocusMemoryState
 import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.ui.theme.SpTypography
 import com.spela.player.presentation.viewmodel.SharedSessionDetailViewModel
@@ -86,6 +89,8 @@ fun SharedSessionDetailScreen(
     val isGamepad = LocalInputMode.current == InputMode.GAMEPAD
 
     SpScreen {
+        val focusMemory = rememberFocusMemoryState()
+        CompositionLocalProvider(LocalFocusMemory provides focusMemory) {
         Column(
             modifier = Modifier
                 .fillMaxSize(),
@@ -262,6 +267,7 @@ fun SharedSessionDetailScreen(
             onDismiss = { viewModel.onIntent(SharedSessionDetailIntent.DismissSuccess) },
             modifier = Modifier.align(Alignment.BottomCenter),
         )
+        } // CompositionLocalProvider
     }
 
     // Clone-to-my-library dialog — opened from the top-bar `…` menu.

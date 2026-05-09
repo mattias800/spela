@@ -43,7 +43,6 @@ import com.spela.player.presentation.ui.feature.explore.DeveloperTopRatedRow
 import com.spela.player.presentation.ui.feature.explore.DeveloperUserStatsCard
 import com.spela.player.presentation.ui.gamepad.InputMode
 import com.spela.player.presentation.ui.gamepad.LocalInputMode
-import com.spela.player.presentation.ui.gamepad.autoFocus
 import com.spela.player.presentation.ui.gamepad.LocalFocusMemory
 import com.spela.player.presentation.ui.gamepad.focusRestoreItem
 import com.spela.player.presentation.ui.gamepad.rememberFocusMemoryState
@@ -105,7 +104,7 @@ fun ExploreDeveloperScreen(
                         DeveloperHeroBanner(
                             detail = detail,
                             modifier = Modifier
-                                .autoFocus()
+                                .focusRestoreItem(key = "explore_developer_hero", isDefault = true)
                                 .layout { measurable, constraints ->
                                     val extraWidth = (horizontalPadding * 2).roundToPx()
                                     val newConstraints = constraints.copy(

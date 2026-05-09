@@ -1,59 +1,22 @@
 package com.spela.player.presentation.ui.gamepad
 
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.compositionLocalOf
-import androidx.compose.runtime.remember
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.composed
-import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.focus.focusRequester
-import kotlinx.coroutines.delay
+
+// Historically this file also defined `Modifier.autoFocus()`, the legacy
+// single-element default-focus modifier. Issue #1138 retired that primitive
+// in favour of `Modifier.focusRestoreItem(key, isDefault = true)` (defined
+// in FocusMemory.kt) which is a strict superset — default focus AND
+// back-nav restoration via the same scope. The forward/tab-switch
+// CompositionLocals stay here because they're still consumed by
+// FocusMemory.kt and provided by SpelaApp on every screen mount.
 
 /**
  * Whether the current screen was reached via forward navigation (not back/tab switch).
- * Set by SpelaApp when rendering each screen.
+ * Set by SpelaApp when rendering each screen and consumed by
+ * [Modifier.focusRestoreItem] to decide whether to restore the saved
+ * focus key or fire the default-focus path.
  */
 val LocalIsForwardNavigation = compositionLocalOf { false }
-
-/**
- * Requests focus on this element when it mounts during forward navigation
- * (or a bottom-nav tab switch) in gamepad mode.
- *
- * Apply to the first meaningful focusable element on each screen — the
- * element that should receive initial gamepad focus. Each screen is
- * responsible for placing this modifier; this is the primary mechanism
- * for focus acquisition on navigation.
- *
- * On back navigation, this modifier does nothing — focus-memory
- * restoration in [Modifier.rememberFocus] takes over so the user lands
- * back on the element they last focused.
- *
- * The 500ms delay ensures the AnimatedContent exit transition has
- * completed so focus doesn't land on the outgoing screen.
- */
-fun Modifier.autoFocus(): Modifier = composed {
-    val isForward = LocalIsForwardNavigation.current
-    // Tab-switches via L1/R1 are not forward navigations (no back stack
-    // entry) but also not back navigations. Treat them like forward
-    // navigations for focus purposes — the destination screen has no
-    // focus memory yet, so autoFocus is the only mechanism that can
-    // place initial focus on a useful element.
-    val isTabSwitch = LocalIsTabSwitch.current
-
-    if (isForward || isTabSwitch) {
-        val focusRequester = remember { FocusRequester() }
-        LaunchedEffect(Unit) {
-            // Wait for AnimatedContent exit transition to complete
-            delay(500)
-            try {
-                focusRequester.requestFocus()
-            } catch (_: Exception) {}
-        }
-        this.focusRequester(focusRequester)
-    } else {
-        this
-    }
-}
 
 /**
  * Whether the current screen was reached via a bottom-nav tab switch

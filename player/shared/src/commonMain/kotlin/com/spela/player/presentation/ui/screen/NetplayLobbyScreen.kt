@@ -53,9 +53,12 @@ import com.spela.player.presentation.ui.components.SpSnackbarType
 import com.spela.player.presentation.ui.components.SpScreen
 import com.spela.player.presentation.ui.components.SpScreenTopSpacer
 import com.spela.player.presentation.ui.components.SpTopBar
+import androidx.compose.runtime.CompositionLocalProvider
 import com.spela.player.presentation.ui.gamepad.InputMode
+import com.spela.player.presentation.ui.gamepad.LocalFocusMemory
 import com.spela.player.presentation.ui.gamepad.LocalInputMode
-import com.spela.player.presentation.ui.gamepad.autoFocus
+import com.spela.player.presentation.ui.gamepad.focusRestoreItem
+import com.spela.player.presentation.ui.gamepad.rememberFocusMemoryState
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.ui.theme.SpTypography
@@ -126,6 +129,8 @@ fun NetplayLobbyScreen(
     val isGamepad = LocalInputMode.current == InputMode.GAMEPAD
 
     SpScreen {
+        val focusMemory = rememberFocusMemoryState()
+        CompositionLocalProvider(LocalFocusMemory provides focusMemory) {
         Column(
             modifier = Modifier
                 .fillMaxSize(),
@@ -295,7 +300,12 @@ fun NetplayLobbyScreen(
                                 SpButton(
                                     text = "Invite Player",
                                     onClick = { viewModel.onIntent(NetplayLobbyIntent.ShowInviteSheet) },
-                                    modifier = Modifier.autoFocus().padding(horizontal = SpSpacing.ScreenHorizontal),
+                                    modifier = Modifier
+                                        .focusRestoreItem(
+                                            key = "netplay_lobby_invite_player",
+                                            isDefault = true,
+                                        )
+                                        .padding(horizontal = SpSpacing.ScreenHorizontal),
                                 )
                             }
                         }
@@ -345,6 +355,7 @@ fun NetplayLobbyScreen(
             onDismiss = { viewModel.onIntent(NetplayLobbyIntent.DismissInviteSuccess) },
             modifier = Modifier.align(Alignment.BottomCenter),
         )
+        } // CompositionLocalProvider
     }
 
     // Invite player dialog

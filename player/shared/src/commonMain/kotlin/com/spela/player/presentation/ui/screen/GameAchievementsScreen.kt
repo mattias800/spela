@@ -16,9 +16,12 @@ import com.spela.player.presentation.ui.components.SpScreen
 import com.spela.player.presentation.ui.components.SpScreenTopSpacer
 import com.spela.player.presentation.ui.components.SpTopBar
 import com.spela.player.presentation.ui.feature.gamedetail.GameAchievementsSection
+import androidx.compose.runtime.CompositionLocalProvider
 import com.spela.player.presentation.ui.gamepad.InputMode
+import com.spela.player.presentation.ui.gamepad.LocalFocusMemory
 import com.spela.player.presentation.ui.gamepad.LocalInputMode
-import com.spela.player.presentation.ui.gamepad.autoFocus
+import com.spela.player.presentation.ui.gamepad.focusRestoreItem
+import com.spela.player.presentation.ui.gamepad.rememberFocusMemoryState
 import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.viewmodel.GameDetailViewModel
 
@@ -39,6 +42,8 @@ fun GameAchievementsScreen(
     val isGamepad = LocalInputMode.current == InputMode.GAMEPAD
 
     SpScreen {
+        val focusMemory = rememberFocusMemoryState()
+        CompositionLocalProvider(LocalFocusMemory provides focusMemory) {
         Column(
             modifier = Modifier
                 .fillMaxSize(),
@@ -60,7 +65,10 @@ fun GameAchievementsScreen(
                 .padding(SpSpacing.Default),
         ) {
             GameAchievementsSection(
-                modifier = Modifier.autoFocus(),
+                modifier = Modifier.focusRestoreItem(
+                    key = "game_achievements_section",
+                    isDefault = true,
+                ),
                 achievements = state.achievements,
                 progress = state.achievementProgress,
                 timeline = state.achievementTimeline,
@@ -74,5 +82,6 @@ fun GameAchievementsScreen(
             )
         }
         }
+        } // CompositionLocalProvider
     }
 }

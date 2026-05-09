@@ -53,7 +53,6 @@ import com.spela.player.presentation.ui.components.SpTopBar
 import com.spela.player.presentation.ui.feature.explore.GameFilterPanel
 import com.spela.player.presentation.ui.gamepad.InputMode
 import com.spela.player.presentation.ui.gamepad.LocalInputMode
-import com.spela.player.presentation.ui.gamepad.autoFocus
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.ui.theme.SpTypography
@@ -118,7 +117,7 @@ fun ExploreSearchScreen(
                     onDeleteSavedSearch = { id -> viewModel.deleteSavedSearch(id) },
                     onApplySavedSearch = { saved -> viewModel.applySavedSearch(saved) },
                     modifier = Modifier
-                        .autoFocus()
+                        .focusRestoreItem(key = "explore_search_filters", isDefault = true)
                         .fillMaxWidth()
                         .padding(horizontal = SpSpacing.ScreenHorizontal),
                 )

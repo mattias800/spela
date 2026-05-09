@@ -45,9 +45,12 @@ import com.spela.player.presentation.ui.components.SpSearchField
 import com.spela.player.presentation.ui.components.SpScreenTopSpacer
 import com.spela.player.presentation.ui.components.SpTopBar
 import com.spela.player.presentation.ui.feature.library.GameGridItem
+import androidx.compose.runtime.CompositionLocalProvider
 import com.spela.player.presentation.ui.gamepad.InputMode
+import com.spela.player.presentation.ui.gamepad.LocalFocusMemory
 import com.spela.player.presentation.ui.gamepad.LocalInputMode
-import com.spela.player.presentation.ui.gamepad.autoFocus
+import com.spela.player.presentation.ui.gamepad.focusRestoreItem
+import com.spela.player.presentation.ui.gamepad.rememberFocusMemoryState
 import com.spela.player.presentation.ui.theme.LocalTitleBarInset
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
@@ -152,6 +155,8 @@ fun DeveloperGamesScreen(
     val isGamepad = LocalInputMode.current == InputMode.GAMEPAD
 
     SpScreen(modifier = Modifier.testTag("developer_games_screen")) {
+        val focusMemory = rememberFocusMemoryState()
+        CompositionLocalProvider(LocalFocusMemory provides focusMemory) {
         SpLazyVerticalGrid(
             columns = GridCells.Adaptive(SpSpacing.GridCellMinWidth),
             modifier = Modifier.fillMaxSize().testTag("developer_games_grid"),
@@ -210,7 +215,10 @@ fun DeveloperGamesScreen(
                             icon = Icons.Filled.SwapVert,
                             contentDescription = "Sort games",
                             onClick = { showSortMenu = true },
-                            modifier = Modifier.autoFocus(),
+                            modifier = Modifier.focusRestoreItem(
+                                key = "developer_games_sort",
+                                isDefault = true,
+                            ),
                         )
                         DropdownMenu(
                             expanded = showSortMenu,
@@ -290,5 +298,6 @@ fun DeveloperGamesScreen(
                 },
             )
         }
+        } // CompositionLocalProvider
     }
 }

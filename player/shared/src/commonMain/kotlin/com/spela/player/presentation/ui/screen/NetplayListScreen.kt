@@ -51,7 +51,6 @@ import com.spela.player.presentation.ui.components.SpTopBar
 import com.spela.player.presentation.ui.components.PlatformBackHandler
 import com.spela.player.presentation.ui.gamepad.InputMode
 import com.spela.player.presentation.ui.gamepad.LocalInputMode
-import com.spela.player.presentation.ui.gamepad.autoFocus
 import com.spela.player.presentation.ui.gamepad.LocalFocusMemory
 import com.spela.player.presentation.ui.gamepad.focusRestoreItem
 import com.spela.player.presentation.ui.gamepad.rememberFocusMemoryState
@@ -132,7 +131,10 @@ fun NetplayListScreen(
                                 SpSecondaryButton(
                                     text = "Join by Code",
                                     onClick = { showJoinDialog = true },
-                                    modifier = Modifier.autoFocus(),
+                                    modifier = Modifier.focusRestoreItem(
+                                        key = "netplay_list_join_by_code",
+                                        isDefault = true,
+                                    ),
                                 )
                             }
                             Spacer(Modifier.height(SpSpacing.Default))

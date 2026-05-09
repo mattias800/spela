@@ -52,7 +52,6 @@ import com.spela.player.presentation.ui.components.SpTopBar
 import com.spela.player.presentation.ui.components.PlatformBackHandler
 import com.spela.player.presentation.ui.gamepad.InputMode
 import com.spela.player.presentation.ui.gamepad.LocalInputMode
-import com.spela.player.presentation.ui.gamepad.autoFocus
 import com.spela.player.presentation.ui.gamepad.LocalFocusMemory
 import com.spela.player.presentation.ui.gamepad.focusRestoreItem
 import com.spela.player.presentation.ui.gamepad.rememberFocus
@@ -262,7 +261,9 @@ private fun ProfileContent(
             StatCard(
                 label = "Play Time",
                 value = formatPlayTime(profile.totalPlayTime),
-                modifier = Modifier.weight(1f).autoFocus(),
+                modifier = Modifier
+                    .weight(1f)
+                    .focusRestoreItem(key = "user_profile_play_time", isDefault = true),
             )
             StatCard(
                 label = "Games Played",

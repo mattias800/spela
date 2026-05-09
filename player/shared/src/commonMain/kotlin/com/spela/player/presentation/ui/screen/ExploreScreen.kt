@@ -38,8 +38,8 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.spela.player.presentation.ui.components.SpEmptyState
 import com.spela.player.presentation.ui.components.SpLoadingIndicator
-import com.spela.player.presentation.ui.gamepad.autoFocus
 import com.spela.player.presentation.ui.gamepad.LocalFocusMemory
+import com.spela.player.presentation.ui.gamepad.focusRestoreItem
 import com.spela.player.presentation.ui.gamepad.rememberFocus
 import com.spela.player.presentation.ui.gamepad.rememberFocusMemoryState
 import androidx.compose.runtime.CompositionLocalProvider
@@ -172,7 +172,7 @@ fun ExploreScreen(
                     SearchBarEntryPoint(
                         onClick = { onGlobalSearchSelected?.invoke() },
                         modifier = Modifier
-                            .autoFocus()
+                            .focusRestoreItem(key = "explore_search_bar", isDefault = true)
                             .testTag("explore_search_bar"),
                     )
 

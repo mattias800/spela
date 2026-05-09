@@ -56,9 +56,12 @@ import com.spela.player.presentation.ui.components.challenge.SpChallengeTypeChip
 import com.spela.player.presentation.ui.components.challenge.SpDifficultyChip
 import com.spela.player.presentation.ui.components.challenge.formatDuration
 import com.spela.player.presentation.ui.theme.SpColor
+import androidx.compose.runtime.CompositionLocalProvider
 import com.spela.player.presentation.ui.gamepad.InputMode
+import com.spela.player.presentation.ui.gamepad.LocalFocusMemory
 import com.spela.player.presentation.ui.gamepad.LocalInputMode
-import com.spela.player.presentation.ui.gamepad.autoFocus
+import com.spela.player.presentation.ui.gamepad.focusRestoreItem
+import com.spela.player.presentation.ui.gamepad.rememberFocusMemoryState
 import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.ui.theme.SpTypography
 import com.spela.player.presentation.viewmodel.ChallengeDetailViewModel
@@ -94,6 +97,8 @@ fun ChallengeDetailScreen(
     val isGamepad = LocalInputMode.current == InputMode.GAMEPAD
 
     SpScreen {
+        val focusMemory = rememberFocusMemoryState()
+        CompositionLocalProvider(LocalFocusMemory provides focusMemory) {
         Column(
             modifier = Modifier
                 .fillMaxSize(),
@@ -236,7 +241,10 @@ fun ChallengeDetailScreen(
                         text = "Attempt Challenge",
                         onClick = { onAttempt(challenge.id, challenge.gameId) },
                         modifier = Modifier
-                            .autoFocus()
+                            .focusRestoreItem(
+                                key = "challenge_detail_attempt",
+                                isDefault = true,
+                            )
                             .fillMaxWidth()
                             .testTag("attempt_challenge_button"),
                     )
@@ -306,6 +314,7 @@ fun ChallengeDetailScreen(
                 onDismiss = { showDeleteConfirm = false },
             )
         }
+        } // CompositionLocalProvider
     }
 }
 
