@@ -495,6 +495,13 @@ func (h *RomHackHandler) HumaCreateRomHack(_ context.Context, in *AdminCreateRom
 	if err != nil {
 		return nil, huma.NewError(http.StatusInternalServerError, "base game ROM file not found on disk")
 	}
+	// Issue #1125: defense in depth. ResolveGamePath now refuses
+	// traversal, but ValidateROMPath here matches the pattern used by
+	// HumaDownloadGame / HumaReplaceROM so any future regression in
+	// ResolveGamePath doesn't immediately turn into arbitrary file read.
+	if !storage.ValidateROMPath(romAbsPath, h.GameDirs) {
+		return nil, huma.NewError(http.StatusForbidden, "base game ROM path is outside configured game dirs")
+	}
 
 	romData, err := os.ReadFile(romAbsPath)
 	if err != nil {
