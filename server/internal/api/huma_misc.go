@@ -67,7 +67,7 @@ type ListSavedSearchesOutput struct {
 
 // DeleteSavedSearchInput is the input for DELETE /api/user/saved-searches/{id}.
 type DeleteSavedSearchInput struct {
-	ID string `path:"id" doc:"Saved search ID."`
+	ID string `path:"id" pattern:"^[0-9]+$" maxLength:"20" doc:"Saved search ID."`
 }
 
 // DeletedStatusResponse is the wire format for delete responses that return a status.
@@ -116,7 +116,7 @@ type GetCoreCompatibilityOutput struct {
 
 // GetUserRateLimitInput is the input for GET /api/admin/users/{id}/rate-limit.
 type GetUserRateLimitInput struct {
-	ID string `path:"id" doc:"User ID."`
+	ID string `path:"id" pattern:"^[0-9]+$" maxLength:"20" doc:"User ID."`
 }
 
 // GetUserRateLimitOutput wraps the rate-limit response.
@@ -126,7 +126,7 @@ type GetUserRateLimitOutput struct {
 
 // ResetUserRateLimitInput is the input for DELETE /api/admin/users/{id}/rate-limit.
 type ResetUserRateLimitInput struct {
-	ID string `path:"id" doc:"User ID."`
+	ID string `path:"id" pattern:"^[0-9]+$" maxLength:"20" doc:"User ID."`
 }
 
 // ResetUserRateLimitOutput wraps the rate-limit reset response.

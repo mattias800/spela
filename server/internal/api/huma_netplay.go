@@ -50,7 +50,7 @@ type ListNetplaySessionsOutput struct {
 
 // GetNetplaySessionInput is the input for GET /api/netplay/sessions/{id}.
 type GetNetplaySessionInput struct {
-	ID string `path:"id" doc:"Netplay session ID."`
+	ID string `path:"id" pattern:"^[0-9]+$" maxLength:"20" doc:"Netplay session ID."`
 }
 
 // GetNetplaySessionOutput wraps the session response.
@@ -60,7 +60,7 @@ type GetNetplaySessionOutput struct {
 
 // DeleteNetplaySessionInput is the input for DELETE /api/netplay/sessions/{id}.
 type DeleteNetplaySessionInput struct {
-	ID string `path:"id" doc:"Netplay session ID."`
+	ID string `path:"id" pattern:"^[0-9]+$" maxLength:"20" doc:"Netplay session ID."`
 }
 
 // DeleteNetplaySessionOutput wraps the delete success message.
@@ -70,7 +70,7 @@ type DeleteNetplaySessionOutput struct {
 
 // LeaveNetplaySessionInput is the input for POST /api/netplay/sessions/{id}/leave.
 type LeaveNetplaySessionInput struct {
-	ID string `path:"id" doc:"Netplay session ID."`
+	ID string `path:"id" pattern:"^[0-9]+$" maxLength:"20" doc:"Netplay session ID."`
 }
 
 // LeaveNetplaySessionResponse is the wire format for the leave endpoint.
@@ -86,7 +86,7 @@ type LeaveNetplaySessionOutput struct {
 
 // UpdateNetplaySettingsInput is the input for PUT /api/netplay/sessions/{id}/settings.
 type UpdateNetplaySettingsInput struct {
-	ID   string `path:"id" doc:"Netplay session ID."`
+	ID   string `path:"id" pattern:"^[0-9]+$" maxLength:"20" doc:"Netplay session ID."`
 	Body UpdateNetplaySettingsRequest
 }
 
@@ -97,7 +97,7 @@ type UpdateNetplaySettingsOutput struct {
 
 // NetplayInviteUserInput is the input for POST /api/netplay/sessions/{id}/invites.
 type NetplayInviteUserInput struct {
-	ID   string `path:"id" doc:"Netplay session ID."`
+	ID   string `path:"id" pattern:"^[0-9]+$" maxLength:"20" doc:"Netplay session ID."`
 	Body NetplayInviteUserRequest
 }
 
@@ -110,7 +110,7 @@ type NetplayInviteUserOutput struct {
 // The path parameter is the numeric invite ID (kept at its historical
 // inviteId name to preserve wire compatibility with existing clients).
 type AcceptNetplayInviteByCodeInput struct {
-	Code string `path:"inviteId" doc:"Invite ID."`
+	Code string `path:"inviteId" pattern:"^[0-9]+$" maxLength:"20" doc:"Invite ID."`
 }
 
 // AcceptNetplayInviteByCodeOutput wraps the accepted invite response.
@@ -120,7 +120,7 @@ type AcceptNetplayInviteByCodeOutput struct {
 
 // DeclineNetplayInviteByCodeInput is the input for POST /api/netplay/invites/{inviteId}/decline.
 type DeclineNetplayInviteByCodeInput struct {
-	Code string `path:"inviteId" doc:"Invite ID."`
+	Code string `path:"inviteId" pattern:"^[0-9]+$" maxLength:"20" doc:"Invite ID."`
 }
 
 // DeclineNetplayInviteByCodeOutput wraps the decline success message.
@@ -130,7 +130,7 @@ type DeclineNetplayInviteByCodeOutput struct {
 
 // ListNetplaySessionInvitesInput is the input for GET /api/netplay/sessions/{id}/invites.
 type ListNetplaySessionInvitesInput struct {
-	ID string `path:"id" doc:"Netplay session ID."`
+	ID string `path:"id" pattern:"^[0-9]+$" maxLength:"20" doc:"Netplay session ID."`
 }
 
 // ListNetplaySessionInvitesOutput wraps the session invites list.

@@ -136,14 +136,14 @@ func streamBytesInline(data []byte, contentType string) *huma.StreamResponse {
 
 // CoreDownloadInput is the input for GET /api/cores/{id}/download.
 type CoreDownloadInput struct {
-	ID       string `path:"id" doc:"Core ID."`
+	ID       string `path:"id" pattern:"^[0-9]+$" maxLength:"20" doc:"Core ID."`
 	Platform string `query:"platform" required:"false" default:"linux" doc:"Target platform: linux, macos, windows, android."`
 	Sha256   string `query:"sha256" required:"false" doc:"Optional hex sha256 of a historical core binary. When set, serves that specific version from the history snapshot; returns 404 if it's been pruned. Defaults to serving the current binary."`
 }
 
 // BiosDownloadInput is the input for GET /api/bios/{filename}.
 type BiosDownloadInput struct {
-	Filename string `path:"filename" doc:"BIOS file name."`
+	Filename string `path:"filename" pattern:"^[A-Za-z0-9._()\\[\\] +-]+$" maxLength:"128" doc:"BIOS file name."`
 }
 
 // BiosArchiveDownloadInput is the input for GET /api/bios/archive/{filename}.
@@ -151,61 +151,61 @@ type BiosDownloadInput struct {
 // server returns a zip of `<biosDir>/<SubDir>/` so the client can extract
 // the directory tree on the device.
 type BiosArchiveDownloadInput struct {
-	Filename string `path:"filename" doc:"Sentinel filename of the bundle entry (matches registry FileName)."`
+	Filename string `path:"filename" pattern:"^[A-Za-z0-9._()\\[\\] +-]+$" maxLength:"128" doc:"Sentinel filename of the bundle entry (matches registry FileName)."`
 }
 
 // SessionSaveDownloadInput is the input for GET /api/sessions/{id}/saves/{saveId}.
 type SessionSaveDownloadInput struct {
-	ID     string `path:"id" doc:"Session ID."`
-	SaveID string `path:"saveId" doc:"Save state ID."`
+	ID     string `path:"id" pattern:"^[0-9]+$" maxLength:"20" doc:"Session ID."`
+	SaveID string `path:"saveId" pattern:"^[0-9]+$" maxLength:"20" doc:"Save state ID."`
 }
 
 // SessionAutoSaveDownloadInput is the input for GET /api/sessions/{id}/saves/auto.
 type SessionAutoSaveDownloadInput struct {
-	ID string `path:"id" doc:"Session ID."`
+	ID string `path:"id" pattern:"^[0-9]+$" maxLength:"20" doc:"Session ID."`
 }
 
 // SessionSlotSaveDownloadInput is the input for GET /api/sessions/{id}/saves/slot/{slot}.
 type SessionSlotSaveDownloadInput struct {
-	ID   string `path:"id" doc:"Session ID."`
-	Slot string `path:"slot" doc:"Save slot number 1-10."`
+	ID   string `path:"id" pattern:"^[0-9]+$" maxLength:"20" doc:"Session ID."`
+	Slot string `path:"slot" pattern:"^[0-9]+$" maxLength:"20" doc:"Save slot number 1-10."`
 }
 
 // SessionSaveDirBundleDownloadInput is the input for GET /api/sessions/{id}/save-dir.
 // Returns the previously-uploaded tarball or 404 if the session has no bundle.
 type SessionSaveDirBundleDownloadInput struct {
-	ID string `path:"id" doc:"Session ID."`
+	ID string `path:"id" pattern:"^[0-9]+$" maxLength:"20" doc:"Session ID."`
 }
 
 // SessionSRAMDownloadInput is the input for GET /api/sessions/{id}/sram.
 type SessionSRAMDownloadInput struct {
-	ID string `path:"id" doc:"Session ID."`
+	ID string `path:"id" pattern:"^[0-9]+$" maxLength:"20" doc:"Session ID."`
 }
 
 // SharedSaveDownloadInput is the input for GET /api/games/{id}/shared-saves/{saveId}/download.
 type SharedSaveDownloadInput struct {
-	ID     string `path:"id" doc:"Game ID."`
-	SaveID string `path:"saveId" doc:"Shared save state ID."`
+	ID     string `path:"id" pattern:"^[0-9]+$" maxLength:"20" doc:"Game ID."`
+	SaveID string `path:"saveId" pattern:"^[0-9]+$" maxLength:"20" doc:"Shared save state ID."`
 }
 
 // SharedSessionSaveDownloadInput is the input for
 // GET /api/shared-sessions/{id}/saves/{saveId}.
 type SharedSessionSaveDownloadInput struct {
-	ID     string `path:"id" doc:"Shared session ID."`
-	SaveID string `path:"saveId" doc:"Shared session save ID."`
+	ID     string `path:"id" pattern:"^[0-9]+$" maxLength:"20" doc:"Shared session ID."`
+	SaveID string `path:"saveId" pattern:"^[0-9]+$" maxLength:"20" doc:"Shared session save ID."`
 }
 
 // SharedSessionAutoSaveDownloadInput is the input for
 // GET /api/shared-sessions/{id}/saves/auto.
 type SharedSessionAutoSaveDownloadInput struct {
-	ID string `path:"id" doc:"Shared session ID."`
+	ID string `path:"id" pattern:"^[0-9]+$" maxLength:"20" doc:"Shared session ID."`
 }
 
 // ConsoleAssetInput is the input for the public console-image endpoints
 // (icon / logo / logo.png / preview-screenshot). The id resolves a console
 // by abbreviation or code.
 type ConsoleAssetInput struct {
-	ID string `path:"id" doc:"Console abbreviation or code."`
+	ID string `path:"id" pattern:"^[a-zA-Z0-9_-]+$" maxLength:"32" doc:"Console abbreviation or code."`
 }
 
 // BrandingLogoInput is the empty input for GET /api/branding/logo.
@@ -215,22 +215,22 @@ type BrandingLogoInput struct{}
 // The filename is captured but unused — it lets the client request the file
 // under a download-friendly name without changing the served bytes.
 type GameDownloadInput struct {
-	ID       string `path:"id" doc:"Game ID."`
-	Filename string `path:"filename" required:"false" doc:"Optional download filename — server ignores it; lets clients control the saved filename."`
+	ID       string `path:"id" pattern:"^[0-9]+$" maxLength:"20" doc:"Game ID."`
+	Filename string `path:"filename" required:"false" pattern:"^[A-Za-z0-9._()\\[\\] +-]+$" maxLength:"128" doc:"Optional download filename — server ignores it; lets clients control the saved filename."`
 	Format   string `query:"format" required:"false" doc:"'zip' to force ZIP packaging for multi-file disc games. Default is .tar (or single-file passthrough)."`
 }
 
 // GameDiscDownloadInput is the input for GET
 // /api/games/{id}/discs/{discNumber}/download.
 type GameDiscDownloadInput struct {
-	ID         string `path:"id" doc:"Game ID."`
-	DiscNumber string `path:"discNumber" doc:"Disc number (1-based)."`
+	ID         string `path:"id" pattern:"^[0-9]+$" maxLength:"20" doc:"Game ID."`
+	DiscNumber string `path:"discNumber" pattern:"^[0-9]+$" maxLength:"20" doc:"Disc number (1-based)."`
 	Format     string `query:"format" required:"false" doc:"'zip' for ZIP packaging (used by EmulatorJS), default is .tar."`
 }
 
 // ChallengeAssetInput is the input for the two challenge download endpoints.
 type ChallengeAssetInput struct {
-	ID string `path:"id" doc:"Challenge ID."`
+	ID string `path:"id" pattern:"^[0-9]+$" maxLength:"20" doc:"Challenge ID."`
 }
 
 // --- Registration ------------------------------------------------------------
@@ -496,8 +496,12 @@ func RegisterDownloadRoutes(
 
 // HumaDownloadCore is the huma implementation of GET /api/cores/{id}/download.
 func (h *CoreHandler) HumaDownloadCore(_ context.Context, in *CoreDownloadInput) (*huma.StreamResponse, error) {
+	parsedID, err := strconv.ParseUint(in.ID, 10, 64)
+	if err != nil {
+		return nil, huma.Error400BadRequest("invalid core ID")
+	}
 	var core db.Core
-	if err := h.DB.First(&core, in.ID).Error; err != nil {
+	if err := h.DB.First(&core, uint(parsedID)).Error; err != nil {
 		return nil, huma.Error404NotFound("core not found")
 	}
 

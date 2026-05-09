@@ -32,7 +32,7 @@ type ListDevicesOutput struct {
 
 // UpdateDeviceInput is the input for PUT /api/user/devices/{id}.
 type UpdateDeviceInput struct {
-	ID   string `path:"id" doc:"Device ID."`
+	ID   string `path:"id" pattern:"^[0-9]+$" maxLength:"20" doc:"Device ID."`
 	Body UpdateDeviceRequest
 }
 
@@ -43,7 +43,7 @@ type UpdateDeviceOutput struct {
 
 // DeleteDeviceInput is the input for DELETE /api/user/devices/{id}.
 type DeleteDeviceInput struct {
-	ID string `path:"id" doc:"Device ID."`
+	ID string `path:"id" pattern:"^[0-9]+$" maxLength:"20" doc:"Device ID."`
 }
 
 // DeleteDeviceOutput wraps the delete success message.
@@ -53,7 +53,7 @@ type DeleteDeviceOutput struct {
 
 // GetDevicePreferencesInput is the input for GET /api/user/devices/{id}/preferences.
 type GetDevicePreferencesInput struct {
-	ID string `path:"id" doc:"Device ID."`
+	ID string `path:"id" pattern:"^[0-9]+$" maxLength:"20" doc:"Device ID."`
 }
 
 // DevicePreferencesResponse is the wire format for device preferences.
@@ -68,7 +68,7 @@ type GetDevicePreferencesOutput struct {
 
 // UpdateDevicePreferencesInput is the input for PUT /api/user/devices/{id}/preferences.
 type UpdateDevicePreferencesInput struct {
-	ID   string `path:"id" doc:"Device ID."`
+	ID   string `path:"id" pattern:"^[0-9]+$" maxLength:"20" doc:"Device ID."`
 	Body UpdateDevicePreferencesRequest
 }
 
@@ -79,7 +79,7 @@ type UpdateDevicePreferencesOutput struct {
 
 // AdminGetUserDevicesInput is the input for GET /api/admin/users/{id}/devices.
 type AdminGetUserDevicesInput struct {
-	ID string `path:"id" doc:"User ID."`
+	ID string `path:"id" pattern:"^[0-9]+$" maxLength:"20" doc:"User ID."`
 }
 
 // AdminGetUserDevicesOutput wraps the list of devices for a user (admin view).

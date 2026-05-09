@@ -38,7 +38,7 @@ type ListUploadsOutput struct {
 
 // SetUploadConsoleInput is the input for POST /api/admin/uploads/{id}/console.
 type SetUploadConsoleInput struct {
-	ID   string `path:"id" doc:"Staged upload ID."`
+	ID   string `path:"id" pattern:"^[0-9]+$" maxLength:"20" doc:"Staged upload ID."`
 	Body SetUploadConsoleRequest
 }
 
@@ -49,7 +49,7 @@ type SetUploadConsoleOutput struct {
 
 // ScrapeUploadInput is the input for POST /api/admin/uploads/{id}/scrape.
 type ScrapeUploadInput struct {
-	ID string `path:"id" doc:"Staged upload ID."`
+	ID string `path:"id" pattern:"^[0-9]+$" maxLength:"20" doc:"Staged upload ID."`
 }
 
 // ScrapeUploadOutput wraps the scraped upload response.
@@ -67,7 +67,7 @@ type ScrapeAllUploadsOutput struct {
 
 // AcceptUploadInput is the input for POST /api/admin/uploads/{id}/accept.
 type AcceptUploadInput struct {
-	ID string `path:"id" doc:"Staged upload ID."`
+	ID string `path:"id" pattern:"^[0-9]+$" maxLength:"20" doc:"Staged upload ID."`
 }
 
 // AcceptUploadOutput wraps the accepted game response.
@@ -77,7 +77,7 @@ type AcceptUploadOutput struct {
 
 // RejectUploadInput is the input for POST /api/admin/uploads/{id}/reject.
 type RejectUploadInput struct {
-	ID string `path:"id" doc:"Staged upload ID."`
+	ID string `path:"id" pattern:"^[0-9]+$" maxLength:"20" doc:"Staged upload ID."`
 }
 
 // RejectUploadOutput wraps the reject success message.

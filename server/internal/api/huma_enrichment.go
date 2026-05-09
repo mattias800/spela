@@ -26,7 +26,7 @@ type ListThemesOutput struct {
 
 // ListThemeGamesInput is the input for GET /api/themes/{id}/games.
 type ListThemeGamesInput struct {
-	ID       string `path:"id" doc:"IGDB theme ID."`
+	ID       string `path:"id" pattern:"^[0-9]+$" maxLength:"20" doc:"IGDB theme ID."`
 	Page     int    `query:"page" doc:"1-based page number (defaults to 1)."`
 	PageSize int    `query:"pageSize" doc:"Page size (defaults to 20, clamped to 1-100)."`
 }
@@ -48,7 +48,7 @@ type ListKeywordsOutput struct {
 
 // ListKeywordGamesInput is the input for GET /api/keywords/{id}/games.
 type ListKeywordGamesInput struct {
-	ID       string `path:"id" doc:"IGDB keyword ID."`
+	ID       string `path:"id" pattern:"^[0-9]+$" maxLength:"20" doc:"IGDB keyword ID."`
 	Page     int    `query:"page" doc:"1-based page number."`
 	PageSize int    `query:"pageSize" doc:"Page size."`
 }
@@ -96,7 +96,7 @@ type GetFranchiseDetailOutput struct {
 
 // ListFranchiseGamesInput is the input for GET /api/franchises/{id}/games.
 type ListFranchiseGamesInput struct {
-	ID       string `path:"id" doc:"IGDB franchise ID."`
+	ID       string `path:"id" pattern:"^[0-9]+$" maxLength:"20" doc:"IGDB franchise ID."`
 	Page     int    `query:"page" doc:"1-based page number."`
 	PageSize int    `query:"pageSize" doc:"Page size."`
 }
@@ -108,7 +108,7 @@ type ListFranchiseGamesOutput struct {
 
 // GetGameSeriesInput is the input for GET /api/games/{id}/series.
 type GetGameSeriesInput struct {
-	ID string `path:"id" doc:"Game ID."`
+	ID string `path:"id" pattern:"^[0-9]+$" maxLength:"20" doc:"Game ID."`
 }
 
 // GetGameSeriesOutput wraps the game series list body.
@@ -118,7 +118,7 @@ type GetGameSeriesOutput struct {
 
 // GetGameFranchisesInput is the input for GET /api/games/{id}/franchises.
 type GetGameFranchisesInput struct {
-	ID string `path:"id" doc:"Game ID."`
+	ID string `path:"id" pattern:"^[0-9]+$" maxLength:"20" doc:"Game ID."`
 }
 
 // GetGameFranchisesOutput wraps the game franchises list body.

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/danielgtaylor/huma/v2"
@@ -23,7 +24,7 @@ type ListCoresOutput struct {
 
 // CoreManifestInput is the input for GET /api/cores/{id}/manifest.
 type CoreManifestInput struct {
-	ID uint `path:"id" doc:"Core row ID (not core name)."`
+	ID string `path:"id" pattern:"^[0-9]+$" maxLength:"20" doc:"Core row ID (not core name)."`
 }
 
 // CoreManifestResponse is the lightweight fingerprint payload players fetch
@@ -44,7 +45,7 @@ type CoreManifestOutput struct {
 
 // RefreshCoreInput is the input for POST /api/cores/{id}/refresh.
 type RefreshCoreInput struct {
-	ID       uint   `path:"id" doc:"Core row ID (not core name)."`
+	ID       string `path:"id" pattern:"^[0-9]+$" maxLength:"20" doc:"Core row ID (not core name)."`
 	Platform string `query:"platform" required:"false" doc:"Platform whose on-disk binary to re-hash (linux|macos|windows|android). Defaults to linux — the default server host platform."`
 }
 
@@ -121,8 +122,12 @@ func (h *CoreHandler) HumaListCores(_ context.Context, _ *ListCoresInput) (*List
 
 // HumaGetCoreManifest is the huma handler for GET /api/cores/{id}/manifest.
 func (h *CoreHandler) HumaGetCoreManifest(_ context.Context, in *CoreManifestInput) (*CoreManifestOutput, error) {
+	parsedID, err := strconv.ParseUint(in.ID, 10, 64)
+	if err != nil {
+		return nil, huma.Error400BadRequest("invalid core ID")
+	}
 	var core db.Core
-	if err := h.DB.First(&core, in.ID).Error; err != nil {
+	if err := h.DB.First(&core, uint(parsedID)).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
 			return nil, huma.Error404NotFound("core not found")
 		}
@@ -140,8 +145,12 @@ func (h *CoreHandler) HumaGetCoreManifest(_ context.Context, in *CoreManifestInp
 // Admin-only. Re-hashes the on-disk binary, updates the DB row, and
 // emits an audit event when the sha256 changed.
 func (h *CoreHandler) HumaRefreshCore(_ context.Context, in *RefreshCoreInput) (*RefreshCoreOutput, error) {
+	parsedID, err := strconv.ParseUint(in.ID, 10, 64)
+	if err != nil {
+		return nil, huma.Error400BadRequest("invalid core ID")
+	}
 	var core db.Core
-	if err := h.DB.First(&core, in.ID).Error; err != nil {
+	if err := h.DB.First(&core, uint(parsedID)).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
 			return nil, huma.Error404NotFound("core not found")
 		}

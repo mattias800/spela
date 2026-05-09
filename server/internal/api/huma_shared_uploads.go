@@ -26,7 +26,7 @@ type SharedSaveUploadBody struct {
 
 // SharedSaveUploadInput is the input for POST /api/games/{id}/shared-saves.
 type SharedSaveUploadInput struct {
-	ID      string `path:"id" doc:"Game ID."`
+	ID      string `path:"id" pattern:"^[0-9]+$" maxLength:"20" doc:"Game ID."`
 	RawBody huma.MultipartFormFiles[SharedSaveUploadBody]
 }
 
@@ -48,7 +48,7 @@ type SharedSessionUploadSaveBody struct {
 // SharedSessionUploadSaveInput wraps the path parameter and multipart body
 // plus the X-Turn-Token header that authorises the upload.
 type SharedSessionUploadSaveInput struct {
-	ID        string `path:"id" doc:"Shared session ID."`
+	ID        string `path:"id" pattern:"^[0-9]+$" maxLength:"20" doc:"Shared session ID."`
 	TurnToken string `header:"X-Turn-Token" required:"false" doc:"Token proving the caller currently holds the turn (returned by joinSharedSession / takeTurn)."`
 	RawBody   huma.MultipartFormFiles[SharedSessionUploadSaveBody]
 }

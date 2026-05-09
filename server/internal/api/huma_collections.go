@@ -36,7 +36,7 @@ type ListCollectionsOutput struct {
 
 // GetCollectionInput is the input for GET /api/collections/{id}.
 type GetCollectionInput struct {
-	ID string `path:"id" doc:"Collection ID."`
+	ID string `path:"id" pattern:"^[0-9]+$" maxLength:"20" doc:"Collection ID."`
 }
 
 // GetCollectionOutput wraps the collection detail response.
@@ -46,7 +46,7 @@ type GetCollectionOutput struct {
 
 // UpdateCollectionInput is the input for PUT /api/collections/{id}.
 type UpdateCollectionInput struct {
-	ID   string `path:"id" doc:"Collection ID."`
+	ID   string `path:"id" pattern:"^[0-9]+$" maxLength:"20" doc:"Collection ID."`
 	Body UpdateCollectionRequest
 }
 
@@ -57,7 +57,7 @@ type UpdateCollectionOutput struct {
 
 // DeleteCollectionInput is the input for DELETE /api/collections/{id}.
 type DeleteCollectionInput struct {
-	ID string `path:"id" doc:"Collection ID."`
+	ID string `path:"id" pattern:"^[0-9]+$" maxLength:"20" doc:"Collection ID."`
 }
 
 // DeleteCollectionOutput wraps the delete success message.
@@ -67,7 +67,7 @@ type DeleteCollectionOutput struct {
 
 // AddGameToCollectionInput is the input for POST /api/collections/{id}/games.
 type AddGameToCollectionInput struct {
-	ID   string `path:"id" doc:"Collection ID."`
+	ID   string `path:"id" pattern:"^[0-9]+$" maxLength:"20" doc:"Collection ID."`
 	Body AddGameToCollectionRequest
 }
 
@@ -78,8 +78,8 @@ type AddGameToCollectionOutput struct {
 
 // RemoveGameFromCollectionInput is the input for DELETE /api/collections/{id}/games/{gameId}.
 type RemoveGameFromCollectionInput struct {
-	ID     string `path:"id" doc:"Collection ID."`
-	GameID string `path:"gameId" doc:"Game ID."`
+	ID     string `path:"id" pattern:"^[0-9]+$" maxLength:"20" doc:"Collection ID."`
+	GameID string `path:"gameId" pattern:"^[0-9]+$" maxLength:"20" doc:"Game ID."`
 }
 
 // RemoveGameFromCollectionOutput wraps the remove-game success message.

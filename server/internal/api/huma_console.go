@@ -24,7 +24,7 @@ type ListConsolesOutput struct {
 
 // ListConsoleGamesInput is the input for GET /api/consoles/{id}/games.
 type ListConsoleGamesInput struct {
-	ID             string `path:"id" doc:"Console abbreviation (e.g. 'snes') or code."`
+	ID             string `path:"id" pattern:"^[a-zA-Z0-9_-]+$" maxLength:"32" doc:"Console abbreviation (e.g. 'snes') or code."`
 	Page           int    `query:"page" default:"1" minimum:"1" doc:"1-based page number."`
 	PageSize       int    `query:"pageSize" default:"50" minimum:"1" maximum:"200" doc:"Page size."`
 	SortBy         string `query:"sortBy" default:"title" enum:"title,created_at,file_size,rating" doc:"Sort column."`
@@ -43,7 +43,7 @@ type ListConsoleGamesOutput struct {
 
 // GetTopRatedInput is the input for GET /api/consoles/{id}/top-rated.
 type GetTopRatedInput struct {
-	ID string `path:"id" doc:"Console abbreviation (e.g. 'snes') or code."`
+	ID string `path:"id" pattern:"^[a-zA-Z0-9_-]+$" maxLength:"32" doc:"Console abbreviation (e.g. 'snes') or code."`
 }
 
 // TopRatedListOutput wraps the top-rated game list for the huma response envelope.
@@ -57,7 +57,7 @@ type GetTopRatedGlobalInput struct{}
 // TopListInput is the input for /api/consoles/{id}/top-lists/* endpoints that
 // are scoped to a single console.
 type TopListInput struct {
-	ID string `path:"id" doc:"Console abbreviation (e.g. 'snes') or code."`
+	ID string `path:"id" pattern:"^[a-zA-Z0-9_-]+$" maxLength:"32" doc:"Console abbreviation (e.g. 'snes') or code."`
 }
 
 // TopListGlobalInput is the input for the global /api/top-lists/* endpoints.

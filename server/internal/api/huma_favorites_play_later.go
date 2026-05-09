@@ -52,7 +52,7 @@ type ListPlayLaterOutput struct {
 
 // AddToPlayLaterInput is the input for POST /api/user/play-later/{gameId}.
 type AddToPlayLaterInput struct {
-	GameID string `path:"gameId" doc:"Game ID."`
+	GameID string `path:"gameId" pattern:"^[0-9]+$" maxLength:"20" doc:"Game ID."`
 }
 
 // AddToPlayLaterOutput uses a dynamic status code — 201 when we added a new
@@ -65,7 +65,7 @@ type AddToPlayLaterOutput struct {
 
 // RemoveFromPlayLaterInput is the input for DELETE /api/user/play-later/{gameId}.
 type RemoveFromPlayLaterInput struct {
-	GameID string `path:"gameId" doc:"Game ID."`
+	GameID string `path:"gameId" pattern:"^[0-9]+$" maxLength:"20" doc:"Game ID."`
 }
 
 // RemoveFromPlayLaterOutput wraps the delete-from-play-later success message.

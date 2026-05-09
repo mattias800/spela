@@ -22,7 +22,7 @@ import (
 
 // UpdateGameMetadataInput is the input for POST /api/admin/games/{id}/metadata.
 type UpdateGameMetadataInput struct {
-	ID   string `path:"id" doc:"Game ID."`
+	ID   string `path:"id" pattern:"^[0-9]+$" maxLength:"20" doc:"Game ID."`
 	Body UpdateGameMetadataRequest
 }
 
@@ -33,7 +33,7 @@ type UpdateGameMetadataOutput struct {
 
 // UpdateVerificationTagInput is the input for PUT /api/admin/games/{id}/verification-tag.
 type UpdateVerificationTagInput struct {
-	ID   string `path:"id" doc:"Game ID."`
+	ID   string `path:"id" pattern:"^[0-9]+$" maxLength:"20" doc:"Game ID."`
 	Body UpdateVerificationTagRequest
 }
 
@@ -51,7 +51,7 @@ type UpdateVerificationTagOutput struct {
 
 // GetGameCoversInput is the input for GET /api/admin/games/{id}/covers.
 type GetGameCoversInput struct {
-	ID string `path:"id" doc:"Game ID."`
+	ID string `path:"id" pattern:"^[0-9]+$" maxLength:"20" doc:"Game ID."`
 }
 
 // GameCoversResponse is the wire format for the game covers response.
@@ -67,7 +67,7 @@ type GetGameCoversOutput struct {
 
 // SetGameCoverInput is the input for PUT /api/admin/games/{id}/covers.
 type SetGameCoverInput struct {
-	ID   string `path:"id" doc:"Game ID."`
+	ID   string `path:"id" pattern:"^[0-9]+$" maxLength:"20" doc:"Game ID."`
 	Body SetGameCoverRequest
 }
 
@@ -78,7 +78,7 @@ type SetGameCoverOutput struct {
 
 // GetGameHeroesInput is the input for GET /api/admin/games/{id}/heroes.
 type GetGameHeroesInput struct {
-	ID string `path:"id" doc:"Game ID."`
+	ID string `path:"id" pattern:"^[0-9]+$" maxLength:"20" doc:"Game ID."`
 }
 
 // GameHeroesResponse is the wire format for the hero options response.
@@ -94,7 +94,7 @@ type GetGameHeroesOutput struct {
 
 // SetGameHeroInput is the input for PUT /api/admin/games/{id}/heroes.
 type SetGameHeroInput struct {
-	ID   string `path:"id" doc:"Game ID."`
+	ID   string `path:"id" pattern:"^[0-9]+$" maxLength:"20" doc:"Game ID."`
 	Body SetGameHeroRequest
 }
 
@@ -107,7 +107,7 @@ type SetGameHeroOutput struct {
 
 // SearchIGDBInput is the input for GET /api/admin/games/{id}/igdb-search.
 type SearchIGDBInput struct {
-	ID    string `path:"id" doc:"Game ID."`
+	ID    string `path:"id" pattern:"^[0-9]+$" maxLength:"20" doc:"Game ID."`
 	Query string `query:"q" doc:"Search query."`
 }
 
@@ -118,7 +118,7 @@ type SearchIGDBOutput struct {
 
 // ApplyIGDBMatchInput is the input for POST /api/admin/games/{id}/igdb-match.
 type ApplyIGDBMatchInput struct {
-	ID   string `path:"id" doc:"Game ID."`
+	ID   string `path:"id" pattern:"^[0-9]+$" maxLength:"20" doc:"Game ID."`
 	Body ApplyIGDBMatchRequest
 }
 
@@ -180,7 +180,7 @@ type ListDeletedUsersOutput struct {
 
 // HardDeleteUserInput is the input for DELETE /api/admin/users/{id}/permanent.
 type HardDeleteUserInput struct {
-	ID string `path:"id" doc:"User ID."`
+	ID string `path:"id" pattern:"^[0-9]+$" maxLength:"20" doc:"User ID."`
 }
 
 // HardDeleteUserOutput wraps the hard-delete success message.

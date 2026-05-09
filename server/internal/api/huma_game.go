@@ -60,7 +60,7 @@ type ListGamesOutput struct {
 
 // GetGameInput is the input for GET /api/games/{id}.
 type GetGameInput struct {
-	ID string `path:"id" doc:"Game ID."`
+	ID string `path:"id" pattern:"^[0-9]+$" maxLength:"20" doc:"Game ID."`
 }
 
 // GetGameOutput wraps a single game response.
@@ -85,7 +85,7 @@ type GetRecommendedCoreOutput struct {
 
 // ScrapeIfNeededInput is the input for POST /api/games/{id}/scrape-if-needed.
 type ScrapeIfNeededInput struct {
-	ID string `path:"id" doc:"Game ID."`
+	ID string `path:"id" pattern:"^[0-9]+$" maxLength:"20" doc:"Game ID."`
 }
 
 // StatusMessageResponse is the {status: ...} wire format used by the scrape /
@@ -105,7 +105,7 @@ type ScrapeIfNeededOutput struct {
 
 // UpdateGamePlayTimeInput is the input for POST /api/games/{id}/play-time.
 type UpdateGamePlayTimeInput struct {
-	ID   string `path:"id" doc:"Game ID."`
+	ID   string `path:"id" pattern:"^[0-9]+$" maxLength:"20" doc:"Game ID."`
 	Body UpdateGamePlayTimeRequest
 }
 
@@ -122,7 +122,7 @@ type UpdateGamePlayTimeOutput struct {
 
 // StopPlayingInput is the input for DELETE /api/games/{id}/play-time.
 type StopPlayingInput struct {
-	ID string `path:"id" doc:"Game ID (path placeholder; not used server-side)."`
+	ID string `path:"id" pattern:"^[0-9]+$" maxLength:"20" doc:"Game ID (path placeholder; not used server-side)."`
 }
 
 // StopPlayingOutput wraps the stop-playing status.

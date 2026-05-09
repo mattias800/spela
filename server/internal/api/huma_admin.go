@@ -77,7 +77,7 @@ type AdminCreateUserOutput struct {
 
 // AdminUpdateUserInput is the input for PUT /api/admin/users/{id}.
 type AdminUpdateUserInput struct {
-	ID   string `path:"id" doc:"User ID."`
+	ID   string `path:"id" pattern:"^[0-9]+$" maxLength:"20" doc:"User ID."`
 	Body AdminUpdateUserRequest
 }
 
@@ -88,7 +88,7 @@ type AdminUpdateUserOutput struct {
 
 // AdminDeleteUserInput is the input for DELETE /api/admin/users/{id}.
 type AdminDeleteUserInput struct {
-	ID string `path:"id" doc:"User ID."`
+	ID string `path:"id" pattern:"^[0-9]+$" maxLength:"20" doc:"User ID."`
 }
 
 // AdminDeleteUserOutput wraps the delete success message.

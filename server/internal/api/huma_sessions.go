@@ -25,7 +25,7 @@ func humaFilepathBase(p string) string {
 
 // ListGameSessionsInput is the input for GET /api/games/{id}/sessions.
 type ListGameSessionsInput struct {
-	ID string `path:"id" doc:"Game ID."`
+	ID string `path:"id" pattern:"^[0-9]+$" maxLength:"20" doc:"Game ID."`
 }
 
 // ListGameSessionsOutput wraps the list response.
@@ -35,7 +35,7 @@ type ListGameSessionsOutput struct {
 
 // GetSessionInput is the input for GET /api/sessions/{id}.
 type GetSessionInput struct {
-	ID string `path:"id" doc:"Session ID."`
+	ID string `path:"id" pattern:"^[0-9]+$" maxLength:"20" doc:"Session ID."`
 }
 
 // GetSessionOutput wraps a single session response.
@@ -45,7 +45,7 @@ type GetSessionOutput struct {
 
 // CreateSessionInput is the input for POST /api/games/{id}/sessions.
 type CreateSessionInput struct {
-	ID   string `path:"id" doc:"Game ID."`
+	ID   string `path:"id" pattern:"^[0-9]+$" maxLength:"20" doc:"Game ID."`
 	Body CreateSessionRequest
 }
 
@@ -57,8 +57,8 @@ type CreateSessionOutput struct {
 // CreateSessionFromSharedSaveInput is the input for POST
 // /api/games/{id}/sessions/from-shared-save/{saveId}.
 type CreateSessionFromSharedSaveInput struct {
-	ID     string `path:"id" doc:"Game ID."`
-	SaveID string `path:"saveId" doc:"Shared save ID to seed the new session from."`
+	ID     string `path:"id" pattern:"^[0-9]+$" maxLength:"20" doc:"Game ID."`
+	SaveID string `path:"saveId" pattern:"^[0-9]+$" maxLength:"20" doc:"Shared save ID to seed the new session from."`
 }
 
 // CreateSessionFromSharedSaveOutput wraps the created session response (201).
@@ -68,7 +68,7 @@ type CreateSessionFromSharedSaveOutput struct {
 
 // UpdateSessionInput is the input for PUT /api/sessions/{id}.
 type UpdateSessionInput struct {
-	ID   string `path:"id" doc:"Session ID."`
+	ID   string `path:"id" pattern:"^[0-9]+$" maxLength:"20" doc:"Session ID."`
 	Body UpdateSessionRequest
 }
 
@@ -79,7 +79,7 @@ type UpdateSessionOutput struct {
 
 // DeleteSessionInput is the input for DELETE /api/sessions/{id}.
 type DeleteSessionInput struct {
-	ID string `path:"id" doc:"Session ID."`
+	ID string `path:"id" pattern:"^[0-9]+$" maxLength:"20" doc:"Session ID."`
 }
 
 // DeleteSessionOutput wraps the delete success message.
@@ -94,7 +94,7 @@ type DeleteSessionOutput struct {
 // specific save instead of the most recent; 0 (the default for a missing
 // query param) means "use the most-recent save".
 type DuplicateSessionInput struct {
-	ID     string `path:"id" doc:"Session ID to clone."`
+	ID     string `path:"id" pattern:"^[0-9]+$" maxLength:"20" doc:"Session ID to clone."`
 	SaveID uint   `query:"saveId" required:"false" doc:"Optional save ID to clone from. Defaults to the most recent save when omitted or zero."`
 	Body   *DuplicateSessionRequest
 }
@@ -106,7 +106,7 @@ type DuplicateSessionOutput struct {
 
 // ListSessionSavesInput is the input for GET /api/sessions/{id}/saves and the slot variant.
 type ListSessionSavesInput struct {
-	ID string `path:"id" doc:"Session ID."`
+	ID string `path:"id" pattern:"^[0-9]+$" maxLength:"20" doc:"Session ID."`
 }
 
 // ListSessionSavesOutput wraps the saves list.
@@ -116,8 +116,8 @@ type ListSessionSavesOutput struct {
 
 // DeleteSessionSaveInput is the input for DELETE /api/sessions/{id}/saves/{saveId}.
 type DeleteSessionSaveInput struct {
-	ID     string `path:"id" doc:"Session ID."`
-	SaveID string `path:"saveId" doc:"Save ID."`
+	ID     string `path:"id" pattern:"^[0-9]+$" maxLength:"20" doc:"Session ID."`
+	SaveID string `path:"saveId" pattern:"^[0-9]+$" maxLength:"20" doc:"Save ID."`
 }
 
 // DeleteSessionSaveOutput wraps the delete success message.
@@ -127,8 +127,8 @@ type DeleteSessionSaveOutput struct {
 
 // UpdateSessionSaveInput is the input for PUT /api/sessions/{id}/saves/{saveId}.
 type UpdateSessionSaveInput struct {
-	ID     string `path:"id" doc:"Session ID."`
-	SaveID string `path:"saveId" doc:"Save ID."`
+	ID     string `path:"id" pattern:"^[0-9]+$" maxLength:"20" doc:"Session ID."`
+	SaveID string `path:"saveId" pattern:"^[0-9]+$" maxLength:"20" doc:"Save ID."`
 	Body   UpdateSessionSaveRequest
 }
 
@@ -139,7 +139,7 @@ type UpdateSessionSaveOutput struct {
 
 // BulkDeleteSessionSavesInput is the input for DELETE /api/sessions/{id}/saves.
 type BulkDeleteSessionSavesInput struct {
-	ID string `path:"id" doc:"Session ID."`
+	ID string `path:"id" pattern:"^[0-9]+$" maxLength:"20" doc:"Session ID."`
 }
 
 // BulkDeleteSessionSavesResponse mirrors the raw gin handler body.
@@ -155,7 +155,7 @@ type BulkDeleteSessionSavesOutput struct {
 
 // UpdateSessionPlayTimeInput is the input for POST /api/sessions/{id}/play-time.
 type UpdateSessionPlayTimeInput struct {
-	ID   string `path:"id" doc:"Session ID."`
+	ID   string `path:"id" pattern:"^[0-9]+$" maxLength:"20" doc:"Session ID."`
 	Body UpdateSessionPlayTimeRequest
 }
 
@@ -166,7 +166,7 @@ type UpdateSessionPlayTimeOutput struct {
 
 // StopPlayingSessionInput is the input for DELETE /api/sessions/{id}/play-time.
 type StopPlayingSessionInput struct {
-	ID string `path:"id" doc:"Session ID."`
+	ID string `path:"id" pattern:"^[0-9]+$" maxLength:"20" doc:"Session ID."`
 }
 
 // StopPlayingSessionOutput wraps the stop-playing success message.
@@ -182,7 +182,7 @@ type SessionCheatsResponse struct {
 
 // GetSessionCheatsInput is the input for GET /api/sessions/{id}/cheats.
 type GetSessionCheatsInput struct {
-	ID string `path:"id" doc:"Session ID."`
+	ID string `path:"id" pattern:"^[0-9]+$" maxLength:"20" doc:"Session ID."`
 }
 
 // GetSessionCheatsOutput wraps the cheats response.
@@ -192,7 +192,7 @@ type GetSessionCheatsOutput struct {
 
 // UpdateSessionCheatsInput is the input for PUT /api/sessions/{id}/cheats.
 type UpdateSessionCheatsInput struct {
-	ID   string `path:"id" doc:"Session ID."`
+	ID   string `path:"id" pattern:"^[0-9]+$" maxLength:"20" doc:"Session ID."`
 	Body UpdateSessionCheatsRequest
 }
 

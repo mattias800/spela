@@ -32,7 +32,7 @@ type ListSystemEventsOutput struct {
 
 // GetSystemEventInput is the input for GET /api/admin/system-events/{id}.
 type GetSystemEventInput struct {
-	ID string `path:"id" doc:"System event ID."`
+	ID string `path:"id" pattern:"^[0-9]+$" maxLength:"20" doc:"System event ID."`
 }
 
 // GetSystemEventOutput wraps a single system event response.
@@ -58,7 +58,7 @@ type GetSystemEventCategoriesOutput struct {
 
 // DismissSystemEventInput is the input for PUT /api/admin/system-events/{id}/dismiss.
 type DismissSystemEventInput struct {
-	ID string `path:"id" doc:"System event ID."`
+	ID string `path:"id" pattern:"^[0-9]+$" maxLength:"20" doc:"System event ID."`
 }
 
 // DismissedResponse is the wire format for the dismiss endpoint.

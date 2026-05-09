@@ -19,7 +19,7 @@ type ListMakersOutput struct {
 
 // GetMakerInput is the input for GET /api/makers/{code}.
 type GetMakerInput struct {
-	Code string `path:"code" doc:"Hardware maker code, e.g. 'nintendo'." example:"nintendo"`
+	Code string `path:"code" pattern:"^[a-z0-9_-]+$" maxLength:"32" doc:"Hardware maker code, e.g. 'nintendo'." example:"nintendo"`
 }
 
 // GetMakerOutput wraps the single-maker body for the huma response envelope.

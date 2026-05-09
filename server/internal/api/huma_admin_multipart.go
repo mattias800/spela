@@ -49,7 +49,7 @@ type AdminReplaceROMBody struct {
 
 // AdminReplaceROMInput wraps the path parameter and multipart body.
 type AdminReplaceROMInput struct {
-	ID      string `path:"id" doc:"Numeric game ID."`
+	ID      string `path:"id" pattern:"^[0-9]+$" maxLength:"20" doc:"Numeric game ID."`
 	RawBody huma.MultipartFormFiles[AdminReplaceROMBody]
 }
 

@@ -84,7 +84,7 @@ type ScrapeStatusCountsOutput struct {
 
 // ScrapeGameInput is the input for POST /api/admin/games/{id}/scrape.
 type ScrapeGameInput struct {
-	ID string `path:"id" doc:"Game ID."`
+	ID string `path:"id" pattern:"^[0-9]+$" maxLength:"20" doc:"Game ID."`
 }
 
 // ScrapeGameResponse is the wire format for scrape-game responses.
@@ -100,7 +100,7 @@ type ScrapeGameOutput struct {
 
 // RefreshAchievementsInput is the input for POST /api/admin/games/{id}/achievements/refresh.
 type RefreshAchievementsInput struct {
-	ID string `path:"id" doc:"Game ID."`
+	ID string `path:"id" pattern:"^[0-9]+$" maxLength:"20" doc:"Game ID."`
 }
 
 // RefreshAchievementsResponse is the wire format for refresh responses.

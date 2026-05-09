@@ -37,7 +37,7 @@ type ListChallengesOutput struct {
 
 // GetChallengeInput is the input for GET /api/challenges/{id}.
 type GetChallengeInput struct {
-	ID string `path:"id" doc:"Challenge ID."`
+	ID string `path:"id" pattern:"^[0-9]+$" maxLength:"20" doc:"Challenge ID."`
 }
 
 // GetChallengeOutput wraps a single challenge response.
@@ -47,7 +47,7 @@ type GetChallengeOutput struct {
 
 // UpdateChallengeInput is the input for PUT /api/challenges/{id}.
 type UpdateChallengeInput struct {
-	ID   string `path:"id" doc:"Challenge ID."`
+	ID   string `path:"id" pattern:"^[0-9]+$" maxLength:"20" doc:"Challenge ID."`
 	Body UpdateChallengeRequest
 }
 
@@ -58,7 +58,7 @@ type UpdateChallengeOutput struct {
 
 // DeleteChallengeInput is the input for DELETE /api/challenges/{id}.
 type DeleteChallengeInput struct {
-	ID string `path:"id" doc:"Challenge ID."`
+	ID string `path:"id" pattern:"^[0-9]+$" maxLength:"20" doc:"Challenge ID."`
 }
 
 // DeleteChallengeOutput wraps the delete success message.
@@ -68,7 +68,7 @@ type DeleteChallengeOutput struct {
 
 // StartChallengeAttemptInput is the input for POST /api/challenges/{id}/attempts/start.
 type StartChallengeAttemptInput struct {
-	ID string `path:"id" doc:"Challenge ID."`
+	ID string `path:"id" pattern:"^[0-9]+$" maxLength:"20" doc:"Challenge ID."`
 }
 
 // StartChallengeAttemptOutput wraps the created attempt response (201 Created).
@@ -78,8 +78,8 @@ type StartChallengeAttemptOutput struct {
 
 // CompleteChallengeAttemptInput is the input for POST /api/challenges/{id}/attempts/{aid}/complete.
 type CompleteChallengeAttemptInput struct {
-	ID  string `path:"id" doc:"Challenge ID."`
-	AID string `path:"aid" doc:"Attempt ID."`
+	ID  string `path:"id" pattern:"^[0-9]+$" maxLength:"20" doc:"Challenge ID."`
+	AID string `path:"aid" pattern:"^[0-9]+$" maxLength:"20" doc:"Attempt ID."`
 }
 
 // CompleteChallengeAttemptOutput wraps the completed attempt response.
@@ -89,8 +89,8 @@ type CompleteChallengeAttemptOutput struct {
 
 // AbandonChallengeAttemptInput is the input for POST /api/challenges/{id}/attempts/{aid}/abandon.
 type AbandonChallengeAttemptInput struct {
-	ID  string `path:"id" doc:"Challenge ID."`
-	AID string `path:"aid" doc:"Attempt ID."`
+	ID  string `path:"id" pattern:"^[0-9]+$" maxLength:"20" doc:"Challenge ID."`
+	AID string `path:"aid" pattern:"^[0-9]+$" maxLength:"20" doc:"Attempt ID."`
 }
 
 // AbandonChallengeAttemptOutput wraps the abandoned attempt response.
@@ -100,7 +100,7 @@ type AbandonChallengeAttemptOutput struct {
 
 // ListMyChallengeAttemptsInput is the input for GET /api/challenges/{id}/attempts/mine.
 type ListMyChallengeAttemptsInput struct {
-	ID string `path:"id" doc:"Challenge ID."`
+	ID string `path:"id" pattern:"^[0-9]+$" maxLength:"20" doc:"Challenge ID."`
 }
 
 // ListMyChallengeAttemptsOutput wraps the attempts list.
@@ -110,7 +110,7 @@ type ListMyChallengeAttemptsOutput struct {
 
 // GetChallengeLeaderboardInput is the input for GET /api/challenges/{id}/leaderboard.
 type GetChallengeLeaderboardInput struct {
-	ID       string `path:"id" doc:"Challenge ID."`
+	ID       string `path:"id" pattern:"^[0-9]+$" maxLength:"20" doc:"Challenge ID."`
 	Page     int    `query:"page" doc:"1-based page number (defaults to 1)."`
 	PageSize int    `query:"pageSize" doc:"Page size (defaults to 50, clamped to 1-100)."`
 }
@@ -122,7 +122,7 @@ type GetChallengeLeaderboardOutput struct {
 
 // ListGameChallengesInput is the input for GET /api/games/{id}/challenges.
 type ListGameChallengesInput struct {
-	ID       string `path:"id" doc:"Game ID."`
+	ID       string `path:"id" pattern:"^[0-9]+$" maxLength:"20" doc:"Game ID."`
 	Page     int    `query:"page" doc:"1-based page number (defaults to 1)."`
 	PageSize int    `query:"pageSize" doc:"Page size (defaults to 20, clamped to 1-100)."`
 }
