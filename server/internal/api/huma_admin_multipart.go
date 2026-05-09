@@ -280,8 +280,12 @@ func (h *BiosHandler) HumaUploadBiosFile(_ context.Context, in *AdminUploadBiosI
 		case fileMD5 == match.MD5:
 			resp.Status = "valid"
 		default:
-			resp.Status = "invalid"
-			resp.ExpectedMD5 = match.MD5
+			// Issue #1124(A): hash mismatch — delete the upload so a
+			// libretro core that doesn't strictly check BIOS hash at
+			// load time cannot boot with attacker-supplied bytes.
+			_ = os.Remove(safePath)
+			return nil, huma.Error400BadRequest(fmt.Sprintf("BIOS file hash mismatch (expected %s, got %s); upload discarded",
+				match.MD5, fileMD5))
 		}
 	}
 

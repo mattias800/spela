@@ -152,12 +152,16 @@ func TestDownloadMissing_ServerError(t *testing.T) {
 	assert.Equal(t, "missing_remote.bin: HTTP 404", result.Errors[0].String())
 }
 
-func TestDownloadMissing_EmptyMD5Accepted(t *testing.T) {
+// TestDownloadMissing_EmptyMD5Rejected verifies issue #1124(B): the
+// auto-downloader refuses entries that lack a registry checksum.
+// Previously empty-MD5 entries were silently trusted, which let a
+// compromised third-party repo (Abdess/retrobios) ship arbitrary BIOS
+// bytes to every Spela instance.
+func TestDownloadMissing_EmptyMD5Rejected(t *testing.T) {
 	biosDir := t.TempDir()
-	fileContent := []byte("sega cd bios")
 
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Write(fileContent)
+		t.Errorf("network should not be reached for empty-MD5 entry")
 	}))
 	defer server.Close()
 
@@ -170,13 +174,12 @@ func TestDownloadMissing_EmptyMD5Accepted(t *testing.T) {
 
 	result := DownloadMissing(biosDir, server.URL, nil)
 
-	assert.Equal(t, 1, result.Downloaded)
-	assert.Equal(t, 0, result.Failed)
+	assert.Equal(t, 0, result.Downloaded)
+	assert.Equal(t, 1, result.Failed)
 
-	// File should exist
-	data, err := os.ReadFile(filepath.Join(biosDir, "bios_CD_U.bin"))
-	require.NoError(t, err)
-	assert.Equal(t, fileContent, data)
+	// File should NOT exist on disk.
+	_, err := os.Stat(filepath.Join(biosDir, "bios_CD_U.bin"))
+	assert.True(t, os.IsNotExist(err), "rejected entry must not be written to disk")
 }
 
 func TestDownloadMissing_OverrideURL(t *testing.T) {
@@ -199,7 +202,7 @@ func TestDownloadMissing_OverrideURL(t *testing.T) {
 	origRegistry := make([]Entry, len(registry))
 	copy(origRegistry, registry)
 	registry = []Entry{
-		{ConsoleID: "neogeo", FileName: "neogeo.zip", Description: "Neo Geo BIOS", MD5: "", Required: true, OverrideURL: overrideServer.URL + "/neogeo.zip"},
+		{ConsoleID: "neogeo", FileName: "neogeo.zip", Description: "Neo Geo BIOS", MD5: md5hex(fileContent), Required: true, OverrideURL: overrideServer.URL + "/neogeo.zip"},
 	}
 	defer func() { registry = origRegistry }()
 
@@ -218,14 +221,14 @@ func TestDownloadMissing_NilProgressCallback(t *testing.T) {
 
 	origRegistry := make([]Entry, len(registry))
 	copy(origRegistry, registry)
-	registry = []Entry{
-		{ConsoleID: "psx", FileName: "skip_me.bin", Description: "Skip", MD5: "", Required: false},
-	}
-	defer func() { registry = origRegistry }()
-
 	// Pre-create with enough data to pass minimum size check
 	skipContent := make([]byte, 2048)
 	os.WriteFile(filepath.Join(biosDir, "skip_me.bin"), skipContent, 0644)
+
+	registry = []Entry{
+		{ConsoleID: "psx", FileName: "skip_me.bin", Description: "Skip", MD5: md5hex(skipContent), Required: false},
+	}
+	defer func() { registry = origRegistry }()
 
 	// Should not panic with nil callback
 	result := DownloadMissing(biosDir, "http://unused", nil)
@@ -273,6 +276,7 @@ func TestDownloadMissing_BundleExtracts(t *testing.T) {
 			ConsoleID:   "psp",
 			FileName:    "flash0/font/jpn0.pgf",
 			Description: "PPSSPP system bundle (test)",
+			MD5:         md5hex(zipBytes),
 			Required:    true,
 			OverrideURL: server.URL,
 			SubDir:      "PPSSPP",
@@ -368,6 +372,7 @@ func TestDownloadMissing_BundleStripsArchivePrefix(t *testing.T) {
 			ConsoleID:   "psp",
 			FileName:    "ppge_atlas.zim",
 			Description: "PPSSPP bundle (StripPrefix)",
+			MD5:         md5hex(zipBytes),
 			Required:    true,
 			SubDir:      "PPSSPP",
 			OverrideURL: server.URL,
@@ -426,6 +431,7 @@ func TestDownloadMissing_BundleStripPrefixSkipsNonMatching(t *testing.T) {
 			ConsoleID:   "psp",
 			FileName:    "ppge_atlas.zim",
 			Description: "PPSSPP bundle",
+			MD5:         md5hex(zipBytes),
 			Required:    true,
 			SubDir:      "PPSSPP",
 			OverrideURL: server.URL,
@@ -469,6 +475,7 @@ func TestDownloadMissing_BundleRefusesZipSlip(t *testing.T) {
 			ConsoleID:   "test",
 			FileName:    "ok.txt",
 			Description: "Slippy bundle",
+			MD5:         md5hex(zipBytes),
 			Required:    true,
 			OverrideURL: server.URL,
 			SubDir:      "test",
