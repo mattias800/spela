@@ -57,6 +57,8 @@ fun SeriesShelf(
     SpCarousel(
         itemCount = series.size,
         modifier = modifier.testTag("series_shelf"),
+        memoryKey = "explore_series_shelf",
+        itemKey = { series[it].id },
     ) { index, focusRequester ->
         val item = series[index]
         val gradientIndex = index % seriesGradients.size

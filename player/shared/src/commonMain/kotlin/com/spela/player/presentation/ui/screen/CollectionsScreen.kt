@@ -14,6 +14,11 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.runtime.CompositionLocalProvider
+import com.spela.player.presentation.ui.gamepad.LocalFocusMemory
+import com.spela.player.presentation.ui.gamepad.focusRestoreItem
+import com.spela.player.presentation.ui.gamepad.rememberFocusMemoryState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -62,6 +67,7 @@ fun CollectionsScreen(
 ) {
     val state by viewModel.state.collectAsState()
     val titleBarInset = LocalTitleBarInset.current
+    val focusMemory = rememberFocusMemoryState()
 
     LaunchedEffect(Unit) {
         viewModel.onIntent(CollectionsIntent.LoadMyCollections)
@@ -86,6 +92,7 @@ fun CollectionsScreen(
         SpColor.PrimaryDark.darken(0.72f),
     )
 
+    CompositionLocalProvider(LocalFocusMemory provides focusMemory) {
     Box(modifier = Modifier.fillMaxSize().testTag(TestTags.SCREEN_COLLECTIONS)) {
         Box(
             modifier = Modifier
@@ -154,10 +161,14 @@ fun CollectionsScreen(
                                             .testTag(TestTags.COLLECTIONS_MY_HEADER),
                                     )
                                 }
-                                items(state.myCollections, key = { "my-${it.id}" }) { collection ->
+                                itemsIndexed(state.myCollections, key = { _, c -> "my-${c.id}" }) { index, collection ->
                                     CollectionListItem(
                                         collection = collection,
                                         onClick = { onCollectionSelected(collection.id) },
+                                        modifier = Modifier.focusRestoreItem(
+                                            key = "collection_my_${collection.id}",
+                                            isDefault = index == 0,
+                                        ),
                                     )
                                 }
                             }
@@ -176,10 +187,14 @@ fun CollectionsScreen(
                                             .testTag(TestTags.COLLECTIONS_PUBLIC_HEADER),
                                     )
                                 }
-                                items(state.publicCollections, key = { "public-${it.id}" }) { collection ->
+                                itemsIndexed(state.publicCollections, key = { _, c -> "public-${c.id}" }) { index, collection ->
                                     CollectionListItem(
                                         collection = collection,
                                         onClick = { onCollectionSelected(collection.id) },
+                                        modifier = Modifier.focusRestoreItem(
+                                            key = "collection_public_${collection.id}",
+                                            isDefault = state.myCollections.isEmpty() && index == 0,
+                                        ),
                                     )
                                 }
                             }
@@ -225,17 +240,19 @@ fun CollectionsScreen(
             modifier = Modifier.align(Alignment.BottomCenter),
         )
     }
+    } // CompositionLocalProvider
 }
 
 @Composable
 private fun CollectionListItem(
     collection: GameCollection,
     onClick: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     SpCard(
         onClick = onClick,
         onGradient = true,
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .semantics {
                 contentDescription = "${collection.name}, ${collection.gameCount} games"

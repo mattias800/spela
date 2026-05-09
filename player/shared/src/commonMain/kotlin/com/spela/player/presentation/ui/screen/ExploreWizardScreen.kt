@@ -283,6 +283,7 @@ fun ExploreWizardScreen(
                             games = state.resultGames,
                             onGameSelected = onGameSelected,
                             modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
+                            memoryKey = "explore_wizard_results",
                         )
                     }
                 }

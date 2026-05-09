@@ -21,10 +21,13 @@ fun GameShelf(
     games: List<Game>,
     onGameSelected: (String) -> Unit,
     modifier: Modifier = Modifier,
+    memoryKey: String? = null,
 ) {
     SpCarousel(
         itemCount = games.size,
         modifier = modifier.testTag("game_shelf"),
+        memoryKey = memoryKey,
+        itemKey = if (memoryKey != null) ({ games[it].id }) else null,
     ) { index, focusRequester ->
         Box(modifier = Modifier.focusRequester(focusRequester)) {
             ExploreGameCard(

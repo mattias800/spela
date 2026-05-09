@@ -30,6 +30,8 @@ fun ConsoleQuickJumpSection(
     SpCarousel(
         itemCount = consoles.size,
         modifier = modifier.testTag("console_quick_jump"),
+        memoryKey = "explore_console_quick_jump",
+        itemKey = { consoles[it].id },
     ) { index, focusRequester ->
         Box(modifier = Modifier.focusRequester(focusRequester)) {
             ConsoleQuickJumpCard(

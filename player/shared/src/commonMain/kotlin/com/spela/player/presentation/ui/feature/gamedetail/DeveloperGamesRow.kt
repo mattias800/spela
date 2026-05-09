@@ -26,7 +26,11 @@ internal fun DeveloperGamesSection(
         icon = Icons.Outlined.Business,
         edgeToEdgeContent = true,
     ) {
-        SpCarousel(itemCount = games.size) { index, focusRequester ->
+        SpCarousel(
+            itemCount = games.size,
+            memoryKey = "game_detail_developer",
+            itemKey = { games[it].id },
+        ) { index, focusRequester ->
             Box(modifier = Modifier.focusRequester(focusRequester)) {
                 DeveloperGameCard(
                     game = games[index],

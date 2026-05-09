@@ -57,6 +57,8 @@ fun ThemeGrid(
     SpCarousel(
         itemCount = themes.size,
         modifier = modifier.testTag("theme_grid"),
+        memoryKey = "explore_theme_grid",
+        itemKey = { themes[it].id },
     ) { index, focusRequester ->
         val theme = themes[index]
         val gradientIndex = index % themeGradients.size

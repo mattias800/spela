@@ -42,6 +42,8 @@ fun TrendingSection(
     SpCarousel(
         itemCount = games.size,
         modifier = modifier.testTag("trending_row"),
+        memoryKey = "explore_trending",
+        itemKey = { games[it].game.id },
     ) { index, focusRequester ->
         val item = games[index]
         Column(
@@ -75,6 +77,8 @@ fun CommunityTopSection(
     SpCarousel(
         itemCount = games.size,
         modifier = modifier.testTag("community_top_row"),
+        memoryKey = "explore_community_top",
+        itemKey = { games[it].game.id },
     ) { index, focusRequester ->
         val item = games[index]
         Column(
@@ -113,6 +117,8 @@ fun CultClassicsSection(
     SpCarousel(
         itemCount = games.size,
         modifier = modifier.testTag("cult_classics_row"),
+        memoryKey = "explore_cult_classics",
+        itemKey = { games[it].game.id },
     ) { index, focusRequester ->
         val item = games[index]
         Column(
@@ -148,6 +154,8 @@ fun RecentlyReviewedSection(
     SpCarousel(
         itemCount = reviews.size,
         modifier = modifier.testTag("recently_reviewed_row"),
+        memoryKey = "explore_recently_reviewed",
+        itemKey = { reviews[it].game.id },
     ) { index, focusRequester ->
         val item = reviews[index]
         Column(
@@ -205,6 +213,8 @@ fun ActiveNowSection(
     SpCarousel(
         itemCount = games.size,
         modifier = modifier.testTag("active_now_row"),
+        memoryKey = "explore_active_now",
+        itemKey = { games[it].game.id },
     ) { index, focusRequester ->
         val item = games[index]
         Column(

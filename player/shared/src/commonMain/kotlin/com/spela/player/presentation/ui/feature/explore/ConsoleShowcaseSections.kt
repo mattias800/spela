@@ -33,6 +33,7 @@ fun ConsoleEssentials(
         GameShelf(
             games = showcase.essentials,
             onGameSelected = onGameSelected,
+            memoryKey = "console_showcase_essentials",
         )
     }
 }
@@ -56,6 +57,7 @@ fun ConsoleHiddenGems(
         GameShelf(
             games = showcase.hiddenGems,
             onGameSelected = onGameSelected,
+            memoryKey = "console_showcase_hidden_gems",
         )
     }
 }
@@ -79,6 +81,7 @@ fun ConsoleLaunchGames(
         GameShelf(
             games = showcase.launchGames,
             onGameSelected = onGameSelected,
+            memoryKey = "console_showcase_launch_games",
         )
     }
 }
@@ -124,6 +127,7 @@ fun ConsoleRecentlyPlayed(
         GameShelf(
             games = showcase.recentlyPlayed,
             onGameSelected = onGameSelected,
+            memoryKey = "console_showcase_recently_played",
         )
     }
 }
@@ -147,6 +151,7 @@ fun ConsoleRecentlyAdded(
         GameShelf(
             games = showcase.recentlyAdded,
             onGameSelected = onGameSelected,
+            memoryKey = "console_showcase_recently_added",
         )
     }
 }

@@ -52,6 +52,8 @@ fun ArtworkShowcaseSection(
         SpCarousel(
             itemCount = artworks.size,
             modifier = Modifier.testTag("artwork_showcase_row"),
+            memoryKey = "explore_artwork_showcase",
+            itemKey = { artworks[it].gameId },
         ) { index, focusRequester ->
             Box(modifier = Modifier.focusRequester(focusRequester)) {
                 ArtworkCard(

@@ -23,6 +23,8 @@ fun KeywordChips(
     SpCarousel(
         itemCount = keywords.size,
         modifier = modifier.testTag("keyword_chips"),
+        memoryKey = "explore_keyword_chips",
+        itemKey = { keywords[it].id },
     ) { index, focusRequester ->
         val keyword = keywords[index]
         SpChip(
