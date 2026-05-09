@@ -401,26 +401,18 @@ func uploadBiosFile(t *testing.T, router *gin.Engine, token string, filename str
 	return w
 }
 
-func TestUploadBiosFile_Success_KnownFile(t *testing.T) {
+// TestUploadBiosFile_KnownFile_MismatchedMD5 verifies issue #1124(A):
+// uploading bytes that match a registry filename but mismatch the
+// expected MD5 returns 400 (so the upload is REJECTED) rather than the
+// pre-fix 200 with status="invalid" that left the bad bytes on disk.
+func TestUploadBiosFile_KnownFile_MismatchedMD5(t *testing.T) {
 	_, database, router := setupBiosTestEnv(t)
 	adminToken := createBiosTestUser(t, database, "admin")
 
 	content := []byte("fake psx bios content")
 	w := uploadBiosFile(t, router, adminToken, "scph5501.bin", content)
 
-	assert.Equal(t, http.StatusOK, w.Code)
-
-	var resp BiosFileResponse
-	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
-
-	assert.Equal(t, "scph5501.bin", resp.Name)
-	assert.Equal(t, int64(len(content)), resp.Size)
-	assert.Equal(t, md5sum(content), resp.MD5)
-	assert.NotNil(t, resp.ConsoleID)
-	assert.Equal(t, "psx", *resp.ConsoleID)
-	assert.True(t, resp.Required)
-	// Content MD5 won't match registry, so status should be "invalid"
-	assert.Equal(t, "invalid", resp.Status)
+	assert.Equal(t, http.StatusBadRequest, w.Code, "body=%s", w.Body.String())
 }
 
 func TestUploadBiosFile_Success_UnknownFile(t *testing.T) {
