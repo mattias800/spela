@@ -57,6 +57,28 @@ type User struct {
 	CustomKeyMapping         string         `gorm:"type:text" json:"customKeyMapping"` // JSON: {"0":"z","1":"x",...}
 	DefaultSecondScreenPage string         `gorm:"size:64;default:art" json:"defaultSecondScreenPage"`
 	PreferredRegions         string         `gorm:"size:255" json:"preferredRegions"` // comma-separated ordered list, e.g. "USA,Europe,World"
+	// ProfileVisibility controls whether the user's public profile
+	// exposes detailed activity (current game, recent games, top
+	// played, play time). Issue #1121: previously every authenticated
+	// user could scrape every other user's gaming habits in real time.
+	// Values: "public" (default), "private". The "friends" tier is
+	// reserved for a future friend graph.
+	ProfileVisibility       string         `gorm:"size:16;default:public" json:"profileVisibility"`
+}
+
+// Block represents a one-way "I do not want to interact with this user"
+// relationship (issue #1121). Filtered in both directions on profile,
+// search, and invite endpoints. The unique constraint on the pair
+// prevents duplicates without a separate idempotency key.
+type Block struct {
+	ID            uint           `gorm:"primarykey" json:"id"`
+	CreatedAt     time.Time      `json:"createdAt"`
+	UpdatedAt     time.Time      `json:"updatedAt"`
+	DeletedAt     gorm.DeletedAt `gorm:"index" json:"-"`
+	UserID        uint           `gorm:"uniqueIndex:idx_block_user_blocked;not null" json:"userId"`
+	User          User           `gorm:"foreignKey:UserID;constraint:OnDelete:CASCADE" json:"-"`
+	BlockedUserID uint           `gorm:"uniqueIndex:idx_block_user_blocked;not null" json:"blockedUserId"`
+	BlockedUser   User           `gorm:"foreignKey:BlockedUserID;constraint:OnDelete:CASCADE" json:"-"`
 }
 
 // LoginAttempt tracks failed login attempts per username for account lockout.

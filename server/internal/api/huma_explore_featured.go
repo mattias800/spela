@@ -52,7 +52,7 @@ type GetExploreMoodsOutput struct {
 
 // GetMoodGamesInput is the input for GET /api/explore/mood/{mood}.
 type GetMoodGamesInput struct {
-	Mood string `path:"mood" doc:"Mood identifier, e.g. 'chill', 'challenge'."`
+	Mood string `path:"mood" pattern:"^[a-z][a-z0-9_-]{0,31}$" maxLength:"32" doc:"Mood identifier, e.g. 'chill', 'challenge'."`
 }
 
 // GetMoodGamesOutput wraps the games list for a mood.

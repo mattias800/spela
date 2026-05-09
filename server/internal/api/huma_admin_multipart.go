@@ -49,7 +49,7 @@ type AdminReplaceROMBody struct {
 
 // AdminReplaceROMInput wraps the path parameter and multipart body.
 type AdminReplaceROMInput struct {
-	ID      string `path:"id" doc:"Numeric game ID."`
+	ID      string `path:"id" pattern:"^[0-9]+$" maxLength:"20" doc:"Numeric game ID."`
 	RawBody huma.MultipartFormFiles[AdminReplaceROMBody]
 }
 
@@ -280,8 +280,12 @@ func (h *BiosHandler) HumaUploadBiosFile(_ context.Context, in *AdminUploadBiosI
 		case fileMD5 == match.MD5:
 			resp.Status = "valid"
 		default:
-			resp.Status = "invalid"
-			resp.ExpectedMD5 = match.MD5
+			// Issue #1124(A): hash mismatch — delete the upload so a
+			// libretro core that doesn't strictly check BIOS hash at
+			// load time cannot boot with attacker-supplied bytes.
+			_ = os.Remove(safePath)
+			return nil, huma.Error400BadRequest(fmt.Sprintf("BIOS file hash mismatch (expected %s, got %s); upload discarded",
+				match.MD5, fileMD5))
 		}
 	}
 
@@ -490,6 +494,26 @@ func (h *RomHackHandler) HumaCreateRomHack(_ context.Context, in *AdminCreateRom
 	romAbsPath, err := storage.ResolveGamePath(baseGame.FilePath, h.GameDirs)
 	if err != nil {
 		return nil, huma.NewError(http.StatusInternalServerError, "base game ROM file not found on disk")
+	}
+	// Issue #1125: defense in depth. ResolveGamePath now refuses
+	// traversal, but ValidateROMPath here matches the pattern used by
+	// HumaDownloadGame / HumaReplaceROM so any future regression in
+	// ResolveGamePath doesn't immediately turn into arbitrary file read.
+	if !storage.ValidateROMPath(romAbsPath, h.GameDirs) {
+		return nil, huma.NewError(http.StatusForbidden, "base game ROM path is outside configured game dirs")
+	}
+
+	// Issue #1134(A): refuse to apply a patch to a multi-GB base ROM.
+	// os.ReadFile loads the full file into memory before patching, and
+	// the patcher's MaxOutputSize is 256 MB — patching a 4 GB ISO peaks
+	// at ~4 GB+ and OOM-kills small hosts. Reject up front using the
+	// patcher's own MaxOutputSize as the ceiling so the in-memory
+	// behaviour is consistent end-to-end.
+	if info, err := os.Stat(romAbsPath); err == nil {
+		if info.Size() > patcher.MaxOutputSize {
+			return nil, huma.NewError(http.StatusRequestEntityTooLarge,
+				fmt.Sprintf("base ROM is %d bytes; patcher refuses inputs larger than %d bytes (issue #1134)", info.Size(), patcher.MaxOutputSize))
+		}
 	}
 
 	romData, err := os.ReadFile(romAbsPath)

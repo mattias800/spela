@@ -12,6 +12,7 @@ import (
 	"github.com/danielgtaylor/huma/v2"
 	"github.com/spela/server/internal/db"
 	"github.com/spela/server/internal/igdb"
+	"github.com/spela/server/internal/safehttp"
 	"github.com/spela/server/internal/scanner"
 	"github.com/spela/server/internal/scraper"
 	ws "github.com/spela/server/internal/websocket"
@@ -22,7 +23,7 @@ import (
 
 // UpdateGameMetadataInput is the input for POST /api/admin/games/{id}/metadata.
 type UpdateGameMetadataInput struct {
-	ID   string `path:"id" doc:"Game ID."`
+	ID   string `path:"id" pattern:"^[0-9]+$" maxLength:"20" doc:"Game ID."`
 	Body UpdateGameMetadataRequest
 }
 
@@ -33,7 +34,7 @@ type UpdateGameMetadataOutput struct {
 
 // UpdateVerificationTagInput is the input for PUT /api/admin/games/{id}/verification-tag.
 type UpdateVerificationTagInput struct {
-	ID   string `path:"id" doc:"Game ID."`
+	ID   string `path:"id" pattern:"^[0-9]+$" maxLength:"20" doc:"Game ID."`
 	Body UpdateVerificationTagRequest
 }
 
@@ -51,7 +52,7 @@ type UpdateVerificationTagOutput struct {
 
 // GetGameCoversInput is the input for GET /api/admin/games/{id}/covers.
 type GetGameCoversInput struct {
-	ID string `path:"id" doc:"Game ID."`
+	ID string `path:"id" pattern:"^[0-9]+$" maxLength:"20" doc:"Game ID."`
 }
 
 // GameCoversResponse is the wire format for the game covers response.
@@ -67,7 +68,7 @@ type GetGameCoversOutput struct {
 
 // SetGameCoverInput is the input for PUT /api/admin/games/{id}/covers.
 type SetGameCoverInput struct {
-	ID   string `path:"id" doc:"Game ID."`
+	ID   string `path:"id" pattern:"^[0-9]+$" maxLength:"20" doc:"Game ID."`
 	Body SetGameCoverRequest
 }
 
@@ -78,7 +79,7 @@ type SetGameCoverOutput struct {
 
 // GetGameHeroesInput is the input for GET /api/admin/games/{id}/heroes.
 type GetGameHeroesInput struct {
-	ID string `path:"id" doc:"Game ID."`
+	ID string `path:"id" pattern:"^[0-9]+$" maxLength:"20" doc:"Game ID."`
 }
 
 // GameHeroesResponse is the wire format for the hero options response.
@@ -94,7 +95,7 @@ type GetGameHeroesOutput struct {
 
 // SetGameHeroInput is the input for PUT /api/admin/games/{id}/heroes.
 type SetGameHeroInput struct {
-	ID   string `path:"id" doc:"Game ID."`
+	ID   string `path:"id" pattern:"^[0-9]+$" maxLength:"20" doc:"Game ID."`
 	Body SetGameHeroRequest
 }
 
@@ -107,7 +108,7 @@ type SetGameHeroOutput struct {
 
 // SearchIGDBInput is the input for GET /api/admin/games/{id}/igdb-search.
 type SearchIGDBInput struct {
-	ID    string `path:"id" doc:"Game ID."`
+	ID    string `path:"id" pattern:"^[0-9]+$" maxLength:"20" doc:"Game ID."`
 	Query string `query:"q" doc:"Search query."`
 }
 
@@ -118,7 +119,7 @@ type SearchIGDBOutput struct {
 
 // ApplyIGDBMatchInput is the input for POST /api/admin/games/{id}/igdb-match.
 type ApplyIGDBMatchInput struct {
-	ID   string `path:"id" doc:"Game ID."`
+	ID   string `path:"id" pattern:"^[0-9]+$" maxLength:"20" doc:"Game ID."`
 	Body ApplyIGDBMatchRequest
 }
 
@@ -180,7 +181,7 @@ type ListDeletedUsersOutput struct {
 
 // HardDeleteUserInput is the input for DELETE /api/admin/users/{id}/permanent.
 type HardDeleteUserInput struct {
-	ID string `path:"id" doc:"User ID."`
+	ID string `path:"id" pattern:"^[0-9]+$" maxLength:"20" doc:"User ID."`
 }
 
 // HardDeleteUserOutput wraps the hard-delete success message.
@@ -666,6 +667,14 @@ func (h *AdminHandler) HumaSetGameHero(ctx context.Context, in *SetGameHeroInput
 	if req.URL == "" {
 		return nil, huma.Error400BadRequest("invalid request body")
 	}
+	// Issue #1120: gate the URL against private/internal IPs and
+	// non-http(s) schemes BEFORE handing it to the scraper, otherwise
+	// a rogue admin could point us at the AWS metadata endpoint or
+	// internal services. Defense in depth: NewClient also re-checks
+	// every redirect hop.
+	if err := safehttp.CheckURL(req.URL); err != nil {
+		return nil, huma.Error400BadRequest("invalid hero URL: " + err.Error())
+	}
 
 	if h.Scraper == nil {
 		return nil, huma.Error500InternalServerError("scraper not available")
@@ -969,6 +978,16 @@ func (h *AdminHandler) HumaHardDeleteUser(ctx context.Context, in *HardDeleteUse
 		return nil, huma.Error403Forbidden("cannot permanently delete the owner")
 	}
 
+	// Issue #1122: only owner can hard-delete another admin row.
+	currentUserID := UserIDFromContext(ctx)
+	var caller db.User
+	if err := h.DB.Select("id", "role").First(&caller, currentUserID).Error; err != nil {
+		return nil, huma.Error500InternalServerError("failed to load caller")
+	}
+	if user.Role == db.RoleAdmin && caller.Role != db.RoleOwner {
+		return nil, huma.Error403Forbidden("only the owner can permanently delete other admins")
+	}
+
 	err := h.DB.Transaction(func(tx *gorm.DB) error {
 		uid := user.ID
 
@@ -1063,7 +1082,6 @@ func (h *AdminHandler) HumaHardDeleteUser(ctx context.Context, in *HardDeleteUse
 		return nil, huma.Error500InternalServerError("failed to permanently delete user")
 	}
 
-	currentUserID := UserIDFromContext(ctx)
 	slog.Info("audit: admin permanently deleted user", "admin_id", currentUserID, "target_user", user.Username)
 	return &HardDeleteUserOutput{Body: MessageResponse{Message: "user permanently deleted"}}, nil
 }

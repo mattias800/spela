@@ -19,7 +19,7 @@ import (
 
 // ListSharedSavesInput is the input for GET /api/games/{id}/shared-saves.
 type ListSharedSavesInput struct {
-	ID       string `path:"id" doc:"Game ID."`
+	ID       string `path:"id" pattern:"^[0-9]+$" maxLength:"20" doc:"Game ID."`
 	Page     int    `query:"page" doc:"1-based page number (defaults to 1)."`
 	PageSize int    `query:"pageSize" doc:"Page size (defaults to 20, clamped to 1-100)."`
 }
@@ -31,8 +31,8 @@ type ListSharedSavesOutput struct {
 
 // DeleteSharedSaveInput is the input for DELETE /api/games/{id}/shared-saves/{saveId}.
 type DeleteSharedSaveInput struct {
-	ID     string `path:"id" doc:"Game ID."`
-	SaveID string `path:"saveId" doc:"Shared save ID."`
+	ID     string `path:"id" pattern:"^[0-9]+$" maxLength:"20" doc:"Game ID."`
+	SaveID string `path:"saveId" pattern:"^[0-9]+$" maxLength:"20" doc:"Shared save ID."`
 }
 
 // DeleteSharedSaveOutput wraps the delete success message.
@@ -52,7 +52,7 @@ type CreateSharedSessionOutput struct {
 
 // GetSharedSessionInput is the input for GET /api/shared-sessions/{id}.
 type GetSharedSessionInput struct {
-	ID string `path:"id" doc:"Shared session ID."`
+	ID string `path:"id" pattern:"^[0-9]+$" maxLength:"20" doc:"Shared session ID."`
 }
 
 // GetSharedSessionOutput wraps the shared session detail response.
@@ -62,7 +62,7 @@ type GetSharedSessionOutput struct {
 
 // UpdateSharedSessionInput is the input for PUT /api/shared-sessions/{id}.
 type UpdateSharedSessionInput struct {
-	ID   string `path:"id" doc:"Shared session ID."`
+	ID   string `path:"id" pattern:"^[0-9]+$" maxLength:"20" doc:"Shared session ID."`
 	Body UpdateSharedSessionRequest
 }
 
@@ -73,7 +73,7 @@ type UpdateSharedSessionOutput struct {
 
 // DeleteSharedSessionInput is the input for DELETE /api/shared-sessions/{id}.
 type DeleteSharedSessionInput struct {
-	ID string `path:"id" doc:"Shared session ID."`
+	ID string `path:"id" pattern:"^[0-9]+$" maxLength:"20" doc:"Shared session ID."`
 }
 
 // DeleteSharedSessionOutput wraps the delete success message.
@@ -83,7 +83,7 @@ type DeleteSharedSessionOutput struct {
 
 // ListGameSharedSessionsInput is the input for GET /api/games/{id}/shared-sessions.
 type ListGameSharedSessionsInput struct {
-	ID string `path:"id" doc:"Game ID."`
+	ID string `path:"id" pattern:"^[0-9]+$" maxLength:"20" doc:"Game ID."`
 }
 
 // ListGameSharedSessionsOutput wraps the game shared sessions list.
@@ -101,7 +101,7 @@ type ListMySharedSessionsOutput struct {
 
 // InviteToSharedSessionInput is the input for POST /api/shared-sessions/{id}/invites.
 type InviteToSharedSessionInput struct {
-	ID   string `path:"id" doc:"Shared session ID."`
+	ID   string `path:"id" pattern:"^[0-9]+$" maxLength:"20" doc:"Shared session ID."`
 	Body InviteToSharedSessionRequest
 }
 
@@ -112,7 +112,7 @@ type InviteToSharedSessionOutput struct {
 
 // LeaveSharedSessionInput is the input for POST /api/shared-sessions/{id}/leave.
 type LeaveSharedSessionInput struct {
-	ID string `path:"id" doc:"Shared session ID."`
+	ID string `path:"id" pattern:"^[0-9]+$" maxLength:"20" doc:"Shared session ID."`
 }
 
 // LeaveSharedSessionOutput wraps the leave success message.
@@ -122,8 +122,8 @@ type LeaveSharedSessionOutput struct {
 
 // RemoveSharedSessionMemberInput is the input for DELETE /api/shared-sessions/{id}/members/{userId}.
 type RemoveSharedSessionMemberInput struct {
-	ID     string `path:"id" doc:"Shared session ID."`
-	UserID string `path:"userId" doc:"User ID to remove."`
+	ID     string `path:"id" pattern:"^[0-9]+$" maxLength:"20" doc:"Shared session ID."`
+	UserID string `path:"userId" pattern:"^[0-9]+$" maxLength:"20" doc:"User ID to remove."`
 }
 
 // RemoveSharedSessionMemberOutput wraps the remove-member success message.
@@ -133,7 +133,7 @@ type RemoveSharedSessionMemberOutput struct {
 
 // SharedSessionTurnInput is the input for POST /api/shared-sessions/{id}/take-turn and release-turn.
 type SharedSessionTurnInput struct {
-	ID string `path:"id" doc:"Shared session ID."`
+	ID string `path:"id" pattern:"^[0-9]+$" maxLength:"20" doc:"Shared session ID."`
 }
 
 // SharedSessionTakeTurnResponse is the wire format for take-turn.
@@ -165,7 +165,7 @@ type SharedSessionHeartbeatOutput struct {
 
 // ListSharedSessionSavesInput is the input for GET /api/shared-sessions/{id}/saves.
 type ListSharedSessionSavesInput struct {
-	ID string `path:"id" doc:"Shared session ID."`
+	ID string `path:"id" pattern:"^[0-9]+$" maxLength:"20" doc:"Shared session ID."`
 }
 
 // ListSharedSessionSavesOutput wraps the saves list.
@@ -175,8 +175,8 @@ type ListSharedSessionSavesOutput struct {
 
 // DeleteSharedSessionSaveInput is the input for DELETE /api/shared-sessions/{id}/saves/{saveId}.
 type DeleteSharedSessionSaveInput struct {
-	ID     string `path:"id" doc:"Shared session ID."`
-	SaveID string `path:"saveId" doc:"Save ID."`
+	ID     string `path:"id" pattern:"^[0-9]+$" maxLength:"20" doc:"Shared session ID."`
+	SaveID string `path:"saveId" pattern:"^[0-9]+$" maxLength:"20" doc:"Save ID."`
 }
 
 // DeleteSharedSessionSaveOutput wraps the delete success message.
@@ -193,8 +193,8 @@ type RenameSharedSessionSaveRequest struct {
 
 // RenameSharedSessionSaveInput is the input for PUT /api/shared-sessions/{id}/saves/{saveId}/rename.
 type RenameSharedSessionSaveInput struct {
-	ID     string `path:"id" doc:"Shared session ID."`
-	SaveID string `path:"saveId" doc:"Save ID."`
+	ID     string `path:"id" pattern:"^[0-9]+$" maxLength:"20" doc:"Shared session ID."`
+	SaveID string `path:"saveId" pattern:"^[0-9]+$" maxLength:"20" doc:"Save ID."`
 	Body   RenameSharedSessionSaveRequest
 }
 
@@ -226,7 +226,7 @@ type SharedSessionInviteCountOutput struct {
 
 // AcceptSharedSessionInviteInput is the input for POST /api/user/shared-session-invites/{id}/accept.
 type AcceptSharedSessionInviteInput struct {
-	ID string `path:"id" doc:"Invite ID."`
+	ID string `path:"id" pattern:"^[0-9]+$" maxLength:"20" doc:"Invite ID."`
 }
 
 // AcceptSharedSessionInviteOutput wraps the accept success message.
@@ -236,7 +236,7 @@ type AcceptSharedSessionInviteOutput struct {
 
 // DeclineSharedSessionInviteInput is the input for POST /api/user/shared-session-invites/{id}/decline.
 type DeclineSharedSessionInviteInput struct {
-	ID string `path:"id" doc:"Invite ID."`
+	ID string `path:"id" pattern:"^[0-9]+$" maxLength:"20" doc:"Invite ID."`
 }
 
 // DeclineSharedSessionInviteOutput wraps the decline success message.
@@ -861,7 +861,14 @@ func (h *SharedSessionHandler) HumaInviteToSharedSession(ctx context.Context, in
 	h.DB.Preload("Inviter").Preload("Invitee").Preload("SharedSession").Preload("SharedSession.Game").First(&invite, invite.ID)
 
 	if h.Hub != nil {
-		h.Hub.Broadcast(ws.Event{Type: ws.EventSharedSessionInviteSent, Payload: h.toSharedSessionInviteResponse(invite)})
+		// Issue #1119: deliver only to inviter and invitee — invite
+		// state is private and was previously broadcast to every
+		// connected client.
+		h.Hub.Broadcast(ws.Event{
+			Type:             ws.EventSharedSessionInviteSent,
+			Payload:          h.toSharedSessionInviteResponse(invite),
+			RecipientUserIDs: []uint{invite.InviterID, invite.InviteeID},
+		})
 	}
 
 	return &InviteToSharedSessionOutput{Body: h.toSharedSessionInviteResponse(invite)}, nil
@@ -997,22 +1004,34 @@ func (h *SharedSessionHandler) HumaSharedSessionTakeTurn(ctx context.Context, in
 		return nil, huma.Error500InternalServerError("failed to acquire turn")
 	}
 
+	// Issue #1119: turn events are private to session members. Build the
+	// recipient list once for both the expired and acquired broadcasts.
+	memberIDs := h.sharedSessionMemberIDs(ss.ID)
+
 	if previousUserID != nil && h.Hub != nil {
-		h.Hub.Broadcast(ws.Event{Type: ws.EventSharedSessionTurnExpired, Payload: ws.SharedSessionTurnExpiredPayload{
-			SharedSessionID: strconv.FormatUint(uint64(ss.ID), 10),
-			PreviousUserID:  strconv.FormatUint(uint64(*previousUserID), 10),
-		}})
+		h.Hub.Broadcast(ws.Event{
+			Type: ws.EventSharedSessionTurnExpired,
+			Payload: ws.SharedSessionTurnExpiredPayload{
+				SharedSessionID: strconv.FormatUint(uint64(ss.ID), 10),
+				PreviousUserID:  strconv.FormatUint(uint64(*previousUserID), 10),
+			},
+			RecipientUserIDs: memberIDs,
+		})
 	}
 
 	var user db.User
 	h.DB.First(&user, uid)
 
 	if h.Hub != nil {
-		h.Hub.Broadcast(ws.Event{Type: ws.EventSharedSessionTurnAcquired, Payload: ws.SharedSessionTurnAcquiredPayload{
-			SharedSessionID: strconv.FormatUint(uint64(ss.ID), 10),
-			UserID:          strconv.FormatUint(uint64(uid), 10),
-			Username:        user.Username,
-		}})
+		h.Hub.Broadcast(ws.Event{
+			Type: ws.EventSharedSessionTurnAcquired,
+			Payload: ws.SharedSessionTurnAcquiredPayload{
+				SharedSessionID: strconv.FormatUint(uint64(ss.ID), 10),
+				UserID:          strconv.FormatUint(uint64(uid), 10),
+				Username:        user.Username,
+			},
+			RecipientUserIDs: memberIDs,
+		})
 	}
 
 	return &SharedSessionTakeTurnOutput{Body: SharedSessionTakeTurnResponse{
@@ -1040,13 +1059,37 @@ func (h *SharedSessionHandler) HumaSharedSessionReleaseTurn(ctx context.Context,
 	})
 
 	if h.Hub != nil {
-		h.Hub.Broadcast(ws.Event{Type: ws.EventSharedSessionTurnReleased, Payload: ws.SharedSessionTurnReleasedPayload{
-			SharedSessionID: strconv.FormatUint(uint64(ss.ID), 10),
-			UserID:          strconv.FormatUint(uint64(uid), 10),
-		}})
+		// Issue #1119: scope to session members.
+		h.Hub.Broadcast(ws.Event{
+			Type: ws.EventSharedSessionTurnReleased,
+			Payload: ws.SharedSessionTurnReleasedPayload{
+				SharedSessionID: strconv.FormatUint(uint64(ss.ID), 10),
+				UserID:          strconv.FormatUint(uint64(uid), 10),
+			},
+			RecipientUserIDs: h.sharedSessionMemberIDs(ss.ID),
+		})
 	}
 
 	return &SharedSessionReleaseTurnOutput{Body: MessageResponse{Message: "turn released"}}, nil
+}
+
+// sharedSessionMemberIDs returns the user IDs of all members of a shared
+// session. Used to scope private events (invites, turn changes) to the
+// recipients who are part of the session, rather than broadcasting to
+// every connected client (issue #1119).
+func (h *SharedSessionHandler) sharedSessionMemberIDs(sharedSessionID uint) []uint {
+	var rows []db.SharedSessionMember
+	if err := h.DB.Where("shared_session_id = ?", sharedSessionID).Find(&rows).Error; err != nil {
+		// Falling back to nil = unfiltered would re-introduce the
+		// information leak. Empty list = nobody, which is safer (the
+		// event still hits the hub but never delivers).
+		return []uint{}
+	}
+	ids := make([]uint, 0, len(rows))
+	for _, m := range rows {
+		ids = append(ids, m.UserID)
+	}
+	return ids
 }
 
 // HumaSharedSessionHeartbeat is the huma handler for POST /api/shared-sessions/{id}/heartbeat.

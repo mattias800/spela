@@ -77,7 +77,7 @@ type AdminCreateUserOutput struct {
 
 // AdminUpdateUserInput is the input for PUT /api/admin/users/{id}.
 type AdminUpdateUserInput struct {
-	ID   string `path:"id" doc:"User ID."`
+	ID   string `path:"id" pattern:"^[0-9]+$" maxLength:"20" doc:"User ID."`
 	Body AdminUpdateUserRequest
 }
 
@@ -88,7 +88,7 @@ type AdminUpdateUserOutput struct {
 
 // AdminDeleteUserInput is the input for DELETE /api/admin/users/{id}.
 type AdminDeleteUserInput struct {
-	ID string `path:"id" doc:"User ID."`
+	ID string `path:"id" pattern:"^[0-9]+$" maxLength:"20" doc:"User ID."`
 }
 
 // AdminDeleteUserOutput wraps the delete success message.
@@ -307,6 +307,19 @@ func (h *AdminHandler) HumaAdminUpdateUser(ctx context.Context, in *AdminUpdateU
 	req := in.Body
 	currentUserID := UserIDFromContext(ctx)
 
+	// Issue #1122: only owner can mutate other admins. Otherwise a
+	// single compromised admin account can demote/disable/lock out
+	// every other admin and become the sole non-owner administrator.
+	// The owner is exempt from this rule (they have ultimate control)
+	// and the existing checks below cover owner-as-target.
+	var caller db.User
+	if err := h.DB.Select("id", "role").First(&caller, currentUserID).Error; err != nil {
+		return nil, huma.Error500InternalServerError("failed to load caller")
+	}
+	if user.Role == db.RoleAdmin && caller.Role != db.RoleOwner && caller.ID != user.ID {
+		return nil, huma.Error403Forbidden("only the owner can modify other admins")
+	}
+
 	if user.Role == db.RoleOwner && req.Role != "" {
 		return nil, huma.Error403Forbidden("cannot change the owner's role")
 	}
@@ -324,11 +337,23 @@ func (h *AdminHandler) HumaAdminUpdateUser(ctx context.Context, in *AdminUpdateU
 		user.Role = req.Role
 	}
 	if req.Email != "" {
+		// Issue #1123: prevent collisions and overwrite of owner email.
+		if user.Role == db.RoleOwner && caller.Role != db.RoleOwner {
+			return nil, huma.Error403Forbidden("cannot change the owner's email")
+		}
+		var conflict db.User
+		if err := h.DB.Where("email = ? AND id != ?", req.Email, user.ID).First(&conflict).Error; err == nil {
+			return nil, huma.Error409Conflict("email already in use")
+		}
 		user.Email = req.Email
 	}
 	if req.Password != "" {
 		if user.Role == db.RoleOwner {
 			return nil, huma.Error403Forbidden("cannot change the owner's password")
+		}
+		// Issue #1123: only owner may change another admin's password.
+		if user.Role == db.RoleAdmin && caller.Role != db.RoleOwner && caller.ID != user.ID {
+			return nil, huma.Error403Forbidden("only the owner can change another admin's password")
 		}
 		if len(req.Password) < 8 {
 			return nil, huma.Error400BadRequest("password must be at least 8 characters")
@@ -378,6 +403,15 @@ func (h *AdminHandler) HumaAdminDeleteUser(ctx context.Context, in *AdminDeleteU
 	currentUserID := UserIDFromContext(ctx)
 	if currentUserID == user.ID {
 		return nil, huma.Error400BadRequest("cannot delete yourself")
+	}
+
+	// Issue #1122: only owner can soft-delete another admin.
+	var caller db.User
+	if err := h.DB.Select("id", "role").First(&caller, currentUserID).Error; err != nil {
+		return nil, huma.Error500InternalServerError("failed to load caller")
+	}
+	if user.Role == db.RoleAdmin && caller.Role != db.RoleOwner {
+		return nil, huma.Error403Forbidden("only the owner can delete other admins")
 	}
 
 	err := h.DB.Transaction(func(tx *gorm.DB) error {

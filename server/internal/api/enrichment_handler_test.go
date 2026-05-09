@@ -138,7 +138,11 @@ func TestListThemeGames_InvalidID(t *testing.T) {
 	req := httptest.NewRequest("GET", "/api/themes/abc/games", nil)
 	req.Header.Set("Authorization", "Bearer "+env.token)
 	env.router.ServeHTTP(w, req)
-	assert.Equal(t, http.StatusBadRequest, w.Code)
+	// Pattern validation in huma rejects with 422 at the API edge (#1127);
+	// before that, the handler parsed the string and returned 400. Either
+	// is acceptable so long as the request never reaches the DB.
+	assert.True(t, w.Code == http.StatusBadRequest || w.Code == http.StatusUnprocessableEntity,
+		"expected 400 or 422, got %d", w.Code)
 }
 
 // --- Keyword endpoint tests ---
@@ -857,7 +861,8 @@ func TestGetGameSeries_InvalidID(t *testing.T) {
 	req := httptest.NewRequest("GET", "/api/games/abc/series", nil)
 	req.Header.Set("Authorization", "Bearer "+env.token)
 	env.router.ServeHTTP(w, req)
-	assert.Equal(t, http.StatusBadRequest, w.Code)
+	assert.True(t, w.Code == http.StatusBadRequest || w.Code == http.StatusUnprocessableEntity,
+		"expected 400 or 422, got %d", w.Code)
 }
 
 func TestGetGameSeries_MultipleSeries(t *testing.T) {
@@ -949,7 +954,8 @@ func TestGetGameFranchises_InvalidID(t *testing.T) {
 	req := httptest.NewRequest("GET", "/api/games/abc/franchises", nil)
 	req.Header.Set("Authorization", "Bearer "+env.token)
 	env.router.ServeHTTP(w, req)
-	assert.Equal(t, http.StatusBadRequest, w.Code)
+	assert.True(t, w.Code == http.StatusBadRequest || w.Code == http.StatusUnprocessableEntity,
+		"expected 400 or 422, got %d", w.Code)
 }
 
 func TestGetGameFranchises_MultipleFranchises(t *testing.T) {

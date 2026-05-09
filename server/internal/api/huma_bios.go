@@ -25,7 +25,7 @@ type ListBiosFilesOutput struct {
 
 // DeleteBiosFileInput is the input for DELETE /api/admin/bios/{filename}.
 type DeleteBiosFileInput struct {
-	Filename string `path:"filename" doc:"BIOS file name."`
+	Filename string `path:"filename" pattern:"^[A-Za-z0-9._()\\[\\] +-]+$" maxLength:"128" doc:"BIOS file name."`
 }
 
 // DeleteBiosFileOutput wraps the delete success message.

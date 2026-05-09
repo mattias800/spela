@@ -95,6 +95,7 @@ func setupTestEnv(t *testing.T) (*gorm.DB, *Config) {
 		&db.GameAgeRating{},
 		&db.ScrapeJob{},
 		&db.ScrapeQueueItem{},
+		&db.Block{},
 	)
 	require.NoError(t, err)
 	err = db.SeedConsoles(database)
@@ -137,7 +138,7 @@ func TestRegisterAndLogin(t *testing.T) {
 	body, _ := json.Marshal(map[string]string{
 		"username": "testuser",
 		"email":    "test@example.com",
-		"password": "password123",
+		"password": "SecureTestPass!2024",
 	})
 	w := httptest.NewRecorder()
 	req := httptest.NewRequest("POST", "/api/auth/register", bytes.NewReader(body))
@@ -158,7 +159,7 @@ func TestRegisterAndLogin(t *testing.T) {
 	// Login
 	body, _ = json.Marshal(map[string]string{
 		"username": "testuser",
-		"password": "password123",
+		"password": "SecureTestPass!2024",
 	})
 	w = httptest.NewRecorder()
 	req = httptest.NewRequest("POST", "/api/auth/login", bytes.NewReader(body))
@@ -180,7 +181,7 @@ func TestRegister_DuplicateUsername(t *testing.T) {
 	body, _ := json.Marshal(map[string]string{
 		"username": "dupeuser",
 		"email":    "dupe1@example.com",
-		"password": "password123",
+		"password": "SecureTestPass!2024",
 	})
 
 	// First registration
@@ -194,7 +195,7 @@ func TestRegister_DuplicateUsername(t *testing.T) {
 	body, _ = json.Marshal(map[string]string{
 		"username": "dupeuser",
 		"email":    "dupe2@example.com",
-		"password": "password123",
+		"password": "SecureTestPass!2024",
 	})
 	w = httptest.NewRecorder()
 	req = httptest.NewRequest("POST", "/api/auth/register", bytes.NewReader(body))
@@ -228,7 +229,7 @@ func TestRefreshToken(t *testing.T) {
 	body, _ := json.Marshal(map[string]string{
 		"username": "refreshuser",
 		"email":    "refresh@example.com",
-		"password": "password123",
+		"password": "SecureTestPass!2024",
 	})
 	w := httptest.NewRecorder()
 	req := httptest.NewRequest("POST", "/api/auth/register", bytes.NewReader(body))
@@ -397,7 +398,7 @@ func TestUpdateProfile(t *testing.T) {
 
 	body, _ := json.Marshal(map[string]string{
 		"email":           "updated@example.com",
-		"currentPassword": "password123",
+		"currentPassword": "SecureTestPass!2024",
 	})
 	w := httptest.NewRecorder()
 	req := httptest.NewRequest("PUT", "/api/user/profile", bytes.NewReader(body))
@@ -468,7 +469,7 @@ func TestAdminEndpoint_NonAdmin(t *testing.T) {
 	ownerToken := registerAndGetToken(t, router)
 
 	// Register second user (will be regular user)
-	userToken := createNonOwnerUser(t, router, ownerToken, "regularuser", "regular@example.com", "password123")
+	userToken := createNonOwnerUser(t, router, ownerToken, "regularuser", "regular@example.com", "SecureTestPass!2024")
 
 	// Verify user is not admin
 	var user db.User
@@ -1323,7 +1324,7 @@ func TestGetPublicProfile_EmptyStats(t *testing.T) {
 	token := registerAndGetToken(t, router)
 
 	// Register a second user with no activity
-	createNonOwnerUser(t, router, token, "emptyuser", "empty@example.com", "password123")
+	createNonOwnerUser(t, router, token, "emptyuser", "empty@example.com", "SecureTestPass!2024")
 
 	database := cfg.DB
 	var user db.User
@@ -2208,7 +2209,7 @@ func TestDeleteSharedSave_NotOwner(t *testing.T) {
 	saveID := createResp["id"].(string)
 
 	// Register a second user
-	otherToken := createNonOwnerUser(t, router, token, "otheruser", "other@example.com", "password123")
+	otherToken := createNonOwnerUser(t, router, token, "otheruser", "other@example.com", "SecureTestPass!2024")
 
 	// Try to delete as other user - should fail
 	w = httptest.NewRecorder()
@@ -2276,7 +2277,7 @@ func TestSearchUsers(t *testing.T) {
 
 	// Register additional users
 	for _, name := range []string{"alice", "alex", "bob", "charlie"} {
-		createNonOwnerUser(t, router, token, name, name+"@example.com", "password123")
+		createNonOwnerUser(t, router, token, name, name+"@example.com", "SecureTestPass!2024")
 	}
 
 	// Helper to extract []map[string]interface{} from PaginatedResponse.Data
@@ -2363,7 +2364,7 @@ func TestGetPendingInviteCount(t *testing.T) {
 	token := registerAndGetToken(t, router)
 
 	// Register a second user
-	inviteeToken := createNonOwnerUser(t, router, token, "invitee", "invitee@example.com", "password123")
+	inviteeToken := createNonOwnerUser(t, router, token, "invitee", "invitee@example.com", "SecureTestPass!2024")
 
 	t.Run("returns zero when no invites", func(t *testing.T) {
 		w := httptest.NewRecorder()
@@ -2458,7 +2459,7 @@ func TestUpdateVerificationTag_NonAdmin_Forbidden(t *testing.T) {
 	ownerToken := registerAndGetToken(t, router)
 
 	// Register second user (regular user)
-	userToken := createNonOwnerUser(t, router, ownerToken, "regularuser", "regular@example.com", "password123")
+	userToken := createNonOwnerUser(t, router, ownerToken, "regularuser", "regular@example.com", "SecureTestPass!2024")
 
 	// Create a test game
 	var console db.Console
@@ -2549,7 +2550,7 @@ func TestScrapeStatus_NonAdmin(t *testing.T) {
 	ownerToken := registerAndGetToken(t, router)
 
 	// Register second user (will be regular user)
-	userToken := createNonOwnerUser(t, router, ownerToken, "regularuser2", "regular2@example.com", "password123")
+	userToken := createNonOwnerUser(t, router, ownerToken, "regularuser2", "regular2@example.com", "SecureTestPass!2024")
 
 	// Verify user is not admin
 	var user db.User
@@ -2570,7 +2571,7 @@ func registerAndGetToken(t *testing.T, router http.Handler) string {
 	body, _ := json.Marshal(map[string]string{
 		"username": "apitest",
 		"email":    "apitest@example.com",
-		"password": "password123",
+		"password": "SecureTestPass!2024",
 	})
 	w := httptest.NewRecorder()
 	req := httptest.NewRequest("POST", "/api/auth/register", bytes.NewReader(body))

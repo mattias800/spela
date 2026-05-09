@@ -44,7 +44,10 @@ func ApplyBPS(romData, patchData []byte) ([]byte, error) {
 	pos := 4
 
 	// Read source size
-	sourceSize, n := decodeVLQ(patchData[pos:])
+	sourceSize, n, ok := decodeVLQ(patchData[pos:])
+	if !ok {
+		return nil, fmt.Errorf("BPS patch truncated reading source size")
+	}
 	pos += n
 
 	// Verify source size matches
@@ -53,12 +56,21 @@ func ApplyBPS(romData, patchData []byte) ([]byte, error) {
 	}
 
 	// Read target size
-	targetSize, n := decodeVLQ(patchData[pos:])
+	targetSize, n, ok := decodeVLQ(patchData[pos:])
+	if !ok {
+		return nil, fmt.Errorf("BPS patch truncated reading target size")
+	}
 	pos += n
 
 	// Read and skip metadata
-	metadataSize, n := decodeVLQ(patchData[pos:])
+	metadataSize, n, ok := decodeVLQ(patchData[pos:])
+	if !ok {
+		return nil, fmt.Errorf("BPS patch truncated reading metadata size")
+	}
 	pos += n
+	if pos+int(metadataSize) > len(patchData) {
+		return nil, fmt.Errorf("BPS metadata size %d overruns patch buffer", metadataSize)
+	}
 	pos += int(metadataSize)
 
 	// Verify source CRC32
@@ -83,7 +95,10 @@ func ApplyBPS(romData, patchData []byte) ([]byte, error) {
 	// Process actions (stop 12 bytes before end = 3 CRC32 values)
 	endPos := len(patchData) - 12
 	for pos < endPos {
-		data, n := decodeVLQ(patchData[pos:])
+		data, n, ok := decodeVLQ(patchData[pos:])
+		if !ok {
+			return nil, fmt.Errorf("BPS patch truncated reading action header at offset %d", pos)
+		}
 		pos += n
 
 		actionType := data & 3
@@ -110,7 +125,10 @@ func ApplyBPS(romData, patchData []byte) ([]byte, error) {
 			targetPos += length
 
 		case 2: // SourceCopy
-			offset, n := decodeSignedVLQ(patchData[pos:])
+			offset, n, ok := decodeSignedVLQ(patchData[pos:])
+			if !ok {
+				return nil, fmt.Errorf("BPS patch truncated reading SourceCopy offset at %d", pos)
+			}
 			pos += n
 			sourceRelOffset += offset
 			for i := 0; i < length; i++ {
@@ -122,7 +140,10 @@ func ApplyBPS(romData, patchData []byte) ([]byte, error) {
 			}
 
 		case 3: // TargetCopy
-			offset, n := decodeSignedVLQ(patchData[pos:])
+			offset, n, ok := decodeSignedVLQ(patchData[pos:])
+			if !ok {
+				return nil, fmt.Errorf("BPS patch truncated reading TargetCopy offset at %d", pos)
+			}
 			pos += n
 			targetRelOffset += offset
 			for i := 0; i < length; i++ {
@@ -146,29 +167,37 @@ func ApplyBPS(romData, patchData []byte) ([]byte, error) {
 }
 
 // decodeVLQ decodes a variable-length quantity from BPS/UPS format.
-// Returns the value and the number of bytes consumed.
-func decodeVLQ(data []byte) (uint64, int) {
+// Returns the value, the number of bytes consumed, and ok=false if the
+// input is truncated (no terminator byte found).
+//
+// Issue #1134(B): the previous (value, n) signature returned len(data)
+// as the consumed-byte count when no terminator was present, leaving
+// the caller's `pos += n` legitimately past end-of-buffer. The next
+// indexed read panicked with index-out-of-range; huma's middleware
+// recovered that into a 500. Switching to (value, n, ok) lets callers
+// surface a clean parser error and avoids any panic-recovery branch.
+func decodeVLQ(data []byte) (uint64, int, bool) {
 	var value uint64
 	shift := uint(0)
 	for i, b := range data {
 		value += uint64(b&0x7F) << shift
 		if b&0x80 != 0 {
-			return value, i + 1
+			return value, i + 1, true
 		}
 		value += 1 << (shift + 7)
 		shift += 7
 	}
-	return value, len(data)
+	return value, len(data), false
 }
 
 // decodeSignedVLQ decodes a signed variable-length quantity.
 // The lowest bit indicates sign (1 = negative).
-func decodeSignedVLQ(data []byte) (int, int) {
-	value, n := decodeVLQ(data)
+func decodeSignedVLQ(data []byte) (int, int, bool) {
+	value, n, ok := decodeVLQ(data)
 	if value&1 != 0 {
-		return -int(value >> 1) - 1, n
+		return -int(value >> 1) - 1, n, ok
 	}
-	return int(value >> 1), n
+	return int(value >> 1), n, ok
 }
 
 // readLE32 reads a 32-bit little-endian value.

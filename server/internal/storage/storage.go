@@ -701,9 +701,41 @@ func (s *Storage) DeleteSessionDir(sessionID uint) error {
 // ResolveGamePath resolves a relative game path (e.g. "nes/Mario.nes") to an
 // absolute filesystem path by joining it with each gameDir and returning the
 // first that exists on disk. Returns an error if no match is found.
+//
+// Issue #1125: rejects relPaths that contain `..` segments or are
+// absolute, and verifies the resolved path stays inside the gameDir it
+// was joined onto. Without this, a Game.FilePath value of
+// "../../etc/spela.env" — introducible via any caller that ever writes
+// FilePath without scrubbing — joined+cleaned through filepath.Join
+// could land outside gameDirs, and callers that don't follow up with
+// ValidateROMPath (e.g. HumaCreateRomHack) leak arbitrary host files.
 func ResolveGamePath(relPath string, gameDirs []string) (string, error) {
+	if relPath == "" {
+		return "", fmt.Errorf("game path is empty")
+	}
+	if filepath.IsAbs(relPath) || strings.HasPrefix(relPath, "/") || strings.HasPrefix(relPath, "\\") {
+		return "", fmt.Errorf("game path must be relative: %s", relPath)
+	}
+	cleaned := filepath.Clean(relPath)
+	for _, seg := range strings.Split(filepath.ToSlash(cleaned), "/") {
+		if seg == ".." {
+			return "", fmt.Errorf("game path contains traversal segment: %s", relPath)
+		}
+	}
 	for _, dir := range gameDirs {
-		full := filepath.Join(dir, relPath)
+		full := filepath.Join(dir, cleaned)
+		absFull, err := filepath.Abs(full)
+		if err != nil {
+			continue
+		}
+		absDir, err := filepath.Abs(dir)
+		if err != nil {
+			continue
+		}
+		if absFull != absDir && !strings.HasPrefix(absFull, absDir+string(filepath.Separator)) {
+			// Joined path escapes the gameDir — try the next one.
+			continue
+		}
 		if _, err := os.Stat(full); err == nil {
 			return full, nil
 		}

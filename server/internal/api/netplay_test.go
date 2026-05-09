@@ -17,7 +17,7 @@ import (
 // ownerToken must be a valid admin/owner token.
 func registerUserAndGetToken(t *testing.T, router http.Handler, ownerToken, username, email string) string {
 	t.Helper()
-	return createNonOwnerUser(t, router, ownerToken, username, email, "password123")
+	return createNonOwnerUser(t, router, ownerToken, username, email, "SecureTestPass!2024")
 }
 
 // netplayTestCtx holds shared state for netplay tests.

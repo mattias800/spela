@@ -39,7 +39,7 @@ func consoleAuthToken(t *testing.T, router http.Handler) string {
 	body, _ := json.Marshal(map[string]string{
 		"username": "consoletest",
 		"email":    "consoletest@example.com",
-		"password": "password123",
+		"password": "SecureTestPass!2024",
 	})
 	w := httptest.NewRecorder()
 	req := httptest.NewRequest("POST", "/api/auth/register", bytes.NewReader(body))

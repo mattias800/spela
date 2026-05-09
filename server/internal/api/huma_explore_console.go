@@ -16,7 +16,7 @@ import (
 
 // GetConsoleShowcaseInput is the input for GET /api/explore/consoles/{id}/showcase.
 type GetConsoleShowcaseInput struct {
-	ID string `path:"id" doc:"Console abbreviation (e.g. 'snes')."`
+	ID string `path:"id" pattern:"^[a-zA-Z0-9_-]+$" maxLength:"32" doc:"Console abbreviation (e.g. 'snes')."`
 }
 
 // GetConsoleShowcaseOutput wraps the console showcase response.

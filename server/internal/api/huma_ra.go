@@ -83,7 +83,7 @@ type GetRATokenOutput struct {
 
 // GetAchievementProgressInput is the input for GET /api/games/{id}/achievements/progress.
 type GetAchievementProgressInput struct {
-	ID string `path:"id" doc:"Game ID."`
+	ID string `path:"id" pattern:"^[0-9]+$" maxLength:"20" doc:"Game ID."`
 }
 
 // GameAchievementProgressResponse is the wire format for per-game user progress.
@@ -99,7 +99,7 @@ type GetAchievementProgressOutput struct {
 
 // GetAchievementTimelineInput is the input for GET /api/games/{id}/achievements/timeline.
 type GetAchievementTimelineInput struct {
-	ID string `path:"id" doc:"Game ID."`
+	ID string `path:"id" pattern:"^[0-9]+$" maxLength:"20" doc:"Game ID."`
 }
 
 // AchievementTimelineResponse is the wire format for the timeline response.
@@ -121,7 +121,7 @@ type GetAchievementTimelineOutput struct {
 
 // GetAchievementLeaderboardInput is the input for GET /api/games/{id}/achievements/leaderboard.
 type GetAchievementLeaderboardInput struct {
-	ID string `path:"id" doc:"Game ID."`
+	ID string `path:"id" pattern:"^[0-9]+$" maxLength:"20" doc:"Game ID."`
 }
 
 // AchievementLeaderboardResponse is the wire format for the leaderboard response.

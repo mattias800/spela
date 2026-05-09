@@ -26,7 +26,7 @@ type ListThemesOutput struct {
 
 // ListThemeGamesInput is the input for GET /api/themes/{id}/games.
 type ListThemeGamesInput struct {
-	ID       string `path:"id" doc:"IGDB theme ID."`
+	ID       string `path:"id" pattern:"^[0-9]+$" maxLength:"20" doc:"IGDB theme ID."`
 	Page     int    `query:"page" doc:"1-based page number (defaults to 1)."`
 	PageSize int    `query:"pageSize" doc:"Page size (defaults to 20, clamped to 1-100)."`
 }
@@ -48,7 +48,7 @@ type ListKeywordsOutput struct {
 
 // ListKeywordGamesInput is the input for GET /api/keywords/{id}/games.
 type ListKeywordGamesInput struct {
-	ID       string `path:"id" doc:"IGDB keyword ID."`
+	ID       string `path:"id" pattern:"^[0-9]+$" maxLength:"20" doc:"IGDB keyword ID."`
 	Page     int    `query:"page" doc:"1-based page number."`
 	PageSize int    `query:"pageSize" doc:"Page size."`
 }
@@ -68,7 +68,7 @@ type ListSeriesOutput struct {
 
 // GetSeriesDetailInput is the input for GET /api/series/{id}.
 type GetSeriesDetailInput struct {
-	ID string `path:"id" doc:"Series ID."`
+	ID string `path:"id" pattern:"^[0-9]+$" maxLength:"20" doc:"Series ID."`
 }
 
 // GetSeriesDetailOutput wraps the series detail body.
@@ -86,7 +86,7 @@ type ListFranchisesOutput struct {
 
 // GetFranchiseDetailInput is the input for GET /api/franchises/{id}.
 type GetFranchiseDetailInput struct {
-	ID string `path:"id" doc:"Franchise group ID, or IGDB franchise ID as fallback."`
+	ID string `path:"id" pattern:"^[0-9]+$" maxLength:"20" doc:"Franchise group ID, or IGDB franchise ID as fallback."`
 }
 
 // GetFranchiseDetailOutput wraps the franchise detail body.
@@ -96,7 +96,7 @@ type GetFranchiseDetailOutput struct {
 
 // ListFranchiseGamesInput is the input for GET /api/franchises/{id}/games.
 type ListFranchiseGamesInput struct {
-	ID       string `path:"id" doc:"IGDB franchise ID."`
+	ID       string `path:"id" pattern:"^[0-9]+$" maxLength:"20" doc:"IGDB franchise ID."`
 	Page     int    `query:"page" doc:"1-based page number."`
 	PageSize int    `query:"pageSize" doc:"Page size."`
 }
@@ -108,7 +108,7 @@ type ListFranchiseGamesOutput struct {
 
 // GetGameSeriesInput is the input for GET /api/games/{id}/series.
 type GetGameSeriesInput struct {
-	ID string `path:"id" doc:"Game ID."`
+	ID string `path:"id" pattern:"^[0-9]+$" maxLength:"20" doc:"Game ID."`
 }
 
 // GetGameSeriesOutput wraps the game series list body.
@@ -118,7 +118,7 @@ type GetGameSeriesOutput struct {
 
 // GetGameFranchisesInput is the input for GET /api/games/{id}/franchises.
 type GetGameFranchisesInput struct {
-	ID string `path:"id" doc:"Game ID."`
+	ID string `path:"id" pattern:"^[0-9]+$" maxLength:"20" doc:"Game ID."`
 }
 
 // GetGameFranchisesOutput wraps the game franchises list body.
@@ -526,8 +526,12 @@ func (h *EnrichmentHandler) HumaListSeries(_ context.Context, _ *ListSeriesInput
 
 // HumaGetSeriesDetail is the huma handler for GET /api/series/{id}.
 func (h *EnrichmentHandler) HumaGetSeriesDetail(_ context.Context, in *GetSeriesDetailInput) (*GetSeriesDetailOutput, error) {
+	parsedID, err := strconv.ParseUint(in.ID, 10, 64)
+	if err != nil {
+		return nil, huma.Error400BadRequest("invalid series ID")
+	}
 	var series db.GameSeries
-	if err := h.DB.Preload("Entries").First(&series, in.ID).Error; err != nil {
+	if err := h.DB.Preload("Entries").First(&series, uint(parsedID)).Error; err != nil {
 		return nil, huma.Error404NotFound("series not found")
 	}
 
@@ -669,7 +673,11 @@ func (h *EnrichmentHandler) HumaListFranchises(_ context.Context, _ *ListFranchi
 
 // HumaGetFranchiseDetail is the huma handler for GET /api/franchises/{id}.
 func (h *EnrichmentHandler) HumaGetFranchiseDetail(_ context.Context, in *GetFranchiseDetailInput) (*GetFranchiseDetailOutput, error) {
-	id := in.ID
+	parsedID, err := strconv.ParseUint(in.ID, 10, 64)
+	if err != nil {
+		return nil, huma.Error400BadRequest("invalid franchise ID")
+	}
+	id := uint(parsedID)
 	var franchise db.GameFranchiseGroup
 	if err := h.DB.Preload("Entries").First(&franchise, id).Error; err != nil {
 		if err2 := h.DB.Preload("Entries").Where("igdb_franchise_id = ?", id).First(&franchise).Error; err2 != nil {

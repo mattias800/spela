@@ -169,7 +169,7 @@ func TestDeleteSavedSearch_NotOwned(t *testing.T) {
 	searchID := resp["id"].(string)
 
 	// Create a second user
-	token2 := createNonOwnerUser(t, router, token, "user2", "user2@example.com", "password123")
+	token2 := createNonOwnerUser(t, router, token, "user2", "user2@example.com", "SecureTestPass!2024")
 	_ = database // suppress unused
 
 	// Try to delete user1's search as user2

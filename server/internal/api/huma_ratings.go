@@ -13,7 +13,7 @@ import (
 
 // CreateOrUpdateRatingInput is the input for POST /api/games/{id}/ratings.
 type CreateOrUpdateRatingInput struct {
-	ID   string `path:"id" doc:"Game ID."`
+	ID   string `path:"id" pattern:"^[0-9]+$" maxLength:"20" doc:"Game ID."`
 	Body CreateOrUpdateRatingRequest
 }
 
@@ -29,7 +29,7 @@ type CreateOrUpdateRatingOutput struct {
 // page/pageSize are enforced in the handler so out-of-range values fall back
 // to defaults instead of returning huma's 422 "validation failed".
 type GetRatingsInput struct {
-	ID       string `path:"id" doc:"Game ID."`
+	ID       string `path:"id" pattern:"^[0-9]+$" maxLength:"20" doc:"Game ID."`
 	Page     int    `query:"page" doc:"1-based page number (defaults to 1)."`
 	PageSize int    `query:"pageSize" doc:"Page size (defaults to 20, clamped to 1-100)."`
 }
@@ -41,7 +41,7 @@ type GetRatingsOutput struct {
 
 // GetRatingSummaryInput is the input for GET /api/games/{id}/ratings/summary.
 type GetRatingSummaryInput struct {
-	ID string `path:"id" doc:"Game ID."`
+	ID string `path:"id" pattern:"^[0-9]+$" maxLength:"20" doc:"Game ID."`
 }
 
 // GetRatingSummaryOutput wraps the rating-summary response.
@@ -51,7 +51,7 @@ type GetRatingSummaryOutput struct {
 
 // GetMyRatingInput is the input for GET /api/games/{id}/ratings/mine.
 type GetMyRatingInput struct {
-	ID string `path:"id" doc:"Game ID."`
+	ID string `path:"id" pattern:"^[0-9]+$" maxLength:"20" doc:"Game ID."`
 }
 
 // GetMyRatingOutput wraps the current user's rating response.
@@ -61,7 +61,7 @@ type GetMyRatingOutput struct {
 
 // DeleteRatingInput is the input for DELETE /api/games/{id}/ratings.
 type DeleteRatingInput struct {
-	ID string `path:"id" doc:"Game ID."`
+	ID string `path:"id" pattern:"^[0-9]+$" maxLength:"20" doc:"Game ID."`
 }
 
 // DeleteRatingOutput wraps the delete-rating success message.

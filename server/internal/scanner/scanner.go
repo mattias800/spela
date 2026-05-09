@@ -568,6 +568,11 @@ func parseM3U(m3uPath string, allowedDirs []string) ([]string, error) {
 // DiscCompanionFiles returns all file paths and total size for a disc entry.
 // For .cue files, it parses FILE directives to find companion .bin files.
 // For .iso/.chd/.pbp, it returns just the file itself.
+//
+// Companion paths are bounded to the disc's directory (issue #1116): a
+// malicious .cue/.gdi can otherwise reference `../../etc/passwd` and the
+// download path will read it back. Absolute paths and `..` segments are
+// rejected outright; resolved paths must remain inside the disc directory.
 func DiscCompanionFiles(discEntryPath string) ([]string, int64, error) {
 	ext := strings.ToLower(filepath.Ext(discEntryPath))
 	if ext != ".cue" && ext != ".gdi" {
@@ -580,6 +585,10 @@ func DiscCompanionFiles(discEntryPath string) ([]string, int64, error) {
 	}
 
 	dir := filepath.Dir(discEntryPath)
+	absDir, err := filepath.Abs(dir)
+	if err != nil {
+		return nil, 0, fmt.Errorf("resolving disc directory: %w", err)
+	}
 	files := []string{discEntryPath}
 	var totalSize int64
 
@@ -594,6 +603,39 @@ func DiscCompanionFiles(discEntryPath string) ([]string, int64, error) {
 		return nil, 0, fmt.Errorf("opening %s file: %w", ext, err)
 	}
 	defer f.Close()
+
+	resolveCompanion := func(name string) (string, bool) {
+		if name == "" {
+			return "", false
+		}
+		// Reject absolute paths outright — companions must be sibling
+		// files. .cue/.gdi sources sometimes carry forward-slash paths
+		// even on Windows, so check both separators.
+		if filepath.IsAbs(name) || strings.HasPrefix(name, "/") || strings.HasPrefix(name, "\\") {
+			slog.Warn("disc companion: absolute path rejected", "disc", discEntryPath, "entry", name)
+			return "", false
+		}
+		// Reject explicit traversal segments before resolving.
+		cleaned := filepath.Clean(name)
+		for _, seg := range strings.Split(filepath.ToSlash(cleaned), "/") {
+			if seg == ".." {
+				slog.Warn("disc companion: traversal rejected", "disc", discEntryPath, "entry", name)
+				return "", false
+			}
+		}
+		joined := filepath.Join(dir, cleaned)
+		abs, err := filepath.Abs(joined)
+		if err != nil {
+			slog.Warn("disc companion: abs resolve failed", "disc", discEntryPath, "entry", name, "error", err)
+			return "", false
+		}
+		// Must stay strictly inside the disc directory.
+		if abs != absDir && !strings.HasPrefix(abs, absDir+string(filepath.Separator)) {
+			slog.Warn("disc companion: escapes disc dir", "disc", discEntryPath, "entry", name, "resolved", abs)
+			return "", false
+		}
+		return joined, true
+	}
 
 	if ext == ".gdi" {
 		// GDI format: first line is track count, subsequent lines are
@@ -616,11 +658,10 @@ func DiscCompanionFiles(discEntryPath string) ([]string, int64, error) {
 				continue
 			}
 			trackFile := strings.Trim(fields[4], "\"")
-			trackPath := trackFile
-			if !filepath.IsAbs(trackPath) {
-				trackPath = filepath.Join(dir, trackPath)
+			trackPath, ok := resolveCompanion(trackFile)
+			if !ok {
+				continue
 			}
-			trackPath = filepath.Clean(trackPath)
 			files = append(files, trackPath)
 			if trackInfo, err := os.Stat(trackPath); err == nil {
 				totalSize += trackInfo.Size()
@@ -635,12 +676,10 @@ func DiscCompanionFiles(discEntryPath string) ([]string, int64, error) {
 			if matches == nil {
 				continue
 			}
-			binName := matches[1]
-			binPath := binName
-			if !filepath.IsAbs(binPath) {
-				binPath = filepath.Join(dir, binPath)
+			binPath, ok := resolveCompanion(matches[1])
+			if !ok {
+				continue
 			}
-			binPath = filepath.Clean(binPath)
 			files = append(files, binPath)
 			if binInfo, err := os.Stat(binPath); err == nil {
 				totalSize += binInfo.Size()

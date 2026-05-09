@@ -11,7 +11,7 @@ import (
 
 // GetGameArtworkInput is the input for GET /api/games/{id}/artwork.
 type GetGameArtworkInput struct {
-	ID string `path:"id" doc:"Game ID."`
+	ID string `path:"id" pattern:"^[0-9]+$" maxLength:"20" doc:"Game ID."`
 }
 
 // GetGameArtworkOutput wraps the SteamGridDB artwork URLs for the huma

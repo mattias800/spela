@@ -79,6 +79,13 @@ func DownloadMissing(biosDir, baseURL string, onProgress func(DownloadProgress))
 		// Re-download if the file is suspiciously small (< 1KB, likely a
 		// placeholder from a failed earlier download) or if it fails MD5
 		// validation when a checksum is available.
+		//
+		// Bundle entries: the sentinel file on disk is just one member
+		// of the extracted archive, not the archive itself. The MD5
+		// stored in the registry is the archive's hash, so we can't
+		// validate the sentinel directly. Fall back to size-only check
+		// for bundles; the archive MD5 still gates the actual download
+		// path further down.
 		destPath := entry.FilePath(biosDir)
 		if info, err := os.Stat(destPath); err == nil {
 			needsRedownload := false
@@ -86,7 +93,7 @@ func DownloadMissing(biosDir, baseURL string, onProgress func(DownloadProgress))
 				slog.Warn("BIOS file too small, re-downloading",
 					"file", entry.FileName, "size", info.Size())
 				needsRedownload = true
-			} else if entry.MD5 != "" {
+			} else if entry.MD5 != "" && !entry.Bundle {
 				if f, err := os.Open(destPath); err == nil {
 					h := md5.New()
 					io.Copy(h, f)
@@ -109,6 +116,30 @@ func DownloadMissing(biosDir, baseURL string, onProgress func(DownloadProgress))
 				}
 				continue
 			}
+		}
+
+		// Issue #1124(B): refuse to fetch entries lacking a registry
+		// checksum. The downloader pulls from a third-party GitHub
+		// account (Abdess/retrobios); without an MD5 we have no way
+		// to detect a malicious commit or cache poisoning, and the
+		// bytes are passed verbatim to the emulated CPU by libretro
+		// cores. Files already on disk are still served (operator
+		// uploaded them manually) — this only blocks the network
+		// fetch path.
+		if entry.MD5 == "" {
+			progress.Status = "failed"
+			progress.Error = "registry entry has no MD5 checksum; refusing untrusted auto-download (issue #1124)"
+			result.Failed++
+			result.Errors = append(result.Errors, DownloadError{
+				FileName:  entry.FileName,
+				ConsoleID: entry.ConsoleID,
+				URL:       "",
+				Error:     progress.Error,
+			})
+			if onProgress != nil {
+				onProgress(progress)
+			}
+			continue
 		}
 
 		// Use OverrideURL if set, otherwise build from repo base URL
@@ -324,13 +355,22 @@ func DownloadMissing(biosDir, baseURL string, onProgress func(DownloadProgress))
 
 // StartAutoDownload checks the bios_auto_download setting and, if enabled,
 // spawns a goroutine that downloads missing BIOS files at startup.
+//
+// Issue #1124: defaults to OFF. Auto-download trusts a third-party GitHub
+// account (Abdess/retrobios) and BIOS bytes are passed verbatim to the
+// emulated CPU by libretro cores; admins should opt in explicitly after
+// reviewing the trust model in SECURITY.md.
 func StartAutoDownload(biosDir string, database *gorm.DB) {
-	// Read the setting; default to "true" if not set
+	// Read the setting; default to OFF unless an admin has explicitly
+	// enabled auto-download. Pre-existing deployments that relied on
+	// the old default-on behaviour will not silently start fetching
+	// after this change — they need to flip the toggle in admin
+	// settings.
 	var setting db.ServerSetting
-	enabled := true
+	enabled := false
 	if err := database.Where("key = ?", "bios_auto_download").First(&setting).Error; err == nil {
-		if setting.Value == "false" {
-			enabled = false
+		if setting.Value == "true" {
+			enabled = true
 		}
 	}
 

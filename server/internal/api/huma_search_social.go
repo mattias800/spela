@@ -167,6 +167,16 @@ func (h *SocialHandler) HumaSearchUsers(ctx context.Context, in *SearchUsersInpu
 		base = base.Where("username LIKE ? ESCAPE '\\'", escapeLikePattern(query)+"%")
 	}
 
+	// Issue #1121: exclude users the caller has blocked AND users
+	// who have blocked the caller. The harasser shouldn't be able to
+	// see the harassed user pop up in their search results either.
+	if uid != 0 {
+		base = base.Where(
+			"id NOT IN (SELECT blocked_user_id FROM blocks WHERE user_id = ? AND deleted_at IS NULL) AND "+
+				"id NOT IN (SELECT user_id FROM blocks WHERE blocked_user_id = ? AND deleted_at IS NULL)",
+			uid, uid)
+	}
+
 	var total int64
 	base.Model(&db.User{}).Count(&total)
 

@@ -264,7 +264,7 @@ func TestSearch_Collections_PublicAndOwnPrivate(t *testing.T) {
 	require.NoError(t, database.First(&owner).Error)
 
 	// Create a second user
-	token2 := createNonOwnerUser(t, router, token, "user2", "user2@test.com", "password123")
+	token2 := createNonOwnerUser(t, router, token, "user2", "user2@test.com", "SecureTestPass!2024")
 	var user2 db.User
 	require.NoError(t, database.Where("username = ?", "user2").First(&user2).Error)
 

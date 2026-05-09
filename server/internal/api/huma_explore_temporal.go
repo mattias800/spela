@@ -28,7 +28,7 @@ type GetOnThisDayOutput struct {
 
 // GetBestOfYearInput is the input for GET /api/explore/best-of-year/{year}.
 type GetBestOfYearInput struct {
-	Year string `path:"year" doc:"Release year (1970-2100)."`
+	Year string `path:"year" pattern:"^(19|20|21)[0-9]{2}$" maxLength:"4" doc:"Release year (1970-2100)."`
 }
 
 // GetBestOfYearOutput wraps the best-of-year response.
@@ -48,7 +48,7 @@ type GetYourAnniversariesOutput struct {
 
 // GetDecadesInput is the input for GET /api/explore/decades/{decade}.
 type GetDecadesInput struct {
-	Decade string `path:"decade" doc:"Decade identifier: '80s', '90s', or '00s'."`
+	Decade string `path:"decade" pattern:"^[0-9]{2}s$" maxLength:"3" doc:"Decade identifier: '80s', '90s', or '00s'."`
 }
 
 // GetDecadesOutput wraps the decades response.

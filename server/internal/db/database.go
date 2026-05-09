@@ -227,6 +227,8 @@ func Initialize(dbPath string) (*gorm.DB, error) {
 		// Persistent scrape queue
 		&ScrapeJob{},
 		&ScrapeQueueItem{},
+		// Privacy: per-user block list (issue #1121)
+		&Block{},
 	)
 	if err != nil {
 		return nil, fmt.Errorf("running migrations: %w", err)

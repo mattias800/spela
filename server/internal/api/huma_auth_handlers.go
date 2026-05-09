@@ -393,6 +393,12 @@ func (h *AuthHandler) HumaLogin(ctx context.Context, in *AuthLoginInput) (*AuthL
 func (h *AuthHandler) HumaRegister(ctx context.Context, in *AuthRegisterInput) (*AuthRegisterOutput, error) {
 	req := in.Body
 
+	// Issue #1131(A): refuse the most-common / most-leaked passwords.
+	// Length already enforced via the schema tag.
+	if isCommonPassword(req.Password) {
+		return nil, huma.NewError(http.StatusBadRequest, "That password is on a known-common-password list. Please choose something else.")
+	}
+
 	hash, err := auth.HashPassword(req.Password)
 	if err != nil {
 		return nil, huma.NewError(http.StatusInternalServerError, "Registration failed. Please try again.")
@@ -412,7 +418,11 @@ func (h *AuthHandler) HumaRegister(ctx context.Context, in *AuthRegisterInput) (
 		var count int64
 		tx.Model(&db.User{}).Where("username = ? OR email = ?", req.Username, req.Email).Count(&count)
 		if count > 0 {
-			txErr = huma.NewError(http.StatusConflict, "That username or email is already taken.")
+			// Issue #1132: keep the response indistinguishable from
+			// any other unprocessable-registration error so an
+			// attacker can't probe whether a specific email is
+			// registered by submitting a junk username with it.
+			txErr = huma.NewError(http.StatusConflict, "Registration could not be completed.")
 			return fmt.Errorf("duplicate")
 		}
 
@@ -582,10 +592,26 @@ func (h *AuthHandler) HumaRefresh(_ context.Context, in *AuthRefreshInput) (*Aut
 	}}, nil
 }
 
+// setupCompletedKey is the server_settings key written after a successful
+// initial setup. Issue #1130: gating HumaSetup on userCount alone means
+// an out-of-band truncation of the users table re-opens the endpoint to
+// whoever races to /api/auth/setup first. The marker survives such a
+// truncation (it lives in server_settings) and prevents re-bootstrap.
+const setupCompletedKey = "setup_completed"
+
 // HumaSetup is the huma implementation of POST /api/auth/setup. Creates the
 // initial owner account; fails with 403 if a user already exists.
 func (h *AuthHandler) HumaSetup(_ context.Context, in *AuthSetupInput) (*AuthSetupOutput, error) {
 	req := in.Body
+
+	// Issue #1130: refuse setup outright if a previous successful setup
+	// left a marker, even if the users table is currently empty. An
+	// admin who needs to truly re-bootstrap a server must remove this
+	// row from server_settings deliberately.
+	var marker db.ServerSetting
+	if err := h.DB.Where("key = ?", setupCompletedKey).First(&marker).Error; err == nil {
+		return nil, huma.NewError(http.StatusForbidden, "Setup has already been completed.")
+	}
 
 	hash, err := auth.HashPassword(req.Password)
 	if err != nil {
@@ -609,6 +635,12 @@ func (h *AuthHandler) HumaSetup(_ context.Context, in *AuthSetupInput) (*AuthSet
 			Role:         db.RoleOwner,
 		}
 		if err := tx.Create(&user).Error; err != nil {
+			txErr = huma.NewError(http.StatusInternalServerError, "Setup failed. Please try again.")
+			return err
+		}
+		// Persist the setup-completed marker inside the same
+		// transaction so the row only appears on a successful setup.
+		if err := tx.Create(&db.ServerSetting{Key: setupCompletedKey, Value: "true"}).Error; err != nil {
 			txErr = huma.NewError(http.StatusInternalServerError, "Setup failed. Please try again.")
 			return err
 		}
@@ -651,6 +683,12 @@ func (h *AuthHandler) HumaSetupStatus(_ context.Context, _ *SetupStatusInput) (*
 	var userCount int64
 	h.DB.Model(&db.User{}).Count(&userCount)
 
+	// Issue #1130: needsSetup is true only when there are no users AND
+	// the setup-completed marker is absent. Without the marker check, an
+	// out-of-band truncation of users would silently re-open setup.
+	var marker db.ServerSetting
+	hasMarker := h.DB.Where("key = ?", setupCompletedKey).First(&marker).Error == nil
+
 	var gameCount int64
 	h.DB.Model(&db.Game{}).Count(&gameCount)
 
@@ -661,7 +699,7 @@ func (h *AuthHandler) HumaSetupStatus(_ context.Context, _ *SetupStatusInput) (*
 	}
 
 	return &SetupStatusOutput{Body: SetupStatusResponse{
-		NeedsSetup:          userCount == 0,
+		NeedsSetup:          userCount == 0 && !hasMarker,
 		RegistrationEnabled: registrationEnabled,
 		GameCount:           gameCount,
 	}}, nil
@@ -695,6 +733,18 @@ func (h *AuthHandler) HumaLogout(ctx context.Context, in *AuthLogoutInput) (*Aut
 		parts := splitAuthHeader(in.Authorization)
 		if len(parts) == 2 && parts[0] == "Bearer" {
 			token = parts[1]
+		}
+	}
+
+	// Issue #1117: a client that authenticated this request via the
+	// query-token fallback (still allowed on a small allowlist of
+	// download/WS routes) won't have an Authorization header. Fall back
+	// to the gin context query so its access token still gets
+	// blacklisted on logout — otherwise the leaked token remains valid
+	// for its remaining TTL even after the user explicitly logged out.
+	if token == "" {
+		if g := ginContextFromCtx(ctx); g != nil {
+			token = g.Query("token")
 		}
 	}
 

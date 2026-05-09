@@ -22,7 +22,7 @@ type ListFavoritesOutput struct {
 
 // AddFavoriteInput is the input for POST /api/user/favorites/{gameId}.
 type AddFavoriteInput struct {
-	GameID string `path:"gameId" doc:"Game ID."`
+	GameID string `path:"gameId" pattern:"^[0-9]+$" maxLength:"20" doc:"Game ID."`
 }
 
 // AddFavoriteOutput wraps the create-favorite success message (201 Created).
@@ -32,7 +32,7 @@ type AddFavoriteOutput struct {
 
 // RemoveFavoriteInput is the input for DELETE /api/user/favorites/{gameId}.
 type RemoveFavoriteInput struct {
-	GameID string `path:"gameId" doc:"Game ID."`
+	GameID string `path:"gameId" pattern:"^[0-9]+$" maxLength:"20" doc:"Game ID."`
 }
 
 // RemoveFavoriteOutput wraps the delete-favorite success message.
@@ -52,7 +52,7 @@ type ListPlayLaterOutput struct {
 
 // AddToPlayLaterInput is the input for POST /api/user/play-later/{gameId}.
 type AddToPlayLaterInput struct {
-	GameID string `path:"gameId" doc:"Game ID."`
+	GameID string `path:"gameId" pattern:"^[0-9]+$" maxLength:"20" doc:"Game ID."`
 }
 
 // AddToPlayLaterOutput uses a dynamic status code — 201 when we added a new
@@ -65,7 +65,7 @@ type AddToPlayLaterOutput struct {
 
 // RemoveFromPlayLaterInput is the input for DELETE /api/user/play-later/{gameId}.
 type RemoveFromPlayLaterInput struct {
-	GameID string `path:"gameId" doc:"Game ID."`
+	GameID string `path:"gameId" pattern:"^[0-9]+$" maxLength:"20" doc:"Game ID."`
 }
 
 // RemoveFromPlayLaterOutput wraps the delete-from-play-later success message.
@@ -215,8 +215,13 @@ func (h *UserHandler) HumaListFavorites(ctx context.Context, _ *ListFavoritesInp
 func (h *UserHandler) HumaAddFavorite(ctx context.Context, in *AddFavoriteInput) (*AddFavoriteOutput, error) {
 	uid := UserIDFromContext(ctx)
 
+	parsedID, err := strconv.ParseUint(in.GameID, 10, 64)
+	if err != nil {
+		return nil, huma.Error400BadRequest("invalid game ID")
+	}
+
 	var game db.Game
-	if err := h.DB.First(&game, in.GameID).Error; err != nil {
+	if err := h.DB.First(&game, uint(parsedID)).Error; err != nil {
 		return nil, huma.Error404NotFound("game not found")
 	}
 

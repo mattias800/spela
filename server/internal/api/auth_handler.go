@@ -127,10 +127,17 @@ func (h *AuthHandler) recordFailedLogin(username string) {
 	})
 }
 
-// clearFailedLogins resets the failed login counter on successful login.
+// clearFailedLogins fully resets the lockout state for an account on
+// successful login. Issue #1131(B): just clearing failed_count left the
+// LoginAttempt row in place, so a slow attacker who quietly failed one
+// attempt every 23h kept refreshing UpdatedAt — the 24h auto-reset in
+// isLockedOut never fired, and the escalation tier kept climbing across
+// days. Deleting the row outright ensures every legitimate successful
+// login restarts the escalation from zero, matching the recommendation
+// in #1131.
 func (h *AuthHandler) clearFailedLogins(username string) {
 	hashed := hashUsername(username)
-	h.DB.Where("username = ?", hashed).Updates(map[string]interface{}{"failed_count": 0, "locked_until": time.Time{}})
+	h.DB.Where("username = ?", hashed).Delete(&db.LoginAttempt{})
 }
 
 // AuthHandler handles authentication endpoints.

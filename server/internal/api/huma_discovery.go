@@ -15,7 +15,7 @@ import (
 
 // GetSimilarGamesInput is the input for GET /api/games/{id}/similar.
 type GetSimilarGamesInput struct {
-	ID string `path:"id" doc:"Game ID."`
+	ID string `path:"id" pattern:"^[0-9]+$" maxLength:"20" doc:"Game ID."`
 }
 
 // GetSimilarGamesOutput wraps the similar-games list for the huma response envelope.
@@ -25,7 +25,7 @@ type GetSimilarGamesOutput struct {
 
 // GetDeveloperGamesInput is the input for GET /api/games/{id}/developer-games.
 type GetDeveloperGamesInput struct {
-	ID string `path:"id" doc:"Game ID."`
+	ID string `path:"id" pattern:"^[0-9]+$" maxLength:"20" doc:"Game ID."`
 }
 
 // GetDeveloperGamesOutput wraps the developer-games list for the huma response envelope.

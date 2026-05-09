@@ -35,7 +35,7 @@ type GetDeveloperSpotlightOutput struct {
 
 // GetDeveloperDetailInput is the input for GET /api/explore/developers/{name}.
 type GetDeveloperDetailInput struct {
-	Name string `path:"name" doc:"Developer name (URL-decoded)."`
+	Name string `path:"name" pattern:"^[^/\\\\]+$" maxLength:"128" doc:"Developer name (URL-decoded)."`
 }
 
 // GetDeveloperDetailOutput wraps the developer detail response.
@@ -46,7 +46,7 @@ type GetDeveloperDetailOutput struct {
 
 // GetPublisherDetailInput is the input for GET /api/explore/publishers/{name}.
 type GetPublisherDetailInput struct {
-	Name string `path:"name" doc:"Publisher name (URL-decoded)."`
+	Name string `path:"name" pattern:"^[^/\\\\]+$" maxLength:"128" doc:"Publisher name (URL-decoded)."`
 }
 
 // GetPublisherDetailOutput wraps the publisher detail response.

@@ -132,6 +132,7 @@ func (h *UserHandler) HumaUpdateProfile(ctx context.Context, in *UpdateProfileIn
 
 	req := in.Body
 
+	emailChanged := false
 	if req.Email != "" {
 		if req.CurrentPassword == "" {
 			return nil, huma.Error400BadRequest("current password is required to change email")
@@ -141,7 +142,14 @@ func (h *UserHandler) HumaUpdateProfile(ctx context.Context, in *UpdateProfileIn
 		}
 		var existing db.User
 		if err := h.DB.Where("email = ? AND id != ?", req.Email, user.ID).First(&existing).Error; err == nil {
-			return nil, huma.Error409Conflict("email already in use")
+			// Issue #1132: vague message so an authenticated
+			// attacker can't probe whether a specific email is
+			// registered by issuing PUT /api/user/profile against
+			// a long list of candidates.
+			return nil, huma.Error409Conflict("could not update profile")
+		}
+		if user.Email != req.Email {
+			emailChanged = true
 		}
 		user.Email = req.Email
 	}
@@ -159,8 +167,23 @@ func (h *UserHandler) HumaUpdateProfile(ctx context.Context, in *UpdateProfileIn
 		user.AvatarURL = req.AvatarURL
 	}
 
+	// Issue #1133: a successful email change is recovery-channel-class
+	// state — bump TokenVersion (invalidating other access tokens) and
+	// revoke all refresh tokens, mirroring HumaChangePassword. Without
+	// this, a thief who briefly held the password (now rotated by the
+	// real owner) could keep a stolen access token alive for its full
+	// TTL while pivoting recovery to their own email if email-based
+	// password reset ships later.
+	if emailChanged {
+		user.TokenVersion++
+	}
+
 	if err := h.DB.Save(&user).Error; err != nil {
 		return nil, huma.Error500InternalServerError("failed to update profile")
+	}
+
+	if emailChanged {
+		h.DB.Where("user_id = ?", user.ID).Delete(&db.RefreshToken{})
 	}
 
 	return &UpdateProfileOutput{Body: ToUserResponse(user)}, nil
@@ -413,6 +436,11 @@ func (h *UserHandler) HumaChangePassword(ctx context.Context, in *ChangePassword
 
 	if !auth.CheckPassword(req.CurrentPassword, user.PasswordHash) {
 		return nil, huma.Error401Unauthorized("incorrect current password")
+	}
+
+	// Issue #1131(A): refuse common passwords on change too.
+	if isCommonPassword(req.NewPassword) {
+		return nil, huma.Error400BadRequest("that password is on a known-common-password list; please choose something else")
 	}
 
 	hash, err := auth.HashPassword(req.NewPassword)

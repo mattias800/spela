@@ -36,7 +36,7 @@ type SessionSaveUploadBody struct {
 // SessionSaveUploadInput wraps the path parameter and multipart body for
 // POST /api/sessions/{id}/saves.
 type SessionSaveUploadInput struct {
-	ID      string `path:"id" doc:"Session ID."`
+	ID      string `path:"id" pattern:"^[0-9]+$" maxLength:"20" doc:"Session ID."`
 	RawBody huma.MultipartFormFiles[SessionSaveUploadBody]
 }
 
@@ -49,15 +49,15 @@ type SessionSaveUploadOutput struct {
 // SessionAutoSaveUploadInput is the multipart body for POST
 // /api/sessions/{id}/saves/auto. Same shape as a manual save.
 type SessionAutoSaveUploadInput struct {
-	ID      string `path:"id" doc:"Session ID."`
+	ID      string `path:"id" pattern:"^[0-9]+$" maxLength:"20" doc:"Session ID."`
 	RawBody huma.MultipartFormFiles[SessionSaveUploadBody]
 }
 
 // SessionSlotSaveUploadInput is the multipart body for PUT
 // /api/sessions/{id}/saves/slot/{slot}. Slot saves don't have a name.
 type SessionSlotSaveUploadInput struct {
-	ID      string `path:"id" doc:"Session ID."`
-	Slot    string `path:"slot" doc:"Slot number 1-10."`
+	ID      string `path:"id" pattern:"^[0-9]+$" maxLength:"20" doc:"Session ID."`
+	Slot    string `path:"slot" pattern:"^[0-9]+$" maxLength:"20" doc:"Slot number 1-10."`
 	RawBody huma.MultipartFormFiles[SessionSaveUploadBody]
 }
 
@@ -68,7 +68,7 @@ type SessionSRAMUploadBody struct {
 
 // SessionSRAMUploadInput wraps the path parameter and multipart body.
 type SessionSRAMUploadInput struct {
-	ID      string `path:"id" doc:"Session ID."`
+	ID      string `path:"id" pattern:"^[0-9]+$" maxLength:"20" doc:"Session ID."`
 	RawBody huma.MultipartFormFiles[SessionSRAMUploadBody]
 }
 
@@ -89,7 +89,7 @@ type SessionSaveDirBundleUploadBody struct {
 
 // SessionSaveDirBundleUploadInput wraps the path parameter and multipart body.
 type SessionSaveDirBundleUploadInput struct {
-	ID      string `path:"id" doc:"Session ID."`
+	ID      string `path:"id" pattern:"^[0-9]+$" maxLength:"20" doc:"Session ID."`
 	RawBody huma.MultipartFormFiles[SessionSaveDirBundleUploadBody]
 }
 
@@ -342,6 +342,14 @@ func (h *SessionHandler) HumaUpsertSlotSave(ctx context.Context, in *SessionSlot
 	uid := UserIDFromContext(ctx)
 	session, err := h.humaLoadSessionWithOwnerCheck(in.ID, uid)
 	if err != nil {
+		return nil, err
+	}
+	// Issue #1128: parity with HumaUploadSessionSave / HumaUploadAutoSave
+	// — if a shared session backs this game session, the caller must
+	// hold the turn before they can write a slot. Without this gate, the
+	// session owner could overwrite slots while a co-op partner held the
+	// turn, polluting the shared playthrough save bank.
+	if err := h.humaCheckSharedSessionTurn(session.ID, uid); err != nil {
 		return nil, err
 	}
 

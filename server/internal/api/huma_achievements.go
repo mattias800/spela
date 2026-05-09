@@ -38,7 +38,7 @@ type UpdateShowcaseOutput struct {
 
 // GetPublicShowcaseInput is the input for GET /api/users/{id}/achievements/showcase.
 type GetPublicShowcaseInput struct {
-	ID string `path:"id" doc:"User ID."`
+	ID string `path:"id" pattern:"^[0-9]+$" maxLength:"20" doc:"User ID."`
 }
 
 // GetPublicShowcaseOutput wraps the public showcase response.
@@ -48,7 +48,7 @@ type GetPublicShowcaseOutput struct {
 
 // GetGameAchievementsInput is the input for GET /api/games/{id}/achievements.
 type GetGameAchievementsInput struct {
-	ID string `path:"id" doc:"Game ID."`
+	ID string `path:"id" pattern:"^[0-9]+$" maxLength:"20" doc:"Game ID."`
 }
 
 // GameAchievementsResponse is the wire format for GET /api/games/{id}/achievements.

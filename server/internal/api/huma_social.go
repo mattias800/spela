@@ -41,7 +41,7 @@ type GetRecentPartnersOutput struct {
 
 // GetPublicProfileInput is the input for GET /api/users/{id}/profile.
 type GetPublicProfileInput struct {
-	ID string `path:"id" doc:"User ID."`
+	ID string `path:"id" pattern:"^[0-9]+$" maxLength:"20" doc:"User ID."`
 }
 
 // GetPublicProfileOutput wraps the public profile response.
@@ -283,92 +283,109 @@ func (h *SocialHandler) HumaGetRecentPartners(ctx context.Context, _ *GetRecentP
 }
 
 // HumaGetPublicProfile is the huma handler for GET /api/users/{id}/profile.
-func (h *SocialHandler) HumaGetPublicProfile(_ context.Context, in *GetPublicProfileInput) (*GetPublicProfileOutput, error) {
+func (h *SocialHandler) HumaGetPublicProfile(ctx context.Context, in *GetPublicProfileInput) (*GetPublicProfileOutput, error) {
+	parsedID, err := strconv.ParseUint(in.ID, 10, 64)
+	if err != nil {
+		return nil, huma.Error400BadRequest("invalid user ID")
+	}
 	var user db.User
-	if err := h.DB.First(&user, in.ID).Error; err != nil {
+	if err := h.DB.First(&user, uint(parsedID)).Error; err != nil {
 		return nil, huma.Error404NotFound("user not found")
 	}
 
 	uid := user.ID
+	callerID := UserIDFromContext(ctx)
+
+	// Issue #1121: respect block relationships in BOTH directions and
+	// the target's profile_visibility setting. If either user has
+	// blocked the other, surface the same 404 we'd return for a
+	// nonexistent user — don't leak existence.
+	if callerID != 0 && callerID != uid && isBlockedEitherWay(h.DB, callerID, uid) {
+		return nil, huma.Error404NotFound("user not found")
+	}
+
+	// Treat anything other than "public" as private. The caller can
+	// still see their own profile in full.
+	visible := user.ProfileVisibility == "" || user.ProfileVisibility == "public" || callerID == uid
 
 	var agg struct {
 		TotalPlayTime int64
 		GamesPlayed   int64
 	}
-	h.DB.Model(&db.PlayHistory{}).
-		Where("user_id = ?", uid).
-		Select("COALESCE(SUM(play_time), 0) as total_play_time, COUNT(*) as games_played").
-		Scan(&agg)
-
-	var favorites []db.Favorite
-	h.DB.Where("user_id = ?", uid).
-		Preload("Game").Preload("Game.Console").
-		Limit(6).
-		Find(&favorites)
-
-	favGames := make([]PublicProfileGame, 0, len(favorites))
-	for _, f := range favorites {
-		if f.Game.ID == 0 {
-			continue
-		}
-		favGames = append(favGames, toPublicProfileGame(f.Game, 0))
-	}
-
-	var recentHistory []db.PlayHistory
-	h.DB.Where("user_id = ?", uid).
-		Preload("Game").Preload("Game.Console").
-		Order("last_played DESC").
-		Limit(6).
-		Find(&recentHistory)
-
-	recentGames := make([]PublicProfileGame, 0, len(recentHistory))
-	for _, ph := range recentHistory {
-		if ph.Game.ID == 0 {
-			continue
-		}
-		recentGames = append(recentGames, toPublicProfileGame(ph.Game, ph.PlayTime))
-	}
-
-	var topHistory []db.PlayHistory
-	h.DB.Where("user_id = ?", uid).
-		Preload("Game").Preload("Game.Console").
-		Order("play_time DESC").
-		Limit(6).
-		Find(&topHistory)
-
-	topGames := make([]PublicProfileGame, 0, len(topHistory))
-	for _, ph := range topHistory {
-		if ph.Game.ID == 0 {
-			continue
-		}
-		topGames = append(topGames, toPublicProfileGame(ph.Game, ph.PlayTime))
-	}
-
+	favGames := []PublicProfileGame{}
+	recentGames := []PublicProfileGame{}
+	topGames := []PublicProfileGame{}
 	isOnline := false
 	var currentGame *OnlineUserGameResponse
-	for _, oid := range h.Hub.GetOnlineUserIDs() {
-		if oid == uid {
-			isOnline = true
-			break
+
+	if visible {
+		h.DB.Model(&db.PlayHistory{}).
+			Where("user_id = ?", uid).
+			Select("COALESCE(SUM(play_time), 0) as total_play_time, COUNT(*) as games_played").
+			Scan(&agg)
+
+		var favorites []db.Favorite
+		h.DB.Where("user_id = ?", uid).
+			Preload("Game").Preload("Game.Console").
+			Limit(6).
+			Find(&favorites)
+		for _, f := range favorites {
+			if f.Game.ID == 0 {
+				continue
+			}
+			favGames = append(favGames, toPublicProfileGame(f.Game, 0))
 		}
-	}
-	if isOnline {
-		if gameID := h.Hub.GetUserGame(uid); gameID != 0 {
-			var game db.Game
-			if err := h.DB.Preload("Console").First(&game, gameID).Error; err == nil {
-				coverURL := game.CoverURL
-				if coverURL != "" && !strings.HasPrefix(coverURL, "http") {
-					coverURL = "/api/images/" + coverURL
-				}
-				consoleName := ""
-				if game.Console.ID != 0 {
-					consoleName = game.Console.Name
-				}
-				currentGame = &OnlineUserGameResponse{
-					ID:          strconv.FormatUint(uint64(game.ID), 10),
-					Title:       game.Title,
-					CoverURL:    coverURL,
-					ConsoleName: consoleName,
+
+		var recentHistory []db.PlayHistory
+		h.DB.Where("user_id = ?", uid).
+			Preload("Game").Preload("Game.Console").
+			Order("last_played DESC").
+			Limit(6).
+			Find(&recentHistory)
+		for _, ph := range recentHistory {
+			if ph.Game.ID == 0 {
+				continue
+			}
+			recentGames = append(recentGames, toPublicProfileGame(ph.Game, ph.PlayTime))
+		}
+
+		var topHistory []db.PlayHistory
+		h.DB.Where("user_id = ?", uid).
+			Preload("Game").Preload("Game.Console").
+			Order("play_time DESC").
+			Limit(6).
+			Find(&topHistory)
+		for _, ph := range topHistory {
+			if ph.Game.ID == 0 {
+				continue
+			}
+			topGames = append(topGames, toPublicProfileGame(ph.Game, ph.PlayTime))
+		}
+
+		for _, oid := range h.Hub.GetOnlineUserIDs() {
+			if oid == uid {
+				isOnline = true
+				break
+			}
+		}
+		if isOnline {
+			if gameID := h.Hub.GetUserGame(uid); gameID != 0 {
+				var game db.Game
+				if err := h.DB.Preload("Console").First(&game, gameID).Error; err == nil {
+					coverURL := game.CoverURL
+					if coverURL != "" && !strings.HasPrefix(coverURL, "http") {
+						coverURL = "/api/images/" + coverURL
+					}
+					consoleName := ""
+					if game.Console.ID != 0 {
+						consoleName = game.Console.Name
+					}
+					currentGame = &OnlineUserGameResponse{
+						ID:          strconv.FormatUint(uint64(game.ID), 10),
+						Title:       game.Title,
+						CoverURL:    coverURL,
+						ConsoleName: consoleName,
+					}
 				}
 			}
 		}
@@ -387,4 +404,15 @@ func (h *SocialHandler) HumaGetPublicProfile(_ context.Context, in *GetPublicPro
 		RecentGames:   recentGames,
 		TopGames:      topGames,
 	}}, nil
+}
+
+// isBlockedEitherWay returns true if a or b has blocked the other.
+// Issue #1121: lookups respect blocks symmetrically — a blocked user
+// shouldn't be able to scrape the blocker either.
+func isBlockedEitherWay(database *gorm.DB, a, b uint) bool {
+	var count int64
+	database.Model(&db.Block{}).
+		Where("(user_id = ? AND blocked_user_id = ?) OR (user_id = ? AND blocked_user_id = ?)", a, b, b, a).
+		Count(&count)
+	return count > 0
 }

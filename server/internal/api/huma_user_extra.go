@@ -24,7 +24,7 @@ type GetPlayHeatmapOutput struct {
 
 // GetPublicPlayHeatmapInput is the input for GET /api/users/{id}/play-heatmap.
 type GetPublicPlayHeatmapInput struct {
-	ID string `path:"id" doc:"User ID."`
+	ID string `path:"id" pattern:"^[0-9]+$" maxLength:"20" doc:"User ID."`
 }
 
 // GetPublicPlayHeatmapOutput wraps the public heatmap list.
@@ -73,7 +73,7 @@ type ReportEmulatorErrorOutput struct {
 
 // GetGameKeyMappingInput is the input for GET /api/user/games/{gameId}/keymapping.
 type GetGameKeyMappingInput struct {
-	GameID string `path:"gameId" doc:"Game ID."`
+	GameID string `path:"gameId" pattern:"^[0-9]+$" maxLength:"20" doc:"Game ID."`
 }
 
 // GetGameKeyMappingOutput wraps the key-mapping response.
@@ -83,7 +83,7 @@ type GetGameKeyMappingOutput struct {
 
 // UpdateGameKeyMappingInput is the input for PUT /api/user/games/{gameId}/keymapping.
 type UpdateGameKeyMappingInput struct {
-	GameID string `path:"gameId" doc:"Game ID."`
+	GameID string `path:"gameId" pattern:"^[0-9]+$" maxLength:"20" doc:"Game ID."`
 	Body   UpdateGameKeyMappingRequest
 }
 
@@ -94,7 +94,7 @@ type UpdateGameKeyMappingOutput struct {
 
 // DeleteGameKeyMappingInput is the input for DELETE /api/user/games/{gameId}/keymapping.
 type DeleteGameKeyMappingInput struct {
-	GameID string `path:"gameId" doc:"Game ID."`
+	GameID string `path:"gameId" pattern:"^[0-9]+$" maxLength:"20" doc:"Game ID."`
 }
 
 // DeleteGameKeyMappingOutput wraps the delete success message.

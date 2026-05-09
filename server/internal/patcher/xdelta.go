@@ -1,10 +1,20 @@
 package patcher
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"os/exec"
+	"time"
 )
+
+// xdeltaTimeout caps how long the xdelta3 child process is allowed to run.
+// xdelta3 is a complex C parser of attacker-supplied patch bytes
+// (issue #1129); a malformed patch could trigger an infinite loop or
+// runaway memory growth in older versions of the binary. 30 seconds is
+// generous for legitimate ROM hacks (which decode in milliseconds) and
+// short enough to bound DoS impact.
+const xdeltaTimeout = 30 * time.Second
 
 // ApplyXDelta applies an xdelta/VCDIFF patch by shelling out to xdelta3.
 // This requires xdelta3 to be installed on the system.
@@ -48,9 +58,18 @@ func ApplyXDelta(romData, patchData []byte) ([]byte, error) {
 	defer os.Remove(outFile.Name())
 	outFile.Close()
 
-	// Run xdelta3
-	cmd := exec.Command(xdeltaPath, "-d", "-s", srcFile.Name(), patchFile.Name(), outFile.Name())
+	// Run xdelta3 under a timeout (issue #1129). The argv form already
+	// makes shell metacharacters inert so command injection isn't a
+	// concern; the remaining attack surface is the C parser inside
+	// xdelta3 itself, which we bound with the context deadline so a
+	// hostile patch can't pin the server's CPU/memory indefinitely.
+	ctx, cancel := context.WithTimeout(context.Background(), xdeltaTimeout)
+	defer cancel()
+	cmd := exec.CommandContext(ctx, xdeltaPath, "-d", "-s", srcFile.Name(), patchFile.Name(), outFile.Name())
 	output, err := cmd.CombinedOutput()
+	if ctx.Err() == context.DeadlineExceeded {
+		return nil, fmt.Errorf("xdelta3 timed out after %s: patch may be malformed", xdeltaTimeout)
+	}
 	if err != nil {
 		return nil, fmt.Errorf("xdelta3 failed: %s: %w", string(output), err)
 	}
