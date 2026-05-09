@@ -582,10 +582,26 @@ func (h *AuthHandler) HumaRefresh(_ context.Context, in *AuthRefreshInput) (*Aut
 	}}, nil
 }
 
+// setupCompletedKey is the server_settings key written after a successful
+// initial setup. Issue #1130: gating HumaSetup on userCount alone means
+// an out-of-band truncation of the users table re-opens the endpoint to
+// whoever races to /api/auth/setup first. The marker survives such a
+// truncation (it lives in server_settings) and prevents re-bootstrap.
+const setupCompletedKey = "setup_completed"
+
 // HumaSetup is the huma implementation of POST /api/auth/setup. Creates the
 // initial owner account; fails with 403 if a user already exists.
 func (h *AuthHandler) HumaSetup(_ context.Context, in *AuthSetupInput) (*AuthSetupOutput, error) {
 	req := in.Body
+
+	// Issue #1130: refuse setup outright if a previous successful setup
+	// left a marker, even if the users table is currently empty. An
+	// admin who needs to truly re-bootstrap a server must remove this
+	// row from server_settings deliberately.
+	var marker db.ServerSetting
+	if err := h.DB.Where("key = ?", setupCompletedKey).First(&marker).Error; err == nil {
+		return nil, huma.NewError(http.StatusForbidden, "Setup has already been completed.")
+	}
 
 	hash, err := auth.HashPassword(req.Password)
 	if err != nil {
@@ -609,6 +625,12 @@ func (h *AuthHandler) HumaSetup(_ context.Context, in *AuthSetupInput) (*AuthSet
 			Role:         db.RoleOwner,
 		}
 		if err := tx.Create(&user).Error; err != nil {
+			txErr = huma.NewError(http.StatusInternalServerError, "Setup failed. Please try again.")
+			return err
+		}
+		// Persist the setup-completed marker inside the same
+		// transaction so the row only appears on a successful setup.
+		if err := tx.Create(&db.ServerSetting{Key: setupCompletedKey, Value: "true"}).Error; err != nil {
 			txErr = huma.NewError(http.StatusInternalServerError, "Setup failed. Please try again.")
 			return err
 		}
@@ -651,6 +673,12 @@ func (h *AuthHandler) HumaSetupStatus(_ context.Context, _ *SetupStatusInput) (*
 	var userCount int64
 	h.DB.Model(&db.User{}).Count(&userCount)
 
+	// Issue #1130: needsSetup is true only when there are no users AND
+	// the setup-completed marker is absent. Without the marker check, an
+	// out-of-band truncation of users would silently re-open setup.
+	var marker db.ServerSetting
+	hasMarker := h.DB.Where("key = ?", setupCompletedKey).First(&marker).Error == nil
+
 	var gameCount int64
 	h.DB.Model(&db.Game{}).Count(&gameCount)
 
@@ -661,7 +689,7 @@ func (h *AuthHandler) HumaSetupStatus(_ context.Context, _ *SetupStatusInput) (*
 	}
 
 	return &SetupStatusOutput{Body: SetupStatusResponse{
-		NeedsSetup:          userCount == 0,
+		NeedsSetup:          userCount == 0 && !hasMarker,
 		RegistrationEnabled: registrationEnabled,
 		GameCount:           gameCount,
 	}}, nil
