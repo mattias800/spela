@@ -12,6 +12,7 @@ import (
 	"github.com/danielgtaylor/huma/v2"
 	"github.com/spela/server/internal/db"
 	"github.com/spela/server/internal/igdb"
+	"github.com/spela/server/internal/safehttp"
 	"github.com/spela/server/internal/scanner"
 	"github.com/spela/server/internal/scraper"
 	ws "github.com/spela/server/internal/websocket"
@@ -665,6 +666,14 @@ func (h *AdminHandler) HumaSetGameHero(ctx context.Context, in *SetGameHeroInput
 	req := in.Body
 	if req.URL == "" {
 		return nil, huma.Error400BadRequest("invalid request body")
+	}
+	// Issue #1120: gate the URL against private/internal IPs and
+	// non-http(s) schemes BEFORE handing it to the scraper, otherwise
+	// a rogue admin could point us at the AWS metadata endpoint or
+	// internal services. Defense in depth: NewClient also re-checks
+	// every redirect hop.
+	if err := safehttp.CheckURL(req.URL); err != nil {
+		return nil, huma.Error400BadRequest("invalid hero URL: " + err.Error())
 	}
 
 	if h.Scraper == nil {

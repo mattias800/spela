@@ -2,12 +2,15 @@ package scraper
 
 import (
 	"fmt"
+	"io"
 	"log/slog"
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/spela/server/internal/db"
+	"github.com/spela/server/internal/safehttp"
 	"gorm.io/gorm"
 )
 
@@ -132,23 +135,53 @@ func (s *Scraper) EnrichAll(mode string, onProgress func(EnrichProgress)) (int, 
 	return successes, total, nil
 }
 
-// DownloadExternalImage downloads an image from an external URL and saves it locally.
-// Returns the relative path for DB storage, or "" on failure.
+// maxExternalImageBytes caps the size of a single image we'll pull from a
+// third-party URL. Issue #1120: without a cap, an attacker-controlled
+// upstream (or a rogue admin pointing at an internal service) can stream
+// gigabytes into the scraper image directory.
+const maxExternalImageBytes = 32 << 20 // 32 MB — covers full-resolution hero art
+
+// safeImageClient is a SSRF-hardened http.Client used by
+// DownloadExternalImage: scheme allowlist, private-IP rejection on every
+// redirect hop, and a per-request timeout. The Scraper's general
+// HTTPClient is kept for non-image fetches (which target known scraper
+// hosts and benefit from a different timeout / retry posture).
+var safeImageClient = safehttp.NewClient(30 * time.Second)
+
+// DownloadExternalImage downloads an image from an external URL and saves
+// it locally. Returns the relative path for DB storage, or "" on failure.
+//
+// Issue #1120: the URL is validated up front (http/https only, no private
+// IPs), the response is wrapped in an io.LimitReader, and the
+// Content-Type must look like an image. The HTTP client re-checks every
+// redirect hop against the private-IP block list to defeat
+// attacker-controlled `302 → http://169.254.169.254/...` chains.
 func (s *Scraper) DownloadExternalImage(imageURL, subpath string) string {
-	resp, err := s.HTTPClient.Get(imageURL)
+	if err := safehttp.CheckURL(imageURL); err != nil {
+		slog.Debug("rejecting external image URL", "url", imageURL, "error", err)
+		return ""
+	}
+
+	resp, err := safeImageClient.Get(imageURL)
 	if err != nil {
 		slog.Debug("failed to fetch external image", "url", imageURL, "error", err)
 		return ""
 	}
+	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		resp.Body.Close()
 		slog.Debug("external image not found", "url", imageURL, "status", resp.StatusCode)
 		return ""
 	}
 
-	savedPath, err := s.Storage.WriteImage(subpath, resp.Body)
-	resp.Body.Close()
+	ct := resp.Header.Get("Content-Type")
+	if ct != "" && !strings.HasPrefix(strings.ToLower(ct), "image/") {
+		slog.Debug("rejecting non-image content type", "url", imageURL, "contentType", ct)
+		return ""
+	}
+
+	limited := io.LimitReader(resp.Body, maxExternalImageBytes+1)
+	savedPath, err := s.Storage.WriteImage(subpath, limited)
 	if err != nil {
 		slog.Warn("failed to save external image", "subpath", subpath, "error", err)
 		return ""
