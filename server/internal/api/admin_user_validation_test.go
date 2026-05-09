@@ -44,7 +44,7 @@ func TestAdminCreateUser_ValidationBounds(t *testing.T) {
 			body: map[string]string{
 				"username": "valid_user_01",
 				"email":    "valid@example.com",
-				"password": "password123",
+				"password": "SecureTestPass!2024",
 				"role":     "user",
 			},
 			expect: http.StatusCreated,
@@ -54,7 +54,7 @@ func TestAdminCreateUser_ValidationBounds(t *testing.T) {
 			body: map[string]string{
 				"username": "ab",
 				"email":    "x@example.com",
-				"password": "password123",
+				"password": "SecureTestPass!2024",
 				"role":     "user",
 			},
 			expect: http.StatusUnprocessableEntity,
@@ -64,7 +64,7 @@ func TestAdminCreateUser_ValidationBounds(t *testing.T) {
 			body: map[string]string{
 				"username": "a234567890123456789012345678901234567890123456789012345678901234X",
 				"email":    "x@example.com",
-				"password": "password123",
+				"password": "SecureTestPass!2024",
 				"role":     "user",
 			},
 			expect: http.StatusUnprocessableEntity,
@@ -84,7 +84,7 @@ func TestAdminCreateUser_ValidationBounds(t *testing.T) {
 			body: map[string]string{
 				"username": "new_user_em",
 				"email":    "",
-				"password": "password123",
+				"password": "SecureTestPass!2024",
 				"role":     "user",
 			},
 			expect: http.StatusUnprocessableEntity,
@@ -94,7 +94,7 @@ func TestAdminCreateUser_ValidationBounds(t *testing.T) {
 			body: map[string]string{
 				"username": "migrated_user_123",
 				"email":    "migrated@example.com",
-				"password": "password123",
+				"password": "SecureTestPass!2024",
 				"role":     "user",
 			},
 			expect: http.StatusCreated,

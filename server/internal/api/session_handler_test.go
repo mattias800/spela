@@ -37,7 +37,7 @@ func setupSessionTestEnv(t *testing.T) *sessionTestEnv {
 	token := registerAndGetToken(t, router)
 
 	// Register second user
-	token2 := createNonOwnerUser(t, router, token, "user2", "user2@example.com", "password123")
+	token2 := createNonOwnerUser(t, router, token, "user2", "user2@example.com", "SecureTestPass!2024")
 
 	// Create a test game
 	var console db.Console
@@ -1462,7 +1462,7 @@ func TestDuplicateSession_SharedSessionMember(t *testing.T) {
 	defer cleanup()
 
 	token1 := registerAndGetToken(t, router)
-	token2 := createNonOwnerUser(t, router, token1, "user2", "user2@example.com", "password123")
+	token2 := createNonOwnerUser(t, router, token1, "user2", "user2@example.com", "SecureTestPass!2024")
 
 	var console db.Console
 	database.First(&console)

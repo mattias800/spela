@@ -17,7 +17,7 @@ func TestGetCoreCompatibility_AdminOnly(t *testing.T) {
 	ownerToken := registerAndGetToken(t, router)
 
 	// Non-admin user should be rejected
-	userToken := createNonOwnerUser(t, router, ownerToken, "regular", "regular@test.com", "password123")
+	userToken := createNonOwnerUser(t, router, ownerToken, "regular", "regular@test.com", "SecureTestPass!2024")
 
 	w := httptest.NewRecorder()
 	req := httptest.NewRequest("GET", "/api/admin/core-compatibility", nil)

@@ -521,7 +521,7 @@ func TestAdminGetUserDevices_NonAdmin(t *testing.T) {
 	ownerToken := registerAndGetToken(t, router)
 
 	// Register second user (regular user)
-	userToken := createNonOwnerUser(t, router, ownerToken, "regular", "regular@example.com", "password123")
+	userToken := createNonOwnerUser(t, router, ownerToken, "regular", "regular@example.com", "SecureTestPass!2024")
 
 	var adminUser db.User
 	database.Where("username = ?", "apitest").First(&adminUser)

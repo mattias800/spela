@@ -518,7 +518,7 @@ func TestPlayLater_PerUserIsolation(t *testing.T) {
 	token1 := registerAndGetToken(t, router)
 
 	// Register second user
-	token2 := createNonOwnerUser(t, router, token1, "otheruser", "other@example.com", "password123")
+	token2 := createNonOwnerUser(t, router, token1, "otheruser", "other@example.com", "SecureTestPass!2024")
 
 	var console db.Console
 	database.First(&console)

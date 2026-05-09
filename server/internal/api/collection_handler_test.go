@@ -273,7 +273,7 @@ func TestGetCollection_PrivateNotAccessibleByOthers(t *testing.T) {
 	colID := createResp["id"].(string)
 
 	// Register a second user
-	otherToken := createNonOwnerUser(t, router, token, "otheruser", "other@example.com", "password123")
+	otherToken := createNonOwnerUser(t, router, token, "otheruser", "other@example.com", "SecureTestPass!2024")
 
 	// Other user tries to access private collection
 	w = httptest.NewRecorder()
@@ -303,7 +303,7 @@ func TestGetCollection_PublicAccessibleByOthers(t *testing.T) {
 	colID := createResp["id"].(string)
 
 	// Register a second user
-	otherToken := createNonOwnerUser(t, router, token, "otheruser", "other@example.com", "password123")
+	otherToken := createNonOwnerUser(t, router, token, "otheruser", "other@example.com", "SecureTestPass!2024")
 
 	// Other user can access public collection
 	w = httptest.NewRecorder()
@@ -376,7 +376,7 @@ func TestUpdateCollection_NotOwner(t *testing.T) {
 	colID := createResp["id"].(string)
 
 	// Register a second user
-	otherToken := createNonOwnerUser(t, router, token, "otheruser", "other@example.com", "password123")
+	otherToken := createNonOwnerUser(t, router, token, "otheruser", "other@example.com", "SecureTestPass!2024")
 
 	// Other user tries to update
 	body, _ = json.Marshal(map[string]interface{}{"name": "Hacked Name"})
@@ -460,7 +460,7 @@ func TestDeleteCollection_NotOwner(t *testing.T) {
 	colID := createResp["id"].(string)
 
 	// Register second user
-	otherToken := createNonOwnerUser(t, router, token, "otheruser", "other@example.com", "password123")
+	otherToken := createNonOwnerUser(t, router, token, "otheruser", "other@example.com", "SecureTestPass!2024")
 
 	// Other user tries to delete
 	w = httptest.NewRecorder()
@@ -601,7 +601,7 @@ func TestAddGame_NotOwner(t *testing.T) {
 	colID := createResp["id"].(string)
 
 	// Register second user
-	otherToken := createNonOwnerUser(t, router, token, "otheruser", "other@example.com", "password123")
+	otherToken := createNonOwnerUser(t, router, token, "otheruser", "other@example.com", "SecureTestPass!2024")
 
 	// Other user tries to add game
 	body, _ = json.Marshal(map[string]interface{}{"gameId": game.ID})

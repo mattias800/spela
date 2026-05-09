@@ -51,7 +51,7 @@ func setupChallengeTestWithRateLimit(t *testing.T, rateLimitSec int) *challengeT
 	body, _ := json.Marshal(map[string]string{
 		"username": "challenger1",
 		"email":    "challenger1@test.com",
-		"password": "password123",
+		"password": "SecureTestPass!2024",
 	})
 	req := httptest.NewRequest("POST", "/api/auth/register", bytes.NewReader(body))
 	req.Header.Set("Content-Type", "application/json")
@@ -66,7 +66,7 @@ func setupChallengeTestWithRateLimit(t *testing.T, rateLimitSec int) *challengeT
 	require.NoError(t, err)
 
 	// Create user 2
-	token2 := createNonOwnerUser(t, router, token1, "challenger2", "challenger2@test.com", "password123")
+	token2 := createNonOwnerUser(t, router, token1, "challenger2", "challenger2@test.com", "SecureTestPass!2024")
 
 	claims2, err := auth.ValidateAccessToken(token2, testJWTSecret)
 	require.NoError(t, err)
@@ -802,7 +802,7 @@ func TestLazyExpiration(t *testing.T) {
 		body, _ := json.Marshal(map[string]string{
 			"username": "expuser",
 			"email":    "expuser@test.com",
-			"password": "password123",
+			"password": "SecureTestPass!2024",
 		})
 		rw := httptest.NewRecorder()
 		req := httptest.NewRequest("POST", "/api/auth/register", bytes.NewReader(body))

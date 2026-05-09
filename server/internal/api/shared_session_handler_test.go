@@ -20,13 +20,13 @@ import (
 // registerSecondUser registers a second user and returns their access token.
 func registerSecondUser(t *testing.T, router http.Handler, ownerToken string) string {
 	t.Helper()
-	return createNonOwnerUser(t, router, ownerToken, "player2", "player2@example.com", "password123")
+	return createNonOwnerUser(t, router, ownerToken, "player2", "player2@example.com", "SecureTestPass!2024")
 }
 
 // registerNamedUser registers a user with the given username and returns their access token.
 func registerNamedUser(t *testing.T, router http.Handler, ownerToken, username string) string {
 	t.Helper()
-	return createNonOwnerUser(t, router, ownerToken, username, username+"@example.com", "password123")
+	return createNonOwnerUser(t, router, ownerToken, username, username+"@example.com", "SecureTestPass!2024")
 }
 
 // createSharedSession creates a shared session via API and returns the response map.

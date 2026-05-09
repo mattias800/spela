@@ -38,14 +38,14 @@ func TestHashPasswordUsesBcryptCost(t *testing.T) {
 }
 
 func TestHashPassword(t *testing.T) {
-	hash, err := HashPassword("testpassword123")
+	hash, err := HashPassword("testSecureTestPass!2024")
 	require.NoError(t, err)
 	assert.NotEmpty(t, hash)
-	assert.NotEqual(t, "testpassword123", hash)
+	assert.NotEqual(t, "testSecureTestPass!2024", hash)
 }
 
 func TestCheckPassword(t *testing.T) {
-	hash, err := HashPassword("testpassword123")
+	hash, err := HashPassword("testSecureTestPass!2024")
 	require.NoError(t, err)
 
 	tests := []struct {
@@ -53,7 +53,7 @@ func TestCheckPassword(t *testing.T) {
 		password string
 		want     bool
 	}{
-		{"correct password", "testpassword123", true},
+		{"correct password", "testSecureTestPass!2024", true},
 		{"wrong password", "wrongpassword", false},
 		{"empty password", "", false},
 	}
