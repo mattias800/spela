@@ -2,6 +2,7 @@ package websocket
 
 import (
 	"net/http"
+	"net/url"
 	"testing"
 	"time"
 
@@ -55,6 +56,42 @@ func TestCheckOrigin_ExplicitList_Rejected(t *testing.T) {
 func TestCheckOrigin_Wildcard(t *testing.T) {
 	check := checkOrigin([]string{"*"})
 	assert.True(t, check(makeRequest("https://anything.com", "server:8080")))
+}
+
+// TestCheckOrigin_WildcardRejectsCredentialed covers issue #1126:
+// when allowedOrigins is "*", a request that authenticates via the
+// query-token fallback (i.e. `?token=<jwt>`) and originates from a
+// cross-origin host is refused regardless of the wildcard. Operators
+// who truly need cross-origin authenticated WS must enumerate origins.
+func TestCheckOrigin_WildcardRejectsCredentialed(t *testing.T) {
+	check := checkOrigin([]string{"*"})
+
+	credentialed := &http.Request{
+		Header: make(http.Header),
+		Host:   "spela.example.com",
+		URL:    mustParse("/api/ws?token=abc"),
+	}
+	credentialed.Header.Set("Origin", "https://evil.example")
+	assert.False(t, check(credentialed),
+		"credentialed cross-origin WS must be refused under wildcard")
+
+	// Same-origin credentialed upgrade still allowed.
+	sameOrigin := &http.Request{
+		Header: make(http.Header),
+		Host:   "spela.example.com",
+		URL:    mustParse("/api/ws?token=abc"),
+	}
+	sameOrigin.Header.Set("Origin", "https://spela.example.com")
+	assert.True(t, check(sameOrigin),
+		"same-origin credentialed WS must still work")
+}
+
+func mustParse(rawURL string) *url.URL {
+	u, err := url.Parse(rawURL)
+	if err != nil {
+		panic(err)
+	}
+	return u
 }
 
 func TestCheckOrigin_InvalidOriginURL(t *testing.T) {

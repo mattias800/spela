@@ -94,6 +94,16 @@ func NewHub(allowedOrigins []string) *Hub {
 
 // checkOrigin returns an origin checker for WebSocket upgrades. An empty
 // allowedOrigins list only allows same-origin requests (secure default).
+//
+// Issue #1126: a `*` entry in allowedOrigins used to bless any cross-origin
+// upgrade, including those carrying ?token=<jwt>. Combined with the
+// query-token fallback (#1117), an attacker who got hold of a token
+// could open an authenticated WS from any origin. Any request that looks
+// credentialed (Origin header present + ?token= query param) now ignores
+// the wildcard and falls back to a strict same-origin check; operators
+// who genuinely want "open" must enumerate origins explicitly. Plain
+// HTTP-style wildcard (no credentials) still works for unauthenticated
+// upgrades.
 func checkOrigin(allowedOrigins []string) func(*http.Request) bool {
 	return func(r *http.Request) bool {
 		origin := r.Header.Get("Origin")
@@ -102,6 +112,8 @@ func checkOrigin(allowedOrigins []string) func(*http.Request) bool {
 		if origin == "" {
 			return true
 		}
+
+		isCredentialed := r.URL != nil && r.URL.Query().Get("token") != ""
 
 		// No configured origins: fall back to gorilla/websocket's default
 		// behaviour — allow only if the Origin host matches the request Host.
@@ -114,7 +126,23 @@ func checkOrigin(allowedOrigins []string) func(*http.Request) bool {
 		}
 
 		for _, allowed := range allowedOrigins {
-			if allowed == "*" || allowed == origin {
+			if allowed == "*" {
+				// Refuse cross-origin upgrades that authenticate via
+				// the query token under a wildcard policy. Plain
+				// (header-authed or unauthenticated) upgrades still
+				// honour the wildcard.
+				if isCredentialed {
+					u, err := url.Parse(origin)
+					if err != nil {
+						return false
+					}
+					if !strings.EqualFold(u.Host, r.Host) {
+						return false
+					}
+				}
+				return true
+			}
+			if allowed == origin {
 				return true
 			}
 		}
