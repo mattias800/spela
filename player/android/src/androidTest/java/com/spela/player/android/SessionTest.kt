@@ -6,6 +6,11 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import org.junit.Test
 
+@RequiresPhysicalDevice(
+    reason = "All four tests depend on either restartApp() (documented unreliable on AVD) " +
+        "or BaseE2ETest.ensureLoggedIn() (unreliable AndroidView'd EditText flow, #1146). " +
+        "Session persistence is covered by desktop E2E tests."
+)
 class SessionTest : BaseE2ETest() {
 
     /** Tap the confirm button in the sign-out dialog and wait for server connection screen. */

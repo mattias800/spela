@@ -5,6 +5,10 @@ import androidx.compose.ui.test.onAllNodesWithText
 import com.spela.player.presentation.ui.TestTags
 import org.junit.Test
 
+@RequiresPhysicalDevice(
+    reason = "Drives Game-Detail action-menu UI; depends on BaseE2ETest.ensureLoggedIn() " +
+        "which the AVD's AndroidView'd EditText flow doesn't reliably authenticate (#1146)."
+)
 class PlayLaterTest : BaseE2ETest() {
 
     /**
