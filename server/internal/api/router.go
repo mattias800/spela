@@ -450,6 +450,15 @@ func serveFrontend(frontendDir string) gin.HandlerFunc {
 	fs := http.Dir(frontendDir)
 	fileServer := http.FileServer(fs)
 
+	// Issue #1118: lock the SPA file server to a containment-checked
+	// resolution of frontendDir. filepath.Clean does not strip `..` from a
+	// relative path, and the previous code stat'd one path while
+	// http.FileServer resolved a different one — Gin's URL normalisation
+	// happened to keep them in sync, but a routing or middleware change
+	// could break the only barrier. Resolve once, prefix-check, refuse if
+	// it escapes.
+	absRoot, _ := filepath.Abs(frontendDir)
+
 	return func(c *gin.Context) {
 		reqPath := c.Request.URL.Path
 
@@ -461,6 +470,13 @@ func serveFrontend(frontendDir string) gin.HandlerFunc {
 
 		// Try to serve the file directly
 		filePath := filepath.Join(frontendDir, filepath.Clean(reqPath))
+		absPath, absErr := filepath.Abs(filePath)
+		if absErr != nil || (absPath != absRoot && !strings.HasPrefix(absPath, absRoot+string(filepath.Separator))) {
+			// Resolved path escaped frontendDir — refuse outright,
+			// don't fall through to SPA index.
+			c.Status(http.StatusNotFound)
+			return
+		}
 		if info, err := os.Stat(filePath); err == nil && !info.IsDir() {
 			// Hashed assets get immutable cache headers
 			if strings.HasPrefix(reqPath, "/assets/") {
