@@ -14,9 +14,20 @@ import (
 )
 
 // Event represents a real-time event sent to clients.
+//
+// RecipientUserIDs filters delivery to a specific subset of connected
+// clients (issue #1119). When non-nil and non-empty, the broadcast loop
+// only delivers to clients whose UserID is in the list. nil/empty means
+// "deliver to everyone" — preserving the historical fan-out semantics
+// for genuinely server-wide events (scrape progress, BIOS download
+// progress, library scan progress, online-status broadcasts).
+//
+// The recipient list is intentionally not serialised to clients —
+// `json:"-"` keeps it out of the wire payload.
 type Event struct {
-	Type    string      `json:"type"`
-	Payload interface{} `json:"payload"`
+	Type             string      `json:"type"`
+	Payload          interface{} `json:"payload"`
+	RecipientUserIDs []uint      `json:"-"`
 }
 
 // OnlineUser represents a user currently connected via WebSocket.
@@ -154,8 +165,22 @@ func (h *Hub) Run() {
 				slog.Error("failed to marshal websocket event", "error", err)
 				continue
 			}
+			// Build a recipient set if the event is targeted; otherwise
+			// fan out to every connected client (issue #1119).
+			var recipientSet map[uint]struct{}
+			if len(event.RecipientUserIDs) > 0 {
+				recipientSet = make(map[uint]struct{}, len(event.RecipientUserIDs))
+				for _, uid := range event.RecipientUserIDs {
+					recipientSet[uid] = struct{}{}
+				}
+			}
 			h.mu.Lock()
 			for client := range h.clients {
+				if recipientSet != nil {
+					if _, ok := recipientSet[client.UserID]; !ok {
+						continue
+					}
+				}
 				select {
 				case client.Send <- data:
 				default:

@@ -861,7 +861,14 @@ func (h *SharedSessionHandler) HumaInviteToSharedSession(ctx context.Context, in
 	h.DB.Preload("Inviter").Preload("Invitee").Preload("SharedSession").Preload("SharedSession.Game").First(&invite, invite.ID)
 
 	if h.Hub != nil {
-		h.Hub.Broadcast(ws.Event{Type: ws.EventSharedSessionInviteSent, Payload: h.toSharedSessionInviteResponse(invite)})
+		// Issue #1119: deliver only to inviter and invitee — invite
+		// state is private and was previously broadcast to every
+		// connected client.
+		h.Hub.Broadcast(ws.Event{
+			Type:             ws.EventSharedSessionInviteSent,
+			Payload:          h.toSharedSessionInviteResponse(invite),
+			RecipientUserIDs: []uint{invite.InviterID, invite.InviteeID},
+		})
 	}
 
 	return &InviteToSharedSessionOutput{Body: h.toSharedSessionInviteResponse(invite)}, nil
@@ -997,22 +1004,34 @@ func (h *SharedSessionHandler) HumaSharedSessionTakeTurn(ctx context.Context, in
 		return nil, huma.Error500InternalServerError("failed to acquire turn")
 	}
 
+	// Issue #1119: turn events are private to session members. Build the
+	// recipient list once for both the expired and acquired broadcasts.
+	memberIDs := h.sharedSessionMemberIDs(ss.ID)
+
 	if previousUserID != nil && h.Hub != nil {
-		h.Hub.Broadcast(ws.Event{Type: ws.EventSharedSessionTurnExpired, Payload: ws.SharedSessionTurnExpiredPayload{
-			SharedSessionID: strconv.FormatUint(uint64(ss.ID), 10),
-			PreviousUserID:  strconv.FormatUint(uint64(*previousUserID), 10),
-		}})
+		h.Hub.Broadcast(ws.Event{
+			Type: ws.EventSharedSessionTurnExpired,
+			Payload: ws.SharedSessionTurnExpiredPayload{
+				SharedSessionID: strconv.FormatUint(uint64(ss.ID), 10),
+				PreviousUserID:  strconv.FormatUint(uint64(*previousUserID), 10),
+			},
+			RecipientUserIDs: memberIDs,
+		})
 	}
 
 	var user db.User
 	h.DB.First(&user, uid)
 
 	if h.Hub != nil {
-		h.Hub.Broadcast(ws.Event{Type: ws.EventSharedSessionTurnAcquired, Payload: ws.SharedSessionTurnAcquiredPayload{
-			SharedSessionID: strconv.FormatUint(uint64(ss.ID), 10),
-			UserID:          strconv.FormatUint(uint64(uid), 10),
-			Username:        user.Username,
-		}})
+		h.Hub.Broadcast(ws.Event{
+			Type: ws.EventSharedSessionTurnAcquired,
+			Payload: ws.SharedSessionTurnAcquiredPayload{
+				SharedSessionID: strconv.FormatUint(uint64(ss.ID), 10),
+				UserID:          strconv.FormatUint(uint64(uid), 10),
+				Username:        user.Username,
+			},
+			RecipientUserIDs: memberIDs,
+		})
 	}
 
 	return &SharedSessionTakeTurnOutput{Body: SharedSessionTakeTurnResponse{
@@ -1040,13 +1059,37 @@ func (h *SharedSessionHandler) HumaSharedSessionReleaseTurn(ctx context.Context,
 	})
 
 	if h.Hub != nil {
-		h.Hub.Broadcast(ws.Event{Type: ws.EventSharedSessionTurnReleased, Payload: ws.SharedSessionTurnReleasedPayload{
-			SharedSessionID: strconv.FormatUint(uint64(ss.ID), 10),
-			UserID:          strconv.FormatUint(uint64(uid), 10),
-		}})
+		// Issue #1119: scope to session members.
+		h.Hub.Broadcast(ws.Event{
+			Type: ws.EventSharedSessionTurnReleased,
+			Payload: ws.SharedSessionTurnReleasedPayload{
+				SharedSessionID: strconv.FormatUint(uint64(ss.ID), 10),
+				UserID:          strconv.FormatUint(uint64(uid), 10),
+			},
+			RecipientUserIDs: h.sharedSessionMemberIDs(ss.ID),
+		})
 	}
 
 	return &SharedSessionReleaseTurnOutput{Body: MessageResponse{Message: "turn released"}}, nil
+}
+
+// sharedSessionMemberIDs returns the user IDs of all members of a shared
+// session. Used to scope private events (invites, turn changes) to the
+// recipients who are part of the session, rather than broadcasting to
+// every connected client (issue #1119).
+func (h *SharedSessionHandler) sharedSessionMemberIDs(sharedSessionID uint) []uint {
+	var rows []db.SharedSessionMember
+	if err := h.DB.Where("shared_session_id = ?", sharedSessionID).Find(&rows).Error; err != nil {
+		// Falling back to nil = unfiltered would re-introduce the
+		// information leak. Empty list = nobody, which is safer (the
+		// event still hits the hub but never delivers).
+		return []uint{}
+	}
+	ids := make([]uint, 0, len(rows))
+	for _, m := range rows {
+		ids = append(ids, m.UserID)
+	}
+	return ids
 }
 
 // HumaSharedSessionHeartbeat is the huma handler for POST /api/shared-sessions/{id}/heartbeat.

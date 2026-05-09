@@ -700,7 +700,12 @@ func (h *NetplayHandler) HumaNetplayInviteUser(ctx context.Context, in *NetplayI
 	resp := h.toNetplayInviteResponse(invite)
 
 	if h.Hub != nil {
-		h.Hub.Broadcast(ws.Event{Type: ws.EventNetplayInviteSent, Payload: resp})
+		// Issue #1119: deliver only to the inviter and invitee.
+		h.Hub.Broadcast(ws.Event{
+			Type:             ws.EventNetplayInviteSent,
+			Payload:          resp,
+			RecipientUserIDs: []uint{invite.InviterID, invite.InviteeID},
+		})
 	}
 
 	return &NetplayInviteUserOutput{Body: resp}, nil
