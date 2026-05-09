@@ -68,7 +68,7 @@ type ListSeriesOutput struct {
 
 // GetSeriesDetailInput is the input for GET /api/series/{id}.
 type GetSeriesDetailInput struct {
-	ID string `path:"id" doc:"Series ID."`
+	ID string `path:"id" pattern:"^[0-9]+$" maxLength:"20" doc:"Series ID."`
 }
 
 // GetSeriesDetailOutput wraps the series detail body.
@@ -86,7 +86,7 @@ type ListFranchisesOutput struct {
 
 // GetFranchiseDetailInput is the input for GET /api/franchises/{id}.
 type GetFranchiseDetailInput struct {
-	ID string `path:"id" doc:"Franchise group ID, or IGDB franchise ID as fallback."`
+	ID string `path:"id" pattern:"^[0-9]+$" maxLength:"20" doc:"Franchise group ID, or IGDB franchise ID as fallback."`
 }
 
 // GetFranchiseDetailOutput wraps the franchise detail body.
@@ -526,8 +526,12 @@ func (h *EnrichmentHandler) HumaListSeries(_ context.Context, _ *ListSeriesInput
 
 // HumaGetSeriesDetail is the huma handler for GET /api/series/{id}.
 func (h *EnrichmentHandler) HumaGetSeriesDetail(_ context.Context, in *GetSeriesDetailInput) (*GetSeriesDetailOutput, error) {
+	parsedID, err := strconv.ParseUint(in.ID, 10, 64)
+	if err != nil {
+		return nil, huma.Error400BadRequest("invalid series ID")
+	}
 	var series db.GameSeries
-	if err := h.DB.Preload("Entries").First(&series, in.ID).Error; err != nil {
+	if err := h.DB.Preload("Entries").First(&series, uint(parsedID)).Error; err != nil {
 		return nil, huma.Error404NotFound("series not found")
 	}
 
@@ -669,7 +673,11 @@ func (h *EnrichmentHandler) HumaListFranchises(_ context.Context, _ *ListFranchi
 
 // HumaGetFranchiseDetail is the huma handler for GET /api/franchises/{id}.
 func (h *EnrichmentHandler) HumaGetFranchiseDetail(_ context.Context, in *GetFranchiseDetailInput) (*GetFranchiseDetailOutput, error) {
-	id := in.ID
+	parsedID, err := strconv.ParseUint(in.ID, 10, 64)
+	if err != nil {
+		return nil, huma.Error400BadRequest("invalid franchise ID")
+	}
+	id := uint(parsedID)
 	var franchise db.GameFranchiseGroup
 	if err := h.DB.Preload("Entries").First(&franchise, id).Error; err != nil {
 		if err2 := h.DB.Preload("Entries").Where("igdb_franchise_id = ?", id).First(&franchise).Error; err2 != nil {

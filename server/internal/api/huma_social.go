@@ -41,7 +41,7 @@ type GetRecentPartnersOutput struct {
 
 // GetPublicProfileInput is the input for GET /api/users/{id}/profile.
 type GetPublicProfileInput struct {
-	ID string `path:"id" doc:"User ID."`
+	ID string `path:"id" pattern:"^[0-9]+$" maxLength:"20" doc:"User ID."`
 }
 
 // GetPublicProfileOutput wraps the public profile response.
@@ -284,8 +284,12 @@ func (h *SocialHandler) HumaGetRecentPartners(ctx context.Context, _ *GetRecentP
 
 // HumaGetPublicProfile is the huma handler for GET /api/users/{id}/profile.
 func (h *SocialHandler) HumaGetPublicProfile(_ context.Context, in *GetPublicProfileInput) (*GetPublicProfileOutput, error) {
+	parsedID, err := strconv.ParseUint(in.ID, 10, 64)
+	if err != nil {
+		return nil, huma.Error400BadRequest("invalid user ID")
+	}
 	var user db.User
-	if err := h.DB.First(&user, in.ID).Error; err != nil {
+	if err := h.DB.First(&user, uint(parsedID)).Error; err != nil {
 		return nil, huma.Error404NotFound("user not found")
 	}
 
