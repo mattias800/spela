@@ -283,6 +283,10 @@ fun GameHeroContent(
                         onClick = onDeleteLocalGame,
                         style = SpButtonStyle.Ghost,
                         onGradient = true,
+                        modifier = Modifier.focusRestoreItem(
+                            key = "game_detail_play",
+                            isDefault = true,
+                        ),
                     )
                 }
             } else {
@@ -294,7 +298,12 @@ fun GameHeroContent(
                 SpSplitButton(
                     text = if (isBusy) "Downloading..." else "Download",
                     onClick = onDownloadGame,
-                    modifier = Modifier.testTag("game_detail_download_button"),
+                    modifier = Modifier
+                        .focusRestoreItem(
+                            key = "game_detail_play",
+                            isDefault = true,
+                        )
+                        .testTag("game_detail_download_button"),
                     isLoading = isBusy,
                     enabled = !isBusy,
                     menuItems = menuItems,
