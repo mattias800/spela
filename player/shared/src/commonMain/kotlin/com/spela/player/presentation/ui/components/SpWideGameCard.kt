@@ -53,9 +53,11 @@ fun SpWideGameCard(
     coverHeight: Dp = 84.dp,
     testTag: String? = null,
     extraContent: (@Composable () -> Unit)? = null,
+    modifier: Modifier = Modifier,
 ) {
     SpCard(
-        modifier = (if (fillWidth) Modifier.fillMaxWidth() else Modifier.width(width))
+        modifier = modifier
+            .then(if (fillWidth) Modifier.fillMaxWidth() else Modifier.width(width))
             .let { if (testTag != null) it.testTag(testTag) else it }
             .semantics {
                 contentDescription = "$title, $subtitle"
