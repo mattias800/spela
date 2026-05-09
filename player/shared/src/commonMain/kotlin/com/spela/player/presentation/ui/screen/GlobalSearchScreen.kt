@@ -40,8 +40,11 @@ import com.spela.player.presentation.ui.components.SpTopBar
 import com.spela.player.presentation.ui.feature.search.RecentSearchesSection
 import com.spela.player.presentation.ui.feature.search.SearchResultSkeleton
 import com.spela.player.presentation.ui.feature.search.SearchResultsList
+import androidx.compose.runtime.CompositionLocalProvider
 import com.spela.player.presentation.ui.gamepad.InputMode
+import com.spela.player.presentation.ui.gamepad.LocalFocusMemory
 import com.spela.player.presentation.ui.gamepad.LocalInputMode
+import com.spela.player.presentation.ui.gamepad.rememberFocusMemoryState
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.viewmodel.GlobalSearchViewModel
@@ -75,6 +78,8 @@ fun GlobalSearchScreen(
     }
 
     SpScreen(modifier = Modifier.testTag("global_search_screen")) {
+        val focusMemory = rememberFocusMemoryState()
+        CompositionLocalProvider(LocalFocusMemory provides focusMemory) {
         Column(modifier = Modifier.fillMaxSize()) {
             if (isGamepad) {
                 SpScreenTopSpacer()
@@ -238,5 +243,6 @@ fun GlobalSearchScreen(
             onDismiss = { viewModel.dismissError() },
             modifier = Modifier.align(Alignment.BottomCenter),
         )
+        } // CompositionLocalProvider
     }
 }
