@@ -27,14 +27,21 @@ type GameHandler struct {
 }
 
 // serveTar streams files as an uncompressed tar archive.
+//
+// Issue #1116: refuse symlinks. The cue/gdi parser already containment-checks
+// resolved paths inside the disc dir, but if a symlink were planted under
+// the disc dir it could still point outside. Lstat + IsRegular catches that.
 func serveTar(w io.Writer, filePaths []string) error {
 	tw := tar.NewWriter(w)
 	defer tw.Close()
 
 	for _, path := range filePaths {
-		info, err := os.Stat(path)
+		info, err := os.Lstat(path)
 		if err != nil {
 			return fmt.Errorf("stat file %s: %w", path, err)
+		}
+		if !info.Mode().IsRegular() {
+			return fmt.Errorf("refusing non-regular file in archive: %s", path)
 		}
 
 		header := &tar.Header{
@@ -62,14 +69,19 @@ func serveTar(w io.Writer, filePaths []string) error {
 
 // serveZip streams files as a zip archive. Used by EmulatorJS which supports
 // zip extraction but not tar.
+//
+// Issue #1116: refuse symlinks (see serveTar comment).
 func serveZip(w io.Writer, filePaths []string) error {
 	zw := zip.NewWriter(w)
 	defer zw.Close()
 
 	for _, path := range filePaths {
-		info, err := os.Stat(path)
+		info, err := os.Lstat(path)
 		if err != nil {
 			return fmt.Errorf("stat file %s: %w", path, err)
+		}
+		if !info.Mode().IsRegular() {
+			return fmt.Errorf("refusing non-regular file in archive: %s", path)
 		}
 
 		header, err := zip.FileInfoHeader(info)
