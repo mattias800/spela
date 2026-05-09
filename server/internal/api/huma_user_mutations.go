@@ -141,7 +141,11 @@ func (h *UserHandler) HumaUpdateProfile(ctx context.Context, in *UpdateProfileIn
 		}
 		var existing db.User
 		if err := h.DB.Where("email = ? AND id != ?", req.Email, user.ID).First(&existing).Error; err == nil {
-			return nil, huma.Error409Conflict("email already in use")
+			// Issue #1132: vague message so an authenticated
+			// attacker can't probe whether a specific email is
+			// registered by issuing PUT /api/user/profile against
+			// a long list of candidates.
+			return nil, huma.Error409Conflict("could not update profile")
 		}
 		user.Email = req.Email
 	}

@@ -418,7 +418,11 @@ func (h *AuthHandler) HumaRegister(ctx context.Context, in *AuthRegisterInput) (
 		var count int64
 		tx.Model(&db.User{}).Where("username = ? OR email = ?", req.Username, req.Email).Count(&count)
 		if count > 0 {
-			txErr = huma.NewError(http.StatusConflict, "That username or email is already taken.")
+			// Issue #1132: keep the response indistinguishable from
+			// any other unprocessable-registration error so an
+			// attacker can't probe whether a specific email is
+			// registered by submitting a junk username with it.
+			txErr = huma.NewError(http.StatusConflict, "Registration could not be completed.")
 			return fmt.Errorf("duplicate")
 		}
 
