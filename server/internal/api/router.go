@@ -263,6 +263,7 @@ func NewRouter(cfg Config) (*gin.Engine, func()) {
 	RegisterUploadAdminRoutes(humaAPI, uploadHandler, cfg.JWTSecret, cfg.DB, userLimiter)
 	RegisterAdminMultipartRoutes(humaAPI, biosHandler, gameHandler, romHackHandler, uploadHandler, cfg.JWTSecret, cfg.DB, userLimiter, uploadLimiter)
 	RegisterSocialExtraRoutes(humaAPI, socialHandler, cfg.JWTSecret, cfg.DB, userLimiter)
+	RegisterBlockRoutes(humaAPI, socialHandler, cfg.JWTSecret, cfg.DB, userLimiter)
 	RegisterProfileRoutes(humaAPI, exploreHandler, cfg.JWTSecret, cfg.DB, userLimiter)
 	RegisterExploreFeaturedRoutes(humaAPI, exploreHandler, cfg.JWTSecret, cfg.DB, userLimiter)
 	RegisterExploreForYouRoutes(humaAPI, exploreHandler, cfg.JWTSecret, cfg.DB, userLimiter)
