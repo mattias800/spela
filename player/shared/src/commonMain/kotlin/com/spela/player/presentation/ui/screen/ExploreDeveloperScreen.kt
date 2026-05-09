@@ -44,6 +44,10 @@ import com.spela.player.presentation.ui.feature.explore.DeveloperUserStatsCard
 import com.spela.player.presentation.ui.gamepad.InputMode
 import com.spela.player.presentation.ui.gamepad.LocalInputMode
 import com.spela.player.presentation.ui.gamepad.autoFocus
+import com.spela.player.presentation.ui.gamepad.LocalFocusMemory
+import com.spela.player.presentation.ui.gamepad.focusRestoreItem
+import com.spela.player.presentation.ui.gamepad.rememberFocusMemoryState
+import androidx.compose.runtime.CompositionLocalProvider
 import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.viewmodel.ExploreViewModel
 
@@ -67,8 +71,10 @@ fun ExploreDeveloperScreen(
     }
 
     val isGamepad = LocalInputMode.current == InputMode.GAMEPAD
+    val focusMemory = rememberFocusMemoryState()
 
     SpScreen(modifier = Modifier.testTag("developer_detail_screen")) {
+        CompositionLocalProvider(LocalFocusMemory provides focusMemory) {
         Column(
             modifier = Modifier
                 .fillMaxSize(),
@@ -203,17 +209,24 @@ fun ExploreDeveloperScreen(
                                 } else null,
                             ) {
                                 SpGameGrid(
-                                    items = detail.games.take(12).map { game ->
+                                    items = detail.games.take(12).mapIndexed { index, game ->
                                         @Composable {
-                                            SpGridGameCard(
-                                                title = game.title,
-                                                subtitle = game.consoleName,
-                                                coverUrl = game.coverUrl,
-                                                onClick = { onGameSelected(game.id) },
-                                                rating = game.communityRating,
-                                                isFavorite = game.isFavorite,
-                                                isInPlayLater = game.isInPlayLater,
-                                            )
+                                            Box(
+                                                modifier = Modifier.focusRestoreItem(
+                                                    key = "developer_${name}_game_${game.id}",
+                                                    isDefault = index == 0,
+                                                ),
+                                            ) {
+                                                SpGridGameCard(
+                                                    title = game.title,
+                                                    subtitle = game.consoleName,
+                                                    coverUrl = game.coverUrl,
+                                                    onClick = { onGameSelected(game.id) },
+                                                    rating = game.communityRating,
+                                                    isFavorite = game.isFavorite,
+                                                    isInPlayLater = game.isInPlayLater,
+                                                )
+                                            }
                                         }
                                     },
                                 )
@@ -283,5 +296,6 @@ fun ExploreDeveloperScreen(
             onDismiss = { viewModel.dismissDeveloperDetailError() },
             modifier = Modifier.align(Alignment.BottomCenter),
         )
+        } // CompositionLocalProvider
     }
 }
