@@ -69,7 +69,7 @@ type UpdateGameKeyMappingRequest struct {
 // and reserved-name allocation. Length and password strength still apply.
 type AdminCreateUserRequest struct {
 	Username string      `json:"username" minLength:"3" maxLength:"64" doc:"New account username (3-64 characters)."`
-	Email    string      `json:"email" minLength:"1" maxLength:"254" doc:"New account email (RFC 5321 cap)."`
+	Email    string      `json:"email" format:"email" minLength:"1" maxLength:"254" doc:"New account email (RFC 5321 cap)."`
 	Password string      `json:"password" minLength:"8" maxLength:"72" doc:"New account password (8-72 characters)."`
 	Role     db.UserRole `json:"role,omitempty"`
 }
@@ -77,7 +77,7 @@ type AdminCreateUserRequest struct {
 // AdminUpdateUserRequest is the body for PUT /api/admin/users/:id.
 type AdminUpdateUserRequest struct {
 	Role            db.UserRole `json:"role,omitempty"`
-	Email           string      `json:"email,omitempty" maxLength:"254"`
+	Email           string      `json:"email,omitempty" format:"email" maxLength:"254"`
 	Password        string      `json:"password,omitempty" maxLength:"72"`
 	Disabled        *bool       `json:"disabled,omitempty"`
 	PendingApproval *bool       `json:"pendingApproval,omitempty"`

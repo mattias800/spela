@@ -978,6 +978,16 @@ func (h *AdminHandler) HumaHardDeleteUser(ctx context.Context, in *HardDeleteUse
 		return nil, huma.Error403Forbidden("cannot permanently delete the owner")
 	}
 
+	// Issue #1122: only owner can hard-delete another admin row.
+	currentUserID := UserIDFromContext(ctx)
+	var caller db.User
+	if err := h.DB.Select("id", "role").First(&caller, currentUserID).Error; err != nil {
+		return nil, huma.Error500InternalServerError("failed to load caller")
+	}
+	if user.Role == db.RoleAdmin && caller.Role != db.RoleOwner {
+		return nil, huma.Error403Forbidden("only the owner can permanently delete other admins")
+	}
+
 	err := h.DB.Transaction(func(tx *gorm.DB) error {
 		uid := user.ID
 
@@ -1072,7 +1082,6 @@ func (h *AdminHandler) HumaHardDeleteUser(ctx context.Context, in *HardDeleteUse
 		return nil, huma.Error500InternalServerError("failed to permanently delete user")
 	}
 
-	currentUserID := UserIDFromContext(ctx)
 	slog.Info("audit: admin permanently deleted user", "admin_id", currentUserID, "target_user", user.Username)
 	return &HardDeleteUserOutput{Body: MessageResponse{Message: "user permanently deleted"}}, nil
 }
