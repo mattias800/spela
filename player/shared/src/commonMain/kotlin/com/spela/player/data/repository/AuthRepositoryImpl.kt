@@ -94,5 +94,6 @@ class AuthRepositoryImpl(
             refresh_token = tokens.refreshToken,
             expires_at = "",
         )
+        println("[AuthDiag] persistTokens: head=${tokens.accessToken.take(12)} hasTokens=${tokenManager.hasTokens()}")
     }
 }

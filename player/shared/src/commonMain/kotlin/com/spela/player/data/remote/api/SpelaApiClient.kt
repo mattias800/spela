@@ -92,7 +92,9 @@ class SpelaApiClient(
                 cacheTokens = false
 
                 loadTokens {
-                    tokenManager.toBearerTokens()
+                    val t = tokenManager.toBearerTokens()
+                    println("[AuthDiag] loadTokens: present=${t != null} accessHead=${t?.accessToken?.take(12)}")
+                    t
                 }
 
                 refreshTokens {

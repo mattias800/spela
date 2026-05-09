@@ -68,6 +68,7 @@ class CloneSessionSmokeTest : BaseE2ETest() {
         try {
             // ── Bring the app up & log in as player so Koin's SessionRepository
             //    has a live auth token to send on its way out. ──
+            android.util.Log.i(LOG_TAG, "[diag] bootstrapToken=${bootstrapToken.take(12)}...")
             rule.ensureLoggedIn()
             android.util.Log.i(LOG_TAG, "App is logged in as $PLAYER_USERNAME")
 
@@ -78,6 +79,19 @@ class CloneSessionSmokeTest : BaseE2ETest() {
             //    → real JSON deserialization of GameSessionResponse. ──
             val koin = KoinPlatformTools.defaultContext().get()
             val sessionRepo = koin.get<SessionRepository>()
+
+            // Diagnostic: confirm whether the production Koin graph has
+            // an access token at the moment we're about to call the
+            // session repo. If hasTokens is false here, the UI-driven
+            // ensureLoggedIn() above didn't actually persist tokens —
+            // pointing at a NavigationViewModel/RestoreSession routing
+            // bug rather than a Ktor auth-plugin bug.
+            val tokenManager = koin.get<com.spela.player.data.remote.interceptor.TokenManager>()
+            val accessHead = tokenManager.accessToken?.take(12)
+            android.util.Log.i(
+                LOG_TAG,
+                "[diag] tokenManager.hasTokens=${tokenManager.hasTokens()} accessHead=$accessHead",
+            )
 
             // Mirror the production UI path: the clone dialog always sends a
             // trimmed name (pre-filled with "{source} (Copy)"). We pass the
