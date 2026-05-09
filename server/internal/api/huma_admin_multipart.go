@@ -503,6 +503,19 @@ func (h *RomHackHandler) HumaCreateRomHack(_ context.Context, in *AdminCreateRom
 		return nil, huma.NewError(http.StatusForbidden, "base game ROM path is outside configured game dirs")
 	}
 
+	// Issue #1134(A): refuse to apply a patch to a multi-GB base ROM.
+	// os.ReadFile loads the full file into memory before patching, and
+	// the patcher's MaxOutputSize is 256 MB — patching a 4 GB ISO peaks
+	// at ~4 GB+ and OOM-kills small hosts. Reject up front using the
+	// patcher's own MaxOutputSize as the ceiling so the in-memory
+	// behaviour is consistent end-to-end.
+	if info, err := os.Stat(romAbsPath); err == nil {
+		if info.Size() > patcher.MaxOutputSize {
+			return nil, huma.NewError(http.StatusRequestEntityTooLarge,
+				fmt.Sprintf("base ROM is %d bytes; patcher refuses inputs larger than %d bytes (issue #1134)", info.Size(), patcher.MaxOutputSize))
+		}
+	}
+
 	romData, err := os.ReadFile(romAbsPath)
 	if err != nil {
 		slog.Warn("failed to read base ROM", "path", romAbsPath, "error", err)

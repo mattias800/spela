@@ -162,7 +162,8 @@ func TestVLQRoundtrip(t *testing.T) {
 	tests := []uint64{0, 1, 127, 128, 255, 256, 1000, 65535, 16777215}
 	for _, v := range tests {
 		encoded := encodeVLQ(v)
-		decoded, n := decodeVLQ(encoded)
+		decoded, n, ok := decodeVLQ(encoded)
+		assert.True(t, ok, "value %d", v)
 		assert.Equal(t, v, decoded, "value %d", v)
 		assert.Equal(t, len(encoded), n, "bytes consumed for value %d", v)
 	}
@@ -172,8 +173,23 @@ func TestSignedVLQRoundtrip(t *testing.T) {
 	tests := []int{0, 1, -1, 127, -128, 1000, -1000}
 	for _, v := range tests {
 		encoded := encodeSignedVLQ(v)
-		decoded, n := decodeSignedVLQ(encoded)
+		decoded, n, ok := decodeSignedVLQ(encoded)
+		assert.True(t, ok, "value %d", v)
 		assert.Equal(t, v, decoded, "value %d", v)
 		assert.Equal(t, len(encoded), n, "bytes consumed for value %d", v)
 	}
+}
+
+// TestVLQTruncated covers issue #1134(B): decodeVLQ on a truncated
+// (no-terminator) input must return ok=false rather than the
+// (consumed=len(data)) value that previously caused index-out-of-range
+// panics in callers' next read.
+func TestVLQTruncated(t *testing.T) {
+	// Three continuation bytes (high bit clear), no terminator.
+	bad := []byte{0x00, 0x00, 0x00}
+	_, _, ok := decodeVLQ(bad)
+	assert.False(t, ok, "truncated VLQ must report ok=false")
+
+	_, _, ok = decodeSignedVLQ(bad)
+	assert.False(t, ok, "truncated signed VLQ must report ok=false")
 }

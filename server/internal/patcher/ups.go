@@ -40,7 +40,10 @@ func ApplyUPS(romData, patchData []byte) ([]byte, error) {
 	pos := 4
 
 	// Read source size
-	sourceSize, n := decodeVLQ(patchData[pos:])
+	sourceSize, n, ok := decodeVLQ(patchData[pos:])
+	if !ok {
+		return nil, fmt.Errorf("UPS patch truncated reading source size")
+	}
 	pos += n
 
 	if int(sourceSize) != len(romData) {
@@ -48,7 +51,10 @@ func ApplyUPS(romData, patchData []byte) ([]byte, error) {
 	}
 
 	// Read target size
-	targetSize, n := decodeVLQ(patchData[pos:])
+	targetSize, n, ok := decodeVLQ(patchData[pos:])
+	if !ok {
+		return nil, fmt.Errorf("UPS patch truncated reading target size")
+	}
 	pos += n
 
 	// Verify source CRC32
@@ -73,7 +79,10 @@ func ApplyUPS(romData, patchData []byte) ([]byte, error) {
 
 	for pos < endPos {
 		// Read relative offset to next change
-		relOffset, n := decodeVLQ(patchData[pos:])
+		relOffset, n, ok := decodeVLQ(patchData[pos:])
+		if !ok {
+			return nil, fmt.Errorf("UPS patch truncated reading relative offset at %d", pos)
+		}
 		pos += n
 		targetPos += int(relOffset)
 
