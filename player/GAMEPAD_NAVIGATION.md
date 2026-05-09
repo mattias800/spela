@@ -345,21 +345,18 @@ focusable elements that don't themselves use `focusRestoreItem` — it
 gives back-nav something to land on (the section's first focusable
 descendant) when no item key matches.
 
-## Default Focus on Forward Entry: `Modifier.autoFocus`
+## Default Focus on Forward Entry
 
-```kotlin
-modifier = Modifier.autoFocus()
-```
+`Modifier.focusRestoreItem(key, isDefault = true)` is the single
+primitive for default-on-entry focus. It saves the focused element's
+key to the enclosing `LocalFocusMemory` scope, restores focus on
+back-nav when the saved key matches, and acts as the screen's default
+on first entry when the saved key is empty.
 
-A legacy single-element modifier. Fires once on forward navigation OR
-tab switch, on screen mount. Use it for a single primary action button
-on screens that don't have a clear "first item" (e.g. the Play button
-on a session-detail screen, the Search input on the Global Search
-screen). Do not combine with `focusRestoreItem(isDefault = true)` on
-the same screen — they will race.
-
-`autoFocus` is no longer gated by gamepad mode (it now fires for
-keyboard users on desktop too).
+The legacy `Modifier.autoFocus()` was retired in #1138. New code must
+use `focusRestoreItem` — `autoFocus` fired on every forward navigation
+but never saved focus, so it didn't compose with the rest of the
+system.
 
 ## What to Do for a New Screen
 
@@ -370,14 +367,17 @@ For most screens, follow the recipe:
    `Modifier.focusRestoreItem(key = "<screen>_<itemId>", isDefault = (item == list.firstOrNull()))`.
 3. **For SpCarousels**, pass `memoryKey` + `itemKey` (and
    `isDefaultFocusGroup = true` on at most one carousel per screen).
-4. **For static-button screens** (no list), use `Modifier.autoFocus()`
+4. **For static-button screens** (no list), use
+   `Modifier.focusRestoreItem(key = "<screen>_<button>", isDefault = true)`
    on the primary action.
 5. Section containers that sit above SpCarousels can keep
    `Modifier.rememberFocus("section_xyz")` as a fallback; new screens
    typically don't need it.
 
-Do **not** combine `autoFocus()` with `focusRestoreItem(isDefault = true)`
-on the same screen. Pick one source of default focus.
+Only **one** element per `LocalFocusMemory` scope should set
+`isDefault = true`. If multiple do, the first to fire claims focus and
+the rest skip — so this is safe but you'll typically want a deliberate
+choice.
 
 ## Testing
 

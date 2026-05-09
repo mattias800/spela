@@ -77,8 +77,9 @@ fun GamepadHandler(
 
     // When focusResetKey changes, ensure the GamepadHandler Box has focus
     // so d-pad key events are received. Individual screens handle their own
-    // focus acquisition via Modifier.autoFocus() on their first focusable
-    // element — this is just a fallback so the Box can receive key events.
+    // focus acquisition via Modifier.focusRestoreItem(isDefault = true) on
+    // their default focusable — this is just a fallback so the Box can
+    // receive key events.
     if (focusResetKey != null) {
         LaunchedEffect(focusResetKey) {
             delay(500)

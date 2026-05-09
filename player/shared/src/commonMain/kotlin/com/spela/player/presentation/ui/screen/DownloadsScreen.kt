@@ -46,7 +46,6 @@ import com.spela.player.presentation.ui.components.SpScreenTopSpacer
 import com.spela.player.presentation.ui.components.SpTopBar
 import com.spela.player.presentation.ui.gamepad.InputMode
 import com.spela.player.presentation.ui.gamepad.LocalInputMode
-import com.spela.player.presentation.ui.gamepad.autoFocus
 import com.spela.player.presentation.ui.gamepad.LocalFocusMemory
 import com.spela.player.presentation.ui.gamepad.focusRestoreItem
 import com.spela.player.presentation.ui.gamepad.rememberFocusMemoryState
@@ -127,7 +126,10 @@ fun DownloadsScreen(
                             onClick = { viewModel.onIntent(DownloadsIntent.ClearCache) },
                             isLoading = state.isClearingCache,
                             enabled = !state.isClearingCache && state.cacheSize > 0,
-                            modifier = Modifier.autoFocus(),
+                            modifier = Modifier.focusRestoreItem(
+                                key = "downloads_clear_cache",
+                                isDefault = true,
+                            ),
                         )
                     }
                 }

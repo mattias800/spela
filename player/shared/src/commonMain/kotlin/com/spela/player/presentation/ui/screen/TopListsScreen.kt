@@ -58,7 +58,6 @@ import com.spela.player.presentation.ui.feature.stats.RankBadge
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.gamepad.InputMode
 import com.spela.player.presentation.ui.gamepad.LocalInputMode
-import com.spela.player.presentation.ui.gamepad.autoFocus
 import com.spela.player.presentation.ui.gamepad.LocalFocusMemory
 import com.spela.player.presentation.ui.gamepad.focusRestoreItem
 import com.spela.player.presentation.ui.gamepad.rememberFocusMemoryState
@@ -85,6 +84,8 @@ fun TopListsScreen(
     val isGamepad = LocalInputMode.current == InputMode.GAMEPAD
 
     SpScreen(modifier = Modifier.testTag("top_lists_screen")) {
+        val focusMemory = rememberFocusMemoryState()
+        CompositionLocalProvider(LocalFocusMemory provides focusMemory) {
         Column(
             modifier = Modifier
                 .fillMaxSize(),
@@ -119,7 +120,9 @@ fun TopListsScreen(
                             modifier = Modifier.size(14.dp),
                         )
                     },
-                    modifier = Modifier.autoFocus().testTag("tab_top_rated"),
+                    modifier = Modifier
+                        .focusRestoreItem(key = "tab_top_rated", isDefault = true)
+                        .testTag("tab_top_rated"),
                 )
                 SpChip(
                     text = "Longest",
@@ -180,8 +183,6 @@ fun TopListsScreen(
                             )
                         }
                     } else {
-                        val focusMemory = rememberFocusMemoryState()
-                        CompositionLocalProvider(LocalFocusMemory provides focusMemory) {
                         when (state.selectedTab) {
                             TopListTab.TOP_RATED -> {
                                 LazyColumn(
@@ -228,11 +229,11 @@ fun TopListsScreen(
                                 }
                             }
                         }
-                        } // CompositionLocalProvider
                     }
                 }
             }
         }
+        } // CompositionLocalProvider
 
         // Error snackbar
         SpSnackbar(
