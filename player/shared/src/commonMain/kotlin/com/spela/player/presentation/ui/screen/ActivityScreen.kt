@@ -16,7 +16,12 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.runtime.CompositionLocalProvider
+import com.spela.player.presentation.ui.gamepad.LocalFocusMemory
+import com.spela.player.presentation.ui.gamepad.focusRestoreItem
+import com.spela.player.presentation.ui.gamepad.rememberFocusMemoryState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -84,7 +89,9 @@ fun ActivityScreen(
         SpColor.Accent.darken(0.80f),
         SpColor.SecondaryDark.darken(0.78f),
     )
+    val focusMemory = rememberFocusMemoryState()
 
+    CompositionLocalProvider(LocalFocusMemory provides focusMemory) {
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -146,15 +153,20 @@ fun ActivityScreen(
                         ),
                         verticalArrangement = Arrangement.spacedBy(SpSpacing.XXSmall),
                     ) {
-                        items(
+                        itemsIndexed(
                             state.fullActivityEvents,
-                            key = { it.id },
-                        ) { event ->
+                            key = { _, event -> event.id },
+                        ) { index, event ->
                             ActivityFeedItem(
                                 event = event,
                                 onGameSelected = onGameSelected,
                                 onUserSelected = onUserSelected,
-                                modifier = Modifier.padding(horizontal = SpSpacing.ScreenHorizontal),
+                                modifier = Modifier
+                                    .padding(horizontal = SpSpacing.ScreenHorizontal)
+                                    .focusRestoreItem(
+                                        key = "activity_event_${event.id}",
+                                        isDefault = index == 0,
+                                    ),
                             )
                         }
 
@@ -178,6 +190,7 @@ fun ActivityScreen(
             }
         }
     }
+    } // CompositionLocalProvider
 }
 
 @Composable

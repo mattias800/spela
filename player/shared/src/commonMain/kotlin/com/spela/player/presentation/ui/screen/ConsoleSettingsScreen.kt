@@ -50,7 +50,10 @@ import com.spela.player.presentation.viewmodel.GamepadConfigIntent
 import com.spela.player.presentation.viewmodel.GamepadConfigViewModel
 import com.spela.player.presentation.ui.gamepad.InputMode
 import com.spela.player.presentation.ui.gamepad.LocalInputMode
-import com.spela.player.presentation.ui.gamepad.autoFocus
+import com.spela.player.presentation.ui.gamepad.LocalFocusMemory
+import com.spela.player.presentation.ui.gamepad.focusRestoreItem
+import com.spela.player.presentation.ui.gamepad.rememberFocusMemoryState
+import androidx.compose.runtime.CompositionLocalProvider
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.ui.theme.SpTypography
@@ -93,8 +96,10 @@ fun ConsoleSettingsScreen(
     val effectiveShader = deviceOverrideShader ?: currentShader
 
     val isGamepad = LocalInputMode.current == InputMode.GAMEPAD
+    val focusMemory = rememberFocusMemoryState()
 
     SpScreen {
+        CompositionLocalProvider(LocalFocusMemory provides focusMemory) {
         Column(
             modifier = Modifier
                 .fillMaxSize(),
@@ -140,7 +145,11 @@ fun ConsoleSettingsScreen(
                                         SettingsIntent.SelectConsoleShader(consoleId, shader)
                                     )
                                 },
-                                modifier = (if (index == 0) Modifier.autoFocus() else Modifier)
+                                modifier = Modifier
+                                    .focusRestoreItem(
+                                        key = "console_settings_shader_${shader.apiId}",
+                                        isDefault = index == 0,
+                                    )
                                     .testTag("shader_option_${shader.apiId}"),
                             )
                             if (index < ShaderPreset.entries.size - 1) {
@@ -371,6 +380,7 @@ fun ConsoleSettingsScreen(
             }
         }
         }
+        } // CompositionLocalProvider
     }
 
     // Shader fullscreen preview dialog

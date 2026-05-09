@@ -7,6 +7,11 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.lazy.grid.GridCells
 import com.spela.player.presentation.ui.components.SpLazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.grid.itemsIndexed
+import androidx.compose.runtime.CompositionLocalProvider
+import com.spela.player.presentation.ui.gamepad.LocalFocusMemory
+import com.spela.player.presentation.ui.gamepad.focusRestoreItem
+import com.spela.player.presentation.ui.gamepad.rememberFocusMemoryState
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
@@ -35,6 +40,9 @@ fun PlayLaterScreen(
         viewModel.onIntent(GameListIntent.LoadDashboard)
     }
 
+    val focusMemory = rememberFocusMemoryState()
+
+    CompositionLocalProvider(LocalFocusMemory provides focusMemory) {
     Box(modifier = Modifier.fillMaxSize().spScreenBackground()) {
         if (state.isLoading && state.playLaterGames.isEmpty()) {
             Box(
@@ -67,11 +75,15 @@ fun PlayLaterScreen(
                         horizontalArrangement = Arrangement.spacedBy(SpSpacing.GridSpacing),
                         verticalArrangement = Arrangement.spacedBy(SpSpacing.GridSpacing),
                     ) {
-                        items(state.playLaterGames, key = { it.id }) { game ->
+                        itemsIndexed(state.playLaterGames, key = { _, g -> g.id }) { index, game ->
                             GameGridItem(
                                 game = game,
                                 onClick = { onGameSelected(game.id) },
                                 onRequestScrape = { viewModel.requestScrapeIfNeeded(it) },
+                                modifier = Modifier.focusRestoreItem(
+                                    key = "play_later_screen_${game.id}",
+                                    isDefault = index == 0,
+                                ),
                             )
                         }
                     }
@@ -79,4 +91,5 @@ fun PlayLaterScreen(
             }
         }
     }
+    } // CompositionLocalProvider
 }
