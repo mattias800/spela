@@ -3218,7 +3218,8 @@ func TestGetBestOfYear_InvalidYear(t *testing.T) {
 	req.Header.Set("Authorization", "Bearer "+env.token)
 	env.router.ServeHTTP(w, req)
 
-	assert.Equal(t, http.StatusBadRequest, w.Code)
+	assert.True(t, w.Code == http.StatusBadRequest || w.Code == http.StatusUnprocessableEntity,
+		"expected 400 or 422, got %d", w.Code)
 }
 
 func TestGetBestOfYear_NoGames(t *testing.T) {

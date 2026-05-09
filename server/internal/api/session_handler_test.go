@@ -746,7 +746,13 @@ func TestSessionSlotSave_InvalidSlot(t *testing.T) {
 			req.Header.Set("Authorization", "Bearer "+env.token)
 			req.Header.Set("Content-Type", writer.FormDataContentType())
 			env.router.ServeHTTP(w, req)
-			assert.Equal(t, http.StatusBadRequest, w.Code)
+			// Pattern validation rejects non-digit slots ("-1", "abc") at
+			// the API edge with 422; out-of-range numeric slots ("0",
+			// "11") still parse and the handler returns 400. Either is
+			// acceptable so long as the upload is rejected.
+			assert.True(t,
+				w.Code == http.StatusBadRequest || w.Code == http.StatusUnprocessableEntity,
+				"slot %q: expected 400 or 422, got %d", tc.slot, w.Code)
 		})
 	}
 }
@@ -1166,7 +1172,8 @@ func TestCreateFromSharedSave_InvalidGameID(t *testing.T) {
 	req := httptest.NewRequest("POST", "/api/games/abc/sessions/from-shared-save/1", nil)
 	req.Header.Set("Authorization", "Bearer "+env.token)
 	env.router.ServeHTTP(w, req)
-	assert.Equal(t, http.StatusBadRequest, w.Code)
+	assert.True(t, w.Code == http.StatusBadRequest || w.Code == http.StatusUnprocessableEntity,
+		"expected 400 or 422, got %d", w.Code)
 }
 
 func TestCreateFromSharedSave_InvalidSaveID(t *testing.T) {
@@ -1176,7 +1183,8 @@ func TestCreateFromSharedSave_InvalidSaveID(t *testing.T) {
 	req := httptest.NewRequest("POST", "/api/games/"+env.gameID+"/sessions/from-shared-save/abc", nil)
 	req.Header.Set("Authorization", "Bearer "+env.token)
 	env.router.ServeHTTP(w, req)
-	assert.Equal(t, http.StatusBadRequest, w.Code)
+	assert.True(t, w.Code == http.StatusBadRequest || w.Code == http.StatusUnprocessableEntity,
+		"expected 400 or 422, got %d", w.Code)
 }
 
 func TestCreateFromSharedSave_GameNotFound(t *testing.T) {
