@@ -1,0 +1,13 @@
+Sinclair ZX Spectrum logo placeholder
+
+Author: Spela contributors (placeholder created in this repo).
+License: CC0 / Public Domain.
+
+This is a generic text-based placeholder for the ZX Spectrum platform.
+The text "ZX Spectrum" and "Sinclair" are trademarks of their respective
+holders; no endorsement is implied. The same license terms apply to the
+rasterised PNG variant in ../console-logos-png/zxs.png.
+
+When the proper trademark logo is sourced (e.g. from Wikimedia Commons
+under a clean license), replace this file and update this LICENSE.txt
+to credit the actual artwork's source and licensor.

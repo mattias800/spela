@@ -252,6 +252,23 @@ var registry = []Entry{
 	{ConsoleID: "scummvm", FileName: "MT32_PCM.ROM", Description: "Roland MT-32 PCM ROM", MD5: "89e42e386e82e0cacb4a2704a03706ca", Required: false, SubDir: "scummvm/extra", OverrideURL: "https://archive.org/download/mame-versioned-roland-mt-32-and-cm-32l-rom-files/MT-32_v1.07_legacy_ROM_files.zip/MT32_PCM.ROM"},
 	{ConsoleID: "scummvm", FileName: "CM32L_CONTROL.ROM", Description: "Roland CM-32L Control ROM (v1.02) — preferred over MT-32 when present", MD5: "bfff32b6144c1d706109accb6e6b1113", Required: false, SubDir: "scummvm/extra", OverrideURL: "https://archive.org/download/mame-versioned-roland-mt-32-and-cm-32l-rom-files/MT-32_and_CM-32L_MAME-Versioned_ROM_files..zip/cm32l_ctrl_1_02.rom"},
 	{ConsoleID: "scummvm", FileName: "CM32L_PCM.ROM", Description: "Roland CM-32L PCM ROM (1MB, expanded sample bank)", MD5: "08cdcfa0ed93e9cb16afa76e6ac5f0a4", Required: false, SubDir: "scummvm/extra", OverrideURL: "https://archive.org/download/mame-versioned-roland-mt-32-and-cm-32l-rom-files/MT-32_and_CM-32L_MAME-Versioned_ROM_files..zip/cm32l_pcm.rom"},
+
+	// Sharp X68000 (X68K) — px68k_libretro.info.
+	//
+	// The px68k core looks for these BIOS files at <system_dir>/keropi/.
+	// IPLROM30.DAT is the boot ROM; CGROM.DAT is the character generator
+	// (font tables) used during the BIOS boot animation and by some
+	// games. Both are technically required to boot any cartridge.
+	//
+	// Source URLs are intentionally not set: Sharp does not distribute
+	// these files publicly, and the existing PD redistributions (e.g.
+	// from MAME ROM dumps) live under licenses Spela can't reliably
+	// honour for auto-download. Operators must supply the files via the
+	// admin BIOS upload UI. Required is therefore left at false to
+	// satisfy the Required→Downloadable invariant; the description
+	// flags them as functionally required.
+	{ConsoleID: "x68k", FileName: "IPLROM30.DAT", Description: "Sharp X68000 IPL Boot ROM v3.0 (functionally required — operator must upload manually)", MD5: "", Required: false, SubDir: "keropi"},
+	{ConsoleID: "x68k", FileName: "CGROM.DAT", Description: "Sharp X68000 Character Generator ROM (functionally required — operator must upload manually)", MD5: "", Required: false, SubDir: "keropi"},
 }
 
 // repoFolders maps console IDs to their folder path in the

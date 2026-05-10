@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Sinclair ZX Spectrum logo placeholder.
+  Renders the platform name on a stripe-band evoking the iconic
+  rainbow strip of the original 48K case. Replaceable with the
+  proper trademark logo when one with a clean license is sourced
+  (see issue #1152).
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 400" preserveAspectRatio="xMidYMid meet">
+  <rect width="1200" height="400" fill="#1a1a1a"/>
+  <g transform="translate(80,150)">
+    <rect width="80" height="120" fill="#cc0000"/>
+    <rect x="80" width="80" height="120" fill="#ffd700"/>
+    <rect x="160" width="80" height="120" fill="#cc00cc"/>
+    <rect x="240" width="80" height="120" fill="#00aa00"/>
+    <rect x="320" width="80" height="120" fill="#0088dd"/>
+  </g>
+  <text x="600" y="240" fill="#ffffff" font-family="Helvetica,Arial,sans-serif" font-size="86" font-weight="700" text-anchor="middle">ZX Spectrum</text>
+</svg>

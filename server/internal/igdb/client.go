@@ -108,6 +108,11 @@ var AbbreviationToIGDBPlatform = map[string][]int{
 	"SGX":     {128}, // NEC PC Engine SuperGrafx
 	"VEC":     {70},  // GCE Vectrex
 	"VITA":    {46},  // Sony PlayStation Vita
+	"ZXS":     {26},  // Sinclair ZX Spectrum
+	"CPC":     {25},  // Amstrad CPC
+	"X68K":    {121}, // Sharp X68000
+	// TIC80 intentionally omitted — no IGDB platform entry; fall back
+	// to filename-derived metadata.
 }
 
 // IGDBPlatformsFor returns the IGDB platform IDs to constrain a search by

@@ -1,0 +1,12 @@
+Sharp X68000 logo placeholder
+
+Author: Spela contributors (placeholder created in this repo).
+License: CC0 / Public Domain.
+
+Generic text placeholder for the Sharp X68000 platform. "SHARP" and
+"X68000" are trademarks of their respective holders; no endorsement is
+implied. The same license terms apply to the rasterised PNG variant
+in ../console-logos-png/x68k.png.
+
+Replace this file with a properly-licensed trademark logo when one is
+sourced and update this LICENSE.txt accordingly.

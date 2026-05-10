@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Amstrad CPC console icon placeholder.
+  See ../console-logos/cpc.svg.LICENSE.txt for license terms.
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" preserveAspectRatio="xMidYMid meet">
+  <rect width="400" height="400" fill="#1f3864" rx="40"/>
+  <text x="200" y="180" fill="#ffd700" font-family="Helvetica,Arial,sans-serif" font-size="48" font-weight="700" text-anchor="middle" letter-spacing="2">AMSTRAD</text>
+  <text x="200" y="270" fill="#ffffff" font-family="Helvetica,Arial,sans-serif" font-size="84" font-weight="700" text-anchor="middle" letter-spacing="6">CPC</text>
+</svg>

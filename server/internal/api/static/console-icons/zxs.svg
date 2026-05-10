@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Sinclair ZX Spectrum console icon placeholder.
+  See ../console-logos/zxs.svg.LICENSE.txt for license terms.
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" preserveAspectRatio="xMidYMid meet">
+  <rect width="400" height="400" fill="#1a1a1a" rx="40"/>
+  <g transform="translate(60,140)">
+    <rect width="56" height="40" fill="#cc0000"/>
+    <rect x="56" width="56" height="40" fill="#ffd700"/>
+    <rect x="112" width="56" height="40" fill="#cc00cc"/>
+    <rect x="168" width="56" height="40" fill="#00aa00"/>
+    <rect x="224" width="56" height="40" fill="#0088dd"/>
+  </g>
+  <text x="200" y="240" fill="#ffffff" font-family="Helvetica,Arial,sans-serif" font-size="48" font-weight="700" text-anchor="middle">ZX</text>
+  <text x="200" y="290" fill="#ffffff" font-family="Helvetica,Arial,sans-serif" font-size="32" font-weight="500" text-anchor="middle">Spectrum</text>
+</svg>
