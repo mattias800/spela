@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Sharp X68000 logo placeholder. Replaceable with the proper trademark
+  logo when one with a clean license is sourced (see issue #1154).
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 400" preserveAspectRatio="xMidYMid meet">
+  <rect width="1200" height="400" fill="#1a1a1a"/>
+  <text x="600" y="180" fill="#cccccc" font-family="Helvetica,Arial,sans-serif" font-size="80" font-weight="500" text-anchor="middle" letter-spacing="14">SHARP</text>
+  <text x="600" y="300" fill="#ffffff" font-family="Helvetica,Arial,sans-serif" font-size="140" font-weight="800" text-anchor="middle" letter-spacing="6">X68000</text>
+</svg>

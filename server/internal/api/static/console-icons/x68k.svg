@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Sharp X68000 console icon placeholder.
+  See ../console-logos/x68k.svg.LICENSE.txt for license terms.
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" preserveAspectRatio="xMidYMid meet">
+  <rect width="400" height="400" fill="#1a1a1a" rx="40"/>
+  <text x="200" y="170" fill="#cccccc" font-family="Helvetica,Arial,sans-serif" font-size="44" font-weight="500" text-anchor="middle" letter-spacing="6">SHARP</text>
+  <text x="200" y="270" fill="#ffffff" font-family="Helvetica,Arial,sans-serif" font-size="68" font-weight="800" text-anchor="middle" letter-spacing="2">X68000</text>
+</svg>

@@ -1021,7 +1021,7 @@ func SeedConsoles(db *gorm.DB) error {
 		{Name: "Pokemon Mini", Abbreviation: "PKMN", Extensions: ".min", DefaultCore: "pokemini", EmulatorJSCore: "", FolderName: "pokemonmini", ColorTheme: "#ffcc00", CoverAspect: "1:1", Generation: 6, SaveStateSupport: true, SaveStatePolicy: SaveStatePolicySmall, Playable: true},
 		{Name: "Xbox", Abbreviation: "XBOX", Extensions: ".iso,.xbe", DefaultCore: "", EmulatorJSCore: "", FolderName: "xbox", ColorTheme: "#107c10", CoverAspect: "8:11", Generation: 6, SaveStateSupport: false, SaveStatePolicy: SaveStatePolicyLarge, Playable: false},
 		// 7th Generation
-		{Name: "Nintendo Wii", Abbreviation: "WII", Extensions: ".iso,.wbfs,.gcz,.rvz,.ciso", DefaultCore: "", EmulatorJSCore: "", FolderName: "wii", ColorTheme: "#c0c0c0", CoverAspect: "8:11", Generation: 7, SaveStateSupport: false, SaveStatePolicy: SaveStatePolicyLarge, Playable: false},
+		{Name: "Nintendo Wii", Abbreviation: "WII", Extensions: ".iso,.wbfs,.gcz,.rvz,.ciso", DefaultCore: "dolphin", EmulatorJSCore: "", FolderName: "wii", ColorTheme: "#c0c0c0", CoverAspect: "8:11", Generation: 7, SaveStateSupport: true, SaveStatePolicy: SaveStatePolicyLarge, Playable: true},
 		{Name: "PlayStation 3", Abbreviation: "PS3", Extensions: ".iso,.bin,.pkg", DefaultCore: "", EmulatorJSCore: "", FolderName: "ps3", ColorTheme: "#003087", CoverAspect: "8:11", Generation: 7, SaveStateSupport: false, SaveStatePolicy: SaveStatePolicyLarge, Playable: false},
 		{Name: "Xbox 360", Abbreviation: "X360", Extensions: ".iso,.xex,.god", DefaultCore: "", EmulatorJSCore: "", FolderName: "xbox360", ColorTheme: "#107c10", CoverAspect: "8:11", Generation: 7, SaveStateSupport: false, SaveStatePolicy: SaveStatePolicyLarge, Playable: false},
 		{Name: "PlayStation Portable", Abbreviation: "PSP", Extensions: ".iso,.cso,.chd", DefaultCore: "ppsspp", EmulatorJSCore: "ppsspp", FolderName: "psp", ColorTheme: "#000000", Generation: 7, SaveStateSupport: true, SaveStatePolicy: SaveStatePolicyMedium, Playable: true},
@@ -1068,10 +1068,20 @@ func SeedConsoles(db *gorm.DB) error {
 		{Name: "DOS Demos", Abbreviation: "DDEMO", Extensions: ".zip,.dosz,.conf", DefaultCore: "dosbox_pure", EmulatorJSCore: "dosbox_pure", FolderName: "dos-demos", ColorTheme: "#333333", Generation: 100, SaveStateSupport: false, SaveStatePolicy: SaveStatePolicySmall, Playable: true},
 		{Name: "MSX", Abbreviation: "MSX1", Extensions: ".rom,.mx1,.dsk,.cas", DefaultCore: "bluemsx", EmulatorJSCore: "", FolderName: "msx1", ColorTheme: "#4a86c8", Generation: 100, SaveStateSupport: true, SaveStatePolicy: SaveStatePolicySmall, Playable: true},
 		{Name: "MSX2", Abbreviation: "MSX2", Extensions: ".rom,.mx2,.dsk,.cas", DefaultCore: "bluemsx", EmulatorJSCore: "", FolderName: "msx2", ColorTheme: "#4a86c8", Generation: 100, SaveStateSupport: true, SaveStatePolicy: SaveStatePolicySmall, Playable: true},
+		// Sinclair ZX Spectrum — UK 8-bit, fuse libretro core handles 16K/48K/128K/+2/+3.
+		{Name: "Sinclair ZX Spectrum", Abbreviation: "ZXS", Extensions: ".tap,.tzx,.z80,.sna,.szx,.dsk,.trd,.scl,.mgt", DefaultCore: "fuse", EmulatorJSCore: "", FolderName: "zxspectrum", ColorTheme: "#cc0000", Generation: 100, SaveStateSupport: true, SaveStatePolicy: SaveStatePolicySmall, Playable: true},
+		// Amstrad CPC — major French/Spanish/UK 8-bit, cap32 libretro core.
+		{Name: "Amstrad CPC", Abbreviation: "CPC", Extensions: ".dsk,.sna,.tap,.cdt,.voc,.cpr,.m3u", DefaultCore: "cap32", EmulatorJSCore: "", FolderName: "amstradcpc", ColorTheme: "#1f3864", Generation: 100, SaveStateSupport: true, SaveStatePolicy: SaveStatePolicySmall, Playable: true},
+		// Sharp X68000 — Japanese 16-bit home computer, px68k libretro core.
+		// Requires IPLROM30.DAT + CGROM.DAT BIOS files (see internal/bios/registry.go).
+		{Name: "Sharp X68000", Abbreviation: "X68K", Extensions: ".dim,.img,.d88,.88d,.hdm,.hdf,.m3u", DefaultCore: "px68k", EmulatorJSCore: "", FolderName: "x68000", ColorTheme: "#666666", Generation: 100, SaveStateSupport: true, SaveStatePolicy: SaveStatePolicySmall, Playable: true},
 		// Arcade (generation = 101)
 		{Name: "Arcade", Abbreviation: "ARCADE", Extensions: ".zip", DefaultCore: "mame2003_plus", EmulatorJSCore: "fbneo", FolderName: "arcade", ColorTheme: "#ff4444", Generation: 101, SaveStateSupport: true, SaveStatePolicy: SaveStatePolicySmall, Playable: true},
 		// ScummVM (generation = 100, alongside home computers)
 		{Name: "ScummVM", Abbreviation: "SCUMMVM", Extensions: ".scummvm", DefaultCore: "scummvm", EmulatorJSCore: "", FolderName: "scummvm", ColorTheme: "#6b8e23", CoverAspect: "5:7", Generation: 100, SaveStateSupport: false, SaveStatePolicy: SaveStatePolicySmall, Playable: true},
+		// Fantasy consoles (generation = 102) — modern indie fantasy platforms with thriving FOSS game ecosystems.
+		// IGDB has no platform entry; metadata stays filename-derived.
+		{Name: "TIC-80", Abbreviation: "TIC80", Extensions: ".tic", DefaultCore: "tic80", EmulatorJSCore: "", FolderName: "tic80", ColorTheme: "#1a1a2e", CoverAspect: "1:1", Generation: 102, SaveStateSupport: true, SaveStatePolicy: SaveStatePolicySmall, Playable: true},
 	}
 
 	for _, c := range consoles {
@@ -1229,6 +1239,10 @@ func SeedCores(db *gorm.DB) error {
 		{Name: "prosystem", DisplayName: "ProSystem", Description: "Atari 7800 ProSystem emulator", Platforms: "windows,linux,macos,android"},
 		{Name: "stella", DisplayName: "Stella", Description: "Atari 2600 VCS emulator", Platforms: "windows,linux,macos,android"},
 		{Name: "vice_x64sc", DisplayName: "VICE x64sc", Description: "Commodore 64 emulator (cycle-accurate)", Platforms: "windows,linux,macos,android"},
+		{Name: "fuse", DisplayName: "Fuse", Description: "Sinclair ZX Spectrum emulator (Fuse — Free Unix Spectrum Emulator)", Platforms: "windows,linux,macos,android"},
+		{Name: "cap32", DisplayName: "Caprice32", Description: "Amstrad CPC emulator", Platforms: "windows,linux,macos,android"},
+		{Name: "px68k", DisplayName: "PX68k", Description: "Sharp X68000 emulator (requires IPLROM30.DAT + CGROM.DAT BIOS)", Platforms: "windows,linux,macos,android"},
+		{Name: "tic80", DisplayName: "TIC-80", Description: "TIC-80 fantasy console (no BIOS required)", Platforms: "windows,linux,macos,android"},
 	}
 
 	for _, c := range cores {

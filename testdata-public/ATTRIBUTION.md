@@ -20,6 +20,14 @@ issue and we'll yank it.
 
 ## Contents
 
+### Platform folders without ROMs yet
+
+`tic80/`, `zxspectrum/`, `amstradcpc/`, `x68000/` — these directories
+ship with a `README.md` documenting how to source a PD ROM but no
+ROM file yet. The backend seeds the corresponding consoles; CI's
+library scan finds zero games for them until a ROM lands. Tracked
+as follow-up to the platform-add issues (#1152, #1153, #1154, #1155).
+
 ### `nes/nestest.nes`
 
 | Field | Value |

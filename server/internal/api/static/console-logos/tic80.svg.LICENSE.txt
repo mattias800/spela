@@ -1,0 +1,13 @@
+TIC-80 logo placeholder
+
+Author: Spela contributors (placeholder created in this repo).
+License: CC0 / Public Domain.
+
+The official TIC-80 logo is MIT-licensed
+(https://github.com/nesbox/TIC-80, copyright Vadim Grigoruk @nesbox);
+this placeholder is a simple text rendering pending the official mark
+being sourced and added with attribution. The same license terms apply
+to the rasterised PNG variant in ../console-logos-png/tic80.png.
+
+Replace this file with the official MIT-licensed logo when added,
+and update this LICENSE.txt to credit the upstream attribution.

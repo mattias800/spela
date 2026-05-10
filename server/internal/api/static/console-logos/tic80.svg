@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  TIC-80 logo placeholder. The official TIC-80 logo is MIT-licensed
+  (https://github.com/nesbox/TIC-80); this placeholder is a simple
+  text rendering until the official mark is sourced and added with
+  attribution (see issue #1155).
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 400" preserveAspectRatio="xMidYMid meet">
+  <rect width="1200" height="400" fill="#1a1a2e"/>
+  <text x="600" y="260" fill="#00ffd1" font-family="Courier,monospace" font-size="200" font-weight="700" text-anchor="middle" letter-spacing="10">TIC-80</text>
+</svg>

@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  TIC-80 console icon placeholder.
+  See ../console-logos/tic80.svg.LICENSE.txt for license terms.
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" preserveAspectRatio="xMidYMid meet">
+  <rect width="400" height="400" fill="#1a1a2e" rx="40"/>
+  <text x="200" y="240" fill="#00ffd1" font-family="Courier,monospace" font-size="92" font-weight="700" text-anchor="middle">TIC-80</text>
+</svg>
