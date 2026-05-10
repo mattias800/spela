@@ -1,12 +1,11 @@
-Amstrad CPC logo placeholder
+Amstrad CPC logo
 
-Author: Spela contributors (placeholder created in this repo).
-License: CC0 / Public Domain.
+Source: https://commons.wikimedia.org/wiki/File:Amstrad_CPC_logo.svg
+Author: Amstrad plc (original mark)
 
-Generic text placeholder for the Amstrad CPC platform. "AMSTRAD" and
-"CPC" are trademarks of their respective holders; no endorsement is
-implied. The same license terms apply to the rasterised PNG variant
-in ../console-logos-png/cpc.png.
+Licensed: Public Domain.
 
-Replace this file with a properly-licensed trademark logo when one is
-sourced and update this LICENSE.txt accordingly.
+Per Wikimedia's metadata, the original Amstrad CPC wordmark and
+its visual identity are in the public domain (the trademark itself
+is no longer enforced and the visual is from 1984). The same license
+terms cover the rasterised PNG variant in ../console-logos-png/cpc.png.

@@ -545,6 +545,75 @@ var launchGamesByConsole = map[string][]string{
 		"Bikkuriman World",
 		"CD-ROM^2 System Card",
 	},
+
+	// Nintendo Wii — North America, 2006-11-19. Launch lineup of 21 titles.
+	"wii": {
+		"Wii Sports",
+		"The Legend of Zelda: Twilight Princess",
+		"Excite Truck",
+		"Red Steel",
+		"Rayman Raving Rabbids",
+		"Trauma Center: Second Opinion",
+		"Madden NFL 07",
+		"Tony Hawk's Downhill Jam",
+		"Call of Duty 3",
+		"Marvel: Ultimate Alliance",
+		"Need for Speed: Carbon",
+		"Tom Clancy's Splinter Cell: Double Agent",
+		"Cars",
+		"Avatar: The Last Airbender",
+		"GT Pro Series",
+		"Happy Feet",
+		"Open Season",
+		"SpongeBob SquarePants: Creature from the Krusty Krab",
+		"Super Monkey Ball: Banana Blitz",
+		"World Series of Poker: Tournament of Champions",
+	},
+
+	// Sinclair ZX Spectrum — UK, 1982-04. The "launch lineup" concept is
+	// fuzzier for an 8-bit home computer than for a console; this list is
+	// the bundled "Horizons" cassette sampler that shipped with the 16K /
+	// 48K plus the most prominent launch-window first-party releases.
+	"zxs": {
+		"Horizons",
+		"Psion Chess",
+		"VU-Calc",
+		"Jet-Pac",
+		"Pssst",
+		"Cookie",
+		"Tranz Am",
+	},
+
+	// Amstrad CPC — UK, 1984-06 (also EU and JP later that year). The
+	// "Roland in" series and the bundled "Welcome" tape were the canonical
+	// introduction to the platform; the rest are launch-window first-party
+	// releases.
+	"cpc": {
+		"Roland on the Ropes",
+		"Roland in the Caves",
+		"Roland Goes Digging",
+		"Roland in Time",
+		"Roland in Space",
+		"Sultan's Maze",
+		"Oh Mummy",
+		"Harrier Attack",
+	},
+
+	// Sharp X68000 — Japan, 1987-03. The platform shipped with built-in
+	// arcade-port quality; this is its launch and earliest-window arcade
+	// conversions, the platform's defining draw.
+	"x68k": {
+		"Gradius",
+		"Out Run",
+		"Tetris",
+		"Hyper Crazy Climber",
+		"Marble Madness",
+		"Castle Excellent",
+	},
+
+	// TIC-80 fantasy console doesn't have a launch lineup in the
+	// traditional sense; intentionally omitted. The console-detail page
+	// renders no launch section when a key is absent.
 }
 
 // launchGamesFor returns the curated launch-title list for a console, keyed
