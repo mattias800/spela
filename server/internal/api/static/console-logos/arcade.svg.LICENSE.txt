@@ -1,0 +1,11 @@
+Arcade category logo placeholder
+
+Author: Spela contributors (this repo).
+License: CC0 / Public Domain.
+
+The Arcade "platform" in Spela is a catch-all for many separate
+arcade manufacturers (Capcom, Konami, Sega, Namco, Williams, etc.)
+with no shared trademark. A generic text mark is the right framing
+here rather than picking any one manufacturer's logo. The same
+license terms cover the rasterised PNG variant in
+../console-logos-png/arcade.png.

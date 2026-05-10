@@ -208,9 +208,20 @@ var RomExtensions = map[string]bool{
 	".sgx": true,
 	".mgw": true,
 	".atr": true, ".atx": true, ".xfd": true,
+	".a52": true, ".car": true, ".bas": true, ".com": true,
+	".a78": true,
 	".st": true, ".stx": true, ".msa": true, ".dim": true,
 	".vpk": true, ".mai": true,
 	".scummvm": true,
+	// Sinclair ZX Spectrum (fuse)
+	".tzx": true, ".z80": true, ".sna": true, ".szx": true,
+	".trd": true, ".scl": true, ".mgt": true,
+	// Amstrad CPC (cap32)
+	".cdt": true, ".cpr": true, ".voc": true,
+	// Sharp X68000 (px68k) — .hdf already listed (Amiga), .img is generic
+	".d88": true, ".88d": true, ".hdm": true, ".img": true,
+	// TIC-80 fantasy console (tic80)
+	".tic": true,
 }
 
 // directoryConsoleMap maps directory names to console abbreviations.
@@ -324,6 +335,16 @@ var directoryConsoleMap = map[string]string{
 	"psvita":        "VITA",
 	"vita":          "VITA",
 	"scummvm":       "SCUMMVM",
+	"zxspectrum":    "ZXS",
+	"zxs":           "ZXS",
+	"spectrum":      "ZXS",
+	"amstradcpc":    "CPC",
+	"cpc":           "CPC",
+	"amstrad":       "CPC",
+	"x68000":        "X68K",
+	"x68k":          "X68K",
+	"sharp":         "X68K",
+	"tic80":         "TIC80",
 }
 
 // discPattern matches disc/disk/cd markers in filenames, e.g. "(Disc 1)", "[Disk 2]", "(CD 3)".

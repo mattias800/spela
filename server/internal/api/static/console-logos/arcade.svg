@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Generic Arcade category logo placeholder.
+  Authored by Spela contributors, CC0. The Arcade "platform" is a
+  catch-all for many separate manufacturers (Capcom, Konami, Sega,
+  etc.) with no shared trademark, so a generic text-based mark is
+  the correct framing rather than picking any one manufacturer's
+  logo.
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 400" preserveAspectRatio="xMidYMid meet">
+  <rect width="1200" height="400" fill="#1a1a1a"/>
+  <text x="600" y="260" fill="#ff4444" font-family="Helvetica,Arial,sans-serif" font-size="200" font-weight="800" text-anchor="middle" letter-spacing="14">ARCADE</text>
+</svg>
