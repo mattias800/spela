@@ -22,11 +22,45 @@ issue and we'll yank it.
 
 ### Platform folders without ROMs yet
 
-`tic80/`, `zxspectrum/`, `amstradcpc/`, `x68000/` — these directories
-ship with a `README.md` documenting how to source a PD ROM but no
-ROM file yet. The backend seeds the corresponding consoles; CI's
-library scan finds zero games for them until a ROM lands. Tracked
-as follow-up to the platform-add issues (#1152, #1153, #1154, #1155).
+`amstradcpc/`, `x68000/` — these directories ship with a `README.md`
+documenting how to source a PD ROM but no ROM file yet. The backend
+seeds the corresponding consoles; CI's library scan finds zero games
+for them until a ROM lands. (For X68000 a ROM alone won't help: the
+platform also needs operator-supplied IPLROM30 + CGROM BIOS.)
+Tracked under #1159.
+
+### `tic80/spela-hello.tic`
+
+| Field | Value |
+|-------|-------|
+| **Author** | Spela contributors (this repo) |
+| **Year** | 2026 |
+| **Size** | 193 bytes |
+| **Source** | hand-written; see `scripts/build-testdata-roms.py` |
+| **License** | CC0 / Public Domain — dedicated to the public domain by the authors |
+
+A minimal TIC-80 cartridge containing a single Lua `TIC()` function
+that prints `SPELA TIC-80 OK` plus a frame counter. Built directly to
+the documented `.tic` chunk format (one CODE chunk, header
+`0x05 NN NN 00`, no compression, no sprites/sound). Boots the
+libretro `tic80` core to confirm the platform integration works.
+
+### `zxspectrum/spela-hello.tap`
+
+| Field | Value |
+|-------|-------|
+| **Author** | Spela contributors (this repo) |
+| **Year** | 2026 |
+| **Size** | 61 bytes |
+| **Source** | hand-written; see `scripts/build-testdata-roms.py` |
+| **License** | CC0 / Public Domain — dedicated to the public domain by the authors |
+
+A minimal Sinclair ZX Spectrum tape image containing a one-line
+BASIC program: `10 BORDER 2 : PAPER 2 : CLS : PRINT "SPELA OK"`.
+Built directly to the documented `.tap` block format (one header
+block + one data block, autostart at line 10). Boots the libretro
+`fuse` core's auto-load-tape flow to confirm the platform
+integration works.
 
 ### `nes/nestest.nes`
 
