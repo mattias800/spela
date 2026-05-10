@@ -1040,17 +1040,9 @@ func TestGetConsoleLogo_ParentFallback(t *testing.T) {
 	}
 }
 
-// Consoles with no fallback configured AND no asset still 404 — the
-// fallback map is opt-in, not a generic catch-all.
-func TestGetConsoleLogo_NoFallbackStill404s(t *testing.T) {
-	_, cfg := setupTestEnv(t)
-	router, cleanup := NewRouter(*cfg)
-	defer cleanup()
-
-	// ARCADE has no parent platform; the issue notes it needs a fresh
-	// asset and remains 404 until one is shipped.
-	w := httptest.NewRecorder()
-	req := httptest.NewRequest("GET", "/api/consoles/arcade/logo", nil)
-	router.ServeHTTP(w, req)
-	assert.Equal(t, http.StatusNotFound, w.Code)
-}
+// TestGetConsoleLogo_NoFallbackStill404s was removed once arcade.svg
+// shipped (the documented gap it asserted is closed). The stronger
+// invariant — every seeded console must have a logo + icon, making
+// "console exists, no asset, no fallback" impossible by construction
+// — is enforced by TestEveryConsoleHasLogoAndIcon in
+// asset_completeness_test.go.

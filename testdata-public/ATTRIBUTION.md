@@ -20,14 +20,35 @@ issue and we'll yank it.
 
 ## Contents
 
-### Platform folders without ROMs yet
+### Zero-byte filename stubs
 
-`amstradcpc/`, `x68000/` — these directories ship with a `README.md`
-documenting how to source a PD ROM but no ROM file yet. The backend
-seeds the corresponding consoles; CI's library scan finds zero games
-for them until a ROM lands. (For X68000 a ROM alone won't help: the
-platform also needs operator-supplied IPLROM30 + CGROM BIOS.)
-Tracked under #1159.
+Several platforms ship **zero-byte filename stubs** with clearly
+fictional, Spela-branded titles (`Spela Rainbow Quest.tap`,
+`Spela CPC Showcase.dsk`, etc.). They exist so the library scanner
+has files to index for each new platform — without them, the
+platform shows up empty in the UI on a fresh install / in CI.
+
+What stubs cover:
+- Scanner walks the folder, adds rows to the `games` table
+- Filename → IGDB metadata lookup proceeds normally (covers,
+  descriptions resolve based on title)
+- Library UI surfaces the platform with populated content
+
+What they explicitly do NOT cover:
+- Launching the libretro core (the file has no ROM bytes; the core
+  fails to init)
+- DAT/CRC-based metadata enrichment (no bytes to checksum)
+- Save-state or actual gameplay tests
+
+Sourcing real PD ROMs for these platforms is tracked under #1159.
+Titles are intentionally **fictional and Spela-branded** to avoid
+any ambiguity about whether a real third-party ROM is implied; you
+will not find `Spela Rainbow Quest` on any other emulation site.
+
+The stubs sit alongside the small CC0 hand-crafted carts
+(`spela-hello.tic`, `spela-hello.tap`) which DO boot their cores —
+those are the minimum-boot anchors; the stubs are the
+library-feels-real layer.
 
 ### `tic80/spela-hello.tic`
 
