@@ -60,7 +60,7 @@ import com.spela.player.presentation.intent.SocialIntent
 import com.spela.player.presentation.ui.components.SpAvatar
 import com.spela.player.presentation.ui.components.SpCoverArt
 import com.spela.player.presentation.ui.components.SpEmptyState
-import com.spela.player.presentation.ui.components.SpLoadingIndicator
+import com.spela.player.presentation.ui.components.ScreenLoadingIndicator
 import com.spela.player.presentation.ui.components.social.formatRelativeTime
 import com.spela.player.presentation.ui.feature.library.darken
 import com.spela.player.presentation.ui.theme.LocalTitleBarInset
@@ -112,7 +112,7 @@ fun ActivityScreen(
                 modifier = Modifier.fillMaxSize(),
                 contentAlignment = Alignment.Center,
             ) {
-                SpLoadingIndicator(message = "Loading activity...")
+                ScreenLoadingIndicator(message = "Loading activity...")
             }
         } else {
             PullToRefreshBox(

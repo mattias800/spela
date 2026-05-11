@@ -40,7 +40,7 @@ import com.spela.player.presentation.intent.GameListIntent
 import com.spela.player.presentation.ui.components.PlatformBackHandler
 import com.spela.player.presentation.ui.components.SpEmptyStates
 import com.spela.player.presentation.ui.components.SpIconButton
-import com.spela.player.presentation.ui.components.SpLoadingIndicator
+import com.spela.player.presentation.ui.components.ScreenLoadingIndicator
 import com.spela.player.presentation.ui.components.SpScreen
 import com.spela.player.presentation.ui.components.SpSearchField
 import com.spela.player.presentation.ui.components.SpSnackbar
@@ -134,7 +134,7 @@ fun ConsoleGamesScreen(
                 modifier = Modifier.fillMaxSize(),
                 contentAlignment = Alignment.Center,
             ) {
-                SpLoadingIndicator(message = "Loading games...")
+                ScreenLoadingIndicator(message = "Loading games...")
             }
             return@SpScreen
         }
@@ -234,7 +234,7 @@ fun ConsoleGamesScreen(
                             modifier = Modifier.fillMaxWidth().height(300.dp),
                             contentAlignment = Alignment.Center,
                         ) {
-                            SpLoadingIndicator(message = "Loading games...")
+                            ScreenLoadingIndicator(message = "Loading games...")
                         }
                     }
                 } else if (sortedGames.isEmpty()) {

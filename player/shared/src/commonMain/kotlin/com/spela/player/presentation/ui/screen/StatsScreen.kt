@@ -25,7 +25,7 @@ import com.spela.player.presentation.ui.feature.stats.MostPlayedGameItem
 import com.spela.player.presentation.ui.feature.stats.PersonalStatsSection
 import com.spela.player.presentation.ui.components.SpEmptyState
 import com.spela.player.presentation.ui.components.SpSectionHeader
-import com.spela.player.presentation.ui.components.SpLoadingIndicator
+import com.spela.player.presentation.ui.components.ScreenLoadingIndicator
 import com.spela.player.presentation.ui.components.SpSnackbar
 import com.spela.player.presentation.ui.components.SpSnackbarData
 import com.spela.player.presentation.ui.components.SpSnackbarType
@@ -80,7 +80,7 @@ fun StatsScreen(
                     modifier = Modifier.fillMaxSize(),
                     contentAlignment = Alignment.Center,
                 ) {
-                    SpLoadingIndicator(message = "Loading stats...")
+                    ScreenLoadingIndicator(message = "Loading stats...")
                 }
             } else {
                 val isEmpty = state.mostPlayedGames.isEmpty() && state.activePlayers.isEmpty() && state.personalStats == null

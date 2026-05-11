@@ -34,7 +34,7 @@ import com.spela.player.presentation.intent.GameListIntent
 import com.spela.player.presentation.state.ViewMode
 import com.spela.player.presentation.ui.components.LocalAnimationsEnabled
 import com.spela.player.presentation.ui.components.SpEmptyStates
-import com.spela.player.presentation.ui.components.SpLoadingIndicator
+import com.spela.player.presentation.ui.components.ScreenLoadingIndicator
 import com.spela.player.presentation.ui.components.SpSearchField
 import com.spela.player.presentation.ui.feature.library.GameGridItem
 import com.spela.player.presentation.ui.feature.library.GameLibraryControls
@@ -95,7 +95,7 @@ fun AllGamesScreen(
                 modifier = Modifier.fillMaxSize(),
                 contentAlignment = Alignment.Center,
             ) {
-                SpLoadingIndicator(message = "Loading games...")
+                ScreenLoadingIndicator(message = "Loading games...")
             }
         } else {
             PullToRefreshBox(

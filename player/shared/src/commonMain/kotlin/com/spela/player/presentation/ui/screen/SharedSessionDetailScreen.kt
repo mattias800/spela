@@ -40,7 +40,7 @@ import com.spela.player.presentation.ui.feature.sharedsession.SharedSessionSaveI
 import com.spela.player.presentation.ui.components.InvitePlayerSheet
 import com.spela.player.presentation.ui.components.SpEmptyState
 import com.spela.player.presentation.ui.components.SpIconButton
-import com.spela.player.presentation.ui.components.SpLoadingIndicator
+import com.spela.player.presentation.ui.components.ScreenLoadingIndicator
 import com.spela.player.presentation.ui.components.SpSectionHeader
 import com.spela.player.presentation.ui.components.SpSnackbar
 import com.spela.player.presentation.ui.components.SpSnackbarData
@@ -142,7 +142,7 @@ fun SharedSessionDetailScreen(
                     modifier = Modifier.fillMaxSize(),
                     contentAlignment = Alignment.Center,
                 ) {
-                    SpLoadingIndicator(message = "Loading shared session...")
+                    ScreenLoadingIndicator(message = "Loading shared session...")
                 }
             } else if (state.sharedSession != null) {
                 val sharedSession = state.sharedSession!!

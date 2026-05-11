@@ -46,7 +46,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.spela.player.presentation.ui.components.SpButton
 import com.spela.player.presentation.ui.components.SpButtonStyle
-import com.spela.player.presentation.ui.components.SpLoadingIndicator
+import com.spela.player.presentation.ui.components.ScreenLoadingIndicator
 import com.spela.player.presentation.ui.components.SpSecondaryButton
 import com.spela.player.presentation.ui.components.SpSnackbar
 import com.spela.player.presentation.ui.components.SpSnackbarData
@@ -160,7 +160,7 @@ private fun MobileLayout(
             Spacer(Modifier.height(SpSpacing.XLarge))
 
             if (state.isLoading) {
-                SpLoadingIndicator(message = "Loading servers...")
+                ScreenLoadingIndicator(message = "Loading servers...")
             } else {
                 ServerListOrForm(
                     viewModel = viewModel,
@@ -226,7 +226,7 @@ private fun SplitLayout(
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
                     if (state.isLoading) {
-                        SpLoadingIndicator(message = "Loading servers...")
+                        ScreenLoadingIndicator(message = "Loading servers...")
                     } else {
                         ServerListOrForm(
                             viewModel = viewModel,
