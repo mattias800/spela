@@ -47,7 +47,6 @@ import androidx.compose.ui.platform.ViewConfiguration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Popup
 import androidx.compose.ui.window.PopupProperties
-import coil3.compose.AsyncImage
 import com.spela.player.presentation.ui.gamepad.gamepadFocusable
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
@@ -135,10 +134,11 @@ fun ScreenshotLightbox(
                         modifier = Modifier.fillMaxSize(),
                         contentAlignment = Alignment.Center,
                     ) {
-                        AsyncImage(
+                        SpImage(
                             model = screenshotUrls[page],
                             contentDescription = "Screenshot ${page + 1}",
                             contentScale = ContentScale.Fit,
+                            staggerMs = 0L,
                             modifier = Modifier
                                 .fillMaxSize()
                                 .padding(horizontal = SpSpacing.XLarge)

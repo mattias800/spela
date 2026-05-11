@@ -22,13 +22,13 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import coil3.compose.AsyncImage
 import com.spela.player.domain.model.SearchCollectionResult
 import com.spela.player.domain.model.SearchConsoleResult
 import com.spela.player.domain.model.SearchFranchiseResult
 import com.spela.player.domain.model.SearchGameResult
 import com.spela.player.domain.model.SearchSeriesResult
 import com.spela.player.presentation.ui.components.SpCard
+import com.spela.player.presentation.ui.components.SpImage
 import com.spela.player.presentation.ui.components.SpLinkText
 import com.spela.player.presentation.ui.components.SpWideGameCard
 import com.spela.player.presentation.ui.components.SpWideIconCard
@@ -138,7 +138,7 @@ fun ConsoleSearchResultItem(
             testTag = "search_result_console_${console.id}",
             icon = {
                 if (console.iconUrl.isNotBlank()) {
-                    AsyncImage(
+                    SpImage(
                         model = console.iconUrl,
                         contentDescription = null,
                         modifier = Modifier.size(28.dp),

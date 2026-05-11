@@ -1,27 +1,19 @@
 package com.spela.player.presentation.ui.components
 
-import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.Dp
-import coil3.compose.SubcomposeAsyncImage
-import androidx.compose.ui.graphics.Color
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.ui.theme.SpTypography
@@ -37,8 +29,9 @@ fun SpCoverArt(
     cornerRadius: Dp = SpSpacing.RadiusLarge,
     aspectRatio: Float? = COVER_ASPECT_RATIO,
     onAspectRatioResolved: ((Float) -> Unit)? = null,
-    // True while a scrape is in progress — shows an animated shimmer instead of
-    // the static placeholder so the user knows something is happening.
+    // True while a scrape is in progress — surfaces the placeholder
+    // unconditionally (no Coil call yet) so the user knows the cover
+    // hasn't been fetched.
     isLoading: Boolean = false,
 ) {
     val shape = RoundedCornerShape(cornerRadius)
@@ -54,13 +47,13 @@ fun SpCoverArt(
         contentAlignment = Alignment.Center,
     ) {
         when {
-            isLoading -> CoverShimmer()
-            imageUrl != null -> SubcomposeAsyncImage(
+            isLoading -> SpImageDefaults.Placeholder()
+            else -> SpImage(
                 model = imageUrl,
                 contentDescription = contentDescription,
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxSize(),
                 contentScale = scale,
-                loading = { CoverShimmer() },
+                placeholder = { CoverPlaceholder(contentDescription) },
                 error = { CoverPlaceholder(contentDescription) },
                 onSuccess = { state ->
                     if (onAspectRatioResolved != null) {
@@ -71,7 +64,6 @@ fun SpCoverArt(
                     }
                 },
             )
-            else -> CoverPlaceholder(contentDescription)
         }
     }
 }
@@ -83,22 +75,14 @@ fun SpHeroCover(
     modifier: Modifier = Modifier,
 ) {
     Box(modifier = modifier) {
-        if (imageUrl != null) {
-            SubcomposeAsyncImage(
-                model = imageUrl,
-                contentDescription = contentDescription,
-                modifier = Modifier.fillMaxWidth(),
-                contentScale = ContentScale.FillWidth,
-                loading = {
-                    CoverShimmer()
-                },
-                error = {
-                    CoverPlaceholder(contentDescription)
-                },
-            )
-        } else {
-            CoverPlaceholder(contentDescription)
-        }
+        SpImage(
+            model = imageUrl,
+            contentDescription = contentDescription,
+            modifier = Modifier.fillMaxSize(),
+            contentScale = ContentScale.FillWidth,
+            placeholder = { CoverPlaceholder(contentDescription) },
+            error = { CoverPlaceholder(contentDescription) },
+        )
 
         // Gradient overlay at the bottom for text readability
         Box(
@@ -117,30 +101,6 @@ fun SpHeroCover(
                 ),
         )
     }
-}
-
-@Composable
-private fun CoverShimmer() {
-    val alpha = if (LocalAnimationsEnabled.current) {
-        val transition = rememberInfiniteTransition(label = "coverShimmer")
-        val animatedAlpha by transition.animateFloat(
-            initialValue = 0.15f,
-            targetValue = 0.35f,
-            animationSpec = infiniteRepeatable(
-                animation = tween(800),
-                repeatMode = RepeatMode.Reverse,
-            ),
-            label = "coverShimmerAlpha",
-        )
-        animatedAlpha
-    } else {
-        0.25f
-    }
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(SpColor.SurfaceBright.copy(alpha = alpha)),
-    )
 }
 
 @Composable

@@ -27,7 +27,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import coil3.compose.SubcomposeAsyncImage
+import com.spela.player.presentation.ui.components.SpImage
 import com.spela.player.presentation.ui.feature.library.getConsoleGradient
 import com.spela.player.presentation.ui.screen.formatSessionDuration
 import com.spela.player.presentation.ui.theme.SpColor
@@ -77,18 +77,18 @@ fun SecondaryArtPage(
     ) {
         if (heroUrl != null) {
             // Hero image at fixed aspect ratio
-            SubcomposeAsyncImage(
+            SpImage(
                 model = heroUrl,
                 contentDescription = "Hero artwork for $gameTitle",
                 modifier = Modifier
                     .fillMaxWidth()
                     .aspectRatio(16f / 9f),
                 contentScale = ContentScale.Crop,
-                loading = {
+                staggerMs = 0L,
+                placeholder = {
                     Box(
                         modifier = Modifier
-                            .fillMaxWidth()
-                            .aspectRatio(16f / 9f)
+                            .fillMaxSize()
                             .background(SpColor.SurfaceVariant),
                     )
                 },
@@ -96,8 +96,7 @@ fun SecondaryArtPage(
                     // On error, show console gradient header instead
                     Box(
                         modifier = Modifier
-                            .fillMaxWidth()
-                            .aspectRatio(16f / 9f)
+                            .fillMaxSize()
                             .background(
                                 Brush.verticalGradient(
                                     colors = listOf(

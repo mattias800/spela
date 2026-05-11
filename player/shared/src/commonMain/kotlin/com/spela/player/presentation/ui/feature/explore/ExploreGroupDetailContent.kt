@@ -41,12 +41,12 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
-import coil3.compose.SubcomposeAsyncImage
 import com.spela.player.presentation.ui.components.SpCard
 import com.spela.player.presentation.ui.components.SpGameGrid
 import com.spela.player.presentation.ui.components.SpProgressBar
 import com.spela.player.presentation.ui.components.SpGridGameCard
 import com.spela.player.presentation.ui.components.SpHeroBanner
+import com.spela.player.presentation.ui.components.SpImage
 import com.spela.player.presentation.ui.components.SpChip
 import com.spela.player.presentation.ui.components.SpCoverArt
 import com.spela.player.presentation.ui.components.SpEmptyState
@@ -144,12 +144,13 @@ fun ExploreGroupDetailContent(
                                     // Franchise/series logo image or name text fallback
                                     val logoUrl = detail.logoUrl
                                     if (logoUrl != null) {
-                                        SubcomposeAsyncImage(
+                                        SpImage(
                                             model = logoUrl,
                                             contentDescription = detail.name,
                                             modifier = Modifier
                                                 .heightIn(max = 120.dp),
                                             contentScale = ContentScale.Fit,
+                                            staggerMs = 0L,
                                             error = {
                                                 Text(
                                                     text = detail.name,

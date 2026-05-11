@@ -24,8 +24,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import coil3.compose.AsyncImage
+import androidx.compose.ui.draw.alpha
 import com.spela.player.presentation.ui.components.SpButton
+import com.spela.player.presentation.ui.components.SpImage
 import com.spela.player.presentation.ui.components.SpSecondaryButton
 import com.spela.player.presentation.ui.components.SpButtonStyle
 import com.spela.player.presentation.ui.components.SpCard
@@ -296,11 +297,10 @@ private fun androidx.compose.foundation.lazy.LazyListScope.consolesContent(
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     if (console.iconUrl.isNotEmpty()) {
-                        AsyncImage(
+                        SpImage(
                             model = console.iconUrl,
                             contentDescription = null,
-                            modifier = Modifier.size(32.dp),
-                            alpha = 0.7f,
+                            modifier = Modifier.size(32.dp).alpha(0.7f),
                         )
                     } else {
                         Icon(

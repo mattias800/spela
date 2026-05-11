@@ -68,6 +68,7 @@ import coil3.compose.AsyncImage
 import com.spela.player.domain.model.Console
 import com.spela.player.presentation.ui.components.SpAreaSizedImage
 import com.spela.player.presentation.ui.components.SpButton
+import com.spela.player.presentation.ui.components.SpImage
 import com.spela.player.presentation.ui.components.SpButtonStyle
 import com.spela.player.presentation.ui.components.SpShimmer
 import com.spela.player.presentation.ui.theme.SpColor
@@ -238,7 +239,7 @@ internal fun ConsoleCard(
                 .alpha(0.07f),
         ) {
             if (console.iconUrl.isNotEmpty()) {
-                AsyncImage(
+                SpImage(
                     model = console.iconUrl,
                     contentDescription = null,
                     modifier = Modifier.fillMaxSize(),
@@ -452,7 +453,7 @@ private fun ConsoleHeroBannerContent(
                 .alpha(0.07f),
         ) {
             if (console.iconUrl.isNotEmpty()) {
-                AsyncImage(
+                SpImage(
                     model = console.iconUrl,
                     contentDescription = null,
                     modifier = Modifier.size(224.dp),

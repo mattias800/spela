@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -30,9 +31,9 @@ import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import coil3.compose.SubcomposeAsyncImage
 import com.spela.player.domain.model.Challenge
 import com.spela.player.presentation.ui.components.SpAvatar
+import com.spela.player.presentation.ui.components.SpImage
 import com.spela.player.presentation.ui.components.SpShimmer
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
@@ -63,13 +64,13 @@ fun SpChallengeCard(
                 .background(SpColor.SurfaceVariant),
         ) {
             if (challenge.screenshotUrl != null) {
-                SubcomposeAsyncImage(
+                SpImage(
                     model = challenge.screenshotUrl,
                     contentDescription = null,
                     modifier = Modifier.matchParentSize(),
                     contentScale = ContentScale.Crop,
-                    loading = {
-                        SpShimmer(modifier = Modifier.matchParentSize())
+                    placeholder = {
+                        SpShimmer(modifier = Modifier.fillMaxSize())
                     },
                 )
             } else {

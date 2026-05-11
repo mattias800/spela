@@ -14,7 +14,6 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.Dp
-import coil3.compose.SubcomposeAsyncImage
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
 
@@ -50,19 +49,21 @@ fun SpHeroBanner(
     ) {
         // Background: hero image or gradient fallback
         if (heroUrl != null) {
-            SubcomposeAsyncImage(
+            SpImage(
                 model = heroUrl,
                 contentDescription = null,
                 modifier = if (height != null) Modifier.fillMaxSize() else Modifier.matchParentSize(),
                 contentScale = ContentScale.Crop,
-                loading = {
+                staggerMs = 0L,
+                placeholder = {
                     Box(
-                        modifier = (if (height != null) Modifier.fillMaxSize() else Modifier.matchParentSize())
+                        modifier = Modifier
+                            .fillMaxSize()
                             .background(SpColor.Background),
                     )
                 },
                 error = {
-                    GradientFallback(if (height != null) Modifier.fillMaxSize() else Modifier.matchParentSize())
+                    GradientFallback(Modifier.fillMaxSize())
                 },
             )
         } else {

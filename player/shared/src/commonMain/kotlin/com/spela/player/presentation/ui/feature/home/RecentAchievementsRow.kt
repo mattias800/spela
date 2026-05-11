@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -24,10 +25,10 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import coil3.compose.SubcomposeAsyncImage
 import com.spela.player.domain.model.RecentAchievement
 import androidx.compose.ui.focus.focusRequester
 import com.spela.player.presentation.ui.components.SpCarousel
+import com.spela.player.presentation.ui.components.SpImage
 import com.spela.player.presentation.ui.components.SpShimmer
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
@@ -72,15 +73,15 @@ private fun AchievementCard(
         ) {
             // Badge image
             if (achievement.badgeUrl != null) {
-                SubcomposeAsyncImage(
+                SpImage(
                     model = achievement.badgeUrl,
                     contentDescription = null,
                     modifier = Modifier
                         .size(48.dp)
                         .clip(RoundedCornerShape(SpSpacing.RadiusMedium)),
                     contentScale = ContentScale.Crop,
-                    loading = {
-                        SpShimmer(modifier = Modifier.size(48.dp))
+                    placeholder = {
+                        SpShimmer(modifier = Modifier.fillMaxSize())
                     },
                 )
             } else {

@@ -35,12 +35,12 @@ import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import coil3.compose.SubcomposeAsyncImage
 import com.spela.player.domain.model.ScreenshotItem
 import com.spela.player.presentation.ui.components.PlatformBackHandler
 import com.spela.player.presentation.ui.components.SpCard
 import com.spela.player.presentation.ui.components.SpEmptyState
 import com.spela.player.presentation.ui.components.SpGameCardSkeleton
+import com.spela.player.presentation.ui.components.SpImage
 import com.spela.player.presentation.ui.components.SpSnackbar
 import com.spela.player.presentation.ui.components.SpSnackbarData
 import com.spela.player.presentation.ui.components.SpSnackbarType
@@ -213,26 +213,24 @@ private fun ScreenshotGridCard(
                 .fillMaxWidth()
                 .clip(shape),
         ) {
-            SubcomposeAsyncImage(
+            SpImage(
                 model = screenshot.url,
                 contentDescription = "${screenshot.gameTitle} screenshot",
                 modifier = Modifier
                     .fillMaxWidth()
                     .aspectRatio(SCREENSHOT_ASPECT_RATIO),
                 contentScale = ContentScale.Crop,
-                loading = {
+                placeholder = {
                     Box(
                         modifier = Modifier
-                            .fillMaxWidth()
-                            .aspectRatio(SCREENSHOT_ASPECT_RATIO)
+                            .fillMaxSize()
                             .background(SpColor.SurfaceBright.copy(alpha = 0.25f)),
                     )
                 },
                 error = {
                     Box(
                         modifier = Modifier
-                            .fillMaxWidth()
-                            .aspectRatio(SCREENSHOT_ASPECT_RATIO)
+                            .fillMaxSize()
                             .background(
                                 Brush.linearGradient(
                                     listOf(SpColor.SurfaceVariant, SpColor.SurfaceElevated),

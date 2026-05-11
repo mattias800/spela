@@ -45,12 +45,12 @@ import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import coil3.compose.SubcomposeAsyncImage
 import com.spela.player.domain.model.FeaturedGame
 import com.spela.player.presentation.ui.components.LocalAnimationsEnabled
 import com.spela.player.presentation.ui.components.SpButton
 import com.spela.player.presentation.ui.components.SpAreaSizedImage
 import com.spela.player.presentation.ui.components.SpConsoleChip
+import com.spela.player.presentation.ui.components.SpImage
 import com.spela.player.presentation.ui.components.SpShimmer
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
@@ -194,12 +194,13 @@ private fun HeroSlide(
     ) {
         // Hero art background
         if (game.heroUrl != null) {
-            SubcomposeAsyncImage(
+            SpImage(
                 model = game.heroUrl,
                 contentDescription = "Hero art for ${game.title}",
                 modifier = Modifier.fillMaxSize(),
                 contentScale = ContentScale.Crop,
-                loading = {
+                staggerMs = 0L,
+                placeholder = {
                     Box(
                         modifier = Modifier
                             .fillMaxSize()

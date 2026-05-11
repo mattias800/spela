@@ -39,7 +39,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.shape.RoundedCornerShape
-import coil3.compose.SubcomposeAsyncImage
 import com.spela.player.presentation.intent.ChallengeIntent
 import com.spela.player.presentation.ui.components.PlatformBackHandler
 import com.spela.player.presentation.ui.components.SpAvatar
@@ -47,6 +46,7 @@ import com.spela.player.presentation.ui.components.SpButton
 import com.spela.player.presentation.ui.components.SpSecondaryButton
 import com.spela.player.presentation.ui.components.SpButtonStyle
 import com.spela.player.presentation.ui.components.SpEmptyStates
+import com.spela.player.presentation.ui.components.SpImage
 import com.spela.player.presentation.ui.components.SpShimmer
 import com.spela.player.presentation.ui.components.SpScreen
 import com.spela.player.presentation.ui.components.SpScreenTopSpacer
@@ -131,11 +131,12 @@ fun ChallengeDetailScreen(
                         .background(SpColor.SurfaceVariant),
                 ) {
                     if (challenge.screenshotUrl != null) {
-                        SubcomposeAsyncImage(
+                        SpImage(
                             model = challenge.screenshotUrl,
                             contentDescription = "Challenge screenshot",
                             modifier = Modifier.matchParentSize(),
                             contentScale = ContentScale.Crop,
+                            staggerMs = 0L,
                         )
                     } else {
                         Icon(

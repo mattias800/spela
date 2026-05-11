@@ -32,7 +32,6 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import coil3.compose.SubcomposeAsyncImage
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
 
@@ -164,12 +163,13 @@ private fun LandscapeLayout(
                             .align(Alignment.TopStart),
                     ) {
                         if (heroUrl != null) {
-                            SubcomposeAsyncImage(
+                            SpImage(
                                 model = heroUrl,
                                 contentDescription = null,
                                 modifier = Modifier.fillMaxSize(),
                                 contentScale = ContentScale.Crop,
-                                loading = {
+                                staggerMs = 0L,
+                                placeholder = {
                                     Box(modifier = Modifier.fillMaxSize().drawBehind {
                                         val cx = size.width / 2f
                                         val cy = size.height / 2f
@@ -320,16 +320,17 @@ private fun PortraitLayout(
                 ) {
                     // Background: hero image — sized by the content Column below via matchParentSize
                     if (heroUrl != null) {
-                        SubcomposeAsyncImage(
+                        SpImage(
                             model = heroUrl,
                             contentDescription = "Hero banner",
                             modifier = Modifier.matchParentSize(),
                             contentScale = ContentScale.Crop,
-                            loading = {
-                                Box(modifier = Modifier.matchParentSize().background(SpColor.Background))
+                            staggerMs = 0L,
+                            placeholder = {
+                                Box(modifier = Modifier.fillMaxSize().background(SpColor.Background))
                             },
                             error = {
-                                Box(modifier = Modifier.matchParentSize().background(
+                                Box(modifier = Modifier.fillMaxSize().background(
                                     Brush.verticalGradient(listOf(
                                         backgroundColors.first().copy(alpha = 0.5f),
                                         backgroundColors.last(),

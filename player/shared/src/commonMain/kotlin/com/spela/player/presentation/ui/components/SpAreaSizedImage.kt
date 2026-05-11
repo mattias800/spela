@@ -10,10 +10,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import coil3.compose.SubcomposeAsyncImage
 import kotlin.math.sqrt
 
 /**
@@ -37,8 +35,7 @@ import kotlin.math.sqrt
  *   the caller (e.g. shipped by the server alongside the image URL). When
  *   supplied the container starts at its final size rather than the square-
  *   guess fallback, eliminating the size-A → size-B re-layout that happens
- *   once SubcomposeAsyncImage decodes the bytes (#1166). Null = legacy
- *   behaviour.
+ *   once SpImage decodes the bytes (#1166). Null = legacy behaviour.
  * @param loading Composable shown while the image loads.
  * @param error Composable shown if loading fails.
  */
@@ -57,15 +54,11 @@ fun SpAreaSizedImage(
 ) {
     // Track the resolved aspect ratio. Seeded by [initialAspectRatio] so
     // the layout snaps to the correct dimensions on first frame; the
-    // SubcomposeAsyncImage callback overwrites it with the painter's
+    // SpImage success callback overwrites it with the painter's
     // intrinsic ratio once the image decodes (handles SVG/PNG drift).
     var aspectRatio by remember(initialAspectRatio) {
         mutableFloatStateOf(initialAspectRatio ?: 0f)
     }
-
-    // Compute dimensions from target area and aspect ratio
-    // area = w * h, aspectRatio = w / h → w = sqrt(area * ar), h = sqrt(area / ar)
-    val density = LocalDensity.current
 
     BoxWithConstraints(modifier = modifier) {
         val computedHeight = if (aspectRatio > 0f) {
@@ -83,13 +76,15 @@ fun SpAreaSizedImage(
             maxWidth
         }
 
-        SubcomposeAsyncImage(
+        SpImage(
             model = imageUrl,
             contentDescription = contentDescription,
             modifier = Modifier
                 .heightIn(max = computedHeight)
                 .widthIn(max = computedWidth),
             contentScale = ContentScale.Fit,
+            placeholder = loading,
+            error = error,
             onSuccess = { result ->
                 val painter = result.painter
                 val intrinsicSize = painter.intrinsicSize
@@ -97,8 +92,6 @@ fun SpAreaSizedImage(
                     aspectRatio = intrinsicSize.width / intrinsicSize.height
                 }
             },
-            loading = { loading() },
-            error = { error() },
         )
     }
 }
