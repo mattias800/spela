@@ -46,6 +46,7 @@ import com.spela.player.presentation.ui.components.SpCoverArt
 import com.spela.player.presentation.ui.components.SpFab
 import com.spela.player.presentation.ui.components.SpEmptyStates
 import com.spela.player.presentation.ui.components.ScreenLoadingIndicator
+import com.spela.player.presentation.ui.components.rememberLoadingFlashDebounce
 import com.spela.player.presentation.ui.components.SpSnackbar
 import com.spela.player.presentation.ui.components.SpSnackbarData
 import com.spela.player.presentation.ui.components.SpSnackbarType
@@ -118,7 +119,12 @@ fun CollectionsScreen(
                 }
             } else {
                 PullToRefreshBox(
-                    isRefreshing = state.isLoading,
+                    // Same debounce as the screen-level indicator —
+                    // PullToRefreshBox draws its own spinner around the
+                    // screen content and would otherwise flash on a
+                    // cache-hit response that transitions through a
+                    // momentary isLoading=true.
+                    isRefreshing = rememberLoadingFlashDebounce(state.isLoading),
                     onRefresh = {
                         viewModel.onIntent(CollectionsIntent.LoadMyCollections)
                         viewModel.onIntent(CollectionsIntent.LoadPublicCollections)

@@ -41,6 +41,7 @@ import com.spela.player.presentation.ui.components.PlatformBackHandler
 import com.spela.player.presentation.ui.components.SpEmptyStates
 import com.spela.player.presentation.ui.components.SpIconButton
 import com.spela.player.presentation.ui.components.ScreenLoadingIndicator
+import com.spela.player.presentation.ui.components.rememberLoadingFlashDebounce
 import com.spela.player.presentation.ui.components.SpScreen
 import com.spela.player.presentation.ui.components.SpSearchField
 import com.spela.player.presentation.ui.components.SpSnackbar
@@ -139,7 +140,7 @@ fun ConsoleGamesScreen(
             return@SpScreen
         }
         PullToRefreshBox(
-            isRefreshing = state.isLoading,
+            isRefreshing = rememberLoadingFlashDebounce(state.isLoading),
             onRefresh = { viewModel.onIntent(GameListIntent.SelectConsole(consoleId)) },
             modifier = Modifier.fillMaxSize(),
         ) {

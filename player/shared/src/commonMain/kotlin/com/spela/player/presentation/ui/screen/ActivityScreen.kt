@@ -61,6 +61,7 @@ import com.spela.player.presentation.ui.components.SpAvatar
 import com.spela.player.presentation.ui.components.SpCoverArt
 import com.spela.player.presentation.ui.components.SpEmptyState
 import com.spela.player.presentation.ui.components.ScreenLoadingIndicator
+import com.spela.player.presentation.ui.components.rememberLoadingFlashDebounce
 import com.spela.player.presentation.ui.components.social.formatRelativeTime
 import com.spela.player.presentation.ui.feature.library.darken
 import com.spela.player.presentation.ui.theme.LocalTitleBarInset
@@ -116,7 +117,12 @@ fun ActivityScreen(
             }
         } else {
             PullToRefreshBox(
-                isRefreshing = state.isLoadingFullActivity && state.fullActivityEvents.isNotEmpty(),
+                // Same debounce as the screen-level indicator —
+                // PullToRefreshBox draws its own spinner and would
+                // otherwise flash on a cache-hit response.
+                isRefreshing = rememberLoadingFlashDebounce(
+                    state.isLoadingFullActivity && state.fullActivityEvents.isNotEmpty()
+                ),
                 onRefresh = { viewModel.onIntent(SocialIntent.LoadFullActivityFeed) },
                 modifier = Modifier.fillMaxSize(),
             ) {

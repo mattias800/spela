@@ -65,3 +65,37 @@ fun ScreenLoadingIndicator(
 
     SpLoadingIndicator(modifier = modifier, message = message, color = color)
 }
+
+/**
+ * Debounces a transient-true Boolean so consumers see `true` only
+ * after [delayMs] of continuous truthy input. Reverts to `false`
+ * immediately when the source flips back.
+ *
+ * Use for other loading-state surfaces that bypass
+ * [ScreenLoadingIndicator] — most often [PullToRefreshBox]'s
+ * `isRefreshing` flag, which has its own spinner that draws around
+ * the screen content. Without this, a cache-hit response transitioning
+ * through a momentary `isLoading=true` state would still flash the
+ * pull-to-refresh spinner even though [ScreenLoadingIndicator]
+ * correctly stayed hidden.
+ *
+ * In test mode ([LocalAnimationsEnabled] false) the value passes
+ * through unchanged so tests don't have to wait 500ms.
+ */
+@Composable
+fun rememberLoadingFlashDebounce(
+    source: Boolean,
+    delayMs: Long = ScreenLoadingDebounceMs,
+): Boolean {
+    if (!LocalAnimationsEnabled.current) return source
+    var debounced by remember { mutableStateOf(false) }
+    LaunchedEffect(source) {
+        if (source) {
+            delay(delayMs)
+            debounced = true
+        } else {
+            debounced = false
+        }
+    }
+    return debounced
+}

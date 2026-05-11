@@ -41,6 +41,7 @@ import com.spela.player.presentation.ui.components.SpCoverArt
 import com.spela.player.presentation.ui.components.SpDialog
 import com.spela.player.presentation.ui.components.SpEmptyStates
 import com.spela.player.presentation.ui.components.ScreenLoadingIndicator
+import com.spela.player.presentation.ui.components.rememberLoadingFlashDebounce
 import com.spela.player.presentation.ui.components.SpSnackbar
 import com.spela.player.presentation.ui.components.SpSnackbarData
 import com.spela.player.presentation.ui.components.SpSnackbarType
@@ -110,7 +111,7 @@ fun NetplayListScreen(
                 }
             } else {
                 PullToRefreshBox(
-                    isRefreshing = state.isLoading,
+                    isRefreshing = rememberLoadingFlashDebounce(state.isLoading),
                     onRefresh = { viewModel.onIntent(NetplayIntent.LoadSessions) },
                     modifier = Modifier.fillMaxSize(),
                 ) {

@@ -44,6 +44,7 @@ import com.spela.player.presentation.ui.components.SpButton
 import com.spela.player.presentation.ui.components.createTextClipEntry
 import com.spela.player.presentation.ui.components.SpSecondaryButton
 import com.spela.player.presentation.ui.components.ScreenLoadingIndicator
+import com.spela.player.presentation.ui.components.rememberLoadingFlashDebounce
 import com.spela.player.presentation.ui.components.SpNetplayPlayerSlot
 import com.spela.player.presentation.ui.components.SpProgressBar
 import com.spela.player.presentation.ui.components.SpSessionCode
@@ -154,7 +155,7 @@ fun NetplayLobbyScreen(
                 }
             } else if (session != null) {
                 PullToRefreshBox(
-                    isRefreshing = state.isLoading,
+                    isRefreshing = rememberLoadingFlashDebounce(state.isLoading),
                     onRefresh = { viewModel.onIntent(NetplayLobbyIntent.LoadSession(sessionId)) },
                     modifier = Modifier.fillMaxSize(),
                 ) {

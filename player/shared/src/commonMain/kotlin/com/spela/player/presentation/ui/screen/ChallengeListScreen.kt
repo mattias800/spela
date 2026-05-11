@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.lazy.grid.GridCells
+import com.spela.player.presentation.ui.components.rememberLoadingFlashDebounce
 import com.spela.player.presentation.ui.components.SpLazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -82,7 +83,7 @@ fun ChallengeListScreen(
             }
         } else {
             PullToRefreshBox(
-                isRefreshing = state.isLoadingGameChallenges && state.gameChallenges.isNotEmpty(),
+                isRefreshing = rememberLoadingFlashDebounce(state.isLoadingGameChallenges && state.gameChallenges.isNotEmpty()),
                 onRefresh = { viewModel.onIntent(ChallengeIntent.LoadGameChallenges(gameId)) },
                 modifier = Modifier.fillMaxSize(),
             ) {
