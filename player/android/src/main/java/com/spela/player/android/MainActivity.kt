@@ -236,6 +236,23 @@ class MainActivity : ComponentActivity() {
     }
 
     override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
+        // Register the source device as a player port if it's a real
+        // gamepad (SOURCE_GAMEPAD / SOURCE_JOYSTICK — see
+        // ensureDeviceConnected). Done at the top of dispatch, before
+        // any state-machine branch, so the on-screen player-N indicator
+        // reflects "the user has used this controller" rather than the
+        // narrower "the user has used this controller during
+        // emulation". Without this, the pill-menu bumper glyphs at the
+        // top of UI screens fall back to keyboard ([ / ]) instead of
+        // L1 / R1 until the user has actually entered a game (#1165).
+        //
+        // No-op for non-gamepad devices — ensureDeviceConnected's own
+        // filter rejects volume keys, power button, touchscreen-
+        // gesture keystrokes, etc.
+        if (event != null) {
+            ensureDeviceConnected(event.deviceId)
+        }
+
         // Key mapping capture: when in listening mode, intercept gamepad buttons
         if (keyMappingViewModel.state.value.currentMappingButton != null && isGamepadCapturable(keyCode)) {
             keyMappingViewModel.onIntent(KeyMappingIntent.CaptureButton(keyCode))
@@ -374,6 +391,12 @@ class MainActivity : ComponentActivity() {
         if (!isJoystickOrGamepad || event.action != MotionEvent.ACTION_MOVE) {
             return super.onGenericMotionEvent(event)
         }
+
+        // Register the source device as a player port — mirrors the
+        // onKeyDown path so analog-stick / trigger movement also
+        // populates the on-screen indicator (#1165). No-op for non-
+        // gamepad sources thanks to ensureDeviceConnected's filter.
+        ensureDeviceConnected(event.deviceId)
 
         if (isEmulationConsuming) {
             val controller = androidController ?: return super.onGenericMotionEvent(event)
