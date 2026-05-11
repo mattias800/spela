@@ -63,6 +63,16 @@ data class Console(
     val defaultCore: String = "",
     val iconUrl: String = "",
     val logoUrl: String = "",
+    /**
+     * Intrinsic width/height of [logoUrl] as reported by the server
+     * (computed once from the SVG's viewBox at seed time). The
+     * console-detail hero uses this on first render so the area-sized
+     * logo container starts at the right dimensions and doesn't
+     * re-layout once the image decodes (#1166). Null when the server
+     * couldn't determine it — clients should fall back to the legacy
+     * fluid sizing.
+     */
+    val logoAspectRatio: Float? = null,
     val saveStateSupport: Boolean = true,
     val saveStatePolicy: SaveStatePolicyTier = SaveStatePolicyTier.Small,
     val browserPlayable: Boolean = false,

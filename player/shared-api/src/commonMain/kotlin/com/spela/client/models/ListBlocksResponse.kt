@@ -15,6 +15,7 @@
 
 package com.spela.client.models
 
+import com.spela.client.models.BlockedUserResponse
 
 import kotlinx.serialization.*
 import kotlinx.serialization.descriptors.*
@@ -23,23 +24,14 @@ import kotlinx.serialization.encoding.*
 /**
  * 
  *
- * @param email New account email (RFC 5321 cap).
- * @param password New account password (8-72 characters).
- * @param username New account username (3-64 alphanumeric characters).
+ * @param blocked 
  * @param dollarSchema A URL to the JSON Schema for this object.
  */
 @Serializable
 
-data class AuthRegisterRequest (
+data class ListBlocksResponse (
 
-    /* New account email (RFC 5321 cap). */
-    @SerialName(value = "email") @Required val email: kotlin.String,
-
-    /* New account password (8-72 characters). */
-    @SerialName(value = "password") @Required val password: kotlin.String,
-
-    /* New account username (3-64 alphanumeric characters). */
-    @SerialName(value = "username") @Required val username: kotlin.String,
+    @SerialName(value = "blocked") @Required val blocked: kotlin.collections.List<BlockedUserResponse>,
 
     /* A URL to the JSON Schema for this object. */
     @SerialName(value = "\$schema") val dollarSchema: kotlin.String? = null

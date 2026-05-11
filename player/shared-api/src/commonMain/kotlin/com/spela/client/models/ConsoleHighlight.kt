@@ -28,6 +28,7 @@ import kotlinx.serialization.encoding.*
  * @param gameCount 
  * @param iconUrl 
  * @param id 
+ * @param logoAspectRatio 
  * @param logoUrl 
  * @param name 
  * @param topGame 
@@ -43,6 +44,8 @@ data class ConsoleHighlight (
     @SerialName(value = "iconUrl") @Required val iconUrl: kotlin.String,
 
     @SerialName(value = "id") @Required val id: kotlin.String,
+
+    @SerialName(value = "logoAspectRatio") @Required val logoAspectRatio: kotlin.Double?,
 
     @SerialName(value = "logoUrl") @Required val logoUrl: kotlin.String,
 

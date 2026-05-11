@@ -96,6 +96,7 @@ export function makeConsole(overrides: Partial<Console> = {}): Console {
     defaultCore: "",
     emulatorJsCore: "",
     coverAspectRatio: 0.75,
+    logoAspectRatio: null,
     colorTheme: "",
     generation: 3,
     iconUrl: "",

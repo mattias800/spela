@@ -55,6 +55,7 @@ private fun ConsoleQuickJumpCard(
         logoUrl = console.logoUrl,
         onClick = onClick,
         testTag = "console_card_${console.id}",
+        logoAspectRatio = console.logoAspectRatio,
     )
 }
 

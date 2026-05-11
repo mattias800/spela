@@ -175,6 +175,36 @@ class ConsoleDetailBrowseSectionTest {
     // Banner is clean — no action buttons
     // ─────────────────────────────────────────────────
 
+    // ─────────────────────────────────────────────────
+    // First-entry focus claims the Browse-all CTA (#1166 follow-up)
+    // ─────────────────────────────────────────────────
+
+    /**
+     * The Library section now sits at the top of the screen-content list
+     * (directly under the banner) and its "Browse all …" SpButton is
+     * marked `focusRestoreItem(isDefault = true)`. On first entry to the
+     * console-detail screen, the focus-memory primitive should claim
+     * focus on that button so the d-pad has somewhere to land.
+     *
+     * Without this guarantee the user sees "nothing focused" on entry
+     * and the first d-pad press resorts to `moveFocus(Next)` which —
+     * depending on composition order — can leapfrog past the curated
+     * carousels (the original symptom reported alongside #1166).
+     */
+    @Test
+    fun browseAllCtaIsFocusedOnFirstEntryForLargeLibrary() = runComposeUiTest {
+        val harness = createHarness()
+        harness.setupLargeLibrary(gameCount = 20)
+
+        setContent { harness.App(animationsEnabled = true) }
+        advance(harness)
+
+        harness.navigationViewModel.onIntent(NavigationIntent.NavigateTo(SpScreen.Console("nes")))
+        advanceFully(harness)
+
+        onNodeWithTag(TestTags.CONSOLE_BROWSE_ALL_CTA).assert(isFocused())
+    }
+
     @Test
     fun heroBannerHasNoBrowseGamesButton() = runComposeUiTest {
         val harness = createHarness()

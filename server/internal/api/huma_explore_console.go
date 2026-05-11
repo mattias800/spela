@@ -257,12 +257,13 @@ func (h *ExploreHandler) HumaGetConsoleHighlights(ctx context.Context, _ *GetCon
 
 		abbr := strings.ToLower(con.Abbreviation)
 		highlight := ConsoleHighlight{
-			ID:         abbr,
-			Name:       con.Name,
-			ColorTheme: con.ColorTheme,
-			IconURL:    "/api/consoles/" + abbr + "/icon",
-			LogoURL:    "/api/consoles/" + abbr + "/logo",
-			GameCount:  gc,
+			ID:              abbr,
+			Name:            con.Name,
+			ColorTheme:      con.ColorTheme,
+			IconURL:         "/api/consoles/" + abbr + "/icon",
+			LogoURL:         "/api/consoles/" + abbr + "/logo",
+			LogoAspectRatio: con.LogoAspectRatio,
+			GameCount:       gc,
 		}
 
 		if topGameID, ok := topGameByConsole[con.ID]; ok {

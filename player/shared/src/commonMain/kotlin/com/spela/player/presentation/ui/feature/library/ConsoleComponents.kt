@@ -499,6 +499,7 @@ private fun ConsoleHeroBannerContent(
                         maxHeight = logoMaxH,
                         maxWidth = logoMaxW,
                         minHeight = 40.dp,
+                        initialAspectRatio = console.logoAspectRatio,
                         error = {
                             logoFailed = true
                             Text(

@@ -40,6 +40,7 @@ fun SpConsoleTile(
     logoUrl: String,
     onClick: () -> Unit,
     testTag: String? = null,
+    logoAspectRatio: Float? = null,
 ) {
     SpTileCard(
         onClick = onClick,
@@ -63,6 +64,7 @@ fun SpConsoleTile(
                     maxHeight = 36.dp,
                     maxWidth = 120.dp,
                     minHeight = 20.dp,
+                    initialAspectRatio = logoAspectRatio,
                     error = {
                         Text(
                             text = name,

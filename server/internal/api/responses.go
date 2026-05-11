@@ -70,6 +70,14 @@ type ConsoleResponse struct {
 	DefaultCore      string                 `json:"defaultCore"`
 	EmulatorJSCore   string                 `json:"emulatorJsCore"`
 	CoverAspectRatio float64                `json:"coverAspectRatio"`
+	// LogoAspectRatio is the intrinsic width/height of the console's
+	// logo SVG, computed once at seed time from the asset's viewBox.
+	// The player app feeds this into SpAreaSizedImage so the console-
+	// detail hero logo starts at its final size on first render
+	// (without it the container falls back to a square guess and
+	// re-layouts once the image decodes, producing a visible jump —
+	// see #1166). Nil for consoles whose SVG has no parseable viewBox.
+	LogoAspectRatio  *float64               `json:"logoAspectRatio"`
 	ColorTheme       string                 `json:"colorTheme"`
 	Generation       int                    `json:"generation"`
 	IconURL          string                 `json:"iconUrl"`
@@ -291,6 +299,7 @@ func ToConsoleResponse(c db.Console) ConsoleResponse {
 		DefaultCore:      c.DefaultCore,
 		EmulatorJSCore:   c.EmulatorJSCore,
 		CoverAspectRatio: ratio,
+		LogoAspectRatio:  c.LogoAspectRatio,
 		ColorTheme:       c.ColorTheme,
 		Generation:       c.Generation,
 		IconURL:          "/api/consoles/" + abbr + "/icon",

@@ -38,6 +38,7 @@ import kotlinx.serialization.encoding.*
  * @param generation 
  * @param iconUrl 
  * @param id 
+ * @param logoAspectRatio 
  * @param logoPngUrl 
  * @param logoUrl 
  * @param maker 
@@ -80,6 +81,8 @@ data class ConsoleResponse (
     @SerialName(value = "iconUrl") @Required val iconUrl: kotlin.String,
 
     @SerialName(value = "id") @Required val id: kotlin.String,
+
+    @SerialName(value = "logoAspectRatio") @Required val logoAspectRatio: kotlin.Double?,
 
     @SerialName(value = "logoPngUrl") @Required val logoPngUrl: kotlin.String,
 

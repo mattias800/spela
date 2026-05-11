@@ -33,6 +33,12 @@ import kotlin.math.sqrt
  * @param maxWidth Maximum width constraint to prevent extremely wide images.
  * @param minHeight Minimum height to ensure very wide images remain visible.
  * @param modifier Modifier for the outer container.
+ * @param initialAspectRatio Optional intrinsic width/height already known by
+ *   the caller (e.g. shipped by the server alongside the image URL). When
+ *   supplied the container starts at its final size rather than the square-
+ *   guess fallback, eliminating the size-A → size-B re-layout that happens
+ *   once SubcomposeAsyncImage decodes the bytes (#1166). Null = legacy
+ *   behaviour.
  * @param loading Composable shown while the image loads.
  * @param error Composable shown if loading fails.
  */
@@ -45,11 +51,17 @@ fun SpAreaSizedImage(
     maxHeight: Dp = 120.dp,
     maxWidth: Dp = 200.dp,
     minHeight: Dp = 48.dp,
+    initialAspectRatio: Float? = null,
     loading: @Composable () -> Unit = {},
     error: @Composable () -> Unit = {},
 ) {
-    // Track the resolved aspect ratio from the loaded image
-    var aspectRatio by remember { mutableFloatStateOf(0f) }
+    // Track the resolved aspect ratio. Seeded by [initialAspectRatio] so
+    // the layout snaps to the correct dimensions on first frame; the
+    // SubcomposeAsyncImage callback overwrites it with the painter's
+    // intrinsic ratio once the image decodes (handles SVG/PNG drift).
+    var aspectRatio by remember(initialAspectRatio) {
+        mutableFloatStateOf(initialAspectRatio ?: 0f)
+    }
 
     // Compute dimensions from target area and aspect ratio
     // area = w * h, aspectRatio = w / h → w = sqrt(area * ar), h = sqrt(area / ar)

@@ -69,6 +69,7 @@ import com.spela.player.presentation.ui.feature.library.darken
 import com.spela.player.presentation.ui.feature.library.getConsoleGradient
 import androidx.compose.runtime.CompositionLocalProvider
 import com.spela.player.presentation.ui.gamepad.LocalFocusMemory
+import com.spela.player.presentation.ui.gamepad.focusRestoreItem
 import com.spela.player.presentation.ui.gamepad.rememberFocus
 import com.spela.player.presentation.ui.gamepad.rememberFocusMemoryState
 import com.spela.player.presentation.ui.components.SpButton
@@ -176,6 +177,37 @@ fun ConsoleScreen(
                     CompositionLocalProvider(LocalFocusMemory provides focusMemory) {
                     SpSectionList {
 
+                    // Library "Browse all" entry — kept directly under the
+                    // banner so it's the first focusable element on the
+                    // screen. d-pad / autofocus lands here on first entry,
+                    // and pressing Down walks naturally into the curated
+                    // carousels below. Only rendered when the console has
+                    // more than the inline-grid threshold; smaller
+                    // libraries are presented as a grid further down and
+                    // don't need a CTA.
+                    if (state.games.size > 15) {
+                        SpTitledSection(
+                            title = "Library",
+                            icon = Icons.AutoMirrored.Filled.LibraryBooks,
+                            modifier = Modifier
+                                .rememberFocus("section_library")
+                                .testTag(TestTags.CONSOLE_BROWSE_ALL_SECTION),
+                        ) {
+                            SpButton(
+                                text = "Browse all ${state.games.size} $consoleName games",
+                                onClick = onBrowseAllGames,
+                                style = SpButtonStyle.Secondary,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .focusRestoreItem(
+                                        key = "console_browse_all",
+                                        isDefault = true,
+                                    )
+                                    .testTag(TestTags.CONSOLE_BROWSE_ALL_CTA),
+                            )
+                        }
+                    }
+
                     // Continue Playing (most relevant — always first)
                     if (continuePlayingGames.isNotEmpty()) {
                         SpTitledSection(
@@ -268,25 +300,10 @@ fun ConsoleScreen(
                         }
                     }
 
-                    // Terminal browse section for larger libraries (>15 games)
-                    if (state.games.size > 15) {
-                        SpTitledSection(
-                            title = "Library",
-                            icon = Icons.AutoMirrored.Filled.LibraryBooks,
-                            modifier = Modifier
-                                .rememberFocus("section_library")
-                                .testTag(TestTags.CONSOLE_BROWSE_ALL_SECTION),
-                        ) {
-                            SpButton(
-                                text = "Browse all ${state.games.size} $consoleName games",
-                                onClick = onBrowseAllGames,
-                                style = SpButtonStyle.Secondary,
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .testTag(TestTags.CONSOLE_BROWSE_ALL_CTA),
-                            )
-                        }
-                    }
+                    // Library "Browse all" was relocated to the top of
+                    // the section list (directly under the banner) so it
+                    // owns first-entry / default focus. See the comment
+                    // above the relocated section.
 
                     // Loading / Empty
                     if (state.games.isEmpty() && state.isLoading) {
