@@ -9,6 +9,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import com.spela.player.presentation.ui.theme.SpColor
+import kotlin.time.Clock
 import kotlinx.coroutines.delay
 
 /**
@@ -25,6 +26,19 @@ import kotlinx.coroutines.delay
  * Times: The 3 Important Limits"). Adjust here, not at call sites.
  */
 const val ScreenLoadingDebounceMs: Long = 500
+
+/**
+ * Minimum time the loading indicator stays visible once it has been
+ * shown. Prevents the "appeared for a frame and disappeared" flash
+ * for requests that finish just after [ScreenLoadingDebounceMs] —
+ * e.g. a 600ms response would otherwise paint dots for ~100ms.
+ *
+ * Anchored to the typical perceptual-glance threshold: <200ms feels
+ * like a glitch; ≥300ms reads as "the app was actually loading". This
+ * is the second half of the canonical "debounced spinner" UX rule
+ * (Nielsen Norman, "Response Times").
+ */
+const val MinLoadingShownMs: Long = 300
 
 /**
  * Role component for the "screen is loading" affordance.
@@ -67,35 +81,53 @@ fun ScreenLoadingIndicator(
 }
 
 /**
- * Debounces a transient-true Boolean so consumers see `true` only
- * after [delayMs] of continuous truthy input. Reverts to `false`
- * immediately when the source flips back.
+ * Two-stage state machine for screen-loading affordances:
  *
- * Use for other loading-state surfaces that bypass
- * [ScreenLoadingIndicator] — most often [PullToRefreshBox]'s
- * `isRefreshing` flag, which has its own spinner that draws around
- * the screen content. Without this, a cache-hit response transitioning
- * through a momentary `isLoading=true` state would still flash the
- * pull-to-refresh spinner even though [ScreenLoadingIndicator]
- * correctly stayed hidden.
+ *   1. **Debounce show.** When [source] becomes true, wait [showAfter]
+ *      ms before returning true. Fast responses (< [showAfter]) never
+ *      flip the output.
+ *   2. **Minimum show time.** Once the output is true, keep it true
+ *      for at least [minShownFor] ms — even if [source] flips back to
+ *      false sooner. Prevents the 50–200ms "flash" for requests that
+ *      land just past the debounce gate.
+ *
+ * Use for any spinner-shaped UI driven by a state Boolean —
+ * [PullToRefreshBox]'s `isRefreshing`, or the parent conditional that
+ * decides whether to mount [ScreenLoadingIndicator]. Both surfaces
+ * benefit from the full state machine; without it, the indicator
+ * appears for "a frame or so" before unmounting on responses in the
+ * 500–800ms window.
  *
  * In test mode ([LocalAnimationsEnabled] false) the value passes
- * through unchanged so tests don't have to wait 500ms.
+ * through unchanged so tests don't have to wait the timings.
  */
 @Composable
 fun rememberLoadingFlashDebounce(
     source: Boolean,
-    delayMs: Long = ScreenLoadingDebounceMs,
+    showAfter: Long = ScreenLoadingDebounceMs,
+    minShownFor: Long = MinLoadingShownMs,
 ): Boolean {
     if (!LocalAnimationsEnabled.current) return source
-    var debounced by remember { mutableStateOf(false) }
+    var visible by remember { mutableStateOf(false) }
+    var shownAtMs by remember { mutableStateOf(0L) }
     LaunchedEffect(source) {
         if (source) {
-            delay(delayMs)
-            debounced = true
+            // Already visible? Nothing to do — keep showing.
+            if (!visible) {
+                delay(showAfter)
+                shownAtMs = Clock.System.now().toEpochMilliseconds()
+                visible = true
+            }
         } else {
-            debounced = false
+            // Source went false. If we've started showing, respect
+            // the minimum-shown-for window before hiding.
+            if (visible) {
+                val elapsed = Clock.System.now().toEpochMilliseconds() - shownAtMs
+                val remaining = minShownFor - elapsed
+                if (remaining > 0) delay(remaining)
+                visible = false
+            }
         }
     }
-    return debounced
+    return visible
 }

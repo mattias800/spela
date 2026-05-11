@@ -108,7 +108,13 @@ fun ActivityScreen(
                 )
             },
     ) {
-        if (state.isLoadingFullActivity && state.fullActivityEvents.isEmpty()) {
+        // Route the screen-level loading branch through the same
+        // state-machine hook as PullToRefreshBox below, so the dots
+        // honour the min-shown-for window once they appear.
+        val showInitialLoading = rememberLoadingFlashDebounce(
+            state.isLoadingFullActivity && state.fullActivityEvents.isEmpty()
+        )
+        if (showInitialLoading) {
             Box(
                 modifier = Modifier.fillMaxSize(),
                 contentAlignment = Alignment.Center,

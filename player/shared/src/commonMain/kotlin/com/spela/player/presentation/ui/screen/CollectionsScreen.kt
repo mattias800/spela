@@ -110,7 +110,15 @@ fun CollectionsScreen(
                     )
                 },
         ) {
-            if (state.isLoading && state.myCollections.isEmpty() && state.publicCollections.isEmpty()) {
+            // Route the screen-level loading branch through the same
+            // state-machine hook as PullToRefreshBox below, so the dots
+            // honour the min-shown-for window once they appear — no
+            // 50-200ms flash for responses that land just past the
+            // debounce gate.
+            val showInitialLoading = rememberLoadingFlashDebounce(
+                state.isLoading && state.myCollections.isEmpty() && state.publicCollections.isEmpty()
+            )
+            if (showInitialLoading) {
                 Box(
                     modifier = Modifier.fillMaxSize(),
                     contentAlignment = Alignment.Center,
