@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
@@ -26,11 +27,11 @@ import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import coil3.compose.SubcomposeAsyncImage
 import com.spela.player.domain.model.ArtworkItem
 import androidx.compose.ui.focus.focusRequester
 import com.spela.player.presentation.ui.components.SpCard
 import com.spela.player.presentation.ui.components.SpCarousel
+import com.spela.player.presentation.ui.components.SpImage
 import com.spela.player.presentation.ui.components.SpShimmer
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
@@ -88,26 +89,24 @@ private fun ArtworkCard(
                 .clip(shape),
         ) {
             // Artwork image
-            SubcomposeAsyncImage(
+            SpImage(
                 model = artwork.url,
                 contentDescription = "${artwork.gameTitle} artwork",
                 modifier = Modifier
                     .fillMaxWidth()
                     .aspectRatio(ARTWORK_ASPECT_RATIO),
                 contentScale = ContentScale.Crop,
-                loading = {
+                placeholder = {
                     Box(
                         modifier = Modifier
-                            .fillMaxWidth()
-                            .aspectRatio(ARTWORK_ASPECT_RATIO)
+                            .fillMaxSize()
                             .background(SpColor.SurfaceBright.copy(alpha = 0.25f)),
                     )
                 },
                 error = {
                     Box(
                         modifier = Modifier
-                            .fillMaxWidth()
-                            .aspectRatio(ARTWORK_ASPECT_RATIO)
+                            .fillMaxSize()
                             .background(
                                 Brush.linearGradient(
                                     listOf(SpColor.SurfaceVariant, SpColor.SurfaceElevated),

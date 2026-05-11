@@ -16,7 +16,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import coil3.compose.SubcomposeAsyncImage
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.ui.theme.SpTypography
@@ -61,12 +60,12 @@ fun SpAchievementBadge(
         contentAlignment = Alignment.Center,
     ) {
         if (badgeUrl != null) {
-            SubcomposeAsyncImage(
+            SpImage(
                 model = badgeUrl,
                 contentDescription = null,
                 modifier = Modifier.fillMaxSize(),
                 contentScale = ContentScale.Crop,
-                loading = {
+                placeholder = {
                     BadgeFallback(rarityColor = borderColor)
                 },
                 error = {

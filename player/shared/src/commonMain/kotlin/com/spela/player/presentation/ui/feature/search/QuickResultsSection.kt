@@ -24,12 +24,12 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import coil3.compose.AsyncImage
 import com.spela.player.domain.model.SearchSuggestion
 import com.spela.player.domain.model.SuggestionNavigationType
 import com.spela.player.presentation.ui.components.SpCard
 import com.spela.player.presentation.ui.components.SpChip
 import com.spela.player.presentation.ui.components.SpCoverArt
+import com.spela.player.presentation.ui.components.SpImage
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.ui.theme.SpTypography
@@ -161,7 +161,7 @@ private fun QuickResultThumbnail(
 
             when {
                 isConsole && !suggestion.imageUrl.isNullOrBlank() -> {
-                    AsyncImage(
+                    SpImage(
                         model = suggestion.imageUrl,
                         contentDescription = null,
                         modifier = Modifier.size(24.dp),

@@ -34,10 +34,10 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import coil3.compose.SubcomposeAsyncImage
 import com.spela.player.presentation.state.SaveSlotInfo
 import androidx.compose.ui.focus.focusRequester
 import com.spela.player.presentation.ui.components.SpCarousel
+import com.spela.player.presentation.ui.components.SpImage
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.ui.theme.SpTypography
@@ -210,7 +210,7 @@ private fun SaveSlotCard(
         ) {
             if (isFilled && slotInfo.screenshotUrl != null) {
                 // Thumbnail image
-                SubcomposeAsyncImage(
+                SpImage(
                     model = slotInfo.screenshotUrl,
                     contentDescription = "Save slot $slot screenshot",
                     modifier = Modifier
@@ -218,7 +218,7 @@ private fun SaveSlotCard(
                         .weight(1f)
                         .clip(RoundedCornerShape(SpSpacing.CardCornerRadius / 2)),
                     contentScale = ContentScale.Crop,
-                    loading = {
+                    placeholder = {
                         Box(
                             modifier = Modifier
                                 .fillMaxSize()

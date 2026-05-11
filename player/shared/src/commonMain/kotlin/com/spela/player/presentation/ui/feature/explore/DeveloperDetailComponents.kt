@@ -46,7 +46,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import coil3.compose.SubcomposeAsyncImage
 import com.spela.player.domain.model.CompanyInfo
 import com.spela.player.domain.model.Game
 import com.spela.player.domain.model.MakerDetail
@@ -55,6 +54,7 @@ import androidx.compose.ui.focus.focusRequester
 import com.spela.player.presentation.ui.components.SpCard
 import com.spela.player.presentation.ui.components.SpCarousel
 import com.spela.player.presentation.ui.components.SpCoverArt
+import com.spela.player.presentation.ui.components.SpImage
 import com.spela.player.presentation.ui.components.SpLinkText
 import com.spela.player.presentation.ui.components.SpCarouselGameCard
 import com.spela.player.presentation.ui.components.SpShimmer
@@ -86,12 +86,13 @@ internal fun DeveloperHeroBanner(
     ) {
         // Background: hero image or gradient fallback
         if (detail.heroUrl != null) {
-            SubcomposeAsyncImage(
+            SpImage(
                 model = detail.heroUrl,
                 contentDescription = "${detail.name} hero image",
                 modifier = Modifier.fillMaxSize(),
                 contentScale = ContentScale.Crop,
-                loading = {
+                staggerMs = 0L,
+                placeholder = {
                     Box(
                         modifier = Modifier
                             .fillMaxSize()
@@ -190,7 +191,7 @@ internal fun DeveloperHeroBanner(
                     // Company logo or name text
                     val logoUrl = companyInfo?.logoUrl
                     if (logoUrl != null) {
-                        SubcomposeAsyncImage(
+                        SpImage(
                             model = logoUrl,
                             contentDescription = "${detail.name} logo",
                             modifier = Modifier
@@ -198,7 +199,8 @@ internal fun DeveloperHeroBanner(
                                 .heightIn(max = 80.dp)
                                 .testTag("developer_company_logo"),
                             contentScale = ContentScale.Fit,
-                            loading = {
+                            staggerMs = 0L,
+                            placeholder = {
                                 Text(
                                     text = detail.name,
                                     style = SpTypography.HeadlineLarge,

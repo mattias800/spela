@@ -17,7 +17,6 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
-import coil3.compose.AsyncImage
 import com.spela.player.domain.model.ShaderPreset
 import com.spela.player.presentation.ui.feature.shader.drawShaderOverlay
 import com.spela.player.presentation.ui.theme.SpColor
@@ -40,13 +39,14 @@ fun ShaderPreview(
             .testTag("shader-preview")
             .background(SpColor.SurfaceVariant),
     ) {
-        // Load the preview image using AsyncImage (same as cover art)
+        // Load the preview image using SpImage (same as cover art)
         if (imageUrl != null) {
-            AsyncImage(
+            SpImage(
                 model = imageUrl,
                 contentDescription = null,
                 modifier = Modifier.fillMaxSize(),
                 contentScale = ContentScale.Fit,
+                staggerMs = 0L,
             )
         }
 

@@ -35,7 +35,6 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
-import coil3.compose.AsyncImage
 import com.spela.player.presentation.ui.TestTags
 import com.spela.player.presentation.intent.GameListIntent
 import com.spela.player.presentation.ui.components.PlatformBackHandler
@@ -47,6 +46,7 @@ import com.spela.player.presentation.ui.components.SpScreenTopSpacer
 import com.spela.player.presentation.ui.components.SpScrollableContent
 import com.spela.player.presentation.ui.components.SpSectionList
 import com.spela.player.presentation.ui.components.SpIconButton
+import com.spela.player.presentation.ui.components.SpImage
 import com.spela.player.presentation.ui.components.ScreenLoadingIndicator
 import com.spela.player.presentation.ui.components.rememberLoadingFlashDebounce
 import com.spela.player.presentation.ui.components.SpSnackbar
@@ -336,7 +336,7 @@ fun ConsoleScreen(
                 onBack = onBack,
                 titleLeadingContent = if (console?.iconUrl?.isNotEmpty() == true) {
                     {
-                        AsyncImage(
+                        SpImage(
                             model = console.iconUrl,
                             contentDescription = null,
                             modifier = Modifier.size(28.dp),

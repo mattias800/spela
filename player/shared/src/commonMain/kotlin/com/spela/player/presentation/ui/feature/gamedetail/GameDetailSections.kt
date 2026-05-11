@@ -14,7 +14,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.unit.dp
-import coil3.compose.AsyncImage
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.outlined.Flag
@@ -29,6 +28,7 @@ import com.spela.player.presentation.ui.components.SpCarousel
 import com.spela.player.presentation.ui.components.ScreenshotLightbox
 import com.spela.player.presentation.ui.components.SpButton
 import com.spela.player.presentation.ui.components.SpButtonStyle
+import com.spela.player.presentation.ui.components.SpImage
 import com.spela.player.presentation.ui.components.SpInnerCard
 import com.spela.player.presentation.ui.components.SpTitledSection
 import com.spela.player.presentation.ui.components.social.SharedSaveItem
@@ -58,7 +58,7 @@ fun ScreenshotsSection(screenshots: List<String>) {
                 .height(180.dp),
             onClick = { lightboxIndex = index },
         ) {
-            AsyncImage(
+            SpImage(
                 model = screenshots[index],
                 contentDescription = "Screenshot ${index + 1}",
                 modifier = Modifier.height(180.dp),

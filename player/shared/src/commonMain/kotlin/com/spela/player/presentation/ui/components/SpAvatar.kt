@@ -14,7 +14,6 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import coil3.compose.SubcomposeAsyncImage
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpTypography
 
@@ -38,14 +37,14 @@ fun SpAvatar(
 ) {
     Box(modifier = modifier.size(size)) {
         if (avatarUrl != null) {
-            SubcomposeAsyncImage(
+            SpImage(
                 model = avatarUrl,
                 contentDescription = null,
                 modifier = Modifier
                     .fillMaxSize()
                     .clip(CircleShape),
                 contentScale = ContentScale.Crop,
-                loading = {
+                placeholder = {
                     AvatarPlaceholder(username = username, textStyle = placeholderTextStyle)
                 },
                 error = {
