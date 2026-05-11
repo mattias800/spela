@@ -15,6 +15,7 @@ function makeConsoleHighlight(
     colorTheme: "#805ad5",
     iconUrl: "/icons/snes.png",
     logoUrl: "/logos/snes.png",
+    logoAspectRatio: null,
     gameCount: 42,
     topGame: makeGame({ id: "top1", title: "Top SNES Game" }),
     ...overrides,

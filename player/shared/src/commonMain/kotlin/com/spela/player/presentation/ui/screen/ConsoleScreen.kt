@@ -47,7 +47,8 @@ import com.spela.player.presentation.ui.components.SpScreenTopSpacer
 import com.spela.player.presentation.ui.components.SpScrollableContent
 import com.spela.player.presentation.ui.components.SpSectionList
 import com.spela.player.presentation.ui.components.SpIconButton
-import com.spela.player.presentation.ui.components.SpLoadingIndicator
+import com.spela.player.presentation.ui.components.ScreenLoadingIndicator
+import com.spela.player.presentation.ui.components.rememberLoadingFlashDebounce
 import com.spela.player.presentation.ui.components.SpSnackbar
 import com.spela.player.presentation.ui.components.SpSnackbarData
 import com.spela.player.presentation.ui.components.SpSnackbarType
@@ -68,6 +69,7 @@ import com.spela.player.presentation.ui.feature.library.darken
 import com.spela.player.presentation.ui.feature.library.getConsoleGradient
 import androidx.compose.runtime.CompositionLocalProvider
 import com.spela.player.presentation.ui.gamepad.LocalFocusMemory
+import com.spela.player.presentation.ui.gamepad.focusRestoreItem
 import com.spela.player.presentation.ui.gamepad.rememberFocus
 import com.spela.player.presentation.ui.gamepad.rememberFocusMemoryState
 import com.spela.player.presentation.ui.components.SpButton
@@ -159,7 +161,7 @@ fun ConsoleScreen(
             }
 
             PullToRefreshBox(
-                isRefreshing = state.isLoading,
+                isRefreshing = rememberLoadingFlashDebounce(state.isLoading),
                 onRefresh = { viewModel.onIntent(GameListIntent.SelectConsole(consoleId)) },
                 modifier = Modifier.fillMaxSize(),
             ) {
@@ -174,6 +176,37 @@ fun ConsoleScreen(
                     val focusMemory = rememberFocusMemoryState()
                     CompositionLocalProvider(LocalFocusMemory provides focusMemory) {
                     SpSectionList {
+
+                    // Library "Browse all" entry — kept directly under the
+                    // banner so it's the first focusable element on the
+                    // screen. d-pad / autofocus lands here on first entry,
+                    // and pressing Down walks naturally into the curated
+                    // carousels below. Only rendered when the console has
+                    // more than the inline-grid threshold; smaller
+                    // libraries are presented as a grid further down and
+                    // don't need a CTA.
+                    if (state.games.size > 15) {
+                        SpTitledSection(
+                            title = "Library",
+                            icon = Icons.AutoMirrored.Filled.LibraryBooks,
+                            modifier = Modifier
+                                .rememberFocus("section_library")
+                                .testTag(TestTags.CONSOLE_BROWSE_ALL_SECTION),
+                        ) {
+                            SpButton(
+                                text = "Browse all ${state.games.size} $consoleName games",
+                                onClick = onBrowseAllGames,
+                                style = SpButtonStyle.Secondary,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .focusRestoreItem(
+                                        key = "console_browse_all",
+                                        isDefault = true,
+                                    )
+                                    .testTag(TestTags.CONSOLE_BROWSE_ALL_CTA),
+                            )
+                        }
+                    }
 
                     // Continue Playing (most relevant — always first)
                     if (continuePlayingGames.isNotEmpty()) {
@@ -267,25 +300,10 @@ fun ConsoleScreen(
                         }
                     }
 
-                    // Terminal browse section for larger libraries (>15 games)
-                    if (state.games.size > 15) {
-                        SpTitledSection(
-                            title = "Library",
-                            icon = Icons.AutoMirrored.Filled.LibraryBooks,
-                            modifier = Modifier
-                                .rememberFocus("section_library")
-                                .testTag(TestTags.CONSOLE_BROWSE_ALL_SECTION),
-                        ) {
-                            SpButton(
-                                text = "Browse all ${state.games.size} $consoleName games",
-                                onClick = onBrowseAllGames,
-                                style = SpButtonStyle.Secondary,
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .testTag(TestTags.CONSOLE_BROWSE_ALL_CTA),
-                            )
-                        }
-                    }
+                    // Library "Browse all" was relocated to the top of
+                    // the section list (directly under the banner) so it
+                    // owns first-entry / default focus. See the comment
+                    // above the relocated section.
 
                     // Loading / Empty
                     if (state.games.isEmpty() && state.isLoading) {
@@ -293,7 +311,7 @@ fun ConsoleScreen(
                             modifier = Modifier.fillMaxWidth().height(200.dp),
                             contentAlignment = Alignment.Center,
                         ) {
-                            SpLoadingIndicator(message = "Loading games...")
+                            ScreenLoadingIndicator(message = "Loading games...")
                         }
                     } else if (state.games.isEmpty() && !state.isLoading) {
                         Box(

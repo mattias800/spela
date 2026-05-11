@@ -152,6 +152,15 @@ type Console struct {
 	EmulatorJSCore string         `gorm:"size:64" json:"emulatorJsCore"`
 	FolderName     string         `gorm:"size:64" json:"folderName"`
 	CoverAspect    string         `gorm:"size:16;default:3:4" json:"coverAspect"`
+	// LogoAspectRatio is the intrinsic width/height ratio of this
+	// console's logo asset, computed once at seed time from the SVG's
+	// viewBox. The player app uses it to size the logo container
+	// correctly on first render — without it, SpAreaSizedImage would
+	// fall back to a square guess and then re-layout once the image
+	// decoded, producing a visible size-A → size-B jump on the
+	// console-detail hero. Null is acceptable (clients fall back to
+	// the legacy fluid sizing). See #1166.
+	LogoAspectRatio  *float64       `json:"logoAspectRatio"`
 	ColorTheme       string         `gorm:"size:7;default:#6366f1" json:"colorTheme"`
 	Generation       int            `gorm:"default:0" json:"generation"`
 	SaveStateSupport bool           `gorm:"default:true" json:"saveStateSupport"`

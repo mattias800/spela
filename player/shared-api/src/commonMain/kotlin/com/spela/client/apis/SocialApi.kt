@@ -16,6 +16,8 @@
 package com.spela.client.apis
 
 import com.spela.client.models.HumaError
+import com.spela.client.models.ListBlocksResponse
+import com.spela.client.models.MessageResponse
 import com.spela.client.models.OnlineUsersResponse
 import com.spela.client.models.PaginatedResponseActivityEventResponse
 import com.spela.client.models.PaginatedResponseUserSearchResult
@@ -46,6 +48,72 @@ open class SocialApi : ApiClient {
         baseUrl: String,
         httpClient: HttpClient
     ): super(baseUrl = baseUrl, httpClient = httpClient)
+
+    /**
+     * Block another user
+     * Adds the specified user to the caller&#39;s block list. The relationship is enforced symmetrically — neither party will see the other in search/profile/invite endpoints.
+     * @param userId User ID to block.
+     * @return MessageResponse
+     */
+    @Suppress("UNCHECKED_CAST")
+    open suspend fun createBlock(userId: kotlin.String): HttpResponse<MessageResponse> {
+
+        val localVariableAuthNames = listOf<String>()
+
+        val localVariableBody = 
+            io.ktor.client.utils.EmptyContent
+
+        val localVariableQuery = mutableMapOf<String, List<String>>()
+        val localVariableHeaders = mutableMapOf<String, String>()
+
+        val localVariableConfig = RequestConfig<kotlin.Any?>(
+            RequestMethod.POST,
+            "/api/user/blocks/{userId}".replace("{" + "userId" + "}", "$userId"),
+            query = localVariableQuery,
+            headers = localVariableHeaders,
+            requiresAuthentication = false,
+        )
+
+        return request(
+            localVariableConfig,
+            localVariableBody,
+            localVariableAuthNames
+        ).wrap()
+    }
+
+
+    /**
+     * Unblock another user
+     * Removes the specified user from the caller&#39;s block list.
+     * @param userId User ID to unblock.
+     * @return MessageResponse
+     */
+    @Suppress("UNCHECKED_CAST")
+    open suspend fun deleteBlock(userId: kotlin.String): HttpResponse<MessageResponse> {
+
+        val localVariableAuthNames = listOf<String>()
+
+        val localVariableBody = 
+            io.ktor.client.utils.EmptyContent
+
+        val localVariableQuery = mutableMapOf<String, List<String>>()
+        val localVariableHeaders = mutableMapOf<String, String>()
+
+        val localVariableConfig = RequestConfig<kotlin.Any?>(
+            RequestMethod.DELETE,
+            "/api/user/blocks/{userId}".replace("{" + "userId" + "}", "$userId"),
+            query = localVariableQuery,
+            headers = localVariableHeaders,
+            requiresAuthentication = false,
+        )
+
+        return request(
+            localVariableConfig,
+            localVariableBody,
+            localVariableAuthNames
+        ).wrap()
+    }
+
 
     /**
      * Get the global activity feed
@@ -188,6 +256,38 @@ open class SocialApi : ApiClient {
             override fun deserialize(decoder: Decoder) = GetRecentPartnersResponse(serializer.deserialize(decoder))
         }
     }
+
+    /**
+     * List the caller&#39;s blocked users
+     * Returns the users the authenticated caller has blocked.
+     * @return ListBlocksResponse
+     */
+    @Suppress("UNCHECKED_CAST")
+    open suspend fun listBlocks(): HttpResponse<ListBlocksResponse> {
+
+        val localVariableAuthNames = listOf<String>()
+
+        val localVariableBody = 
+            io.ktor.client.utils.EmptyContent
+
+        val localVariableQuery = mutableMapOf<String, List<String>>()
+        val localVariableHeaders = mutableMapOf<String, String>()
+
+        val localVariableConfig = RequestConfig<kotlin.Any?>(
+            RequestMethod.GET,
+            "/api/user/blocks",
+            query = localVariableQuery,
+            headers = localVariableHeaders,
+            requiresAuthentication = false,
+        )
+
+        return request(
+            localVariableConfig,
+            localVariableBody,
+            localVariableAuthNames
+        ).wrap()
+    }
+
 
     /**
      * Search for users

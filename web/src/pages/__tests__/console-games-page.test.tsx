@@ -66,6 +66,7 @@ const testConsoles: Console[] = [
     extensions: [".sfc"],
     defaultCore: "snes9x",
     coverAspectRatio: 0.75,
+    logoAspectRatio: null,
     colorTheme: "#6366f1",
     generation: 4,
     iconUrl: "",

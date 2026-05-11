@@ -88,7 +88,7 @@ open class CoresApi : ApiClient {
      * @return CoreManifestResponse
      */
     @Suppress("UNCHECKED_CAST")
-    open suspend fun getCoreManifest(id: kotlin.Long): HttpResponse<CoreManifestResponse> {
+    open suspend fun getCoreManifest(id: kotlin.String): HttpResponse<CoreManifestResponse> {
 
         val localVariableAuthNames = listOf<String>()
 
@@ -163,7 +163,7 @@ open class CoresApi : ApiClient {
      * @return RefreshCoreResponse
      */
     @Suppress("UNCHECKED_CAST")
-    open suspend fun refreshCore(id: kotlin.Long, platform: kotlin.String? = null): HttpResponse<RefreshCoreResponse> {
+    open suspend fun refreshCore(id: kotlin.String, platform: kotlin.String? = null): HttpResponse<RefreshCoreResponse> {
 
         val localVariableAuthNames = listOf<String>()
 

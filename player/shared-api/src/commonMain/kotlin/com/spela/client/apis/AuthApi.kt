@@ -86,11 +86,10 @@ open class AuthApi : ApiClient {
      * Sign out
      * Blacklists the bearer access token (preventing reuse for its remaining lifetime) and revokes every refresh token belonging to the authenticated user, signing them out across all devices.
      * @param authorization Bearer access token to blacklist. (optional)
-     * @param token Fallback access token to blacklist when no Authorization header is sent. (optional)
      * @return AuthLogoutResponse
      */
     @Suppress("UNCHECKED_CAST")
-    open suspend fun authLogout(authorization: kotlin.String? = null, token: kotlin.String? = null): HttpResponse<AuthLogoutResponse> {
+    open suspend fun authLogout(authorization: kotlin.String? = null): HttpResponse<AuthLogoutResponse> {
 
         val localVariableAuthNames = listOf<String>()
 
@@ -98,7 +97,6 @@ open class AuthApi : ApiClient {
             io.ktor.client.utils.EmptyContent
 
         val localVariableQuery = mutableMapOf<String, List<String>>()
-        token?.apply { localVariableQuery["token"] = listOf("$token") }
         val localVariableHeaders = mutableMapOf<String, String>()
         authorization?.apply { localVariableHeaders["Authorization"] = this.toString() }
 

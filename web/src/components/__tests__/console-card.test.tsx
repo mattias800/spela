@@ -12,6 +12,7 @@ function makeConsole(overrides: Partial<Console> = {}): Console {
     extensions: [],
     defaultCore: "",
     coverAspectRatio: 0.75,
+    logoAspectRatio: null,
     colorTheme: "",
     generation: 3,
     iconUrl: "/api/consoles/nes/icon",

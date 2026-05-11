@@ -28,6 +28,7 @@ import com.spela.player.presentation.ui.components.SpMainContentPadding
 import com.spela.player.presentation.ui.components.SpScreen
 import com.spela.player.presentation.ui.components.SpScreenTopSpacer
 import com.spela.player.presentation.ui.components.SpScrollableContent
+import com.spela.player.presentation.ui.components.rememberLoadingFlashDebounce
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.viewmodel.GameListViewModel
@@ -72,7 +73,7 @@ internal fun LibraryConsolesTab(
             }
         } else {
             PullToRefreshBox(
-                isRefreshing = state.isLoading,
+                isRefreshing = rememberLoadingFlashDebounce(state.isLoading),
                 onRefresh = { viewModel.onIntent(GameListIntent.LoadConsoles) },
                 modifier = Modifier.fillMaxSize(),
             ) {
@@ -101,6 +102,9 @@ internal fun LibraryConsolesTab(
                                     grouping = grouping,
                                 )
                             }
+                            // Bottom breathing room — without this the last
+                            // console card sits flush against the screen edge.
+                            Spacer(Modifier.height(SpSpacing.XLarge))
                         }
                     }
                 }

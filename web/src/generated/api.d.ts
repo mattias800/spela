@@ -4393,6 +4393,50 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/user/blocks": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the caller's blocked users
+         * @description Returns the users the authenticated caller has blocked.
+         */
+        get: operations["listBlocks"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/user/blocks/{userId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Block another user
+         * @description Adds the specified user to the caller's block list. The relationship is enforced symmetrically — neither party will see the other in search/profile/invite endpoints.
+         */
+        post: operations["createBlock"];
+        /**
+         * Unblock another user
+         * @description Removes the specified user from the caller's block list.
+         */
+        delete: operations["deleteBlock"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/user/challenges": {
         parameters: {
             query?: never;
@@ -5326,7 +5370,10 @@ export interface components {
              * @example https://example.com/api/schemas/AdminCreateUserRequest.json
              */
             readonly $schema?: string;
-            /** @description New account email. */
+            /**
+             * Format: email
+             * @description New account email (RFC 5321 cap).
+             */
             email: string;
             /** @description New account password (8-72 characters). */
             password: string;
@@ -5368,6 +5415,7 @@ export interface components {
              */
             readonly $schema?: string;
             disabled?: boolean;
+            /** Format: email */
             email?: string;
             password?: string;
             pendingApproval?: boolean;
@@ -5500,7 +5548,7 @@ export interface components {
             readonly $schema?: string;
             /**
              * Format: email
-             * @description New account email.
+             * @description New account email (RFC 5321 cap).
              */
             email: string;
             /** @description New account password (8-72 characters). */
@@ -5597,6 +5645,11 @@ export interface components {
             readonly $schema?: string;
             consoles: components["schemas"]["ConsoleBiosStatus"][];
             files: components["schemas"]["BiosFileResponse"][];
+        };
+        BlockedUserResponse: {
+            avatarUrl: string;
+            userId: string;
+            username: string;
         };
         BulkDeleteSessionSavesResponse: {
             /**
@@ -5853,6 +5906,8 @@ export interface components {
             gameCount: number;
             iconUrl: string;
             id: string;
+            /** Format: double */
+            logoAspectRatio: number | null;
             logoUrl: string;
             name: string;
             topGame?: components["schemas"]["GameResponse"];
@@ -5890,6 +5945,8 @@ export interface components {
             generation: number;
             iconUrl: string;
             id: string;
+            /** Format: double */
+            logoAspectRatio: number | null;
             logoPngUrl: string;
             logoUrl: string;
             maker: components["schemas"]["HardwareMakerResponse"];
@@ -6887,6 +6944,15 @@ export interface components {
             readonly $schema?: string;
             password?: string;
             username?: string;
+        };
+        ListBlocksResponse: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/api/schemas/ListBlocksResponse.json
+             */
+            readonly $schema?: string;
+            blocked: components["schemas"]["BlockedUserResponse"][];
         };
         ListMyNetplayInvitesResponse: {
             /**
@@ -10828,10 +10894,7 @@ export interface operations {
     };
     authLogout: {
         parameters: {
-            query?: {
-                /** @description Fallback access token to blacklist when no Authorization header is sent. */
-                token?: string;
-            };
+            query?: never;
             header?: {
                 /** @description Bearer access token to blacklist. */
                 Authorization?: string;
@@ -12213,7 +12276,7 @@ export interface operations {
             header?: never;
             path: {
                 /** @description Core row ID (not core name). */
-                id: number;
+                id: string;
             };
             cookie?: never;
         };
@@ -12248,7 +12311,7 @@ export interface operations {
             header?: never;
             path: {
                 /** @description Core row ID (not core name). */
-                id: number;
+                id: string;
             };
             cookie?: never;
         };
@@ -17274,6 +17337,99 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["UnlockedAchievementsResponse"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HumaError"];
+                };
+            };
+        };
+    };
+    listBlocks: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListBlocksResponse"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HumaError"];
+                };
+            };
+        };
+    };
+    createBlock: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description User ID to block. */
+                userId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageResponse"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HumaError"];
+                };
+            };
+        };
+    };
+    deleteBlock: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description User ID to unblock. */
+                userId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageResponse"];
                 };
             };
             /** @description Error */

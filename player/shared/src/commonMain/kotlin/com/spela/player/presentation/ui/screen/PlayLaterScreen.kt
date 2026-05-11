@@ -21,7 +21,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import com.spela.player.presentation.intent.GameListIntent
 import com.spela.player.presentation.ui.components.SpEmptyStates
-import com.spela.player.presentation.ui.components.SpLoadingIndicator
+import com.spela.player.presentation.ui.components.ScreenLoadingIndicator
+import com.spela.player.presentation.ui.components.rememberLoadingFlashDebounce
 import com.spela.player.presentation.ui.feature.library.GameGridItem
 import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.ui.theme.spScreenBackground
@@ -48,11 +49,11 @@ fun PlayLaterScreen(
                 modifier = Modifier.fillMaxSize(),
                 contentAlignment = Alignment.Center,
             ) {
-                SpLoadingIndicator(message = "Loading play later...")
+                ScreenLoadingIndicator(message = "Loading play later...")
             }
         } else {
             PullToRefreshBox(
-                isRefreshing = state.isLoading,
+                isRefreshing = rememberLoadingFlashDebounce(state.isLoading),
                 onRefresh = { viewModel.onIntent(GameListIntent.LoadDashboard) },
                 modifier = Modifier.fillMaxSize(),
             ) {

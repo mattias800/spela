@@ -46,6 +46,7 @@ fun com.spela.client.models.ConsoleResponse.toDomain(): Console = Console(
     defaultCore = defaultCore,
     iconUrl = iconUrl,
     logoUrl = logoPngUrl.ifEmpty { logoUrl },
+    logoAspectRatio = logoAspectRatio?.toFloat(),
     saveStateSupport = saveStateSupport,
     saveStatePolicy = SaveStatePolicyTier.fromApiId(saveStatePolicy),
     browserPlayable = browserPlayable,
@@ -1043,6 +1044,7 @@ fun com.spela.client.models.ConsoleHighlight.toDomain(): ConsoleHighlight = Cons
     colorTheme = colorTheme,
     iconUrl = iconUrl,
     logoUrl = logoUrl,
+    logoAspectRatio = logoAspectRatio?.toFloat(),
     gameCount = gameCount.toInt(),
     topGame = topGame?.takeIf { it.id.isNotEmpty() }?.toDomain(),
 )

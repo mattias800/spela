@@ -163,13 +163,32 @@ class MainActivity : ComponentActivity() {
     /**
      * Ensures a gamepad device is assigned to a port. If it's a new device,
      * assigns it and loads its key mapping for the current console.
-     * Returns the assigned port, or -1 if all ports are full.
+     * Returns the assigned port, or -1 if all ports are full / device is
+     * not a gamepad.
+     *
+     * Source-flags filter: Android dispatches `onKeyDown` for **any**
+     * KEYBOARD-class input device — hardware volume keys (`gpio-keys`),
+     * power button (`pmic_pwrkey`), audio-jack mic button, even the
+     * primary touchscreen on devices that re-route gesture-recognised
+     * keystrokes through it (the AYN Thor's `fts_ts` exposes
+     * KEY_UP/DOWN/LEFT/RIGHT/POWER, see #1165). Without filtering we'd
+     * allocate a player-port for every distinct deviceId that ever
+     * produced a key event, so the player-N indicator ended up showing
+     * 2 controllers on the Thor with only the internal gamepad present.
+     *
+     * The narrowest correct filter is `SOURCE_GAMEPAD` — every real
+     * controller has this bit set; nothing else does. Joystick-only
+     * devices (rare but possible) are also accepted on `SOURCE_JOYSTICK`
+     * for defense in depth.
      */
     private fun ensureDeviceConnected(deviceId: Int): Int {
         val existingPort = gamepadPortManager.getPort(deviceId)
         if (existingPort >= 0) return existingPort
 
-        val deviceName = InputDevice.getDevice(deviceId)?.name ?: "Gamepad $deviceId"
+        val device = InputDevice.getDevice(deviceId) ?: return -1
+        if (!isGamepadInputDevice(device)) return -1
+
+        val deviceName = device.name ?: "Gamepad $deviceId"
         val port = gamepadPortManager.connectDevice(deviceId, deviceName)
         if (port >= 0) {
             val consoleId = emulationViewModel.state.value.consoleId
@@ -184,6 +203,21 @@ class MainActivity : ComponentActivity() {
             }
         }
         return port
+    }
+
+    /**
+     * True when [device] is a real gamepad-shaped input — both
+     * SOURCE_GAMEPAD (face buttons / dpad / start / select) and
+     * SOURCE_JOYSTICK (analog sticks / triggers / hat) qualify. Devices
+     * that are KEYBOARD-only (volume keys, power button, jack-button,
+     * touchscreen accessibility keystrokes) are filtered out so they
+     * don't claim player ports.
+     */
+    private fun isGamepadInputDevice(device: InputDevice): Boolean {
+        val sources = device.sources
+        val isGamepad = sources and InputDevice.SOURCE_GAMEPAD == InputDevice.SOURCE_GAMEPAD
+        val isJoystick = sources and InputDevice.SOURCE_JOYSTICK == InputDevice.SOURCE_JOYSTICK
+        return isGamepad || isJoystick
     }
 
     /** Key codes that are gamepad-relevant and should be captured during key mapping. */
@@ -202,6 +236,23 @@ class MainActivity : ComponentActivity() {
     }
 
     override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
+        // Register the source device as a player port if it's a real
+        // gamepad (SOURCE_GAMEPAD / SOURCE_JOYSTICK — see
+        // ensureDeviceConnected). Done at the top of dispatch, before
+        // any state-machine branch, so the on-screen player-N indicator
+        // reflects "the user has used this controller" rather than the
+        // narrower "the user has used this controller during
+        // emulation". Without this, the pill-menu bumper glyphs at the
+        // top of UI screens fall back to keyboard ([ / ]) instead of
+        // L1 / R1 until the user has actually entered a game (#1165).
+        //
+        // No-op for non-gamepad devices — ensureDeviceConnected's own
+        // filter rejects volume keys, power button, touchscreen-
+        // gesture keystrokes, etc.
+        if (event != null) {
+            ensureDeviceConnected(event.deviceId)
+        }
+
         // Key mapping capture: when in listening mode, intercept gamepad buttons
         if (keyMappingViewModel.state.value.currentMappingButton != null && isGamepadCapturable(keyCode)) {
             keyMappingViewModel.onIntent(KeyMappingIntent.CaptureButton(keyCode))
@@ -340,6 +391,12 @@ class MainActivity : ComponentActivity() {
         if (!isJoystickOrGamepad || event.action != MotionEvent.ACTION_MOVE) {
             return super.onGenericMotionEvent(event)
         }
+
+        // Register the source device as a player port — mirrors the
+        // onKeyDown path so analog-stick / trigger movement also
+        // populates the on-screen indicator (#1165). No-op for non-
+        // gamepad sources thanks to ensureDeviceConnected's filter.
+        ensureDeviceConnected(event.deviceId)
 
         if (isEmulationConsuming) {
             val controller = androidController ?: return super.onGenericMotionEvent(event)

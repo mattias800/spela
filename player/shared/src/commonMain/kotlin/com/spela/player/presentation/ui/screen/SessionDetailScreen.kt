@@ -56,7 +56,8 @@ import com.spela.player.presentation.ui.components.SpChip
 import com.spela.player.presentation.ui.components.SpCoverArt
 import com.spela.player.presentation.ui.components.SpEmptyState
 import com.spela.player.presentation.ui.components.SpHeroCover
-import com.spela.player.presentation.ui.components.SpLoadingIndicator
+import com.spela.player.presentation.ui.components.ScreenLoadingIndicator
+import com.spela.player.presentation.ui.components.rememberLoadingFlashDebounce
 import com.spela.player.presentation.ui.components.SpSectionHeader
 import com.spela.player.presentation.ui.components.SpSnackbar
 import com.spela.player.presentation.ui.components.SpSnackbarData
@@ -159,11 +160,13 @@ fun SessionDetailScreen(
                     modifier = Modifier.fillMaxSize(),
                     contentAlignment = Alignment.Center,
                 ) {
-                    SpLoadingIndicator(message = "Loading session...")
+                    ScreenLoadingIndicator(message = "Loading session...")
                 }
             } else if (state.session != null) {
                 val session = state.session!!
-                val isRefreshing = state.isLoading || state.isLoadingSaves
+                val isRefreshing = rememberLoadingFlashDebounce(
+                    state.isLoading || state.isLoadingSaves
+                )
 
                 PullToRefreshBox(
                     isRefreshing = isRefreshing,

@@ -14,6 +14,7 @@ const makeConsole = (abbr: string, name: string): Console => ({
   extensions: [],
   defaultCore: "",
   coverAspectRatio: 0.75,
+  logoAspectRatio: null,
   colorTheme: "",
   generation: 4,
   iconUrl: "",

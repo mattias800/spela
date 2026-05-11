@@ -52,6 +52,10 @@ type ConsoleHighlight struct {
 	ColorTheme string        `json:"colorTheme"`
 	IconURL    string        `json:"iconUrl"`
 	LogoURL    string        `json:"logoUrl"`
+	// LogoAspectRatio mirrors ConsoleResponse.logoAspectRatio so the
+	// explore-page quick-jump tiles can also start at the correct logo
+	// size on first render. Nil when the server couldn't determine it.
+	LogoAspectRatio *float64 `json:"logoAspectRatio"`
 	GameCount  int           `json:"gameCount"`
 	TopGame    *GameResponse `json:"topGame,omitempty"`
 }

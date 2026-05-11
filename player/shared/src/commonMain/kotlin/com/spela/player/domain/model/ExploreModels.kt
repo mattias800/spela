@@ -319,6 +319,8 @@ data class ConsoleHighlight(
     val colorTheme: String,
     val iconUrl: String,
     val logoUrl: String,
+    /** Intrinsic logo aspect ratio from the server — see Console.logoAspectRatio. */
+    val logoAspectRatio: Float? = null,
     val gameCount: Int,
     val topGame: Game?,
 )

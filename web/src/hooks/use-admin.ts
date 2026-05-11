@@ -516,7 +516,10 @@ export function useRefreshCore() {
       unwrap(
         typedApi.POST("/api/cores/{id}/refresh", {
           params: {
-            path: { id: params.id },
+            // The server's path-id is a regex-validated string
+            // (`^[0-9]+$`); the page still holds the row PK as a
+            // number, so stringify at the API boundary.
+            path: { id: String(params.id) },
             query: params.platform ? { platform: params.platform } : {},
           },
         }),

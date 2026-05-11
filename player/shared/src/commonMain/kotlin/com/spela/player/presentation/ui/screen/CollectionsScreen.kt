@@ -45,7 +45,8 @@ import com.spela.player.presentation.ui.components.SpCard
 import com.spela.player.presentation.ui.components.SpCoverArt
 import com.spela.player.presentation.ui.components.SpFab
 import com.spela.player.presentation.ui.components.SpEmptyStates
-import com.spela.player.presentation.ui.components.SpLoadingIndicator
+import com.spela.player.presentation.ui.components.ScreenLoadingIndicator
+import com.spela.player.presentation.ui.components.rememberLoadingFlashDebounce
 import com.spela.player.presentation.ui.components.SpSnackbar
 import com.spela.player.presentation.ui.components.SpSnackbarData
 import com.spela.player.presentation.ui.components.SpSnackbarType
@@ -109,16 +110,29 @@ fun CollectionsScreen(
                     )
                 },
         ) {
-            if (state.isLoading && state.myCollections.isEmpty() && state.publicCollections.isEmpty()) {
+            // Route the screen-level loading branch through the same
+            // state-machine hook as PullToRefreshBox below, so the dots
+            // honour the min-shown-for window once they appear — no
+            // 50-200ms flash for responses that land just past the
+            // debounce gate.
+            val showInitialLoading = rememberLoadingFlashDebounce(
+                state.isLoading && state.myCollections.isEmpty() && state.publicCollections.isEmpty()
+            )
+            if (showInitialLoading) {
                 Box(
                     modifier = Modifier.fillMaxSize(),
                     contentAlignment = Alignment.Center,
                 ) {
-                    SpLoadingIndicator(message = "Loading collections...")
+                    ScreenLoadingIndicator(message = "Loading collections...")
                 }
             } else {
                 PullToRefreshBox(
-                    isRefreshing = state.isLoading,
+                    // Same debounce as the screen-level indicator —
+                    // PullToRefreshBox draws its own spinner around the
+                    // screen content and would otherwise flash on a
+                    // cache-hit response that transitions through a
+                    // momentary isLoading=true.
+                    isRefreshing = rememberLoadingFlashDebounce(state.isLoading),
                     onRefresh = {
                         viewModel.onIntent(CollectionsIntent.LoadMyCollections)
                         viewModel.onIntent(CollectionsIntent.LoadPublicCollections)

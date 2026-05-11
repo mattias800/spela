@@ -41,7 +41,7 @@ import com.spela.player.presentation.ui.components.SpConfirmDialog
 import com.spela.player.presentation.ui.components.SpEmptyStates
 import com.spela.player.presentation.ui.feature.library.GameGridItem
 import com.spela.player.presentation.ui.components.SpIconButton
-import com.spela.player.presentation.ui.components.SpLoadingIndicator
+import com.spela.player.presentation.ui.components.ScreenLoadingIndicator
 import com.spela.player.presentation.ui.components.SpSearchField
 import com.spela.player.presentation.ui.components.SpSnackbar
 import com.spela.player.presentation.ui.components.SpSnackbarData
@@ -113,7 +113,7 @@ fun CollectionDetailScreen(
                     modifier = Modifier.fillMaxSize(),
                     contentAlignment = Alignment.Center,
                 ) {
-                    SpLoadingIndicator(message = "Loading collection...")
+                    ScreenLoadingIndicator(message = "Loading collection...")
                 }
             } else if (state.selectedDetail != null) {
                 val detail = state.selectedDetail ?: return@CompositionLocalProvider

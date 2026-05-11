@@ -60,7 +60,8 @@ import com.spela.player.presentation.intent.SocialIntent
 import com.spela.player.presentation.ui.components.SpAvatar
 import com.spela.player.presentation.ui.components.SpCoverArt
 import com.spela.player.presentation.ui.components.SpEmptyState
-import com.spela.player.presentation.ui.components.SpLoadingIndicator
+import com.spela.player.presentation.ui.components.ScreenLoadingIndicator
+import com.spela.player.presentation.ui.components.rememberLoadingFlashDebounce
 import com.spela.player.presentation.ui.components.social.formatRelativeTime
 import com.spela.player.presentation.ui.feature.library.darken
 import com.spela.player.presentation.ui.theme.LocalTitleBarInset
@@ -107,16 +108,27 @@ fun ActivityScreen(
                 )
             },
     ) {
-        if (state.isLoadingFullActivity && state.fullActivityEvents.isEmpty()) {
+        // Route the screen-level loading branch through the same
+        // state-machine hook as PullToRefreshBox below, so the dots
+        // honour the min-shown-for window once they appear.
+        val showInitialLoading = rememberLoadingFlashDebounce(
+            state.isLoadingFullActivity && state.fullActivityEvents.isEmpty()
+        )
+        if (showInitialLoading) {
             Box(
                 modifier = Modifier.fillMaxSize(),
                 contentAlignment = Alignment.Center,
             ) {
-                SpLoadingIndicator(message = "Loading activity...")
+                ScreenLoadingIndicator(message = "Loading activity...")
             }
         } else {
             PullToRefreshBox(
-                isRefreshing = state.isLoadingFullActivity && state.fullActivityEvents.isNotEmpty(),
+                // Same debounce as the screen-level indicator —
+                // PullToRefreshBox draws its own spinner and would
+                // otherwise flash on a cache-hit response.
+                isRefreshing = rememberLoadingFlashDebounce(
+                    state.isLoadingFullActivity && state.fullActivityEvents.isNotEmpty()
+                ),
                 onRefresh = { viewModel.onIntent(SocialIntent.LoadFullActivityFeed) },
                 modifier = Modifier.fillMaxSize(),
             ) {
