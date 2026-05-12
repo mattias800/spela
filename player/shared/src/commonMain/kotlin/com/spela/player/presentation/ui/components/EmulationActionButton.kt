@@ -84,7 +84,7 @@ fun EmulationActionButton(
                 indication = null,
                 onClick = onClick,
             )
-            .then(if (useFocusRing) Modifier.gamepadFocusable(shape = RoundedCornerShape(16.dp), addFocusable = false) else Modifier)
+            .then(if (useFocusRing) Modifier.gamepadFocusable(shape = RoundedCornerShape(16.dp), interactionSource = interactionSource, addFocusable = false) else Modifier)
             .semantics {
                 contentDescription = label
                 role = Role.Button

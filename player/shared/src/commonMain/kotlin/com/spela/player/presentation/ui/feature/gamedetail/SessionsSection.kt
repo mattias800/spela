@@ -50,6 +50,7 @@ import com.spela.player.presentation.ui.components.SpStatusChip
 import com.spela.player.presentation.ui.components.SpInnerCard
 import com.spela.player.presentation.ui.components.SpPlayInfo
 import com.spela.player.presentation.ui.components.SpTitledSection
+import com.spela.player.presentation.ui.gamepad.focusRestoreItem
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.ui.theme.SpTypography
@@ -140,7 +141,15 @@ internal fun SessionsSection(
                 },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(vertical = SpSpacing.XXSmall),
+                    .padding(vertical = SpSpacing.XXSmall)
+                    // Capture this row in the screen's LocalFocusMemory
+                    // so back-nav from the SessionDetail screen restores
+                    // focus to the same session the user opened, rather
+                    // than falling back to the Play/Download button's
+                    // `isDefault = true`. Key is the session id so it
+                    // survives the list reordering on lastPlayedAt
+                    // updates.
+                    .focusRestoreItem(key = "game_detail_session_${session.id}"),
             )
         }
     }

@@ -1,7 +1,6 @@
 package com.spela.player.presentation.ui.feature.gamedetail
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -135,9 +134,16 @@ private fun TopPlayerRow(
         else -> SpColor.OnBackgroundTertiary
     }
 
-    SpInnerCard(modifier = modifier.then(
-        if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier
-    )) {
+    // SpInnerCard handles its own focus mechanics correctly when given
+    // the `onClick` parameter — its internal clickable + gamepadFocusable
+    // share a single MutableInteractionSource. The previous pattern
+    // wrapped `.clickable` around the outer modifier, which bypassed
+    // SpInnerCard's internal focus wiring entirely and produced an
+    // invisible focus ring (#1176 audit follow-up).
+    SpInnerCard(
+        modifier = modifier,
+        onClick = onClick,
+    ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()

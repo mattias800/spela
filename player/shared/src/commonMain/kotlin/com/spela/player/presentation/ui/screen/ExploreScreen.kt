@@ -604,14 +604,23 @@ private fun SearchBarEntryPoint(
     modifier: Modifier = Modifier,
 ) {
     val shape = RoundedCornerShape(SpSpacing.RadiusLarge)
+    val interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
     Row(
         modifier = modifier
             .fillMaxWidth()
             .clip(shape)
             .background(SpColor.SurfaceVariant)
             .border(1.dp, SpColor.Divider, shape)
-            .clickable(onClick = onClick)
-            .gamepadFocusable(shape = shape)
+            .clickable(
+                interactionSource = interactionSource,
+                indication = null,
+                onClick = onClick,
+            )
+            .gamepadFocusable(
+                shape = shape,
+                interactionSource = interactionSource,
+                addFocusable = false,
+            )
             .padding(horizontal = SpSpacing.Default, vertical = 14.dp)
             .semantics {
                 contentDescription = "Search games, consoles, developers"

@@ -1,6 +1,7 @@
 package com.spela.player.presentation.ui.feature.gamedetail
 
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.shape.RoundedCornerShape
 import com.spela.player.presentation.ui.gamepad.gamepadFocusable
 import androidx.compose.foundation.layout.Arrangement
@@ -24,6 +25,7 @@ import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -131,13 +133,31 @@ private fun MetadataItem(
 ) {
     val secondaryColor = if (onGradient) androidx.compose.ui.graphics.Color.White.copy(alpha = 0.50f) else SpColor.OnBackgroundTertiary
     val isClickable = onClick != null
+    // Share one MutableInteractionSource between `.clickable` and
+    // `.gamepadFocusable`. Without this the two modifiers each install
+    // their own focus target with their own interaction source — focus
+    // lands on .clickable's target (you see the default Material
+    // darken), but gamepadFocusable's spFocusRing observes its OWN
+    // source and never fires. Net result: invisible focus ring.
+    // Same bug class is documented inline on `gamepadFocusable` (see
+    // #1096). With a shared source we also set `addFocusable = false`
+    // so we don't stack two focus targets.
+    val interactionSource = remember { MutableInteractionSource() }
     Row(
         modifier = modifier
             .padding(vertical = SpSpacing.XSmall)
             .then(
                 if (onClick != null) Modifier
-                    .clickable(onClick = onClick)
-                    .gamepadFocusable(shape = RoundedCornerShape(SpSpacing.Small))
+                    .clickable(
+                        interactionSource = interactionSource,
+                        indication = null,
+                        onClick = onClick,
+                    )
+                    .gamepadFocusable(
+                        shape = RoundedCornerShape(SpSpacing.Small),
+                        interactionSource = interactionSource,
+                        addFocusable = false,
+                    )
                 else Modifier
             ),
         verticalAlignment = Alignment.CenterVertically,

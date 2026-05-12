@@ -182,10 +182,14 @@ fun ConsoleSettingsScreen(
             item {
                 SpCard(onGradient = true) {
                     Column(modifier = Modifier.fillMaxWidth()) {
+                        val overrideInteractionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .clickable {
+                                .clickable(
+                                    interactionSource = overrideInteractionSource,
+                                    indication = null,
+                                ) {
                                     if (hasDeviceOverride) {
                                         settingsViewModel.onIntent(
                                             SettingsIntent.SetDeviceOverride(consoleId, null)
@@ -196,7 +200,11 @@ fun ConsoleSettingsScreen(
                                         )
                                     }
                                 }
-                                .gamepadFocusable(shape = RoundedCornerShape(SpSpacing.RadiusLarge))
+                                .gamepadFocusable(
+                                    shape = RoundedCornerShape(SpSpacing.RadiusLarge),
+                                    interactionSource = overrideInteractionSource,
+                                    addFocusable = false,
+                                )
                                 .testTag("device_shader_override_toggle")
                                 .semantics { contentDescription = "Override on this device only" }
                                 .padding(horizontal = SpSpacing.Default, vertical = SpSpacing.Medium),

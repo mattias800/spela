@@ -177,8 +177,10 @@ fun ScreenshotLightbox(
                 )
 
                 // Close button
+                val closeInteractionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
                 IconButton(
                     onClick = onDismiss,
+                    interactionSource = closeInteractionSource,
                     colors = IconButtonDefaults.iconButtonColors(
                         containerColor = NavButtonColor,
                         contentColor = NavButtonContentColor,
@@ -186,7 +188,11 @@ fun ScreenshotLightbox(
                     modifier = Modifier
                         .align(Alignment.TopEnd)
                         .padding(SpSpacing.Medium)
-                        .gamepadFocusable(shape = androidx.compose.foundation.shape.CircleShape),
+                        .gamepadFocusable(
+                            shape = androidx.compose.foundation.shape.CircleShape,
+                            interactionSource = closeInteractionSource,
+                            addFocusable = false,
+                        ),
                 ) {
                     Icon(Icons.Filled.Close, "Close", Modifier.size(24.dp))
                 }
@@ -200,25 +206,37 @@ fun ScreenshotLightbox(
                     horizontalArrangement = Arrangement.SpaceBetween,
                 ) {
                     val hasPrev = pagerState.currentPage > 0
+                    val prevInteractionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
                     IconButton(
                         onClick = { coroutineScope.launch { pagerState.animateScrollToPage(pagerState.currentPage - 1) } },
                         enabled = hasPrev,
+                        interactionSource = prevInteractionSource,
                         colors = IconButtonDefaults.iconButtonColors(
                             containerColor = NavButtonColor, contentColor = NavButtonContentColor,
                             disabledContainerColor = NavButtonDisabledColor, disabledContentColor = NavButtonDisabledContentColor,
                         ),
-                        modifier = Modifier.gamepadFocusable(shape = androidx.compose.foundation.shape.CircleShape),
+                        modifier = Modifier.gamepadFocusable(
+                            shape = androidx.compose.foundation.shape.CircleShape,
+                            interactionSource = prevInteractionSource,
+                            addFocusable = false,
+                        ),
                     ) { Icon(Icons.AutoMirrored.Filled.KeyboardArrowLeft, "Previous", Modifier.size(36.dp)) }
 
                     val hasNext = pagerState.currentPage < screenshotUrls.size - 1
+                    val nextInteractionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
                     IconButton(
                         onClick = { coroutineScope.launch { pagerState.animateScrollToPage(pagerState.currentPage + 1) } },
                         enabled = hasNext,
+                        interactionSource = nextInteractionSource,
                         colors = IconButtonDefaults.iconButtonColors(
                             containerColor = NavButtonColor, contentColor = NavButtonContentColor,
                             disabledContainerColor = NavButtonDisabledColor, disabledContentColor = NavButtonDisabledContentColor,
                         ),
-                        modifier = Modifier.gamepadFocusable(shape = androidx.compose.foundation.shape.CircleShape),
+                        modifier = Modifier.gamepadFocusable(
+                            shape = androidx.compose.foundation.shape.CircleShape,
+                            interactionSource = nextInteractionSource,
+                            addFocusable = false,
+                        ),
                     ) { Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, "Next", Modifier.size(36.dp)) }
                 }
 

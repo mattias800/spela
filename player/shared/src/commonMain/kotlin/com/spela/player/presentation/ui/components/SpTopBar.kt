@@ -2,6 +2,7 @@ package com.spela.player.presentation.ui.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import com.spela.player.presentation.ui.gamepad.gamepadFocusable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -22,6 +23,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -70,14 +72,23 @@ fun SpTopBar(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             if (showBack) {
+                val backInteractionSource = remember { MutableInteractionSource() }
                 Box(
                     modifier = Modifier
                         .testTag(TestTags.BACK_BUTTON)
                         .size(48.dp)
                         .clip(CircleShape)
                         .background(if (onGradient) Color.Black.copy(alpha = 0.30f) else SpColor.SurfaceVariant)
-                        .clickable(onClick = onBack)
-                        .gamepadFocusable(shape = CircleShape)
+                        .clickable(
+                            interactionSource = backInteractionSource,
+                            indication = null,
+                            onClick = onBack,
+                        )
+                        .gamepadFocusable(
+                            shape = CircleShape,
+                            interactionSource = backInteractionSource,
+                            addFocusable = false,
+                        )
                         .semantics {
                             contentDescription = "Go back"
                             role = Role.Button
