@@ -133,7 +133,7 @@ fun ConsoleScreen(
 
     // Darkened version of the console's brand gradient for the full-screen background
     val screenGradientColors = if (console != null) {
-        val (from, to) = getConsoleGradient(console.abbreviation, console.colorTheme)
+        val (from, to) = getConsoleGradient(console.colorTheme)
         listOf(from.darken(0.65f), to.darken(0.65f))
     } else {
         listOf(SpColor.Background, SpColor.Background)

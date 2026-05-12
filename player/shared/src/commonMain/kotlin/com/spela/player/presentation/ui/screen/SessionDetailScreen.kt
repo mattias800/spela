@@ -124,11 +124,17 @@ fun SessionDetailScreen(
         }
     }
 
-    // Per-console gradient background (matching GameDetailScreen)
+    // Per-console gradient background (matching GameDetailScreen).
+    // SessionDetail's view-model doesn't currently load the full Console
+    // (only the Game DTO with consoleId), so colorTheme isn't available
+    // — the gradient falls back to SpColor.Primary until that's plumbed.
+    // Visually no worse than before #1167 for this surface: the old
+    // hard-coded abbreviation table also defaulted whenever the id
+    // didn't match its 60-entry list.
     val backgroundColors = remember(state.game?.consoleId) {
         val consoleId = state.game?.consoleId
         if (consoleId != null) {
-            val (from, to) = getConsoleGradient(consoleId, null)
+            val (from, to) = getConsoleGradient(null)
             listOf(from.darken(0.65f), to.darken(0.65f))
         } else {
             listOf(SpColor.Background, SpColor.Background)

@@ -181,7 +181,7 @@ internal fun ConsoleCard(
     hasMissingBios: Boolean = false,
     modifier: Modifier = Modifier,
 ) {
-    val (gradientFrom, gradientTo) = getConsoleGradient(console.abbreviation, console.colorTheme)
+    val (gradientFrom, gradientTo) = getConsoleGradient(console.colorTheme)
     val shape = RoundedCornerShape(SpSpacing.CardCornerRadius)
     val biosDesc = if (hasMissingBios) ", BIOS missing" else ""
     val interactionSource = remember { MutableInteractionSource() }
@@ -406,8 +406,10 @@ private fun ConsoleHeroBannerContent(
 ) {
     val shape = RoundedCornerShape(SpSpacing.CardCornerRadius)
 
-    // Per-console gradient matching web UI's console-metadata.ts exactly
-    val (gradientFrom, gradientTo) = getConsoleGradient(console.abbreviation, console.colorTheme)
+    // Two-stop brand gradient derived from the server's colorTheme —
+    // matches web's `ConsoleHeroBanner` after #1167 so both clients
+    // render the same console with the same brand sweep.
+    val (gradientFrom, gradientTo) = getConsoleGradient(console.colorTheme)
     val gradientColors = listOf(gradientFrom, gradientTo)
 
     // Depth overlay matching web: from-black/30 via-transparent to-white/[0.04]
