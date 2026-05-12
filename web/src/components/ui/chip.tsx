@@ -17,7 +17,12 @@ export function Chip({ selected, className, children, ...rest }: ChipProps) {
     <button data-comp="Chip"
       aria-pressed={selected}
       className={cn(
+        // Tailwind preflight resets <button>'s native cursor to default;
+        // every chip in the app needs to opt back in so it doesn't look
+        // non-clickable to a mouse user. See #1176 Issue A.
         "px-2.5 py-1 rounded-full text-xs font-medium transition-colors",
+        "cursor-pointer disabled:cursor-not-allowed",
+        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 focus-visible:ring-offset-surface-950",
         selected
           ? "bg-brand-600 text-white"
           : "bg-surface-800 text-surface-300 hover:bg-surface-700 hover:text-surface-100",
@@ -98,7 +103,11 @@ export function ChipPicker({
       {hasOverflow && (
         <button
           onClick={() => setExpanded(!expanded)}
-          className="mt-1.5 text-xs text-surface-400 hover:text-surface-200 flex items-center gap-1"
+          // Same cursor + focus hygiene as Chip itself — this toggle
+          // sits visually adjacent to a row of chips and was the only
+          // interactive element in ChipPicker that didn't pick those
+          // up. See #1176 Issue A.
+          className="mt-1.5 text-xs text-surface-400 hover:text-surface-200 flex items-center gap-1 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 focus-visible:ring-offset-surface-950 rounded"
         >
           {expanded ? (
             <>
