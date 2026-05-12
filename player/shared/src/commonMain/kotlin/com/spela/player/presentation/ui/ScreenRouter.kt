@@ -863,6 +863,7 @@ fun ScreenRouter(
                             is SpScreen.Consoles -> {
                                 ConsolesScreen(
                                     viewModel = gameListViewModel,
+                                    preferencesRepository = preferencesRepository,
                                     onConsoleSelected = { consoleId ->
                                         navigationViewModel.onIntent(
                                             NavigationIntent.NavigateTo(SpScreen.Console(consoleId))

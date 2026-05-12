@@ -42,4 +42,14 @@ interface PreferencesRepository {
     fun setOrientationLock(mode: String)
     fun getControlTab(consoleId: String): String
     fun setControlTab(consoleId: String, tab: String)
+
+    /**
+     * Device-local console list grouping preference ("generation" |
+     * "manufacturer"). Defaults to "generation" when unset — matches
+     * the web behaviour in `consoles-page.tsx` and so a user landing
+     * on either client for the first time sees the same default
+     * grouping. See #1176.
+     */
+    fun getConsoleListGrouping(): String
+    fun setConsoleListGrouping(grouping: String)
 }

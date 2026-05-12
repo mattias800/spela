@@ -405,6 +405,7 @@ class SpelaTestHarness(
                 presenceService = presenceService,
                 connectivityMonitor = connectivityMonitor,
                 downloadRepository = downloadRepo,
+                preferencesRepository = preferencesRepo,
                 sessionDetailViewModel = sessionDetailViewModel,
                 topListsViewModel = topListsViewModel,
                 exploreViewModel = exploreViewModel,

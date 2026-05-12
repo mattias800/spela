@@ -1,9 +1,7 @@
 package com.spela.player.presentation.ui.feature.library
 
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -21,13 +19,15 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.spela.player.domain.repository.PreferencesRepository
 import com.spela.player.presentation.intent.GameListIntent
-import com.spela.player.presentation.ui.components.SpChip
+import com.spela.player.presentation.ui.components.SegmentedOption
 import com.spela.player.presentation.ui.components.SpEmptyStates
 import com.spela.player.presentation.ui.components.SpMainContentPadding
 import com.spela.player.presentation.ui.components.SpScreen
 import com.spela.player.presentation.ui.components.SpScreenTopSpacer
 import com.spela.player.presentation.ui.components.SpScrollableContent
+import com.spela.player.presentation.ui.components.SpSegmentedControl
 import com.spela.player.presentation.ui.components.rememberLoadingFlashDebounce
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
@@ -37,16 +37,32 @@ import com.spela.player.presentation.viewmodel.GameListViewModel
 @Composable
 internal fun LibraryConsolesTab(
     viewModel: GameListViewModel,
+    preferencesRepository: PreferencesRepository,
     onConsoleSelected: (String) -> Unit,
 ) {
     val state by viewModel.state.collectAsState()
 
-    // #1106 — toggle state lives at the tab level so the segmented
-    // control and the grid render from the same source of truth.
-    // `remember` keeps the choice for the lifetime of the tab; cross-
-    // restart persistence (and rotation persistence on Android) is
-    // filed as a follow-up.
-    var grouping by remember { mutableStateOf(ConsoleGrouping.Generation) }
+    // Persist the grouping choice device-locally — mirrors the web's
+    // `localStorage["consoleListGrouping"]` so a user landing on either
+    // client sees the same default and their pick survives screen
+    // disposal (#1176). The repository's getter falls back to
+    // "generation" when unset, which matches the web default.
+    var grouping by remember {
+        val initial = when (preferencesRepository.getConsoleListGrouping()) {
+            "manufacturer" -> ConsoleGrouping.Manufacturer
+            else -> ConsoleGrouping.Generation
+        }
+        mutableStateOf(initial)
+    }
+    val onGroupingChange: (ConsoleGrouping) -> Unit = { next ->
+        grouping = next
+        preferencesRepository.setConsoleListGrouping(
+            when (next) {
+                ConsoleGrouping.Generation -> "generation"
+                ConsoleGrouping.Manufacturer -> "manufacturer"
+            }
+        )
+    }
 
     LaunchedEffect(Unit) {
         viewModel.onIntent(GameListIntent.LoadConsoles)
@@ -90,7 +106,7 @@ internal fun LibraryConsolesTab(
                         SpMainContentPadding {
                             ConsoleGroupingToggle(
                                 grouping = grouping,
-                                onGroupingChange = { grouping = it },
+                                onGroupingChange = onGroupingChange,
                             )
                             Spacer(Modifier.height(SpSpacing.Medium))
                             BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
@@ -118,25 +134,27 @@ private fun ConsoleGroupingToggle(
     grouping: ConsoleGrouping,
     onGroupingChange: (ConsoleGrouping) -> Unit,
 ) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .testTag("console-grouping-toggle"),
-        horizontalArrangement = Arrangement.spacedBy(SpSpacing.Small),
-    ) {
-        SpChip(
-            text = "By generation",
-            isSelected = grouping == ConsoleGrouping.Generation,
-            onClick = { onGroupingChange(ConsoleGrouping.Generation) },
-            onGradient = true,
-            modifier = Modifier.testTag("console-grouping-generation"),
-        )
-        SpChip(
-            text = "By manufacturer",
-            isSelected = grouping == ConsoleGrouping.Manufacturer,
-            onClick = { onGroupingChange(ConsoleGrouping.Manufacturer) },
-            onGradient = true,
-            modifier = Modifier.testTag("console-grouping-manufacturer"),
-        )
-    }
+    // Migrated from two SpChips to SpSegmentedControl in #1176 so the
+    // primary "switch how the entire screen is organised" affordance
+    // doesn't look like passive metadata. testTag values are preserved
+    // for the existing UI tests.
+    SpSegmentedControl(
+        options = listOf(
+            SegmentedOption(
+                value = ConsoleGrouping.Generation,
+                label = "Generation",
+                testTag = "console-grouping-generation",
+            ),
+            SegmentedOption(
+                value = ConsoleGrouping.Manufacturer,
+                label = "Manufacturer",
+                testTag = "console-grouping-manufacturer",
+            ),
+        ),
+        selectedValue = grouping,
+        onValueChange = onGroupingChange,
+        label = "Group by",
+        onGradient = true,
+        modifier = Modifier.testTag("console-grouping-toggle"),
+    )
 }

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Gamepad2 } from "lucide-react";
 import { ConsoleCard } from "@/components/console-card";
-import { Chip, ConsoleCardSkeleton, EmptyState } from "@/components/ui";
+import { ConsoleCardSkeleton, EmptyState, SegmentedControl } from "@/components/ui";
 import { useBiosStatus } from "@/hooks/use-bios";
 import { useConsoles } from "@/hooks/use-consoles";
 import { PageLayout, SectionList } from "@/components/layout";
@@ -65,27 +65,24 @@ export function ConsolesPage() {
         />
       ) : (
         <div className="space-y-8">
-          <div
-            data-testid="console-grouping-toggle"
-            className="flex items-center gap-2"
-            role="group"
-            aria-label="Console grouping"
-          >
-            <Chip
-              data-testid="console-grouping-generation"
-              selected={grouping === "generation"}
-              onClick={() => setGrouping("generation")}
-            >
-              By generation
-            </Chip>
-            <Chip
-              data-testid="console-grouping-manufacturer"
-              selected={grouping === "manufacturer"}
-              onClick={() => setGrouping("manufacturer")}
-            >
-              By manufacturer
-            </Chip>
-          </div>
+          <SegmentedControl<ConsoleGrouping>
+            testId="console-grouping-toggle"
+            label="Group by:"
+            value={grouping}
+            onChange={setGrouping}
+            options={[
+              {
+                value: "generation",
+                label: "Generation",
+                testId: "console-grouping-generation",
+              },
+              {
+                value: "manufacturer",
+                label: "Manufacturer",
+                testId: "console-grouping-manufacturer",
+              },
+            ]}
+          />
           {groups.map((group) => (
             <section key={group.key}>
               <div className="flex items-baseline gap-3 mb-4">

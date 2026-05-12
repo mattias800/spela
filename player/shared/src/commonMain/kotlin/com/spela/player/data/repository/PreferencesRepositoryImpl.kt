@@ -217,6 +217,15 @@ class PreferencesRepositoryImpl(
         database.spelaDatabaseQueries.insertDeviceSetting("control_tab:$consoleId", tab)
     }
 
+    override fun getConsoleListGrouping(): String {
+        return database.spelaDatabaseQueries.getDeviceSetting("console_list_grouping")
+            .executeAsOneOrNull() ?: "generation"
+    }
+
+    override fun setConsoleListGrouping(grouping: String) {
+        database.spelaDatabaseQueries.insertDeviceSetting("console_list_grouping", grouping)
+    }
+
     override suspend fun pushKeyMappingsToServer() {
         runCatching {
             val allMappings = database.spelaDatabaseQueries.getAllKeyMappings().executeAsList()

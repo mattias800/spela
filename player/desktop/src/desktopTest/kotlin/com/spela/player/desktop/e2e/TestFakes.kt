@@ -793,6 +793,9 @@ class FakePreferencesRepository : PreferencesRepository {
     override fun getControlTab(consoleId: String): String =
         controlTabs[consoleId] ?: if (consoleId.lowercase() == "scummvm") "trackpad" else "gamepad"
     override fun setControlTab(consoleId: String, tab: String) { controlTabs[consoleId] = tab }
+    private var consoleListGrouping: String = "generation"
+    override fun getConsoleListGrouping(): String = consoleListGrouping
+    override fun setConsoleListGrouping(grouping: String) { consoleListGrouping = grouping }
 }
 
 class FakeAchievementsRepository : AchievementsRepository {
