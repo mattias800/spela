@@ -264,9 +264,24 @@ fun SpCarousel(
         contentPadding = PaddingValues(horizontal = SpSpacing.ScreenHorizontal),
         horizontalArrangement = Arrangement.spacedBy(SpSpacing.Medium),
     ) {
+        // Pre-compute keys so we can verify uniqueness — duplicate
+        // keys crash LazyRow with "Key '<x>' was already used". Most
+        // shelf data is naturally unique-by-id but social shelves
+        // ("recently reviewed" etc.) can show the same game multiple
+        // times. When we detect a collision we fall back to positional
+        // keys (null), which loses cross-recomposition item identity
+        // but keeps the screen alive. The call site should fix its
+        // itemKey to be properly unique (composite); the fallback is
+        // just a "don't crash production" safety net.
+        val keys: List<Any>? = if (itemKey != null) {
+            val list = ArrayList<Any>(itemCount)
+            for (i in 0 until itemCount) list.add(itemKey(i))
+            if (list.toSet().size == list.size) list else null
+        } else null
+
         items(
             count = itemCount,
-            key = if (itemKey != null) { i -> itemKey(i) } else null,
+            key = if (keys != null) { i -> keys[i] } else null,
         ) { i ->
             val restoreKey = if (memoryKey != null && itemKey != null) {
                 "$memoryKey/${itemKey(i)}"

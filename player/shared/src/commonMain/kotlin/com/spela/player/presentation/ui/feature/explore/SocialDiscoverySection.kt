@@ -155,7 +155,12 @@ fun RecentlyReviewedSection(
         itemCount = reviews.size,
         modifier = modifier.testTag("recently_reviewed_row"),
         memoryKey = "explore_recently_reviewed",
-        itemKey = { reviews[it].game.id },
+        // Composite key — the same game can be reviewed by multiple
+        // friends in the same window, so `game.id` alone produces
+        // duplicates and crashes LazyRow with "Key was already used".
+        // Reviewer + timestamp + game makes each row unique even when
+        // reviews of the same game stack up.
+        itemKey = { val r = reviews[it]; "${r.reviewerName}_${r.reviewedAt}_${r.game.id}" },
     ) { index, focusRequester ->
         val item = reviews[index]
         Column(
