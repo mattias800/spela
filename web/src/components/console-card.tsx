@@ -40,13 +40,17 @@ export function ConsoleCard({ console: c, hasMissingBios = false }: ConsoleCardP
       >
         <div
           className="absolute inset-0"
-          // Full-bleed card on a dark surface — alphas are stronger than
-          // the Explore strip's `${color}30 → ${color}08` so the brand
-          // colour reads at a glance, but the bottom-right still fades
-          // toward the surface so adjacent cards don't blur into each
-          // other.
+          // Two-stop brand gradient mixed in sRGB: top-left is the
+          // brand hex at full saturation; bottom-right is the same
+          // hex mixed 60% with black so light themes (NES red, Game
+          // Boy olive) get a vivid-to-shaded sweep, and dark themes
+          // (Genesis #171717, Atari #1e293b) still grade visibly into
+          // near-black rather than fading flat. Mirrors the spirit of
+          // the previous Tailwind `from-X-600 to-X-900` pairs but
+          // derives both stops from the single server-seeded
+          // colorTheme — see #1167.
           style={{
-            background: `linear-gradient(135deg, ${theme}cc, ${theme}55)`,
+            background: `linear-gradient(135deg, ${theme}, color-mix(in srgb, ${theme}, black 60%))`,
           }}
         />
         {/* Toward-bottom darken keeps text + indicators readable on
