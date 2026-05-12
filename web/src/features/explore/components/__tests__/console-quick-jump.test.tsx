@@ -144,4 +144,25 @@ describe("ConsoleQuickJump", () => {
     const items = screen.getAllByRole("listitem");
     expect(items).toHaveLength(3);
   });
+
+  // #1175 — the "See all consoles" affordance is the section's only
+  // exit ramp to the full Consoles directory; without it users assume
+  // the carousel is the complete inventory.
+  it("renders See-all-consoles link pointing at /consoles", () => {
+    renderComponent();
+    const link = screen.getByTestId("console-quick-jump-see-all");
+    expect(link).toBeInTheDocument();
+    expect(link.tagName).toBe("A");
+    expect(link).toHaveAttribute("href", "/consoles");
+  });
+
+  // The link must also render in the loading skeleton so it doesn't
+  // pop in when data arrives — the section header layout is the same
+  // in both states.
+  it("renders See-all-consoles link in the loading skeleton too", () => {
+    renderComponent(undefined, true);
+    const link = screen.getByTestId("console-quick-jump-see-all");
+    expect(link).toBeInTheDocument();
+    expect(link).toHaveAttribute("href", "/consoles");
+  });
 });
