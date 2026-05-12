@@ -1,7 +1,6 @@
 import { Link } from "react-router-dom";
 import { AlertTriangle, Check, Globe } from "lucide-react";
 import { cn } from "@/lib/cn";
-import { getConsoleStyle } from "@/lib/console-metadata";
 import type { Console } from "@/types/api";
 
 interface ConsoleCardProps {
@@ -16,8 +15,19 @@ interface ConsoleCardProps {
   hasMissingBios?: boolean;
 }
 
+// Card backgrounds derive from `Console.colorTheme` (the server-seeded
+// brand hex) rather than a hard-coded Tailwind gradient table. This
+// keeps the Consoles list, the Explore "Browse by Console" strip, and
+// the console-detail hero on one source of truth — admins / seed
+// updates change the colour in one place and every surface follows
+// (#1167). The previous per-console `console-metadata` gradient table
+// drifted from `colorTheme` (e.g. NES `red-600 → red-900` vs the
+// server's `#e60012`) and produced visibly different palettes for the
+// same library across the two pages.
+const FALLBACK_THEME = "#6366f1";
+
 export function ConsoleCard({ console: c, hasMissingBios = false }: ConsoleCardProps) {
-  const style = getConsoleStyle(c.abbreviation);
+  const theme = c.colorTheme || FALLBACK_THEME;
 
   return (
     <Link to={`/consoles/${c.id}`} className="group block">
@@ -29,8 +39,20 @@ export function ConsoleCard({ console: c, hasMissingBios = false }: ConsoleCardP
         )}
       >
         <div
-          className={cn("absolute inset-0 bg-gradient-to-br", style.gradient)}
+          className="absolute inset-0"
+          // Full-bleed card on a dark surface — alphas are stronger than
+          // the Explore strip's `${color}30 → ${color}08` so the brand
+          // colour reads at a glance, but the bottom-right still fades
+          // toward the surface so adjacent cards don't blur into each
+          // other.
+          style={{
+            background: `linear-gradient(135deg, ${theme}cc, ${theme}55)`,
+          }}
         />
+        {/* Toward-bottom darken keeps text + indicators readable on
+            light-saturation themes (e.g. Game Boy green). */}
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-black/30 pointer-events-none" />
+
 
         <div className="absolute inset-0 flex flex-col items-center justify-center gap-3">
           <img
