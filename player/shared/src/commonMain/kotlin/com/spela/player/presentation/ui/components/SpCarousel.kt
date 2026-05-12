@@ -103,34 +103,102 @@ fun SpCarousel(
     // Apply the latest pending target. Keyed on pendingTarget so a
     // mid-flight scroll is cancelled the moment the user advances
     // further along the carousel.
+    //
+    // Sequence:
+    //   1. requestFocus on the target's requester. For the common
+    //      adjacent-step case (d-pad right/left from a visible item)
+    //      the target sits in LazyRow's prefetch window, so its
+    //      requester is bound to a layout node and this works
+    //      synchronously — the focus ring snaps before any scroll
+    //      animation starts.
+    //   2. animateScrollBy enough to bring the focused item's centre
+    //      to the centre of the viewport. We read the item's offset
+    //      and size from layoutInfo.visibleItemsInfo, which is the
+    //      LazyRow equivalent of the old onGloballyPositioned tracking.
+    //   3. Slow path for off-screen jumps (focus restoration uses its
+    //      own LaunchedEffect above; this only fires when the key
+    //      handler itself targets something not yet composed): scroll
+    //      it in first, yield a frame, then requestFocus.
+    //
+    // Previously this LaunchedEffect did scrollToItem THEN requestFocus
+    // — the user saw the list pan first, then the focus ring catch up,
+    // and the focused item always settled on the viewport's left edge
+    // because scrollToItem(i) anchors to viewport start. Fixed in
+    // #1180 follow-up to #1168.
     LaunchedEffect(pendingTarget) {
         val target = pendingTarget
         if (target < 0) return@LaunchedEffect
         val now = System.currentTimeMillis()
-        val isRapid = now - lastFocusChangeTime < 100
+        // Rapid threshold matches typical held-d-pad cadence (~150–200ms
+        // between events). Anything quicker than 250ms snaps instead of
+        // animating, otherwise each new press would cancel the previous
+        // animation mid-flight and the carousel would never converge to
+        // a centred position.
+        val isRapid = now - lastFocusChangeTime < 250
         lastFocusChangeTime = now
-        if (isRapid) {
-            listState.scrollToItem(target)
+
+        // animateScrollToItem(index, scrollOffset) is idempotent under
+        // cancellation — each call retargets from the current scroll
+        // position. animateScrollBy(delta) sucks under rapid presses
+        // because the delta is computed once at launch and a subsequent
+        // press recomputes from a partially-scrolled state, accumulating
+        // error.
+        //
+        // To centre: scrollOffset = -((viewportSize - itemSize) / 2).
+        // Positive scrollOffset shifts the item further toward viewport
+        // start (per Compose convention); negative shifts it further
+        // from start, which is what we want for centring.
+        val info = listState.layoutInfo
+        val viewportSize = info.viewportEndOffset - info.viewportStartOffset
+        val itemSize = info.visibleItemsInfo.firstOrNull { it.index == target }?.size
+            ?: info.visibleItemsInfo.firstOrNull()?.size
+            ?: 0
+        val centerOffset = if (itemSize in 1..<viewportSize) {
+            -((viewportSize - itemSize) / 2)
+        } else 0
+
+        val targetVisible = info.visibleItemsInfo.any { it.index == target }
+        if (targetVisible) {
+            // Common path. Focus snaps immediately because the requester
+            // is bound to a layout node; carousel pans in to centre.
+            try { requesters[target].requestFocus() } catch (_: Exception) {}
+            if (isRapid) {
+                listState.scrollToItem(target, centerOffset)
+            } else {
+                listState.animateScrollToItem(target, centerOffset)
+            }
         } else {
-            listState.animateScrollToItem(target)
+            // Slow path — target outside the prefetch window. Scroll
+            // first so the LazyRow composes its layout node, then
+            // requestFocus.
+            if (isRapid) {
+                listState.scrollToItem(target, centerOffset)
+            } else {
+                listState.animateScrollToItem(target, centerOffset)
+            }
+            kotlinx.coroutines.yield()
+            try { requesters[target].requestFocus() } catch (_: Exception) {}
         }
-        kotlinx.coroutines.yield()
-        try { requesters[target].requestFocus() } catch (_: Exception) {}
     }
 
-    // Focus restoration: if the saved focus key belongs to one of this
-    // carousel's items, scroll the LazyRow so the item composes. The
-    // 120 ms layout-settle delay in focusRestoreItem then fires after
-    // composition has caught up, and requestFocus binds the requester.
+    // Focus restoration: if [LocalFocusMemory]'s saved key belongs to
+    // one of this carousel's items AT SCREEN ENTRY, scroll the LazyRow
+    // so the item composes. The 120 ms layout-settle delay in
+    // focusRestoreItem then fires after composition catches up, and
+    // requestFocus binds the requester.
     //
-    // [itemKey] is intentionally NOT in the key list — it's a lambda
-    // and lambdas compare by referential equality, so a fresh instance
-    // per recomposition would cancel + restart the effect on every
-    // frame, abort the in-flight `scrollToItem`, and leave the saved
-    // item uncomposed when focusRestoreItem's 120 ms timer fires.
+    // The saved key is captured ONCE at first composition. We must NOT
+    // re-fire this effect when [focusMemory.value] changes during the
+    // session — focusRestoreItem writes the scope on every focus
+    // change, and re-firing here would race against the d-pad
+    // keyhandler's animated centring scroll, clobbering it with an
+    // instant scrollToItem-to-viewport-start. The previous version
+    // keyed on `focusMemory.value` and was the cause of "carousel
+    // never animates + focused item always anchored to left edge".
     val focusMemory = LocalFocusMemory.current
-    LaunchedEffect(focusMemory?.value, itemCount, memoryKey) {
-        val savedKey = focusMemory?.value
+    val savedKeyAtEntry = remember { focusMemory?.value }
+    LaunchedEffect(itemCount, memoryKey) {
+        val savedKey = savedKeyAtEntry
         val keyFn = itemKey
         if (
             savedKey.isNullOrEmpty() ||
@@ -210,4 +278,5 @@ fun SpCarousel(
         }
     }
 }
+
 

@@ -34,6 +34,34 @@ import kotlinx.coroutines.delay
 private const val DEFAULT_STAGGER_MS: Long = 1000L
 
 /**
+ * Process-wide set of image models (URL strings, mostly) that have
+ * completed at least one successful Coil load during this app session.
+ *
+ * Why this exists: when a card scrolls out of a LazyRow / LazyColumn
+ * viewport, Compose disposes the [SpImage] composable. When it scrolls
+ * back in, a *fresh* [SpImage] mounts — which means the `ready` state
+ * starts at `false` and the stagger timer re-runs from zero. Coil's
+ * memory cache still has the bitmap and would serve it in the same
+ * frame, but our artificial 0–[staggerMs] gate hides it behind a
+ * placeholder for up to a second.
+ *
+ * The set lets every [SpImage] short-circuit the stagger when it sees
+ * a model it (or some other instance) has already loaded successfully.
+ * Coil then serves the cached bitmap immediately and the user sees no
+ * flicker as cards scroll back into view.
+ *
+ * Lifetime: in-memory, dies with the JVM. There is no eviction policy
+ * — we only store the *fact* of a successful load, not the bitmap, so
+ * even at app scale (~thousands of distinct game covers) the memory
+ * cost is negligible (a Set of URL strings).
+ *
+ * Thread-safety: reads and writes both happen on the composition /
+ * main thread (Coil's `onSuccess` callback fires there by default).
+ * No need for a concurrent set.
+ */
+private val loadedModels = mutableSetOf<Any>()
+
+/**
  * DESIGN component — Spela's shared async image primitive.
  *
  * Every image-bearing surface in the app routes through this composable
@@ -98,11 +126,18 @@ fun SpImage(
     // `model`: if the URL changes (e.g. a card is recycled into a
     // different game), the timer restarts so we don't show a stale
     // placeholder while waiting for a leftover timer on a different URL.
+    //
+    // Short-circuit: if any earlier [SpImage] has already successfully
+    // loaded this model in the current process, skip the stagger and
+    // hand the URL to Coil immediately. Coil's memory cache returns
+    // the bitmap in the same frame, so a card scrolling back into a
+    // LazyRow viewport doesn't flash a placeholder.
+    val alreadyLoadedOnce = remember(model) { loadedModels.contains(model) }
     var ready by remember(model, staggerMs) {
-        mutableStateOf(staggerMs <= 0L)
+        mutableStateOf(alreadyLoadedOnce || staggerMs <= 0L)
     }
     LaunchedEffect(model, staggerMs) {
-        if (staggerMs > 0L && !ready) {
+        if (!alreadyLoadedOnce && staggerMs > 0L && !ready) {
             // Random.nextLong is half-open [0, bound). Add 1 so the
             // declared bound is inclusive — purely for tidiness, the
             // single-ms difference is irrelevant in practice.
@@ -122,7 +157,13 @@ fun SpImage(
                 contentScale = contentScale,
                 loading = { placeholder() },
                 error = { error() },
-                onSuccess = { state -> onSuccess?.invoke(state) },
+                onSuccess = { state ->
+                    // Remember this URL has succeeded so future SpImage
+                    // mounts (same URL, e.g. card scrolling back in)
+                    // skip the stagger and let Coil's cache do its job.
+                    loadedModels.add(model)
+                    onSuccess?.invoke(state)
+                },
             )
         }
     }
