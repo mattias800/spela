@@ -9,12 +9,31 @@ interface ConsoleQuickJumpProps {
   isLoading: boolean;
 }
 
+// Section header layout — extracted so the loading skeleton and the
+// hydrated section both render the same flex row and the "See all"
+// link doesn't shift in/out as data arrives (#1175).
+function SectionHeader() {
+  return (
+    <div className="flex items-baseline justify-between mb-5">
+      <h2 className="text-xl font-bold text-surface-100">
+        Browse by Console
+      </h2>
+      <Link
+        to="/consoles"
+        data-testid="console-quick-jump-see-all"
+        className="inline-flex items-center gap-1 text-sm font-medium text-surface-400 hover:text-brand-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 focus-visible:ring-offset-surface-950 rounded-md transition-colors"
+      >
+        See all consoles
+        <ChevronRight className="h-4 w-4" aria-hidden="true" />
+      </Link>
+    </div>
+  );
+}
+
 function ConsoleQuickJumpSkeleton() {
   return (
     <section data-comp="ConsoleQuickJumpSkeleton" data-testid="console-quick-jump-skeleton">
-      <h2 className="text-xl font-bold text-surface-100 mb-5">
-        Browse by Console
-      </h2>
+      <SectionHeader />
       <div className="flex gap-4 overflow-hidden">
         {Array.from({ length: 8 }, (_, i) => (
           <Skeleton key={i} className="w-36 h-24 rounded-xl flex-shrink-0" />
@@ -75,9 +94,7 @@ export function ConsoleQuickJump({
       data-testid="console-quick-jump"
       className="group/console-jump relative"
     >
-      <h2 className="text-xl font-bold text-surface-100 mb-5">
-        Browse by Console
-      </h2>
+      <SectionHeader />
 
       <div className="relative">
         {/* Scroll arrows */}
