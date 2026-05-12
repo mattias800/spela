@@ -1,9 +1,13 @@
 package com.spela.player.presentation.ui.components
 
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.focusGroup
+import androidx.compose.foundation.gestures.animateScrollBy
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
@@ -129,52 +133,73 @@ fun SpCarousel(
         val target = pendingTarget
         if (target < 0) return@LaunchedEffect
         val now = System.currentTimeMillis()
-        // Rapid threshold matches typical held-d-pad cadence (~150–200ms
-        // between events). Anything quicker than 250ms snaps instead of
-        // animating, otherwise each new press would cancel the previous
-        // animation mid-flight and the carousel would never converge to
-        // a centred position.
-        val isRapid = now - lastFocusChangeTime < 250
+        // Three-tier classifier keyed on the time gap since the last
+        // d-pad press. The user's intent is the signal: a single
+        // deliberate press gets the full spring; a few quick taps get
+        // a snappy linear tween; a held d-pad fires events too fast to
+        // animate at all, so we snap. Thresholds are tuned for typical
+        // gamepad / keyboard cadence (≈150–250ms held, ≈300–500ms
+        // deliberate).
+        val gap = now - lastFocusChangeTime
         lastFocusChangeTime = now
+        val mode = when {
+            gap < 100  -> ScrollMode.Snap
+            gap < 250  -> ScrollMode.Fast
+            else       -> ScrollMode.Slow
+        }
 
-        // animateScrollToItem(index, scrollOffset) is idempotent under
-        // cancellation — each call retargets from the current scroll
-        // position. animateScrollBy(delta) sucks under rapid presses
-        // because the delta is computed once at launch and a subsequent
-        // press recomputes from a partially-scrolled state, accumulating
-        // error.
+        // Centring math. For animateScrollToItem (Snap + Slow) we need
+        // a scrollOffset such that the item lands at viewport centre:
+        // scrollOffset = -((viewportSize - itemSize) / 2). Per Compose
+        // convention positive scrollOffset shifts the item further
+        // toward viewport start; negative shifts it further from start,
+        // which is what we want for centring.
         //
-        // To centre: scrollOffset = -((viewportSize - itemSize) / 2).
-        // Positive scrollOffset shifts the item further toward viewport
-        // start (per Compose convention); negative shifts it further
-        // from start, which is what we want for centring.
+        // For Fast we use animateScrollBy(delta, tween) — animateScroll-
+        // ToItem doesn't expose an AnimationSpec parameter, and we need
+        // one to dial the duration down to ~120 ms. The delta math is
+        // the natural sibling: delta = itemCenter - viewportCenter,
+        // where positive delta scrolls forward (items move left in
+        // viewport, item shifts toward centre when it was to the
+        // right). scrollBy auto-clamps at the list ends, same as
+        // scrollToItem does.
         val info = listState.layoutInfo
         val viewportSize = info.viewportEndOffset - info.viewportStartOffset
-        val itemSize = info.visibleItemsInfo.firstOrNull { it.index == target }?.size
+        val targetItem = info.visibleItemsInfo.firstOrNull { it.index == target }
+        val itemSize = targetItem?.size
             ?: info.visibleItemsInfo.firstOrNull()?.size
             ?: 0
         val centerOffset = if (itemSize in 1..<viewportSize) {
             -((viewportSize - itemSize) / 2)
         } else 0
 
-        val targetVisible = info.visibleItemsInfo.any { it.index == target }
+        val targetVisible = targetItem != null
         if (targetVisible) {
             // Common path. Focus snaps immediately because the requester
-            // is bound to a layout node; carousel pans in to centre.
+            // is bound to a layout node; the carousel pans in to centre.
             try { requesters[target].requestFocus() } catch (_: Exception) {}
-            if (isRapid) {
-                listState.scrollToItem(target, centerOffset)
-            } else {
-                listState.animateScrollToItem(target, centerOffset)
+            when (mode) {
+                ScrollMode.Snap -> listState.scrollToItem(target, centerOffset)
+                ScrollMode.Fast -> {
+                    val delta = centerDelta(info, target)
+                    if (delta != null) {
+                        listState.animateScrollBy(delta, tween(120, easing = LinearEasing))
+                    } else {
+                        listState.scrollToItem(target, centerOffset)
+                    }
+                }
+                ScrollMode.Slow -> listState.animateScrollToItem(target, centerOffset)
             }
         } else {
             // Slow path — target outside the prefetch window. Scroll
             // first so the LazyRow composes its layout node, then
-            // requestFocus.
-            if (isRapid) {
-                listState.scrollToItem(target, centerOffset)
-            } else {
-                listState.animateScrollToItem(target, centerOffset)
+            // requestFocus. The Fast tier collapses into Slow here:
+            // animateScrollBy needs the target's measured offset which
+            // we don't have until it's composed, so just take the
+            // slower-but-correct path.
+            when (mode) {
+                ScrollMode.Snap -> listState.scrollToItem(target, centerOffset)
+                else -> listState.animateScrollToItem(target, centerOffset)
             }
             kotlinx.coroutines.yield()
             try { requesters[target].requestFocus() } catch (_: Exception) {}
@@ -277,6 +302,41 @@ fun SpCarousel(
             }
         }
     }
+}
+
+/**
+ * Scroll animation tier picked by the gap since the last d-pad press.
+ *
+ * - [Slow] — single deliberate press (>250 ms gap). Uses the default
+ *   spring animation via `animateScrollToItem`.
+ * - [Fast] — a few quick taps (100–250 ms gap). Uses `animateScrollBy`
+ *   with a 120 ms linear tween for a snappy, businesslike feel.
+ * - [Snap] — held d-pad / repeating keys (<100 ms gap). No animation
+ *   at all; each press jumps instantly to the centred target.
+ */
+private enum class ScrollMode { Slow, Fast, Snap }
+
+/**
+ * The horizontal `scrollBy` delta that would centre the item at
+ * [targetIndex] in the LazyRow's viewport, or null when the item isn't
+ * currently measured (typically: outside the prefetch window).
+ *
+ * Positive delta scrolls the list forward (items move left in
+ * viewport) — appropriate when the item is to the right of viewport
+ * centre. Negative delta scrolls backward. `LazyListState.scrollBy`
+ * auto-clamps at list ends, so we don't need to special-case the
+ * leftmost / rightmost items.
+ */
+private fun centerDelta(
+    info: androidx.compose.foundation.lazy.LazyListLayoutInfo,
+    targetIndex: Int,
+): Float? {
+    val item = info.visibleItemsInfo.firstOrNull { it.index == targetIndex } ?: return null
+    val viewportSize = info.viewportEndOffset - info.viewportStartOffset
+    if (viewportSize <= 0) return null
+    val itemCenter = item.offset + item.size / 2f
+    val viewportCenter = info.viewportStartOffset + viewportSize / 2f
+    return itemCenter - viewportCenter
 }
 
 
