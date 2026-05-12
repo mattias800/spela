@@ -409,6 +409,8 @@ class KeyMappingViewModelTest {
         override fun getControlTab(consoleId: String): String =
             if (consoleId.lowercase() == "scummvm") "trackpad" else "gamepad"
         override fun setControlTab(consoleId: String, tab: String) {}
+        override fun getConsoleListGrouping(): String = "generation"
+        override fun setConsoleListGrouping(grouping: String) {}
     }
 
     private class FakeKeyMappingRepository : KeyMappingRepository {
