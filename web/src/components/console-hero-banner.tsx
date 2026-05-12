@@ -1,5 +1,4 @@
 import { Check, Globe } from "lucide-react";
-import { getConsoleStyle } from "@/lib/console-metadata";
 import { cn } from "@/lib/cn";
 import type { Console } from "@/types/api";
 
@@ -8,28 +7,37 @@ interface ConsoleHeroBannerProps {
   gameCount?: number;
 }
 
+// Hero gradient derives from `Console.colorTheme` (same source the
+// Explore strip + Consoles list use) so the three console-identity
+// surfaces stay in sync — see #1167.
+const FALLBACK_THEME = "#6366f1";
+
 export function ConsoleHeroBanner({
   console: consoleData,
   gameCount,
 }: ConsoleHeroBannerProps) {
   const consoleName = consoleData?.name ?? "Console";
-  const consoleAbbr = consoleData?.abbreviation ?? "";
   const count = gameCount ?? consoleData?.gameCount ?? 0;
-  const style = getConsoleStyle(consoleAbbr);
-  const Icon = style.icon;
+  const theme = consoleData?.colorTheme || FALLBACK_THEME;
 
   return (
     <div data-comp="ConsoleHeroBanner"
       className={cn(
         "relative overflow-hidden rounded-2xl border border-white/[0.06]",
-        "bg-gradient-to-br",
-        style.gradient,
       )}
+      // Hero is the biggest console-coloured surface in the app; we
+      // push the alpha higher than the card list so the brand reads
+      // clearly even from the back of a couch. The far-end fade to
+      // black keeps the metadata row legible regardless of theme
+      // luminance.
+      style={{
+        background: `linear-gradient(135deg, ${theme}dd, ${theme}66 60%, #000000aa)`,
+      }}
       data-testid="console-hero-banner"
     >
       {/* Background watermark icon for depth */}
-      <div className="absolute -right-8 -top-8 opacity-[0.07] pointer-events-none">
-        {consoleData?.iconUrl ? (
+      {consoleData?.iconUrl && (
+        <div className="absolute -right-8 -top-8 opacity-[0.07] pointer-events-none">
           <img
             src={consoleData.iconUrl}
             alt=""
@@ -37,10 +45,8 @@ export function ConsoleHeroBanner({
             className="h-56 w-56 object-contain"
             style={{ imageRendering: "pixelated" }}
           />
-        ) : (
-          <Icon className="h-56 w-56 text-white" />
-        )}
-      </div>
+        </div>
+      )}
 
       {/* Subtle noise/texture overlay */}
       <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-white/[0.04] pointer-events-none" />

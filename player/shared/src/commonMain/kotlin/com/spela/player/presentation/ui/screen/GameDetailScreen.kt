@@ -118,9 +118,12 @@ fun GameDetailScreen(
     val game = detail.game
     val isDemoConsole = state.console?.abbreviation == "ADEMO" || state.console?.abbreviation == "DDEMO"
 
-    // Per-console gradient background (same as console screen, darkened)
-    val backgroundColors = remember(game.consoleId) {
-        val (from, to) = getConsoleGradient(game.consoleId, null)
+    // Per-console gradient background (same as console screen, darkened).
+    // Sourced from the loaded Console's colorTheme so this surface stays
+    // in sync with the consoles-list and console-detail hero (#1167).
+    val consoleColorTheme = state.console?.colorTheme
+    val backgroundColors = remember(consoleColorTheme) {
+        val (from, to) = getConsoleGradient(consoleColorTheme)
         listOf(from.darken(0.65f), to.darken(0.65f))
     }
 

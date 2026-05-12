@@ -61,7 +61,7 @@ fun SecondaryArtPage(
     gamePlayers: Int = 0,
 ) {
     val timeText = formatSessionDuration(sessionElapsedSeconds)
-    val (gradientFrom, _) = getConsoleGradient(consoleId, consoleColorTheme)
+    val (gradientFrom, _) = getConsoleGradient(consoleColorTheme)
 
     val hasGameInfo = !gameDeveloper.isNullOrEmpty() || !gamePublisher.isNullOrEmpty() || !gameGenre.isNullOrEmpty() ||
         !gameReleaseDate.isNullOrEmpty() || !gameDescription.isNullOrEmpty() || gamePlayers > 0 || gameRating > 0.0

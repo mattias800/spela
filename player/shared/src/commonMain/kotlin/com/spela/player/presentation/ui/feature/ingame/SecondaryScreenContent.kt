@@ -444,7 +444,7 @@ private fun CompanionHeader(
     consoleColorTheme: String?,
 ) {
     val timeText = formatSessionDuration(sessionElapsedSeconds)
-    val (gradientFrom, gradientTo) = getConsoleGradient(consoleId, consoleColorTheme)
+    val (gradientFrom, gradientTo) = getConsoleGradient(consoleColorTheme)
 
     Column(
         modifier = Modifier

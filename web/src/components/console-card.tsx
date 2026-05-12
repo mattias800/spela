@@ -1,7 +1,6 @@
 import { Link } from "react-router-dom";
 import { AlertTriangle, Check, Globe } from "lucide-react";
 import { cn } from "@/lib/cn";
-import { getConsoleStyle } from "@/lib/console-metadata";
 import type { Console } from "@/types/api";
 
 interface ConsoleCardProps {
@@ -16,8 +15,19 @@ interface ConsoleCardProps {
   hasMissingBios?: boolean;
 }
 
+// Card backgrounds derive from `Console.colorTheme` (the server-seeded
+// brand hex) rather than a hard-coded Tailwind gradient table. This
+// keeps the Consoles list, the Explore "Browse by Console" strip, and
+// the console-detail hero on one source of truth — admins / seed
+// updates change the colour in one place and every surface follows
+// (#1167). The previous per-console `console-metadata` gradient table
+// drifted from `colorTheme` (e.g. NES `red-600 → red-900` vs the
+// server's `#e60012`) and produced visibly different palettes for the
+// same library across the two pages.
+const FALLBACK_THEME = "#6366f1";
+
 export function ConsoleCard({ console: c, hasMissingBios = false }: ConsoleCardProps) {
-  const style = getConsoleStyle(c.abbreviation);
+  const theme = c.colorTheme || FALLBACK_THEME;
 
   return (
     <Link to={`/consoles/${c.id}`} className="group block">
@@ -29,8 +39,24 @@ export function ConsoleCard({ console: c, hasMissingBios = false }: ConsoleCardP
         )}
       >
         <div
-          className={cn("absolute inset-0 bg-gradient-to-br", style.gradient)}
+          className="absolute inset-0"
+          // Two-stop brand gradient mixed in sRGB: top-left is the
+          // brand hex at full saturation; bottom-right is the same
+          // hex mixed 60% with black so light themes (NES red, Game
+          // Boy olive) get a vivid-to-shaded sweep, and dark themes
+          // (Genesis #171717, Atari #1e293b) still grade visibly into
+          // near-black rather than fading flat. Mirrors the spirit of
+          // the previous Tailwind `from-X-600 to-X-900` pairs but
+          // derives both stops from the single server-seeded
+          // colorTheme — see #1167.
+          style={{
+            background: `linear-gradient(135deg, ${theme}, color-mix(in srgb, ${theme}, black 60%))`,
+          }}
         />
+        {/* Toward-bottom darken keeps text + indicators readable on
+            light-saturation themes (e.g. Game Boy green). */}
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-black/30 pointer-events-none" />
+
 
         <div className="absolute inset-0 flex flex-col items-center justify-center gap-3">
           <img
