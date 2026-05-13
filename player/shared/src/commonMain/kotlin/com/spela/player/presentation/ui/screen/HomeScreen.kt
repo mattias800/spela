@@ -73,6 +73,7 @@ import com.spela.player.presentation.ui.components.SpSnackbar
 import com.spela.player.presentation.ui.components.SpSnackbarData
 import com.spela.player.presentation.ui.components.SpSnackbarType
 import com.spela.player.presentation.ui.components.SpTextField
+import androidx.compose.ui.text.input.ImeAction
 import com.spela.player.presentation.ui.components.SpTitledSection
 import com.spela.player.presentation.ui.components.social.ActivityEventItem
 import com.spela.player.presentation.ui.components.social.OnlineUsersRow
@@ -539,19 +540,22 @@ private fun DeviceNameBanner(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(SpSpacing.Small),
                 ) {
+                    val submit = {
+                        if (nameInput.isNotBlank()) {
+                            onSave(nameInput)
+                        }
+                    }
                     SpTextField(
                         value = nameInput,
                         onValueChange = { nameInput = it },
                         placeholder = "My device",
+                        imeAction = ImeAction.Done,
+                        onImeAction = submit,
                         modifier = Modifier.weight(1f),
                     )
                     SpButton(
                         text = "Save",
-                        onClick = {
-                            if (nameInput.isNotBlank()) {
-                                onSave(nameInput)
-                            }
-                        },
+                        onClick = submit,
                         style = SpButtonStyle.Primary,
                         enabled = nameInput.isNotBlank(),
                     )
