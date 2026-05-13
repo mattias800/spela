@@ -255,6 +255,52 @@ func Initialize(dbPath string) (*gorm.DB, error) {
 		slog.Warn("failed to ensure token_blacklists expires_at index", "error", err)
 	}
 
+	// Performance indexes for hot-path lookups. SQLite functional
+	// indexes (CREATE INDEX ... (LOWER(col))) are required for the
+	// many handlers that compare case-insensitively against
+	// games.title / games.developer / games.publisher — without these
+	// every `WHERE LOWER(col) = LOWER(?)` is a full table scan. See
+	// also the plain indexes for join columns (scraper_id,
+	// game_keywords.igdb_keyword_id) that GORM AutoMigrate doesn't
+	// derive from the model struct tags because they're not declared
+	// as standalone indexes on the column.
+	//
+	// All idempotent: IF NOT EXISTS means the second startup is a
+	// no-op. Adding a new index here only costs the create-index
+	// time on the next upgrade.
+	for _, ddl := range []struct {
+		name string
+		stmt string
+	}{
+		// /api/games/{id}/similar matches cached IGDB titles to local
+		// games via `WHERE LOWER(title) = LOWER(?)` (one query per
+		// cached row). Same for several explore-developer / -publisher
+		// handlers and the global top-rated join.
+		{"idx_games_title_lower", "CREATE INDEX IF NOT EXISTS idx_games_title_lower ON games(LOWER(title))"},
+		// /api/explore/developers/{name} and
+		// /api/explore/developers/spotlight scope to a developer with
+		// `WHERE LOWER(developer) = LOWER(?)`.
+		{"idx_games_developer_lower", "CREATE INDEX IF NOT EXISTS idx_games_developer_lower ON games(LOWER(developer))"},
+		// /api/explore/publishers/{name} — same pattern as developer.
+		{"idx_games_publisher_lower", "CREATE INDEX IF NOT EXISTS idx_games_publisher_lower ON games(LOWER(publisher))"},
+		// games.scraper_id ("igdb:<id>") is the join key for the
+		// top-rated and discovery joins. The model has no `gorm:"index"`
+		// tag on this column, so without this entry the joins were
+		// scanning the full games table.
+		{"idx_games_scraper_id", "CREATE INDEX IF NOT EXISTS idx_games_scraper_id ON games(scraper_id)"},
+		// /api/keywords aggregates by igdb_keyword_id; the existing
+		// unique compound index (game_id, igdb_keyword_id) doesn't help
+		// because igdb_keyword_id isn't the leading column.
+		{"idx_game_keywords_igdb_keyword_id", "CREATE INDEX IF NOT EXISTS idx_game_keywords_igdb_keyword_id ON game_keywords(igdb_keyword_id)"},
+		// top_rated_games.name is matched case-insensitively against
+		// games.title in the humaTopListByRating JOIN.
+		{"idx_top_rated_games_name_lower", "CREATE INDEX IF NOT EXISTS idx_top_rated_games_name_lower ON top_rated_games(LOWER(name))"},
+	} {
+		if err := db.Exec(ddl.stmt).Error; err != nil {
+			slog.Warn("failed to ensure performance index", "index", ddl.name, "error", err)
+		}
+	}
+
 	// One-time backfill: games on consoles where CRC verification doesn't
 	// apply (Amiga, demos, ScummVM) used to land with status "unverified"
 	// because the scraper's skip-list didn't cover them. Flip those to
