@@ -65,7 +65,12 @@ const val MinLoadingShownMs: Long = 300
 fun ScreenLoadingIndicator(
     modifier: Modifier = Modifier,
     message: String? = null,
-    color: Color = SpColor.Primary,
+    // Light grey by default. The brand purple ([SpColor.Primary]) read
+    // as "an accent/CTA colour" in the middle of a loading-state
+    // screen — a generic "the app is thinking" indicator should be
+    // neutral so the brand colour stays reserved for things the user
+    // can act on.
+    color: Color = SpColor.OnBackgroundSecondary,
 ) {
     val animationsEnabled = LocalAnimationsEnabled.current
     var visible by remember { mutableStateOf(!animationsEnabled) }

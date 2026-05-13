@@ -4,12 +4,45 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.lerp
 import com.spela.player.presentation.ui.theme.SpColor
 
-/** Darkens a color by mixing it towards black. [amount] 0f = unchanged, 1f = pure black. */
-fun Color.darken(amount: Float): Color = copy(
-    red = red * (1f - amount),
-    green = green * (1f - amount),
-    blue = blue * (1f - amount),
-)
+/**
+ * Brightness floor used when darkening a console gradient — keeps
+ * very-dark brands (Genesis #171717, PSP #000000, ColecoVision
+ * #000000, etc.) from collapsing to pure black after the second-
+ * order darken in ConsoleScreen / GameDetailScreen, where the
+ * background would otherwise swallow card borders and any other
+ * semi-transparent overlay. Equivalent of ~#1A1A1A — a visible dark
+ * grey rather than the surface itself.
+ *
+ * The floor only kicks in when the darkened result is *below* this
+ * brightness; brighter consoles (NES red, Game Boy olive) keep their
+ * tinted darken result unchanged.
+ */
+private const val DARKEN_MIN_BRIGHTNESS = 0.10f
+
+/**
+ * Darkens a color by mixing it towards black. [amount] 0f = unchanged,
+ * 1f = pure black. Clamps the result so the average channel brightness
+ * doesn't fall below [DARKEN_MIN_BRIGHTNESS] — see the constant for
+ * why. The lift preserves hue: we add the same delta to every channel
+ * rather than per-channel max, so darkening a saturated colour
+ * doesn't grey it out unless the saturated colour was itself very
+ * dark to begin with.
+ */
+fun Color.darken(amount: Float): Color {
+    val newR = red * (1f - amount)
+    val newG = green * (1f - amount)
+    val newB = blue * (1f - amount)
+    val brightness = (newR + newG + newB) / 3f
+    if (brightness >= DARKEN_MIN_BRIGHTNESS) {
+        return copy(red = newR, green = newG, blue = newB)
+    }
+    val lift = DARKEN_MIN_BRIGHTNESS - brightness
+    return copy(
+        red = (newR + lift).coerceAtMost(1f),
+        green = (newG + lift).coerceAtMost(1f),
+        blue = (newB + lift).coerceAtMost(1f),
+    )
+}
 
 /**
  * Returns the `(from, to)` gradient pair for a console-coloured surface.
@@ -31,7 +64,11 @@ fun Color.darken(amount: Float): Color = copy(
  */
 fun getConsoleGradient(colorTheme: String?): Pair<Color, Color> {
     val brand = getConsoleColor(colorTheme)
-    val darkStop = lerp(brand, Color.Black, 0.6f)
+    // Dark stop targets a near-black grey (#1A1A1A) instead of pure
+    // black so very-dark brands (Genesis #171717, PSP #000000) still
+    // have a visible-against-the-surface bottom of the gradient. For
+    // brighter brands the visible difference is negligible.
+    val darkStop = lerp(brand, Color(0xFF1A1A1A), 0.6f)
     return brand to darkStop
 }
 
