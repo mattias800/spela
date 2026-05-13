@@ -7,7 +7,6 @@ import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.ui.layout.layout
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Code
 import androidx.compose.runtime.Composable
@@ -33,8 +32,10 @@ import com.spela.player.presentation.ui.components.SpSnackbar
 import com.spela.player.presentation.ui.components.SpSnackbarData
 import com.spela.player.presentation.ui.components.SpSnackbarType
 import com.spela.player.presentation.ui.components.SpTitledSection
+import com.spela.player.presentation.ui.components.SpMainContentPadding
 import com.spela.player.presentation.ui.components.SpScreen
 import com.spela.player.presentation.ui.components.SpScreenTopSpacer
+import com.spela.player.presentation.ui.components.SpScrollableContent
 import com.spela.player.presentation.ui.components.SpTopBar
 import com.spela.player.presentation.ui.feature.explore.DeveloperCompanyDescription
 import com.spela.player.presentation.ui.feature.explore.DeveloperDetailSkeleton
@@ -74,12 +75,9 @@ fun ExploreDeveloperScreen(
 
     SpScreen(modifier = Modifier.testTag("developer_detail_screen")) {
         CompositionLocalProvider(LocalFocusMemory provides focusMemory) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize(),
-        ) {
-            when {
-                state.isLoading && state.detail == null -> {
+        when {
+            state.isLoading && state.detail == null -> {
+                Column(modifier = Modifier.fillMaxSize()) {
                     if (isGamepad) {
                         SpScreenTopSpacer()
                     } else {
@@ -91,33 +89,26 @@ fun ExploreDeveloperScreen(
                     }
                     DeveloperDetailSkeleton()
                 }
+            }
 
-                state.detail != null -> {
-                    val detail = state.detail!!
-                    val horizontalPadding = SpSpacing.ScreenHorizontal
+            state.detail != null -> {
+                val detail = state.detail!!
 
-                    Box(modifier = Modifier.fillMaxSize()) {
-                    SpSectionList(
-                        modifier = Modifier.fillMaxSize().testTag("developer_detail_content"),
-                    ) {
-                        // 0. Hero Banner — full-width edge-to-edge
-                        DeveloperHeroBanner(
-                            detail = detail,
-                            modifier = Modifier
-                                .focusRestoreItem(key = "explore_developer_hero", isDefault = true)
-                                .layout { measurable, constraints ->
-                                    val extraWidth = (horizontalPadding * 2).roundToPx()
-                                    val newConstraints = constraints.copy(
-                                        maxWidth = constraints.maxWidth + extraWidth,
-                                        minWidth = if (constraints.minWidth > 0) constraints.minWidth + extraWidth else 0,
-                                    )
-                                    val placeable = measurable.measure(newConstraints)
-                                    layout(placeable.width, placeable.height) {
-                                        placeable.place(-horizontalPadding.roundToPx(), 0)
-                                    }
-                                }
-                                .testTag("developer_hero_banner"),
-                        )
+                // Hero-banner page pattern from player/LAYOUT.md:
+                // SpScrollableContent → HeroBanner (edge-to-edge, no padding)
+                // → SpMainContentPadding → SpSectionList → sections. Top bar
+                // overlays as a sibling so it floats on the banner.
+                SpScrollableContent {
+                    DeveloperHeroBanner(
+                        detail = detail,
+                        modifier = Modifier
+                            .focusRestoreItem(key = "explore_developer_hero", isDefault = true)
+                            .testTag("developer_hero_banner"),
+                    )
+                    SpMainContentPadding {
+                        SpSectionList(
+                            modifier = Modifier.testTag("developer_detail_content"),
+                        ) {
                         // 1. About (company description)
                         val companyInfo = detail.companyInfo
                         if (companyInfo?.description != null) {
@@ -243,22 +234,26 @@ fun ExploreDeveloperScreen(
                                 )
                             }
                         }
-                    }
-                    // Top bar overlaid on everything — floats over the banner
-                    if (isGamepad) {
-                        SpScreenTopSpacer()
-                    } else {
-                        SpTopBar(
-                            title = "",
-                            showBack = true,
-                            onBack = onBack,
-                            onGradient = true,
-                        )
-                    }
-                    } // Box
-                }
+                        } // SpSectionList
+                    } // SpMainContentPadding
+                } // SpScrollableContent
 
-                else -> {
+                // Top bar overlaid on everything — floats over the banner.
+                // Sibling of SpScrollableContent inside SpScreen's Box scope.
+                if (isGamepad) {
+                    SpScreenTopSpacer()
+                } else {
+                    SpTopBar(
+                        title = "",
+                        showBack = true,
+                        onBack = onBack,
+                        onGradient = true,
+                    )
+                }
+            }
+
+            else -> {
+                Column(modifier = Modifier.fillMaxSize()) {
                     if (isGamepad) {
                         SpScreenTopSpacer()
                     } else {

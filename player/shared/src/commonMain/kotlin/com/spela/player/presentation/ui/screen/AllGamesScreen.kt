@@ -40,9 +40,9 @@ import com.spela.player.presentation.ui.components.SpSearchField
 import com.spela.player.presentation.ui.feature.library.GameGridItem
 import com.spela.player.presentation.ui.feature.library.GameLibraryControls
 import com.spela.player.presentation.ui.feature.library.GameListRowItem
+import com.spela.player.presentation.ui.components.SpScreen
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
-import com.spela.player.presentation.ui.theme.spScreenBackground
 import com.spela.player.presentation.viewmodel.GameListViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -61,7 +61,8 @@ fun AllGamesScreen(
         viewModel.onIntent(GameListIntent.Search(""))
     }
 
-    Column(modifier = Modifier.fillMaxSize().spScreenBackground()) {
+    SpScreen {
+    Column(modifier = Modifier.fillMaxSize()) {
         SpSearchField(
             value = searchQuery,
             onValueChange = { query ->
@@ -205,5 +206,6 @@ fun AllGamesScreen(
                 }
             }
         }
-    }
+    } // Column
+    } // SpScreen
 }

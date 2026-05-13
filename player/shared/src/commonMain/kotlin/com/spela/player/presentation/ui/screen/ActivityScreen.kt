@@ -45,9 +45,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.drawBehind
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -57,10 +54,11 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import com.spela.player.domain.model.ActivityEvent
 import com.spela.player.presentation.intent.SocialIntent
+import com.spela.player.presentation.ui.components.ScreenLoadingIndicator
 import com.spela.player.presentation.ui.components.SpAvatar
 import com.spela.player.presentation.ui.components.SpCoverArt
 import com.spela.player.presentation.ui.components.SpEmptyState
-import com.spela.player.presentation.ui.components.ScreenLoadingIndicator
+import com.spela.player.presentation.ui.components.SpScreen
 import com.spela.player.presentation.ui.components.rememberLoadingFlashDebounce
 import com.spela.player.presentation.ui.components.social.formatRelativeTime
 import com.spela.player.presentation.ui.feature.library.darken
@@ -92,22 +90,7 @@ fun ActivityScreen(
     val focusMemory = rememberFocusMemoryState()
 
     CompositionLocalProvider(LocalFocusMemory provides focusMemory) {
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .drawBehind {
-                val cx = size.width / 2f
-                val cy = size.height / 2f
-                val d = (size.width + size.height) * 0.25f
-                drawRect(
-                    brush = Brush.linearGradient(
-                        colors = gradientColors,
-                        start = Offset(cx - d, cy - d),
-                        end = Offset(cx + d, cy + d),
-                    ),
-                )
-            },
-    ) {
+    SpScreen(gradientColors = gradientColors) {
         // Route the screen-level loading branch through the same
         // state-machine hook as PullToRefreshBox below, so the dots
         // honour the min-shown-for window once they appear.

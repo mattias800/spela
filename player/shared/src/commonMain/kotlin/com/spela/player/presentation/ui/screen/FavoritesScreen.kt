@@ -20,12 +20,12 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import com.spela.player.presentation.intent.GameListIntent
-import com.spela.player.presentation.ui.components.SpEmptyStates
 import com.spela.player.presentation.ui.components.ScreenLoadingIndicator
+import com.spela.player.presentation.ui.components.SpEmptyStates
+import com.spela.player.presentation.ui.components.SpScreen
 import com.spela.player.presentation.ui.components.rememberLoadingFlashDebounce
 import com.spela.player.presentation.ui.feature.library.GameGridItem
 import com.spela.player.presentation.ui.theme.SpSpacing
-import com.spela.player.presentation.ui.theme.spScreenBackground
 import com.spela.player.presentation.viewmodel.GameListViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -43,7 +43,7 @@ fun FavoritesScreen(
     val focusMemory = rememberFocusMemoryState()
 
     CompositionLocalProvider(LocalFocusMemory provides focusMemory) {
-    Box(modifier = Modifier.fillMaxSize().spScreenBackground()) {
+    SpScreen {
         if (state.isLoading && state.favoriteGames.isEmpty()) {
             Box(
                 modifier = Modifier.fillMaxSize(),
@@ -90,6 +90,6 @@ fun FavoritesScreen(
                 }
             }
         }
-    }
+    } // SpScreen
     } // CompositionLocalProvider
 }

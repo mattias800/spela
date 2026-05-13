@@ -37,10 +37,10 @@ import com.spela.player.presentation.ui.components.SpProgressBar
 import com.spela.player.presentation.ui.feature.explore.GameShelf
 import com.spela.player.presentation.ui.feature.explore.GameShelfSkeleton
 import com.spela.player.presentation.ui.theme.LocalTitleBarInset
+import com.spela.player.presentation.ui.components.SpScreen
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.ui.theme.SpTypography
-import com.spela.player.presentation.ui.theme.spScreenBackground
 import com.spela.player.presentation.viewmodel.ExploreViewModel
 
 @Composable
@@ -56,11 +56,9 @@ fun ExploreWizardScreen(
         viewModel.loadWizardSteps()
     }
 
+    SpScreen(modifier = Modifier.testTag("wizard_screen")) {
     Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .spScreenBackground()
-            .testTag("wizard_screen"),
+        modifier = Modifier.fillMaxSize(),
     ) {
         // Top bar with back button
         Row(
@@ -289,5 +287,6 @@ fun ExploreWizardScreen(
                 }
             }
         }
-    }
+    } // Column
+    } // SpScreen
 }
