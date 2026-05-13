@@ -365,32 +365,48 @@ func (h *ExploreHandler) HumaGetDeveloperSpotlight(ctx context.Context, _ *GetDe
 		topGames = topGames[:8]
 	}
 
+	// Hero artwork: walk the games we already loaded (sorted by
+	// rating DESC) and take the first matching hero_url. The old
+	// approach issued a JOIN games × game_artworks ordered by rating,
+	// which re-did the work we already have in `games`. Single
+	// indexed lookup per match instead of a join scan.
 	heroURL := ""
 	if len(games) > 0 {
-		gameIDs := make([]uint, len(games))
+		gameIDs := make([]uint, 0, len(games))
+		gameIDIndex := make(map[uint]int, len(games))
 		for i, g := range games {
-			gameIDs[i] = g.ID
+			gameIDs = append(gameIDs, g.ID)
+			gameIDIndex[g.ID] = i
 		}
-		var artwork db.GameArtwork
-		if err := h.DB.
-			Joins("JOIN games ON games.id = game_artworks.game_id").
-			Where("game_artworks.game_id IN ? AND game_artworks.hero_url != ''", gameIDs).
-			Order("games.rating DESC").
-			First(&artwork).Error; err == nil {
-			heroURL = resolveImageURL(artwork.HeroURL)
+		var artworks []db.GameArtwork
+		h.DB.Where("game_id IN ? AND hero_url != ''", gameIDs).Find(&artworks)
+		// Pick the artwork belonging to the highest-rated game (lowest
+		// index in `games`, which is already ordered by rating DESC).
+		bestIdx := -1
+		var bestHero string
+		for _, a := range artworks {
+			if idx, ok := gameIDIndex[a.GameID]; ok {
+				if bestIdx < 0 || idx < bestIdx {
+					bestIdx = idx
+					bestHero = a.HeroURL
+				}
+			}
+		}
+		if bestHero != "" {
+			heroURL = resolveImageURL(bestHero)
 		}
 	}
 
-	var totalGameCount int64
-	h.DB.Model(&db.Game{}).
-		Where("LOWER(developer) = LOWER(?) AND is_primary = true AND deleted_at IS NULL", selectedDev.Developer).
-		Count(&totalGameCount)
+	// We already loaded every game by this developer; the SELECT-COUNT
+	// round-trip is redundant. games is unfiltered (no Limit) and
+	// scoped to the same predicate, so len() is exact.
+	totalGameCount := len(games)
 
 	return &GetDeveloperSpotlightOutput{
 		CacheControl: "private, max-age=300",
 		Body: DeveloperSpotlightResponse{
 			Name:      selectedDev.Developer,
-			GameCount: int(totalGameCount),
+			GameCount: totalGameCount,
 			AvgRating: avgRating,
 			Consoles:  consoles,
 			TopGames:  ToGameResponses(topGames, h.DB, userID),

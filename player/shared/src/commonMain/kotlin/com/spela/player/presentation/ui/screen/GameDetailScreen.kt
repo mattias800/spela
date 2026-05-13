@@ -1,6 +1,8 @@
 package com.spela.player.presentation.ui.screen
 
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Text
@@ -38,6 +40,7 @@ import com.spela.player.presentation.ui.feature.library.darken
 import com.spela.player.presentation.ui.feature.library.getConsoleGradient
 import com.spela.player.presentation.ui.components.GameDetailLayout
 import com.spela.player.presentation.ui.components.GameDetailSkeleton
+import com.spela.player.presentation.ui.components.onApproachingVisible
 import com.spela.player.presentation.ui.components.SpConfirmDialog
 import com.spela.player.presentation.ui.components.SpCoverArt
 import com.spela.player.presentation.ui.components.SpSnackbar
@@ -325,14 +328,28 @@ fun GameDetailScreen(
                 // 3. Screenshots
                 ScreenshotsSection(detail.screenshots)
 
-                // 3b. Similar Games
-                if (state.similarGames.isNotEmpty()) {
-                    SimilarGamesSection(
-                        games = state.similarGames,
-                        onGameSelected = { gameId ->
-                            onNavigateToGame?.invoke(gameId)
-                        },
-                    )
+                // 3b. Similar Games — lazy-fetched. The placeholder Box
+                // is always laid out at this position; its
+                // onApproachingVisible callback fires the network
+                // request the first time the user scrolls (or is
+                // about to scroll) the section into view. The
+                // SimilarGamesSection itself only renders once data
+                // arrives. This keeps /api/games/{id}/similar off the
+                // game-detail initial-load hot path entirely — most
+                // game-detail visits never reach this section.
+                Box(
+                    modifier = Modifier.fillMaxWidth().onApproachingVisible {
+                        viewModel.requestSimilarGames()
+                    },
+                ) {
+                    if (state.similarGames.isNotEmpty()) {
+                        SimilarGamesSection(
+                            games = state.similarGames,
+                            onGameSelected = { gameId ->
+                                onNavigateToGame?.invoke(gameId)
+                            },
+                        )
+                    }
                 }
 
                 // 3c. More from Developer

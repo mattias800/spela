@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/danielgtaylor/huma/v2"
@@ -88,13 +89,51 @@ func (h *GameDiscoveryHandler) HumaGetSimilarGames(_ context.Context, in *GetSim
 		}
 	}
 
+	// Cache refresh is fire-and-forget — never block the user's response
+	// on an outbound IGDB HTTP call. The user gets whatever's already
+	// cached (possibly nothing on first-ever request for this game);
+	// the background goroutine populates the cache so the next visit
+	// is fast. Previously this awaited GetSimilarGames synchronously,
+	// which added ~500–800ms to every game-detail page load when the
+	// cache was older than 7 days (or empty).
 	if !fresh && h.Scraper != nil && h.Scraper.IGDBClient != nil && h.Scraper.IGDBClient.IsConfigured() {
-		similarGames, err := h.Scraper.IGDBClient.GetSimilarGames(igdbGameID)
-		if err != nil {
-			slog.Warn("failed to fetch similar games from IGDB", "game", game.Title, "error", err)
-		} else {
-			gameID := game.ID
-			go h.upsertSimilarGames(gameID, similarGames)
+		gameID := game.ID
+		gameTitle := game.Title
+		igdbClient := h.Scraper.IGDBClient
+		go func() {
+			similarGames, err := igdbClient.GetSimilarGames(igdbGameID)
+			if err != nil {
+				slog.Warn("failed to fetch similar games from IGDB", "game", gameTitle, "error", err)
+				return
+			}
+			h.upsertSimilarGames(gameID, similarGames)
+		}()
+	}
+
+	// Batch the cross-reference lookup into a single query instead of
+	// one per cached row. The old loop issued
+	//   WHERE LOWER(title) = LOWER(?)
+	// per similar game (~10 round-trips); the new pass does one
+	// `LOWER(title) IN (...)` query and builds a map. Combined with
+	// the LOWER(title) functional index added in the migrations,
+	// the cross-ref step is now ~one indexed lookup.
+	loweredNames := make([]string, 0, len(cached))
+	for _, sg := range cached {
+		if sg.Name != "" {
+			loweredNames = append(loweredNames, strings.ToLower(sg.Name))
+		}
+	}
+
+	localByLowerTitle := make(map[string]db.Game, len(loweredNames))
+	if len(loweredNames) > 0 {
+		var localMatches []db.Game
+		if err := h.DB.Where("LOWER(title) IN ?", loweredNames).Find(&localMatches).Error; err == nil {
+			for _, g := range localMatches {
+				key := strings.ToLower(g.Title)
+				if _, exists := localByLowerTitle[key]; !exists {
+					localByLowerTitle[key] = g
+				}
+			}
 		}
 	}
 
@@ -106,8 +145,7 @@ func (h *GameDiscoveryHandler) HumaGetSimilarGames(_ context.Context, in *GetSim
 			IGDBCriticsRating: sg.IGDBCriticsRating,
 		}
 
-		var localGame db.Game
-		if err := h.DB.Where("LOWER(title) = LOWER(?)", sg.Name).First(&localGame).Error; err == nil {
+		if localGame, ok := localByLowerTitle[strings.ToLower(sg.Name)]; ok {
 			localID := fmt.Sprintf("%d", localGame.ID)
 			resp.LocalGameId = &localID
 			if localGame.CoverURL != "" {

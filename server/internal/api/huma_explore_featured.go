@@ -167,6 +167,13 @@ func (h *ExploreHandler) HumaGetExploreFeatured(ctx context.Context, _ *GetExplo
 		ConsoleID uint
 	}
 
+	// Cap the candidate set at the top 200 by effective rating. The
+	// old version transferred every hero+logo-arted game in the
+	// catalog (can be thousands of rows on a stocked library) just
+	// so weightedSample could pick 10. Since the weights are the
+	// rating itself, the unweighted tail contributes essentially
+	// nothing — capping at 200 produces the same selection
+	// distribution without the wire transfer cost.
 	var allRows []featuredRow
 	err := h.DB.
 		Table("games").
@@ -175,6 +182,8 @@ func (h *ExploreHandler) HumaGetExploreFeatured(ctx context.Context, _ *GetExplo
 		Where("games.deleted_at IS NULL").
 		Where("games.is_primary = true").
 		Where("game_artworks.hero_url != '' AND game_artworks.logo_url != ''").
+		Order(effectiveRatingPrefixed + " DESC").
+		Limit(200).
 		Scan(&allRows).Error
 	if err != nil {
 		return nil, huma.Error500InternalServerError("failed to fetch featured games")
@@ -260,30 +269,49 @@ func (h *ExploreHandler) HumaGetExploreFeatured(ctx context.Context, _ *GetExplo
 func (h *ExploreHandler) HumaGetExploreRows(ctx context.Context, _ *GetExploreRowsInput) (*GetExploreRowsOutput, error) {
 	userID := UserIDFromContext(ctx)
 
-	rows := []ExploreRowResponse{}
-
-	if row, err := h.buildTopRatedRow(userID); err != nil {
-		return nil, huma.Error500InternalServerError("failed to build top-rated row")
-	} else if row != nil {
-		rows = append(rows, *row)
+	// The four row builders are independent — each runs its own
+	// queries with no shared state and no ordering dependency. Run
+	// them in parallel so wall time collapses to max(builder) instead
+	// of sum(builder). GORM v2 + SQLite WAL handle concurrent reads
+	// per goroutine via the connection pool.
+	type rowResult struct {
+		idx int
+		row *ExploreRowResponse
+		err error
+	}
+	builders := []func(uint) (*ExploreRowResponse, error){
+		h.buildTopRatedRow,
+		h.buildRecentlyAddedRow,
+		h.buildHiddenGemsRow,
+		h.buildMostPlayedRow,
+	}
+	results := make(chan rowResult, len(builders))
+	for i, fn := range builders {
+		i, fn := i, fn
+		go func() {
+			row, err := fn(userID)
+			results <- rowResult{idx: i, row: row, err: err}
+		}()
 	}
 
-	if row, err := h.buildRecentlyAddedRow(userID); err != nil {
-		return nil, huma.Error500InternalServerError("failed to build recently-added row")
-	} else if row != nil {
-		rows = append(rows, *row)
+	ordered := make([]*ExploreRowResponse, len(builders))
+	var firstErr error
+	for range builders {
+		r := <-results
+		if r.err != nil && firstErr == nil {
+			firstErr = r.err
+		}
+		ordered[r.idx] = r.row
+	}
+	if firstErr != nil {
+		return nil, huma.Error500InternalServerError("failed to build explore rows")
 	}
 
-	if row, err := h.buildHiddenGemsRow(userID); err != nil {
-		return nil, huma.Error500InternalServerError("failed to build hidden-gems row")
-	} else if row != nil {
-		rows = append(rows, *row)
-	}
-
-	if row, err := h.buildMostPlayedRow(userID); err != nil {
-		return nil, huma.Error500InternalServerError("failed to build most-played row")
-	} else if row != nil {
-		rows = append(rows, *row)
+	rows := make([]ExploreRowResponse, 0, len(builders))
+	for _, r := range ordered {
+		if r != nil {
+			rows = append(rows, *r)
+		}
 	}
 
 	return &GetExploreRowsOutput{

@@ -183,6 +183,7 @@ private fun ControllerButton(
     val buttonWidth = containerWidth * region.widthFraction
     val buttonHeight = containerHeight * region.heightFraction
     val density = LocalDensity.current
+    val interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
 
     Box(
         modifier = Modifier
@@ -194,8 +195,16 @@ private fun ControllerButton(
             }
             .size(width = buttonWidth, height = buttonHeight)
             .clip(shape)
-            .clickable(onClick = onClick)
-            .gamepadFocusable(shape = shape)
+            .clickable(
+                interactionSource = interactionSource,
+                indication = null,
+                onClick = onClick,
+            )
+            .gamepadFocusable(
+                shape = shape,
+                interactionSource = interactionSource,
+                addFocusable = false,
+            )
             .semantics {
                 contentDescription = if (mappedKeyLabel != null) {
                     "$label mapped to $mappedKeyLabel"

@@ -11,7 +11,9 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"strconv"
 	"testing"
+	"time"
 
 	"github.com/spela/server/internal/db"
 	"github.com/spela/server/internal/scanner"
@@ -32,7 +34,22 @@ func setupTestEnv(t *testing.T) (*gorm.DB, *Config) {
 	// _foreign_keys=1 mirrors the production DSN (database.go) so the
 	// CASCADE / SET NULL constraints on user-owned tables (#971) are
 	// enforced under tests.
-	database, err := gorm.Open(sqlite.Open(":memory:?_foreign_keys=1"), &gorm.Config{
+	// `cache=shared` lets multiple connections to this in-memory DB
+	// see the same data — required because some handlers (parallel
+	// /explore/rows / /for-you row builders, plus handler code that
+	// fans out within a single request) acquire more than one
+	// connection from the pool. The default plain `:memory:` gives
+	// each new connection a fresh empty database; without
+	// `cache=shared` concurrent goroutines land on different empty
+	// DBs and fail with `no such table`. Pinning MaxOpenConns(1)
+	// was the previous workaround but it deadlocks any code path
+	// that acquires a second connection on the same goroutine
+	// (e.g. TestApplyIGDBMatch_Success → HTTP handler holds conn,
+	// scraper.storeEnrichmentData wants another).
+	// `cache=shared` is the standard SQLite mechanism and matches
+	// production's file-backed multi-connection semantics.
+	dsn := "file:test_" + t.Name() + "_" + strconv.FormatInt(time.Now().UnixNano(), 36) + "?mode=memory&cache=shared&_foreign_keys=1"
+	database, err := gorm.Open(sqlite.Open(dsn), &gorm.Config{
 		Logger: logger.Default.LogMode(logger.Silent),
 	})
 	require.NoError(t, err)

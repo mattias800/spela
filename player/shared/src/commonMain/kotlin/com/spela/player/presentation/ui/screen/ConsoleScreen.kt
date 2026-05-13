@@ -46,8 +46,6 @@ import com.spela.player.presentation.ui.components.SpScreenTopSpacer
 import com.spela.player.presentation.ui.components.SpScrollableContent
 import com.spela.player.presentation.ui.components.SpSectionList
 import com.spela.player.presentation.ui.components.SpIconButton
-import com.spela.player.presentation.ui.components.SpImage
-import com.spela.player.presentation.ui.components.ScreenLoadingIndicator
 import com.spela.player.presentation.ui.components.rememberLoadingFlashDebounce
 import com.spela.player.presentation.ui.components.SpSnackbar
 import com.spela.player.presentation.ui.components.SpSnackbarData
@@ -305,15 +303,13 @@ fun ConsoleScreen(
                     // owns first-entry / default focus. See the comment
                     // above the relocated section.
 
-                    // Loading / Empty
-                    if (state.games.isEmpty() && state.isLoading) {
-                        Box(
-                            modifier = Modifier.fillMaxWidth().height(200.dp),
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            ScreenLoadingIndicator(message = "Loading games...")
-                        }
-                    } else if (state.games.isEmpty() && !state.isLoading) {
+                    // Empty state (loaded, no games). The "loading" case
+                    // used to render a `ScreenLoadingIndicator` here, but
+                    // the surrounding `PullToRefreshBox` already shows a
+                    // spinner for `state.isLoading` — rendering both at
+                    // the same time was just visual noise. The cold-load
+                    // path above renders a skeleton.
+                    if (state.games.isEmpty() && !state.isLoading) {
                         Box(
                             modifier = Modifier.fillMaxWidth().height(200.dp),
                             contentAlignment = Alignment.Center,
@@ -328,21 +324,15 @@ fun ConsoleScreen(
             }
 
             // Fixed top bar overlaid on top of scrollable content
-            // (auto-hidden in gamepad mode by SpTopBar)
+            // (auto-hidden in gamepad mode by SpTopBar). Title is left
+            // blank — the console name is already the headline of the
+            // hero banner one row below, so repeating it on the top bar
+            // is redundant.
             SpTopBar(
-                title = consoleName,
+                title = "",
                 showBack = true,
                 onGradient = true,
                 onBack = onBack,
-                titleLeadingContent = if (console?.iconUrl?.isNotEmpty() == true) {
-                    {
-                        SpImage(
-                            model = console.iconUrl,
-                            contentDescription = null,
-                            modifier = Modifier.size(28.dp),
-                        )
-                    }
-                } else null,
                 actions = {
                     if (state.isAdmin) {
                         var adminMenuExpanded by remember { mutableStateOf(false) }

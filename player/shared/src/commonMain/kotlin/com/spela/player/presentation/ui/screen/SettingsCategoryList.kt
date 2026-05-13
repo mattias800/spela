@@ -23,6 +23,7 @@ import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -94,6 +95,7 @@ fun SettingsCategoryList(
             val isSelected = category == selectedCategory
             val bgColor = if (isSelected) SpColor.Primary.copy(alpha = 0.15f) else Color.Transparent
             val textColor = if (isSelected) SpColor.PrimaryLight else SpColor.OnBackground
+            val interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
 
             Row(
                 modifier = Modifier
@@ -105,8 +107,16 @@ fun SettingsCategoryList(
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(8.dp))
                     .background(bgColor)
-                    .clickable { onSelectCategory(category) }
-                    .gamepadFocusable(shape = RoundedCornerShape(8.dp))
+                    .clickable(
+                        interactionSource = interactionSource,
+                        indication = null,
+                        onClick = { onSelectCategory(category) },
+                    )
+                    .gamepadFocusable(
+                        shape = RoundedCornerShape(8.dp),
+                        interactionSource = interactionSource,
+                        addFocusable = false,
+                    )
                     .padding(horizontal = SpSpacing.Medium, vertical = SpSpacing.Medium)
                     .semantics { contentDescription = category.label },
                 verticalAlignment = Alignment.CenterVertically,

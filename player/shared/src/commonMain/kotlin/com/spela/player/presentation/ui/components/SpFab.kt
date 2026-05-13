@@ -2,11 +2,13 @@ package com.spela.player.presentation.ui.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -34,14 +36,28 @@ fun SpFab(
     size: Dp = 56.dp,
     iconSize: Dp = 24.dp,
 ) {
+    // Share one MutableInteractionSource between .clickable and
+    // .gamepadFocusable so spFocusRing sees the same focus events
+    // .clickable installs. Without this the focus ring never draws —
+    // see the canonical fix in MetadataGrid and the audit summary.
+    val interactionSource = remember { MutableInteractionSource() }
     Box(
         modifier = modifier
             .size(size)
             .shadow(8.dp, CircleShape)
             .clip(CircleShape)
             .background(Color.White.copy(alpha = 0.15f))
-            .clickable(onClick = onClick)
-            .gamepadFocusable(shape = CircleShape, scaleOnFocus = true, addFocusable = false)
+            .clickable(
+                interactionSource = interactionSource,
+                indication = null,
+                onClick = onClick,
+            )
+            .gamepadFocusable(
+                shape = CircleShape,
+                scaleOnFocus = true,
+                interactionSource = interactionSource,
+                addFocusable = false,
+            )
             .semantics {
                 contentDescription = description
                 role = Role.Button

@@ -17,6 +17,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -88,12 +89,21 @@ private fun RecentSearchItem(
     onRemove: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
     Row(
         modifier = modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(SpSpacing.RadiusDefault))
-            .clickable(onClick = onClick)
-            .gamepadFocusable(shape = RoundedCornerShape(SpSpacing.RadiusDefault))
+            .clickable(
+                interactionSource = interactionSource,
+                indication = null,
+                onClick = onClick,
+            )
+            .gamepadFocusable(
+                shape = RoundedCornerShape(SpSpacing.RadiusDefault),
+                interactionSource = interactionSource,
+                addFocusable = false,
+            )
             .padding(vertical = SpSpacing.Small)
             .testTag("recent_search_item_$query")
             .semantics {

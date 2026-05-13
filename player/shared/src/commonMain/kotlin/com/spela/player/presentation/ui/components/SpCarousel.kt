@@ -1,9 +1,13 @@
 package com.spela.player.presentation.ui.components
 
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.focusGroup
+import androidx.compose.foundation.gestures.animateScrollBy
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
@@ -103,34 +107,123 @@ fun SpCarousel(
     // Apply the latest pending target. Keyed on pendingTarget so a
     // mid-flight scroll is cancelled the moment the user advances
     // further along the carousel.
+    //
+    // Sequence:
+    //   1. requestFocus on the target's requester. For the common
+    //      adjacent-step case (d-pad right/left from a visible item)
+    //      the target sits in LazyRow's prefetch window, so its
+    //      requester is bound to a layout node and this works
+    //      synchronously — the focus ring snaps before any scroll
+    //      animation starts.
+    //   2. animateScrollBy enough to bring the focused item's centre
+    //      to the centre of the viewport. We read the item's offset
+    //      and size from layoutInfo.visibleItemsInfo, which is the
+    //      LazyRow equivalent of the old onGloballyPositioned tracking.
+    //   3. Slow path for off-screen jumps (focus restoration uses its
+    //      own LaunchedEffect above; this only fires when the key
+    //      handler itself targets something not yet composed): scroll
+    //      it in first, yield a frame, then requestFocus.
+    //
+    // Previously this LaunchedEffect did scrollToItem THEN requestFocus
+    // — the user saw the list pan first, then the focus ring catch up,
+    // and the focused item always settled on the viewport's left edge
+    // because scrollToItem(i) anchors to viewport start. Fixed in
+    // #1180 follow-up to #1168.
     LaunchedEffect(pendingTarget) {
         val target = pendingTarget
         if (target < 0) return@LaunchedEffect
         val now = System.currentTimeMillis()
-        val isRapid = now - lastFocusChangeTime < 100
+        // Three-tier classifier keyed on the time gap since the last
+        // d-pad press. The user's intent is the signal: a single
+        // deliberate press gets the full spring; a few quick taps get
+        // a snappy linear tween; a held d-pad fires events too fast to
+        // animate at all, so we snap. Thresholds are tuned for typical
+        // gamepad / keyboard cadence (≈150–250ms held, ≈300–500ms
+        // deliberate).
+        val gap = now - lastFocusChangeTime
         lastFocusChangeTime = now
-        if (isRapid) {
-            listState.scrollToItem(target)
-        } else {
-            listState.animateScrollToItem(target)
+        val mode = when {
+            gap < 100  -> ScrollMode.Snap
+            gap < 250  -> ScrollMode.Fast
+            else       -> ScrollMode.Slow
         }
-        kotlinx.coroutines.yield()
-        try { requesters[target].requestFocus() } catch (_: Exception) {}
+
+        // Centring math. For animateScrollToItem (Snap + Slow) we need
+        // a scrollOffset such that the item lands at viewport centre:
+        // scrollOffset = -((viewportSize - itemSize) / 2). Per Compose
+        // convention positive scrollOffset shifts the item further
+        // toward viewport start; negative shifts it further from start,
+        // which is what we want for centring.
+        //
+        // For Fast we use animateScrollBy(delta, tween) — animateScroll-
+        // ToItem doesn't expose an AnimationSpec parameter, and we need
+        // one to dial the duration down to ~120 ms. The delta math is
+        // the natural sibling: delta = itemCenter - viewportCenter,
+        // where positive delta scrolls forward (items move left in
+        // viewport, item shifts toward centre when it was to the
+        // right). scrollBy auto-clamps at the list ends, same as
+        // scrollToItem does.
+        val info = listState.layoutInfo
+        val viewportSize = info.viewportEndOffset - info.viewportStartOffset
+        val targetItem = info.visibleItemsInfo.firstOrNull { it.index == target }
+        val itemSize = targetItem?.size
+            ?: info.visibleItemsInfo.firstOrNull()?.size
+            ?: 0
+        val centerOffset = if (itemSize in 1..<viewportSize) {
+            -((viewportSize - itemSize) / 2)
+        } else 0
+
+        val targetVisible = targetItem != null
+        if (targetVisible) {
+            // Common path. Focus snaps immediately because the requester
+            // is bound to a layout node; the carousel pans in to centre.
+            try { requesters[target].requestFocus() } catch (_: Exception) {}
+            when (mode) {
+                ScrollMode.Snap -> listState.scrollToItem(target, centerOffset)
+                ScrollMode.Fast -> {
+                    val delta = centerDelta(info, target)
+                    if (delta != null) {
+                        listState.animateScrollBy(delta, tween(120, easing = LinearEasing))
+                    } else {
+                        listState.scrollToItem(target, centerOffset)
+                    }
+                }
+                ScrollMode.Slow -> listState.animateScrollToItem(target, centerOffset)
+            }
+        } else {
+            // Slow path — target outside the prefetch window. Scroll
+            // first so the LazyRow composes its layout node, then
+            // requestFocus. The Fast tier collapses into Slow here:
+            // animateScrollBy needs the target's measured offset which
+            // we don't have until it's composed, so just take the
+            // slower-but-correct path.
+            when (mode) {
+                ScrollMode.Snap -> listState.scrollToItem(target, centerOffset)
+                else -> listState.animateScrollToItem(target, centerOffset)
+            }
+            kotlinx.coroutines.yield()
+            try { requesters[target].requestFocus() } catch (_: Exception) {}
+        }
     }
 
-    // Focus restoration: if the saved focus key belongs to one of this
-    // carousel's items, scroll the LazyRow so the item composes. The
-    // 120 ms layout-settle delay in focusRestoreItem then fires after
-    // composition has caught up, and requestFocus binds the requester.
+    // Focus restoration: if [LocalFocusMemory]'s saved key belongs to
+    // one of this carousel's items AT SCREEN ENTRY, scroll the LazyRow
+    // so the item composes. The 120 ms layout-settle delay in
+    // focusRestoreItem then fires after composition catches up, and
+    // requestFocus binds the requester.
     //
-    // [itemKey] is intentionally NOT in the key list — it's a lambda
-    // and lambdas compare by referential equality, so a fresh instance
-    // per recomposition would cancel + restart the effect on every
-    // frame, abort the in-flight `scrollToItem`, and leave the saved
-    // item uncomposed when focusRestoreItem's 120 ms timer fires.
+    // The saved key is captured ONCE at first composition. We must NOT
+    // re-fire this effect when [focusMemory.value] changes during the
+    // session — focusRestoreItem writes the scope on every focus
+    // change, and re-firing here would race against the d-pad
+    // keyhandler's animated centring scroll, clobbering it with an
+    // instant scrollToItem-to-viewport-start. The previous version
+    // keyed on `focusMemory.value` and was the cause of "carousel
+    // never animates + focused item always anchored to left edge".
     val focusMemory = LocalFocusMemory.current
-    LaunchedEffect(focusMemory?.value, itemCount, memoryKey) {
-        val savedKey = focusMemory?.value
+    val savedKeyAtEntry = remember { focusMemory?.value }
+    LaunchedEffect(itemCount, memoryKey) {
+        val savedKey = savedKeyAtEntry
         val keyFn = itemKey
         if (
             savedKey.isNullOrEmpty() ||
@@ -171,9 +264,24 @@ fun SpCarousel(
         contentPadding = PaddingValues(horizontal = SpSpacing.ScreenHorizontal),
         horizontalArrangement = Arrangement.spacedBy(SpSpacing.Medium),
     ) {
+        // Pre-compute keys so we can verify uniqueness — duplicate
+        // keys crash LazyRow with "Key '<x>' was already used". Most
+        // shelf data is naturally unique-by-id but social shelves
+        // ("recently reviewed" etc.) can show the same game multiple
+        // times. When we detect a collision we fall back to positional
+        // keys (null), which loses cross-recomposition item identity
+        // but keeps the screen alive. The call site should fix its
+        // itemKey to be properly unique (composite); the fallback is
+        // just a "don't crash production" safety net.
+        val keys: List<Any>? = if (itemKey != null) {
+            val list = ArrayList<Any>(itemCount)
+            for (i in 0 until itemCount) list.add(itemKey(i))
+            if (list.toSet().size == list.size) list else null
+        } else null
+
         items(
             count = itemCount,
-            key = if (itemKey != null) { i -> itemKey(i) } else null,
+            key = if (keys != null) { i -> keys[i] } else null,
         ) { i ->
             val restoreKey = if (memoryKey != null && itemKey != null) {
                 "$memoryKey/${itemKey(i)}"
@@ -210,4 +318,40 @@ fun SpCarousel(
         }
     }
 }
+
+/**
+ * Scroll animation tier picked by the gap since the last d-pad press.
+ *
+ * - [Slow] — single deliberate press (>250 ms gap). Uses the default
+ *   spring animation via `animateScrollToItem`.
+ * - [Fast] — a few quick taps (100–250 ms gap). Uses `animateScrollBy`
+ *   with a 120 ms linear tween for a snappy, businesslike feel.
+ * - [Snap] — held d-pad / repeating keys (<100 ms gap). No animation
+ *   at all; each press jumps instantly to the centred target.
+ */
+private enum class ScrollMode { Slow, Fast, Snap }
+
+/**
+ * The horizontal `scrollBy` delta that would centre the item at
+ * [targetIndex] in the LazyRow's viewport, or null when the item isn't
+ * currently measured (typically: outside the prefetch window).
+ *
+ * Positive delta scrolls the list forward (items move left in
+ * viewport) — appropriate when the item is to the right of viewport
+ * centre. Negative delta scrolls backward. `LazyListState.scrollBy`
+ * auto-clamps at list ends, so we don't need to special-case the
+ * leftmost / rightmost items.
+ */
+private fun centerDelta(
+    info: androidx.compose.foundation.lazy.LazyListLayoutInfo,
+    targetIndex: Int,
+): Float? {
+    val item = info.visibleItemsInfo.firstOrNull { it.index == targetIndex } ?: return null
+    val viewportSize = info.viewportEndOffset - info.viewportStartOffset
+    if (viewportSize <= 0) return null
+    val itemCenter = item.offset + item.size / 2f
+    val viewportCenter = info.viewportStartOffset + viewportSize / 2f
+    return itemCenter - viewportCenter
+}
+
 

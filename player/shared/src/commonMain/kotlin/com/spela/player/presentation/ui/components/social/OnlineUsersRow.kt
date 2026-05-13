@@ -2,6 +2,7 @@ package com.spela.player.presentation.ui.components.social
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.offset
@@ -9,8 +10,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -25,6 +28,7 @@ import com.spela.player.domain.model.OnlineUser
 import androidx.compose.ui.focus.focusRequester
 import com.spela.player.presentation.ui.components.SpAvatar
 import com.spela.player.presentation.ui.components.SpCarousel
+import com.spela.player.presentation.ui.gamepad.gamepadFocusable
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.ui.theme.SpTypography
@@ -61,14 +65,25 @@ private fun OnlineUserItem(
         "${user.username} online"
     }
 
+    val interactionSource = remember { MutableInteractionSource() }
     Column(
         modifier = modifier
             .width(64.dp)
+            .clip(RoundedCornerShape(SpSpacing.RadiusLarge))
             .semantics {
                 contentDescription = description
                 role = Role.Button
             }
-            .clickable { onUserSelected(user.id) },
+            .clickable(
+                interactionSource = interactionSource,
+                indication = null,
+                onClick = { onUserSelected(user.id) },
+            )
+            .gamepadFocusable(
+                shape = RoundedCornerShape(SpSpacing.RadiusLarge),
+                interactionSource = interactionSource,
+                addFocusable = false,
+            ),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Box(modifier = Modifier.size(48.dp)) {

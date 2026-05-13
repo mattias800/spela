@@ -58,6 +58,52 @@ var decadeLabel = map[string]string{
 	"00s": "The 00s",
 }
 
+// onThisDayLikePatterns returns the SQL LIKE patterns that cover every
+// release_date format parseReleaseDateMonthDay accepts, for a given
+// target month + day. Used by GET /api/explore/on-this-day to push
+// the date filter into SQL rather than scanning every release-dated
+// game in Go.
+//
+// Patterns are intentionally over-inclusive — callers must re-validate
+// each matched row with parseReleaseDateMonthDay. The point of the
+// SQL prefilter is to reduce rows-transferred, not to be exact.
+func onThisDayLikePatterns(month time.Month, day int) []string {
+	monthName := month.String()       // "March"
+	monthAbbr := monthName            // "March" — full == abbrev for May / June / July / Sept-Dec; Go .String() uses the full name
+	if len(monthName) > 3 {
+		monthAbbr = monthName[:3] // "Mar"
+	}
+	dayStr := strconv.Itoa(day)
+	dayPad := dayStr
+	if day < 10 {
+		dayPad = "0" + dayStr
+	}
+	monthPad := strconv.Itoa(int(month))
+	if month < 10 {
+		monthPad = "0" + monthPad
+	}
+
+	patterns := []string{
+		"%-" + monthPad + "-" + dayPad + "%",      // ISO: "1996-05-13" / "1996-05-13T..."
+		monthName + " " + dayStr + ",%",           // "May 13, 1996" / "March 3, 1996"
+		monthName + " " + dayPad + ",%",           // "May 13, 1996" (zero-padded day variant)
+		dayStr + " " + monthName + "%",            // "13 May 1996" / "3 March 1996"
+		dayPad + " " + monthName + "%",            // "03 March 1996"
+	}
+	// Add 3-letter abbreviation variants only when distinct from full
+	// name (May / June / July / Sept-Dec are >3 chars but the abbrev
+	// differs only for March / April / June / July / August / September
+	// / October / November / December — the >3-char filter above
+	// captures every month where abbreviation differs).
+	if monthAbbr != monthName {
+		patterns = append(patterns,
+			monthAbbr+" "+dayStr+",%", // "Mar 13, 1996"
+			monthAbbr+" "+dayPad+",%", // "Mar 03, 1996"
+		)
+	}
+	return patterns
+}
+
 // parseReleaseDateMonthDay attempts to extract month and day from a release_date string.
 // Supports formats like "2000-03-10", "March 10, 2000", "Mar 10, 2000".
 // Returns (month, day, true) on success, or (0, 0, false) if unparseable or year-only.

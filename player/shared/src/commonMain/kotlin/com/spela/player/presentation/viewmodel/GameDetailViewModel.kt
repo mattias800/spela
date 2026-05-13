@@ -1,5 +1,6 @@
 package com.spela.player.presentation.viewmodel
 
+import com.spela.player.data.cache.GameDetailCache
 import com.spela.player.data.remote.ScrapeService
 import com.spela.player.data.remote.api.SpelaApiClient
 import com.spela.player.data.repository.BiosRepository
@@ -23,6 +24,7 @@ import com.spela.player.domain.repository.GameStatsRepository
 import com.spela.player.presentation.intent.GameDetailIntent
 import com.spela.player.presentation.state.GameDetailState
 import com.spela.player.util.DispatcherProvider
+import com.spela.player.domain.model.GameDetail
 import com.spela.player.domain.model.INSTANT_DOWNLOAD_FALLBACK_DELAY_MS
 import com.spela.player.domain.model.INSTANT_DOWNLOAD_THRESHOLD_BYTES
 import kotlinx.coroutines.CoroutineScope
@@ -64,6 +66,12 @@ class GameDetailViewModel(
 
     private var currentGameId: String? = null
 
+    // Lazy-fetch latch for `/api/games/{id}/similar` — null until the
+    // UI signals the Similar Games carousel has approached the
+    // viewport via requestSimilarGames(). Reset by loadGame() so a
+    // new game starts un-requested.
+    private var similarGamesRequestedForGameId: String? = null
+
     // Per-game collector jobs. Cancelled and re-launched on every
     // loadGame so navigating away and back (or to a different game)
     // doesn't leak collectors. Pre-#956 these were unbounded `scope.
@@ -73,6 +81,16 @@ class GameDetailViewModel(
     // scrape-done event.
     private var downloadObserveJob: Job? = null
     private var scrapeObserveJobs: List<Job> = emptyList()
+    /**
+     * Tracks the in-flight game-detail fetch so a fast back-then-
+     * forward navigation cancels the previous load before starting
+     * the new one. Without this, a slow response for game A could
+     * win over the fresh response for game B (last-write-wins), and
+     * the user would see game A's data appear on game B's screen.
+     * See the `currentGameId` re-check in the load coroutine for the
+     * belt-and-suspenders guard against the same race.
+     */
+    private var loadGameJob: Job? = null
 
     // Session + achievement CRUD extracted into their own managers
     // (#691). Each shares this VM's `_state` so updates land
@@ -243,9 +261,46 @@ class GameDetailViewModel(
         }
     }
 
+    /**
+     * Apply [transform] to the current `_state.gameDetail`, write the
+     * result to both screen state AND the [GameDetailCache]. Use this
+     * for every mutation that touches `gameDetail` (favourite toggle,
+     * play-later toggle, scrape-refresh re-fetch, etc.) — the cache
+     * then stays consistent with on-screen truth without needing
+     * separate invalidation calls. If `_state.gameDetail` is null
+     * (no detail loaded yet), the transform is skipped and nothing
+     * changes.
+     */
+    private inline fun mutateGameDetail(transform: (GameDetail) -> GameDetail) {
+        _state.update { state ->
+            val current = state.gameDetail ?: return@update state
+            val updated = transform(current)
+            GameDetailCache.put(updated.game.id, updated)
+            state.copy(gameDetail = updated)
+        }
+    }
+
     private fun loadGame(gameId: String) {
         currentGameId = gameId
-        _state.update { GameDetailState(isLoading = true) }
+
+        // Stale-while-revalidate: if we've fetched this game before
+        // in this app session, the cache still has the last detail
+        // we observed. Paint the screen with it immediately so the
+        // user gets instant feedback while the fresh network fetch
+        // runs in the background. By the time the fetch returns the
+        // user has already been looking at correct (or near-correct)
+        // data; the new value just refreshes anything that drifted.
+        val cached = GameDetailCache.get(gameId)
+        if (cached != null) {
+            _state.update {
+                GameDetailState(
+                    gameDetail = cached,
+                    isLoading = false,
+                )
+            }
+        } else {
+            _state.update { GameDetailState(isLoading = true) }
+        }
 
         // Cancel any observers from a previous loadGame call (a
         // back-and-forth nav, or a switch to a different game) so
@@ -253,8 +308,14 @@ class GameDetailViewModel(
         downloadObserveJob?.cancel()
         scrapeObserveJobs.forEach { it.cancel() }
         scrapeObserveJobs = emptyList()
+        // Cancel any in-flight detail fetch for the previous game.
+        // Without this, a slow response for game A could land after
+        // the user has already navigated to game B and overwrite
+        // B's state with A's data — visible as "wrong game briefly
+        // appears" during back-then-forward navigation.
+        loadGameJob?.cancel()
 
-        scope.launch(dispatchers.io) {
+        loadGameJob = scope.launch(dispatchers.io) {
             getGameDetailUseCase(gameId).fold(
                 onSuccess = { detail ->
                     val isCached = downloadRepository.isGameCached(gameId)
@@ -273,6 +334,18 @@ class GameDetailViewModel(
                     val prefs = preferencesRepository.getPreferences().getOrNull()
                     val perGameChoice = prefs?.gameSaveStatePolicies?.get(gameId)
                     val perConsolePolicies = prefs?.consoleSaveStatePolicies ?: emptyMap()
+                    // Write to cache even if this response is for a
+                    // game the user has already navigated away from —
+                    // we don't want to throw away a finished fetch
+                    // we paid for. The next visit to that game will
+                    // read it from the cache and render instantly.
+                    GameDetailCache.put(gameId, detail)
+                    // Belt-and-suspenders: even though we cancel the
+                    // previous job above, if a CancellationException
+                    // slipped through (e.g. the use case caught it),
+                    // this guard drops the late write so the user's
+                    // current game's screen isn't clobbered.
+                    if (currentGameId != gameId) return@fold
                     _state.update {
                         it.copy(
                             gameDetail = detail,
@@ -294,6 +367,7 @@ class GameDetailViewModel(
                         val isAdmin = runCatching { apiClient.getCurrentUser() }
                             .map { it.role == "admin" || it.role == "owner" }
                             .getOrDefault(false)
+                        if (currentGameId != gameId) return@launch
                         _state.update { it.copy(isAdmin = isAdmin) }
                     }
                     if (detail.game.scrapeAttempts == 0) {
@@ -310,6 +384,7 @@ class GameDetailViewModel(
                     }
                 },
                 onFailure = { error ->
+                    if (currentGameId != gameId) return@fold
                     _state.update { it.copy(error = error.message, isLoading = false) }
                 },
             )
@@ -324,13 +399,37 @@ class GameDetailViewModel(
         // Observe WebSocket scrape status for this game
         observeScrapeStatus(gameId)
 
-        // Load community data that applies to all games (playable or not)
+        // Reset the per-game lazy-request flag so requestSimilarGames
+        // re-fires for the new game when its section approaches the
+        // viewport. The previous game's "already fetched" state must
+        // not leak across.
+        similarGamesRequestedForGameId = null
+
+        // Load community data that applies to all games (playable or not).
+        // Note: loadSimilarGames is NOT auto-fired here — it's gated on
+        // viewport visibility (see requestSimilarGames) because the
+        // similar section sits far down the page and the upstream IGDB
+        // call is the most expensive part of the detail screen.
         loadGameStats(gameId)
         loadReviews(gameId)
-        loadSimilarGames(gameId)
         loadDeveloperGames(gameId)
         loadGameSeriesLinks(gameId)
         loadGameFranchiseLinks(gameId)
+    }
+
+    /**
+     * Trigger the similar-games fetch for the currently-loaded game.
+     *
+     * Called by the UI when the Similar Games carousel approaches the
+     * viewport (see [Modifier.onApproachingVisible]). Idempotent: only
+     * the first call per [currentGameId] actually launches the fetch;
+     * subsequent calls (e.g. from rapid scroll wiggles) are no-ops.
+     */
+    fun requestSimilarGames() {
+        val gameId = currentGameId ?: return
+        if (similarGamesRequestedForGameId == gameId) return
+        similarGamesRequestedForGameId = gameId
+        loadSimilarGames(gameId)
     }
 
     private fun loadBiosStatus() {
@@ -368,7 +467,14 @@ class GameDetailViewModel(
                 if (doneGameId == gameId) {
                     getGameDetailUseCase(gameId).fold(
                         onSuccess = { detail ->
-                            _state.update { it.copy(gameDetail = detail) }
+                            // Always write to cache; only write to
+                            // screen state if the user is still on
+                            // this game. Same write-through invariant
+                            // as loadGame above.
+                            GameDetailCache.put(gameId, detail)
+                            if (currentGameId == gameId) {
+                                _state.update { it.copy(gameDetail = detail) }
+                            }
                         },
                         onFailure = { /* ignore reload failure */ },
                     )
@@ -494,11 +600,8 @@ class GameDetailViewModel(
         scope.launch(dispatchers.io) {
             toggleFavoriteUseCase(detail.game.id, currentlyFavorite).fold(
                 onSuccess = {
-                    _state.update {
-                        val updatedGame = it.gameDetail?.game?.copy(isFavorite = !currentlyFavorite)
-                        it.copy(
-                            gameDetail = updatedGame?.let { g -> it.gameDetail.copy(game = g) }
-                        )
+                    mutateGameDetail { d ->
+                        d.copy(game = d.game.copy(isFavorite = !currentlyFavorite))
                     }
                 },
                 onFailure = { error ->
@@ -534,22 +637,18 @@ class GameDetailViewModel(
         val detail = _state.value.gameDetail ?: return
         val currentlyInPlayLater = detail.game.isInPlayLater
         // Optimistic update: flip immediately to prevent double-clicks
-        _state.update {
-            val updatedGame = it.gameDetail?.game?.copy(isInPlayLater = !currentlyInPlayLater)
-            it.copy(gameDetail = updatedGame?.let { g -> it.gameDetail.copy(game = g) })
+        mutateGameDetail { d ->
+            d.copy(game = d.game.copy(isInPlayLater = !currentlyInPlayLater))
         }
         scope.launch(dispatchers.io) {
             togglePlayLaterUseCase(detail.game.id, currentlyInPlayLater).fold(
                 onSuccess = { /* Already updated optimistically */ },
                 onFailure = { error ->
                     // Revert on failure
-                    _state.update {
-                        val revertedGame = it.gameDetail?.game?.copy(isInPlayLater = currentlyInPlayLater)
-                        it.copy(
-                            gameDetail = revertedGame?.let { g -> it.gameDetail.copy(game = g) },
-                            error = error.message,
-                        )
+                    mutateGameDetail { d ->
+                        d.copy(game = d.game.copy(isInPlayLater = currentlyInPlayLater))
                     }
+                    _state.update { it.copy(error = error.message) }
                 },
             )
         }

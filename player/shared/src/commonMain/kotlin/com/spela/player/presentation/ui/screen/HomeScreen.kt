@@ -5,7 +5,6 @@ import androidx.compose.animation.expandVertically
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -18,7 +17,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.BarChart
 import androidx.compose.material.icons.filled.Download
@@ -49,9 +47,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.testTag
 import com.spela.player.presentation.ui.TestTags
-import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.spela.player.domain.model.NetplaySession
@@ -68,6 +64,7 @@ import com.spela.player.presentation.ui.gamepad.LocalFocusMemory
 import com.spela.player.presentation.ui.gamepad.rememberFocus
 import com.spela.player.presentation.ui.gamepad.rememberFocusMemoryState
 import androidx.compose.runtime.CompositionLocalProvider
+import com.spela.player.presentation.ui.components.SpSectionLink
 import com.spela.player.presentation.ui.components.SpSectionList
 import com.spela.player.presentation.ui.components.SpIconButton
 import com.spela.player.presentation.ui.components.ScreenLoadingIndicator
@@ -301,8 +298,9 @@ fun HomeScreen(
                                     edgeToEdgeContent = true,
                                     modifier = Modifier.rememberFocus("section_play_later"),
                                     titleTrailing = {
-                                        SeeAllLink(
-                                            label = "Play Later",
+                                        SpSectionLink(
+                                            text = "See all",
+                                            contentDescription = "See all Play Later",
                                             onClick = onNavigateToPlayLater,
                                         )
                                     },
@@ -323,8 +321,9 @@ fun HomeScreen(
                                     edgeToEdgeContent = true,
                                     modifier = Modifier.rememberFocus("section_favorites"),
                                     titleTrailing = {
-                                        SeeAllLink(
-                                            label = "Favorites",
+                                        SpSectionLink(
+                                            text = "See all",
+                                            contentDescription = "See all Favorites",
                                             onClick = onNavigateToFavorites,
                                         )
                                     },
@@ -363,8 +362,9 @@ fun HomeScreen(
                                     edgeToEdgeContent = true,
                                     modifier = Modifier.rememberFocus("section_recent_achievements"),
                                     titleTrailing = {
-                                        SeeAllLink(
-                                            label = "Recent Achievements",
+                                        SpSectionLink(
+                                            text = "See all",
+                                            contentDescription = "See all Recent Achievements",
                                             onClick = onNavigateToStats,
                                         )
                                     },
@@ -381,8 +381,9 @@ fun HomeScreen(
                                     edgeToEdgeContent = true,
                                     modifier = Modifier.rememberFocus("section_trending_challenges"),
                                     titleTrailing = {
-                                        SeeAllLink(
-                                            label = "Trending Challenges",
+                                        SpSectionLink(
+                                            text = "See all",
+                                            contentDescription = "See all Trending Challenges",
                                             onClick = onNavigateToChallenges,
                                         )
                                     },
@@ -433,8 +434,9 @@ fun HomeScreen(
                                     icon = Icons.Filled.History,
                                     modifier = Modifier.rememberFocus("section_recent_activity"),
                                     titleTrailing = {
-                                        SeeAllLink(
-                                            label = "Recent Activity",
+                                        SpSectionLink(
+                                            text = "See all",
+                                            contentDescription = "See all Recent Activity",
                                             onClick = onNavigateToActivity,
                                         )
                                     },
@@ -456,8 +458,9 @@ fun HomeScreen(
                                     icon = Icons.Filled.BarChart,
                                     modifier = Modifier.rememberFocus("section_your_stats"),
                                     titleTrailing = {
-                                        SeeAllLink(
-                                            label = "Your Stats",
+                                        SpSectionLink(
+                                            text = "See all",
+                                            contentDescription = "See all Your Stats",
                                             onClick = onNavigateToStats,
                                         )
                                     },
@@ -558,22 +561,3 @@ private fun DeviceNameBanner(
     }
 }
 
-@Composable
-private fun SeeAllLink(
-    label: String,
-    onClick: () -> Unit,
-) {
-    Text(
-        text = "See all",
-        style = SpTypography.LabelLarge,
-        color = SpColor.Link,
-        modifier = Modifier
-            .clip(RoundedCornerShape(SpSpacing.Small))
-            .clickable(onClick = onClick)
-            .padding(SpSpacing.Small)
-            .semantics {
-                contentDescription = "See all $label"
-                role = Role.Button
-            },
-    )
-}

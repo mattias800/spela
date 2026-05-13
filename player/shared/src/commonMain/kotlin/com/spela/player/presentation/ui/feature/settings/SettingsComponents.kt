@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.Role
@@ -64,11 +65,20 @@ internal fun SettingsToggle(
     isChecked: Boolean,
     onToggle: () -> Unit,
 ) {
+    val interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(onClick = onToggle)
-            .gamepadFocusable(shape = RoundedCornerShape(SpSpacing.RadiusLarge))
+            .clickable(
+                interactionSource = interactionSource,
+                indication = null,
+                onClick = onToggle,
+            )
+            .gamepadFocusable(
+                shape = RoundedCornerShape(SpSpacing.RadiusLarge),
+                interactionSource = interactionSource,
+                addFocusable = false,
+            )
             .semantics {
                 contentDescription = title
                 role = Role.Switch

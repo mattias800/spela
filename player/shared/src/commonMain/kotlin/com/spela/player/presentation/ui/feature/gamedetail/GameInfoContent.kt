@@ -20,6 +20,7 @@ import androidx.compose.ui.semantics.semantics
 import com.spela.player.domain.model.BiosMissingFile
 import com.spela.player.domain.model.Game
 import com.spela.player.domain.model.GameDetail
+import com.spela.player.domain.model.GameVariant
 import com.spela.player.presentation.state.GameDetailState
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
@@ -128,10 +129,32 @@ fun GameInfoContent(
 
     if (versionVariants.isNotEmpty()) {
         Spacer(Modifier.height(SpSpacing.Default))
+        // Prepend a synthetic GameVariant built from the current Game
+        // so the Versions list shows the full picture — including the
+        // one the user is looking at, marked with a "This game" chip
+        // inside the section. The prepend keeps the current version at
+        // the top so the user doesn't have to scan for context.
+        val versionsIncludingCurrent = buildList {
+            add(
+                GameVariant(
+                    id = game.id,
+                    title = game.title,
+                    fileName = game.fileName,
+                    region = game.region?.takeIf { it.isNotBlank() },
+                    revision = game.revision?.takeIf { it.isNotBlank() },
+                    tags = game.tags?.takeIf { it.isNotBlank() },
+                    isPreRelease = game.isPreRelease,
+                    fileSize = game.fileSize,
+                    verificationStatus = game.verificationStatus?.takeIf { it.isNotBlank() },
+                )
+            )
+            addAll(versionVariants)
+        }
         VariantsSection(
             title = "Versions",
-            variants = versionVariants,
+            variants = versionsIncludingCurrent,
             onVariantSelected = onNavigateToGame,
+            currentGameId = game.id,
         )
     }
 
