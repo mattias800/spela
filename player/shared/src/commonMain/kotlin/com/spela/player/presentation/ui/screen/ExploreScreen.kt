@@ -47,6 +47,7 @@ import com.spela.player.presentation.ui.gamepad.gamepadFocusable
 import com.spela.player.presentation.ui.components.SpSnackbar
 import com.spela.player.presentation.ui.components.SpSnackbarData
 import com.spela.player.presentation.ui.components.SpSnackbarType
+import com.spela.player.presentation.ui.components.SpSectionLink
 import com.spela.player.presentation.ui.components.SpSectionList
 import com.spela.player.presentation.ui.components.SpTitledSection
 import com.spela.player.presentation.ui.feature.explore.ActiveNowSection
@@ -295,15 +296,10 @@ fun ExploreScreen(
                         skeleton = { ArtworkShowcaseSkeleton() },
                         titleTrailing = onGallerySelected?.let { onClick ->
                             {
-                                Text(
+                                SpSectionLink(
                                     text = "Browse Gallery",
-                                    style = SpTypography.LabelLarge,
-                                    color = SpColor.Link,
-                                    modifier = Modifier
-                                        .clip(RoundedCornerShape(SpSpacing.Small))
-                                        .clickable(onClick = onClick)
-                                        .padding(SpSpacing.Small)
-                                        .testTag("browse_gallery_button"),
+                                    onClick = onClick,
+                                    modifier = Modifier.testTag("browse_gallery_button"),
                                 )
                             }
                         },
