@@ -408,19 +408,53 @@ func (h *ConsoleHandler) HumaGetTopRatedGlobal(_ context.Context, _ *GetTopRated
 	var all []db.TopRatedGame
 	h.DB.Where("console_id IN ?", libraryConsoleIDs).Order("total_rating desc").Find(&all)
 
+	// Determine which IGDB game IDs have a matching local game (and on
+	// which console). The naive loop here used to issue one COUNT(*)
+	// per IGDB row — N+1, with N up to ~150 candidates, and the inner
+	// query did `LOWER(title)` against an unindexed column. With the
+	// LOWER(title) functional index in place a single batched query
+	// suffices: one trip for the scraper_id matches, one for the title
+	// matches; everything else lives in maps.
 	localConsoles := make(map[int]uint)
-	for _, tr := range all {
-		if _, seen := localConsoles[tr.IGDBGameID]; seen {
-			continue
+	if len(all) > 0 {
+		scraperIDs := make([]string, 0, len(all))
+		loweredTitles := make([]string, 0, len(all))
+		scraperIDByTopRated := make(map[string][]int, len(all)) // scraperID -> []IGDBGameID
+		titleByTopRated := make(map[string][]int, len(all))     // lowered name -> []IGDBGameID
+		consoleByTopRated := make(map[int]uint, len(all))       // IGDBGameID -> ConsoleID
+		for _, tr := range all {
+			scraperID := fmt.Sprintf("igdb:%d", tr.IGDBGameID)
+			loweredName := strings.ToLower(tr.Name)
+			scraperIDs = append(scraperIDs, scraperID)
+			loweredTitles = append(loweredTitles, loweredName)
+			scraperIDByTopRated[scraperID] = append(scraperIDByTopRated[scraperID], tr.IGDBGameID)
+			titleByTopRated[loweredName] = append(titleByTopRated[loweredName], tr.IGDBGameID)
+			consoleByTopRated[tr.IGDBGameID] = tr.ConsoleID
 		}
-		var count int64
-		scraperID := fmt.Sprintf("igdb:%d", tr.IGDBGameID)
-		h.DB.Model(&db.Game{}).Where(
-			"(scraper_id = ? OR LOWER(title) = LOWER(?)) AND console_id = ?",
-			scraperID, tr.Name, tr.ConsoleID,
-		).Count(&count)
-		if count > 0 {
-			localConsoles[tr.IGDBGameID] = tr.ConsoleID
+
+		type matchedGame struct {
+			ScraperID string
+			Title     string
+			ConsoleID uint
+		}
+		var matches []matchedGame
+		h.DB.Model(&db.Game{}).
+			Select("scraper_id, title, console_id").
+			Where("(scraper_id IN ? OR LOWER(title) IN ?) AND console_id IN ?",
+				scraperIDs, loweredTitles, libraryConsoleIDs).
+			Scan(&matches)
+
+		for _, m := range matches {
+			for _, igdbID := range scraperIDByTopRated[m.ScraperID] {
+				if consoleByTopRated[igdbID] == m.ConsoleID {
+					localConsoles[igdbID] = m.ConsoleID
+				}
+			}
+			for _, igdbID := range titleByTopRated[strings.ToLower(m.Title)] {
+				if consoleByTopRated[igdbID] == m.ConsoleID {
+					localConsoles[igdbID] = m.ConsoleID
+				}
+			}
 		}
 	}
 

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/danielgtaylor/huma/v2"
@@ -109,6 +110,33 @@ func (h *GameDiscoveryHandler) HumaGetSimilarGames(_ context.Context, in *GetSim
 		}()
 	}
 
+	// Batch the cross-reference lookup into a single query instead of
+	// one per cached row. The old loop issued
+	//   WHERE LOWER(title) = LOWER(?)
+	// per similar game (~10 round-trips); the new pass does one
+	// `LOWER(title) IN (...)` query and builds a map. Combined with
+	// the LOWER(title) functional index added in the migrations,
+	// the cross-ref step is now ~one indexed lookup.
+	loweredNames := make([]string, 0, len(cached))
+	for _, sg := range cached {
+		if sg.Name != "" {
+			loweredNames = append(loweredNames, strings.ToLower(sg.Name))
+		}
+	}
+
+	localByLowerTitle := make(map[string]db.Game, len(loweredNames))
+	if len(loweredNames) > 0 {
+		var localMatches []db.Game
+		if err := h.DB.Where("LOWER(title) IN ?", loweredNames).Find(&localMatches).Error; err == nil {
+			for _, g := range localMatches {
+				key := strings.ToLower(g.Title)
+				if _, exists := localByLowerTitle[key]; !exists {
+					localByLowerTitle[key] = g
+				}
+			}
+		}
+	}
+
 	result := make([]SimilarGameResponse, 0, len(cached))
 	for _, sg := range cached {
 		resp := SimilarGameResponse{
@@ -117,8 +145,7 @@ func (h *GameDiscoveryHandler) HumaGetSimilarGames(_ context.Context, in *GetSim
 			IGDBCriticsRating: sg.IGDBCriticsRating,
 		}
 
-		var localGame db.Game
-		if err := h.DB.Where("LOWER(title) = LOWER(?)", sg.Name).First(&localGame).Error; err == nil {
+		if localGame, ok := localByLowerTitle[strings.ToLower(sg.Name)]; ok {
 			localID := fmt.Sprintf("%d", localGame.ID)
 			resp.LocalGameId = &localID
 			if localGame.CoverURL != "" {
