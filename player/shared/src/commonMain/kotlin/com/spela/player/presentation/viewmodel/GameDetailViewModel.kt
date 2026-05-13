@@ -66,6 +66,12 @@ class GameDetailViewModel(
 
     private var currentGameId: String? = null
 
+    // Lazy-fetch latch for `/api/games/{id}/similar` — null until the
+    // UI signals the Similar Games carousel has approached the
+    // viewport via requestSimilarGames(). Reset by loadGame() so a
+    // new game starts un-requested.
+    private var similarGamesRequestedForGameId: String? = null
+
     // Per-game collector jobs. Cancelled and re-launched on every
     // loadGame so navigating away and back (or to a different game)
     // doesn't leak collectors. Pre-#956 these were unbounded `scope.
@@ -393,13 +399,37 @@ class GameDetailViewModel(
         // Observe WebSocket scrape status for this game
         observeScrapeStatus(gameId)
 
-        // Load community data that applies to all games (playable or not)
+        // Reset the per-game lazy-request flag so requestSimilarGames
+        // re-fires for the new game when its section approaches the
+        // viewport. The previous game's "already fetched" state must
+        // not leak across.
+        similarGamesRequestedForGameId = null
+
+        // Load community data that applies to all games (playable or not).
+        // Note: loadSimilarGames is NOT auto-fired here — it's gated on
+        // viewport visibility (see requestSimilarGames) because the
+        // similar section sits far down the page and the upstream IGDB
+        // call is the most expensive part of the detail screen.
         loadGameStats(gameId)
         loadReviews(gameId)
-        loadSimilarGames(gameId)
         loadDeveloperGames(gameId)
         loadGameSeriesLinks(gameId)
         loadGameFranchiseLinks(gameId)
+    }
+
+    /**
+     * Trigger the similar-games fetch for the currently-loaded game.
+     *
+     * Called by the UI when the Similar Games carousel approaches the
+     * viewport (see [Modifier.onApproachingVisible]). Idempotent: only
+     * the first call per [currentGameId] actually launches the fetch;
+     * subsequent calls (e.g. from rapid scroll wiggles) are no-ops.
+     */
+    fun requestSimilarGames() {
+        val gameId = currentGameId ?: return
+        if (similarGamesRequestedForGameId == gameId) return
+        similarGamesRequestedForGameId = gameId
+        loadSimilarGames(gameId)
     }
 
     private fun loadBiosStatus() {
