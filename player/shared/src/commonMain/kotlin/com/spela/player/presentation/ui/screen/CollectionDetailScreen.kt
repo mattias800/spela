@@ -42,6 +42,7 @@ import com.spela.player.presentation.ui.components.SpEmptyStates
 import com.spela.player.presentation.ui.feature.library.GameGridItem
 import com.spela.player.presentation.ui.components.SpIconButton
 import com.spela.player.presentation.ui.components.ScreenLoadingIndicator
+import com.spela.player.presentation.ui.components.SpScreen
 import com.spela.player.presentation.ui.components.SpSearchField
 import com.spela.player.presentation.ui.components.SpSnackbar
 import com.spela.player.presentation.ui.components.SpSnackbarData
@@ -82,12 +83,8 @@ fun CollectionDetailScreen(
     val focusMemory = rememberFocusMemoryState()
 
     CompositionLocalProvider(LocalFocusMemory provides focusMemory) {
-    Box(modifier = Modifier.fillMaxSize()) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(SpColor.Background),
-        ) {
+    SpScreen {
+        Column(modifier = Modifier.fillMaxSize()) {
             SpTopBar(
                 title = state.selectedDetail?.name ?: "Collection",
                 showBack = true,
@@ -116,7 +113,10 @@ fun CollectionDetailScreen(
                     ScreenLoadingIndicator(message = "Loading collection...")
                 }
             } else if (state.selectedDetail != null) {
-                val detail = state.selectedDetail ?: return@CompositionLocalProvider
+                // We just null-checked; safe to bang. (Previously a
+                // non-local return through Box, but SpScreen isn't
+                // inline so labelled returns don't traverse it.)
+                val detail = state.selectedDetail!!
                 var searchQuery by rememberSaveable { mutableStateOf("") }
                 val showSearch = detail.games.size > 5
                 val filteredGames = if (searchQuery.isBlank()) {

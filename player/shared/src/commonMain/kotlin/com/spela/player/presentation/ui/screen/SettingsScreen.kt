@@ -15,14 +15,12 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.drawBehind
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.unit.dp
 import com.spela.player.presentation.ui.components.PlatformBackHandler
 import com.spela.player.presentation.ui.components.ShaderPreviewDialog
 import com.spela.player.presentation.ui.components.SpConfirmDialog
 import com.spela.player.presentation.ui.components.SpDialog
+import com.spela.player.presentation.ui.components.SpScreen
 import com.spela.player.presentation.ui.components.SpTextField
 import com.spela.player.presentation.ui.components.keymapping.PresetPickerDialog
 import com.spela.player.presentation.ui.feature.library.darken
@@ -80,22 +78,7 @@ fun SettingsScreen(
         SpColor.SecondaryDark.darken(0.82f),
     )
 
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .drawBehind {
-                val cx = size.width / 2f
-                val cy = size.height / 2f
-                val d = (size.width + size.height) * 0.25f
-                drawRect(
-                    brush = Brush.linearGradient(
-                        colors = gradientColors,
-                        start = Offset(cx - d, cy - d),
-                        end = Offset(cx + d, cy + d),
-                    ),
-                )
-            },
-    ) {
+    SpScreen(gradientColors = gradientColors) {
         BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
             val isWide = maxWidth > LIST_DETAIL_BREAKPOINT.dp
 
