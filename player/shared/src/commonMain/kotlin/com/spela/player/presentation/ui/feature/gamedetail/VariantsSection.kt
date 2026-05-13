@@ -20,6 +20,7 @@ import com.spela.player.presentation.ui.components.SpCard
 import com.spela.player.presentation.ui.components.SpChip
 import com.spela.player.presentation.ui.components.SpCoverArt
 import com.spela.player.presentation.ui.components.SpRegionChip
+import com.spela.player.presentation.ui.components.SpStatusChip
 import com.spela.player.presentation.ui.components.SpTitledSection
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
@@ -39,6 +40,7 @@ fun VariantsSection(
     title: String,
     variants: List<GameVariant>,
     onVariantSelected: ((String) -> Unit)?,
+    currentGameId: String? = null,
 ) {
     SpTitledSection(
         title = title,
@@ -47,8 +49,18 @@ fun VariantsSection(
             verticalArrangement = Arrangement.spacedBy(SpSpacing.Small),
         ) {
             variants.forEach { variant ->
+                val isCurrent = currentGameId != null && variant.id == currentGameId
+                // The current game row isn't clickable — tapping it
+                // would just navigate to itself. Leave as a visual
+                // marker instead, identified by the "This game" chip
+                // below.
+                val cardOnClick: (() -> Unit)? = if (isCurrent) {
+                    null
+                } else {
+                    { onVariantSelected?.invoke(variant.id) }
+                }
                 SpCard(
-                    onClick = { onVariantSelected?.invoke(variant.id) },
+                    onClick = cardOnClick,
                     onGradient = true,
                     cornerRadius = SpSpacing.RadiusMedium,
                 ) {
@@ -65,6 +77,15 @@ fun VariantsSection(
                             horizontalArrangement = Arrangement.spacedBy(SpSpacing.Small),
                             verticalArrangement = Arrangement.spacedBy(SpSpacing.XSmall),
                         ) {
+                            if (isCurrent) {
+                                // Marker for the entry that matches
+                                // the game currently being shown — so
+                                // the list shows the full landscape
+                                // including the one you're on. Success
+                                // colour matches other "this is the
+                                // active thing" badges in the app.
+                                SpStatusChip(text = "This game")
+                            }
                             variant.region?.takeIf { it.isNotBlank() }?.let { region ->
                                 SpRegionChip(region = region, onGradient = true)
                             }
