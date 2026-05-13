@@ -120,20 +120,42 @@ func (h *ExploreHandler) HumaGetOnThisDay(ctx context.Context, _ *GetOnThisDayIn
 
 	dateLabel := now.Format("January 2")
 
-	var allGames []db.Game
+	// Pre-filter at SQL with LIKE patterns covering every release_date
+	// format parseReleaseDateMonthDay accepts. The old version loaded
+	// every release-dated game (could be 50k+ rows) into Go memory and
+	// ran time.Parse per row — the bottleneck per the perf audit.
+	// SQL filtering still scans the table (no index on release_date)
+	// but skips the wire transfer + reflection cost of building Game
+	// structs for rows we'll throw away.
+	likePatterns := onThisDayLikePatterns(targetMonth, targetDay)
+	whereSQL := "release_date IS NOT NULL AND release_date != '' AND is_primary = true AND deleted_at IS NULL AND ("
+	whereArgs := make([]interface{}, 0, len(likePatterns))
+	for i, p := range likePatterns {
+		if i > 0 {
+			whereSQL += " OR "
+		}
+		whereSQL += "release_date LIKE ?"
+		whereArgs = append(whereArgs, p)
+	}
+	whereSQL += ")"
+
+	var candidates []db.Game
 	if err := h.DB.Preload("Console").
-		Where("release_date != '' AND release_date IS NOT NULL AND is_primary = true AND deleted_at IS NULL").
-		Find(&allGames).Error; err != nil {
+		Where(whereSQL, whereArgs...).
+		Find(&candidates).Error; err != nil {
 		slog.Error("failed to fetch games for on-this-day", "error", err)
 		return nil, huma.Error500InternalServerError("failed to fetch games")
 	}
 
+	// LIKE patterns are intentionally over-inclusive (e.g. "%-05-13%"
+	// could match a substring inside a larger string). Re-validate by
+	// parsing the exact month/day per candidate row.
 	type matchedGame struct {
 		game db.Game
 		year int
 	}
 	var matched []matchedGame
-	for _, g := range allGames {
+	for _, g := range candidates {
 		month, day, ok := parseReleaseDateMonthDay(g.ReleaseDate)
 		if !ok {
 			continue
