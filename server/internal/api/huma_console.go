@@ -376,14 +376,21 @@ func (h *ConsoleHandler) HumaGetTopRated(_ context.Context, in *GetTopRatedInput
 		}
 	}
 
+	// Cache refresh is fire-and-forget — never block the user's
+	// response on the outbound IGDB HTTP call. See
+	// HumaGetSimilarGames for the same pattern; same justification.
 	if !fresh && h.Scraper != nil && h.Scraper.IGDBClient != nil && h.Scraper.IGDBClient.IsConfigured() {
-		topGames, err := h.Scraper.IGDBClient.GetTopGames(igdbPlatformIDs, 100)
-		if err != nil {
-			slog.Warn("failed to fetch top-rated games from IGDB", "console", abbr, "error", err)
-		} else {
+		consoleID := console.ID
+		igdbClient := h.Scraper.IGDBClient
+		go func() {
+			topGames, err := igdbClient.GetTopGames(igdbPlatformIDs, 100)
+			if err != nil {
+				slog.Warn("failed to fetch top-rated games from IGDB", "console", abbr, "error", err)
+				return
+			}
 			ranked := bayesianRank(topGames, 25)
-			go h.upsertTopRatedGames(console.ID, ranked)
-		}
+			h.upsertTopRatedGames(consoleID, ranked)
+		}()
 	}
 
 	return &TopRatedListOutput{Body: h.buildTopRatedResponses(cached, false)}, nil

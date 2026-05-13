@@ -88,14 +88,25 @@ func (h *GameDiscoveryHandler) HumaGetSimilarGames(_ context.Context, in *GetSim
 		}
 	}
 
+	// Cache refresh is fire-and-forget — never block the user's response
+	// on an outbound IGDB HTTP call. The user gets whatever's already
+	// cached (possibly nothing on first-ever request for this game);
+	// the background goroutine populates the cache so the next visit
+	// is fast. Previously this awaited GetSimilarGames synchronously,
+	// which added ~500–800ms to every game-detail page load when the
+	// cache was older than 7 days (or empty).
 	if !fresh && h.Scraper != nil && h.Scraper.IGDBClient != nil && h.Scraper.IGDBClient.IsConfigured() {
-		similarGames, err := h.Scraper.IGDBClient.GetSimilarGames(igdbGameID)
-		if err != nil {
-			slog.Warn("failed to fetch similar games from IGDB", "game", game.Title, "error", err)
-		} else {
-			gameID := game.ID
-			go h.upsertSimilarGames(gameID, similarGames)
-		}
+		gameID := game.ID
+		gameTitle := game.Title
+		igdbClient := h.Scraper.IGDBClient
+		go func() {
+			similarGames, err := igdbClient.GetSimilarGames(igdbGameID)
+			if err != nil {
+				slog.Warn("failed to fetch similar games from IGDB", "game", gameTitle, "error", err)
+				return
+			}
+			h.upsertSimilarGames(gameID, similarGames)
+		}()
 	}
 
 	result := make([]SimilarGameResponse, 0, len(cached))
