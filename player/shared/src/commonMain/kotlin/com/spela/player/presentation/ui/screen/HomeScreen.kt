@@ -6,6 +6,7 @@ import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -65,6 +66,7 @@ import com.spela.player.presentation.ui.components.SpMainContentPadding
 import com.spela.player.presentation.ui.components.SpScreen
 import com.spela.player.presentation.ui.components.SpScrollableContent
 import com.spela.player.presentation.ui.gamepad.LocalFocusMemory
+import com.spela.player.presentation.ui.gamepad.gamepadFocusable
 import com.spela.player.presentation.ui.gamepad.rememberFocus
 import com.spela.player.presentation.ui.gamepad.rememberFocusMemoryState
 import androidx.compose.runtime.CompositionLocalProvider
@@ -563,13 +565,23 @@ private fun SeeAllLink(
     label: String,
     onClick: () -> Unit,
 ) {
+    val interactionSource = remember { MutableInteractionSource() }
     Text(
         text = "See all",
         style = SpTypography.LabelLarge,
         color = SpColor.Link,
         modifier = Modifier
             .clip(RoundedCornerShape(SpSpacing.Small))
-            .clickable(onClick = onClick)
+            .clickable(
+                interactionSource = interactionSource,
+                indication = null,
+                onClick = onClick,
+            )
+            .gamepadFocusable(
+                shape = RoundedCornerShape(SpSpacing.Small),
+                interactionSource = interactionSource,
+                addFocusable = false,
+            )
             .padding(SpSpacing.Small)
             .semantics {
                 contentDescription = "See all $label"
