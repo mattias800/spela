@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/danielgtaylor/huma/v2"
 	"github.com/spela/server/internal/db"
@@ -13,6 +14,15 @@ import (
 	ws "github.com/spela/server/internal/websocket"
 	"gorm.io/gorm"
 )
+
+// listKeywordsTTL is how long GET /api/keywords cached results stay
+// fresh. The endpoint's response is purely a function of game →
+// keyword aggregation across the whole library; it doesn't change
+// when one user views their own library, doesn't depend on userID,
+// and changes only when the scraper adds/removes a game. A 5-minute
+// in-process cache turns the ~621ms aggregate-and-sort scan into a
+// hashmap lookup for every request inside the window.
+const listKeywordsTTL = 5 * time.Minute
 
 // --- Input / output types ---
 
@@ -405,6 +415,18 @@ func (h *EnrichmentHandler) HumaListKeywords(_ context.Context, in *ListKeywords
 		limit = 50
 	}
 
+	// Serve from the in-process cache when fresh. The result is a
+	// function of library aggregation only — it changes only when the
+	// scraper writes new game_keywords rows, not on any user-driven
+	// action. See [listKeywordsTTL] for the cache window rationale.
+	h.listKeywordsCacheMu.Lock()
+	if entry, ok := h.listKeywordsCache[limit]; ok && time.Since(entry.at) < listKeywordsTTL {
+		cached := entry.result
+		h.listKeywordsCacheMu.Unlock()
+		return &ListKeywordsOutput{Body: cached}, nil
+	}
+	h.listKeywordsCacheMu.Unlock()
+
 	type keywordRow struct {
 		IGDBKeywordID int
 		Name          string
@@ -431,6 +453,17 @@ func (h *EnrichmentHandler) HumaListKeywords(_ context.Context, in *ListKeywords
 			GameCount: r.GameCount,
 		}
 	}
+
+	h.listKeywordsCacheMu.Lock()
+	if h.listKeywordsCache == nil {
+		h.listKeywordsCache = make(map[int]cachedKeywords)
+	}
+	h.listKeywordsCache[limit] = cachedKeywords{
+		at:     time.Now(),
+		result: result,
+	}
+	h.listKeywordsCacheMu.Unlock()
+
 	return &ListKeywordsOutput{Body: result}, nil
 }
 

@@ -1,6 +1,9 @@
 package api
 
 import (
+	"sync"
+	"time"
+
 	"github.com/spela/server/internal/scraper"
 	ws "github.com/spela/server/internal/websocket"
 	"gorm.io/gorm"
@@ -11,6 +14,18 @@ type EnrichmentHandler struct {
 	DB      *gorm.DB
 	Scraper *scraper.Scraper
 	Hub     *ws.Hub
+
+	// In-process cache for GET /api/keywords — the result is a function
+	// of library-wide game→keyword aggregation, not user-specific, and
+	// only changes when the scraper writes new game_keywords rows.
+	// See [listKeywordsTTL] for the cache window.
+	listKeywordsCacheMu sync.Mutex
+	listKeywordsCache   map[int]cachedKeywords
+}
+
+type cachedKeywords struct {
+	at     time.Time
+	result []KeywordResponse
 }
 
 // --- Theme endpoints ---
