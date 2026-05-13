@@ -36,6 +36,15 @@ func setupTestEnv(t *testing.T) (*gorm.DB, *Config) {
 		Logger: logger.Default.LogMode(logger.Silent),
 	})
 	require.NoError(t, err)
+	// SQLite :memory: gives each connection a fresh, empty database.
+	// Goroutines pulling new connections from the pool would each see
+	// a different empty DB — production uses a file-backed DB and
+	// doesn't have this problem. Force the pool to a single
+	// connection so concurrent handlers (e.g. /explore/rows,
+	// /explore/for-you) still see the seeded schema in tests.
+	if sqlDB, dbErr := database.DB(); dbErr == nil {
+		sqlDB.SetMaxOpenConns(1)
+	}
 	err = database.AutoMigrate(
 		&db.User{}, &db.Console{}, &db.Game{}, &db.GameDisc{},
 		&db.Favorite{}, &db.PlayHistory{}, &db.RefreshToken{},

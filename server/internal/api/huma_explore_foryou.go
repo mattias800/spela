@@ -69,40 +69,56 @@ func (h *ExploreHandler) HumaGetForYou(ctx context.Context, _ *GetForYouInput) (
 		return nil, huma.Error401Unauthorized("authentication required")
 	}
 
-	rows := []ForYouRowResponse{}
+	// Run the four row builders in parallel — they're independent and
+	// each one does its own DB queries. Same pattern as /explore/rows.
+	type result struct {
+		idx           int
+		becauseRows   []ForYouRowResponse
+		row           *ForYouRowResponse
+		err           error
+		errLogContext string
+	}
+	results := make(chan result, 4)
 
-	becauseRows, err := h.buildBecauseYouPlayedRows(userID)
-	if err != nil {
-		slog.Error("failed to build because-you-played rows", "error", err)
+	go func() {
+		rows, err := h.buildBecauseYouPlayedRows(userID)
+		results <- result{idx: 0, becauseRows: rows, err: err, errLogContext: "because-you-played rows"}
+	}()
+	go func() {
+		row, err := h.buildMoreGenreRow(userID)
+		results <- result{idx: 1, row: row, err: err, errLogContext: "more-genre row"}
+	}()
+	go func() {
+		row, err := h.buildUnfinishedRow(userID)
+		results <- result{idx: 2, row: row, err: err, errLogContext: "unfinished row"}
+	}()
+	go func() {
+		row, err := h.buildExpandHorizonsRow(userID)
+		results <- result{idx: 3, row: row, err: err, errLogContext: "expand-horizons row"}
+	}()
+
+	collected := make([]result, 4)
+	var firstErr error
+	for range collected {
+		r := <-results
+		collected[r.idx] = r
+		if r.err != nil {
+			slog.Error("failed to build for-you row", "row", r.errLogContext, "error", r.err)
+			if firstErr == nil {
+				firstErr = r.err
+			}
+		}
+	}
+	if firstErr != nil {
 		return nil, huma.Error500InternalServerError("failed to build recommendations")
 	}
-	rows = append(rows, becauseRows...)
 
-	moreGenreRow, err := h.buildMoreGenreRow(userID)
-	if err != nil {
-		slog.Error("failed to build more-genre row", "error", err)
-		return nil, huma.Error500InternalServerError("failed to build recommendations")
-	}
-	if moreGenreRow != nil {
-		rows = append(rows, *moreGenreRow)
-	}
-
-	unfinishedRow, err := h.buildUnfinishedRow(userID)
-	if err != nil {
-		slog.Error("failed to build unfinished row", "error", err)
-		return nil, huma.Error500InternalServerError("failed to build recommendations")
-	}
-	if unfinishedRow != nil {
-		rows = append(rows, *unfinishedRow)
-	}
-
-	expandRow, err := h.buildExpandHorizonsRow(userID)
-	if err != nil {
-		slog.Error("failed to build expand-horizons row", "error", err)
-		return nil, huma.Error500InternalServerError("failed to build recommendations")
-	}
-	if expandRow != nil {
-		rows = append(rows, *expandRow)
+	rows := make([]ForYouRowResponse, 0, 6)
+	rows = append(rows, collected[0].becauseRows...) // because-you-played (may be many)
+	for i := 1; i < 4; i++ {
+		if collected[i].row != nil {
+			rows = append(rows, *collected[i].row)
+		}
 	}
 
 	return &GetForYouOutput{
