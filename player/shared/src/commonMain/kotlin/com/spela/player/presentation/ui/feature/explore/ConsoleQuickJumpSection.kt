@@ -17,9 +17,7 @@ import androidx.compose.ui.focus.focusRequester
 import com.spela.player.presentation.ui.components.SpCarousel
 import com.spela.player.presentation.ui.components.SpConsoleTile
 import com.spela.player.presentation.ui.components.SpShimmer
-import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
-import com.spela.player.util.parseHexColor
 
 @Composable
 fun ConsoleQuickJumpSection(
@@ -51,7 +49,7 @@ private fun ConsoleQuickJumpCard(
     SpConsoleTile(
         name = console.name,
         gameCount = console.gameCount,
-        accentColor = parseHexColor(console.colorTheme, SpColor.Primary),
+        colorTheme = console.colorTheme,
         logoUrl = console.logoUrl,
         onClick = onClick,
         testTag = "console_card_${console.id}",
