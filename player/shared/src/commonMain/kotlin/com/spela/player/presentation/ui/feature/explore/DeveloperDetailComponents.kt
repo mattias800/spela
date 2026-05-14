@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -188,15 +187,18 @@ internal fun DeveloperHeroBanner(
                         .padding(SpSpacing.Large),
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
-                    // Company logo or name text
+                    // Company logo or name text. Use a fixed-size
+                    // container so ContentScale.Fit actually scales small
+                    // logos UP — widthIn/heightIn (upper bounds only)
+                    // let a 100×30 logo render at 100×30 inside a much
+                    // larger slot.
                     val logoUrl = companyInfo?.logoUrl
                     if (logoUrl != null) {
                         SpImage(
                             model = logoUrl,
                             contentDescription = "${detail.name} logo",
                             modifier = Modifier
-                                .widthIn(max = 200.dp)
-                                .heightIn(max = 80.dp)
+                                .size(width = 200.dp, height = 80.dp)
                                 .testTag("developer_company_logo"),
                             contentScale = ContentScale.Fit,
                             staggerMs = 0L,
@@ -317,12 +319,21 @@ internal fun DeveloperTopRatedRow(
     topGames: List<Game>,
     onGameSelected: (String) -> Unit,
     modifier: Modifier = Modifier,
+    /**
+     * When true, the first item in this carousel claims the screen's
+     * default focus on first entry. Use on the publisher/developer
+     * detail pages to land focus on the top of the content rather
+     * than dropping into "All games" further down (which would scroll
+     * the page on first paint).
+     */
+    isDefaultFocusGroup: Boolean = false,
 ) {
     SpCarousel(
         itemCount = topGames.size,
         modifier = modifier,
         memoryKey = "explore_developer_top_rated",
         itemKey = { topGames[it].id },
+        isDefaultFocusGroup = isDefaultFocusGroup,
     ) { index, focusRequester ->
         Box(modifier = Modifier.focusRequester(focusRequester)) {
             DeveloperTopRatedCard(

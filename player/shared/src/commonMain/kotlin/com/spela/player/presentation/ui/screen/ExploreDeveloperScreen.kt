@@ -99,20 +99,31 @@ fun ExploreDeveloperScreen(
                 // → SpMainContentPadding → SpSectionList → sections. Top bar
                 // overlays as a sibling so it floats on the banner.
                 SpScrollableContent {
+                    // Hero banner is decorative — no focusable descendants
+                    // — so isDefault=true silently failed here and the
+                    // page's default-focus walked to the next candidate
+                    // ("All games" first item), which scrolled the page
+                    // to the bottom on first entry. Default-focus claim
+                    // moved to the first card in Top Rated (see below).
                     DeveloperHeroBanner(
                         detail = detail,
                         modifier = Modifier
-                            .focusRestoreItem(key = "explore_developer_hero", isDefault = true)
+                            .focusRestoreItem(key = "explore_developer_hero")
                             .testTag("developer_hero_banner"),
                     )
                     SpMainContentPadding {
                         SpSectionList(
                             modifier = Modifier.testTag("developer_detail_content"),
                         ) {
-                        // 1. About (company description)
+                        // 1. About — entity description (when IGDB has one).
+                        // Heading explicitly names the entity type so a
+                        // visitor landing on this page knows whether
+                        // they're reading about a developer or publisher
+                        // (the hero banner alone doesn't always make that
+                        // unambiguous).
                         val companyInfo = detail.companyInfo
                         if (companyInfo?.description != null) {
-                            SpTitledSection(title = "About") {
+                            SpTitledSection(title = "About this developer") {
                                 DeveloperCompanyDescription(
                                     companyInfo = companyInfo,
                                     modifier = Modifier.testTag("developer_company_description_section"),
@@ -120,45 +131,7 @@ fun ExploreDeveloperScreen(
                             }
                         }
 
-                        // 3. Related chips (publishers + related developers)
-                        val hasPublishers = detail.publishers.isNotEmpty()
-                        val hasRelated = detail.relatedDevelopers.isNotEmpty()
-                        if (hasPublishers || hasRelated) {
-                            FlowRow(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .testTag("developer_related_chips"),
-                                horizontalArrangement = Arrangement.spacedBy(SpSpacing.Small),
-                                verticalArrangement = Arrangement.spacedBy(SpSpacing.Small),
-                            ) {
-                                detail.publishers.forEach { publisher ->
-                                    SpChip(
-                                        text = "${publisher.name} (${publisher.count})",
-                                        onClick = { onPublisherSelected(publisher.name) },
-                                        modifier = Modifier
-                                            .testTag("developer_publisher_chip_${publisher.name}")
-                                            .semantics {
-                                                contentDescription = "${publisher.name}, ${publisher.count} games"
-                                                role = Role.Button
-                                            },
-                                    )
-                                }
-                                detail.relatedDevelopers.forEach { related ->
-                                    SpChip(
-                                        text = related.name,
-                                        onClick = { onDeveloperSelected(related.name) },
-                                        modifier = Modifier
-                                            .testTag("developer_related_chip_${related.name}")
-                                            .semantics {
-                                                contentDescription = "${related.name}, ${related.gameCount} games"
-                                                role = Role.Button
-                                            },
-                                    )
-                                }
-                            }
-                        }
-
-                        // 3. Top Rated
+                        // 2. Top Rated
                         if (detail.topGames.size >= 3) {
                             SpTitledSection(
                                 title = "Top Rated",
@@ -180,14 +153,27 @@ fun ExploreDeveloperScreen(
                                     topGames = detail.topGames,
                                     onGameSelected = onGameSelected,
                                     modifier = Modifier.testTag("developer_top_rated_section"),
+                                    isDefaultFocusGroup = true,
                                 )
                             }
                         }
 
-                        // 4. Games grid
+                        // 3. Your Stats
+                        if (detail.userStats != null) {
+                            SpTitledSection(title = "Your Stats") {
+                                DeveloperUserStatsCard(
+                                    userStats = detail.userStats,
+                                    totalGames = detail.gameCount,
+                                    onGameSelected = onGameSelected,
+                                    modifier = Modifier.testTag("developer_user_stats"),
+                                )
+                            }
+                        }
+
+                        // 4. All games — the full library entry-point.
                         if (detail.games.isNotEmpty()) {
                             SpTitledSection(
-                                title = "Games",
+                                title = "All games",
                                 titleTrailing = if (detail.games.size > 12 && onNavigateToGames != null) {
                                     {
                                         SpButton(
@@ -201,10 +187,15 @@ fun ExploreDeveloperScreen(
                                 SpGameGrid(
                                     items = detail.games.take(12).mapIndexed { index, game ->
                                         @Composable {
+                                            // Default-focus claim lives on
+                                            // Top Rated; falling back to
+                                            // the first game here would
+                                            // scroll the page on first
+                                            // entry past Top Rated +
+                                            // Your Stats.
                                             Box(
                                                 modifier = Modifier.focusRestoreItem(
                                                     key = "developer_${name}_game_${game.id}",
-                                                    isDefault = index == 0,
                                                 ),
                                             ) {
                                                 SpGridGameCard(
@@ -223,15 +214,59 @@ fun ExploreDeveloperScreen(
                             }
                         }
 
-                        // 5. Your Stats
-                        if (detail.userStats != null) {
-                            SpTitledSection(title = "Your Stats") {
-                                DeveloperUserStatsCard(
-                                    userStats = detail.userStats,
-                                    totalGames = detail.gameCount,
-                                    onGameSelected = onGameSelected,
-                                    modifier = Modifier.testTag("developer_user_stats"),
-                                )
+                        // 5. Connected companies — moved to the bottom
+                        // because the user is mostly here for the games
+                        // (sections 2–4), not the supply-chain trivia.
+                        // Split into two separately-labelled subsections
+                        // so each chip is obviously a publisher OR a
+                        // related developer, not an undifferentiated mix.
+                        if (detail.publishers.isNotEmpty()) {
+                            SpTitledSection(title = "Published by") {
+                                FlowRow(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .testTag("developer_publisher_chips"),
+                                    horizontalArrangement = Arrangement.spacedBy(SpSpacing.Small),
+                                    verticalArrangement = Arrangement.spacedBy(SpSpacing.Small),
+                                ) {
+                                    detail.publishers.forEach { publisher ->
+                                        SpChip(
+                                            text = "${publisher.name} (${publisher.count})",
+                                            onClick = { onPublisherSelected(publisher.name) },
+                                            modifier = Modifier
+                                                .testTag("developer_publisher_chip_${publisher.name}")
+                                                .semantics {
+                                                    contentDescription = "${publisher.name}, ${publisher.count} games"
+                                                    role = Role.Button
+                                                },
+                                        )
+                                    }
+                                }
+                            }
+                        }
+
+                        if (detail.relatedDevelopers.isNotEmpty()) {
+                            SpTitledSection(title = "Related developers") {
+                                FlowRow(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .testTag("developer_related_chips"),
+                                    horizontalArrangement = Arrangement.spacedBy(SpSpacing.Small),
+                                    verticalArrangement = Arrangement.spacedBy(SpSpacing.Small),
+                                ) {
+                                    detail.relatedDevelopers.forEach { related ->
+                                        SpChip(
+                                            text = related.name,
+                                            onClick = { onDeveloperSelected(related.name) },
+                                            modifier = Modifier
+                                                .testTag("developer_related_chip_${related.name}")
+                                                .semantics {
+                                                    contentDescription = "${related.name}, ${related.gameCount} games"
+                                                    role = Role.Button
+                                                },
+                                        )
+                                    }
+                                }
                             }
                         }
                         } // SpSectionList
