@@ -3,6 +3,7 @@ package com.spela.player.presentation.ui.feature.gamedetail
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.shape.RoundedCornerShape
+import com.spela.player.presentation.ui.gamepad.focusRestoreItem
 import com.spela.player.presentation.ui.gamepad.gamepadFocusable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -148,6 +149,11 @@ private fun MetadataItem(
             .padding(vertical = SpSpacing.XSmall)
             .then(
                 if (onClick != null) Modifier
+                    // Save focus per metadata link so back-nav from the
+                    // developer / publisher detail screen restores focus
+                    // to the link the user clicked, instead of dropping
+                    // back to the screen's default-focus element.
+                    .focusRestoreItem(key = "metadata_$label")
                     .clickable(
                         interactionSource = interactionSource,
                         indication = null,

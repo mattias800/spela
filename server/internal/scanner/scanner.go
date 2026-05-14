@@ -361,6 +361,21 @@ var discPattern = regexp.MustCompile(`(?i)[\(\[]\s*(?:disc|disk|cd)\s*(\d+)\s*[\
 // reasons. .ipf files are no longer indexed (see #892).
 var amigaDiscPattern = regexp.MustCompile(`\s([A-Z])$`)
 
+// amigaUnderscoreDiscPattern matches the alternative Amiga floppy
+// convention where each disk is suffixed with `_N` — e.g.
+// "BatmanVuelve_1.adf", "BatmanVuelve_2.adf". Common for ripped
+// demoscene productions where the original naming wasn't preserved.
+//
+// Restricted to 1-2 digit suffixes (`_1`..`_99`) to avoid grabbing
+// dates / serials / version numbers — `Game_2024.adf` (a 4-digit
+// year) and `Tool_v1.adf` won't match. Anchored to end-of-string
+// after extension is stripped.
+//
+// Safety: as with [amigaDiscPattern], a lone match isn't grouped
+// (see `len(files) < 2` guard in the disc-group loop), so a single
+// `Random_1.adf` stays as a standalone game.
+var amigaUnderscoreDiscPattern = regexp.MustCompile(`_(\d{1,2})$`)
+
 // trackPattern matches CD audio track markers in filenames, e.g. "(Track 06)", "(Track 1)".
 // These are companion files referenced by .cue sheets and should not be scanned as standalone games.
 var trackPattern = regexp.MustCompile(`(?i)\(Track\s*\d+\)`)
@@ -742,6 +757,13 @@ func stripAmigaDiscMarker(nameNoExt string) string {
 	return strings.TrimSpace(amigaDiscPattern.ReplaceAllString(nameNoExt, ""))
 }
 
+// stripAmigaUnderscoreDiscMarker removes the `_N` Amiga disc suffix from a
+// filename (extension already stripped). "BatmanVuelve_1" → "BatmanVuelve".
+// Pass-through if no match.
+func stripAmigaUnderscoreDiscMarker(nameNoExt string) string {
+	return strings.TrimSpace(amigaUnderscoreDiscPattern.ReplaceAllString(nameNoExt, ""))
+}
+
 // amigaDiscNumber converts a single uppercase letter to a 1-indexed disc
 // number ("A" → 1, "B" → 2, "E" → 5). Used for sorting Amiga disk sets.
 func amigaDiscNumber(letter string) int {
@@ -1082,6 +1104,17 @@ func (s *Scanner) scanMultiDisc(dir string, consoleMap map[string]*db.Console, f
 			parentDir := filepath.Dir(path)
 			nameNoExt := strings.TrimSuffix(info.Name(), filepath.Ext(info.Name()))
 			baseTitle := stripAmigaDiscMarker(nameNoExt)
+			key := discGroupKey{Dir: parentDir, Title: baseTitle}
+			discGroups[key] = append(discGroups[key], path)
+		} else if ext == ".adf" && amigaUnderscoreDiscPattern.MatchString(strings.TrimSuffix(info.Name(), ext)) {
+			// Amiga floppy alternative: "Title_1.adf" / "Title_2.adf" — `_N` suffix.
+			// Common for ripped demos. The 1-2-digit regex avoids
+			// catching years / serials. Lone matches stay as
+			// standalone games via the `len(files) < 2` guard
+			// downstream.
+			parentDir := filepath.Dir(path)
+			nameNoExt := strings.TrimSuffix(info.Name(), filepath.Ext(info.Name()))
+			baseTitle := stripAmigaUnderscoreDiscMarker(nameNoExt)
 			key := discGroupKey{Dir: parentDir, Title: baseTitle}
 			discGroups[key] = append(discGroups[key], path)
 		}

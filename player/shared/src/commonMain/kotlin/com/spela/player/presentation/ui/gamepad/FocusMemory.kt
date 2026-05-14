@@ -4,14 +4,19 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.compositionLocalOf
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInRoot
+import androidx.compose.ui.platform.LocalWindowInfo
 import kotlinx.coroutines.delay
 
 /**
@@ -49,10 +54,21 @@ fun rememberFocusMemoryState(): MutableState<String> {
  *  - On back/tab-switch entry, if the saved key matches [key], focus is
  *    requested on this element after a brief layout-settle delay.
  *  - When [isDefault] is true and the saved key is empty (first visit, or
- *    cleared scope), focus is requested on this element instead — the
- *    "sensible default focus on entry" behavior. Only ONE element per
- *    scope should set [isDefault] = true; if multiple do, the first to
- *    fire claims focus and the rest skip.
+ *    cleared scope), focus is requested on this element — the "sensible
+ *    default focus on entry" behavior — **but only if the element is on
+ *    screen at the time of firing**. Off-screen defaults would force the
+ *    page to scroll on forward navigation (centerOnFocus pulls the focused
+ *    element to viewport center), which is jarring when the user expects to
+ *    land on a freshly-rendered page at the top. Restore (back navigation)
+ *    is intentionally unaffected — the user remembers being there and
+ *    expects to land back on the same element, scroll cost or no.
+ *
+ *    Without a default that fires, gamepad navigation still activates: the
+ *    [GamepadHandler] wrapper Box self-focuses on screen mount, and the
+ *    first d-pad press calls `moveFocus(Next)` to enter the content tree.
+ *
+ *    Only ONE element per scope should set [isDefault] = true; if multiple
+ *    do, the first to fire claims focus and the rest skip.
  *
  * Call sites can pass an existing [requester] when they already manage one
  * (e.g. SpCarousel's per-item requesters used for left/right navigation).
@@ -61,7 +77,8 @@ fun rememberFocusMemoryState(): MutableState<String> {
  * @param key Stable identifier for this element within its scope. For list
  *   items use a composite like `"$groupKey/$itemId"` so reorder is handled.
  * @param isDefault If true, this is the screen's default-focus element —
- *   it gets focus on first entry when no saved key exists.
+ *   it gets focus on first entry when no saved key exists AND the element
+ *   is on screen.
  * @param requester Optional shared [FocusRequester]. If null, one is created.
  */
 fun Modifier.focusRestoreItem(
@@ -72,6 +89,13 @@ fun Modifier.focusRestoreItem(
     val scope = LocalFocusMemory.current ?: return@composed this
     val isForward = LocalIsForwardNavigation.current
     val fr = requester ?: remember { FocusRequester() }
+
+    // Window height for the viewport-visibility gate on Action.Default.
+    // Read from LocalWindowInfo so it adapts to window resizes and
+    // works the same on desktop / Android.
+    val windowHeightPx = LocalWindowInfo.current.containerSize.height.toFloat()
+    var elementY by remember { mutableStateOf(Float.NaN) }
+    var elementHeight by remember { mutableStateOf(0) }
 
     // Capture the firing decision exactly once at first composition. We must
     // NOT re-evaluate later — if `isForward` flips during a back transition
@@ -99,14 +123,35 @@ fun Modifier.focusRestoreItem(
                 Action.Default -> current.isEmpty()
                 Action.None -> false
             }
-            if (stillValid) {
-                try { fr.requestFocus() } catch (_: Exception) {}
+            if (!stillValid) return@LaunchedEffect
+
+            // Default-focus only fires when the target is on screen at
+            // firing time. See the kdoc above for why. Action.Restore
+            // skips this gate — back-nav should always land on the
+            // remembered element, even if it requires scrolling.
+            if (initialAction == Action.Default) {
+                val measured = !elementY.isNaN()
+                val topInside = measured && elementY in 0f..windowHeightPx
+                val bottomInside = measured &&
+                    (elementY + elementHeight) in 0f..windowHeightPx
+                if (!measured || (!topInside && !bottomInside)) {
+                    return@LaunchedEffect
+                }
             }
+
+            try { fr.requestFocus() } catch (_: Exception) {}
         }
     }
 
     this
         .focusRequester(fr)
+        .onGloballyPositioned { coords ->
+            // Captured for the Default-action viewport gate above. The
+            // value updates every layout pass; the LaunchedEffect reads
+            // whatever is current at the 120 ms firing point.
+            elementY = coords.positionInRoot().y
+            elementHeight = coords.size.height
+        }
         .onFocusChanged { state ->
             if (state.hasFocus) {
                 scope.value = key

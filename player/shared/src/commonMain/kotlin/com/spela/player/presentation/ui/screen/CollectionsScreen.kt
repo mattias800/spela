@@ -29,9 +29,6 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.drawBehind
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
@@ -45,6 +42,7 @@ import com.spela.player.presentation.ui.components.SpCard
 import com.spela.player.presentation.ui.components.SpCoverArt
 import com.spela.player.presentation.ui.components.SpFab
 import com.spela.player.presentation.ui.components.SpEmptyStates
+import com.spela.player.presentation.ui.components.SpScreen
 import com.spela.player.presentation.ui.components.ScreenLoadingIndicator
 import com.spela.player.presentation.ui.components.rememberLoadingFlashDebounce
 import com.spela.player.presentation.ui.components.SpSnackbar
@@ -93,23 +91,10 @@ fun CollectionsScreen(
     )
 
     CompositionLocalProvider(LocalFocusMemory provides focusMemory) {
-    Box(modifier = Modifier.fillMaxSize().testTag(TestTags.SCREEN_COLLECTIONS)) {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .drawBehind {
-                    val cx = size.width / 2f
-                    val cy = size.height / 2f
-                    val d = (size.width + size.height) * 0.25f
-                    drawRect(
-                        brush = Brush.linearGradient(
-                            colors = gradientColors,
-                            start = Offset(cx - d, cy - d),
-                            end = Offset(cx + d, cy + d),
-                        ),
-                    )
-                },
-        ) {
+    SpScreen(
+        gradientColors = gradientColors,
+        modifier = Modifier.testTag(TestTags.SCREEN_COLLECTIONS),
+    ) {
             // Route the screen-level loading branch through the same
             // state-machine hook as PullToRefreshBox below, so the dots
             // honour the min-shown-for window once they appear — no
@@ -215,7 +200,6 @@ fun CollectionsScreen(
                     }
                 }
             }
-        }
 
         // FAB
         SpFab(

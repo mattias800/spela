@@ -450,6 +450,37 @@ func TestAmigaDiscPattern(t *testing.T) {
 	}
 }
 
+func TestAmigaUnderscoreDiscPattern(t *testing.T) {
+	// `_N` at end of name-without-extension, 1-2 digits. Common for ripped
+	// demoscene productions (e.g. BatmanVuelve_1.adf / BatmanVuelve_2.adf).
+	tests := []struct {
+		nameNoExt string
+		matches   bool
+		stripped  string
+	}{
+		{"BatmanVuelve_1", true, "BatmanVuelve"},
+		{"BatmanVuelve_2", true, "BatmanVuelve"},
+		{"Game_10", true, "Game"},
+		{"Game_99", true, "Game"},
+		// 3+ digits don't match (avoids matching years like _2024).
+		{"Tool_2024", false, "Tool_2024"},
+		{"Demo_1991_release", false, "Demo_1991_release"},
+		// Underscore but no trailing digit.
+		{"Final_Fantasy", false, "Final_Fantasy"},
+		// Mid-string `_N` doesn't anchor.
+		{"Star Trek_02_TNG", false, "Star Trek_02_TNG"},
+		// No underscore at all.
+		{"BatmanVuelve", false, "BatmanVuelve"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.nameNoExt, func(t *testing.T) {
+			assert.Equal(t, tt.matches, amigaUnderscoreDiscPattern.MatchString(tt.nameNoExt))
+			assert.Equal(t, tt.stripped, stripAmigaUnderscoreDiscMarker(tt.nameNoExt))
+		})
+	}
+}
+
 func TestAmigaDiscNumber(t *testing.T) {
 	tests := []struct {
 		letter string

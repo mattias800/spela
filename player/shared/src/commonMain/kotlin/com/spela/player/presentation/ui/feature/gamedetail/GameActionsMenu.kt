@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.WatchLater
 import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material.icons.filled.Refresh
@@ -40,6 +41,15 @@ internal fun GameActionsMenu(
     onTogglePlayLater: () -> Unit,
     onAddToCollection: () -> Unit,
     onGradient: Boolean = false,
+    /**
+     * Optional "Save state settings" menu item — opens the per-game
+     * save-state policy override sheet. Provided only for consoles
+     * whose save-state tier is Medium or Large (where the override
+     * is actually meaningful); for Small-tier consoles this is null
+     * and no menu item renders, since the per-game opt-out is
+     * pointless when the console itself never opted out.
+     */
+    onSaveStateSettings: (() -> Unit)? = null,
     onAdminScrape: (() -> Unit)? = null,
     onAdminRefreshAchievements: (() -> Unit)? = null,
     isAdminActionLoading: Boolean = false,
@@ -130,6 +140,29 @@ internal fun GameActionsMenu(
                     )
                 },
             )
+
+            if (onSaveStateSettings != null) {
+                DropdownMenuItem(
+                    text = {
+                        Text(
+                            text = "Save state settings",
+                            style = SpTypography.BodyMedium,
+                        )
+                    },
+                    onClick = {
+                        expanded = false
+                        onSaveStateSettings()
+                    },
+                    modifier = Modifier.testTag("game_detail_menu_save_state_settings"),
+                    leadingIcon = {
+                        Icon(
+                            imageVector = Icons.Filled.Settings,
+                            contentDescription = null,
+                            modifier = Modifier.size(20.dp),
+                        )
+                    },
+                )
+            }
 
             // Admin actions
             if (onAdminScrape != null || onAdminRefreshAchievements != null) {

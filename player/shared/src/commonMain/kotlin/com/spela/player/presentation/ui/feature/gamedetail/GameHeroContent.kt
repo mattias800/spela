@@ -12,7 +12,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccessTime
 import androidx.compose.material.icons.filled.EmojiEvents
 import androidx.compose.material.icons.filled.History
-import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
@@ -100,9 +99,10 @@ fun GameHeroContent(
     onAdminScrape: (() -> Unit)? = null,
     onAdminRefreshAchievements: (() -> Unit)? = null,
     /**
-     * Per-game save-state policy override. The control lives behind a
-     * gear icon in this hero action row → Game settings sheet (#855),
-     * not inline in the info column where it used to be.
+     * Per-game save-state policy override. The control lives inside
+     * the "..." actions menu under "Save state settings", and only
+     * appears for Medium/Large-tier consoles where the override is
+     * meaningful.
      */
     onSetGameSaveStatePolicy: (com.spela.player.domain.model.SaveStateChoice?) -> Unit = {},
 ) {
@@ -311,6 +311,14 @@ fun GameHeroContent(
                 )
             }
 
+            // Per-game save-state policy override is only meaningful
+            // for Medium/Large console tiers — Small-tier consoles
+            // (NES / GB / SNES, KB-sized states) never opt out at the
+            // console level, so the per-game override has nothing to
+            // override. Hide the menu entry entirely on those consoles
+            // rather than show a sheet with only a no-op toggle.
+            val showSaveStateSettings = game.consoleSaveStatePolicy !=
+                com.spela.player.domain.model.SaveStatePolicyTier.Small
             GameActionsMenu(
                 isFavorite = game.isFavorite,
                 isInPlayLater = game.isInPlayLater,
@@ -318,23 +326,12 @@ fun GameHeroContent(
                 onTogglePlayLater = onTogglePlayLater,
                 onAddToCollection = onAddToCollection,
                 onGradient = true,
+                onSaveStateSettings = if (showSaveStateSettings) {
+                    { showGameSettingsSheet = true }
+                } else null,
                 onAdminScrape = onAdminScrape,
                 onAdminRefreshAchievements = onAdminRefreshAchievements,
                 isAdminActionLoading = state.isAdminActionLoading,
-            )
-
-            // Game settings — currently only the per-game save-state
-            // policy override (#855). Lives behind a gear icon, not
-            // inline, so the rare-use override doesn't compete with
-            // Play / Resume for vertical real-estate. Future per-game
-            // policies (shader, core, input remap) can land in the
-            // same sheet without re-litigating placement.
-            com.spela.player.presentation.ui.components.SpIconButton(
-                icon = Icons.Filled.Settings,
-                contentDescription = "Game settings",
-                onClick = { showGameSettingsSheet = true },
-                onGradient = true,
-                modifier = Modifier.testTag("game_detail_settings_button"),
             )
 
             // Playtime + last played grouped so they wrap together
@@ -469,7 +466,7 @@ fun GameHeroContent(
     if (showGameSettingsSheet) {
         AlertDialog(
             onDismissRequest = { showGameSettingsSheet = false },
-            title = { Text("Game settings") },
+            title = { Text("Save state settings") },
             text = {
                 GameSaveStatePolicyToggle(
                     current = state.gameSaveStatePolicy,
