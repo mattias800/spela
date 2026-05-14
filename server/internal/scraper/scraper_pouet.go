@@ -129,6 +129,123 @@ func (s *Scraper) applyPouetMetadata(game *db.Game, prod *pouet.Prod, console db
 	}
 }
 
+// backfillDemoMisscrapeFlag is the [db.ServerSetting] key used to record
+// that [Scraper.BackfillDemoConsoleMisscrapes] has run at least once on
+// this database. The backfill is idempotent over its query (only acts on
+// rows that still have igdb:* on a demo console), but we still gate it on
+// the flag so the work doesn't repeat on every startup once cleared.
+const backfillDemoMisscrapeFlag = "backfill_demo_igdb_misscrape_v1"
+
+// BackfillDemoConsoleMisscrapes clears IGDB-sourced metadata from demo-
+// console games (ADEMO / DDEMO) that have an `igdb:*` scraper ID, then
+// enqueues them for a fresh Pouet-routed scrape.
+//
+// Why: the DemoConsoles → Pouet routing in ScrapeGame was added after
+// some libraries had already been scraped through the IGDB path. The
+// fuzzy-match path in IGDB matches demo filenames (e.g. "Batmanpower
+// (The Goonies) [1989].adf") to real games (Ocean's Batman), and once
+// those bogus matches are saved the routing rule alone won't undo them
+// — re-scrape only runs on user-initiated rescrape or scanner-detected
+// file changes, neither of which fire on a stable library.
+//
+// One-shot via [backfillDemoMisscrapeFlag]: once the flag is set, the
+// backfill is a no-op. This avoids re-correcting an admin's deliberate
+// IGDB-to-demo match (e.g. linking a demo to a base game) after server
+// restarts. Admins who want to re-run the backfill can delete the
+// ServerSetting row.
+func (s *Scraper) BackfillDemoConsoleMisscrapes() error {
+	var setting db.ServerSetting
+	if err := s.DB.Where("key = ?", backfillDemoMisscrapeFlag).First(&setting).Error; err == nil {
+		// Already run on this DB.
+		return nil
+	}
+
+	demoAbbrevs := make([]string, 0, len(DemoConsoles))
+	for abbr := range DemoConsoles {
+		demoAbbrevs = append(demoAbbrevs, abbr)
+	}
+
+	var games []db.Game
+	if err := s.DB.
+		Joins("JOIN consoles ON consoles.id = games.console_id").
+		Where("consoles.abbreviation IN ?", demoAbbrevs).
+		Where("games.scraper_id LIKE 'igdb:%'").
+		Find(&games).Error; err != nil {
+		return fmt.Errorf("querying demo-console misscrapes: %w", err)
+	}
+
+	if len(games) == 0 {
+		// Set the flag so we don't repeat the query on every startup.
+		s.DB.Create(&db.ServerSetting{Key: backfillDemoMisscrapeFlag, Value: "done"})
+		return nil
+	}
+
+	slog.Info("backfilling demo-console misscrapes", "count", len(games))
+
+	ids := make([]uint, 0, len(games))
+	for _, g := range games {
+		ids = append(ids, g.ID)
+	}
+
+	// Clear the IGDB-sourced fields. Mirror the field set that
+	// ScrapeGame's re-scrape path clears, so the next scrape starts
+	// from a clean slate. Title is intentionally left as-is — a
+	// re-scrape with a successful Pouet match will overwrite it, and
+	// for demos with filenames too generic for Pouet to match
+	// (e.g. "BatmanVuelve_1.adf") the existing Title is at least a
+	// hint of the original even if it came from a wrong IGDB match.
+	if err := s.DB.Model(&db.Game{}).
+		Where("id IN ?", ids).
+		Updates(map[string]interface{}{
+			"scraper_id":              "",
+			"cover_url":               "",
+			"screenshot_url":          "",
+			"libretro_cover_url":      "",
+			"igdb_cover_url":          "",
+			"description":             "",
+			"storyline":               "",
+			"developer":               "",
+			"publisher":               "",
+			"genre":                   "",
+			"game_modes":              "",
+			"players":                 0,
+			"total_rating":            0,
+			"total_rating_count":      0,
+			"igdb_user_rating":        0,
+			"igdb_user_rating_count":  0,
+			"time_to_beat_hastily":    0,
+			"time_to_beat_normally":   0,
+			"time_to_beat_completely": 0,
+			"scrape_attempts":         0,
+		}).Error; err != nil {
+		return fmt.Errorf("clearing demo-console misscrape metadata: %w", err)
+	}
+
+	// Drop normalised screenshot + release-date rows for these games
+	// — same as ScrapeGame's re-scrape branch does inline.
+	s.DB.Where("game_id IN ?", ids).Delete(&db.GameScreenshot{})
+	s.DB.Where("game_id IN ?", ids).Delete(&db.GameReleaseDate{})
+
+	// Enqueue for a fresh Pouet scrape. Low priority so user-initiated
+	// scrapes still jump the queue.
+	if s.Queue != nil {
+		if err := s.Queue.EnqueueGames(0, ids, 10); err != nil {
+			slog.Warn("failed to enqueue demo-console misscrapes for re-scrape",
+				"count", len(ids), "error", err)
+		}
+	}
+
+	// Mark done so the next startup is a no-op.
+	if err := s.DB.Create(&db.ServerSetting{
+		Key:   backfillDemoMisscrapeFlag,
+		Value: "done",
+	}).Error; err != nil {
+		slog.Warn("failed to record demo-misscrape backfill flag", "error", err)
+	}
+
+	return nil
+}
+
 // ScrapeGameWithPouetMatch applies metadata from a specific Pouet production ID.
 func (s *Scraper) ScrapeGameWithPouetMatch(game *db.Game, pouetID string) error {
 	prod, err := s.PouetClient.GetProd(pouetID)

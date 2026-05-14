@@ -327,6 +327,17 @@ func main() {
 		go scrapeWorker.Run(workerCtx)
 	}
 
+	// One-shot cleanup: clear stale IGDB metadata stuck on demo-console
+	// games (ADEMO / DDEMO) from before the Pouet routing was added, and
+	// enqueue them for a fresh Pouet scrape. Idempotent — guarded by a
+	// ServerSetting flag, so subsequent restarts are no-ops. See the
+	// kdoc on BackfillDemoConsoleMisscrapes for details.
+	go func() {
+		if err := metaScraper.BackfillDemoConsoleMisscrapes(); err != nil {
+			slog.Warn("demo-console misscrape backfill failed", "error", err)
+		}
+	}()
+
 	// Rebuild variant groups from scratch on startup. This is idempotent —
 	// the result depends only on filenames and IGDB IDs, not on existing
 	// group state. Fixes any corruption from previous runs.
