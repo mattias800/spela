@@ -7,25 +7,19 @@ import androidx.compose.ui.unit.sp
 /**
  * Centralised typography tokens for the player UI.
  *
- * ## Minimum size floor: 14sp
+ * ## Minimum size floor: 12sp
  *
- * Every token defined here is ≥ 14sp. The app's main UI must not use
+ * Every token defined here is ≥ 12sp. The app's main UI must not use
  * smaller text — readability on TVs, gaming handhelds, and for users
  * with imperfect eyesight degrades quickly below that. 16sp is the
- * default body / title size; 14sp is reserved for the genuinely
- * smaller tier (labels, supporting metadata, chips).
+ * default body / title size; 14sp is the comfortable mid tier; 12sp
+ * is the smallest size the app will go to (used only for the
+ * densest secondary metadata: chip labels, supporting captions).
  *
- * If you find yourself wanting smaller text, you almost certainly
- * want to:
- *
- *   1. Move information to a different place in the layout, or
- *   2. Use [FinePrint] explicitly — the one allowed exception, for
- *      true disclaimers / legal-style text that the user shouldn't
- *      need to read often.
- *
- * **Do not hardcode `fontSize = N.sp`** outside this file (with the
- * narrow exception of in-game overlays where dense layouts are
- * unavoidable — e.g. the secondary keyboard tab labels).
+ * **Do not hardcode `fontSize = N.sp`** outside this file. If a token
+ * doesn't fit your case, the answer is either to pick a different
+ * tier or to move the information somewhere it has room — not to go
+ * smaller than 12sp.
  *
  * ## Tier semantics
  *
@@ -86,13 +80,11 @@ object SpTypography {
         fontWeight = FontWeight.Medium,
         lineHeight = 20.sp,
     )
-    // 14sp — at the readability floor. Used to be 12sp; bumped per the
-    // app-wide minimum (see kdoc above).
     val TitleSmall = TextStyle(
-        fontSize = 14.sp,
+        fontSize = 12.sp,
         fontWeight = FontWeight.Medium,
-        lineHeight = 20.sp,
-        letterSpacing = 0.25.sp,
+        lineHeight = 16.sp,
+        letterSpacing = 0.5.sp,
     )
 
     // Body - descriptions, paragraphs
@@ -106,12 +98,10 @@ object SpTypography {
         fontWeight = FontWeight.Normal,
         lineHeight = 20.sp,
     )
-    // 14sp — at the readability floor. Used to be 12sp; bumped per the
-    // app-wide minimum (see kdoc above).
     val BodySmall = TextStyle(
-        fontSize = 14.sp,
+        fontSize = 12.sp,
         fontWeight = FontWeight.Normal,
-        lineHeight = 20.sp,
+        lineHeight = 16.sp,
     )
 
     // Label - buttons, chips, tags
@@ -121,44 +111,19 @@ object SpTypography {
         lineHeight = 20.sp,
         letterSpacing = 0.25.sp,
     )
-    // 14sp — at the readability floor. Used to be 12sp; bumped per the
-    // app-wide minimum (see kdoc above).
     val LabelMedium = TextStyle(
-        fontSize = 14.sp,
+        fontSize = 12.sp,
         fontWeight = FontWeight.SemiBold,
-        lineHeight = 20.sp,
-        letterSpacing = 0.4.sp,
-    )
-    // 14sp — at the readability floor. Used to be 10sp; bumped per the
-    // app-wide minimum (see kdoc above).
-    val LabelSmall = TextStyle(
-        fontSize = 14.sp,
-        fontWeight = FontWeight.Medium,
-        lineHeight = 20.sp,
+        lineHeight = 16.sp,
         letterSpacing = 0.5.sp,
     )
-
-    /**
-     * Disclaimer / legal-style fine print. 12sp — the ONE allowed
-     * exception to the 14sp floor.
-     *
-     * Reserved for text that:
-     *
-     *   - The user should be aware of but doesn't need to read in
-     *     daily use (terms-of-service blurbs, attribution footers,
-     *     debug-build markers, ROM hash signatures shown for
-     *     verification, etc.)
-     *   - Is information-dense enough that compressing it down
-     *     actively helps comprehension (e.g. a tabular "this is
-     *     metadata about the metadata" footer).
-     *
-     * If you're tempted to use this for ordinary supporting metadata
-     * (release year, developer name, chip text), use [LabelSmall]
-     * (14sp) instead.
-     */
-    val FinePrint = TextStyle(
+    // 12sp — the floor. Used to be 10sp, which is unreadable at
+    // typical gaming-handheld / TV viewing distance and for users
+    // with imperfect eyesight. See the kdoc on this object.
+    val LabelSmall = TextStyle(
         fontSize = 12.sp,
-        fontWeight = FontWeight.Normal,
+        fontWeight = FontWeight.Medium,
         lineHeight = 16.sp,
+        letterSpacing = 0.5.sp,
     )
 }
