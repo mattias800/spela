@@ -815,6 +815,10 @@ type SimilarGame struct {
 	Name        string  `json:"name"`
 	Cover       *Image  `json:"cover"`
 	TotalRating float64 `json:"total_rating"`
+	// Platforms are the IGDB platform IDs the title is released on.
+	// Used by the similar-games handler to filter suggestions to
+	// platforms within ± 1 console generation of the source game.
+	Platforms []int `json:"platforms"`
 }
 
 // GetSimilarGames fetches similar games for a given IGDB game ID.
@@ -884,7 +888,7 @@ func (c *Client) GetSimilarGames(igdbGameID int) ([]SimilarGame, error) {
 	}
 
 	detailQuery := fmt.Sprintf(
-		`fields name, cover.image_id, total_rating; where id = (%s); limit %d;`,
+		`fields name, cover.image_id, total_rating, platforms; where id = (%s); limit %d;`,
 		strings.Join(idStrs, ","), len(ids),
 	)
 
