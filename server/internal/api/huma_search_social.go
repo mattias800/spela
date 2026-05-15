@@ -126,10 +126,20 @@ func (h *SearchHandler) HumaSearch(ctx context.Context, in *SearchInput) (*Searc
 		limit = 5
 	}
 
+	// Multi-token queries may include a platform abbreviation that
+	// prioritises (but doesn't filter) that platform's games — e.g.
+	// "jurassic park nes" or "nes jurassic park". The hint is dropped
+	// only for the games search; the other categories continue to
+	// search the full query so a user typing "nes" gets the NES
+	// console hit in the consoles tab too. See [extractConsoleHint].
+	gameQuery, priorityAbbr := h.extractConsoleHint(query)
+
 	escapedQuery := escapeLikePattern(query)
 	likePattern := "%" + escapedQuery + "%"
 
-	games := h.searchGames(likePattern, limit)
+	gamesLikePattern := "%" + escapeLikePattern(gameQuery) + "%"
+
+	games := h.searchGames(gamesLikePattern, limit, priorityAbbr)
 	consoles := h.searchConsoles(likePattern, limit)
 	developers := h.searchDevelopers(likePattern, limit)
 	publishers := h.searchPublishers(likePattern, limit)
