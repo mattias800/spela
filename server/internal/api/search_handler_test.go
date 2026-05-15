@@ -395,6 +395,112 @@ func TestSearch_RequiresAuth(t *testing.T) {
 	assert.Equal(t, http.StatusUnauthorized, w.Code)
 }
 
+// TestSearch_PlatformCodeHintBoostsMatchingConsole covers the "jurassic
+// park nes" pattern: a multi-token query containing a console
+// abbreviation prioritises games on that console without filtering out
+// other consoles' results.
+func TestSearch_PlatformCodeHintBoostsMatchingConsole(t *testing.T) {
+	database, router, token := setupSearchEnv(t)
+
+	var snes, nes, gba db.Console
+	require.NoError(t, database.Where("abbreviation = ?", "SNES").First(&snes).Error)
+	require.NoError(t, database.Where("abbreviation = ?", "NES").First(&nes).Error)
+	require.NoError(t, database.Where("abbreviation = ?", "GBA").First(&gba).Error)
+
+	// Same title across three platforms — alphabetical order without
+	// the hint would put SNES before NES (S > N is false; actually
+	// SNES sorts after NES alphabetically by title which is identical,
+	// so order would come down to whatever the ORM returns).
+	// With a NES hint, NES must surface first regardless of SNES /
+	// GBA being in the result set.
+	titles := []db.Game{
+		{ConsoleID: snes.ID, Title: "Jurassic Park", FileName: "jp.smc", FilePath: "/roms/snes/jp.smc"},
+		{ConsoleID: nes.ID, Title: "Jurassic Park", FileName: "jp.nes", FilePath: "/roms/nes/jp.nes"},
+		{ConsoleID: gba.ID, Title: "Jurassic Park", FileName: "jp.gba", FilePath: "/roms/gba/jp.gba"},
+	}
+	for i := range titles {
+		require.NoError(t, database.Create(&titles[i]).Error)
+	}
+
+	cases := []struct {
+		name   string
+		query  string
+		expect string
+	}{
+		{"suffix", "jurassic park nes", "nes"},
+		{"prefix", "nes jurassic park", "nes"},
+		{"mixed case", "Jurassic Park NES", "nes"},
+		{"uppercase abbrev", "JURASSIC PARK NES", "nes"},
+		// Different console — make sure the hint is being read, not
+		// hard-coded.
+		{"snes hint", "jurassic park snes", "snes"},
+		{"gba hint", "jurassic park gba", "gba"},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			code, resp := searchGet(t, router, token,
+				"/api/search?q="+url.QueryEscape(tc.query))
+			require.Equal(t, http.StatusOK, code)
+			require.GreaterOrEqual(t, len(resp.Games.Results), 3,
+				"all three platform variants should still be in the result set (hint priortises, doesn't filter)")
+			assert.Equal(t, tc.expect, resp.Games.Results[0].ConsoleID,
+				"first result should be on the hinted console")
+		})
+	}
+}
+
+// TestSearch_PlatformCodeHintSingleTokenStillSearchesEverything verifies
+// the "user typed just `nes` alone" case isn't stripped to an empty
+// query. A single token shouldn't trigger console-hint extraction; the
+// token has to remain in the games-title LIKE pattern.
+func TestSearch_PlatformCodeHintSingleTokenStillSearchesEverything(t *testing.T) {
+	database, router, token := setupSearchEnv(t)
+
+	var nes db.Console
+	require.NoError(t, database.Where("abbreviation = ?", "NES").First(&nes).Error)
+
+	// A game whose title contains "nes" — confirms the unmodified
+	// single-token query still runs the LIKE search instead of being
+	// stripped to nothing by the hint extractor.
+	g := db.Game{ConsoleID: nes.ID, Title: "Jonesy NES", FileName: "jn.nes", FilePath: "/roms/nes/jn.nes"}
+	require.NoError(t, database.Create(&g).Error)
+
+	code, resp := searchGet(t, router, token, "/api/search?q=nes")
+	require.Equal(t, http.StatusOK, code)
+	assert.NotEmpty(t, resp.Games.Results,
+		"single-token query should not strip the token; it should LIKE-match game titles")
+}
+
+// TestSearch_PlatformCodeHintDoesNotFilterOtherConsoles asserts the
+// "don't filter out other platforms" contract from the spec.
+func TestSearch_PlatformCodeHintDoesNotFilterOtherConsoles(t *testing.T) {
+	database, router, token := setupSearchEnv(t)
+
+	var snes, gba db.Console
+	require.NoError(t, database.Where("abbreviation = ?", "SNES").First(&snes).Error)
+	require.NoError(t, database.Where("abbreviation = ?", "GBA").First(&gba).Error)
+
+	// "Final Fantasy" exists only on SNES and GBA. User types
+	// "final fantasy nes" — no NES game matches the title, but the
+	// result must still include SNES + GBA results, not be empty.
+	for i, c := range []db.Console{snes, gba} {
+		g := db.Game{
+			ConsoleID: c.ID,
+			Title:     "Final Fantasy",
+			FileName:  fmt.Sprintf("ff-%d.rom", i),
+			FilePath:  fmt.Sprintf("/roms/ff-%d.rom", i),
+		}
+		require.NoError(t, database.Create(&g).Error)
+	}
+
+	code, resp := searchGet(t, router, token,
+		"/api/search?q="+url.QueryEscape("final fantasy nes"))
+	require.Equal(t, http.StatusOK, code)
+	assert.Equal(t, 2, len(resp.Games.Results),
+		"NES hint must not filter out SNES + GBA results when no NES title matches")
+}
+
 func TestSearch_LimitDefaultsAndBounds(t *testing.T) {
 	database, router, token := setupSearchEnv(t)
 

@@ -1,8 +1,10 @@
 package api
 
 import (
+	"fmt"
 	"log/slog"
 	"math"
+	"regexp"
 	"strconv"
 	"strings"
 
@@ -90,8 +92,82 @@ type SearchFranchiseResult struct {
 // likeEscape is the ESCAPE clause fragment used in all LIKE queries.
 const likeEscape = " ESCAPE '\\'"
 
+// consoleAbbrSafe restricts what may be inlined into the CASE expression
+// used by [SearchHandler.searchGames] when applying a platform-code
+// priority. Real console abbreviations are A-Z 0-9 only (NES, SNES, GBA,
+// A52, GG, etc.); this regex rejects anything else as a guard against
+// future bugs that might let raw user text slip into priorityAbbr.
+var consoleAbbrSafe = regexp.MustCompile(`^[A-Z0-9]{1,16}$`)
+
+// extractConsoleHint pulls a single console-abbreviation token out of a
+// multi-token search query so callers can prioritise (not filter)
+// matching games. Lets users type "jurassic park nes" or "nes jurassic
+// park" and have NES results float to the top.
+//
+// Rules:
+//   - One-token queries are returned unchanged. ("nes" alone keeps the
+//     existing behaviour: searches every category for "nes" and finds
+//     the NES console.)
+//   - For multi-token queries, the first token whose lower-cased form
+//     exactly matches a Console.Abbreviation (case-insensitive) is
+//     stripped from the query; that abbreviation becomes the hint.
+//   - If stripping leaves fewer than two characters of query, the hint
+//     is dropped and the original query is returned — we don't want
+//     "DS Dark Souls" → search for nothing if the user was reaching
+//     for the regular search.
+//   - If no token matches, the original query is returned with empty hint.
+//
+// Returns the (potentially-stripped) cleaned query and the canonical
+// upper-case abbreviation of the matched console, or empty string if
+// none.
+func (h *SearchHandler) extractConsoleHint(query string) (cleanedQuery string, priorityAbbr string) {
+	tokens := strings.Fields(query)
+	if len(tokens) < 2 {
+		return query, ""
+	}
+
+	var consoleAbbrs []string
+	if err := h.DB.Model(&db.Console{}).
+		Where("deleted_at IS NULL").
+		Pluck("abbreviation", &consoleAbbrs).Error; err != nil {
+		return query, ""
+	}
+	abbrSet := make(map[string]string, len(consoleAbbrs))
+	for _, a := range consoleAbbrs {
+		abbrSet[strings.ToLower(a)] = a
+	}
+
+	matched := ""
+	remaining := make([]string, 0, len(tokens))
+	for _, t := range tokens {
+		if matched == "" {
+			if canonical, ok := abbrSet[strings.ToLower(t)]; ok {
+				matched = canonical
+				continue
+			}
+		}
+		remaining = append(remaining, t)
+	}
+
+	if matched == "" {
+		return query, ""
+	}
+
+	cleaned := strings.Join(remaining, " ")
+	if len(cleaned) < 2 {
+		// User typed something like "nes" with stray whitespace, or
+		// "nes a". Leaving them with a single-character query is
+		// useless. Fall back to the original.
+		return query, ""
+	}
+	return cleaned, matched
+}
+
 // searchGames searches for games matching the query, excluding soft-deleted entries.
-func (h *SearchHandler) searchGames(likePattern string, limit int) SearchCategoryResult[SearchGameResult] {
+//
+// When priorityAbbr is non-empty, games on that console float to the top
+// of the result list without filtering out other consoles' results.
+func (h *SearchHandler) searchGames(likePattern string, limit int, priorityAbbr string) SearchCategoryResult[SearchGameResult] {
 	type gameRow struct {
 		ID          uint
 		Title       string
@@ -112,11 +188,34 @@ func (h *SearchHandler) searchGames(likePattern string, limit int) SearchCategor
 		Count(&total)
 
 	var rows []gameRow
-	if err := h.DB.
+	q := h.DB.
 		Table("games").
 		Select("games.id, games.title, games.cover_url, consoles.name as console_name, consoles.abbreviation as console_abbr, games.developer, games.genre, consoles.cover_aspect").
 		Joins("JOIN consoles ON consoles.id = games.console_id").
-		Where(likeClause, likePattern).
+		Where(likeClause, likePattern)
+
+	// Priority-console hint: matching console first, then alphabetical
+	// within each bucket. Implemented via a CASE expression on the
+	// abbreviation column so SQLite can short-circuit the comparison
+	// per row without an extra subquery.
+	//
+	// priorityAbbr is sourced from extractConsoleHint, which only
+	// returns values it found in the consoles table — never user
+	// input — so inlining it into the SQL string is safe. Belt-and-
+	// braces: a regex sanity check rejects anything that isn't the
+	// alphanumeric / underscore form abbreviations actually use, so a
+	// future bug that lets user text leak in can't become injection.
+	// (Parameter binding via gorm.Expr / gorm.Order doesn't survive
+	// — GORM's Order() falls through to fmt.Sprintf and drops the
+	// Vars.)
+	if priorityAbbr != "" && consoleAbbrSafe.MatchString(priorityAbbr) {
+		q = q.Order(fmt.Sprintf(
+			"CASE WHEN UPPER(consoles.abbreviation) = '%s' THEN 0 ELSE 1 END",
+			strings.ToUpper(priorityAbbr),
+		))
+	}
+
+	if err := q.
 		Order("games.title ASC").
 		Limit(limit).
 		Scan(&rows).Error; err != nil {
