@@ -127,7 +127,9 @@ func (h *GameDiscoveryHandler) HumaGetSimilarGames(_ context.Context, in *GetSim
 	localByLowerTitle := make(map[string]db.Game, len(loweredNames))
 	if len(loweredNames) > 0 {
 		var localMatches []db.Game
-		if err := h.DB.Where("LOWER(title) IN ?", loweredNames).Find(&localMatches).Error; err == nil {
+		// Preload Console so the generation filter below can read
+		// localGame.Console.Generation without an extra round-trip.
+		if err := h.DB.Preload("Console").Where("LOWER(title) IN ?", loweredNames).Find(&localMatches).Error; err == nil {
 			for _, g := range localMatches {
 				key := strings.ToLower(g.Title)
 				if _, exists := localByLowerTitle[key]; !exists {
@@ -137,15 +139,60 @@ func (h *GameDiscoveryHandler) HumaGetSimilarGames(_ context.Context, in *GetSim
 		}
 	}
 
+	// Build an IGDB-platform → console-generation map so we can filter
+	// the cached similar games by era. IGDB's similar_games field
+	// ignores platform/era and routinely surfaces modern games for
+	// retro titles (e.g. Borderlands 3 as "similar to" a 1993 NES
+	// Jurassic Park). The filter keeps only games whose platform's
+	// console generation is within ± 1 of the source game's console
+	// generation.
+	srcGen := game.Console.Generation
+	platformGen := buildIGDBPlatformGenerationMap(h.DB)
+
 	result := make([]SimilarGameResponse, 0, len(cached))
 	for _, sg := range cached {
+		localGame, hasLocal := localByLowerTitle[strings.ToLower(sg.Name)]
+
+		// Apply the generation filter when the source game has a
+		// known generation (Console.Generation > 0). Consoles seeded
+		// without a generation (demos, ungraded retro systems) get
+		// no filtering — return everything from the cache.
+		if srcGen > 0 {
+			candidateGens := make([]int, 0, 4)
+			if hasLocal && localGame.Console.Generation > 0 {
+				candidateGens = append(candidateGens, localGame.Console.Generation)
+			}
+			for _, pid := range parseIGDBPlatformsList(sg.Platforms) {
+				if gen, ok := platformGen[pid]; ok && gen > 0 {
+					candidateGens = append(candidateGens, gen)
+				}
+			}
+			// Drop conservatively when we have no way to verify the
+			// generation: no local match and no cached / mapped
+			// platform data. Legacy cache rows (pre-Platforms column)
+			// land here until the 7-day TTL refreshes them.
+			if len(candidateGens) == 0 {
+				continue
+			}
+			inRange := false
+			for _, g := range candidateGens {
+				if g >= srcGen-1 && g <= srcGen+1 {
+					inRange = true
+					break
+				}
+			}
+			if !inRange {
+				continue
+			}
+		}
+
 		resp := SimilarGameResponse{
 			IGDBGameID:        sg.IGDBGameID,
 			Name:              sg.Name,
 			IGDBCriticsRating: sg.IGDBCriticsRating,
 		}
 
-		if localGame, ok := localByLowerTitle[strings.ToLower(sg.Name)]; ok {
+		if hasLocal {
 			localID := fmt.Sprintf("%d", localGame.ID)
 			resp.LocalGameId = &localID
 			if localGame.CoverURL != "" {
@@ -160,6 +207,39 @@ func (h *GameDiscoveryHandler) HumaGetSimilarGames(_ context.Context, in *GetSim
 	}
 
 	return &GetSimilarGamesOutput{Body: result}, nil
+}
+
+// buildIGDBPlatformGenerationMap returns a map from IGDB platform ID to
+// the corresponding console generation, derived by joining
+// [igdb.AbbreviationToIGDBPlatform] with the seeded Console rows. Used
+// by [HumaGetSimilarGames] to filter cached suggestions to platforms
+// within ± 1 generation of the source game.
+//
+// When multiple Spela consoles share an IGDB platform ID (e.g. C64
+// and C128 both map to 15), the lowest non-zero generation wins so
+// the filter stays permissive.
+func buildIGDBPlatformGenerationMap(database *gorm.DB) map[int]int {
+	var consoles []db.Console
+	if err := database.Find(&consoles).Error; err != nil {
+		return nil
+	}
+	genByAbbrev := make(map[string]int, len(consoles))
+	for _, c := range consoles {
+		genByAbbrev[c.Abbreviation] = c.Generation
+	}
+	result := make(map[int]int)
+	for abbr, platformIDs := range igdb.AbbreviationToIGDBPlatform {
+		gen, ok := genByAbbrev[abbr]
+		if !ok || gen == 0 {
+			continue
+		}
+		for _, pid := range platformIDs {
+			if existing, exists := result[pid]; !exists || gen < existing {
+				result[pid] = gen
+			}
+		}
+	}
+	return result
 }
 
 // HumaGetDeveloperGames is the huma handler for GET /api/games/{id}/developer-games.

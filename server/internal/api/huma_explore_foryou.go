@@ -69,6 +69,13 @@ func (h *ExploreHandler) HumaGetForYou(ctx context.Context, _ *GetForYouInput) (
 		return nil, huma.Error401Unauthorized("authentication required")
 	}
 
+	// Compute the cross-platform-dedupe tiebreak hint once and share it
+	// with every row builder. The map is read-only after construction so
+	// the parallel goroutines below can safely read it without locking.
+	// See [explore_handler_foryou_dedup.go] for the dedupe rules
+	// (issue #1183 v1).
+	mostPlayedByTitle := h.fetchMostPlayedTitleMap(userID)
+
 	// Run the four row builders in parallel — they're independent and
 	// each one does its own DB queries. Same pattern as /explore/rows.
 	type result struct {
@@ -81,19 +88,19 @@ func (h *ExploreHandler) HumaGetForYou(ctx context.Context, _ *GetForYouInput) (
 	results := make(chan result, 4)
 
 	go func() {
-		rows, err := h.buildBecauseYouPlayedRows(userID)
+		rows, err := h.buildBecauseYouPlayedRows(userID, mostPlayedByTitle)
 		results <- result{idx: 0, becauseRows: rows, err: err, errLogContext: "because-you-played rows"}
 	}()
 	go func() {
-		row, err := h.buildMoreGenreRow(userID)
+		row, err := h.buildMoreGenreRow(userID, mostPlayedByTitle)
 		results <- result{idx: 1, row: row, err: err, errLogContext: "more-genre row"}
 	}()
 	go func() {
-		row, err := h.buildUnfinishedRow(userID)
+		row, err := h.buildUnfinishedRow(userID, mostPlayedByTitle)
 		results <- result{idx: 2, row: row, err: err, errLogContext: "unfinished row"}
 	}()
 	go func() {
-		row, err := h.buildExpandHorizonsRow(userID)
+		row, err := h.buildExpandHorizonsRow(userID, mostPlayedByTitle)
 		results <- result{idx: 3, row: row, err: err, errLogContext: "expand-horizons row"}
 	}()
 
@@ -283,6 +290,11 @@ func (h *ExploreHandler) HumaGetPlayersLikeYou(ctx context.Context, _ *GetPlayer
 			sorted = append(sorted, g)
 		}
 	}
+
+	// Cross-platform title dedupe (#1183 v1). Without it, a similar user
+	// who has Street Fighter II on SNES, Genesis, and Arcade favourited
+	// would inflate this shelf with all three platform variants.
+	sorted = dedupeGamesByTitle(sorted, h.fetchMostPlayedTitleMap(userID))
 
 	return &GetPlayersLikeYouOutput{
 		CacheControl: "private, max-age=120",

@@ -925,6 +925,16 @@ type SimilarGame struct {
 	CoverLocalPath    string         `gorm:"size:512" json:"-"`
 	IGDBCriticsRating float64        `gorm:"column:rating" json:"igdbCriticsRating"`
 	LocalGameID       *uint          `json:"localGameId"`
+	// Platforms is a comma-separated list of IGDB platform IDs the
+	// similar game is released on (per IGDB's `platforms` field).
+	// Used by GET /api/games/{id}/similar to filter the cached
+	// suggestions to platforms within ± 1 console generation of the
+	// source game — IGDB's similar-games picks ignore platform and
+	// era, so a 1993 NES game ends up "similar to" 2019 PC shooters
+	// otherwise. Legacy rows (cached before this column existed)
+	// have an empty string; they fall back to local-library matching
+	// for the generation check and refresh via the 7-day cache TTL.
+	Platforms string `gorm:"size:255" json:"-"`
 }
 
 // Core represents a libretro core.

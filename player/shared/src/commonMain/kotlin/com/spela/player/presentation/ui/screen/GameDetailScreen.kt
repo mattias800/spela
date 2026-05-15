@@ -1,5 +1,6 @@
 package com.spela.player.presentation.ui.screen
 
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -54,6 +55,7 @@ import com.spela.player.presentation.ui.gamepad.LocalFocusMemory
 import com.spela.player.presentation.ui.gamepad.rememberFocusMemoryState
 import androidx.compose.runtime.CompositionLocalProvider
 import com.spela.player.presentation.ui.theme.SpColor
+import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.ui.theme.SpTypography
 import com.spela.player.presentation.viewmodel.GameDetailViewModel
 import com.spela.player.presentation.viewmodel.KeyMappingViewModel
@@ -182,20 +184,37 @@ fun GameDetailScreen(
                 )
             },
             coverExtra = { isPortrait ->
-                // User rating below the cover (landscape only; portrait shows it inline)
+                // Below-the-cover left column (landscape only — portrait
+                // renders these inline further down the page). Mirrors
+                // the web layout (#1099): rating + Time to Beat stacked
+                // in a compact left-side column, beside the game
+                // description / metadata on the right. The Column gives
+                // the two sections explicit vertical breathing room;
+                // SpTitledSection itself has no outer padding.
                 if (!isPortrait) {
-                    SpTitledSection(
-                        title = "Your Rating",
-                        icon = Icons.Filled.Star,
+                    Column(
+                        verticalArrangement = Arrangement.spacedBy(SpSpacing.Large),
                     ) {
-                        StarRatingRow(
-                            currentRating = state.myRating,
-                            averageRating = state.ratingSummary?.averageRating ?: game.communityRating,
-                            ratingCount = state.ratingSummary?.totalRatings ?: game.communityRatingCount,
-                            onRate = { rating ->
-                                viewModel.onIntent(GameDetailIntent.RateGame(rating))
-                            },
-                        )
+                        SpTitledSection(
+                            title = "Your Rating",
+                            icon = Icons.Filled.Star,
+                        ) {
+                            StarRatingRow(
+                                currentRating = state.myRating,
+                                averageRating = state.ratingSummary?.averageRating ?: game.communityRating,
+                                ratingCount = state.ratingSummary?.totalRatings ?: game.communityRatingCount,
+                                onRate = { rating ->
+                                    viewModel.onIntent(GameDetailIntent.RateGame(rating))
+                                },
+                            )
+                        }
+                        if (!isDemoConsole &&
+                            (game.timeToBeatHastily > 0 ||
+                                game.timeToBeatNormally > 0 ||
+                                game.timeToBeatCompletely > 0)
+                        ) {
+                            TimeToBeatSection(game = game)
+                        }
                     }
                 }
             },
@@ -286,19 +305,22 @@ fun GameDetailScreen(
                     )
                 }
 
-                // 2. Time to Beat (hidden for demo consoles)
-                if (!isDemoConsole && (game.timeToBeatHastily > 0 || game.timeToBeatNormally > 0 || game.timeToBeatCompletely > 0)) {
-                    TimeToBeatSection(game = game)
-                }
+                // Time to Beat was here as a top-level section; it now
+                // lives next to "Your Rating" (in coverExtra for
+                // landscape, inline below for portrait) so the pairing
+                // matches the web layout (#1099).
 
-                // 3. Community Stats (Play Activity)
+                // Community Stats (Play Activity)
                 GameCommunityStatsSection(
                     stats = state.gameStats,
                     isLoading = state.isLoadingStats,
                     onPlayerClicked = onNavigateToUser,
                 )
 
-                // Your Rating (portrait only — landscape shows it under cover art)
+                // Your Rating + Time to Beat (portrait only — landscape
+                // shows them under cover art in coverExtra). Web pairs
+                // these two compactly in a left-side column; we mirror
+                // that here.
                 if (isPortraitScreen) {
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally,
@@ -311,6 +333,13 @@ fun GameDetailScreen(
                                 viewModel.onIntent(GameDetailIntent.RateGame(rating))
                             },
                         )
+                    }
+                    if (!isDemoConsole &&
+                        (game.timeToBeatHastily > 0 ||
+                            game.timeToBeatNormally > 0 ||
+                            game.timeToBeatCompletely > 0)
+                    ) {
+                        TimeToBeatSection(game = game)
                     }
                 }
 

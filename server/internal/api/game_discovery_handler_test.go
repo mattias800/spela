@@ -101,7 +101,9 @@ func TestGetSimilarGames_ReturnsCachedData(t *testing.T) {
 	}
 	require.NoError(t, database.Create(&game).Error)
 
-	// Pre-populate cache
+	// Pre-populate cache. Platforms = "18" is the IGDB platform ID
+	// for NES — needed for the generation filter in HumaGetSimilarGames
+	// to recognise these similar games as same-generation candidates.
 	similar1 := db.SimilarGame{
 		GameID:            game.ID,
 		IGDBGameID:        5678,
@@ -109,6 +111,7 @@ func TestGetSimilarGames_ReturnsCachedData(t *testing.T) {
 		CoverImageID:      "co9999",
 		CoverLocalPath:    "NES/5678/cover.jpg",
 		IGDBCriticsRating: 85.5,
+		Platforms:         "18",
 	}
 	similar2 := db.SimilarGame{
 		GameID:            game.ID,
@@ -117,6 +120,7 @@ func TestGetSimilarGames_ReturnsCachedData(t *testing.T) {
 		CoverImageID:      "co8888",
 		CoverLocalPath:    "NES/9012/cover.jpg",
 		IGDBCriticsRating: 82.0,
+		Platforms:         "18",
 	}
 	require.NoError(t, database.Create(&similar1).Error)
 	require.NoError(t, database.Create(&similar2).Error)
@@ -188,6 +192,113 @@ func TestGetSimilarGames_CrossReferencesLocalLibrary(t *testing.T) {
 	assert.Len(t, result, 1)
 	require.NotNil(t, result[0].LocalGameId, "should have localGameId when local game matches")
 	assert.Equal(t, strconv.Itoa(int(localMatch.ID)), *result[0].LocalGameId)
+}
+
+func TestGetSimilarGames_GenerationFilter(t *testing.T) {
+	// IGDB's similar_games field ignores platform/era and routinely
+	// surfaces modern games for retro titles. The handler filters
+	// cached suggestions to platforms within ± 1 console generation
+	// of the source game.
+	database, cfg := setupTestEnv(t)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
+	token := discoveryAuthToken(t, router)
+
+	var nes db.Console
+	require.NoError(t, database.Where("abbreviation = ?", "NES").First(&nes).Error)
+
+	game := db.Game{
+		ConsoleID: nes.ID,
+		Title:     "Jurassic Park",
+		FileName:  "jp.nes",
+		FilePath:  "/tmp/jp.nes",
+		FileSize:  1024,
+		ScraperID: "igdb:1234",
+	}
+	require.NoError(t, database.Create(&game).Error)
+
+	// Three cached IGDB suggestions:
+	// (a) Same gen (NES, platform 18, gen 3) — kept
+	// (b) Adjacent gen (SNES, platform 19, gen 4) — kept (within ±1)
+	// (c) Far gen (PS3, platform 9, gen 7) — dropped
+	require.NoError(t, database.Create(&db.SimilarGame{
+		GameID:     game.ID,
+		IGDBGameID: 5001,
+		Name:       "Same Gen NES Title",
+		Platforms:  "18",
+	}).Error)
+	require.NoError(t, database.Create(&db.SimilarGame{
+		GameID:     game.ID,
+		IGDBGameID: 5002,
+		Name:       "Adjacent Gen SNES Title",
+		Platforms:  "19",
+	}).Error)
+	require.NoError(t, database.Create(&db.SimilarGame{
+		GameID:     game.ID,
+		IGDBGameID: 5003,
+		Name:       "Far Gen PS3 Title",
+		Platforms:  "9",
+	}).Error)
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/games/"+strconv.Itoa(int(game.ID))+"/similar", nil)
+	req.Header.Set("Authorization", "Bearer "+token)
+	router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var result []SimilarGameResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &result))
+
+	names := make([]string, len(result))
+	for i, r := range result {
+		names[i] = r.Name
+	}
+	assert.ElementsMatch(t, []string{"Same Gen NES Title", "Adjacent Gen SNES Title"}, names,
+		"expected same-gen and adjacent-gen suggestions kept, far-gen dropped")
+}
+
+func TestGetSimilarGames_GenerationFilter_DropsRowWithNoPlatformOrLocalMatch(t *testing.T) {
+	// A cached row with no Platforms (legacy data) AND no matching
+	// local game gives the handler no way to verify the generation.
+	// It drops conservatively. Once the cache TTL expires and the
+	// background refresh populates Platforms, the row re-appears
+	// (if it actually belongs in the allowed generation range).
+	database, cfg := setupTestEnv(t)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
+	token := discoveryAuthToken(t, router)
+
+	var nes db.Console
+	require.NoError(t, database.Where("abbreviation = ?", "NES").First(&nes).Error)
+
+	game := db.Game{
+		ConsoleID: nes.ID,
+		Title:     "Source Game",
+		FileName:  "src.nes",
+		FilePath:  "/tmp/src.nes",
+		FileSize:  1024,
+		ScraperID: "igdb:1234",
+	}
+	require.NoError(t, database.Create(&game).Error)
+
+	// No Platforms, no matching local game in the library.
+	require.NoError(t, database.Create(&db.SimilarGame{
+		GameID:     game.ID,
+		IGDBGameID: 5001,
+		Name:       "Mystery Suggestion",
+	}).Error)
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/games/"+strconv.Itoa(int(game.ID))+"/similar", nil)
+	req.Header.Set("Authorization", "Bearer "+token)
+	router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var result []SimilarGameResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &result))
+	assert.Empty(t, result, "legacy row with no platforms / local match is dropped conservatively")
 }
 
 func TestGetDeveloperGames_GameNotFound(t *testing.T) {
