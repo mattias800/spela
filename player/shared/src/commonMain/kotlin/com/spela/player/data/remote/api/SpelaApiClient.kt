@@ -864,13 +864,18 @@ class SpelaApiClient(
         return coresApi.listCores().body()
     }
 
-    suspend fun getCoreManifest(coreId: Long): com.spela.client.models.CoreManifestResponse {
+    suspend fun getCoreManifest(coreId: Long, platformArch: String? = null): com.spela.client.models.CoreManifestResponse {
         // The server's `/api/cores/{id}/manifest` path-id was changed
         // from int64 to a regex-validated string (`^[0-9]+$`) in the
         // OpenAPI schema, so the generated client now expects a String.
         // The numeric `coreId` we hold internally is still semantically
         // a row PK — encoding it as decimal preserves the URL shape.
-        return coresApi.getCoreManifest(coreId.toString()).body()
+        //
+        // platformArch is the `<currentPlatform()>-<currentArch()>` tag
+        // used by the per-platform staleness path (#1190). When null the
+        // server falls back to the legacy Core-wide fingerprint, so older
+        // callers keep working unchanged.
+        return coresApi.getCoreManifest(coreId.toString(), platformArch).body()
     }
 
     suspend fun getRecommendedCore(gameId: String): com.spela.player.domain.model.LibretroCore {
