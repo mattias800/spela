@@ -30,20 +30,6 @@ import com.spela.player.libretro.ControllerStatusState
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
 
-/**
- * Glyphs for the prev/next-section bumpers shown on either side of the
- * pill. When a controller is connected we use the L1/R1 labels that
- * match the bumper buttons; otherwise we surface the keyboard bindings
- * (`[` / `]`) the GamepadHandler already wires (#1136). This keeps the
- * pill honest about what each user can actually press.
- */
-private data class SectionBumperGlyphs(val prev: String, val next: String) {
-    companion object {
-        val Gamepad = SectionBumperGlyphs(prev = "L1", next = "R1")
-        val Keyboard = SectionBumperGlyphs(prev = "[", next = "]")
-    }
-}
-
 @Composable
 fun SpSectionIndicator(
     activeTab: BottomNavTab,
@@ -52,11 +38,6 @@ fun SpSectionIndicator(
     modifier: Modifier = Modifier,
 ) {
     val animationsEnabled = LocalAnimationsEnabled.current
-    val glyphs = if (controllerStatus.connectedCount > 0) {
-        SectionBumperGlyphs.Gamepad
-    } else {
-        SectionBumperGlyphs.Keyboard
-    }
 
     AnimatedVisibility(
         visible = visible,
@@ -75,7 +56,7 @@ fun SpSectionIndicator(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
-                text = glyphs.prev,
+                text = "L1",
                 color = SpColor.OnBackgroundSecondary,
                 fontSize = 12.sp,
             )
@@ -94,7 +75,7 @@ fun SpSectionIndicator(
                 }
             }
             Text(
-                text = glyphs.next,
+                text = "R1",
                 color = SpColor.OnBackgroundSecondary,
                 fontSize = 12.sp,
             )
