@@ -161,6 +161,7 @@ func Initialize(dbPath string) (*gorm.DB, error) {
 		&RefreshToken{},
 		&ServerSetting{},
 		&Core{},
+		&CorePlatformBinary{},
 		&ConsoleShaderPreference{},
 		&ConsoleKeyMappingPreference{},
 		&ConsoleSaveStatePolicy{},

@@ -248,19 +248,18 @@ func (h *CoreHandler) RefreshCoreMetadata(core *db.Core, platform string) (CoreR
 
 	changed := old != sum
 	if changed {
-		meta := map[string]interface{}{
-			"core":        core.Name,
-			"old_sha256":  old,
-			"new_sha256":  sum,
-			"size_bytes":  size,
-			"platform":    platform,
-			"source_url":  core.SourceURL,
-			"trigger":     "admin_refresh",
-		}
 		db.RecordOperationalEvent(h.DB, db.SystemEventInput{
 			EventType: db.SystemEventCoreUpdated,
 			Reason:    fmt.Sprintf("core %q binary replaced: %s → %s", core.Name, shortSha(old), shortSha(sum)),
-			Metadata:  meta,
+			Metadata: db.CoreUpdatedMetadata{
+				Core:         core.Name,
+				PlatformArch: platform,
+				OldSha256:    old,
+				NewSha256:    sum,
+				SizeBytes:    size,
+				SourceURL:    core.SourceURL,
+				Trigger:      "admin_refresh",
+			},
 		})
 	}
 

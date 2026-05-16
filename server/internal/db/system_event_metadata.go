@@ -72,3 +72,29 @@ type BIOSDownloadFailedMetadata struct {
 	URL       string `json:"url"`
 	Error     string `json:"error"`
 }
+
+// CoreUpdatedMetadata is the metadata shape for SystemEventCoreUpdated.
+// Emitted whenever the server observes a new sha256 for a core binary —
+// admin-triggered refresh, or a buildbot poll that landed a new nightly.
+// Trigger discriminates the two so the audit trail tells the story.
+type CoreUpdatedMetadata struct {
+	Core         string `json:"core"`
+	PlatformArch string `json:"platformArch,omitempty"` // empty for legacy admin-refresh that doesn't carry one
+	OldSha256    string `json:"oldSha256"`
+	NewSha256    string `json:"newSha256"`
+	SizeBytes    int64  `json:"sizeBytes"`
+	SourceURL    string `json:"sourceUrl"`
+	Trigger      string `json:"trigger"` // "admin_refresh" | "buildbot_poll"
+}
+
+// CoreUpdateFailedMetadata is the metadata shape for
+// SystemEventCoreUpdateFailed. Emitted by the buildbot poller when a
+// fetch or unzip fails — analogous to BIOSDownloadFailedMetadata. Lets
+// admins notice when upstream goes down or shifts the URL layout
+// without tailing container logs. See #1190.
+type CoreUpdateFailedMetadata struct {
+	Core         string `json:"core"`
+	PlatformArch string `json:"platformArch"`
+	URL          string `json:"url"`
+	Error        string `json:"error"`
+}

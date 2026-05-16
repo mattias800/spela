@@ -85,10 +85,11 @@ open class CoresApi : ApiClient {
      * Get fingerprint for a core binary
      * Returns sha256 + size + fetched-at for the server&#39;s current cached binary of a core. Players use this to decide whether their locally cached copy is stale without re-downloading the binary itself.
      * @param id Core row ID (not core name).
+     * @param platform Player&#39;s &lt;platform&gt;-&lt;arch&gt; tag. Optional; omit for the legacy core-wide manifest. (optional)
      * @return CoreManifestResponse
      */
     @Suppress("UNCHECKED_CAST")
-    open suspend fun getCoreManifest(id: kotlin.String): HttpResponse<CoreManifestResponse> {
+    open suspend fun getCoreManifest(id: kotlin.String, platform: kotlin.String? = null): HttpResponse<CoreManifestResponse> {
 
         val localVariableAuthNames = listOf<String>()
 
@@ -96,6 +97,7 @@ open class CoresApi : ApiClient {
             io.ktor.client.utils.EmptyContent
 
         val localVariableQuery = mutableMapOf<String, List<String>>()
+        platform?.apply { localVariableQuery["platform"] = listOf("$platform") }
         val localVariableHeaders = mutableMapOf<String, String>()
 
         val localVariableConfig = RequestConfig<kotlin.Any?>(

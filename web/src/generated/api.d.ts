@@ -12272,7 +12272,10 @@ export interface operations {
     };
     getCoreManifest: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Player's <platform>-<arch> tag. Optional; omit for the legacy core-wide manifest. */
+                platform?: string;
+            };
             header?: never;
             path: {
                 /** @description Core row ID (not core name). */
