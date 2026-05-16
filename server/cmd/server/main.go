@@ -149,6 +149,12 @@ func main() {
 		os.Exit(1)
 	}
 
+	// Drop the legacy CustomDownloadURL override on the azahar core row so
+	// downloads fall back to the libretro buildbot nightly endpoint. See #1187.
+	if err := db.MigrateAzaharToBuildbot(database); err != nil {
+		slog.Warn("failed to migrate azahar core to buildbot default", "error", err)
+	}
+
 	// Compute LogoAspectRatio for every seeded console by parsing the
 	// embedded SVG's viewBox. Lets the player app size the console-
 	// detail hero logo correctly on first render — without this, the

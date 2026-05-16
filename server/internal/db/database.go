@@ -1,6 +1,7 @@
 package db
 
 import (
+	"errors"
 	"fmt"
 	"log/slog"
 	"os"
@@ -1251,14 +1252,7 @@ func SeedCores(db *gorm.DB) error {
 		{Name: "gearcoleco", DisplayName: "Gearcoleco", Description: "ColecoVision emulator", Platforms: "windows,linux,macos,android"},
 		{Name: "puae", DisplayName: "PUAE", Description: "Commodore Amiga emulator", Platforms: "windows,linux,macos,android"},
 		{Name: "neocd", DisplayName: "NeoCD", Description: "Neo Geo CD emulator", Platforms: "windows,linux,macos,android"},
-		{
-			Name:        "azahar",
-			DisplayName: "Azahar",
-			Description: "Nintendo 3DS emulator (Citra successor)",
-			Platforms:   "windows,linux,macos,android",
-			Version:     "2125.0.1",
-			CustomDownloadURL: "https://github.com/azahar-emu/azahar/releases/download/2125.0.1/azahar-libretro-{platform}-2125.0.1.zip",
-		},
+		{Name: "azahar", DisplayName: "Azahar", Description: "Nintendo 3DS emulator (Citra successor)", Platforms: "windows,linux,macos,android"},
 		{Name: "scummvm", DisplayName: "ScummVM", Description: "Point-and-click adventure game engine", Platforms: "windows,linux,macos,android"},
 		{Name: "freechaf", DisplayName: "FreeChaF", Description: "Fairchild Channel F emulator", Platforms: "windows,linux,macos,android"},
 		{Name: "o2em", DisplayName: "O2EM", Description: "Magnavox Odyssey 2 / Philips Videopac emulator", Platforms: "windows,linux,macos,android"},
@@ -1310,6 +1304,45 @@ func SeedCores(db *gorm.DB) error {
 		}
 	}
 
+	return nil
+}
+
+// MigrateAzaharToBuildbot clears the legacy CustomDownloadURL / Version
+// override on the azahar core row so downloads fall back to the libretro
+// buildbot nightly endpoint. See #1187.
+//
+// Pre-#1187 the row was seeded with a GitHub release URL pinned to
+// 2125.0-alpha4 (later 2125.0.1). That URL 404'd on Android arm64-v8a
+// — the only Android ABI we support for 3DS — and shipped an Azahar
+// build with a Vulkan tooling_info crash on Apple Silicon. Buildbot
+// publishes fresh nightlies that fix both. SeedCores only backfilled
+// empty rows, so live deployments never picked up the corrected URL;
+// this migration force-clears the override so every existing row joins
+// the buildbot path.
+//
+// Idempotent: once the row is buildbot-default (both fields empty),
+// this is a no-op.
+func MigrateAzaharToBuildbot(database *gorm.DB) error {
+	var azahar Core
+	err := database.Where("name = ?", "azahar").First(&azahar).Error
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil
+	}
+	if err != nil {
+		return fmt.Errorf("loading azahar core: %w", err)
+	}
+	if azahar.CustomDownloadURL == "" && azahar.Version == "" {
+		return nil
+	}
+	if err := database.Model(&azahar).Updates(map[string]interface{}{
+		"download_url": "",
+		"version":      "",
+	}).Error; err != nil {
+		return fmt.Errorf("clearing azahar override: %w", err)
+	}
+	slog.Info("migrated azahar core to buildbot default",
+		"previous_url", azahar.CustomDownloadURL,
+		"previous_version", azahar.Version)
 	return nil
 }
 
