@@ -94,12 +94,13 @@ fun SpelaApp(deps: SpelaAppDependencies) = with(deps) {
     ) {
         val navState by navigationViewModel.state.collectAsState()
 
-        // Input mode detection: TOUCH shows tab bar, GAMEPAD shows section indicator
-        val inputMode by gamepadPortManager?.inputMode?.collectAsState()
-            ?: remember { mutableStateOf(InputMode.TOUCH) }
-        val isGamepadMode = inputMode == InputMode.GAMEPAD
+        // Nav style is driven by whether a physical gamepad is connected, not by
+        // the in-app InputMode. Keyboard + mouse users (no gamepad) always see the
+        // tab bar / side rail, so the nav doesn't flicker between styles as they
+        // switch between typing and clicking. See #1187.
         val controllerStatus by gamepadPortManager?.controllerStatus?.collectAsState()
             ?: remember { mutableStateOf(ControllerStatusState.Empty) }
+        val isGamepadMode = controllerStatus.connectedCount > 0
         val sectionIndicatorVisible = isGamepadMode
 
         // Indicator for E2E tests: exposes whether the libretro core is running.

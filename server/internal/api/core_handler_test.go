@@ -19,35 +19,6 @@ import (
 
 func itoa(u uint) string { return strconv.FormatUint(uint64(u), 10) }
 
-func TestListCores_AzaharHasDownloadURL(t *testing.T) {
-	_, cfg := setupTestEnv(t)
-	router, cleanup := NewRouter(*cfg)
-	defer cleanup()
-	token := registerAndGetToken(t, router)
-
-	w := httptest.NewRecorder()
-	req := httptest.NewRequest("GET", "/api/cores", nil)
-	req.Header.Set("Authorization", "Bearer "+token)
-	router.ServeHTTP(w, req)
-
-	require.Equal(t, http.StatusOK, w.Code)
-
-	var cores []map[string]interface{}
-	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &cores))
-
-	var azahar map[string]interface{}
-	for _, c := range cores {
-		if c["name"] == "azahar" {
-			azahar = c
-			break
-		}
-	}
-	require.NotNil(t, azahar, "azahar core should be seeded")
-	url, _ := azahar["customDownloadUrl"].(string)
-	assert.Contains(t, url, "github.com/azahar-emu/azahar")
-	assert.Contains(t, url, "{platform}")
-}
-
 func TestListCores_BuildbotCoresHaveNoDownloadURL(t *testing.T) {
 	_, cfg := setupTestEnv(t)
 	router, cleanup := NewRouter(*cfg)
@@ -64,8 +35,11 @@ func TestListCores_BuildbotCoresHaveNoDownloadURL(t *testing.T) {
 	var cores []db.Core
 	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &cores))
 
+	// `azahar` joined this set in #1188 — pre-#1188 it was pinned to a
+	// GitHub release that broke on Apple Silicon and 404'd on Android.
+	// Guard against a regression that re-adds the override.
 	for _, c := range cores {
-		if c.Name == "nestopia" || c.Name == "snes9x" || c.Name == "dolphin" {
+		if c.Name == "nestopia" || c.Name == "snes9x" || c.Name == "dolphin" || c.Name == "azahar" {
 			assert.Empty(t, c.CustomDownloadURL, "buildbot core %s should have no downloadUrl", c.Name)
 		}
 	}
@@ -135,8 +109,10 @@ func TestDownloadCore_BackfillsMetadata(t *testing.T) {
 }
 
 // TestDownloadCore_PinnedCoreCopiesDownloadURL verifies that a core with a
-// populated DownloadURL (pinned cores like azahar) has its DownloadURL
-// copied into SourceURL on the first-serve backfill.
+// populated CustomDownloadURL has it copied into SourceURL on the first-
+// serve metadata backfill. Spela no longer ships any seeded pinned cores
+// (azahar moved to the buildbot default in #1188), so the fixture is a
+// synthetic row written into the DB just for this test.
 func TestDownloadCore_PinnedCoreCopiesDownloadURL(t *testing.T) {
 	database, cfg := setupTestEnv(t)
 	router, cleanup := NewRouter(*cfg)
@@ -145,12 +121,17 @@ func TestDownloadCore_PinnedCoreCopiesDownloadURL(t *testing.T) {
 
 	require.NoError(t, os.MkdirAll(cfg.CoreDir, 0o755))
 	payload := []byte("pinned-core-bytes")
-	corePath := filepath.Join(cfg.CoreDir, "azahar_libretro.so")
+	corePath := filepath.Join(cfg.CoreDir, "fake_pinned_libretro.so")
 	require.NoError(t, os.WriteFile(corePath, payload, 0o644))
 
-	var core db.Core
-	require.NoError(t, database.Where("name = ?", "azahar").First(&core).Error)
-	require.NotEmpty(t, core.CustomDownloadURL, "seeded azahar core should have a DownloadURL template")
+	pinnedURL := "https://example.test/cores/fake_pinned-{platform}.zip"
+	core := db.Core{
+		Name:              "fake_pinned",
+		DisplayName:       "Fake Pinned Core",
+		Platforms:         "linux",
+		CustomDownloadURL: pinnedURL,
+	}
+	require.NoError(t, database.Create(&core).Error)
 
 	w := httptest.NewRecorder()
 	req := httptest.NewRequest("GET", "/api/cores/"+itoa(core.ID)+"/download?platform=linux", nil)
@@ -160,8 +141,8 @@ func TestDownloadCore_PinnedCoreCopiesDownloadURL(t *testing.T) {
 
 	var refreshed db.Core
 	require.NoError(t, database.First(&refreshed, core.ID).Error)
-	assert.Equal(t, core.CustomDownloadURL, refreshed.SourceURL,
-		"pinned core's DownloadURL template should be copied to SourceURL on first serve")
+	assert.Equal(t, pinnedURL, refreshed.SourceURL,
+		"pinned core's CustomDownloadURL should be copied to SourceURL on first serve")
 }
 
 // TestHashFileSha256_Errors verifies that hashFileSha256 returns an error

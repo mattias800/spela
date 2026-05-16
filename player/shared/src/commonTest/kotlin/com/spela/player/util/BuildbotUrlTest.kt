@@ -84,6 +84,30 @@ class BuildbotUrlTest {
         assertEquals("nestopia_libretro.so", coreFileName("nestopia", "linux"))
     }
 
+    // Azahar Android — libretro buildbot drops the `_android` suffix for this
+    // core specifically. See #1187 and ANDROID_NO_SUFFIX_CORES.
+
+    @Test
+    fun azaharAndroidArm64Url() {
+        assertEquals(
+            "https://buildbot.libretro.com/nightly/android/latest/arm64-v8a/azahar_libretro.so.zip",
+            buildbotCoreUrl("azahar", "android", "arm64-v8a"),
+        )
+    }
+
+    @Test
+    fun azaharAndroidFileName() {
+        assertEquals("azahar_libretro.so", coreFileName("azahar", "android"))
+    }
+
+    @Test
+    fun azaharMacosArm64UnchangedFromConvention() {
+        assertEquals(
+            "https://buildbot.libretro.com/nightly/apple/osx/arm64/latest/azahar_libretro.dylib.zip",
+            buildbotCoreUrl("azahar", "macos", "arm64"),
+        )
+    }
+
     // resolveDownloadUrl — Azahar-style GitHub release templates
 
     private val azaharTemplate =
