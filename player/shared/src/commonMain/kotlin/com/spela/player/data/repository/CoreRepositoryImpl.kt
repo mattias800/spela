@@ -8,6 +8,8 @@ import com.spela.player.domain.repository.CoreRepository
 import com.spela.player.util.FileStorage
 import com.spela.player.util.buildbotCoreUrl
 import com.spela.player.util.coreFileName
+import com.spela.player.util.currentArch
+import com.spela.player.util.currentPlatform
 import com.spela.player.util.extractFirstZipEntry
 import com.spela.player.util.resolveDownloadUrl
 import io.ktor.client.*
@@ -149,7 +151,14 @@ class CoreRepositoryImpl(
             apiClient.getAvailableCores().firstOrNull { it.name == coreName }?.id
         }.getOrNull() ?: return null
 
-        val manifest = runCatching { apiClient.getCoreManifest(coreId) }.getOrNull()
+        // Pass our runtime platform-arch so the server returns the
+        // per-platform fingerprint that matches the binary this device
+        // actually downloaded from buildbot. Without this the server
+        // falls back to its single Core.Sha256, which conflates every
+        // platform and breaks staleness for any device whose ABI isn't
+        // the last one to be admin-refreshed. See #1190.
+        val platformArch = "${currentPlatform()}-${currentArch()}"
+        val manifest = runCatching { apiClient.getCoreManifest(coreId, platformArch) }.getOrNull()
             ?: return null
 
         // Empty sha == the server has not fingerprinted this core

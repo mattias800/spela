@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"testing"
+	"time"
 
 	"github.com/spela/server/internal/auth"
 	"github.com/spela/server/internal/db"
@@ -266,6 +267,87 @@ func TestGetCoreManifest_RequiresAuth(t *testing.T) {
 	req := httptest.NewRequest("GET", "/api/cores/"+itoa(core.ID)+"/manifest", nil)
 	router.ServeHTTP(w, req)
 	assert.Equal(t, http.StatusUnauthorized, w.Code)
+}
+
+// TestGetCoreManifest_PerPlatformBinaryWinsOverCoreFields verifies the
+// platform-aware path: when ?platform=<platform-arch> matches a
+// CorePlatformBinary row, its sha/size win over the Core row's legacy
+// single-value fields. The player drives this with currentPlatform-arch
+// so its staleness check sees the right fingerprint for its own runtime.
+// See #1190.
+func TestGetCoreManifest_PerPlatformBinaryWinsOverCoreFields(t *testing.T) {
+	database, cfg := setupTestEnv(t)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
+	token := registerAndGetToken(t, router)
+
+	var core db.Core
+	require.NoError(t, database.Where("name = ?", "nestopia").First(&core).Error)
+	// Seed the legacy Core fields with one set of values, the per-platform
+	// row with a different set — the platform-aware response must pick
+	// the per-platform values.
+	require.NoError(t, database.Model(&core).Updates(map[string]interface{}{
+		"sha256":     "legacycoresha",
+		"size_bytes": int64(100),
+		"source_url": "https://example.test/legacy",
+	}).Error)
+	now := time.Now().UTC()
+	require.NoError(t, database.Create(&db.CorePlatformBinary{
+		CoreID:       core.ID,
+		PlatformArch: "linux-x86_64",
+		Sha256:       "perPlatformSha",
+		SizeBytes:    200,
+		FetchedAt:    &now,
+		SourceURL:    "https://example.test/per-platform",
+	}).Error)
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/cores/"+itoa(core.ID)+"/manifest?platform=linux-x86_64", nil)
+	req.Header.Set("Authorization", "Bearer "+token)
+	router.ServeHTTP(w, req)
+	require.Equal(t, http.StatusOK, w.Code)
+
+	var manifest struct {
+		Sha256    string `json:"sha256"`
+		SizeBytes int64  `json:"sizeBytes"`
+		SourceURL string `json:"sourceUrl"`
+	}
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &manifest))
+	assert.Equal(t, "perPlatformSha", manifest.Sha256)
+	assert.Equal(t, int64(200), manifest.SizeBytes)
+	assert.Equal(t, "https://example.test/per-platform", manifest.SourceURL)
+}
+
+// TestGetCoreManifest_FallsBackWhenPlatformNotPolled verifies that asking
+// for a platform that the poller hasn't covered yet falls back to the
+// legacy Core fields instead of 404-ing — clients shouldn't have to
+// special-case "manifest exists but not for my platform".
+func TestGetCoreManifest_FallsBackWhenPlatformNotPolled(t *testing.T) {
+	database, cfg := setupTestEnv(t)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
+	token := registerAndGetToken(t, router)
+
+	var core db.Core
+	require.NoError(t, database.Where("name = ?", "nestopia").First(&core).Error)
+	require.NoError(t, database.Model(&core).Updates(map[string]interface{}{
+		"sha256":     "fallbacksha",
+		"size_bytes": int64(50),
+	}).Error)
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/cores/"+itoa(core.ID)+"/manifest?platform=windows-x86_64", nil)
+	req.Header.Set("Authorization", "Bearer "+token)
+	router.ServeHTTP(w, req)
+	require.Equal(t, http.StatusOK, w.Code)
+
+	var manifest struct {
+		Sha256    string `json:"sha256"`
+		SizeBytes int64  `json:"sizeBytes"`
+	}
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &manifest))
+	assert.Equal(t, "fallbacksha", manifest.Sha256)
+	assert.Equal(t, int64(50), manifest.SizeBytes)
 }
 
 // TestRefreshCore_PicksUpReplacedBinary is the canonical #555 Phase 2b

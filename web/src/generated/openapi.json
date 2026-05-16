@@ -16023,6 +16023,18 @@
               "pattern": "^[0-9]+$",
               "type": "string"
             }
+          },
+          {
+            "description": "Player's \u003cplatform\u003e-\u003carch\u003e tag. Optional; omit for the legacy core-wide manifest.",
+            "explode": false,
+            "in": "query",
+            "name": "platform",
+            "schema": {
+              "description": "Player's \u003cplatform\u003e-\u003carch\u003e tag. Optional; omit for the legacy core-wide manifest.",
+              "maxLength": 64,
+              "pattern": "^[a-z0-9_-]*$",
+              "type": "string"
+            }
           }
         ],
         "responses": {

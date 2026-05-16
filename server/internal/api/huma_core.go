@@ -25,6 +25,12 @@ type ListCoresOutput struct {
 // CoreManifestInput is the input for GET /api/cores/{id}/manifest.
 type CoreManifestInput struct {
 	ID string `path:"id" pattern:"^[0-9]+$" maxLength:"20" doc:"Core row ID (not core name)."`
+	// PlatformArch selects the per-platform CorePlatformBinary row to
+	// fingerprint against — e.g. `linux-x86_64`, `macos-arm64`,
+	// `android-arm64-v8a`. Clients should pass `${currentPlatform()}-${currentArch()}`.
+	// When empty, the response falls back to the legacy single Core.Sha256
+	// for admin-tool compatibility. See #1190.
+	PlatformArch string `query:"platform" required:"false" maxLength:"64" pattern:"^[a-z0-9_-]*$" doc:"Player's <platform>-<arch> tag. Optional; omit for the legacy core-wide manifest."`
 }
 
 // CoreManifestResponse is the lightweight fingerprint payload players fetch
@@ -121,6 +127,20 @@ func (h *CoreHandler) HumaListCores(_ context.Context, _ *ListCoresInput) (*List
 }
 
 // HumaGetCoreManifest is the huma handler for GET /api/cores/{id}/manifest.
+//
+// Resolution order:
+//
+//   1. If the request carries a PlatformArch and a CorePlatformBinary row
+//      exists for (core, platform), return that row's fingerprint. This is
+//      the path the player takes for staleness checks (#1190).
+//   2. Otherwise, fall back to the Core row's own Sha256 / etc. — the
+//      legacy single-binary view kept for admin tooling and any caller
+//      that doesn't know about per-platform rows.
+//
+// Fallback is intentional: a request that names a platform we haven't
+// polled yet should still get *something* useful back (typically empty),
+// rather than 404-ing and forcing the client to handle "manifest exists
+// but not for my platform" specially.
 func (h *CoreHandler) HumaGetCoreManifest(_ context.Context, in *CoreManifestInput) (*CoreManifestOutput, error) {
 	parsedID, err := strconv.ParseUint(in.ID, 10, 64)
 	if err != nil {
@@ -128,11 +148,29 @@ func (h *CoreHandler) HumaGetCoreManifest(_ context.Context, in *CoreManifestInp
 	}
 	var core db.Core
 	if err := h.DB.First(&core, uint(parsedID)).Error; err != nil {
-		if err == gorm.ErrRecordNotFound {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, huma.Error404NotFound("core not found")
 		}
 		return nil, huma.Error500InternalServerError("failed to fetch core")
 	}
+
+	if in.PlatformArch != "" {
+		var binary db.CorePlatformBinary
+		err := h.DB.Where("core_id = ? AND platform_arch = ?", core.ID, in.PlatformArch).First(&binary).Error
+		if err == nil {
+			return &CoreManifestOutput{Body: CoreManifestResponse{
+				Sha256:    binary.Sha256,
+				SizeBytes: binary.SizeBytes,
+				FetchedAt: binary.FetchedAt,
+				SourceURL: binary.SourceURL,
+			}}, nil
+		}
+		if !errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, huma.Error500InternalServerError("failed to fetch core platform binary")
+		}
+		// fall through to legacy Core fields
+	}
+
 	return &CoreManifestOutput{Body: CoreManifestResponse{
 		Sha256:    core.Sha256,
 		SizeBytes: core.SizeBytes,

@@ -59,7 +59,7 @@ func setupTestEnv(t *testing.T) (*gorm.DB, *Config) {
 		&db.TokenBlacklist{}, &db.LoginAttempt{},
 		&db.SystemEventCategory{},
 		&db.SystemEvent{},
-		&db.ServerSetting{}, &db.Core{},
+		&db.ServerSetting{}, &db.Core{}, &db.CorePlatformBinary{},
 		&db.ConsoleShaderPreference{},
 		&db.ConsoleSaveStatePolicy{},
 		&db.GameSaveStatePolicy{},

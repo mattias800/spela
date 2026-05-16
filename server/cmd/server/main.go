@@ -16,6 +16,7 @@ import (
 	"github.com/spela/server/internal/auth"
 	"github.com/spela/server/internal/bios"
 	"github.com/spela/server/internal/cheats"
+	"github.com/spela/server/internal/cores"
 	"github.com/spela/server/internal/db"
 	"github.com/spela/server/internal/igdb"
 	"github.com/spela/server/internal/retroachievements"
@@ -260,6 +261,27 @@ func main() {
 
 	// Auto-download missing BIOS files at startup (non-blocking)
 	bios.StartAutoDownload(store.BiosDir, database)
+
+	// Libretro buildbot poller: keeps per-platform core fingerprints
+	// fresh so the player's staleness check can drive auto-updates of
+	// buildbot-default cores. Disabled via SPELA_DISABLE_CORE_POLLER=1
+	// for tests and air-gapped installs. See #1190.
+	if os.Getenv("SPELA_DISABLE_CORE_POLLER") == "" {
+		interval := 24 * time.Hour
+		var setting db.ServerSetting
+		if err := database.Where("key = ?", "core_poll_interval_hours").First(&setting).Error; err == nil {
+			if hours, err := strconv.Atoi(setting.Value); err == nil && hours > 0 {
+				interval = time.Duration(hours) * time.Hour
+			}
+		}
+		poller := cores.NewPoller(database, cores.PollerOptions{
+			CoreDir:  coreDir,
+			Interval: interval,
+		})
+		go poller.Run(workerCtx)
+	} else {
+		slog.Info("core buildbot poller disabled by SPELA_DISABLE_CORE_POLLER")
+	}
 
 	// Auto-import cheat codes on first boot (non-blocking)
 	cheats.StartAutoImport(database)

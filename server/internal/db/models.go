@@ -405,10 +405,15 @@ const (
 	SystemEventAPICredentialsInvalid   = "api_credentials_invalid"
 	SystemEventEmulatorJSLoadFailed    = "emulatorjs_load_failed"
 	// Emitted when the server observes a new sha256 for a core binary —
-	// either an admin-triggered force-refresh or (future) a background
-	// buildbot poll. Metadata carries old_sha256 and new_sha256 so the
-	// audit trail shows which version replaced which. See #555 Phase 2.
+	// either an admin-triggered force-refresh or a background buildbot
+	// poll. Metadata carries old_sha256 and new_sha256 so the audit trail
+	// shows which version replaced which. See #555 Phase 2 and #1190.
 	SystemEventCoreUpdated = "core_updated"
+	// Emitted by the libretro buildbot poller when a (core, platform)
+	// fetch fails — HTTP error, zip parse failure, hash mismatch, etc.
+	// Lets admins notice when buildbot goes down or shifts URL layouts.
+	// Metadata: CoreUpdateFailedMetadata. See #1190.
+	SystemEventCoreUpdateFailed = "core_update_failed"
 	// Emitted by the BIOS auto-downloader when an entry fails to fetch
 	// or extract — HTTP error, non-200 status, MD5 mismatch, archive
 	// extraction failure, filesystem error. Lets admins notice when
@@ -436,6 +441,7 @@ var AllSystemEventTypes = []string{
 	SystemEventAPICredentialsInvalid,
 	SystemEventEmulatorJSLoadFailed,
 	SystemEventCoreUpdated,
+	SystemEventCoreUpdateFailed,
 	SystemEventBIOSDownloadFailed,
 }
 
@@ -458,6 +464,7 @@ var SystemEventTypeCategory = map[string]string{
 	SystemEventAPICredentialsInvalid:   CategoryOperational,
 	SystemEventEmulatorJSLoadFailed:    CategoryOperational,
 	SystemEventCoreUpdated:             CategoryOperational,
+	SystemEventCoreUpdateFailed:        CategoryOperational,
 	SystemEventBIOSDownloadFailed:      CategoryOperational,
 }
 
@@ -966,10 +973,45 @@ type Core struct {
 	// whenever it downloads or serves a core for the first time. See #555.
 	// Nullable pointer for FetchedAt so admin UI can distinguish "never
 	// fetched" from "fetched long ago".
+	//
+	// These fields are platform-ambiguous — they describe whichever binary
+	// happens to live at FilePath on this server. For multi-platform
+	// fingerprinting (used by the buildbot poller and the per-platform
+	// staleness check on the player), see CorePlatformBinary. The manifest
+	// endpoint falls back to these when no per-platform row exists, so
+	// existing admin upload flows keep working without changes.
 	Sha256    string     `gorm:"size:64" json:"sha256"`    // hex sha256 of the cached binary
 	SizeBytes int64      `json:"sizeBytes"`                // byte length of the cached binary
 	FetchedAt *time.Time `json:"fetchedAt"`                // when the binary was last downloaded
 	SourceURL string     `gorm:"size:1024" json:"sourceUrl"` // URL we pulled the binary from
+}
+
+// CorePlatformBinary is the per-(core, platform) fingerprint that the
+// libretro buildbot poller maintains. See #1190.
+//
+// `Core.Sha256` and friends describe ONE binary — whatever lives at
+// `Core.FilePath` on this server. That works for admin-uploaded pinned
+// cores but breaks for buildbot-default cores where each platform has
+// its own distinct binary on disk; a single Sha256 means the last
+// platform polled wins and every other platform's player thrashes
+// (sha mismatch → redownload → next poll cycle's sha mismatch → ...).
+//
+// Each row pins one (core, platform-arch) tuple: the file the poller
+// stored to disk, its sha256, its size, and when it was fetched.
+// PlatformArch follows the player's `${currentPlatform()}-${currentArch()}`
+// convention — e.g. `linux-x86_64`, `macos-arm64`, `android-arm64-v8a`.
+type CorePlatformBinary struct {
+	ID           uint           `gorm:"primarykey" json:"id"`
+	CreatedAt    time.Time      `json:"createdAt"`
+	UpdatedAt    time.Time      `json:"updatedAt"`
+	DeletedAt    gorm.DeletedAt `gorm:"index" json:"-"`
+	CoreID       uint           `gorm:"uniqueIndex:idx_core_platform;not null" json:"coreId"`
+	PlatformArch string         `gorm:"uniqueIndex:idx_core_platform;size:64;not null" json:"platformArch"`
+	FilePath     string         `gorm:"size:1024" json:"-"`
+	Sha256       string         `gorm:"size:64" json:"sha256"`
+	SizeBytes    int64          `json:"sizeBytes"`
+	FetchedAt    *time.Time     `json:"fetchedAt"`
+	SourceURL    string         `gorm:"size:1024" json:"sourceUrl"`
 }
 
 // CheatCode represents a cheat code for a specific game.
