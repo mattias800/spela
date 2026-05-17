@@ -413,6 +413,16 @@ fun SpelaApp(deps: SpelaAppDependencies) = with(deps) {
                             }
                         }
 
+                        // Core download progress sheet — replaces the
+                        // pre-#1192 opaque loading spinner with a
+                        // foreground modal carrying "Updating Azahar —
+                        // 12 / 38 MB". Non-null when prepareGameUseCase
+                        // is fetching a fresh/updated core (including
+                        // when reusing an in-flight prefetch).
+                        emulationState.coreDownload?.let { progress ->
+                            com.spela.player.presentation.ui.feature.coreupdate.CoreDownloadSheet(progress)
+                        }
+
                         // Missing BIOS dialog (AC 4.3)
                         if (emulationState.showMissingBiosDialog) {
                             com.spela.player.presentation.ui.feature.gamedetail.MissingBiosDialog(

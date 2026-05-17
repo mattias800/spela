@@ -208,8 +208,15 @@ class SpelaTestHarness(
         scope = scope,
     )
 
+    val coreUpdateService = com.spela.player.data.repository.CoreUpdateService(
+        coreRepository = coreRepo,
+        preferencesRepository = preferencesRepo,
+        dispatchers = dispatchers,
+        scope = scope,
+    )
+
     val emulationViewModel = EmulationViewModel(
-        prepareGameUseCase = PrepareGameUseCase(downloadRepo, coreRepo),
+        prepareGameUseCase = PrepareGameUseCase(downloadRepo, coreRepo, coreUpdateService),
         getGameDetailUseCase = GetGameDetailUseCase(gameRepo),
         preferencesRepository = preferencesRepo,
         achievementsRepository = achievementsRepo,

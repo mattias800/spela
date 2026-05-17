@@ -43,7 +43,11 @@ class CoreRepositoryImpl(
         }
     }
 
-    override suspend fun downloadCore(coreName: String, customDownloadUrl: String?, onProgress: (Float) -> Unit): Result<String> = runCatching {
+    override suspend fun downloadCore(
+        coreName: String,
+        customDownloadUrl: String?,
+        onProgress: (bytesDownloaded: Long, totalBytes: Long?) -> Unit,
+    ): Result<String> = runCatching {
         val fileName = coreFileName(coreName)
         val destPath = fileStorage.getCoresDir() + "/$fileName"
         val tempZipPath = "$destPath.zip.tmp"
@@ -58,7 +62,11 @@ class CoreRepositoryImpl(
         try {
             httpClient.prepareGet(url) {
                 onDownload { bytesSentTotal, contentLength ->
-                    if (contentLength != null && contentLength > 0) onProgress(bytesSentTotal.toFloat() / contentLength)
+                    // Ktor reports contentLength=null when the server
+                    // omits Content-Length. Pass it through verbatim so
+                    // the UI can render an indeterminate progress bar
+                    // instead of a misleading 0% / NaN%.
+                    onProgress(bytesSentTotal, contentLength)
                 }
             }.execute { response ->
                 if (!response.status.isSuccess()) {
@@ -87,7 +95,7 @@ class CoreRepositoryImpl(
     override suspend fun downloadCoreByHash(
         coreName: String,
         sha256: String,
-        onProgress: (Float) -> Unit,
+        onProgress: (bytesDownloaded: Long, totalBytes: Long?) -> Unit,
     ): Result<String> = runCatching {
         // Resolve the server-side numeric core id. The versioned endpoint is
         // `/api/cores/{id}/download?sha256=...` and requires the numeric id;
@@ -99,9 +107,7 @@ class CoreRepositoryImpl(
         val (status, body) = apiClient.downloadCoreByHash(
             coreId = core.id.toString(),
             sha256 = sha256,
-            onProgress = { sent, total ->
-                if (total != null && total > 0) onProgress(sent.toFloat() / total)
-            },
+            onProgress = { sent, total -> onProgress(sent, total) },
         )
         if (status == 404) {
             throw CorePrunedException(sha256)

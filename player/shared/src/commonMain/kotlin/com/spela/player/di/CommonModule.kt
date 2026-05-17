@@ -51,6 +51,7 @@ val commonModule = module {
     single<GameRepository> { GameRepositoryImpl(get(), get(), get()) }
     single<SaveDataRepository> { SaveDataRepositoryImpl(get()) }
     single<CoreRepository> { CoreRepositoryImpl(get(), get(), get()) }
+    single { CoreUpdateService(get(), get(), get(), get()) }
     single<DownloadRepository> { DownloadRepositoryImpl(get(), get(), get()) }
     single<ServerRepository> { ServerRepositoryImpl(get(), get(), get()) }
     single<PreferencesRepository> { PreferencesRepositoryImpl(get(), get(), get(), get()) }
@@ -91,7 +92,7 @@ val commonModule = module {
     factory { ToggleFavoriteUseCase(get()) }
     factory { GetPlayLaterGamesUseCase(get()) }
     factory { TogglePlayLaterUseCase(get()) }
-    factory { PrepareGameUseCase(get(), get()) }
+    factory { PrepareGameUseCase(get(), get(), get()) }
     factory { RestoreSessionUseCase(get(), get(), get()) }
     factory { GetOnlineUsersUseCase(get()) }
     factory { GetActivityFeedUseCase(get()) }
@@ -377,6 +378,7 @@ val commonModule = module {
             dispatchers = get(),
             scope = get(),
             biosRepository = get(),
+            coreUpdateService = get(),
         )
     }
     factory {

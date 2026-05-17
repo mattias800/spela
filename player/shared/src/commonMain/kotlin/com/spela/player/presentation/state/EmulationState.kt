@@ -195,6 +195,15 @@ data class EmulationState(
      * issue. #555 Phase 3.
      */
     val coreVersionWarning: String? = null,
+    /**
+     * Snapshot of an in-progress core download. Non-null while
+     * PrepareGameUseCase is fetching (or awaiting a prefetch of) a
+     * fresh-or-updated libretro core; null otherwise. The Emulation UI
+     * renders a foreground sheet while this is non-null so the user
+     * gets a "downloading Azahar — 12 / 38 MB" surface instead of an
+     * opaque loading spinner. See #1192.
+     */
+    val coreDownload: com.spela.player.domain.model.CoreDownloadProgress? = null,
     val fps: Float = 0f,
     val frameTime: Float = 0f,
     val isFastForward: Boolean = false,

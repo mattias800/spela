@@ -598,18 +598,26 @@ class FakeCoreRepository : CoreRepository {
         return Result.success(cores.first())
     }
 
-    override suspend fun downloadCore(coreName: String, customDownloadUrl: String?, onProgress: (Float) -> Unit): Result<String> {
+    override suspend fun downloadCore(
+        coreName: String,
+        customDownloadUrl: String?,
+        onProgress: (bytesDownloaded: Long, totalBytes: Long?) -> Unit,
+    ): Result<String> {
         downloadCalls.add(coreName)
-        onProgress(1f)
+        onProgress(0L, 0L)
         return Result.success("/fake/cores/$coreName")
     }
 
-    override suspend fun downloadCoreByHash(coreName: String, sha256: String, onProgress: (Float) -> Unit): Result<String> {
+    override suspend fun downloadCoreByHash(
+        coreName: String,
+        sha256: String,
+        onProgress: (bytesDownloaded: Long, totalBytes: Long?) -> Unit,
+    ): Result<String> {
         downloadByHashCalls.add(coreName to sha256)
         if (sha256 in prunedHashes) {
             return Result.failure(com.spela.player.domain.repository.CorePrunedException(sha256))
         }
-        onProgress(1f)
+        onProgress(0L, 0L)
         return Result.success("/fake/cores/$coreName@$sha256")
     }
 
