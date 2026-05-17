@@ -1,17 +1,51 @@
 package com.spela.player.domain.usecase
 
+import com.spela.player.data.repository.CoreUpdateService
 import com.spela.player.domain.model.DownloadProgress
 import com.spela.player.domain.model.DownloadedGame
 import com.spela.player.domain.model.LibretroCore
+import com.spela.player.domain.model.ShaderPreset
+import com.spela.player.domain.model.UserPreferences
 import com.spela.player.domain.repository.CorePrunedException
 import com.spela.player.domain.repository.CoreRepository
 import com.spela.player.domain.repository.DownloadRepository
+import com.spela.player.domain.repository.PreferencesRepository
+import com.spela.player.util.DispatcherProvider
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emptyFlow
+import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
+
+/**
+ * Constructs a [PrepareGameUseCase] backed by the supplied [core] plus a
+ * lightweight [CoreUpdateService] wired to the test scope. The service
+ * isn't exercised here — these tests pin the use case's own decision
+ * branches, and CoreUpdateService is covered separately in
+ * CoreUpdateServiceTest (#1192). The presence of the service is purely
+ * to satisfy the constructor.
+ */
+private fun TestScope.buildPrepareGameUseCase(
+    core: CoreRepository,
+    downloads: DownloadRepository = FakeDownloadRepository(),
+): PrepareGameUseCase {
+    val dispatchers = object : DispatcherProvider {
+        override val main: CoroutineDispatcher = Dispatchers.Unconfined
+        override val io: CoroutineDispatcher = Dispatchers.Unconfined
+        override val default: CoroutineDispatcher = Dispatchers.Unconfined
+    }
+    val updateService = CoreUpdateService(
+        coreRepository = core,
+        preferencesRepository = StubPreferencesRepository(),
+        dispatchers = dispatchers,
+        scope = this.backgroundScope,
+    )
+    return PrepareGameUseCase(downloads, core, updateService)
+}
 
 /**
  * Regression coverage for the Phase 2 cache-invalidation branch in
@@ -31,7 +65,7 @@ class PrepareGameUseCaseTest {
             local = "/local/core.so",
             isCurrent = null, // "don't know" branch
         )
-        val useCase = PrepareGameUseCase(FakeDownloadRepository(), core)
+        val useCase = buildPrepareGameUseCase(core)
 
         val result = useCase.invoke(gameId = "g1").getOrThrow()
 
@@ -45,7 +79,7 @@ class PrepareGameUseCaseTest {
             local = "/local/core.so",
             isCurrent = true,
         )
-        val useCase = PrepareGameUseCase(FakeDownloadRepository(), core)
+        val useCase = buildPrepareGameUseCase(core)
 
         val result = useCase.invoke(gameId = "g1").getOrThrow()
 
@@ -60,7 +94,7 @@ class PrepareGameUseCaseTest {
             isCurrent = false, // stale branch
             downloadResult = Result.success("/local/core-refreshed.so"),
         )
-        val useCase = PrepareGameUseCase(FakeDownloadRepository(), core)
+        val useCase = buildPrepareGameUseCase(core)
 
         val result = useCase.invoke(gameId = "g1").getOrThrow()
 
@@ -75,7 +109,7 @@ class PrepareGameUseCaseTest {
             isCurrent = false,
             downloadResult = Result.failure(RuntimeException("network down")),
         )
-        val useCase = PrepareGameUseCase(FakeDownloadRepository(), core)
+        val useCase = buildPrepareGameUseCase(core)
 
         val result = useCase.invoke(gameId = "g1").getOrThrow()
 
@@ -91,7 +125,7 @@ class PrepareGameUseCaseTest {
             local = "/local/core.so",
             isCurrent = false, // server thinks local is stale …
         )
-        val useCase = PrepareGameUseCase(FakeDownloadRepository(), core)
+        val useCase = buildPrepareGameUseCase(core)
 
         // … but the user has opted out of auto-updates. We must not
         // call downloadCore; the locally cached binary stays in use.
@@ -117,7 +151,7 @@ class PrepareGameUseCaseTest {
             isCurrent = false,
             serverSha = "bb".repeat(32), // 64 chars, differs from pin
         )
-        val useCase = PrepareGameUseCase(FakeDownloadRepository(), core)
+        val useCase = buildPrepareGameUseCase(core)
 
         val result = useCase.invoke(
             gameId = "g1",
@@ -137,7 +171,7 @@ class PrepareGameUseCaseTest {
             isCurrent = false,
             serverSha = "bb".repeat(32),
         )
-        val useCase = PrepareGameUseCase(FakeDownloadRepository(), core)
+        val useCase = buildPrepareGameUseCase(core)
 
         val result = useCase.invoke(
             gameId = "g1",
@@ -157,7 +191,7 @@ class PrepareGameUseCaseTest {
             isCurrent = false,
             serverSha = "bb".repeat(32),
         )
-        val useCase = PrepareGameUseCase(FakeDownloadRepository(), core)
+        val useCase = buildPrepareGameUseCase(core)
 
         val result = useCase.invoke(
             gameId = "g1",
@@ -177,7 +211,7 @@ class PrepareGameUseCaseTest {
             isCurrent = false,
             serverSha = "bb".repeat(32),
         )
-        val useCase = PrepareGameUseCase(FakeDownloadRepository(), core)
+        val useCase = buildPrepareGameUseCase(core)
 
         val result = useCase.invoke(
             gameId = "g1",
@@ -199,7 +233,7 @@ class PrepareGameUseCaseTest {
             isCurrent = true,
             serverSha = pinned, // server matches pin — no drift
         )
-        val useCase = PrepareGameUseCase(FakeDownloadRepository(), core)
+        val useCase = buildPrepareGameUseCase(core)
 
         val result = useCase.invoke(
             gameId = "g1",
@@ -219,7 +253,7 @@ class PrepareGameUseCaseTest {
             isCurrent = null,
             serverSha = null, // network failure / server hasn't fingerprinted
         )
-        val useCase = PrepareGameUseCase(FakeDownloadRepository(), core)
+        val useCase = buildPrepareGameUseCase(core)
 
         val result = useCase.invoke(
             gameId = "g1",
@@ -244,7 +278,7 @@ class PrepareGameUseCaseTest {
             isCurrent = false,
             serverSha = "bb".repeat(32),
         )
-        val useCase = PrepareGameUseCase(FakeDownloadRepository(), core)
+        val useCase = buildPrepareGameUseCase(core)
 
         val result = useCase.invoke(
             gameId = "g1",
@@ -270,7 +304,7 @@ class PrepareGameUseCaseTest {
             local = "/local/core.so",
             isCurrent = true,
         )
-        val useCase = PrepareGameUseCase(FakeDownloadRepository(), core)
+        val useCase = buildPrepareGameUseCase(core)
 
         val result = useCase.invoke(
             gameId = "g1",
@@ -297,7 +331,7 @@ class PrepareGameUseCaseTest {
             isCurrent = false,
             serverSha = "bb".repeat(32),
         )
-        val useCase = PrepareGameUseCase(FakeDownloadRepository(), core)
+        val useCase = buildPrepareGameUseCase(core)
 
         val result = useCase.invoke(
             gameId = "g1",
@@ -322,7 +356,7 @@ class PrepareGameUseCaseTest {
             local = "/local/core.so",
             isCurrent = true,
         )
-        val useCase = PrepareGameUseCase(FakeDownloadRepository(), core)
+        val useCase = buildPrepareGameUseCase(core)
 
         val result = useCase.invoke(
             gameId = "g1",
@@ -350,7 +384,7 @@ class PrepareGameUseCaseTest {
             // binary is no longer in the server's history.
             hashDownloadResult = Result.failure(CorePrunedException("aa".repeat(32))),
         )
-        val useCase = PrepareGameUseCase(FakeDownloadRepository(), core)
+        val useCase = buildPrepareGameUseCase(core)
 
         val result = useCase.invoke(
             gameId = "g1",
@@ -377,7 +411,7 @@ class PrepareGameUseCaseTest {
             isCurrent = true,
             hashDownloadResult = Result.failure(CorePrunedException("aa".repeat(32))),
         )
-        val useCase = PrepareGameUseCase(FakeDownloadRepository(), core)
+        val useCase = buildPrepareGameUseCase(core)
 
         val result = useCase.invoke(
             gameId = "g1",
@@ -405,7 +439,7 @@ class PrepareGameUseCaseTest {
             isCurrent = true,
             hashDownloadResult = Result.failure(CorePrunedException("aa".repeat(32))),
         )
-        val useCase = PrepareGameUseCase(FakeDownloadRepository(), core)
+        val useCase = buildPrepareGameUseCase(core)
 
         val result = useCase.invoke(
             gameId = "g1",
@@ -428,7 +462,7 @@ class PrepareGameUseCaseTest {
             isCurrent = false,
             serverSha = "bb".repeat(32),
         )
-        val useCase = PrepareGameUseCase(FakeDownloadRepository(), core)
+        val useCase = buildPrepareGameUseCase(core)
 
         val result = useCase.invoke(
             gameId = "g1",
@@ -487,7 +521,7 @@ private class FakeCoreRepository(
     override suspend fun downloadCore(
         coreName: String,
         customDownloadUrl: String?,
-        onProgress: (Float) -> Unit,
+        onProgress: (bytesDownloaded: Long, totalBytes: Long?) -> Unit,
     ): Result<String> {
         downloadCoreCalls++
         return downloadResult
@@ -496,7 +530,7 @@ private class FakeCoreRepository(
     override suspend fun downloadCoreByHash(
         coreName: String,
         sha256: String,
-        onProgress: (Float) -> Unit,
+        onProgress: (bytesDownloaded: Long, totalBytes: Long?) -> Unit,
     ): Result<String> = hashDownloadResult
 
     override suspend fun getLocalCorePath(coreName: String): String? = local
@@ -505,4 +539,43 @@ private class FakeCoreRepository(
 
     override suspend fun isCachedCoreCurrent(coreName: String): Boolean? = isCurrent
     override suspend fun getServerCoreSha(coreName: String): String? = serverSha
+}
+
+/**
+ * Minimum-viable [PreferencesRepository] for tests that only need
+ * [getPreferences] (used by [CoreUpdateService] to gate its prefetch
+ * pass). Every other method throws so an accidental dependency in a
+ * future test surfaces loudly rather than returning a silent default.
+ */
+private class StubPreferencesRepository : PreferencesRepository {
+    override suspend fun getPreferences(): Result<UserPreferences> =
+        Result.success(UserPreferences())
+
+    override suspend fun updatePreferences(
+        showPerformanceOverlay: Boolean?,
+        autoSaveEnabled: Boolean?,
+        autoLoadSaveEnabled: Boolean?,
+        autoUpdateCoresEnabled: Boolean?,
+        selectedShader: String?,
+        selectedTheme: String?,
+        consoleShaders: Map<String, String>?,
+        consoleSaveStatePolicies: Map<String, String>?,
+        gameSaveStatePolicies: Map<String, String>?,
+        defaultSecondScreenPage: String?,
+    ): Result<UserPreferences> = error("unused")
+
+    override fun getDeviceShaderOverride(consoleId: String): ShaderPreset? = null
+    override fun setDeviceShaderOverride(consoleId: String, shader: ShaderPreset?) = Unit
+    override fun getAllDeviceShaderOverrides(): Map<String, ShaderPreset> = emptyMap()
+    override suspend fun syncDeviceShaderOverrides() = Unit
+    override suspend fun resolveShader(consoleId: String): ShaderPreset = ShaderPreset.NONE
+    override suspend fun pushDeviceShaderOverridesToServer() = Unit
+    override suspend fun syncKeyMappingsFromServer() = Unit
+    override suspend fun pushKeyMappingsToServer() = Unit
+    override fun getOrientationLock(): String = "auto"
+    override fun setOrientationLock(mode: String) = Unit
+    override fun getControlTab(consoleId: String): String = "gamepad"
+    override fun setControlTab(consoleId: String, tab: String) = Unit
+    override fun getConsoleListGrouping(): String = "generation"
+    override fun setConsoleListGrouping(grouping: String) = Unit
 }
