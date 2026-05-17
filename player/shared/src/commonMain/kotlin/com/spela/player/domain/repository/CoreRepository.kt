@@ -15,7 +15,23 @@ class CorePrunedException(sha256: String) : RuntimeException(
 interface CoreRepository {
     suspend fun getAvailableCores(): Result<List<LibretroCore>>
     suspend fun getRecommendedCore(gameId: String): Result<LibretroCore>
-    suspend fun downloadCore(coreName: String, customDownloadUrl: String? = null, onProgress: (Float) -> Unit = {}): Result<String>
+
+    /**
+     * Downloads the latest binary for [coreName].
+     *
+     * [onProgress] receives raw byte counters as they're observed from
+     * the underlying HTTP stream. `totalBytes` may be `null` for hosts
+     * that don't send a Content-Length header; the UI should render an
+     * indeterminate state in that case. Fires zero or more times during
+     * the download and is not guaranteed to fire at all (e.g. when the
+     * payload is fully buffered before any download progress reaches the
+     * client). See #1192.
+     */
+    suspend fun downloadCore(
+        coreName: String,
+        customDownloadUrl: String? = null,
+        onProgress: (bytesDownloaded: Long, totalBytes: Long?) -> Unit = { _, _ -> },
+    ): Result<String>
 
     /**
      * Downloads a specific historical build of [coreName] identified by
@@ -26,7 +42,11 @@ interface CoreRepository {
      *
      * Part of #555 Phase 3 core history retention.
      */
-    suspend fun downloadCoreByHash(coreName: String, sha256: String, onProgress: (Float) -> Unit = {}): Result<String>
+    suspend fun downloadCoreByHash(
+        coreName: String,
+        sha256: String,
+        onProgress: (bytesDownloaded: Long, totalBytes: Long?) -> Unit = { _, _ -> },
+    ): Result<String>
 
     suspend fun getLocalCorePath(coreName: String): String?
     suspend fun isCoreCached(coreName: String): Boolean

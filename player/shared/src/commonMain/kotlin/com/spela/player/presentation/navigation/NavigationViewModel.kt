@@ -24,6 +24,7 @@ class NavigationViewModel(
     private val dispatchers: DispatcherProvider,
     private val scope: CoroutineScope,
     private val biosRepository: BiosRepository? = null,
+    private val coreUpdateService: com.spela.player.data.repository.CoreUpdateService? = null,
 ) {
     private val _state = MutableStateFlow(NavigationState())
     val state: StateFlow<NavigationState> = _state.asStateFlow()
@@ -287,6 +288,13 @@ class NavigationViewModel(
                         }
                     }
                 }
+
+                // Background prefetch of stale cached cores — keeps the
+                // user off the foreground download path when buildbot
+                // has rolled out a new nightly since they last played.
+                // The service single-flights internally so re-calls per
+                // session no-op. See #1192.
+                coreUpdateService?.prefetchStaleCachedCores()
             }
         }
     }

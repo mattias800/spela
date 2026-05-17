@@ -1022,6 +1022,13 @@ class EmulationViewModel(
                 sessionHasSaves = hasSaves,
                 skipCoreDecisionPrompt = skipCoreDecisionPrompt,
                 rehearsalCrashPending = crashPending,
+                onCoreDownload = { progress ->
+                    // Progress callback fires on the dispatcher running
+                    // prepareGameUseCase (typically io). State updates on
+                    // _state are thread-safe via MutableStateFlow's atomic
+                    // CAS, so we don't need to hop to the main dispatcher.
+                    _state.update { it.copy(coreDownload = progress) }
+                },
             ).fold(
                 onSuccess = { prepared ->
                     val gamePath = prepared.gamePath

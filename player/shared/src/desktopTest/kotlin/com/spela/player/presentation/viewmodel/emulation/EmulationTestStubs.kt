@@ -237,8 +237,8 @@ class StubDownloadRepository : DownloadRepository {
 class StubCoreRepository : CoreRepository {
     override suspend fun getAvailableCores() = Result.success(emptyList<LibretroCore>())
     override suspend fun getRecommendedCore(gameId: String) = Result.success(LibretroCore(id = 1, name = "nestopia", displayName = "Nestopia"))
-    override suspend fun downloadCore(coreName: String, customDownloadUrl: String?, onProgress: (Float) -> Unit) = Result.success("/path/to/core.so")
-    override suspend fun downloadCoreByHash(coreName: String, sha256: String, onProgress: (Float) -> Unit) = Result.success("/path/to/core.so")
+    override suspend fun downloadCore(coreName: String, customDownloadUrl: String?, onProgress: (bytesDownloaded: Long, totalBytes: Long?) -> Unit) = Result.success("/path/to/core.so")
+    override suspend fun downloadCoreByHash(coreName: String, sha256: String, onProgress: (bytesDownloaded: Long, totalBytes: Long?) -> Unit) = Result.success("/path/to/core.so")
     override suspend fun getLocalCorePath(coreName: String): String = "/path/to/core.so"
     override suspend fun isCoreCached(coreName: String) = true
     override suspend fun isCachedCoreCurrent(coreName: String): Boolean? = null
@@ -847,10 +847,17 @@ class EmulationViewModelTestBuilder {
             scope = vmScope,
         )
 
+        val emulationStubCoreRepo = StubCoreRepository()
         return EmulationViewModel(
             prepareGameUseCase = PrepareGameUseCase(
                 downloadRepository = StubDownloadRepository(),
-                coreRepository = StubCoreRepository(),
+                coreRepository = emulationStubCoreRepo,
+                coreUpdateService = com.spela.player.data.repository.CoreUpdateService(
+                    coreRepository = emulationStubCoreRepo,
+                    preferencesRepository = preferencesRepository,
+                    dispatchers = dispatchers,
+                    scope = vmScope,
+                ),
             ),
             getGameDetailUseCase = GetGameDetailUseCase(gameRepository = gameRepository),
             preferencesRepository = preferencesRepository,

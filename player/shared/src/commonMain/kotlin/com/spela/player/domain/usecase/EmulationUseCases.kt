@@ -1,9 +1,14 @@
 package com.spela.player.domain.usecase
 
+import com.spela.player.data.repository.CoreUpdateService
+import com.spela.player.domain.model.CoreDownloadProgress
 import com.spela.player.domain.repository.CorePrunedException
 import com.spela.player.domain.repository.CoreRepository
 import com.spela.player.domain.repository.DownloadRepository
 import com.spela.player.util.currentPlatform
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
 
 /**
  * Classifies why (if at all) the player might want to surface a
@@ -119,6 +124,7 @@ private val ANDROID_CORE_SUBSTITUTIONS = mapOf(
 class PrepareGameUseCase(
     private val downloadRepository: DownloadRepository,
     private val coreRepository: CoreRepository,
+    private val coreUpdateService: CoreUpdateService,
 ) {
     /** Warning copy shown to the user when the session's pinned core is no longer on the server. */
     private val prunedWarning =
@@ -145,6 +151,18 @@ class PrepareGameUseCase(
         sessionHasSaves: Boolean = false,
         skipCoreDecisionPrompt: Boolean = false,
         rehearsalCrashPending: Boolean = false,
+        /**
+         * Optional progress sink for the unpinned-core download path.
+         * Receives a non-null [CoreDownloadProgress] while a download is
+         * in flight (including reused prefetch downloads), then `null`
+         * once the binary is on disk. Caller is expected to surface this
+         * as a foreground sheet — see #1192.
+         *
+         * Not invoked for the version-pinned download path: that path is
+         * tied to a save-state replay and the user is already waiting on
+         * a known-good binary, not browsing.
+         */
+        onCoreDownload: (CoreDownloadProgress?) -> Unit = {},
     ): Result<PrepareGameResult> {
         println("[PrepareGame] invoke(gameId=$gameId)")
         val gamePath = downloadRepository.getLocalGamePath(gameId)
@@ -278,7 +296,7 @@ class PrepareGameUseCase(
             if (error is CorePrunedException) {
                 println("[PrepareGame] Pinned core $pinnedCoreSha256 pruned — falling back to latest")
                 val fallbackPath = coreRepository.getLocalCorePath(coreName)
-                    ?: coreRepository.downloadCore(coreName, customDownloadUrl).getOrElse {
+                    ?: downloadWithProgress(coreName, core.displayName, customDownloadUrl, onCoreDownload).getOrElse {
                         return Result.failure(it)
                     }
                 // When the user explicitly locked this session to the
@@ -334,7 +352,7 @@ class PrepareGameUseCase(
         val shouldCheckStaleness = autoUpdateCoresEnabled && cached != null
         val corePath = if (shouldCheckStaleness && coreRepository.isCachedCoreCurrent(coreName) == false) {
             println("[PrepareGame] Cached $coreName is stale vs server — redownloading")
-            coreRepository.downloadCore(coreName, customDownloadUrl).getOrElse {
+            downloadWithProgress(coreName, core.displayName, customDownloadUrl, onCoreDownload).getOrElse {
                 // Re-download failed: fall back to the stale cache rather
                 // than stranding the user. The game still runs; saves
                 // made here might not load on a fresh install, but that's
@@ -348,7 +366,7 @@ class PrepareGameUseCase(
                 cached
             } else {
                 println("[PrepareGame] No cached core — downloading $coreName")
-                coreRepository.downloadCore(coreName, customDownloadUrl).getOrElse {
+                downloadWithProgress(coreName, core.displayName, customDownloadUrl, onCoreDownload).getOrElse {
                     println("[PrepareGame] downloadCore FAILED: ${it::class.simpleName}: ${it.message}")
                     return Result.failure(it)
                 }.also { println("[PrepareGame] downloadCore succeeded → $it") }
@@ -364,6 +382,56 @@ class PrepareGameUseCase(
                 coreDisplayName = core.displayName.ifEmpty { coreName },
             ),
         )
+    }
+
+    /**
+     * Runs a deduplicated core download through [CoreUpdateService] while
+     * surfacing progress to [onCoreDownload]. When a prefetch pass is
+     * already downloading the same core, both callers share one HTTP
+     * fetch and one progress stream — see #1192.
+     *
+     * Wrapped in [coroutineScope] so the progress collector lives only
+     * as long as the await; cancelling the outer prepareGame call
+     * propagates to both the download and the collector.
+     */
+    private suspend fun downloadWithProgress(
+        coreName: String,
+        coreDisplayName: String,
+        customDownloadUrl: String?,
+        onCoreDownload: (CoreDownloadProgress?) -> Unit,
+    ): Result<String> = coroutineScope {
+        val handle = coreUpdateService.downloadCore(coreName, customDownloadUrl)
+        val displayName = coreDisplayName.ifEmpty { coreName }
+        // Push an initial indeterminate tick so the sheet renders the
+        // moment we know we're going to download — before the HTTP
+        // layer reports the first byte.
+        onCoreDownload(
+            CoreDownloadProgress(
+                coreName = coreName,
+                coreDisplayName = displayName,
+                bytesDownloaded = 0L,
+                totalBytes = null,
+            ),
+        )
+
+        val progressJob = handle.progress
+            .onEach { snapshot ->
+                onCoreDownload(
+                    CoreDownloadProgress(
+                        coreName = coreName,
+                        coreDisplayName = displayName,
+                        bytesDownloaded = snapshot.bytesDownloaded,
+                        totalBytes = snapshot.totalBytes,
+                    ),
+                )
+            }
+            .launchIn(this)
+        try {
+            handle.await()
+        } finally {
+            progressJob.cancel()
+            onCoreDownload(null)
+        }
     }
 
     /**
