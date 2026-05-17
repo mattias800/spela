@@ -6,11 +6,9 @@ import com.spela.player.domain.repository.CorePrunedException
 import com.spela.player.domain.repository.CoreRepository
 import com.spela.player.domain.repository.DownloadRepository
 import com.spela.player.util.currentPlatform
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
-import kotlinx.coroutines.launch
 
 /**
  * Classifies why (if at all) the player might want to surface a
