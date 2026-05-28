@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -35,8 +36,10 @@ import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
+import androidx.compose.ui.input.InputMode
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalInputModeManager
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.delay
@@ -69,7 +72,22 @@ fun GamepadHandler(
     content: @Composable () -> Unit,
 ) {
     val focusManager = LocalFocusManager.current
+    val inputModeManager = LocalInputModeManager.current
     val focusRequester = remember { FocusRequester() }
+
+    // Expose Compose's input-mode switch to MainActivity.onKeyDown via
+    // ComposeFocusBridge. On AYN Thor the hardware d-pad fires events
+    // that don't trigger Compose's automatic Touch -> Keyboard mode
+    // flip, so the snapshotFlow listener in focusRestoreItem never
+    // wakes up to restore focus. MainActivity invokes this callback
+    // before re-dispatching d-pad events; the resulting mode change
+    // fires the listener and restores focus to the last-saved item.
+    DisposableEffect(inputModeManager) {
+        ComposeFocusBridge.requestKeyboardMode = {
+            inputModeManager.requestInputMode(InputMode.Keyboard)
+        }
+        onDispose { ComposeFocusBridge.requestKeyboardMode = null }
+    }
     // Track focus state. isSelfFocused = the wrapper Box has direct focus
     // (not a child). hasFocus = anything in the tree has focus.
     var hasFocus by remember { mutableStateOf(false) }
