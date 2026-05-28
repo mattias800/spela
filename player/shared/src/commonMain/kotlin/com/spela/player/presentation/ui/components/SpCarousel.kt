@@ -1,7 +1,9 @@
 package com.spela.player.presentation.ui.components
 
+import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.MutatePriority
 import androidx.compose.foundation.focusGroup
 import androidx.compose.foundation.gestures.animateScrollBy
 import androidx.compose.foundation.layout.Arrangement
@@ -20,6 +22,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.onFocusChanged
+import kotlinx.coroutines.launch
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.key
@@ -172,38 +175,74 @@ fun SpCarousel(
         val centerOffset = if (itemSize in 1..<viewportSize) {
             -((viewportSize - itemSize) / 2)
         } else 0
-
         val targetVisible = targetItem != null
-        if (targetVisible) {
-            // Common path. Focus snaps immediately because the requester
-            // is bound to a layout node; the carousel pans in to centre.
-            try { requesters[target].requestFocus() } catch (_: Exception) {}
-            when (mode) {
-                ScrollMode.Snap -> listState.scrollToItem(target, centerOffset)
-                ScrollMode.Fast -> {
-                    val delta = centerDelta(info, target)
-                    if (delta != null) {
-                        listState.animateScrollBy(delta, tween(120, easing = LinearEasing))
-                    } else {
-                        listState.scrollToItem(target, centerOffset)
+
+        // Goal: focus ring snaps INSTANTLY to the new item, AND the
+        // carousel animates to centre it.
+        //
+        // Naive `requestFocus` then `animateScrollToItem` doesn't work
+        // on Android. The focusable's automatic bring-into-view scroll
+        // fires after the focus change and competes with our centring
+        // scroll for the LazyList scroll mutex. Both use the default
+        // mutate priority and bring-into-view often wins, edge-aligning
+        // the item instead of centring it.
+        //
+        // Fix: run our centring scroll inside `listState.scroll(
+        // MutatePriority.UserInput) { ... }` and animate within the
+        // block via an Animatable. `UserInput` priority preempts any
+        // in-flight `Default`-priority scroll (which is what
+        // bring-into-view uses), so even if bring-into-view managed to
+        // grab the mutex first, our scroll cancels it the moment we
+        // start. Crucially, we kick off the scroll first via
+        // `launch { }` so it grabs the mutex before `requestFocus`
+        // triggers bring-into-view; then the focus ring snaps
+        // immediately while the scroll continues to centre.
+        //
+        // Off-screen targets (`targetVisible == false`) skip the
+        // centring delta — we don't know the position yet — and use
+        // animateScrollToItem instead. focus still goes through the
+        // same launch + yield path so it's instant there too.
+        val scrollJob = launch {
+            listState.scroll(MutatePriority.UserInput) {
+                val animatable = Animatable(0f)
+                var lastValue = 0f
+                if (targetVisible) {
+                    val delta = centerDelta(info, target) ?: 0f
+                    when (mode) {
+                        ScrollMode.Snap -> scrollBy(delta)
+                        ScrollMode.Fast -> animatable.animateTo(
+                            delta,
+                            tween(120, easing = LinearEasing),
+                        ) {
+                            scrollBy(value - lastValue)
+                            lastValue = value
+                        }
+                        ScrollMode.Slow -> animatable.animateTo(delta) {
+                            scrollBy(value - lastValue)
+                            lastValue = value
+                        }
+                    }
+                } else {
+                    // Target not in prefetch window — we can't compute a
+                    // centring delta yet. Fall back to animating toward
+                    // the item, which composes it; once on-screen the
+                    // user's next press will pick up the centring path.
+                    // Plain animateScrollToItem can't run inside this
+                    // scroll block (it would re-acquire the mutex), so
+                    // we approximate by scrolling by a viewport-sized
+                    // chunk in the right direction.
+                    val direction = if (target > focusCursor[0]) 1 else -1
+                    val chunk = (viewportSize * 0.8f) * direction
+                    animatable.animateTo(chunk) {
+                        scrollBy(value - lastValue)
+                        lastValue = value
                     }
                 }
-                ScrollMode.Slow -> listState.animateScrollToItem(target, centerOffset)
             }
-        } else {
-            // Slow path — target outside the prefetch window. Scroll
-            // first so the LazyRow composes its layout node, then
-            // requestFocus. The Fast tier collapses into Slow here:
-            // animateScrollBy needs the target's measured offset which
-            // we don't have until it's composed, so just take the
-            // slower-but-correct path.
-            when (mode) {
-                ScrollMode.Snap -> listState.scrollToItem(target, centerOffset)
-                else -> listState.animateScrollToItem(target, centerOffset)
-            }
-            kotlinx.coroutines.yield()
-            try { requesters[target].requestFocus() } catch (_: Exception) {}
         }
+        kotlinx.coroutines.yield()
+        try { requesters[target].requestFocus() } catch (_: Exception) {}
+        scrollJob.join()
     }
 
     // Focus restoration: if [LocalFocusMemory]'s saved key belongs to

@@ -9,15 +9,19 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.input.InputMode
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInRoot
+import androidx.compose.ui.platform.LocalInputModeManager
 import androidx.compose.ui.platform.LocalWindowInfo
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.collectLatest
 
 /**
  * Holds the key of the last-focused element within a focus-memory scope.
@@ -89,6 +93,7 @@ fun Modifier.focusRestoreItem(
     val scope = LocalFocusMemory.current ?: return@composed this
     val isForward = LocalIsForwardNavigation.current
     val fr = requester ?: remember { FocusRequester() }
+    val inputModeManager = LocalInputModeManager.current
 
     // Window height for the viewport-visibility gate on Action.Default.
     // Read from LocalWindowInfo so it adapts to window resizes and
@@ -96,6 +101,43 @@ fun Modifier.focusRestoreItem(
     val windowHeightPx = LocalWindowInfo.current.containerSize.height.toFloat()
     var elementY by remember { mutableStateOf(Float.NaN) }
     var elementHeight by remember { mutableStateOf(0) }
+
+    // Hybrid input mode focus restoration. On Android the framework
+    // tracks a global "touch mode" — any screen touch (tap, swipe,
+    // scroll) flips Compose's input mode to `InputMode.Touch` and its
+    // FocusOwner explicitly drops the active focus path, because focus
+    // rings are visual noise when the user is interacting directly
+    // with their finger. When the user later picks up a controller or
+    // presses an arrow key, the mode flips back to
+    // `InputMode.Keyboard` — but the focus path is gone, so the key
+    // event has no dispatch target and gamepad navigation freezes
+    // until the user touches a focusable.
+    //
+    // We bridge that gap here: on every Touch → Keyboard transition,
+    // the focusRestoreItem whose [key] matches the saved
+    // `scope.value` re-acquires focus on its own requester. (For the
+    // very first transition, when nothing has been focused yet,
+    // `isDefault` items act as the fallback target.) `collectLatest`
+    // ensures rapid mode flapping (mash-tap → mash-d-pad) cancels
+    // stale restoration attempts and only the newest mode change
+    // wins.
+    //
+    // requestFocus is wrapped in try/catch because the FocusRequester
+    // may not be bound to a measured layout node if this item is
+    // currently scrolled out of view in a LazyList — silent no-op is
+    // the correct behavior there (the user will navigate from
+    // whatever focusable IS currently visible after the mode flip).
+    LaunchedEffect(Unit) {
+        snapshotFlow { inputModeManager.inputMode }
+            .collectLatest { mode ->
+                if (mode != InputMode.Keyboard) return@collectLatest
+                val shouldFire = scope.value == key ||
+                    (scope.value.isEmpty() && isDefault)
+                if (shouldFire) {
+                    try { fr.requestFocus() } catch (_: Exception) {}
+                }
+            }
+    }
 
     // Capture the firing decision exactly once at first composition. We must
     // NOT re-evaluate later — if `isForward` flips during a back transition
