@@ -17,6 +17,7 @@ import com.spela.player.domain.repository.PreferencesRepository
 import com.spela.player.libretro.AndroidLibretroController
 import com.spela.player.libretro.GamepadPortManager
 import com.spela.player.presentation.App
+import com.spela.player.presentation.ui.gamepad.ComposeFocusBridge
 import com.spela.player.presentation.ui.gamepad.InputMode
 import com.spela.player.presentation.intent.EmulationIntent
 import com.spela.player.presentation.navigation.NavigationIntent
@@ -72,6 +73,7 @@ class MainActivity : ComponentActivity() {
     private var analogDpadRight = false
     private var analogDpadUp = false
     private var analogDpadDown = false
+
 
     private val inputDeviceListener = object : InputManager.InputDeviceListener {
         override fun onInputDeviceAdded(deviceId: Int) {
@@ -321,6 +323,31 @@ class MainActivity : ComponentActivity() {
                     navigationViewModel.onIntent(NavigationIntent.NavigateTo(SpScreen.GlobalSearch))
                 }
                 return true
+            }
+            KeyEvent.KEYCODE_DPAD_UP, KeyEvent.KEYCODE_DPAD_DOWN,
+            KeyEvent.KEYCODE_DPAD_LEFT, KeyEvent.KEYCODE_DPAD_RIGHT,
+            KeyEvent.KEYCODE_DPAD_CENTER -> {
+                // Force Compose into keyboard input mode so the
+                // focus-restoration snapshotFlow listener in
+                // `focusRestoreItem` fires and brings focus back to
+                // the last-saved item. On AYN Thor (and possibly other
+                // handhelds), hardware d-pad events arrive with
+                // source=0 and Compose's `ComposeView.dispatchKeyEvent`
+                // does NOT update `inputModeManager.inputMode` for
+                // them — verified by absence of matching `[ImDbg]`
+                // logs during a session where every d-pad press fired
+                // `onKeyDown`. Without the mode flip the listener
+                // never wakes up, so the user is stuck after any
+                // touch-mode interaction until they press A (which is
+                // remapped to DPAD_CENTER and re-dispatched, taking a
+                // path that DOES trigger the mode flip). We do the
+                // flip ourselves here via the bridge.
+                //
+                // We don't eat the event — after the bridge call we
+                // let `super.onKeyDown` propagate normally so the
+                // key also drives carousel/grid navigation. The user
+                // sees one press both restore focus AND navigate.
+                ComposeFocusBridge.requestKeyboardMode?.invoke()
             }
         }
 
