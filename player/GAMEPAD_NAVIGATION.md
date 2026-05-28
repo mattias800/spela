@@ -460,3 +460,187 @@ if (!hasInitiallyLoaded) {
 }
 PullToRefreshBox(isRefreshing = state.isLoading, ...) { ... }
 ```
+
+---
+
+# Hybrid Touch + Gamepad: Input Mode and Focus Recovery
+
+This section covers the rules that keep gamepad navigation alive when
+the user mixes touch and d-pad input. The system handles the seam where
+a screen tap clears Compose focus, and a subsequent d-pad press has to
+re-acquire it without the user noticing. **Read this whole section
+before touching anything in `FocusMemory.kt`,
+`ComposeFocusBridge.kt`, `MainActivity.onKeyDown`, or `SpScreen.kt`'s
+tap handler.** The pieces are load-bearing and the failure mode is
+"d-pad navigation freezes after any screen touch" — issue #1194 ate
+~30 build iterations to land.
+
+## The Problem
+
+Android tracks a global state called **touch mode**. Any screen touch
+(tap, scroll, swipe) puts the system into `InputMode.Touch`; pressing a
+physical key, d-pad, or gamepad button puts it back into
+`InputMode.Keyboard`. Compose mirrors this in its own
+`InputModeManager`, and **when Compose enters touch mode it explicitly
+releases the active focus path via its `FocusOwner`** — by design,
+because focus rings are visual noise during touch input.
+
+The consequence on a gamepad-first handheld like the AYN Thor: the
+user is navigating with the d-pad, accidentally bumps the touchscreen,
+focus is gone, and the next d-pad press has no Compose dispatch target
+because nothing is focused. Without intervention, gamepad navigation
+freezes until the user touches a focusable element on the touchscreen
+to re-acquire focus.
+
+Three further wrinkles make this harder than it looks:
+
+1. **Auto-recovering focus the moment focus is lost is worse than
+   doing nothing.** Touch -> auto-restore -> bring focused item into
+   view -> snap-scroll the page back to wherever focus came from -
+   that fights the user's scroll intent. Recovery MUST be tied to a
+   subsequent key press, not to the focus-loss event.
+
+2. **`requestFocus()` is silently rejected from a non-input coroutine
+   context while Compose is in touch mode.** Calling
+   `focusRequester.requestFocus()` from a `LaunchedEffect` that fires
+   on focus loss returns without throwing, but the focus doesn't
+   actually move. To move focus, Compose first has to flip back to
+   `InputMode.Keyboard`.
+
+3. **On AYN Thor, hardware d-pad events arrive with `source=0`
+   (SOURCE_UNKNOWN), not the SOURCE_GAMEPAD/SOURCE_DPAD you'd
+   expect.** Worse, Compose's `ComposeView.dispatchKeyEvent` does NOT
+   update `inputModeManager.inputMode` to Keyboard for these source-0
+   events — verified by absence of matching mode-change log lines
+   during a session where every d-pad press fired `MainActivity.
+   onKeyDown`. So even the natural "key event = keyboard mode" flip
+   doesn't happen, and the user is stranded.
+
+## The Architecture
+
+Three components, layered, each with one job:
+
+1. **`Modifier.focusRestoreItem(key, isDefault)`** in `FocusMemory.kt`
+   listens for `LocalInputModeManager.inputMode` via `snapshotFlow` +
+   `collectLatest`. On every Touch -> Keyboard transition, the
+   `focusRestoreItem` whose `key` matches `LocalFocusMemory.value`
+   calls `requestFocus()` on its own requester. If `scope.value` is
+   empty (first transition, nothing focused yet), `isDefault = true`
+   items act as the fallback target. This is the **restoration**
+   layer.
+
+2. **`ComposeFocusBridge.requestKeyboardMode`** in
+   `ComposeFocusBridge.kt` is a `@Volatile` callback exposed by
+   `GamepadHandler` via `DisposableEffect`. It calls
+   `inputModeManager.requestInputMode(InputMode.Keyboard)` on the
+   active scope. This is the **mode-flip** layer.
+
+3. **`MainActivity.onKeyDown`** invokes
+   `ComposeFocusBridge.requestKeyboardMode?.invoke()` on every
+   `KEYCODE_DPAD_*` arrival (in addition to the existing
+   `BUTTON_A -> DPAD_CENTER` remap). This is the **trigger** layer —
+   it ensures a hardware d-pad press always flips Compose into
+   keyboard mode, which wakes the snapshotFlow listener in (1).
+
+The full flow when the user taps the screen then presses d-pad:
+
+```
+[tap screen]
+    -> Compose enters InputMode.Touch
+    -> FocusOwner releases focus
+    -> snapshotFlow in focusRestoreItem sees Touch, no-ops
+
+[press hardware d-pad, e.g. RIGHT]
+    -> Android dispatches keyEvent
+        -> ComposeView.dispatchKeyEvent
+            (does NOT update inputMode for source=0 d-pad events)
+        -> Activity.onKeyDown
+            -> Spela's DPAD_RIGHT branch
+                -> ComposeFocusBridge.requestKeyboardMode?.invoke()
+                    -> inputModeManager.requestInputMode(Keyboard)
+                        -> snapshotFlow listener fires
+                            -> requestFocus() on saved key's item
+                -> super.onKeyDown(KEYCODE_DPAD_RIGHT, event)
+                    -> normal Compose navigation (moveFocus(Right))
+```
+
+The same key press both **restores** focus to the last-known item AND
+**navigates** in the pressed direction. No double-press required, no
+intermediate visible state.
+
+## SpScreen's Tap Handler
+
+`SpScreen.kt` installs a screen-wide `detectTapGestures` handler in
+the bubble phase that fires only when a tap doesn't hit any interactive
+child (i.e., on bare screen background). It dismisses the soft
+keyboard and clears focus from any focused text field. **This handler
+intentionally does NOT try to re-acquire focus** — see the
+"auto-restore is worse than nothing" wrinkle above. Recovery is the
+job of the user's next d-pad press, via the bridge.
+
+## Why `event.source` is Not Gated
+
+The d-pad branch in `MainActivity.onKeyDown` intentionally does not
+filter on `event.source`. Hardware vendors split gamepad input across
+different input sources / ports depending on firmware config, and on
+AYN Thor the d-pad reports `source=0` despite being a real hardware
+gamepad. Gating on `SOURCE_GAMEPAD` would skip exactly the events we
+care about.
+
+If you need to distinguish synthesized events from hardware events in
+the future (e.g. to avoid double-handling), use a thread-local
+recursion guard pattern — not source filtering.
+
+## Adding a New Screen
+
+If you're writing a new screen that follows the standard
+`SpScreen { SpScrollableContent { SpMainContentPadding { ... } } }`
+pattern (Home, Console, ConsoleGames, etc.), you get all of this for
+free — there's nothing screen-specific to wire up. The bridge is set
+up once at app start by `GamepadHandler` which wraps the whole
+`SpelaApp`, and every `focusRestoreItem` in your screen automatically
+participates.
+
+## Adding a New Focusable
+
+If you're adding a new focusable element (a card, a grid cell, a
+toggle), put `Modifier.focusRestoreItem(key = "...")` on it with a
+key unique within the screen's focus-memory scope. See the
+"Focus Memory and Restoration" section above for the key naming
+conventions.
+
+If exactly one focusable on the screen should be the cold-start
+default target, pass `isDefault = true`. Apply to one and only one
+element per `LocalFocusMemory` scope.
+
+## Common Pitfalls
+
+- **Don't auto-recover focus on focus loss.** Specifically: don't add
+  `LaunchedEffect(hasFocus) { if (!hasFocus) ... requestFocus() }` to
+  `GamepadHandler` or anywhere else. It triggers snap-scroll on every
+  touch and is universally hated. Recovery must hang off the user's
+  next key press.
+
+- **Don't call `focusManager.clearFocus()` from a tap handler unless
+  you've confirmed a text field is actually focused.** Compose
+  already drops focus on touch-mode entry; an extra clear from app
+  code on top of that just makes recovery harder.
+
+- **Don't try to fix this from Compose alone.** The mode-flip on
+  hardware d-pad doesn't happen in `ComposeView.dispatchKeyEvent`
+  on AYN Thor, so listening to `inputMode` from a pure-Compose
+  vantage point isn't enough. The `MainActivity` hook is required.
+
+- **Don't gate the d-pad handler on `event.source`.** See the section
+  above.
+
+- **Don't claim a focus fix works based on ADB-only testing.** ADB
+  injects key events through the same code path as hardware (verified
+  during #1194 work) so functional ADB tests are valid evidence, but
+  **eyeballing screenshots is unreliable** — "card visible with
+  neighbors on both sides" is not the same as "card centred in the
+  viewport". For positional claims, dump
+  `LazyListState.layoutInfo` (`viewportEndOffset - viewportStartOffset`,
+  item's `offset + size/2`) and verify numerically that the focused
+  item's centre equals the viewport's centre within a few pixels.
+
