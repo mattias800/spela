@@ -24,6 +24,12 @@ import kotlin.time.Clock
 class GamepadPortManager(
     private val keyMappingRepository: KeyMappingRepository,
     private val scope: CoroutineScope? = null,
+    /**
+     * Wall-clock source in epoch milliseconds. Defaults to the system clock.
+     * Tests inject a virtual clock (the test scheduler's `currentTime`) so the
+     * activity-timeout window is deterministic instead of racing real time.
+     */
+    private val nowMs: () -> Long = { Clock.System.now().toEpochMilliseconds() },
 ) {
     companion object {
         const val MAX_PORTS = 8
@@ -109,7 +115,7 @@ class GamepadPortManager(
     fun reportActivity(port: Int) {
         if (port < 0 || port >= MAX_PORTS) return
         if (!occupiedPorts[port]) return
-        lastActivityMs[port] = Clock.System.now().toEpochMilliseconds()
+        lastActivityMs[port] = nowMs()
         _portActivity.value = buildActivityMap()
         emitControllerStatus()
     }
@@ -303,7 +309,7 @@ class GamepadPortManager(
     }
 
     private fun emitControllerStatus() {
-        val now = Clock.System.now().toEpochMilliseconds()
+        val now = nowMs()
         _controllerStatus.value = ControllerStatusState.fromPortData(
             occupiedPorts = occupiedPorts.copyOf(),
             lastActivityMs = lastActivityMs.copyOf(),

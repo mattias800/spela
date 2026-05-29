@@ -35,6 +35,12 @@ class GamepadConfigViewModel(
     private val gamepadPortManager: GamepadPortManager,
     private val dispatchers: DispatcherProvider,
     private val scope: CoroutineScope,
+    /**
+     * Wall-clock source in epoch milliseconds. Defaults to the system clock.
+     * Tests inject a virtual clock so the activity-timeout window is
+     * deterministic rather than racing real time against the test scheduler.
+     */
+    private val nowMs: () -> Long = { kotlin.time.Clock.System.now().toEpochMilliseconds() },
 ) {
     companion object {
         private const val ACTIVITY_TIMEOUT_MS = 500L
@@ -78,7 +84,7 @@ class GamepadConfigViewModel(
     private fun refreshState() {
         val assignments = gamepadPortManager.assignments.value
         val activity = gamepadPortManager.portActivity.value
-        val now = kotlin.time.Clock.System.now().toEpochMilliseconds()
+        val now = nowMs()
 
         val portAssignments = assignments.map { assignment ->
             val lastActivity = activity[assignment.port] ?: 0L

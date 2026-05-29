@@ -167,7 +167,11 @@ class SpelaTestHarness(
     val presenceService = PresenceService(fakeApiClient, stubEngineFactory, dispatchers, scope)
 
     val keyMappingRepo = FakeKeyMappingRepository()
-    val gamepadPortManager = GamepadPortManager(keyMappingRepo, scope)
+    val gamepadPortManager = GamepadPortManager(
+        keyMappingRepo,
+        scope,
+        nowMs = { testDispatcher.scheduler.currentTime },
+    )
 
     // Achievement fakes are exposed so tests can drive the popup wiring:
     // set `achievementsRepo.raTokenResult = Result.success(...)` to enable
@@ -269,6 +273,7 @@ class SpelaTestHarness(
         gamepadPortManager = gamepadPortManager,
         dispatchers = dispatchers,
         scope = scope,
+        nowMs = { testDispatcher.scheduler.currentTime },
     )
 
     val socialRepo = FakeSocialRepository()
