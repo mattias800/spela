@@ -772,6 +772,47 @@ fun ComposeRule.tapOnTag(tag: String, fallbackLabel: String? = null) {
 }
 
 /**
+ * Click the first node carrying [tag] by invoking its OnClick semantic
+ * action directly, falling back to [performClick] only when the node has
+ * no OnClick action. Returns false if no node with the tag exists.
+ *
+ * Why not just `performClick()`? A synthetic touch dispatched by
+ * `performClick()` can be routed to the wrong display and silently
+ * dropped on multi-display devices (notably the AYN Thor, which exposes
+ * a Screen-2 secondary display). Invoking the OnClick semantic action
+ * runs the registered `onClick` lambda regardless of pointer routing —
+ * the same reason [tapOnTag] prefers the action over a touch. Use this
+ * for content cards (console cards, game cards) that are reached by
+ * tag, where [tapOnTag]'s label fallback doesn't apply.
+ */
+fun ComposeRule.clickNodeByTag(tag: String): Boolean {
+    // Prefer the merged tree so testTag and the OnClick action resolve
+    // onto the same semantic node; fall back to the unmerged tree.
+    for (useUnmerged in listOf(false, true)) {
+        val present = try {
+            onAllNodesWithTag(tag, useUnmergedTree = useUnmerged).fetchSemanticsNodes().isNotEmpty()
+        } catch (_: Exception) {
+            false
+        }
+        if (!present) continue
+        try {
+            val interaction = onAllNodesWithTag(tag, useUnmergedTree = useUnmerged)[0]
+            val hasOnClick = interaction.fetchSemanticsNode().config.contains(SemanticsActions.OnClick)
+            if (hasOnClick) {
+                interaction.performSemanticsAction(SemanticsActions.OnClick)
+            } else {
+                interaction.performClick()
+            }
+            waitForIdle()
+            return true
+        } catch (_: Exception) {
+            // Tree busy / node detached mid-resolution — try the other tree.
+        }
+    }
+    return false
+}
+
+/**
  * Wait for a node with the given [testTag] to appear in the semantic
  * tree. Preferred over [waitForText] for standardised controls — see
  * [tapOnTag].
@@ -2194,7 +2235,11 @@ fun ComposeRule.downloadGameIfNeeded() {
 
     if (hasDownload) {
         android.util.Log.d("E2E_NAV", "downloadGameIfNeeded: Clicking Download")
-        onNodeWithText("Download", substring = false).performClick()
+        // OnClick action via tag, not a synthetic touch — performClick() can be
+        // dropped on multi-display hardware (AYN Thor). See clickNodeByTag.
+        if (!clickNodeByTag(com.spela.player.presentation.ui.TestTags.GAME_DETAIL_DOWNLOAD_BUTTON)) {
+            onNodeWithText("Download", substring = false).performClick()
+        }
         waitForIdle()
         // After download, button becomes "Play", "Resume", or "New Game"
         // ROM download can be slow on emulator — use 60s timeout
@@ -2231,7 +2276,12 @@ fun ComposeRule.startGameAndWait() {
         android.util.Log.d("E2E_NAV", "startGameAndWait: testTags on screen: ${visibleTags.take(40)}")
         throw IllegalStateException("Game detail play button (testTag=$playButtonTag) not found")
     }
-    onAllNodes(hasTestTag(playButtonTag))[0].performClick()
+    // OnClick action, not a synthetic touch — performClick() can be dropped
+    // on multi-display hardware (AYN Thor), so the game never starts. See
+    // clickNodeByTag.
+    if (!clickNodeByTag(playButtonTag)) {
+        onAllNodes(hasTestTag(playButtonTag))[0].performClick()
+    }
     waitForIdle()
 
     // Wait for emulation to start using multiple signals
@@ -2448,8 +2498,13 @@ fun ComposeRule.navigateToGameAndPlay(preferredGameTitle: String? = "Balloon Fig
         )
     }
     android.util.Log.d(tag, "navigateToGameAndPlay: landed on Consoles list after $pops pop(s)")
-    onAllNodes(hasTestTag(nesTag))[0].performClick()
-    waitForIdle()
+    // Invoke the console card's OnClick action directly rather than a
+    // synthetic touch — performClick() can be dropped on multi-display
+    // hardware (AYN Thor Screen-2), leaving us stranded on the consoles
+    // list. See clickNodeByTag.
+    if (!clickNodeByTag(nesTag)) {
+        android.util.Log.d(tag, "navigateToGameAndPlay: clickNodeByTag($nesTag) found no node to click")
+    }
     Thread.sleep(500)
 
     // Wait for game cards to render. `explore_game_card_<id>` is the
@@ -2535,12 +2590,11 @@ fun ComposeRule.navigateToGameAndPlay(preferredGameTitle: String? = "Balloon Fig
     // avoid extra navigation when the front page already has it.
     if (preferredGameTitle != null && findGameCardTagByTitle(preferredGameTitle) == null) {
         android.util.Log.d(tag, "navigateToGameAndPlay: $preferredGameTitle not on console front page; opening Browse Games")
-        try {
-            onAllNodes(hasTestTag(com.spela.player.presentation.ui.TestTags.consoleBrowseGames("nes")))[0].performClick()
-            waitForIdle()
+        // OnClick action, not a synthetic touch — see clickNodeByTag.
+        if (clickNodeByTag(com.spela.player.presentation.ui.TestTags.consoleBrowseGames("nes"))) {
             Thread.sleep(2_000)
-        } catch (e: Exception) {
-            android.util.Log.d(tag, "navigateToGameAndPlay: Browse Games tap failed: ${e.message?.take(120)}")
+        } else {
+            android.util.Log.d(tag, "navigateToGameAndPlay: Browse Games button not found")
         }
     }
 
@@ -2552,12 +2606,12 @@ fun ComposeRule.navigateToGameAndPlay(preferredGameTitle: String? = "Balloon Fig
             val targetTag = preferredTag ?: allCards.firstOrNull()
             android.util.Log.d(tag, "navigateToGameAndPlay: attempt ${attempt + 1}, preferred=$preferredGameTitle tag=$targetTag allCards=${allCards.size}")
             if (targetTag == null) return@repeat
-            try {
-                onAllNodes(hasTestTag(targetTag), useUnmergedTree = true)[0].performClick()
-                waitForIdle()
+            // Invoke the OnClick action directly (not a synthetic touch) so
+            // the tap isn't dropped by multi-display routing on the AYN Thor.
+            if (clickNodeByTag(targetTag)) {
                 android.util.Log.d(tag, "navigateToGameAndPlay: tapped $targetTag")
-            } catch (e: Exception) {
-                android.util.Log.d(tag, "navigateToGameAndPlay: tap failed: ${e.message?.take(120)}")
+            } else {
+                android.util.Log.d(tag, "navigateToGameAndPlay: tap failed for $targetTag")
                 return@repeat
             }
 
