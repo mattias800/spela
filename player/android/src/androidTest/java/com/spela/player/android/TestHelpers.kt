@@ -18,6 +18,7 @@ import androidx.compose.ui.test.onAllNodesWithText
 import com.spela.player.presentation.ui.TestTags
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.SemanticsNodeInteraction
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
@@ -813,6 +814,27 @@ fun ComposeRule.clickNodeByTag(tag: String): Boolean {
 }
 
 /**
+ * Click this node via its OnClick semantic action when it exposes one,
+ * else a synthetic touch. Action dispatch is immune to the multi-display
+ * touch-routing drop that silently no-ops `performClick()` on the AYN
+ * Thor (Screen-2). For label/text taps the resolved merged node is the
+ * enclosing clickable (button), which carries the OnClick action. See
+ * [clickNodeByTag] for the rationale.
+ */
+fun SemanticsNodeInteraction.clickPreferAction() {
+    val hasOnClick = try {
+        fetchSemanticsNode().config.contains(SemanticsActions.OnClick)
+    } catch (_: Exception) {
+        false
+    }
+    if (hasOnClick) {
+        performSemanticsAction(SemanticsActions.OnClick)
+    } else {
+        performClick()
+    }
+}
+
+/**
  * Wait for a node with the given [testTag] to appear in the semantic
  * tree. Preferred over [waitForText] for standardised controls — see
  * [tapOnTag].
@@ -883,16 +905,13 @@ private val labelToTestTag: Map<String, String> = mapOf(
 fun ComposeRule.tapOn(label: String) {
     // Prefer testTag if this label is a known standardised element.
     labelToTestTag[label]?.let { tag ->
-        val nodes = onAllNodesWithTag(tag, useUnmergedTree = true)
-            .fetchSemanticsNodes()
-        if (nodes.isNotEmpty()) {
-            onAllNodesWithTag(tag, useUnmergedTree = true)[0].performClick()
-            waitForIdle()
+        // OnClick action, not a synthetic touch (AYN Thor multi-display
+        // drop). clickNodeByTag returns false if the tag isn't present, in
+        // which case we fall through to text/description matching — could be
+        // a screen that hasn't adopted the tag yet.
+        if (clickNodeByTag(tag)) {
             return
         }
-        // Fall through to text/description matching if the tag isn't
-        // present — could be a screen that hasn't adopted the tag yet
-        // or a node not in the current composition.
     }
     tapOnByLabel(label)
 }
@@ -929,15 +948,15 @@ private fun ComposeRule.tapOnByLabel(label: String) {
     try {
         val textNodes = onAllNodesWithText(label, substring = true).fetchSemanticsNodes()
         if (textNodes.size == 1) {
-            onNodeWithText(label, substring = true).performClick()
+            onNodeWithText(label, substring = true).clickPreferAction()
         } else {
             val descNodes = onAllNodesWithContentDescription(label, substring = true).fetchSemanticsNodes()
             if (descNodes.size == 1) {
-                onNodeWithContentDescription(label, substring = true).performClick()
+                onNodeWithContentDescription(label, substring = true).clickPreferAction()
             } else if (descNodes.isNotEmpty()) {
-                onAllNodesWithContentDescription(label, substring = true)[0].performClick()
+                onAllNodesWithContentDescription(label, substring = true)[0].clickPreferAction()
             } else if (textNodes.isNotEmpty()) {
-                onAllNodesWithText(label, substring = true)[0].performClick()
+                onAllNodesWithText(label, substring = true)[0].clickPreferAction()
         } else {
             // Force failure with a clear error
             onNodeWithText(label, substring = true).performClick()
@@ -1559,31 +1578,55 @@ fun ComposeRule.navigateToAnyNesGame(): String {
     val nesCardTag = com.spela.player.presentation.ui.TestTags.consoleCard("nes")
     scrollToAndTapTag(nesCardTag, maxSwipes = 12)
 
-    // Wait for console game list screen
-    android.util.Log.d(tag, "navigateToAnyNesGame: wait Console settings desc")
-    waitForContentDescription("Console settings", TIMEOUT_EXTRA_LONG)
+    // Confirm we reached the ConsoleScreen by waiting for the game's own
+    // title to render (below). The previous anchor — a "Console settings"
+    // contentDescription — was stale: that label now lives in an
+    // admin-only overflow DropdownMenu (ConsoleScreen.kt) that the
+    // non-admin E2E user never sees and the test never opens, so it could
+    // never be found.
 
-    // ConsoleScreen renders "Top Rated" only if state.topRatedGames
-    // is non-empty (a small library has none), and "All Games" only
-    // when game count ≤ 15. Don't anchor on a section header — wait
-    // for the game's own title text to render.
-    android.util.Log.d(tag, "navigateToAnyNesGame: waitForText '$title'")
-    waitForText(title, TIMEOUT_LONG)
+    // Tap the FIRST available game card (any game) rather than hunting for
+    // a specific API-picked title. The back-stack / play-later callers are
+    // game-agnostic — they only need to reach game detail — and the console
+    // front page shows curated shelves whose contents vary with the seed,
+    // so a fixed title (e.g. the API's first NES game) often isn't visible.
+    // Game cards are tagged `explore_game_card_<id>` (front shelves) or
+    // `game_grid_item_<id>` (paginated Browse grid). If none are on the
+    // front page, hop through Browse Games (lists every game).
+    val cardPrefixes = listOf("explore_game_card_", "game_grid_item_")
+    fun firstGameCardTag(): String? = try {
+        onAllNodes(androidx.compose.ui.test.isRoot(), useUnmergedTree = true)
+            .fetchSemanticsNodes()
+            .flatMap { collectAllNodes(it) }
+            .mapNotNull { n -> n.config.firstOrNull { it.key.name == "TestTag" }?.value as? String }
+            .firstOrNull { t -> cardPrefixes.any { t.startsWith(it) } }
+    } catch (_: Exception) {
+        null
+    }
 
-    // Click via Compose semantics on the card's merged contentDescription.
-    // `SpGameCard` (the role component behind SpGridGameCard) overrides
-    // its merged semantics with `contentDescription = "$title, $subtitle"`
-    // and `role = Button` — so the card's child Text("nestest") is NOT
-    // a descendant of the merged tree, which is why a
-    // `hasClickAction() and hasAnyDescendant(hasText(title))` matcher
-    // returns 0 nodes (the previous attempt). Match the card directly
-    // via `hasContentDescription(title, substring = true)` — the
-    // merged contentDescription always contains the title.
-    android.util.Log.d(tag, "navigateToAnyNesGame: click card by contentDesc")
-    onAllNodes(
-        androidx.compose.ui.test.hasClickAction() and
-            androidx.compose.ui.test.hasContentDescription(title, substring = true)
-    )[0].performClick()
+    android.util.Log.d(tag, "navigateToAnyNesGame: locating a game card (any)")
+    var cardTag = firstGameCardTag()
+    if (cardTag == null) {
+        android.util.Log.d(tag, "navigateToAnyNesGame: no card on front page; opening Browse Games")
+        clickNodeByTag(com.spela.player.presentation.ui.TestTags.consoleBrowseGames("nes"))
+        Thread.sleep(1_500)
+        try {
+            pollUntil(timeoutMillis = TIMEOUT_LONG) { firstGameCardTag() != null }
+        } catch (_: Throwable) {
+            // fall through to the null-check below for a clear failure
+        }
+        cardTag = firstGameCardTag()
+    }
+    checkNotNull(cardTag) {
+        "navigateToAnyNesGame: no NES game cards on the console screen " +
+            "(front shelves and Browse Games both empty) — did the NES console " +
+            "card tap navigate? (looked for one of $cardPrefixes)"
+    }
+
+    // OnClick action, not a synthetic touch — performClick() can be dropped
+    // by multi-display routing on the AYN Thor. See clickNodeByTag.
+    android.util.Log.d(tag, "navigateToAnyNesGame: tapping game card $cardTag")
+    clickNodeByTag(cardTag)
     android.util.Log.d(tag, "navigateToAnyNesGame: card click fired, polling action button")
     // Game detail's primary action button is one of:
     //   game_detail_play_button (testTag) — for in-library games (label

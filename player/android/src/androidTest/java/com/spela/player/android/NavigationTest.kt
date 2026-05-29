@@ -1,7 +1,5 @@
 package com.spela.player.android
 
-import androidx.compose.ui.test.onAllNodesWithContentDescription
-import androidx.compose.ui.test.onAllNodesWithText
 import org.junit.Test
 
 @RequiresPhysicalDevice(
@@ -18,19 +16,12 @@ class NavigationTest : BaseE2ETest() {
         // ships nestest. `navigateToAnyNesGame` finds whichever NES
         // game is available — back-stack navigation doesn't care
         // which.
+        // navigateToAnyNesGame already confirms game detail rendered — it
+        // returns only after the play/download action-button testTag appears.
+        // (The earlier text poll for "Play"/"Download"/"Resume" here was stale:
+        // an in-library, unplayed game's primary button reads "New game" /
+        // "Continue", so none of those substrings matched.)
         rule.navigateToAnyNesGame()
-
-        // Verify game detail rendered — wait for an action button.
-        rule.pollUntil(timeoutMillis = 15_000) {
-            try {
-                rule.onAllNodesWithText("Download", substring = true)
-                    .fetchSemanticsNodes().isNotEmpty() ||
-                    rule.onAllNodesWithText("Play", substring = true)
-                        .fetchSemanticsNodes().isNotEmpty() ||
-                    rule.onAllNodesWithText("Resume", substring = true)
-                        .fetchSemanticsNodes().isNotEmpty()
-            } catch (_: IllegalStateException) { false }
-        }
 
         // BACK #1: Game Detail → previous screen (Browse / game list).
         rule.pressBack()
