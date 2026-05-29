@@ -14,8 +14,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
+import androidx.compose.ui.input.InputMode
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInRoot
+import androidx.compose.ui.platform.LocalInputModeManager
 import com.spela.player.presentation.ui.components.LocalScrollState
 
 /**
@@ -88,8 +90,21 @@ fun Modifier.centerOnFocus(
 
     if (scrollState == null && lazyGridInfo == null && lazyListInfo == null) return@composed this
 
+    val inputModeManager = LocalInputModeManager.current
+
     LaunchedEffect(isFocused) {
         if (!isFocused) return@LaunchedEffect
+
+        // Centring-on-focus is a gamepad / arrow-key affordance — it
+        // pulls the focused element to the viewport centre so the user
+        // can see what they just navigated to with the d-pad. When the
+        // focus change comes from a pointer (mouse click, touch tap,
+        // `ComposeUiTest.performClick`), the element is already on
+        // screen by definition, so there's nothing to scroll TO — and
+        // running a scroll here has been observed to drop the
+        // accompanying click action on Compose Multiplatform 1.10
+        // (see #1196). Skip when the input mode is Touch.
+        if (inputModeManager.inputMode != InputMode.Keyboard) return@LaunchedEffect
 
         val now = System.currentTimeMillis()
         val isRapid = now - lastFocusTime < 100
