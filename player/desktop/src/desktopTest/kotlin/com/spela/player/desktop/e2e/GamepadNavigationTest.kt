@@ -14,10 +14,14 @@ import kotlin.test.Test
  * Verifies component focusability and directional focus navigation
  * for gaming handheld support.
  *
- * Note: D-pad input triggers gamepad mode which hides the bottom tab bar
- * and shows the section indicator. Tab bar interaction via D-pad is therefore
- * not possible — section cycling (L1/R1) is tested in SectionIndicatorTest
- * and SectionNavigationTest.
+ * Note: since #1187 the nav style (side rail / bottom bar vs. section
+ * indicator pill) is driven by *physical controller connection*
+ * (`controllerStatus.connectedCount > 0`), not by `InputMode`. Tests that
+ * exercise d-pad navigation at a screen-edge boundary must therefore
+ * connect a controller so the side rail is hidden — otherwise the rail
+ * sits to the left of the content and `DirectionLeft` moves focus into it.
+ * Section cycling (L1/R1) is tested in SectionIndicatorTest and
+ * SectionNavigationTest.
  */
 @OptIn(ExperimentalCoroutinesApi::class, ExperimentalTestApi::class)
 class GamepadNavigationTest {
@@ -90,7 +94,11 @@ class GamepadNavigationTest {
         setContent { harness.App() }
         advance(harness)
 
-        // Enter gamepad mode and navigate to Consoles
+        // Connect a controller so the app is in gamepad mode and the side rail
+        // is hidden (post-#1187). Without this the rail sits to the left of the
+        // grid and DirectionLeft would move focus into the rail instead of
+        // staying on the leftmost card.
+        harness.gamepadPortManager.connectDevice(1, "Test Controller")
         harness.gamepadPortManager.setInputMode(InputMode.GAMEPAD)
         harness.navigationViewModel.onIntent(
             NavigationIntent.NavigateTo(SpScreen.Consoles)
@@ -247,7 +255,10 @@ class GamepadNavigationTest {
         setContent { harness.App() }
         advance(harness)
 
-        // Enter gamepad mode and go to Consoles
+        // Connect a controller so the app is in gamepad mode and the side rail
+        // is hidden (post-#1187) — otherwise focus recovery / moveFocus(Next)
+        // lands on a rail tab instead of the console grid.
+        harness.gamepadPortManager.connectDevice(1, "Test Controller")
         harness.gamepadPortManager.setInputMode(InputMode.GAMEPAD)
         harness.navigationViewModel.onIntent(NavigationIntent.NextSection) // Explore
         harness.navigationViewModel.onIntent(NavigationIntent.NextSection) // Consoles

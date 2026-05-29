@@ -102,9 +102,16 @@ class GamepadConfigTest {
         harness.gamepadPortManager.connectDevice(1, "Xbox Controller")
         advance(harness)
 
-        // Report activity AFTER advance so the 500ms timeout hasn't expired
+        // Report activity, then advance virtual time by LESS than the 500ms
+        // activity window (REFRESH_INTERVAL is 200ms) so the config VM's refresh
+        // loop recomputes isActive while the input is still fresh. The harness
+        // injects the test scheduler as the clock, so this is deterministic —
+        // advancing a full second (as advance/advanceQuick do) would push past
+        // the window and read inactive. See #1198.
         harness.gamepadPortManager.reportActivity(0)
-        advanceQuick(harness)
+        harness.testDispatcher.scheduler.advanceTimeBy(300)
+        harness.testDispatcher.scheduler.runCurrent()
+        waitForIdle()
 
         // The activity indicator should be active
         onAllNodesWithContentDescription("Activity indicator active").assertCountEquals(1)
