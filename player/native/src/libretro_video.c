@@ -138,6 +138,19 @@ void video_unlock(void) {
     }
 }
 
+/* Clear the displayed frame so the previous game's last frame doesn't linger
+ * into the next game (#1236). Zeroing the dimensions makes readers
+ * (nativeGetVideoWidth/Height, renderGpuFrameToBgra's >0 guard, the SW
+ * fill path) report "no frame" until the next game's first video_refresh
+ * repopulates them. The frame buffer allocation is kept for reuse. */
+void video_clear_frame(void) {
+    video_lock();
+    video_state.width = 0;
+    video_state.height = 0;
+    video_state.pitch = 0;
+    video_unlock();
+}
+
 void video_set_pixel_format(unsigned format) {
     video_lock();
     video_state.pixel_format = format;
