@@ -249,10 +249,19 @@ func (h *UserHandler) HumaUpdatePreferences(ctx context.Context, in *UpdatePrefe
 				h.DB.Where("user_id = ? AND console_id = ?", uid, console.ID).
 					Delete(&db.ConsoleShaderPreference{})
 			} else {
+				// Unscoped lookup so a previously soft-deleted row (from
+				// clearing the shader to "none") is revived in place. A
+				// scoped First would miss it and the subsequent Create
+				// would hit the (user_id, console_id) unique index and
+				// silently fail, dropping the new selection (#1219).
+				// Mirrors the ConsoleKeyMapping / ConsoleSaveStatePolicy
+				// upserts below.
 				var existing db.ConsoleShaderPreference
-				result := h.DB.Where("user_id = ? AND console_id = ?", uid, console.ID).First(&existing)
+				result := h.DB.Unscoped().Where("user_id = ? AND console_id = ?", uid, console.ID).First(&existing)
 				if result.Error == nil {
-					h.DB.Model(&existing).Update("shader", shader)
+					existing.Shader = shader
+					existing.DeletedAt = gorm.DeletedAt{}
+					h.DB.Unscoped().Save(&existing)
 				} else {
 					h.DB.Create(&db.ConsoleShaderPreference{
 						UserID:    uid,
