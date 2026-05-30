@@ -1155,6 +1155,10 @@ JNI_FUNC(void, nativeUnloadGame)(JNIEnv *env, jobject thiz) {
     g_core.retro_unload_game();
     g_core.game_loaded = false;
     audio_deinit();
+    /* Clear the displayed frame so the next game doesn't briefly show this
+     * game's last frame (#1236). The next game's first video_refresh resets
+     * the dimensions. */
+    video_clear_frame();
     LOGI("Game unloaded");
 }
 

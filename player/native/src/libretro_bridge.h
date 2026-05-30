@@ -24,6 +24,9 @@ void video_deinit(void);
  * libretro's MailBox flush in CGSH_OpenGL_Libretro::Release) don't
  * dereference data that's already partially torn down. (#916) */
 void video_set_shutting_down(void);
+/* Zero the current frame dimensions so the previous game's frame doesn't
+ * linger into the next game. Called on game unload. (#1236) */
+void video_clear_frame(void);
 void video_set_pixel_format(unsigned format);
 void video_refresh_callback(const void *data, unsigned width, unsigned height, size_t pitch);
 unsigned video_get_width(void);
