@@ -122,17 +122,16 @@ actual fun platformModule(): Module = module {
     single<PlatformSecondaryDisplay> { DesktopSecondaryDisplay() }
     single {
         val navViewModel = get<NavigationViewModel>()
-        val emulationState = get<kotlinx.coroutines.flow.MutableStateFlow<com.spela.player.presentation.state.EmulationState>>()
         DesktopGamepadPoller(
             jni = get(),
             gamepadPortManager = get(),
             controller = get(),
             navigationEventBus = get<NavigationEventBus>(),
-            isEmulationActive = {
-                navViewModel.state.value.showInGameOverlay &&
-                    emulationState.value.isRunning &&
-                    !emulationState.value.showOverlay
-            },
+            // UI-navigation synth only applies in the app menus. While a game is
+            // open (showInGameOverlay), GamepadHandler is disabled, so synth keys
+            // can't drive focus and would leak into the emulator — suppress them.
+            // The gamepad still controls the game via the poller's button routing.
+            isInGame = { navViewModel.state.value.showInGameOverlay },
         )
     }
     single {
