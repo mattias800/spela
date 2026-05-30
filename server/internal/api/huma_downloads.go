@@ -143,7 +143,7 @@ type CoreDownloadInput struct {
 
 // BiosDownloadInput is the input for GET /api/bios/{filename}.
 type BiosDownloadInput struct {
-	Filename string `path:"filename" pattern:"^[A-Za-z0-9._()\\[\\] +-]+$" maxLength:"128" doc:"BIOS file name."`
+	Filename string `path:"filename" pattern:"^[A-Za-z0-9._()\\[\\],'&! +-]+$" maxLength:"128" doc:"BIOS file name."`
 }
 
 // BiosArchiveDownloadInput is the input for GET /api/bios/archive/{filename}.
@@ -151,7 +151,7 @@ type BiosDownloadInput struct {
 // server returns a zip of `<biosDir>/<SubDir>/` so the client can extract
 // the directory tree on the device.
 type BiosArchiveDownloadInput struct {
-	Filename string `path:"filename" pattern:"^[A-Za-z0-9._()\\[\\] +-]+$" maxLength:"128" doc:"Sentinel filename of the bundle entry (matches registry FileName)."`
+	Filename string `path:"filename" pattern:"^[A-Za-z0-9._()\\[\\],'&! +-]+$" maxLength:"128" doc:"Sentinel filename of the bundle entry (matches registry FileName)."`
 }
 
 // SessionSaveDownloadInput is the input for GET /api/sessions/{id}/saves/{saveId}.
@@ -216,7 +216,7 @@ type BrandingLogoInput struct{}
 // under a download-friendly name without changing the served bytes.
 type GameDownloadInput struct {
 	ID       string `path:"id" pattern:"^[0-9]+$" maxLength:"20" doc:"Game ID."`
-	Filename string `path:"filename" required:"false" pattern:"^[A-Za-z0-9._()\\[\\] +-]+$" maxLength:"128" doc:"Optional download filename — server ignores it; lets clients control the saved filename."`
+	Filename string `path:"filename" required:"false" pattern:"^[A-Za-z0-9._()\\[\\],'&! +-]+$" maxLength:"128" doc:"Optional download filename — server ignores it; lets clients control the saved filename."`
 	Format   string `query:"format" required:"false" doc:"'zip' to force ZIP packaging for multi-file disc games. Default is .tar (or single-file passthrough)."`
 }
 
