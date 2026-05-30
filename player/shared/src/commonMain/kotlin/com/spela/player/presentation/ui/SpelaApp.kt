@@ -33,6 +33,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.key
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.platform.LocalInputModeManager
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -105,6 +106,17 @@ fun SpelaApp(deps: SpelaAppDependencies) = with(deps) {
             ?: remember { mutableStateOf(ControllerStatusState.Empty) }
         val isGamepadMode = resolveGamepadNavStyle(inputMode, controllerStatus)
         val sectionIndicatorVisible = isGamepadMode
+
+        // When a controller is connected, flip Compose into keyboard input mode so
+        // the current screen's default focusRestoreItem grabs focus and the focus
+        // ring is visible immediately — instead of nothing being focused until the
+        // first d-pad press (#1229). Compose's input mode is independent of the
+        // app's gamepad/touch nav style; using the mouse flips it back to Touch.
+        val inputModeManager = LocalInputModeManager.current
+        val hasController = controllerStatus.connectedCount > 0
+        LaunchedEffect(hasController) {
+            if (hasController) inputModeManager.requestInputMode(androidx.compose.ui.input.InputMode.Keyboard)
+        }
 
         // Indicator for E2E tests: exposes whether the libretro core is running.
         // Tests wait for "Core idle" instead of Thread.sleep after exiting games.
