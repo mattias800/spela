@@ -334,6 +334,15 @@ fun ConsoleScreen(
                 onGradient = true,
                 onBack = onBack,
                 actions = {
+                    // Console settings (controls, shaders, …) — available to every
+                    // user since these are per-user, per-console preferences.
+                    SpIconButton(
+                        icon = Icons.Filled.Settings,
+                        contentDescription = "Console settings",
+                        onGradient = true,
+                        onClick = onNavigateToConsoleSettings,
+                        modifier = Modifier.testTag(TestTags.CONSOLE_SETTINGS_BUTTON),
+                    )
                     if (state.isAdmin) {
                         var adminMenuExpanded by remember { mutableStateOf(false) }
                         Box {
