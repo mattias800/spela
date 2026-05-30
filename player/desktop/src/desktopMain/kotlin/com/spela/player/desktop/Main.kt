@@ -109,7 +109,7 @@ fun main(args: Array<String>) {
         // through the transparent title bar.
         val titleBarInset = when {
             isMacOS -> 28.dp
-            (isWindows || isLinux) && isJbrTitleBarActive -> 32.dp
+            (isWindows || isLinux) && isJbrTitleBarActive -> 42.dp
             else -> 0.dp
         }
         CompositionLocalProvider(LocalTitleBarInset provides titleBarInset) {
@@ -153,7 +153,7 @@ private fun applyJbrTransparentTitleBar(window: java.awt.Window) {
         val wdInterface = Class.forName("com.jetbrains.WindowDecorations")
         val ctbInterface = Class.forName("com.jetbrains.WindowDecorations\$CustomTitleBar")
         val titleBar = wdInterface.getMethod("createCustomTitleBar").invoke(windowDecorations)
-        ctbInterface.getMethod("setHeight", java.lang.Float.TYPE).invoke(titleBar, 32f)
+        ctbInterface.getMethod("setHeight", java.lang.Float.TYPE).invoke(titleBar, 42f)
         // setCustomTitleBar is overloaded ((Frame, ..), (Dialog, ..)) and the param
         // types vary by JBR version, so match the overload to the actual arg types.
         val setMethod = wdInterface.methods.firstOrNull { m ->
