@@ -20,6 +20,9 @@ actual fun PlatformEmulationSurface(
     selectedShader: ShaderPreset,
     modifier: Modifier,
     onEscapePressed: (() -> Unit)?,
+    // Unused on Android — the overlay is navigated via the platform back gesture
+    // and Android's own gamepad key dispatch (#1211 is a desktop-input fix).
+    overlayVisible: Boolean,
 ) {
     val androidController = controller as? AndroidLibretroController ?: return
     val emulationViewModel: EmulationViewModel = koinInject()

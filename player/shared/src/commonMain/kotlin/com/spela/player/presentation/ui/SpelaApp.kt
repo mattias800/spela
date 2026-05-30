@@ -156,15 +156,25 @@ fun SpelaApp(deps: SpelaAppDependencies) = with(deps) {
             navigationViewModel.onIntent(NavigationIntent.GoBack)
         }
 
+        // The in-game pause overlay (Save/Load/Resume menu) is rendered while a
+        // game is open. Re-enable focus navigation for it so the gamepad can
+        // drive the menu (#1211): GamepadHandler is normally disabled in-game so
+        // the pad drives the emulator, but with the overlay open the emulation
+        // surface yields its keys and we want d-pad -> focus + A -> activate.
+        val inGameOverlayOpen = navState.showInGameOverlay && coreIdleState.showOverlay
         GamepadHandler(
-            enabled = !navState.showInGameOverlay,
-            onBack = if (isGamepadScreen) {
+            enabled = !navState.showInGameOverlay || inGameOverlayOpen,
+            onBack = if (inGameOverlayOpen) {
+                // A / Escape resumes (closes the overlay) rather than navigating.
+                { emulationViewModel.onIntent(EmulationIntent.ToggleOverlay) }
+            } else if (isGamepadScreen) {
                 { navigationViewModel.onIntent(NavigationIntent.GoBack) }
             } else null,
-            onNextSection = if (isGamepadScreen) {
+            // Section switching is meaningless while the pause overlay owns input.
+            onNextSection = if (isGamepadScreen && !inGameOverlayOpen) {
                 { navigationViewModel.onIntent(NavigationIntent.NextSection) }
             } else null,
-            onPreviousSection = if (isGamepadScreen) {
+            onPreviousSection = if (isGamepadScreen && !inGameOverlayOpen) {
                 { navigationViewModel.onIntent(NavigationIntent.PreviousSection) }
             } else null,
             onGamepadInput = {
@@ -394,6 +404,7 @@ fun SpelaApp(deps: SpelaAppDependencies) = with(deps) {
                             onEscapePressed = {
                                 emulationViewModel.onIntent(EmulationIntent.ToggleOverlay)
                             },
+                            overlayVisible = emulationState.showOverlay,
                         )
 
                         // Error overlay: shown when emulation fails to start

@@ -64,6 +64,7 @@ fun MetalOffscreenSurface(
     onEscapePressed: (() -> Unit)? = null,
     keyMapping: Map<Int, Int>? = null,
     gamepadPortManager: GamepadPortManager? = null,
+    overlayVisible: Boolean = false,
 ) {
     val effectiveMapping = remember(keyMapping) {
         keyMapping ?: defaultMetalKeyMapping
@@ -89,8 +90,10 @@ fun MetalOffscreenSurface(
         }
     }
 
-    // Request focus for keyboard input
-    LaunchedEffect(Unit) {
+    // Request focus for keyboard input. Yield while the pause overlay is open
+    // so its menu can hold focus and be navigated (#1211).
+    LaunchedEffect(overlayVisible) {
+        if (overlayVisible) return@LaunchedEffect
         while (true) {
             focusRequester.requestFocus()
             delay(500)
@@ -172,8 +175,11 @@ fun MetalOffscreenSurface(
                     controller.gpuResize(size.width, size.height)
                 }
                 .focusRequester(focusRequester)
-                .focusable()
+                // Non-focusable + key-yielding while the overlay is open so its
+                // menu owns focus and input (#1211).
+                .focusable(enabled = !overlayVisible)
                 .onPreviewKeyEvent { event ->
+                    if (overlayVisible) return@onPreviewKeyEvent false
                     if (event.key == Key.Escape && event.type == KeyEventType.KeyDown) {
                         onEscapePressed?.invoke()
                         return@onPreviewKeyEvent true
