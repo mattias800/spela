@@ -13,6 +13,9 @@ import com.spela.player.presentation.viewmodel.LibretroController
  * [selectedShader] controls the video filter applied to the rendered frame.
  * [onEscapePressed] is invoked on Desktop when the user presses the Escape key.
  * On Android this parameter is unused (back is handled by PlatformBackHandler).
+ * [overlayVisible] is true while the in-game pause overlay is shown; on Desktop
+ * the surface then yields keyboard/gamepad input and focus so the overlay menu
+ * can be navigated (#1211). Unused on Android.
  */
 @Composable
 expect fun PlatformEmulationSurface(
@@ -20,4 +23,5 @@ expect fun PlatformEmulationSurface(
     selectedShader: ShaderPreset = ShaderPreset.NONE,
     modifier: Modifier = Modifier,
     onEscapePressed: (() -> Unit)? = null,
+    overlayVisible: Boolean = false,
 )

@@ -17,6 +17,7 @@ import com.spela.player.libretro.LibretroJni
 import com.spela.player.libretro.desktopDefaultRetroMapping
 import com.spela.player.presentation.secondarydisplay.PlatformSecondaryDisplay
 import com.spela.player.platform.DesktopFileStorage
+import com.spela.player.presentation.viewmodel.EmulationViewModel
 import com.spela.player.presentation.viewmodel.LibretroController
 import com.spela.player.util.FileStorage
 import io.ktor.client.*
@@ -122,6 +123,7 @@ actual fun platformModule(): Module = module {
     single<PlatformSecondaryDisplay> { DesktopSecondaryDisplay() }
     single {
         val navViewModel = get<NavigationViewModel>()
+        val emuViewModel = get<EmulationViewModel>()
         DesktopGamepadPoller(
             jni = get(),
             gamepadPortManager = get(),
@@ -131,7 +133,15 @@ actual fun platformModule(): Module = module {
             // open (showInGameOverlay), GamepadHandler is disabled, so synth keys
             // can't drive focus and would leak into the emulator — suppress them.
             // The gamepad still controls the game via the poller's button routing.
-            isInGame = { navViewModel.state.value.showInGameOverlay },
+            //
+            // EXCEPTION: when the in-game pause overlay is open (showOverlay),
+            // GamepadHandler is re-enabled (see SpelaApp) and the emulation
+            // surface yields its keys, so the synth must run to drive focus
+            // through the overlay menu. (#1211)
+            isInGame = {
+                navViewModel.state.value.showInGameOverlay &&
+                    !emuViewModel.state.value.showOverlay
+            },
         )
     }
     single {

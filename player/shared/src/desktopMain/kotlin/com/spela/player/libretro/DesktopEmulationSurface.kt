@@ -70,6 +70,7 @@ fun DesktopEmulationSurface(
     onEscapePressed: (() -> Unit)? = null,
     keyMapping: Map<Int, Int>? = null,
     gamepadPortManager: GamepadPortManager? = null,
+    overlayVisible: Boolean = false,
 ) {
     val effectiveMapping = remember(keyMapping) {
         keyMapping ?: defaultKeyMapping
@@ -107,7 +108,10 @@ fun DesktopEmulationSurface(
 
     // Request focus so we receive key events, and periodically re-request
     // to recover from any focus-stealing UI elements (e.g. overlays).
-    LaunchedEffect(Unit) {
+    // While the in-game pause overlay is open we deliberately stop grabbing
+    // focus so the overlay menu can hold it and be navigated (#1211).
+    LaunchedEffect(overlayVisible) {
+        if (overlayVisible) return@LaunchedEffect
         while (true) {
             focusRequester.requestFocus()
             delay(500)
@@ -127,7 +131,9 @@ fun DesktopEmulationSurface(
                 .fillMaxSize()
                 .background(Color.Black)
                 .focusRequester(focusRequester)
-                .focusable()
+                // Non-focusable while the overlay is open so focus stays in the
+                // overlay menu rather than bouncing back to the surface (#1211).
+                .focusable(enabled = !overlayVisible)
                 .pointerInput(controller) {
                     // Forward Compose pointer events to the libretro
                     // RETRO_DEVICE_MOUSE pipeline (#857). Mirror of the
@@ -179,6 +185,10 @@ fun DesktopEmulationSurface(
                     }
                 }
                 .onPreviewKeyEvent { event ->
+                    // While the pause overlay is open, yield all keys so the
+                    // overlay menu's focus navigation (and its own Escape/back
+                    // handling) gets them instead of the emulator (#1211).
+                    if (overlayVisible) return@onPreviewKeyEvent false
                     // Handle Escape key to toggle overlay
                     if (event.key == Key.Escape && event.type == KeyEventType.KeyDown) {
                         onEscapePressed?.invoke()

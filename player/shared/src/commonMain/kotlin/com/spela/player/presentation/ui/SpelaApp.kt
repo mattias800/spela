@@ -33,6 +33,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.key
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.platform.LocalInputModeManager
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -106,6 +107,17 @@ fun SpelaApp(deps: SpelaAppDependencies) = with(deps) {
         val isGamepadMode = resolveGamepadNavStyle(inputMode, controllerStatus)
         val sectionIndicatorVisible = isGamepadMode
 
+        // When a controller is connected, flip Compose into keyboard input mode so
+        // the current screen's default focusRestoreItem grabs focus and the focus
+        // ring is visible immediately — instead of nothing being focused until the
+        // first d-pad press (#1229). Compose's input mode is independent of the
+        // app's gamepad/touch nav style; using the mouse flips it back to Touch.
+        val inputModeManager = LocalInputModeManager.current
+        val hasController = controllerStatus.connectedCount > 0
+        LaunchedEffect(hasController) {
+            if (hasController) inputModeManager.requestInputMode(androidx.compose.ui.input.InputMode.Keyboard)
+        }
+
         // Indicator for E2E tests: exposes whether the libretro core is running.
         // Tests wait for "Core idle" instead of Thread.sleep after exiting games.
         // Uses 1dp size so it appears in the Android accessibility tree for UiAutomator.
@@ -156,15 +168,25 @@ fun SpelaApp(deps: SpelaAppDependencies) = with(deps) {
             navigationViewModel.onIntent(NavigationIntent.GoBack)
         }
 
+        // The in-game pause overlay (Save/Load/Resume menu) is rendered while a
+        // game is open. Re-enable focus navigation for it so the gamepad can
+        // drive the menu (#1211): GamepadHandler is normally disabled in-game so
+        // the pad drives the emulator, but with the overlay open the emulation
+        // surface yields its keys and we want d-pad -> focus + A -> activate.
+        val inGameOverlayOpen = navState.showInGameOverlay && coreIdleState.showOverlay
         GamepadHandler(
-            enabled = !navState.showInGameOverlay,
-            onBack = if (isGamepadScreen) {
+            enabled = !navState.showInGameOverlay || inGameOverlayOpen,
+            onBack = if (inGameOverlayOpen) {
+                // A / Escape resumes (closes the overlay) rather than navigating.
+                { emulationViewModel.onIntent(EmulationIntent.ToggleOverlay) }
+            } else if (isGamepadScreen) {
                 { navigationViewModel.onIntent(NavigationIntent.GoBack) }
             } else null,
-            onNextSection = if (isGamepadScreen) {
+            // Section switching is meaningless while the pause overlay owns input.
+            onNextSection = if (isGamepadScreen && !inGameOverlayOpen) {
                 { navigationViewModel.onIntent(NavigationIntent.NextSection) }
             } else null,
-            onPreviousSection = if (isGamepadScreen) {
+            onPreviousSection = if (isGamepadScreen && !inGameOverlayOpen) {
                 { navigationViewModel.onIntent(NavigationIntent.PreviousSection) }
             } else null,
             onGamepadInput = {
@@ -394,6 +416,7 @@ fun SpelaApp(deps: SpelaAppDependencies) = with(deps) {
                             onEscapePressed = {
                                 emulationViewModel.onIntent(EmulationIntent.ToggleOverlay)
                             },
+                            overlayVisible = emulationState.showOverlay,
                         )
 
                         // Error overlay: shown when emulation fails to start

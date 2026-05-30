@@ -26,6 +26,7 @@ actual fun PlatformEmulationSurface(
     selectedShader: ShaderPreset,
     modifier: Modifier,
     onEscapePressed: (() -> Unit)?,
+    overlayVisible: Boolean,
 ) {
     val desktopController = controller as? DesktopLibretroController ?: return
 
@@ -99,6 +100,7 @@ actual fun PlatformEmulationSurface(
             onEscapePressed = onEscapePressed,
             keyMapping = keyMapping,
             gamepadPortManager = gamepadPortManager,
+            overlayVisible = overlayVisible,
         )
     } else {
         // Fallback: software rendering via Compose Canvas + Skia
@@ -109,6 +111,7 @@ actual fun PlatformEmulationSurface(
             onEscapePressed = onEscapePressed,
             keyMapping = keyMapping,
             gamepadPortManager = gamepadPortManager,
+            overlayVisible = overlayVisible,
         )
     }
 }
