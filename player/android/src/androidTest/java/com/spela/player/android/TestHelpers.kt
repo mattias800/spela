@@ -2398,8 +2398,27 @@ fun ComposeRule.startGameAndWait() {
             }
             .flatten().filterIsInstance<String>().take(20)
     } catch (_: Exception) { emptyList() }
-    android.util.Log.d("E2E_GAMEPLAY", "Game did not start. Visible contentDescriptions sample: $lastDesc")
-    throw IllegalStateException("Game did not start within 20 seconds")
+    // Surface the actual emulation error so the failure is actionable
+    // without reading screenshots. EmulationViewModel and the native
+    // bridge log it ("[Emulation] EXCEPTION during emulation start: ...",
+    // "retro_load_game failed"); read it back from logcat — the same
+    // mechanism the start-detection above uses.
+    val emulationError = try {
+        device.executeShellCommand("logcat -d -s System.out:I SpelaLibretro:I -t 800")
+            .lineSequence()
+            .lastOrNull { line ->
+                line.contains("EXCEPTION during emulation start") ||
+                    line.contains("retro_load_game failed") ||
+                    line.contains("Failed to load game")
+            }
+            ?.replace(Regex("^.*?(System\\.out|SpelaLibretro):\\s*"), "")
+            ?.trim()
+    } catch (_: Exception) { null }
+    android.util.Log.d("E2E_GAMEPLAY", "Game did not start. emulationError='$emulationError' visible=$lastDesc")
+    throw IllegalStateException(
+        "Game did not start within 20 seconds" +
+            (emulationError?.let { " — emulation error (from logcat): \"$it\"" } ?: ""),
+    )
 }
 
 fun ComposeRule.openOverlay() {

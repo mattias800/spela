@@ -134,7 +134,14 @@ class AndroidLibretroController(
 
     override fun loadGame(gamePath: String) {
         if (!jni.nativeLoadGame(gamePath)) {
-            throw RuntimeException("Failed to load game: $gamePath")
+            // retro_load_game returned false. The core rejected the ROM —
+            // see the `[core]` lines in logcat (tag SpelaLibretro) for the
+            // core's own reason. Common causes: unsupported/corrupt ROM,
+            // wrong core for the file, or missing BIOS.
+            throw RuntimeException(
+                "the emulator core could not load this game (it may be an " +
+                    "unsupported or corrupt ROM): $gamePath",
+            )
         }
         targetFps = jni.nativeGetTargetFps()
         if (targetFps <= 0) targetFps = 60.0
