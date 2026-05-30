@@ -806,8 +806,13 @@ fun ComposeRule.clickNodeByTag(tag: String): Boolean {
             }
             waitForIdle()
             return true
-        } catch (_: Exception) {
+        } catch (_: Throwable) {
             // Tree busy / node detached mid-resolution — try the other tree.
+            // Catch Throwable, not just Exception: a node present at the
+            // fetchSemanticsNodes check above can vanish before the indexed
+            // fetch (screen transition), and fetchSemanticsNode() then throws
+            // AssertionError ("can't retrieve node at index 0") — an Error, not
+            // an Exception. Leaking it would defeat this method's Boolean contract.
         }
     }
     return false
@@ -2277,9 +2282,14 @@ fun ComposeRule.assertTagNotVisible(tag: String) {
 }
 
 fun ComposeRule.downloadGameIfNeeded() {
-    // Use Compose tree — UiAutomator accessibility tree can be stale after navigation
+    // Gate on the Download button's testTag, not "Download" label text. Text can
+    // false-positive / linger while the actual CTA has already flipped, and it
+    // must agree with the clickNodeByTag(DOWNLOAD_BUTTON) below. Absent tag
+    // (game already downloaded) → skip straight to play. (Compose tree, not
+    // UiAutomator — the accessibility tree can be stale after navigation.)
     val hasDownload = try {
-        onAllNodesWithText("Download", substring = false).fetchSemanticsNodes().isNotEmpty()
+        onAllNodes(hasTestTag(com.spela.player.presentation.ui.TestTags.GAME_DETAIL_DOWNLOAD_BUTTON))
+            .fetchSemanticsNodes().isNotEmpty()
     } catch (_: Exception) { false }
 
     if (hasDownload) {
