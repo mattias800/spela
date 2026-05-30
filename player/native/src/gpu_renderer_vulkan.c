@@ -2530,14 +2530,24 @@ static VKAPI_ATTR PFN_vkVoidFunction VKAPI_CALL wrapped_vkGetInstanceProcAddr(
     if (strcmp(pName, "vkEnumerateDeviceExtensionProperties") == 0) {
         return (PFN_vkVoidFunction)wrapped_vkEnumerateDeviceExtensionProperties;
     }
-    if (strcmp(pName, "vkGetPhysicalDeviceSurfaceCapabilitiesKHR") == 0) {
-        return (PFN_vkVoidFunction)wrapped_vkGetPhysicalDeviceSurfaceCapabilitiesKHR;
-    }
     if (strcmp(pName, "vkGetDeviceProcAddr") == 0) {
         return (PFN_vkVoidFunction)wrapped_vkGetDeviceProcAddr;
     }
 
     PFN_vkVoidFunction result = vkGetInstanceProcAddr(instance, pName);
+
+    /* Surface capabilities. With a real surface (on-screen, e.g. Android) use
+     * the real-driver wrapper that forces IDENTITY transform (#916). In
+     * offscreen mode the instance has no VK_KHR_surface, so `result` is NULL
+     * and we fall through to the synthesized stub below — which reports
+     * supportedUsageFlags including COLOR_ATTACHMENT (what a real surface
+     * reports; cf. RetroArch passing its real vk_surface to create_device2).
+     * Previously we ALWAYS used the real-driver wrapper; querying the real
+     * driver with the dummy offscreen surface returned no COLOR_ATTACHMENT on
+     * Windows, so Dolphin's Vulkan swap-chain creation failed and then crashed
+     * (#1203 / #1214). */
+    if (result && strcmp(pName, "vkGetPhysicalDeviceSurfaceCapabilitiesKHR") == 0)
+        return (PFN_vkVoidFunction)wrapped_vkGetPhysicalDeviceSurfaceCapabilitiesKHR;
 
     /* Provide stubs for surface functions that return NULL in offscreen mode */
     if (!result) {
