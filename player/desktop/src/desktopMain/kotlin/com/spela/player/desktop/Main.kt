@@ -16,6 +16,8 @@ import androidx.compose.ui.window.rememberWindowState
 import com.spela.player.di.commonModule
 import com.spela.player.di.platformModule
 import com.spela.player.libretro.DesktopGamepadPoller
+import com.spela.player.libretro.DesktopGamepadSynth
+import com.spela.player.presentation.ui.gamepad.InputModeClassifier
 import com.spela.player.presentation.App
 import com.spela.player.presentation.ui.theme.LocalTitleBarInset
 import com.spela.player.presentation.navigation.NavigationIntent
@@ -40,6 +42,10 @@ fun main(args: Array<String>) {
     startKoin {
         modules(commonModule, platformModule())
     }
+
+    // Attribute synthesized gamepad key events to the gamepad (not the keyboard)
+    // so the control method in use drives the nav style. See DesktopGamepadSynth.
+    InputModeClassifier.isKeyboardNavFromGamepad = { DesktopGamepadSynth.wasRecent() }
 
     // Start gamepad poller (SDL2)
     val gamepadPoller = getKoin().get<DesktopGamepadPoller>()
