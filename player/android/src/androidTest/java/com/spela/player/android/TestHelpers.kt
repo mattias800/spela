@@ -2001,15 +2001,17 @@ fun ComposeRule.navigateToN64Game() {
         scrollToAndTapText("Banjo-Kazooie")
     }
 
-    // Wait for the GameDetail primary CTA. The label depends on local
-    // state: "Download" pre-download, "Play" post-download with no save,
-    // "Resume" once a save exists. After a previous test already ran the
-    // game, "Download" is gone — accept any of the three.
+    // Wait for the GameDetail primary CTA to render. It's either the Download
+    // button (pre-download) or the play button (post-download, label "Play" /
+    // "Resume" / "New game" / "Continue"). Poll for either stable testTag, not
+    // label text — "New game" (downloaded but unplayed) matched none of the old
+    // text checks.
     pollUntil(timeoutMillis = TIMEOUT_LONG) {
         try {
-            onAllNodesWithText("Download", substring = false).fetchSemanticsNodes().isNotEmpty() ||
-                onAllNodesWithText("Play", substring = false).fetchSemanticsNodes().isNotEmpty() ||
-                onAllNodesWithText("Resume", substring = false).fetchSemanticsNodes().isNotEmpty()
+            onAllNodes(hasTestTag(com.spela.player.presentation.ui.TestTags.GAME_DETAIL_DOWNLOAD_BUTTON))
+                .fetchSemanticsNodes().isNotEmpty() ||
+                onAllNodes(hasTestTag(com.spela.player.presentation.ui.TestTags.GAME_DETAIL_PLAY_BUTTON))
+                    .fetchSemanticsNodes().isNotEmpty()
         } catch (_: Exception) { false }
     }
 }
@@ -2020,13 +2022,13 @@ fun ComposeRule.navigateToN64GameAndPlay() {
     // N64 core (mupen64plus_next) takes longer to initialize than NES (nestopia).
     // It needs to download the core binary, set up GL/Vulkan context, and load a larger ROM.
     // On emulators this can take 60+ seconds for the first run (core download + init).
-    // If saves exist, the button is "Resume"; otherwise "Play"
-    val hasResume = onAllNodesWithText("Resume", substring = true)
-        .fetchSemanticsNodes().isNotEmpty()
-    if (hasResume) {
-        onNodeWithText("Resume").performClick()
-    } else {
-        onNodeWithText("Play").performClick()
+    // Click the play CTA via its stable testTag — the label is "Resume" with a
+    // save, else "Play" / "New game", and onNodeWithText("Play") misses the
+    // "New game" label an unplayed in-library game shows. OnClick action, not a
+    // synthetic touch, so it isn't dropped on the AYN Thor's secondary display.
+    // See clickNodeByTag / startGameAndWait.
+    if (!clickNodeByTag(com.spela.player.presentation.ui.TestTags.GAME_DETAIL_PLAY_BUTTON)) {
+        onAllNodes(hasTestTag(com.spela.player.presentation.ui.TestTags.GAME_DETAIL_PLAY_BUTTON))[0].performClick()
     }
     // Wait for the "Game running" semantic marker which is always on the primary display,
     // regardless of touch controls visibility, physical controller, or dual-screen mode.
@@ -2288,12 +2290,16 @@ fun ComposeRule.downloadGameIfNeeded() {
             onNodeWithText("Download", substring = false).performClick()
         }
         waitForIdle()
-        // After download, button becomes "Play", "Resume", or "New Game"
-        // ROM download can be slow on emulator — use 60s timeout
+        // After download the Download button is replaced by the play CTA, whose
+        // label varies — "Play", "Resume", "New game", or "Continue". Poll for
+        // its stable testTag, not label text: an in-library *unplayed* game reads
+        // "New game", which the old "Play"/"Resume" text poll never matched, so
+        // download-required tests (e.g. the N64/Banjo flow) timed out after 60s.
+        // ROM download can be slow on emulator / large ROMs — keep the 60s timeout.
         pollUntil(timeoutMillis = 60_000) {
             try {
-                onAllNodesWithText("Play", substring = false).fetchSemanticsNodes().isNotEmpty() ||
-                    onAllNodesWithText("Resume", substring = false).fetchSemanticsNodes().isNotEmpty()
+                onAllNodes(hasTestTag(com.spela.player.presentation.ui.TestTags.GAME_DETAIL_PLAY_BUTTON))
+                    .fetchSemanticsNodes().isNotEmpty()
             } catch (_: Exception) { false }
         }
         android.util.Log.d("E2E_NAV", "downloadGameIfNeeded: Download complete")
