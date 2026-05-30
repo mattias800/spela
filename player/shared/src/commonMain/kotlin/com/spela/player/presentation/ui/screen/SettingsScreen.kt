@@ -12,6 +12,8 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.Saver
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -57,10 +59,14 @@ fun SettingsScreen(
         keyMappingViewModel?.onIntent(KeyMappingIntent.LoadMapping("__default__"))
     }
 
-    // Selected category state
-    var selectedCategory by remember { mutableStateOf(SettingsCategory.GENERAL) }
-    // On phones, null means showing the category list
-    var showingDetail by remember { mutableStateOf(false) }
+    // Selected category state. Saveable so it survives forward+back navigation
+    // (e.g. into a console's settings and back) instead of resetting to General.
+    var selectedCategory by rememberSaveable(
+        stateSaver = Saver(save = { it.name }, restore = { SettingsCategory.valueOf(it) }),
+    ) { mutableStateOf(SettingsCategory.GENERAL) }
+    // On phones, false means showing the category list. Also saveable so we
+    // return to the detail (not the list) after navigating back.
+    var showingDetail by rememberSaveable { mutableStateOf(false) }
 
     // Dialogs (shared across all categories)
     SettingsDialogs(
