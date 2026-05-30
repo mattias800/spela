@@ -41,7 +41,6 @@ import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.spela.player.domain.model.ShaderPreset
-import com.spela.player.presentation.ui.feature.shader.drawShaderOverlay
 import com.spela.player.presentation.ui.feature.shader.filterQuality
 import com.spela.player.presentation.viewmodel.LibretroAnalog
 import com.spela.player.presentation.viewmodel.LibretroButtons
@@ -248,6 +247,11 @@ private fun DrawScope.drawScaledBitmap(bitmap: ImageBitmap, shader: ShaderPreset
     val dstSize = IntSize(dstWidth, dstHeight)
     val srcSize = IntSize(bitmap.width, bitmap.height)
 
+    // CRT / scanlines / LCD render as a single GPU fragment pass (#1209) instead
+    // of per-frame Compose geometry that scaled with output resolution. Returns
+    // false for pass-through presets and on failure, where we draw plainly.
+    if (drawWithDesktopShader(bitmap, shader, dstOffset, dstSize, srcSize)) return
+
     drawImage(
         image = bitmap,
         srcOffset = IntOffset.Zero,
@@ -256,8 +260,6 @@ private fun DrawScope.drawScaledBitmap(bitmap: ImageBitmap, shader: ShaderPreset
         dstSize = dstSize,
         filterQuality = shader.filterQuality(),
     )
-
-    drawShaderOverlay(shader, dstOffset, dstSize, srcSize)
 }
 
 /**
