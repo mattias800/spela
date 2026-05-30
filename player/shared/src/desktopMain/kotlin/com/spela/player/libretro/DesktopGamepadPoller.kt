@@ -1,6 +1,7 @@
 package com.spela.player.libretro
 
 import com.spela.player.presentation.navigation.NavigationEventBus
+import com.spela.player.presentation.ui.gamepad.InputMode
 import com.spela.player.presentation.viewmodel.LibretroButtons
 import com.spela.player.presentation.viewmodel.LibretroController
 import java.util.concurrent.Executors
@@ -59,7 +60,11 @@ class DesktopGamepadPoller(
     private val knownControllers = mutableSetOf<Int>()
 
     /** Translates controller input into UI navigation key events (menus only). */
-    private val uiNavigator = GamepadUiNavigator(navigationEventBus, isInGame)
+    private val uiNavigator = GamepadUiNavigator(
+        navigationEventBus = navigationEventBus,
+        isInGame = isInGame,
+        onGamepadInput = { gamepadPortManager.setInputMode(InputMode.GAMEPAD) },
+    )
 
     fun start(scope: CoroutineScope) {
         if (pollJob != null) return

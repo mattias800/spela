@@ -10,9 +10,12 @@ import kotlin.test.Test
 
 /**
  * E2E tests for the floating section indicator (pill) that replaces the bottom
- * tab bar when a physical gamepad is connected. See #1187: the pill is tied to
- * controller presence, not to in-app InputMode, so keyboard + mouse users on
- * desktop never see it flicker in.
+ * tab bar in gamepad navigation mode.
+ *
+ * Nav style follows the control method currently IN USE (see
+ * `resolveGamepadNavStyle`): the pill shows when [InputMode] is GAMEPAD and the
+ * tab bar shows for TOUCH (keyboard/mouse/touch) — regardless of whether a
+ * controller is connected.
  */
 @OptIn(ExperimentalCoroutinesApi::class, ExperimentalTestApi::class)
 class SectionIndicatorTest {
@@ -25,7 +28,7 @@ class SectionIndicatorTest {
     }
 
     @Test
-    fun bottomNavVisibleWhenNoGamepad() = runComposeUiTest {
+    fun bottomNavVisibleInTouchMode() = runComposeUiTest {
         val harness = createLoggedInHarness()
 
         setContent { harness.App() }
@@ -39,13 +42,13 @@ class SectionIndicatorTest {
     }
 
     @Test
-    fun sectionIndicatorAppearsWhenGamepadConnects() = runComposeUiTest {
+    fun sectionIndicatorAppearsWhenUsingGamepad() = runComposeUiTest {
         val harness = createLoggedInHarness()
 
         setContent { harness.App() }
         advance(harness)
 
-        harness.gamepadPortManager.connectDevice(1, "Test Controller")
+        harness.gamepadPortManager.setInputMode(InputMode.GAMEPAD)
         advanceQuick(harness)
 
         onNodeWithContentDescription("Section indicator").assertExists()
@@ -53,16 +56,16 @@ class SectionIndicatorTest {
     }
 
     @Test
-    fun keyboardInputModeAloneDoesNotShowIndicator() = runComposeUiTest {
+    fun touchInputKeepsTabBarEvenWithControllerConnected() = runComposeUiTest {
         val harness = createLoggedInHarness()
 
         setContent { harness.App() }
         advance(harness)
 
-        // Keyboard nav (arrow keys, [, ]) flips InputMode to GAMEPAD to drive
-        // focus behavior, but with no physical controller connected the nav
-        // style must stay as the tab bar so it doesn't flicker against mouse use.
-        harness.gamepadPortManager.setInputMode(InputMode.GAMEPAD)
+        // A controller is connected, but the user is navigating with keyboard/mouse
+        // (TOUCH). Nav style follows usage, so the tab bar stays and the pill does not show.
+        harness.gamepadPortManager.connectDevice(1, "Test Controller")
+        harness.gamepadPortManager.setInputMode(InputMode.TOUCH)
         advanceQuick(harness)
 
         onNodeWithContentDescription("Home").assertExists()
@@ -71,22 +74,22 @@ class SectionIndicatorTest {
     }
 
     @Test
-    fun sectionIndicatorDisappearsWhenGamepadDisconnects() = runComposeUiTest {
+    fun switchingBetweenInputMethodsTogglesNavStyle() = runComposeUiTest {
         val harness = createLoggedInHarness()
 
         setContent { harness.App() }
         advance(harness)
 
-        harness.gamepadPortManager.connectDevice(1, "Test Controller")
+        // Use gamepad -> pill.
+        harness.gamepadPortManager.setInputMode(InputMode.GAMEPAD)
         advanceQuick(harness)
         onNodeWithContentDescription("Section indicator").assertExists()
 
-        harness.gamepadPortManager.disconnectDevice(1)
+        // Switch back to keyboard/mouse -> tab bar.
+        harness.gamepadPortManager.setInputMode(InputMode.TOUCH)
         advanceQuick(harness)
-
         onNodeWithContentDescription("Section indicator").assertDoesNotExist()
         onNodeWithContentDescription("Home").assertExists()
-        onNodeWithContentDescription("Consoles").assertExists()
     }
 
     @Test
@@ -96,7 +99,7 @@ class SectionIndicatorTest {
         setContent { harness.App() }
         advance(harness)
 
-        harness.gamepadPortManager.connectDevice(1, "Test Controller")
+        harness.gamepadPortManager.setInputMode(InputMode.GAMEPAD)
         advanceQuick(harness)
 
         onNodeWithContentDescription("Section: Home, active").assertExists()
@@ -111,7 +114,7 @@ class SectionIndicatorTest {
         setContent { harness.App() }
         advance(harness)
 
-        harness.gamepadPortManager.connectDevice(1, "Test Controller")
+        harness.gamepadPortManager.setInputMode(InputMode.GAMEPAD)
         advance(harness)
 
         harness.navigationViewModel.onIntent(NavigationIntent.NextSection)

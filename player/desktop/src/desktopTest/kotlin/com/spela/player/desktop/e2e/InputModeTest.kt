@@ -12,11 +12,10 @@ import kotlin.test.assertEquals
 /**
  * E2E tests for the in-app InputMode flag (TOUCH vs GAMEPAD).
  *
- * Post #1187 InputMode no longer drives the nav style — that's tied to physical
- * controller presence. InputMode still exists to tell screens whether the user
- * is doing pointer-style or focus-style navigation (auto-focus, etc.), so these
- * tests verify that the flag transitions cleanly and crucially that flipping
- * InputMode by itself does NOT change which navigation widget is rendered.
+ * InputMode reflects the control method currently in use and DOES drive the nav
+ * style (see `resolveGamepadNavStyle`): GAMEPAD -> section pill, TOUCH -> tab
+ * bar, regardless of controller connection. These tests verify the flag
+ * transitions cleanly and that it drives which navigation widget is rendered.
  */
 @OptIn(ExperimentalCoroutinesApi::class, ExperimentalTestApi::class)
 class InputModeTest {
@@ -45,20 +44,20 @@ class InputModeTest {
     }
 
     @Test
-    fun inputModeFlipsDoNotChangeNavStyle() = runComposeUiTest {
+    fun inputModeDrivesNavStyle() = runComposeUiTest {
         val harness = createLoggedInHarness()
 
         setContent { harness.App() }
         advance(harness)
 
-        // No physical controller is connected — toggling InputMode (as keyboard
-        // navigation would) must leave the tab bar visible.
+        // GAMEPAD usage shows the section pill (and hides the tab bar)...
         harness.gamepadPortManager.setInputMode(InputMode.GAMEPAD)
         advanceQuick(harness)
 
-        onNodeWithContentDescription("Home").assertExists()
-        onNodeWithContentDescription("Section indicator").assertDoesNotExist()
+        onNodeWithContentDescription("Section indicator").assertExists()
+        onNodeWithContentDescription("Home").assertDoesNotExist()
 
+        // ...switching back to TOUCH (keyboard/mouse) restores the tab bar.
         harness.gamepadPortManager.setInputMode(InputMode.TOUCH)
         advanceQuick(harness)
 
@@ -85,13 +84,13 @@ class InputModeTest {
     }
 
     @Test
-    fun pillIsRetainedAcrossScreensWhenControllerStaysConnected() = runComposeUiTest {
+    fun pillIsRetainedAcrossSectionsInGamepadMode() = runComposeUiTest {
         val harness = createLoggedInHarness()
 
         setContent { harness.App() }
         advance(harness)
 
-        harness.gamepadPortManager.connectDevice(1, "Test Controller")
+        harness.gamepadPortManager.setInputMode(InputMode.GAMEPAD)
         advanceQuick(harness)
         onNodeWithContentDescription("Section: Home, active").assertExists()
 

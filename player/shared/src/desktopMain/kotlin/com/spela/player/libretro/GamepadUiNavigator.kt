@@ -28,6 +28,12 @@ class GamepadUiNavigator(
      */
     private val isInGame: () -> Boolean,
     /**
+     * Called once per poll frame in which the gamepad produced any UI-navigation
+     * input. Used to set the app's input mode to GAMEPAD (which drives the nav
+     * style). No-op by default.
+     */
+    private val onGamepadInput: () -> Unit = {},
+    /**
      * Key-event sink. Defaults to an AWT [Robot] that synthesizes real key
      * presses; tests inject a fake to assert the button -> key-code mapping and
      * auto-repeat timing without a real Robot.
@@ -41,6 +47,12 @@ class GamepadUiNavigator(
          */
         private const val REPEAT_INITIAL_DELAY_TICKS = 45 // ~360ms at the 8ms poll rate
         private const val REPEAT_INTERVAL_TICKS = 8       // ~64ms between repeats
+
+        /** Libretro button ids that count as UI navigation input. */
+        private val NAV_BUTTONS = intArrayOf(
+            LibretroButtons.UP, LibretroButtons.DOWN, LibretroButtons.LEFT, LibretroButtons.RIGHT,
+            LibretroButtons.B, LibretroButtons.A, LibretroButtons.L, LibretroButtons.R,
+        )
     }
 
     private var prevLeftShoulder = false
@@ -74,6 +86,11 @@ class GamepadUiNavigator(
             return
         }
         val first = states[0]
+
+        // Any gamepad nav input this frame means the user is driving the UI with
+        // the controller -> switch the app to GAMEPAD input mode (drives nav style).
+        val anyNavInput = NAV_BUTTONS.any { first.buttons.getOrNull(it) == true }
+        if (anyNavInput) onGamepadInput()
 
         // L1/R1 -> section switching (via the navigation bus).
         // buttons is indexed by libretro button id, so use L (10) / R (11).
@@ -127,6 +144,9 @@ class GamepadUiNavigator(
 
     /** Emits a synthesized key press+release via the injected sink or the AWT Robot. */
     private fun synthKey(keyCode: Int) {
+        // Mark so the desktop InputModeClassifier attributes the resulting key
+        // event to the gamepad (keeps GAMEPAD mode) rather than to a real keyboard.
+        DesktopGamepadSynth.mark()
         val sink = synthesizeKey
         if (sink != null) {
             sink(keyCode)
