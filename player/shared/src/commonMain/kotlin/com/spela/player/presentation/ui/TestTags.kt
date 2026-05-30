@@ -67,6 +67,7 @@ object TestTags {
     const val CONSOLE_BROWSE_ALL_CTA = "console_browse_all_cta"
     const val CONSOLE_ADMIN_MENU_BUTTON = "console_admin_menu_button"
     const val CONSOLE_ADMIN_MENU_SETTINGS = "console_admin_menu_settings"
+    const val CONSOLE_SETTINGS_BUTTON = "console_settings_button"
 
     // Game detail — primary CTA changes label between Play / Resume / Download
     // depending on save + cache state. Tests should target the tag, not the

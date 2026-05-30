@@ -133,6 +133,35 @@ class SettingsConsoleNavigationTest {
     }
 
     @Test
+    fun backFromConsoleSettingsReturnsToPerConsoleNotGeneral() = runComposeUiTest {
+        val harness = createLoggedInHarness()
+
+        setContent { harness.App() }
+        navigateToSettings(harness)
+        navigateToControlsCategory(harness)
+
+        // Into a console's settings...
+        onNodeWithText("Nintendo Entertainment System").performClick()
+        advance(harness)
+        assertEquals(
+            SpScreen.ConsoleSettings("nes"),
+            harness.navigationViewModel.state.value.currentScreen,
+        )
+
+        // ...then Back. We should return to the Per-Console list, not General.
+        harness.navigationViewModel.onIntent(NavigationIntent.GoBack)
+        advance(harness)
+
+        assertEquals(
+            SpScreen.Settings,
+            harness.navigationViewModel.state.value.currentScreen,
+        )
+        // The console rows are only rendered in the Per-Console category content;
+        // before the rememberSaveable fix this reset to General and the rows were gone.
+        onNodeWithText("Nintendo Entertainment System").assertIsDisplayed()
+    }
+
+    @Test
     fun consoleSettingsRowsHaveArrowIcon() = runComposeUiTest {
         val harness = createLoggedInHarness()
 

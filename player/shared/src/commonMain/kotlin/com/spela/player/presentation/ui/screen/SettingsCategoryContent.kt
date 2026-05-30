@@ -282,7 +282,7 @@ private fun androidx.compose.foundation.lazy.LazyListScope.consolesContent(
 ) {
     if (state.consoles.isNotEmpty()) {
         items(
-            items = state.consoles,
+            items = state.consoles.sortedForConsoleList(),
             key = { "console_${it.id}" },
         ) { console ->
             SpCard(
@@ -300,6 +300,9 @@ private fun androidx.compose.foundation.lazy.LazyListScope.consolesContent(
                         SpImage(
                             model = console.iconUrl,
                             contentDescription = null,
+                            // Eager load: the console list is short and bounded, so
+                            // skip the request stagger to avoid logos popping in.
+                            staggerMs = 0L,
                             modifier = Modifier.size(32.dp).alpha(0.7f),
                         )
                     } else {

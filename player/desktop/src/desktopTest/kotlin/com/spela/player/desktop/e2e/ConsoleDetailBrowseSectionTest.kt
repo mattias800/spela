@@ -8,6 +8,7 @@ import com.spela.player.presentation.ui.TestTags
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlin.test.Test
+import kotlin.test.assertEquals
 
 /**
  * Desktop E2E tests for the console detail screen changes from #1095:
@@ -169,6 +170,42 @@ class ConsoleDetailBrowseSectionTest {
         advanceQuick(harness)
 
         onNodeWithTag(TestTags.CONSOLE_ADMIN_MENU_SETTINGS).assertIsDisplayed()
+    }
+
+    // ─────────────────────────────────────────────────
+    // Console settings button (available to all users)
+    // ─────────────────────────────────────────────────
+
+    @Test
+    fun consoleSettingsButtonVisibleForNonAdmin() = runComposeUiTest {
+        val harness = createHarness()
+        // Default FakeAuthRepository returns role "player" — non-admin
+
+        setContent { harness.App() }
+
+        harness.navigationViewModel.onIntent(NavigationIntent.NavigateTo(SpScreen.Console("nes")))
+        advanceFully(harness)
+
+        onNodeWithTag(TestTags.CONSOLE_SETTINGS_BUTTON).assertIsDisplayed()
+    }
+
+    @Test
+    fun consoleSettingsButtonNavigatesToConsoleSettings() = runComposeUiTest {
+        val harness = createHarness()
+
+        setContent { harness.App() }
+
+        harness.navigationViewModel.onIntent(NavigationIntent.NavigateTo(SpScreen.Console("nes")))
+        advanceFully(harness)
+
+        onNodeWithTag(TestTags.CONSOLE_SETTINGS_BUTTON).performClick()
+        advance(harness)
+
+        assertEquals(
+            SpScreen.ConsoleSettings("nes"),
+            harness.navigationViewModel.state.value.currentScreen,
+            "Console settings button should navigate to ConsoleSettings(\"nes\")",
+        )
     }
 
     // ─────────────────────────────────────────────────
