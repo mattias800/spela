@@ -242,6 +242,7 @@ internal fun ConsoleCard(
                 SpImage(
                     model = console.iconUrl,
                     contentDescription = null,
+                    staggerMs = 0L, // eager: bounded console list, no request stagger
                     modifier = Modifier.fillMaxSize(),
                 )
             } else {
@@ -458,6 +459,7 @@ private fun ConsoleHeroBannerContent(
                 SpImage(
                     model = console.iconUrl,
                     contentDescription = null,
+                    staggerMs = 0L, // eager: bounded console list, no request stagger
                     modifier = Modifier.size(224.dp),
                 )
             } else {
