@@ -1608,7 +1608,7 @@ fun ComposeRule.navigateToAnyNesGame(): String {
     var cardTag = firstGameCardTag()
     if (cardTag == null) {
         android.util.Log.d(tag, "navigateToAnyNesGame: no card on front page; opening Browse Games")
-        clickNodeByTag(com.spela.player.presentation.ui.TestTags.consoleBrowseGames("nes"))
+        clickNodeByTag(com.spela.player.presentation.ui.TestTags.CONSOLE_BROWSE_ALL_CTA)
         Thread.sleep(1_500)
         try {
             pollUntil(timeoutMillis = TIMEOUT_LONG) { firstGameCardTag() != null }
@@ -1779,23 +1779,24 @@ fun ComposeRule.navigateToGameByTitle(gameTitle: String) {
     // Try multiple strategies to find and click Browse
     var browseClicked = false
 
-    // Strategy 0: testTag — most reliable. ConsoleScreen tags the
-    // browse-games CTA via TestTags.consoleBrowseGames(consoleId).
-    // We don't know the consoleId here at compile time, but the
-    // current screen is for NES — try the well-known id first.
+    // Strategy 0: testTag — most reliable. The console screen tags the
+    // "Browse all N games" CTA with TestTags.CONSOLE_BROWSE_ALL_CTA.
+    // (The old `console_browse_games_<id>` tag is stale — the CTA was
+    // renamed to console_browse_all_cta in the ConsoleScreen redesign.)
     if (!browseClicked) {
         try {
-            val browseTag = "console_browse_games_nes"
+            val browseTag = TestTags.CONSOLE_BROWSE_ALL_CTA
             val nodes = onAllNodesWithTag(browseTag, useUnmergedTree = true)
                 .fetchSemanticsNodes()
             if (nodes.isNotEmpty()) {
                 android.util.Log.d(tag, "Step 5: Found Browse via testTag '$browseTag'")
-                tapOnTag(browseTag)
+                // OnClick action, not a synthetic touch (AYN Thor multi-display drop).
+                clickNodeByTag(browseTag)
                 browseClicked = true
                 Thread.sleep(2_000)
             }
         } catch (e: Exception) {
-            android.util.Log.d(tag, "Step 5: tapOnTag(console_browse_games_nes) failed: ${e.message?.take(80)}")
+            android.util.Log.d(tag, "Step 5: ${TestTags.CONSOLE_BROWSE_ALL_CTA} tap failed: ${e.message?.take(80)}")
         }
     }
 
@@ -1884,22 +1885,25 @@ fun ComposeRule.navigateToGameByTitle(gameTitle: String) {
         val textNodes = onAllNodesWithText(gameTitle, substring = true).fetchSemanticsNodes()
         android.util.Log.d(tag, "Step 7: text-only nodes: ${textNodes.size}")
 
+        // All taps go through the OnClick semantic action (clickPreferAction)
+        // rather than a synthetic touch, which the AYN Thor's Screen-2 routing
+        // silently drops.
         if (clickableNodes.isNotEmpty()) {
             // Click the first node that has both text AND click action
-            onAllNodes(clickableMatcher)[0].performClick()
+            onAllNodes(clickableMatcher)[0].clickPreferAction()
             waitForIdle()
             android.util.Log.d(tag, "Step 7: Clicked via clickable+text matcher")
         } else if (textNodes.size == 1) {
-            // Only text node exists — try performClick which MAY propagate
-            // up the semantic tree to find an onClick ancestor
-            onNodeWithText(gameTitle, substring = true).performClick()
+            // Only text node exists — clickPreferAction falls back to a touch
+            // which MAY propagate up the semantic tree to an onClick ancestor
+            onNodeWithText(gameTitle, substring = true).clickPreferAction()
             waitForIdle()
             android.util.Log.d(tag, "Step 7: Clicked text node")
         } else if (textNodes.size > 1) {
             // Multiple matches — try each one
             for (i in textNodes.indices) {
                 try {
-                    onAllNodesWithText(gameTitle, substring = true)[i].performClick()
+                    onAllNodesWithText(gameTitle, substring = true)[i].clickPreferAction()
                     waitForIdle()
                     android.util.Log.d(tag, "Step 7: Clicked text node [$i]")
                     break

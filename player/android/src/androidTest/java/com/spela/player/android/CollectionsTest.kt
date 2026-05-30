@@ -49,7 +49,7 @@ class CollectionsTest : BaseE2ETest() {
         description: String? = null,
         isPublic: Boolean = false,
     ) {
-        rule.onNodeWithContentDescription("Create collection", substring = true).performClick()
+        rule.onNodeWithContentDescription("Create collection", substring = true).clickPreferAction()
         rule.waitForIdle()
         rule.waitForText("Create Collection", timeout = 5_000)
 
@@ -63,7 +63,7 @@ class CollectionsTest : BaseE2ETest() {
             rule.tapOn("Make public")
         }
 
-        rule.onNodeWithText("Create").performClick()
+        rule.onNodeWithText("Create").clickPreferAction()
         rule.waitForText("Collection created", timeout = 8_000)
 
         // Wait for list to refresh with the new collection
@@ -107,7 +107,7 @@ class CollectionsTest : BaseE2ETest() {
     private fun deleteCurrentCollection() {
         // Click the delete icon button in the top bar
         rule.waitForContentDescription("Delete collection", timeout = 5_000)
-        rule.onNodeWithContentDescription("Delete collection", substring = true).performClick()
+        rule.onNodeWithContentDescription("Delete collection", substring = true).clickPreferAction()
         rule.waitForIdle()
         Thread.sleep(500)
 
@@ -116,7 +116,7 @@ class CollectionsTest : BaseE2ETest() {
 
         // Click the "Delete" confirm button (exact match, NOT substring).
         // tapOn() uses substring=true which would match "Delete Collection" title first.
-        rule.onNodeWithText("Delete").performClick()
+        rule.onNodeWithText("Delete").clickPreferAction()
         rule.waitForIdle()
 
         // After successful delete, the LaunchedEffect in CollectionDetailScreen
@@ -210,12 +210,12 @@ class CollectionsTest : BaseE2ETest() {
         navigateToCollectionsTab()
 
         // Tap FAB to open create dialog
-        rule.onNodeWithContentDescription("Create collection", substring = true).performClick()
+        rule.onNodeWithContentDescription("Create collection", substring = true).clickPreferAction()
         rule.waitForIdle()
         rule.waitForText("Create Collection", timeout = 5_000)
 
         // Name field should be empty initially — tap Create without entering a name
-        rule.onNodeWithText("Create").performClick()
+        rule.onNodeWithText("Create").clickPreferAction()
 
         // Validation error should appear
         rule.waitForText("Name is required", timeout = 3_000)
@@ -244,7 +244,7 @@ class CollectionsTest : BaseE2ETest() {
         openCollection(collName)
 
         // Tap Edit button
-        rule.onNodeWithContentDescription("Edit collection", substring = true).performClick()
+        rule.onNodeWithContentDescription("Edit collection", substring = true).clickPreferAction()
         rule.waitForIdle()
         rule.waitForText("Edit Collection", timeout = 5_000)
 
@@ -252,7 +252,7 @@ class CollectionsTest : BaseE2ETest() {
         rule.typeIntoFieldByLabel("Name", editedName, clearFirst = true)
 
         // Save
-        rule.onNodeWithText("Save").performClick()
+        rule.onNodeWithText("Save").clickPreferAction()
         rule.waitForText("Collection updated", timeout = 8_000)
 
         // Verify the title bar updated
