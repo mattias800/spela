@@ -3,25 +3,24 @@ package com.spela.player.desktop.e2e
 import androidx.compose.ui.test.*
 import com.spela.player.presentation.navigation.NavigationIntent
 import com.spela.player.presentation.navigation.SpScreen
+import com.spela.player.presentation.ui.gamepad.InputMode
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlin.test.Test
 
 /**
- * E2E tests for the controller status indicator.
+ * E2E tests for the controller status indicator (connected-player dots).
  *
- * Since #1187 the nav style is driven by *physical controller connection*
- * (`controllerStatus.connectedCount > 0`): connecting a controller puts the app
- * into gamepad mode, which hides the side rail / bottom bar and shows the
- * floating `SpSectionIndicator` pill. When 2+ controllers are connected
- * (`isMultiplayer`), the pill additionally renders an `SpControllerStatusRow`
- * of connected-player dots with `showEmptySlots = false` — so each connected
- * port exposes a "Player N connected" / "Player N active" content description,
- * and empty ports render nothing.
+ * The dots render inside the floating `SpSectionIndicator` pill, shown in
+ * gamepad navigation mode (`InputMode.GAMEPAD`; see `resolveGamepadNavStyle`).
+ * With 2+ controllers (`isMultiplayer`) the pill renders an
+ * `SpControllerStatusRow` with `showEmptySlots = false` — each connected port
+ * exposes a "Player N connected" / "Player N active" content description, and
+ * empty ports render nothing. These tests drive gamepad mode (via the harness
+ * factory) to exercise that row.
  *
- * (The older `SpControllerStatusCard`-in-rail and bottom-bar mini-pill became
- * unreachable when #1187 gated the rail/bottom-bar on `!isGamepadMode`; the
- * section-indicator dots are now the live controller-status surface. See #1198.)
+ * (A separate bottom-bar mini-pill surfaces controller status for
+ * touch/keyboard users with 2+ controllers; it is not covered here.)
  *
  * Tests verify:
  * - No player dots with 0 or 1 controller (not multiplayer)
@@ -36,6 +35,9 @@ class ControllerStatusIndicatorTest {
         val harness = SpelaTestHarness(StandardTestDispatcher())
         harness.authRepo.preSetTokens()
         harness.navigationViewModel.onIntent(NavigationIntent.NavigateTo(SpScreen.Home))
+        // The connected-player dots live in the gamepad-mode section pill, so
+        // exercise these tests in gamepad input mode.
+        harness.gamepadPortManager.setInputMode(InputMode.GAMEPAD)
         return harness
     }
 

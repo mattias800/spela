@@ -75,7 +75,9 @@ import com.spela.player.presentation.ui.gamepad.GamepadHandler
 import com.spela.player.presentation.ui.gamepad.InputMode
 import com.spela.player.presentation.ui.gamepad.LocalIsForwardNavigation
 import com.spela.player.presentation.ui.gamepad.LocalIsTabSwitch
+import com.spela.player.presentation.ui.gamepad.InputModeClassifier
 import com.spela.player.presentation.ui.gamepad.LocalInputMode
+import com.spela.player.presentation.ui.gamepad.resolveGamepadNavStyle
 import com.spela.player.presentation.ui.components.LocalScrapeService
 import com.spela.player.presentation.ui.theme.SpelaTheme
 import androidx.compose.runtime.CompositionLocalProvider
@@ -88,19 +90,20 @@ fun SpelaApp(deps: SpelaAppDependencies) = with(deps) {
     val currentTheme by settingsViewModel.selectedTheme.collectAsState()
 
     SpelaTheme(theme = currentTheme) {
+    val inputMode = gamepadPortManager?.inputMode?.collectAsState()?.value ?: InputMode.TOUCH
     CompositionLocalProvider(
         LocalScrapeService provides scrapeService,
-        LocalInputMode provides (gamepadPortManager?.inputMode?.collectAsState()?.value ?: InputMode.TOUCH),
+        LocalInputMode provides inputMode,
     ) {
         val navState by navigationViewModel.state.collectAsState()
 
-        // Nav style is driven by whether a physical gamepad is connected, not by
-        // the in-app InputMode. Keyboard + mouse users (no gamepad) always see the
-        // tab bar / side rail, so the nav doesn't flicker between styles as they
-        // switch between typing and clicking. See #1187.
+        // Nav style follows the control method currently in USE (gamepad -> L1/R1
+        // section pill; keyboard/mouse/touch -> tab bar / side rail), regardless of
+        // what is connected. The policy is centralized in resolveGamepadNavStyle()
+        // — change the behavior there.
         val controllerStatus by gamepadPortManager?.controllerStatus?.collectAsState()
             ?: remember { mutableStateOf(ControllerStatusState.Empty) }
-        val isGamepadMode = controllerStatus.connectedCount > 0
+        val isGamepadMode = resolveGamepadNavStyle(inputMode, controllerStatus)
         val sectionIndicatorVisible = isGamepadMode
 
         // Indicator for E2E tests: exposes whether the libretro core is running.
@@ -164,7 +167,14 @@ fun SpelaApp(deps: SpelaAppDependencies) = with(deps) {
             onPreviousSection = if (isGamepadScreen) {
                 { navigationViewModel.onIntent(NavigationIntent.PreviousSection) }
             } else null,
-            onGamepadInput = { gamepadPortManager?.setInputMode(InputMode.GAMEPAD) },
+            onGamepadInput = {
+                // On desktop, real keyboard nav and synthesized gamepad nav are
+                // indistinguishable here; the classifier tells them apart so the
+                // control method in use drives InputMode (and thus the nav style).
+                gamepadPortManager?.setInputMode(
+                    if (InputModeClassifier.isKeyboardNavFromGamepad()) InputMode.GAMEPAD else InputMode.TOUCH
+                )
+            },
             focusResetKey = Pair(navState.activeTab, navState.currentScreen),
             isGoingBack = navState.isGoingBack,
         ) {

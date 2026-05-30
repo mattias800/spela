@@ -16,6 +16,8 @@ import androidx.compose.ui.window.rememberWindowState
 import com.spela.player.di.commonModule
 import com.spela.player.di.platformModule
 import com.spela.player.libretro.DesktopGamepadPoller
+import com.spela.player.libretro.DesktopGamepadSynth
+import com.spela.player.presentation.ui.gamepad.InputModeClassifier
 import com.spela.player.presentation.App
 import com.spela.player.presentation.ui.theme.LocalTitleBarInset
 import com.spela.player.presentation.navigation.NavigationIntent
@@ -40,6 +42,10 @@ fun main(args: Array<String>) {
     startKoin {
         modules(commonModule, platformModule())
     }
+
+    // Attribute synthesized gamepad key events to the gamepad (not the keyboard)
+    // so the control method in use drives the nav style. See DesktopGamepadSynth.
+    InputModeClassifier.isKeyboardNavFromGamepad = { DesktopGamepadSynth.wasRecent() }
 
     // Start gamepad poller (SDL2)
     val gamepadPoller = getKoin().get<DesktopGamepadPoller>()
@@ -133,19 +139,40 @@ private var isJbrTitleBarActive = false
  * Gracefully degrades to standard title bar on non-JBR JDKs (dev mode).
  */
 private fun applyJbrTransparentTitleBar(window: java.awt.Window) {
-    if (!System.getProperty("java.vendor").orEmpty().contains("JetBrains", ignoreCase = true)) {
-        return
-    }
     try {
-        val rootPane = (window as? javax.swing.JFrame)?.rootPane ?: return
-        rootPane.putClientProperty("jetbrains.awt.customTitleBar.enabled", true)
-        rootPane.putClientProperty("jetbrains.awt.transparentTitleBarAppearance", true)
-        val bg = java.awt.Color(10, 10, 16) // #0A0A10 — fallback before Compose renders
+        // JBR custom title bar API, called reflectively so non-JBR JDKs degrade
+        // gracefully (getWindowDecorations() is absent/returns null off JBR).
+        val jbr = Class.forName("com.jetbrains.JBR")
+        val windowDecorations = jbr.getMethod("getWindowDecorations").invoke(null)
+        if (windowDecorations == null) {
+            println("[TitleBar] JBR WindowDecorations unavailable — standard title bar")
+            return
+        }
+        // Invoke via the PUBLIC interfaces — the runtime impl class is a synthetic
+        // module-private type and reflecting on it throws IllegalAccessException.
+        val wdInterface = Class.forName("com.jetbrains.WindowDecorations")
+        val ctbInterface = Class.forName("com.jetbrains.WindowDecorations\$CustomTitleBar")
+        val titleBar = wdInterface.getMethod("createCustomTitleBar").invoke(windowDecorations)
+        ctbInterface.getMethod("setHeight", java.lang.Float.TYPE).invoke(titleBar, 32f)
+        // setCustomTitleBar is overloaded ((Frame, ..), (Dialog, ..)) and the param
+        // types vary by JBR version, so match the overload to the actual arg types.
+        val setMethod = wdInterface.methods.firstOrNull { m ->
+            m.name == "setCustomTitleBar" && m.parameterCount == 2 &&
+                m.parameterTypes[0].isInstance(window) && m.parameterTypes[1].isInstance(titleBar)
+        } ?: run {
+            println("[TitleBar] no matching setCustomTitleBar overload — standard title bar")
+            return
+        }
+        setMethod.invoke(windowDecorations, window, titleBar)
+
+        val bg = java.awt.Color(10, 10, 16) // #0A0A10 — fallback behind the transparent bar
         window.background = bg
-        rootPane.background = bg
-        window.contentPane.background = bg
+        (window as? javax.swing.JFrame)?.let {
+            it.rootPane.background = bg
+            it.contentPane.background = bg
+        }
         isJbrTitleBarActive = true
-    } catch (_: Exception) {
-        // Graceful degradation — standard title bar
+    } catch (e: Throwable) {
+        println("[TitleBar] JBR custom title bar failed: $e")
     }
 }

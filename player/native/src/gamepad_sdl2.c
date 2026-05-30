@@ -89,6 +89,12 @@ JNIEXPORT jboolean JNICALL Java_com_spela_player_libretro_LibretroJni_nativeGame
     (void)env; (void)obj;
     if (initialized) return JNI_TRUE;
 
+    /* Run joystick device detection on SDL's own internal thread so hot-plug
+     * add/remove events are delivered even though this app never pumps a Win32
+     * message loop on the UI thread. Without this, controllers connected AFTER
+     * launch are never detected on Windows. Must be set before SDL_Init. */
+    SDL_SetHint(SDL_HINT_JOYSTICK_THREAD, "1");
+
     if (SDL_Init(SDL_INIT_GAMECONTROLLER) < 0) {
         return JNI_FALSE;
     }
@@ -129,7 +135,15 @@ JNIEXPORT jobjectArray JNICALL Java_com_spela_player_libretro_LibretroJni_native
         switch (event.type) {
             case SDL_CONTROLLERDEVICEADDED: {
                 int device_index = event.cdevice.which;
-                if (SDL_IsGameController(device_index) && num_controllers < MAX_CONTROLLERS) {
+                /* Dedup: SDL also posts ADDED for controllers already opened at
+                 * init (open_controllers), which would otherwise open the same
+                 * physical device twice and assign it two ports. */
+                SDL_JoystickID new_id = SDL_JoystickGetDeviceInstanceID(device_index);
+                int already_open = 0;
+                for (int k = 0; k < num_controllers; k++) {
+                    if (controller_instance_ids[k] == new_id) { already_open = 1; break; }
+                }
+                if (!already_open && SDL_IsGameController(device_index) && num_controllers < MAX_CONTROLLERS) {
                     SDL_GameController *gc = SDL_GameControllerOpen(device_index);
                     if (gc) {
                         controllers[num_controllers] = gc;
@@ -169,9 +183,18 @@ JNIEXPORT jobjectArray JNICALL Java_com_spela_player_libretro_LibretroJni_native
     jmethodID ctor = (*env)->GetMethodID(env, stateClass, "<init>", "(ILjava/lang/String;[Z[I)V");
     if (!ctor) return NULL;
 
-    jobjectArray result = (*env)->NewObjectArray(env, num_controllers, stateClass, NULL);
+    /* Count attached controllers so the returned array has no null slots. A
+     * momentarily-detached controller (e.g. a wireless pad dropping) would
+     * otherwise leave a null element that the Kotlin poller NPEs on. */
+    int attached_count = 0;
+    for (int i = 0; i < num_controllers; i++) {
+        if (controllers[i] && SDL_GameControllerGetAttached(controllers[i])) attached_count++;
+    }
+
+    jobjectArray result = (*env)->NewObjectArray(env, attached_count, stateClass, NULL);
     if (!result) return NULL;
 
+    int out_index = 0;
     for (int i = 0; i < num_controllers; i++) {
         SDL_GameController *gc = controllers[i];
         if (!gc || !SDL_GameControllerGetAttached(gc)) continue;
@@ -209,7 +232,8 @@ JNIEXPORT jobjectArray JNICALL Java_com_spela_player_libretro_LibretroJni_native
 
         /* Create GamepadState object */
         jobject stateObj = (*env)->NewObject(env, stateClass, ctor, controllerId, jname, buttons, axes);
-        (*env)->SetObjectArrayElement(env, result, i, stateObj);
+        (*env)->SetObjectArrayElement(env, result, out_index, stateObj);
+        out_index++;
 
         /* Clean up local refs */
         (*env)->DeleteLocalRef(env, jname);
