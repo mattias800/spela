@@ -16,6 +16,13 @@
 .NOTES
   SDL2: set $env:SDL2_DIR to the SDL2 'cmake' dir to override auto-detection.
   Auto-detection looks for %USERPROFILE%\SDL2\SDL2-*\cmake.
+
+  Title bar: the transparent title bar on Windows/Linux requires the JetBrains
+  Runtime (JBR). This script runs on JBR if found (override with $env:SPELA_JBR,
+  else auto-detected under %USERPROFILE%\jbr\jbr-*); otherwise it falls back to
+  the machine JDK and the title bar is opaque (dev only — release builds package
+  JBR). Download a JBR build from https://cache-redirector.jetbrains.com/intellij-jbr/
+  and unpack it under %USERPROFILE%\jbr\.
 #>
 param([Parameter(ValueFromRemainingArguments = $true)] [string[]] $GradleArgs)
 
@@ -30,8 +37,22 @@ if (-not $vsPath) { throw "No Visual Studio / Build Tools installation found." }
 Import-Module (Join-Path $vsPath 'Common7\Tools\Microsoft.VisualStudio.DevShell.dll')
 Enter-VsDevShell -VsInstallPath $vsPath -SkipAutomaticLocation -DevCmdArguments '-arch=x64 -host_arch=x64' | Out-Null
 
-# --- JDK / Vulkan / Android from machine/user env ---
-$env:JAVA_HOME  = [System.Environment]::GetEnvironmentVariable('JAVA_HOME', 'Machine')
+# --- JDK: prefer the JetBrains Runtime so the window gets a transparent title
+#     bar (same as release builds; see applyJbrTransparentTitleBar in Main.kt).
+#     Override with $env:SPELA_JBR; else auto-detect %USERPROFILE%\jbr\jbr-*.
+#     Falls back to the machine JDK (opaque title bar) if no JBR is present. ---
+$jbr = $env:SPELA_JBR
+if (-not $jbr) {
+    $jbrDir = Get-ChildItem "$env:USERPROFILE\jbr\jbr-*" -Directory -ErrorAction SilentlyContinue |
+        Sort-Object Name -Descending | Select-Object -First 1
+    if ($jbrDir) { $jbr = $jbrDir.FullName }
+}
+if ($jbr -and (Test-Path (Join-Path $jbr 'bin\java.exe'))) {
+    $env:JAVA_HOME = $jbr
+} else {
+    $env:JAVA_HOME = [System.Environment]::GetEnvironmentVariable('JAVA_HOME', 'Machine')
+    Write-Warning "JetBrains Runtime not found; using $env:JAVA_HOME (title bar will be opaque). Set `$env:SPELA_JBR or unpack a JBR under %USERPROFILE%\jbr\."
+}
 $env:VULKAN_SDK = [System.Environment]::GetEnvironmentVariable('VULKAN_SDK', 'Machine')
 if (-not $env:ANDROID_HOME) {
     $env:ANDROID_HOME = [System.Environment]::GetEnvironmentVariable('ANDROID_HOME', 'User')
