@@ -340,6 +340,23 @@ static bool environment_callback(unsigned cmd, void *data) {
                     }
                 }
 
+#ifndef __ANDROID__
+                /* Azahar (3DS): force Vulkan on desktop. The WGL/OpenGL path
+                 * crashes; route through the offscreen Vulkan path (#1234).
+                 * Detected via the core's "citra_" option namespace. Android
+                 * keeps GLES (works there), so this is desktop-only. */
+                {
+                    const struct retro_variable *v4 = (const struct retro_variable *)data;
+                    for (; v4->key; v4++) {
+                        if (v4->key && strstr(v4->key, "citra_graphics_api")) {
+                            LOGI("Azahar core detected, forcing Vulkan graphics API");
+                            core_variables_set("citra_graphics_api", "Vulkan");
+                            break;
+                        }
+                    }
+                }
+#endif
+
                 /* ScummVM: sensible default gamepad mapping for the audience
                  * (#859). The core's built-in joypad-to-key defaults are
                  * tuned for the libretro-scummvm dev environment, not for a
@@ -495,6 +512,14 @@ static bool environment_callback(unsigned cmd, void *data) {
              * Other cores: GLES3 on Android, OpenGL Core on desktop. */
             const char *libname = g_core.system_info.library_name;
             bool prefer_vulkan = libname && strstr(libname, "dolphin") != NULL;
+#ifndef __ANDROID__
+            /* Azahar (3DS): the desktop WGL/OpenGL path crashes; use the
+             * offscreen Vulkan path (#1234) instead. Android keeps GLES
+             * (which works there). library_name is "Azahar" (older: "Citra"). */
+            if (libname && (strstr(libname, "Azahar") || strstr(libname, "Citra"))) {
+                prefer_vulkan = true;
+            }
+#endif
 #ifdef __ANDROID__
             if (libname && strstr(libname, "PPSSPP") != NULL) {
                 prefer_vulkan = true;
