@@ -249,11 +249,15 @@ class DownloadRepositoryImpl(
         val path = "$gameDir/$actualFileName"
 
         apiClient.downloadGameToFile(gameId, fileStorage, path) { downloaded, total ->
-            // Prefer the DB file size over Content-Length. OkHttp transparently
-            // decompresses gzip responses, so Content-Length may report the
-            // compressed size while downloaded bytes count decompressed data,
-            // causing the progress bar to jump past 100%.
-            val reportedTotal = if (expectedSize > 0) expectedSize else (total ?: -1)
+            // Prefer the server's Content-Length (`total`) — it's the exact
+            // number of bytes we'll receive, so `downloaded` reaches it and the
+            // bar hits 100%. The DB file size can disagree with the transfer:
+            // for compressed single-file formats (.rvz, .chd) it's the
+            // logical/uncompressed size, which left the bar stuck well under
+            // 100%. Game downloads aren't Content-Encoding: gzip'd, so
+            // Content-Length is the true received-byte count on every engine.
+            // Fall back to the DB size only if the server omits it. (#1235)
+            val reportedTotal = total ?: if (expectedSize > 0) expectedSize else -1L
             val monotonic = monotonicBytes(gameId, downloaded)
             val speed = recordSpeed(gameId, monotonic)
             downloads.update {
@@ -314,7 +318,12 @@ class DownloadRepositoryImpl(
             // Single file — stream to disk
             val discPath = "$gameDir/${disc.fileName}"
             apiClient.downloadDiscToFile(gameId, disc.discNumber.toInt(), fileStorage, discPath) { downloaded, total ->
-                val reportedTotal = if (disc.fileSize > 0) disc.fileSize else (total ?: -1)
+                // Prefer the server's Content-Length over the DB disc.fileSize:
+                // it's the exact transfer size, so the bar reaches 100%. For
+                // compressed single-file discs (.rvz, .chd) the DB size is the
+                // logical/uncompressed size and left the bar stuck ~50%. This
+                // matches the .cue/.gdi branch above. (#1235)
+                val reportedTotal = total ?: if (disc.fileSize > 0) disc.fileSize else -1L
                 val monotonic = monotonicBytes(gameId, downloaded)
                 val speed = recordSpeed(gameId, monotonic)
                 downloads.update {
