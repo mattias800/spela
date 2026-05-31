@@ -43,6 +43,10 @@ import io.ktor.client.statement.*
 import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
 import io.ktor.utils.io.*
+import io.ktor.client.plugins.HttpRequestTimeoutException
+import kotlinx.coroutines.delay
+import kotlinx.serialization.DeserializationStrategy
+import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
 
 class SpelaApiClient(
@@ -57,6 +61,64 @@ class SpelaApiClient(
         ignoreUnknownKeys = true
         isLenient = true
         encodeDefaults = true
+    }
+
+    // ── Cold-load resilience + diagnostics (#1231) ──
+    // A truncated/garbled 2xx body — connection contention while cores prefetch,
+    // a proxy/CDN hiccup, etc. — surfaces as a hard SerializationException and a
+    // user-visible error, even though a retry would succeed. For read-only GETs
+    // we (a) capture the exact exception + raw body so the failure is
+    // diagnosable, and (b) retry the transient failure modes so one bad response
+    // self-heals. GETs only — never wrap a mutating call (would double-submit).
+
+    private fun isTransient(e: Throwable): Boolean {
+        if (e is SerializationException) return true
+        if (e is HttpRequestTimeoutException) return true
+        // Match by class name to stay multiplatform-import-safe across Ktor's
+        // socket/IO exception hierarchy and expectSuccess's 5xx wrapper.
+        val n = e::class.simpleName ?: ""
+        return n.contains("Timeout") || n.contains("IOException") ||
+            n.contains("Socket") || n.contains("Connect") ||
+            n.contains("ServerResponse") // 5xx via expectSuccess — safe to retry on idempotent GETs
+    }
+
+    private suspend fun <T> retryTransient(
+        label: String,
+        attempts: Int = 3,
+        block: suspend () -> T,
+    ): T {
+        var last: Throwable? = null
+        repeat(attempts) { i ->
+            try {
+                return block()
+            } catch (e: Throwable) {
+                last = e
+                if (!isTransient(e) || i == attempts - 1) throw e
+                println("[ApiDiag] $label transient ${e::class.simpleName} (attempt ${i + 1}/$attempts) — retrying")
+                delay(250L * (i + 1))
+            }
+        }
+        throw last ?: IllegalStateException(label)
+    }
+
+    // Read the body as text and decode it ourselves so the raw payload is in
+    // hand if decoding fails — ContentNegotiation's .body() consumes the stream,
+    // leaving nothing to log. Uses the same Json instance as ContentNegotiation.
+    private suspend fun <T : Any> com.spela.client.infrastructure.HttpResponse<T>.bodyDiagnostic(
+        label: String,
+        deserializer: DeserializationStrategy<T>,
+    ): T {
+        val raw = response.bodyAsText()
+        return try {
+            json.decodeFromString(deserializer, raw)
+        } catch (e: SerializationException) {
+            println(
+                "[ApiDiag] $label deserialization failed: ${e::class.simpleName}: " +
+                    "${e.message?.take(300)} | httpStatus=$status bodyLen=${raw.length} " +
+                    "bodyHead=${raw.take(400)}",
+            )
+            throw e
+        }
     }
 
     private val client = HttpClient(engineFactory) {
@@ -1201,20 +1263,30 @@ class SpelaApiClient(
     suspend fun getMyCollections(
         page: Int = 1,
         pageSize: Int = 20,
-    ): com.spela.client.models.PaginatedResponseCollectionResponse {
-        return collectionsApi.listMyCollections(page = page.toLong(), pageSize = pageSize.toLong()).body()
+    ): com.spela.client.models.PaginatedResponseCollectionResponse = retryTransient("getMyCollections") {
+        collectionsApi.listMyCollections(page = page.toLong(), pageSize = pageSize.toLong())
+            .bodyDiagnostic(
+                "getMyCollections",
+                com.spela.client.models.PaginatedResponseCollectionResponse.serializer(),
+            )
     }
 
     suspend fun getPublicCollections(
         page: Int = 1,
         pageSize: Int = 20,
-    ): com.spela.client.models.PaginatedResponseCollectionResponse {
-        return collectionsApi.listPublicCollections(page = page.toLong(), pageSize = pageSize.toLong()).body()
+    ): com.spela.client.models.PaginatedResponseCollectionResponse = retryTransient("getPublicCollections") {
+        collectionsApi.listPublicCollections(page = page.toLong(), pageSize = pageSize.toLong())
+            .bodyDiagnostic(
+                "getPublicCollections",
+                com.spela.client.models.PaginatedResponseCollectionResponse.serializer(),
+            )
     }
 
-    suspend fun getCollection(id: String): com.spela.client.models.CollectionDetailResponse {
-        return collectionsApi.getCollection(id).body()
-    }
+    suspend fun getCollection(id: String): com.spela.client.models.CollectionDetailResponse =
+        retryTransient("getCollection") {
+            collectionsApi.getCollection(id)
+                .bodyDiagnostic("getCollection", com.spela.client.models.CollectionDetailResponse.serializer())
+        }
 
     suspend fun createCollection(
         request: com.spela.client.models.CreateCollectionRequest,
