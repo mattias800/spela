@@ -668,6 +668,7 @@ static bool environment_callback(unsigned cmd, void *data) {
                         if (g_core.hw_render_callback.context_reset) {
                             g_core.hw_render_callback.context_reset();
                         }
+                        gpu_renderer_mark_hw_context_reset_done(g_gpu_renderer);
                         LOGI("Vulkan HW render context initialized lazily "
                              "(on GET_HW_RENDER_INTERFACE)");
                     } else {
@@ -1037,6 +1038,7 @@ JNI_FUNC(jboolean, nativeLoadGame)(JNIEnv *env, jobject thiz, jstring gamePath) 
                 if (g_core.hw_render_callback.context_reset) {
                     g_core.hw_render_callback.context_reset();
                 }
+                gpu_renderer_mark_hw_context_reset_done(g_gpu_renderer);
                 LOGI("Vulkan HW render context initialized after game load");
             } else {
                 LOGE("Failed to init Vulkan HW render context after game load");
@@ -1113,15 +1115,22 @@ JNI_FUNC(jboolean, nativeLoadGame)(JNIEnv *env, jobject thiz, jstring gamePath) 
 
 JNI_FUNC(void, nativeRun)(JNIEnv *env, jobject thiz) {
     if (!g_core.game_loaded) return;
-    /* Vulkan HW render: skip frames until Vulkan HW context is ready */
+    /* Vulkan HW render: skip frames until the Vulkan HW context is active AND
+     * the core's context_reset() has completed. hw_render_active flips true at
+     * the end of gpu_renderer_hw_vulkan_init(), which runs BEFORE the caller
+     * invokes context_reset() — gating on active alone let the emulation thread
+     * run a frame in that gap, before the core built its GPU backend, crashing
+     * PSP/PPSSPP on its first GE display list (#925/#1270). */
     if (g_core.hw_render_enabled &&
         g_core.hw_render_callback.context_type == RETRO_HW_CONTEXT_VULKAN &&
-        (!g_gpu_renderer || !gpu_renderer_is_hw_render_active(g_gpu_renderer))) {
+        (!g_gpu_renderer || !gpu_renderer_is_hw_render_active(g_gpu_renderer) ||
+         !gpu_renderer_is_hw_context_reset_done(g_gpu_renderer))) {
         static int vk_skip_count = 0;
         if (++vk_skip_count <= 5 || vk_skip_count % 300 == 0) {
-            LOGI("VK HW: skipping frame %d (renderer=%p active=%d)",
+            LOGI("VK HW: skipping frame %d (renderer=%p active=%d ctxReset=%d)",
                  vk_skip_count, (void*)g_gpu_renderer,
-                 g_gpu_renderer ? gpu_renderer_is_hw_render_active(g_gpu_renderer) : -1);
+                 g_gpu_renderer ? gpu_renderer_is_hw_render_active(g_gpu_renderer) : -1,
+                 g_gpu_renderer ? gpu_renderer_is_hw_context_reset_done(g_gpu_renderer) : -1);
         }
         return;
     }
@@ -1911,6 +1920,7 @@ JNI_FUNC(jboolean, nativeGpuInit)(JNIEnv *env, jobject thiz, jobject surface) {
             if (g_core.hw_render_callback.context_reset) {
                 g_core.hw_render_callback.context_reset();
             }
+            gpu_renderer_mark_hw_context_reset_done(g_gpu_renderer);
             LOGI("Vulkan HW render context initialized for core");
         } else {
             LOGE("Failed to init Vulkan HW render context");
@@ -2028,6 +2038,7 @@ JNI_FUNC(jboolean, nativeGpuInitOffscreen)(JNIEnv *env, jobject thiz, jint width
             if (g_core.hw_render_callback.context_reset) {
                 g_core.hw_render_callback.context_reset();
             }
+            gpu_renderer_mark_hw_context_reset_done(g_gpu_renderer);
             LOGI("Vulkan HW render context initialized for core (offscreen)");
         } else {
             LOGE("Failed to init Vulkan HW render context (offscreen)");
