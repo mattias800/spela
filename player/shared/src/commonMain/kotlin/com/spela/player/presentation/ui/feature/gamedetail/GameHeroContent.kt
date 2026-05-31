@@ -12,6 +12,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccessTime
 import androidx.compose.material.icons.filled.EmojiEvents
 import androidx.compose.material.icons.filled.History
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
@@ -185,6 +186,13 @@ fun GameHeroContent(
                     onClick = onNavigateToAchievements,
                 )
             }
+        }
+
+        // Not-playable notice: surface clearly that an unsupported-console
+        // game can't be played in Spela, before/at download time — otherwise
+        // the only signal is the absent Play button. (#1255)
+        if (!game.playable) {
+            NotPlayableNotice(consoleName = game.consoleName)
         }
 
         // Action buttons + size hint. Wrapping inner Column keeps the
@@ -537,6 +545,36 @@ private fun CommunityRatingBadge(averageRating: Double, ratingCount: Long) {
             text = "($ratingCount)",
             style = SpTypography.LabelMedium,
             color = SpColor.OnBackgroundTertiary,
+        )
+    }
+}
+
+/**
+ * Notice shown on the hero for a game whose console Spela can't emulate.
+ * Makes the "not playable" state explicit instead of leaving the absent
+ * Play button as the only signal. (#1255)
+ */
+@Composable
+private fun NotPlayableNotice(consoleName: String) {
+    Row(
+        horizontalArrangement = Arrangement.spacedBy(SpSpacing.Small),
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier.testTag("game_detail_not_playable_notice"),
+    ) {
+        Icon(
+            imageVector = Icons.Filled.Info,
+            contentDescription = null,
+            tint = SpColor.OnGradientSecondary,
+            modifier = Modifier.size(18.dp),
+        )
+        Text(
+            text = if (consoleName.isNotBlank()) {
+                "Not playable in Spela — $consoleName isn't supported yet. You can still download the files."
+            } else {
+                "Not playable in Spela — this console isn't supported yet. You can still download the files."
+            },
+            style = SpTypography.BodySmall,
+            color = SpColor.OnGradientSecondary,
         )
     }
 }
