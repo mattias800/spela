@@ -1003,6 +1003,17 @@ func (h *GameHandler) HumaDownloadGame(_ context.Context, in *GameDownloadInput)
 			defer f.Close()
 			hctx.SetHeader("Content-Type", "application/octet-stream")
 			hctx.SetHeader("Content-Disposition", fmt.Sprintf("inline; filename=%q", game.FileName))
+			// Advertise the exact transfer size so the player shows accurate
+			// download progress. Without it the body is chunked (no
+			// Content-Length) and the client falls back to the DB file size,
+			// which for compressed formats (PSP, .rvz, .chd) is the
+			// logical/uncompressed size — leaving the bar stuck well under
+			// 100%. The streamed byte count equals the on-disk size; the
+			// iNES normalization below rewrites the first 16 bytes in place,
+			// so the length is unchanged. (#1261, follow-up to #1235/#1248)
+			if info, serr := f.Stat(); serr == nil {
+				hctx.SetHeader("Content-Length", strconv.FormatInt(info.Size(), 10))
+			}
 			w := hctx.BodyWriter()
 			if normalizeINES {
 				var head [16]byte
