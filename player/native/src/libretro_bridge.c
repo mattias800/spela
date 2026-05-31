@@ -255,6 +255,9 @@ static bool environment_callback(unsigned cmd, void *data) {
                     }
                 }
                 LOGI("Parsed SET_VARIABLES: %d variables stored", core_variable_count);
+                for (int vi = 0; vi < core_variable_count; vi++) {
+                    LOGI("  opt %s = %s", core_variables[vi].key, core_variables[vi].value);
+                }
 
                 /* N64 renderer selection per platform:
                  * - macOS: Angrylion (software) — avoids GL compositing issues with GLideN64
@@ -826,6 +829,9 @@ static int core_load(const char *path) {
      * be called at any time without initialization. */
     g_core.retro_get_system_info(&g_core.system_info);
     LOGI("Core: %s v%s", g_core.system_info.library_name, g_core.system_info.library_version);
+    LOGI("  valid_extensions: %s, need_fullpath: %d, block_extract: %d",
+         g_core.system_info.valid_extensions ? g_core.system_info.valid_extensions : "(none)",
+         g_core.system_info.need_fullpath, g_core.system_info.block_extract);
 
     /* Register callbacks before retro_init */
     g_core.retro_set_environment(environment_callback);
@@ -948,9 +954,12 @@ JNI_FUNC(jboolean, nativeLoadGame)(JNIEnv *env, jobject thiz, jstring gamePath) 
         g_core.game_loaded = true;
         g_core.retro_get_system_av_info(&g_core.av_info);
         audio_init(g_core.av_info.timing.sample_rate);
-        LOGI("Game loaded: %ux%u @ %.2f fps, audio %.1f Hz",
+        LOGI("Game loaded: %ux%u (max %ux%u, aspect %.4f) @ %.2f fps, audio %.1f Hz",
              g_core.av_info.geometry.base_width,
              g_core.av_info.geometry.base_height,
+             g_core.av_info.geometry.max_width,
+             g_core.av_info.geometry.max_height,
+             g_core.av_info.geometry.aspect_ratio,
              g_core.av_info.timing.fps,
              g_core.av_info.timing.sample_rate);
 
