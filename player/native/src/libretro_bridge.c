@@ -13,6 +13,7 @@
 #include "libretro_bridge.h"
 #include "libretro_achievements.h"
 #include "gpu_renderer.h"
+#include "spela_host_api.h"   /* native (non-JNI) host API — implemented at end of file */
 
 #include "hw_render_gl.h"
 
@@ -885,6 +886,7 @@ static int core_load(const char *path) {
     return 0;
 }
 
+#ifndef SPELA_CORE_HOST  /* JNI bindings are excluded from the native host build */
 /* === JNI BINDINGS === */
 
 #define JNI_FUNC(ret, name) JNIEXPORT ret JNICALL Java_com_spela_player_libretro_LibretroJni_##name
@@ -2104,3 +2106,231 @@ JNI_FUNC(void, nativeCheatSet)(JNIEnv *env, jobject thiz,
     g_core.retro_cheat_set((unsigned)index, enabled == JNI_TRUE, codeStr);
     (*env)->ReleaseStringUTFChars(env, code, codeStr);
 }
+
+#endif /* !SPELA_CORE_HOST — end of JNI bindings */
+
+/* ===================================================================== */
+/* === NATIVE HOST API (non-JNI) — out-of-process core host (desktop) === */
+/*                                                                       */
+/* Mirrors the JNI entry points above but takes plain C types, so a      */
+/* native main() (spela_core_host.c) can drive a core without a JVM.     */
+/* Reuses the same static core_load / globals / subsystem functions.     */
+/* See spela_host_api.h, player/native/CORE_HOST.md, and #1243.          */
+/* ===================================================================== */
+
+#ifndef __ANDROID__  /* host process is desktop-only (Android stays in-process) */
+
+void sp_host_set_dirs(const char *system_dir, const char *save_dir) {
+    if (system_dir) {
+        strncpy(g_core.system_dir, system_dir, sizeof(g_core.system_dir) - 1);
+        g_core.system_dir[sizeof(g_core.system_dir) - 1] = '\0';
+    }
+    if (save_dir) {
+        strncpy(g_core.save_dir, save_dir, sizeof(g_core.save_dir) - 1);
+        g_core.save_dir[sizeof(g_core.save_dir) - 1] = '\0';
+    }
+}
+
+bool sp_host_load_core(const char *core_path) {
+    return core_path && core_load(core_path) == 0;
+}
+
+void sp_host_init(void) {
+    if (!g_core.handle) return;
+    video_init();
+    input_init();
+    g_core.retro_init();
+    g_core.initialized = true;
+    /* Re-bind callbacks after retro_init (some cores reset them). */
+    g_core.retro_set_video_refresh(video_refresh_callback);
+    g_core.retro_set_audio_sample(audio_sample_callback);
+    g_core.retro_set_audio_sample_batch(audio_sample_batch_callback);
+    g_core.retro_set_input_poll(input_poll_callback);
+    g_core.retro_set_input_state(input_state_callback);
+    LOGI("[host] Core initialized");
+}
+
+bool sp_host_gpu_init_offscreen(int width, int height) {
+    if (g_gpu_renderer) {
+        video_set_gpu_renderer(NULL);
+        gpu_renderer_deinit_surface(g_gpu_renderer);
+        gpu_renderer_destroy(g_gpu_renderer);
+        g_gpu_renderer = NULL;
+    }
+    g_gpu_renderer = gpu_renderer_create(GPU_BACKEND_VULKAN);
+    if (!g_gpu_renderer) {
+        LOGE("[host] Failed to create GPU renderer for offscreen");
+        return false;
+    }
+    if (g_core.hw_vk_negotiation) {
+        gpu_renderer_set_vk_negotiation(g_gpu_renderer, g_core.hw_vk_negotiation);
+    }
+    if (!gpu_renderer_init_offscreen(g_gpu_renderer, width, height)) {
+        LOGE("[host] Failed to init offscreen GPU renderer");
+        gpu_renderer_destroy(g_gpu_renderer);
+        g_gpu_renderer = NULL;
+        return false;
+    }
+    video_set_gpu_renderer(g_gpu_renderer);
+    if (g_core.hw_render_enabled &&
+        g_core.hw_render_callback.context_type == RETRO_HW_CONTEXT_VULKAN) {
+        if (gpu_renderer_hw_vulkan_init(g_gpu_renderer)) {
+            if (g_core.hw_render_callback.context_reset) {
+                g_core.hw_render_callback.context_reset();
+            }
+            LOGI("[host] Vulkan HW render context initialized (offscreen)");
+        } else {
+            LOGE("[host] Failed to init Vulkan HW render context (offscreen)");
+            g_core.hw_render_enabled = false;
+        }
+    }
+    LOGI("[host] Offscreen GPU renderer initialized");
+    return true;
+}
+
+bool sp_host_load_game(const char *game_path) {
+    if (!g_core.handle || !g_core.initialized || !game_path) return false;
+
+    struct retro_game_info game_info = {0};
+    game_info.path = game_path;
+
+    if (!g_core.system_info.need_fullpath) {
+        FILE *f = fopen(game_path, "rb");
+        if (!f) { LOGE("[host] Failed to open ROM: %s", game_path); return false; }
+        fseek(f, 0, SEEK_END);
+        game_info.size = ftell(f);
+        fseek(f, 0, SEEK_SET);
+        void *buf = malloc(game_info.size);
+        if (buf) {
+            size_t read_bytes = fread(buf, 1, game_info.size, f);
+            if (read_bytes != game_info.size) {
+                LOGE("[host] Short read from ROM: %zu of %zu", read_bytes, game_info.size);
+                free(buf); fclose(f); return false;
+            }
+            game_info.data = buf;
+        }
+        fclose(f);
+    }
+
+    bool loaded = g_core.retro_load_game(&game_info);
+    if (game_info.data) free((void *)game_info.data);
+    if (!loaded) { LOGE("[host] retro_load_game failed"); return false; }
+
+    g_core.game_loaded = true;
+    g_core.retro_get_system_av_info(&g_core.av_info);
+    audio_init(g_core.av_info.timing.sample_rate);
+    LOGI("[host] Game loaded: %ux%u @ %.2f fps, audio %.1f Hz",
+         g_core.av_info.geometry.base_width, g_core.av_info.geometry.base_height,
+         g_core.av_info.timing.fps, g_core.av_info.timing.sample_rate);
+
+    if (g_core.retro_set_controller_port_device) {
+        for (unsigned port = 0; port < 4; port++) {
+            g_core.retro_set_controller_port_device(port, RETRO_DEVICE_JOYPAD);
+        }
+    }
+
+    /* Vulkan HW render: GPU renderer was created offscreen before load_game;
+     * reinit with the core's negotiation interface so they share VkInstance. */
+    if (g_core.hw_render_enabled &&
+        g_core.hw_render_callback.context_type == RETRO_HW_CONTEXT_VULKAN &&
+        g_gpu_renderer) {
+        if (g_core.hw_vk_negotiation) {
+            gpu_renderer_set_vk_negotiation(g_gpu_renderer, g_core.hw_vk_negotiation);
+            if (!gpu_renderer_reinit_vulkan(g_gpu_renderer)) {
+                LOGE("[host] Failed to reinit Vulkan with negotiation");
+            }
+        }
+        if (gpu_renderer_hw_vulkan_init(g_gpu_renderer)) {
+            if (g_core.hw_render_callback.context_reset) {
+                g_core.hw_render_callback.context_reset();
+            }
+            LOGI("[host] Vulkan HW render context initialized after game load");
+        } else {
+            LOGE("[host] Failed to init Vulkan HW render after game load");
+        }
+    }
+    return true;
+}
+
+void sp_host_run_frame(void) {
+    if (!g_core.game_loaded) return;
+    /* Vulkan HW render: skip frames until the HW context is ready. */
+    if (g_core.hw_render_enabled &&
+        g_core.hw_render_callback.context_type == RETRO_HW_CONTEXT_VULKAN &&
+        (!g_gpu_renderer || !gpu_renderer_is_hw_render_active(g_gpu_renderer))) {
+        return;
+    }
+    if (g_core.hw_render_enabled && g_core.hw_gl_ctx) {
+        hw_gl_make_current(g_core.hw_gl_ctx);
+        hw_gl_debug_reset_frame();
+    }
+    g_core.retro_run();
+    g_first_frame_run = true;
+    if (g_core.hw_render_enabled && g_core.hw_gl_ctx) {
+        hw_gl_release_current(g_core.hw_gl_ctx);
+    }
+    achievements_do_frame();
+}
+
+unsigned    sp_host_video_width(void)       { return video_get_width(); }
+unsigned    sp_host_video_height(void)      { return video_get_height(); }
+unsigned    sp_host_pixel_format(void)      { return video_get_pixel_format(); }
+const void *sp_host_video_buffer(void)      { return video_get_frame_buffer(); }
+size_t      sp_host_video_buffer_size(void) { return video_get_frame_buffer_size(); }
+
+size_t sp_host_render_to_bgra(void *dst, size_t dst_capacity, unsigned *w, unsigned *h) {
+    if (!g_gpu_renderer || !dst) return 0;
+    return gpu_renderer_render_to_bgra(g_gpu_renderer, dst, dst_capacity, w, h);
+}
+
+size_t sp_host_get_audio(int16_t *dst, size_t dst_frames) {
+    if (!dst || dst_frames == 0) return 0;
+    audio_lock();
+    const int16_t *buf = audio_get_buffer();
+    size_t frames = audio_get_buffer_frames_unlocked();
+    if (!buf || frames == 0) { audio_unlock(); return 0; }
+    size_t copy = frames < dst_frames ? frames : dst_frames;
+    memcpy(dst, buf, copy * 2 * sizeof(int16_t));
+    audio_clear_buffer_unlocked();
+    audio_unlock();
+    return copy;
+}
+
+void sp_host_set_button(unsigned port, unsigned id, bool pressed) {
+    input_set_button(port, id, pressed);
+}
+void sp_host_set_analog(unsigned port, unsigned index, unsigned id, int16_t value) {
+    input_set_analog(port, index, id, value);
+}
+void sp_host_set_pointer(unsigned port, int16_t x, int16_t y, bool pressed) {
+    input_set_pointer(port, x, y, pressed);
+}
+void sp_host_set_core_variable(const char *key, const char *value) {
+    if (key && value) core_variables_set(key, value);
+}
+
+double sp_host_target_fps(void)     { return g_core.av_info.timing.fps; }
+double sp_host_sample_rate(void)    { return g_core.av_info.timing.sample_rate; }
+float  sp_host_aspect_ratio(void)   { return g_core.av_info.geometry.aspect_ratio; }
+bool   sp_host_is_hw_render(void)   { return g_core.hw_render_enabled; }
+bool   sp_host_is_vulkan_hw_render(void) {
+    return g_core.hw_render_enabled &&
+           g_core.hw_render_callback.context_type == RETRO_HW_CONTEXT_VULKAN;
+}
+
+void sp_host_unload(void) {
+    if (g_core.game_loaded && g_core.retro_unload_game) g_core.retro_unload_game();
+    g_core.game_loaded = false;
+}
+void sp_host_deinit(void) {
+    /* The host is a short-lived process; the OS reclaims everything on exit.
+     * Keep teardown minimal to avoid the subtle HW-render teardown hazards
+     * the in-process JNI path must handle. */
+    if (g_core.initialized && g_core.retro_deinit) {
+        video_set_shutting_down();
+        g_core.retro_deinit();
+        g_core.initialized = false;
+    }
+}
+
+#endif /* !__ANDROID__ */
