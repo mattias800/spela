@@ -281,7 +281,12 @@ fun GameHeroContent(
                     SpButton(
                         text = "Delete Download",
                         onClick = onDeleteLocalGame,
-                        style = SpButtonStyle.Ghost,
+                        // Tinted, not Ghost: this is the sole action for a
+                        // non-playable game, sitting on the gradient hero.
+                        // Ghost on a gradient is just white text with no
+                        // fill/border and reads as transparent (#1256). Tinted
+                        // is the established gradient-hero button treatment.
+                        style = SpButtonStyle.Tinted,
                         onGradient = true,
                         modifier = Modifier.focusRestoreItem(
                             key = "game_detail_play",
