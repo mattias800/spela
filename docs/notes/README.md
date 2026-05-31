@@ -15,5 +15,10 @@ truth for current behaviour.
 | [`n64-android.md`](n64-android.md) | N64 Vulkan HW render on Android — debugging status. |
 | [`n64-macos.md`](n64-macos.md) | N64 OpenGL HW render on macOS — investigation notes. |
 
+For debugging desktop libretro **core crashes** (and the #1237/#1243 Azahar/3DS
+crash postmortem + the `cmd & 0xFFFF` env-masking pitfall), see
+[`player/native/CORE_HOST.md`](../../player/native/CORE_HOST.md) — the
+out-of-process core-host harness lives with the native code it documents.
+
 If you find one of these contradicts current code, the code wins. Update or
 delete the doc rather than backporting a bug.

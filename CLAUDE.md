@@ -228,6 +228,13 @@ This is especially important for:
 
 Do not guess at the problem — instrument the code, read the logs, and let the data guide the fix.
 
+**For desktop libretro core crashes**, see `player/native/CORE_HOST.md`: the
+`spela-core-host` harness runs a core out-of-process (JVM-free, with symbols) for
+a fast `cdb`-debuggable repro. It also documents the **env command-number masking
+pitfall** (`cmd & 0xFFFF` aliasing) behind the #1237/#1243 Azahar crash, and the
+lesson that "works in RetroArch, crashes in Spela" usually means *our* libretro
+frontend behavior differs — not the hosting.
+
 ## Architecture Decisions
 - See ARCHITECTURE.md for full technical architecture
 - See `player/LAYOUT.md` for the player app's shared layout composable system (SpScreen, SpMainContentPadding, SpSectionList, etc.). All screens must use these — no custom padding or scroll code.

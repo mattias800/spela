@@ -193,3 +193,62 @@ endif()
 # Note: Metal shaders are compiled from inline MSL strings at runtime
 # (see gpu_renderer_metal.m). The .metal files in shaders/ are reference
 # copies but are not pre-compiled into a .metallib.
+
+# =====================================================================
+# Out-of-process core host (desktop only) — debug/isolation harness.
+#
+# A standalone native executable that loads + runs a libretro core in its
+# own process (via the sp_host_* API in libretro_bridge.c), sharing video/
+# audio/input with a parent over a memory-mapped file. It gives a core a
+# clean native address space (like RetroArch) and full symbols (PDB), which
+# makes it a fast repro for diagnosing core/integration crashes — it's how
+# the #1243 GET_SENSOR_INTERFACE bug was pinned. See player/native/CORE_HOST.md.
+#
+# Reuses COMMON_SOURCES with SPELA_CORE_HOST defined, which compiles OUT the
+# JNI bindings — so the host links NO jvm/jawt libraries and stays JVM-free.
+# jni.h/jawt.h are needed only as headers (for the JavaVM* type, unused at
+# runtime), so we add JNI_INCLUDE_DIRS but do NOT link JNI_LIBRARIES.
+# =====================================================================
+if(NOT ANDROID)
+    add_executable(spela-core-host ${COMMON_SOURCES} src/spela_core_host.c)
+    target_compile_definitions(spela-core-host PRIVATE SPELA_CORE_HOST)
+    target_include_directories(spela-core-host PRIVATE src rcheevos/include)
+
+    find_package(JNI REQUIRED)
+    target_include_directories(spela-core-host PRIVATE ${JNI_INCLUDE_DIRS})
+
+    if(SDL2_FOUND)
+        target_include_directories(spela-core-host PRIVATE ${SDL2_INCLUDE_DIRS})
+        target_link_libraries(spela-core-host ${SDL2_LIBRARIES})
+    endif()
+
+    find_package(Vulkan REQUIRED)
+    target_include_directories(spela-core-host PRIVATE ${Vulkan_INCLUDE_DIRS})
+
+    if(APPLE)
+        find_library(MOLTENVK_LIB MoltenVK HINTS /opt/homebrew/lib /usr/local/lib)
+        find_library(METAL_FRAMEWORK Metal)
+        find_library(QUARTZCORE_FRAMEWORK QuartzCore)
+        find_library(COCOA_FRAMEWORK Cocoa)
+        find_library(OPENGL_FRAMEWORK OpenGL)
+        find_library(IOKIT_FRAMEWORK IOKit)
+        find_library(IOSURFACE_FRAMEWORK IOSurface)
+        if(MOLTENVK_LIB)
+            target_link_libraries(spela-core-host ${MOLTENVK_LIB}
+                ${METAL_FRAMEWORK} ${QUARTZCORE_FRAMEWORK} ${COCOA_FRAMEWORK}
+                ${OPENGL_FRAMEWORK} ${IOKIT_FRAMEWORK} ${IOSURFACE_FRAMEWORK})
+        else()
+            target_link_libraries(spela-core-host ${Vulkan_LIBRARIES}
+                ${METAL_FRAMEWORK} ${QUARTZCORE_FRAMEWORK} ${COCOA_FRAMEWORK}
+                ${OPENGL_FRAMEWORK})
+        endif()
+    elseif(UNIX)
+        target_link_libraries(spela-core-host ${Vulkan_LIBRARIES} dl m)
+    else()
+        target_link_libraries(spela-core-host ${Vulkan_LIBRARIES} opengl32)
+    endif()
+
+    if(TARGET compile_shaders)
+        add_dependencies(spela-core-host compile_shaders)
+    endif()
+endif()
