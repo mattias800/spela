@@ -2656,6 +2656,48 @@ func TestDownloadGame_CueBinServeTar(t *testing.T) {
 	assert.Len(t, fileNames, 2, "tar should contain exactly 2 files")
 }
 
+// TestDownloadGame_SingleFileSetsContentLength verifies the fallback
+// single-file path advertises Content-Length = the on-disk byte count, so
+// the player can show accurate download progress instead of falling back to
+// the (possibly logical/uncompressed) DB file size. Regression for #1261.
+func TestDownloadGame_SingleFileSetsContentLength(t *testing.T) {
+	database, cfg := setupTestEnv(t)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
+	token := registerAndGetToken(t, router)
+
+	psxDir := filepath.Join(cfg.GameDirs[0], "psx")
+	require.NoError(t, os.MkdirAll(psxDir, 0755))
+
+	// A compressed single-file format whose on-disk (transfer) size differs
+	// from the DB FileSize (which for such formats is the logical size).
+	isoContent := []byte("compressed disc image bytes — smaller than logical size")
+	require.NoError(t, os.WriteFile(filepath.Join(psxDir, "game.chd"), isoContent, 0644))
+
+	var psxConsole db.Console
+	require.NoError(t, database.Where("abbreviation = ?", "PSX").First(&psxConsole).Error)
+
+	game := db.Game{
+		ConsoleID: psxConsole.ID,
+		Title:     "Test Single File",
+		FileName:  "game.chd",
+		FilePath:  filepath.Join("psx", "game.chd"),
+		FileSize:  9_999_999, // logical size, deliberately != on-disk size
+	}
+	require.NoError(t, database.Create(&game).Error)
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", fmt.Sprintf("/api/games/%d/download", game.ID), nil)
+	req.Header.Set("Authorization", "Bearer "+token)
+	router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	// Content-Length must equal the actual transferred bytes, not the DB size.
+	assert.Equal(t, strconv.Itoa(len(isoContent)), w.Header().Get("Content-Length"),
+		"Content-Length should be the on-disk transfer size")
+	assert.Equal(t, len(isoContent), w.Body.Len())
+}
+
 // TestDownloadGame_CueBinServeZip verifies the zip format option for .cue downloads.
 func TestDownloadGame_CueBinServeZip(t *testing.T) {
 	database, cfg := setupTestEnv(t)
