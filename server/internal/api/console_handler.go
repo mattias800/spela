@@ -86,7 +86,9 @@ func (h *ConsoleHandler) resolvePreviewScreenshotPath(_ context.Context, console
 	cachedPath := filepath.Join("previews", console.Abbreviation, "preview.png")
 	fullCachedPath := h.Storage.ImagePath(cachedPath)
 	if _, err := os.Stat(fullCachedPath); err == nil {
-		return "/api/images/" + cachedPath, nil
+		// filepath.ToSlash keeps the URL path-separated even when the
+		// cache path was built with the OS separator (backslash on Windows).
+		return "/api/images/" + filepath.ToSlash(cachedPath), nil
 	}
 
 	libRetroSystem, ok := scraper.AbbreviationToLibRetro[console.Abbreviation]
@@ -123,7 +125,7 @@ func (h *ConsoleHandler) resolvePreviewScreenshotPath(_ context.Context, console
 		slog.Warn("failed to cache preview screenshot", "console", console.Abbreviation, "error", err)
 		return "", huma.Error500InternalServerError("failed to cache preview")
 	}
-	return "/api/images/" + savedPath, nil
+	return "/api/images/" + filepath.ToSlash(savedPath), nil
 }
 
 

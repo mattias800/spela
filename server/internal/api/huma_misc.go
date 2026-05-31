@@ -392,7 +392,7 @@ func (h *SavedSearchHandler) HumaListSavedSearches(ctx context.Context, _ *ListS
 	}
 
 	var searches []db.SavedSearch
-	if err := h.DB.Where("user_id = ?", uid).Order("created_at DESC").Find(&searches).Error; err != nil {
+	if err := h.DB.Where("user_id = ?", uid).Order("created_at DESC, id DESC").Find(&searches).Error; err != nil {
 		return nil, huma.Error500InternalServerError("failed to fetch saved searches")
 	}
 

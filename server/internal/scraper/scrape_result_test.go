@@ -21,6 +21,13 @@ func setupScrapeResultDB(t *testing.T) *gorm.DB {
 	})
 	require.NoError(t, err)
 	require.NoError(t, database.AutoMigrate(&db.GameScrapeResult{}))
+	// Close the SQLite handle before t.TempDir cleanup removes the file.
+	// Windows cannot delete a file that is still open (#1225).
+	t.Cleanup(func() {
+		if sqlDB, err := database.DB(); err == nil {
+			_ = sqlDB.Close()
+		}
+	})
 	return database
 }
 

@@ -37,6 +37,13 @@ func setupTestDB(t *testing.T) *gorm.DB {
 		&db.GameArtworkImage{}, &db.GameReleaseDate{},
 		&db.GameVideo{}, &db.GameLanguageSupport{}, &db.GameAgeRating{},
 	))
+	// Close the SQLite handle before t.TempDir cleanup removes the file.
+	// Windows cannot delete a file that is still open (#1225).
+	t.Cleanup(func() {
+		if sqlDB, err := database.DB(); err == nil {
+			_ = sqlDB.Close()
+		}
+	})
 	return database
 }
 
