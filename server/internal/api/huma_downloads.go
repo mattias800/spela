@@ -41,6 +41,15 @@ func streamFileFromDisk(absPath, downloadName, contentType string) *huma.StreamR
 				hctx.SetHeader("Content-Type", contentType)
 			}
 			hctx.SetHeader("Content-Disposition", fmt.Sprintf("attachment; filename=%q", downloadName))
+			// Advertise the exact byte count so clients can show accurate
+			// download progress. Without this the body is chunked (no
+			// Content-Length), the player can't learn the transfer size, and
+			// it falls back to the DB file size — which for compressed
+			// single-file formats (e.g. .rvz) is the logical/uncompressed
+			// size, leaving the progress bar stuck well under 100%. (#1235)
+			if info, serr := f.Stat(); serr == nil {
+				hctx.SetHeader("Content-Length", strconv.FormatInt(info.Size(), 10))
+			}
 			_, _ = io.Copy(hctx.BodyWriter(), f)
 		},
 	}
