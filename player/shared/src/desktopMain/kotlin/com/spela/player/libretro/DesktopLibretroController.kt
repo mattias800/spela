@@ -69,6 +69,44 @@ class DesktopLibretroController(
     private var emulationThread: Thread? = null
     private var targetFps = 60.0
 
+    /* Emulation-thread dispatch: some cores (Dolphin) require retro_serialize /
+     * retro_unserialize to run on the SAME thread as retro_run — they flush the
+     * GPU render queue during (un)serialize, which needs the HW-render context
+     * that lives on the emulation thread. Calling them from another thread (the
+     * IO dispatcher, during auto-save-on-stop) deadlocks → "Uploading save…"
+     * hangs forever. This queue lets any thread run work on the emulation
+     * thread and wait for the result. Mirrors AndroidLibretroController. (#1206) */
+    private class EmulationThreadRequest(
+        val action: () -> Any?,
+        val latch: java.util.concurrent.CountDownLatch = java.util.concurrent.CountDownLatch(1),
+        @Volatile var result: Any? = null,
+    )
+
+    private val emulationThreadQueue = java.util.concurrent.LinkedBlockingQueue<EmulationThreadRequest>()
+
+    /** Run [block] on the emulation thread and wait for the result. If the
+     *  emulation thread isn't alive (or we're already on it), runs inline. */
+    private fun <T> runOnEmulationThread(timeoutSeconds: Long = 15, block: () -> T): T? {
+        val t = emulationThread
+        if (t?.isAlive != true || Thread.currentThread() == t) {
+            return block()
+        }
+        val req = EmulationThreadRequest(action = { block() })
+        emulationThreadQueue.add(req)
+        val completed = req.latch.await(timeoutSeconds, java.util.concurrent.TimeUnit.SECONDS)
+        @Suppress("UNCHECKED_CAST")
+        return if (completed) req.result as? T else null
+    }
+
+    /** Service one queued emulation-thread request. Called from the emulation
+     *  loop (on the emulation thread), so the action runs with the HW-render
+     *  context current. */
+    private fun pumpEmulationThreadQueue() {
+        val req = emulationThreadQueue.poll() ?: return
+        req.result = req.action()
+        req.latch.countDown()
+    }
+
     @Volatile
     private var currentFps = 0f
 
@@ -143,6 +181,12 @@ class DesktopLibretroController(
         // (e.g. Play! PS2's OpenGL context) are cleaned up on the correct thread.
         deinitOnEmuThread = true
         running = false
+        // Drain any pending emulation-thread requests so their callers unblock
+        // instead of waiting out the timeout once the loop has stopped. (#1206)
+        while (true) {
+            val req = emulationThreadQueue.poll() ?: break
+            req.latch.countDown()
+        }
         netplayTransport?.disconnect()
         emulationThread?.join()
         emulationThread = null
@@ -161,9 +205,12 @@ class DesktopLibretroController(
     // save states, serialize() itself will return null gracefully.
     override fun supportsSaveStates(): Boolean = true
 
-    override fun serialize(): ByteArray? = jni.nativeSerialize()
+    // Marshal (un)serialize onto the emulation thread — HW-render cores (e.g.
+    // Dolphin) flush the GPU queue here and deadlock if called off-thread. (#1206)
+    override fun serialize(): ByteArray? = runOnEmulationThread { jni.nativeSerialize() }
 
-    override fun unserialize(data: ByteArray): Boolean = jni.nativeUnserialize(data)
+    override fun unserialize(data: ByteArray): Boolean =
+        runOnEmulationThread { jni.nativeUnserialize(data) } ?: false
 
     override fun setFastForward(enabled: Boolean) {
         fastForward = enabled
@@ -308,6 +355,9 @@ class DesktopLibretroController(
         var fpsTimer = System.nanoTime()
 
         while (running) {
+            // Run any queued work (serialize/unserialize) on this thread first —
+            // HW-render cores need it on the retro_run thread. (#1206)
+            pumpEmulationThreadQueue()
             if (paused) {
                 Thread.sleep(16)
                 continue
@@ -397,6 +447,7 @@ class DesktopLibretroController(
         }
 
         while (running) {
+            pumpEmulationThreadQueue() // service serialize/unserialize on this thread (#1206)
             if (paused) {
                 Thread.sleep(16)
                 continue
