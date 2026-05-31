@@ -10,6 +10,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"runtime"
 	"testing"
 
 	"github.com/spela/server/internal/auth"
@@ -1648,6 +1649,13 @@ func TestCheckWritable_WritableDir(t *testing.T) {
 }
 
 func TestCheckWritable_ReadonlyDir(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		// os.Chmod(0555) cannot make a directory read-only on Windows —
+		// it only toggles the read-only file attribute, which does not
+		// stop the owner from creating files. checkWritable's probe
+		// therefore succeeds. The behaviour is POSIX-only (#1225).
+		t.Skip("read-only directory semantics are not reproducible on Windows")
+	}
 	env := setupUploadTestEnv(t)
 
 	// Make the game directory read-only

@@ -539,7 +539,10 @@ func extractRelativeByConsoleFolders(absPath string, folderNames map[string]bool
 	parts := strings.Split(filepath.ToSlash(absPath), "/")
 	for i, part := range parts {
 		if folderNames[part] && i < len(parts)-1 {
-			return filepath.Join(parts[i:]...)
+			// Join with "/" (not filepath.Join) so the stored relative
+			// path is canonical across host OSes — filepath.Join would
+			// emit backslashes on Windows, breaking dedup idempotency.
+			return strings.Join(parts[i:], "/")
 		}
 	}
 	return absPath

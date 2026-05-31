@@ -26,7 +26,9 @@ func TestNewStorage(t *testing.T) {
 func TestSaveStatePath(t *testing.T) {
 	store := &Storage{SaveDir: "/data/saves"}
 	path := store.SaveStatePath(1, 42, "save.sav")
-	assert.Equal(t, "/data/saves/user_1/game_42/save.sav", path)
+	// SaveStatePath builds a real on-disk path, so it uses the OS separator
+	// (backslash on Windows). ToSlash normalises for a stable assertion.
+	assert.Equal(t, "/data/saves/user_1/game_42/save.sav", filepath.ToSlash(path))
 }
 
 func TestWriteAndReadSave(t *testing.T) {
