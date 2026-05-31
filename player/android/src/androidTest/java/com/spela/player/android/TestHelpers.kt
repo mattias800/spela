@@ -2460,17 +2460,40 @@ fun ComposeRule.openOverlay() {
 }
 
 fun ComposeRule.exitGame(coreIdleTimeout: Long = 10_000) {
-    // During emulation, performClick() blocks on Espresso idle (60fps loop).
-    // Use UiAutomator which bypasses Espresso idle synchronization.
+    // The "Exit Game" control can render on the AYN Thor's secondary display
+    // (Screen-2), where UiAutomator is blind — openOverlay() already works
+    // around this by also consulting the Compose tree, whose nodes span all
+    // displays, and exitGame must do the same. A UiAutomator-only lookup
+    // failed with "button not found" against a secondary-display overlay.
+    //
+    // The loop also tolerates a transient MainActivity recreation during the
+    // N64 save/load lifecycle: it re-opens the overlay before each attempt
+    // (instead of assuming it's already open from the caller), so a reload that
+    // briefly tears the overlay down doesn't strand the exit.
     val device = UiDevice.getInstance(InstrumentationRegistry.getInstrumentation())
-    val exitBtn = device.findObject(UiSelector().text("Exit Game"))
-    if (exitBtn.exists()) {
-        exitBtn.click()
-    } else {
-        val exitBtnFuzzy = device.findObject(UiSelector().textContains("Exit Game"))
-        check(exitBtnFuzzy.exists()) { "exitGame: 'Exit Game' button not found" }
-        exitBtnFuzzy.click()
+    val deadline = System.currentTimeMillis() + TIMEOUT_MEDIUM
+    var clicked = false
+    while (System.currentTimeMillis() < deadline) {
+        try { ensureOverlayOpen() } catch (_: Throwable) { /* reloading / tree busy — retry */ }
+        // 1) UiAutomator: bypasses the 60fps Espresso idle wait; primary display only.
+        val uiBtn = device.findObject(UiSelector().textContains("Exit Game"))
+        if (uiBtn.exists()) { uiBtn.click(); clicked = true; break }
+        // 2) Compose tree: spans all displays, so it sees a secondary-display
+        //    overlay UiAutomator can't. The overlay pauses emulation, so the
+        //    OnClick action dispatches without an AppNotIdle wait — the same
+        //    path tapOn("Save"/"Load") use successfully on this overlay.
+        try {
+            if (onAllNodesWithText("Exit Game", substring = true)
+                    .fetchSemanticsNodes().isNotEmpty()
+            ) {
+                onAllNodesWithText("Exit Game", substring = true)[0].clickPreferAction()
+                clicked = true
+                break
+            }
+        } catch (_: Throwable) { /* tree busy / node detached — retry */ }
+        Thread.sleep(200)
     }
+    check(clicked) { "exitGame: 'Exit Game' button not found via UiAutomator or Compose tree" }
     // stopGame() runs async: serializes save state then calls libretroController.stop()
     // which joins the emulation thread (up to 2s) and deinits native core.
     // Wait for "Core idle" indicator before navigating to a new game,
