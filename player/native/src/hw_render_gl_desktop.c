@@ -775,20 +775,12 @@ unsigned hw_gl_read_pixels(hw_gl_context_t *ctx, void *out_data, size_t out_capa
     /* Read BGRA pixels (XRGB8888 compatible) */
     ctx->pfn_glReadPixels(0, 0, w, h, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, out_data);
 
-    /* Flip vertically (GL origin is bottom-left, we need top-left) */
-    uint8_t *pixels = (uint8_t *)out_data;
-    size_t row_bytes = (size_t)w * 4;
-    uint8_t *temp = (uint8_t *)malloc(row_bytes);
-    if (temp) {
-        for (unsigned y = 0; y < h / 2; y++) {
-            uint8_t *top = pixels + y * row_bytes;
-            uint8_t *bot = pixels + (h - 1 - y) * row_bytes;
-            memcpy(temp, top, row_bytes);
-            memcpy(top, bot, row_bytes);
-            memcpy(bot, temp, row_bytes);
-        }
-        free(temp);
-    }
+    /* Do NOT flip vertically here. The frame is presented through
+     * gpu_renderer_render_to_bgra, whose vertex shader applies
+     * flip_y = hw_bottom_left_origin to convert the GL bottom-left origin
+     * to the screen top-left origin. Flipping here as well double-flips,
+     * producing an upside-down image (#1254). This matches the Android
+     * readback path (hw_render_gl_android.c). */
 
     if (out_width) *out_width = w;
     if (out_height) *out_height = h;
