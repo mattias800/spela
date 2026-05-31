@@ -149,6 +149,20 @@ static void *hw_get_proc_address(const char *sym) {
  * We handle the subset of environment commands needed for basic operation.
  */
 static bool environment_callback(unsigned cmd, void *data) {
+    /* GET_SENSOR_INTERFACE (25 | RETRO_ENVIRONMENT_EXPERIMENTAL = 0x10019) must
+     * be intercepted by its FULL value, BEFORE the base_cmd masking below. The
+     * mask (cmd & 0xFFFF) maps 0x10019 -> 25, which collides with our local
+     * RETRO_ENVIRONMENT_SET_CONTROLLER_PORT_DEVICE_ENV (25); that case returns
+     * true WITHOUT populating the retro_sensor_interface out-param. The core
+     * (Azahar/3DS) then stores the uninitialized {set_sensor_state,
+     * get_sensor_input} function pointers and later calls the garbage
+     * set_sensor_state(port, ENABLE, rate) -> hard crash on desktop (the
+     * uninitialized stack happened to be zero on Android, hiding it there).
+     * We don't expose host motion sensors, so decline cleanly: the core keeps
+     * its null sensor callbacks and motion is simply disabled. (#1237, #1243) */
+    if (cmd == (25u | 0x10000u)) {
+        return false;
+    }
     /* Mask off RETRO_ENVIRONMENT_EXPERIMENTAL (0x10000) so experimental
      * commands like GET_HW_RENDER_INTERFACE match our case labels. */
     unsigned base_cmd = cmd & 0xFFFF;
