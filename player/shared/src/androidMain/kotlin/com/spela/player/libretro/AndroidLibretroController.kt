@@ -436,31 +436,15 @@ class AndroidLibretroController(
         var fpsCounter = 0
         var fpsTimer = System.nanoTime()
 
-        // #916 — PPSSPP libretro Vulkan deadlocks on the FIRST retro_run
-        // if BootState is still Booting (PSP_InitUpdate returns Booting →
-        // ctx->SwapBuffers() → vk_libretro_wait_for_presentation() blocks
-        // forever on chain.condVar because chain.current_index == -1 and
-        // no rendering has happened yet). The fix upstream needs to make
-        // wait_for_presentation skip the wait if no present has happened
-        // since swapchain creation; until that lands, wait here for the
-        // loader thread to finish CPU_Init (which sets g_bootState =
-        // Complete) before letting retro_run see Booting.
-        //
-        // RetroArch's frame loop has enough natural slack between
-        // retro_load_game and the first retro_run to avoid this; ours
-        // doesn't. 5s covers CPU_Init for typical PSP ISOs (1-1.5GB) on
-        // device storage. Doesn't slow down GLES PSP or non-Vulkan cores.
-        if (jni.nativeIsVulkanHwRender() &&
-            jni.nativeGetCoreLibraryName().contains("PPSSPP")) {
-            Log.i(TAG, "PSP+Vulkan: holding retro_run for 2s while loader thread finishes (#916)")
-            try {
-                Thread.sleep(2000)
-            } catch (_: InterruptedException) {
-                // Allow stop() to break out early.
-                return
-            }
-            Log.i(TAG, "PSP+Vulkan: pre-run wait complete, starting retro_run loop")
-        }
+        // NOTE: the 2s PSP+Vulkan pre-run sleep (#916/#925) was removed here.
+        // It worked around a PPSSPP libretro-Vulkan boot deadlock where the
+        // first retro_run during BootState::Booting calls SwapBuffers →
+        // vk_libretro_wait_for_presentation() and blocked forever because no
+        // frame had presented yet. The upstream fix (hrydgard/ppsspp#21627,
+        // PR #21631 — gate the wait on a new `ever_presented` flag) is merged
+        // and shipped in the libretro buildbot nightly we pull, so the
+        // workaround is redundant. Revert this commit if a buildbot
+        // regression reintroduces the deadlock.
 
         while (running) {
             // Process pending emulation-thread requests (serialize, unserialize, etc.).
