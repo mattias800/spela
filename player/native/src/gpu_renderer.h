@@ -82,6 +82,11 @@ void *gpu_renderer_hw_vulkan_get_interface(gpu_renderer_t *r);
 void gpu_renderer_hw_render_frame(gpu_renderer_t *r, unsigned width, unsigned height);
 void gpu_renderer_hw_vulkan_deinit(gpu_renderer_t *r);
 bool gpu_renderer_is_hw_render_active(gpu_renderer_t *r);
+/* Context-reset gating: the renderer goes hw_render_active before the core's
+ * context_reset() runs; mark/query whether context_reset has completed so
+ * retro_run can wait for the core's GPU backend to exist. See #925/#1270. */
+void gpu_renderer_mark_hw_context_reset_done(gpu_renderer_t *r);
+bool gpu_renderer_is_hw_context_reset_done(gpu_renderer_t *r);
 void gpu_renderer_set_hw_bottom_left_origin(gpu_renderer_t *r, bool bottom_left);
 /* Wait for GPU to finish all pending work (call before context_destroy) */
 void gpu_renderer_wait_idle(gpu_renderer_t *r);

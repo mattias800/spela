@@ -221,6 +221,12 @@ struct gpu_renderer {
 
     /* Vulkan HW render state (Phase 4) */
     bool hw_render_active;
+    /* Set true only after the core's context_reset() has run (which builds the
+     * core's GPU backend). The emulation thread gates retro_run on this so it
+     * can't run a frame in the window between hw_render_active flipping true
+     * (end of gpu_renderer_hw_vulkan_init) and context_reset completing — that
+     * window crashed PSP/PPSSPP on its first GE list. See #925/#1270. */
+    bool hw_context_reset_done;
     bool hw_offscreen_frame_ready; /* offscreen HW frame readback is valid */
     bool hw_bottom_left_origin; /* core renders with OpenGL-style Y-up */
     struct retro_hw_render_interface_vulkan hw_vk_interface;
@@ -1050,6 +1056,10 @@ bool gpu_renderer_hw_vulkan_init(gpu_renderer_t *r) {
     }
 
     r->hw_render_active = true;
+    /* Re-arm the context-reset gate: this init made the renderer active, but
+     * the core's context_reset() hasn't run yet — the bridge calls
+     * gpu_renderer_mark_hw_context_reset_done() once it has. */
+    r->hw_context_reset_done = false;
     r->hw_offscreen_frame_ready = false;
     VK_LOGI("Vulkan HW render initialized (queue_family=%u, sync_mask=0x%x, bottom_left=%d, offscreen=%d)",
             r->queue_family_index, (1u << MAX_FRAMES_IN_FLIGHT) - 1,
@@ -1611,6 +1621,14 @@ void gpu_renderer_hw_vulkan_deinit(gpu_renderer_t *r) {
 
 bool gpu_renderer_is_hw_render_active(gpu_renderer_t *r) {
     return r && r->hw_render_active;
+}
+
+void gpu_renderer_mark_hw_context_reset_done(gpu_renderer_t *r) {
+    if (r) r->hw_context_reset_done = true;
+}
+
+bool gpu_renderer_is_hw_context_reset_done(gpu_renderer_t *r) {
+    return r && r->hw_context_reset_done;
 }
 
 void gpu_renderer_wait_idle(gpu_renderer_t *r) {
