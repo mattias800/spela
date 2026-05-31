@@ -24,10 +24,6 @@ open class BiosRepository(
             // lists optional BIOS the server may not hold (PS2, X68000, …);
             // attempting to download a "missing" entry just 404s and spams
             // the log on every startup (#1207).
-            // Skip files the server itself reports as absent. The registry
-            // lists optional BIOS the server may not hold (PS2, X68000, …);
-            // attempting to download a "missing" entry just 404s and spams
-            // the log on every startup (#1207).
             if (file.status == "missing") continue
             val localDir = if (!file.subDir.isNullOrEmpty()) "$biosDir/${file.subDir}" else biosDir
             val localPath = "$localDir/${file.name}"
