@@ -97,6 +97,7 @@ fun GameHeroContent(
     onCreateNetplay: ((String) -> Unit)?,
     onDeleteLocalGame: () -> Unit,
     onOpenDownloadFolder: () -> Unit = {},
+    onDownloadToFolder: () -> Unit = {},
     syncState: GameSyncState?,
     onNavigateToAchievements: () -> Unit = {},
     onAdminScrape: (() -> Unit)? = null,
@@ -310,9 +311,17 @@ fun GameHeroContent(
                         add(SpSplitButtonMenuItem("Netplay") { onCreateNetplay(gameId) })
                     }
                 }
+                // For a game Spela can't emulate, downloading to the managed
+                // cache is pointless — let the user pick a folder instead
+                // (desktop only; Android keeps the default). (#1257)
+                val downloadToFolder = !game.playable && currentPlatform() != "android"
                 SpSplitButton(
-                    text = if (isBusy) "Downloading..." else "Download",
-                    onClick = onDownloadGame,
+                    text = when {
+                        isBusy -> "Downloading..."
+                        downloadToFolder -> "Download to folder…"
+                        else -> "Download"
+                    },
+                    onClick = if (downloadToFolder) onDownloadToFolder else onDownloadGame,
                     modifier = Modifier
                         .focusRestoreItem(
                             key = "game_detail_play",

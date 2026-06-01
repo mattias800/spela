@@ -165,6 +165,7 @@ fun GameDetailScreen(
                     onCreateNetplay = onCreateNetplay,
                     onDeleteLocalGame = { viewModel.onIntent(GameDetailIntent.ShowDeleteDownloadDialog) },
                     onOpenDownloadFolder = { viewModel.onIntent(GameDetailIntent.OpenDownloadFolder) },
+                    onDownloadToFolder = { viewModel.onIntent(GameDetailIntent.DownloadToFolder) },
                     syncState = syncState,
                     onNavigateToAchievements = { onNavigateToAchievements?.invoke(gameId) },
                     onAdminScrape = if (state.isAdmin) {{ viewModel.onIntent(GameDetailIntent.AdminScrapeGame) }} else null,

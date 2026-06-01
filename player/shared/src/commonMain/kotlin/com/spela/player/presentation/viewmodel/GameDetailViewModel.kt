@@ -24,6 +24,7 @@ import com.spela.player.domain.repository.GameStatsRepository
 import com.spela.player.presentation.intent.GameDetailIntent
 import com.spela.player.presentation.state.GameDetailState
 import com.spela.player.util.DispatcherProvider
+import com.spela.player.util.pickDirectory
 import com.spela.player.util.revealInFileManager
 import com.spela.player.domain.model.GameDetail
 import com.spela.player.domain.model.INSTANT_DOWNLOAD_FALLBACK_DELAY_MS
@@ -114,6 +115,7 @@ class GameDetailViewModel(
         when (intent) {
             is GameDetailIntent.LoadGame -> loadGame(intent.gameId)
             GameDetailIntent.DownloadGame -> downloadGame()
+            GameDetailIntent.DownloadToFolder -> downloadToFolder()
             GameDetailIntent.DownloadGameAndPlay -> downloadGameAndPlay()
             GameDetailIntent.ConsumeAutoLaunch -> _state.update { it.copy(pendingAutoLaunch = false) }
             GameDetailIntent.PlayGame -> { /* Handled by UI navigation to emulation screen */ }
@@ -496,6 +498,26 @@ class GameDetailViewModel(
             } catch (e: Exception) {
                 println("GameDetailViewModel: scrape request failed for game $gameId: ${e.message}")
             }
+        }
+    }
+
+    /**
+     * Download a game Spela can't emulate to a user-chosen folder (#1257).
+     * Prompts for the destination, then streams the file there (no managed
+     * cache entry). Progress flows through the same observeDownload path as
+     * a normal download. On platforms without a folder picker (Android) the
+     * picker returns null and this is a no-op.
+     */
+    private fun downloadToFolder() {
+        val gameId = currentGameId ?: return
+        val gameTitle = _state.value.gameDetail?.game?.title ?: ""
+        scope.launch(dispatchers.io) {
+            val dir = pickDirectory("Choose a folder to download to") ?: return@launch
+            _state.update { it.copy(isDownloading = true) }
+            downloadRepository.downloadGameToDirectory(gameId, gameTitle, dir).fold(
+                onSuccess = { _state.update { it.copy(isDownloading = false) } },
+                onFailure = { error -> _state.update { it.copy(error = error.message, isDownloading = false) } },
+            )
         }
     }
 
