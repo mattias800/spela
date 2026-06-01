@@ -96,12 +96,12 @@ jobs:
       - name: Extract version from tag
         id: meta
         run: echo "version=${RELEASE_TAG#v}" >> "$GITHUB_OUTPUT"
-      - uses: docker/login-action@v3
+      - uses: docker/login-action@v4
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-      - uses: docker/build-push-action@v6
+      - uses: docker/build-push-action@v7
         with:
           context: .
           push: true
