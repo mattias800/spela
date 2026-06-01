@@ -756,11 +756,20 @@ void *hw_gl_get_proc_address(const char *sym) {
 }
 
 unsigned hw_gl_read_pixels(hw_gl_context_t *ctx, void *out_data, size_t out_capacity,
+                           unsigned req_width, unsigned req_height,
                            unsigned *out_width, unsigned *out_height) {
     if (!ctx || !ctx->initialized || !out_data) return 0;
 
     unsigned w = ctx->fbo_width;
     unsigned h = ctx->fbo_height;
+    // Clamp to the core-reported frame size. The FBO can be larger than the
+    // current frame (left over from a prior larger frame before
+    // hw_gl_resize_fbo shrinks it); the core renders into the bottom-left
+    // req_width x req_height region. Reading the full FBO would overflow the
+    // caller's buffer (sized for the reported frame) and capture padding. (#1268)
+    if (req_width != 0 && req_width < w) w = req_width;
+    if (req_height != 0 && req_height < h) h = req_height;
+    if (w == 0 || h == 0) return 0;
     size_t needed = (size_t)w * h * 4;
 
     if (out_capacity < needed) {

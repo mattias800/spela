@@ -42,9 +42,19 @@ uintptr_t hw_gl_get_framebuffer(hw_gl_context_t *ctx);
 /* Resolve GL function addresses (macOS links GL statically via dlsym) */
 void *hw_gl_get_proc_address(const char *sym);
 
-/* Read FBO to CPU buffer as XRGB8888, flipping vertically (GL origin is bottom-left).
- * Returns number of pixels read, or 0 on failure. */
+/* Read the HW framebuffer to a CPU buffer as XRGB8888.
+ *
+ * Reads the core-reported frame region (req_width x req_height) from the
+ * bottom-left of the FBO, clamped to the FBO's actual size. The FBO can be
+ * larger than the current frame (e.g. left over from a prior larger frame
+ * before hw_gl_resize_fbo shrinks it), so reading the whole FBO would both
+ * overflow a buffer sized for the reported frame and capture empty padding
+ * (#1268). Pass req_width/req_height = 0 to read the full FBO.
+ *
+ * The actual region read is written to out_width/out_height. Returns the
+ * number of pixels read, or 0 on failure. */
 unsigned hw_gl_read_pixels(hw_gl_context_t *ctx, void *out_data, size_t out_capacity,
+                           unsigned req_width, unsigned req_height,
                            unsigned *out_width, unsigned *out_height);
 
 /* Debug: reset per-frame counters (call before retro_run) */

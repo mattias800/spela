@@ -1168,6 +1168,7 @@ static bool fbo_has_content(GLuint fbo_id, unsigned fw, unsigned fh) {
 }
 
 unsigned hw_gl_read_pixels(hw_gl_context_t *ctx, void *out_data, size_t out_capacity,
+                           unsigned req_width, unsigned req_height,
                            unsigned *out_width, unsigned *out_height) {
     if (!ctx || !ctx->cgl_ctx) return 0;
 
@@ -1175,6 +1176,12 @@ unsigned hw_gl_read_pixels(hw_gl_context_t *ctx, void *out_data, size_t out_capa
     unsigned h = ctx->fbo_height;
 
     if (!out_data || w == 0 || h == 0) return 0;
+
+    /* Clamp to the core-reported frame size; the FBO can be larger than the
+     * current frame, which the core renders into the bottom-left region.
+     * No-op when they match (the steady-state case). (#1268) */
+    if (req_width != 0 && req_width < w) w = req_width;
+    if (req_height != 0 && req_height < h) h = req_height;
 
     CGLSetCurrentContext(ctx->cgl_ctx);
 
