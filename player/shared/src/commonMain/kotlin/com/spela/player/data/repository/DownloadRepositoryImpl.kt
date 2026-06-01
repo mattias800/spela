@@ -219,6 +219,55 @@ class DownloadRepositoryImpl(
         }
     }
 
+    override suspend fun downloadGameToDirectory(
+        gameId: String,
+        gameTitle: String,
+        destDir: String,
+    ): Result<String> {
+        setActiveJob(gameId, coroutineContext[Job]!!)
+        return runCatching {
+            downloads.update { it + (gameId to DownloadProgress(gameId, gameTitle, DownloadState.QUEUED)) }
+            downloads.update { it + (gameId to DownloadProgress(gameId, gameTitle, DownloadState.DOWNLOADING)) }
+
+            val gameDetail = apiClient.getGameDetail(gameId)
+            val fileName = gameDetail.fileName.ifEmpty { gameId }
+            val expectedSize = gameDetail.fileSize
+            // destDir is a user-chosen absolute path; write the file directly
+            // into it. Unlike downloadGame this records no DB row, so the game
+            // is never treated as "cached" — the file lives outside the games
+            // dir purely for the user. (#1257)
+            val destPath = "$destDir/$fileName"
+
+            apiClient.downloadGameToFile(gameId, fileStorage, destPath) { downloaded, total ->
+                val reportedTotal = total ?: if (expectedSize > 0) expectedSize else -1L
+                val monotonic = monotonicBytes(gameId, downloaded)
+                val speed = recordSpeed(gameId, monotonic)
+                downloads.update {
+                    it + (gameId to DownloadProgress(gameId, gameTitle, DownloadState.DOWNLOADING, monotonic, reportedTotal, bytesPerSecond = speed))
+                }
+            }
+
+            resetSpeed(gameId)
+            val actualSize = fileStorage.getFileSize(destPath)
+            downloads.update {
+                it + (gameId to DownloadProgress(gameId, gameTitle, DownloadState.COMPLETED, actualSize, actualSize))
+            }
+            destPath
+        }.also {
+            takeActiveJob(gameId)
+        }.onFailure { error ->
+            takeActiveJob(gameId)
+            resetSpeed(gameId)
+            if (error is CancellationException) {
+                downloads.update { it - gameId }
+                throw error
+            }
+            downloads.update {
+                it + (gameId to DownloadProgress(gameId, gameTitle, DownloadState.FAILED))
+            }
+        }
+    }
+
     /**
      * Mirrors the server's packaging decision in
      * `huma_downloads.go::HumaDownloadGame`: extensions that the server

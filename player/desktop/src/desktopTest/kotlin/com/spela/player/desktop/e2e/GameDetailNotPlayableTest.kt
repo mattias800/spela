@@ -64,4 +64,25 @@ class GameDetailNotPlayableTest {
         onNodeWithText("Castlevania").assertIsDisplayed()
         onNodeWithTag("game_detail_not_playable_notice").assertDoesNotExist()
     }
+
+    @Test
+    fun nonPlayableGameOffersDownloadToFolder() = runComposeUiTest {
+        // #1257: a non-playable game uses "Download to folder…" instead of the
+        // managed "Download". Use a large file (> instant-download threshold)
+        // so the regular download-button path is taken. Desktop test platform
+        // is non-Android, so the folder variant is enabled. Assertion only —
+        // clicking would open a real OS folder picker.
+        val harness = createHarness()
+        val bigGame = vitaGame.copy(
+            id = "vita-2",
+            title = "Big Unsupported Title",
+            fileSize = 64L * 1024 * 1024,
+        )
+        harness.gameRepo.games = harness.gameRepo.games + bigGame
+        setContent { harness.App() }
+        navigateToGameDetail(harness, "vita-2")
+
+        onNodeWithText("Big Unsupported Title").assertIsDisplayed()
+        onNodeWithText("Download to folder", substring = true).assertIsDisplayed()
+    }
 }

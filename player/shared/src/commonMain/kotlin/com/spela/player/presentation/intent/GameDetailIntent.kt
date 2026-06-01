@@ -3,6 +3,7 @@ package com.spela.player.presentation.intent
 sealed interface GameDetailIntent {
     data class LoadGame(val gameId: String) : GameDetailIntent
     data object DownloadGame : GameDetailIntent
+    data object DownloadToFolder : GameDetailIntent
     /**
      * Silent download-then-launch path for sub-threshold games. The
      * ViewModel kicks off the download, suppresses progress UI for
