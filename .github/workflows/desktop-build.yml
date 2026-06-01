@@ -201,6 +201,12 @@ jobs:
           distribution: temurin
           java-version: 21
 
+      # Gradle configures the :android module unconditionally, so even this
+      # desktop-only build needs the Android SDK. ubuntu-latest / macOS /
+      # windows runners ship it; the ARM64 runner does not — provision it
+      # (mirrors release.yml's ARM64 job). (#1277)
+      - uses: android-actions/setup-android@v4
+
       - name: Install Linux dependencies
         run: |
           sudo apt-get update
