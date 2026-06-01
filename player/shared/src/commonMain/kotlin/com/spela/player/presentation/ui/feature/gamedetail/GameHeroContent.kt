@@ -54,6 +54,7 @@ import com.spela.player.presentation.ui.gamepad.focusRestoreItem
 import com.spela.player.presentation.ui.theme.SpColor
 import com.spela.player.presentation.ui.theme.SpSpacing
 import com.spela.player.presentation.ui.theme.SpTypography
+import com.spela.player.util.currentPlatform
 import com.spela.player.util.formatBytes
 import com.spela.player.util.formatPlayTime
 
@@ -95,6 +96,7 @@ fun GameHeroContent(
     onAddToCollection: () -> Unit,
     onCreateNetplay: ((String) -> Unit)?,
     onDeleteLocalGame: () -> Unit,
+    onOpenDownloadFolder: () -> Unit = {},
     syncState: GameSyncState?,
     onNavigateToAchievements: () -> Unit = {},
     onAdminScrape: (() -> Unit)? = null,
@@ -341,6 +343,12 @@ fun GameHeroContent(
                 onGradient = true,
                 onSaveStateSettings = if (showSaveStateSettings) {
                     { showGameSettingsSheet = true }
+                } else null,
+                // Only for downloaded games, and only where the OS file
+                // manager can browse the download location — i.e. desktop,
+                // not Android (app-private storage). (#1259)
+                onOpenDownloadFolder = if (state.isGameCached && currentPlatform() != "android") {
+                    onOpenDownloadFolder
                 } else null,
                 onAdminScrape = onAdminScrape,
                 onAdminRefreshAchievements = onAdminRefreshAchievements,

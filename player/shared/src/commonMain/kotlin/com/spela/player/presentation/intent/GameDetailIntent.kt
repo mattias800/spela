@@ -18,6 +18,7 @@ sealed interface GameDetailIntent {
     data object ConsumeAutoLaunch : GameDetailIntent
     data object PlayGame : GameDetailIntent
     data object DeleteLocalGame : GameDetailIntent
+    data object OpenDownloadFolder : GameDetailIntent
     data object ShowDeleteDownloadDialog : GameDetailIntent
     data object DismissDeleteDownloadDialog : GameDetailIntent
     data object ToggleFavorite : GameDetailIntent

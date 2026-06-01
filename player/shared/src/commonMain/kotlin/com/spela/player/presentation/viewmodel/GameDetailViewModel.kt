@@ -24,6 +24,7 @@ import com.spela.player.domain.repository.GameStatsRepository
 import com.spela.player.presentation.intent.GameDetailIntent
 import com.spela.player.presentation.state.GameDetailState
 import com.spela.player.util.DispatcherProvider
+import com.spela.player.util.revealInFileManager
 import com.spela.player.domain.model.GameDetail
 import com.spela.player.domain.model.INSTANT_DOWNLOAD_FALLBACK_DELAY_MS
 import com.spela.player.domain.model.INSTANT_DOWNLOAD_THRESHOLD_BYTES
@@ -117,6 +118,7 @@ class GameDetailViewModel(
             GameDetailIntent.ConsumeAutoLaunch -> _state.update { it.copy(pendingAutoLaunch = false) }
             GameDetailIntent.PlayGame -> { /* Handled by UI navigation to emulation screen */ }
             GameDetailIntent.DeleteLocalGame -> deleteLocalGame()
+            GameDetailIntent.OpenDownloadFolder -> openDownloadFolder()
             GameDetailIntent.ShowDeleteDownloadDialog -> _state.update {
                 it.copy(showDeleteDownloadDialog = true)
             }
@@ -591,6 +593,14 @@ class GameDetailViewModel(
         scope.launch(dispatchers.io) {
             downloadRepository.deleteLocalGame(gameId)
             _state.update { it.copy(isGameCached = false, showDeleteDownloadDialog = false) }
+        }
+    }
+
+    private fun openDownloadFolder() {
+        val gameId = currentGameId ?: return
+        scope.launch(dispatchers.io) {
+            val path = downloadRepository.getLocalGamePath(gameId) ?: return@launch
+            revealInFileManager(path)
         }
     }
 

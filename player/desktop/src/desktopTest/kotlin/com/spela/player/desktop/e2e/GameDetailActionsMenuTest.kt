@@ -149,6 +149,36 @@ class GameDetailActionsMenuTest {
     }
 
     @Test
+    fun cachedGameActionsMenuShowsOpenDownloadFolder() = runComposeUiTest {
+        // #1259: downloaded games on desktop expose "Show in folder" in the
+        // actions menu (currentPlatform() is non-Android in the desktop test).
+        val harness = createLoggedInHarness()
+        harness.downloadRepo.preCacheGame("1")
+
+        setContent { harness.App() }
+        navigateToGameDetail(harness, "1")
+
+        onNodeWithContentDescription("More actions").performClick()
+        advanceQuick(harness)
+
+        onNodeWithText("Show in folder").assertIsDisplayed()
+    }
+
+    @Test
+    fun uncachedGameActionsMenuHidesOpenDownloadFolder() = runComposeUiTest {
+        // Not downloaded → nothing to reveal → item hidden.
+        val harness = createLoggedInHarness()
+
+        setContent { harness.App() }
+        navigateToGameDetail(harness, "1")
+
+        onNodeWithContentDescription("More actions").performClick()
+        advanceQuick(harness)
+
+        onNodeWithText("Show in folder").assertDoesNotExist()
+    }
+
+    @Test
     fun actionsMenuDismissesOnItemClick() = runComposeUiTest {
         val harness = createLoggedInHarness()
 
