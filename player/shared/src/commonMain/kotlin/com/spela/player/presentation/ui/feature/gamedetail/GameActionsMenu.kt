@@ -9,6 +9,7 @@ import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.WatchLater
 import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.outlined.FolderOpen
 import androidx.compose.material.icons.outlined.LibraryAdd
 import androidx.compose.material.icons.outlined.WatchLater
 import androidx.compose.material3.CircularProgressIndicator
@@ -50,6 +51,13 @@ internal fun GameActionsMenu(
      * pointless when the console itself never opted out.
      */
     onSaveStateSettings: (() -> Unit)? = null,
+    /**
+     * Optional "Show in folder" menu item — opens the downloaded game's
+     * folder in the OS file manager. Provided only for downloaded games on
+     * platforms that can reveal it (desktop); null on Android, where
+     * downloads live in app-private storage. (#1259)
+     */
+    onOpenDownloadFolder: (() -> Unit)? = null,
     onAdminScrape: (() -> Unit)? = null,
     onAdminRefreshAchievements: (() -> Unit)? = null,
     isAdminActionLoading: Boolean = false,
@@ -140,6 +148,29 @@ internal fun GameActionsMenu(
                     )
                 },
             )
+
+            if (onOpenDownloadFolder != null) {
+                DropdownMenuItem(
+                    text = {
+                        Text(
+                            text = "Show in folder",
+                            style = SpTypography.BodyMedium,
+                        )
+                    },
+                    onClick = {
+                        expanded = false
+                        onOpenDownloadFolder()
+                    },
+                    modifier = Modifier.testTag("game_detail_menu_open_download_folder"),
+                    leadingIcon = {
+                        Icon(
+                            imageVector = Icons.Outlined.FolderOpen,
+                            contentDescription = null,
+                            modifier = Modifier.size(20.dp),
+                        )
+                    },
+                )
+            }
 
             if (onSaveStateSettings != null) {
                 DropdownMenuItem(
