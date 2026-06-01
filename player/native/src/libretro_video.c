@@ -237,8 +237,14 @@ void video_refresh_callback(const void *data, unsigned width, unsigned height, s
             }
 
             unsigned rb_w = 0, rb_h = 0;
+            // Pass the core-reported frame size so the readback is clamped to
+            // it: the FBO can be larger than the current frame (the resize to
+            // the new dims happens below, after this read), which previously
+            // overflowed the buffer and dropped the frame with a "Buffer too
+            // small" error. (#1268)
             unsigned pixels = hw_gl_read_pixels(g_core.hw_gl_ctx, video_state.frame_buffer,
-                                                video_state.frame_buffer_size, &rb_w, &rb_h);
+                                                video_state.frame_buffer_size, width, height,
+                                                &rb_w, &rb_h);
 
             if (pixels > 0) {
                 video_state.width = rb_w;
