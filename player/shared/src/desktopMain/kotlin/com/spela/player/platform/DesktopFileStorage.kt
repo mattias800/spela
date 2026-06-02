@@ -137,15 +137,27 @@ class DesktopFileStorage : FileStorage {
             // streamed copy keeps the heap allocation bounded so the
             // largest libretro cores (#849, scummvm ~134 MB) don't OOM
             // when buffered as a ByteArray.
+            //
+            // Extract to a temp sibling and atomically rename into place.
+            // The destination may be a libretro core .so that is (or was)
+            // dlopen'ed — some cores stay mapped even after dlclose
+            // (RTLD_NODELETE / static TLS). Overwriting the inode in place
+            // while mapped makes the dynamic linker SIGBUS on the changed
+            // pages (observed in _dl_lookup_map when the core updater
+            // replaced azahar_libretro.so on game resume). A rename swaps
+            // the directory entry and leaves the mapped old inode intact.
+            val tmp = File("$destPath.extract.tmp")
             java.util.zip.ZipFile(src).use { zf ->
                 val entry = zf.entries().asSequence().firstOrNull()
                     ?: throw IllegalStateException("ZIP archive is empty: $zipPath")
                 zf.getInputStream(entry).use { input ->
-                    dest.outputStream().use { output ->
+                    tmp.outputStream().use { output ->
                         input.copyTo(output)
                     }
                 }
             }
+            Files.move(tmp.toPath(), dest.toPath(), StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING)
+            Unit
         }
     }
 
