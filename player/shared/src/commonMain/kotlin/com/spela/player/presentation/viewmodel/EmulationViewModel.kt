@@ -1333,8 +1333,13 @@ class EmulationViewModel(
                             initAchievements(gameId)
                         }
 
-                        // Start play-time heartbeat for online presence
-                        presenceService.startHeartbeat(gameId)
+                        // Start play-time reporting. Time is accrued from
+                        // frames actually advanced (drained from the
+                        // controller), not wall-clock, so paused/background
+                        // time isn't counted (#1282).
+                        presenceService.startHeartbeat(gameId) {
+                            libretroController.consumeActivePlayMillis()
+                        }
 
                         // Start shared session heartbeat if in shared session mode
                         if (sharedSessionId != null) {
@@ -2066,6 +2071,14 @@ interface LibretroController {
     fun unserializeFromFile(path: String): Boolean = false
     fun setFastForward(enabled: Boolean)
     fun performanceStats(): kotlinx.coroutines.flow.Flow<Pair<Float, Float>>
+
+    /** Drains and returns the wall-clock milliseconds the emulator has
+     *  actively advanced frames since the last call (resetting the
+     *  internal counter to 0). Play time is accrued from this so that
+     *  time while paused / backgrounded / suspended / stalled — when no
+     *  frames are produced — is not counted. Default 0 for fakes and
+     *  platforms that don't track it. See #1282. */
+    fun consumeActivePlayMillis(): Long = 0L
 
     /** True once retro_run() has returned at least one frame for the
      *  currently loaded game. Replaces a fixed Dolphin-tuned wait

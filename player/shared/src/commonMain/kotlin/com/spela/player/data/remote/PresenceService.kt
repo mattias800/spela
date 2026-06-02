@@ -1,6 +1,7 @@
 package com.spela.player.data.remote
 
 import com.spela.player.data.remote.api.SpelaApiClient
+import com.spela.player.libretro.splitForFlush
 import com.spela.player.util.DispatcherProvider
 import io.ktor.client.*
 import io.ktor.client.plugins.websocket.*
@@ -37,6 +38,13 @@ class PresenceService(
     private var heartbeatJob: Job? = null
     @Volatile
     private var currentGameId: String? = null
+
+    // Drains the milliseconds of *active* play (frames advanced) since the
+    // last call from the emulation controller. Play time is reported from
+    // this — not wall-clock — so paused/backgrounded/stalled time is never
+    // counted (#1282). Null when no game is running.
+    @Volatile
+    private var drainPlayMillis: (() -> Long)? = null
 
     @Volatile
     var paused: Boolean = false
@@ -94,15 +102,21 @@ class PresenceService(
     }
 
     /**
-     * Start sending play-time heartbeats for the given game.
-     * Each heartbeat reports the interval seconds and marks the user as playing.
+     * Start reporting play time for the given game. [drainMillis] is polled
+     * each interval for the milliseconds of *active* play (frames advanced)
+     * since the previous poll; the reporter sends the real accrued seconds
+     * — not a flat interval — carrying any sub-second remainder forward so
+     * nothing is lost or invented. Time while paused/backgrounded/stalled
+     * drains as ~0, so it isn't counted (#1282).
      */
-    fun startHeartbeat(gameId: String) {
+    fun startHeartbeat(gameId: String, drainMillis: () -> Long) {
         stopHeartbeat()
         paused = false
         currentGameId = gameId
+        drainPlayMillis = drainMillis
 
-        // Send initial heartbeat immediately
+        // Initial 0-second ping marks the user as playing this game
+        // immediately (server sets current-game presence on any report).
         scope.launch(dispatchers.io) {
             try {
                 apiClient.updatePlayTime(gameId, 0)
@@ -112,33 +126,50 @@ class PresenceService(
         }
 
         heartbeatJob = scope.launch(dispatchers.io) {
+            var pendingMillis = 0L
             while (isActive) {
                 delay(HEARTBEAT_INTERVAL_MS)
-                if (paused) continue // Don't report play time while paused/backgrounded
                 val gid = currentGameId ?: break
-                try {
-                    val seconds = HEARTBEAT_INTERVAL_MS / 1000
-                    apiClient.updatePlayTime(gid, seconds)
-                } catch (_: Exception) {
-                    // Best effort, will retry on next interval
+                // Always drain to keep the accumulator from growing while
+                // paused; only the reporting is gated on `paused`.
+                pendingMillis += drainPlayMillis?.invoke() ?: 0L
+                if (paused) continue
+                val (seconds, remainder) = splitForFlush(pendingMillis)
+                pendingMillis = remainder
+                if (seconds > 0L) {
+                    try {
+                        apiClient.updatePlayTime(gid, seconds)
+                    } catch (_: Exception) {
+                        // Best effort; the un-drained remainder is already
+                        // carried in pendingMillis, so nothing is lost.
+                    }
                 }
             }
         }
     }
 
     /**
-     * Stop sending play-time heartbeats.
-     * Sends a final API call to clear the game status on the server (best-effort).
+     * Stop reporting play time. Flushes any active play accrued since the
+     * last interval, then clears the game status on the server (both
+     * best-effort).
      */
     fun stopHeartbeat() {
         val gameId = currentGameId
+        val drain = drainPlayMillis
         heartbeatJob?.cancel()
         heartbeatJob = null
         currentGameId = null
+        drainPlayMillis = null
 
-        // Fire-and-forget: tell the server we stopped playing
         if (gameId != null) {
             scope.launch(dispatchers.io) {
+                try {
+                    val (seconds, _) = splitForFlush(drain?.invoke() ?: 0L)
+                    if (seconds > 0L) apiClient.updatePlayTime(gameId, seconds)
+                } catch (_: Exception) {
+                    // Best effort
+                }
+                // Tell the server we stopped playing
                 try {
                     apiClient.clearCurrentGame(gameId)
                 } catch (_: Exception) {

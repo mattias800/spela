@@ -113,6 +113,14 @@ class DesktopLibretroController(
     @Volatile
     private var currentFrameTime = 0f
 
+    /* Active play-time accrual (#1282). The emulation thread adds the
+     * clamped wall-clock gap between presented frames; the reporter
+     * drains via consumeActivePlayMillis(). lastFrameNanos is reset to 0
+     * on pause so the gap across a pause isn't counted on resume. */
+    private val activePlayMillis = java.util.concurrent.atomic.AtomicLong(0L)
+    @Volatile
+    private var lastFrameNanos = 0L
+
     /**
      * Double-buffered rendered frame output for offscreen Metal rendering.
      * The emulation thread renders into one buffer while the Compose thread
@@ -165,10 +173,25 @@ class DesktopLibretroController(
 
     override fun pause() {
         paused = true
+        // Reset the frame-gap baseline so the paused stretch isn't
+        // credited as play time when the loop resumes (#1282).
+        lastFrameNanos = 0L
     }
 
     override fun resume() {
         paused = false
+    }
+
+    override fun consumeActivePlayMillis(): Long = activePlayMillis.getAndSet(0L)
+
+    /** Credit the wall-clock gap since the previous presented frame to
+     *  the active-play accumulator, clamped so an idle/suspended stretch
+     *  isn't counted (#1282). Called once per frame from the emulation
+     *  loop(s) — the only writer of [lastFrameNanos]. */
+    private fun accrueActivePlayTime(nowNanos: Long) {
+        val delta = frameDeltaMillis(lastFrameNanos, nowNanos)
+        if (delta > 0L) activePlayMillis.addAndGet(delta)
+        lastFrameNanos = nowNanos
     }
 
     /** Set by emulation thread; signals that unload+deinit should happen on the emu thread. */
@@ -364,6 +387,7 @@ class DesktopLibretroController(
             }
 
             val frameStart = System.nanoTime()
+            accrueActivePlayTime(frameStart)
 
             jni.nativeRun()
 
@@ -454,6 +478,7 @@ class DesktopLibretroController(
             }
 
             val frameStart = System.nanoTime()
+            accrueActivePlayTime(frameStart)
             val currentFrame = frameCounter
 
             // 1. Capture local input from netplayLocalButtons (set by setButton),
