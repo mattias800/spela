@@ -155,6 +155,18 @@ open class StubLibretroController : LibretroController {
     override fun getSRAM(): ByteArray? { getSRAMCallCount++; return getSRAMResult }
     override fun setSRAM(data: ByteArray): Boolean { setSRAMCallCount++; lastSetSRAMData = data; return setSRAMResult }
     override fun clearNetplayMode() { clearNetplayModeCallCount++ }
+
+    /** Drives [consumeActivePlayMillis] — set the active-play millis the
+     *  next drain should return. Reset to 0 on each drain, mirroring the
+     *  real controller's getAndSet semantics (#1282). */
+    var activePlayMillisToReturn = 0L
+    var consumeActivePlayMillisCallCount = 0; private set
+    override fun consumeActivePlayMillis(): Long {
+        consumeActivePlayMillisCallCount++
+        val v = activePlayMillisToReturn
+        activePlayMillisToReturn = 0L
+        return v
+    }
 }
 
 class StubLibretroControllerWithVariableTracking : LibretroController {

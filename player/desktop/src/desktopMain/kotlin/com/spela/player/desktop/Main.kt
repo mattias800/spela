@@ -11,6 +11,8 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.snapshotFlow
+import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.pointer.PointerEventType
@@ -29,6 +31,7 @@ import com.spela.player.libretro.DesktopGamepadSynth
 import com.spela.player.presentation.ui.gamepad.InputModeClassifier
 import com.spela.player.presentation.App
 import com.spela.player.presentation.ui.theme.LocalTitleBarInset
+import com.spela.player.presentation.intent.EmulationIntent
 import com.spela.player.presentation.navigation.NavigationIntent
 import com.spela.player.presentation.navigation.NavigationViewModel
 import com.spela.player.presentation.viewmodel.EmulationViewModel
@@ -76,13 +79,34 @@ fun main(args: Array<String>) {
 
     val icon = useResource("spela-icon.svg") { loadSvgPainter(it, Density(1f)) }
 
+    val windowState = rememberWindowState(width = 1280.dp, height = 720.dp)
+    val windowInfo = LocalWindowInfo.current
+
+    // Pause the game (and play-time accrual) when the window is minimized
+    // or loses focus, and resume when it comes back — mirroring Android's
+    // onPause/onResume. Without this, a game left in the background keeps
+    // running and counting play time (#1282).
+    LaunchedEffect(Unit) {
+        snapshotFlow { windowInfo.isWindowFocused && !windowState.isMinimized }
+            .collect { active ->
+                val st = emulationViewModel.state.value
+                if (!active && st.isRunning && !st.isPaused) {
+                    println("[PlayTime] window background → pause (game=${st.gameId})")
+                    emulationViewModel.onIntent(EmulationIntent.LifecyclePause)
+                } else if (active && st.isLifecyclePaused) {
+                    println("[PlayTime] window foreground → resume (game=${st.gameId})")
+                    emulationViewModel.onIntent(EmulationIntent.LifecycleResume)
+                }
+            }
+    }
+
     Window(
         onCloseRequest = {
             gamepadPoller.stop()
             exitApplication()
         },
         title = windowTitle,
-        state = rememberWindowState(width = 1280.dp, height = 720.dp),
+        state = windowState,
         icon = icon,
     ) {
         // macOS: transparent title bar that lets Compose content show through.
