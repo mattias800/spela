@@ -291,6 +291,7 @@ static VKAPI_ATTR PFN_vkVoidFunction VKAPI_CALL wrapped_vkGetInstanceProcAddr(
 static VKAPI_ATTR PFN_vkVoidFunction VKAPI_CALL wrapped_vkGetDeviceProcAddr(
     VkDevice device, const char *pName);
 static void cleanup_offscreen(gpu_renderer_t *r);
+void gpu_renderer_check_hw_interface(gpu_renderer_t *r, const char *phase);
 
 /* ===== Public API ===== */
 
@@ -300,6 +301,9 @@ gpu_renderer_t *gpu_renderer_create(int backend) {
     r->backend = backend;
     r->current_shader = GPU_SHADER_NONE;
     r->extension_filter_enabled = true;
+    /* [HwIfaceCanary] pointer identity for the Azahar UAF investigation */
+    VK_LOGI("[HwIfaceCanary] gpu_renderer created: %p (interface at %p)",
+            (void *)r, (void *)&r->hw_vk_interface);
     return r;
 }
 
@@ -312,6 +316,8 @@ void gpu_renderer_set_extension_filter_enabled(gpu_renderer_t *r, bool enabled) 
 
 void gpu_renderer_destroy(gpu_renderer_t *r) {
     if (!r) return;
+    /* [HwIfaceCanary] pointer identity for the Azahar UAF investigation */
+    VK_LOGI("[HwIfaceCanary] gpu_renderer destroyed: %p", (void *)r);
     if (g_hw_renderer == r) g_hw_renderer = NULL;
 
     /* When a core used the negotiation interface to create the
@@ -886,12 +892,50 @@ static void hw_vulkan_set_image(void *handle,
 static uint32_t hw_vulkan_get_sync_index(void *handle) {
     (void)handle;
     gpu_renderer_t *r = g_hw_renderer;
+    if (r) gpu_renderer_check_hw_interface(r, "get_sync_index (per-frame)");
     return r ? r->current_frame : 0;
 }
 
 static uint32_t hw_vulkan_get_sync_index_mask(void *handle) {
     (void)handle;
     return (1u << MAX_FRAMES_IN_FLIGHT) - 1;
+}
+
+static void hw_vulkan_lock_queue(void *handle);
+
+/* [HwIfaceCanary] Diagnostic for the Azahar resume crash (garbage jump via
+ * vulkan_intf->lock_queue): something overwrites r->hw_vk_interface from
+ * +0x10 onward with structured data while the first 16 bytes stay intact.
+ * Verify the struct at phase boundaries and per-frame callbacks, and log the
+ * first corruption with its phase so the repro pinpoints the writer.
+ * TEMPORARY — remove once the root cause is fixed. */
+static bool g_hw_iface_corruption_logged = false;
+void gpu_renderer_check_hw_interface(gpu_renderer_t *r, const char *phase) {
+    if (!r || !r->hw_render_active || g_hw_iface_corruption_logged) return;
+    const struct retro_hw_render_interface_vulkan *i = &r->hw_vk_interface;
+    if (i->lock_queue == hw_vulkan_lock_queue &&
+        i->set_image == hw_vulkan_set_image &&
+        i->get_device_proc_addr == wrapped_vkGetDeviceProcAddr &&
+        i->device == r->device) {
+        return; /* intact */
+    }
+    g_hw_iface_corruption_logged = true;
+    VK_LOGE("[HwIfaceCanary] interface CORRUPTED, first seen at phase '%s'", phase);
+    VK_LOGE("[HwIfaceCanary] lock_queue=%p (want %p) set_image=%p (want %p)",
+            (void *)(uintptr_t)i->lock_queue, (void *)(uintptr_t)hw_vulkan_lock_queue,
+            (void *)(uintptr_t)i->set_image, (void *)(uintptr_t)hw_vulkan_set_image);
+    VK_LOGE("[HwIfaceCanary] device=%p (want %p) instance=%p (want %p) handle=%p (want %p)",
+            (void *)i->device, (void *)r->device,
+            (void *)i->instance, (void *)r->instance,
+            i->handle, (void *)r);
+    const uint64_t *raw = (const uint64_t *)i;
+    for (int k = 0; k < 17; k += 4) {
+        VK_LOGE("[HwIfaceCanary] +0x%02x: %016llx %016llx %016llx %016llx", k * 8,
+                (unsigned long long)raw[k],
+                (unsigned long long)(k + 1 < 17 ? raw[k + 1] : 0),
+                (unsigned long long)(k + 2 < 17 ? raw[k + 2] : 0),
+                (unsigned long long)(k + 3 < 17 ? raw[k + 3] : 0));
+    }
 }
 
 static void hw_vulkan_wait_sync_index(void *handle) {

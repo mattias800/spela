@@ -136,13 +136,32 @@ class AndroidFileStorage(private val context: Context) : FileStorage {
             // InputStream straight to the destination FileOutputStream
             // with a small buffer (java.io.InputStream.copyTo defaults
             // to 8 KB), keeping the heap allocation bounded.
+            //
+            // Extract to a temp sibling and rename into place. The
+            // destination may be a libretro core .so that is (or was)
+            // dlopen'ed — some cores stay mapped even after dlclose.
+            // Overwriting the inode in place while mapped makes the dynamic
+            // linker SIGBUS on the changed pages (observed on desktop in
+            // _dl_lookup_map when the core updater replaced
+            // azahar_libretro.so on game resume); a rename swaps the
+            // directory entry and leaves the mapped old inode intact.
+            val tmp = File("$destPath.extract.tmp")
             java.util.zip.ZipFile(src).use { zf ->
                 val entry = zf.entries().asSequence().firstOrNull()
                     ?: throw IllegalStateException("ZIP archive is empty: $zipPath")
                 zf.getInputStream(entry).use { input ->
-                    dest.outputStream().use { output ->
+                    tmp.outputStream().use { output ->
                         input.copyTo(output)
                     }
+                }
+            }
+            if (!tmp.renameTo(dest)) {
+                // Same fallback semantics as atomicWriteFile: rename should
+                // overwrite atomically on POSIX; if it refuses, fall back to
+                // delete + rename so the extract still completes.
+                dest.delete()
+                if (!tmp.renameTo(dest)) {
+                    throw IllegalStateException("Failed to move extracted core into place: $destPath")
                 }
             }
         }

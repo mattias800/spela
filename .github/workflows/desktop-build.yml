@@ -35,8 +35,13 @@ jobs:
       - name: Set up JDK 21
         uses: actions/setup-java@v5
         with:
-          distribution: temurin
+          # Match release.yml: bundle JBR on Windows/Linux — its AWT patches
+          # (fractional HiDPI on Linux, transparent title bar) are required;
+          # stock Temurin mis-scales on Linux Wayland/HiDPI. macOS AWT needs
+          # no patches and Temurin avoids GitHub API rate limits there.
+          distribution: ${{ runner.os == 'macOS' && 'temurin' || 'jetbrains' }}
           java-version: 21
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Install Linux dependencies
         if: runner.os == 'Linux'
@@ -98,8 +103,10 @@ jobs:
       - name: Set up JDK 21
         uses: actions/setup-java@v5
         with:
-          distribution: temurin
+          # JBR to match release.yml — see the matrix job's comment.
+          distribution: jetbrains
           java-version: 21
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Install Linux dependencies
         run: |
@@ -144,8 +151,10 @@ jobs:
       - name: Set up JDK 21
         uses: actions/setup-java@v5
         with:
-          distribution: temurin
+          # JBR to match release.yml — see the matrix job's comment.
+          distribution: jetbrains
           java-version: 21
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Install Linux dependencies
         run: |
@@ -198,8 +207,10 @@ jobs:
       - name: Set up JDK 21
         uses: actions/setup-java@v5
         with:
-          distribution: temurin
+          # JBR to match release.yml — see the matrix job's comment.
+          distribution: jetbrains
           java-version: 21
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       # Gradle configures the :android module unconditionally, so even this
       # desktop-only build needs the Android SDK location. ubuntu-latest /
