@@ -114,6 +114,7 @@ class PresenceService(
         paused = false
         currentGameId = gameId
         drainPlayMillis = drainMillis
+        println("[PlayTime] start game=$gameId")
 
         // Initial 0-second ping marks the user as playing this game
         // immediately (server sets current-game presence on any report).
@@ -133,10 +134,16 @@ class PresenceService(
                 // Always drain to keep the accumulator from growing while
                 // paused; only the reporting is gated on `paused`.
                 pendingMillis += drainPlayMillis?.invoke() ?: 0L
-                if (paused) continue
+                if (paused) {
+                    if (pendingMillis > 0L) {
+                        println("[PlayTime] paused — holding ${pendingMillis}ms (game=$gid)")
+                    }
+                    continue
+                }
                 val (seconds, remainder) = splitForFlush(pendingMillis)
                 pendingMillis = remainder
                 if (seconds > 0L) {
+                    println("[PlayTime] report game=$gid +${seconds}s (carry ${remainder}ms)")
                     try {
                         apiClient.updatePlayTime(gid, seconds)
                     } catch (_: Exception) {
@@ -165,6 +172,7 @@ class PresenceService(
             scope.launch(dispatchers.io) {
                 try {
                     val (seconds, _) = splitForFlush(drain?.invoke() ?: 0L)
+                    println("[PlayTime] stop game=$gameId final +${seconds}s")
                     if (seconds > 0L) apiClient.updatePlayTime(gameId, seconds)
                 } catch (_: Exception) {
                     // Best effort

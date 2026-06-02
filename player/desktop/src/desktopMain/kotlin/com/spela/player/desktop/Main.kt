@@ -91,8 +91,10 @@ fun main(args: Array<String>) {
             .collect { active ->
                 val st = emulationViewModel.state.value
                 if (!active && st.isRunning && !st.isPaused) {
+                    println("[PlayTime] window background → pause (game=${st.gameId})")
                     emulationViewModel.onIntent(EmulationIntent.LifecyclePause)
                 } else if (active && st.isLifecyclePaused) {
+                    println("[PlayTime] window foreground → resume (game=${st.gameId})")
                     emulationViewModel.onIntent(EmulationIntent.LifecycleResume)
                 }
             }
