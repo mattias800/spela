@@ -4,7 +4,9 @@
  * Provides an offscreen OpenGL context with FBO for libretro cores
  * that request hardware-accelerated rendering via RETRO_ENVIRONMENT_SET_HW_RENDER.
  *
- * Linux: EGL pbuffer surface (works on X11 and Wayland)
+ * Linux: GLX pbuffer (primary — matches RetroArch's X11 driver; cores like
+ *        PPSSPP ship GLX-built GLEW that fails in EGL contexts), falling back
+ *        to EGL (pbuffer, then surfaceless) when X11/GLX is unavailable
  * Windows: WGL with hidden window
  *
  * After each frame, pixels are read back via glReadPixels and fed through
@@ -80,6 +82,7 @@ typedef int32_t EGLint;
 #define EGL_WIDTH             0x3057
 #define EGL_HEIGHT            0x3058
 #define EGL_OPENGL_API        0x30A2
+#define EGL_EXTENSIONS        0x3055
 
 /* EGL function types */
 typedef EGLDisplay (*PFN_eglGetDisplay)(void *);
@@ -93,6 +96,47 @@ typedef EGLBoolean (*PFN_eglDestroySurface)(EGLDisplay, EGLSurface);
 typedef EGLBoolean (*PFN_eglMakeCurrent)(EGLDisplay, EGLSurface, EGLSurface, EGLContext);
 typedef EGLBoolean (*PFN_eglBindAPI)(unsigned int);
 typedef void *     (*PFN_eglGetProcAddress)(const char *);
+typedef const char *(*PFN_eglQueryString)(EGLDisplay, EGLint);
+
+/* GLX types and constants (from GLX 1.4 spec). All opaque pointers/XIDs so we
+ * can dlopen libX11/libGL without their headers, matching the EGL approach. */
+typedef void *XDisplay;       /* Display* */
+typedef void *GLXFBConfig;
+typedef void *GLXContext;
+typedef unsigned long GLXDrawable; /* XID */
+
+#define GLX_NONE_ATTR         0
+#define GLX_RED_SIZE_ATTR     8
+#define GLX_GREEN_SIZE_ATTR   9
+#define GLX_BLUE_SIZE_ATTR    10
+#define GLX_ALPHA_SIZE_ATTR   11
+#define GLX_DEPTH_SIZE_ATTR   12
+#define GLX_STENCIL_SIZE_ATTR 13
+#define GLX_DRAWABLE_TYPE     0x8010
+#define GLX_RENDER_TYPE       0x8011
+#define GLX_RGBA_BIT          0x00000001
+#define GLX_PBUFFER_BIT       0x00000004
+#define GLX_RGBA_TYPE         0x8014
+#define GLX_PBUFFER_WIDTH     0x8041
+#define GLX_PBUFFER_HEIGHT    0x8040
+#define GLX_CONTEXT_MAJOR_VERSION_ARB 0x2091
+#define GLX_CONTEXT_MINOR_VERSION_ARB 0x2092
+#define GLX_CONTEXT_PROFILE_MASK_ARB  0x9126
+#define GLX_CONTEXT_CORE_PROFILE_BIT_ARB 0x00000001
+
+typedef XDisplay      (*PFN_XOpenDisplay)(const char *);
+typedef int           (*PFN_XCloseDisplay)(XDisplay);
+typedef int           (*PFN_XDefaultScreen)(XDisplay);
+typedef int           (*PFN_XFree)(void *);
+typedef int           (*PFN_glXQueryExtension)(XDisplay, int *, int *);
+typedef GLXFBConfig * (*PFN_glXChooseFBConfig)(XDisplay, int, const int *, int *);
+typedef void *        (*PFN_glXGetProcAddressARB)(const unsigned char *);
+typedef GLXContext    (*PFN_glXCreateContextAttribsARB)(XDisplay, GLXFBConfig, GLXContext, int, const int *);
+typedef GLXContext    (*PFN_glXCreateNewContext)(XDisplay, GLXFBConfig, int, GLXContext, int);
+typedef GLXDrawable   (*PFN_glXCreatePbuffer)(XDisplay, GLXFBConfig, const int *);
+typedef void          (*PFN_glXDestroyPbuffer)(XDisplay, GLXDrawable);
+typedef int           (*PFN_glXMakeContextCurrent)(XDisplay, GLXDrawable, GLXDrawable, GLXContext);
+typedef void          (*PFN_glXDestroyContext)(XDisplay, GLXContext);
 #endif
 
 /* ===== OpenGL types and constants ===== */
@@ -187,6 +231,26 @@ struct hw_gl_context {
     PFN_eglMakeCurrent pfn_eglMakeCurrent;
     PFN_eglBindAPI pfn_eglBindAPI;
     PFN_eglGetProcAddress pfn_eglGetProcAddress;
+    PFN_eglQueryString pfn_eglQueryString;
+
+    /* GLX state (primary Linux path; EGL above is the fallback) */
+    bool using_glx;
+    void *x11_lib;
+    XDisplay glx_display;
+    GLXContext glx_context;
+    GLXDrawable glx_pbuffer;
+    PFN_XOpenDisplay pfn_XOpenDisplay;
+    PFN_XCloseDisplay pfn_XCloseDisplay;
+    PFN_XDefaultScreen pfn_XDefaultScreen;
+    PFN_XFree pfn_XFree;
+    PFN_glXQueryExtension pfn_glXQueryExtension;
+    PFN_glXChooseFBConfig pfn_glXChooseFBConfig;
+    PFN_glXGetProcAddressARB pfn_glXGetProcAddressARB;
+    PFN_glXCreateNewContext pfn_glXCreateNewContext;
+    PFN_glXCreatePbuffer pfn_glXCreatePbuffer;
+    PFN_glXDestroyPbuffer pfn_glXDestroyPbuffer;
+    PFN_glXMakeContextCurrent pfn_glXMakeContextCurrent;
+    PFN_glXDestroyContext pfn_glXDestroyContext;
 #endif
 
     /* GL function pointers */
@@ -238,8 +302,10 @@ static void *load_gl_func(hw_gl_context_t *ctx, const char *name) {
         proc = (void *)GetProcAddress(ctx->gl_lib, name);
     }
 #else
-    /* Try eglGetProcAddress first, then dlsym from libGL */
-    if (ctx->pfn_eglGetProcAddress) {
+    /* GLX: glXGetProcAddressARB; EGL: eglGetProcAddress; then dlsym libGL */
+    if (ctx->using_glx && ctx->pfn_glXGetProcAddressARB) {
+        proc = ctx->pfn_glXGetProcAddressARB((const unsigned char *)name);
+    } else if (ctx->pfn_eglGetProcAddress) {
         proc = ctx->pfn_eglGetProcAddress(name);
     }
     if (!proc && ctx->gl_lib) {
@@ -400,7 +466,153 @@ static void destroy_gl_context_win32(hw_gl_context_t *ctx) {
     }
 }
 
-#else /* Linux: EGL */
+#else /* Linux: GLX (primary), EGL (fallback) */
+
+/* GLX pbuffer context. This is the path RetroArch's X11 driver uses, and the
+ * one GL cores are de-facto built against: PPSSPP's bundled GLEW is GLX-only
+ * (glewInit() calls glXGetCurrentDisplay()), so it fails inside an EGL
+ * context and PPSSPP then crashes on its null draw context (CreatePresets).
+ * The app always has an X server available (AWT runs on X11/XWayland). */
+static bool create_gl_context_glx(hw_gl_context_t *ctx, unsigned vmaj, unsigned vmin) {
+    ctx->x11_lib = dlopen("libX11.so.6", RTLD_LAZY);
+    if (!ctx->x11_lib) {
+        GL_LOGI("libX11 not available, skipping GLX");
+        return false;
+    }
+    ctx->gl_lib = dlopen("libGL.so.1", RTLD_LAZY);
+    if (!ctx->gl_lib) {
+        ctx->gl_lib = dlopen("libGL.so", RTLD_LAZY);
+    }
+    if (!ctx->gl_lib) {
+        GL_LOGI("libGL not available, skipping GLX");
+        return false;
+    }
+
+#define LOAD_X11(fn) do { \
+    ctx->pfn_##fn = (PFN_##fn)dlsym(ctx->x11_lib, #fn); \
+    if (!ctx->pfn_##fn) { GL_LOGE("Failed to load " #fn); return false; } \
+} while(0)
+#define LOAD_GLX(fn) do { \
+    ctx->pfn_##fn = (PFN_##fn)dlsym(ctx->gl_lib, #fn); \
+    if (!ctx->pfn_##fn) { GL_LOGE("Failed to load " #fn); return false; } \
+} while(0)
+
+    LOAD_X11(XOpenDisplay);
+    LOAD_X11(XCloseDisplay);
+    LOAD_X11(XDefaultScreen);
+    LOAD_X11(XFree);
+    LOAD_GLX(glXQueryExtension);
+    LOAD_GLX(glXChooseFBConfig);
+    LOAD_GLX(glXGetProcAddressARB);
+    LOAD_GLX(glXCreateNewContext);
+    LOAD_GLX(glXCreatePbuffer);
+    LOAD_GLX(glXDestroyPbuffer);
+    LOAD_GLX(glXMakeContextCurrent);
+    LOAD_GLX(glXDestroyContext);
+
+#undef LOAD_X11
+#undef LOAD_GLX
+
+    ctx->glx_display = ctx->pfn_XOpenDisplay(NULL);
+    if (!ctx->glx_display) {
+        GL_LOGI("XOpenDisplay failed (no X server), skipping GLX");
+        return false;
+    }
+    if (!ctx->pfn_glXQueryExtension(ctx->glx_display, NULL, NULL)) {
+        GL_LOGI("GLX extension not present, skipping GLX");
+        return false;
+    }
+
+    int config_attribs[] = {
+        GLX_DRAWABLE_TYPE, GLX_PBUFFER_BIT,
+        GLX_RENDER_TYPE, GLX_RGBA_BIT,
+        GLX_RED_SIZE_ATTR, 8,
+        GLX_GREEN_SIZE_ATTR, 8,
+        GLX_BLUE_SIZE_ATTR, 8,
+        GLX_ALPHA_SIZE_ATTR, 8,
+        GLX_DEPTH_SIZE_ATTR, 24,
+        GLX_STENCIL_SIZE_ATTR, 8,
+        GLX_NONE_ATTR,
+    };
+    int screen = ctx->pfn_XDefaultScreen(ctx->glx_display);
+    int num_configs = 0;
+    GLXFBConfig *configs =
+        ctx->pfn_glXChooseFBConfig(ctx->glx_display, screen, config_attribs, &num_configs);
+    if (!configs || num_configs == 0) {
+        GL_LOGE("glXChooseFBConfig found no pbuffer config");
+        if (configs) ctx->pfn_XFree(configs);
+        return false;
+    }
+    GLXFBConfig config = configs[0];
+    ctx->pfn_XFree(configs);
+
+    PFN_glXCreateContextAttribsARB create_attribs = (PFN_glXCreateContextAttribsARB)
+        ctx->pfn_glXGetProcAddressARB((const unsigned char *)"glXCreateContextAttribsARB");
+    if (create_attribs && vmaj >= 3) {
+        int context_attribs[] = {
+            GLX_CONTEXT_MAJOR_VERSION_ARB, (int)vmaj,
+            GLX_CONTEXT_MINOR_VERSION_ARB, (int)vmin,
+            GLX_CONTEXT_PROFILE_MASK_ARB, GLX_CONTEXT_CORE_PROFILE_BIT_ARB,
+            GLX_NONE_ATTR,
+        };
+        ctx->glx_context = create_attribs(ctx->glx_display, config, NULL, 1, context_attribs);
+    }
+    if (!ctx->glx_context) {
+        /* Fall back to a legacy context */
+        ctx->glx_context = ctx->pfn_glXCreateNewContext(
+            ctx->glx_display, config, GLX_RGBA_TYPE, NULL, 1);
+    }
+    if (!ctx->glx_context) {
+        GL_LOGE("glXCreateContext failed");
+        return false;
+    }
+
+    int pbuf_attribs[] = {
+        GLX_PBUFFER_WIDTH, 1,
+        GLX_PBUFFER_HEIGHT, 1,
+        GLX_NONE_ATTR,
+    };
+    ctx->glx_pbuffer = ctx->pfn_glXCreatePbuffer(ctx->glx_display, config, pbuf_attribs);
+    if (!ctx->glx_pbuffer) {
+        GL_LOGE("glXCreatePbuffer failed");
+        return false;
+    }
+
+    if (!ctx->pfn_glXMakeContextCurrent(ctx->glx_display, ctx->glx_pbuffer,
+                                        ctx->glx_pbuffer, ctx->glx_context)) {
+        GL_LOGE("glXMakeContextCurrent failed");
+        return false;
+    }
+
+    ctx->using_glx = true;
+    GL_LOGI("GLX context created (GL %u.%u)", vmaj, vmin);
+    return true;
+}
+
+static void destroy_gl_context_glx(hw_gl_context_t *ctx) {
+    if (ctx->glx_display) {
+        ctx->pfn_glXMakeContextCurrent(ctx->glx_display, 0, 0, NULL);
+        if (ctx->glx_pbuffer) {
+            ctx->pfn_glXDestroyPbuffer(ctx->glx_display, ctx->glx_pbuffer);
+            ctx->glx_pbuffer = 0;
+        }
+        if (ctx->glx_context) {
+            ctx->pfn_glXDestroyContext(ctx->glx_display, ctx->glx_context);
+            ctx->glx_context = NULL;
+        }
+        ctx->pfn_XCloseDisplay(ctx->glx_display);
+        ctx->glx_display = NULL;
+    }
+    if (ctx->gl_lib) {
+        dlclose(ctx->gl_lib);
+        ctx->gl_lib = NULL;
+    }
+    if (ctx->x11_lib) {
+        dlclose(ctx->x11_lib);
+        ctx->x11_lib = NULL;
+    }
+    ctx->using_glx = false;
+}
 
 static bool load_egl_functions(hw_gl_context_t *ctx) {
     ctx->egl_lib = dlopen("libEGL.so.1", RTLD_LAZY);
@@ -428,6 +640,7 @@ static bool load_egl_functions(hw_gl_context_t *ctx) {
     LOAD_EGL(eglMakeCurrent);
     LOAD_EGL(eglBindAPI);
     LOAD_EGL(eglGetProcAddress);
+    LOAD_EGL(eglQueryString);
 
 #undef LOAD_EGL
     return true;
@@ -460,6 +673,15 @@ static bool create_gl_context_egl(hw_gl_context_t *ctx, unsigned vmaj, unsigned 
 
     ctx->pfn_eglBindAPI(EGL_OPENGL_API);
 
+    /* Mesa's Wayland EGL platform has no pbuffer support, so on Wayland
+     * sessions eglCreatePbufferSurface (and sometimes pbuffer config
+     * selection) fails. Rendering is offscreen-FBO only, so no surface is
+     * actually needed: fall back to a surfaceless context
+     * (EGL_KHR_surfaceless_context) when pbuffers are unavailable. */
+    const char *egl_exts = ctx->pfn_eglQueryString(ctx->egl_display, EGL_EXTENSIONS);
+    bool surfaceless_supported =
+        egl_exts && strstr(egl_exts, "EGL_KHR_surfaceless_context") != NULL;
+
     EGLint config_attribs[] = {
         EGL_SURFACE_TYPE, EGL_PBUFFER_BIT,
         EGL_RENDERABLE_TYPE, EGL_OPENGL_BIT,
@@ -474,10 +696,22 @@ static bool create_gl_context_egl(hw_gl_context_t *ctx, unsigned vmaj, unsigned 
 
     EGLConfig config;
     EGLint num_configs;
-    if (!ctx->pfn_eglChooseConfig(ctx->egl_display, config_attribs, &config, 1, &num_configs) ||
-        num_configs == 0) {
-        GL_LOGE("eglChooseConfig failed");
-        return false;
+    bool have_pbuffer_config =
+        ctx->pfn_eglChooseConfig(ctx->egl_display, config_attribs, &config, 1, &num_configs) &&
+        num_configs > 0;
+    if (!have_pbuffer_config) {
+        if (!surfaceless_supported) {
+            GL_LOGE("eglChooseConfig failed (no pbuffer config, no surfaceless support)");
+            return false;
+        }
+        /* Retry without requiring pbuffer support — the config is only
+         * used for context creation in surfaceless mode. */
+        config_attribs[1] = 0; /* EGL_SURFACE_TYPE: don't care */
+        if (!ctx->pfn_eglChooseConfig(ctx->egl_display, config_attribs, &config, 1, &num_configs) ||
+            num_configs == 0) {
+            GL_LOGE("eglChooseConfig failed");
+            return false;
+        }
     }
 
     EGLint context_attribs[] = {
@@ -494,19 +728,28 @@ static bool create_gl_context_egl(hw_gl_context_t *ctx, unsigned vmaj, unsigned 
         return false;
     }
 
-    EGLint pbuf_attribs[] = {
-        EGL_WIDTH, 1,
-        EGL_HEIGHT, 1,
-        EGL_NONE,
-    };
-    ctx->egl_surface = ctx->pfn_eglCreatePbufferSurface(ctx->egl_display, config, pbuf_attribs);
-    if (ctx->egl_surface == EGL_NO_SURFACE) {
-        GL_LOGE("eglCreatePbufferSurface failed");
-        return false;
+    ctx->egl_surface = EGL_NO_SURFACE;
+    if (have_pbuffer_config) {
+        EGLint pbuf_attribs[] = {
+            EGL_WIDTH, 1,
+            EGL_HEIGHT, 1,
+            EGL_NONE,
+        };
+        ctx->egl_surface = ctx->pfn_eglCreatePbufferSurface(ctx->egl_display, config, pbuf_attribs);
+        if (ctx->egl_surface == EGL_NO_SURFACE && !surfaceless_supported) {
+            GL_LOGE("eglCreatePbufferSurface failed (no surfaceless support)");
+            return false;
+        }
     }
 
-    ctx->pfn_eglMakeCurrent(ctx->egl_display, ctx->egl_surface, ctx->egl_surface, ctx->egl_context);
-    GL_LOGI("EGL context created (GL %u.%u)", vmaj, vmin);
+    if (!ctx->pfn_eglMakeCurrent(ctx->egl_display, ctx->egl_surface, ctx->egl_surface,
+                                 ctx->egl_context)) {
+        GL_LOGE("eglMakeCurrent failed (%s)",
+                ctx->egl_surface != EGL_NO_SURFACE ? "pbuffer" : "surfaceless");
+        return false;
+    }
+    GL_LOGI("EGL context created (GL %u.%u, %s)", vmaj, vmin,
+            ctx->egl_surface != EGL_NO_SURFACE ? "pbuffer" : "surfaceless");
     return true;
 }
 
@@ -647,7 +890,12 @@ bool hw_gl_init(hw_gl_context_t *ctx, unsigned version_major, unsigned version_m
 #ifdef _WIN32
     if (!create_gl_context_win32(ctx, version_major, version_minor)) return false;
 #else
-    if (!create_gl_context_egl(ctx, version_major, version_minor)) return false;
+    /* GLX first (cores' GLEW expects it), EGL as headless fallback. */
+    if (!create_gl_context_glx(ctx, version_major, version_minor)) {
+        destroy_gl_context_glx(ctx); /* clean up partial GLX state */
+        GL_LOGI("GLX unavailable, falling back to EGL");
+        if (!create_gl_context_egl(ctx, version_major, version_minor)) return false;
+    }
 #endif
 
     if (!load_gl_functions(ctx)) return false;
@@ -669,7 +917,11 @@ void hw_gl_deinit(hw_gl_context_t *ctx) {
 #ifdef _WIN32
     destroy_gl_context_win32(ctx);
 #else
-    destroy_gl_context_egl(ctx);
+    if (ctx->using_glx) {
+        destroy_gl_context_glx(ctx);
+    } else {
+        destroy_gl_context_egl(ctx);
+    }
 #endif
 
     ctx->initialized = false;
@@ -683,7 +935,12 @@ void hw_gl_make_current(hw_gl_context_t *ctx) {
         ctx->pfn_wglMakeCurrent(ctx->hdc, ctx->hglrc);
     }
 #else
-    if (ctx->egl_display != EGL_NO_DISPLAY && ctx->egl_context != EGL_NO_CONTEXT) {
+    if (ctx->using_glx) {
+        if (ctx->glx_display && ctx->glx_context) {
+            ctx->pfn_glXMakeContextCurrent(ctx->glx_display, ctx->glx_pbuffer,
+                                           ctx->glx_pbuffer, ctx->glx_context);
+        }
+    } else if (ctx->egl_display != EGL_NO_DISPLAY && ctx->egl_context != EGL_NO_CONTEXT) {
         ctx->pfn_eglMakeCurrent(ctx->egl_display, ctx->egl_surface,
                                  ctx->egl_surface, ctx->egl_context);
     }
@@ -697,7 +954,11 @@ void hw_gl_release_current(hw_gl_context_t *ctx) {
         ctx->pfn_wglMakeCurrent(ctx->hdc, NULL);
     }
 #else
-    if (ctx->egl_display != EGL_NO_DISPLAY) {
+    if (ctx->using_glx) {
+        if (ctx->glx_display) {
+            ctx->pfn_glXMakeContextCurrent(ctx->glx_display, 0, 0, NULL);
+        }
+    } else if (ctx->egl_display != EGL_NO_DISPLAY) {
         ctx->pfn_eglMakeCurrent(ctx->egl_display, EGL_NO_SURFACE,
                                  EGL_NO_SURFACE, EGL_NO_CONTEXT);
     }
@@ -733,12 +994,16 @@ void *hw_gl_get_proc_address(const char *sym) {
     }
     return proc;
 #else
-    /* On Linux: dlsym from libGL */
+    /* On Linux: glXGetProcAddressARB (resolves extensions in a GLX context),
+     * then plain dlsym from libGL, then EGL as last resort. */
     void *proc = NULL;
     void *gl = dlopen("libGL.so.1", RTLD_LAZY | RTLD_NOLOAD);
     if (!gl) gl = dlopen("libGL.so", RTLD_LAZY | RTLD_NOLOAD);
     if (gl) {
-        proc = dlsym(gl, sym);
+        PFN_glXGetProcAddressARB glxGPA =
+            (PFN_glXGetProcAddressARB)dlsym(gl, "glXGetProcAddressARB");
+        if (glxGPA) proc = glxGPA((const unsigned char *)sym);
+        if (!proc) proc = dlsym(gl, sym);
         dlclose(gl);
     }
     if (!proc) {
