@@ -82,25 +82,6 @@ fun main(args: Array<String>) {
     val icon = useResource("spela-icon.svg") { loadSvgPainter(it, Density(1f)) }
 
     val windowState = rememberWindowState(width = 1280.dp, height = 720.dp)
-    val windowInfo = LocalWindowInfo.current
-
-    // Pause the game (and play-time accrual) when the window is minimized
-    // or loses focus, and resume when it comes back — mirroring Android's
-    // onPause/onResume. Without this, a game left in the background keeps
-    // running and counting play time (#1282).
-    LaunchedEffect(Unit) {
-        snapshotFlow { windowInfo.isWindowFocused && !windowState.isMinimized }
-            .collect { active ->
-                val st = emulationViewModel.state.value
-                if (!active && st.isRunning && !st.isPaused) {
-                    println("[PlayTime] window background → pause (game=${st.gameId})")
-                    emulationViewModel.onIntent(EmulationIntent.LifecyclePause)
-                } else if (active && st.isLifecyclePaused) {
-                    println("[PlayTime] window foreground → resume (game=${st.gameId})")
-                    emulationViewModel.onIntent(EmulationIntent.LifecycleResume)
-                }
-            }
-    }
 
     Window(
         onCloseRequest = {
@@ -111,6 +92,28 @@ fun main(args: Array<String>) {
         state = windowState,
         icon = icon,
     ) {
+        // Pause the game (and play-time accrual) when the window is minimized
+        // or loses focus, and resume when it comes back — mirroring Android's
+        // onPause/onResume. Without this, a game left in the background keeps
+        // running and counting play time (#1282).
+        //
+        // Must live INSIDE the Window content: LocalWindowInfo is provided
+        // per-window — reading it at application{} scope throws
+        // "CompositionLocal LocalWindowInfo not present" on startup.
+        val windowInfo = LocalWindowInfo.current
+        LaunchedEffect(Unit) {
+            snapshotFlow { windowInfo.isWindowFocused && !windowState.isMinimized }
+                .collect { active ->
+                    val st = emulationViewModel.state.value
+                    if (!active && st.isRunning && !st.isPaused) {
+                        println("[PlayTime] window background → pause (game=${st.gameId})")
+                        emulationViewModel.onIntent(EmulationIntent.LifecyclePause)
+                    } else if (active && st.isLifecyclePaused) {
+                        println("[PlayTime] window foreground → resume (game=${st.gameId})")
+                        emulationViewModel.onIntent(EmulationIntent.LifecycleResume)
+                    }
+                }
+        }
         // macOS: transparent title bar that lets Compose content show through.
         // Uses official OpenJDK client properties (JDK 12+/17+).
         // fullWindowContent extends Compose rendering behind the title bar.
