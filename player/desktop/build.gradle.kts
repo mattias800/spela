@@ -301,6 +301,61 @@ if (org.gradle.internal.os.OperatingSystem.current().isMacOsX) {
     }
 }
 
+// Linux signal-chaining setup: libretro cores with JIT fastmem (Dolphin, PPSSPP)
+// install their own SIGSEGV handlers, replacing HotSpot's. Dolphin's handler
+// re-raises unrecognized faults via raise(), which strips si_addr — the JVM then
+// aborts on its own (normal) safepoint/null-check faults. Preloading HotSpot's
+// libjsig.so makes the core's sigaction() call register as a *chained* handler
+// instead: the JVM sees every fault first with intact siginfo and forwards
+// genuine fastmem faults to the core. Same mechanism as Android's libsigchain,
+// which is why this only ever broke on desktop Linux (Windows VEH chains by
+// design; macOS uses Mach exception ports). See player/native/CORE_HOST.md.
+if (org.gradle.internal.os.OperatingSystem.current().isLinux) {
+    val libjsig = org.gradle.internal.jvm.Jvm.current().javaHome.resolve("lib/libjsig.so")
+    if (libjsig.exists()) {
+        tasks.withType<JavaExec>().configureEach {
+            environment("LD_PRELOAD", libjsig.absolutePath)
+        }
+    }
+
+    // Wrap the packaged launcher the same way: rename the jpackage binary to
+    // Spela-bin (it locates its .cfg by its own basename, so the cfg is
+    // duplicated) and install a shell wrapper at bin/Spela that preloads the
+    // bundled runtime's libjsig.so. AppImage and Flatpak launch scripts both
+    // exec bin/Spela, so all Linux artifacts inherit the preload.
+    tasks.matching { it.name == "createDistributable" || it.name == "createReleaseDistributable" }.configureEach {
+        doLast {
+            val appImageDir = project.layout.buildDirectory.dir("compose/binaries/main/app").get().asFile
+            val binDir = appImageDir.resolve("Spela/bin")
+            val launcher = binDir.resolve("Spela")
+            val realBinary = binDir.resolve("Spela-bin")
+            // Idempotent: skip if the launcher is already the shell wrapper.
+            val alreadyWrapped = launcher.exists() && launcher.inputStream().use {
+                val magic = ByteArray(2)
+                it.read(magic) == 2 && magic[0] == '#'.code.toByte() && magic[1] == '!'.code.toByte()
+            }
+            if (launcher.exists() && !alreadyWrapped) {
+                val cfg = appImageDir.resolve("Spela/lib/app/Spela.cfg")
+                cfg.copyTo(appImageDir.resolve("Spela/lib/app/Spela-bin.cfg"), overwrite = true)
+                launcher.renameTo(realBinary)
+                launcher.writeText(
+                    """
+                    #!/bin/sh
+                    # Preload HotSpot's libjsig so libretro cores' JIT-fastmem SIGSEGV
+                    # handlers chain with the JVM instead of replacing its handlers.
+                    # See player/native/CORE_HOST.md (Dolphin SIGSEGV on Linux).
+                    HERE="${'$'}(cd "${'$'}(dirname "${'$'}0")" && pwd)"
+                    export LD_PRELOAD="${'$'}HERE/../lib/runtime/lib/libjsig.so${'$'}{LD_PRELOAD:+:${'$'}LD_PRELOAD}"
+                    exec "${'$'}HERE/Spela-bin" "${'$'}@"
+                    """.trimIndent() + "\n"
+                )
+                launcher.setExecutable(true)
+                logger.lifecycle("Wrapped Linux launcher with libjsig preload (bin/Spela -> bin/Spela-bin)")
+            }
+        }
+    }
+}
+
 // Forward JVM stdout/stderr so emulation logs, native printf, and debug output
 // are visible in the terminal. Without this, Gradle's forked JVM process swallows all output.
 tasks.withType<JavaExec>().configureEach {

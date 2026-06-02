@@ -205,3 +205,57 @@ global to the writer to the dispatcher — which turned out to be our own
 **Lesson:** when a core works in another frontend but not ours, the difference is
 in **our libretro frontend behavior**, not necessarily the process/host. Reach
 for `spela-core-host` early.
+
+---
+
+## Postmortem: Dolphin SIGSEGV on Linux — JVM vs JIT-fastmem signal handlers
+
+**Symptom (June 2026):** GameCube (Dolphin) on desktop **Linux** froze/black-
+screened and aborted with an `hs_err_pid*.log`. The crash signature was the
+tell:
+
+```
+Current thread: JavaThread "SpelaEmulation" [_thread_in_Java]
+# Problematic frame: J ... java.util.Formatter$FormatSpecifier.localizedMagnitude
+siginfo: si_signo: 11 (SIGSEGV), si_code: -6 (SI_TKILL), si_pid: <current process>
+```
+
+`SI_TKILL` from our own pid means the SEGV was **sent via tgkill**, not a real
+memory fault — and the pc was innocuous compiled-Java code.
+
+**Root cause:** Dolphin (and PPSSPP) use **JIT fastmem**: they deliberately
+fault on emulated-memory access and catch it with their own SIGSEGV handler
+(`Source/Core/Core/MemTools.cpp`). Installing it **replaces** HotSpot's
+handler. HotSpot's *normal* operation also generates SEGVs constantly
+(safepoint polls, implicit null checks). When one of those landed in Dolphin's
+handler, `JitInterface::HandleFault` rejected it and Dolphin "chained":
+
+```c
+sigaction(sig, &old_sa, nullptr);  // restore previous (JVM) handler
+raise(sig);                        // re-raise — but raise() == tgkill(self)!
+```
+
+The re-raise **strips the original siginfo** (`si_addr` is lost, `si_code`
+becomes `SI_TKILL`), so HotSpot could no longer recognize the fault as its own
+safepoint poll → deliberate abort.
+
+**Why only Linux:** Windows uses VEH, which is a chain by OS design; Android's
+ART ships `libsigchain` (interposes `sigaction()` so handlers chain); macOS
+arbitration happens via Mach exception ports. Desktop Linux raw `sigaction()`
+is last-writer-wins — the only platform with no arbitration.
+
+**Fix:** preload HotSpot's own chaining shim **`libjsig.so`** (shipped in every
+JDK, including the bundled runtime). With it, the core's `sigaction()` call
+registers a *chained* handler: the JVM sees every SEGV first with intact
+siginfo, handles its own, and forwards genuine fastmem faults to the core.
+Fastmem runs at full speed. Wired up in:
+
+- `desktop/build.gradle.kts` — `LD_PRELOAD` env for dev `:desktop:run`
+  (JavaExec), plus a post-`createDistributable` step that wraps the Linux
+  jpackage launcher (`bin/Spela` becomes a shell wrapper around `Spela-bin`
+  exporting `LD_PRELOAD=…/lib/runtime/lib/libjsig.so`). AppImage and Flatpak
+  launch scripts exec `bin/Spela`, so all Linux artifacts inherit it.
+
+**Lesson:** a JVM `hs_err` crash with `si_code: SI_TKILL` from the own process
+while a JIT-fastmem core is loaded is a **signal-handler collision**, not a
+core bug. Check what the core's handler does with faults it doesn't own.
