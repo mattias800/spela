@@ -11,10 +11,12 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.pointer.PointerEventType
 import androidx.compose.ui.input.pointer.onPointerEvent
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.loadSvgPainter
 import androidx.compose.ui.res.useResource
 import androidx.compose.ui.unit.Density
@@ -121,8 +123,21 @@ fun main(args: Array<String>) {
             (isWindows || isLinux) && isJbrTitleBarActive -> 32.dp
             else -> 0.dp
         }
+
+        // Linux fractional HiDPI: AWT's device scale is integer-only on X11, so
+        // on a 1.5x-scaled desktop Compose inherits density 1.0 and renders too
+        // small. Compensate by overriding LocalDensity with the scale published
+        // over XSETTINGS. See LinuxDisplayScale.kt.
+        val densityOverride = remember {
+            if (isLinux) detectLinuxDensityOverride(window) else null
+        }
+        val density = densityOverride?.let { Density(it) } ?: LocalDensity.current
+
         Box(Modifier.fillMaxSize()) {
-            CompositionLocalProvider(LocalTitleBarInset provides titleBarInset) {
+            CompositionLocalProvider(
+                LocalTitleBarInset provides titleBarInset,
+                LocalDensity provides density,
+            ) {
                 App()
             }
 
