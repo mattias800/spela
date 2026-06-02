@@ -66,6 +66,11 @@ JavaVM *g_jvm = NULL;
 
 /* GPU renderer instance - used by both env callbacks and JNI methods */
 static gpu_renderer_t *g_gpu_renderer = NULL;
+/* Set when nativeGpuDeinit is called while a core is still loaded (emulation
+ * screen onDispose racing the stop flow); the deinit then runs at the end of
+ * nativeDeinit instead. See nativeGpuDeinit. */
+static volatile bool g_gpu_deinit_deferred = false;
+static void do_gpu_deinit(void);
 
 /* Core variable storage for RETRO_ENVIRONMENT_GET_VARIABLE */
 #define MAX_CORE_VARIABLES 256
@@ -1168,7 +1173,20 @@ JNI_FUNC(void, nativeReset)(JNIEnv *env, jobject thiz) {
 
 JNI_FUNC(void, nativeUnloadGame)(JNIEnv *env, jobject thiz) {
     if (!g_core.game_loaded) return;
-    /* Tear down Vulkan HW render context before unloading game */
+    /* Vulkan HW render teardown is split around retro_unload_game: fire
+     * context_destroy first (cores expect it before unload), but only
+     * destroy OUR VkDevice after retro_unload_game returns. The core's GPU
+     * threads (e.g. Azahar's Vulkan::Scheduler worker, Granite's pipeline
+     * compilers) are joined inside retro_unload_game / Core shutdown — for
+     * Azahar, context_destroy doesn't stop the scheduler at all (it only
+     * releases the renderer on the GL path). Destroying the device earlier
+     * is a use-after-free on the dispatchable queue handle: the worker's
+     * next vkQueueSubmit jumps through freed dispatch-table memory
+     * (observed as a garbage-RIP SIGSEGV saving state in OoT 3D on Linux).
+     * RetroArch likewise destroys its Vulkan context only after core
+     * deinit. The old 200ms "grace period" here was a workaround for this
+     * same race and is superseded by the correct ordering. */
+    bool vk_deinit_pending = false;
     if (g_core.hw_render_enabled && g_gpu_renderer &&
         gpu_renderer_is_hw_render_active(g_gpu_renderer)) {
         /* Wait for all GPU work to finish before core destroys its resources */
@@ -1176,14 +1194,7 @@ JNI_FUNC(void, nativeUnloadGame)(JNIEnv *env, jobject thiz) {
         if (g_core.hw_render_callback.context_destroy) {
             g_core.hw_render_callback.context_destroy();
         }
-        /* Granite's background threads (DefaultDispatch) may still be compiling
-         * pipelines. context_destroy signals them to stop but doesn't join them.
-         * Wait for the device to go idle, then give threads time to exit. */
-        gpu_renderer_wait_idle(g_gpu_renderer);
-        sp_sleep_ms(200); /* 200ms grace period for background thread shutdown */
-        gpu_renderer_hw_vulkan_deinit(g_gpu_renderer);
-        g_core.hw_render_enabled = false;
-        LOGI("Vulkan HW render context destroyed");
+        vk_deinit_pending = true;
     }
     /* Tear down OpenGL/GLES HW render context before unloading game */
     if (g_core.hw_render_enabled && g_core.hw_gl_ctx) {
@@ -1213,6 +1224,14 @@ JNI_FUNC(void, nativeUnloadGame)(JNIEnv *env, jobject thiz) {
     }
     g_core.retro_unload_game();
     g_core.game_loaded = false;
+    if (vk_deinit_pending) {
+        /* Core threads are joined now (see comment above) — safe to
+         * destroy our Vulkan device. */
+        gpu_renderer_wait_idle(g_gpu_renderer);
+        gpu_renderer_hw_vulkan_deinit(g_gpu_renderer);
+        g_core.hw_render_enabled = false;
+        LOGI("Vulkan HW render context destroyed");
+    }
     audio_deinit();
     /* Clear the displayed frame so the next game doesn't briefly show this
      * game's last frame (#1236). The next game's first video_refresh resets
@@ -1246,21 +1265,22 @@ JNI_FUNC(void, nativeDeinit)(JNIEnv *env, jobject thiz) {
      * resources. With teardown moved onto the emulation thread, the
      * standard order should be safe. */
 
-    /* Step 1: HW render context_destroy. The Vulkan HW path needs a
-     * wait-idle + brief grace before the vulkan_deinit; the GL path just
-     * fires the callback once. Cores may have already destroyed their own
-     * context during emulation (we observe hw_gl_ctx going NULL via
-     * the env callback in some flows), so guard each branch. */
+    /* Step 1: HW render context_destroy. Vulkan only fires the callback
+     * here — destroying our VkDevice is deferred to after retro_deinit,
+     * when the core's GPU threads are joined (see nativeUnloadGame for the
+     * full rationale; destroying earlier is a use-after-free race with the
+     * core's submit threads). The GL path just fires the callback once.
+     * Cores may have already destroyed their own context during emulation
+     * (we observe hw_gl_ctx going NULL via the env callback in some
+     * flows), so guard each branch. */
+    bool vk_deinit_pending = false;
     if (g_core.hw_render_enabled && g_gpu_renderer &&
         gpu_renderer_is_hw_render_active(g_gpu_renderer)) {
         gpu_renderer_wait_idle(g_gpu_renderer);
         if (g_core.hw_render_callback.context_destroy) {
             g_core.hw_render_callback.context_destroy();
         }
-        gpu_renderer_wait_idle(g_gpu_renderer);
-        sp_sleep_ms(200); /* grace for any Granite background work */
-        gpu_renderer_hw_vulkan_deinit(g_gpu_renderer);
-        g_core.hw_render_enabled = false;
+        vk_deinit_pending = true;
     } else if (g_core.hw_gl_ctx) {
         /* #907 — bind so PPSSPP's GLRenderManager has a current
          * context for cleanup. We rely on Kotlin-side thread-parking
@@ -1291,6 +1311,14 @@ JNI_FUNC(void, nativeDeinit)(JNIEnv *env, jobject thiz) {
         g_core.initialized = false;
     }
 
+    /* Step 3b: core threads are joined now — safe to destroy our Vulkan
+     * device (see Step 1 comment). */
+    if (vk_deinit_pending) {
+        gpu_renderer_wait_idle(g_gpu_renderer);
+        gpu_renderer_hw_vulkan_deinit(g_gpu_renderer);
+        g_core.hw_render_enabled = false;
+    }
+
     /* Step 4: subsystem teardown */
     video_deinit();
     input_deinit();
@@ -1316,6 +1344,14 @@ JNI_FUNC(void, nativeDeinit)(JNIEnv *env, jobject thiz) {
     if (g_core.handle) {
         sp_dlclose(g_core.handle);
         g_core.handle = NULL;
+    }
+
+    /* Step 7: run a GPU deinit that arrived while the core was still alive
+     * (emulation screen onDispose racing this teardown) — see
+     * nativeGpuDeinit. The core and its GPU threads are gone now. */
+    if (g_gpu_deinit_deferred) {
+        g_gpu_deinit_deferred = false;
+        do_gpu_deinit();
     }
 
     /* Clear every retro_* function pointer in g_core. After dlclose the
@@ -1375,6 +1411,8 @@ JNI_FUNC(jboolean, nativeFirstFrameRun)(JNIEnv *env, jobject thiz) {
 JNI_FUNC(jbyteArray, nativeSerialize)(JNIEnv *env, jobject thiz) {
     if (!g_core.game_loaded) return NULL;
 
+    if (g_gpu_renderer) gpu_renderer_check_hw_interface(g_gpu_renderer, "before retro_serialize");
+
     size_t size = g_core.retro_serialize_size();
     if (size == 0) return NULL;
 
@@ -1385,6 +1423,7 @@ JNI_FUNC(jbyteArray, nativeSerialize)(JNIEnv *env, jobject thiz) {
         free(buf);
         return NULL;
     }
+    if (g_gpu_renderer) gpu_renderer_check_hw_interface(g_gpu_renderer, "after retro_serialize");
 
     jbyteArray result = (*env)->NewByteArray(env, (jsize)size);
     if (result) {
@@ -1508,7 +1547,9 @@ JNI_FUNC(jboolean, nativeUnserialize)(JNIEnv *env, jobject thiz, jbyteArray data
         return JNI_FALSE;
     }
 
+    if (g_gpu_renderer) gpu_renderer_check_hw_interface(g_gpu_renderer, "before retro_unserialize");
     bool result = g_core.retro_unserialize(buf, (size_t)size);
+    if (g_gpu_renderer) gpu_renderer_check_hw_interface(g_gpu_renderer, "after retro_unserialize");
     (*env)->ReleaseByteArrayElements(env, data, buf, JNI_ABORT);
 
     if (made_current) {
@@ -1979,7 +2020,7 @@ JNI_FUNC(jboolean, nativeGpuResume)(JNIEnv *env, jobject thiz, jobject surface) 
 #endif
 }
 
-JNI_FUNC(void, nativeGpuDeinit)(JNIEnv *env, jobject thiz) {
+static void do_gpu_deinit(void) {
     if (g_gpu_renderer) {
         /* Destroy Vulkan HW render context before releasing surface */
         if (g_core.hw_render_enabled && gpu_renderer_is_hw_render_active(g_gpu_renderer)) {
@@ -2000,6 +2041,24 @@ JNI_FUNC(void, nativeGpuDeinit)(JNIEnv *env, jobject thiz) {
         g_gpu_renderer = NULL;
         LOGI("GPU renderer destroyed");
     }
+}
+
+JNI_FUNC(void, nativeGpuDeinit)(JNIEnv *env, jobject thiz) {
+    /* The emulation screen's onDispose fires this while the stop flow (auto
+     * save → upload → unload on the emulation thread) may still be running —
+     * navigation leaves the screen before the core is torn down. Destroying
+     * the renderer here frees the gpu_renderer_t that the core's
+     * retro_hw_render_interface_vulkan points into; the core's GPU threads
+     * (Azahar's Vulkan::Scheduler) then read freed memory and jump through a
+     * garbage lock_queue pointer (use-after-free crash on quit/resume of
+     * OoT 3D). Defer the deinit to the end of nativeDeinit — the same
+     * emulation thread that owns core teardown — whenever a core is alive. */
+    if (g_core.game_loaded || g_core.initialized) {
+        g_gpu_deinit_deferred = true;
+        LOGI("GPU deinit deferred until core teardown completes");
+        return;
+    }
+    do_gpu_deinit();
 }
 
 JNI_FUNC(jboolean, nativeGpuInitOffscreen)(JNIEnv *env, jobject thiz, jint width, jint height) {

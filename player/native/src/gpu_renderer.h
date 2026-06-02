@@ -90,6 +90,10 @@ bool gpu_renderer_is_hw_context_reset_done(gpu_renderer_t *r);
 void gpu_renderer_set_hw_bottom_left_origin(gpu_renderer_t *r, bool bottom_left);
 /* Wait for GPU to finish all pending work (call before context_destroy) */
 void gpu_renderer_wait_idle(gpu_renderer_t *r);
+/* [HwIfaceCanary] TEMPORARY diagnostic for the Azahar resume crash: verify the
+ * retro_hw_render_interface_vulkan struct is intact, logging the first
+ * corruption with the given phase tag. No-op on non-Vulkan/inactive HW render. */
+void gpu_renderer_check_hw_interface(gpu_renderer_t *r, const char *phase);
 
 /* Query state */
 bool gpu_renderer_is_active(gpu_renderer_t *r);
