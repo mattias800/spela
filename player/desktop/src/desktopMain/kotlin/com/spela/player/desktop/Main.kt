@@ -12,6 +12,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.Alignment
@@ -42,6 +43,9 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
 import org.koin.core.context.startKoin
 import org.koin.java.KoinJavaComponent.getKoin
 
@@ -82,6 +86,7 @@ fun main(args: Array<String>) {
 
     val icon = useResource("spela-icon.svg") { loadSvgPainter(it, Density(1f)) }
 
+    val appScope = rememberCoroutineScope()
     val windowState = rememberWindowState(width = 1280.dp, height = 720.dp)
 
     // Linux: JBR's CustomTitleBar API is not implemented on X11 (JBR-6413),
@@ -98,7 +103,25 @@ fun main(args: Array<String>) {
     Window(
         onCloseRequest = {
             gamepadPoller.stop()
-            exitApplication()
+            if (emulationViewModel.state.value.isRunning) {
+                // Stop the running game cleanly before exiting: StopGame runs
+                // auto-save + core teardown, then flips isRunning=false. Closing
+                // without this skips the save AND leaves the (non-daemon)
+                // emulation thread running headless — audio keeps playing and
+                // the process lingers. Defer the exit until the stop completes
+                // (bounded, so a stuck save can't block shutdown forever). (#1286)
+                println("[Shutdown] game running — stopping (auto-save + teardown) before exit…")
+                emulationViewModel.onIntent(EmulationIntent.StopGame)
+                appScope.launch {
+                    withTimeoutOrNull(12_000) {
+                        emulationViewModel.state.first { !it.isRunning }
+                    }
+                    println("[Shutdown] stop complete — exiting")
+                    exitApplication()
+                }
+            } else {
+                exitApplication()
+            }
         },
         title = windowTitle,
         state = windowState,
