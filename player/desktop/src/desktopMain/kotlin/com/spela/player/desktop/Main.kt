@@ -24,6 +24,7 @@ import androidx.compose.ui.res.useResource
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Window
+import androidx.compose.ui.window.WindowPlacement
 import androidx.compose.ui.window.application
 import androidx.compose.ui.window.rememberWindowState
 import com.spela.player.di.commonModule
@@ -82,24 +83,16 @@ fun main(args: Array<String>) {
     val icon = useResource("spela-icon.svg") { loadSvgPainter(it, Density(1f)) }
 
     val windowState = rememberWindowState(width = 1280.dp, height = 720.dp)
-    val windowInfo = LocalWindowInfo.current
 
-    // Pause the game (and play-time accrual) when the window is minimized
-    // or loses focus, and resume when it comes back — mirroring Android's
-    // onPause/onResume. Without this, a game left in the background keeps
-    // running and counting play time (#1282).
-    LaunchedEffect(Unit) {
-        snapshotFlow { windowInfo.isWindowFocused && !windowState.isMinimized }
-            .collect { active ->
-                val st = emulationViewModel.state.value
-                if (!active && st.isRunning && !st.isPaused) {
-                    println("[PlayTime] window background → pause (game=${st.gameId})")
-                    emulationViewModel.onIntent(EmulationIntent.LifecyclePause)
-                } else if (active && st.isLifecyclePaused) {
-                    println("[PlayTime] window foreground → resume (game=${st.gameId})")
-                    emulationViewModel.onIntent(EmulationIntent.LifecycleResume)
-                }
-            }
+    // Linux: JBR's CustomTitleBar API is not implemented on X11 (JBR-6413),
+    // so the transparent-title-bar look is achieved with an undecorated
+    // window plus Compose-drawn chrome (LinuxTitleBar.kt). Only enabled when
+    // JBR's WindowMove service exists — without native WM drag an
+    // undecorated window would be unmovable, so non-JBR dev runs keep the
+    // standard decorated window. Decided before Window() because
+    // undecorated must be set when the AWT frame is created.
+    val useLinuxCustomChrome = remember {
+        isLinux && !isJbrWindowDecorationsAvailable() && isJbrWindowMoveAvailable()
     }
 
     Window(
@@ -110,7 +103,30 @@ fun main(args: Array<String>) {
         title = windowTitle,
         state = windowState,
         icon = icon,
+        undecorated = useLinuxCustomChrome,
     ) {
+        // Pause the game (and play-time accrual) when the window is minimized
+        // or loses focus, and resume when it comes back — mirroring Android's
+        // onPause/onResume. Without this, a game left in the background keeps
+        // running and counting play time (#1282).
+        //
+        // Must live INSIDE the Window content: LocalWindowInfo is provided
+        // per-window — reading it at application{} scope throws
+        // "CompositionLocal LocalWindowInfo not present" on startup.
+        val windowInfo = LocalWindowInfo.current
+        LaunchedEffect(Unit) {
+            snapshotFlow { windowInfo.isWindowFocused && !windowState.isMinimized }
+                .collect { active ->
+                    val st = emulationViewModel.state.value
+                    if (!active && st.isRunning && !st.isPaused) {
+                        println("[PlayTime] window background → pause (game=${st.gameId})")
+                        emulationViewModel.onIntent(EmulationIntent.LifecyclePause)
+                    } else if (active && st.isLifecyclePaused) {
+                        println("[PlayTime] window foreground → resume (game=${st.gameId})")
+                        emulationViewModel.onIntent(EmulationIntent.LifecycleResume)
+                    }
+                }
+        }
         // macOS: transparent title bar that lets Compose content show through.
         // Uses official OpenJDK client properties (JDK 12+/17+).
         // fullWindowContent extends Compose rendering behind the title bar.
@@ -130,11 +146,24 @@ fun main(args: Array<String>) {
 
         // Windows / Linux: transparent title bar matching the macOS appearance.
         // Uses JetBrains Runtime (JBR) custom title bar API when available
-        // (always present in packaged distributions). Gracefully degrades
-        // to standard title bar on other JDKs (dev mode).
-        if (isWindows || isLinux) {
+        // (always present in packaged distributions on Windows; never on
+        // Linux X11 — see useLinuxCustomChrome). Gracefully degrades to the
+        // standard title bar on other JDKs (dev mode).
+        if (isWindows || (isLinux && !useLinuxCustomChrome)) {
             LaunchedEffect(Unit) {
                 applyJbrTransparentTitleBar(window)
+            }
+        }
+
+        // Undecorated Linux window: set the AWT background to the app's dark
+        // base immediately so the frame doesn't flash white before Compose
+        // renders (same fallback color as the macOS/Windows paths).
+        if (useLinuxCustomChrome) {
+            LaunchedEffect(Unit) {
+                val bg = java.awt.Color(10, 10, 16) // #0A0A10
+                window.background = bg
+                window.rootPane.background = bg
+                window.contentPane.background = bg
             }
         }
 
@@ -144,6 +173,7 @@ fun main(args: Array<String>) {
         // through the transparent title bar.
         val titleBarInset = when {
             isMacOS -> 28.dp
+            useLinuxCustomChrome -> 32.dp
             (isWindows || isLinux) && isJbrTitleBarActive -> 32.dp
             else -> 0.dp
         }
@@ -185,6 +215,35 @@ fun main(args: Array<String>) {
                         .onPointerEvent(PointerEventType.Move) { jbrMarkTitleBarDraggable() }
                         .onPointerEvent(PointerEventType.Enter) { jbrMarkTitleBarDraggable() }
                         .onPointerEvent(PointerEventType.Press) { jbrMarkTitleBarDraggable() },
+                )
+            }
+
+            // Linux undecorated path: Compose-drawn window chrome (drag strip
+            // + caption buttons) over the transparent top inset. Window
+            // operations go through windowState so Compose stays the source
+            // of truth (the maximize glyph follows placement). Edge resizing
+            // is Compose's built-in UndecoratedWindowResizer.
+            if (useLinuxCustomChrome) {
+                LinuxTitleBarChrome(
+                    isMaximized = windowState.placement == WindowPlacement.Maximized,
+                    onMinimize = { windowState.isMinimized = true },
+                    onToggleMaximize = {
+                        windowState.placement =
+                            if (windowState.placement == WindowPlacement.Maximized) {
+                                WindowPlacement.Floating
+                            } else {
+                                WindowPlacement.Maximized
+                            }
+                    },
+                    onClose = {
+                        gamepadPoller.stop()
+                        exitApplication()
+                    },
+                    onDragStart = { startNativeWindowMove(window) },
+                    modifier = Modifier
+                        .align(Alignment.TopStart)
+                        .fillMaxWidth()
+                        .height(titleBarInset),
                 )
             }
         }
