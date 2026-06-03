@@ -167,6 +167,11 @@ class DesktopLibretroController(
             }
         }, "SpelaEmulation").apply {
             priority = Thread.MAX_PRIORITY
+            // Daemon so the emulation loop (and its audio) can never outlive
+            // the JVM if the app exits without a clean stop() — otherwise a
+            // window-close that skips teardown leaves the process running
+            // headless with audio still playing. (#1286)
+            isDaemon = true
             start()
         }
     }
