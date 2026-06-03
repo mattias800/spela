@@ -403,18 +403,28 @@ class DesktopLibretroController(
                 renderGpuFrameToBgra()
             }
 
-            // Audio-sync frame pacing: write audio to device (blocking write
-            // paces emulation to the audio sample rate). Falls back to
-            // precisionSleep if no audio player or no samples available.
-            // Audio-sync frame pacing: write audio to device (blocking write
-            // paces emulation to the audio sample rate). Falls back to
-            // precisionSleep if no audio player, no samples, or device not ready.
+            // Output audio. A blocking write naturally absorbs part of the
+            // frame budget for cores that emit a full ~(sampleRate/fps) chunk
+            // every retro_run(); that's fine — the precisionSleep below then
+            // just no-ops.
             val ap = audioPlayer
             val audioSamples = jni.nativeGetAudioBuffer()
-            val synced = if (ap != null && !fastForward && audioSamples != null && audioSamples.isNotEmpty()) {
+            if (ap != null && !fastForward && audioSamples != null && audioSamples.isNotEmpty()) {
                 ap.writeSync(audioSamples)
-            } else false
-            if (!synced && !fastForward) {
+            }
+
+            // Always cap the loop to the core's target FPS (video-clock
+            // pacing) — the primary throttle, matching the Android loop and
+            // RetroArch's frame limiter. Audio back-pressure alone cannot pace
+            // every core: free-running cores like Play! (PS2) run their VM on
+            // a separate thread and retro_run() only *harvests* the latest
+            // frame plus a small, non-cumulative audio chunk. The device then
+            // under-feeds, write() never blocks, and without this cap the loop
+            // runs unthrottled — video too fast and audio choppy (#1288).
+            // precisionSleep returns immediately when a blocking audio write
+            // already consumed the budget, so audio-synced cores are
+            // unaffected.
+            if (!fastForward) {
                 precisionSleep(frameStart + frameTimeNs)
             }
 
