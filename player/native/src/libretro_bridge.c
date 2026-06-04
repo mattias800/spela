@@ -2299,6 +2299,52 @@ bool sp_host_load_game(const char *game_path) {
         }
     }
 
+    /* OpenGL/GLES HW render: create + init the GL context and fire the core's
+     * context_reset — mirrors nativeLoadGame. Without this a GL core like
+     * mupen64plus_next/GLideN64 runs with NO GL context in the harness and
+     * crashes early in plugin_start_gfx, masking the real (#1298) bug. Porting
+     * it makes the harness faithfully reproduce the app's GL path. */
+    if (g_core.hw_render_enabled &&
+        g_core.hw_render_callback.context_type != RETRO_HW_CONTEXT_VULKAN) {
+        g_core.hw_gl_ctx = hw_gl_create();
+        g_core.hw_gl_was_used = (g_core.hw_gl_ctx != NULL);
+        if (g_core.hw_gl_ctx) {
+            unsigned vmaj = g_core.hw_render_callback.version_major;
+            unsigned vmin = g_core.hw_render_callback.version_minor;
+#ifndef __ANDROID__
+            if (vmaj == 0) { vmaj = 3; vmin = 2; }
+#else
+            if (vmaj == 0) { vmaj = 3; vmin = 0; }
+#endif
+            if (hw_gl_init(g_core.hw_gl_ctx, vmaj, vmin,
+                           g_core.hw_render_callback.depth,
+                           g_core.hw_render_callback.stencil)) {
+                hw_gl_resize_fbo(g_core.hw_gl_ctx,
+                                 g_core.av_info.geometry.max_width > 0
+                                     ? g_core.av_info.geometry.max_width
+                                     : g_core.av_info.geometry.base_width,
+                                 g_core.av_info.geometry.max_height > 0
+                                     ? g_core.av_info.geometry.max_height
+                                     : g_core.av_info.geometry.base_height);
+                if (g_core.hw_render_callback.context_reset) {
+                    hw_gl_make_current(g_core.hw_gl_ctx);
+                    g_core.hw_render_callback.context_reset();
+                }
+                hw_gl_rebind_gl_symbols();
+                hw_gl_release_current(g_core.hw_gl_ctx);
+                LOGI("[host] OpenGL HW render context initialized for core");
+            } else {
+                LOGE("[host] Failed to init OpenGL HW render context");
+                hw_gl_destroy(g_core.hw_gl_ctx);
+                g_core.hw_gl_ctx = NULL;
+                g_core.hw_render_enabled = false;
+            }
+        } else {
+            LOGE("[host] Failed to create HW GL context struct");
+            g_core.hw_render_enabled = false;
+        }
+    }
+
     /* Vulkan HW render: GPU renderer was created offscreen before load_game;
      * reinit with the core's negotiation interface so they share VkInstance. */
     if (g_core.hw_render_enabled &&
