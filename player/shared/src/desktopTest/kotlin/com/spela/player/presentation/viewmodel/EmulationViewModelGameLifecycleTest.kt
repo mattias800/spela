@@ -489,6 +489,45 @@ class EmulationViewModelGameLifecycleTest {
     }
 
     @Test
+    fun stopGameClearsGameIdentityFields() = runTest {
+        // #1298 regression: finishStopGame() must clear the game identity so a
+        // later overlay/launch can't show the previous game's title or frame.
+        val vm = builder.build()
+        vm.onIntent(EmulationIntent.StartGame("game1"))
+        builder.advanceTimeBy(100)
+        assertEquals("Test Game", vm.state.value.gameTitle)
+        assertEquals("nes", vm.state.value.consoleId)
+
+        vm.onIntent(EmulationIntent.StopGame)
+        builder.advanceTimeBy(100)
+        assertEquals("", vm.state.value.gameId)
+        assertEquals("", vm.state.value.gameTitle)
+        assertEquals("", vm.state.value.consoleId)
+        assertEquals("", vm.state.value.consoleName)
+    }
+
+    @Test
+    fun startingNewGameRecreatesStateFromScratch() = runTest {
+        // #1298 regression: launching a second game must be state-wise
+        // identical to launching the first — the prior game's title/console
+        // must not linger (the bug: overlay showed "Final Fantasy X" while
+        // Ocarina of Time was starting). The reset is synchronous, so the
+        // stale title must be gone immediately, before the new detail loads.
+        val vm = builder.build()
+        vm.onIntent(EmulationIntent.StartGame("game1"))
+        builder.advanceTimeBy(100)
+        assertEquals("Test Game", vm.state.value.gameTitle)
+
+        vm.onIntent(EmulationIntent.StartGame("game2"))
+        // No advanceTimeBy: assert the synchronous from-scratch reset.
+        assertEquals("game2", vm.state.value.gameId)
+        assertEquals("", vm.state.value.gameTitle)
+        assertEquals("", vm.state.value.consoleId)
+        assertEquals("", vm.state.value.consoleName)
+        assertTrue(vm.state.value.isLoading)
+    }
+
+    @Test
     fun startGameAutoCreatesSessionWhenNoneProvided() = runTest {
         val vm = builder.build()
         vm.onIntent(EmulationIntent.StartGame("game1"))
