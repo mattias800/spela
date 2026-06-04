@@ -262,6 +262,11 @@ class DesktopLibretroController(
     fun getAudioBuffer(): ShortArray? = jni.nativeGetAudioBuffer()
     fun getSampleRate(): Double = jni.nativeGetSampleRate()
 
+    /** Resample the core's buffered audio (SINC) by [ratio] into [out];
+     *  returns the interleaved-stereo short count. Drains the core buffer.
+     *  Used by [DesktopAudioPlayer] for dynamic-rate-control output (#1288). */
+    fun resampleAudio(out: ShortArray, ratio: Double): Int = jni.nativeResampleAudio(out, ratio)
+
     fun setButton(port: Int, buttonId: Int, pressed: Boolean) {
         jni.nativeSetInputButton(port, buttonId, pressed)
         // Also update netplay-side button state (avoids JNI feedback loop)
@@ -403,18 +408,18 @@ class DesktopLibretroController(
                 renderGpuFrameToBgra()
             }
 
-            // Audio-sync frame pacing: write audio to device (blocking write
-            // paces emulation to the audio sample rate). Falls back to
-            // precisionSleep if no audio player or no samples available.
-            // Audio-sync frame pacing: write audio to device (blocking write
-            // paces emulation to the audio sample rate). Falls back to
-            // precisionSleep if no audio player, no samples, or device not ready.
+            // Audio output via SINC resampler + dynamic rate control, then
+            // pace the loop to the core's target FPS. This mirrors the Android
+            // path (and RetroArch): the DRC'd blocking write keeps the device
+            // buffer ~half-full and provides realtime back-pressure, while
+            // precisionSleep caps the rate at targetFps. The old raw per-frame
+            // writeSync caused choppy audio / wrong speed on bursty,
+            // frontend-paced cores like Play! (PS2). (#1288)
             val ap = audioPlayer
-            val audioSamples = jni.nativeGetAudioBuffer()
-            val synced = if (ap != null && !fastForward && audioSamples != null && audioSamples.isNotEmpty()) {
-                ap.writeSync(audioSamples)
-            } else false
-            if (!synced && !fastForward) {
+            if (ap != null && !fastForward) {
+                ap.write(ap.calculateRatio())
+            }
+            if (!fastForward) {
                 precisionSleep(frameStart + frameTimeNs)
             }
 
