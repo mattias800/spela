@@ -12,8 +12,10 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/danielgtaylor/huma/v2"
+	"github.com/danielgtaylor/huma/v2/adapters/humago"
 	"github.com/spela/server/internal/bios"
 	"github.com/spela/server/internal/db"
 	"github.com/spela/server/internal/scanner"
@@ -31,6 +33,17 @@ import (
 func streamFileFromDisk(absPath, downloadName, contentType string) *huma.StreamResponse {
 	return &huma.StreamResponse{
 		Body: func(hctx huma.Context) {
+			// Large game/disc downloads (multi-GB ISOs) routinely exceed the
+			// server's global http.Server WriteTimeout: the connection is
+			// closed mid-stream after WriteTimeout seconds regardless of
+			// progress, so e.g. a 4.5GB ISO dies at ~120s / ~3.5GB every time
+			// (the cut point varies with bandwidth). Clear the write deadline
+			// for this streaming response so the transfer can take as long as
+			// it needs; the global timeout still guards normal API responses.
+			// Covers disc + save downloads too — both stream through here.
+			if _, w := humago.Unwrap(hctx); w != nil {
+				_ = http.NewResponseController(w).SetWriteDeadline(time.Time{})
+			}
 			f, err := os.Open(absPath)
 			if err != nil {
 				hctx.SetStatus(http.StatusInternalServerError)
