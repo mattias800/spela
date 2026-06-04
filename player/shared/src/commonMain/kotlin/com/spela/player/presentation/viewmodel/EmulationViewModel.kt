@@ -785,43 +785,31 @@ class EmulationViewModel(
         // doesn't inherit a stale banner.
         val rehearsalPrompt = pendingRehearsalPrompt
         pendingRehearsalPrompt = null
-        _state.update {
-            it.copy(
-                gameId = gameId,
-                isLoading = true,
-                isPaused = false,
-                showOverlay = false,
-                showExitConfirm = false,
-                sharedSessionId = sharedSessionId,
-                turnToken = turnToken,
-                netplaySessionId = netplaySessionId,
-                sessionId = sessionId, // may be updated by ensureSession below
-                challengeId = challengeId,
-                challengeAttemptId = null,
-                challengeElapsedMs = 0,
-                challengeCompletedAttempt = null,
-                achievementEvent = null,
-                achievements = emptyList(),
-                achievementProgress = emptyList(),
-                achievementTotalPoints = 0,
-                achievementsLoading = false,
-                sessionAchievementUnlocks = emptyList(),
-                error = null,
-                statusMessage = null,
-                isFastForward = false,
-                supportsSaveStates = true,
-                isHwRenderEnabled = false,
-                secondaryToast = null,
-                touchControlPort = 0,
-                // RehearsalPrompt survives the state reset so the
-                // in-game banner is visible the moment the emulator
-                // surface composes. Closes the gap where the user
-                // would briefly see a naked emulator without knowing
-                // they're in rehearsal mode.
-                coreDecision = rehearsalPrompt,
-                showRehearsalConfirmSheet = false,
-            )
-        }
+        // Recreate the emulation state from scratch so launching a game is
+        // state-wise IDENTICAL to launching the very first game — no field
+        // from the previous game can linger (the old hand-maintained copy()
+        // reset missed gameTitle/gameId/consoleId/consoleName and others,
+        // leaving the prior game's title/frame in the overlay; see #1298).
+        // Only the launch parameters and the pre-captured rehearsal banner are
+        // seeded; everything else takes its default and is re-populated below
+        // (game detail, preferences) exactly as on a first launch.
+        _state.value = EmulationState(
+            gameId = gameId,
+            isLoading = true,
+            // Optimistic until the post-load probe; the core is assumed to
+            // support save states (matches the pre-#1298 reset behaviour).
+            supportsSaveStates = true,
+            sharedSessionId = sharedSessionId,
+            turnToken = turnToken,
+            netplaySessionId = netplaySessionId,
+            sessionId = sessionId, // may be updated by ensureSession below
+            challengeId = challengeId,
+            // RehearsalPrompt survives the reset so the in-game banner is
+            // visible the moment the emulator surface composes. Closes the gap
+            // where the user would briefly see a naked emulator without knowing
+            // they're in rehearsal mode.
+            coreDecision = rehearsalPrompt,
+        )
 
         scope.launch(dispatchers.io) {
             // Ensure any previous emulation is fully stopped before starting a new one.
@@ -1601,64 +1589,20 @@ class EmulationViewModel(
 
         libretroController.stop()
         withContext(dispatchers.main) {
+            // Clear the emulation state on exit by recreating it from scratch
+            // rather than enumerating ~50 fields to reset (which had drifted
+            // out of date and leaked gameTitle/gameId/consoleId/consoleName,
+            // leaving the prior game lingering in the overlay; see #1298).
+            // Only fields that intentionally outlive a game stop survive:
+            //  - requestExit: the navigate-away signal the UI reads AFTER the
+            //    game stops (cleared later by ClearExitRequest),
+            //  - the upload-sync counters owned by SaveManager (uploads that
+            //    outlive the session).
             _state.update {
-                it.copy(
-                    isRunning = false,
-                    isPaused = false,
-                    isLifecyclePaused = false,
-                    fps = 0f,
-                    frameTime = 0f,
-                    isHardcoreMode = false,
-                    showExitConfirm = false,
-                    showOverlay = false,
-                    secondaryDisplayActive = false,
-                    isDualScreenConsole = false,
-                    dualScreenSplitY = 0,
-                    dualScreenBottomWidth = 0,
-                    dualScreenBottomOffsetX = 0,
-                    sharedSessionId = null,
-                    turnToken = null,
-                    netplaySessionId = null,
-                    netplayPeerUsername = null,
-                    netplayPeerLatencyMs = 0,
-                    netplayPeerDisconnected = false,
-                    netplayPausedByUsername = null,
-                    netplayShowLeaveConfirm = false,
-                    netplayPauseElapsedSeconds = 0,
-                    netplaySessionExpired = false,
-                    challengeId = null,
-                    challengeAttemptId = null,
-                    challengeElapsedMs = 0,
-                    showChallengeCreation = false,
-                    isCreatingChallenge = false,
-                    challengeCreationSuccess = false,
-                    showGiveUpConfirm = false,
-                    challengeCompletedAttempt = null,
-                    sessionId = null,
-                    consoleColorTheme = null,
-                    heroUrl = null,
-                    gameDescription = null,
-                    gameDeveloper = null,
-                    gamePublisher = null,
-                    gameReleaseDate = null,
-                    gameGenre = null,
-                    gameRating = 0.0,
-                    gamePlayers = 0,
-                    showCoreMismatchDialog = false,
-                    coreMismatchSaveCoreName = "",
-                    coreMismatchCurrentCoreName = "",
-                    hasCheats = false,
-                    enabledCheatCount = 0,
-                    showCheatBrowser = false,
-                    cheats = emptyList(),
-                    achievements = emptyList(),
-                    achievementProgress = emptyList(),
-                    achievementTotalPoints = 0,
-                    achievementsLoading = false,
-                    sessionAchievementUnlocks = emptyList(),
-                    achievementEvent = null,
-                    secondaryToast = null,
-                    touchControlPort = 0,
+                EmulationState(
+                    requestExit = it.requestExit,
+                    hasPendingUploads = it.hasPendingUploads,
+                    stuckUploadCount = it.stuckUploadCount,
                 )
             }
             saveManager.currentSessionId = null
