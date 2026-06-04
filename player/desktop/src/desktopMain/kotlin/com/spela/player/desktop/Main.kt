@@ -13,8 +13,6 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.snapshotFlow
-import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.pointer.PointerEventType
@@ -128,28 +126,13 @@ fun main(args: Array<String>) {
         icon = icon,
         undecorated = useLinuxCustomChrome,
     ) {
-        // Pause the game (and play-time accrual) when the window is minimized
-        // or loses focus, and resume when it comes back — mirroring Android's
-        // onPause/onResume. Without this, a game left in the background keeps
-        // running and counting play time (#1282).
-        //
-        // Must live INSIDE the Window content: LocalWindowInfo is provided
-        // per-window — reading it at application{} scope throws
-        // "CompositionLocal LocalWindowInfo not present" on startup.
-        val windowInfo = LocalWindowInfo.current
-        LaunchedEffect(Unit) {
-            snapshotFlow { windowInfo.isWindowFocused && !windowState.isMinimized }
-                .collect { active ->
-                    val st = emulationViewModel.state.value
-                    if (!active && st.isRunning && !st.isPaused) {
-                        println("[PlayTime] window background → pause (game=${st.gameId})")
-                        emulationViewModel.onIntent(EmulationIntent.LifecyclePause)
-                    } else if (active && st.isLifecyclePaused) {
-                        println("[PlayTime] window foreground → resume (game=${st.gameId})")
-                        emulationViewModel.onIntent(EmulationIntent.LifecycleResume)
-                    }
-                }
-        }
+        // NOTE: desktop intentionally does NOT pause the game when the window
+        // loses focus / is minimized. It was tried (#1282) but is annoying on
+        // desktop — users routinely alt-tab while playing, and can pause
+        // explicitly with Esc any time. Android still pauses on background via
+        // MainActivity.onPause (device sleep / clamshell), which is what we
+        // actually want there. (#1288 follow-up)
+
         // macOS: transparent title bar that lets Compose content show through.
         // Uses official OpenJDK client properties (JDK 12+/17+).
         // fullWindowContent extends Compose rendering behind the title bar.
