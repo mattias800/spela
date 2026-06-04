@@ -15,7 +15,6 @@ import (
 	"time"
 
 	"github.com/danielgtaylor/huma/v2"
-	"github.com/danielgtaylor/huma/v2/adapters/humago"
 	"github.com/spela/server/internal/bios"
 	"github.com/spela/server/internal/db"
 	"github.com/spela/server/internal/scanner"
@@ -41,8 +40,13 @@ func streamFileFromDisk(absPath, downloadName, contentType string) *huma.StreamR
 			// for this streaming response so the transfer can take as long as
 			// it needs; the global timeout still guards normal API responses.
 			// Covers disc + save downloads too — both stream through here.
-			if _, w := humago.Unwrap(hctx); w != nil {
-				_ = http.NewResponseController(w).SetWriteDeadline(time.Time{})
+			//
+			// BodyWriter() is the underlying http.ResponseWriter under the
+			// humago adapter; under huma's test adapter it's a buffer, so the
+			// type check keeps this a no-op there (humago.Unwrap would panic on
+			// a non-humago context).
+			if rw, ok := hctx.BodyWriter().(http.ResponseWriter); ok {
+				_ = http.NewResponseController(rw).SetWriteDeadline(time.Time{})
 			}
 			f, err := os.Open(absPath)
 			if err != nil {
