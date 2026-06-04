@@ -32,22 +32,6 @@ import (
 func streamFileFromDisk(absPath, downloadName, contentType string) *huma.StreamResponse {
 	return &huma.StreamResponse{
 		Body: func(hctx huma.Context) {
-			// Large game/disc downloads (multi-GB ISOs) routinely exceed the
-			// server's global http.Server WriteTimeout: the connection is
-			// closed mid-stream after WriteTimeout seconds regardless of
-			// progress, so e.g. a 4.5GB ISO dies at ~120s / ~3.5GB every time
-			// (the cut point varies with bandwidth). Clear the write deadline
-			// for this streaming response so the transfer can take as long as
-			// it needs; the global timeout still guards normal API responses.
-			// Covers disc + save downloads too — both stream through here.
-			//
-			// BodyWriter() is the underlying http.ResponseWriter under the
-			// humago adapter; under huma's test adapter it's a buffer, so the
-			// type check keeps this a no-op there (humago.Unwrap would panic on
-			// a non-humago context).
-			if rw, ok := hctx.BodyWriter().(http.ResponseWriter); ok {
-				_ = http.NewResponseController(rw).SetWriteDeadline(time.Time{})
-			}
 			f, err := os.Open(absPath)
 			if err != nil {
 				hctx.SetStatus(http.StatusInternalServerError)
@@ -58,18 +42,126 @@ func streamFileFromDisk(absPath, downloadName, contentType string) *huma.StreamR
 				hctx.SetHeader("Content-Type", contentType)
 			}
 			hctx.SetHeader("Content-Disposition", fmt.Sprintf("attachment; filename=%q", downloadName))
-			// Advertise the exact byte count so clients can show accurate
-			// download progress. Without this the body is chunked (no
-			// Content-Length), the player can't learn the transfer size, and
-			// it falls back to the DB file size — which for compressed
-			// single-file formats (e.g. .rvz) is the logical/uncompressed
-			// size, leaving the progress bar stuck well under 100%. (#1235)
-			if info, serr := f.Stat(); serr == nil {
-				hctx.SetHeader("Content-Length", strconv.FormatInt(info.Size(), 10))
+			info, serr := f.Stat()
+			if serr != nil {
+				// Can't size it — stream the whole file, no ranges/deadline reset.
+				_, _ = io.Copy(hctx.BodyWriter(), f)
+				return
+			}
+			// Clear the write deadline (so multi-GB transfers aren't cut off by
+			// the global WriteTimeout) and serve a Range/resume request when
+			// present; otherwise fall through to a full stream. (#1294/#1296)
+			if serveFileRangeOrFull(hctx, f, info.Size(), info.ModTime(), true) {
+				return
 			}
 			_, _ = io.Copy(hctx.BodyWriter(), f)
 		},
 	}
+}
+
+// serveFileRangeOrFull clears the per-connection write deadline (so multi-GB
+// downloads aren't cut off by the server's global http.Server WriteTimeout —
+// #1294) and, when rangeable, serves an HTTP Range request so an interrupted
+// download can resume (#1296): a satisfiable "bytes=N-" with a matching (or
+// absent) If-Range validator gets a 206 with just that slice; an offset past
+// EOF gets 416; a stale If-Range validator (the file changed under the client)
+// falls back to a full 200 so the client restarts cleanly rather than splicing.
+//
+// Returns true when it fully wrote the response (the caller must not write
+// more); false when the caller should stream the whole file — Content-Length
+// is already set for that case. Pass rangeable=false when the body is
+// transformed (e.g. iNES header normalization) so a byte range can't be
+// reproduced; the file is then always served whole (but the deadline is still
+// cleared).
+//
+// BodyWriter() is the underlying http.ResponseWriter under the humago adapter;
+// under huma's test adapter it's a buffer, so the type check keeps the deadline
+// reset a no-op there (humago.Unwrap would panic on a non-humago context).
+func serveFileRangeOrFull(hctx huma.Context, f *os.File, size int64, modTime time.Time, rangeable bool) (handled bool) {
+	if rw, ok := hctx.BodyWriter().(http.ResponseWriter); ok {
+		_ = http.NewResponseController(rw).SetWriteDeadline(time.Time{})
+	}
+	if !rangeable {
+		hctx.SetHeader("Content-Length", strconv.FormatInt(size, 10))
+		return false
+	}
+	etag := fmt.Sprintf("%q", fmt.Sprintf("%d-%d", size, modTime.UnixNano()))
+	hctx.SetHeader("Accept-Ranges", "bytes")
+	hctx.SetHeader("ETag", etag)
+
+	start, end, isRange := parseByteRange(hctx.Header("Range"), size)
+	if isRange {
+		if ir := hctx.Header("If-Range"); ir != "" && ir != etag {
+			isRange = false // file changed under the client — serve full, client restarts
+		}
+	}
+	if !isRange {
+		hctx.SetHeader("Content-Length", strconv.FormatInt(size, 10))
+		return false
+	}
+	if start >= size {
+		hctx.SetHeader("Content-Range", fmt.Sprintf("bytes */%d", size))
+		hctx.SetStatus(http.StatusRequestedRangeNotSatisfiable)
+		return true
+	}
+	if _, err := f.Seek(start, io.SeekStart); err != nil {
+		hctx.SetStatus(http.StatusInternalServerError)
+		return true
+	}
+	hctx.SetHeader("Content-Range", fmt.Sprintf("bytes %d-%d/%d", start, end, size))
+	hctx.SetHeader("Content-Length", strconv.FormatInt(end-start+1, 10))
+	hctx.SetStatus(http.StatusPartialContent)
+	_, _ = io.CopyN(hctx.BodyWriter(), f, end-start+1)
+	return true
+}
+
+// parseByteRange parses a single HTTP Range header ("bytes=start-end",
+// "bytes=start-", or suffix "bytes=-N") against a known content size.
+// It returns ok=false for an absent, malformed, or multi-range header, in
+// which case the caller should serve the full file. end is inclusive and
+// clamped to size-1. Only a single range is supported — sufficient for
+// download resume, which always asks for "bytes=<offset>-".
+func parseByteRange(header string, size int64) (start, end int64, ok bool) {
+	const prefix = "bytes="
+	if !strings.HasPrefix(header, prefix) {
+		return 0, 0, false
+	}
+	spec := strings.TrimSpace(strings.TrimPrefix(header, prefix))
+	if spec == "" || strings.Contains(spec, ",") {
+		return 0, 0, false // multi-range not supported — serve full
+	}
+	dash := strings.IndexByte(spec, '-')
+	if dash < 0 {
+		return 0, 0, false
+	}
+	startStr := strings.TrimSpace(spec[:dash])
+	endStr := strings.TrimSpace(spec[dash+1:])
+	if startStr == "" {
+		// suffix range: bytes=-N → last N bytes
+		n, err := strconv.ParseInt(endStr, 10, 64)
+		if err != nil || n <= 0 {
+			return 0, 0, false
+		}
+		if n > size {
+			n = size
+		}
+		return size - n, size - 1, true
+	}
+	s, err := strconv.ParseInt(startStr, 10, 64)
+	if err != nil || s < 0 {
+		return 0, 0, false
+	}
+	if endStr == "" {
+		return s, size - 1, true // bytes=N-
+	}
+	e, err := strconv.ParseInt(endStr, 10, 64)
+	if err != nil || e < s {
+		return 0, 0, false
+	}
+	if e > size-1 {
+		e = size - 1
+	}
+	return s, e, true
 }
 
 // streamSaveFromDisk wraps [streamFileFromDisk] with an X-Compression
@@ -1020,16 +1112,24 @@ func (h *GameHandler) HumaDownloadGame(_ context.Context, in *GameDownloadInput)
 			defer f.Close()
 			hctx.SetHeader("Content-Type", "application/octet-stream")
 			hctx.SetHeader("Content-Disposition", fmt.Sprintf("inline; filename=%q", game.FileName))
-			// Advertise the exact transfer size so the player shows accurate
-			// download progress. Without it the body is chunked (no
-			// Content-Length) and the client falls back to the DB file size,
-			// which for compressed formats (PSP, .rvz, .chd) is the
-			// logical/uncompressed size — leaving the bar stuck well under
-			// 100%. The streamed byte count equals the on-disk size; the
-			// iNES normalization below rewrites the first 16 bytes in place,
-			// so the length is unchanged. (#1261, follow-up to #1235/#1248)
-			if info, serr := f.Stat(); serr == nil {
-				hctx.SetHeader("Content-Length", strconv.FormatInt(info.Size(), 10))
+			info, serr := f.Stat()
+			if serr != nil {
+				// Can't size it — stream the whole file, no ranges/deadline reset.
+				_, _ = io.Copy(hctx.BodyWriter(), f)
+				return
+			}
+			// Clear the write deadline so multi-GB game downloads (e.g. a 4.5GB
+			// PS2 ISO) aren't cut off mid-stream by the global WriteTimeout —
+			// this is the path game downloads actually take, which #1294 missed.
+			// Also serve a Range/resume request when present (#1296). Range is
+			// disabled for .nes files because the iNES normalization below
+			// rewrites the first 16 bytes in memory, so a byte range would
+			// splice the unmodified on-disk header onto the resumed tail; .nes
+			// ROMs are tiny, so resume isn't needed there. serveFileRangeOrFull
+			// sets Content-Length for the full-stream case, preserving the
+			// accurate progress fix (#1261, follow-up to #1235/#1248).
+			if serveFileRangeOrFull(hctx, f, info.Size(), info.ModTime(), !normalizeINES) {
+				return
 			}
 			w := hctx.BodyWriter()
 			if normalizeINES {
