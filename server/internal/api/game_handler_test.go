@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/spela/server/internal/db"
 	"github.com/stretchr/testify/assert"
@@ -210,6 +211,98 @@ func TestUpdatePlayTime_CreatesPlayHistory(t *testing.T) {
 	require.NoError(t, err, "PlayHistory should be created after UpdatePlayTime")
 	assert.Equal(t, int64(60), ph.PlayTime)
 	assert.False(t, ph.LastPlayed.IsZero(), "LastPlayed should be set")
+}
+
+// postPlayTime is a small helper that POSTs a play-time heartbeat for the
+// given game and asserts it succeeds.
+func postPlayTime(t *testing.T, router http.Handler, token, gameID string, seconds int64) {
+	t.Helper()
+	body, _ := json.Marshal(map[string]interface{}{"seconds": seconds})
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("POST", "/api/games/"+gameID+"/play-time", bytes.NewReader(body))
+	req.Header.Set("Authorization", "Bearer "+token)
+	req.Header.Set("Content-Type", "application/json")
+	router.ServeHTTP(w, req)
+	require.Equal(t, http.StatusOK, w.Code)
+}
+
+// TestUpdatePlayTime_HeartbeatsCreateSingleStartedPlayingEvent reproduces the
+// activity-feed flood: the player's PresenceService calls POST /play-time as a
+// 30s heartbeat for the whole session (initial 0s ping + one per interval +
+// final flush). Each call must NOT spawn its own "started_playing" event —
+// otherwise a multi-hour session produces hundreds of identical feed rows.
+// A single continuous session must yield exactly ONE "started_playing" event.
+func TestUpdatePlayTime_HeartbeatsCreateSingleStartedPlayingEvent(t *testing.T) {
+	database, cfg := setupTestEnv(t)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
+	token := registerAndGetToken(t, router)
+
+	var user db.User
+	require.NoError(t, database.Order("id DESC").First(&user).Error)
+
+	var console db.Console
+	database.First(&console)
+	game := db.Game{ConsoleID: console.ID, Title: "Heartbeat Game", FileName: "hb.nes", FilePath: "/tmp/hb.nes", FileSize: 100}
+	require.NoError(t, database.Create(&game).Error)
+	gameID := fmt.Sprintf("%d", game.ID)
+
+	// Simulate one session: an initial 0s ping plus several 30s heartbeats,
+	// all arriving back-to-back (well within the same session).
+	postPlayTime(t, router, token, gameID, 0)
+	for i := 0; i < 5; i++ {
+		postPlayTime(t, router, token, gameID, 30)
+	}
+
+	// Play time still accumulates across every heartbeat.
+	var ph db.PlayHistory
+	require.NoError(t, database.Where("user_id = ? AND game_id = ?", user.ID, game.ID).First(&ph).Error)
+	assert.Equal(t, int64(150), ph.PlayTime, "play time accumulates across heartbeats (5 x 30s)")
+
+	// But only ONE started_playing activity event for the whole session.
+	var count int64
+	database.Model(&db.ActivityEvent{}).
+		Where("user_id = ? AND game_id = ? AND event_type = ?", user.ID, game.ID, "started_playing").
+		Count(&count)
+	assert.Equal(t, int64(1), count, "a single play session must create exactly one started_playing event")
+}
+
+// TestUpdatePlayTime_NewSessionAfterGapEmitsNewEvent guards against the fix
+// being too aggressive: a genuinely new session — one that starts long after
+// the previous heartbeat — should still produce its own "started_playing"
+// event, so the feed reflects each distinct play session.
+func TestUpdatePlayTime_NewSessionAfterGapEmitsNewEvent(t *testing.T) {
+	database, cfg := setupTestEnv(t)
+	router, cleanup := NewRouter(*cfg)
+	defer cleanup()
+	token := registerAndGetToken(t, router)
+
+	var user db.User
+	require.NoError(t, database.Order("id DESC").First(&user).Error)
+
+	var console db.Console
+	database.First(&console)
+	game := db.Game{ConsoleID: console.ID, Title: "Two Session Game", FileName: "ts.nes", FilePath: "/tmp/ts.nes", FileSize: 100}
+	require.NoError(t, database.Create(&game).Error)
+	gameID := fmt.Sprintf("%d", game.ID)
+
+	// Session 1.
+	postPlayTime(t, router, token, gameID, 30)
+
+	// Simulate the session ending: back-date the last heartbeat far enough
+	// that the next report is unambiguously a new session.
+	require.NoError(t, database.Model(&db.PlayHistory{}).
+		Where("user_id = ? AND game_id = ?", user.ID, game.ID).
+		Update("last_played", time.Now().Add(-2*time.Hour)).Error)
+
+	// Session 2.
+	postPlayTime(t, router, token, gameID, 30)
+
+	var count int64
+	database.Model(&db.ActivityEvent{}).
+		Where("user_id = ? AND game_id = ? AND event_type = ?", user.ID, game.ID, "started_playing").
+		Count(&count)
+	assert.Equal(t, int64(2), count, "two distinct sessions must create two started_playing events")
 }
 
 // TestDownloadGame_NormalizesINESHeader verifies that .nes ROMs with a
