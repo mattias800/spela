@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
@@ -346,7 +347,79 @@ func Initialize(dbPath string) (*gorm.DB, error) {
 		}
 	}
 
+	// One-time cleanup: collapse the historical "started_playing" activity
+	// flood (the play-time handler used to emit one event per 30s heartbeat)
+	// down to one event per session. Idempotent — safe on every startup.
+	if err := dedupeStartedPlayingEvents(db); err != nil {
+		slog.Warn("started_playing activity dedupe failed", "error", err)
+	}
+
 	return db, nil
+}
+
+// StartedPlayingSessionGap is how long after the previous play-time report a
+// new report must arrive to count as a new play session. Shared by the
+// play-time handler (which emits a "started_playing" feed event only when a
+// session starts) and dedupeStartedPlayingEvents. The player heartbeats play
+// time every 30s, so this sits well above the heartbeat cadence and brief
+// pauses, but low enough that resuming after a real break reads as new.
+const StartedPlayingSessionGap = 10 * time.Minute
+
+// dedupeStartedPlayingEvents collapses historical "started_playing" activity
+// events down to one per play session. Before the heartbeat fix, every 30s
+// play-time report created its own event, flooding the activity feed with
+// hundreds of identical rows per session. Two events for the same
+// (user, game) within StartedPlayingSessionGap of each other belong to the
+// same session; only the first is kept. Idempotent: once collapsed, the
+// survivors are more than a gap apart, so a second run deletes nothing.
+func dedupeStartedPlayingEvents(database *gorm.DB) error {
+	type evRow struct {
+		ID        uint
+		UserID    uint
+		GameID    *uint
+		CreatedAt time.Time
+	}
+	var rows []evRow
+	if err := database.Model(&ActivityEvent{}).
+		Where("event_type = ? AND game_id IS NOT NULL", "started_playing").
+		Order("user_id, game_id, created_at").
+		Find(&rows).Error; err != nil {
+		return err
+	}
+
+	type sessionKey struct {
+		userID uint
+		gameID uint
+	}
+	lastSeen := make(map[sessionKey]time.Time)
+	var toDelete []uint
+	for _, r := range rows {
+		k := sessionKey{r.UserID, *r.GameID}
+		// A report within the gap of the previous one for the same game is a
+		// continuation heartbeat, not a new session — drop it.
+		if prev, ok := lastSeen[k]; ok && r.CreatedAt.Sub(prev) <= StartedPlayingSessionGap {
+			toDelete = append(toDelete, r.ID)
+		}
+		lastSeen[k] = r.CreatedAt
+	}
+	if len(toDelete) == 0 {
+		return nil
+	}
+
+	// Hard-delete (Unscoped) in batches to stay under SQLite's bound-parameter
+	// limit on deployments with a large backlog.
+	const batchSize = 500
+	for i := 0; i < len(toDelete); i += batchSize {
+		end := i + batchSize
+		if end > len(toDelete) {
+			end = len(toDelete)
+		}
+		if err := database.Unscoped().Where("id IN ?", toDelete[i:end]).
+			Delete(&ActivityEvent{}).Error; err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // MigrateToRelativePaths converts absolute game file paths to relative paths.

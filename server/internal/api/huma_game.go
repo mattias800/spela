@@ -770,7 +770,12 @@ func (h *GameHandler) HumaUpdatePlayTime(ctx context.Context, in *UpdateGamePlay
 
 	var ph db.PlayHistory
 	result := h.DB.Where("user_id = ? AND game_id = ?", uid, gid).First(&ph)
+	// Whether this report begins a new play session. A brand-new PlayHistory
+	// row is always a new session; an existing one only when the previous
+	// report was long enough ago (gap measured before LastPlayed is bumped).
+	newSession := false
 	if result.Error == gorm.ErrRecordNotFound {
+		newSession = true
 		ph = db.PlayHistory{
 			UserID:     uid,
 			GameID:     uint(gid),
@@ -781,6 +786,7 @@ func (h *GameHandler) HumaUpdatePlayTime(ctx context.Context, in *UpdateGamePlay
 			return nil, huma.Error500InternalServerError("failed to create play history")
 		}
 	} else {
+		newSession = time.Since(ph.LastPlayed) > db.StartedPlayingSessionGap
 		newTotal := ph.PlayTime + seconds
 		if newTotal > maxPlayTimeSeconds {
 			newTotal = maxPlayTimeSeconds
@@ -798,9 +804,13 @@ func (h *GameHandler) HumaUpdatePlayTime(ctx context.Context, in *UpdateGamePlay
 		h.Hub.SetUserGame(uid, uint(gid))
 	}
 
-	CreateActivityEvent(h.DB, h.Hub, uid, "started_playing", uint(gid), StartedPlayingMetadata{
-		Seconds: seconds,
-	})
+	// Only emit a feed event when a session actually starts — not on every
+	// heartbeat, which would flood the activity feed.
+	if newSession {
+		CreateActivityEvent(h.DB, h.Hub, uid, "started_playing", uint(gid), StartedPlayingMetadata{
+			Seconds: seconds,
+		})
+	}
 
 	return &UpdateGamePlayTimeOutput{
 		Body: UpdateGamePlayTimeResponse{
