@@ -1518,7 +1518,7 @@ class SpelaApiClient(
         destPath: String,
         resumeFrom: Long = 0,
         validator: String? = null,
-        onResponseInfo: (validator: String?, fullSize: Long?) -> Unit = { _, _ -> },
+        onResponseInfo: (validator: String?, fullSize: Long?, resumed: Boolean) -> Unit = { _, _, _ -> },
         onProgress: (Long, Long?) -> Unit = { _, _ -> },
     ): DownloadResult {
         return client.prepareGet("$baseUrl/api/games/$gameId/download") {
@@ -1551,10 +1551,10 @@ class SpelaApiClient(
             // resume offset; for a 200 it already is the full size.
             val contentLen = response.contentLength()
             val fullSize: Long? = if (resumed && contentLen != null) resumeFrom + contentLen else contentLen
-            // Surface validator + true size before streaming so they're
-            // persisted even if the transfer dies mid-stream (the very state a
-            // later resume needs). (#1296)
-            onResponseInfo(serverValidator, fullSize)
+            // Surface validator + true size + whether the range was honored,
+            // before streaming, so they're persisted even if the transfer dies
+            // mid-stream (the very state a later resume needs). (#1296)
+            onResponseInfo(serverValidator, fullSize, resumed)
             if (resumed) {
                 streamResponseToFile(
                     response, fileStorage, destPath,

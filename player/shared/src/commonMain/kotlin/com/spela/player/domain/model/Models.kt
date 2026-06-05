@@ -340,12 +340,13 @@ enum class DownloadFailureReason(val resumable: Boolean) {
     /** Server cut the connection mid-stream (e.g. write timeout, 5xx). Resume. */
     SERVER(resumable = true),
 
-    /** Server file changed since the partial (size/ETag mismatch). The stale
-     *  partial is discarded; the only safe path is a clean restart. */
-    FILE_CHANGED(resumable = false),
+    // Note: a file that changed on the server is NOT a failure reason — the
+    // resume request's stale If-Range makes the server send a full 200, which
+    // the client writes from scratch and completes successfully. It never
+    // surfaces as a FAILED state, so there is no FILE_CHANGED value here.
 
-    /** The partial is corrupt or its offset no longer matches the server.
-     *  Restart cleanly rather than splice a bad file. */
+    /** The partial is corrupt or its offset no longer matches the server
+     *  (e.g. a 416). Restart cleanly rather than splice a bad file. */
     CORRUPT(resumable = false),
 
     /** Not enough free disk space to finish. Restarting won't help until the

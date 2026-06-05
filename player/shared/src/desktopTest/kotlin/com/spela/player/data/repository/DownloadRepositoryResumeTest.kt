@@ -172,6 +172,24 @@ class DownloadRepositoryResumeTest {
     }
 
     @Test
+    fun resumableNetworkFailureKeepsPartialAndMarksPaused() = runTest {
+        seedPartial(gameId, prefixLen = 20, validator = "\"v1\"", expectedSize = 60)
+        fileStorage.failAppendWith = RuntimeException("connection reset by peer")
+
+        val result = repo.resumeDownload(gameId)
+
+        assertTrue(result.isFailure)
+        val progress = repo.observeDownload(gameId).first()
+        assertEquals(DownloadState.PAUSED, progress.state, "a transient network failure stays resumable")
+        assertEquals(DownloadFailureReason.NETWORK, progress.failureReason)
+        // Partial KEPT so the user can resume again.
+        assertTrue(
+            database.spelaDatabaseQueries.getPartialDownload(gameId).executeAsOneOrNull() != null,
+            "a resumable failure must keep the partial record",
+        )
+    }
+
+    @Test
     fun terminalDiskFullFailureDiscardsPartialAndSurfacesReason() = runTest {
         seedPartial(gameId, prefixLen = 20, validator = "\"v1\"", expectedSize = 60)
         fileStorage.failAppendWith = RuntimeException("write failed: ENOSPC no space left on device")

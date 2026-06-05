@@ -26,6 +26,7 @@ import com.spela.player.presentation.state.GameDetailState
 import com.spela.player.util.DispatcherProvider
 import com.spela.player.util.pickDirectory
 import com.spela.player.util.revealInFileManager
+import com.spela.player.domain.model.DownloadState
 import com.spela.player.domain.model.GameDetail
 import com.spela.player.domain.model.INSTANT_DOWNLOAD_FALLBACK_DELAY_MS
 import com.spela.player.domain.model.INSTANT_DOWNLOAD_THRESHOLD_BYTES
@@ -398,7 +399,21 @@ class GameDetailViewModel(
 
         downloadObserveJob = scope.launch(dispatchers.io) {
             downloadRepository.observeDownload(gameId).collect { progress ->
-                _state.update { it.copy(downloadProgress = progress) }
+                // Reconcile the isDownloading latch from the observed state. A
+                // download paused/failed from another surface (e.g. the Downloads
+                // screen) cancels this VM's downloadGame coroutine, so its
+                // .fold(onFailure) — the usual place isDownloading clears — never
+                // runs; without this the CTA stays stuck on "Downloading…" and
+                // never flips to Resume / Start over. (#1296)
+                val settled = progress.state == DownloadState.PAUSED ||
+                    progress.state == DownloadState.FAILED ||
+                    progress.state == DownloadState.COMPLETED
+                _state.update {
+                    it.copy(
+                        downloadProgress = progress,
+                        isDownloading = if (settled) false else it.isDownloading,
+                    )
+                }
             }
         }
 

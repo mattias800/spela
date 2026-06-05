@@ -291,16 +291,25 @@ class DownloadRepositoryImpl(
         val onDisk = last?.bytesDownloaded ?: 0L
         val total = last?.totalBytes ?: -1L
         resetSpeed(gameId)
+        // Resume needs a persisted partial record. Paths that never write one
+        // (multi-disc, tar bundles) can't be resumed, so they must NOT surface a
+        // PAUSED/Resume affordance that would dead-end on resumeDownload. This is
+        // a synchronous query — safe to read even on a cancelled coroutine. (#1296)
+        val hasPartial = database.spelaDatabaseQueries.getPartialDownload(gameId).executeAsOneOrNull() != null
 
         if (error is CancellationException) {
             downloads.update {
-                it + (gameId to DownloadProgress(gameId, gameTitle, DownloadState.PAUSED, onDisk, total))
+                if (hasPartial) {
+                    it + (gameId to DownloadProgress(gameId, gameTitle, DownloadState.PAUSED, onDisk, total))
+                } else {
+                    it - gameId // nothing to resume — a plain cancel, drop the entry
+                }
             }
             throw error
         }
 
         val reason = classifyFailure(error)
-        if (reason.resumable) {
+        if (reason.resumable && hasPartial) {
             // Keep the partial; record why so the UI shows the right copy. Guard
             // the DB write with NonCancellable so a racing cancel can't abort the
             // bookkeeping half-done.
@@ -311,7 +320,8 @@ class DownloadRepositoryImpl(
                 it + (gameId to DownloadProgress(gameId, gameTitle, DownloadState.PAUSED, onDisk, total, failureReason = reason))
             }
         } else {
-            // Terminal — discard the partial (file + record) so any restart is clean.
+            // Terminal, OR resumable but with no partial to resume from → discard
+            // and surface FAILED so the UI offers Start over, not a broken Resume.
             withContext(NonCancellable) {
                 cleanupPartialDownload(gameId)
                 database.spelaDatabaseQueries.deletePartialDownload(gameId)
@@ -333,6 +343,9 @@ class DownloadRepositoryImpl(
         return when {
             "size mismatch" in msg || "empty file" in msg -> DownloadFailureReason.CORRUPT
             "enospc" in msg || "no space" in msg || "not enough space" in msg -> DownloadFailureReason.DISK_FULL
+            // 416: our partial is past the server file's end (e.g. it shrank
+            // under a same validator). Resuming again just re-416s — restart.
+            "http 416" in msg -> DownloadFailureReason.CORRUPT
             Regex("http 5\\d\\d").containsMatchIn(msg) -> DownloadFailureReason.SERVER
             else -> DownloadFailureReason.NETWORK
         }
@@ -469,8 +482,13 @@ class DownloadRepositoryImpl(
             path,
             resumeFrom = resumeFrom,
             validator = validator,
-            onResponseInfo = { serverValidator, fullSize ->
+            onResponseInfo = { serverValidator, fullSize, resumed ->
                 if (fullSize != null && fullSize > 0) serverTotal = fullSize
+                // If we asked to resume but the server restarted from scratch
+                // (200 — the file changed), the byte counter is going back to 0;
+                // clear the high-water seeded at the old offset so the bar tracks
+                // the fresh transfer instead of sticking at the stale offset. (#1296)
+                if (resumeFrom > 0 && !resumed) resetSpeed(gameId)
                 // Persist validator + true size immediately so a later resume is
                 // safe and shows correct progress even if this attempt dies
                 // mid-stream — the very state resume needs. (#1296)
@@ -781,6 +799,9 @@ class DownloadRepositoryImpl(
     }
 
     override suspend fun deleteLocalGame(gameId: String) {
+        // Stop any in-flight transfer first so it can't keep writing to a dir
+        // we're about to delete (e.g. "Start over" while a job is somehow live).
+        takeActiveJob(gameId)?.cancel(CancellationException("download removed"))
         val gameDir = fileStorage.getGamesDir() + "/$gameId"
         if (fileStorage.isDirectory(gameDir)) {
             fileStorage.deleteDirectory(gameDir)

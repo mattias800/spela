@@ -212,7 +212,6 @@ private fun downloadStatusCopy(d: DownloadProgress): DownloadStatusCopy {
         DownloadState.FAILED -> when (d.failureReason) {
             DownloadFailureReason.DISK_FULL -> DownloadStatusCopy("Not enough space", "Free up space, then start over")
             DownloadFailureReason.CORRUPT -> DownloadStatusCopy("Download corrupted", "Start over to fix it")
-            DownloadFailureReason.FILE_CHANGED -> DownloadStatusCopy("File changed on server", "Start over")
             else -> DownloadStatusCopy("Download failed", "Start over")
         }
     }
@@ -288,9 +287,13 @@ private fun DownloadItem(
                 // terminally-failed game from scratch. (#1296)
                 when (download.state) {
                     DownloadState.DOWNLOADING, DownloadState.QUEUED -> {
-                        val label = if (download.state == DownloadState.QUEUED) "Cancel" else "Pause"
+                        val queued = download.state == DownloadState.QUEUED
                         SpButton(
-                            text = if (isCancelling) "…" else label,
+                            text = when {
+                                isCancelling -> if (queued) "Cancelling…" else "Pausing…"
+                                queued -> "Cancel"
+                                else -> "Pause"
+                            },
                             onClick = onCancel,
                             style = SpButtonStyle.Ghost,
                             isLoading = isCancelling,
@@ -330,7 +333,7 @@ private fun DownloadItem(
                 Spacer(Modifier.height(SpSpacing.Small))
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
                     SpButton(
-                        text = "Remove",
+                        text = "Remove download",
                         onClick = onRemove,
                         style = SpButtonStyle.Ghost,
                     )

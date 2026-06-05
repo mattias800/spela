@@ -84,9 +84,12 @@ object SpColor {
     val DownloadComplete = Success
     val DownloadFailed = Error
 
-    // A paused/interrupted-but-resumable download — amber "action available",
-    // distinct from the red of a terminal failure. (#1296)
-    val DownloadPaused = Warning
+    // A paused/interrupted-but-resumable download — its own warm amber-orange:
+    // "stopped, action available", deliberately distinct from the bright-yellow
+    // Warning that QUEUED uses (the 4dp status stripe is the only colour cue in
+    // a Downloads row, so paused and queued must not share it) and from the red
+    // of a terminal failure. (#1296)
+    val DownloadPaused = Color(0xFFFF9800)
 
     // On-gradient surface tokens — for badges, buttons, and other
     // controls that sit on top of the colorful console banner gradient.
