@@ -73,6 +73,24 @@ jobs:
           key: player-gradle-${{ hashFiles('player/**/*.gradle*', 'player/gradle/libs.versions.toml') }}
           restore-keys: |
             player-gradle-
+      # The Gradle steps below are desktop-only, but Gradle configures the
+      # :android module too, and AGP resolves the pinned NDK at configuration
+      # time. Pre-install it (and the cmake the native build pins) explicitly
+      # with retries so AGP never triggers its own un-retried, flake-prone
+      # on-the-fly install — which broke the v0.0.251 release run. ubuntu-latest
+      # ships the SDK; setup-android just ensures sdkmanager is on PATH. (#1281)
+      - uses: android-actions/setup-android@v4
+        with:
+          packages: ''
+      - name: Pre-install pinned Android NDK + cmake
+        run: |
+          for i in 1 2 3; do
+            yes | sdkmanager --install "ndk;27.0.12077973" "cmake;3.22.1" && exit 0
+            echo "::warning::sdkmanager install attempt $i failed; retrying in 15s" >&2
+            sleep 15
+          done
+          echo "::error::NDK/cmake install failed after 3 attempts" >&2
+          exit 1
       - name: Run shared desktop tests
         run: ./gradlew :shared:desktopTest
       - name: Run detekt rules unit tests

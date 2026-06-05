@@ -33,6 +33,14 @@ android {
     namespace = "com.spela.player.android"
     compileSdk = 35
 
+    // Pin the NDK explicitly instead of inheriting AGP's default. This is the
+    // same version AGP 8.13.2 defaults to (27.0.12077973), so it's behaviour-
+    // neutral — but pinning makes the version deterministic and, crucially,
+    // lets CI pre-install this exact NDK so configuring :android (which the
+    // desktop-only :shared:desktopTest + detekt jobs do) never triggers a
+    // flaky on-the-fly NDK install. See #1281 and the CI pre-install step.
+    ndkVersion = "27.0.12077973"
+
     sourceSets["main"].manifest.srcFile("src/main/AndroidManifest.xml")
     sourceSets["main"].java.srcDirs("src/main/java")
     sourceSets["main"].res.srcDirs("src/main/res")
