@@ -22,7 +22,19 @@ data class DownloadsState(
 
 sealed interface DownloadsIntent {
     data object LoadDownloads : DownloadsIntent
+
+    /** Pause an in-flight download (keeps the partial; #1296). */
     data class CancelDownload(val gameId: String) : DownloadsIntent
+
+    /** Resume a paused/failed download from its on-disk offset (#1296). */
+    data class ResumeDownload(val gameId: String) : DownloadsIntent
+
+    /** Discard a partial and start the download over from scratch (#1296). */
+    data class RestartDownload(val gameId: String, val gameTitle: String) : DownloadsIntent
+
+    /** Remove a partial entirely (no resume), reclaiming its disk space (#1296). */
+    data class RemoveDownload(val gameId: String) : DownloadsIntent
+
     data class DeleteLocalGame(val gameId: String) : DownloadsIntent
     data object ClearCache : DownloadsIntent
 }
@@ -52,6 +64,9 @@ class DownloadsViewModel(
         when (intent) {
             DownloadsIntent.LoadDownloads -> loadDownloads()
             is DownloadsIntent.CancelDownload -> cancelDownload(intent.gameId)
+            is DownloadsIntent.ResumeDownload -> resumeDownload(intent.gameId)
+            is DownloadsIntent.RestartDownload -> restartDownload(intent.gameId, intent.gameTitle)
+            is DownloadsIntent.RemoveDownload -> deleteLocalGame(intent.gameId)
             is DownloadsIntent.DeleteLocalGame -> deleteLocalGame(intent.gameId)
             DownloadsIntent.ClearCache -> clearCache()
         }
@@ -70,6 +85,22 @@ class DownloadsViewModel(
         scope.launch(dispatchers.io) {
             downloadRepository.cancelDownload(gameId)
             _state.update { it.copy(cancellingGameIds = it.cancellingGameIds - gameId) }
+        }
+    }
+
+    private fun resumeDownload(gameId: String) {
+        scope.launch(dispatchers.io) {
+            downloadRepository.resumeDownload(gameId)
+        }
+    }
+
+    private fun restartDownload(gameId: String, gameTitle: String) {
+        scope.launch(dispatchers.io) {
+            // Discard the partial, then start a fresh download.
+            downloadRepository.deleteLocalGame(gameId)
+            downloadRepository.downloadGame(gameId, gameTitle)
+            val cacheSize = downloadRepository.getCacheSize()
+            _state.update { it.copy(cacheSize = cacheSize) }
         }
     }
 

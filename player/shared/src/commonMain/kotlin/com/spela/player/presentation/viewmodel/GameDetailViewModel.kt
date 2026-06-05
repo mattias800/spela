@@ -26,6 +26,7 @@ import com.spela.player.presentation.state.GameDetailState
 import com.spela.player.util.DispatcherProvider
 import com.spela.player.util.pickDirectory
 import com.spela.player.util.revealInFileManager
+import com.spela.player.domain.model.DownloadState
 import com.spela.player.domain.model.GameDetail
 import com.spela.player.domain.model.INSTANT_DOWNLOAD_FALLBACK_DELAY_MS
 import com.spela.player.domain.model.INSTANT_DOWNLOAD_THRESHOLD_BYTES
@@ -117,6 +118,8 @@ class GameDetailViewModel(
             GameDetailIntent.DownloadGame -> downloadGame()
             GameDetailIntent.DownloadToFolder -> downloadToFolder()
             GameDetailIntent.DownloadGameAndPlay -> downloadGameAndPlay()
+            GameDetailIntent.ResumeDownload -> resumeDownload()
+            GameDetailIntent.RestartDownload -> restartDownload()
             GameDetailIntent.ConsumeAutoLaunch -> _state.update { it.copy(pendingAutoLaunch = false) }
             GameDetailIntent.PlayGame -> { /* Handled by UI navigation to emulation screen */ }
             GameDetailIntent.DeleteLocalGame -> deleteLocalGame()
@@ -396,7 +399,21 @@ class GameDetailViewModel(
 
         downloadObserveJob = scope.launch(dispatchers.io) {
             downloadRepository.observeDownload(gameId).collect { progress ->
-                _state.update { it.copy(downloadProgress = progress) }
+                // Reconcile the isDownloading latch from the observed state. A
+                // download paused/failed from another surface (e.g. the Downloads
+                // screen) cancels this VM's downloadGame coroutine, so its
+                // .fold(onFailure) — the usual place isDownloading clears — never
+                // runs; without this the CTA stays stuck on "Downloading…" and
+                // never flips to Resume / Start over. (#1296)
+                val settled = progress.state == DownloadState.PAUSED ||
+                    progress.state == DownloadState.FAILED ||
+                    progress.state == DownloadState.COMPLETED
+                _state.update {
+                    it.copy(
+                        downloadProgress = progress,
+                        isDownloading = if (settled) false else it.isDownloading,
+                    )
+                }
             }
         }
 
@@ -607,6 +624,39 @@ class GameDetailViewModel(
                     }
                 },
             )
+        }
+    }
+
+    /**
+     * Resume a paused/resumably-failed download from its on-disk offset (#1296).
+     * Clears any error toast (the resume is the recovery) and reuses the same
+     * success/failure handling as a fresh download.
+     */
+    private fun resumeDownload() {
+        val gameId = currentGameId ?: return
+        _state.update { it.copy(isDownloading = true, error = null) }
+        scope.launch(dispatchers.io) {
+            downloadRepository.resumeDownload(gameId).fold(
+                onSuccess = {
+                    _state.update { it.copy(isGameCached = true, isDownloading = false) }
+                    currentGameId?.let { loadCheats(it) }
+                },
+                onFailure = { error ->
+                    _state.update { it.copy(error = error.message, isDownloading = false) }
+                },
+            )
+        }
+    }
+
+    /**
+     * Discard the partial and download the game over from scratch — the
+     * recovery for a terminal failure (corrupt/disk-full/changed file). (#1296)
+     */
+    private fun restartDownload() {
+        val gameId = currentGameId ?: return
+        scope.launch(dispatchers.io) {
+            downloadRepository.deleteLocalGame(gameId)
+            downloadGame()
         }
     }
 

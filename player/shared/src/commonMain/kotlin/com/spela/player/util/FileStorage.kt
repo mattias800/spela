@@ -35,6 +35,23 @@ interface FileStorage {
         path: String,
         writer: suspend (append: suspend (ByteArray, Int, Int) -> Unit) -> Unit,
     )
+
+    /**
+     * Like [writeFileStreaming] but APPENDS to the file at [path] instead of
+     * truncating it — the writer's bytes are written after the current end of
+     * file. Used to resume an interrupted download by continuing its `.part`
+     * file from the byte offset already on disk (#1296). Creates the file (and
+     * parent dirs) if absent, behaving like [writeFileStreaming] in that case.
+     *
+     * Default throws; only the production platform implementations
+     * (Desktop/Android) support real append. Test stubs that don't exercise
+     * resume can keep the default.
+     */
+    suspend fun appendFileStreaming(
+        path: String,
+        writer: suspend (append: suspend (ByteArray, Int, Int) -> Unit) -> Unit,
+    ): Unit = throw UnsupportedOperationException("appendFileStreaming not supported")
+
     suspend fun getFileSize(path: String): Long
     suspend fun listFiles(path: String): List<String>
     suspend fun isDirectory(path: String): Boolean

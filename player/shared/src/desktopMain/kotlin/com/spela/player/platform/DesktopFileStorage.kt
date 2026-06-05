@@ -84,6 +84,20 @@ class DesktopFileStorage : FileStorage {
         }
     }
 
+    override suspend fun appendFileStreaming(
+        path: String,
+        writer: suspend (append: suspend (ByteArray, Int, Int) -> Unit) -> Unit,
+    ) = withContext(Dispatchers.IO) {
+        val file = File(path)
+        file.parentFile?.mkdirs()
+        // append = true: continue after the existing bytes on disk (resume), #1296.
+        java.io.FileOutputStream(file, true).use { fos ->
+            writer { bytes, offset, length ->
+                fos.write(bytes, offset, length)
+            }
+        }
+    }
+
     override suspend fun getFileSize(path: String): Long = File(path).length()
 
     override suspend fun listFiles(path: String): List<String> = withContext(Dispatchers.IO) {

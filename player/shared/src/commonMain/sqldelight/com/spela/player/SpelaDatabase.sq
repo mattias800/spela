@@ -46,6 +46,51 @@ DELETE FROM DownloadEntity WHERE game_id = ?;
 deleteAllDownloads:
 DELETE FROM DownloadEntity;
 
+-- Resumable partial downloads (#1296). One row per game whose download is
+-- interrupted/paused and can be resumed from its on-disk byte offset. The
+-- partial file lives at local_path; its current size IS the resume offset
+-- (no need to store byte counts — stat the file). validator is the server's
+-- ETag for If-Range so a changed file forces a clean restart. failure_reason
+-- is a DownloadFailureReason name (null = user-initiated pause). A completed
+-- download deletes its row here and inserts into DownloadEntity instead.
+CREATE TABLE PartialDownloadEntity (
+    game_id TEXT NOT NULL PRIMARY KEY,
+    game_title TEXT NOT NULL DEFAULT '',
+    file_name TEXT NOT NULL,
+    local_path TEXT NOT NULL,
+    expected_size INTEGER NOT NULL DEFAULT 0,
+    validator TEXT,
+    failure_reason TEXT,
+    updated_at INTEGER NOT NULL
+);
+
+insertPartialDownload:
+INSERT OR REPLACE INTO PartialDownloadEntity(game_id, game_title, file_name, local_path, expected_size, validator, failure_reason, updated_at)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?);
+
+getPartialDownload:
+SELECT * FROM PartialDownloadEntity WHERE game_id = ?;
+
+getAllPartialDownloads:
+SELECT * FROM PartialDownloadEntity;
+
+-- Record the server validator (ETag) + authoritative total once response
+-- headers arrive, so a later resume can send If-Range and show correct
+-- progress even if the very first attempt fails mid-stream.
+updatePartialDownloadHeaders:
+UPDATE PartialDownloadEntity SET validator = ?, expected_size = ?, updated_at = ? WHERE game_id = ?;
+
+-- Stamp why a kept partial stopped (resumable cause), without needing the
+-- rest of the row in scope at the failure site.
+updatePartialDownloadFailure:
+UPDATE PartialDownloadEntity SET failure_reason = ?, updated_at = ? WHERE game_id = ?;
+
+deletePartialDownload:
+DELETE FROM PartialDownloadEntity WHERE game_id = ?;
+
+deleteAllPartialDownloads:
+DELETE FROM PartialDownloadEntity;
+
 -- Auth tokens
 CREATE TABLE AuthTokenEntity (
     id INTEGER NOT NULL PRIMARY KEY DEFAULT 1,

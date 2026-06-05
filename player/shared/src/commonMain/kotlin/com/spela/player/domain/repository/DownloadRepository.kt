@@ -23,6 +23,28 @@ interface DownloadRepository {
         destDir: String,
     ): Result<String> = Result.failure(UnsupportedOperationException("downloadGameToDirectory not supported"))
 
+    /**
+     * Resumes a paused or resumably-failed download from the bytes already on
+     * disk. Requires a partial-download record (created when the download first
+     * started, so it survives process death). Sends an HTTP Range request from
+     * the current on-disk offset, guarded by the stored validator; if the
+     * server reports the file changed it transparently restarts from scratch.
+     * Returns the local path on success. On a resumable failure the partial is
+     * kept and the state returns to PAUSED; on a terminal failure the partial
+     * is discarded and the state is FAILED. (#1296)
+     *
+     * Default is a no-op failure for fakes that don't exercise resume; the
+     * production [com.spela.player.data.repository.DownloadRepositoryImpl]
+     * overrides it.
+     */
+    suspend fun resumeDownload(gameId: String): Result<String> =
+        Result.failure(UnsupportedOperationException("resumeDownload not supported"))
+
+    /**
+     * Stops the in-flight transfer but KEEPS the partial so it can be resumed
+     * later — an interrupted download is recoverable, not discarded. The state
+     * becomes PAUSED. Use [deleteLocalGame] to remove a partial entirely. (#1296)
+     */
     suspend fun cancelDownload(gameId: String)
     suspend fun getLocalGamePath(gameId: String): String?
     suspend fun isGameCached(gameId: String): Boolean

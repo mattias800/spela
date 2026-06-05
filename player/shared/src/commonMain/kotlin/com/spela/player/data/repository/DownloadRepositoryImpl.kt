@@ -3,6 +3,7 @@ package com.spela.player.data.repository
 import com.spela.player.data.local.SpelaDatabase
 import com.spela.player.data.remote.api.SpelaApiClient
 import com.spela.player.data.remote.dto.GameDto
+import com.spela.player.domain.model.DownloadFailureReason
 import com.spela.player.domain.model.DownloadProgress
 import com.spela.player.domain.model.DownloadState
 import com.spela.player.domain.model.DownloadedGame
@@ -10,10 +11,12 @@ import com.spela.player.domain.repository.DownloadRepository
 import com.spela.player.util.FileStorage
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.withContext
 import kotlin.coroutines.coroutineContext
 
 class DownloadRepositoryImpl(
@@ -99,22 +102,48 @@ class DownloadRepositoryImpl(
     }
 
     /**
-     * Walks `getGamesDir()` and deletes any per-game directory that has
-     * no row in the `downloads` table. These are orphans from process
-     * death, force-stop, or crashes that aborted [downloadGame] before
-     * the [DownloadEntity] insert ran — without this scan they'd sit on
-     * disk forever (no UI surface lists them, and the user has no
-     * "phantom partial" to discover).
+     * Launch-time download reconciliation (call exactly once from the DI graph):
      *
-     * Idempotent: running this twice in a row produces the same result.
-     * Should be called exactly once at app launch from the DI graph.
-     * See #845.
+     * 1. **Restores resumable partials** ([PartialDownloadEntity]) into the
+     *    in-memory state as PAUSED so the UI offers Resume after an app restart,
+     *    with progress reflecting the bytes already on disk. (#1296)
+     * 2. **Deletes orphan directories** under `getGamesDir()` that have neither a
+     *    completed-download row nor a resumable-partial row — leftovers from
+     *    process death/force-stop that aborted [downloadGame] before either row
+     *    was written. Without this they'd sit on disk forever (no UI lists them).
+     *
+     * Idempotent: running twice produces the same result. See #845, #1296.
      */
     override suspend fun scanForOrphanedDownloads() {
+        // (1) Restore resumable partials into the in-memory state. Their dirs are
+        // also protected from the orphan sweep below.
+        val partials = database.spelaDatabaseQueries.getAllPartialDownloads().executeAsList()
+        for (p in partials) {
+            val onDisk = if (fileStorage.fileExists(p.local_path)) fileStorage.getFileSize(p.local_path) else 0L
+            val reason = p.failure_reason?.let { runCatching { DownloadFailureReason.valueOf(it) }.getOrNull() }
+            // Seed the monotonic high-water so a subsequent resume doesn't snap
+            // the bar back to 0 before its first chunk lands.
+            monotonicBytes(p.game_id, onDisk)
+            downloads.update {
+                it + (p.game_id to DownloadProgress(
+                    gameId = p.game_id,
+                    gameTitle = p.game_title,
+                    state = DownloadState.PAUSED,
+                    bytesDownloaded = onDisk,
+                    totalBytes = if (p.expected_size > 0) p.expected_size else -1L,
+                    failureReason = reason,
+                ))
+            }
+        }
+
+        // (2) Sweep orphan dirs. A dir is tracked if it's a completed download
+        // OR has a resumable partial — neither should be deleted.
         val gamesDir = fileStorage.getGamesDir()
         if (!fileStorage.fileExists(gamesDir)) return
-        val tracked = database.spelaDatabaseQueries.getAllDownloads()
-            .executeAsList().map { it.game_id }.toSet()
+        val tracked = (
+            database.spelaDatabaseQueries.getAllDownloads().executeAsList().map { it.game_id } +
+                partials.map { it.game_id }
+            ).toSet()
         val onDisk = try {
             fileStorage.listFiles(gamesDir)
         } catch (e: Exception) {
@@ -198,25 +227,146 @@ class DownloadRepositoryImpl(
             }
         }.onSuccess { path ->
             val fileSize = try { fileStorage.getDirectorySize(fileStorage.getGamesDir() + "/$gameId") } catch (_: Exception) { 0L }
-            val now = kotlin.time.Clock.System.now().toEpochMilliseconds()
-            database.spelaDatabaseQueries.insertDownload(gameId, path, fileSize, now)
+            database.spelaDatabaseQueries.insertDownload(gameId, path, fileSize, nowMillis())
+            // The download finished — drop any resumable-partial record so the
+            // game reads as fully cached, not paused. (#1296)
+            database.spelaDatabaseQueries.deletePartialDownload(gameId)
             refreshDownloadedGames()
             takeActiveJob(gameId)
         }.onFailure { error ->
+            handleDownloadFailure(gameId, gameTitle, error)
+        }
+    }
+
+    override suspend fun resumeDownload(gameId: String): Result<String> {
+        val partial = database.spelaDatabaseQueries.getPartialDownload(gameId).executeAsOneOrNull()
+            ?: return Result.failure(IllegalStateException("No resumable partial for game $gameId"))
+        val gameTitle = partial.game_title
+        val path = partial.local_path
+        // Capture the caller's Job so cancelDownload can interrupt the resume.
+        setActiveJob(gameId, coroutineContext[Job]!!)
+        return runCatching {
+            // The partial file's current size IS the resume offset. If the file
+            // vanished (manual cleanup), start over from zero.
+            val resumeFrom = if (fileStorage.fileExists(path)) fileStorage.getFileSize(path) else 0L
+            // Seed the monotonic high-water so the bar continues from the offset
+            // rather than snapping back to 0 before the first 206 chunk lands.
+            monotonicBytes(gameId, resumeFrom)
+            downloads.update {
+                it + (gameId to DownloadProgress(gameId, gameTitle, DownloadState.DOWNLOADING, resumeFrom, partial.expected_size))
+            }
+            transferSingleFile(gameId, gameTitle, path, partial.expected_size, resumeFrom, partial.validator)
+        }.onSuccess { resolvedPath ->
+            val fileSize = try { fileStorage.getDirectorySize(fileStorage.getGamesDir() + "/$gameId") } catch (_: Exception) { 0L }
+            database.spelaDatabaseQueries.insertDownload(gameId, resolvedPath, fileSize, nowMillis())
+            database.spelaDatabaseQueries.deletePartialDownload(gameId)
+            refreshDownloadedGames()
             takeActiveJob(gameId)
-            cleanupPartialDownload(gameId)
-            resetSpeed(gameId)
-            // User-initiated cancel surfaces as CancellationException via runCatching.
-            // Treat it as IDLE rather than FAILED so the UI doesn't show an error
-            // toast for an action the user just took intentionally.
-            if (error is CancellationException) {
-                downloads.update { it - gameId }
-                throw error
+        }.onFailure { error ->
+            handleDownloadFailure(gameId, gameTitle, error)
+        }
+    }
+
+    /**
+     * Resolves the in-memory + persisted state when a download stops without
+     * completing. Shared by [downloadGame] and [resumeDownload].
+     *
+     * - **Cancellation** (user pause, app backgrounded/killed): keep the
+     *   partial and surface PAUSED. The partial row was persisted at download
+     *   start, so nothing else is needed — and the coroutine is cancelled, so
+     *   suspend/DB work here would throw. Re-throws so structured concurrency
+     *   still unwinds.
+     * - **Resumable failure** (network drop, server cut, unknown error): keep
+     *   the partial, stamp the reason, surface PAUSED with a [DownloadFailureReason].
+     * - **Terminal failure** (corrupt bytes, disk full): discard the partial so
+     *   a restart is clean, surface FAILED. (#1296)
+     */
+    private suspend fun handleDownloadFailure(gameId: String, gameTitle: String, error: Throwable) {
+        takeActiveJob(gameId)
+        // Read display bytes/total from the last in-memory progress (non-suspend,
+        // safe even when the coroutine is cancelled). The exact resume offset is
+        // re-derived by statting the file at resume time.
+        val last = downloads.value[gameId]
+        val onDisk = last?.bytesDownloaded ?: 0L
+        val total = last?.totalBytes ?: -1L
+        resetSpeed(gameId)
+        // Resume needs a persisted partial record. Paths that never write one
+        // (multi-disc, tar bundles) can't be resumed, so they must NOT surface a
+        // PAUSED/Resume affordance that would dead-end on resumeDownload. This is
+        // a synchronous query — safe to read even on a cancelled coroutine. (#1296)
+        val hasPartial = database.spelaDatabaseQueries.getPartialDownload(gameId).executeAsOneOrNull() != null
+
+        if (error is CancellationException) {
+            downloads.update {
+                if (hasPartial) {
+                    it + (gameId to DownloadProgress(gameId, gameTitle, DownloadState.PAUSED, onDisk, total))
+                } else {
+                    it - gameId // nothing to resume — a plain cancel, drop the entry
+                }
+            }
+            throw error
+        }
+
+        val reason = classifyFailure(error)
+        if (reason.resumable && hasPartial) {
+            // Keep the partial; record why so the UI shows the right copy. Guard
+            // the DB write with NonCancellable so a racing cancel can't abort the
+            // bookkeeping half-done.
+            withContext(NonCancellable) {
+                database.spelaDatabaseQueries.updatePartialDownloadFailure(reason.name, nowMillis(), gameId)
             }
             downloads.update {
-                it + (gameId to DownloadProgress(gameId, gameTitle, DownloadState.FAILED))
+                it + (gameId to DownloadProgress(gameId, gameTitle, DownloadState.PAUSED, onDisk, total, failureReason = reason))
+            }
+        } else {
+            // Terminal, OR resumable but with no partial to resume from → discard
+            // and surface FAILED so the UI offers Start over, not a broken Resume.
+            withContext(NonCancellable) {
+                cleanupPartialDownload(gameId)
+                database.spelaDatabaseQueries.deletePartialDownload(gameId)
+            }
+            downloads.update {
+                it + (gameId to DownloadProgress(gameId, gameTitle, DownloadState.FAILED, failureReason = reason))
             }
         }
+    }
+
+    /**
+     * Maps a download error to a [DownloadFailureReason]. Defaults to NETWORK
+     * (resumable) for unrecognised errors — better to offer Resume than
+     * dead-end the user on an opaque failure. Terminal causes are matched
+     * explicitly. (#1296)
+     */
+    private fun classifyFailure(error: Throwable): DownloadFailureReason {
+        val msg = (error.message ?: "").lowercase()
+        return when {
+            "size mismatch" in msg || "empty file" in msg -> DownloadFailureReason.CORRUPT
+            "enospc" in msg || "no space" in msg || "not enough space" in msg -> DownloadFailureReason.DISK_FULL
+            // 416: our partial is past the server file's end (e.g. it shrank
+            // under a same validator). Resuming again just re-416s — restart.
+            "http 416" in msg -> DownloadFailureReason.CORRUPT
+            Regex("http 5\\d\\d").containsMatchIn(msg) -> DownloadFailureReason.SERVER
+            else -> DownloadFailureReason.NETWORK
+        }
+    }
+
+    private fun nowMillis(): Long = kotlin.time.Clock.System.now().toEpochMilliseconds()
+
+    private fun persistPartialRow(
+        gameId: String,
+        gameTitle: String,
+        fileName: String,
+        path: String,
+        expectedSize: Long,
+        validator: String?,
+    ) {
+        database.spelaDatabaseQueries.insertPartialDownload(
+            gameId, gameTitle, fileName, path, expectedSize, validator, null, nowMillis(),
+        )
+    }
+
+    private fun updatePartialHeaders(gameId: String, validator: String?, expectedSize: Long) {
+        database.spelaDatabaseQueries.updatePartialDownloadHeaders(validator, expectedSize, nowMillis(), gameId)
     }
 
     override suspend fun downloadGameToDirectory(
@@ -297,7 +447,53 @@ class DownloadRepositoryImpl(
         val actualFileName = fileName.ifEmpty { gameId }
         val path = "$gameDir/$actualFileName"
 
-        apiClient.downloadGameToFile(gameId, fileStorage, path) { downloaded, total ->
+        // Record a resumable partial BEFORE streaming so an interrupted transfer
+        // — including a hard process kill that never reaches a failure handler —
+        // leaves a row to resume from (and shields the dir from the orphan
+        // sweep). The validator is filled in once response headers arrive. (#1296)
+        persistPartialRow(gameId, gameTitle, actualFileName, path, expectedSize, validator = null)
+
+        return transferSingleFile(gameId, gameTitle, path, expectedSize, resumeFrom = 0, validator = null)
+    }
+
+    /**
+     * Streams a single-file game to [path] — fresh ([resumeFrom] = 0) or
+     * resumed (the on-disk offset, with a [validator] for If-Range) — updating
+     * progress and the partial record, then validates the result against the
+     * size the server reported for THIS transfer. Shared by the fresh and
+     * resume paths. (#1296)
+     */
+    private suspend fun transferSingleFile(
+        gameId: String,
+        gameTitle: String,
+        path: String,
+        expectedSize: Long,
+        resumeFrom: Long,
+        validator: String?,
+    ): String {
+        // Authoritative full size of the file the server is serving, learned
+        // from response headers; the DB size is only a fallback until then.
+        var serverTotal: Long = if (expectedSize > 0) expectedSize else -1L
+
+        val result = apiClient.downloadGameToFile(
+            gameId,
+            fileStorage,
+            path,
+            resumeFrom = resumeFrom,
+            validator = validator,
+            onResponseInfo = { serverValidator, fullSize, resumed ->
+                if (fullSize != null && fullSize > 0) serverTotal = fullSize
+                // If we asked to resume but the server restarted from scratch
+                // (200 — the file changed), the byte counter is going back to 0;
+                // clear the high-water seeded at the old offset so the bar tracks
+                // the fresh transfer instead of sticking at the stale offset. (#1296)
+                if (resumeFrom > 0 && !resumed) resetSpeed(gameId)
+                // Persist validator + true size immediately so a later resume is
+                // safe and shows correct progress even if this attempt dies
+                // mid-stream — the very state resume needs. (#1296)
+                updatePartialHeaders(gameId, serverValidator, fullSize ?: expectedSize)
+            },
+        ) { downloaded, total ->
             // Prefer the server's Content-Length (`total`) — it's the exact
             // number of bytes we'll receive, so `downloaded` reaches it and the
             // bar hits 100%. The DB file size can disagree with the transfer:
@@ -315,13 +511,16 @@ class DownloadRepositoryImpl(
         }
 
         val actualSize = fileStorage.getFileSize(path)
-        println("[Download] File written: path=$path actualSize=$actualSize expectedSize=$expectedSize")
+        println("[Download] File written: path=$path actualSize=$actualSize serverTotal=$serverTotal resumed=${result.resumed}")
         if (actualSize == 0L) {
             throw RuntimeException("Download produced empty file: $path")
         }
-        if (expectedSize > 0 && actualSize != expectedSize) {
+        // Validate against the size the server reported for THIS transfer, not
+        // the possibly-stale DB size — otherwise a legitimately changed file
+        // (served fresh via a 200 on resume) looks like a size mismatch. (#1296)
+        if (serverTotal > 0 && actualSize != serverTotal) {
             throw RuntimeException(
-                "Download size mismatch: expected $expectedSize bytes, got $actualSize bytes"
+                "Download size mismatch: expected $serverTotal bytes, got $actualSize bytes"
             )
         }
         resetSpeed(gameId)
@@ -538,22 +737,23 @@ class DownloadRepositoryImpl(
     }
 
     override suspend fun cancelDownload(gameId: String) {
-        // Cancel the in-flight job (if any). This propagates CancellationException
-        // through the runCatching block in downloadGame, which then runs
-        // cleanupPartialDownload via the onFailure branch — so disk space is
-        // reclaimed automatically. cancelDownload itself doesn't need to call
-        // cleanup directly.
-        takeActiveJob(gameId)?.cancel(CancellationException("download cancelled by user"))
-        // Defensive: if the job already completed (or never started), drop the
-        // in-memory progress entry and tracker manually.
-        downloads.update { it - gameId }
-        // Drop the tracker too so a cancel-then-restart starts with a fresh
-        // window. Without this the old samples briefly inflate the reported
-        // speed of the new download until they age out.
-        resetSpeed(gameId)
+        // Stop the in-flight transfer but KEEP the partial — an interrupted
+        // download is resumable now (#1296). Cancelling the job propagates
+        // CancellationException into the runCatching block of
+        // downloadGame/resumeDownload, whose failure handler records PAUSED and
+        // leaves the partial file + its row in place. If there's no active job
+        // (already paused/done), this is a no-op. Use deleteLocalGame to remove
+        // a partial entirely.
+        takeActiveJob(gameId)?.cancel(CancellationException("download paused by user"))
     }
 
     override suspend fun getLocalGamePath(gameId: String): String? {
+        // An in-progress / paused / failed partial is on disk under the final
+        // name but isn't a complete, playable file — never resolve it as cached
+        // until the download finishes and its partial row is cleared. (#1296)
+        if (database.spelaDatabaseQueries.getPartialDownload(gameId).executeAsOneOrNull() != null) {
+            return null
+        }
         val gameDir = fileStorage.getGamesDir() + "/$gameId"
         // Check multi-disc first: M3U must exist AND disc images must be present.
         // Without this check, a partial download (M3U written but discs not yet
@@ -598,6 +798,9 @@ class DownloadRepositoryImpl(
     }
 
     override suspend fun deleteLocalGame(gameId: String) {
+        // Stop any in-flight transfer first so it can't keep writing to a dir
+        // we're about to delete (e.g. "Start over" while a job is somehow live).
+        takeActiveJob(gameId)?.cancel(CancellationException("download removed"))
         val gameDir = fileStorage.getGamesDir() + "/$gameId"
         if (fileStorage.isDirectory(gameDir)) {
             fileStorage.deleteDirectory(gameDir)
@@ -606,6 +809,10 @@ class DownloadRepositoryImpl(
         }
         downloads.update { it - gameId }
         database.spelaDatabaseQueries.deleteDownload(gameId)
+        // Also clear any resumable partial — this is the removal path for both
+        // a completed game and a paused/failed partial ("Start over"/"Cancel"). (#1296)
+        database.spelaDatabaseQueries.deletePartialDownload(gameId)
+        resetSpeed(gameId)
         refreshDownloadedGames()
     }
 

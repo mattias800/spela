@@ -1,0 +1,13 @@
+-- Migration from schema version 4 to 5: add PartialDownloadEntity table so
+-- interrupted/paused game downloads survive process death and can be resumed
+-- from their on-disk byte offset instead of restarting from zero. See #1296.
+CREATE TABLE PartialDownloadEntity (
+    game_id TEXT NOT NULL PRIMARY KEY,
+    game_title TEXT NOT NULL DEFAULT '',
+    file_name TEXT NOT NULL,
+    local_path TEXT NOT NULL,
+    expected_size INTEGER NOT NULL DEFAULT 0,
+    validator TEXT,
+    failure_reason TEXT,
+    updated_at INTEGER NOT NULL
+);

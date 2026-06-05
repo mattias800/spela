@@ -166,6 +166,8 @@ fun GameDetailScreen(
                     onDeleteLocalGame = { viewModel.onIntent(GameDetailIntent.ShowDeleteDownloadDialog) },
                     onOpenDownloadFolder = { viewModel.onIntent(GameDetailIntent.OpenDownloadFolder) },
                     onDownloadToFolder = { viewModel.onIntent(GameDetailIntent.DownloadToFolder) },
+                    onResumeDownload = { viewModel.onIntent(GameDetailIntent.ResumeDownload) },
+                    onRestartDownload = { viewModel.onIntent(GameDetailIntent.RestartDownload) },
                     syncState = syncState,
                     onNavigateToAchievements = { onNavigateToAchievements?.invoke(gameId) },
                     onAdminScrape = if (state.isAdmin) {{ viewModel.onIntent(GameDetailIntent.AdminScrapeGame) }} else null,
@@ -577,14 +579,21 @@ fun GameDetailScreen(
             modifier = Modifier.align(Alignment.BottomCenter),
         )
 
-        // Error snackbar
+        // Error snackbar. On a resumable failure (network drop / server cut),
+        // the partial is kept and the toast offers Resume as the recovery
+        // action rather than a dead-end Dismiss. (#1296)
         SpSnackbar(
             data = state.error?.let {
+                val resumable = state.downloadProgress?.isResumable == true
                 SpSnackbarData(
                     message = it,
                     type = SpSnackbarType.Error,
-                    actionLabel = "Dismiss",
-                    onAction = { viewModel.onIntent(GameDetailIntent.DismissError) },
+                    actionLabel = if (resumable) "Resume" else "Dismiss",
+                    onAction = {
+                        viewModel.onIntent(
+                            if (resumable) GameDetailIntent.ResumeDownload else GameDetailIntent.DismissError,
+                        )
+                    },
                 )
             },
             onDismiss = { viewModel.onIntent(GameDetailIntent.DismissError) },

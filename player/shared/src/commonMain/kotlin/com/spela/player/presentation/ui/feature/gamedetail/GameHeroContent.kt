@@ -34,6 +34,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.spela.player.domain.model.BiosMissingFile
+import com.spela.player.domain.model.DownloadFailureReason
 import com.spela.player.domain.model.DownloadState
 import com.spela.player.domain.model.Game
 import com.spela.player.domain.model.INSTANT_DOWNLOAD_THRESHOLD_BYTES
@@ -98,6 +99,10 @@ fun GameHeroContent(
     onDeleteLocalGame: () -> Unit,
     onOpenDownloadFolder: () -> Unit = {},
     onDownloadToFolder: () -> Unit = {},
+    /** Resume a paused/resumably-failed partial from its offset (#1296). */
+    onResumeDownload: () -> Unit = {},
+    /** Discard the partial and download from scratch (terminal failure) (#1296). */
+    onRestartDownload: () -> Unit = {},
     syncState: GameSyncState?,
     onNavigateToAchievements: () -> Unit = {},
     onAdminScrape: (() -> Unit)? = null,
@@ -306,9 +311,24 @@ fun GameHeroContent(
                     )
                 }
             } else {
+                // A paused/resumably-failed partial → Resume; a terminally
+                // failed one → Start over. Otherwise a fresh Download. (#1296)
+                val dpState = state.downloadProgress?.state
+                val isPaused = dpState == DownloadState.PAUSED
+                val isTerminalFailed = dpState == DownloadState.FAILED
+                val pausedPct = state.downloadProgress
+                    ?.takeIf { it.totalBytes > 0 }
+                    ?.let { (it.progress * 100).toInt().coerceIn(0, 100) }
                 val menuItems = buildList {
                     if (onCreateNetplay != null && supportsNetplay) {
                         add(SpSplitButtonMenuItem("Netplay") { onCreateNetplay(gameId) })
+                    }
+                    // Recovery options for a stopped partial.
+                    if (isPaused) {
+                        add(SpSplitButtonMenuItem("Start over") { onRestartDownload() })
+                    }
+                    if (isPaused || isTerminalFailed) {
+                        add(SpSplitButtonMenuItem("Remove download") { onDeleteLocalGame() })
                     }
                 }
                 // For a game Spela can't emulate, downloading to the managed
@@ -318,10 +338,17 @@ fun GameHeroContent(
                 SpSplitButton(
                     text = when {
                         isBusy -> "Downloading..."
+                        isPaused -> pausedPct?.let { "Resume $it%" } ?: "Resume"
+                        isTerminalFailed -> "Start over"
                         downloadToFolder -> "Download to folder…"
                         else -> "Download"
                     },
-                    onClick = if (downloadToFolder) onDownloadToFolder else onDownloadGame,
+                    onClick = when {
+                        isPaused -> onResumeDownload
+                        isTerminalFailed -> onRestartDownload
+                        downloadToFolder -> onDownloadToFolder
+                        else -> onDownloadGame
+                    },
                     modifier = Modifier
                         .focusRestoreItem(
                             key = "game_detail_play",
@@ -429,6 +456,12 @@ fun GameHeroContent(
         // state.isInstantDownload flips false and the regular UI
         // takes over.
         val showDownloadStatus = state.isDownloading && !state.isInstantDownload
+        // A paused (resumable) download shows its progress on the hero too, so
+        // the "Resume N%" CTA has a visual anchor — mirroring the Downloads
+        // screen. Paused is a stable state (no per-frame progress), so showing
+        // the bar here doesn't reintroduce the #797/#894 reflow. (#1296)
+        val pausedDp = state.downloadProgress?.takeIf { it.state == DownloadState.PAUSED }
+        val showPausedStatus = pausedDp != null && !isBusy
         val statusText = when {
             state.isScraping -> "Scraping…"
             state.isScrapeQueued -> "Scrape queued"
@@ -437,6 +470,11 @@ fun GameHeroContent(
                 val p = state.downloadProgress
                 if (p != null && p.totalDiscs > 1) "Downloading disc ${p.currentDisc}/${p.totalDiscs}…"
                 else "Downloading…"
+            }
+            showPausedStatus -> when (pausedDp?.failureReason) {
+                DownloadFailureReason.NETWORK -> "Connection lost — Resume to continue"
+                DownloadFailureReason.SERVER -> "Server interrupted — Resume to continue"
+                else -> "Paused — Resume to continue"
             }
             else -> null
         }
@@ -460,8 +498,9 @@ fun GameHeroContent(
                     horizontalArrangement = Arrangement.spacedBy(SpSpacing.XSmall),
                 ) {
                     // Show spinner for non-download statuses (scraping, sync).
-                    // Downloads already have a spinner in the button.
-                    if (!showDownloadStatus) {
+                    // Downloads already have a spinner in the button; a paused
+                    // download is stopped, so no spinner there either.
+                    if (!showDownloadStatus && !showPausedStatus) {
                         CircularProgressIndicator(
                             modifier = Modifier.size(14.dp),
                             strokeWidth = 2.dp,
@@ -477,14 +516,17 @@ fun GameHeroContent(
 
                 // Latched on isDownloading. The dp object's individual
                 // values (progress, bytes) still update continuously —
-                // only the show/hide decision is held stable.
-                if (showDownloadStatus) {
+                // only the show/hide decision is held stable. The paused
+                // variant renders the same bar in amber so the Resume CTA has
+                // a visual anchor. (#1296)
+                if (showDownloadStatus || showPausedStatus) {
                     val dp = state.downloadProgress
                     SpDownloadProgressBar(
                         progress = dp?.progress ?: -1f,
                         bytesDownloaded = dp?.bytesDownloaded ?: 0L,
                         totalBytes = dp?.totalBytes ?: -1L,
-                        bytesPerSecond = dp?.bytesPerSecond ?: 0L,
+                        bytesPerSecond = if (showPausedStatus) 0L else dp?.bytesPerSecond ?: 0L,
+                        paused = showPausedStatus,
                         onGradient = true,
                         modifier = Modifier.fillMaxWidth(),
                     )
