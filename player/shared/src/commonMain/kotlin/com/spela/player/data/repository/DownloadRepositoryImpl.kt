@@ -1,7 +1,6 @@
 package com.spela.player.data.repository
 
 import com.spela.player.data.local.SpelaDatabase
-import com.spela.player.data.remote.api.DownloadResult
 import com.spela.player.data.remote.api.SpelaApiClient
 import com.spela.player.data.remote.dto.GameDto
 import com.spela.player.domain.model.DownloadFailureReason
