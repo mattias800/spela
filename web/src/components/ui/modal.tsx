@@ -74,14 +74,17 @@ export function Modal({
         aria-modal="true"
         aria-label={title}
         className={cn(
-          "relative w-full rounded-2xl bg-surface-900 border border-surface-800 shadow-2xl",
+          // Cap the dialog at the viewport (the overlay's p-4 leaves 1rem of
+          // breathing room top/bottom) and lay it out as a column so the header
+          // stays pinned and only the body scrolls when content is tall. (#1290)
+          "relative flex w-full max-h-[calc(100vh-2rem)] flex-col rounded-2xl bg-surface-900 border border-surface-800 shadow-2xl",
           "animate-in fade-in zoom-in-95 duration-200",
           sizeStyles[size],
           className,
         )}
       >
         {title && (
-          <div className="flex items-center justify-between px-6 py-4 border-b border-surface-800">
+          <div className="flex shrink-0 items-center justify-between px-6 py-4 border-b border-surface-800">
             <h2 className="text-lg font-semibold text-surface-100">{title}</h2>
             <button
               onClick={onClose}
@@ -92,7 +95,10 @@ export function Modal({
             </button>
           </div>
         )}
-        <div className={bodyClassName}>{children}</div>
+        {/* min-h-0 lets this flex child shrink below its content height so
+            overflow-y-auto actually scrolls instead of pushing the dialog past
+            the viewport. (#1290) */}
+        <div className={cn("min-h-0 overflow-y-auto", bodyClassName)}>{children}</div>
       </div>
     </div>
   );
