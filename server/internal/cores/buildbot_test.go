@@ -32,6 +32,8 @@ func TestBuildbotURL_StandardConvention(t *testing.T) {
 			"https://buildbot.libretro.com/nightly/linux/aarch64/latest/nestopia_libretro.so.zip"},
 		{"windows x86_64", "mgba", "windows", "x86_64",
 			"https://buildbot.libretro.com/nightly/windows/x86_64/latest/mgba_libretro.dll.zip"},
+		{"windows x86_64 parallel_n64", "parallel_n64", "windows", "x86_64",
+			"https://buildbot.libretro.com/nightly/windows/x86_64/latest/parallel_n64_libretro.dll.zip"},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
