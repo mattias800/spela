@@ -307,6 +307,36 @@ static bool environment_callback(unsigned cmd, void *data) {
                     }
                 }
 
+                /* parallel_n64 renderer selection. This core exposes its own
+                 * option keys ("parallel-n64-gfxplugin"/"parallel-n64-rspplugin"),
+                 * NOT mupen64plus_next's "rdp-plugin", so the block above never
+                 * fires for it. Same per-platform intent as mupen:
+                 * - macOS: Angrylion (software) — avoids GLideN64 GL compositing
+                 *   issues; only switched when the build advertises angrylion.
+                 * - Android: GLideN64 (GLES) — proven HW render path.
+                 * - Windows/Linux: leave default (gliden64) — confirmed working. */
+                {
+                    const struct retro_variable *v3 = (const struct retro_variable *)data;
+                    for (; v3->key; v3++) {
+                        if (v3->key && strstr(v3->key, "parallel-n64-gfxplugin")) {
+#ifdef __APPLE__
+                            if (strstr(v3->value, "angrylion")) {
+                                LOGI("parallel_n64 detected with Angrylion support, switching to software renderer on macOS");
+                                core_variables_set("parallel-n64-gfxplugin", "angrylion");
+                                core_variables_set("parallel-n64-rspplugin", "parallel");
+                            } else {
+                                LOGI("parallel_n64 detected but Angrylion NOT advertised; leaving GLideN64 default on macOS");
+                            }
+#elif defined(__ANDROID__)
+                            LOGI("parallel_n64 detected, selecting GLideN64 (GLES) renderer");
+                            core_variables_set("parallel-n64-gfxplugin", "gliden64");
+                            core_variables_set("parallel-n64-rspplugin", "hle");
+#endif
+                            break;
+                        }
+                    }
+                }
+
 #ifdef __ANDROID__
                 /* PSP (PPSSPP) backend selection on Android: force
                  * Vulkan to sidestep the Adreno EGL TLS bug

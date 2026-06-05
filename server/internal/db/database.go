@@ -1053,7 +1053,7 @@ func SeedConsoles(db *gorm.DB) error {
 		{Name: "Philips CD-i", Abbreviation: "CDI", Extensions: ".chd,.cue,.iso", DefaultCore: "same_cdi", EmulatorJSCore: "same_cdi", FolderName: "cdi", ColorTheme: "#006633", Generation: 4, SaveStateSupport: true, SaveStatePolicy: SaveStatePolicySmall, Playable: true},
 		// 5th Generation
 		{Name: "PlayStation", Abbreviation: "PSX", Extensions: ".bin,.cue,.iso,.pbp,.m3u", DefaultCore: "beetle_psx_hw", EmulatorJSCore: "mednafen_psx_hw", FolderName: "psx", ColorTheme: "#003087", CoverAspect: "1:1", Generation: 5, SaveStateSupport: true, SaveStatePolicy: SaveStatePolicyMedium, Playable: true},
-		{Name: "Nintendo 64", Abbreviation: "N64", Extensions: ".n64,.z64,.v64", DefaultCore: "mupen64plus_next", EmulatorJSCore: "mupen64plus_next", FolderName: "n64", ColorTheme: "#009e60", CoverAspect: "10:7", Generation: 5, SaveStateSupport: true, SaveStatePolicy: SaveStatePolicyMedium, Playable: true},
+		{Name: "Nintendo 64", Abbreviation: "N64", Extensions: ".n64,.z64,.v64", DefaultCore: "parallel_n64", EmulatorJSCore: "mupen64plus_next", FolderName: "n64", ColorTheme: "#009e60", CoverAspect: "10:7", Generation: 5, SaveStateSupport: true, SaveStatePolicy: SaveStatePolicyMedium, Playable: true},
 		{Name: "Sega Saturn", Abbreviation: "SAT", Extensions: ".iso,.bin,.cue,.chd,.m3u", DefaultCore: "yabause", EmulatorJSCore: "yabause", FolderName: "saturn", ColorTheme: "#0a4da2", Generation: 5, SaveStateSupport: true, SaveStatePolicy: SaveStatePolicyMedium, Playable: true},
 		{Name: "Game Boy Color", Abbreviation: "GBC", Extensions: ".gbc", DefaultCore: "gambatte", EmulatorJSCore: "gambatte", FolderName: "gbc", ColorTheme: "#6638a8", CoverAspect: "7:8", Generation: 5, SaveStateSupport: true, SaveStatePolicy: SaveStatePolicySmall, Playable: true},
 		{Name: "Atari Jaguar", Abbreviation: "JAG", Extensions: ".j64,.jag", DefaultCore: "virtualjaguar", EmulatorJSCore: "virtualjaguar", FolderName: "atarijaguar", ColorTheme: "#8b4513", Generation: 5, SaveStateSupport: false, SaveStatePolicy: SaveStatePolicySmall, Playable: true},
@@ -1236,6 +1236,7 @@ func SeedCores(db *gorm.DB) error {
 		{Name: "gambatte", DisplayName: "Gambatte", Description: "Game Boy / Game Boy Color emulator", Platforms: "windows,linux,macos,android"},
 		{Name: "mgba", DisplayName: "mGBA", Description: "Game Boy Advance emulator", Platforms: "windows,linux,macos,android"},
 		{Name: "mupen64plus_next", DisplayName: "Mupen64Plus-Next", Description: "Nintendo 64 emulator", Platforms: "windows,linux,macos,android"},
+		{Name: "parallel_n64", DisplayName: "ParaLLEl N64", Description: "Nintendo 64 emulator (default native core)", Platforms: "windows,linux,macos,android"},
 		{Name: "genesis_plus_gx", DisplayName: "Genesis Plus GX", Description: "Sega 8/16-bit emulator", Platforms: "windows,linux,macos,android"},
 		{Name: "genesis_plus_gx_wide", DisplayName: "Genesis Plus GX Wide", Description: "Sega 8/16-bit emulator (widescreen)", Platforms: "windows,linux,macos,android"},
 		{Name: "picodrive", DisplayName: "PicoDrive", Description: "Sega 8/16-bit + Sega CD/32X emulator", Platforms: "windows,linux,macos,android"},
